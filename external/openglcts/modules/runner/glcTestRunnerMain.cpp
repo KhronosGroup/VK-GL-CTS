@@ -62,7 +62,8 @@ static bool parseCommandLine(CommandLine& cmdLine, int argc, const char* const* 
 							 { "gl32", glu::ApiType::core(3, 2) }, { "gl33", glu::ApiType::core(3, 3) },
 							 { "gl40", glu::ApiType::core(4, 0) }, { "gl41", glu::ApiType::core(4, 1) },
 							 { "gl42", glu::ApiType::core(4, 2) }, { "gl43", glu::ApiType::core(4, 3) },
-							 { "gl44", glu::ApiType::core(4, 4) }, { "gl45", glu::ApiType::core(4, 5) } };
+							 { "gl44", glu::ApiType::core(4, 4) }, { "gl45", glu::ApiType::core(4, 5) },
+							 { "gl46", glu::ApiType::core(4, 6) } };
 
 			const char* value = arg + 7;
 			int			ndx   = 0;
@@ -102,7 +103,7 @@ static void printHelp(const char* binName)
 	printf("%s:\n", binName);
 	printf("  --type=[esN[M]|glNM] Conformance test run type. Choose from\n");
 	printf("                       ES: es2, es3, es31, es32\n");
-	printf("                       GL: gl30, gl31, gl32, gl33, gl40, gl41, gl42, gl43, gl44, gl45\n");
+	printf("                       GL: gl30, gl31, gl32, gl33, gl40, gl41, gl42, gl43, gl44, gl45, gl46\n");
 	printf("  --logdir=[path]      Destination directory for log files\n");
 	printf("  --summary            Print summary without running the tests\n");
 	printf("  --verbose            Print out and log more information\n");

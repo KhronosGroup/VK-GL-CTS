@@ -66,8 +66,16 @@ protected:
 	/* Checks whether the feature is supported. */
 	bool featureSupported()
 	{
-		return (m_api == TransformFeedbackOverflowQueryTests::API_GL_ARB_transform_feedback_overflow_query &&
-				m_context.getContextInfo().isExtensionSupported("GL_ARB_transform_feedback_overflow_query"));
+		if (m_api == TransformFeedbackOverflowQueryTests::API_GL_ARB_transform_feedback_overflow_query)
+		{
+			glu::ContextType contextType = m_context.getRenderContext().getType();
+			if (m_context.getContextInfo().isExtensionSupported("GL_ARB_transform_feedback_overflow_query") ||
+				glu::contextSupports(contextType, glu::ApiType::core(4, 6)))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/* Checks whether transform_feedback2 is supported. */
@@ -135,11 +143,11 @@ private:
 /*
  API Implementation Dependent State Test
 
- * Check that calling GetQueryiv with target TRANSFORM_FEEDBACK_OVERFLOW_ARB
+ * Check that calling GetQueryiv with target TRANSFORM_FEEDBACK_OVERFLOW
  and pname QUERY_COUNTER_BITS returns a non-negative value without error.
 
  * If GL 4.0 or ARB_transform_feedback3 is supported, check that calling
- GetQueryiv with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB and pname
+ GetQueryiv with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW and pname
  QUERY_COUNTER_BITS returns a non-negative value without error.
  */
 class TransformFeedbackOverflowQueryImplDepState : public TransformFeedbackOverflowQueryBaseTest
@@ -159,19 +167,18 @@ public:
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 		GLint				  counterBits;
 
-		gl.getQueryiv(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, GL_QUERY_COUNTER_BITS, &counterBits);
+		gl.getQueryiv(GL_TRANSFORM_FEEDBACK_OVERFLOW, GL_QUERY_COUNTER_BITS, &counterBits);
 		if (counterBits < 0)
 		{
-			TCU_FAIL("Value of QUERY_COUNTER_BITS for query target TRANSFORM_FEEDBACK_OVERFLOW_ARB is invalid");
+			TCU_FAIL("Value of QUERY_COUNTER_BITS for query target TRANSFORM_FEEDBACK_OVERFLOW is invalid");
 		}
 
 		if (supportsTransformFeedback3())
 		{
-			gl.getQueryiv(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, GL_QUERY_COUNTER_BITS, &counterBits);
+			gl.getQueryiv(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, GL_QUERY_COUNTER_BITS, &counterBits);
 			if (counterBits < 0)
 			{
-				TCU_FAIL(
-					"Value of QUERY_COUNTER_BITS for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB is invalid");
+				TCU_FAIL("Value of QUERY_COUNTER_BITS for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW is invalid");
 			}
 		}
 
@@ -224,11 +231,11 @@ protected:
 /*
  API Default Context State Test
 
- * Check that calling GetQueryiv with target TRANSFORM_FEEDBACK_OVERFLOW_ARB
+ * Check that calling GetQueryiv with target TRANSFORM_FEEDBACK_OVERFLOW
  and pname CURRENT_QUERY returns zero by default.
 
  * If GL 4.0 or ARB_transform_feedback3 is supported, check that calling
- GetQueryIndexediv with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB and
+ GetQueryIndexediv with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW and
  pname CURRENT_QUERY returns zero for any index between zero and MAX_-
  VERTEX_STREAMS.
  */
@@ -246,18 +253,18 @@ public:
 	/* Test case iterate function. Contains the actual test case logic. */
 	IterateResult iterate()
 	{
-		if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, 0, 0))
+		if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_OVERFLOW, 0, 0))
 		{
-			TCU_FAIL("Default value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_OVERFLOW_ARB is non-zero");
+			TCU_FAIL("Default value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_OVERFLOW is non-zero");
 		}
 
 		if (supportsTransformFeedback3())
 		{
 			for (GLuint i = 0; i < getMaxVertexStreams(); ++i)
 			{
-				if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, 0, 0))
+				if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, 0, 0))
 				{
-					TCU_FAIL("Default value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB "
+					TCU_FAIL("Default value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW "
 							 "is non-zero");
 				}
 			}
@@ -330,22 +337,22 @@ public:
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 		// Call BeginQuery
-		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, m_overflow_query);
+		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW, m_overflow_query);
 
 		// Verify that CURRENT_QUERY is set to the name of the query
-		if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, 0, m_overflow_query))
+		if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_OVERFLOW, 0, m_overflow_query))
 		{
-			TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_OVERFLOW_ARB is not updated properly "
+			TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_OVERFLOW is not updated properly "
 					 "after a call to BeginQuery");
 		}
 
 		// Call EndQuery
-		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB);
+		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW);
 
 		// Verify that CURRENT_QUERY is reset to zero
-		if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, 0, 0))
+		if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_OVERFLOW, 0, 0))
 		{
-			TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_OVERFLOW_ARB is not reset properly "
+			TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_OVERFLOW is not reset properly "
 					 "after a call to EndQuery");
 		}
 
@@ -354,25 +361,24 @@ public:
 			for (GLuint i = 0; i < getMaxVertexStreams(); ++i)
 			{
 				// Call BeginQueryIndexed with specified index
-				gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, i, m_stream_overflow_query);
+				gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, i, m_stream_overflow_query);
 
 				// Verify that CURRENT_QUERY is set to the name of the query for the specified index, but remains zero for other indices
 				for (GLuint j = 0; j < getMaxVertexStreams(); ++j)
 				{
 					if (i == j)
 					{
-						if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, j,
-													 m_stream_overflow_query))
+						if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, j, m_stream_overflow_query))
 						{
-							TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB "
+							TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW "
 									 "is not updated properly after a call to BeginQueryIndexed");
 						}
 					}
 					else
 					{
-						if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, j, 0))
+						if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, j, 0))
 						{
-							TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB "
+							TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW "
 									 "is incorrectly updated for an unrelated vertex stream"
 									 "index after a call to BeginQueryIndexed");
 						}
@@ -380,24 +386,24 @@ public:
 				}
 
 				// Call EndQueryIndexed with specified index
-				gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, i);
+				gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, i);
 
 				// Verify that CURRENT_QUERY is reset to zero for the specified index and still remains zero for other indices
 				for (GLuint j = 0; j < getMaxVertexStreams(); ++j)
 				{
 					if (i == j)
 					{
-						if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, j, 0))
+						if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, j, 0))
 						{
-							TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB "
+							TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW "
 									 "is not reset properly after a call to EndQueryIndexed");
 						}
 					}
 					else
 					{
-						if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, j, 0))
+						if (!verifyCurrentQueryState(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, j, 0))
 						{
-							TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB "
+							TCU_FAIL("Value of CURRENT_QUERY for query target TRANSFORM_FEEDBACK_STREAM_OVERFLOW "
 									 "is incorrectly updated for an unrelated vertex stream"
 									 "index after a call to EndQueryIndexed");
 						}
@@ -459,7 +465,7 @@ private:
  OVERFLOW_ARB and a non-zero index generates an INVALID_VALUE error.
 
  * If GL 4.0 or ARB_transform_feedback3 is supported, check that calling
- GetQueryIndexediv with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB
+ GetQueryIndexediv with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW
  and an index greater than or equal to MAX_VERTEX_STREAMS generates an
  INVALID_VALUE error.
 
@@ -467,7 +473,7 @@ private:
  OVERFLOW_ARB and a non-zero index generates an INVALID_VALUE error.
 
  * If GL 4.0 or ARB_transform_feedback3 is supported, check that calling
- BeginQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB
+ BeginQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW
  and an index greater than or equal to MAX_VERTEX_STREAMS generates an
  INVALID_VALUE error.
  */
@@ -511,45 +517,45 @@ public:
 		GLint				  value;
 
 		startTest("GetQueryIndexediv must generate INVALID_VALUE if <target> is "
-				  "TRANSFORM_FEEDBACK_OVERFLOW_ARB and <index> is non-zero.");
+				  "TRANSFORM_FEEDBACK_OVERFLOW and <index> is non-zero.");
 
 		for (GLuint i = 1; i < getMaxVertexStreams(); ++i)
 		{
-			gl.getQueryIndexediv(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, i, GL_CURRENT_QUERY, &value);
+			gl.getQueryIndexediv(GL_TRANSFORM_FEEDBACK_OVERFLOW, i, GL_CURRENT_QUERY, &value);
 			verifyError(GL_INVALID_VALUE);
 		}
 
 		if (supportsTransformFeedback3())
 		{
 			startTest("GetQueryIndexediv must generate INVALID_VALUE if <target> is "
-					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB and <index> is greater "
+					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW and <index> is greater "
 					  "than or equal to MAX_VERTEX_STREAMS.");
 
 			for (GLuint i = getMaxVertexStreams(); i < getMaxVertexStreams() + 4; ++i)
 			{
-				gl.getQueryIndexediv(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, i, GL_CURRENT_QUERY, &value);
+				gl.getQueryIndexediv(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, i, GL_CURRENT_QUERY, &value);
 				verifyError(GL_INVALID_VALUE);
 			}
 		}
 
 		startTest("BeginQueryIndexed must generate INVALID_VALUE if <target> is "
-				  "TRANSFORM_FEEDBACK_OVERFLOW_ARB and <index> is non-zero.");
+				  "TRANSFORM_FEEDBACK_OVERFLOW and <index> is non-zero.");
 
 		for (GLuint i = 1; i < getMaxVertexStreams(); ++i)
 		{
-			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, i, m_query);
+			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW, i, m_query);
 			verifyError(GL_INVALID_VALUE);
 		}
 
 		if (supportsTransformFeedback3())
 		{
 			startTest("BeginQueryIndexed must generate INVALID_VALUE if <target> is "
-					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB and <index> is greater "
+					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW and <index> is greater "
 					  "than or equal to MAX_VERTEX_STREAMS.");
 
 			for (GLuint i = getMaxVertexStreams(); i < getMaxVertexStreams() + 4; ++i)
 			{
-				gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, i, m_query);
+				gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, i, m_query);
 				verifyError(GL_INVALID_VALUE);
 			}
 		}
@@ -566,20 +572,20 @@ protected:
 /*
  API Already Active Error Test
 
- * Check that calling BeginQuery with target TRANSFORM_FEEDBACK_OVERFLOW_ARB
+ * Check that calling BeginQuery with target TRANSFORM_FEEDBACK_OVERFLOW
  generates an INVALID_OPERATION error if there is already an active
- query for TRANSFORM_FEEDBACK_OVERFLOW_ARB.
+ query for TRANSFORM_FEEDBACK_OVERFLOW.
 
  * If GL 4.0 or ARB_transform_feedback3 is supported, check that calling
- BeginQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB
+ BeginQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW
  generates an INVALID_OPERATION error if there is already an active
- query for TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB for the specified
+ query for TRANSFORM_FEEDBACK_STREAM_OVERFLOW for the specified
  index.
 
  * If GL 4.0 or ARB_transform_feedback3 is supported, check that calling
- BeginQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB
+ BeginQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW
  generates an INVALID_OPERATION error if the specified query is already
- active on another TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB target with
+ active on another TRANSFORM_FEEDBACK_STREAM_OVERFLOW target with
  a different index.
  */
 class TransformFeedbackOverflowQueryErrorAlreadyActive : public TransformFeedbackOverflowQueryErrorBase
@@ -609,13 +615,13 @@ public:
 		gl.genQueries(1, &m_query);
 
 		gl.genQueries(1, &m_active_overflow_query);
-		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, m_active_overflow_query);
+		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW, m_active_overflow_query);
 
 		if (supportsTransformFeedback3())
 		{
 			gl.genQueries(1, &m_active_stream_overflow_query);
 			m_active_query_stream_index = 2;
-			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_active_query_stream_index,
+			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_active_query_stream_index,
 								 m_active_stream_overflow_query);
 		}
 	}
@@ -627,11 +633,11 @@ public:
 
 		if (supportsTransformFeedback3())
 		{
-			gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_active_query_stream_index);
+			gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_active_query_stream_index);
 			gl.deleteQueries(1, &m_active_stream_overflow_query);
 		}
 
-		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB);
+		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW);
 		gl.deleteQueries(1, &m_active_overflow_query);
 
 		gl.deleteQueries(1, &m_query);
@@ -645,38 +651,38 @@ public:
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 		startTest("BeginQuery[Indexed] must generate INVALID_OPERATION if <target> is "
-				  "TRANSFORM_FEEDBACK_OVERFLOW_ARB and there is already an active "
+				  "TRANSFORM_FEEDBACK_OVERFLOW and there is already an active "
 				  "query for TRANSFORM_FEEDBACK_ARB.");
 
-		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, m_query);
+		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW, m_query);
 		verifyError(GL_INVALID_OPERATION);
-		gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, 0, m_query);
+		gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW, 0, m_query);
 		verifyError(GL_INVALID_OPERATION);
 
 		if (supportsTransformFeedback3())
 		{
 			startTest("BeginQueryIndexed must generate INVALID_OPERATION if <target> is "
-					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB and there is already an active "
-					  "query for TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB for the specified index.");
+					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW and there is already an active "
+					  "query for TRANSFORM_FEEDBACK_STREAM_OVERFLOW for the specified index.");
 
-			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_active_query_stream_index, m_query);
+			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_active_query_stream_index, m_query);
 			verifyError(GL_INVALID_OPERATION);
 
 			startTest("BeginQuery[Indexed] must generate INVALID_OPERATION if <target> is "
-					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB and the specified query is "
-					  "already active on another TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB "
+					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW and the specified query is "
+					  "already active on another TRANSFORM_FEEDBACK_STREAM_OVERFLOW "
 					  "target with a different index.");
 
 			for (GLuint i = 0; i < getMaxVertexStreams(); ++i)
 			{
 				if (i != m_active_query_stream_index)
 				{
-					gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, i, m_active_stream_overflow_query);
+					gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, i, m_active_stream_overflow_query);
 					verifyError(GL_INVALID_OPERATION);
 
 					if (i == 0)
 					{
-						gl.beginQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_active_stream_overflow_query);
+						gl.beginQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_active_stream_overflow_query);
 						verifyError(GL_INVALID_OPERATION);
 					}
 				}
@@ -699,9 +705,9 @@ protected:
  API Incompatible Target Error Test
 
  * If GL 4.0 or ARB_transform_feedback3 is supported, check that calling
- BeginQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB
+ BeginQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW
  generates an INVALID_OPERATION error if the specified query was
- previously used as a TRANSFORM_FEEDBACK_OVERFLOW_ARB query. Also check
+ previously used as a TRANSFORM_FEEDBACK_OVERFLOW query. Also check
  the other way around.
  */
 class TransformFeedbackOverflowQueryErrorIncompatibleTarget : public TransformFeedbackOverflowQueryErrorBase
@@ -733,14 +739,14 @@ public:
 		gl.endQuery(GL_SAMPLES_PASSED);
 
 		gl.genQueries(1, &m_overflow_query);
-		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, m_overflow_query);
-		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB);
+		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW, m_overflow_query);
+		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW);
 
 		if (supportsTransformFeedback3())
 		{
 			gl.genQueries(1, &m_stream_overflow_query);
-			gl.beginQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_stream_overflow_query);
-			gl.endQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB);
+			gl.beginQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_stream_overflow_query);
+			gl.endQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW);
 		}
 	}
 
@@ -767,33 +773,33 @@ public:
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 		startTest("BeginQuery[Indexed] must generate INVALID_OPERATION if <target> is "
-				  "TRANSFORM_FEEDBACK_OVERFLOW_ARB and the specified query was "
+				  "TRANSFORM_FEEDBACK_OVERFLOW and the specified query was "
 				  "previously used with another target.");
 
-		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, m_incompatible_query);
+		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW, m_incompatible_query);
 		verifyError(GL_INVALID_OPERATION);
-		gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, 0, m_incompatible_query);
+		gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW, 0, m_incompatible_query);
 		verifyError(GL_INVALID_OPERATION);
 
 		if (supportsTransformFeedback3())
 		{
-			gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, m_stream_overflow_query);
+			gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW, m_stream_overflow_query);
 			verifyError(GL_INVALID_OPERATION);
-			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, 0, m_stream_overflow_query);
+			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW, 0, m_stream_overflow_query);
 			verifyError(GL_INVALID_OPERATION);
 
 			startTest("BeginQuery[Indexed] must generate INVALID_OPERATION if <target> is "
-					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB and the specified query "
+					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW and the specified query "
 					  "was previously used with another target.");
 
-			gl.beginQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_incompatible_query);
+			gl.beginQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_incompatible_query);
 			verifyError(GL_INVALID_OPERATION);
-			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, 2, m_incompatible_query);
+			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, 2, m_incompatible_query);
 			verifyError(GL_INVALID_OPERATION);
 
-			gl.beginQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_overflow_query);
+			gl.beginQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_overflow_query);
 			verifyError(GL_INVALID_OPERATION);
-			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, 2, m_overflow_query);
+			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, 2, m_overflow_query);
 			verifyError(GL_INVALID_OPERATION);
 		}
 
@@ -811,14 +817,14 @@ protected:
 /*
  API No Query Active Error Test
 
- * Check that calling EndQuery with target TRANSFORM_FEEDBACK_OVERFLOW_ARB
+ * Check that calling EndQuery with target TRANSFORM_FEEDBACK_OVERFLOW
  generates an INVALID_OPERATION error if no query is active for
- TRANSFORM_FEEDBACK_OVERFLOW_ARB.
+ TRANSFORM_FEEDBACK_OVERFLOW.
 
  * If GL 4.0 or ARB_transform_feedback3 is supported, check that calling
- EndQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB
+ EndQueryIndexed with target TRANSFORM_FEEDBACK_STREAM_OVERFLOW
  generates an INVALID_OPERATION error if no query is active for
- TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB for the specified index, even
+ TRANSFORM_FEEDBACK_STREAM_OVERFLOW for the specified index, even
  if there is an active query for another index.
  */
 class TransformFeedbackOverflowQueryErrorNoActiveQuery : public TransformFeedbackOverflowQueryErrorBase
@@ -846,7 +852,7 @@ public:
 		{
 			gl.genQueries(1, &m_active_stream_overflow_query);
 			m_active_query_stream_index = 2;
-			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_active_query_stream_index,
+			gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_active_query_stream_index,
 								 m_active_stream_overflow_query);
 		}
 	}
@@ -858,7 +864,7 @@ public:
 
 		if (supportsTransformFeedback3())
 		{
-			gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, m_active_query_stream_index);
+			gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, m_active_query_stream_index);
 			gl.deleteQueries(1, &m_active_stream_overflow_query);
 		}
 
@@ -871,30 +877,30 @@ public:
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 		startTest("EndQuery[Indexed] must generate INVALID_OPERATION if <target> is "
-				  "TRANSFORM_FEEDBACK_OVERFLOW_ARB and there is no query active "
-				  "for TRANSFORM_FEEDBACK_OVERFLOW_ARB.");
+				  "TRANSFORM_FEEDBACK_OVERFLOW and there is no query active "
+				  "for TRANSFORM_FEEDBACK_OVERFLOW.");
 
-		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB);
+		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW);
 		verifyError(GL_INVALID_OPERATION);
-		gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, 0);
+		gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_OVERFLOW, 0);
 		verifyError(GL_INVALID_OPERATION);
 
 		if (supportsTransformFeedback3())
 		{
 			startTest("EndQuery[Indexed] must generate INVALID_OPERATION if <target> is "
-					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB and there is no query active "
-					  "for TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB for the given index.");
+					  "TRANSFORM_FEEDBACK_STREAM_OVERFLOW and there is no query active "
+					  "for TRANSFORM_FEEDBACK_STREAM_OVERFLOW for the given index.");
 
 			for (GLuint i = 0; i < getMaxVertexStreams(); ++i)
 			{
 				if (i != m_active_query_stream_index)
 				{
-					gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, i);
+					gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, i);
 					verifyError(GL_INVALID_OPERATION);
 
 					if (i == 0)
 					{
-						gl.endQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB);
+						gl.endQuery(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW);
 						verifyError(GL_INVALID_OPERATION);
 					}
 				}
@@ -914,11 +920,11 @@ protected:
 /*
  Base class of all functionality tests. Helps enforce the following requirements:
 
- * Ensuring that QUERY_COUNTER_BITS is at least one for the TRANSFORM_FEEDBACK_OVERFLOW_ARB query
+ * Ensuring that QUERY_COUNTER_BITS is at least one for the TRANSFORM_FEEDBACK_OVERFLOW query
  target before running any test that uses such a query's result.
 
  * Ensuring that GL 4.0 or ARB_transform_feedback3 is supported and QUERY_COUNTER_BITS is at least
- one for the TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB query target before running any test that
+ one for the TRANSFORM_FEEDBACK_STREAM_OVERFLOW query target before running any test that
  uses such a query's result.
  */
 class TransformFeedbackOverflowQueryFunctionalBase : public TransformFeedbackOverflowQueryBaseTest
@@ -938,18 +944,18 @@ protected:
 	{
 	}
 
-	/* Tells whether functional tests using TRANSFORM_FEEDBACK_OVERFLOW_ARB are runnable */
+	/* Tells whether functional tests using TRANSFORM_FEEDBACK_OVERFLOW are runnable */
 	bool canTestOverflow()
 	{
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 		GLint				  counterBits;
 
-		gl.getQueryiv(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, GL_QUERY_COUNTER_BITS, &counterBits);
+		gl.getQueryiv(GL_TRANSFORM_FEEDBACK_OVERFLOW, GL_QUERY_COUNTER_BITS, &counterBits);
 
 		return counterBits > 0;
 	}
 
-	/* Tells whether functional tests using TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB are runnable */
+	/* Tells whether functional tests using TRANSFORM_FEEDBACK_STREAM_OVERFLOW are runnable */
 	bool canTestStreamOverflow()
 	{
 		if (supportsTransformFeedback3())
@@ -957,7 +963,7 @@ protected:
 			const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 			GLint				  counterBits;
 
-			gl.getQueryiv(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, GL_QUERY_COUNTER_BITS, &counterBits);
+			gl.getQueryiv(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, GL_QUERY_COUNTER_BITS, &counterBits);
 
 			return counterBits > 0;
 		}
@@ -1021,7 +1027,7 @@ protected:
 		else
 		{
 			throw tcu::NotSupportedError(
-				"QUERY_COUNTER_BITS for TRANSFORM_FEEDBACK_OVERFLOW_ARB queries is zero, skipping test");
+				"QUERY_COUNTER_BITS for TRANSFORM_FEEDBACK_OVERFLOW queries is zero, skipping test");
 		}
 	}
 
@@ -1169,19 +1175,19 @@ protected:
 	{
 		bool result = true;
 
-		// Verify the result of the TRANSFORM_FEEDBACK_OVERFLOW_ARB query.
+		// Verify the result of the TRANSFORM_FEEDBACK_OVERFLOW query.
 		result &= verifyQueryResult(m_overflow_query, any);
 
 		if (supportsTransformFeedback3())
 		{
-			// Verify the result of the TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB queries
+			// Verify the result of the TRANSFORM_FEEDBACK_STREAM_OVERFLOW queries
 			// corresponding to the first 4 vertex streams.
 			result &= verifyQueryResult(m_stream_overflow_query[0], stream0);
 			result &= verifyQueryResult(m_stream_overflow_query[1], stream1);
 			result &= verifyQueryResult(m_stream_overflow_query[2], stream2);
 			result &= verifyQueryResult(m_stream_overflow_query[3], stream3);
 
-			// Expect the rest of the TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB queries
+			// Expect the rest of the TRANSFORM_FEEDBACK_STREAM_OVERFLOW queries
 			// to have a FALSE result.
 			for (GLuint i = 4; i < getMaxVertexStreams(); ++i)
 			{
@@ -1304,13 +1310,13 @@ protected:
 	{
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB, m_overflow_query);
+		gl.beginQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW, m_overflow_query);
 
 		if (supportsTransformFeedback3())
 		{
 			for (GLuint i = 0; i < getMaxVertexStreams(); ++i)
 			{
-				gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, i, m_stream_overflow_query[i]);
+				gl.beginQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, i, m_stream_overflow_query[i]);
 			}
 		}
 	}
@@ -1320,13 +1326,13 @@ protected:
 	{
 		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
-		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW_ARB);
+		gl.endQuery(GL_TRANSFORM_FEEDBACK_OVERFLOW);
 
 		if (supportsTransformFeedback3())
 		{
 			for (GLuint i = 0; i < getMaxVertexStreams(); ++i)
 			{
-				gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB, i);
+				gl.endQueryIndexed(GL_TRANSFORM_FEEDBACK_STREAM_OVERFLOW, i);
 			}
 		}
 	}
@@ -1964,8 +1970,8 @@ public:
 		gl.pauseTransformFeedback();
 
 		// Use the basic checking mechanism to validate that the result of the
-		// queries are all FALSE, except for the TRANSFORM_FEEDBACK_OVERFLOW_ARB
-		// query, and the TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB queries for
+		// queries are all FALSE, except for the TRANSFORM_FEEDBACK_OVERFLOW
+		// query, and the TRANSFORM_FEEDBACK_STREAM_OVERFLOW queries for
 		// vertex streams #1 and #3, which should have a TRUE result.
 		verifyQueryResults(GL_TRUE, GL_FALSE, GL_TRUE, GL_FALSE, GL_TRUE);
 
@@ -1994,8 +2000,8 @@ public:
 		gl.endTransformFeedback();
 
 		// Use the basic checking mechanism to validate that the result of the
-		// queries are all FALSE, except for the TRANSFORM_FEEDBACK_OVERFLOW_ARB
-		// query, and the TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB queries for
+		// queries are all FALSE, except for the TRANSFORM_FEEDBACK_OVERFLOW
+		// query, and the TRANSFORM_FEEDBACK_STREAM_OVERFLOW queries for
 		// vertex streams #2 and #3, which should have a TRUE result.
 		verifyQueryResults(GL_TRUE, GL_FALSE, GL_FALSE, GL_TRUE, GL_TRUE);
 
@@ -2131,8 +2137,8 @@ public:
 		gl.pauseTransformFeedback();
 
 		// Use the basic checking mechanism to validate that the result of the
-		// queries are all FALSE, except for the TRANSFORM_FEEDBACK_OVERFLOW_ARB
-		// query, and the TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB query for vertex
+		// queries are all FALSE, except for the TRANSFORM_FEEDBACK_OVERFLOW
+		// query, and the TRANSFORM_FEEDBACK_STREAM_OVERFLOW query for vertex
 		// stream #1, which should have a TRUE result.
 		verifyQueryResults(GL_TRUE, GL_FALSE, GL_TRUE);
 
@@ -2161,8 +2167,8 @@ public:
 		gl.endTransformFeedback();
 
 		// Use the basic checking mechanism to validate that the result of the
-		// queries are all FALSE, except for the TRANSFORM_FEEDBACK_OVERFLOW_ARB
-		// query, and the TRANSFORM_FEEDBACK_STREAM_OVERFLOW_ARB queries for
+		// queries are all FALSE, except for the TRANSFORM_FEEDBACK_OVERFLOW
+		// query, and the TRANSFORM_FEEDBACK_STREAM_OVERFLOW queries for
 		// vertex streams #0 and #1, which should have a TRUE result.
 		verifyQueryResults(GL_TRUE, GL_TRUE, GL_TRUE);
 

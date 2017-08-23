@@ -17,12 +17,6 @@
  * limitations under the License.
  *
  */ /*!
- * \file
- * \brief
- */ /*-------------------------------------------------------------------*/
-
-/**
- */ /*!
  * \file  gl4cShaderDrawParametersTests.cpp
  * \brief Conformance tests for the GL_ARB_shader_draw_parameters functionality.
  */ /*-------------------------------------------------------------------*/
@@ -35,6 +29,7 @@
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
 #include "tcuRenderTarget.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
 
 using namespace glw;
@@ -61,27 +56,27 @@ const char* sdp_compute_extensionCheck = "#version 450 core\n"
 										 "{\n"
 										 "}\n";
 
-static const char* sdp_vertShader = "#version 450\n"
+static const char* sdp_vertShader = "${VERSION}\n"
 									"\n"
-									"#extension GL_ARB_shader_draw_parameters : enable\n"
+									"${DRAW_PARAMETERS_EXTENSION}\n"
 									"\n"
 									"in vec3 vertex;\n"
 									"out vec3 color;\n"
 									"\n"
 									"void main()\n"
 									"{\n"
-									"    float hOffset = float(gl_BaseVertexARB) / 5.0;\n"
-									"    float vOffset = float(gl_BaseInstanceARB) / 5.0;\n"
+									"    float hOffset = float(${GL_BASE_VERTEX}) / 5.0;\n"
+									"    float vOffset = float(${GL_BASE_INSTANCE}) / 5.0;\n"
 									"    color = vec3(0.0);\n"
-									"    if (gl_DrawIDARB % 3 == 0) color.r = 1;\n"
-									"    else if (gl_DrawIDARB % 3 == 1) color.g = 1;\n"
-									"    else if (gl_DrawIDARB % 3 == 2) color.b = 1;\n"
+									"    if (${GL_DRAW_ID} % 3 == 0) color.r = 1;\n"
+									"    else if (${GL_DRAW_ID} % 3 == 1) color.g = 1;\n"
+									"    else if (${GL_DRAW_ID} % 3 == 2) color.b = 1;\n"
 									"    gl_Position = vec4(vertex + vec3(hOffset, vOffset, 0), 1);\n"
 									"}\n";
 
-static const char* sdp_fragShader = "#version 450\n"
+static const char* sdp_fragShader = "${VERSION}\n"
 									"\n"
-									"#extension GL_ARB_shader_draw_parameters : enable\n"
+									"${DRAW_PARAMETERS_EXTENSION}\n"
 									"\n"
 									"in vec3 color;\n"
 									"out vec4 fragColor;\n"
@@ -157,8 +152,12 @@ ShaderDrawParametersTestBase::ShaderDrawParametersTestBase(deqp::Context& contex
 /** Stub init method */
 void ShaderDrawParametersTestBase::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_draw_parameters"))
-		TCU_THROW(NotSupportedError, "Extension GL_ARB_shader_draw_parameters not supported");
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_draw_parameters"))
+	{
+		TCU_THROW(NotSupportedError, "shader_draw_parameters functionality not supported");
+	}
 
 	initChild();
 
@@ -235,8 +234,30 @@ tcu::TestNode::IterateResult ShaderDrawParametersTestBase::iterate()
 bool ShaderDrawParametersTestBase::draw()
 {
 	const Functions& gl = m_context.getRenderContext().getFunctions();
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	std::map<std::string, std::string> specializationMap;
 
-	ProgramSources sources = makeVtxFragSources(sdp_vertShader, sdp_fragShader);
+	if (glu::contextSupports(contextType, glu::ApiType::core(4, 6)))
+	{
+		specializationMap["VERSION"]				   = "#version 460";
+		specializationMap["DRAW_PARAMETERS_EXTENSION"] = "";
+		specializationMap["GL_BASE_VERTEX"]			   = "gl_BaseVertex";
+		specializationMap["GL_BASE_INSTANCE"]		   = "gl_BaseInstance";
+		specializationMap["GL_DRAW_ID"]				   = "gl_DrawID";
+	}
+	else
+	{
+		specializationMap["VERSION"]				   = "#version 450";
+		specializationMap["DRAW_PARAMETERS_EXTENSION"] = "#extension GL_ARB_shader_draw_parameters : enable";
+		specializationMap["GL_BASE_VERTEX"]			   = "gl_BaseVertexARB";
+		specializationMap["GL_BASE_INSTANCE"]		   = "gl_BaseInstanceARB";
+		specializationMap["GL_DRAW_ID"]				   = "gl_DrawIDARB";
+	}
+
+	std::string vs = tcu::StringTemplate(sdp_vertShader).specialize(specializationMap);
+	std::string fs = tcu::StringTemplate(sdp_fragShader).specialize(specializationMap);
+
+	ProgramSources sources = makeVtxFragSources(vs, fs);
 	ShaderProgram  program(gl, sources);
 
 	if (!program.isOk())
@@ -696,8 +717,12 @@ void ShaderMultiDrawElementsIndirectParametersTestCase::drawCommand()
 
 void ShaderMultiDrawArraysIndirectCountParametersTestCase::initChild()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
-		TCU_THROW(NotSupportedError, "Extension GL_ARB_indirect_parameters not supported");
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
+	{
+		TCU_THROW(NotSupportedError, "indirect_parameters functionality not supported");
+	}
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -766,8 +791,12 @@ void ShaderMultiDrawArraysIndirectCountParametersTestCase::drawCommand()
 
 void ShaderMultiDrawElementsIndirectCountParametersTestCase::initChild()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
-		TCU_THROW(NotSupportedError, "Extension GL_ARB_indirect_parameters not supported");
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
+	{
+		TCU_THROW(NotSupportedError, "indirect_parameters functionality not supported");
+	}
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 

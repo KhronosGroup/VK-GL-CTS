@@ -19,9 +19,13 @@
  * be lost! Modify the generating script instead.
  */
 
-const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass/4.5.5.x/";
+const char* mustpassDir = "gl_cts/data/mustpass/gl/khronos_mustpass/4.6.0.x/";
 
 static const RunParams khronos_mustpass_gl_first_cfg[] = {
+	{ glu::ApiType::core(4, 6), "master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+	{ glu::ApiType::core(4, 6), "master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+	{ glu::ApiType::core(4, 6), "master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+	{ glu::ApiType::core(4, 6), "master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
 	{ glu::ApiType::core(4, 5), "master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::core(4, 5), "master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 	{ glu::ApiType::core(4, 5), "master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
@@ -62,6 +66,18 @@ static const RunParams khronos_mustpass_gl_first_cfg[] = {
 	{ glu::ApiType::core(3, 0), "master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 	{ glu::ApiType::core(3, 0), "master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
 	{ glu::ApiType::core(3, 0), "master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+#if defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::core(4, 6), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::core(4, 6), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::core(4, 6), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", 64, -1 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::core(4, 6), "gtf-master", DE_NULL, "unspecified", 3, "rgba8888d24s8", -1, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
 #if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::core(4, 5), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 #endif // defined(DEQP_GTF_AVAILABLE)
@@ -185,6 +201,8 @@ static const RunParams khronos_mustpass_gl_first_cfg[] = {
 };
 
 static const RunParams khronos_mustpass_gl_other_cfg[] = {
+	{ glu::ApiType::core(4, 6), "master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+	{ glu::ApiType::core(4, 6), "master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 	{ glu::ApiType::core(4, 5), "master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::core(4, 5), "master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 	{ glu::ApiType::core(4, 4), "master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
@@ -205,6 +223,12 @@ static const RunParams khronos_mustpass_gl_other_cfg[] = {
 	{ glu::ApiType::core(3, 1), "master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
 	{ glu::ApiType::core(3, 0), "master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 	{ glu::ApiType::core(3, 0), "master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#if defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::core(4, 6), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
+#endif // defined(DEQP_GTF_AVAILABLE)
+#if defined(DEQP_GTF_AVAILABLE)
+	{ glu::ApiType::core(4, 6), "gtf-master", DE_NULL, "unspecified", 2, DE_NULL, 113, 47 },
+#endif // defined(DEQP_GTF_AVAILABLE)
 #if defined(DEQP_GTF_AVAILABLE)
 	{ glu::ApiType::core(4, 5), "gtf-master", DE_NULL, "unspecified", 1, DE_NULL, 64, 64 },
 #endif // defined(DEQP_GTF_AVAILABLE)

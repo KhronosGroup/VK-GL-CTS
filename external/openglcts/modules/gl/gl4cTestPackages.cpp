@@ -381,4 +381,21 @@ void GL45TestPackage::init(void)
 	}
 }
 
+GL46TestPackage::GL46TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
+								 glu::ContextType renderContextType)
+	: GL45TestPackage(testCtx, packageName, packageName, renderContextType)
+{
+	(void)description;
+}
+
+GL46TestPackage::~GL46TestPackage(void)
+{
+}
+
+void GL46TestPackage::init(void)
+{
+	// Call init() in parent - this creates context.
+	GL45TestPackage::init();
+}
+
 } // gl4cts

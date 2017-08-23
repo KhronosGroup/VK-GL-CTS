@@ -265,6 +265,8 @@ def getApiType(apiName):
 		return "glu::ApiType::es(3, 1)"
 	if apiName == "GLES32":
 		return "glu::ApiType::es(3, 2)"
+	if apiName == "GL46":
+		return "glu::ApiType::core(4, 6)"
 	if apiName == "GL45":
 		return "glu::ApiType::core(4, 5)"
 	if apiName == "GL44":

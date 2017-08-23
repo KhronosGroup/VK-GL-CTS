@@ -988,6 +988,7 @@ GL_CTS_KHR_MP_NOCTX_DEVICE_DIR		= "gl_cts/data/mustpass/gl/khronos_mustpass_noct
 GL_CTS_NOCTX_PROJECT				= Project(name = "Khronos Mustpass GL NoContext", path = GL_CTS_KHR_MP_NOCTX_DATA_DIR, incpath = GL_CTS_MP_INC_DIR, devicepath = GL_CTS_KHR_MP_NOCTX_DEVICE_DIR, copyright = COPYRIGHT_DECLARATION)
 
 GL_MODULES							= OrderedDict([
+			('KHR-GL46',		['master',		[include('gl46-master.txt'), exclude('gl46-test-issues.txt')]]),
 			('KHR-GL45',		['master',		[include('gl45-master.txt'), exclude('gl45-test-issues.txt')]]),
 			('KHR-GL44',		['master',		[include('gl44-master.txt'), exclude('gl44-test-issues.txt')]]),
 			('KHR-GL43',		['master',		[include('gl43-master.txt'), exclude('gl43-test-issues.txt')]]),
@@ -998,6 +999,7 @@ GL_MODULES							= OrderedDict([
 			('KHR-GL32',		['master',		[include('gl32-master.txt')]]),
 			('KHR-GL31',		['master',		[include('gl31-master.txt')]]),
 			('KHR-GL30',		['master',		[include('gl30-master.txt')]]),
+			('GTF-GL46',		['gtf-master',	[include('gl46-gtf-master.txt')]]),
 			('GTF-GL45',		['gtf-master',	[include('gl45-gtf-master.txt')]]),
 			('GTF-GL44',		['gtf-master',	[include('gl44-gtf-master.txt')]]),
 			('GTF-GL43',		['gtf-master',	[include('gl43-gtf-master.txt')]]),
@@ -1057,8 +1059,8 @@ def generateGLMustpass():
 			gl_packages.append(pkg0)
 			gl_packages.append(pkg1)
 
-		mustpass = [Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "4.5.5.x", isCurrent=True, packages = gl_packages),
-					Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.5.5.x", isCurrent=True, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
+		mustpass = [Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "4.6.0.x", isCurrent=True, packages = gl_packages),
+					Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.6.0.x", isCurrent=True, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
 					]
 		return mustpass
 

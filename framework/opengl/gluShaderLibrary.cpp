@@ -1260,7 +1260,7 @@ void ShaderParser::parseGLSLVersion (glu::GLSLVersion& version)
 		advanceToken();
 	}
 
-	DE_STATIC_ASSERT(glu::GLSL_VERSION_LAST == 14);
+	DE_STATIC_ASSERT(glu::GLSL_VERSION_LAST == 15);
 
 	if		(versionNum == 100 && postfix == "es")	version = glu::GLSL_VERSION_100_ES;
 	else if (versionNum == 300 && postfix == "es")	version = glu::GLSL_VERSION_300_ES;
@@ -1276,6 +1276,7 @@ void ShaderParser::parseGLSLVersion (glu::GLSLVersion& version)
 	else if (versionNum == 430)						version = glu::GLSL_VERSION_430;
 	else if (versionNum == 440)						version = glu::GLSL_VERSION_440;
 	else if (versionNum == 450)						version = glu::GLSL_VERSION_450;
+	else if (versionNum == 460)						version = glu::GLSL_VERSION_460;
 	else
 		parseError("Unknown GLSL version");
 }

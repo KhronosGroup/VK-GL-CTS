@@ -83,7 +83,9 @@ void ParameterBufferOperationsCase::init()
  */
 tcu::TestNode::IterateResult ParameterBufferOperationsCase::iterate()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
 		return STOP;
@@ -245,7 +247,9 @@ VertexArrayIndirectDrawingBaseCase::VertexArrayIndirectDrawingBaseCase(deqp::Con
  */
 tcu::TestNode::IterateResult VertexArrayIndirectDrawingBaseCase::iterate()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
 	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
 		return STOP;
@@ -331,7 +335,9 @@ MultiDrawArraysIndirectCountCase::MultiDrawArraysIndirectCountCase(deqp::Context
 /** Stub init method */
 void MultiDrawArraysIndirectCountCase::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
 		return;
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();
@@ -510,7 +516,9 @@ MultiDrawElementsIndirectCountCase::MultiDrawElementsIndirectCountCase(deqp::Con
 /** Stub init method */
 void MultiDrawElementsIndirectCountCase::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_indirect_parameters"))
 		return;
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();

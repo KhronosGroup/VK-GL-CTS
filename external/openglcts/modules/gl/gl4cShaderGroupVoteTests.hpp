@@ -72,6 +72,7 @@ public:
 protected:
 	/* Protected members */
 	bool						m_extensionSupported;
+	std::string					m_glslFunctionPostfix;
 	std::vector<ComputeShader*> m_shaders;
 };
 

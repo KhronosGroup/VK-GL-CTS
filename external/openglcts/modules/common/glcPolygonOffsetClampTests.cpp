@@ -86,7 +86,10 @@ PolygonOffsetClampTestCaseBase::PolygonOffsetClampTestCaseBase(deqp::Context& co
 															   const char* description)
 	: TestCase(context, name, description)
 {
-	m_extensionSupported = context.getContextInfo().isExtensionSupported("GL_EXT_polygon_offset_clamp");
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	m_extensionSupported		 = glu::contextSupports(contextType, glu::ApiType::core(4, 6));
+	m_extensionSupported |= context.getContextInfo().isExtensionSupported("GL_EXT_polygon_offset_clamp");
+	m_extensionSupported |= context.getContextInfo().isExtensionSupported("GL_ARB_polygon_offset_clamp");
 }
 
 tcu::TestNode::IterateResult PolygonOffsetClampTestCaseBase::iterate()
@@ -406,7 +409,7 @@ void PolygonOffsetClampValueTestCaseBase::test(const glw::Functions& gl)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glEnable");
 
 		gl.polygonOffsetClamp(m_testValues[i].factor, m_testValues[i].units, m_testValues[i].clamp);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glPolygonOffsetClampEXT");
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glPolygonOffsetClamp");
 
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawArrays");

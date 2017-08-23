@@ -55,11 +55,18 @@ SpirvExtensionsQueriesTestCase::SpirvExtensionsQueriesTestCase(deqp::Context& co
 /** Stub init method */
 void SpirvExtensionsQueriesTestCase::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_spirv_extensions"))
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_spirv_extensions"))
+	{
 		TCU_THROW(NotSupportedError, "GL_ARB_spirv_extensions not supported");
+	}
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
+	{
 		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv not supported");
+	}
 }
 
 /** Executes test iteration.
