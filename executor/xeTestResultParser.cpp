@@ -847,10 +847,10 @@ void TestResultParser::handleData (void)
 
 				switch (phase)
 				{
-					case 0: outPtr[0] |= (deUint8)(decodedBits<<2);													break;
-					case 1: outPtr[0] |= (deUint8)(decodedBits>>4);	outPtr[1] |= (deUint8)((decodedBits&0xF)<<4);	break;
-					case 2: outPtr[1] |= (deUint8)(decodedBits>>2);	outPtr[2] |= (deUint8)((decodedBits&0x3)<<6);	break;
-					case 3: outPtr[2] |= decodedBits;																break;
+					case 0: outPtr[0] |= (deUint8)(decodedBits<<2);																								break;
+					case 1: outPtr[0] = (deUint8)(outPtr[0] | (deUint8)(decodedBits>>4));	outPtr[1] = (deUint8)(outPtr[1] | (deUint8)((decodedBits&0xF)<<4));	break;
+					case 2: outPtr[1] = (deUint8)(outPtr[1] | (deUint8)(decodedBits>>2));	outPtr[2] = (deUint8)(outPtr[2] | (deUint8)((decodedBits&0x3)<<6));	break;
+					case 3: outPtr[2] |= decodedBits;																											break;
 					default:
 						DE_ASSERT(false);
 				}

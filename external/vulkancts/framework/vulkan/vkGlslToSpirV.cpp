@@ -226,11 +226,22 @@ std::string getShaderStageSource (const GlslSource& program, glu::ShaderType sha
 		return program.sources[shaderType][0];
 }
 
+EShMessages getCompileFlags (const GlslBuildOptions& buildOpts)
+{
+	EShMessages		flags	= (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+
+	if ((buildOpts.flags & GlslBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS) != 0)
+		flags = (EShMessages)(flags | EShMsgHlslOffsets);
+
+	return flags;
+}
+
 } // anonymous
 
 bool compileGlslToSpirV (const GlslSource& program, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
 {
 	TBuiltInResource	builtinRes;
+	const EShMessages	compileFlags	= getCompileFlags(program.buildOptions);
 
 	if (program.buildOptions.targetVersion != SPIRV_VERSION_1_0)
 		TCU_THROW(InternalError, "Unsupported SPIR-V target version");
@@ -258,7 +269,7 @@ bool compileGlslToSpirV (const GlslSource& program, std::vector<deUint32>* dst, 
 
 			{
 				const deUint64	compileStartTime	= deGetMicroseconds();
-				const int		compileRes			= shader.parse(&builtinRes, 110, false, (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules));
+				const int		compileRes			= shader.parse(&builtinRes, 110, false, compileFlags);
 				glu::ShaderInfo	shaderBuildInfo;
 
 				shaderBuildInfo.type			= (glu::ShaderType)shaderType;
@@ -274,7 +285,7 @@ bool compileGlslToSpirV (const GlslSource& program, std::vector<deUint32>* dst, 
 			if (buildInfo->shaders[0].compileOk)
 			{
 				const deUint64	linkStartTime	= deGetMicroseconds();
-				const int		linkRes			= program.link((EShMessages)(EShMsgSpvRules | EShMsgVulkanRules));
+				const int		linkRes			= program.link(compileFlags);
 
 				buildInfo->program.infoLog		= program.getInfoLog(); // \todo [2015-11-05 scygan] Include debug log?
 				buildInfo->program.linkOk		= (linkRes != 0);
