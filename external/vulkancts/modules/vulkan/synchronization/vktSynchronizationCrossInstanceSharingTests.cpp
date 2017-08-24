@@ -351,6 +351,7 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&			
 												   vk::VkDevice									device,
 												   vk::VkBuffer									buffer,
 												   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												   deUint32&									exportedMemoryTypeIndex,
 												   bool											dedicated,
 												   bool											getMemReq2Supported)
 {
@@ -390,7 +391,7 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&			
 	}
 
 
-	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, memoryRequirements, externalType, dedicated ? buffer : (vk::VkBuffer)0);
+	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, memoryRequirements, externalType, dedicated ? buffer : (vk::VkBuffer)0, exportedMemoryTypeIndex);
 	VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -400,6 +401,7 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&			
 												   vk::VkDevice									device,
 												   vk::VkImage									image,
 												   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												   deUint32&									exportedMemoryTypeIndex,
 												   bool											dedicated,
 												   bool											getMemReq2Supported)
 {
@@ -436,7 +438,7 @@ de::MovePtr<vk::Allocation> allocateAndBindMemory (const vk::DeviceInterface&			
 		vkd.getImageMemoryRequirements(device, image, &memoryRequirements);
 	}
 
-	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, memoryRequirements, externalType, dedicated ? image : (vk::VkImage)0);
+	vk::Move<vk::VkDeviceMemory> memory = allocateExportableMemory(vkd, device, memoryRequirements, externalType, dedicated ? image : (vk::VkImage)0, exportedMemoryTypeIndex);
 	VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -449,6 +451,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 									  const OperationSupport&					readOp,
 									  const OperationSupport&					writeOp,
 									  vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+									  deUint32&									exportedMemoryTypeIndex,
 									  bool										dedicated,
 									  bool										getMemReq2Supported)
 {
@@ -503,7 +506,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 		};
 
 		vk::Move<vk::VkImage>			image		= vk::createImage(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>		allocation	= allocateAndBindMemory(vkd, device, *image, externalType, dedicated, getMemReq2Supported);
+		de::MovePtr<vk::Allocation>		allocation	= allocateAndBindMemory(vkd, device, *image, externalType, exportedMemoryTypeIndex, dedicated, getMemReq2Supported);
 
 		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
 	}
@@ -531,7 +534,7 @@ de::MovePtr<Resource> createResource (const vk::DeviceInterface&				vkd,
 			&queueFamilyIndices[0]
 		};
 		vk::Move<vk::VkBuffer>		buffer		= vk::createBuffer(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>	allocation	= allocateAndBindMemory(vkd, device, *buffer, externalType, dedicated, getMemReq2Supported);
+		de::MovePtr<vk::Allocation>	allocation	= allocateAndBindMemory(vkd, device, *buffer, externalType, exportedMemoryTypeIndex, dedicated, getMemReq2Supported);
 
 		return de::MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
 	}
@@ -542,12 +545,13 @@ de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&					
 												 vk::VkBuffer								buffer,
 												 NativeHandle&								nativeHandle,
 												 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												 deUint32									exportedMemoryTypeIndex,
 												 bool										dedicated)
 {
 	const vk::VkMemoryRequirements	requirements	= vk::getBufferMemoryRequirements(vkd, device, buffer);
 	vk::Move<vk::VkDeviceMemory>	memory			= dedicated
-													? importDedicatedMemory(vkd, device, buffer, requirements, externalType, nativeHandle)
-													: importMemory(vkd, device, requirements, externalType, nativeHandle);
+													? importDedicatedMemory(vkd, device, buffer, requirements, externalType, exportedMemoryTypeIndex, nativeHandle)
+													: importMemory(vkd, device, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
 
 	VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
 
@@ -559,12 +563,13 @@ de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&					
 												 vk::VkImage								image,
 												 NativeHandle&								nativeHandle,
 												 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												 deUint32									exportedMemoryTypeIndex,
 												 bool										dedicated)
 {
 	const vk::VkMemoryRequirements	requirements	= vk::getImageMemoryRequirements(vkd, device, image);
 	vk::Move<vk::VkDeviceMemory>	memory			= dedicated
-													? importDedicatedMemory(vkd, device, image, requirements, externalType, nativeHandle)
-													: importMemory(vkd, device, requirements, externalType, nativeHandle);
+													? importDedicatedMemory(vkd, device, image, requirements, externalType, exportedMemoryTypeIndex, nativeHandle)
+													: importMemory(vkd, device, requirements, externalType, exportedMemoryTypeIndex, nativeHandle);
 	VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
 
 	return de::MovePtr<vk::Allocation>(new SimpleAllocation(vkd, device, memory.disown()));
@@ -578,6 +583,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 									  const OperationSupport&					writeOp,
 									  NativeHandle&								nativeHandle,
 									  vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+									  deUint32									exportedMemoryTypeIndex,
 									  bool										dedicated)
 {
 	if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
@@ -631,7 +637,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		};
 
 		vk::Move<vk::VkImage>			image		= vk::createImage(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, dedicated);
+		de::MovePtr<vk::Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType, exportedMemoryTypeIndex, dedicated);
 
 		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
 	}
@@ -659,7 +665,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			&queueFamilyIndices[0]
 		};
 		vk::Move<vk::VkBuffer>		buffer		= vk::createBuffer(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>	allocation	= importAndBindMemory(vkd, device, *buffer, nativeHandle, externalType, dedicated);
+		de::MovePtr<vk::Allocation>	allocation	= importAndBindMemory(vkd, device, *buffer, nativeHandle, externalType, exportedMemoryTypeIndex, dedicated);
 
 		return de::MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
 	}
@@ -986,12 +992,13 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 	const vk::Unique<vk::VkSemaphore>		semaphoreA			(createExportableSemaphore(m_vkdA, *m_deviceA, m_semaphoreHandleType));
 	const vk::Unique<vk::VkSemaphore>		semaphoreB			(createSemaphore(m_vkdB, *m_deviceB));
 
-	const de::UniquePtr<Resource>			resourceA			(createResource(m_vkdA, *m_deviceA, m_config.resource, m_queueFamilyIndicesA, *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType, m_config.dedicated, m_getMemReq2Supported));
+	deUint32								exportedMemoryTypeIndex = ~0U;
+	const de::UniquePtr<Resource>			resourceA			(createResource(m_vkdA, *m_deviceA, m_config.resource, m_queueFamilyIndicesA, *m_supportReadOp, *m_supportWriteOp, m_memoryHandleType, exportedMemoryTypeIndex, m_config.dedicated, m_getMemReq2Supported));
 
 	NativeHandle							nativeMemoryHandle;
 	getMemoryNative(m_vkdA, *m_deviceA, resourceA->getMemory(), m_memoryHandleType, nativeMemoryHandle);
 
-	const de::UniquePtr<Resource>			resourceB			(importResource(m_vkdB, *m_deviceB, m_config.resource, m_queueFamilyIndicesB, *m_supportReadOp, *m_supportWriteOp, nativeMemoryHandle, m_memoryHandleType, m_config.dedicated));
+	const de::UniquePtr<Resource>			resourceB			(importResource(m_vkdB, *m_deviceB, m_config.resource, m_queueFamilyIndicesB, *m_supportReadOp, *m_supportWriteOp, nativeMemoryHandle, m_memoryHandleType, exportedMemoryTypeIndex, m_config.dedicated));
 
 	try
 	{
