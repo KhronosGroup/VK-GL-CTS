@@ -94,15 +94,22 @@ public:
 		DRAWTYPE_GLES2_RENDER
 	};
 
-						WideColorTest		(EglTestContext& eglTestCtx, const char* name, const char* description);
-						~WideColorTest		(void);
+						WideColorTest				(EglTestContext& eglTestCtx, const char* name, const char* description);
+						~WideColorTest				(void);
 
-	void				init				(void);
-	void				deinit				(void);
+	void				init						(void);
+	void				deinit						(void);
+	void				checkPixelFloatSupport		(void);
+	void				checkDisplayP3Support		(void);
+	void				checkDisplayP3LinearSupport (void);
+	void				check1010102Support			(void);
+	void				checkFP16Support			(void);
+	void				checkSCRGBSupport			(void);
+	void				checkSCRGBLinearSupport		(void);
 
 protected:
-	void				initEGLSurface		(EGLConfig config);
-	void				initEGLContext		(EGLConfig config);
+	void				initEGLSurface				(EGLConfig config);
+	void				initEGLContext				(EGLConfig config);
 
 	EGLDisplay			m_eglDisplay;
 	glw::Functions		m_gl;
@@ -271,54 +278,101 @@ WideColorTest::~WideColorTest (void)
 
 void WideColorTest::init (void)
 {
-	const Library&	egl	= m_eglTestCtx.getLibrary();
-
 	m_eglDisplay		= eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
 
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
-
-	// Wide-color support requires these extensions: EGL_EXT_pixel_format_float,
-	// EGL_EXT_gl_colorspace_display_p3, EGL_EXT_gl_colorspace_display_p3_linear
-	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_pixel_format_float"))
-		TCU_THROW(NotSupportedError, "EGL_EXT_pixel_format_float is not supported");
-
-	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_display_p3"))
-		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_display_p3 is not supported");
-
-	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_display_p3_linear"))
-		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_display_p3_linear is not supported");
-
 }
 
-void WideColorTest::deinit (void)
+void WideColorTest::checkPixelFloatSupport (void)
 {
 	const Library&	egl	= m_eglTestCtx.getLibrary();
 
-	if (m_eglDisplay != EGL_NO_DISPLAY)
+	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_pixel_format_float"))
+		TCU_THROW(NotSupportedError, "EGL_EXT_pixel_format_float is not supported");
+}
+
+void WideColorTest::checkDisplayP3Support (void)
+{
+	const Library&	egl	= m_eglTestCtx.getLibrary();
+
+	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_display_p3"))
+		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_display_p3 is not supported");
+}
+
+void WideColorTest::checkDisplayP3LinearSupport (void)
+{
+	const Library&	egl	= m_eglTestCtx.getLibrary();
+
+	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_display_p3_linear"))
+		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_display_p3_linear is not supported");
+}
+
+void WideColorTest::checkSCRGBSupport (void)
+{
+	const Library&	egl	= m_eglTestCtx.getLibrary();
+
+	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_scrgb"))
+		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_scrgb is not supported");
+}
+
+void WideColorTest::checkSCRGBLinearSupport (void)
+{
+	const Library&	egl	= m_eglTestCtx.getLibrary();
+
+	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_scrgb_linear"))
+		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_scrgb_linear is not supported");
+}
+
+void WideColorTest::check1010102Support (void)
+{
+	const Library&	egl	= m_eglTestCtx.getLibrary();
+	tcu::TestLog&	log	= m_testCtx.getLog();
+
+	const EGLint attribList[] =
 	{
-		egl.terminate(m_eglDisplay);
-		m_eglDisplay = EGL_NO_DISPLAY;
+		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
+		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
+		EGL_RED_SIZE,					10,
+		EGL_GREEN_SIZE,					10,
+		EGL_BLUE_SIZE,					10,
+		EGL_ALPHA_SIZE,					2,
+		EGL_NONE,						EGL_NONE
+	};
+	EGLint numConfigs = 0;
+	EGLConfig config;
+
+	// Query from EGL implementation
+	EGLU_CHECK_CALL(egl, chooseConfig(m_eglDisplay, &attribList[0], DE_NULL, 0, &numConfigs));
+
+	if (numConfigs <= 0)
+	{
+		log << tcu::TestLog::Message << "No configs returned." << tcu::TestLog::EndMessage;
+		TCU_THROW(NotSupportedError, "10:10:10:2 pixel format is not supported");
 	}
+
+	log << tcu::TestLog::Message << numConfigs << " configs returned" << tcu::TestLog::EndMessage;
+
+	EGLU_CHECK_CALL(egl, chooseConfig(m_eglDisplay, &attribList[0], &config, 1, &numConfigs));
+	if (numConfigs > 1)
+	{
+		log << tcu::TestLog::Message << "Fail, more configs returned than requested." << tcu::TestLog::EndMessage;
+		TCU_FAIL("Too many configs returned");
+	}
+
+	EGLint components[4];
+
+	EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, config, EGL_RED_SIZE, &components[0]));
+	EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, config, EGL_GREEN_SIZE, &components[1]));
+	EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, config, EGL_BLUE_SIZE, &components[2]));
+	EGLU_CHECK_CALL(egl, getConfigAttrib(m_eglDisplay, config, EGL_ALPHA_SIZE, &components[3]));
+
+	TCU_CHECK_MSG(components[0] == 10, "Missing 10bit deep red channel");
+	TCU_CHECK_MSG(components[1] == 10, "Missing 10bit deep green channel");
+	TCU_CHECK_MSG(components[2] == 10, "Missing 10bit deep blue channel");
+	TCU_CHECK_MSG(components[3] == 2, "Missing 2bit deep alpha channel");
 }
 
-class WideColorFP16Test : public WideColorTest
-{
-public:
-						WideColorFP16Test		(EglTestContext& eglTestCtx, const char* name, const char* description);
-
-	void				init					(void);
-	void				executeTest				(void);
-	IterateResult		iterate					(void);
-};
-
-WideColorFP16Test::WideColorFP16Test (EglTestContext&	eglTestCtx,
-									  const char*		name,
-									  const char*		description)
-	: WideColorTest(eglTestCtx, name, description)
-{
-}
-
-void WideColorFP16Test::executeTest (void)
+void WideColorTest::checkFP16Support (void)
 {
 	const Library&	egl			= m_eglTestCtx.getLibrary();
 	tcu::TestLog&	log			= m_testCtx.getLog();
@@ -343,7 +397,7 @@ void WideColorFP16Test::executeTest (void)
 	if (numConfigs <= 0)
 	{
 		log << tcu::TestLog::Message << "No configs returned." << tcu::TestLog::EndMessage;
-		TCU_FAIL("No configs returned");
+		TCU_THROW(NotSupportedError, "10:10:10:2 pixel format is not supported");
 	}
 
 	log << tcu::TestLog::Message << numConfigs << " configs returned" << tcu::TestLog::EndMessage;
@@ -381,6 +435,41 @@ void WideColorFP16Test::executeTest (void)
 	TCU_CHECK_MSG(components[3] == 16, "Missing 16bit deep alpha channel");
 }
 
+void WideColorTest::deinit (void)
+{
+	const Library&	egl	= m_eglTestCtx.getLibrary();
+
+	if (m_eglDisplay != EGL_NO_DISPLAY)
+	{
+		egl.terminate(m_eglDisplay);
+		m_eglDisplay = EGL_NO_DISPLAY;
+	}
+}
+
+class WideColorFP16Test : public WideColorTest
+{
+public:
+						WideColorFP16Test		(EglTestContext& eglTestCtx, const char* name, const char* description);
+
+	void				init					(void);
+	void				executeTest				(void);
+	IterateResult		iterate					(void);
+};
+
+WideColorFP16Test::WideColorFP16Test (EglTestContext&	eglTestCtx,
+									  const char*		name,
+									  const char*		description)
+	: WideColorTest(eglTestCtx, name, description)
+{
+}
+
+
+void WideColorFP16Test::executeTest (void)
+{
+	checkPixelFloatSupport();
+	checkFP16Support();
+}
+
 TestCase::IterateResult WideColorFP16Test::iterate (void)
 {
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -400,7 +489,6 @@ public:
 												 const char*		name,
 												 const char*		description);
 
-	void				init					(void);
 	void				executeTest				(void);
 	IterateResult		iterate					(void);
 };
@@ -410,74 +498,9 @@ WideColor1010102Test::WideColor1010102Test (EglTestContext& eglTestCtx, const ch
 {
 }
 
-void WideColor1010102Test::init (void)
-{
-	WideColorTest::init();
-}
-
 void WideColor1010102Test::executeTest (void)
 {
-	const Library&	egl	= m_eglTestCtx.getLibrary();
-	tcu::TestLog&	log	= m_testCtx.getLog();
-
-	EGLint attribList[] =
-	{
-		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
-		EGL_RED_SIZE,					10,
-		EGL_GREEN_SIZE,					10,
-		EGL_BLUE_SIZE,					10,
-		EGL_ALPHA_SIZE,					2,
-		EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FIXED_EXT,
-		EGL_NONE,						EGL_NONE
-	};
-	EGLint numConfigs = 0;
-	EGLConfig config;
-
-	// Query from EGL implementation
-	EGLU_CHECK_CALL(egl, chooseConfig(m_eglDisplay, &attribList[0], DE_NULL, 0, &numConfigs));
-
-	if (numConfigs <= 0)
-	{
-		log << tcu::TestLog::Message << "No configs returned." << tcu::TestLog::EndMessage;
-		TCU_FAIL("No configs returned");
-	}
-
-	log << tcu::TestLog::Message << numConfigs << " configs returned" << tcu::TestLog::EndMessage;
-
-	EGLBoolean success = egl.chooseConfig(m_eglDisplay, &attribList[0], &config, 1, &numConfigs);
-	if (success != EGL_TRUE)
-	{
-		log << tcu::TestLog::Message << "Fail, eglChooseConfig returned an error." << tcu::TestLog::EndMessage;
-		TCU_FAIL("eglChooseConfig failed");
-	}
-	if (numConfigs > 1)
-	{
-		log << tcu::TestLog::Message << "Fail, more configs returned than requested." << tcu::TestLog::EndMessage;
-		TCU_FAIL("Too many configs returned");
-	}
-
-	EGLint components[4];
-
-	success = egl.getConfigAttrib(m_eglDisplay, config, EGL_RED_SIZE, &components[0]);
-	TCU_CHECK_MSG(success == EGL_TRUE, "eglGetConfigAttrib failed");
-	EGLU_CHECK(egl);
-	success = egl.getConfigAttrib(m_eglDisplay, config, EGL_GREEN_SIZE, &components[1]);
-	TCU_CHECK_MSG(success == EGL_TRUE, "eglGetConfigAttrib failed");
-	EGLU_CHECK(egl);
-	success = egl.getConfigAttrib(m_eglDisplay, config, EGL_BLUE_SIZE, &components[2]);
-	TCU_CHECK_MSG(success == EGL_TRUE, "eglGetConfigAttrib failed");
-	EGLU_CHECK(egl);
-	success = egl.getConfigAttrib(m_eglDisplay, config, EGL_ALPHA_SIZE, &components[3]);
-	TCU_CHECK_MSG(success == EGL_TRUE, "eglGetConfigAttrib failed");
-	EGLU_CHECK(egl);
-
-	TCU_CHECK_MSG(components[0] == 10, "Missing 10bit deep red channel");
-	TCU_CHECK_MSG(components[1] == 10, "Missing 10bit deep green channel");
-	TCU_CHECK_MSG(components[2] == 10, "Missing 10bit deep blue channel");
-	TCU_CHECK_MSG(components[3] == 2, "Missing 2bit deep alpha channel");
-
-	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	check1010102Support();
 }
 
 TestCase::IterateResult WideColor1010102Test::iterate (void)
@@ -507,7 +530,6 @@ public:
 												 const std::vector<Iteration>&	iterations);
 
 	void				init					(void);
-	void				deinit					(void);
 	void				executeTest				(void);
 	IterateResult		iterate					(void);
 
@@ -519,6 +541,9 @@ protected:
 	deUint32			expectedUint2			(float reference);
 	deUint8				expectedUint8			(float reference);
 	deUint8				expectedAlpha8			(float reference);
+	bool				checkWithThreshold8		(deUint8 value, deUint8 reference, deUint8 threshold = 1);
+	bool				checkWithThreshold10	(deUint32 value, deUint32 reference, deUint32 threshold = 1);
+	bool				checkWithThresholdFloat (float value, float reference, float threshold);
 	void				doClearTest				(EGLSurface surface);
 	void				testPixels				(float reference, float increment);
 	void				writeEglConfig			(EGLConfig config);
@@ -531,6 +556,7 @@ private:
 	EGLint								m_redSize;
 	EGLint								m_colorSpace;
 	const std::vector<struct Iteration> m_iterations;
+	std::stringstream					m_debugLog;
 };
 
 WideColorSurfaceTest::WideColorSurfaceTest (EglTestContext& eglTestCtx, const char* name, const char* description, const EGLint* attribList, EGLint colorSpace, const std::vector<struct Iteration>& iterations)
@@ -566,6 +592,33 @@ void WideColorSurfaceTest::init (void)
 
 	WideColorTest::init();
 
+	// Only check for pixel format required for this specific run
+	// If not available, check will abort test with "NotSupported"
+	switch (m_redSize)
+	{
+		case 10:
+			check1010102Support();
+			break;
+		case 16:
+			checkPixelFloatSupport();
+			checkFP16Support();
+			break;
+	}
+
+	switch (m_colorSpace) {
+		case EGL_GL_COLORSPACE_DISPLAY_P3_EXT:
+			checkDisplayP3Support();
+			break;
+		case EGL_GL_COLORSPACE_SCRGB_EXT:
+			checkSCRGBSupport();
+			break;
+		case EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT:
+			checkSCRGBLinearSupport();
+			break;
+		default:
+			break;
+	}
+
 	EGLint numConfigs = 0;
 
 	// Query from EGL implementation
@@ -595,11 +648,6 @@ void WideColorSurfaceTest::init (void)
 
 	writeEglConfig(m_eglConfig);
 
-}
-
-void WideColorSurfaceTest::deinit (void)
-{
-	WideColorTest::deinit();
 }
 
 void WideColorSurfaceTest::readPixels (const glw::Functions& gl, float* dataPtr)
@@ -802,6 +850,28 @@ deUint8 WideColorSurfaceTest::expectedAlpha8 (float reference)
 	return expected;
 }
 
+// Return true for value out of range (fail)
+bool WideColorSurfaceTest::checkWithThreshold8(deUint8 value, deUint8 reference, deUint8 threshold)
+{
+	const deUint8 low = reference >= threshold ? static_cast<deUint8>(reference - threshold) : 0;
+	const deUint8 high = reference <= (255 - threshold) ? static_cast<deUint8>(reference + threshold) : 255;
+	return !((value >= low) && (value <= high));
+}
+
+bool WideColorSurfaceTest::checkWithThreshold10(deUint32 value, deUint32 reference, deUint32 threshold)
+{
+	const deUint32 low = reference >= threshold ? reference - threshold : 0;
+	const deUint32 high = reference <= (1023 - threshold) ? reference + threshold : 1023;
+	return !((value >= low) && (value <= high));
+}
+
+bool WideColorSurfaceTest::checkWithThresholdFloat(float value, float reference, float threshold)
+{
+	const float low = reference - threshold;
+	const float high = reference + threshold;
+	return !((value >= low) && (value <= high));
+}
+
 void WideColorSurfaceTest::testPixels (float reference, float increment)
 {
 	tcu::TestLog&	log				= m_testCtx.getLog();
@@ -809,50 +879,52 @@ void WideColorSurfaceTest::testPixels (float reference, float increment)
 	if (m_componentType == EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT)
 	{
 		float pixels[16];
+		const float expected[4] =
+		{
+			reference,
+			reference + increment,
+			reference - increment,
+			reference + 2 * increment
+		};
 		readPixels(m_gl, pixels);
 
-		// TODO: Do we need threshold values here? Test range
-		// and increment is chosen to exactly match FP16
-		// capability.
-		if (pixels[0] != reference)
+		if (checkWithThresholdFloat(pixels[0], expected[0], increment) ||
+				checkWithThresholdFloat(pixels[1], expected[1], increment) ||
+				checkWithThresholdFloat(pixels[2], expected[2], increment) ||
+				checkWithThresholdFloat(pixels[3], expected[3], increment))
 		{
+			if (m_debugLog.str().size() > 0)
+			{
+				log << tcu::TestLog::Message
+					<< "Prior passing tests\n"
+					<< m_debugLog.str()
+					<< tcu::TestLog::EndMessage;
+				m_debugLog.str("");
+			}
 			log << tcu::TestLog::Message
-				<< "Image red comparison failed: "
-				<< "expected = " << reference
+				<< "Image comparison failed: "
+				<< "reference = " << reference
+				<< ", expected = " << expected[0]
+					<< ":" << expected[1]
+					<< ":" << expected[2]
+					<< ":" << expected[3]
 				<< ", result = " << pixels[0]
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[1] != (reference + increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image green comparison failed: "
-				<< "expected = " << reference + increment
-				<< ", result = " << pixels[1]
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[2] != (reference - increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image blue comparison failed: "
-				<< "expected = " << reference - increment
-				<< ", result = " << pixels[2]
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[3] != (reference + 2 * increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image alpha comparison failed: "
-				<< "expected = " << reference + 2 * increment
-				<< ", result = " << pixels[3]
+					<< ":" << pixels[1]
+					<< ":" << pixels[2]
+					<< ":" << pixels[3]
 				<< tcu::TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
 		}
 		else
 		{
 			// Pixel matches expected value
+			m_debugLog << "Image comparison passed: "
+				<< "reference = " << reference
+				<< ", result = " << pixels[0]
+					<< ":" << pixels[1]
+					<< ":" << pixels[2]
+					<< ":" << pixels[3]
+				<< "\n";
 		}
 	}
 	else if (m_redSize > 8)
@@ -860,105 +932,97 @@ void WideColorSurfaceTest::testPixels (float reference, float increment)
 		deUint32 buffer[16];
 		readPixels(m_gl, buffer);
 		deUint32 pixels[4];
+		deUint32 expected[4];
 
 		pixels[0] = buffer[0] & 0x3ff;
 		pixels[1] = (buffer[0] >> 10) & 0x3ff;
 		pixels[2] = (buffer[0] >> 20) & 0x3ff;
 		pixels[3] = (buffer[0] >> 30) & 0x3;
 
-		if (pixels[0] != expectedUint10(reference))
+		expected[0] = expectedUint10(reference);
+		expected[1] = expectedUint10(reference + increment);
+		expected[2] = expectedUint10(reference - increment);
+		expected[3] = expectedUint2(reference + 2 * increment);
+		if (checkWithThreshold10(pixels[0], expected[0]) || checkWithThreshold10(pixels[1], expected[1])
+				|| checkWithThreshold10(pixels[2], expected[2]) || checkWithThreshold10(pixels[3], expected[3]))
 		{
+			if (m_debugLog.str().size() > 0) {
+				log << tcu::TestLog::Message
+					<< "Prior passing tests\n"
+					<< m_debugLog.str()
+					<< tcu::TestLog::EndMessage;
+				m_debugLog.str("");
+			}
 			log << tcu::TestLog::Message
-				<< "Image red comparison failed: "
+				<< "Image comparison failed: "
 				<< "reference = " << reference
-				<< ", expected = " << expectedUint10(reference)
-				<< ", result = " << pixels[0]
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[1] != expectedUint10(reference + increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image green comparison failed: "
-				<< "reference = " << reference + increment
-				<< ", expected = " << expectedUint10(reference + increment)
-				<< ", result = " << pixels[1]
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[2] != expectedUint10(reference - increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image blue comparison failed: "
-				<< "reference = " << reference - increment
-				<< ", expected = " << expectedUint10(reference - increment)
-				<< ", result = " << pixels[2]
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[3] != expectedUint2(reference + 2 * increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image alpha comparison failed: "
-				<< "reference = " << reference + 2 * increment
-				<< ", expected = " << expectedUint10(reference + 2 * increment)
-				<< ", result = " << pixels[3]
+				<< ", expected = " << static_cast<deUint32>(expected[0])
+					<< ":" << static_cast<deUint32>(expected[1])
+					<< ":" << static_cast<deUint32>(expected[2])
+					<< ":" << static_cast<deUint32>(expected[3])
+				<< ", result = " << static_cast<deUint32>(pixels[0])
+					<< ":" << static_cast<deUint32>(pixels[1])
+					<< ":" << static_cast<deUint32>(pixels[2])
+					<< ":" << static_cast<deUint32>(pixels[3])
 				<< tcu::TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
 		}
 		else
 		{
 			// Pixel matches expected value
+			m_debugLog << "Image comparison passed: "
+				<< "reference = " << reference
+				<< ", result = " << static_cast<deUint32>(pixels[0])
+					<< ":" << static_cast<deUint32>(pixels[1])
+					<< ":" << static_cast<deUint32>(pixels[2])
+					<< ":" << static_cast<deUint32>(pixels[3])
+				<< "\n";
 		}
 	}
 	else
 	{
 		deUint8 pixels[16];
+		deUint8 expected[4];
 		readPixels(m_gl, pixels);
 
-		if (pixels[0] != expectedUint8(reference))
+		expected[0] = expectedUint8(reference);
+		expected[1] = expectedUint8(reference + increment);
+		expected[2] = expectedUint8(reference - increment);
+		expected[3] = expectedAlpha8(reference + 2 * increment);
+		if (checkWithThreshold8(pixels[0], expected[0]) || checkWithThreshold8(pixels[1], expected[1])
+				|| checkWithThreshold8(pixels[2], expected[2]) || checkWithThreshold8(pixels[3], expected[3]))
 		{
+			if (m_debugLog.str().size() > 0) {
+				log << tcu::TestLog::Message
+					<< "(C)Prior passing tests\n"
+					<< m_debugLog.str()
+					<< tcu::TestLog::EndMessage;
+				m_debugLog.str("");
+			}
 			log << tcu::TestLog::Message
-				<< "Image red comparison failed: "
+				<< "Image comparison failed: "
 				<< "reference = " << reference
-				<< ", expected = " << static_cast<deUint32>(expectedUint8(reference))
+				<< ", expected = " << static_cast<deUint32>(expected[0])
+					<< ":" << static_cast<deUint32>(expected[1])
+					<< ":" << static_cast<deUint32>(expected[2])
+					<< ":" << static_cast<deUint32>(expected[3])
 				<< ", result = " << static_cast<deUint32>(pixels[0])
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[1] != expectedUint8(reference + increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image green comparison failed: "
-				<< "reference = " << reference + increment
-				<< ", expected = " << static_cast<deUint32>(expectedUint8(reference + increment))
-				<< ", result = " << static_cast<deUint32>(pixels[1])
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[2] != expectedUint8(reference - increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image blue comparison failed: "
-				<< "reference = " << reference - increment
-				<< ", expected = " << static_cast<deUint32>(expectedUint8(reference - increment))
-				<< ", result = " << static_cast<deUint32>(pixels[2])
-				<< tcu::TestLog::EndMessage;
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
-		}
-		else if (pixels[3] != expectedAlpha8(reference + 2 * increment))
-		{
-			log << tcu::TestLog::Message
-				<< "Image alpha comparison failed: "
-				<< "reference = " << reference + 2 * increment
-				<< ", expected = " << static_cast<deUint32>(expectedAlpha8(reference + 2 * increment))
-				<< ", result = " << static_cast<deUint32>(pixels[3])
+					<< ":" << static_cast<deUint32>(pixels[1])
+					<< ":" << static_cast<deUint32>(pixels[2])
+					<< ":" << static_cast<deUint32>(pixels[3])
 				<< tcu::TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Color test failed");
 		}
 		else
 		{
 			// Pixel matches expected value
+			m_debugLog << "Image comparison passed: "
+				<< "reference = " << reference
+				<< ", result = " << static_cast<deUint32>(pixels[0])
+					<< ":" << static_cast<deUint32>(pixels[1])
+					<< ":" << static_cast<deUint32>(pixels[2])
+					<< ":" << static_cast<deUint32>(pixels[3])
+				<< "\n";
 		}
 	}
 }
@@ -996,6 +1060,7 @@ void WideColorSurfaceTest::doClearTest (EGLSurface surface)
 			log << tcu::TestLog::Message
 						<< "count = " << it->iterationCount
 						<< tcu::TestLog::EndMessage;
+			m_debugLog.str("");
 			for (int iterationCount = 0; iterationCount < it->iterationCount; iterationCount++)
 			{
 				const Color	clearColor(reference, reference + it->increment, reference - it->increment, reference + 2 * it->increment);
@@ -1053,6 +1118,10 @@ void WideColorSurfaceTest::executeTest (void)
 		attribs.push_back(EGL_NONE);
 		attribs.push_back(EGL_NONE);
 		const EGLSurface surface = egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribs.data());
+		if ((surface == EGL_NO_SURFACE) && (egl.getError() == EGL_BAD_MATCH))
+		{
+			TCU_THROW(NotSupportedError, "Colorspace is not supported with this format");
+		}
 		TCU_CHECK(surface != EGL_NO_SURFACE);
 		EGLU_CHECK_MSG(egl, "eglCreatePbufferSurface()");
 
@@ -1123,7 +1192,7 @@ WideColorTests::WideColorTests (EglTestContext& eglTestCtx)
 void WideColorTests::init (void)
 {
 	addChild(new WideColorFP16Test(m_eglTestCtx, "fp16", "Verify that FP16 pixel format is present"));
-	addChild(new WideColor1010102Test(m_eglTestCtx, "1010102", "Verify that 1010102 pixel format is present"));
+	addChild(new WideColor1010102Test(m_eglTestCtx, "1010102", "Check if 1010102 pixel format is present"));
 
 	// This is an increment FP16 can do between -1.0 to 1.0
 	const float fp16Increment1 = deFloatPow(2.0, -11.0);
@@ -1180,7 +1249,6 @@ void WideColorTests::init (void)
 		EGL_GREEN_SIZE,					10,
 		EGL_BLUE_SIZE,					10,
 		EGL_ALPHA_SIZE,					2,
-		EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FIXED_EXT,
 		EGL_NONE,						EGL_NONE
 	};
 
@@ -1205,7 +1273,6 @@ void WideColorTests::init (void)
 		EGL_GREEN_SIZE,					10,
 		EGL_BLUE_SIZE,					10,
 		EGL_ALPHA_SIZE,					2,
-		EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FIXED_EXT,
 		EGL_NONE,						EGL_NONE
 	};
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_1010102_colorspace_default", "1010102 pbuffer surface, default (sRGB) colorspace", pbufferAttribList1010102, DE_NULL, int1010102Iterations));
@@ -1220,7 +1287,6 @@ void WideColorTests::init (void)
 		EGL_GREEN_SIZE,					8,
 		EGL_BLUE_SIZE,					8,
 		EGL_ALPHA_SIZE,					8,
-		EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FIXED_EXT,
 		EGL_NONE,						EGL_NONE
 	};
 
@@ -1245,7 +1311,6 @@ void WideColorTests::init (void)
 		EGL_GREEN_SIZE,					8,
 		EGL_BLUE_SIZE,					8,
 		EGL_ALPHA_SIZE,					8,
-		EGL_COLOR_COMPONENT_TYPE_EXT,	EGL_COLOR_COMPONENT_TYPE_FIXED_EXT,
 		EGL_NONE,						EGL_NONE
 	};
 	addChild(new WideColorSurfaceTest(m_eglTestCtx, "pbuffer_8888_colorspace_default", "8888 pbuffer surface, default (sRGB) colorspace", pbufferAttribList8888, DE_NULL, int8888Iterations));
