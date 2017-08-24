@@ -310,7 +310,8 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 
 		DE_ASSERT(sparseMemoryRequirements.size() != 0);
 
-		const deUint32 colorAspectIndex = getSparseAspectRequirementsIndex(sparseMemoryRequirements, VK_IMAGE_ASPECT_COLOR_BIT);
+		const deUint32 colorAspectIndex		= getSparseAspectRequirementsIndex(sparseMemoryRequirements, VK_IMAGE_ASPECT_COLOR_BIT);
+		const deUint32 metadataAspectIndex	= getSparseAspectRequirementsIndex(sparseMemoryRequirements, VK_IMAGE_ASPECT_METADATA_BIT);
 
 		if (colorAspectIndex == NO_MATCH_FOUND)
 			TCU_THROW(NotSupportedError, "Not supported image aspect - the test supports currently only VK_IMAGE_ASPECT_COLOR_BIT");
@@ -392,6 +393,25 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 			for (deUint32 pixelNdx = pixelOffset; pixelNdx < residencyReferenceData.size(); ++pixelNdx)
 			{
 				residencyReferenceData[pixelNdx] = MEMORY_BLOCK_BOUND_VALUE;
+			}
+		}
+
+		// Metadata
+		if (metadataAspectIndex != NO_MATCH_FOUND)
+		{
+			const VkSparseImageMemoryRequirements metadataAspectRequirements = sparseMemoryRequirements[metadataAspectIndex];
+
+			const deUint32 metadataBindCount = (metadataAspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT ? 1u : imageSparseInfo.arrayLayers);
+			for (deUint32 bindNdx = 0u; bindNdx < metadataBindCount; ++bindNdx)
+			{
+				const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
+					metadataAspectRequirements.imageMipTailSize, memoryType,
+					metadataAspectRequirements.imageMipTailOffset + bindNdx * metadataAspectRequirements.imageMipTailStride,
+					VK_SPARSE_MEMORY_BIND_METADATA_BIT);
+
+				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+
+				imageMipTailBinds.push_back(imageMipTailMemoryBind);
 			}
 		}
 
