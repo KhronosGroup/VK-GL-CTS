@@ -1140,20 +1140,16 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), bufferSize);
 		invalidateMappedMemoryRange(vk, device, referenceAlloc.getMemory(), referenceAlloc.getOffset(), bufferSize);
 
-		ConstPixelBufferAccess	resultPixels		(mapVkFormat(decompressedImageInfo.format), decompressedImageInfo.extent.width, decompressedImageInfo.extent.height, decompressedImageInfo.extent.depth, resultAlloc.getHostPtr());
-		ConstPixelBufferAccess	referencePixels		(mapVkFormat(decompressedImageInfo.format), decompressedImageInfo.extent.width, decompressedImageInfo.extent.height, decompressedImageInfo.extent.depth, referenceAlloc.getHostPtr());
-
-		if (decompressedImageInfo.extent.width > 2)
+		if (deMemCmp(resultAlloc.getHostPtr(), referenceAlloc.getHostPtr(), (size_t)bufferSize) != 0)
 		{
+			ConstPixelBufferAccess	resultPixels		(mapVkFormat(decompressedImageInfo.format), decompressedImageInfo.extent.width, decompressedImageInfo.extent.height, decompressedImageInfo.extent.depth, resultAlloc.getHostPtr());
+			ConstPixelBufferAccess	referencePixels		(mapVkFormat(decompressedImageInfo.format), decompressedImageInfo.extent.width, decompressedImageInfo.extent.height, decompressedImageInfo.extent.depth, referenceAlloc.getHostPtr());
+
 			if(!fuzzyCompare(m_context.getTestContext().getLog(), "Image Comparison", "Image Comparison", resultPixels, referencePixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING))
 				return false;
 		}
-		else
-		{
-			if (deMemCmp(resultAlloc.getHostPtr(), referenceAlloc.getHostPtr(), (size_t)bufferSize))
-				return false;
-		}
 	}
+
 	return true;
 }
 
