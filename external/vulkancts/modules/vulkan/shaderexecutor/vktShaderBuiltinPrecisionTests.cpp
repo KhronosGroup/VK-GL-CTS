@@ -2903,12 +2903,32 @@ public:
 protected:
 	ExprP<float>	doExpand	(ExpandContext&, const ArgExprs& args) const
 	{
-		ExprP<float> val = args.a[0] * args.b[0];
+		ExprP<float> op[Size];
+		// Precompute all products.
+		for (int ndx = 0; ndx < Size; ++ndx)
+			op[ndx] = args.a[ndx] * args.b[ndx];
 
+		int idx[Size];
+		//Prepare an array of indices.
+		for (int ndx = 0; ndx < Size; ++ndx)
+			idx[ndx] = ndx;
+
+		ExprP<float> res = op[0];
+		// Compute the first dot alternative: SUM(a[i]*b[i]), i = 0 .. Size-1
 		for (int ndx = 1; ndx < Size; ++ndx)
-			val = val + args.a[ndx] * args.b[ndx];
+			res = res + op[ndx];
 
-		return val;
+		// Generate all permutations of indices and
+		// using a permutation compute a dot alternative.
+		// Generates all possible variants fo summation of products in the dot product expansion expression.
+		do {
+			ExprP<float> alt = constant(0.0f);
+			for (int ndx = 0; ndx < Size; ++ndx)
+				alt = alt + op[idx[ndx]];
+			res = alternatives(res, alt);
+		} while (std::next_permutation(idx, idx + Size));
+
+		return res;
 	}
 };
 

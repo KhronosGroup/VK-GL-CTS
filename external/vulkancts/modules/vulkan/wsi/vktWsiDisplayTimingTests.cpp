@@ -1247,7 +1247,7 @@ void DisplayTimingTestInstance::render (void)
 		else
 		{
 			desiredPresentTime = m_prevDesiredPresentTime + m_targetIPD;
-			if (presentTime.presentID == 80)
+			if ((presentTime.presentID == 80) && (m_swapchainConfig.presentMode != vk::VK_PRESENT_MODE_MAILBOX_KHR))
 			{
 				// Test if desiredPresentTime is 1 second earlier (i.e. before the previous image could have been presented)
 				presentTime.desiredPresentTime -= SECOND;
