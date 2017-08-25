@@ -401,6 +401,7 @@ PixelFormatInfo Core::getPixelFormatInfo (HDC deviceCtx, int pixelFormat) const
 
 Context::Context (const Core*						core,
 				  HDC								deviceCtx,
+				  const Context*					sharedContext,
 				  glu::ContextType					ctxType,
 				  int								pixelFormat,
 				  glu::ResetNotificationStrategy	resetNotificationStrategy)
@@ -414,6 +415,7 @@ Context::Context (const Core*						core,
 	// Context version and profile
 	{
 		int	profileBit	= 0;
+		HGLRC sharedCtx	= DE_NULL;
 		int minor		= ctxType.getMinorVersion();
 		int major		= ctxType.getMajorVersion();
 
@@ -505,11 +507,15 @@ Context::Context (const Core*						core,
 			throw ResourceError("Failed to set pixel format");
 	}
 
+	HGLRC sharedCtx = DE_NULL;
+	if (DE_NULL != sharedContext)
+		sharedCtx = sharedContext->m_context;
+
 	// Terminate attribList
 	attribList.push_back(0);
 
 	// Create context
-	m_context = wgl.createContextAttribsARB(deviceCtx, (HGLRC)0, &attribList[0]);
+	m_context = wgl.createContextAttribsARB(deviceCtx, sharedCtx, &attribList[0]);
 
 	if (!m_context)
 		TCU_THROW(ResourceError, "Failed to create WGL context");

@@ -49,7 +49,7 @@ class GLContextFactory : public glu::ContextFactory
 {
 public:
 											GLContextFactory	(const NativeDisplayFactoryRegistry& displayFactoryRegistry);
-	virtual glu::RenderContext*				createContext		(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const;
+	virtual glu::RenderContext*				createContext		(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext *sharedContext) const;
 
 private:
 	const NativeDisplayFactoryRegistry&		m_displayFactoryRegistry;

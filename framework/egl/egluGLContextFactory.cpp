@@ -47,6 +47,7 @@
 
 #include "deDynamicLibrary.hpp"
 #include "deSTLUtil.hpp"
+#include "deSharedPtr.hpp"
 
 #include <string>
 #include <string>
@@ -129,7 +130,7 @@ private:
 class RenderContext : public GLRenderContext
 {
 public:
-										RenderContext			(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config);
+										RenderContext			(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config, const glu::RenderContext* sharedContext = DE_NULL);
 	virtual								~RenderContext			(void);
 
 	virtual glu::ContextType			getType					(void) const { return m_renderConfig.type;		}
@@ -147,13 +148,13 @@ public:
 	virtual void						makeCurrent				(void);
 
 private:
-	void								create					(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config);
+	void								create					(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config, const glu::RenderContext* sharedContext);
 	void								destroy					(void);
 
 	const glu::RenderConfig				m_renderConfig;
 	const NativeWindowFactory* const	m_nativeWindowFactory;	// Stored in case window must be re-created
 
-	NativeDisplay*						m_display;
+	de::SharedPtr<NativeDisplay>		m_display;
 	NativeWindow*						m_window;
 	NativePixmap*						m_pixmap;
 
@@ -161,13 +162,14 @@ private:
 	EGLConfig							m_eglConfig;
 	EGLSurface							m_eglSurface;
 	EGLContext							m_eglContext;
+	EGLContext							m_eglSharedContext;
 
 	tcu::RenderTarget					m_glRenderTarget;
 	de::DynamicLibrary*					m_dynamicGLLibrary;
 	glw::Functions						m_glFunctions;
 };
 
-RenderContext::RenderContext (const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config)
+RenderContext::RenderContext (const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config, const glu::RenderContext* sharedContext)
 	: m_renderConfig		(config)
 	, m_nativeWindowFactory	(windowFactory)
 	, m_display				(DE_NULL)
@@ -177,6 +179,7 @@ RenderContext::RenderContext (const NativeDisplayFactory* displayFactory, const 
 	, m_eglDisplay			(EGL_NO_DISPLAY)
 	, m_eglSurface			(EGL_NO_SURFACE)
 	, m_eglContext			(EGL_NO_CONTEXT)
+	, m_eglSharedContext	(EGL_NO_CONTEXT)
 
 	, m_dynamicGLLibrary	(DE_NULL)
 {
@@ -184,7 +187,7 @@ RenderContext::RenderContext (const NativeDisplayFactory* displayFactory, const 
 
 	try
 	{
-		create(displayFactory, windowFactory, pixmapFactory, config);
+		create(displayFactory, windowFactory, pixmapFactory, config, sharedContext);
 	}
 	catch (...)
 	{
@@ -206,7 +209,6 @@ RenderContext::~RenderContext(void)
 
 	delete m_window;
 	delete m_pixmap;
-	delete m_display;
 	delete m_dynamicGLLibrary;
 }
 
@@ -305,15 +307,22 @@ glw::GenericFuncType RenderContext::getProcAddress (const char* name) const
 	return (glw::GenericFuncType)m_display->getLibrary().getProcAddress(name);
 }
 
-void RenderContext::create (const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config)
+void RenderContext::create (const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config, const glu::RenderContext *sharedContext)
 {
 	glu::RenderConfig::SurfaceType	surfaceType	= config.surfaceType;
 
 	DE_ASSERT(displayFactory);
 
-	m_display		= displayFactory->createDisplay();
-	m_eglDisplay	= eglu::getDisplay(*m_display);
+	if (DE_NULL == sharedContext)
+		m_display = de::SharedPtr<NativeDisplay>(displayFactory->createDisplay());
+	else
+	{
+		const RenderContext* context = dynamic_cast<const RenderContext*>(sharedContext);
+		m_eglSharedContext			 = context->m_eglContext;
+		m_display					 = context->m_display;
+	}
 
+	m_eglDisplay	= eglu::getDisplay(*m_display);
 	const Library& egl = m_display->getLibrary();
 
 	{
@@ -345,7 +354,7 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 		{
 			if (windowFactory)
 			{
-				const WindowSurfacePair windowSurface = createWindow(m_display, windowFactory, m_eglDisplay, m_eglConfig, config);
+				const WindowSurfacePair windowSurface = createWindow(m_display.get(), windowFactory, m_eglDisplay, m_eglConfig, config);
 				m_window		= windowSurface.first;
 				m_eglSurface	= windowSurface.second;
 			}
@@ -358,7 +367,7 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 		{
 			if (pixmapFactory)
 			{
-				const PixmapSurfacePair pixmapSurface = createPixmap(m_display, pixmapFactory, m_eglDisplay, m_eglConfig, config);
+				const PixmapSurfacePair pixmapSurface = createPixmap(m_display.get(), pixmapFactory, m_eglDisplay, m_eglConfig, config);
 				m_pixmap		= pixmapSurface.first;
 				m_eglSurface	= pixmapSurface.second;
 			}
@@ -375,7 +384,7 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 			throw tcu::InternalError("Invalid surface type");
 	}
 
-	m_eglContext = createGLContext(egl, m_eglDisplay, m_eglConfig, config.type, config.resetNotificationStrategy);
+	m_eglContext = createGLContext(egl, m_eglDisplay, m_eglConfig, config.type, m_eglSharedContext, config.resetNotificationStrategy);
 
 	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
@@ -473,7 +482,8 @@ void RenderContext::destroy (void)
 		if (m_eglContext != EGL_NO_CONTEXT)
 			EGLU_CHECK_CALL(egl, destroyContext(m_eglDisplay, m_eglContext));
 
-		EGLU_CHECK_CALL(egl, terminate(m_eglDisplay));
+		if (m_eglSharedContext == EGL_NO_CONTEXT)
+			EGLU_CHECK_CALL(egl, terminate(m_eglDisplay));
 
 		m_eglDisplay	= EGL_NO_DISPLAY;
 		m_eglSurface	= EGL_NO_SURFACE;
@@ -482,12 +492,10 @@ void RenderContext::destroy (void)
 
 	delete m_window;
 	delete m_pixmap;
-	delete m_display;
 	delete m_dynamicGLLibrary;
 
 	m_window			= DE_NULL;
 	m_pixmap			= DE_NULL;
-	m_display			= DE_NULL;
 	m_dynamicGLLibrary	= DE_NULL;
 }
 
@@ -521,7 +529,7 @@ void RenderContext::postIterate (void)
 
 			try
 			{
-				WindowSurfacePair windowSurface = createWindow(m_display, m_nativeWindowFactory, m_eglDisplay, m_eglConfig, m_renderConfig);
+				WindowSurfacePair windowSurface = createWindow(m_display.get(), m_nativeWindowFactory, m_eglDisplay, m_eglConfig, m_renderConfig);
 				m_window		= windowSurface.first;
 				m_eglSurface	= windowSurface.second;
 
@@ -587,7 +595,7 @@ GLContextFactory::GLContextFactory (const NativeDisplayFactoryRegistry& displayF
 {
 }
 
-glu::RenderContext* GLContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const
+glu::RenderContext* GLContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext *sharedContext) const
 {
 	const NativeDisplayFactory& displayFactory = selectNativeDisplayFactory(m_displayFactoryRegistry, cmdLine);
 
@@ -612,7 +620,7 @@ glu::RenderContext* GLContextFactory::createContext (const glu::RenderConfig& co
 		pixmapFactory = DE_NULL;
 	}
 
-	return new RenderContext(&displayFactory, windowFactory, pixmapFactory, config);
+	return new RenderContext(&displayFactory, windowFactory, pixmapFactory, config, sharedContext);
 }
 
 } // eglu

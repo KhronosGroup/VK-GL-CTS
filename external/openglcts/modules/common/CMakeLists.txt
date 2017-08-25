@@ -32,6 +32,8 @@ set(GLCTS_COMMON_SRCS
 	glcFragDepthTests.hpp
 	glcInfoTests.cpp
 	glcInfoTests.hpp
+	glcMultipleContextsTests.cpp
+	glcMultipleContextsTests.hpp
 	glcNoErrorTests.cpp
 	glcNoErrorTests.hpp
 	glcRobustnessTests.cpp

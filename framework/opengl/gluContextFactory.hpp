@@ -57,11 +57,12 @@ public:
 	 * Only single context will be active concurrently and it will be accessed
 	 * only from the calling thread.
 	 *
-	 * \param config	Rendering context configuration
-	 * \param cmdLine	Command line for extra arguments
+	 * \param config		Rendering context configuration
+	 * \param cmdLine		Command line for extra arguments
+	 * \param sharedContext	Context with which objects should be shared
 	 * \return Rendering context wrapper object.
 	 *//*--------------------------------------------------------------------*/
-	virtual RenderContext*	createContext		(const RenderConfig& config, const tcu::CommandLine& cmdLine) const = 0;
+	virtual RenderContext*	createContext		(const RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext) const = 0;
 
 private:
 							ContextFactory		(const ContextFactory&);

@@ -71,10 +71,6 @@ public:
 
 	const tcu::RenderTarget& getRenderTarget(void) const;
 
-	glu::RenderContext* createSharedContext(
-		glu::ContextFlags			   ctxFlags = (glu::ContextFlags)0,
-		glu::ResetNotificationStrategy ctxReset = glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED);
-
 private:
 	Context(const Context& other);
 	Context& operator=(const Context& other);
