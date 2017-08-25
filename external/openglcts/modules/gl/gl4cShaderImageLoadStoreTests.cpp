@@ -7814,7 +7814,9 @@ private:
  *  "complete_destination" is filled with zeros.
  *
  *  Texture is considered incomplete when it has enabled mipmaping (see below)
- *  and does not have all mipmap levels defined.
+ *  and does not have all mipmap levels defined.  But for the case of Image
+ *  accessing, it is considered invalid if it is mipmap-incomplete and the
+ *  level is different to the base level (base-incomplete).
  *
  *  Creation of incomplete texture:
  *  - generate and bind texture object id,
@@ -7831,6 +7833,11 @@ private:
  *  - set GL_TEXTURE_BASE_LEVEL parameter to 0.
  *  - set GL_TEXTURE_MAX_LEVEL parameter to 0.
  *
+ *  Binding:
+ *  - Set level == base_level for complete destinations.
+ *  - Set level != base_level for incomplete destinations that are using
+ *    mipmap-incomplete textures.
+ *
  *  Test with 2D 64x64 RGBA8 textures.
  *
  *  Program should consist of vertex and fragment shader. Vertex shader should
@@ -7841,7 +7848,9 @@ class ImageLoadStoreIncompleteTexturesTest : public ShaderImageLoadStoreBase
 {
 private:
 	/* Constants */
-	/* Magic numbers that will identify textures */
+	/* Magic numbers that will identify textures, which will be used as their
+	 * texel value.
+	 */
 	static const GLubyte m_complete_destination_magic_number   = 0x11;
 	static const GLubyte m_complete_source_magic_number		   = 0x22;
 	static const GLubyte m_incomplete_destination_magic_number = 0x33;
@@ -8078,10 +8087,11 @@ private:
 	 *
 	 * @param program_id   Program object id
 	 * @param texture_id   Texture id
+	 * @param level        Texture level
 	 * @param image_unit   Index of image unit
 	 * @param uniform_name Name of image uniform
 	 **/
-	void BindTextureToImage(GLuint program_id, GLuint texture_id, GLuint image_unit, const char* uniform_name)
+	void BindTextureToImage(GLuint program_id, GLuint texture_id, GLint level, GLuint image_unit, const char* uniform_name)
 	{
 		/* Uniform location and invalid value */
 		static const GLint invalid_uniform_location = -1;
@@ -8096,7 +8106,7 @@ private:
 		}
 
 		/* Bind texture to image unit */
-		glBindImageTexture(image_unit, texture_id, 0 /* level */, GL_FALSE, 0 /* layer */, GL_READ_WRITE, GL_RGBA8);
+		glBindImageTexture(image_unit, texture_id, level, GL_FALSE, 0 /* layer */, GL_READ_WRITE, GL_RGBA8);
 		GLU_EXPECT_NO_ERROR(glGetError(), "BindImageTexture");
 
 		/* Set uniform to image unit */
@@ -8238,13 +8248,17 @@ private:
 		GLU_EXPECT_NO_ERROR(glGetError(), "EnableVertexAttribArray");
 
 		/* Setup textures as source and destination images */
-		BindTextureToImage(m_program_id, complete_destination_texture_id, 0 /* image_unit */,
+		BindTextureToImage(m_program_id, complete_destination_texture_id,
+						   0 /* texture level */, 0 /* image_unit */,
 						   complete_destination_image_uniform_name);
-		BindTextureToImage(m_program_id, complete_source_texture_id, 1 /* image_unit */,
+		BindTextureToImage(m_program_id, complete_source_texture_id,
+						   0 /* texture level */, 1 /* image_unit */,
 						   complete_source_image_uniform_name);
-		BindTextureToImage(m_program_id, incomplete_destination_texture_id, 2 /* image_unit */,
+		BindTextureToImage(m_program_id, incomplete_destination_texture_id,
+						   2 /* texture level */, 2 /* image_unit */,
 						   incomplete_destination_image_uniform_name);
-		BindTextureToImage(m_program_id, incomplete_source_texture_id, 3 /* image_unit */,
+		BindTextureToImage(m_program_id, incomplete_source_texture_id,
+						   2 /* texture level */, 3 /* image_unit */,
 						   incomplete_source_image_uniform_name);
 
 		/* Execute draw */
