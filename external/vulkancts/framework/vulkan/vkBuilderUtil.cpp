@@ -66,6 +66,39 @@ DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::addBinding (VkDescriptor
 	return *this;
 }
 
+DescriptorSetLayoutBuilder& DescriptorSetLayoutBuilder::addIndexedBinding (VkDescriptorType		descriptorType,
+																		   deUint32				descriptorCount,
+																		   VkShaderStageFlags	stageFlags,
+																		   deUint32				dstBinding,
+																		   const VkSampler*		pImmutableSamplers)
+{
+	if (pImmutableSamplers)
+	{
+		const ImmutableSamplerInfo immutableSamplerInfo =
+		{
+			(deUint32)dstBinding,
+			(deUint32)m_immutableSamplers.size()
+		};
+
+		m_immutableSamplerInfos.push_back(immutableSamplerInfo);
+
+		for (size_t descriptorNdx = 0; descriptorNdx < descriptorCount; descriptorNdx++)
+			m_immutableSamplers.push_back(pImmutableSamplers[descriptorNdx]);
+	}
+
+	// pImmutableSamplers will be updated at build time
+	const VkDescriptorSetLayoutBinding binding =
+	{
+		dstBinding,						// binding
+		descriptorType,					// descriptorType
+		descriptorCount,				// descriptorCount
+		stageFlags,						// stageFlags
+		DE_NULL,						// pImmutableSamplers
+	};
+	m_bindings.push_back(binding);
+	return *this;
+}
+
 Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build (const DeviceInterface& vk, VkDevice device, VkDescriptorSetLayoutCreateFlags extraFlags) const
 {
 	// Create new layout bindings with pImmutableSamplers updated

@@ -26,7 +26,10 @@
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "glcUniformBlockCase.hpp"
+#include "glwEnums.hpp"
+#include "glwFunctions.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuTestLog.hpp"
 
 namespace deqp
 {
@@ -573,6 +576,109 @@ private:
 	int		 m_numInstances;
 };
 
+class UniformBlockPrecisionMatching : public TestCase
+{
+public:
+	UniformBlockPrecisionMatching(Context& context, glu::GLSLVersion glslVersion)
+		: TestCase(context, "precision_matching", ""), m_glslVersion(glslVersion)
+	{
+	}
+
+	IterateResult iterate(void)
+	{
+		std::string vs1("layout (std140) uniform Data { lowp float x; } myData;\n"
+						"void main() {\n"
+						"  gl_Position = vec4(myData.x, 0.0, 0.0, 1.0);\n"
+						"}");
+		std::string fs1("precision highp float;\n"
+						"out vec4 color;\n"
+						"layout (std140) uniform Data { float x; } myData;\n"
+						"void main() {\n"
+						"  color = vec4(myData.x);\n"
+						"}");
+
+		std::string vs2("layout (std140) uniform Data { highp int x; mediump int y; } myData;\n"
+						"void main() {\n"
+						"  gl_Position = vec4(float(myData.x), 0.0, 0.0, 1.0);\n"
+						"}");
+		std::string fs2("precision highp float;\n"
+						"out vec4 color;\n"
+						"layout (std140) uniform Data { mediump int x; highp int y; } myData;\n"
+						"void main() {\n"
+						"  color = vec4(float(myData.y));\n"
+						"}");
+
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		if (!Link(vs1, fs1) || !Link(vs2, fs2))
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		return STOP;
+	}
+
+	bool Link(const std::string& vs, const std::string& fs)
+	{
+		const glw::Functions& gl	  = m_context.getRenderContext().getFunctions();
+		const glw::GLuint	 p		  = gl.createProgram();
+		const std::string	 version = glu::getGLSLVersionDeclaration(m_glslVersion);
+
+		static const struct
+		{
+			const char*		   name;
+			const std::string& body;
+			glw::GLenum		   type;
+		} shaderDefinition[] = { { "VS", vs, GL_VERTEX_SHADER }, { "FS", fs, GL_FRAGMENT_SHADER } };
+
+		for (unsigned int index = 0; index < 2; ++index)
+		{
+			std::string shaderSource	= version + "\n" + shaderDefinition[index].body;
+			const char* shaderSourcePtr = shaderSource.c_str();
+
+			glw::GLuint sh = gl.createShader(shaderDefinition[index].type);
+			gl.attachShader(p, sh);
+			gl.deleteShader(sh);
+			gl.shaderSource(sh, 1, &shaderSourcePtr, NULL);
+			gl.compileShader(sh);
+
+			glw::GLint status;
+			gl.getShaderiv(sh, GL_COMPILE_STATUS, &status);
+			if (status == GL_FALSE)
+			{
+				glw::GLint length;
+				gl.getShaderiv(sh, GL_INFO_LOG_LENGTH, &length);
+				if (length > 0)
+				{
+					std::vector<glw::GLchar> log(length);
+					gl.getShaderInfoLog(sh, length, NULL, &log[0]);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << shaderDefinition[index].name
+														<< " compilation should succed. Info Log:\n"
+														<< &log[0] << tcu::TestLog::EndMessage;
+				}
+				gl.deleteProgram(p);
+				return false;
+			}
+		}
+
+		gl.linkProgram(p);
+
+		bool	   result = true;
+		glw::GLint status;
+		gl.getProgramiv(p, GL_LINK_STATUS, &status);
+		if (status == GL_FALSE)
+		{
+			glw::GLchar log[1024];
+			gl.getProgramInfoLog(p, sizeof(log), NULL, log);
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Link operation should succed. Info Log:\n"
+												<< log << tcu::TestLog::EndMessage;
+			result = false;
+		}
+
+		gl.deleteProgram(p);
+		return result;
+	}
+
+private:
+	glu::GLSLVersion m_glslVersion;
+};
+
 UniformBlockTests::UniformBlockTests(Context& context, glu::GLSLVersion glslVersion)
 	: TestCaseGroup(context, "uniform_block", "Uniform Block tests"), m_glslVersion(glslVersion)
 {
@@ -982,6 +1088,14 @@ void UniformBlockTests::init(void)
 							  m_glslVersion, UniformBlockCase::BUFFERMODE_PER_BLOCK, ~0u, 20, 200);
 		createRandomCaseGroup(randomGroup, m_context, "all_shared_buffer", "All random features, shared buffer",
 							  m_glslVersion, UniformBlockCase::BUFFERMODE_SINGLE, ~0u, 20, 250);
+	}
+
+	// ubo.common
+	if (glu::isGLSLVersionSupported(m_context.getRenderContext().getType(), glu::GLSL_VERSION_300_ES))
+	{
+		tcu::TestCaseGroup* commonGroup = new tcu::TestCaseGroup(m_testCtx, "common", "Common Uniform Block cases");
+		addChild(commonGroup);
+		commonGroup->addChild(new UniformBlockPrecisionMatching(m_context, m_glslVersion));
 	}
 }
 
