@@ -1509,7 +1509,7 @@ void drawAsPrimitives (const RenderState& state, const RenderTarget& renderTarge
 bool isValidCommand (const DrawCommand& command, int numInstances)
 {
 	// numInstances should be valid
-	if (numInstances < 1)
+	if (numInstances < 0)
 		return false;
 
 	// Shaders should have the same varyings
