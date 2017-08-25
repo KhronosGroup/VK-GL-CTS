@@ -377,7 +377,7 @@ int calcCandidateCubemapFaces (const Vec3& r)
 
 			DE_ASSERT(faceNdx < 6);
 
-			faceBitmap = faceBitmap | (deUint8) (1U << faceNdx);
+			faceBitmap = (deUint8)(faceBitmap | (deUint8) (1U << faceNdx));
 		}
 	}
 

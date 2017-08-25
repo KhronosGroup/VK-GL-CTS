@@ -757,8 +757,10 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface
 													   vk::VkDevice									device,
 													   const vk::VkMemoryRequirements&				requirements,
 													   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
-													   vk::VkBuffer									buffer)
+													   vk::VkBuffer									buffer,
+													   deUint32&                                    exportedMemoryTypeIndex)
 {
+	exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 	const vk::VkMemoryDedicatedAllocateInfoKHR	dedicatedInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
@@ -778,7 +780,7 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface
 		vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		&exportInfo,
 		requirements.size,
-		chooseMemoryType(requirements.memoryTypeBits)
+		exportedMemoryTypeIndex
 	};
 	return vk::allocateMemory(vkd, device, &info);
 }
@@ -787,8 +789,10 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface
 													   vk::VkDevice									device,
 													   const vk::VkMemoryRequirements&				requirements,
 													   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
-													   vk::VkImage									image)
+													   vk::VkImage									image,
+													   deUint32&                                    exportedMemoryTypeIndex)
 {
+	exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 	const vk::VkMemoryDedicatedAllocateInfoKHR	dedicatedInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
@@ -808,7 +812,7 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface
 		vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 		&exportInfo,
 		requirements.size,
-		chooseMemoryType(requirements.memoryTypeBits)
+		exportedMemoryTypeIndex
 	};
 	return vk::allocateMemory(vkd, device, &info);
 }
@@ -820,7 +824,8 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::InstanceInterfa
 													   const vk::VkMemoryRequirements&				requirements,
 													   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
 													   bool											hostVisible,
-													   vk::VkBuffer									buffer)
+													   vk::VkBuffer									buffer,
+													   deUint32&									exportedMemoryTypeIndex)
 {
 	const vk::VkPhysicalDeviceMemoryProperties properties = vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
@@ -850,6 +855,8 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::InstanceInterfa
 				requirements.size,
 				memoryTypeIndex
 			};
+
+			exportedMemoryTypeIndex = memoryTypeIndex;
 			return vk::allocateMemory(vkd, device, &info);
 		}
 	}
@@ -863,6 +870,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 												  vk::VkImage								image,
 												  const vk::VkMemoryRequirements&			requirements,
 												  vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												  deUint32									memoryTypeIndex,
 												  NativeHandle&								handle)
 {
 	const bool	isDedicated		= !!buffer || !!image;
@@ -890,7 +898,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			(isDedicated ? (const void*)&dedicatedInfo : (const void*)&importInfo),
 			requirements.size,
-			chooseMemoryType(requirements.memoryTypeBits)
+			(memoryTypeIndex == ~0U) ? chooseMemoryType(requirements.memoryTypeBits) : memoryTypeIndex
 		};
 		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
 
@@ -921,7 +929,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
 			(isDedicated ? (const void*)&dedicatedInfo : (const void*)&importInfo),
 			requirements.size,
-			chooseMemoryType(requirements.memoryTypeBits)
+			(memoryTypeIndex == ~0U) ? chooseMemoryType(requirements.memoryTypeBits)  : memoryTypeIndex
 		};
 		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
 
@@ -940,9 +948,10 @@ vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&					vkd,
 										   vk::VkDevice									device,
 										   const vk::VkMemoryRequirements&				requirements,
 										   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+										   deUint32										memoryTypeIndex,
 										   NativeHandle&								handle)
 {
-	return importMemory(vkd, device, (vk::VkBuffer)0, (vk::VkImage)0, requirements, externalType, handle);
+	return importMemory(vkd, device, (vk::VkBuffer)0, (vk::VkImage)0, requirements, externalType, memoryTypeIndex, handle);
 }
 
 vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&					vkd,
@@ -950,9 +959,10 @@ vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&		
 													vk::VkBuffer								buffer,
 													const vk::VkMemoryRequirements&				requirements,
 													vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+													deUint32									memoryTypeIndex,
 													NativeHandle&								handle)
 {
-	return importMemory(vkd, device, buffer, (vk::VkImage)0, requirements, externalType, handle);
+	return importMemory(vkd, device, buffer, (vk::VkImage)0, requirements, externalType, memoryTypeIndex, handle);
 }
 
 vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&					vkd,
@@ -960,9 +970,10 @@ vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&		
 													vk::VkImage									image,
 													const vk::VkMemoryRequirements&				requirements,
 													vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+													deUint32									memoryTypeIndex,
 													NativeHandle&								handle)
 {
-	return importMemory(vkd, device, (vk::VkBuffer)0, image, requirements, externalType, handle);
+	return importMemory(vkd, device, (vk::VkBuffer)0, image, requirements, externalType, memoryTypeIndex, handle);
 }
 
 vk::Move<vk::VkBuffer> createExternalBuffer (const vk::DeviceInterface&					vkd,
