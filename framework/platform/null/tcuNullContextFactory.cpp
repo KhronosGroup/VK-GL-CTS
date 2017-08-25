@@ -34,7 +34,7 @@ NullGLContextFactory::NullGLContextFactory (void)
 {
 }
 
-glu::RenderContext* NullGLContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine&) const
+glu::RenderContext* NullGLContextFactory::createContext (const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext*) const
 {
 	return new RenderContext(config);
 }

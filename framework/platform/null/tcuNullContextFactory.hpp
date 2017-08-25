@@ -35,7 +35,7 @@ class NullGLContextFactory : public glu::ContextFactory
 {
 public:
 						NullGLContextFactory	(void);
-	glu::RenderContext*	createContext			(const glu::RenderConfig& config, const tcu::CommandLine&) const;
+	glu::RenderContext*	createContext			(const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext*) const;
 };
 
 } // null

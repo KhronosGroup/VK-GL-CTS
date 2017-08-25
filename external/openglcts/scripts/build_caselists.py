@@ -76,6 +76,7 @@ MODULES = [
 	Module("GTF-GL31",		"GL31"),
 	Module("GTF-GL30",		"GL30"),
 	Module("KHR-NOCTX-GL30","GL30"),
+	Module("KHR-NOCTX-GL40","GL40"),
 	Module("KHR-NOCTX-GL45","GL45"),
 ]
 GLCTS_BIN_NAME = "glcts"
@@ -102,7 +103,7 @@ def getModulesPath (buildCfg):
 
 def getCaseListFileName (module, caseListType):
 	mname = module.name
-	if mname == "KHR-NOCTX-ES2" or mname == "KHR-NOCTX-ES32" or mname == "KHR-NOCTX-GL30" or mname == "KHR-NOCTX-GL45":
+	if mname == "KHR-NOCTX-ES2" or mname == "KHR-NOCTX-ES32" or mname == "KHR-NOCTX-GL30" or mname == "KHR-NOCTX-GL40" or mname == "KHR-NOCTX-GL45":
 		mname =  "KHR-NoContext"
 	return "%s-cases.%s" % (mname, caseListType)
 

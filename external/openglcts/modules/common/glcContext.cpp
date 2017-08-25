@@ -83,11 +83,6 @@ void Context::destroyRenderContext(void)
 	m_renderCtx   = DE_NULL;
 }
 
-glu::RenderContext* Context::createSharedContext(glu::ContextFlags, glu::ResetNotificationStrategy)
-{
-	TCU_THROW(InternalError, "Not implemented");
-}
-
 const tcu::RenderTarget& Context::getRenderTarget(void) const
 {
 	return m_renderCtx->getRenderTarget();

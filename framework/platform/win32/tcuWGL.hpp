@@ -197,6 +197,7 @@ class Context
 public:
 						Context				(const Core*					core,
 											 HDC							deviceCtx,
+											 const Context*					sharedContext,
 											 glu::ContextType				ctxType,
 											 int							pixelFormat,
 											 glu::ResetNotificationStrategy	resetNotificationStrategy);

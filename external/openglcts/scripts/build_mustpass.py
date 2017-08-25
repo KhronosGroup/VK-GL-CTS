@@ -1013,6 +1013,7 @@ GL_MODULES							= OrderedDict([
 		])
 
 NOCTX_GL30_KHR_MODULE			= getModuleByName("KHR-NOCTX-GL30")
+NOCTX_GL40_KHR_MODULE			= getModuleByName("KHR-NOCTX-GL40")
 NOCTX_GL45_KHR_MODULE			= getModuleByName("KHR-NOCTX-GL45")
 
 GLCTS_NOCTX_GL30_KHR_PKG			= Package(module = NOCTX_GL30_KHR_MODULE, configurations = [
@@ -1022,6 +1023,15 @@ GLCTS_NOCTX_GL30_KHR_PKG			= Package(module = NOCTX_GL30_KHR_MODULE, configurati
 					surfaceheight	= "64",
 					baseseed		= "1",
 					filters			= [include("gl30-khr-master.txt")]),
+	])
+
+GLCTS_NOCTX_GL40_KHR_PKG			= Package(module = NOCTX_GL40_KHR_MODULE, configurations = [
+		# Master
+		Configuration(name			= "khr-master",
+					surfacewidth	= "64",
+					surfaceheight	= "64",
+					baseseed		= "1",
+					filters			= [include("gl40-khr-master.txt")]),
 	])
 
 GLCTS_NOCTX_GL45_KHR_PKG			= Package(module = NOCTX_GL45_KHR_MODULE, configurations = [
@@ -1060,7 +1070,7 @@ def generateGLMustpass():
 			gl_packages.append(pkg1)
 
 		mustpass = [Mustpass(project = GL_CTS_KHR_MP_PROJECT, version = "4.6.0.x", isCurrent=True, packages = gl_packages),
-					Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.6.0.x", isCurrent=True, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
+					Mustpass(project = GL_CTS_NOCTX_PROJECT, version = "4.6.0.x", isCurrent=True, packages = [GLCTS_NOCTX_GL30_KHR_PKG, GLCTS_NOCTX_GL40_KHR_PKG, GLCTS_NOCTX_GL45_KHR_PKG]),
 					]
 		return mustpass
 

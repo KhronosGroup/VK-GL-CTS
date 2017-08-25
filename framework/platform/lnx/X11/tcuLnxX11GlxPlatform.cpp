@@ -82,8 +82,9 @@ class GlxContextFactory : public glu::ContextFactory
 public:
 							GlxContextFactory	(EventState& eventState);
 							~GlxContextFactory	(void);
-	RenderContext*			createContext		(const RenderConfig&	config,
-												 const CommandLine&		cmdLine) const;
+	RenderContext*			createContext		(const RenderConfig&	   config,
+												 const CommandLine&		   cmdLine,
+												 const glu::RenderContext* sharedContext) const;
 
 	EventState&				getEventState		(void) const { return m_eventState;}
 
@@ -119,6 +120,7 @@ public:
 	Visual*					getXVisual			(void) { return m_visual; }
 	GLXContext				createContext		(const GlxContextFactory&		factory,
 												 const ContextType&				contextType,
+												 const glu::RenderContext*		sharedContext,
 												 glu::ResetNotificationStrategy	resetNotificationStrategy);
 	GLXWindow				createWindow		(::Window xWindow);
 	GlxDisplay&				getGlxDisplay		(void) { return m_display; }
@@ -171,7 +173,9 @@ class GlxRenderContext : public RenderContext
 {
 public:
 										GlxRenderContext	(const GlxContextFactory&	factory,
-															 const RenderConfig&		config);
+															 const RenderConfig&		config,
+															 const glu::RenderContext*	sharedContext
+															 );
 										~GlxRenderContext	(void);
 	virtual ContextType					getType				(void) const;
 	virtual void						postIterate			(void);
@@ -179,6 +183,7 @@ public:
 	void								clearCurrent		(void);
 	virtual const glw::Functions&		getFunctions		(void) const;
 	virtual const tcu::RenderTarget&	getRenderTarget		(void) const;
+	const GLXContext&					getGLXContext		(void) const;
 
 private:
 	GlxDisplay							m_glxDisplay;
@@ -214,11 +219,12 @@ GlxContextFactory::GlxContextFactory (EventState& eventState)
 	XSetErrorHandler(tcuLnxX11GlxErrorHandler);
 }
 
-RenderContext* GlxContextFactory::createContext (const RenderConfig&	config,
-												 const CommandLine&		cmdLine) const
+RenderContext* GlxContextFactory::createContext (const RenderConfig&		config,
+												 const CommandLine&			cmdLine,
+												 const glu::RenderContext*	sharedContext) const
 {
 	DE_UNREF(cmdLine);
-	GlxRenderContext* const renderContext = new GlxRenderContext(*this, config);
+	GlxRenderContext* const renderContext = new GlxRenderContext(*this, config, sharedContext);
 	return renderContext;
 }
 
@@ -304,6 +310,7 @@ int GlxVisual::getAttrib (int attribute)
 
 GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
 									 const ContextType&				contextType,
+									 const glu::RenderContext*		sharedContext,
 									 glu::ResetNotificationStrategy	resetNotificationStrategy)
 {
 	std::vector<int>	attribs;
@@ -391,8 +398,11 @@ GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
 	// Terminate attrib list
 	attribs.push_back(None);
 
+	const GlxRenderContext* sharedGlxRenderContext = dynamic_cast<const GlxRenderContext*>(sharedContext);
+	const GLXContext& sharedGLXContext = sharedGlxRenderContext ? sharedGlxRenderContext->getGLXContext() : DE_NULL;
+
 	return TCU_CHECK_GLX(factory.m_glXCreateContextAttribsARB(
-							 getXDisplay(), m_fbConfig, DE_NULL, True, &attribs[0]));
+							 getXDisplay(), m_fbConfig, sharedGLXContext, True, &attribs[0]));
 }
 
 GLXWindow GlxVisual::createWindow (::Window xWindow)
@@ -683,11 +693,12 @@ struct GlxFunctionLoader : public glw::FunctionLoader
 };
 
 GlxRenderContext::GlxRenderContext (const GlxContextFactory&	factory,
-									const RenderConfig&			config)
+									const RenderConfig&			config,
+									const glu::RenderContext*	sharedContext)
 	: m_glxDisplay		(factory.getEventState(), DE_NULL)
 	, m_glxVisual		(chooseVisual(m_glxDisplay, config))
 	, m_type			(config.type)
-	, m_GLXContext		(m_glxVisual.createContext(factory, config.type, config.resetNotificationStrategy))
+	, m_GLXContext		(m_glxVisual.createContext(factory, config.type, sharedContext, config.resetNotificationStrategy))
 	, m_glxDrawable		(createDrawable(m_glxVisual, config))
 	, m_renderTarget	(m_glxDrawable->getWidth(), m_glxDrawable->getHeight(),
 						 PixelFormat(m_glxVisual.getAttrib(GLX_RED_SIZE),
@@ -743,6 +754,11 @@ const RenderTarget& GlxRenderContext::getRenderTarget (void) const
 const glw::Functions& GlxRenderContext::getFunctions (void) const
 {
 	return m_functions;
+}
+
+const GLXContext& GlxRenderContext::getGLXContext (void) const
+{
+	return m_GLXContext;
 }
 
 MovePtr<ContextFactory> createContextFactory (EventState& eventState)

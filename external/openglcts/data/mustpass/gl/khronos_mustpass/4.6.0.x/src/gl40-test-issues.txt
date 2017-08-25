@@ -1,2 +1,0 @@
-# VK-GL-CTS issue: 624
-KHR-GL40.shader_subroutine.multiple_contexts

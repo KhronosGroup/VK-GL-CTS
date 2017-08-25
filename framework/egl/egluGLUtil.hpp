@@ -45,6 +45,7 @@ eglw::EGLContext	createGLContext			(const eglw::Library&			egl,
 											 eglw::EGLDisplay				display,
 											 eglw::EGLConfig				config,
 											 const glu::ContextType&		contextType,
+											 eglw::EGLContext				sharedContext = EGL_NO_CONTEXT,
 											 glu::ResetNotificationStrategy	resetNotificationStrategy = glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED);
 
 eglw::EGLConfig		chooseConfig			(const eglw::Library&			egl,
