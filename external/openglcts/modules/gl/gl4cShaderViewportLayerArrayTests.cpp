@@ -446,6 +446,8 @@ void ShaderLayerFramebufferTestCaseBase::init()
 	if (!m_isExtensionSupported)
 		return;
 
+	const glw::Functions&	 gl			= m_context.getRenderContext().getFunctions();
+
 	this->createFBO();
 
 	m_shaderPipelines.push_back(ShaderViewportLayerArrayUtils::ShaderPipeline(false, false, m_layersNum, "Layer"));
@@ -456,7 +458,19 @@ void ShaderLayerFramebufferTestCaseBase::init()
 	{
 		iter->create(m_context.getRenderContext());
 	}
+
+	gl.viewport(0, 0, m_fboSize, m_fboSize);
 }
+
+void ShaderLayerFramebufferTestCaseBase::deinit()
+{
+	const Functions&		gl			 = m_context.getRenderContext().getFunctions();
+	const tcu::RenderTarget renderTarget = m_context.getRenderContext().getRenderTarget();
+
+	gl.viewport(0, 0, renderTarget.getWidth(), renderTarget.getHeight());
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Viewport");
+}
+
 
 tcu::TestNode::IterateResult ShaderLayerFramebufferTestCaseBase::iterate()
 {
@@ -484,6 +498,8 @@ tcu::TestNode::IterateResult ShaderLayerFramebufferTestCaseBase::iterate()
 		gl.clear(GL_COLOR_BUFFER_BIT);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Clear");
 		ShaderViewportLayerArrayUtils::renderQuad(renderContext, *pipelineIter, m_currentLayer, renderColor);
+		gl.flush();
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Flush");
 
 		// calculate layer offset (same value as gl_Layer in shader)
 		int currentLayerWithOffset = (m_currentLayer + pipelineIter->getViewportLayerOffset()) % m_layersNum;
@@ -498,6 +514,7 @@ tcu::TestNode::IterateResult ShaderLayerFramebufferTestCaseBase::iterate()
 		GLU_EXPECT_NO_ERROR(gl.getError(), "ReadPixels");
 		bool validationResult =
 			ShaderViewportLayerArrayUtils::validateColor(tcu::Vec4(rgba[0], rgba[1], rgba[2], rgba[3]), renderColor);
+
 		TCU_CHECK_MSG(validationResult, "Expected pixel color did not match rendered one.");
 	}
 

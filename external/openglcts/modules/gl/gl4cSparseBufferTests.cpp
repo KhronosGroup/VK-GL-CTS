@@ -945,7 +945,7 @@ bool AtomicCounterBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_f
 		else
 		{
 			m_gl.bindBufferRange(GL_ATOMIC_COUNTER_BUFFER, 0, /* index */
-								 m_sparse_bo, m_sparse_bo_data_start_offset, m_sparse_bo_data_size);
+								 m_sparse_bo, m_sparse_bo_data_start_offset, m_helper_bo_size);
 
 			GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBufferRange() call failed.");
 		}
