@@ -98,7 +98,8 @@ WGLContext::WGLContext (HINSTANCE instance, const wgl::Core& wglCore, const glu:
 	, m_context		(DE_NULL)
 {
 	if (config.surfaceType != glu::RenderConfig::SURFACETYPE_WINDOW &&
-		config.surfaceType != glu::RenderConfig::SURFACETYPE_DONT_CARE)
+		config.surfaceType != glu::RenderConfig::SURFACETYPE_DONT_CARE &&
+		config.surfaceType != glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC)
 		throw NotSupportedError("Unsupported surface type");
 
 	HDC		deviceCtx	= m_window.getDeviceContext();
