@@ -517,7 +517,7 @@ Note that the GL context version is determined by the case name. `KHR-GLES3` in
 the example above selects OpenGL ES 3.0. The command to run the same test
 against OpenGL version 4.1 is:
 
-	Debug/glcts.exe --deqp-case=GL41-CTS.shaders.loops.* --deqp-gl-config-id=3
+	Debug/glcts.exe --deqp-case=KHR-GL45.shaders.loops.* --deqp-gl-config-id=3
 
 To list available test cases (writes out `*-cases.txt` files per module), run:
 
