@@ -1458,6 +1458,16 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 			}
 		}
 
+		deUint32 metadataAspectIndex = noMatchFound;
+		for (deUint32 memoryReqNdx = 0; memoryReqNdx < sparseMemoryReqCount; ++memoryReqNdx)
+		{
+			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask & VK_IMAGE_ASPECT_METADATA_BIT)
+			{
+				metadataAspectIndex = memoryReqNdx;
+				break;
+			}
+		}
+
 		if (colorAspectIndex == noMatchFound)
 			TCU_THROW(NotSupportedError, "Not supported image aspect - the test supports currently only VK_IMAGE_ASPECT_COLOR_BIT.");
 
@@ -1480,7 +1490,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 		if (memoryRequirements.size > deviceProperties.limits.sparseAddressSpaceSize)
 			TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits.");
 
-		// Check if the image format supports sparse oprerations
+		// Check if the image format supports sparse operations
 		const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec =
 			getPhysicalDeviceSparseImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
 
@@ -1552,8 +1562,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 			// 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
 			// 2) otherwise:                                                            only one tail is needed.
 			{
-				if ( imageMipTailMemoryBinds.size() == 0                                                                                                   ||
-					(imageMipTailMemoryBinds.size() != 0 && (aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0))
+				if (imageMipTailMemoryBinds.size() == 0 || (aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
 				{
 					const VkMemoryRequirements allocRequirements =
 					{
@@ -1575,6 +1584,36 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 
 					m_allocations.push_back(allocation);
 					imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+				}
+
+				// Metadata
+				if (metadataAspectIndex != noMatchFound)
+				{
+					const VkSparseImageMemoryRequirements	metadataAspectRequirements = sparseImageMemoryRequirements[metadataAspectIndex];
+
+					if (imageMipTailMemoryBinds.size() == 1 || (metadataAspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
+					{
+						const VkMemoryRequirements metadataAllocRequirements =
+						{
+							metadataAspectRequirements.imageMipTailSize,	// VkDeviceSize	size;
+							memoryRequirements.alignment,					// VkDeviceSize	alignment;
+							memoryRequirements.memoryTypeBits,				// uint32_t		memoryTypeBits;
+						};
+						const de::SharedPtr<Allocation>	metadataAllocation(m_memAlloc.allocate(metadataAllocRequirements, MemoryRequirement::Any).release());
+
+						const VkSparseMemoryBind metadataMipTailMemoryBind =
+						{
+							metadataAspectRequirements.imageMipTailOffset +
+							layerNdx * metadataAspectRequirements.imageMipTailStride,			// VkDeviceSize					resourceOffset;
+							metadataAspectRequirements.imageMipTailSize,						// VkDeviceSize					size;
+							metadataAllocation->getMemory(),									// VkDeviceMemory				memory;
+							metadataAllocation->getOffset(),									// VkDeviceSize					memoryOffset;
+							VK_SPARSE_MEMORY_BIND_METADATA_BIT									// VkSparseMemoryBindFlags		flags;
+						};
+
+						m_allocations.push_back(metadataAllocation);
+						imageMipTailMemoryBinds.push_back(metadataMipTailMemoryBind);
+					}
 				}
 			}
 		}
