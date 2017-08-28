@@ -354,7 +354,7 @@ void CopiesAndBlittingTestInstance::generateBuffer (tcu::PixelBufferAccess buffe
 		for (int i = 0; i < 4; ++i)
 		{
 			if (bits[i] != 0)
-				maxValue[i] = static_cast<float>((1 << (bits[i] - signBit)) - 1);
+				maxValue[i] = static_cast<float>((deUint64(1) << (bits[i] - signBit)) - 1);
 		}
 	}
 
