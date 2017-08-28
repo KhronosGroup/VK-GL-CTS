@@ -1454,6 +1454,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 
 		const bool							allowSnorm8Bug	= m_texture->getTextureFormat().type == tcu::TextureFormat::SNORM_INT8 &&
 															  (m_samplerParams.minFilter == VK_FILTER_LINEAR || m_samplerParams.magFilter == VK_FILTER_LINEAR);
+		const bool							isNearestOnly	= (m_samplerParams.minFilter == VK_FILTER_NEAREST && m_samplerParams.magFilter == VK_FILTER_NEAREST);
 
 		tcu::LookupPrecision				lookupPrecision;
 
@@ -1462,7 +1463,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 		lookupPrecision.coordBits		= tcu::IVec3(17, 17, 17);
 		lookupPrecision.uvwBits			= tcu::IVec3(5, 5, 5);
 		lookupPrecision.colorMask		= tcu::BVec4(true);
-		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(tcu::IVec4(8, 8, 8, 8)) / swizzleScaleBias(lookupScale, m_componentMapping);
+		lookupPrecision.colorThreshold	= tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) / swizzleScaleBias(lookupScale, m_componentMapping);
 
 		if (tcu::isSRGB(m_texture->getTextureFormat()))
 			lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
