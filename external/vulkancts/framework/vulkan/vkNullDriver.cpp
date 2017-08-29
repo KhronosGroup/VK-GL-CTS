@@ -28,7 +28,10 @@
 #include "tcuFunctionLibrary.hpp"
 #include "deMemory.h"
 
-#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#if (DE_OS == DE_OS_ANDROID) && defined(__ANDROID_API_O__) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#	define USE_ANDROID_O_HARDWARE_BUFFER
+#endif
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 #	include <android/hardware_buffer.h>
 #endif
 
@@ -357,7 +360,7 @@ private:
 	void* const			m_memory;
 };
 
-#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 AHardwareBuffer* findOrCreateHwBuffer (const VkMemoryAllocateInfo* pAllocInfo)
 {
 	const VkExportMemoryAllocateInfoKHR* const				exportInfo		= findStructure<VkExportMemoryAllocateInfoKHR>(pAllocInfo->pNext);
@@ -459,7 +462,7 @@ public:
 private:
 	AHardwareBuffer* const	m_hwbuffer;
 };
-#endif // (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#endif // defined(USE_ANDROID_O_HARDWARE_BUFFER)
 
 class CommandBuffer
 {
@@ -724,7 +727,7 @@ VKAPI_ATTR VkResult VKAPI_CALL enumerateDeviceExtensionProperties (VkPhysicalDev
 		{ "VK_KHR_get_memory_requirements2",					1u },
 		{ "VK_KHR_maintenance1",								1u },
 		{ "VK_KHR_sampler_ycbcr_conversion",					1u },
-#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 		{ "VK_ANDROID_external_memory_android_hardware_buffer",	1u },
 #endif
 	};
@@ -1157,7 +1160,7 @@ VKAPI_ATTR VkResult VKAPI_CALL allocateMemory (VkDevice device, const VkMemoryAl
 	if ((exportInfo && (exportInfo->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0)
 		|| (importInfo && importInfo->buffer.internal))
 	{
-#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 		VK_NULL_RETURN((*pMemory = allocateNonDispHandle<ExternalDeviceMemoryAndroid, DeviceMemory, VkDeviceMemory>(device, pAllocateInfo, pAllocator)));
 #else
 		return VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR;
@@ -1194,7 +1197,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryAndroidHardwareBufferANDROID (VkDevice d
 {
 	DE_UNREF(device);
 
-#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 	DeviceMemory* const					memory			= reinterpret_cast<ExternalDeviceMemoryAndroid*>(pInfo->memory.getInternal());
 	ExternalDeviceMemoryAndroid* const	androidMemory	= static_cast<ExternalDeviceMemoryAndroid*>(memory);
 
@@ -1306,7 +1309,7 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysi
 	pExternalBufferProperties->externalMemoryProperties.exportFromImportedHandleTypes = 0;
 	pExternalBufferProperties->externalMemoryProperties.compatibleHandleTypes = 0;
 
-#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 	if (pExternalBufferInfo->handleType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
 	{
 		pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
@@ -1328,7 +1331,7 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2KHR (VkPhy
 
 	if (externalInfo && externalInfo->handleType != 0)
 	{
-#if (DE_OS == DE_OS_ANDROID) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 		if (externalInfo->handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
 			return VK_ERROR_FORMAT_NOT_SUPPORTED;
 
