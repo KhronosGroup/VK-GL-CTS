@@ -432,7 +432,7 @@ Move<VkImage> makeImage (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,	// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
-		2u,														// uint32_t					viewFormatCount
+		2u,														// deUint32					viewFormatCount
 		formatList												// const VkFormat*			pViewFormats
 	};
 
@@ -524,24 +524,24 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 {
 	const VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
-		0u,									// uint32_t				binding;
-		(uint32_t)(2 * sizeof(Vec4)),		// uint32_t				stride;
+		0u,									// deUint32				binding;
+		(deUint32)(2 * sizeof(Vec4)),		// deUint32				stride;
 		VK_VERTEX_INPUT_RATE_VERTEX,		// VkVertexInputRate	inputRate;
 	};
 
 	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
 	{
 		{
-			0u,								// uint32_t			location;
-			0u,								// uint32_t			binding;
+			0u,								// deUint32			location;
+			0u,								// deUint32			binding;
 			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat			format;
-			0u,								// uint32_t			offset;
+			0u,								// deUint32			offset;
 		},
 		{
-			1u,								// uint32_t			location;
-			0u,								// uint32_t			binding;
+			1u,								// deUint32			location;
+			0u,								// deUint32			binding;
 			VK_FORMAT_R32G32B32A32_SFLOAT,	// VkFormat			format;
-			(uint32_t)sizeof(Vec4),			// uint32_t			offset;
+			(deUint32)sizeof(Vec4),			// deUint32			offset;
 		}
 	};
 
@@ -550,9 +550,9 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType;
 		DE_NULL,													// const void*								pNext;
 		(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags	flags;
-		1u,															// uint32_t									vertexBindingDescriptionCount;
+		1u,															// deUint32									vertexBindingDescriptionCount;
 		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
-		DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),		// uint32_t									vertexAttributeDescriptionCount;
+		DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),		// deUint32									vertexAttributeDescriptionCount;
 		vertexInputAttributeDescriptions,							// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
 
@@ -581,9 +581,9 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		// VkStructureType						sType;
 		DE_NULL,													// const void*							pNext;
 		(VkPipelineViewportStateCreateFlags)0,						// VkPipelineViewportStateCreateFlags	flags;
-		1u,															// uint32_t								viewportCount;
+		1u,															// deUint32								viewportCount;
 		&viewport,													// const VkViewport*					pViewports;
-		1u,															// uint32_t								scissorCount;
+		1u,															// deUint32								scissorCount;
 		&scissor,													// const VkRect2D*						pScissors;
 	};
 
@@ -1251,8 +1251,8 @@ void UploadDownloadExecutor::uploadCopy(Context& context)
 		DE_NULL,											// const void*        pNext;
 		VK_ACCESS_HOST_WRITE_BIT,							// VkAccessFlags      srcAccessMask;
 		VK_ACCESS_TRANSFER_READ_BIT,						// VkAccessFlags      dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,							// uint32_t           srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,							// uint32_t           dstQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,							// deUint32           srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,							// deUint32           dstQueueFamilyIndex;
 		*m_uCopy.colorBuffer,								// VkBuffer           buffer;
 		0ull,												// VkDeviceSize       offset;
 		VK_WHOLE_SIZE,										// VkDeviceSize       size;
@@ -1279,16 +1279,16 @@ void UploadDownloadExecutor::uploadCopy(Context& context)
 	const VkImageSubresourceLayers	subresource	=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,							// VkImageAspectFlags    aspectMask;
-		0u,													// uint32_t              mipLevel;
-		0u,													// uint32_t              baseArrayLayer;
-		m_caseDef.numLayers,								// uint32_t              layerCount;
+		0u,													// deUint32              mipLevel;
+		0u,													// deUint32              baseArrayLayer;
+		m_caseDef.numLayers,								// deUint32              layerCount;
 	};
 
 	const VkBufferImageCopy			region		=
 	{
 		0ull,												// VkDeviceSize                bufferOffset;
-		0u,													// uint32_t                    bufferRowLength;
-		0u,													// uint32_t                    bufferImageHeight;
+		0u,													// deUint32                    bufferRowLength;
+		0u,													// deUint32                    bufferImageHeight;
 		subresource,										// VkImageSubresourceLayers    imageSubresource;
 		makeOffset3D(0, 0, 0),								// VkOffset3D                  imageOffset;
 		makeExtent3D(m_caseDef.size),						// VkExtent3D                  imageExtent;
@@ -1372,7 +1372,7 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 				*m_uDraw.renderPass,							// VkRenderPass            renderPass;
 				*m_uDraw.framebuffer,							// VkFramebuffer           framebuffer;
 				renderArea,									// VkRect2D                renderArea;
-				static_cast<deUint32>(clearValues.size()),	// uint32_t                clearValueCount;
+				static_cast<deUint32>(clearValues.size()),	// deUint32                clearValueCount;
 				&clearValues[0],							// const VkClearValue*     pClearValues;
 			};
 
@@ -1597,16 +1597,16 @@ void UploadDownloadExecutor::copyImageToBuffer(VkImage				sourceImage,
 	const VkImageSubresourceLayers	subresource	=
 	{
 		VK_IMAGE_ASPECT_COLOR_BIT,					// VkImageAspectFlags    aspectMask;
-		0u,											// uint32_t              mipLevel;
-		0u,											// uint32_t              baseArrayLayer;
-		numLayers,									// uint32_t              layerCount;
+		0u,											// deUint32              mipLevel;
+		0u,											// deUint32              baseArrayLayer;
+		numLayers,									// deUint32              layerCount;
 	};
 
 	const VkBufferImageCopy			region		=
 	{
 		0ull,										// VkDeviceSize                bufferOffset;
-		0u,											// uint32_t                    bufferRowLength;
-		0u,											// uint32_t                    bufferImageHeight;
+		0u,											// deUint32                    bufferRowLength;
+		0u,											// deUint32                    bufferImageHeight;
 		subresource,								// VkImageSubresourceLayers    imageSubresource;
 		makeOffset3D(0, 0, 0),						// VkOffset3D                  imageOffset;
 		makeExtent3D(size),							// VkExtent3D                  imageExtent;
@@ -1620,8 +1620,8 @@ void UploadDownloadExecutor::copyImageToBuffer(VkImage				sourceImage,
 		DE_NULL,									// const void*        pNext;
 		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags      srcAccessMask;
 		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags      dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// uint32_t           srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// uint32_t           dstQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32           srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32           dstQueueFamilyIndex;
 		buffer,										// VkBuffer           buffer;
 		0ull,										// VkDeviceSize       offset;
 		VK_WHOLE_SIZE,								// VkDeviceSize       size;
