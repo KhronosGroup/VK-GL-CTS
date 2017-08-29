@@ -893,6 +893,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 	for (deUint32 mipNdx = 0u; mipNdx < mipMapSizes.size(); ++mipNdx)
 	for (deUint32 layerNdx = 0u; layerNdx < getLayerCount(); ++layerNdx)
 	{
+		const bool						layoutShaderReadOnly	= (layerNdx % 2u) == 1;
 		const deUint32					imageNdx				= layerNdx + mipNdx * getLayerCount();
 		const VkExtent3D				extentCompressed		= makeExtent3D(mipMapSizes[mipNdx]);
 		const VkImage&					uncompressed			= imageData[m_parameters.imagesCount -1].getImage(imageNdx);
@@ -1009,8 +1010,8 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 
 		VkDescriptorImageInfo			descriptorImageInfos[]	=
 		{
-			makeDescriptorImageInfo(*sampler,	*uncompressedView,	VK_IMAGE_LAYOUT_GENERAL),
-			makeDescriptorImageInfo(*sampler,	*compressedView,	VK_IMAGE_LAYOUT_GENERAL),
+			makeDescriptorImageInfo(*sampler,	*uncompressedView,	layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL),
+			makeDescriptorImageInfo(*sampler,	*compressedView,	layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL),
 			makeDescriptorImageInfo(DE_NULL,	*resultView,		VK_IMAGE_LAYOUT_GENERAL),
 			makeDescriptorImageInfo(DE_NULL,	*referenceView,		VK_IMAGE_LAYOUT_GENERAL)
 		};
@@ -1030,6 +1031,15 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 				0u,																	//deUint32						baseMipLevel
 				1u,																	//deUint32						levelCount
 				0u,																	//deUint32						baseArrayLayer
+				1u																	//deUint32						layerCount
+			};
+
+			const VkImageSubresourceRange	subresourceRangeComp	=
+			{
+				VK_IMAGE_ASPECT_COLOR_BIT,											//VkImageAspectFlags			aspectMask
+				mipNdx,																//deUint32						baseMipLevel
+				1u,																	//deUint32						levelCount
+				layerNdx,															//deUint32						baseArrayLayer
 				1u																	//deUint32						layerCount
 			};
 
@@ -1085,8 +1095,12 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 				{
 
 					makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 						uncompressedImage.get(), subresourceRange),
+
+					makeImageMemoryBarrier(0, VK_ACCESS_SHADER_READ_BIT,
+						VK_IMAGE_LAYOUT_GENERAL, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
+						compressed, subresourceRangeComp),
 
 					makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT,
 						VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
@@ -1822,6 +1836,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const VkQueue						queue						= m_context.getUniversalQueue();
 	Allocator&							allocator					= m_context.getDefaultAllocator();
 
+	const bool							layoutShaderReadOnly		= (layer % 2u) == 1;
 	const UVec3							mipmapDimsBlocked			= getCompressedImageResolutionBlockCeil(m_parameters.formatCompressed, mipmapDims);
 
 	const VkImageSubresourceRange		subresourceRange			= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, SINGLE_LEVEL, 0u, SINGLE_LAYER);
@@ -1882,8 +1897,8 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const Move<VkSampler>				refSrcSampler				= vk::createSampler(vk, device, &refSrcSamplerInfo);
 	const VkSamplerCreateInfo			resSrcSamplerInfo			(makeSamplerCreateInfo());
 	const Move<VkSampler>				resSrcSampler				= vk::createSampler(vk, device, &resSrcSamplerInfo);
-	const VkDescriptorImageInfo			descriptorRefSrcImage		(makeDescriptorImageInfo(*refSrcSampler, *refSrcImageView, VK_IMAGE_LAYOUT_GENERAL));
-	const VkDescriptorImageInfo			descriptorResSrcImage		(makeDescriptorImageInfo(*resSrcSampler, *resSrcImageView, VK_IMAGE_LAYOUT_GENERAL));
+	const VkDescriptorImageInfo			descriptorRefSrcImage		(makeDescriptorImageInfo(*refSrcSampler, *refSrcImageView, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL));
+	const VkDescriptorImageInfo			descriptorResSrcImage		(makeDescriptorImageInfo(*resSrcSampler, *resSrcImageView, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL));
 	const VkDescriptorImageInfo			descriptorRefDstImage		(makeDescriptorImageInfo(DE_NULL, *refDstImageView, VK_IMAGE_LAYOUT_GENERAL));
 	const VkDescriptorImageInfo			descriptorResDstImage		(makeDescriptorImageInfo(DE_NULL, *resDstImageView, VK_IMAGE_LAYOUT_GENERAL));
 
@@ -1897,7 +1912,8 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	const VkBufferImageCopy				copyRegion					= makeBufferImageCopy(mipmapDims.x(), mipmapDims.y(), 0u, 0u);
 	const VkBufferMemoryBarrier			refSrcCopyBufferBarrierPre	= makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, refSrcImageBuffer->get(), 0ull, refCompressedData.size());
 	const VkImageMemoryBarrier			refSrcCopyImageBarrierPre	= makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, refSrcImage->get(), subresourceRange);
-	const VkImageMemoryBarrier			refSrcCopyImageBarrierPost	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, refSrcImage->get(), subresourceRange);
+	const VkImageMemoryBarrier			refSrcCopyImageBarrierPost	= makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, refSrcImage->get(), subresourceRange);
+	const VkImageMemoryBarrier			resCompressedImageBarrier	= makeImageMemoryBarrier(0, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, layoutShaderReadOnly ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL, resCompressedImage->get(), resSubresourceRange);
 
 	const Move<VkFramebuffer>			framebuffer					(makeFramebuffer(vk, device, *renderPass, 0, DE_NULL, renderSize, getLayerCount()));
 
@@ -1914,11 +1930,14 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	// Copy buffer to image
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1u, &refSrcCopyBufferBarrierPre, 1u, &refSrcCopyImageBarrierPre);
 	vk.cmdCopyBufferToImage(*cmdBuffer, refSrcImageBuffer->get(), refSrcImage->get(), VK_IMAGE_LAYOUT_GENERAL, 1u, &copyBufferToImageRegion);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, DE_NULL, 1u, &refSrcCopyImageBarrierPost);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, DE_NULL, 1u, &refSrcCopyImageBarrierPost);
 
 	// Make reference and result images readable
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0u, DE_NULL, 1u, &refDstInitImageBarrier);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0u, DE_NULL, 1u, &resDstInitImageBarrier);
+	{
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0u, DE_NULL, 1u, &resCompressedImageBarrier);
+	}
 
 	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
 	{
