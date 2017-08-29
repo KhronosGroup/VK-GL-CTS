@@ -1261,22 +1261,6 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 	return createFramebuffer(vk, device, &framebufferInfo);
 }
 
-VkViewport makeViewport (const deUint32	width,
-						 const deUint32	height)
-{
-	const VkViewport viewport =
-	{
-		0.0f,			// float	originX;
-		0.0f,			// float	originY;
-		(float)width,	// float	width;
-		(float)height,	// float	height;
-		0.0f,			// float	minDepth;
-		1.0f			// float	maxDepth;
-	};
-
-	return viewport;
-}
-
 VkRect2D makeScissor (const deUint32	width,
 					  const deUint32	height)
 {

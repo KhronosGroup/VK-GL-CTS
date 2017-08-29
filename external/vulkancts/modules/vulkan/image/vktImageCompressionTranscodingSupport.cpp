@@ -1524,7 +1524,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 		MovePtr<Buffer>				dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkExtent2D			renderSize				(makeExtent2D(uncompressedImageRes.x(), uncompressedImageRes.y()));
-		const VkViewport			viewport				= makeViewport(renderSize.width, renderSize.height);
+		const VkViewport			viewport				= makeViewport(0.0f, 0.0f, static_cast<float>(renderSize.width), static_cast<float>(renderSize.height), 0.0f, 1.0f);
 		const VkRect2D				scissor					= makeScissor(renderSize.width, renderSize.height);
 
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
@@ -1652,7 +1652,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 		const VkImageCreateInfo		srcImageCreateInfo		= makeCreateImageInfo(m_srcFormat, m_parameters.imageType, srcImageResolution, m_srcImageUsageFlags, imgCreateFlagsOverride, SINGLE_LEVEL, SINGLE_LAYER);
 
 		const VkExtent2D			renderSize				(makeExtent2D(uncompressedImageRes.x(), uncompressedImageRes.y()));
-		const VkViewport			viewport				= makeViewport(renderSize.width, renderSize.height);
+		const VkViewport			viewport				= makeViewport(0.0f, 0.0f, static_cast<float>(renderSize.width), static_cast<float>(renderSize.height), 0.0f, 1.0f);
 		const VkRect2D				scissor					= makeScissor(renderSize.width, renderSize.height);
 
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
@@ -2077,7 +2077,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 		MovePtr<Buffer>				dstImageBuffer			= MovePtr<Buffer>(new Buffer(vk, device, allocator, dstImageBufferInfo, MemoryRequirement::HostVisible));
 
 		const VkExtent2D			renderSize				(makeExtent2D(uncompressedImageRes.x(), uncompressedImageRes.y()));
-		const VkViewport			viewport				= makeViewport(renderSize.width, renderSize.height);
+		const VkViewport			viewport				= makeViewport(0.0f, 0.0f, static_cast<float>(renderSize.width), static_cast<float>(renderSize.height), 0.0f, 1.0f);
 		const VkRect2D				scissor					= makeScissor(renderSize.width, renderSize.height);
 
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
@@ -2211,7 +2211,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 		const VkImageCreateInfo		srcImageCreateInfo		= makeCreateImageInfo(m_srcFormat, m_parameters.imageType, srcImageResolution, m_srcImageUsageFlags, imgCreateFlagsOverride, SINGLE_LEVEL, SINGLE_LAYER);
 
 		const VkExtent2D			renderSize				(makeExtent2D(uncompressedImageRes.x(), uncompressedImageRes.y()));
-		const VkViewport			viewport				= makeViewport(renderSize.width, renderSize.height);
+		const VkViewport			viewport				= makeViewport(0.0f, 0.0f, static_cast<float>(renderSize.width), static_cast<float>(renderSize.height), 0.0f, 1.0f);
 		const VkRect2D				scissor					= makeScissor(renderSize.width, renderSize.height);
 
 		for (deUint32 layerNdx = 0; layerNdx < getLayerCount(); ++layerNdx)
