@@ -264,7 +264,7 @@ private:
 	const VkDeviceSize	m_size;
 };
 
-VkExternalMemoryHandleTypeFlagsKHR getExternalHandleTypes (const VkImageCreateInfo* pCreateInfo)
+VkExternalMemoryHandleTypeFlagsKHR getExternalTypesHandle (const VkImageCreateInfo* pCreateInfo)
 {
 	const VkExternalMemoryImageCreateInfoKHR* const	externalInfo	= findStructure<VkExternalMemoryImageCreateInfoKHR>	(pCreateInfo->pNext);
 
@@ -282,14 +282,14 @@ public:
 		, m_samples				(pCreateInfo->samples)
 		, m_usage				(pCreateInfo->usage)
 		, m_flags				(pCreateInfo->flags)
-		, m_externalHandleTypes	(::vk::getExternalHandleTypes(pCreateInfo))
+		, m_externalHandleTypes	(getExternalTypesHandle(pCreateInfo))
 	{
 	}
 
 	VkImageType									getImageType			(void) const { return m_imageType;				}
 	VkFormat									getFormat				(void) const { return m_format;					}
 	VkExtent3D									getExtent				(void) const { return m_extent;					}
-	uint32_t									getArrayLayers			(void) const { return m_arrayLayers;			}
+	deUint32									getArrayLayers			(void) const { return m_arrayLayers;			}
 	VkSampleCountFlagBits						getSamples				(void) const { return m_samples;				}
 	VkImageUsageFlags							getUsage				(void) const { return m_usage;					}
 	VkImageCreateFlags							getFlags				(void) const { return m_flags;					}
@@ -299,7 +299,7 @@ private:
 	const VkImageType							m_imageType;
 	const VkFormat								m_format;
 	const VkExtent3D							m_extent;
-	const uint32_t								m_arrayLayers;
+	const deUint32								m_arrayLayers;
 	const VkSampleCountFlagBits					m_samples;
 	const VkImageUsageFlags						m_usage;
 	const VkImageCreateFlags					m_flags;
@@ -420,7 +420,7 @@ AHardwareBuffer* findOrCreateHwBuffer (const VkMemoryAllocateInfo* pAllocInfo)
 		}
 		else
 		{
-			hwbufferDesc.width = static_cast<uint32_t>(pAllocInfo->allocationSize);
+			hwbufferDesc.width = static_cast<deUint32>(pAllocInfo->allocationSize);
 			hwbufferDesc.height = 1,
 			hwbufferDesc.layers = 1,
 			hwbufferDesc.format = AHARDWAREBUFFER_FORMAT_BLOB,
