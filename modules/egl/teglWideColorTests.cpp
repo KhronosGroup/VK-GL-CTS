@@ -605,6 +605,9 @@ void WideColorSurfaceTest::init (void)
 			break;
 	}
 
+	if (m_colorSpace != DE_NULL && !eglu::hasExtension(egl, m_eglDisplay, "EGL_KHR_gl_colorspace"))
+		TCU_THROW(NotSupportedError, "EGL_KHR_gl_colorspace is not supported");
+
 	switch (m_colorSpace) {
 		case EGL_GL_COLORSPACE_DISPLAY_P3_EXT:
 			checkDisplayP3Support();
