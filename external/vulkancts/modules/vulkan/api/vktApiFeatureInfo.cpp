@@ -2314,8 +2314,7 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 				results.check(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1, "Invalid maxArrayLayers for 3D image");
 
 				if (tiling == VK_IMAGE_TILING_OPTIMAL && imageType == VK_IMAGE_TYPE_2D && !(curCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) &&
-					 ((supportedFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) ||
-					 ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) && deviceFeatures.shaderStorageImageMultisample)))
+					 (supportedFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)))
 				{
 					const VkSampleCountFlags	requiredSampleCounts	= getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
 					results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts, "Required sample counts not supported");
