@@ -1332,15 +1332,27 @@ void ShadersOOB::setup (void)
 
 	// Create dummy data for filling buffer objects
 	const std::vector<tcu::Vec4> refValues(s_numBindings, tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f));
-	glw::GLenum resType = (m_isUBO) ? GL_UNIFORM_BUFFER : GL_SHADER_STORAGE_BUFFER;
 
-	if (!m_isLocalArray)
+	if (m_isLocalArray && m_shaderType == SHADERTYPE_COMPUTE)
+	{
+		// Setup output buffer
+		GLU_CHECK_GLW_CALL(m_gl, genBuffers((glw::GLsizei)1u, &m_buffers[0]));
+
+		GLU_CHECK_GLW_CALL(m_gl, bindBuffer(GL_SHADER_STORAGE_BUFFER, m_buffers[0]));
+		GLU_CHECK_GLW_CALL(m_gl, bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(tcu::Vec4), &(refValues[0]), GL_STATIC_DRAW));
+		GLU_CHECK_GLW_CALL(m_gl, bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_buffers[0]));
+	}
+	else if (!m_isLocalArray)
 	{
 		// Set up interface block of buffer bindings
 		GLU_CHECK_GLW_CALL(m_gl, genBuffers((glw::GLsizei)m_buffers.size(), &m_buffers[0]));
 
 		for (int bufNdx = 0; bufNdx < (int)m_buffers.size(); ++bufNdx)
 		{
+			const glw::GLenum resType	= m_isUBO && (m_shaderType != SHADERTYPE_COMPUTE || bufNdx != 0)
+										? GL_UNIFORM_BUFFER
+										: GL_SHADER_STORAGE_BUFFER;
+
 			GLU_CHECK_GLW_CALL(m_gl, bindBuffer(resType, m_buffers[bufNdx]));
 			GLU_CHECK_GLW_CALL(m_gl, bufferData(resType, sizeof(tcu::Vec4), &(refValues[bufNdx]), GL_STATIC_DRAW));
 			GLU_CHECK_GLW_CALL(m_gl, bindBufferBase(resType, bufNdx, m_buffers[bufNdx]));
