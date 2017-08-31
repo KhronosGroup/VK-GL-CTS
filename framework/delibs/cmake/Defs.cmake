@@ -68,21 +68,19 @@ DE_MAKE_ENV_BOOL("DE_OS" "ANDROID")
 DE_MAKE_ENV_BOOL("DE_OS" "IOS")
 
 # Prevent mixed compile with GCC and Clang
-if (NOT ("${CMAKE_C_COMPILER_ID}" MATCHES "GNU") EQUAL ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU"))
+if (NOT (CMAKE_C_COMPILER_ID MATCHES "GNU") EQUAL (CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
 	message(FATAL_ERROR "CMake C and CXX compilers do not match. Both or neither must be GNU.")
-elseif (NOT ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang") EQUAL ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
+elseif (NOT (CMAKE_C_COMPILER_ID MATCHES "Clang") EQUAL (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 	message(FATAL_ERROR "CMake C and CXX compilers do not match. Both or neither must be Clang.")
 endif ()
 
 # Compiler detection
 if (NOT DEFINED DE_COMPILER)
-	# \note " x" postfix is to work around bug in CMake that causes
-	#       "MSVC" to translate to something completely different
-	if (("${CMAKE_C_COMPILER_ID} x" MATCHES "MSVC") OR MSVC)
+	if ((CMAKE_C_COMPILER_ID MATCHES "MSVC") OR MSVC)
 		set(DE_COMPILER "DE_COMPILER_MSC")
-	elseif ("${CMAKE_C_COMPILER_ID}" MATCHES "GNU")
+	elseif (CMAKE_C_COMPILER_ID MATCHES "GNU")
 		set(DE_COMPILER "DE_COMPILER_GCC")
-	elseif ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+	elseif (CMAKE_C_COMPILER_ID MATCHES "Clang")
 		set(DE_COMPILER "DE_COMPILER_CLANG")
 
 	# Guess based on OS

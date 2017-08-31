@@ -434,7 +434,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 tcu::TestStatus InstancedDrawInstance::iterate()
 {
 	const vk::VkQueue		queue					= m_context.getUniversalQueue();
-	static const deUint32	instanceCounts[]		= { 1, 2, 4, 20 };
+	static const deUint32	instanceCounts[]		= { 0, 1, 2, 4, 20 };
 	static const deUint32	firstInstanceIndices[]	= { 0, 1, 3, 4, 20 };
 
 	qpTestResult			res						= QP_TEST_RESULT_PASS;
@@ -452,9 +452,11 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 		const deUint32 instanceCount = instanceCounts[instanceCountNdx];
 		for (int firstInstanceIndexNdx = 0; firstInstanceIndexNdx < firstInstanceIndicesCount; firstInstanceIndexNdx++)
 		{
-			const deUint32 firstInstance = firstInstanceIndices[firstInstanceIndexNdx];
+			// Prepare vertex data for at least one instance
+			const deUint32				prepareCount			= de::max(instanceCount, 1u);
+			const deUint32				firstInstance			= firstInstanceIndices[firstInstanceIndexNdx];
 
-			prepareVertexData(instanceCount, firstInstance);
+			prepareVertexData(prepareCount, firstInstance);
 			const de::SharedPtr<Buffer>	vertexBuffer			= createAndUploadBuffer(m_data, m_vk, m_context);
 			const de::SharedPtr<Buffer>	instancedVertexBuffer	= createAndUploadBuffer(m_instancedColor, m_vk, m_context);
 			de::SharedPtr<Buffer>		indexBuffer;
