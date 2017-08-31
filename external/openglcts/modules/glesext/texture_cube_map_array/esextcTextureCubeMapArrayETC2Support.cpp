@@ -67,6 +67,7 @@ void TextureCubeMapArrayETC2Support::deinit(void)
  */
 tcu::TestCase::IterateResult TextureCubeMapArrayETC2Support::iterate(void)
 {
+	prepareFramebuffer();
 	prepareProgram();
 	prepareVertexArrayObject();
 	prepareTexture();
@@ -79,6 +80,34 @@ tcu::TestCase::IterateResult TextureCubeMapArrayETC2Support::iterate(void)
 
 	clean();
 	return STOP;
+}
+
+/** @brief Bind default framebuffer object.
+ *
+ *  @note The function may throw if unexpected error has occured.
+ */
+void TextureCubeMapArrayETC2Support::prepareFramebuffer()
+{
+	/* Shortcut for GL functionality */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	gl.genRenderbuffers(1, &m_rbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenRenderbuffers call failed.");
+
+	gl.bindRenderbuffer(GL_RENDERBUFFER, m_rbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
+
+	gl.renderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, RENDER_WIDTH, RENDER_HEIGHT);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glRenderbufferStorage call failed.");
+
+	gl.genFramebuffers(1, &m_fbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers call failed.");
+
+	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer call failed.");
+
+	gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_rbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer call failed.");
 }
 
 /** @brief Function generate and bind empty vertex array object.
