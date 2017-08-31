@@ -687,6 +687,11 @@ VkResult DeviceDriver::getFenceFdKHR (VkDevice device, const VkFenceGetFdInfoKHR
 	return m_vk.getFenceFdKHR(device, pGetFdInfo, pFd);
 }
 
+void DeviceDriver::getDeviceQueue2KHR (VkDevice device, const VkDeviceQueueInfo2KHR* pQueueInfo, VkQueue* pQueue) const
+{
+	m_vk.getDeviceQueue2KHR(device, pQueueInfo, pQueue);
+}
+
 void DeviceDriver::getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const
 {
 	m_vk.getImageMemoryRequirements2KHR(device, pInfo, pMemoryRequirements);

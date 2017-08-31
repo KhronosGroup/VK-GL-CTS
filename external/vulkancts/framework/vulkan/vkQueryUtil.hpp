@@ -55,6 +55,7 @@ std::vector<VkLayerProperties>					enumerateDeviceLayerProperties					(const Ins
 std::vector<VkExtensionProperties>				enumerateDeviceExtensionProperties				(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
 
 VkQueue											getDeviceQueue									(const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex);
+VkQueue											getDeviceQueue2KHR								(const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2KHR *queueInfo);
 
 // Feature / extension support
 

@@ -51,7 +51,7 @@ public:
 			, m_device				(makeProtectedMemDevice(m_vki, m_phyDevice, m_queueFamilyIndex))
 			, m_allocator			(createAllocator())
 			, m_deviceDriver		(m_vki, *m_device)
-			, m_queue				(vk::getDeviceQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
+			, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
 		{}
 
 	const vk::DeviceInterface&					getDeviceInterface	(void) const	{ return m_deviceDriver;					}

@@ -392,6 +392,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedAllocateInfoKH
 std::ostream&	operator<<	(std::ostream& s, const VkProtectedSubmitInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferMemoryRequirementsInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageMemoryRequirementsInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSparseMemoryRequirementsInfo2KHR& value);

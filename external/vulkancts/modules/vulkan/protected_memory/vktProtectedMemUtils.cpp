@@ -197,6 +197,28 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice (const vk::InstanceDriver&	vkd,
 	return vk::createDevice(vkd, physicalDevice, &deviceParams, DE_NULL);
 }
 
+vk::VkQueue getProtectedQueue	(const vk::DeviceInterface&	vk,
+								 vk::VkDevice				device,
+								 const deUint32				queueFamilyIndex,
+								 const deUint32				queueIdx)
+{
+	const vk::VkDeviceQueueInfo2KHR	queueInfo	=
+	{
+		vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2_KHR,		// sType
+		DE_NULL,											// pNext
+		vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT_KHR,		// flags
+		queueFamilyIndex,									// queueFamilyIndex
+		queueIdx,											// queueIndex
+	};
+
+	vk::VkQueue						queue		= vk::getDeviceQueue2KHR(vk, device, &queueInfo);
+
+	if (queue == DE_NULL)
+		TCU_THROW(TestError, "Unable to get a protected queue");
+
+	return queue;
+}
+
 de::MovePtr<vk::ImageWithMemory>	createImage2D		(ProtectedContext&		context,
 														 ProtectionMode			protectionMode,
 														 const deUint32			queueFamilyIdx,

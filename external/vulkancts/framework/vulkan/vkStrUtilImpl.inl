@@ -252,6 +252,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR:									return "VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2_KHR:										return "VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR:						return "VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR:						return "VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR";
@@ -4085,6 +4086,18 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceProtectedMemory
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tprotectedNoFault = " << value.protectedNoFault << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceQueueInfo2KHR& value)
+{
+	s << "VkDeviceQueueInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDeviceQueueCreateFlagsStr(value.flags) << '\n';
+	s << "\tqueueFamilyIndex = " << value.queueFamilyIndex << '\n';
+	s << "\tqueueIndex = " << value.queueIndex << '\n';
 	s << '}';
 	return s;
 }

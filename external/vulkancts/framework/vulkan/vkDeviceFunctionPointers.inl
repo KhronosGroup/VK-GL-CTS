@@ -138,6 +138,7 @@ ImportFenceWin32HandleKHRFunc						importFenceWin32HandleKHR;
 GetFenceWin32HandleKHRFunc							getFenceWin32HandleKHR;
 ImportFenceFdKHRFunc								importFenceFdKHR;
 GetFenceFdKHRFunc									getFenceFdKHR;
+GetDeviceQueue2KHRFunc								getDeviceQueue2KHR;
 GetImageMemoryRequirements2KHRFunc					getImageMemoryRequirements2KHR;
 GetBufferMemoryRequirements2KHRFunc					getBufferMemoryRequirements2KHR;
 GetImageSparseMemoryRequirements2KHRFunc			getImageSparseMemoryRequirements2KHR;

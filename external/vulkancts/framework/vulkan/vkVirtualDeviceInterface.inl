@@ -138,6 +138,7 @@ virtual VkResult	importFenceWin32HandleKHR						(VkDevice device, const VkImport
 virtual VkResult	getFenceWin32HandleKHR							(VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;
 virtual VkResult	importFenceFdKHR								(VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo) const = 0;
 virtual VkResult	getFenceFdKHR									(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const = 0;
+virtual void		getDeviceQueue2KHR								(VkDevice device, const VkDeviceQueueInfo2KHR* pQueueInfo, VkQueue* pQueue) const = 0;
 virtual void		getImageMemoryRequirements2KHR					(VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const = 0;
 virtual void		getBufferMemoryRequirements2KHR					(VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const = 0;
 virtual void		getImageSparseMemoryRequirements2KHR			(VkDevice device, const VkImageSparseMemoryRequirementsInfo2KHR* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements) const = 0;

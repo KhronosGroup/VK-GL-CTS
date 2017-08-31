@@ -350,6 +350,15 @@ VkQueue getDeviceQueue (const DeviceInterface& vkd, VkDevice device, deUint32 qu
 	return queue;
 }
 
+VkQueue getDeviceQueue2KHR (const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2KHR* queueInfo)
+{
+	VkQueue queue;
+
+	vkd.getDeviceQueue2KHR(device, queueInfo, &queue);
+
+	return queue;
+}
+
 const void* findStructureInChain (const void* first, VkStructureType type)
 {
 	struct StructureBase

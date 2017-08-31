@@ -138,6 +138,7 @@ m_vk.importFenceWin32HandleKHR							= (ImportFenceWin32HandleKHRFunc)						GET_
 m_vk.getFenceWin32HandleKHR								= (GetFenceWin32HandleKHRFunc)							GET_PROC_ADDR("vkGetFenceWin32HandleKHR");
 m_vk.importFenceFdKHR									= (ImportFenceFdKHRFunc)								GET_PROC_ADDR("vkImportFenceFdKHR");
 m_vk.getFenceFdKHR										= (GetFenceFdKHRFunc)									GET_PROC_ADDR("vkGetFenceFdKHR");
+m_vk.getDeviceQueue2KHR									= (GetDeviceQueue2KHRFunc)								GET_PROC_ADDR("vkGetDeviceQueue2KHR");
 m_vk.getImageMemoryRequirements2KHR						= (GetImageMemoryRequirements2KHRFunc)					GET_PROC_ADDR("vkGetImageMemoryRequirements2KHR");
 m_vk.getBufferMemoryRequirements2KHR					= (GetBufferMemoryRequirements2KHRFunc)					GET_PROC_ADDR("vkGetBufferMemoryRequirements2KHR");
 m_vk.getImageSparseMemoryRequirements2KHR				= (GetImageSparseMemoryRequirements2KHRFunc)			GET_PROC_ADDR("vkGetImageSparseMemoryRequirements2KHR");

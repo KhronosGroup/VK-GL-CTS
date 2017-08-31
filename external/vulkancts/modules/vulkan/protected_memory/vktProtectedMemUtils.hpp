@@ -58,7 +58,10 @@ deUint32							chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&			v
 vk::Move<vk::VkDevice>				makeProtectedMemDevice				(const vk::InstanceDriver&			vkd,
 																		 vk::VkPhysicalDevice				physicalDevice,
 																		 const deUint32						queueFamilyIndex);
-
+vk::VkQueue							getProtectedQueue					(const vk::DeviceInterface&			vk,
+																		 vk::VkDevice						device,
+																		 const deUint32						queueFamilyIndex,
+																		 const deUint32						queueIdx);
 
 de::MovePtr<vk::ImageWithMemory>	createImage2D						(ProtectedContext&					context,
 																		 ProtectionMode						protectionMode,

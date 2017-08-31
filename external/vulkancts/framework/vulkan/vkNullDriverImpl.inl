@@ -1222,6 +1222,13 @@ VKAPI_ATTR VkResult VKAPI_CALL getFenceFdKHR (VkDevice device, const VkFenceGetF
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL getDeviceQueue2KHR (VkDevice device, const VkDeviceQueueInfo2KHR* pQueueInfo, VkQueue* pQueue)
+{
+	DE_UNREF(device);
+	DE_UNREF(pQueueInfo);
+	DE_UNREF(pQueue);
+}
+
 VKAPI_ATTR void VKAPI_CALL getImageSparseMemoryRequirements2KHR (VkDevice device, const VkImageSparseMemoryRequirementsInfo2KHR* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements)
 {
 	DE_UNREF(device);
@@ -1632,6 +1639,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetFenceWin32HandleKHR,							getFenceWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,									importFenceFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetFenceFdKHR,										getFenceFdKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceQueue2KHR,								getDeviceQueue2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2KHR,					getImageMemoryRequirements2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2KHR,					getBufferMemoryRequirements2KHR),
 	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2KHR,				getImageSparseMemoryRequirements2KHR),

@@ -466,6 +466,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceProtectedMemoryPrope
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkDeviceQueueInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2_KHR;
+}
+
 template<> VkStructureType getStructureType<VkBufferMemoryRequirementsInfo2KHR> (void)
 {
 	return VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR;

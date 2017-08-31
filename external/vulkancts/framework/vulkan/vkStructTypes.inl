@@ -1676,6 +1676,15 @@ struct VkPhysicalDeviceProtectedMemoryPropertiesKHR
 	VkBool32		protectedNoFault;
 };
 
+struct VkDeviceQueueInfo2KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkDeviceQueueCreateFlags	flags;
+	deUint32					queueFamilyIndex;
+	deUint32					queueIndex;
+};
+
 struct VkBufferMemoryRequirementsInfo2KHR
 {
 	VkStructureType	sType;
