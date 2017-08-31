@@ -218,11 +218,13 @@ To download sources, run:
 
 	python external/fetch_sources.py
 
-To download Khronos Confidential Conformance Test Suite, run:
+For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
+download Khronos Confidential Conformance Test Suite:
 
 	python external/fetch_kc_cts.py
 
-The results for the tests included in this suite must be included in a
+For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
+the results for the tests included in this suite must be included in a
 conformance submission.
 
 **NOTE**: You need to be a Khronos Adopter and have an active account
@@ -321,14 +323,14 @@ are needed in order to build an Android binary:
 
 An Android binary (for ES 3.2) can be built using command:
 
-	python scripts/android/build_apk.py --target=openglcts
+	python scripts/android/build_apk.py --target=openglcts --sdk <path to Android SDK> --ndk <path to Android NDK>
 
 If Khronos Confidential CTS is present then the script will set `GLCTS_GTF_TARGET`
 to `gles32` by default.
 It is possible to specify a different `GLCTS_GTF_TARGET` target by invoking the script
 with the `--kc-cts-target` option, e.g.:
 
-	python scripts/android/build_apk.py --target=openglcts --kc-cts-target=gles31
+	python scripts/android/build_apk.py --target=openglcts --kc-cts-target=gles31 --sdk <path to Android SDK> --ndk <path to Android NDK>
 
 Available values for `--kc-cts-target` are `gles32`, `gles31`, `gles3`, `gles2` and `gl`.
 
@@ -343,12 +345,6 @@ To pick which ABI to use at install time, following commands must be used
 instead:
 
 	adb install --abi <ABI name> <build root>/Khronos-CTS.apk /data/local/tmp/Khronos-CTS.apk
-
-The script assumes some default install locations, which should be changed based
-on your environment. It is a good idea to check at least variables
-`ANDROID_NDK_PATH`, `ANDROID_SDK_PATH`, and `ANDROID_NDK_HOST_OS`.
-The `ANDROID_NDK_HOST_OS` is used to select the correct compiler binaries from
-in the Android NDK package.
 
 Porting
 ------------------------
@@ -409,9 +405,8 @@ Running the Tests
 ------------------------
 All the following commands need to be run in the CTS build directory. If you
 need to move the binaries from the build directory, remember to copy the
-data directory named `gl_cts` and its subdirectories from the build directory
-to the test target in the same relative locations. For more information on data
-files, see Section [Data Files](#data-files) later in the document.
+data directories named `gl_cts`, `gles2`, `gles3`, and `gles31` and its subdirectories
+from the build directory to the test target in the same relative locations.
 
 If the build instructions have been followed as-is, the correct path is:
 
