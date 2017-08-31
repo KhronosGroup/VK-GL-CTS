@@ -2765,8 +2765,9 @@ template class StorageAndSubImageTest<glw::GLfloat, 4, true, 3, true>;
  *
  *  @param [in] context     OpenGL context.
  */
-StorageMultisampleTest::StorageMultisampleTest(deqp::Context& context)
-	: deqp::TestCase(context, "textures_storage_multisample", "Texture Storage Multisample Test")
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+StorageMultisampleTest<T, S, N, D>::StorageMultisampleTest(deqp::Context& context, const char* name)
+	: deqp::TestCase(context, name, "Texture Storage Multisample Test")
 	, m_fbo_ms(0)
 	, m_fbo_aux(0)
 	, m_to_ms(0)
@@ -2781,401 +2782,433 @@ StorageMultisampleTest::StorageMultisampleTest(deqp::Context& context)
 
 /** @brief Count of reference data to be teted.
  *
- *  @tparam S      Size (# of components).
- *  @tparam D      Texture dimenisons.
- *
  *  @return Count.
  */
-template <glw::GLint S, glw::GLuint D>
-glw::GLuint StorageMultisampleTest::TestReferenceDataCount()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+glw::GLuint StorageMultisampleTest<T, S, N, D>::TestReferenceDataCount()
 {
 	return 2 /* 1D */ * ((D > 1) ? 3 : 1) /* 2D */ * ((D > 2) ? 4 : 1) /* 3D */ * S /* components */;
 }
 
 /** @brief Size of reference data to be teted.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam D      Texture dimenisons.
- *
  *  @return Size.
  */
-template <typename T, glw::GLint S, glw::GLuint D>
-glw::GLuint StorageMultisampleTest::TestReferenceDataSize()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+glw::GLuint StorageMultisampleTest<T, S, N, D>::TestReferenceDataSize()
 {
-	return TestReferenceDataCount<S, D>() * sizeof(T);
+	return TestReferenceDataCount() * sizeof(T);
 }
 
 /** @brief Height, width or depth of reference data to be teted.
  *
- *  @tparam D      Texture dimenisons.
- *
  *  @return Height, width or depth.
  */
-template <>
-glw::GLuint StorageMultisampleTest::TestReferenceDataHeight<2>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+glw::GLuint StorageMultisampleTest<T, S, N, D>::TestReferenceDataHeight()
 {
-	return 3;
+	switch(D)
+	{
+	case 3:
+	case 2:
+		return 3;
+	default:
+		return 1;
+	}
 }
 
-template <>
-glw::GLuint StorageMultisampleTest::TestReferenceDataHeight<3>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+glw::GLuint StorageMultisampleTest<T, S, N, D>::TestReferenceDataDepth()
 {
-	return TestReferenceDataHeight<2>();
+	switch(D)
+	{
+	case 3:
+		return 4;
+	default:
+		return 1;
+	}
 }
 
-template <>
-glw::GLuint StorageMultisampleTest::TestReferenceDataDepth<2>()
-{
-	return 1;
-}
-
-template <>
-glw::GLuint StorageMultisampleTest::TestReferenceDataDepth<3>()
-{
-	return 4;
-}
-
-template <glw::GLuint D>
-glw::GLuint			  StorageMultisampleTest::TestReferenceDataWidth()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+glw::GLuint	StorageMultisampleTest<T, S, N, D>::TestReferenceDataWidth()
 {
 	return 2;
 }
 
 /** @brief Fragment shader declaration selector.
  *
- *  @tparam T      Type.
- *  @tparam N      Normalized flag.
- *  @tparam D      Texture dimenisons.
- *
  *  @return Frgment shader source code part.
  */
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLubyte, true, 2>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclarationMultisample()
 {
-	return s_fragment_shader_ms_2D_fdecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLbyte))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_ms_2D_idecl_lowp;
+		case 3:
+			return s_fragment_shader_ms_3D_idecl_lowp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLbyte, false, 2>()
-{
-	return s_fragment_shader_ms_2D_idecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLubyte))
+	{
+		if (N)
+		{
+			switch (D)
+			{
+			case 2:
+				return s_fragment_shader_ms_2D_fdecl_lowp;
+			case 3:
+				return s_fragment_shader_ms_3D_fdecl_lowp;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+		else
+		{
+			switch (D)
+			{
+			case 2:
+				return s_fragment_shader_ms_2D_udecl_lowp;
+			case 3:
+				return s_fragment_shader_ms_3D_udecl_lowp;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLubyte, false, 2>()
-{
-	return s_fragment_shader_ms_2D_udecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLshort))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_ms_2D_idecl_mediump;
+		case 3:
+			return s_fragment_shader_ms_3D_idecl_mediump;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLushort, true, 2>()
-{
-	return s_fragment_shader_ms_2D_fdecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLushort))
+	{
+		if (N)
+		{
+			switch (D)
+			{
+			case 2:
+				return s_fragment_shader_ms_2D_fdecl_mediump;
+			case 3:
+				return s_fragment_shader_ms_3D_fdecl_mediump;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+		else
+		{
+			switch (D)
+			{
+			case 2:
+				return s_fragment_shader_ms_2D_udecl_mediump;
+			case 3:
+				return s_fragment_shader_ms_3D_udecl_mediump;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLshort, false, 2>()
-{
-	return s_fragment_shader_ms_2D_idecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLint))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_ms_2D_idecl_highp;
+		case 3:
+			return s_fragment_shader_ms_3D_idecl_highp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLushort, false, 2>()
-{
-	return s_fragment_shader_ms_2D_udecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLuint))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_ms_2D_udecl_highp;
+		case 3:
+			return s_fragment_shader_ms_3D_udecl_highp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLfloat, true, 2>()
-{
-	return s_fragment_shader_ms_2D_fdecl_highp;
-}
+	if (typeid(T) == typeid(glw::GLfloat))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_ms_2D_fdecl_highp;
+		case 3:
+			return s_fragment_shader_ms_3D_fdecl_highp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLint, false, 2>()
-{
-	return s_fragment_shader_ms_2D_idecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLuint, false, 2>()
-{
-	return s_fragment_shader_ms_2D_udecl_highp;
+	DE_ASSERT("invalid type");
+	return DE_NULL;
 }
 
 /** @brief Fragment shader declaration selector.
  *
- *  @tparam T      Type.
- *  @tparam N      Normalized flag.
- *  @tparam D      Texture dimenisons.
- *
  *  @return Frgment shader source code part.
  */
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLubyte, true, 3>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderDeclarationAuxiliary()
 {
-	return s_fragment_shader_ms_3D_fdecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLbyte))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_aux_2D_idecl_lowp;
+		case 3:
+			return s_fragment_shader_aux_3D_idecl_lowp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLbyte, false, 3>()
-{
-	return s_fragment_shader_ms_3D_idecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLubyte))
+	{
+		if (N)
+		{
+			switch (D)
+			{
+			case 2:
+				return s_fragment_shader_aux_2D_fdecl_lowp;
+			case 3:
+				return s_fragment_shader_aux_3D_fdecl_lowp;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+		else
+		{
+			switch (D)
+			{
+			case 2:
+				return s_fragment_shader_aux_2D_udecl_lowp;
+			case 3:
+				return s_fragment_shader_aux_3D_udecl_lowp;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLubyte, false, 3>()
-{
-	return s_fragment_shader_ms_3D_udecl_lowp;
-}
+	if (typeid(T) == typeid(glw::GLshort))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_aux_2D_idecl_mediump;
+		case 3:
+			return s_fragment_shader_aux_3D_idecl_mediump;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLushort, true, 3>()
-{
-	return s_fragment_shader_ms_3D_fdecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLushort))
+	{
+		if (N)
+		{
+			switch (D)
+			{
+			case 2:
+				return s_fragment_shader_aux_2D_fdecl_mediump;
+			case 3:
+				return s_fragment_shader_aux_3D_fdecl_mediump;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+		else
+		{
+			switch (D)
+			{
+			case 2:
+				return s_fragment_shader_aux_2D_udecl_mediump;
+			case 3:
+				return s_fragment_shader_aux_3D_udecl_mediump;
+			default:
+				DE_ASSERT("invalid texture dimension");
+				return DE_NULL;
+			}
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLshort, false, 3>()
-{
-	return s_fragment_shader_ms_3D_idecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLint))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_aux_2D_idecl_highp;
+		case 3:
+			return s_fragment_shader_aux_3D_idecl_highp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLushort, false, 3>()
-{
-	return s_fragment_shader_ms_3D_udecl_mediump;
-}
+	if (typeid(T) == typeid(glw::GLuint))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_aux_2D_udecl_highp;
+		case 3:
+			return s_fragment_shader_aux_3D_udecl_highp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLfloat, true, 3>()
-{
-	return s_fragment_shader_ms_3D_fdecl_highp;
-}
+	if (typeid(T) == typeid(glw::GLfloat))
+	{
+		switch (D)
+		{
+		case 2:
+			return s_fragment_shader_aux_2D_fdecl_highp;
+		case 3:
+			return s_fragment_shader_aux_3D_fdecl_highp;
+		default:
+			DE_ASSERT("invalid texture dimension");
+			return DE_NULL;
+		}
+	}
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLint, false, 3>()
-{
-	return s_fragment_shader_ms_3D_idecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationMultisample<glw::GLuint, false, 3>()
-{
-	return s_fragment_shader_ms_3D_udecl_highp;
-}
-
-/** @brief Fragment shader declaration selector.
- *
- *  @tparam T      Type.
- *  @tparam N      Normalized flag.
- *  @tparam D      Texture dimenisons.
- *
- *  @return Frgment shader source code part.
- */
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLubyte, true, 2>()
-{
-	return s_fragment_shader_aux_2D_fdecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLbyte, false, 2>()
-{
-	return s_fragment_shader_aux_2D_idecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLubyte, false, 2>()
-{
-	return s_fragment_shader_aux_2D_udecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLushort, true, 2>()
-{
-	return s_fragment_shader_aux_2D_fdecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLshort, false, 2>()
-{
-	return s_fragment_shader_aux_2D_idecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLushort, false, 2>()
-{
-	return s_fragment_shader_aux_2D_udecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLfloat, true, 2>()
-{
-	return s_fragment_shader_aux_2D_fdecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLint, false, 2>()
-{
-	return s_fragment_shader_aux_2D_idecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLuint, false, 2>()
-{
-	return s_fragment_shader_aux_2D_udecl_highp;
-}
-
-/** @brief Fragment shader declaration selector.
- *
- *  @tparam T      Type.
- *  @tparam N      Normalized flag.
- *  @tparam D      Texture dimenisons.
- *
- *  @return Frgment shader source code part.
- */
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLubyte, true, 3>()
-{
-	return s_fragment_shader_aux_3D_fdecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLbyte, false, 3>()
-{
-	return s_fragment_shader_aux_3D_idecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLubyte, false, 3>()
-{
-	return s_fragment_shader_aux_3D_udecl_lowp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLushort, true, 3>()
-{
-	return s_fragment_shader_aux_3D_fdecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLshort, false, 3>()
-{
-	return s_fragment_shader_aux_3D_idecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLushort, false, 3>()
-{
-	return s_fragment_shader_aux_3D_udecl_mediump;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLfloat, true, 3>()
-{
-	return s_fragment_shader_aux_3D_fdecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLint, false, 3>()
-{
-	return s_fragment_shader_aux_3D_idecl_highp;
-}
-
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderDeclarationAuxiliary<glw::GLuint, false, 3>()
-{
-	return s_fragment_shader_aux_3D_udecl_highp;
+	DE_ASSERT("invalid type");
+	return DE_NULL;
 }
 
 /** @brief Fragment shader tail selector.
  *
- *  @tparam D      Texture dimenisons.
- *
  *  @return Frgment shader source code part.
  */
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderTail<2>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::FragmentShaderTail()
 {
-	return s_fragment_shader_tail_2D;
+	switch (D)
+	{
+	case 2:
+		return s_fragment_shader_tail_2D;
+	case 3:
+		return s_fragment_shader_tail_3D;
+	default:
+		DE_ASSERT("invalid texture dimension");
+		return DE_NULL;
+	}
 }
 
-template <>
-const glw::GLchar* StorageMultisampleTest::FragmentShaderTail<3>()
-{
-	return s_fragment_shader_tail_3D;
-}
-
-/** @brief Texture target selector.
- *
- *  @tparam D      Texture dimenisons.
+/** @brief Multisample texture target selector.
  *
  *  @return Texture target.
  */
-template <>
-glw::GLenum StorageMultisampleTest::InputTextureTarget<2>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+glw::GLenum StorageMultisampleTest<T, S, N, D>::MultisampleTextureTarget()
 {
-	return GL_TEXTURE_2D;
+	switch (D)
+	{
+	case 2:
+		return GL_TEXTURE_2D_MULTISAMPLE;
+	case 3:
+		return GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+	default:
+		DE_ASSERT("invalid texture dimension");
+		return DE_NULL;
+	}
 }
 
-template <>
-glw::GLenum StorageMultisampleTest::InputTextureTarget<3>()
+/** @brief Input texture target selector.
+ *
+ *  @return Texture target.
+ */
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+glw::GLenum StorageMultisampleTest<T, S, N, D>::InputTextureTarget()
 {
-	return GL_TEXTURE_2D_ARRAY;
+	switch (D)
+	{
+	case 2:
+		return GL_TEXTURE_2D;
+	case 3:
+		return GL_TEXTURE_2D_ARRAY;
+	default:
+		DE_ASSERT("invalid texture dimension");
+		return DE_NULL;
+	}
 }
 
 /** @brief Prepare texture data for input texture.
  *
- *  @tparam D      Texture dimenisons.
- *
  *  @note parameters as passed to texImage*
  */
-template <>
-void StorageMultisampleTest::InputTextureImage<2>(const glw::GLenum internal_format, const glw::GLuint width,
-												  const glw::GLuint height, const glw::GLuint depth,
-												  const glw::GLenum format, const glw::GLenum type,
-												  const glw::GLvoid* data)
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::InputTextureImage(const glw::GLenum internal_format, const glw::GLuint width,
+														   const glw::GLuint height, const glw::GLuint depth,
+														   const glw::GLenum format, const glw::GLenum type,
+														   const glw::GLvoid* data)
 {
 	(void)depth;
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Data setup. */
-	gl.texImage2D(InputTextureTarget<2>(), 0, internal_format, width, height, 0, format, type, data);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage2D has failed");
-}
+	switch (D)
+	{
+	case 2:
+		gl.texImage2D(InputTextureTarget(), 0, internal_format, width, height, 0, format, type, data);
+		break;
+	case 3:
+		gl.texImage3D(InputTextureTarget(), 0, internal_format, width, height, depth, 0, format, type, data);
+		break;
+	default:
+		DE_ASSERT("invalid texture dimension");
+	}
 
-/** @brief Prepare texture data for input texture.
- *
- *  @tparam D      Texture dimenisons.
- *
- *  @note parameters as passed to texImage*
- */
-template <>
-void StorageMultisampleTest::InputTextureImage<3>(const glw::GLenum internal_format, const glw::GLuint width,
-												  const glw::GLuint height, const glw::GLuint depth,
-												  const glw::GLenum format, const glw::GLenum type,
-												  const glw::GLvoid* data)
-{
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Data setup. */
-	gl.texImage3D(InputTextureTarget<3>(), 0, internal_format, width, height, depth, 0, format, type, data);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage2D has failed");
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage has failed");
 }
 
 /** @brief Create texture.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *  @tparam D      Dimmensions.
  */
 template <typename T, glw::GLint S, bool N, glw::GLuint D>
-void StorageMultisampleTest::CreateInputTexture()
+void StorageMultisampleTest<T, S, N, D>::CreateInputTexture()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3184,45 +3217,41 @@ void StorageMultisampleTest::CreateInputTexture()
 	gl.genTextures(1, &m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures has failed");
 
-	gl.bindTexture(InputTextureTarget<D>(), m_to);
+	gl.bindTexture(InputTextureTarget(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
 	/* Data setup. */
-	InputTextureImage<D>(InternalFormat<T, S, N>(), TestReferenceDataWidth<D>(), TestReferenceDataHeight<D>(),
-						 TestReferenceDataDepth<D>(), Format<S, N>(), Type<T>(), ReferenceData<T, N>());
+	InputTextureImage(InternalFormat<T, S, N>(), TestReferenceDataWidth(), TestReferenceDataHeight(),
+					  TestReferenceDataDepth(), Format<S, N>(), Type<T>(), ReferenceData<T, N>());
 
 	/* Parameter setup. */
-	gl.texParameteri(InputTextureTarget<D>(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	gl.texParameteri(InputTextureTarget<D>(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.texParameteri(InputTextureTarget(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.texParameteri(InputTextureTarget(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri call failed.");
 }
 
 /** @brief Compre results with the reference.
  *
- *  @tparam T      Type.
- *  @tparam S      Size (# of components).
- *  @tparam N      Is normalized.
- *
  *  @return True if equal, false otherwise.
  */
 template <typename T, glw::GLint S, bool N, glw::GLuint D>
-bool StorageMultisampleTest::Check()
+bool StorageMultisampleTest<T, S, N, D>::Check()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Fetching data fro auxiliary texture. */
-	std::vector<T> result(TestReferenceDataCount<S, D>());
+	std::vector<T> result(TestReferenceDataCount());
 
-	gl.bindTexture(InputTextureTarget<D>() /* Auxiliary target is the same as input. */, m_to_aux);
+	gl.bindTexture(InputTextureTarget() /* Auxiliary target is the same as input. */, m_to_aux);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-	gl.getTexImage(InputTextureTarget<D>() /* Auxiliary target is the same as input. */, 0, Format<S, N>(), Type<T>(),
+	gl.getTexImage(InputTextureTarget() /* Auxiliary target is the same as input. */, 0, Format<S, N>(), Type<T>(),
 				   (glw::GLvoid*)(&result[0]));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexImage has failed");
 
 	/* Comparison. */
-	for (glw::GLuint i = 0; i < TestReferenceDataCount<S, D>(); ++i)
+	for (glw::GLuint i = 0; i < TestReferenceDataCount(); ++i)
 	{
 		if (!Compare<T>(result[i], ReferenceData<T, N>()[i]))
 		{
@@ -3235,15 +3264,10 @@ bool StorageMultisampleTest::Check()
 
 /** @brief Test case function.
  *
- *  @tparam T       Type.
- *  @tparam S       Size (# of components).
- *  @tparam N       Is normalized.
- *  @tparam D       Number of texture dimensions.
- *
  *  @return True if test succeeded, false otherwise.
  */
 template <typename T, glw::GLint S, bool N, glw::GLuint D>
-bool StorageMultisampleTest::Test()
+bool StorageMultisampleTest<T, S, N, D>::Test()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3255,22 +3279,22 @@ bool StorageMultisampleTest::Test()
 	gl.pixelStorei(GL_PACK_ALIGNMENT, sizeof(T));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glPixelStorei has failed");
 
-	CreateInputTexture<T, S, N, D>();
+	CreateInputTexture();
 
-	if (!PrepareFramebufferMultisample<D>(InternalFormat<T, S, N>()))
+	if (!PrepareFramebufferMultisample(InternalFormat<T, S, N>()))
 	{
 		CleanInputTexture();
 
 		return false;
 	}
 
-	PrepareFramebufferAuxiliary<D>(InternalFormat<T, S, N>());
+	PrepareFramebufferAuxiliary(InternalFormat<T, S, N>());
 
 	/* Action. */
-	Draw<D>();
+	Draw();
 
 	/* Compare results with reference. */
-	bool result = Check<T, S, N, D>();
+	bool result = Check();
 
 	/* Cleanup. */
 	CleanAuxiliaryTexture();
@@ -3282,72 +3306,13 @@ bool StorageMultisampleTest::Test()
 	return result;
 }
 
-/** @brief Lopp test function over S.
- *
- *  @tparam T      Type.
- *  @tparam N      Is normalized.
- *  @tparam D      Texture dimension.
- *
- *  @param [in] skip_rgb            Skip test of S = 3 (needed for some formats).
- *
- *  @return True if tests succeeded, false otherwise.
- */
-template <typename T, bool N, glw::GLuint D>
-bool StorageMultisampleTest::LoopTestOverS(bool skip_rgb)
-{
-	/* Prepare one program to create multisample texture and one to copy it to regular texture. */
-	m_po_ms  = PrepareProgram(FragmentShaderDeclarationMultisample<T, N, D>(), FragmentShaderTail<D>());
-	m_po_aux = PrepareProgram(FragmentShaderDeclarationAuxiliary<T, N, D>(), FragmentShaderTail<D>());
-
-	/* Run tests. */
-	bool result = true;
-
-	result &= Test<T, 1, N, D>();
-
-	result &= Test<T, 2, N, D>();
-
-	if (!skip_rgb)
-	{
-		result &= Test<T, 3, N, D>();
-	}
-
-	result &= Test<T, 4, N, D>();
-
-	/* Cleanup.*/
-	CleanPrograms();
-	CleanErrors();
-
-	/* Pass result. */
-	return result;
-}
-
-/** @brief Lopp test function over D and next over S.
- *
- *  @tparam T      Type.
- *  @tparam N      Is normalized.
- *
- *  @param [in] skip_rgb            Skip test of S = 3 (needed for some formats).
- *
- *  @return True if tests succeeded, false otherwise.
- */
-template <typename T, bool N>
-bool StorageMultisampleTest::LoopTestOverDOverS(bool skip_rgb)
-{
-	bool result = true;
-
-	result &= LoopTestOverS<T, N, 2>(skip_rgb);
-	result &= LoopTestOverS<T, N, 3>(skip_rgb);
-
-	return result;
-}
-
 /** @brief Function prepares framebuffer with internal format color attachment.
  *         Viewport is set up. Content of the framebuffer is cleared.
  *
  *  @note The function may throw if unexpected error has occured.
  */
-template <>
-bool StorageMultisampleTest::PrepareFramebufferMultisample<2>(const glw::GLenum internal_format)
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+bool StorageMultisampleTest<T, S, N, D>::PrepareFramebufferMultisample(const glw::GLenum internal_format)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3362,11 +3327,23 @@ bool StorageMultisampleTest::PrepareFramebufferMultisample<2>(const glw::GLenum 
 	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo_ms);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer call failed.");
 
-	gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_to_ms);
+	gl.bindTexture(MultisampleTextureTarget(), m_to_ms);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
 
-	gl.textureStorage2DMultisample(m_to_ms, 1, internal_format, TestReferenceDataWidth<2>(),
-								   TestReferenceDataHeight<2>(), false);
+	switch (D)
+	{
+	case 2:
+		gl.textureStorage2DMultisample(m_to_ms, 1, internal_format, TestReferenceDataWidth(),
+									   TestReferenceDataHeight(), false);
+		break;
+	case 3:
+		gl.textureStorage3DMultisample(m_to_ms, 1, internal_format, TestReferenceDataWidth(),
+									   TestReferenceDataHeight(), TestReferenceDataDepth(), false);
+		break;
+	default:
+		DE_ASSERT("invalid texture dimension");
+		return false;
+	}
 
 	glw::GLenum error;
 
@@ -3375,22 +3352,40 @@ bool StorageMultisampleTest::PrepareFramebufferMultisample<2>(const glw::GLenum 
 		CleanFramebuffers();
 
 		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "glTextureStorage2DMultisample unexpectedly generated error "
+			<< tcu::TestLog::Message << "glTextureStorageMultisample unexpectedly generated error "
 			<< glu::getErrorStr(error) << " during the test of internal format "
 			<< glu::getTextureFormatStr(internal_format) << ". Test fails." << tcu::TestLog::EndMessage;
 
 		return false;
 	}
 
-	gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_to_ms, 0);
+	switch (D)
+	{
+	case 2:
+		gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_to_ms, 0);
+		break;
+	case 3:
+		for (glw::GLuint i = 0; i < TestReferenceDataDepth(); ++i)
+		{
+			gl.framebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, m_to_ms, 0, i);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTextureLayer call failed.");
+		}
+		break;
+	default:
+		DE_ASSERT("invalid texture dimension");
+		return false;
+	}
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer call failed.");
 
 	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		throw 0;
+		if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_UNSUPPORTED)
+			throw tcu::NotSupportedError("unsupported framebuffer configuration");
+		else
+			throw 0;
 	}
 
-	gl.viewport(0, 0, TestReferenceDataWidth<2>(), TestReferenceDataHeight<2>());
+	gl.viewport(0, 0, TestReferenceDataWidth(), TestReferenceDataHeight());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport call failed.");
 
 	/* Clear framebuffer's content. */
@@ -3408,73 +3403,8 @@ bool StorageMultisampleTest::PrepareFramebufferMultisample<2>(const glw::GLenum 
  *
  *  @note The function may throw if unexpected error has occured.
  */
-template <>
-bool StorageMultisampleTest::PrepareFramebufferMultisample<3>(const glw::GLenum internal_format)
-{
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Prepare framebuffer. */
-	gl.genFramebuffers(1, &m_fbo_ms);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers call failed.");
-
-	gl.genTextures(1, &m_to_ms);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenRenderbuffers call failed.");
-
-	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo_ms);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer call failed.");
-
-	gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, m_to_ms);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
-
-	gl.textureStorage3DMultisample(m_to_ms, 1, internal_format, TestReferenceDataWidth<3>(),
-								   TestReferenceDataHeight<3>(), TestReferenceDataDepth<3>(), false);
-
-	glw::GLenum error;
-
-	if (GL_NO_ERROR != (error = gl.getError()))
-	{
-		CleanFramebuffers();
-
-		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "glTextureStorage3DMultisample unexpectedly generated error "
-			<< glu::getErrorStr(error) << " during the test of internal format "
-			<< glu::getTextureFormatStr(internal_format) << ". Test fails." << tcu::TestLog::EndMessage;
-
-		return false;
-	}
-
-	for (glw::GLuint i = 0; i < TestReferenceDataDepth<3>(); ++i)
-	{
-		gl.framebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, m_to_ms, 0, i);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer call failed.");
-	}
-
-	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		throw 0;
-	}
-
-	gl.viewport(0, 0, TestReferenceDataWidth<3>(), TestReferenceDataHeight<3>());
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport call failed.");
-
-	/* Clear framebuffer's content. */
-	gl.clearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glClearColor call failed.");
-
-	gl.clear(GL_COLOR_BUFFER_BIT);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glClear call failed.");
-
-	return true;
-}
-
-/** @brief Function prepares framebuffer with internal format color attachment.
- *         Viewport is set up. Content of the framebuffer is cleared.
- *
- *  @note The function may throw if unexpected error has occured.
- */
-template <>
-void StorageMultisampleTest::PrepareFramebufferAuxiliary<2>(const glw::GLenum internal_format)
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::PrepareFramebufferAuxiliary(const glw::GLenum internal_format)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3489,10 +3419,21 @@ void StorageMultisampleTest::PrepareFramebufferAuxiliary<2>(const glw::GLenum in
 	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo_aux);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer call failed.");
 
-	gl.bindTexture(GL_TEXTURE_2D, m_to_aux);
+	gl.bindTexture(InputTextureTarget(), m_to_aux);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
 
-	gl.textureStorage2D(m_to_aux, 1, internal_format, TestReferenceDataWidth<2>(), TestReferenceDataHeight<2>());
+	switch (D)
+	{
+	case 2:
+		gl.textureStorage2D(m_to_aux, 1, internal_format, TestReferenceDataWidth(), TestReferenceDataHeight());
+		break;
+	case 3:
+		gl.textureStorage3D(m_to_aux, 1, internal_format, TestReferenceDataWidth(), TestReferenceDataHeight(),
+							TestReferenceDataDepth());
+		break;
+	default:
+		DE_ASSERT("invalid texture dimension");
+	}
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTextureStorage2D call failed.");
 
 	/* Parameter setup. */
@@ -3500,70 +3441,32 @@ void StorageMultisampleTest::PrepareFramebufferAuxiliary<2>(const glw::GLenum in
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri call failed.");
 
-	gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_to_aux, 0);
+	switch (D)
+	{
+	case 2:
+		gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_to_aux, 0);
+		break;
+	case 3:
+		for (glw::GLuint i = 0; i < TestReferenceDataDepth(); ++i)
+		{
+			gl.framebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, m_to_aux, 0, i);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTextureLayer call failed.");
+		}
+		break;
+	default:
+		DE_ASSERT("invalid texture dimension");
+	}
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer call failed.");
 
 	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		throw 0;
+		if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_UNSUPPORTED)
+			throw tcu::NotSupportedError("unsupported framebuffer configuration");
+		else
+			throw 0;
 	}
 
-	gl.viewport(0, 0, TestReferenceDataWidth<2>(), TestReferenceDataHeight<2>());
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport call failed.");
-
-	/* Clear framebuffer's content. */
-	gl.clearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glClearColor call failed.");
-
-	gl.clear(GL_COLOR_BUFFER_BIT);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glClear call failed.");
-}
-
-/** @brief Function prepares framebuffer with internal format color attachment.
- *         Viewport is set up. Content of the framebuffer is cleared.
- *
- *  @note The function may throw if unexpected error has occured.
- */
-template <>
-void StorageMultisampleTest::PrepareFramebufferAuxiliary<3>(const glw::GLenum internal_format)
-{
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Prepare framebuffer. */
-	gl.genFramebuffers(1, &m_fbo_aux);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers call failed.");
-
-	gl.genTextures(1, &m_to_aux);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenRenderbuffers call failed.");
-
-	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo_aux);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer call failed.");
-
-	gl.bindTexture(GL_TEXTURE_2D_ARRAY, m_to_aux);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
-
-	gl.textureStorage3D(m_to_aux, 1, internal_format, TestReferenceDataWidth<3>(), TestReferenceDataHeight<3>(),
-						TestReferenceDataDepth<3>());
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTextureStorage3D call failed.");
-
-	/* Parameter setup. */
-	gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	gl.texParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexParameteri call failed.");
-
-	for (glw::GLuint i = 0; i < TestReferenceDataDepth<3>(); ++i)
-	{
-		gl.framebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, m_to_aux, 0, i);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer call failed.");
-	}
-
-	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		throw 0;
-	}
-
-	gl.viewport(0, 0, TestReferenceDataWidth<3>(), TestReferenceDataHeight<3>());
+	gl.viewport(0, 0, TestReferenceDataWidth(), TestReferenceDataHeight());
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport call failed.");
 
 	/* Clear framebuffer's content. */
@@ -3579,7 +3482,8 @@ void StorageMultisampleTest::PrepareFramebufferAuxiliary<3>(const glw::GLenum in
  *  @param [in] variable_declaration      Variables declaration part of fragment shader source code.
  *  @param [in] tail                      Tail part of fragment shader source code.
  */
-glw::GLuint StorageMultisampleTest::PrepareProgram(const glw::GLchar* variable_declaration, const glw::GLchar* tail)
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+glw::GLuint StorageMultisampleTest<T, S, N, D>::PrepareProgram(const glw::GLchar* variable_declaration, const glw::GLchar* tail)
 {
 	/* Shortcut for GL functionality */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3732,7 +3636,8 @@ glw::GLuint StorageMultisampleTest::PrepareProgram(const glw::GLchar* variable_d
 
 /** @brief Prepare VAO.
  */
-void StorageMultisampleTest::PrepareVertexArray()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::PrepareVertexArray()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3744,10 +3649,10 @@ void StorageMultisampleTest::PrepareVertexArray()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindVertexArray has failed");
 }
 
-/** @brief Draw call 2D.
+/** @brief Draw call
  */
-template <>
-void StorageMultisampleTest::Draw<2>()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::Draw()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3766,88 +3671,23 @@ void StorageMultisampleTest::Draw<2>()
 	gl.activeTexture(GL_TEXTURE0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture has failed");
 
-	gl.bindTexture(GL_TEXTURE_2D, m_to);
+	gl.bindTexture(InputTextureTarget(), m_to);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture has failed");
 
 	gl.uniform1i(gl.getUniformLocation(m_po_ms, "texture_input"), 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i or glGetUniformLocation has failed");
 
-	/* Select layer. */
-	gl.drawBuffer(GL_COLOR_ATTACHMENT0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawBuffer has failed");
-
-	/* Draw. */
-	gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawArrays has failed");
-
-	/* Copy multisample texture to auxiliary texture using draw call. */
-
-	/* Prepare framebuffer with auxiliary texture. */
-	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo_aux);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer has failed");
-
-	/* Use first program program. */
-	gl.useProgram(m_po_aux);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram has failed");
-
-	/* Prepare texture to be drawn with. */
-	gl.activeTexture(GL_TEXTURE0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture has failed");
-
-	gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_to_ms);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture has failed");
-
-	gl.bindTextureUnit(0, m_to);
-
-	gl.uniform1i(gl.getUniformLocation(m_po_aux, "texture_input"), 0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i or glGetUniformLocation has failed");
-
-	/* Select layer. */
-	gl.drawBuffer(GL_COLOR_ATTACHMENT0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawBuffer has failed");
-
-	/* Draw. */
-	gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawArrays has failed");
-}
-
-/** @brief Draw call 3D.
- */
-template <>
-void StorageMultisampleTest::Draw<3>()
-{
-	/* Shortcut for GL functionality. */
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	/* Prepare multisample texture using draw call. */
-
-	/* Prepare framebuffer with multisample texture. */
-	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo_ms);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer has failed");
-
-	/* Use first program program. */
-	gl.useProgram(m_po_ms);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram has failed");
-
-	/* Prepare texture to be drawn with. */
-	gl.activeTexture(GL_TEXTURE0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture has failed");
-
-	gl.bindTexture(GL_TEXTURE_2D_ARRAY, m_to);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture has failed");
-
-	gl.uniform1i(gl.getUniformLocation(m_po_ms, "texture_input"), 0);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i or glGetUniformLocation has failed");
-
-	/* For each texture layer. */
-	for (glw::GLuint i = 0; i < TestReferenceDataDepth<3>(); ++i)
+	for (glw::GLuint i = 0; i < TestReferenceDataDepth(); ++i)
 	{
 		/* Select layer. */
 		gl.drawBuffer(GL_COLOR_ATTACHMENT0 + i);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawBuffer has failed");
 
-		gl.uniform1i(gl.getUniformLocation(m_po_aux, "texture_layer"), i);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i or glGetUniformLocation has failed");
+		if (D == 3)
+		{
+			gl.uniform1i(gl.getUniformLocation(m_po_aux, "texture_layer"), i);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i or glGetUniformLocation has failed");
+		}
 
 		/* Draw. */
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -3868,7 +3708,7 @@ void StorageMultisampleTest::Draw<3>()
 	gl.activeTexture(GL_TEXTURE0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture has failed");
 
-	gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, m_to_ms);
+	gl.bindTexture(MultisampleTextureTarget(), m_to_ms);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glActiveTexture has failed");
 
 	gl.bindTextureUnit(0, m_to);
@@ -3877,14 +3717,17 @@ void StorageMultisampleTest::Draw<3>()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i or glGetUniformLocation has failed");
 
 	/* For each texture layer. */
-	for (glw::GLuint i = 0; i < TestReferenceDataDepth<3>(); ++i)
+	for (glw::GLuint i = 0; i < TestReferenceDataDepth(); ++i)
 	{
 		/* Select layer. */
 		gl.drawBuffer(GL_COLOR_ATTACHMENT0 + i);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawBuffer has failed");
 
-		gl.uniform1i(gl.getUniformLocation(m_po_aux, "texture_layer"), i);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i or glGetUniformLocation has failed");
+		if (D == 3)
+		{
+			gl.uniform1i(gl.getUniformLocation(m_po_aux, "texture_layer"), i);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i or glGetUniformLocation has failed");
+		}
 
 		/* Draw. */
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -3894,7 +3737,8 @@ void StorageMultisampleTest::Draw<3>()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageMultisampleTest::CleanInputTexture()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::CleanInputTexture()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3910,7 +3754,8 @@ void StorageMultisampleTest::CleanInputTexture()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageMultisampleTest::CleanAuxiliaryTexture()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::CleanAuxiliaryTexture()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3925,7 +3770,8 @@ void StorageMultisampleTest::CleanAuxiliaryTexture()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageMultisampleTest::CleanFramebuffers()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::CleanFramebuffers()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3965,7 +3811,8 @@ void StorageMultisampleTest::CleanFramebuffers()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageMultisampleTest::CleanPrograms()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::CleanPrograms()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3992,7 +3839,8 @@ void StorageMultisampleTest::CleanPrograms()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageMultisampleTest::CleanErrors()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::CleanErrors()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -4004,7 +3852,8 @@ void StorageMultisampleTest::CleanErrors()
 
 /** @brief Clean GL objects, test variables and GL errors.
  */
-void StorageMultisampleTest::CleanVertexArray()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+void StorageMultisampleTest<T, S, N, D>::CleanVertexArray()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -4023,7 +3872,8 @@ void StorageMultisampleTest::CleanVertexArray()
  *
  *  @return Iteration result.
  */
-tcu::TestNode::IterateResult StorageMultisampleTest::iterate()
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+tcu::TestNode::IterateResult StorageMultisampleTest<T, S, N, D>::iterate()
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -4049,15 +3899,14 @@ tcu::TestNode::IterateResult StorageMultisampleTest::iterate()
 
 		//  gl.enable(GL_MULTISAMPLE);
 
-		is_ok &= LoopTestOverDOverS<glw::GLbyte, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLubyte, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLshort, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLushort, false>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLint, false>(false);
-		is_ok &= LoopTestOverDOverS<glw::GLuint, false>(false);
-		is_ok &= LoopTestOverDOverS<glw::GLubyte, true>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLushort, true>(true);
-		is_ok &= LoopTestOverDOverS<glw::GLfloat, true>(false);
+		m_po_ms  = PrepareProgram(FragmentShaderDeclarationMultisample(), FragmentShaderTail());
+		m_po_aux = PrepareProgram(FragmentShaderDeclarationAuxiliary(), FragmentShaderTail());
+
+		is_ok = Test();
+	}
+	catch (tcu::NotSupportedError e)
+	{
+		throw e;
 	}
 	catch (...)
 	{
@@ -4099,138 +3948,179 @@ tcu::TestNode::IterateResult StorageMultisampleTest::iterate()
 }
 
 /* Vertex shader source code. */
-const glw::GLchar* StorageMultisampleTest::s_vertex_shader = "#version 450\n"
-															 "\n"
-															 "void main()\n"
-															 "{\n"
-															 "    switch(gl_VertexID)\n"
-															 "    {\n"
-															 "        case 0:\n"
-															 "            gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
-															 "            break;\n"
-															 "        case 1:\n"
-															 "            gl_Position = vec4( 1.0, 1.0, 0.0, 1.0);\n"
-															 "            break;\n"
-															 "        case 2:\n"
-															 "            gl_Position = vec4(-1.0,-1.0, 0.0, 1.0);\n"
-															 "            break;\n"
-															 "        case 3:\n"
-															 "            gl_Position = vec4( 1.0,-1.0, 0.0, 1.0);\n"
-															 "            break;\n"
-															 "    }\n"
-															 "}\n";
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_vertex_shader =
+	"#version 450\n"
+	"\n"
+	"void main()\n"
+	"{\n"
+	"    switch(gl_VertexID)\n"
+	"    {\n"
+	"        case 0:\n"
+	"            gl_Position = vec4(-1.0, 1.0, 0.0, 1.0);\n"
+	"            break;\n"
+	"        case 1:\n"
+	"            gl_Position = vec4( 1.0, 1.0, 0.0, 1.0);\n"
+	"            break;\n"
+	"        case 2:\n"
+	"            gl_Position = vec4(-1.0,-1.0, 0.0, 1.0);\n"
+	"            break;\n"
+	"        case 3:\n"
+	"            gl_Position = vec4( 1.0,-1.0, 0.0, 1.0);\n"
+	"            break;\n"
+	"    }\n"
+	"}\n";
 
 /* Fragment shader source program. */
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_head =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_head =
 	"#version 450\n"
 	"\n"
 	"layout(pixel_center_integer) in vec4 gl_FragCoord;\n"
 	"\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_fdecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_fdecl_lowp =
 	"uniform  sampler2D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_idecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_idecl_lowp =
 	"uniform isampler2D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_udecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_udecl_lowp =
 	"uniform usampler2D texture_input;\nout     uvec4         texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_fdecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_fdecl_mediump =
 	"uniform  sampler2D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_idecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_idecl_mediump =
 	"uniform isampler2D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_udecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_udecl_mediump =
 	"uniform usampler2D texture_input;\nout     uvec4         texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_fdecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_fdecl_highp =
 	"uniform  sampler2D texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_idecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_idecl_highp =
 	"uniform isampler2D texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_2D_udecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_2D_udecl_highp =
 	"uniform usampler2D texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_fdecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_fdecl_lowp =
 	"uniform  sampler2DArray texture_input;\nout     vec4          texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_idecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_idecl_lowp =
 	"uniform isampler2DArray texture_input;\nout     ivec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_udecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_udecl_lowp =
 	"uniform usampler2DArray texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_fdecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_fdecl_mediump =
 	"uniform  sampler2DArray texture_input;\nout     vec4          texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_idecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_idecl_mediump =
 	"uniform isampler2DArray texture_input;\nout     ivec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_udecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_udecl_mediump =
 	"uniform usampler2DArray texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_fdecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_fdecl_highp =
 	"uniform  sampler2DArray texture_input;\nout     vec4          texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_idecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_idecl_highp =
 	"uniform isampler2DArray texture_input;\nout     ivec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_ms_3D_udecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_ms_3D_udecl_highp =
 	"uniform usampler2DArray texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_fdecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_fdecl_lowp =
 	"uniform  sampler2DMS texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_idecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_idecl_lowp =
 	"uniform isampler2DMS texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_udecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_udecl_lowp =
 	"uniform usampler2DMS texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_fdecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_fdecl_mediump =
 	"uniform  sampler2DMS texture_input;\nout     vec4          texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_idecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_idecl_mediump =
 	"uniform isampler2DMS texture_input;\nout     ivec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_udecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_udecl_mediump =
 	"uniform usampler2DMS texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_fdecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_fdecl_highp =
 	"uniform  sampler2DMS texture_input;\nout     vec4          texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_idecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_idecl_highp =
 	"uniform isampler2DMS texture_input;\nout     ivec4         texture_output;\n";
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_2D_udecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_2D_udecl_highp =
 	"uniform usampler2DMS texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_fdecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_fdecl_lowp =
 	"uniform  sampler2DMSArray texture_input;\nout     vec4          texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_idecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_idecl_lowp =
 	"uniform isampler2DMSArray texture_input;\nout     ivec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_udecl_lowp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_udecl_lowp =
 	"uniform usampler2DMSArray texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_fdecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_fdecl_mediump =
 	"uniform  sampler2DMSArray texture_input;\nout     vec4          texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_idecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_idecl_mediump =
 	"uniform isampler2DMSArray texture_input;\nout     ivec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_udecl_mediump =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_udecl_mediump =
 	"uniform usampler2DMSArray texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_fdecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_fdecl_highp =
 	"uniform  sampler2DMSArray texture_input;\nout     vec4          texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_idecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_idecl_highp =
 	"uniform isampler2DMSArray texture_input;\nout     ivec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_aux_3D_udecl_highp =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_aux_3D_udecl_highp =
 	"uniform usampler2DMSArray texture_input;\nout     uvec4         texture_output;\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_tail_2D =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_tail_2D =
 	"\n"
 	"void main()\n"
 	"{\n"
 	"    texture_output = texelFetch(texture_input, ivec2(gl_FragCoord.xy), 0);\n"
 	"}\n";
 
-const glw::GLchar* StorageMultisampleTest::s_fragment_shader_tail_3D =
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
+const glw::GLchar* StorageMultisampleTest<T, S, N, D>::s_fragment_shader_tail_3D =
 	"\n"
 	"uniform int texture_layer;\n"
 	"\n"
@@ -4238,6 +4128,75 @@ const glw::GLchar* StorageMultisampleTest::s_fragment_shader_tail_3D =
 	"{\n"
 	"    texture_output = texelFetch(texture_input, ivec3(gl_FragCoord.xy, texture_layer), 0);\n"
 	"}\n";
+
+template class StorageMultisampleTest<glw::GLbyte, 1, false, 2>;
+template class StorageMultisampleTest<glw::GLbyte, 2, false, 2>;
+template class StorageMultisampleTest<glw::GLbyte, 4, false, 2>;
+template class StorageMultisampleTest<glw::GLbyte, 1, false, 3>;
+template class StorageMultisampleTest<glw::GLbyte, 2, false, 3>;
+template class StorageMultisampleTest<glw::GLbyte, 4, false, 3>;
+
+template class StorageMultisampleTest<glw::GLubyte, 1, false, 2>;
+template class StorageMultisampleTest<glw::GLubyte, 2, false, 2>;
+template class StorageMultisampleTest<glw::GLubyte, 4, false, 2>;
+template class StorageMultisampleTest<glw::GLubyte, 1, false, 3>;
+template class StorageMultisampleTest<glw::GLubyte, 2, false, 3>;
+template class StorageMultisampleTest<glw::GLubyte, 4, false, 3>;
+
+template class StorageMultisampleTest<glw::GLubyte, 1, true, 2>;
+template class StorageMultisampleTest<glw::GLubyte, 2, true, 2>;
+template class StorageMultisampleTest<glw::GLubyte, 4, true, 2>;
+template class StorageMultisampleTest<glw::GLubyte, 1, true, 3>;
+template class StorageMultisampleTest<glw::GLubyte, 2, true, 3>;
+template class StorageMultisampleTest<glw::GLubyte, 4, true, 3>;
+
+template class StorageMultisampleTest<glw::GLshort, 1, false, 2>;
+template class StorageMultisampleTest<glw::GLshort, 2, false, 2>;
+template class StorageMultisampleTest<glw::GLshort, 4, false, 2>;
+template class StorageMultisampleTest<glw::GLshort, 1, false, 3>;
+template class StorageMultisampleTest<glw::GLshort, 2, false, 3>;
+template class StorageMultisampleTest<glw::GLshort, 4, false, 3>;
+
+template class StorageMultisampleTest<glw::GLushort, 1, false, 2>;
+template class StorageMultisampleTest<glw::GLushort, 2, false, 2>;
+template class StorageMultisampleTest<glw::GLushort, 4, false, 2>;
+template class StorageMultisampleTest<glw::GLushort, 1, false, 3>;
+template class StorageMultisampleTest<glw::GLushort, 2, false, 3>;
+template class StorageMultisampleTest<glw::GLushort, 4, false, 3>;
+
+template class StorageMultisampleTest<glw::GLushort, 1, true, 2>;
+template class StorageMultisampleTest<glw::GLushort, 2, true, 2>;
+template class StorageMultisampleTest<glw::GLushort, 4, true, 2>;
+template class StorageMultisampleTest<glw::GLushort, 1, true, 3>;
+template class StorageMultisampleTest<glw::GLushort, 2, true, 3>;
+template class StorageMultisampleTest<glw::GLushort, 4, true, 3>;
+
+template class StorageMultisampleTest<glw::GLint, 1, false, 2>;
+template class StorageMultisampleTest<glw::GLint, 2, false, 2>;
+template class StorageMultisampleTest<glw::GLint, 3, false, 2>;
+template class StorageMultisampleTest<glw::GLint, 4, false, 2>;
+template class StorageMultisampleTest<glw::GLint, 1, false, 3>;
+template class StorageMultisampleTest<glw::GLint, 2, false, 3>;
+template class StorageMultisampleTest<glw::GLint, 3, false, 3>;
+template class StorageMultisampleTest<glw::GLint, 4, false, 3>;
+
+template class StorageMultisampleTest<glw::GLuint, 1, false, 2>;
+template class StorageMultisampleTest<glw::GLuint, 2, false, 2>;
+template class StorageMultisampleTest<glw::GLuint, 3, false, 2>;
+template class StorageMultisampleTest<glw::GLuint, 4, false, 2>;
+template class StorageMultisampleTest<glw::GLuint, 1, false, 3>;
+template class StorageMultisampleTest<glw::GLuint, 2, false, 3>;
+template class StorageMultisampleTest<glw::GLuint, 3, false, 3>;
+template class StorageMultisampleTest<glw::GLuint, 4, false, 3>;
+
+template class StorageMultisampleTest<glw::GLfloat, 1, true, 2>;
+template class StorageMultisampleTest<glw::GLfloat, 2, true, 2>;
+template class StorageMultisampleTest<glw::GLfloat, 3, true, 2>;
+template class StorageMultisampleTest<glw::GLfloat, 4, true, 2>;
+template class StorageMultisampleTest<glw::GLfloat, 1, true, 3>;
+template class StorageMultisampleTest<glw::GLfloat, 2, true, 3>;
+template class StorageMultisampleTest<glw::GLfloat, 3, true, 3>;
+template class StorageMultisampleTest<glw::GLfloat, 4, true, 3>;
 
 /******************************** Compressed SubImage Test Implementation   ********************************/
 
