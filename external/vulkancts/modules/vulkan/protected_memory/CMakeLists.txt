@@ -2,6 +2,7 @@ include_directories(..)
 
 set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemContext.hpp
+	vktProtectedMemContext.cpp
 	vktProtectedMemUtils.cpp
 	vktProtectedMemUtils.hpp
 	vktProtectedMemTests.cpp
@@ -30,6 +31,8 @@ set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemStorageBufferTests.hpp
 	vktProtectedMemShaderImageAccessTests.cpp
 	vktProtectedMemShaderImageAccessTests.hpp
+	vktProtectedMemWsiSwapchainTests.cpp
+	vktProtectedMemWsiSwapchainTests.hpp
 	vktProtectedMemTests.cpp
 	vktProtectedMemTests.hpp
 	)

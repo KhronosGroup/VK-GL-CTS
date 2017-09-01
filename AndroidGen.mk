@@ -170,6 +170,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemBlitImageTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemBufferValidator.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemClearColorImageTests.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemContext.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemCopyBufferToImageTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemCopyImageTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemCopyImageToBufferTests.cpp \
@@ -179,6 +180,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemStorageBufferTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemTests.cpp \
 	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemUtils.cpp \
+	external/vulkancts/modules/vulkan/protected_memory/vktProtectedMemWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolOcclusionTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
