@@ -68,12 +68,14 @@ enum
 
 struct TextureShadowCommonTestCaseParameters
 {
-							TextureShadowCommonTestCaseParameters	(void);
-	Sampler::CompareMode	compareOp;
+										TextureShadowCommonTestCaseParameters	(void);
+	Sampler::CompareMode				compareOp;
+	TextureBinding::ImageBackingMode	backingMode;
 };
 
 TextureShadowCommonTestCaseParameters::TextureShadowCommonTestCaseParameters (void)
-	: compareOp				(Sampler::COMPAREMODE_EQUAL)
+	: compareOp							(Sampler::COMPAREMODE_EQUAL)
+	, backingMode						(TextureBinding::IMAGE_BACKING_MODE_REGULAR)
 {
 }
 
@@ -262,7 +264,7 @@ Texture2DShadowTestInstance::Texture2DShadowTestInstance (Context& context, cons
 	// Upload.
 	for (std::vector<TestTexture2DSp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
 	{
-		m_renderer.add2DTexture(*i);
+		m_renderer.add2DTexture(*i, m_testParameters.backingMode);
 	}
 
 	// Compute cases.
@@ -484,7 +486,7 @@ TextureCubeShadowTestInstance::TextureCubeShadowTestInstance (Context& context, 
 	// Upload.
 	for (vector<TestTextureCubeSp>::iterator i = m_textures.begin(); i != m_textures.end(); i++)
 	{
-		m_renderer.addCubeTexture(*i);
+		m_renderer.addCubeTexture(*i, m_testParameters.backingMode);
 	}
 
 	// Compute cases
@@ -689,7 +691,7 @@ Texture2DArrayShadowTestInstance::Texture2DArrayShadowTestInstance (Context& con
 	// Upload.
 	for (std::vector<TestTexture2DArraySp>::iterator i = m_textures.begin(); i != m_textures.end(); ++i)
 	{
-		m_renderer.add2DArrayTexture(*i);
+		m_renderer.add2DArrayTexture(*i, m_testParameters.backingMode);
 	}
 
 	// Compute cases.
@@ -817,8 +819,18 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 	static const struct
 	{
-		const char*		name;
-		const VkFormat	format;
+		const char*								name;
+		const TextureBinding::ImageBackingMode	backingMode;
+	} backingModes[] =
+	{
+		{ "",			TextureBinding::IMAGE_BACKING_MODE_REGULAR	},
+		{ "sparse_",	TextureBinding::IMAGE_BACKING_MODE_SPARSE	}
+	};
+
+	static const struct
+	{
+		const char*								name;
+		const VkFormat							format;
 	} formats[] =
 	{
 		{ "d16_unorm",				VK_FORMAT_D16_UNORM				},
@@ -831,9 +843,9 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 	static const struct
 	{
-		const char*					name;
-		const Sampler::FilterMode	minFilter;
-		const Sampler::FilterMode	magFilter;
+		const char*								name;
+		const Sampler::FilterMode				minFilter;
+		const Sampler::FilterMode				magFilter;
 	} filters[] =
 	{
 		{ "nearest",				Sampler::NEAREST,					Sampler::NEAREST	},
@@ -846,8 +858,8 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 
 	static const struct
 	{
-		const char*					name;
-		const Sampler::CompareMode	op;
+		const char*								name;
+		const Sampler::CompareMode				op;
 	} compareOp[] =
 	{
 		{ "less_or_equal",		Sampler::COMPAREMODE_LESS_OR_EQUAL		},
@@ -872,21 +884,25 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 			{
 				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 				{
-					const string						name			= string(compareOp[compareNdx].name) + "_" + formats[formatNdx].name;
-					Texture2DShadowTestCaseParameters	testParameters;
+					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+					{
+						const string						name	= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
+						Texture2DShadowTestCaseParameters	testParameters;
 
-					testParameters.minFilter	= filters[filterNdx].minFilter;
-					testParameters.magFilter	= filters[filterNdx].magFilter;
-					testParameters.format		= formats[formatNdx].format;
-					testParameters.compareOp	= compareOp[compareNdx].op;
-					testParameters.wrapS		= Sampler::REPEAT_GL;
-					testParameters.wrapT		= Sampler::REPEAT_GL;
-					testParameters.width		= 32;
-					testParameters.height		= 64;
+						testParameters.minFilter	= filters[filterNdx].minFilter;
+						testParameters.magFilter	= filters[filterNdx].magFilter;
+						testParameters.format		= formats[formatNdx].format;
+						testParameters.backingMode	= backingModes[backingNdx].backingMode;
+						testParameters.compareOp	= compareOp[compareNdx].op;
+						testParameters.wrapS		= Sampler::REPEAT_GL;
+						testParameters.wrapT		= Sampler::REPEAT_GL;
+						testParameters.width		= 32;
+						testParameters.height		= 64;
 
-					testParameters.programs.push_back(PROGRAM_2D_SHADOW);
+						testParameters.programs.push_back(PROGRAM_2D_SHADOW);
 
-					filterGroup->addChild(new TextureTestCase<Texture2DShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						filterGroup->addChild(new TextureTestCase<Texture2DShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+					}
 				}
 			}
 
@@ -908,20 +924,24 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 			{
 				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 				{
-					const string							name			= string(compareOp[compareNdx].name) + "_" + formats[formatNdx].name;
-					TextureCubeShadowTestCaseParameters		testParameters;
+					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+					{
+						const string							name	= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
+						TextureCubeShadowTestCaseParameters		testParameters;
 
-					testParameters.minFilter	= filters[filterNdx].minFilter;
-					testParameters.magFilter	= filters[filterNdx].magFilter;
-					testParameters.format		= formats[formatNdx].format;
-					testParameters.compareOp	= compareOp[compareNdx].op;
-					testParameters.wrapS		= Sampler::REPEAT_GL;
-					testParameters.wrapT		= Sampler::REPEAT_GL;
-					testParameters.size			= 32;
+						testParameters.minFilter	= filters[filterNdx].minFilter;
+						testParameters.magFilter	= filters[filterNdx].magFilter;
+						testParameters.format		= formats[formatNdx].format;
+						testParameters.backingMode	= backingModes[backingNdx].backingMode;
+						testParameters.compareOp	= compareOp[compareNdx].op;
+						testParameters.wrapS		= Sampler::REPEAT_GL;
+						testParameters.wrapT		= Sampler::REPEAT_GL;
+						testParameters.size			= 32;
 
-					testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
+						testParameters.programs.push_back(PROGRAM_CUBE_SHADOW);
 
-					filterGroup->addChild(new TextureTestCase<TextureCubeShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						filterGroup->addChild(new TextureTestCase<TextureCubeShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+					}
 				}
 			}
 
@@ -943,22 +963,26 @@ void populateTextureShadowTests (tcu::TestCaseGroup* textureShadowTests)
 			{
 				for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 				{
-					const string							name			= string(compareOp[compareNdx].name) + "_" + formats[formatNdx].name;
-					Texture2DArrayShadowTestCaseParameters	testParameters;
+					for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+					{
+						const string							name	= string(backingModes[backingNdx].name) + compareOp[compareNdx].name + "_" + formats[formatNdx].name;
+						Texture2DArrayShadowTestCaseParameters	testParameters;
 
-					testParameters.minFilter	= filters[filterNdx].minFilter;
-					testParameters.magFilter	= filters[filterNdx].magFilter;
-					testParameters.format		= formats[formatNdx].format;
-					testParameters.compareOp	= compareOp[compareNdx].op;
-					testParameters.wrapS		= Sampler::REPEAT_GL;
-					testParameters.wrapT		= Sampler::REPEAT_GL;
-					testParameters.width		= 32;
-					testParameters.height		= 64;
-					testParameters.numLayers	= 8;
+						testParameters.minFilter	= filters[filterNdx].minFilter;
+						testParameters.magFilter	= filters[filterNdx].magFilter;
+						testParameters.format		= formats[formatNdx].format;
+						testParameters.backingMode	= backingModes[backingNdx].backingMode;
+						testParameters.compareOp	= compareOp[compareNdx].op;
+						testParameters.wrapS		= Sampler::REPEAT_GL;
+						testParameters.wrapT		= Sampler::REPEAT_GL;
+						testParameters.width		= 32;
+						testParameters.height		= 64;
+						testParameters.numLayers	= 8;
 
-					testParameters.programs.push_back(PROGRAM_2D_ARRAY_SHADOW);
+						testParameters.programs.push_back(PROGRAM_2D_ARRAY_SHADOW);
 
-					filterGroup->addChild(new TextureTestCase<Texture2DArrayShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+						filterGroup->addChild(new TextureTestCase<Texture2DArrayShadowTestInstance>(testCtx, name.c_str(), "", testParameters));
+					}
 				}
 			}
 

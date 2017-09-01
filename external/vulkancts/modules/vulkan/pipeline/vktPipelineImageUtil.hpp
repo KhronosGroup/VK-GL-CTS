@@ -32,6 +32,7 @@
 #include "vkRef.hpp"
 #include "tcuTexture.hpp"
 #include "tcuCompressedTexture.hpp"
+#include "deSharedPtr.hpp"
 
 namespace vkt
 {
@@ -92,6 +93,25 @@ void							uploadTestTexture			(const vk::DeviceInterface&		vk,
 															 vk::Allocator&					allocator,
 															 const TestTexture&				testTexture,
 															 vk::VkImage					destImage);
+
+/*--------------------------------------------------------------------*//*!
+ * Uploads data from a test texture to a destination VK image using sparse
+ * binding.
+ *
+ * The VkImage must be non-multisampled and able to be used as a
+ * destination operand for transfer operations.
+ *//*--------------------------------------------------------------------*/
+void							uploadTestTextureSparse		(const vk::DeviceInterface&						vk,
+															 vk::VkDevice									device,
+															 const vk::VkPhysicalDevice						physicalDevice,
+															 const vk::InstanceInterface&					instance,
+															 const vk::VkImageCreateInfo&					imageCreateInfo,
+															 vk::VkQueue									queue,
+															 deUint32										queueFamilyIndex,
+															 vk::Allocator&									allocator,
+															 std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
+															 const TestTexture&								srcTexture,
+															 vk::VkImage									destImage);
 
 class TestTexture
 {

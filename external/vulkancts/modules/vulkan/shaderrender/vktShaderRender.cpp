@@ -1466,12 +1466,12 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 
 		const deUint32 noMatchFound = ~((deUint32)0);
 
-		deUint32 colorAspectIndex = noMatchFound;
+		deUint32 aspectIndex = noMatchFound;
 		for (deUint32 memoryReqNdx = 0; memoryReqNdx < sparseMemoryReqCount; ++memoryReqNdx)
 		{
-			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask & VK_IMAGE_ASPECT_COLOR_BIT)
+			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask == aspectMask)
 			{
-				colorAspectIndex = memoryReqNdx;
+				aspectIndex = memoryReqNdx;
 				break;
 			}
 		}
@@ -1486,8 +1486,8 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 			}
 		}
 
-		if (colorAspectIndex == noMatchFound)
-			TCU_THROW(NotSupportedError, "Not supported image aspect - the test supports currently only VK_IMAGE_ASPECT_COLOR_BIT.");
+		if (aspectIndex == noMatchFound)
+			TCU_THROW(NotSupportedError, "Required image aspect not supported.");
 
 		const VkMemoryRequirements	memoryRequirements	= getImageMemoryRequirements(vk, vkDevice, sparseImage);
 
@@ -1515,7 +1515,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 		if (sparseImageFormatPropVec.size() == 0)
 			TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
 
-		const VkSparseImageMemoryRequirements		aspectRequirements	= sparseImageMemoryRequirements[colorAspectIndex];
+		const VkSparseImageMemoryRequirements		aspectRequirements	= sparseImageMemoryRequirements[aspectIndex];
 		const VkExtent3D							imageGranularity	= aspectRequirements.formatProperties.imageGranularity;
 
 		std::vector<VkSparseImageMemoryBind>		imageResidencyMemoryBinds;

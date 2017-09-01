@@ -53,6 +53,19 @@ namespace texture
 namespace util
 {
 
+deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
+{
+	const std::vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
+
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
+			return (deUint32)queueNdx;
+	}
+
+	TCU_THROW(NotSupportedError, "No matching queue found");
+}
+
 struct ShaderParameters {
 	float		bias;				//!< User-supplied bias.
 	float		ref;				//!< Reference value for shadow lookups.
@@ -285,14 +298,23 @@ void initializePrograms(vk::SourceCollections& programCollection, glu::Precision
 }
 
 TextureBinding::TextureBinding (Context& context)
-	: m_context			(context)
+	: m_context				(context)
+	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT))
+	, m_device				(createDevice())
+	, m_deviceInterface		(context.getInstanceInterface(), *m_device)
+	, m_allocator			(createAllocator())
 {
 }
 
-TextureBinding::TextureBinding (Context& context, const TestTextureSp& textureData, const TextureBinding::Type type)
-	: m_context			(context)
-	, m_type			(type)
-	, m_textureData		(textureData)
+TextureBinding::TextureBinding (Context& context, const TestTextureSp& textureData, const TextureBinding::Type type, const TextureBinding::ImageBackingMode backingMode)
+	: m_context				(context)
+	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT))
+	, m_type				(type)
+	, m_backingMode			(backingMode)
+	, m_textureData			(textureData)
+	, m_device				(createDevice())
+	, m_deviceInterface		(context.getInstanceInterface(), *m_device)
+	, m_allocator			(createAllocator())
 {
 	updateTextureData(m_textureData, m_type);
 }
@@ -301,15 +323,15 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 {
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const VkDevice								vkDevice				= m_context.getDevice();
-	const VkQueue								queue					= m_context.getUniversalQueue();
-	const deUint32								queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const bool									sparse					= m_backingMode == IMAGE_BACKING_MODE_SPARSE;
+	const deUint32								queueFamilyIndex		= sparse ? m_queueFamilyIndex : m_context.getUniversalQueueFamilyIndex();
+	const VkQueue								queue					= sparse ? getDeviceQueue(vkd, vkDevice, queueFamilyIndex, 0) : m_context.getUniversalQueue();
 	Allocator&									allocator				= m_context.getDefaultAllocator();
-
 	m_type			= textureType;
 	m_textureData	= textureData;
 
 	const bool									isCube					= m_type == TYPE_CUBE_MAP;
-	const VkImageCreateFlags					imageCreateFlags		= isCube ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+	VkImageCreateFlags							imageCreateFlags		= (isCube ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0) | (sparse ? (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) : 0);
 	const VkImageViewType						imageViewType			= textureTypeToImageViewType(textureType);
 	const VkImageType							imageType				= imageViewTypeToImageType(imageViewType);
 	const VkImageTiling							imageTiling				= VK_IMAGE_TILING_OPTIMAL;
@@ -365,13 +387,37 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 		VK_IMAGE_LAYOUT_UNDEFINED										// VkImageLayout			initialLayout;
 	};
 
-	m_textureImage			= createImage(vkd, vkDevice, &imageParams);
-	m_textureImageMemory	= allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_textureImage), MemoryRequirement::Any);
-	VK_CHECK(vkd.bindImageMemory(vkDevice, *m_textureImage, m_textureImageMemory->getMemory(), m_textureImageMemory->getOffset()));
+	m_textureImage = createImage(vkd, vkDevice, &imageParams);
+
+	if (sparse)
+	{
+		pipeline::uploadTestTextureSparse	(vkd,
+											 vkDevice,
+											 m_context.getPhysicalDevice(),
+											 m_context.getInstanceInterface(),
+											 imageParams,
+											 queue,
+											 queueFamilyIndex,
+											 *m_allocator,
+											 m_allocations,
+											 *m_textureData,
+											 *m_textureImage);
+	}
+	else
+	{
+		m_textureImageMemory = allocator.allocate(getImageMemoryRequirements(vkd, vkDevice, *m_textureImage), MemoryRequirement::Any);
+		VK_CHECK(vkd.bindImageMemory(vkDevice, *m_textureImage, m_textureImageMemory->getMemory(), m_textureImageMemory->getOffset()));
+
+		pipeline::uploadTestTexture	(vkd,
+									 vkDevice,
+									 queue,
+									 queueFamilyIndex,
+									 allocator,
+									 *m_textureData,
+									 *m_textureImage);
+	}
 
 	updateTextureViewMipLevels(0, mipLevels - 1);
-
-	pipeline::uploadTestTexture(vkd, vkDevice, queue, queueFamilyIndex, allocator, *m_textureData, *m_textureImage);
 }
 
 void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 maxLevel)
@@ -402,6 +448,45 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	};
 
 	m_textureImageView		= createImageView(vkd, vkDevice, &viewParams);
+}
+
+vk::Allocator* TextureBinding::createAllocator() const
+{
+	VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+	return new SimpleAllocator(m_deviceInterface, *m_device, memoryProperties);
+}
+
+Move<VkDevice> TextureBinding::createDevice() const
+{
+	const InstanceInterface&				vk					= m_context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice		= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures			deviceFeatures		= getPhysicalDeviceFeatures(vk, physicalDevice);
+
+	VkDeviceQueueCreateInfo					queueInfo;
+	VkDeviceCreateInfo						deviceInfo;
+	const float								queuePriority		= 1.0f;
+
+	deMemset(&queueInfo,	0, sizeof(queueInfo));
+	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
+
+	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo.pNext							= DE_NULL;
+	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
+	queueInfo.queueFamilyIndex				= m_queueFamilyIndex;
+	queueInfo.queueCount					= 1u;
+	queueInfo.pQueuePriorities				= &queuePriority;
+
+	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceInfo.pNext						= DE_NULL;
+	deviceInfo.queueCreateInfoCount			= 1u;
+	deviceInfo.pQueueCreateInfos			= &queueInfo;
+	deviceInfo.enabledExtensionCount		= 0u;
+	deviceInfo.ppEnabledExtensionNames		= DE_NULL;
+	deviceInfo.enabledLayerCount			= 0u;
+	deviceInfo.ppEnabledLayerNames			= DE_NULL;
+	deviceInfo.pEnabledFeatures				= &deviceFeatures;
+
+	return vk::createDevice(vk, physicalDevice, &deviceInfo);
 }
 
 const deUint16		TextureRenderer::s_vertexIndices[6] = { 0, 1, 2, 2, 1, 3 };
@@ -813,24 +898,24 @@ void TextureRenderer::clearImage(VkImage image)
 	VK_CHECK(vkd.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 }
 
-void TextureRenderer::add2DTexture (const TestTexture2DSp& texture)
+void TextureRenderer::add2DTexture (const TestTexture2DSp& texture, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D, backingMode)));
 }
 
-void TextureRenderer::addCubeTexture (const TestTextureCubeSp& texture)
+void TextureRenderer::addCubeTexture (const TestTextureCubeSp& texture, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_CUBE_MAP)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_CUBE_MAP, backingMode)));
 }
 
-void TextureRenderer::add2DArrayTexture (const TestTexture2DArraySp& texture)
+void TextureRenderer::add2DArrayTexture (const TestTexture2DArraySp& texture, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D_ARRAY)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D_ARRAY, backingMode)));
 }
 
-void TextureRenderer::add3DTexture (const TestTexture3DSp& texture)
+void TextureRenderer::add3DTexture (const TestTexture3DSp& texture, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_3D)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_3D, backingMode)));
 }
 
 const pipeline::TestTexture2D& TextureRenderer::get2DTexture (int textureIndex) const
