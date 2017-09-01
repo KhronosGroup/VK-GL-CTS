@@ -37,6 +37,7 @@
 #include "vktProtectedMemCopyBufferToImageTests.hpp"
 #include "vktProtectedMemStorageBufferTests.hpp"
 #include "vktProtectedMemShaderImageAccessTests.hpp"
+#include "vktProtectedMemWsiSwapchainTests.hpp"
 
 namespace vkt
 {
@@ -83,6 +84,12 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 		ssboTestGroup->addChild(createWriteStorageBufferTests(testCtx));
 		ssboTestGroup->addChild(createAtomicStorageBufferTests(testCtx));
 		protectedTests->addChild(ssboTestGroup.release());
+	}
+
+	{
+		de::MovePtr<tcu::TestCaseGroup> interactionTestGroup (new tcu::TestCaseGroup(testCtx, "interaction", "Various tests which interacts with other extensions"));
+		interactionTestGroup->addChild(createSwapchainTests(testCtx));
+		protectedTests->addChild(interactionTestGroup.release());
 	}
 
 	return protectedTests.release();

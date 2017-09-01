@@ -24,6 +24,8 @@
 
 #include "vktProtectedMemUtils.hpp"
 
+#include <deString.h>
+
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -32,6 +34,7 @@
 
 #include "vkPlatform.hpp"
 #include "vktProtectedMemContext.hpp"
+#include "vkWsiUtil.hpp"
 
 namespace vkt
 {
@@ -75,11 +78,11 @@ std::vector<std::string> getValidationLayers (const vk::PlatformInterface& vkp)
 }
 
 
-vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& vkp, const vkt::Context& context)
+vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& vkp, const vkt::Context& context, const std::vector<std::string>& extraExtensions)
 {
 	const Extensions			supportedExtensions(vk::enumerateInstanceExtensionProperties(vkp, DE_NULL));
 	std::vector<std::string>	enabledLayers;
-	std::vector<std::string>	requiredExtensions;
+	std::vector<std::string>	requiredExtensions = extraExtensions;
 	const bool					isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
 
 	if (isValidationEnabled)
@@ -107,7 +110,8 @@ vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& 
 }
 
 deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
-											 vk::VkPhysicalDevice		physicalDevice)
+											 vk::VkPhysicalDevice		physicalDevice,
+											 vk::VkSurfaceKHR			surface)
 {
 	std::vector<vk::VkQueueFamilyProperties>	properties;
 	deUint32									numFamilies		= 0;
@@ -126,6 +130,10 @@ deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
 	{
 		vk::VkQueueFlags	flags = properties[idx].queueFlags;
 
+		if (surface != DE_NULL
+			&& vk::wsi::getPhysicalDeviceSurfaceSupport(vkd, physicalDevice, (deUint32)idx, surface) == VK_FALSE)
+			continue; // Skip the queue family index if it does not support the surface
+
 		if ((flags & requiredFlags) == requiredFlags)
 			return (deUint32)idx;
 	}
@@ -133,27 +141,31 @@ deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
 	TCU_THROW(NotSupportedError, "No matching universal protected queue found");
 }
 
-vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&		vkd,
-												 vk::VkPhysicalDevice			physicalDevice,
-												 const deUint32					queueFamilyIndex,
-												 const deUint32					apiVersion)
+vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
+												 vk::VkPhysicalDevice				physicalDevice,
+												 const deUint32						queueFamilyIndex,
+												 const deUint32						apiVersion,
+												 const std::vector<std::string>&	extraExtensions)
 {
 	const Extensions					supportedExtensions	(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
-	std::vector<const char*>			requiredExtensions;
-	deUint32							extensionsCount		= 1;
-	const char* const					extensions[]		=
-	{
-		"VK_KHR_protected_memory"
-	};
+	std::vector<std::string>			requiredExtensions;
+	std::vector<std::string>			extensions			= extraExtensions;
+	extensions.push_back("VK_KHR_protected_memory");
 
 	// Check if the physical device supports the protected memory extension name
-	for (deUint32 ndx = 0; ndx < extensionsCount; ++ndx)
+	for (deUint32 ndx = 0; ndx < extensions.size(); ++ndx)
 	{
 		if (!isDeviceExtensionSupported(apiVersion, supportedExtensions, vk::RequiredExtension(extensions[ndx])))
-			TCU_THROW(NotSupportedError, (std::string(extensions[ndx]) + " is not supported").c_str());
+			TCU_THROW(NotSupportedError, (extensions[ndx] + " is not supported").c_str());
 
 		if (!isCoreDeviceExtension(apiVersion, extensions[ndx]))
 			requiredExtensions.push_back(extensions[ndx]);
+	}
+
+	std::vector<const char*>			enabledExts			(requiredExtensions.size());
+	for (size_t idx = 0; idx < requiredExtensions.size(); ++idx)
+	{
+		enabledExts[idx] = requiredExtensions[idx].c_str();
 	}
 
 	// Check if the protected memory can be enabled on the physical device.
@@ -201,7 +213,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&		vkd,
 		0u,																// enabledLayerCount
 		DE_NULL,														// pEnabledLayerNames
 		(deUint32)requiredExtensions.size(),							// enabledExtensionCount
-		requiredExtensions.empty() ? DE_NULL : &requiredExtensions[0],	// pEnabledExtensionNames
+		requiredExtensions.empty() ? DE_NULL : &enabledExts[0],			// pEnabledExtensionNames
 		DE_NULL															// pEnabledFeatures
 	};
 

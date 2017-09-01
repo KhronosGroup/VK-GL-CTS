@@ -51,14 +51,17 @@ typedef std::vector<vk::VkVertexInputBindingDescription>	VertexBindings;
 typedef std::vector<vk::VkVertexInputAttributeDescription>	VertexAttribs;
 
 vk::Move<vk::VkInstance>			makeProtectedMemInstance			(const vk::PlatformInterface&		vkp,
-																		 const vkt::Context&				context);
+																		 const vkt::Context&				context,
+																		 const std::vector<std::string>&	extraExtensions = std::vector<std::string>());
 deUint32							chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&			vkd,
-																		 vk::VkPhysicalDevice				physicalDevice);
+																		 vk::VkPhysicalDevice				physicalDevice,
+																		 vk::VkSurfaceKHR					surface = DE_NULL);
 
 vk::Move<vk::VkDevice>				makeProtectedMemDevice				(const vk::InstanceDriver&			vkd,
 																		 vk::VkPhysicalDevice				physicalDevice,
 																		 const deUint32						queueFamilyIndex,
-																		 const deUint32						apiVersion);
+																		 const deUint32						apiVersion,
+																		 const std::vector<std::string>&	extraExtensions = std::vector<std::string>());
 vk::VkQueue							getProtectedQueue					(const vk::DeviceInterface&			vk,
 																		 vk::VkDevice						device,
 																		 const deUint32						queueFamilyIndex,

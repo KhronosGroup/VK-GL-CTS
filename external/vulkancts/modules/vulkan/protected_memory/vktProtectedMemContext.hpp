@@ -31,37 +31,42 @@
 #include "vktProtectedMemUtils.hpp"
 #include "tcuCommandLine.hpp"
 #include "vkMemUtil.hpp"
+#include "vkWsiUtil.hpp"
 
 namespace vkt
 {
 namespace ProtectedMem
 {
 
-
 class ProtectedContext
 {
 public:
-		ProtectedContext	(Context& ctx)
-			: m_context				(ctx)
-			, m_interface			(m_context.getPlatformInterface())
-			, m_instance			(makeProtectedMemInstance(m_interface, m_context))
-			, m_vki					(m_interface, *m_instance)
-			, m_phyDevice			(vk::chooseDevice(m_vki, *m_instance, m_context.getTestContext().getCommandLine()))
-			, m_queueFamilyIndex	(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice))
-			, m_device				(makeProtectedMemDevice(m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion()))
-			, m_allocator			(createAllocator())
-			, m_deviceDriver		(m_vki, *m_device)
-			, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
-		{}
+		ProtectedContext	(Context&						ctx,
+							 const std::vector<std::string>	instanceExtensions = std::vector<std::string>(),
+							 const std::vector<std::string>	deviceExtensions = std::vector<std::string>());
+
+		ProtectedContext	(Context&						ctx,
+							 vk::wsi::Type					wsiType,
+							 vk::wsi::Display&				display,
+							 vk::wsi::Window&				window,
+							 const std::vector<std::string>	instanceExtensions = std::vector<std::string>(),
+							 const std::vector<std::string>	deviceExtensions = std::vector<std::string>());
 
 	const vk::DeviceInterface&					getDeviceInterface	(void) const	{ return m_deviceDriver;					}
 	vk::VkDevice								getDevice			(void) const	{ return *m_device;							}
+	const vk::DeviceDriver&						getDeviceDriver		(void) const	{ return m_deviceDriver;					}
+	vk::VkPhysicalDevice						getPhysicalDevice	(void) const	{ return m_phyDevice;						}
 	vk::VkQueue									getQueue			(void) const	{ return m_queue;							}
 	deUint32									getQueueFamilyIndex	(void) const	{ return m_queueFamilyIndex;				}
 
 	tcu::TestContext&							getTestContext		(void) const	{ return m_context.getTestContext();		}
 	vk::BinaryCollection&						getBinaryCollection	(void) const	{ return m_context.getBinaryCollection();	}
 	vk::Allocator&								getDefaultAllocator	(void) const	{ return *m_allocator;	}
+
+	const vk::InstanceDriver&					getInstanceDriver	(void) const	{ return m_vki;								}
+	vk::VkInstance								getInstance			(void) const	{ return *m_instance;						}
+	const vk::VkSurfaceKHR						getSurface			(void) const	{ return *m_surface;						}
+
 
 private:
 	vk::Allocator* createAllocator (void)
@@ -73,16 +78,17 @@ private:
 		return new vk::SimpleAllocator(getDeviceInterface(), getDevice(), memoryProperties);
 	}
 
-	Context&						m_context;
-	const vk::PlatformInterface&	m_interface;
-	vk::Move<vk::VkInstance>		m_instance;
-	vk::InstanceDriver				m_vki;
-	vk::VkPhysicalDevice			m_phyDevice;
-	deUint32						m_queueFamilyIndex;
-	vk::Move<vk::VkDevice>			m_device;
+	Context&							m_context;
+	const vk::PlatformInterface&		m_interface;
+	vk::Move<vk::VkInstance>			m_instance;
+	vk::InstanceDriver					m_vki;
+	vk::VkPhysicalDevice				m_phyDevice;
+	const vk::Move<vk::VkSurfaceKHR>	m_surface;
+	deUint32							m_queueFamilyIndex;
+	vk::Move<vk::VkDevice>				m_device;
 	const de::UniquePtr<vk::Allocator>	m_allocator;
-	vk::DeviceDriver				m_deviceDriver;
-	vk::VkQueue						m_queue;
+	vk::DeviceDriver					m_deviceDriver;
+	vk::VkQueue							m_queue;
 };
 
 class ProtectedTestInstance : public TestInstance
