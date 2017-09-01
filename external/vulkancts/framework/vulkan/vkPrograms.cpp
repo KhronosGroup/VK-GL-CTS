@@ -99,11 +99,11 @@ ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
 
 } // anonymous
 
-void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramInfo* buildInfo)
+void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramInfo* buildInfo, const SpirvVersion spirvVersion)
 {
 	std::ostringstream validationLog;
 
-	if (!validateSpirV(binary.size(), &binary[0], &validationLog))
+	if (!validateSpirV(binary.size(), &binary[0], &validationLog, spirvVersion))
 	{
 		buildInfo->program.linkOk	 = false;
 		buildInfo->program.infoLog	+= "\n" + validationLog.str();
@@ -114,6 +114,7 @@ void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramIn
 
 ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* buildInfo)
 {
+	const SpirvVersion	spirvVersion	= program.buildOptions.targetVersion;
 	const bool			validateBinary	= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
 
@@ -129,13 +130,14 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 	}
 
 	if (validateBinary)
-		validateCompiledBinary(binary, buildInfo);
+		validateCompiledBinary(binary, buildInfo, spirvVersion);
 
 	return createProgramBinaryFromSpirV(binary);
 }
 
 ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* buildInfo)
 {
+	const SpirvVersion	spirvVersion	= program.buildOptions.targetVersion;
 	const bool			validateBinary	= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
 
@@ -151,24 +153,25 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 	}
 
 	if (validateBinary)
-		validateCompiledBinary(binary, buildInfo);
+		validateCompiledBinary(binary, buildInfo, spirvVersion);
 
 	return createProgramBinaryFromSpirV(binary);
 }
 
 ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo* buildInfo)
 {
+	const SpirvVersion	spirvVersion		= program.buildOptions.targetVersion;
 	const bool			validateBinary		= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
 
-	if (!assembleSpirV(&program, &binary, buildInfo))
+	if (!assembleSpirV(&program, &binary, buildInfo, spirvVersion))
 		TCU_THROW(InternalError, "Failed to assemble SPIR-V");
 
 	if (validateBinary)
 	{
 		std::ostringstream	validationLog;
 
-		if (!validateSpirV(binary.size(), &binary[0], &validationLog))
+		if (!validateSpirV(binary.size(), &binary[0], &validationLog, spirvVersion))
 		{
 			buildInfo->compileOk	 = false;
 			buildInfo->infoLog		+= "\n" + validationLog.str();
@@ -180,14 +183,14 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 	return createProgramBinaryFromSpirV(binary);
 }
 
-void disassembleProgram (const ProgramBinary& program, std::ostream* dst)
+void disassembleProgram (const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion)
 {
 	if (program.getFormat() == PROGRAM_FORMAT_SPIRV)
 	{
 		TCU_CHECK_INTERNAL(isSaneSpirVBinary(program));
 
 		if (isNativeSpirVBinaryEndianness())
-			disassembleSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst);
+			disassembleSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst, spirvVersion);
 		else
 			TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
 	}
@@ -195,7 +198,7 @@ void disassembleProgram (const ProgramBinary& program, std::ostream* dst)
 		TCU_THROW(NotSupportedError, "Unsupported program format");
 }
 
-bool validateProgram (const ProgramBinary& program, std::ostream* dst)
+bool validateProgram (const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion)
 {
 	if (program.getFormat() == PROGRAM_FORMAT_SPIRV)
 	{
@@ -206,7 +209,7 @@ bool validateProgram (const ProgramBinary& program, std::ostream* dst)
 		}
 
 		if (isNativeSpirVBinaryEndianness())
-			return validateSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst);
+			return validateSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst, spirvVersion);
 		else
 			TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
 	}
@@ -262,6 +265,95 @@ VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 	};
 
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(s_shaderStages, shaderType);
+}
+
+vk::SpirvVersion getSpirvVersionForAsm (const deUint32 vulkanVersion)
+{
+	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
+
+	if (vulkanVersion == VK_API_VERSION_1_0)
+		result = vk::SPIRV_VERSION_1_0;
+	else if (vulkanVersion >= VK_API_VERSION_1_1)
+		result = vk::SPIRV_VERSION_1_3;
+
+	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);
+
+	return result;
+}
+
+vk::SpirvVersion getSpirvVersionForGlsl (const deUint32 vulkanVersion)
+{
+	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
+
+	if (vulkanVersion == VK_API_VERSION_1_0)
+		result = vk::SPIRV_VERSION_1_0;
+	else if (vulkanVersion >= VK_API_VERSION_1_1)
+		result = vk::SPIRV_VERSION_1_3;
+
+	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);
+
+	return result;
+}
+
+SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
+{
+	DE_STATIC_ASSERT(SPIRV_VERSION_1_3 + 1 == SPIRV_VERSION_LAST);
+
+	if (binary.getFormat() != PROGRAM_FORMAT_SPIRV)
+		TCU_THROW(InternalError, "Binary is not in SPIR-V format");
+
+	if (!isSaneSpirVBinary(binary) || binary.getSize() < sizeof(SpirvBinaryHeader))
+		TCU_THROW(InternalError, "Invalid SPIR-V header format");
+
+	const deUint32				spirvBinaryVersion10	= 0x00010000;
+	const deUint32				spirvBinaryVersion11	= 0x00010100;
+	const deUint32				spirvBinaryVersion12	= 0x00010200;
+	const deUint32				spirvBinaryVersion13	= 0x00010300;
+	const SpirvBinaryHeader*	header					= reinterpret_cast<const SpirvBinaryHeader*>(binary.getBinary());
+	const deUint32				spirvVersion			= isNativeSpirVBinaryEndianness()
+														? header->version
+														: deReverseBytes32(header->version);
+	SpirvVersion				result					= SPIRV_VERSION_LAST;
+
+	switch (spirvVersion)
+	{
+		case spirvBinaryVersion10:	result = SPIRV_VERSION_1_0; break; //!< SPIR-V 1.0
+		case spirvBinaryVersion11:	result = SPIRV_VERSION_1_1; break; //!< SPIR-V 1.1
+		case spirvBinaryVersion12:	result = SPIRV_VERSION_1_2; break; //!< SPIR-V 1.2
+		case spirvBinaryVersion13:	result = SPIRV_VERSION_1_3; break; //!< SPIR-V 1.3
+		default:					TCU_THROW(InternalError, "Unknown SPIR-V version detected in binary");
+	}
+
+	return result;
+}
+
+std::string getSpirvVersionName (const SpirvVersion spirvVersion)
+{
+	DE_STATIC_ASSERT(SPIRV_VERSION_1_3 + 1 == SPIRV_VERSION_LAST);
+	DE_ASSERT(spirvVersion < SPIRV_VERSION_LAST);
+
+	std::string result;
+
+	switch (spirvVersion)
+	{
+		case SPIRV_VERSION_1_0: result = "1.0"; break; //!< SPIR-V 1.0
+		case SPIRV_VERSION_1_1: result = "1.1"; break; //!< SPIR-V 1.1
+		case SPIRV_VERSION_1_2: result = "1.2"; break; //!< SPIR-V 1.2
+		case SPIRV_VERSION_1_3: result = "1.3"; break; //!< SPIR-V 1.3
+		default:				result = "Unknown";
+	}
+
+	return result;
+}
+
+SpirvVersion& operator++(SpirvVersion& spirvVersion)
+{
+	if (spirvVersion == SPIRV_VERSION_LAST)
+		spirvVersion = SPIRV_VERSION_1_0;
+	else
+		spirvVersion = static_cast<SpirvVersion>(static_cast<deUint32>(spirvVersion) + 1);
+
+	return spirvVersion;
 }
 
 } // vk

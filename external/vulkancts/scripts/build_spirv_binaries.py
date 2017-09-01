@@ -44,6 +44,7 @@ VULKAN_MODULE		= Module("dEQP-VK", "../external/vulkancts/modules/vulkan", "deqp
 DEFAULT_BUILD_DIR	= os.path.join(tempfile.gettempdir(), "spirv-binaries", "{targetName}-{buildType}")
 DEFAULT_TARGET		= "null"
 DEFAULT_DST_DIR		= os.path.join(DEQP_DIR, "external", "vulkancts", "data", "vulkan", "prebuilt")
+DEFAULT_VULKAN_VERSION	= "1.1"
 
 def getBuildConfig (buildPathPtrn, targetName, buildType):
 	buildPath = buildPathPtrn.format(
@@ -59,7 +60,7 @@ def cleanDstDir (dstPath):
 		print "Removing %s" % os.path.join(dstPath, binFile)
 		os.remove(os.path.join(dstPath, binFile))
 
-def execBuildPrograms (buildCfg, generator, module, dstPath):
+def execBuildPrograms (buildCfg, generator, module, dstPath, vulkanVersion):
 	fullDstPath	= os.path.realpath(dstPath)
 	workDir		= os.path.join(buildCfg.getBuildDir(), "modules", module.dirName)
 
@@ -67,7 +68,7 @@ def execBuildPrograms (buildCfg, generator, module, dstPath):
 
 	try:
 		binPath = generator.getBinaryPath(buildCfg.getBuildType(), os.path.join(".", "vk-build-programs"))
-		execute([binPath, "--validate-spv", "--dst-path", fullDstPath])
+		execute([binPath, "--validate-spv", "--dst-path", fullDstPath, "--target-vulkan-version", vulkanVersion])
 	finally:
 		popWorkingDir()
 
@@ -94,6 +95,11 @@ def parseArgs ():
 						dest="dstPath",
 						default=DEFAULT_DST_DIR,
 						help="Destination path")
+	parser.add_argument("-u",
+						"--target-vulkan-version",
+						dest="vulkanVersion",
+						default=DEFAULT_VULKAN_VERSION,
+						help="Target Vulkan version")
 	return parser.parse_args()
 
 if __name__ == "__main__":
@@ -108,4 +114,4 @@ if __name__ == "__main__":
 	if not os.path.exists(args.dstPath):
 		os.makedirs(args.dstPath)
 
-	execBuildPrograms(buildCfg, generator, module, args.dstPath)
+	execBuildPrograms(buildCfg, generator, module, args.dstPath, args.vulkanVersion)

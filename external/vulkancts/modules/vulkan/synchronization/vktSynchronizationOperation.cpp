@@ -3429,15 +3429,15 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 {
 }
 
-OperationContext::OperationContext (const deUint32								apiVersion,
-									const vk::InstanceInterface&				vki,
-									const vk::DeviceInterface&					vkd,
-									vk::VkPhysicalDevice						physicalDevice,
-									vk::VkDevice								device,
-									vk::Allocator&								allocator,
-									const std::vector<std::string>&				deviceExtensions,
-									vk::ProgramCollection<vk::ProgramBinary>&	programCollection,
-									PipelineCacheData&							pipelineCacheData)
+OperationContext::OperationContext (const deUint32					apiVersion,
+									const vk::InstanceInterface&	vki,
+									const vk::DeviceInterface&		vkd,
+									vk::VkPhysicalDevice			physicalDevice,
+									vk::VkDevice					device,
+									vk::Allocator&					allocator,
+									const std::vector<std::string>&	deviceExtensions,
+									vk::BinaryCollection&			programCollection,
+									PipelineCacheData&				pipelineCacheData)
 	: m_vki					(vki)
 	, m_vk					(vkd)
 	, m_physicalDevice		(physicalDevice)

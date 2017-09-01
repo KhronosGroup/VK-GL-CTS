@@ -267,28 +267,6 @@ namespace vkt
 namespace SpirVAssembly
 {
 
-/*--------------------------------------------------------------------*//*!
- * \brief Test instance for compute pipeline
- *
- * The compute shader is specified in the format of SPIR-V assembly, which
- * is allowed to access MAX_NUM_INPUT_BUFFERS input storage buffers and
- * MAX_NUM_OUTPUT_BUFFERS output storage buffers maximally. The shader
- * source and input/output data are given in a ComputeShaderSpec object.
- *
- * This instance runs the given compute shader by feeding the data from input
- * buffers and compares the data in the output buffers with the expected.
- *//*--------------------------------------------------------------------*/
-class SpvAsmComputeShaderInstance : public TestInstance
-{
-public:
-										SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features);
-	tcu::TestStatus						iterate						(void);
-
-private:
-	const ComputeShaderSpec&			m_shaderSpec;
-	const ComputeTestFeatures			m_features;
-};
-
 // ComputeShaderTestCase implementations
 
 SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
@@ -300,11 +278,15 @@ SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, con
 
 void SpvAsmComputeShaderCase::initPrograms (SourceCollections& programCollection) const
 {
-	programCollection.spirvAsmSources.add("compute") << m_shaderSpec.assembly.c_str();
+	programCollection.spirvAsmSources.add("compute") << m_shaderSpec.assembly.c_str() << SpirVAsmBuildOptions(m_shaderSpec.spirvVersion);
 }
 
 TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 {
+	if (getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion) < ctx.getUsedApiVersion())
+	{
+		TCU_THROW(NotSupportedError, std::string("Vulkan higher than " + getVulkanName(ctx.getUsedApiVersion()) + " is required for this test to run").c_str());
+	}
 	return new SpvAsmComputeShaderInstance(ctx, m_shaderSpec, m_features);
 }
 
@@ -419,6 +401,10 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Create compute shader and pipeline.
 
 	const ProgramBinary&				binary				= m_context.getBinaryCollection().get("compute");
+	if (m_shaderSpec.verifyBinary && !m_shaderSpec.verifyBinary(binary))
+	{
+		return tcu::TestStatus::fail("Binary verification of SPIR-V in the test failed");
+	}
 	Unique<VkShaderModule>				module				(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
 
 	Unique<VkPipeline>					computePipeline		(createComputePipeline(vkdi, device, *pipelineLayout, *module, m_shaderSpec.entryPoint.c_str(), m_shaderSpec.specConstants));

@@ -39,11 +39,25 @@ using std::vector;
 
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
 
-static const spv_target_env s_defaultEnvironment = SPV_ENV_VULKAN_1_1;
-
-bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, SpirVProgramInfo* buildInfo)
+static spv_target_env mapTargetSpvEnvironment(SpirvVersion spirvVersion)
 {
-	const spv_context	context		= spvContextCreate(s_defaultEnvironment);
+	spv_target_env result = SPV_ENV_UNIVERSAL_1_0;
+
+	switch (spirvVersion)
+	{
+		case SPIRV_VERSION_1_0: result = SPV_ENV_UNIVERSAL_1_0; break;	//!< SPIR-V 1.0
+		case SPIRV_VERSION_1_1: result = SPV_ENV_UNIVERSAL_1_1; break;	//!< SPIR-V 1.1
+		case SPIRV_VERSION_1_2: result = SPV_ENV_UNIVERSAL_1_2; break;	//!< SPIR-V 1.2
+		case SPIRV_VERSION_1_3: result = SPV_ENV_UNIVERSAL_1_3; break;	//!< SPIR-V 1.3
+		default:				TCU_THROW(InternalError, "Unknown SPIR-V version");
+	}
+
+	return result;
+}
+
+bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, SpirVProgramInfo* buildInfo, SpirvVersion spirvVersion)
+{
+	const spv_context	context		= spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
 	spv_binary			binary		= DE_NULL;
 	spv_diagnostic		diagnostic	= DE_NULL;
 
@@ -84,9 +98,9 @@ bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, S
 	}
 }
 
-void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* dst)
+void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* dst, SpirvVersion spirvVersion)
 {
-	const spv_context	context		= spvContextCreate(s_defaultEnvironment);
+	const spv_context	context		= spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
 	spv_text			text		= DE_NULL;
 	spv_diagnostic		diagnostic	= DE_NULL;
 
@@ -116,9 +130,9 @@ void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::os
 	}
 }
 
-bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog)
+bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog, SpirvVersion spirvVersion)
 {
-	const spv_context	context		= spvContextCreate(s_defaultEnvironment);
+	const spv_context	context		= spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
 	spv_diagnostic		diagnostic	= DE_NULL;
 
 	try
@@ -145,17 +159,17 @@ bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostre
 
 #else // defined(DEQP_HAVE_SPIRV_TOOLS)
 
-bool assembleSpirV (const SpirVAsmSource*, std::vector<deUint32>*, SpirVProgramInfo*)
+bool assembleSpirV (const SpirVAsmSource*, std::vector<deUint32>*, SpirVProgramInfo*, SpirvVersion)
 {
 	TCU_THROW(NotSupportedError, "SPIR-V assembly not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }
 
-void disassembleSpirV (size_t, const deUint32*, std::ostream*)
+void disassembleSpirV (size_t, const deUint32*, std::ostream*, SpirvVersion)
 {
 	TCU_THROW(NotSupportedError, "SPIR-V disassembling not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }
 
-bool validateSpirV (size_t, const deUint32*, std::ostream*)
+bool validateSpirV (size_t, const deUint32*, std::ostream*, SpirvVersion)
 {
 	TCU_THROW(NotSupportedError, "SPIR-V validation not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }

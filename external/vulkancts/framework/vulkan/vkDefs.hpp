@@ -98,9 +98,20 @@ private:
 enum SpirvVersion
 {
 	SPIRV_VERSION_1_0	= 0,	//!< SPIR-V 1.0
+	SPIRV_VERSION_1_1	= 1,	//!< SPIR-V 1.1
+	SPIRV_VERSION_1_2	= 2,	//!< SPIR-V 1.2
+	SPIRV_VERSION_1_3	= 3,	//!< SPIR-V 1.3
 
 	SPIRV_VERSION_LAST
 };
+
+typedef struct
+{
+	deUint32	magic;
+	deUint32	version;
+	deUint32	generator;
+	deUint32	bound;
+} SpirvBinaryHeader;
 
 namespace wsi
 {

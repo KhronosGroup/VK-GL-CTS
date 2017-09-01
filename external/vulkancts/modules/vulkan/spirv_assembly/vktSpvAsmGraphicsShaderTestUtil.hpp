@@ -75,25 +75,31 @@ typedef bool (*GraphicsVerifyIOFunc) (const std::vector<Resource>&		inputs,
 									  const std::vector<Resource>&		expectedOutputs,
 									  tcu::TestLog&						log);
 
+typedef bool (*GraphicsVerifyBinaryFunc) (const ProgramBinary&	binary);
+
 // Resources used by graphics-pipeline-based tests.
 struct GraphicsResources
 {
 	// Resources used as inputs.
-	std::vector<Resource>	inputs;
+	std::vector<Resource>		inputs;
 	// Resources used as outputs. The data supplied will be used as
 	// the expected outputs for the corresponding bindings by default.
 	// If other behaviors are needed, please provide a custom verifyIO.
-	std::vector<Resource>	outputs;
+	std::vector<Resource>		outputs;
 	// If null, a default verification will be performed by comparing the
 	// memory pointed to by outputAllocations  and the contents of
 	// expectedOutputs. Otherwise the function pointed to by verifyIO will
 	// be called. If true is returned, then the test case is assumed to
 	// have passed, if false is returned, then the test case is assumed
 	// to have failed.
-	GraphicsVerifyIOFunc	verifyIO;
+	GraphicsVerifyIOFunc		verifyIO;
+	GraphicsVerifyBinaryFunc	verifyBinary;
+	SpirvVersion				spirvVersion;
 
 							GraphicsResources()
-								: verifyIO	(DE_NULL)
+								: verifyIO		(DE_NULL)
+								, verifyBinary	(DE_NULL)
+								, spirvVersion	(SPIRV_VERSION_1_0)
 							{}
 };
 
@@ -397,6 +403,12 @@ InstanceContext createInstanceContext (const ShaderElement							(&elements)[N],
 	return createInstanceContext(elements, defaultColors, defaultColors, testCodeFragments);
 }
 
+
+void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
+void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
+void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
+void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
+void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
 
 void createTestsForAllStages (const std::string&						name,
 							  const tcu::RGBA							(&inputColors)[4],

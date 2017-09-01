@@ -36,6 +36,19 @@ class TestLog;
 namespace vk
 {
 
+struct SpirVAsmBuildOptions
+{
+	SpirvVersion	targetVersion;
+
+	SpirVAsmBuildOptions (SpirvVersion targetVersion_)
+		: targetVersion	(targetVersion_)
+	{}
+
+	SpirVAsmBuildOptions (void)
+		: targetVersion	(SPIRV_VERSION_1_0)
+	{}
+};
+
 struct SpirVAsmSource
 {
 	SpirVAsmSource (void)
@@ -47,7 +60,14 @@ struct SpirVAsmSource
 	{
 	}
 
-	std::string		source;
+	SpirVAsmSource& operator<< (const SpirVAsmBuildOptions& buildOptions_)
+	{
+		buildOptions = buildOptions_;
+		return *this;
+	};
+
+	SpirVAsmBuildOptions	buildOptions;
+	std::string				source;
 };
 
 struct SpirVProgramInfo

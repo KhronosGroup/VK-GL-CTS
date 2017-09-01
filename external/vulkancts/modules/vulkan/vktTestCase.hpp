@@ -27,6 +27,7 @@
 #include "tcuTestCase.hpp"
 #include "vkDefs.hpp"
 #include "deUniquePtr.hpp"
+#include "vkPrograms.hpp"
 
 namespace glu
 {
@@ -36,8 +37,6 @@ struct ProgramSources;
 namespace vk
 {
 class PlatformInterface;
-class ProgramBinary;
-template<typename Program> class ProgramCollection;
 class Allocator;
 struct SourceCollections;
 }
@@ -50,14 +49,14 @@ class DefaultDevice;
 class Context
 {
 public:
-												Context							(tcu::TestContext&							testCtx,
-																				 const vk::PlatformInterface&				platformInterface,
-																				 vk::ProgramCollection<vk::ProgramBinary>&	progCollection);
+												Context							(tcu::TestContext&				testCtx,
+																				 const vk::PlatformInterface&	platformInterface,
+																				 vk::BinaryCollection&			progCollection);
 												~Context						(void);
 
 	tcu::TestContext&							getTestContext					(void) const { return m_testCtx;			}
 	const vk::PlatformInterface&				getPlatformInterface			(void) const { return m_platformInterface;	}
-	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection				(void) const { return m_progCollection;		}
+	vk::BinaryCollection&						getBinaryCollection				(void) const { return m_progCollection;		}
 
 	// Default instance & device, selected with --deqp-vk-device-id=N
 	deUint32									getInstanceVersion				(void) const;
@@ -81,7 +80,7 @@ public:
 protected:
 	tcu::TestContext&							m_testCtx;
 	const vk::PlatformInterface&				m_platformInterface;
-	vk::ProgramCollection<vk::ProgramBinary>&	m_progCollection;
+	vk::BinaryCollection&						m_progCollection;
 
 	const de::UniquePtr<DefaultDevice>			m_device;
 	const de::UniquePtr<vk::Allocator>			m_allocator;

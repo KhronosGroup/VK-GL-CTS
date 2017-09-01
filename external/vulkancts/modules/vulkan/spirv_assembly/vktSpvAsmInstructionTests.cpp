@@ -57,7 +57,10 @@
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
 #include "vktSpvAsmVariablePointersTests.hpp"
+#include "vktSpvAsmSpirvVersionTests.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vktSpvAsmLoopDepLenTests.hpp"
+#include "vktSpvAsmLoopDepInfTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -592,6 +595,103 @@ tcu::TestCaseGroup* createOpLineGroup (tcu::TestContext& testCtx)
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpLine appearing at different places", spec));
+
+	return group.release();
+}
+
+bool veryfiBinaryShader (const ProgramBinary& binary)
+{
+	const size_t	paternCount			= 3u;
+	bool paternsCheck[paternCount]		=
+	{
+		false, false, false
+	};
+	const string patersns[paternCount]	=
+	{
+		"VULKAN CTS",
+		"Negative values",
+		"Date: 2017/09/21"
+	};
+	size_t			paternNdx		= 0u;
+
+	for (size_t ndx = 0u; ndx < binary.getSize(); ++ndx)
+	{
+		if (false == paternsCheck[paternNdx] &&
+			patersns[paternNdx][0] == static_cast<char>(binary.getBinary()[ndx]) &&
+			deMemoryEqual((const char*)&binary.getBinary()[ndx], &patersns[paternNdx][0], patersns[paternNdx].length()))
+		{
+			paternsCheck[paternNdx]= true;
+			paternNdx++;
+			if (paternNdx == paternCount)
+				break;
+		}
+	}
+
+	for (size_t ndx = 0u; ndx < paternCount; ++ndx)
+	{
+		if (!paternsCheck[ndx])
+			return false;
+	}
+
+	return true;
+}
+
+tcu::TestCaseGroup* createOpModuleProcessedGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opmoduleprocessed", "Test the OpModuleProcessed instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 10;
+	vector<float>					positiveFloats	(numElements, 0);
+	vector<float>					negativeFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
+
+	spec.assembly =
+		string(getComputeAsmShaderPreamble()) +
+		"%fname = OpString \"negateInputs.comp\"\n"
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+		"OpModuleProcessed \"VULKAN CTS\"\n"					//OpModuleProcessed;
+		"OpModuleProcessed \"Negative values\"\n"
+		"OpModuleProcessed \"Date: 2017/09/21\"\n"
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits())
+
+		+ string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"OpLine %fname 0 1\n"
+
+		"OpLine %fname 1000 1\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+		"%main      = OpFunction %void None %voidf\n"
+
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %f32 %inloc\n"
+		"%neg       = OpFNegate %f32 %inval\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %neg\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
+	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+	spec.verifyBinary = veryfiBinaryShader;
+	spec.spirvVersion = SPIRV_VERSION_1_3;
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpModuleProcessed Tests", spec));
 
 	return group.release();
 }
@@ -4113,6 +4213,9 @@ tcu::TestCaseGroup* createLoopControlGroup (tcu::TestContext& testCtx)
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
 
+	group->addChild(new SpvAsmLoopControlDependencyLengthCase(testCtx, "dependency_length", "dependency_length"));
+	group->addChild(new SpvAsmLoopControlDependencyInfiniteCase(testCtx, "dependency_infinite", "dependency_infinite"));
+
 	return group.release();
 }
 
@@ -4526,7 +4629,6 @@ tcu::TestCaseGroup* createOpSourceContinuedTests (tcu::TestContext& testCtx)
 
 	return opSourceTests.release();
 }
-
 tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 {
 	RGBA								 defaultColors[4];
@@ -4580,6 +4682,44 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("opnoline", defaultColors, defaultColors, fragments, opLineTests.get());
 
 	return opLineTests.release();
+}
+
+tcu::TestCaseGroup* createOpModuleProcessedTests(tcu::TestContext& testCtx)
+{
+	RGBA								defaultColors[4];
+	de::MovePtr<tcu::TestCaseGroup>		opModuleProcessedTests			(new tcu::TestCaseGroup(testCtx, "opmoduleprocessed", "OpModuleProcessed instruction"));
+	map<string, string>					fragments;
+	std::vector<std::string>			noExtensions;
+	GraphicsResources					resources;
+
+	getDefaultColors(defaultColors);
+	resources.verifyBinary = veryfiBinaryShader;
+	resources.spirvVersion = SPIRV_VERSION_1_3;
+
+	fragments["moduleprocessed"]							=
+		"OpModuleProcessed \"VULKAN CTS\"\n"
+		"OpModuleProcessed \"Negative values\"\n"
+		"OpModuleProcessed \"Date: 2017/09/21\"\n";
+
+	fragments["pre_main"]	=
+		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"%second_param1 = OpFunctionParameter %v4f32\n"
+		"%label_secondfunction = OpLabel\n"
+		"OpReturnValue %second_param1\n"
+		"OpFunctionEnd\n";
+
+	fragments["testfun"]		=
+		// A %test_code function that returns its argument unchanged.
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_testfun = OpLabel\n"
+		"%val1 = OpFunctionCall %v4f32 %second_function %param1\n"
+		"OpReturnValue %val1\n"
+		"OpFunctionEnd\n";
+
+	createTestsForAllStages ("opmoduleprocessed", defaultColors, defaultColors, fragments, resources, noExtensions, opModuleProcessedTests.get());
+
+	return opModuleProcessedTests.release();
 }
 
 
@@ -7910,15 +8050,19 @@ tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
+	const bool testComputePipeline = true;
+
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
 	de::MovePtr<tcu::TestCaseGroup> computeTests		(new tcu::TestCaseGroup(testCtx, "compute", "Compute Instructions with special opcodes/operands"));
 	de::MovePtr<tcu::TestCaseGroup> graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics Instructions with special opcodes/operands"));
 
+	computeTests->addChild(createSpivVersionCheckTests(testCtx, testComputePipeline));
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx));
 	computeTests->addChild(createOpAtomicGroup(testCtx, false));
 	computeTests->addChild(createOpAtomicGroup(testCtx, true)); // Using new StorageBuffer decoration
 	computeTests->addChild(createOpLineGroup(testCtx));
+	computeTests->addChild(createOpModuleProcessedGroup(testCtx));
 	computeTests->addChild(createOpNoLineGroup(testCtx));
 	computeTests->addChild(createOpConstantNullGroup(testCtx));
 	computeTests->addChild(createOpConstantCompositeGroup(testCtx));
@@ -7967,9 +8111,11 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createConditionalBranchComputeGroup(testCtx));
 	computeTests->addChild(createIndexingComputeGroup(testCtx));
 	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
+	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
 	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
 	graphicsTests->addChild(createOpSourceContinuedTests(testCtx));
+	graphicsTests->addChild(createOpModuleProcessedTests(testCtx));
 	graphicsTests->addChild(createOpLineTests(testCtx));
 	graphicsTests->addChild(createOpNoLineTests(testCtx));
 	graphicsTests->addChild(createOpConstantNullTests(testCtx));

@@ -522,20 +522,20 @@ public:
 		virtual void	rendererDraw	(const VkPipelineLayout pipelineLayout, const VkCommandBuffer cmdBuffer) const = 0;
 	};
 
-	Renderer (const DeviceInterface&					vk,
-			  const VkDevice							device,
-			  Allocator&								allocator,
-			  const deUint32							queueFamilyIndex,
-			  const VkDescriptorSetLayout				descriptorSetLayout,	//!< may be NULL, if no descriptors are used
-			  ProgramCollection<vk::ProgramBinary>&		binaryCollection,
-			  const std::string&						vertexName,
-			  const std::string&						fragmentName,
-			  const VkBuffer							colorBuffer,
-			  const IVec2&								renderSize,
-			  const VkFormat							colorFormat,
-			  const Vec4&								clearColor,
-			  const VkPrimitiveTopology					topology,
-			  SpecializationMap							specMap = SpecializationMap())
+	Renderer (const DeviceInterface&		vk,
+			  const VkDevice				device,
+			  Allocator&					allocator,
+			  const deUint32				queueFamilyIndex,
+			  const VkDescriptorSetLayout	descriptorSetLayout,	//!< may be NULL, if no descriptors are used
+			  BinaryCollection&				binaryCollection,
+			  const std::string&			vertexName,
+			  const std::string&			fragmentName,
+			  const VkBuffer				colorBuffer,
+			  const IVec2&					renderSize,
+			  const VkFormat				colorFormat,
+			  const Vec4&					clearColor,
+			  const VkPrimitiveTopology		topology,
+			  SpecializationMap				specMap = SpecializationMap())
 		: m_colorBuffer				(colorBuffer)
 		, m_renderSize				(renderSize)
 		, m_colorFormat				(colorFormat)
