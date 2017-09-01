@@ -406,9 +406,9 @@ vk::Allocator* createAllocator (DefaultDevice* device)
 
 // Context
 
-Context::Context (tcu::TestContext&							testCtx,
-				  const vk::PlatformInterface&				platformInterface,
-				  vk::ProgramCollection<vk::ProgramBinary>&	progCollection)
+Context::Context (tcu::TestContext&				testCtx,
+				  const vk::PlatformInterface&	platformInterface,
+				  vk::BinaryCollection&			progCollection)
 	: m_testCtx				(testCtx)
 	, m_platformInterface	(platformInterface)
 	, m_progCollection		(progCollection)

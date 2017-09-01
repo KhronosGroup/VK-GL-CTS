@@ -34,6 +34,7 @@
 #include "vkShaderToSpirV.hpp"
 #include "vkDebugReportUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkApiVersion.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -221,9 +222,15 @@ TestCaseExecutor::~TestCaseExecutor (void)
 
 void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePath)
 {
-	const TestCase*			vktCase		= dynamic_cast<TestCase*>(testCase);
-	tcu::TestLog&			log			= m_context.getTestContext().getLog();
-	vk::SourceCollections	sourceProgs;
+	const TestCase*				vktCase						= dynamic_cast<TestCase*>(testCase);
+	tcu::TestLog&				log							= m_context.getTestContext().getLog();
+	const deUint32				usedVulkanVersion			= m_context.getUsedApiVersion();
+	const vk::SpirvVersion		spirvVersionForGlsl			= vk::getSpirvVersionForGlsl(usedVulkanVersion);
+	const vk::SpirvVersion		spirvVersionForAsm			= vk::getSpirvVersionForAsm(usedVulkanVersion);
+	vk::ShaderBuildOptions		defaultGlslBuildOptions		(spirvVersionForGlsl, 0u);
+	vk::ShaderBuildOptions		defaultHlslBuildOptions		(spirvVersionForGlsl, 0u);
+	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(spirvVersionForAsm);
+	vk::SourceCollections		sourceProgs					(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
 
 	DE_UNREF(casePath); // \todo [2015-03-13 pyry] Use this to identify ProgramCollection storage path
 
@@ -235,13 +242,16 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin(); progIter != sourceProgs.glslSources.end(); ++progIter)
 	{
+		if (progIter.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForGlsl(m_context.getUsedApiVersion()))
+			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
+
 		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
 
 		try
 		{
 			std::ostringstream disasm;
 
-			vk::disassembleProgram(*binProg, &disasm);
+			vk::disassembleProgram(*binProg, &disasm, spirvVersionForGlsl);
 
 			log << vk::SpirVAsmSource(disasm.str());
 		}
@@ -253,13 +263,16 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::HlslSourceCollection::Iterator progIter = sourceProgs.hlslSources.begin(); progIter != sourceProgs.hlslSources.end(); ++progIter)
 	{
+		if (progIter.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForGlsl(m_context.getUsedApiVersion()))
+			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
+
 		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::HlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
 
 		try
 		{
 			std::ostringstream disasm;
 
-			vk::disassembleProgram(*binProg, &disasm);
+			vk::disassembleProgram(*binProg, &disasm, spirvVersionForGlsl);
 
 			log << vk::SpirVAsmSource(disasm.str());
 		}
@@ -271,6 +284,9 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::SpirVAsmCollection::Iterator asmIterator = sourceProgs.spirvAsmSources.begin(); asmIterator != sourceProgs.spirvAsmSources.end(); ++asmIterator)
 	{
+		if (asmIterator.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForAsm(m_context.getUsedApiVersion()))
+			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
+
 		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection);
 	}
 

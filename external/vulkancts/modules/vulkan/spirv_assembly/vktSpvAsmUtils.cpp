@@ -213,5 +213,26 @@ Allocator* createAllocator (const InstanceInterface& instanceInterface, const Vk
 	return new SimpleAllocator(deviceInterface, device, memoryProperties);
 }
 
+deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
+{
+	switch(version)
+	{
+	case SPIRV_VERSION_1_0:
+		return VK_API_VERSION_1_0;
+	case SPIRV_VERSION_1_1:
+	case SPIRV_VERSION_1_2:
+	case SPIRV_VERSION_1_3:
+		return VK_API_VERSION_1_1;
+	default:
+		DE_ASSERT(0);
+	}
+	return 0u;
+}
+
+std::string	getVulkanName (const deUint32 version)
+{
+	return std::string(version == VK_API_VERSION_1_1 ? "1.1" : "1.0");
+}
+
 } // SpirVAssembly
 } // vkt

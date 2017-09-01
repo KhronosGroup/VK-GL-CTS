@@ -60,7 +60,7 @@ public:
 	deUint32									getQueueFamilyIndex	(void) const	{ return m_queueFamilyIndex;				}
 
 	tcu::TestContext&							getTestContext		(void) const	{ return m_context.getTestContext();		}
-	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection	(void) const	{ return m_context.getBinaryCollection();	}
+	vk::BinaryCollection&						getBinaryCollection	(void) const	{ return m_context.getBinaryCollection();	}
 	vk::Allocator&								getDefaultAllocator	(void) const	{ return *m_allocator;	}
 
 private:

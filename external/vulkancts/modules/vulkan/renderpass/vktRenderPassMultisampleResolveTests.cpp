@@ -561,14 +561,14 @@ Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
-									   VkDevice											device,
-									   VkRenderPass										renderPass,
-									   VkPipelineLayout									pipelineLayout,
-									   const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-									   deUint32											width,
-									   deUint32											height,
-									   deUint32											sampleCount)
+Move<VkPipeline> createRenderPipeline (const DeviceInterface&		vkd,
+									   VkDevice						device,
+									   VkRenderPass					renderPass,
+									   VkPipelineLayout				pipelineLayout,
+									   const vk::BinaryCollection&	binaryCollection,
+									   deUint32						width,
+									   deUint32						height,
+									   deUint32						sampleCount)
 {
 	const Unique<VkShaderModule>	vertexShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
 	const Unique<VkShaderModule>	fragmentShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));

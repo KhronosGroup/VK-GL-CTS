@@ -25,6 +25,12 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmUtils.hpp
 	vktSpvAsmVariablePointersTests.cpp
 	vktSpvAsmVariablePointersTests.hpp
+	vktSpvAsmSpirvVersionTests.cpp
+	vktSpvAsmSpirvVersionTests.hpp
+	vktSpvAsmLoopDepLenTests.cpp
+	vktSpvAsmLoopDepLenTests.hpp
+	vktSpvAsmLoopDepInfTests.cpp
+	vktSpvAsmLoopDepInfTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

@@ -94,6 +94,10 @@ vk::Allocator* createAllocator (const vk::InstanceInterface& instanceInterface,
 								const vk::DeviceInterface& deviceInterface,
 								const vk::VkDevice device);
 
+deUint32 getMinRequiredVulkanVersion (const vk::SpirvVersion version);
+
+std::string	getVulkanName (const deUint32 version);
+
 } // SpirVAssembly
 } // vkt
 
