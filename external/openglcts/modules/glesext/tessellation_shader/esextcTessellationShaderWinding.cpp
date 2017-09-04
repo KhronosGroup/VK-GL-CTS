@@ -47,11 +47,14 @@ public:
 	void		  init(void);
 	void		  deinit(void);
 	IterateResult iterate(void);
+	void prepareFramebuffer();
 
 private:
 	static const int RENDER_SIZE = 64;
 
 	de::SharedPtr<const glu::ShaderProgram> m_program;
+	glw::GLuint m_rbo;
+	glw::GLuint m_fbo;
 };
 
 WindingCase::WindingCase(glcts::Context& context, const ExtParameters& extParams, std::string name,
@@ -62,7 +65,9 @@ WindingCase::WindingCase(glcts::Context& context, const ExtParameters& extParams
 	DE_ASSERT((winding.compare("cw") == 0) || (winding.compare("ccw") == 0));
 
 	m_specializationMap["PRIMITIVE_TYPE"] = primitiveType;
-	m_specializationMap["WINDING"]		  = winding;
+	m_specializationMap["WINDING"]        = winding;
+	m_rbo                                 = 0;
+	m_fbo                                 = 0;
 }
 
 void WindingCase::init(void)
@@ -120,7 +125,49 @@ void WindingCase::init(void)
 
 void WindingCase::deinit(void)
 {
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	if (m_fbo)
+	{
+		gl.deleteFramebuffers(1, &m_fbo);
+		m_fbo = 0;
+	}
+
+	if (m_rbo)
+	{
+		gl.deleteRenderbuffers(1, &m_rbo);
+		m_rbo = 0;
+	}
+
 	m_program.clear();
+}
+
+/** @brief Bind default framebuffer object.
+ *
+ *  @note The function may throw if unexpected error has occured.
+ */
+void WindingCase::prepareFramebuffer()
+{
+	/* Shortcut for GL functionality */
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+	gl.genRenderbuffers(1, &m_rbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenRenderbuffers call failed.");
+
+	gl.bindRenderbuffer(GL_RENDERBUFFER, m_rbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindRenderbuffer call failed.");
+
+	gl.renderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, RENDER_SIZE, RENDER_SIZE);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glRenderbufferStorage call failed.");
+
+	gl.genFramebuffers(1, &m_fbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers call failed.");
+
+	gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer call failed.");
+
+	gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_rbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferRenderbuffer call failed.");
 }
 
 WindingCase::IterateResult WindingCase::iterate(void)
@@ -136,6 +183,7 @@ WindingCase::IterateResult WindingCase::iterate(void)
 	const bool testWindingIsCW				= (m_specializationMap["WINDING"].compare("cw") == 0);
 	bool	   success						= true;
 
+	prepareFramebuffer();
 	gl.viewport(0, 0, RENDER_SIZE, RENDER_SIZE);
 	gl.clearColor(1.0f, 0.0f, 0.0f, 1.0f);
 	gl.useProgram(programGL);
