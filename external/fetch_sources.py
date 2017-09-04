@@ -28,6 +28,7 @@ import hashlib
 import argparse
 import subprocess
 import ssl
+import stat
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
@@ -38,6 +39,10 @@ EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
 def computeChecksum (data):
 	return hashlib.sha256(data).hexdigest()
 
+def onReadonlyRemoveError (func, path, exc_info):
+	os.chmod(path, stat.S_IWRITE)
+	os.unlink(path)
+
 class Source:
 	def __init__(self, baseDir, extractDir):
 		self.baseDir		= baseDir
@@ -45,6 +50,10 @@ class Source:
 
 	def clean (self):
 		fullDstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
+		# Remove read-only first
+		readonlydir = os.path.join(fullDstPath, ".git", "objects", "pack")
+		if os.path.exists(readonlydir):
+			shutil.rmtree(readonlydir, onerror = onReadonlyRemoveError )
 		if os.path.exists(fullDstPath):
 			shutil.rmtree(fullDstPath, ignore_errors=False)
 
