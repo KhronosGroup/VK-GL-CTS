@@ -955,8 +955,8 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 
 		drawState.numSamples				= m_samples;
 		drawState.sampleShadingEnable		= true;
-		vulkanProgram.descriptorSetLayout	= descriptorSetLayout;
-		vulkanProgram.descriptorSet			= descriptorSet;
+		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
+		vulkanProgram.descriptorSet			= *descriptorSet;
 
 		VulkanDrawContext		vulkanDrawContext(m_context, drawState, drawCallData, vulkanProgram);
 		vulkanDrawContext.draw();
@@ -1498,8 +1498,8 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 
 		drawState.numSamples				= m_sampleCount;
 		drawState.sampleShadingEnable		= true;
-		vulkanProgram.descriptorSetLayout	= descriptorSetLayout;
-		vulkanProgram.descriptorSet			= descriptorSet;
+		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
+		vulkanProgram.descriptorSet			= *descriptorSet;
 
 		VulkanDrawContext	vulkanDrawContext(m_context, drawState, drawCallData, vulkanProgram);
 		vulkanDrawContext.draw();
