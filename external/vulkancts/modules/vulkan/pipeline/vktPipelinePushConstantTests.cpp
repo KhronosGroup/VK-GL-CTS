@@ -1445,6 +1445,8 @@ tcu::TestStatus PushConstantComputeTestInstance::iterate (void)
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity*/));
 
+	invalidateMappedMemoryRange(vk, vkDevice, m_outBufferAlloc->getMemory(), m_outBufferAlloc->getOffset(), (size_t)(sizeof(tcu::Vec4) * 8));
+
 	// verify result
 	std::vector<tcu::Vec4>	expectValue(8, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
 	if (deMemCmp((void*)(&expectValue[0]), m_outBufferAlloc->getHostPtr(), (size_t)(sizeof(tcu::Vec4) * 8)))

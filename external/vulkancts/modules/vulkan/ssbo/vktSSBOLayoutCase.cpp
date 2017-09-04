@@ -2039,29 +2039,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			mappedBlockPtrs = blockLocationsToPtrs(m_refLayout, blockLocations, mapPtrs);
 			copyData(m_refLayout, mappedBlockPtrs, m_refLayout, m_initialData.pointers);
 
-			if (m_bufferMode == SSBOLayoutCase::BUFFERMODE_PER_BLOCK)
+			for (size_t allocNdx = 0; allocNdx < m_uniformAllocs.size(); allocNdx++)
 			{
-				DE_ASSERT(m_uniformAllocs.size() == bufferSizes.size());
-				for (size_t allocNdx = 0; allocNdx < m_uniformAllocs.size(); allocNdx++)
-				{
-					const int size = bufferSizes[allocNdx];
-					vk::Allocation* alloc = m_uniformAllocs[allocNdx].get();
-					flushMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), size);
-				}
-			}
-			else
-			{
-				DE_ASSERT(m_bufferMode == SSBOLayoutCase::BUFFERMODE_SINGLE);
-				DE_ASSERT(m_uniformAllocs.size() == 1);
-				int totalSize = 0;
-				for (size_t bufferNdx = 0; bufferNdx < bufferSizes.size(); bufferNdx++)
-				{
-					totalSize += bufferSizes[bufferNdx];
-				}
-
-				DE_ASSERT(totalSize > 0);
-				vk::Allocation* alloc = m_uniformAllocs[0].get();
-				flushMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), totalSize);
+				vk::Allocation* alloc = m_uniformAllocs[allocNdx].get();
+				flushMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), VK_WHOLE_SIZE);
 			}
 		}
 	}
@@ -2216,6 +2197,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		const int refCount = 1;
 		int resCount = 0;
 
+		invalidateMappedMemoryRange(vk, device, acBufferAlloc->getMemory(), acBufferAlloc->getOffset(), acBufferSize);
+
 		resCount = *(const int*)((const deUint8*)acBufferAlloc->getHostPtr());
 
 		counterOk = (refCount == resCount);
@@ -2223,6 +2206,12 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		{
 			m_context.getTestContext().getLog() << TestLog::Message << "Error: ac_numPassed = " << resCount << ", expected " << refCount << TestLog::EndMessage;
 		}
+	}
+
+	for (size_t allocNdx = 0; allocNdx < m_uniformAllocs.size(); allocNdx++)
+	{
+		vk::Allocation *alloc = m_uniformAllocs[allocNdx].get();
+		invalidateMappedMemoryRange(vk, device, alloc->getMemory(), alloc->getOffset(), VK_WHOLE_SIZE);
 	}
 
 	// Validate result
