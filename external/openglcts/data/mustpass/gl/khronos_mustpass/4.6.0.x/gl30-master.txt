@@ -7,9 +7,6 @@ KHR-GL30.info.render_target
 KHR-GL30.clip_distance.coverage
 KHR-GL30.clip_distance.functional
 KHR-GL30.clip_distance.negative
-KHR-GL30.gpu_shader5_gl.implicit_conversions
-KHR-GL30.gpu_shader5_gl.function_overloading
-KHR-GL30.gpu_shader5_gl.float_encoding
 KHR-GL30.glsl_noperspective.functionaltest
 KHR-GL30.transform_feedback.api_errors_test
 KHR-GL30.transform_feedback.linking_errors_test

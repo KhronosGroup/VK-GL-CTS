@@ -7,9 +7,6 @@ KHR-GL41.info.render_target
 KHR-GL41.clip_distance.coverage
 KHR-GL41.clip_distance.functional
 KHR-GL41.clip_distance.negative
-KHR-GL41.gpu_shader5_gl.implicit_conversions
-KHR-GL41.gpu_shader5_gl.function_overloading
-KHR-GL41.gpu_shader5_gl.float_encoding
 KHR-GL41.glsl_noperspective.functionaltest
 KHR-GL41.transform_feedback.api_errors_test
 KHR-GL41.transform_feedback.linking_errors_test
@@ -202,6 +199,9 @@ KHR-GL41.CommonBugs.CommonBug_PerVertexValidation
 KHR-GL41.CommonBugs.CommonBug_ReservedNames
 KHR-GL41.CommonBugs.CommonBug_SparseBuffersWithCopyOps
 KHR-GL41.texture_size_promotion.functional
+KHR-GL41.gpu_shader5_gl.implicit_conversions
+KHR-GL41.gpu_shader5_gl.function_overloading
+KHR-GL41.gpu_shader5_gl.float_encoding
 KHR-GL41.transform_feedback_overflow_query_ARB.implementation-dependent-state
 KHR-GL41.transform_feedback_overflow_query_ARB.default-context-state
 KHR-GL41.transform_feedback_overflow_query_ARB.context-state-update

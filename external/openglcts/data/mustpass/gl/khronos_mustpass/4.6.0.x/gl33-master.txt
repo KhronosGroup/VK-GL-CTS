@@ -7,9 +7,6 @@ KHR-GL33.info.render_target
 KHR-GL33.clip_distance.coverage
 KHR-GL33.clip_distance.functional
 KHR-GL33.clip_distance.negative
-KHR-GL33.gpu_shader5_gl.implicit_conversions
-KHR-GL33.gpu_shader5_gl.function_overloading
-KHR-GL33.gpu_shader5_gl.float_encoding
 KHR-GL33.glsl_noperspective.functionaltest
 KHR-GL33.transform_feedback.api_errors_test
 KHR-GL33.transform_feedback.linking_errors_test
@@ -202,6 +199,9 @@ KHR-GL33.CommonBugs.CommonBug_PerVertexValidation
 KHR-GL33.CommonBugs.CommonBug_ReservedNames
 KHR-GL33.CommonBugs.CommonBug_SparseBuffersWithCopyOps
 KHR-GL33.texture_size_promotion.functional
+KHR-GL33.gpu_shader5_gl.implicit_conversions
+KHR-GL33.gpu_shader5_gl.function_overloading
+KHR-GL33.gpu_shader5_gl.float_encoding
 KHR-GL33.transform_feedback_overflow_query_ARB.implementation-dependent-state
 KHR-GL33.transform_feedback_overflow_query_ARB.default-context-state
 KHR-GL33.transform_feedback_overflow_query_ARB.context-state-update

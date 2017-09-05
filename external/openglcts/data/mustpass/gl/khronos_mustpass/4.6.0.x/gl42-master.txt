@@ -7,9 +7,6 @@ KHR-GL42.info.render_target
 KHR-GL42.clip_distance.coverage
 KHR-GL42.clip_distance.functional
 KHR-GL42.clip_distance.negative
-KHR-GL42.gpu_shader5_gl.implicit_conversions
-KHR-GL42.gpu_shader5_gl.function_overloading
-KHR-GL42.gpu_shader5_gl.float_encoding
 KHR-GL42.glsl_noperspective.functionaltest
 KHR-GL42.transform_feedback.api_errors_test
 KHR-GL42.transform_feedback.linking_errors_test
@@ -202,6 +199,9 @@ KHR-GL42.CommonBugs.CommonBug_PerVertexValidation
 KHR-GL42.CommonBugs.CommonBug_ReservedNames
 KHR-GL42.CommonBugs.CommonBug_SparseBuffersWithCopyOps
 KHR-GL42.texture_size_promotion.functional
+KHR-GL42.gpu_shader5_gl.implicit_conversions
+KHR-GL42.gpu_shader5_gl.function_overloading
+KHR-GL42.gpu_shader5_gl.float_encoding
 KHR-GL42.transform_feedback_overflow_query_ARB.implementation-dependent-state
 KHR-GL42.transform_feedback_overflow_query_ARB.default-context-state
 KHR-GL42.transform_feedback_overflow_query_ARB.context-state-update
