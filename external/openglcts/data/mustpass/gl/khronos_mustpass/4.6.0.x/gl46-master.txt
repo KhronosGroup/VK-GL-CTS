@@ -3877,6 +3877,7 @@ KHR-GL46.shader_storage_buffer_object.basic-matrixOperations-case6-cs
 KHR-GL46.shader_storage_buffer_object.basic-matrixOperations-case7-vs
 KHR-GL46.shader_storage_buffer_object.basic-matrixOperations-case7-cs
 KHR-GL46.shader_storage_buffer_object.basic-noBindingLayout
+KHR-GL46.shader_storage_buffer_object.basic-readonly-writeonly
 KHR-GL46.shader_storage_buffer_object.advanced-switchBuffers
 KHR-GL46.shader_storage_buffer_object.advanced-switchBuffers-cs
 KHR-GL46.shader_storage_buffer_object.advanced-switchPrograms

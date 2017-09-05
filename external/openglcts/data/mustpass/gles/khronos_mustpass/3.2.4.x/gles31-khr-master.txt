@@ -1900,6 +1900,7 @@ KHR-GLES31.core.shader_storage_buffer_object.basic-matrixOperations-case6-vs
 KHR-GLES31.core.shader_storage_buffer_object.basic-matrixOperations-case6-cs
 KHR-GLES31.core.shader_storage_buffer_object.basic-matrixOperations-case7-vs
 KHR-GLES31.core.shader_storage_buffer_object.basic-matrixOperations-case7-cs
+KHR-GLES31.core.shader_storage_buffer_object.basic-readonly-writeonly
 KHR-GLES31.core.shader_storage_buffer_object.advanced-switchBuffers-vs
 KHR-GLES31.core.shader_storage_buffer_object.advanced-switchBuffers-cs
 KHR-GLES31.core.shader_storage_buffer_object.advanced-switchPrograms-vs

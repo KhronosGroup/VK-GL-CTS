@@ -4857,6 +4857,72 @@ class BasicMatrixOperationsCase7CS : public BasicMatrixOperationsBaseCS
 	}
 };
 
+//----------------------------------------------------------------------------
+// 1.13 BasicReadonlyWriteonly
+//-----------------------------------------------------------------------------
+class BasicReadonlyWriteonly : public ShaderStorageBufferObjectBase
+{
+	GLuint m_program;
+	GLuint m_storage_buffer[2];
+
+	virtual long Setup()
+	{
+		m_program = 0;
+		memset(m_storage_buffer, 0, sizeof(m_storage_buffer));
+		return NO_ERROR;
+	}
+
+	virtual long Run()
+	{
+		const char* const glsl_cs =
+			NL "layout(local_size_x = 1) in;" NL "layout(std430, binding = 0) buffer Input {" NL
+			   "  readonly writeonly int g_in[];" NL "};" NL "layout(std430, binding = 1) buffer Output {" NL
+			   "  int count;" NL "} g_output;" NL "void main() {" NL "  g_output.count = g_in.length();" NL "}";
+
+		m_program = CreateProgramCS(glsl_cs);
+		glLinkProgram(m_program);
+		if (!CheckProgram(m_program))
+			return ERROR;
+
+		glGenBuffers(2, m_storage_buffer);
+
+		/* Input */
+		int input_data[] = { 1, 2, 3 };
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_storage_buffer[0]);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(input_data), input_data, GL_STATIC_DRAW);
+
+		/* Output */
+		int output_data[] = { 0 };
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_storage_buffer[1]);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(output_data), output_data, GL_DYNAMIC_COPY);
+
+		glUseProgram(m_program);
+		glDispatchCompute(1, 1, 1);
+		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_storage_buffer[1]);
+		int* data = (int*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 4, GL_MAP_READ_BIT);
+		if (!data)
+			return ERROR;
+		if (*data != DE_LENGTH_OF_ARRAY(input_data))
+		{
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Buffer data is " << *data << " should be "
+												<< sizeof(input_data) << tcu::TestLog::EndMessage;
+			return ERROR;
+		}
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		return NO_ERROR;
+	}
+
+	virtual long Cleanup()
+	{
+		glUseProgram(0);
+		glDeleteProgram(m_program);
+		glDeleteBuffers(2, m_storage_buffer);
+		return NO_ERROR;
+	}
+};
+
 //-----------------------------------------------------------------------------
 // 2.1 AdvancedSwitchBuffers
 //-----------------------------------------------------------------------------
@@ -8532,6 +8598,7 @@ void ShaderStorageBufferObjectTests::init()
 							 TestSubcase::Create<BasicMatrixOperationsCase7VS>));
 	addChild(new TestSubcase(m_context, "basic-matrixOperations-case7-cs",
 							 TestSubcase::Create<BasicMatrixOperationsCase7CS>));
+	addChild(new TestSubcase(m_context, "basic-readonly-writeonly", TestSubcase::Create<BasicReadonlyWriteonly>));
 	addChild(new TestSubcase(m_context, "advanced-switchBuffers-vs", TestSubcase::Create<AdvancedSwitchBuffersVS>));
 	addChild(new TestSubcase(m_context, "advanced-switchBuffers-cs", TestSubcase::Create<AdvancedSwitchBuffersCS>));
 	addChild(new TestSubcase(m_context, "advanced-switchPrograms-vs", TestSubcase::Create<AdvancedSwitchProgramsVS>));

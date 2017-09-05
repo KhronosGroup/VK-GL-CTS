@@ -3876,6 +3876,7 @@ KHR-GL43.shader_storage_buffer_object.basic-matrixOperations-case6-cs
 KHR-GL43.shader_storage_buffer_object.basic-matrixOperations-case7-vs
 KHR-GL43.shader_storage_buffer_object.basic-matrixOperations-case7-cs
 KHR-GL43.shader_storage_buffer_object.basic-noBindingLayout
+KHR-GL43.shader_storage_buffer_object.basic-readonly-writeonly
 KHR-GL43.shader_storage_buffer_object.advanced-switchBuffers
 KHR-GL43.shader_storage_buffer_object.advanced-switchBuffers-cs
 KHR-GL43.shader_storage_buffer_object.advanced-switchPrograms
