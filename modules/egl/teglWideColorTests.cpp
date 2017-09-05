@@ -100,6 +100,7 @@ public:
 	void				init						(void);
 	void				deinit						(void);
 	void				checkPixelFloatSupport		(void);
+	void				checkColorSpaceSupport		(void);
 	void				checkDisplayP3Support		(void);
 	void				checkDisplayP3LinearSupport (void);
 	void				check1010102Support			(void);
@@ -289,6 +290,14 @@ void WideColorTest::checkPixelFloatSupport (void)
 
 	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_pixel_format_float"))
 		TCU_THROW(NotSupportedError, "EGL_EXT_pixel_format_float is not supported");
+}
+
+void WideColorTest::checkColorSpaceSupport (void)
+{
+	const Library&	egl	= m_eglTestCtx.getLibrary();
+
+	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_KHR_gl_colorspace"))
+		TCU_THROW(NotSupportedError, "EGL_KHR_gl_colorspace is not supported");
 }
 
 void WideColorTest::checkDisplayP3Support (void)
@@ -609,6 +618,9 @@ void WideColorSurfaceTest::init (void)
 		TCU_THROW(NotSupportedError, "EGL_KHR_gl_colorspace is not supported");
 
 	switch (m_colorSpace) {
+		case EGL_GL_COLORSPACE_SRGB_KHR:
+			checkColorSpaceSupport();
+			break;
 		case EGL_GL_COLORSPACE_DISPLAY_P3_EXT:
 			checkDisplayP3Support();
 			break;
