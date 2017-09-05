@@ -1252,7 +1252,7 @@ glu::ProgramSources ShadersOOB::genComputeSource (void)
 											 ? "	sb_out.values.x = values[u_index];\n"
 											 : "	sb_out.values[u_index] = values.x;\n";
 
-		shaderBody	<< "	highp vec4 values = vec4(1.0f) * float(groupNdx);\n"
+		shaderBody	<< "	highp vec4 values = vec4(1.0f, 0.0f, 3.0f, 2.0f) * float(groupNdx);\n"
 					<< readWriteStatement;
 	}
 	else
