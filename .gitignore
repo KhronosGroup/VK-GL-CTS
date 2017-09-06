@@ -1,6 +1,7 @@
 *~
 *.pyc
 *.user
+*.class
 .*
 !.gitignore
 !.editorconfig

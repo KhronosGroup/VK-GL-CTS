@@ -110,9 +110,6 @@ public:
 		THREADSTATUS_NOT_STARTED = 0,
 		THREADSTATUS_RUNNING,
 		THREADSTATUS_READY,
-
-		THREADSTATUS_NOT_SUPPORTED,
-		THREADSTATUS_ERROR
 	};
 
 					TestThread	(MultiThreadedTest& test, int id);
@@ -149,18 +146,20 @@ public:
 
 	virtual bool			runThread			(TestThread& thread) = 0;
 	virtual IterateResult	iterate				(void);
-	bool					execTest			(TestThread& thread);
+	void					execTest			(TestThread& thread);
 
 	const Library&			getLibrary			(void) const { return m_eglTestCtx.getLibrary(); }
 
 protected:
-	void					barrier				(TestThread& thread);
+	void					barrier				(void);
 
 private:
 	int						m_threadCount;
 	bool					m_initialized;
 	deUint64				m_startTimeUs;
 	const deUint64			m_timeoutUs;
+	bool					m_ok;
+	bool					m_supported;
 	vector<TestThread*>		m_threads;
 
 	volatile deInt32		m_barrierWaiters;
@@ -189,10 +188,7 @@ void TestThread::run (void)
 
 	try
 	{
-		if (m_test.execTest(*this))
-			m_status = THREADSTATUS_READY;
-		else
-			m_status = THREADSTATUS_ERROR;
+		m_test.execTest(*this);
 	}
 	catch (const TestThread::TestStop&)
 	{
@@ -212,15 +208,15 @@ void TestThread::run (void)
 	}
 
 	getLibrary().releaseThread();
+	m_status = THREADSTATUS_READY;
 }
 
-bool MultiThreadedTest::execTest (TestThread& thread)
+void MultiThreadedTest::execTest (TestThread& thread)
 {
-	bool isOk = false;
-
 	try
 	{
-		isOk = runThread(thread);
+		if (!runThread(thread))
+			m_ok = false;
 	}
 	catch (const TestThread::TestStop&)
 	{
@@ -229,9 +225,7 @@ bool MultiThreadedTest::execTest (TestThread& thread)
 	}
 	catch (const tcu::NotSupportedError&)
 	{
-		// Set status of each thread
-		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
-			m_threads[threadNdx]->setStatus(TestThread::THREADSTATUS_NOT_SUPPORTED);
+		m_supported = false;
 
 		// Release barriers
 		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
@@ -244,9 +238,7 @@ bool MultiThreadedTest::execTest (TestThread& thread)
 	}
 	catch(...)
 	{
-		// Set status of each thread
-		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
-			m_threads[threadNdx]->setStatus(TestThread::THREADSTATUS_ERROR);
+		m_ok = false;
 
 		// Release barriers
 		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
@@ -257,8 +249,6 @@ bool MultiThreadedTest::execTest (TestThread& thread)
 
 		throw;
 	}
-
-	return isOk;
 }
 
 MultiThreadedTest::MultiThreadedTest (EglTestContext& eglTestCtx, const char* name, const char* description, int threadCount, deUint64 timeoutUs)
@@ -267,7 +257,8 @@ MultiThreadedTest::MultiThreadedTest (EglTestContext& eglTestCtx, const char* na
 	, m_initialized			(false)
 	, m_startTimeUs			(0)
 	, m_timeoutUs			(timeoutUs)
-
+	, m_ok					(true)
+	, m_supported			(true)
 	, m_barrierWaiters		(0)
 	, m_barrierSemaphore1	(0, 0)
 	, m_barrierSemaphore2	(1, 0)
@@ -297,7 +288,7 @@ void MultiThreadedTest::deinit (void)
 	}
 }
 
-void MultiThreadedTest::barrier (TestThread& thread)
+void MultiThreadedTest::barrier (void)
 {
 	{
 		const deInt32 waiters = deAtomicIncrement32(&m_barrierWaiters);
@@ -330,7 +321,7 @@ void MultiThreadedTest::barrier (TestThread& thread)
 	}
 
 	// Barrier was released due an error in other thread
-	if (thread.getStatus() != TestThread::THREADSTATUS_RUNNING)
+	if (!m_ok || !m_supported)
 		throw TestThread::TestStop();
 }
 
@@ -339,6 +330,9 @@ TestCase::IterateResult MultiThreadedTest::iterate (void)
 	if (!m_initialized)
 	{
 		m_testCtx.getLog() << tcu::TestLog::Message << "Thread timeout limit: " << m_timeoutUs << "us" << tcu::TestLog::EndMessage;
+
+		m_ok = true;
+		m_supported = true;
 
 		// Create threads
 		m_threads.reserve(m_threadCount);
@@ -367,18 +361,6 @@ TestCase::IterateResult MultiThreadedTest::iterate (void)
 		// Join threads
 		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
 			m_threads[threadNdx]->join();
-
-		bool isOk			= true;
-		bool notSupported	= false;
-
-		for (int threadNdx = 0; threadNdx < (int)m_threads.size(); threadNdx++)
-		{
-			if (m_threads[threadNdx]->getStatus() == TestThread::THREADSTATUS_ERROR)
-				isOk = false;
-
-			if (m_threads[threadNdx]->getStatus() == TestThread::THREADSTATUS_NOT_SUPPORTED)
-				notSupported = true;
-		}
 
 		// Get logs
 		{
@@ -419,9 +401,9 @@ TestCase::IterateResult MultiThreadedTest::iterate (void)
 		m_threads.clear();
 
 		// Set result
-		if (isOk)
+		if (m_ok)
 		{
-			if (notSupported)
+			if (!m_supported)
 				m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
 			else
 				m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -555,7 +537,7 @@ bool MultiThreadedConfigTest::runThread (TestThread& thread)
 	de::Random			rnd		(deInt32Hash(thread.getId() + 10435));
 	vector<EGLConfig>	configs;
 
-	barrier(thread);
+	barrier();
 
 	for (int getConfigsNdx = 0; getConfigsNdx < m_getConfigs; getConfigsNdx++)
 	{
@@ -944,7 +926,7 @@ bool MultiThreadedObjectTest::runThread (TestThread& thread)
 			TCU_THROW(NotSupportedError, "No usable config found");
 	}
 
-	barrier(thread);
+	barrier();
 
 	// Create / Destroy Objects
 	if ((m_types & TYPE_SINGLE_WINDOW) != 0 && (m_types & TYPE_PBUFFER) == 0 && (m_types & TYPE_PIXMAP) == 0 && (m_types & TYPE_CONTEXT) == 0)
@@ -959,30 +941,30 @@ bool MultiThreadedObjectTest::runThread (TestThread& thread)
 	if (thread.getId() == 0)
 		pushObjectsToShared(thread);
 
-	barrier(thread);
+	barrier();
 
 	// Push second threads objects to shared
 	if (thread.getId() == 1)
 		pushObjectsToShared(thread);
 
-	barrier(thread);
+	barrier();
 
 	// Make queries from shared surfaces
 	querySetSharedObjects(thread, 100);
 
-	barrier(thread);
+	barrier();
 
 	// Pull surfaces for first thread from shared surfaces
 	if (thread.getId() == 0)
 		pullObjectsFromShared(thread, (int)(m_sharedPbuffers.size()/2), (int)(m_sharedNativePixmaps.size()/2), (int)(m_sharedNativeWindows.size()/2), (int)(m_sharedContexts.size()/2));
 
-	barrier(thread);
+	barrier();
 
 	// Pull surfaces for second thread from shared surfaces
 	if (thread.getId() == 1)
 		pullObjectsFromShared(thread, (int)m_sharedPbuffers.size(), (int)m_sharedNativePixmaps.size(), (int)m_sharedNativeWindows.size(), (int)m_sharedContexts.size());
 
-	barrier(thread);
+	barrier();
 
 	// Create / Destroy Objects
 	if ((m_types & TYPE_SINGLE_WINDOW) == 0)
