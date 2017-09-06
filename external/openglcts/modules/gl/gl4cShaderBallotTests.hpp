@@ -52,7 +52,6 @@ public:
 
 	public:
 		ShaderPipeline(glu::ShaderType testedShader, const std::string& contentSnippet,
-					   const std::string& headSnippet = "",
 					   std::map<std::string, std::string> specMap = std::map<std::string, std::string>());
 		~ShaderPipeline();
 
