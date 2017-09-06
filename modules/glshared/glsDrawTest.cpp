@@ -43,6 +43,7 @@
 #include "tcuFloat.hpp"
 #include "tcuTextureUtil.hpp"
 
+#include "gluContextInfo.hpp"
 #include "gluPixelTransfer.hpp"
 #include "gluCallLogWrapper.hpp"
 
@@ -3034,6 +3035,7 @@ static bool containsLineCases (const std::vector<DrawTestSpec>& m_specs)
 DrawTest::DrawTest (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const DrawTestSpec& spec, const char* name, const char* desc)
 	: TestCase			(testCtx, name, desc)
 	, m_renderCtx		(renderCtx)
+	, m_contextInfo		(DE_NULL)
 	, m_refBuffers		(DE_NULL)
 	, m_refContext		(DE_NULL)
 	, m_glesContext		(DE_NULL)
@@ -3051,6 +3053,7 @@ DrawTest::DrawTest (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, co
 DrawTest::DrawTest (tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* desc)
 	: TestCase			(testCtx, name, desc)
 	, m_renderCtx		(renderCtx)
+	, m_contextInfo		(DE_NULL)
 	, m_refBuffers		(DE_NULL)
 	, m_refContext		(DE_NULL)
 	, m_glesContext		(DE_NULL)
@@ -3130,6 +3133,7 @@ void DrawTest::init (void)
 	m_maxDiffRed	= deCeilFloatToInt32(256.0f * (6.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().redBits)));
 	m_maxDiffGreen	= deCeilFloatToInt32(256.0f * (6.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().greenBits)));
 	m_maxDiffBlue	= deCeilFloatToInt32(256.0f * (6.0f / (float)(1 << m_renderCtx.getRenderTarget().getPixelFormat().blueBits)));
+	m_contextInfo	= glu::ContextInfo::create(m_renderCtx);
 }
 
 void DrawTest::deinit (void)
@@ -3139,12 +3143,14 @@ void DrawTest::deinit (void)
 	delete m_refBuffers;
 	delete m_refContext;
 	delete m_glesContext;
+	delete m_contextInfo;
 
 	m_glArrayPack	= DE_NULL;
 	m_rrArrayPack	= DE_NULL;
 	m_refBuffers	= DE_NULL;
 	m_refContext	= DE_NULL;
 	m_glesContext	= DE_NULL;
+	m_contextInfo	= DE_NULL;
 }
 
 DrawTest::IterateResult DrawTest::iterate (void)
@@ -3156,7 +3162,8 @@ DrawTest::IterateResult DrawTest::iterate (void)
 		spec.drawMethod == DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_INSTANCED_BASEVERTEX ||
 		spec.drawMethod == DrawTestSpec::DRAWMETHOD_DRAWELEMENTS_RANGED_BASEVERTEX)
 	{
-		TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(m_renderCtx.getType(), glu::ApiType::es(3, 2)), "Tests requires a 3.2 context or higher context version.");
+		const bool supportsES32 = contextSupports(m_renderCtx.getType(), glu::ApiType::es(3, 2));
+		TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || m_contextInfo->isExtensionSupported("GL_EXT_draw_elements_base_vertex"), "GL_EXT_draw_elements_base_vertex is not supported.");
 	}
 
 	const bool					drawStep		= (m_iteration % 2) == 0;

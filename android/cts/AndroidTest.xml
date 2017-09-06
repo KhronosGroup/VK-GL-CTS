@@ -18,6 +18,7 @@
 	<!--
      This file has been automatically generated. Edit with caution.
      -->
+	<option key="component" name="config-descriptor:metadata" value="deqp"/>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-EGL"/>
 		<option name="deqp-caselist-file" value="egl-master.txt"/>

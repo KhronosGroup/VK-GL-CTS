@@ -305,6 +305,9 @@ def genAndroidTestXml (mustpass):
 	RUNNER_CLASS = "com.drawelements.deqp.runner.DeqpTestRunner"
 	configElement = ElementTree.Element("configuration")
 
+	# add in metadata option for component name
+	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="component", value="deqp")
+
 	for package in mustpass.packages:
 		for config in package.configurations:
 			testElement = ElementTree.SubElement(configElement, "test")

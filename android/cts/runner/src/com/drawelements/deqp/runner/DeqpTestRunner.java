@@ -16,7 +16,6 @@
 package com.drawelements.deqp.runner;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.compatibility.common.util.AbiUtils;
 import com.android.ddmlib.AdbCommandRejectedException;
 import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.MultiLineReceiver;
@@ -24,7 +23,6 @@ import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
 import com.android.ddmlib.testrunner.TestIdentifier;
 import com.android.tradefed.build.IBuildInfo;
-import com.android.tradefed.build.IFolderBuildInfo;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.config.OptionClass;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -34,14 +32,16 @@ import com.android.tradefed.result.ByteArrayInputStreamSource;
 import com.android.tradefed.result.ITestInvocationListener;
 import com.android.tradefed.result.LogDataType;
 import com.android.tradefed.testtype.IAbi;
-import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.IAbiReceiver;
+import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.IDeviceTest;
 import com.android.tradefed.testtype.IRemoteTest;
 import com.android.tradefed.testtype.IRuntimeHintProvider;
 import com.android.tradefed.testtype.IShardableTest;
+import com.android.tradefed.testtype.IStrictShardableTest;
 import com.android.tradefed.testtype.ITestCollector;
 import com.android.tradefed.testtype.ITestFilterReceiver;
+import com.android.tradefed.util.AbiUtils;
 import com.android.tradefed.util.IRunUtil;
 import com.android.tradefed.util.RunInterruptedException;
 import com.android.tradefed.util.RunUtil;
@@ -52,8 +52,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,9 +65,9 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * Test runner for dEQP tests
@@ -77,7 +77,7 @@ import java.util.concurrent.TimeUnit;
 @OptionClass(alias="deqp-test-runner")
 public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         ITestFilterReceiver, IAbiReceiver, IShardableTest, ITestCollector,
-        IRuntimeHintProvider {
+        IRuntimeHintProvider, IStrictShardableTest {
     private static final String DEQP_ONDEVICE_APK = "com.drawelements.deqp.apk";
     private static final String DEQP_ONDEVICE_PKG = "com.drawelements.deqp";
     private static final String INCOMPLETE_LOG_MESSAGE = "Crash: Incomplete test log";
@@ -122,9 +122,15 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     @Option(name = "include-filter",
             description="Test include filter. '*' is zero or more letters. '.' has no special meaning.")
     private List<String> mIncludeFilters = new ArrayList<>();
+    @Option(name = "include-filter-file",
+            description="Load list of includes from the files given.")
+    private List<String> mIncludeFilterFiles = new ArrayList<>();
     @Option(name = "exclude-filter",
             description="Test exclude filter. '*' is zero or more letters. '.' has no special meaning.")
     private List<String> mExcludeFilters = new ArrayList<>();
+    @Option(name = "exclude-filter-file",
+            description="Load list of excludes from the files given.")
+    private List<String> mExcludeFilterFiles = new ArrayList<>();
     @Option(name = "collect-tests-only",
             description = "Only invoke the instrumentation to collect list of applicable test "
                     + "cases. All test run callbacks will be triggered, but test execution will "
@@ -168,6 +174,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     @Override
     public void setAbi(IAbi abi) {
         mAbi = abi;
+    }
+
+    @Override
+    public IAbi getAbi() {
+        return mAbi;
     }
 
     /**
@@ -242,82 +253,6 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     private static final class CapabilityQueryFailureException extends Exception {
-    }
-
-    /**
-     * Test configuration of dEPQ test instance execution.
-     * Exposed for unit testing
-     */
-    public static final class BatchRunConfiguration {
-        public static final String ROTATION_UNSPECIFIED = "unspecified";
-        public static final String ROTATION_PORTRAIT = "0";
-        public static final String ROTATION_LANDSCAPE = "90";
-        public static final String ROTATION_REVERSE_PORTRAIT = "180";
-        public static final String ROTATION_REVERSE_LANDSCAPE = "270";
-
-        private final String mGlConfig;
-        private final String mRotation;
-        private final String mSurfaceType;
-        private final boolean mRequired;
-
-        public BatchRunConfiguration(String glConfig, String rotation, String surfaceType, boolean required) {
-            mGlConfig = glConfig;
-            mRotation = rotation;
-            mSurfaceType = surfaceType;
-            mRequired = required;
-        }
-
-        /**
-         * Get string that uniquely identifies this config
-         */
-        public String getId() {
-            return String.format("{glformat=%s,rotation=%s,surfacetype=%s,required=%b}",
-                    mGlConfig, mRotation, mSurfaceType, mRequired);
-        }
-
-        /**
-         * Get the GL config used in this configuration.
-         */
-        public String getGlConfig() {
-            return mGlConfig;
-        }
-
-        /**
-         * Get the screen rotation used in this configuration.
-         */
-        public String getRotation() {
-            return mRotation;
-        }
-
-        /**
-         * Get the surface type used in this configuration.
-         */
-        public String getSurfaceType() {
-            return mSurfaceType;
-        }
-
-        /**
-         * Is this configuration mandatory to support, if target API is supported?
-         */
-        public boolean isRequired() {
-            return mRequired;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (other == null) {
-                return false;
-            } else if (!(other instanceof BatchRunConfiguration)) {
-                return false;
-            } else {
-                return getId().equals(((BatchRunConfiguration)other).getId());
-            }
-        }
-
-        @Override
-        public int hashCode() {
-            return getId().hashCode();
-        }
     }
 
     /**
@@ -819,11 +754,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     private static class SleepProvider implements ISleepProvider {
+        @Override
         public void sleep(int milliseconds) {
-            try {
-                Thread.sleep(milliseconds);
-            } catch (InterruptedException ex) {
-            }
+            RunUtil.getDefault().sleep(milliseconds);
         }
     }
 
@@ -858,11 +791,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Tries to recover device after abnormal execution termination or link failure.
          *
-         * @param progressedSinceLastCall true if test execution has progressed since last call
          * @throws DeviceNotAvailableException if recovery did not succeed
          */
         public void recoverComLinkKilled() throws DeviceNotAvailableException;
-    };
+    }
 
     /**
      * State machine for execution failure recovery.
@@ -878,7 +810,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             RECOVER, // recover by calling recover()
             REBOOT, // recover by rebooting
             FAIL, // cannot recover
-        };
+        }
 
         private MachineState mState = MachineState.WAIT;
         private ITestDevice mDevice;
@@ -890,6 +822,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * {@inheritDoc}
          */
+        @Override
         public void setSleepProvider(ISleepProvider sleepProvider) {
             mSleepProvider = sleepProvider;
         }
@@ -946,7 +879,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 case FAIL:
                     // Third failure in a row, just fail
                     CLog.w("Cannot recover ADB connection");
-                    throw new DeviceNotAvailableException("failed to connect after reboot");
+                    throw new DeviceNotAvailableException("failed to connect after reboot",
+                            mDevice.getSerialNumber());
             }
         }
 
@@ -1009,7 +943,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 case FAIL:
                     // Fourth failure in a row, just fail
                     CLog.w("Cannot recover ADB connection");
-                    throw new DeviceNotAvailableException("link killed after reboot");
+                    throw new DeviceNotAvailableException("link killed after reboot",
+                            mDevice.getSerialNumber());
             }
         }
 
@@ -1086,7 +1021,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     private static Map<TestIdentifier, Set<BatchRunConfiguration>> generateTestInstances(
-            Reader testlist, String configName, String screenRotation, String surfaceType, boolean required) throws FileNotFoundException {
+            Reader testlist, String configName, String screenRotation, String surfaceType,
+            boolean required) {
         // Note: This is specifically a LinkedHashMap to guarantee that tests are iterated
         // in the insertion order.
         final Map<TestIdentifier, Set<BatchRunConfiguration>> instances = new LinkedHashMap<>();
@@ -1111,8 +1047,15 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         return instances;
     }
 
-    private Set<BatchRunConfiguration> getTestRunConfigs (TestIdentifier testId) {
+    private Set<BatchRunConfiguration> getTestRunConfigs(TestIdentifier testId) {
         return mTestInstances.get(testId);
+    }
+
+    /**
+     * Get the test instance of the runner. Exposed for testing.
+     */
+    Map<TestIdentifier, Set<BatchRunConfiguration>> getTestInstance() {
+        return mTestInstances;
     }
 
     /**
@@ -1883,7 +1826,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Get GL major version (based on package name)
      */
-    private int getGlesMajorVersion() throws DeviceNotAvailableException {
+    private int getGlesMajorVersion() {
         if ("dEQP-GLES2".equals(mDeqpPackage)) {
             return 2;
         } else if ("dEQP-GLES3".equals(mDeqpPackage)) {
@@ -1898,7 +1841,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     /**
      * Get GL minor version (based on package name)
      */
-    private int getGlesMinorVersion() throws DeviceNotAvailableException {
+    private int getGlesMinorVersion() {
         if ("dEQP-GLES2".equals(mDeqpPackage)) {
             return 0;
         } else if ("dEQP-GLES3".equals(mDeqpPackage)) {
@@ -1924,7 +1867,17 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         Set<String> nonPatternFilters = new HashSet<String>();
         for (String filter : filters) {
             if (!filter.contains("*")) {
-                nonPatternFilters.add(filter);
+                // Deqp usesly only dots for separating between parts of the names
+                // Convert last dot to hash if needed.
+                if (!filter.contains("#")) {
+                    int lastSeparator = filter.lastIndexOf('.');
+                    String filterWithHash = filter.substring(0, lastSeparator) + "#" +
+                        filter.substring(lastSeparator + 1, filter.length());
+                    nonPatternFilters.add(filterWithHash);
+                }
+                else {
+                    nonPatternFilters.add(filter);
+                }
             }
         }
         return nonPatternFilters;
@@ -1955,7 +1908,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         List<Pattern> includePatterns = getPatternFilters(includeFilters);
         List<Pattern> excludePatterns = getPatternFilters(excludeFilters);
 
-        List<TestIdentifier> testList = new ArrayList(tests.keySet());
+        List<TestIdentifier> testList = new ArrayList<>(tests.keySet());
         for (TestIdentifier test : testList) {
             if (excludeStrings.contains(test.toString())) {
                 tests.remove(test); // remove test if explicitly excluded
@@ -1968,6 +1921,48 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 // if this test isn't included and other tests are,
                 // or if test matches exclude pattern, exclude test
                 tests.remove(test);
+            }
+        }
+    }
+
+    /**
+     * Read a list of filters from a file.
+     *
+     * Note: Filters can be numerous so we prefer, for performance
+     * reasons, to add directly to the target list instead of using
+     * intermediate return value.
+     */
+    static private void readFilterFile(List<String> filterList, File file) throws FileNotFoundException {
+        if (!file.canRead()) {
+            CLog.e("Failed to read filter file '%s'", file.getPath());
+            throw new FileNotFoundException();
+        }
+        try (Reader plainReader = new FileReader(file);
+             BufferedReader reader = new BufferedReader(plainReader)) {
+            String filter = "";
+            while ((filter = reader.readLine()) != null) {
+                // TOOD: Sanity check filter
+                filterList.add(filter);
+            }
+            // Rely on try block to autoclose
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Failed to read filter list file '" + file.getPath() + "': " +
+                     e.getMessage());
+        }
+    }
+
+    /**
+     * Prints filters into debug log stream, limiting to 20 entries.
+     */
+    static private void printFilters(List<String> filters) {
+        int numPrinted = 0;
+        for (String filter : filters) {
+            CLog.d("    %s", filter);
+            if (++numPrinted == 20) {
+                CLog.d("    ... AND %d others", filters.size() - numPrinted);
+                break;
             }
         }
     }
@@ -1998,13 +1993,28 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         catch (IOException e) {
             CLog.w("Failed to close test list reader.");
         }
-        CLog.d("Filters");
-        for (String filter : mIncludeFilters) {
-            CLog.d("Include: %s", filter);
+
+        try
+        {
+            for (String filterFile : mIncludeFilterFiles) {
+                CLog.d("Read include filter file '%s'", filterFile);
+                File file = new File(mBuildHelper.getTestsDir(), filterFile);
+                readFilterFile(mIncludeFilters, file);
+            }
+            for (String filterFile : mExcludeFilterFiles) {
+                CLog.d("Read exclude filter file '%s'", filterFile);
+                File file = new File(mBuildHelper.getTestsDir(), filterFile);
+                readFilterFile(mExcludeFilters, file);
+            }
         }
-        for (String filter : mExcludeFilters) {
-            CLog.d("Exclude: %s", filter);
+        catch (FileNotFoundException e) {
+            throw new RuntimeException("Cannot read deqp filter list file:" + e.getMessage());
         }
+
+        CLog.d("Include filters:");
+        printFilters(mIncludeFilters);
+        CLog.d("Exclude filters:");
+        printFilters(mExcludeFilters);
 
         long originalTestCount = mTestInstances.size();
         CLog.i("Num tests before filtering: %d", originalTestCount);
@@ -2035,6 +2045,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         listener.testRunStarted(getId(), mRemainingTests.size());
 
         try {
+            if (mRemainingTests.isEmpty()) {
+                CLog.d("No tests to run.");
+                return;
+            }
             final boolean isSupportedApi = (isOpenGlEsPackage() && isSupportedGles())
                                             || (isVulkanPackage() && isSupportedVulkan())
                                             || (!isOpenGlEsPackage() && !isVulkanPackage());
@@ -2060,9 +2074,9 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             // test cases in "NotExecuted" state
             CLog.e("Capability query failed - leaving tests unexecuted.");
             uninstallTestApk();
+        } finally {
+            listener.testRunEnded(System.currentTimeMillis() - startTime, emptyMap);
         }
-
-        listener.testRunEnded(System.currentTimeMillis() - startTime, emptyMap);
     }
 
    /**
@@ -2113,10 +2127,26 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         destination.mSurfaceType = source.mSurfaceType;
         destination.mConfigRequired = source.mConfigRequired;
         destination.mIncludeFilters = new ArrayList<>(source.mIncludeFilters);
+        destination.mIncludeFilterFiles = new ArrayList<>(source.mIncludeFilterFiles);
         destination.mExcludeFilters = new ArrayList<>(source.mExcludeFilters);
+        destination.mExcludeFilterFiles = new ArrayList<>(source.mExcludeFilterFiles);
         destination.mAbi = source.mAbi;
         destination.mLogData = source.mLogData;
         destination.mCollectTestsOnly = source.mCollectTestsOnly;
+    }
+
+    /**
+     * Helper to update the RuntimeHint of the tests after being sharded.
+     */
+    private void updateRuntimeHint(long originalSize, Collection<IRemoteTest> runners) {
+        if (originalSize > 0) {
+            long fullRuntimeMs = getRuntimeHint();
+            for (IRemoteTest remote: runners) {
+                DeqpTestRunner runner = (DeqpTestRunner)remote;
+                long shardRuntime = (fullRuntimeMs * runner.mTestInstances.size()) / originalSize;
+                runner.mRuntimeHint = shardRuntime;
+            }
+        }
     }
 
     /**
@@ -2138,6 +2168,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         Map<TestIdentifier, Set<BatchRunConfiguration>> currentSet = new LinkedHashMap<>();
         Map<TestIdentifier, Set<BatchRunConfiguration>> iterationSet = this.mTestInstances;
 
+        if (iterationSet.keySet().isEmpty()) {
+            CLog.i("Cannot split deqp tests, no tests to run");
+            return null;
+        }
+
         // Go through tests, split
         for (TestIdentifier test: iterationSet.keySet()) {
             currentSet.put(test, iterationSet.get(test));
@@ -2145,23 +2180,59 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 runners.add(new DeqpTestRunner(this, currentSet));
                 // NOTE: Use linked hash map to keep the insertion order in iteration
                 currentSet = new LinkedHashMap<>();
-             }
+            }
         }
         runners.add(new DeqpTestRunner(this, currentSet));
 
         // Compute new runtime hints
-        long originalSize = iterationSet.size();
-        if (originalSize > 0) {
-            long fullRuntimeMs = getRuntimeHint();
-            for (IRemoteTest remote: runners) {
-                DeqpTestRunner runner = (DeqpTestRunner)remote;
-                long shardRuntime = (fullRuntimeMs * runner.mTestInstances.size()) / originalSize;
-                runner.mRuntimeHint = shardRuntime;
+        updateRuntimeHint(iterationSet.size(), runners);
+        CLog.i("Split deqp tests into %d shards", runners.size());
+        return runners;
+    }
+
+    /**
+     * This sharding should be deterministic for the same input and independent.
+     * Through this API, each shard could be executed on different machine.
+     */
+    @Override
+    public IRemoteTest getTestShard(int shardCount, int shardIndex) {
+        // TODO: refactor getTestshard and split to share some logic.
+        if (mTestInstances == null) {
+            loadTests();
+        }
+
+        List<IRemoteTest> runners = new ArrayList<>();
+        // NOTE: Use linked hash map to keep the insertion order in iteration
+        Map<TestIdentifier, Set<BatchRunConfiguration>> currentSet = new LinkedHashMap<>();
+        Map<TestIdentifier, Set<BatchRunConfiguration>> iterationSet = this.mTestInstances;
+
+        int batchLimit = iterationSet.keySet().size() / shardCount;
+        int i = 1;
+        // Go through tests, split
+        for (TestIdentifier test: iterationSet.keySet()) {
+            currentSet.put(test, iterationSet.get(test));
+            if (currentSet.size() >= batchLimit && i < shardCount) {
+                runners.add(new DeqpTestRunner(this, currentSet));
+                i++;
+                // NOTE: Use linked hash map to keep the insertion order in iteration
+                currentSet = new LinkedHashMap<>();
+            }
+        }
+        runners.add(new DeqpTestRunner(this, currentSet));
+
+        // Compute new runtime hints
+        updateRuntimeHint(iterationSet.size(), runners);
+
+        // If too many shards were requested, we complete with placeholder.
+        if (runners.size() < shardCount) {
+            for (int j = runners.size(); j < shardCount; j++) {
+                runners.add(new DeqpTestRunner(this,
+                        new LinkedHashMap<TestIdentifier, Set<BatchRunConfiguration>>()));
             }
         }
 
-        CLog.i("Split deqp tests into %d shards", runners.size());
-        return runners;
+        CLog.i("Split deqp tests into %d shards, return shard: %s", runners.size(), shardIndex);
+        return runners.get(shardIndex);
     }
 
     /**

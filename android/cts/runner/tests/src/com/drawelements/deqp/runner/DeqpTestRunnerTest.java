@@ -16,10 +16,8 @@
 package com.drawelements.deqp.runner;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.compatibility.common.util.AbiUtils;
 import com.android.ddmlib.IDevice;
 import com.android.ddmlib.IShellOutputReceiver;
-import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.testrunner.TestIdentifier;
 import com.android.tradefed.build.IFolderBuildInfo;
 import com.android.tradefed.config.ConfigurationException;
@@ -31,6 +29,8 @@ import com.android.tradefed.testtype.Abi;
 import com.android.tradefed.testtype.IAbi;
 import com.android.tradefed.testtype.IRemoteTest;
 import com.android.tradefed.testtype.IRuntimeHintProvider;
+import com.android.tradefed.util.AbiUtils;
+import com.android.tradefed.util.FileUtil;
 import com.android.tradefed.util.IRunUtil;
 import com.android.tradefed.util.RunInterruptedException;
 
@@ -42,6 +42,9 @@ import org.easymock.IMocksControl;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -81,50 +84,17 @@ public class DeqpTestRunnerTest extends TestCase {
         DEFAULT_INSTANCE_ARGS.iterator().next().put("surfacetype", "window");
     }
 
-    private static class StubRecovery implements DeqpTestRunner.IRecovery {
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void setSleepProvider(DeqpTestRunner.ISleepProvider sleepProvider) {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void setDevice(ITestDevice device) {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void onExecutionProgressed() {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void recoverConnectionRefused() throws DeviceNotAvailableException {
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void recoverComLinkKilled() throws DeviceNotAvailableException {
-        }
-    };
+    private File mTestsDir = null;
 
     public static class BuildHelperMock extends CompatibilityBuildHelper {
-        public BuildHelperMock(IFolderBuildInfo buildInfo) {
+        private File mTestsDir = null;
+        public BuildHelperMock(IFolderBuildInfo buildInfo, File testsDir) {
             super(buildInfo);
+            mTestsDir = testsDir;
         }
         @Override
         public File getTestsDir() throws FileNotFoundException {
-            return new File("logs");
+            return mTestsDir;
         }
     }
 
@@ -135,27 +105,39 @@ public class DeqpTestRunnerTest extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        mTestsDir = FileUtil.createTempDir("deqp-test-cases");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void tearDown() throws Exception {
+        FileUtil.recursiveDelete(mTestsDir);
+        super.tearDown();
     }
 
     private static DeqpTestRunner buildGlesTestRunner(int majorVersion,
                                                       int minorVersion,
-                                                      Collection<TestIdentifier> tests) throws ConfigurationException, FileNotFoundException {
+                                                      Collection<TestIdentifier> tests,
+                                                      File testsDir) throws ConfigurationException, FileNotFoundException {
         StringWriter testlist = new StringWriter();
         for (TestIdentifier test : tests) {
             testlist.write(test.getClassName() + "." + test.getTestName() + "\n");
         }
-        return buildGlesTestRunner(majorVersion, minorVersion, testlist.toString());
+        return buildGlesTestRunner(majorVersion, minorVersion, testlist.toString(), testsDir);
     }
 
-    private static CompatibilityBuildHelper getMockBuildHelper() {
+    private static CompatibilityBuildHelper getMockBuildHelper(File testsDir) {
         IFolderBuildInfo mockIFolderBuildInfo = EasyMock.createMock(IFolderBuildInfo.class);
         EasyMock.replay(mockIFolderBuildInfo);
-        return new BuildHelperMock(mockIFolderBuildInfo);
+        return new BuildHelperMock(mockIFolderBuildInfo, testsDir);
     }
 
     private static DeqpTestRunner buildGlesTestRunner(int majorVersion,
                                                       int minorVersion,
-                                                      String testlist) throws ConfigurationException, FileNotFoundException {
+                                                      String testlist,
+                                                      File testsDir) throws ConfigurationException, FileNotFoundException {
         DeqpTestRunner runner = new DeqpTestRunner();
         OptionSetter setter = new OptionSetter(runner);
 
@@ -170,7 +152,7 @@ public class DeqpTestRunnerTest extends TestCase {
 
         runner.setCaselistReader(new StringReader(testlist));
         runner.setAbi(ABI);
-        runner.setBuildHelper(getMockBuildHelper());
+        runner.setBuildHelper(getMockBuildHelper(testsDir));
 
         return runner;
     }
@@ -232,7 +214,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(requiredMajorVersion, requiredMinorVersion, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(requiredMajorVersion, requiredMinorVersion, tests, mTestsDir);
 
         int version = (majorVersion << 16) | minorVersion;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
@@ -374,7 +356,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         int version = 3 << 16;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
@@ -541,7 +523,7 @@ public class DeqpTestRunnerTest extends TestCase {
             tests.add(id);
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         int version = 3 << 16;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
@@ -636,30 +618,15 @@ public class DeqpTestRunnerTest extends TestCase {
         return output.toString();
     }
 
-    private void testFiltering(Set<String> includes,
-                               Set<String> excludes,
-                               List<TestIdentifier> fullTestList,
+    private void testFiltering(DeqpTestRunner deqpTest,
                                String expectedTrie,
                                List<TestIdentifier> expectedTests) throws Exception {
-
-        boolean thereAreTests = !expectedTests.isEmpty();
-        ITestDevice mockDevice = EasyMock.createMock(ITestDevice.class);
-        ITestInvocationListener mockListener
-                = EasyMock.createStrictMock(ITestInvocationListener.class);
-        IDevice mockIDevice = EasyMock.createMock(IDevice.class);
-
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, fullTestList);
-        if (includes != null) {
-            deqpTest.addAllIncludeFilters(includes);
-        }
-        if (excludes != null) {
-            deqpTest.addAllExcludeFilters(excludes);
-        }
-
         int version = 3 << 16;
+        ITestDevice mockDevice = EasyMock.createMock(ITestDevice.class);
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
+        boolean thereAreTests = !expectedTests.isEmpty();
         if (thereAreTests)
         {
             // only expect to install/uninstall packages if there are any tests
@@ -670,10 +637,12 @@ public class DeqpTestRunnerTest extends TestCase {
                 .andReturn(null).once();
         }
 
-
+        ITestInvocationListener mockListener
+                = EasyMock.createStrictMock(ITestInvocationListener.class);
         mockListener.testRunStarted(getTestId(deqpTest), expectedTests.size());
         EasyMock.expectLastCall().once();
 
+        IDevice mockIDevice = EasyMock.createMock(IDevice.class);
         if (thereAreTests)
         {
             expectRenderConfigQuery(mockDevice, 3, 0);
@@ -734,9 +703,9 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        Set<String> includes = new HashSet();
-        includes.add("dEQP-GLES3.pick_me#*");
-        testFiltering(includes, null, allTests, expectedTrie, activeTests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addIncludeFilter("dEQP-GLES3.pick_me#*");
+        testFiltering(deqpTest, expectedTrie, activeTests);
     }
 
     public void testRun_trivialExcludeFilter() throws Exception {
@@ -761,9 +730,9 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
 
-        Set<String> excludes = new HashSet();
-        excludes.add("dEQP-GLES3.missing#*");
-        testFiltering(null, excludes, allTests, expectedTrie, activeTests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addExcludeFilter("dEQP-GLES3.missing#*");
+        testFiltering(deqpTest, expectedTrie, activeTests);
     }
 
     public void testRun_includeAndExcludeFilter() throws Exception {
@@ -786,13 +755,17 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group2{yes}}}";
 
-        Set<String> includes = new HashSet();
-        includes.add("dEQP-GLES3.group2#*");
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
 
-        Set<String> excludes = new HashSet();
+        Set<String> includes = new HashSet<>();
+        includes.add("dEQP-GLES3.group2#*");
+        deqpTest.addAllIncludeFilters(includes);
+
+        Set<String> excludes = new HashSet<>();
         excludes.add("*foo");
         excludes.add("*thoushallnotpass");
-        testFiltering(includes, excludes, allTests, expectedTrie, activeTests);
+        deqpTest.addAllExcludeFilters(excludes);
+        testFiltering(deqpTest, expectedTrie, activeTests);
     }
 
     public void testRun_includeAll() throws Exception {
@@ -812,10 +785,9 @@ public class DeqpTestRunnerTest extends TestCase {
 
         String expectedTrie = "{dEQP-GLES3{group1{mememe,yeah,takeitall},group2{jeba,yes,granted}}}";
 
-        Set<String> includes = new HashSet();
-        includes.add("*");
-
-        testFiltering(includes, null, allTests, expectedTrie, allTests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addIncludeFilter("*");
+        testFiltering(deqpTest, expectedTrie, allTests);
     }
 
     public void testRun_excludeAll() throws Exception {
@@ -833,12 +805,18 @@ public class DeqpTestRunnerTest extends TestCase {
             allTests.add(id);
         }
 
-        String expectedTrie = "";
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addExcludeFilter("*");
+        ITestInvocationListener mockListener
+                = EasyMock.createStrictMock(ITestInvocationListener.class);
+        mockListener.testRunStarted(getTestId(deqpTest), 0);
+        EasyMock.expectLastCall().once();
+        mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
+        EasyMock.expectLastCall().once();
 
-        Set<String> excludes = new HashSet();
-        excludes.add("*");
-
-        testFiltering(null, excludes, allTests, expectedTrie, new ArrayList<TestIdentifier>());
+        EasyMock.replay(mockListener);
+        deqpTest.run(mockListener);
+        EasyMock.verify(mockListener);
     }
 
     /**
@@ -887,7 +865,7 @@ public class DeqpTestRunnerTest extends TestCase {
             tests.add(id);
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         int version = 3 << 16;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
@@ -969,7 +947,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         // Note: If the rotation is the default unspecified, features are not queried at all
         setter.setOptionValue("deqp-screen-rotation", "90");
@@ -1021,7 +999,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         deqpTest.setDevice(mockDevice);
 
@@ -1103,7 +1081,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         setter.setOptionValue("deqp-screen-rotation", rotation);
 
@@ -1113,19 +1091,19 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        if (!rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_UNSPECIFIED)) {
+        if (!rotation.equals(BatchRunConfiguration.ROTATION_UNSPECIFIED)) {
             EasyMock.expect(mockDevice.executeShellCommand("pm list features"))
                     .andReturn(featureString);
         }
 
         final boolean isPortraitOrientation =
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_PORTRAIT) ||
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_REVERSE_PORTRAIT);
+                rotation.equals(BatchRunConfiguration.ROTATION_PORTRAIT) ||
+                rotation.equals(BatchRunConfiguration.ROTATION_REVERSE_PORTRAIT);
         final boolean isLandscapeOrientation =
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_LANDSCAPE) ||
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_REVERSE_LANDSCAPE);
+                rotation.equals(BatchRunConfiguration.ROTATION_LANDSCAPE) ||
+                rotation.equals(BatchRunConfiguration.ROTATION_REVERSE_LANDSCAPE);
         final boolean executable =
-                rotation.equals(DeqpTestRunner.BatchRunConfiguration.ROTATION_UNSPECIFIED) ||
+                rotation.equals(BatchRunConfiguration.ROTATION_UNSPECIFIED) ||
                 (isPortraitOrientation &&
                 featureString.contains(DeqpTestRunner.FEATURE_PORTRAIT)) ||
                 (isLandscapeOrientation &&
@@ -1345,34 +1323,6 @@ public class DeqpTestRunnerTest extends TestCase {
     public void testRun_unsupportedPixelFormat() throws Exception {
         final String pixelFormat = "rgba5658d16m4";
         final TestIdentifier testId = new TestIdentifier("dEQP-GLES3.pixelformat", "test");
-        final String testPath = "dEQP-GLES3.pixelformat.test";
-        final String testTrie = "{dEQP-GLES3{pixelformat{test}}}";
-        final String output = "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Name=releaseName\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=SessionInfo\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Value=2014.x\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Name=releaseId\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=SessionInfo\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Value=0xcafebabe\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Name=targetName\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=SessionInfo\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-SessionInfo-Value=android\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=BeginSession\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=BeginTestCase\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-BeginTestCase-TestCasePath=" + testPath + "\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-TestCaseResult-Code=Pass\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-TestCaseResult-Details=Pass\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=TestCaseResult\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=EndTestCase\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_STATUS: dEQP-EventType=EndSession\r\n"
-                + "INSTRUMENTATION_STATUS_CODE: 0\r\n"
-                + "INSTRUMENTATION_CODE: 0\r\n";
 
         ITestDevice mockDevice = EasyMock.createMock(ITestDevice.class);
         ITestInvocationListener mockListener
@@ -1381,7 +1331,7 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         tests.add(testId);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         setter.setOptionValue("deqp-gl-config-name", pixelFormat);
 
@@ -1435,7 +1385,7 @@ public class DeqpTestRunnerTest extends TestCase {
         PROGRESS,
         FAIL_CONNECTION_REFUSED,
         FAIL_LINK_KILLED,
-    };
+    }
 
     private void runRecoveryWithPattern(DeqpTestRunner.Recovery recovery, RecoveryEvent[] events)
             throws DeviceNotAvailableException {
@@ -1551,6 +1501,7 @@ public class DeqpTestRunnerTest extends TestCase {
         DeqpTestRunner.Recovery recovery = new DeqpTestRunner.Recovery();
         IMocksControl orderedControl = EasyMock.createStrictControl();
         RecoverableTestDevice mockDevice = orderedControl.createMock(RecoverableTestDevice.class);
+        EasyMock.expect(mockDevice.getSerialNumber()).andStubReturn("SERIAL");
         DeqpTestRunner.ISleepProvider mockSleepProvider =
                 orderedControl.createMock(DeqpTestRunner.ISleepProvider.class);
 
@@ -1748,7 +1699,7 @@ public class DeqpTestRunnerTest extends TestCase {
         IDevice mockIDevice = EasyMock.createMock(IDevice.class);
         IRunUtil mockRunUtil = EasyMock.createMock(IRunUtil.class);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         deqpTest.setDevice(mockDevice);
         deqpTest.setRunUtil(mockRunUtil);
@@ -1775,6 +1726,8 @@ public class DeqpTestRunnerTest extends TestCase {
 
         mockListener.testRunStarted(getTestId(deqpTest), 1);
         EasyMock.expectLastCall().once();
+        mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.anyObject());
+        EasyMock.expectLastCall().once();
 
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
@@ -1795,12 +1748,12 @@ public class DeqpTestRunnerTest extends TestCase {
         Collection<TestIdentifier> tests = new ArrayList<TestIdentifier>();
         for (TestIdentifier id : testIds) tests.add(id);
 
-        DeqpTestRunner runner = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner runner = buildGlesTestRunner(3, 0, tests, mTestsDir);
         ArrayList<IRemoteTest> shards = (ArrayList<IRemoteTest>)runner.split();
 
         for (int shardIndex = 0; shardIndex < shards.size(); shardIndex++) {
             DeqpTestRunner shard = (DeqpTestRunner)shards.get(shardIndex);
-            shard.setBuildHelper(getMockBuildHelper());
+            shard.setBuildHelper(getMockBuildHelper(mTestsDir));
 
             ArrayList<TestIdentifier> shardTests = testsForShard.get(shardIndex);
 
@@ -1895,9 +1848,10 @@ public class DeqpTestRunnerTest extends TestCase {
     }
 
     public void testSharding_empty() throws Exception {
-        DeqpTestRunner runner = buildGlesTestRunner(3, 0, new ArrayList<TestIdentifier>());
+        DeqpTestRunner runner = buildGlesTestRunner(3, 0, new ArrayList<TestIdentifier>(), mTestsDir);
         ArrayList<IRemoteTest> shards = (ArrayList<IRemoteTest>)runner.split();
-        // \todo [2015-11-23 kalle] What should the result be? The runner or nothing?
+        // Returns null when cannot be sharded.
+        assertNull(shards);
     }
 
     /**
@@ -1943,7 +1897,7 @@ public class DeqpTestRunnerTest extends TestCase {
         IDevice mockIDevice = EasyMock.createMock(IDevice.class);
         IRunUtil mockRunUtil = EasyMock.createMock(IRunUtil.class);
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         deqpTest.setDevice(mockDevice);
         deqpTest.setRunUtil(mockRunUtil);
@@ -1988,6 +1942,8 @@ public class DeqpTestRunnerTest extends TestCase {
         mockListener.testFailed(EasyMock.eq(testId), EasyMock.<String>notNull());
         EasyMock.expectLastCall().andThrow(new RunInterruptedException());
 
+        mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.anyObject());
+        EasyMock.expectLastCall().once();
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
         EasyMock.replay(mockRunUtil);
@@ -2108,7 +2064,7 @@ public class DeqpTestRunnerTest extends TestCase {
             tests.add(id);
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         final long runtimeMs = 123456;
         setter.setOptionValue("runtime-hint", String.valueOf(runtimeMs));
@@ -2177,7 +2133,7 @@ public class DeqpTestRunnerTest extends TestCase {
             testIds.add(new TestIdentifier("dEQP-GLES3.funny.group", String.valueOf(i)));
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds, mTestsDir);
         OptionSetter setter = new OptionSetter(deqpTest);
         final long fullRuntimeMs = testIds.size()*100;
         setter.setOptionValue("runtime-hint", String.valueOf(fullRuntimeMs));
@@ -2189,6 +2145,100 @@ public class DeqpTestRunnerTest extends TestCase {
         assertEquals("Second shard's time not proportional to test count",
                  (fullRuntimeMs*(TEST_COUNT-SHARD_SIZE))/TEST_COUNT,
                  ((IRuntimeHintProvider)shards.get(1)).getRuntimeHint());
+    }
+
+    /**
+     * Test that strict shardable is able to split deterministically the set of tests.
+     */
+    public void testGetTestShard() throws Exception {
+        final int TEST_COUNT = 2237;
+        final int SHARD_COUNT = 4;
+
+        ArrayList<TestIdentifier> testIds = new ArrayList<>(TEST_COUNT);
+        for (int i = 0; i < TEST_COUNT; i++) {
+            testIds.add(new TestIdentifier("dEQP-GLES3.funny.group", String.valueOf(i)));
+        }
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds, mTestsDir);
+        OptionSetter setter = new OptionSetter(deqpTest);
+        final long fullRuntimeMs = testIds.size()*100;
+        setter.setOptionValue("runtime-hint", String.valueOf(fullRuntimeMs));
+
+        DeqpTestRunner shard1 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 0);
+        assertEquals(559, shard1.getTestInstance().size());
+        int j = 0;
+        // Ensure numbers, and that order is stable
+        for (TestIdentifier t : shard1.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard2 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 1);
+        assertEquals(559, shard2.getTestInstance().size());
+        for (TestIdentifier t : shard2.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard3 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 2);
+        assertEquals(559, shard3.getTestInstance().size());
+        for (TestIdentifier t : shard3.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard4 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 3);
+        assertEquals(560, shard4.getTestInstance().size());
+        for (TestIdentifier t : shard4.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        assertEquals(TEST_COUNT, j);
+    }
+
+    /**
+     * Test that strict shardable is creating an empty shard of the runner when too many shards
+     * are requested.
+     */
+    public void testGetTestShard_tooManyShardRequested() throws Exception {
+        final int TEST_COUNT = 2;
+        final int SHARD_COUNT = 3;
+
+        ArrayList<TestIdentifier> testIds = new ArrayList<>(TEST_COUNT);
+        for (int i = 0; i < TEST_COUNT; i++) {
+            testIds.add(new TestIdentifier("dEQP-GLES3.funny.group", String.valueOf(i)));
+        }
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, testIds, mTestsDir);
+        OptionSetter setter = new OptionSetter(deqpTest);
+        final long fullRuntimeMs = testIds.size()*100;
+        setter.setOptionValue("runtime-hint", String.valueOf(fullRuntimeMs));
+        DeqpTestRunner shard1 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 0);
+        assertEquals(1, shard1.getTestInstance().size());
+        int j = 0;
+        // Ensure numbers, and that order is stable
+        for (TestIdentifier t : shard1.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard2 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 1);
+        assertEquals(1, shard2.getTestInstance().size());
+        for (TestIdentifier t : shard2.getTestInstance().keySet()) {
+            assertEquals(String.format("dEQP-GLES3.funny.group#%s", j),
+                    String.format("%s#%s", t.getClassName(), t.getTestName()));
+            j++;
+        }
+        DeqpTestRunner shard3 = (DeqpTestRunner)deqpTest.getTestShard(SHARD_COUNT, 2);
+        assertTrue(shard3.getTestInstance().isEmpty());
+        assertEquals(TEST_COUNT, j);
+        ITestInvocationListener mockListener
+                = EasyMock.createStrictMock(ITestInvocationListener.class);
+        mockListener.testRunStarted(EasyMock.anyObject(), EasyMock.eq(0));
+        mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.anyObject());
+        EasyMock.replay(mockListener);
+        shard3.run(mockListener);
+        EasyMock.verify(mockListener);
     }
 
     public void testRuntimeHint_optionNotSet() throws Exception {
@@ -2206,7 +2256,7 @@ public class DeqpTestRunnerTest extends TestCase {
             tests.add(id);
         }
 
-        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests);
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, tests, mTestsDir);
 
         long runtime = deqpTest.getRuntimeHint();
         assertTrue("Runtime for tests must be positive", runtime > 0);
@@ -2265,5 +2315,167 @@ public class DeqpTestRunnerTest extends TestCase {
                 return null;
             }
         });
+    }
+
+    static private void writeStringsToFile(File target, Set<String> strings) throws IOException {
+        try (PrintWriter out = new PrintWriter(new FileWriter(target))) {
+            out.print(String.join(System.lineSeparator(), strings));
+            out.println();
+        }
+    }
+
+    private void addFilterFileForOption(DeqpTestRunner test, Set<String> filters, String option)
+            throws IOException, ConfigurationException {
+        String filterFile = option + ".txt";
+        writeStringsToFile(new File(mTestsDir, filterFile), filters);
+        OptionSetter setter = new OptionSetter(test);
+        setter.setOptionValue(option, filterFile);
+    }
+
+    public void testIncludeFilterFile() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.missing", "no"),
+                new TestIdentifier("dEQP-GLES3.missing", "nope"),
+                new TestIdentifier("dEQP-GLES3.missing", "donotwant"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "yes"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "ok"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "accepted"),
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        List<TestIdentifier> activeTests = new ArrayList<TestIdentifier>();
+        activeTests.add(testIds[3]);
+        activeTests.add(testIds[4]);
+        activeTests.add(testIds[5]);
+
+        String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        Set<String> includes = new HashSet<>();
+        includes.add("dEQP-GLES3.pick_me#*");
+        addFilterFileForOption(deqpTest, includes, "include-filter-file");
+        testFiltering(deqpTest, expectedTrie, activeTests);
+    }
+
+    public void testMissingIncludeFilterFile() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.pick_me", "yes"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "ok"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "accepted"),
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        OptionSetter setter = new OptionSetter(deqpTest);
+        setter.setOptionValue("include-filter-file", "not-a-file.txt");
+        try {
+            testFiltering(deqpTest, expectedTrie, allTests);
+            fail("Test execution should have aborted with exception.");
+        } catch (RuntimeException e) {
+        }
+    }
+
+    public void testExcludeFilterFile() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.missing", "no"),
+                new TestIdentifier("dEQP-GLES3.missing", "nope"),
+                new TestIdentifier("dEQP-GLES3.missing", "donotwant"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "yes"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "ok"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "accepted"),
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        List<TestIdentifier> activeTests = new ArrayList<TestIdentifier>();
+        activeTests.add(testIds[3]);
+        activeTests.add(testIds[4]);
+        activeTests.add(testIds[5]);
+
+        String expectedTrie = "{dEQP-GLES3{pick_me{yes,ok,accepted}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        Set<String> excludes = new HashSet<>();
+        excludes.add("dEQP-GLES3.missing#*");
+        addFilterFileForOption(deqpTest, excludes, "exclude-filter-file");
+        testFiltering(deqpTest, expectedTrie, activeTests);
+    }
+
+    public void testFilterComboWithFiles() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.group1", "footah"),
+                new TestIdentifier("dEQP-GLES3.group1", "foo"),
+                new TestIdentifier("dEQP-GLES3.group1", "nope"),
+                new TestIdentifier("dEQP-GLES3.group1", "nonotwant"),
+                new TestIdentifier("dEQP-GLES3.group2", "foo"),
+                new TestIdentifier("dEQP-GLES3.group2", "yes"),
+                new TestIdentifier("dEQP-GLES3.group2", "thoushallnotpass"),
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        List<TestIdentifier> activeTests = new ArrayList<TestIdentifier>();
+        activeTests.add(testIds[0]);
+        activeTests.add(testIds[5]);
+
+        String expectedTrie = "{dEQP-GLES3{group1{footah}group2{yes}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+
+        Set<String> includes = new HashSet<>();
+        includes.add("dEQP-GLES3.group2#*");
+        deqpTest.addAllIncludeFilters(includes);
+
+        Set<String> fileIncludes = new HashSet<>();
+        fileIncludes.add("dEQP-GLES3.group1#no*");
+        fileIncludes.add("dEQP-GLES3.group1#foo*");
+        addFilterFileForOption(deqpTest, fileIncludes, "include-filter-file");
+
+        Set<String> fileExcludes = new HashSet<>();
+        fileExcludes.add("*foo");
+        fileExcludes.add("*thoushallnotpass");
+        addFilterFileForOption(deqpTest, fileExcludes, "exclude-filter-file");
+
+        deqpTest.addExcludeFilter("dEQP-GLES3.group1#no*");
+
+        testFiltering(deqpTest, expectedTrie, activeTests);
+    }
+
+    public void testDotToHashConversionInFilters() throws Exception {
+        final TestIdentifier[] testIds = {
+                new TestIdentifier("dEQP-GLES3.missing", "no"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "donotwant"),
+                new TestIdentifier("dEQP-GLES3.pick_me", "yes")
+        };
+
+        List<TestIdentifier> allTests = new ArrayList<TestIdentifier>();
+        for (TestIdentifier id : testIds) {
+            allTests.add(id);
+        }
+
+        List<TestIdentifier> activeTests = new ArrayList<TestIdentifier>();
+        activeTests.add(testIds[2]);
+
+        String expectedTrie = "{dEQP-GLES3{pick_me{yes}}}";
+
+        DeqpTestRunner deqpTest = buildGlesTestRunner(3, 0, allTests, mTestsDir);
+        deqpTest.addIncludeFilter("dEQP-GLES3.pick_me.yes");
+        testFiltering(deqpTest, expectedTrie, activeTests);
     }
 }
