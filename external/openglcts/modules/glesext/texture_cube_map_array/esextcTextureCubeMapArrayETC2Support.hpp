@@ -42,6 +42,7 @@ public:
 	virtual IterateResult iterate(void);
 
 protected:
+	void prepareFramebuffer();
 	void prepareVertexArrayObject();
 	void prepareProgram();
 	void prepareTexture();
