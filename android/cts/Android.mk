@@ -26,13 +26,16 @@ LOCAL_COMPATIBILITY_SUITE := cts
 LOCAL_SDK_VERSION := 22
 
 LOCAL_SRC_FILES := $(call all-java-files-under, runner/src)
-LOCAL_JAVA_LIBRARIES := cts-tradefed compatibility-host-util tradefed-prebuilt
+LOCAL_JAVA_LIBRARIES := cts-tradefed compatibility-host-util tradefed
 
 DEQP_CASELISTS:=$(sort $(patsubst master/%,%, \
   $(shell cd $(LOCAL_PATH) ; \
           find -L master -maxdepth 1 -name "*.txt") \
   ))
 LOCAL_COMPATIBILITY_SUPPORT_FILES := $(foreach file, $(DEQP_CASELISTS), $(LOCAL_PATH)/master/$(file):$(file))
+LOCAL_COMPATIBILITY_SUPPORT_FILES += $(LOCAL_PATH)/nyc/vk-master.txt:nyc-vk-master.txt
+LOCAL_COMPATIBILITY_SUPPORT_FILES += $(LOCAL_PATH)/nyc/gles31-master.txt:nyc-gles31-master.txt
+LOCAL_COMPATIBILITY_SUPPORT_FILES += $(LOCAL_PATH)/nyc/egl-master.txt:nyc-egl-master.txt
 
 include $(BUILD_HOST_JAVA_LIBRARY)
 
