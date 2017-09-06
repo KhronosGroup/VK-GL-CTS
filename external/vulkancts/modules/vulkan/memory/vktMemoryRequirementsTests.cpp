@@ -707,6 +707,7 @@ protected:
 private:
 	virtual bool isImageSupported			(const InstanceInterface&					vki,
 											 const VkPhysicalDevice						physDevice,
+											 const std::vector<std::string>&			deviceExtensions,
 											 const VkImageCreateInfo&					info);
 
 	virtual bool isFormatMatchingAspect		(const VkFormat								format,
@@ -866,15 +867,16 @@ bool isUsageMatchesFeatures (const VkImageUsageFlags usage, const VkFormatFeatur
 }
 
 //! This catches both invalid as well as legal but unsupported combinations of image parameters
-bool ImageMemoryRequirementsOriginal::isImageSupported (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkImageCreateInfo& info)
+bool ImageMemoryRequirementsOriginal::isImageSupported (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const std::vector<std::string>& deviceExtensions, const VkImageCreateInfo& info)
 {
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
 
-	if (isYCbCrFormat(info.format)
+	if ((isYCbCrFormat(info.format)
 		&& (info.imageType != VK_IMAGE_TYPE_2D
 			|| info.mipLevels != 1
 			|| info.arrayLayers != 1
 			|| info.samples != VK_SAMPLE_COUNT_1_BIT))
+			|| !de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_sampler_ycbcr_conversion"))
 	{
 		return false;
 	}
@@ -1363,7 +1365,7 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 
 					m_currentTestImageInfo = imageInfo;
 
-					if (!isImageSupported(vki, physDevice, m_currentTestImageInfo))
+					if (!isImageSupported(vki, physDevice, context.getDeviceExtensions(), m_currentTestImageInfo))
 						continue;
 
 					log << tcu::TestLog::Message << "- " << getImageInfoString(m_currentTestImageInfo) << tcu::TestLog::EndMessage;
