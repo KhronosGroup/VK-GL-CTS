@@ -3698,12 +3698,12 @@ KHR-GL43.arrays_of_arrays_gl.SubroutineArgumentAliasing3
 KHR-GL43.arrays_of_arrays_gl.SubroutineArgumentAliasing4
 KHR-GL43.copy_image.functional
 KHR-GL43.copy_image.incomplete_tex
-KHR-GL43.copy_image.missmatch_object
+KHR-GL43.copy_image.invalid_object
 KHR-GL43.copy_image.smoke_test
 KHR-GL43.copy_image.invalid_target
 KHR-GL43.copy_image.target_miss_match
 KHR-GL43.copy_image.incompatible_formats
-KHR-GL43.copy_image.samples_missmatch
+KHR-GL43.copy_image.samples_mismatch
 KHR-GL43.copy_image.incompatible_formats_compression
 KHR-GL43.copy_image.non_existent_mipmap
 KHR-GL43.copy_image.exceeding_boundaries
