@@ -113,15 +113,19 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryVaryingGeometryShaderTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageAtomicOperationTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageCompressionTranscodingSupport.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageMultisampleLoadStoreTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageMutableTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageQualifiersTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageSizeTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTexture.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageTranscodingSupportTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryAllocationTests.cpp \
+	external/vulkancts/modules/vulkan/memory/vktMemoryBindingTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryMappingTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryPipelineBarrierTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryRequirementsTests.cpp \
@@ -273,6 +277,13 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrConversionTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrCopyTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFormatTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageQueryTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrUtil.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrViewTests.cpp \
 	framework/common/tcuApp.cpp \
 	framework/common/tcuArray.cpp \
 	framework/common/tcuAstcUtil.cpp \
@@ -981,6 +992,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/ycbcr \
 	$(deqp_dir)/framework/common \
 	$(deqp_dir)/framework/delibs/debase \
 	$(deqp_dir)/framework/delibs/decpp \

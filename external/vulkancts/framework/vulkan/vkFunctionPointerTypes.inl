@@ -191,6 +191,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetFenceFdKHRFunc)										(VkDevic
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageMemoryRequirements2KHRFunc)					(VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetBufferMemoryRequirements2KHRFunc)					(VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetImageSparseMemoryRequirements2KHRFunc)				(VkDevice device, const VkImageSparseMemoryRequirementsInfo2KHR* pInfo, deUint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2KHR* pSparseMemoryRequirements);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSamplerYcbcrConversionKHRFunc)					(VkDevice device, const VkSamplerYcbcrConversionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSamplerYcbcrConversionKHR* pYcbcrConversion);
+typedef VKAPI_ATTR void					(VKAPI_CALL* DestroySamplerYcbcrConversionKHRFunc)					(VkDevice device, VkSamplerYcbcrConversionKHR YcbcrConversion, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDebugReportCallbackEXTFunc)						(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDebugReportCallbackEXTFunc)						(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DebugReportMessageEXTFunc)								(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage);
@@ -206,3 +208,5 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportSemaphoreFdKHRFunc)								(Vk
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreFdKHRFunc)									(VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetRefreshCycleDurationGOOGLEFunc)						(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPastPresentationTimingGOOGLEFunc)					(VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindBufferMemory2KHRFunc)								(VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindImageMemory2KHRFunc)								(VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos);

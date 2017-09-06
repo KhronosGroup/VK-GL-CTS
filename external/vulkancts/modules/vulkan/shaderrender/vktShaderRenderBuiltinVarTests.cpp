@@ -132,7 +132,7 @@ TestStatus BuiltinGlFrontFacingCaseInstance::iterate (void)
 {
 	TestLog&					log				= m_context.getTestContext().getLog();
 	std::vector<Vec4>			vertices;
-	std::vector<Shader>			shaders;
+	std::vector<VulkanShader>	shaders;
 	FrontFacingVertexShader		vertexShader;
 	FrontFacingFragmentShader	fragmentShader;
 	std::string					testDesc;
@@ -144,8 +144,8 @@ TestStatus BuiltinGlFrontFacingCaseInstance::iterate (void)
 	vertices.push_back(Vec4(  0.75f,	-0.75f,	0.0f,	1.0f));
 	vertices.push_back(Vec4(  0.0f,		-0.75f,	0.0f,	1.0f));
 
-	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert")));
-	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag")));
 
 	testDesc = "gl_FrontFacing " + getPrimitiveTopologyShortName(m_topology) + " ";
 
@@ -724,7 +724,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 	// Perform Draw
 	{
 		std::vector<Vec4>				vertices;
-		std::vector<Shader>				shaders;
+		std::vector<VulkanShader>		shaders;
 		Move<VkDescriptorSetLayout>		descriptorSetLayout;
 		Move<VkDescriptorPool>			descriptorPool;
 		Move<VkDescriptorSet>			descriptorSet;
@@ -776,8 +776,8 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		vertices.push_back(Vec4(  0.78f,	0.0f,	0.0f,	1.0f));
 		vertices.push_back(Vec4( -0.1f,		0.6f,	0.0f,	1.0f));
 
-		shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragDepthVert")));
-		shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragDepthFrag")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragDepthVert")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragDepthFrag")));
 
 		DrawState				drawState(m_topology, m_renderSize.x(), m_renderSize.y());
 		DrawCallData			drawCallData(vertices);
@@ -790,9 +790,9 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		drawState.depthTestEnable			= true;
 		drawState.depthWriteEnable			= true;
 		drawState.sampleShadingEnable		= true;
-		vulkanProgram.depthImageView		= depthImageView;
-		vulkanProgram.descriptorSetLayout	= descriptorSetLayout;
-		vulkanProgram.descriptorSet			= descriptorSet;
+		vulkanProgram.depthImageView		= *depthImageView;
+		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
+		vulkanProgram.descriptorSet			= *descriptorSet;
 
 		VulkanDrawContext		vulkanDrawContext(m_context, drawState, drawCallData, vulkanProgram);
 		vulkanDrawContext.draw();
@@ -806,7 +806,6 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 										1,
 										vulkanDrawContext.getColorPixels().getDataPtr()));
 
-		depthImageView = vulkanProgram.depthImageView;
 	}
 
 	// Barrier to transition between first and second pass
@@ -893,7 +892,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 	// Resolve Depth Buffer
 	{
 		std::vector<Vec4>				vertices;
-		std::vector<Shader>				shaders;
+		std::vector<VulkanShader>		shaders;
 		Move<VkDescriptorSetLayout>		descriptorSetLayout;
 		Move<VkDescriptorPool>			descriptorPool;
 		Move<VkDescriptorSet>			descriptorSet;
@@ -945,8 +944,8 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		vertices.push_back(Vec4(  1.0f,	-1.0f,	0.0f,	1.0f));
 		vertices.push_back(Vec4(  1.0f,	 1.0f,	0.0f,	1.0f));
 
-		shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragDepthVertPass2")));
-		shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragDepthFragPass2")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragDepthVertPass2")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragDepthFragPass2")));
 
 		DrawState				drawState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_renderSize.x(), m_renderSize.y());
 		DrawCallData			drawCallData(vertices);
@@ -1487,15 +1486,15 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 	// Perform draw
 	{
 		std::vector<Vec4>				vertices;
-		std::vector<Shader>				shaders;
+		std::vector<VulkanShader>		shaders;
 
 		vertices.push_back(Vec4( -1.0f,	-1.0f,	0.0f,	1.0f));
 		vertices.push_back(Vec4( -1.0f,	 1.0f,	0.0f,	1.0f));
 		vertices.push_back(Vec4(  1.0f,	-1.0f,	0.0f,	1.0f));
 		vertices.push_back(Vec4(  1.0f,	 1.0f,	0.0f,	1.0f));
 
-		shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragCoordMsaaVert")));
-		shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragCoordMsaaFrag")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragCoordMsaaVert")));
+		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragCoordMsaaFrag")));
 
 		DrawState			drawState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_renderSize.x(), m_renderSize.y());
 		DrawCallData		drawCallData(vertices);

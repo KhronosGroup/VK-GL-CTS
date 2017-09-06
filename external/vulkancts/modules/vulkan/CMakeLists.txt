@@ -25,6 +25,7 @@ add_subdirectory(geometry)
 add_subdirectory(texture)
 add_subdirectory(robustness)
 add_subdirectory(renderpass)
+add_subdirectory(ycbcr)
 
 include_directories(
 	api
@@ -52,6 +53,7 @@ include_directories(
 	geometry
 	robustness
 	renderpass
+	ycbcr
 	)
 
 set(DEQP_VK_SRCS
@@ -71,6 +73,8 @@ set(DEQP_VK_SRCS
 	vktDrawUtil.hpp
 	vktExternalMemoryUtil.cpp
 	vktExternalMemoryUtil.hpp
+	vktDrawUtil.cpp
+	vktDrawUtil.hpp
 	)
 
 set(DEQP_VK_LIBS
@@ -102,6 +106,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-geometry
 	deqp-vk-robustness
 	deqp-vk-render-pass
+	deqp-vk-ycbcr
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

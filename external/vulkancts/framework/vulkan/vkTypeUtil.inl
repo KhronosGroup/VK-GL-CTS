@@ -404,6 +404,15 @@ inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (
 	return res;
 }
 
+inline VkInputAttachmentAspectReferenceKHR makeInputAttachmentAspectReferenceKHR (deUint32 subpass, deUint32 inputAttachmentIndex, VkImageAspectFlags aspectMask)
+{
+	VkInputAttachmentAspectReferenceKHR res;
+	res.subpass					= subpass;
+	res.inputAttachmentIndex	= inputAttachmentIndex;
+	res.aspectMask				= aspectMask;
+	return res;
+}
+
 inline VkExternalMemoryPropertiesKHR makeExternalMemoryPropertiesKHR (VkExternalMemoryFeatureFlagsKHR externalMemoryFeatures, VkExternalMemoryHandleTypeFlagsKHR exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlagsKHR compatibleHandleTypes)
 {
 	VkExternalMemoryPropertiesKHR res;

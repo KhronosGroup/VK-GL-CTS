@@ -78,6 +78,7 @@
 #include "vktTextureTests.hpp"
 #include "vktGeometryTests.hpp"
 #include "vktRobustnessTests.hpp"
+#include "vktYCbCrTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -402,6 +403,7 @@ void TestPackage::init (void)
 	addChild(texture::createTests			(m_testCtx));
 	addChild(geometry::createTests			(m_testCtx));
 	addChild(robustness::createTests		(m_testCtx));
+	addChild(ycbcr::createTests				(m_testCtx));
 }
 
 } // vkt

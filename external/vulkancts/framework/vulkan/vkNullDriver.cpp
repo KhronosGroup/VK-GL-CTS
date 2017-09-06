@@ -24,6 +24,7 @@
 #include "vkNullDriver.hpp"
 #include "vkPlatform.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "tcuFunctionLibrary.hpp"
 #include "deMemory.h"
 
@@ -231,6 +232,12 @@ class SwapchainKHR
 public:
 										SwapchainKHR	(VkDevice, const VkSwapchainCreateInfoKHR*) {}
 										~SwapchainKHR	(void) {}
+};
+
+class SamplerYcbcrConversionKHR
+{
+public:
+	SamplerYcbcrConversionKHR (VkDevice, const VkSamplerYcbcrConversionCreateInfoKHR*) {}
 };
 
 void* allocateHeap (const VkMemoryAllocateInfo* pAllocInfo)
@@ -529,6 +536,55 @@ VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDevices (VkInstance, deUint32* p
 	return VK_SUCCESS;
 }
 
+VkResult enumerateExtensions (deUint32 numExtensions, const VkExtensionProperties* extensions, deUint32* pPropertyCount, VkExtensionProperties* pProperties)
+{
+	const deUint32	dstSize		= pPropertyCount ? *pPropertyCount : 0;
+
+	if (pPropertyCount)
+		*pPropertyCount = numExtensions;
+
+	if (pProperties)
+	{
+		for (deUint32 ndx = 0; ndx < de::min(numExtensions, dstSize); ++ndx)
+			pProperties[ndx] = extensions[ndx];
+
+		if (dstSize < numExtensions)
+			return VK_INCOMPLETE;
+	}
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceExtensionProperties (const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties)
+{
+	static const VkExtensionProperties	s_extensions[]	=
+	{
+		{ "VK_KHR_get_physical_device_properties2", 1u }
+	};
+
+	if (!pLayerName)
+		return enumerateExtensions((deUint32)DE_LENGTH_OF_ARRAY(s_extensions), s_extensions, pPropertyCount, pProperties);
+	else
+		return enumerateExtensions(0, DE_NULL, pPropertyCount, pProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL enumerateDeviceExtensionProperties (VkPhysicalDevice physicalDevice, const char* pLayerName, deUint32* pPropertyCount, VkExtensionProperties* pProperties)
+{
+	DE_UNREF(physicalDevice);
+
+	static const VkExtensionProperties	s_extensions[]	=
+	{
+		{ "VK_KHR_get_memory_requirements2",	1u },
+		{ "VK_KHR_bind_memory2",				1u },
+		{ "VK_KHR_sampler_ycbcr_conversion",	1u },
+	};
+
+	if (!pLayerName)
+		return enumerateExtensions((deUint32)DE_LENGTH_OF_ARRAY(s_extensions), s_extensions, pPropertyCount, pProperties);
+	else
+		return enumerateExtensions(0, DE_NULL, pPropertyCount, pProperties);
+}
+
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures)
 {
 	DE_UNREF(physicalDevice);
@@ -589,6 +645,20 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures (VkPhysicalDevice physicalD
 	pFeatures->sparseResidencyAliased						= VK_TRUE;
 	pFeatures->variableMultisampleRate						= VK_TRUE;
 	pFeatures->inheritedQueries								= VK_TRUE;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2KHR* pFeatures)
+{
+	// Core features
+	getPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
+
+	// VK_KHR_sampler_ycbcr_conversion
+	{
+		VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR*	extFeatures	= findStructure<VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR>(pFeatures->pNext);
+
+		if (extFeatures)
+			extFeatures->samplerYcbcrConversion = VK_TRUE;
+	}
 }
 
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties (VkPhysicalDevice, VkPhysicalDeviceProperties* props)
@@ -718,6 +788,12 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties (VkPhysicalDevice, VkPhys
 	props->limits.nonCoherentAtomSize									= 128;
 }
 
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2KHR* pProperties)
+{
+	getPhysicalDeviceProperties(physicalDevice, &pProperties->properties);
+}
+
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyProperties (VkPhysicalDevice, deUint32* count, VkQueueFamilyProperties* props)
 {
 	if (props && *count >= 1u)
@@ -747,7 +823,7 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceMemoryProperties (VkPhysicalDevice, 
 	props->memoryHeaps[0].flags			= 0u;
 }
 
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFormatProperties (VkPhysicalDevice, VkFormat, VkFormatProperties* pFormatProperties)
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFormatProperties (VkPhysicalDevice, VkFormat format, VkFormatProperties* pFormatProperties)
 {
 	const VkFormatFeatureFlags	allFeatures	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
 											| VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT
@@ -761,11 +837,20 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFormatProperties (VkPhysicalDevice, 
 											| VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
 											| VK_FORMAT_FEATURE_BLIT_SRC_BIT
 											| VK_FORMAT_FEATURE_BLIT_DST_BIT
-											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
+											| VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT_KHR
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT_KHR
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT_KHR
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT_KHR
+											| VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
 
 	pFormatProperties->linearTilingFeatures		= allFeatures;
 	pFormatProperties->optimalTilingFeatures	= allFeatures;
 	pFormatProperties->bufferFeatures			= allFeatures;
+
+	if (isYCbCrFormat(format) && getPlaneCount(format) > 1)
+		pFormatProperties->optimalTilingFeatures |= VK_FORMAT_FEATURE_DISJOINT_BIT_KHR;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties)
@@ -806,6 +891,11 @@ VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements (VkDevice, VkBuffer buffe
 	requirements->alignment			= (VkDeviceSize)1u;
 }
 
+VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements2KHR (VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
+{
+	getBufferMemoryRequirements(device, pInfo->buffer, &pMemoryRequirements->memoryRequirements);
+}
+
 VkDeviceSize getPackedImageDataSize (VkFormat format, VkExtent3D extent, VkSampleCountFlagBits samples)
 {
 	return (VkDeviceSize)getPixelSize(mapVkFormat(format))
@@ -834,6 +924,26 @@ VkDeviceSize getCompressedImageDataSize (VkFormat format, VkExtent3D extent)
 	}
 }
 
+VkDeviceSize getYCbCrImageDataSize (VkFormat format, VkExtent3D extent)
+{
+	const PlanarFormatDescription	desc		= getPlanarFormatDescription(format);
+	VkDeviceSize					totalSize	= 0;
+
+	DE_ASSERT(extent.depth == 1);
+
+	for (deUint32 planeNdx = 0; planeNdx < desc.numPlanes; ++planeNdx)
+	{
+		const deUint32		planeW		= extent.width / desc.planes[planeNdx].widthDivisor;
+		const deUint32		planeH		= extent.height / desc.planes[planeNdx].heightDivisor;
+		const deUint32		elementSize	= desc.planes[planeNdx].elementSizeBytes;
+
+		totalSize = (VkDeviceSize)deAlign64((deInt64)totalSize, elementSize);
+		totalSize += planeW * planeH * elementSize;
+	}
+
+	return totalSize;
+}
+
 VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements (VkDevice, VkImage imageHandle, VkMemoryRequirements* requirements)
 {
 	const Image*	image	= reinterpret_cast<const Image*>(imageHandle.getInternal());
@@ -843,8 +953,36 @@ VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements (VkDevice, VkImage imageHa
 
 	if (isCompressedFormat(image->getFormat()))
 		requirements->size = getCompressedImageDataSize(image->getFormat(), image->getExtent());
+	else if (isYCbCrFormat(image->getFormat()))
+		requirements->size = getYCbCrImageDataSize(image->getFormat(), image->getExtent());
 	else
 		requirements->size = getPackedImageDataSize(image->getFormat(), image->getExtent(), image->getSamples());
+}
+
+VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
+{
+	const VkImagePlaneMemoryRequirementsInfoKHR*	planeReqs	= findStructure<VkImagePlaneMemoryRequirementsInfoKHR>(pInfo->pNext);
+
+	if (planeReqs)
+	{
+		const deUint32					planeNdx	= getAspectPlaneNdx(planeReqs->planeAspect);
+		const Image*					image		= reinterpret_cast<const Image*>(pInfo->image.getInternal());
+		const VkFormat					format		= image->getFormat();
+		const PlanarFormatDescription	formatDesc	= getPlanarFormatDescription(format);
+
+		DE_ASSERT(de::inBounds<deUint32>(planeNdx, 0u, formatDesc.numPlanes));
+
+		const VkExtent3D				extent		= image->getExtent();
+		const deUint32					planeW		= extent.width / formatDesc.planes[planeNdx].widthDivisor;
+		const deUint32					planeH		= extent.height / formatDesc.planes[planeNdx].heightDivisor;
+		const deUint32					elementSize	= formatDesc.planes[planeNdx].elementSizeBytes;
+
+		pMemoryRequirements->memoryRequirements.memoryTypeBits	= 1u;
+		pMemoryRequirements->memoryRequirements.alignment		= 16u;
+		pMemoryRequirements->memoryRequirements.size			= planeW * planeH * elementSize;
+	}
+	else
+		getImageMemoryRequirements(device, pInfo->image, &pMemoryRequirements->memoryRequirements);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL mapMemory (VkDevice, VkDeviceMemory memHandle, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData)

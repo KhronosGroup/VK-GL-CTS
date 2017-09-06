@@ -702,6 +702,16 @@ void DeviceDriver::getImageSparseMemoryRequirements2KHR (VkDevice device, const 
 	m_vk.getImageSparseMemoryRequirements2KHR(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
 }
 
+VkResult DeviceDriver::createSamplerYcbcrConversionKHR (VkDevice device, const VkSamplerYcbcrConversionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSamplerYcbcrConversionKHR* pYcbcrConversion) const
+{
+	return m_vk.createSamplerYcbcrConversionKHR(device, pCreateInfo, pAllocator, pYcbcrConversion);
+}
+
+void DeviceDriver::destroySamplerYcbcrConversionKHR (VkDevice device, VkSamplerYcbcrConversionKHR YcbcrConversion, const VkAllocationCallbacks* pAllocator) const
+{
+	m_vk.destroySamplerYcbcrConversionKHR(device, YcbcrConversion, pAllocator);
+}
+
 VkResult DeviceDriver::getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
 {
 	return m_vk.getMemoryWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
@@ -750,4 +760,14 @@ VkResult DeviceDriver::getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapcha
 VkResult DeviceDriver::getPastPresentationTimingGOOGLE (VkDevice device, VkSwapchainKHR swapchain, deUint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const
 {
 	return m_vk.getPastPresentationTimingGOOGLE(device, swapchain, pPresentationTimingCount, pPresentationTimings);
+}
+
+VkResult DeviceDriver::bindBufferMemory2KHR (VkDevice device, deUint32 bindInfoCount, const VkBindBufferMemoryInfoKHR* pBindInfos) const
+{
+	return m_vk.bindBufferMemory2KHR(device, bindInfoCount, pBindInfos);
+}
+
+VkResult DeviceDriver::bindImageMemory2KHR (VkDevice device, deUint32 bindInfoCount, const VkBindImageMemoryInfoKHR* pBindInfos) const
+{
+	return m_vk.bindImageMemory2KHR(device, bindInfoCount, pBindInfos);
 }
