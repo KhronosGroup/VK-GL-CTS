@@ -25,7 +25,6 @@
 #include "gluRenderContext.hpp"
 #include "gluRenderConfig.hpp"
 #include "gluFboRenderContext.hpp"
-#include "gluES3PlusWrapperContext.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDummyRenderContext.hpp"
 #include "tcuCommandLine.hpp"
