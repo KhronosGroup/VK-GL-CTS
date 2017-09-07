@@ -809,7 +809,35 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 					VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
 				}
 
-				vkd.cmdCopyImage(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copies.size(), &copies[0]);
+				for (size_t i = 0; i < copies.size(); i++)
+				{
+					vkd.cmdCopyImage(*cmdBuffer, *srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *dstImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copies[i]);
+
+					const vk::VkImageMemoryBarrier preCopyBarrier =
+					{
+						vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+						DE_NULL,
+						vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+						vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+						vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						VK_QUEUE_FAMILY_IGNORED,
+						VK_QUEUE_FAMILY_IGNORED,
+						*dstImage,
+						{ vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }
+					};
+
+					vkd.cmdPipelineBarrier(*cmdBuffer,
+											(vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+											(vk::VkPipelineStageFlags)vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+											(vk::VkDependencyFlags)0u,
+											0u,
+											(const vk::VkMemoryBarrier*)DE_NULL,
+											0u,
+											(const vk::VkBufferMemoryBarrier*)DE_NULL,
+											1u,
+											&preCopyBarrier);
+				}
 
 				VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
