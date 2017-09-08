@@ -1013,26 +1013,26 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationTest(
 		createShaderModule(context.getDeviceInterface(), context.getDevice(),
 						   context.getBinaryCollection().get("tese"), 0u));
 
-	std::vector<BufferOrImage*> inputBuffers(extraDatasCount + 1);
+	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(extraDatasCount + 1);
 
 	// The implicit result SSBO we use to store our outputs from the shader
 	{
 		vk::VkDeviceSize size = getFormatSizeInBytes(format) * maxWidth * 2;
-		inputBuffers[0] = new Buffer(context, size);
+		inputBuffers[0] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 	}
 
 	for (deUint32 i = 0; i < (inputBuffers.size() - 1); i++)
 	{
 		if (extraDatas[i].isImage)
 		{
-			inputBuffers[i + 1] = new Image(context,
-											static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format);
+			inputBuffers[i + 1] = de::SharedPtr<BufferOrImage>(new Image(context,
+											static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format));
 		}
 		else
 		{
 			vk::VkDeviceSize size =
 				getFormatSizeInBytes(extraDatas[i].format) * extraDatas[i].numElements;
-			inputBuffers[i + 1] = new Buffer(context, size);
+			inputBuffers[i + 1] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
 		const Allocation& alloc = inputBuffers[i + 1]->getAllocation();
@@ -1193,11 +1193,6 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationTest(
 		context.getDeviceInterface().resetCommandBuffer(*cmdBuffer, 0);
 	}
 
-	for (deUint32 i = 0; i < inputBuffers.size(); i++)
-	{
-		delete inputBuffers[i];
-	}
-
 	if (0 < failedIterations)
 	{
 		context.getTestContext().getLog()
@@ -1226,26 +1221,26 @@ tcu::TestStatus vkt::subgroups::makeTessellationControlTest(
 		createShaderModule(context.getDeviceInterface(), context.getDevice(),
 						   context.getBinaryCollection().get("tese"), 0u));
 
-	std::vector<BufferOrImage*> inputBuffers(extraDatasCount + 1);
+	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(extraDatasCount + 1);
 
 	// The implicit result SSBO we use to store our outputs from the vertex shader
 	{
 		vk::VkDeviceSize size = getFormatSizeInBytes(format) * maxWidth;
-		inputBuffers[0] = new Buffer(context, size);
+		inputBuffers[0] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 	}
 
 	for (deUint32 i = 0; i < (inputBuffers.size() - 1); i++)
 	{
 		if (extraDatas[i].isImage)
 		{
-			inputBuffers[i + 1] = new Image(context,
-											static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format);
+			inputBuffers[i + 1] = de::SharedPtr<BufferOrImage>(new Image(context,
+											static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format));
 		}
 		else
 		{
 			vk::VkDeviceSize size =
 				getFormatSizeInBytes(extraDatas[i].format) * extraDatas[i].numElements;
-			inputBuffers[i + 1] = new Buffer(context, size);
+			inputBuffers[i + 1] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
 		const Allocation& alloc = inputBuffers[i + 1]->getAllocation();
@@ -1406,11 +1401,6 @@ tcu::TestStatus vkt::subgroups::makeTessellationControlTest(
 		context.getDeviceInterface().resetCommandBuffer(*cmdBuffer, 0);
 	}
 
-	for (deUint32 i = 0; i < inputBuffers.size(); i++)
-	{
-		delete inputBuffers[i];
-	}
-
 	if (0 < failedIterations)
 	{
 		context.getTestContext().getLog()
@@ -1436,26 +1426,26 @@ tcu::TestStatus vkt::subgroups::makeGeometryTest(
 		createShaderModule(context.getDeviceInterface(), context.getDevice(),
 						   context.getBinaryCollection().get("geom"), 0u));
 
-	std::vector<BufferOrImage*> inputBuffers(extraDatasCount + 1);
+	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(extraDatasCount + 1);
 
 	// The implicit result SSBO we use to store our outputs from the vertex shader
 	{
 		vk::VkDeviceSize size = getFormatSizeInBytes(format) * maxWidth;
-		inputBuffers[0] = new Buffer(context, size);
+		inputBuffers[0] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 	}
 
 	for (deUint32 i = 0; i < (inputBuffers.size() - 1); i++)
 	{
 		if (extraDatas[i].isImage)
 		{
-			inputBuffers[i + 1] = new Image(context,
-											static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format);
+			inputBuffers[i + 1] = de::SharedPtr<BufferOrImage>(new Image(context,
+											static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format));
 		}
 		else
 		{
 			vk::VkDeviceSize size =
 				getFormatSizeInBytes(extraDatas[i].format) * extraDatas[i].numElements;
-			inputBuffers[i + 1] = new Buffer(context, size);
+			inputBuffers[i + 1] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
 		const Allocation& alloc = inputBuffers[i + 1]->getAllocation();
@@ -1616,11 +1606,6 @@ tcu::TestStatus vkt::subgroups::makeGeometryTest(
 		context.getDeviceInterface().resetCommandBuffer(*cmdBuffer, 0);
 	}
 
-	for (deUint32 i = 0; i < inputBuffers.size(); i++)
-	{
-		delete inputBuffers[i];
-	}
-
 	if (0 < failedIterations)
 	{
 		context.getTestContext().getLog()
@@ -1643,26 +1628,26 @@ tcu::TestStatus vkt::subgroups::makeVertexTest(
 		createShaderModule(context.getDeviceInterface(), context.getDevice(),
 						   context.getBinaryCollection().get("vert"), 0u));
 
-	std::vector<BufferOrImage*> inputBuffers(extraDatasCount + 1);
+	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(extraDatasCount + 1);
 
 	// The implicit result SSBO we use to store our outputs from the vertex shader
 	{
 		vk::VkDeviceSize size = getFormatSizeInBytes(format) * maxWidth;
-		inputBuffers[0] = new Buffer(context, size);
+		inputBuffers[0] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 	}
 
 	for (deUint32 i = 0; i < (inputBuffers.size() - 1); i++)
 	{
 		if (extraDatas[i].isImage)
 		{
-			inputBuffers[i + 1] = new Image(context,
-											static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format);
+			inputBuffers[i + 1] = de::SharedPtr<BufferOrImage>(new Image(context,
+											static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format));
 		}
 		else
 		{
 			vk::VkDeviceSize size =
 				getFormatSizeInBytes(extraDatas[i].format) * extraDatas[i].numElements;
-			inputBuffers[i + 1] = new Buffer(context, size);
+			inputBuffers[i + 1] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
 		const Allocation& alloc = inputBuffers[i + 1]->getAllocation();
@@ -1822,11 +1807,6 @@ tcu::TestStatus vkt::subgroups::makeVertexTest(
 		context.getDeviceInterface().resetCommandBuffer(*cmdBuffer, 0);
 	}
 
-	for (deUint32 i = 0; i < inputBuffers.size(); i++)
-	{
-		delete inputBuffers[i];
-	}
-
 	if (0 < failedIterations)
 	{
 		context.getTestContext().getLog()
@@ -1851,20 +1831,20 @@ tcu::TestStatus vkt::subgroups::makeFragmentTest(
 		createShaderModule(context.getDeviceInterface(), context.getDevice(),
 						   context.getBinaryCollection().get("frag"), 0u));
 
-	std::vector<BufferOrImage*> inputBuffers(extraDatasCount);
+	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(extraDatasCount);
 
 	for (deUint32 i = 0; i < extraDatasCount; i++)
 	{
 		if (extraDatas[i].isImage)
 		{
-			inputBuffers[i] = new Image(context,
-										static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format);
+			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context,
+										static_cast<deUint32>(extraDatas[i].numElements), 1, extraDatas[i].format));
 		}
 		else
 		{
 			vk::VkDeviceSize size =
 				getFormatSizeInBytes(extraDatas[i].format) * extraDatas[i].numElements;
-			inputBuffers[i] = new Buffer(context, size);
+			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -2055,11 +2035,6 @@ tcu::TestStatus vkt::subgroups::makeFragmentTest(
 		}
 	}
 
-	for (deUint32 i = 0; i < extraDatasCount; i++)
-	{
-		delete inputBuffers[i];
-	}
-
 	if (0 < failedIterations)
 	{
 		context.getTestContext().getLog()
@@ -2087,20 +2062,20 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	Buffer resultBuffer(
 		context, resultBufferSizeInBytes);
 
-	std::vector<BufferOrImage*> inputBuffers(inputsCount);
+	std::vector< de::SharedPtr<BufferOrImage> > inputBuffers(inputsCount);
 
 	for (deUint32 i = 0; i < inputsCount; i++)
 	{
 		if (inputs[i].isImage)
 		{
-			inputBuffers[i] = new Image(context,
-										static_cast<deUint32>(inputs[i].numElements), 1, inputs[i].format);
+			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Image(context,
+										static_cast<deUint32>(inputs[i].numElements), 1, inputs[i].format));
 		}
 		else
 		{
 			vk::VkDeviceSize size =
 				getFormatSizeInBytes(inputs[i].format) * inputs[i].numElements;
-			inputBuffers[i] = new Buffer(context, size);
+			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -2284,11 +2259,6 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		context.getDeviceInterface().resetCommandBuffer(*cmdBuffer, 0);
 
 		lastPipeline = nextPipeline;
-	}
-
-	for (deUint32 i = 0; i < inputsCount; i++)
-	{
-		delete inputBuffers[i];
 	}
 
 	if (0 < failedIterations)
