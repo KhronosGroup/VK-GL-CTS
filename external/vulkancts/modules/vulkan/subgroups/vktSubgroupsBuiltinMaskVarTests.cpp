@@ -36,6 +36,7 @@ namespace vkt
 {
 namespace subgroups
 {
+
 static bool checkVertexPipelineStages(std::vector<const void*> datas,
 									  deUint32 width, deUint32)
 {
@@ -131,12 +132,13 @@ namespace
 {
 struct CaseDefinition
 {
-	std::string varName;
-	VkShaderStageFlags shaderStage;
+	std::string			varName;
+	VkShaderStageFlags	shaderStage;
+	bool				noSSBO;
 };
 }
 
-void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
+std::string subgroupMask (const CaseDefinition& caseDef)
 {
 	std::ostringstream bdy;
 
@@ -183,6 +185,50 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 
 	bdy << "  }\n";
+	return bdy.str();
+}
+
+void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
+{
+	std::ostringstream	vertexSrc;
+	std::ostringstream	fragmentSrc;
+	std::ostringstream	bdy;
+	bdy << subgroupMask(caseDef);
+
+	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+	{
+		vertexSrc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+					<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+					<< "layout(location = 0) out float out_color;\n"
+					<< "layout(location = 0) in highp vec4 in_position;\n"
+					<< "\n"
+					<< "void main (void)\n"
+					<< "{\n"
+					<< bdy.str()
+					<< "  out_color = float(tempResult);\n"
+					<< "  gl_Position = in_position;\n"
+					<< "}\n";
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str());
+
+		fragmentSrc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+					<< "layout(location = 0) in highp float in_color;\n"
+					<< "layout(location = 0) out uint out_color;\n"
+					<< "void main()\n"
+					<<"{\n"
+					<< "	out_color = uint(in_color);\n"
+					<< "}\n";
+		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSrc.str());
+	}
+	else
+	{
+		DE_FATAL("Unsupported shader stage");
+	}
+}
+
+void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
+{
+	std::ostringstream bdy;
+	bdy << subgroupMask(caseDef);
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
@@ -359,6 +405,12 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
 	}
 
+	//Tests which don't use the SSBO
+	if (caseDef.noSSBO && VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+	{
+		return makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages);
+	}
+
 	if ((VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage) &&
 			(VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage))
 	{
@@ -436,12 +488,21 @@ tcu::TestCaseGroup* createSubgroupsBuiltinMaskVarTests(tcu::TestContext& testCtx
 		{
 			const std::string var = all_stages_vars[a];
 
-			CaseDefinition caseDef = {"gl_" + var, stage};
+			CaseDefinition caseDef = {"gl_" + var, stage, false};
 
 			addFunctionCaseWithPrograms(group.get(),
 										de::toLower(var) + "_" +
 										getShaderStageName(stage), "",
 										initPrograms, test, caseDef);
+
+			if (VK_SHADER_STAGE_VERTEX_BIT == stage)
+			{
+				caseDef.noSSBO = true;
+				addFunctionCaseWithPrograms(group.get(),
+							de::toLower(var) + "_" +
+							getShaderStageName(stage)+"_framebuffer", "",
+							initFrameBufferPrograms, test, caseDef);
+			}
 		}
 	}
 
