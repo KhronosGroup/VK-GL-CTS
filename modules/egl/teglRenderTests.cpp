@@ -356,6 +356,37 @@ tcu::TextureFormat getColorFormat (const tcu::PixelFormat& colorBits)
 #undef PACK_FMT
 }
 
+/*
+The getColorThreshold function is used to obtain a
+threshold usable for the fuzzyCompare function.
+
+For 8bit color depths a value of 0.02 should provide
+a good metric for rejecting images above this level.
+For other bit depths other thresholds should be selected.
+Ideally this function would take advantage of the
+getColorThreshold function provided by the PixelFormat class
+as this would also allow setting per channel thresholds.
+However using the PixelFormat provided function can result
+in too strict thresholds for 8bit bit depths (compared to
+the current default of 0.02) or too relaxed for lower bit
+depths if scaled proportionally to the 8bit default.
+*/
+
+float getColorThreshold (const tcu::PixelFormat& colorBits)
+{
+	if ((colorBits.redBits > 0 && colorBits.redBits < 8) ||
+		(colorBits.greenBits > 0 && colorBits.greenBits < 8) ||
+		(colorBits.blueBits > 0 && colorBits.blueBits < 8) ||
+		(colorBits.alphaBits > 0 && colorBits.alphaBits < 8))
+	{
+		return 0.05f;
+	}
+	else
+	{
+		return 0.02f;
+	}
+}
+
 tcu::TextureFormat getDepthFormat (const int depthBits)
 {
 	switch (depthBits)
@@ -699,9 +730,9 @@ void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface 
 	const int				numContexts	= (int)contexts.size();
 	const int				drawsPerCtx	= 2;
 	const int				numIters	= 2;
-	const float				threshold	= 0.02f;
-
 	const tcu::PixelFormat	pixelFmt	= getPixelFormat(egl, display, config.config);
+	const float				threshold	= getColorThreshold(pixelFmt);
+
 	const int				depthBits	= eglu::getConfigAttribInt(egl, display, config.config, EGL_DEPTH_SIZE);
 	const int				stencilBits	= eglu::getConfigAttribInt(egl, display, config.config, EGL_STENCIL_SIZE);
 	const int				numSamples	= eglu::getConfigAttribInt(egl, display, config.config, EGL_SAMPLES);
@@ -903,9 +934,9 @@ void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface s
 	const int				packetsPerThread	= 2;
 	const int				numThreads			= numContexts;
 	const int				numPackets			= numThreads * packetsPerThread;
-	const float				threshold			= 0.02f;
-
 	const tcu::PixelFormat	pixelFmt			= getPixelFormat(egl, display, config.config);
+	const float				threshold			= getColorThreshold(pixelFmt);
+
 	const int				depthBits			= eglu::getConfigAttribInt(egl, display, config.config, EGL_DEPTH_SIZE);
 	const int				stencilBits			= eglu::getConfigAttribInt(egl, display, config.config, EGL_STENCIL_SIZE);
 	const int				numSamples			= eglu::getConfigAttribInt(egl, display, config.config, EGL_SAMPLES);
