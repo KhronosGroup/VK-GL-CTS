@@ -3880,6 +3880,7 @@ KHR-GL44.copy_image.incompatible_formats_compression
 KHR-GL44.copy_image.non_existent_mipmap
 KHR-GL44.copy_image.exceeding_boundaries
 KHR-GL44.copy_image.invalid_alignment
+KHR-GL44.copy_image.integer_tex
 KHR-GL44.draw_indirect_43.advanced-twoPass-Compute-arrays
 KHR-GL44.draw_indirect_43.advanced-twoPass-Compute-elements
 KHR-GL44.khr_debug.api_errors_non_debug
