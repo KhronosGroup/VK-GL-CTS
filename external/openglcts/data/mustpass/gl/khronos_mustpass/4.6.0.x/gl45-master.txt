@@ -2778,7 +2778,6 @@ KHR-GL45.draw_elements_base_vertex_tests.invalid_mode_argument
 KHR-GL45.draw_elements_base_vertex_tests.invalid_primcount_argument
 KHR-GL45.draw_elements_base_vertex_tests.invalid_start_end_arguments
 KHR-GL45.draw_elements_base_vertex_tests.invalid_type_argument
-KHR-GL45.draw_elements_base_vertex_tests.invalid_mapped_bos
 KHR-GL45.gpu_shader_fp64.fp64.errors
 KHR-GL45.gpu_shader_fp64.fp64.max_uniform_components
 KHR-GL45.gpu_shader_fp64.fp64.named_uniform_blocks
