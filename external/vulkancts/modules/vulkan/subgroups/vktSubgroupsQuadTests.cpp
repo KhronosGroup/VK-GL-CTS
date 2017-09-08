@@ -155,11 +155,82 @@ std::string getOpTypeName(int opType)
 
 struct CaseDefinition
 {
-	int opType;
-	VkShaderStageFlags shaderStage;
-	VkFormat format;
-	int direction;
+	int					opType;
+	VkShaderStageFlags	shaderStage;
+	VkFormat			format;
+	int					direction;
+	bool				noSSBO;
 };
+
+void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
+{
+	std::string swapTable[OPTYPE_LAST];
+	swapTable[OPTYPE_QUAD_BROADCAST] = "";
+	swapTable[OPTYPE_QUAD_SWAP_HORIZONTAL] = "  const uint swapTable[4] = {1, 0, 3, 2};\n";
+	swapTable[OPTYPE_QUAD_SWAP_VERTICAL] = "  const uint swapTable[4] = {2, 3, 0, 1};\n";
+	swapTable[OPTYPE_QUAD_SWAP_DIAGONAL] = "  const uint swapTable[4] = {3, 2, 1, 0};\n";
+
+	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+	{
+		std::ostringstream	src;
+		std::ostringstream	fragmentSrc;
+
+		src << "#version 450\n"
+			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
+			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< "layout(location = 0) in highp vec4 in_position;\n"
+			<< "layout(location = 0) out float result;\n"
+			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+			<< "{\n"
+			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
+			<< "};\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "  uvec4 mask = subgroupBallot(true);\n"
+			<< swapTable[caseDef.opType];
+
+		if (OPTYPE_QUAD_BROADCAST == caseDef.opType)
+		{
+			src << "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
+				<< getOpTypeName(caseDef.opType) << "(data[gl_SubgroupInvocationID], " << caseDef.direction << ");\n"
+				<< "  uint otherID = (gl_SubgroupInvocationID & ~0x3) + " << caseDef.direction << ";\n";
+		}
+		else
+		{
+			src << "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
+				<< getOpTypeName(caseDef.opType) << "(data[gl_SubgroupInvocationID]);\n"
+				<< "  uint otherID = (gl_SubgroupInvocationID & ~0x3) + swapTable[gl_SubgroupInvocationID & 0x3];\n";
+		}
+
+		src << "  if (subgroupBallotBitExtract(mask, otherID))\n"
+			<< "  {\n"
+			<< "    result = (op == data[otherID]) ? 1.0f : 0.0f;\n"
+			<< "  }\n"
+			<< "  else\n"
+			<< "  {\n"
+			<< "    result = 1.0f; // Invocation we read from was inactive, so we can't verify results!\n"
+			<< "  }\n"
+			<< "  gl_Position = in_position;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+
+		fragmentSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< "layout(location = 0) in float result;\n"
+			<< "layout(location = 0) out uint out_color;\n"
+			<< "void main()\n"
+			<<"{\n"
+			<< "	out_color = uint(result);\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSrc.str());
+	}
+	else
+	{
+		DE_FATAL("Unsupported shader stage");
+	}
+}
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
@@ -234,7 +305,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			 << "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			 << "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			 << "layout(location = 0) out uint result;\n"
-			 << "layout(set = 0, binding = 0, std430) buffer Buffer2\n"
+			 << "layout(set = 0, binding = 0, std430) readonly buffer Buffer2\n"
 			 << "{\n"
 			 << "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[];\n"
 			 << "};\n"
@@ -516,6 +587,17 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		TCU_THROW(NotSupportedError, "Device does not support subgroup double operations");
 	}
 
+	//Tests which don't use the SSBO
+	if (caseDef.noSSBO && VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+	{
+			subgroups::SSBOData inputData;
+			inputData.format = caseDef.format;
+			inputData.numElements = subgroups::maxSupportedSubgroupSize();
+			inputData.initializeType = subgroups::SSBOData::InitializeNonZero;
+
+			return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, checkVertexPipelineStages);
+	}
+
 	if ((VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage) &&
 			(VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage))
 	{
@@ -636,7 +718,7 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 
 				for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 				{
-					CaseDefinition caseDef = {opTypeIndex, stage, format, direction};
+					CaseDefinition caseDef = {opTypeIndex, stage, format, direction, false};
 
 					std::ostringstream name;
 
@@ -662,6 +744,14 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 
 					addFunctionCaseWithPrograms(group.get(), name.str(),
 												"", initPrograms, test, caseDef);
+
+					if (VK_SHADER_STAGE_VERTEX_BIT == stage )
+					{
+						caseDef.noSSBO = true;
+						addFunctionCaseWithPrograms(group.get(), name.str()+"_framebuffer", "",
+													initFrameBufferPrograms, test, caseDef);
+					}
+
 				}
 			}
 		}

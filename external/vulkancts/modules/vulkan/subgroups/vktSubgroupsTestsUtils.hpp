@@ -117,9 +117,18 @@ tcu::TestStatus makeGeometryTest(Context& context, vk::VkFormat format,
 	SSBOData* extraData, deUint32 extraDataCount,
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize));
 
+tcu::TestStatus makeVertexFrameBufferTest(Context& context, vk::VkFormat format,
+	SSBOData* extraData, deUint32 extraDataCount,
+	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize));
+
 tcu::TestStatus makeVertexTest(Context& context, vk::VkFormat format,
 	SSBOData* extraData, deUint32 extraDataCount,
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize));
+
+tcu::TestStatus makeFragmentFrameBufferTest(Context& context, vk::VkFormat format,
+	SSBOData* extraData, deUint32 extraDataCount,
+	bool (*checkResult)(std::vector<const void*> datas, deUint32 width,
+									 deUint32 height, deUint32 subgroupSize));
 
 tcu::TestStatus makeFragmentTest(Context& context, vk::VkFormat format,
 	SSBOData* extraData, deUint32 extraDataCount,

@@ -35,8 +35,9 @@ using namespace vkt;
 
 namespace
 {
-static const deUint32 ELECTED_VALUE = 42;
-static const deUint32 UNELECTED_VALUE = 13;
+static const deUint32			ELECTED_VALUE		= 42u;
+static const deUint32			UNELECTED_VALUE		= 13u;
+static const vk::VkDeviceSize	SHADER_BUFFER_SIZE	= 16384ull; //maxUniformBufferRange 128*128
 
 static bool checkFragmentSubgroupElect(std::vector<const void*> datas,
 									   deUint32 width, deUint32 height, deUint32)
@@ -96,6 +97,60 @@ static bool checkFragmentSubgroupBarriers(std::vector<const void*> datas,
 	return true;
 }
 
+static bool checkFragmentSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32 height, deUint32)
+{
+	const float* const	resultData	= reinterpret_cast<const float*>(datas[0]);
+
+	for (deUint32 x = 0u; x < width; ++x)
+	{
+		for (deUint32 y = 0u; y < height; ++y)
+		{
+			const deUint32 ndx = (x * height + y) * 4u;
+			if (1.0f == resultData[ndx +2])
+			{
+				if(resultData[ndx] != resultData[ndx +1])
+				{
+					return false;
+				}
+			}
+			else if (resultData[ndx] != resultData[ndx +3])
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+static bool checkVertexPipelineStagesSubgroupElectNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32)
+{
+	const float* const	resultData			= reinterpret_cast<const float*>(datas[0]);
+	float				poisonValuesFound	= 0.0f;
+	float				numSubgroupsUsed	= 0.0f;
+
+	for (deUint32 x = 0; x < width; ++x)
+	{
+		deUint32 val = static_cast<deUint32>(resultData[x * 2]);
+		numSubgroupsUsed += resultData[x * 2 + 1];
+
+		switch (val)
+		{
+			default:
+				// some garbage value was found!
+				return false;
+			case UNELECTED_VALUE:
+				break;
+			case ELECTED_VALUE:
+				poisonValuesFound += 1.0f;
+				break;
+		}
+	}
+	return numSubgroupsUsed == poisonValuesFound;
+}
+
 static bool checkVertexPipelineStagesSubgroupElect(std::vector<const void*> datas,
 		deUint32 width, deUint32)
 {
@@ -143,6 +198,31 @@ static bool checkVertexPipelineStagesSubgroupBarriers(std::vector<const void*> d
 		{
 			return false;
 		}
+	}
+
+	return true;
+}
+
+static bool checkVertexPipelineStagesSubgroupBarriersNoSSBO(std::vector<const void*> datas,
+		deUint32 width, deUint32)
+{
+	const float* const	resultData	= reinterpret_cast<const float*>(datas[0]);
+
+	for (deUint32 x = 0u; x < width; ++x)
+	{
+		const deUint32 ndx = x*4u;
+		if (1.0f == resultData[ndx +2])
+		{
+			if(resultData[ndx] != resultData[ndx +1])
+			{
+				return false;
+			}
+		}
+		else if (resultData[ndx] != resultData[ndx +3])
+		{
+			return false;
+		}
+
 	}
 
 	return true;
@@ -288,9 +368,183 @@ std::string getOpTypeName(int opType)
 
 struct CaseDefinition
 {
-	int opType;
-	VkShaderStageFlags shaderStage;
+	int					opType;
+	VkShaderStageFlags	shaderStage;
+	bool				noSSBO;
 };
+
+void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
+{
+	std::ostringstream			vertexSrc;
+	std::ostringstream			fragmentSrc;
+	if(VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+	{
+		fragmentSrc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< "layout(location = 0) in vec4 in_color;\n"
+			<< "layout(location = 0) out vec4 out_color;\n"
+			<< "void main()\n"
+			<<"{\n"
+			<< "	out_color = in_color;\n"
+			<< "}\n";
+		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSrc.str());
+	}
+	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+	{
+		programCollection.glslSources.add("vert") << glu::VertexSource(subgroups::getVertShaderForStage(caseDef.shaderStage));
+	}
+
+	if (OPTYPE_ELECT == caseDef.opType)
+	{
+		if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+		{
+			vertexSrc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
+				<< "layout(location = 0) out vec4 out_color;\n"
+				<< "layout(location = 0) in highp vec4 in_position;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "  if (subgroupElect())\n"
+				<< "  {\n"
+				<< "    out_color.r = " << ELECTED_VALUE << ";\n"
+				<< "    out_color.g = 1.0f;\n"
+				<< "  }\n"
+				<< "  else\n"
+				<< "  {\n"
+				<< "    out_color.r = " << UNELECTED_VALUE << ";\n"
+				<< "    out_color.g = 0.0f;\n"
+				<< "  }\n"
+				<< "  gl_Position = in_position;\n"
+				<< "}\n";
+			programCollection.glslSources.add("vert")
+					<< glu::VertexSource(vertexSrc.str());
+		}
+		else
+		{
+			DE_FATAL("Unsupported shader stage");
+		}
+	}
+	else
+	{
+		std::ostringstream bdy;
+		switch (caseDef.opType)
+		{
+			default:
+				DE_FATAL("Unhandled op type!");
+			case OPTYPE_SUBGROUP_BARRIER:
+			case OPTYPE_SUBGROUP_MEMORY_BARRIER:
+			case OPTYPE_SUBGROUP_MEMORY_BARRIER_BUFFER:
+				bdy << " tempResult2 = tempBuffer[id];\n"
+					<< "  if (subgroupElect())\n"
+					<< "  {\n"
+					<< "    tempResult = value;\n"
+					<< "    out_color.b = 1.0f;\n"
+					<< "  }\n"
+					 << "  else\n"
+					<< "  {\n"
+					<< "    tempResult = tempBuffer[id];\n"
+					<< "  }\n"
+					<< "  " << getOpTypeName(caseDef.opType) << "();\n";
+				break;
+			case OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE:
+				bdy <<"tempResult2 = imageLoad(tempImage, ivec2(id, 0)).x;\n"
+					<< "  if (subgroupElect())\n"
+					<< "  {\n"
+					<< "    tempResult = value;\n"
+					<< "    out_color.b = 1.0f;\n"
+					<< "  }\n"
+					<< "  else\n"
+					<< "  {\n"
+					<< "    tempResult = imageLoad(tempImage, ivec2(id, 0)).x;\n"
+					<< "  }\n"
+					<< "  subgroupMemoryBarrierImage();\n";
+
+				break;
+		}
+
+		if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+		{
+			fragmentSrc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
+				<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				<< "layout(location = 0) out vec4 out_color;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+				<< "{\n"
+				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
+				<< "};\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 1) uniform Buffer2\n"
+				<< "{\n"
+				<< "  uint value;\n"
+				<< "};\n"
+				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(set = 0, binding = 2, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "  if (gl_HelperInvocation) return;\n"
+				<< "  uint id = 0;\n"
+				<< "  if (subgroupElect())\n"
+				<< "  {\n"
+				<< "    id = uint(gl_FragCoord.x*100.0f);\n"
+				<< "  }\n"
+				<< "  id = subgroupBroadcastFirst(id);\n"
+				<< "  uint localId = id;\n"
+				<< "  uint tempResult = 0u;\n"
+				<< "  uint tempResult2 = 0u;\n"
+				<< "  out_color.b = 0.0f;\n"
+				<< bdy.str()
+				<< "  out_color.r = float(tempResult);\n"
+				<< "  out_color.g = float(value);\n"
+				<< "  out_color.a = float(tempResult2);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSrc.str());
+		}
+		else if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+		{
+			vertexSrc	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+				<< "#extension GL_KHR_shader_subgroup_basic: enable\n"
+				<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				<<"\n"
+				<< "layout(location = 0) out vec4 out_color;\n"
+				<< "layout(location = 0) in highp vec4 in_position;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+				<< "{\n"
+				<< "  uint tempBuffer["<<SHADER_BUFFER_SIZE/4ull<<"];\n"
+				<< "};\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 1) uniform Buffer2\n"
+				<< "{\n"
+				<< "  uint value;\n"
+				<< "};\n"
+				<< (OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? "layout(set = 0, binding = 2, r32ui) readonly uniform highp uimage2D tempImage;\n" : "\n")
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "  uint id = 0;\n"
+				<< "  if (subgroupElect())\n"
+				<< "  {\n"
+				<< "    id = gl_VertexIndex;\n"
+				<< "  }\n"
+				<< "  id = subgroupBroadcastFirst(id);\n"
+				<< "  uint tempResult = 0u;\n"
+				<< "  uint tempResult2 = 0u;\n"
+				<< "  out_color.b = 0.0f;\n"
+				<< bdy.str()
+				<< "  out_color.r = float(tempResult);\n"
+				<< "  out_color.g = float(value);\n"
+				<< "  out_color.a = float(tempResult2);\n"
+				<< "  gl_Position = in_position;\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str());
+		}
+		else
+		{
+			DE_FATAL("Unsupported shader stage");
+		}
+	}
+}
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
@@ -846,6 +1100,68 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 				   " is a required capability!");
 	}
 
+	//Tests which don't use the SSBO
+	if(caseDef.noSSBO)
+	{
+		if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+		{
+			if (OPTYPE_ELECT == caseDef.opType)
+			{
+				return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32_SFLOAT,
+												 DE_NULL, 0u, checkVertexPipelineStagesSubgroupElectNoSSBO);
+			}
+			else
+			{
+				const deUint32						inputDatasCount	= OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? 3u : 2u;
+				std::vector<subgroups::SSBOData>	inputDatas		(inputDatasCount);
+
+				inputDatas[0].format = VK_FORMAT_R32_UINT;
+				inputDatas[0].numElements = SHADER_BUFFER_SIZE/4ull;
+				inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
+
+				inputDatas[1].format = VK_FORMAT_R32_UINT;
+				inputDatas[1].numElements = 1ull;
+				inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
+
+				if(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType )
+				{
+					inputDatas[2].format = VK_FORMAT_R32_UINT;
+					inputDatas[2].numElements = SHADER_BUFFER_SIZE;
+					inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
+					inputDatas[2].isImage = true;
+				}
+
+				return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT,
+												 &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
+			}
+		}
+
+		if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+		{
+				const deUint32						inputDatasCount	= OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? 3u : 2u;
+				std::vector<subgroups::SSBOData>	inputDatas		(inputDatasCount);
+
+				inputDatas[0].format = VK_FORMAT_R32_UINT;
+				inputDatas[0].numElements = SHADER_BUFFER_SIZE/4ull;
+				inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
+
+				inputDatas[1].format = VK_FORMAT_R32_UINT;
+				inputDatas[1].numElements = 1ull;
+				inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
+
+				if(OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType )
+				{
+					inputDatas[2].format = VK_FORMAT_R32_UINT;
+					inputDatas[2].numElements = SHADER_BUFFER_SIZE;
+					inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
+					inputDatas[2].isImage = true;
+				}
+
+			return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT,
+											   &inputDatas[0], inputDatasCount, checkFragmentSubgroupBarriersNoSSBO);
+		}
+	}
+
 	if ((VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage) &&
 			(VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage))
 	{
@@ -885,7 +1201,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 4;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = VK_FORMAT_R32_UINT;
-			inputDatas[0].numElements = 128 * 128;
+			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[1].format = VK_FORMAT_R32_UINT;
@@ -897,7 +1213,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[3].format = VK_FORMAT_R32_UINT;
-			inputDatas[3].numElements = 128 * 128;
+			inputDatas[3].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[3].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[3].isImage = true;
 
@@ -918,7 +1234,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 3;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = VK_FORMAT_R32_UINT;
-			inputDatas[0].numElements = 128 * 128;
+			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNone;
 
 			inputDatas[1].format = VK_FORMAT_R32_UINT;
@@ -926,7 +1242,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			inputDatas[1].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[2].format = VK_FORMAT_R32_UINT;
-			inputDatas[2].numElements = 128 * 128;
+			inputDatas[2].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[2].isImage = true;
 
@@ -951,7 +1267,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 4;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = VK_FORMAT_R32_UINT;
-			inputDatas[0].numElements = 128 * 128;
+			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[1].format = VK_FORMAT_R32_UINT;
@@ -963,7 +1279,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[3].format = VK_FORMAT_R32_UINT;
-			inputDatas[3].numElements = 128 * 128;
+			inputDatas[3].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[3].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[3].isImage = true;
 
@@ -988,7 +1304,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 4;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = VK_FORMAT_R32_UINT;
-			inputDatas[0].numElements = 128 * 128;
+			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[1].format = VK_FORMAT_R32_UINT;
@@ -1000,7 +1316,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[3].format = VK_FORMAT_R32_UINT;
-			inputDatas[3].numElements = 128 * 128;
+			inputDatas[3].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[3].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[3].isImage = true;
 
@@ -1025,7 +1341,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 4;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = VK_FORMAT_R32_UINT;
-			inputDatas[0].numElements = 128 * 128;
+			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[1].format = VK_FORMAT_R32_UINT;
@@ -1037,7 +1353,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[3].format = VK_FORMAT_R32_UINT;
-			inputDatas[3].numElements = 128 * 128;
+			inputDatas[3].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[3].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[3].isImage = true;
 
@@ -1062,7 +1378,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			const deUint32 inputDatasCount = 4;
 			subgroups::SSBOData inputDatas[inputDatasCount];
 			inputDatas[0].format = VK_FORMAT_R32_UINT;
-			inputDatas[0].numElements = 128 * 128;
+			inputDatas[0].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[0].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[1].format = VK_FORMAT_R32_UINT;
@@ -1074,7 +1390,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 			inputDatas[2].initializeType = subgroups::SSBOData::InitializeNonZero;
 
 			inputDatas[3].format = VK_FORMAT_R32_UINT;
-			inputDatas[3].numElements = 128 * 128;
+			inputDatas[3].numElements = SHADER_BUFFER_SIZE;
 			inputDatas[3].initializeType = subgroups::SSBOData::InitializeNone;
 			inputDatas[3].isImage = true;
 
@@ -1121,7 +1437,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 				continue;
 			}
 
-			CaseDefinition caseDef = {opTypeIndex, stage};
+			CaseDefinition caseDef = {opTypeIndex, stage, false};
 
 			std::string op = getOpTypeName(opTypeIndex);
 
@@ -1129,6 +1445,18 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 										de::toLower(op) +
 										"_" + getShaderStageName(stage), "",
 										initPrograms, test, caseDef);
+
+			if ((VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) & stage )
+			{
+				if (OPTYPE_ELECT != caseDef.opType || VK_SHADER_STAGE_FRAGMENT_BIT != stage)
+				{
+					caseDef.noSSBO = true;
+					addFunctionCaseWithPrograms(group.get(),
+								de::toLower(op) + "_" +
+								getShaderStageName(stage)+"_framebuffer", "",
+								initFrameBufferPrograms, test, caseDef);
+				}
+			}
 		}
 	}
 
