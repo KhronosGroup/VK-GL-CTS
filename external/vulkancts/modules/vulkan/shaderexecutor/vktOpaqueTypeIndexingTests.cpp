@@ -1565,7 +1565,7 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 	m_shaderSpec.source				= code.str();
 
 	if ((m_flags & BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER) != 0)
-		m_shaderSpec.buildOptions.flags |= vk::GlslBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS;
+		m_shaderSpec.buildOptions.flags |= vk::ShaderBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS;
 }
 
 class AtomicCounterIndexingCaseInstance : public OpaqueTypeIndexingTestInstance

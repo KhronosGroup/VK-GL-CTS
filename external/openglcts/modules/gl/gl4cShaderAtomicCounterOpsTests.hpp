@@ -107,7 +107,7 @@ public:
 
 	public:
 		AtomicOperationAdd(glw::GLuint inputValue, glw::GLuint paramValue)
-			: AtomicOperation("atomicCounterAddARB", inputValue, paramValue, 0U, true)
+			: AtomicOperation("atomicCounterAdd", inputValue, paramValue, 0U, true)
 		{
 		}
 	};
@@ -123,7 +123,7 @@ public:
 
 	public:
 		AtomicOperationSubtract(glw::GLuint inputValue, glw::GLuint paramValue)
-			: AtomicOperation("atomicCounterSubtractARB", inputValue, paramValue, 0U, true)
+			: AtomicOperation("atomicCounterSubtract", inputValue, paramValue, 0U, true)
 		{
 		}
 	};
@@ -139,7 +139,7 @@ public:
 
 	public:
 		AtomicOperationMin(glw::GLuint inputValue, glw::GLuint paramValue)
-			: AtomicOperation("atomicCounterMinARB", inputValue, paramValue)
+			: AtomicOperation("atomicCounterMin", inputValue, paramValue)
 		{
 		}
 	};
@@ -155,7 +155,7 @@ public:
 
 	public:
 		AtomicOperationMax(glw::GLuint inputValue, glw::GLuint paramValue)
-			: AtomicOperation("atomicCounterMaxARB", inputValue, paramValue)
+			: AtomicOperation("atomicCounterMax", inputValue, paramValue)
 		{
 		}
 	};
@@ -171,7 +171,7 @@ public:
 
 	public:
 		AtomicOperationAnd(glw::GLuint inputValue, glw::GLuint paramValue)
-			: AtomicOperation("atomicCounterAndARB", inputValue, paramValue)
+			: AtomicOperation("atomicCounterAnd", inputValue, paramValue)
 		{
 		}
 	};
@@ -187,7 +187,7 @@ public:
 
 	public:
 		AtomicOperationOr(glw::GLuint inputValue, glw::GLuint paramValue)
-			: AtomicOperation("atomicCounterOrARB", inputValue, paramValue)
+			: AtomicOperation("atomicCounterOr", inputValue, paramValue)
 		{
 		}
 	};
@@ -203,7 +203,7 @@ public:
 
 	public:
 		AtomicOperationXor(glw::GLuint inputValue, glw::GLuint paramValue)
-			: AtomicOperation("atomicCounterXorARB", inputValue, paramValue)
+			: AtomicOperation("atomicCounterXor", inputValue, paramValue)
 		{
 		}
 	};
@@ -220,7 +220,7 @@ public:
 
 	public:
 		AtomicOperationExchange(glw::GLuint inputValue, glw::GLuint paramValue)
-			: AtomicOperation("atomicCounterExchangeARB", inputValue, paramValue)
+			: AtomicOperation("atomicCounterExchange", inputValue, paramValue)
 		{
 		}
 	};
@@ -235,7 +235,7 @@ public:
 
 	public:
 		AtomicOperationCompSwap(glw::GLuint inputValue, glw::GLuint paramValue, glw::GLuint compareValue)
-			: AtomicOperation("atomicCounterCompSwapARB", inputValue, paramValue, compareValue)
+			: AtomicOperation("atomicCounterCompSwap", inputValue, paramValue, compareValue)
 		{
 		}
 	};
@@ -254,7 +254,7 @@ public:
 		void executeComputeShader(deqp::Context& context);
 
 	public:
-		ShaderPipeline(glu::ShaderType testedShader, AtomicOperation* newOp);
+		ShaderPipeline(glu::ShaderType testedShader, AtomicOperation* newOp, bool contextGL46);
 		~ShaderPipeline();
 
 		void prepareShader(std::string& shader, const std::string& tag, const std::string& replace);
@@ -288,6 +288,7 @@ protected:
 	/* Protected members */
 	glw::GLuint					  m_atomicCounterBuffer;
 	glw::GLuint					  m_atomicCounterCallsBuffer;
+	bool						  m_contextSupportsGL46;
 	std::vector<AtomicOperation*> m_operations;
 	std::vector<ShaderPipeline>   m_shaderPipelines;
 
@@ -296,7 +297,7 @@ protected:
 	{
 		for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
 		{
-			m_shaderPipelines.push_back(ShaderPipeline((glu::ShaderType)i, newOp));
+			m_shaderPipelines.push_back(ShaderPipeline((glu::ShaderType)i, newOp, m_contextSupportsGL46));
 		}
 	}
 

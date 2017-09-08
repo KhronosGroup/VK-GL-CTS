@@ -39,13 +39,11 @@ namespace gl4cts
 
 ShaderBallotBaseTestCase::ShaderPipeline::ShaderPipeline(glu::ShaderType	testedShader,
 														 const std::string& contentSnippet,
-														 const std::string& headSnippet,
 														 std::map<std::string, std::string> specMap)
 	: m_programRender(NULL), m_programCompute(NULL), m_testedShader(testedShader), m_specializationMap(specMap)
 {
 	std::string testedHeadPart = "#extension GL_ARB_shader_ballot : enable\n"
 								 "#extension GL_ARB_gpu_shader_int64 : enable\n";
-	testedHeadPart += headSnippet;
 
 	std::string testedContentPart = contentSnippet;
 
@@ -551,7 +549,7 @@ ShaderBallotBitmasksTestCase::ShaderBallotBitmasksTestCase(deqp::Context& contex
 			std::map<std::string, std::string> specMap;
 			specMap["MASK_VAR"]		 = maskIter->first;
 			specMap["MASK_OPERATOR"] = maskIter->second;
-			m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, colorShaderSnippet, "", specMap));
+			m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, colorShaderSnippet, specMap));
 		}
 	}
 }
@@ -688,21 +686,20 @@ ShaderBallotFunctionReadTestCase::ShaderBallotFunctionReadTestCase(deqp::Context
 	std::string readFirstInvSnippet = "float color = 1.0f - (gl_SubGroupInvocationARB / float(gl_SubGroupSizeARB));\n"
 									  "outColor = readFirstInvocationARB(vec4(color, color, color, 1.0f));\n";
 
-	std::string readInvSnippetHead = "layout(std430, binding = 0) buffer invocationBuffer {\n"
-									 "  int invocation;\n"
-									 "};";
-
 	std::string readInvSnippet = "float color = 1.0 - (gl_SubGroupInvocationARB / float(gl_SubGroupSizeARB));\n"
-								 "if(invocation == -1)\n"
-								 "{\n"
-								 "	invocation = int(gl_SubGroupInvocationARB);\n"
+								 "uvec2 parts = unpackUint2x32(ballotARB(true));\n"
+								 "uint invocation;\n"
+								 "if (parts.x != 0) {\n"
+								 "    invocation = findLSB(parts.x);\n"
+								 "} else {\n"
+								 "    invocation = findLSB(parts.y) + 32;\n"
 								 "}\n"
-								 "outColor = readInvocationARB(vec4(color, color, color, 1.0f), uint(invocation));\n";
+								 "outColor = readInvocationARB(vec4(color, color, color, 1.0f), invocation);\n";
 
 	for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
 	{
 		m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, readFirstInvSnippet));
-		m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, readInvSnippet, readInvSnippetHead));
+		m_shaderPipelines.push_back(new ShaderPipeline((glu::ShaderType)i, readInvSnippet));
 	}
 }
 
@@ -741,25 +738,9 @@ tcu::TestNode::IterateResult ShaderBallotFunctionReadTestCase::iterate()
 	{
 		gl.clear(GL_COLOR_BUFFER_BIT);
 
-		glw::GLuint invocationBufferID;
-		gl.genBuffers(1, &invocationBufferID);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "genBuffers failed");
-		gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, invocationBufferID);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "bindBuffer failed");
-
-		int invocationID = -1;
-		gl.bufferData(GL_SHADER_STORAGE_BUFFER, sizeof(int), &invocationID, GL_DYNAMIC_COPY);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "bufferData failed");
-		gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, invocationBufferID);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "bindBufferBase failed");
-		gl.bindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "bindBuffer failed");
-
 		(*pipelineIter)->test(m_context);
 
 		gl.flush();
-
-		gl.deleteBuffers(1, &invocationBufferID);
 
 		bool validationResult =
 			ShaderBallotBaseTestCase::validateScreenPixelsSameColor(m_context, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));

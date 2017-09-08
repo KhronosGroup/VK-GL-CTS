@@ -450,7 +450,7 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo (const Vk
 {
 	const VkImageType			imageType				= mapImageType(type);
 	const VkImageCreateFlags	imageCreateFlagsBase	= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-	const VkImageCreateFlags	imageCreateFlagsAddOn	= extendedImageCreateFlag ? VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR : 0;
+	const VkImageCreateFlags	imageCreateFlagsAddOn	= extendedImageCreateFlag ? VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR : 0;
 	const VkImageCreateFlags	imageCreateFlags		= imageCreateFlagsBase | imageCreateFlagsAddOn;
 
 	const VkImageCreateInfo createImageInfo =

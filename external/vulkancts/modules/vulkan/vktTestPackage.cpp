@@ -31,7 +31,7 @@
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkBinaryRegistry.hpp"
-#include "vkGlslToSpirV.hpp"
+#include "vkShaderToSpirV.hpp"
 #include "vkDebugReportUtil.hpp"
 #include "vkQueryUtil.hpp"
 
@@ -90,6 +90,11 @@ namespace // compilation
 {
 
 vk::ProgramBinary* compileProgram (const vk::GlslSource& source, glu::ShaderProgramInfo* buildInfo)
+{
+	return vk::buildProgram(source, buildInfo);
+}
+
+vk::ProgramBinary* compileProgram (const vk::HlslSource& source, glu::ShaderProgramInfo* buildInfo)
 {
 	return vk::buildProgram(source, buildInfo);
 }
@@ -230,7 +235,25 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin(); progIter != sourceProgs.glslSources.end(); ++progIter)
 	{
-		vk::ProgramBinary* binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
+		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
+
+		try
+		{
+			std::ostringstream disasm;
+
+			vk::disassembleProgram(*binProg, &disasm);
+
+			log << vk::SpirVAsmSource(disasm.str());
+		}
+		catch (const tcu::NotSupportedError& err)
+		{
+			log << err;
+		}
+	}
+
+	for (vk::HlslSourceCollection::Iterator progIter = sourceProgs.hlslSources.begin(); progIter != sourceProgs.hlslSources.end(); ++progIter)
+	{
+		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::HlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
 
 		try
 		{

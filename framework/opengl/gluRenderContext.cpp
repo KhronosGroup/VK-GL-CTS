@@ -258,6 +258,7 @@ void initCoreFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, 
 		{ ApiType::core(4,3),	glw::initGL43Core	},
 		{ ApiType::core(4,4),	glw::initGL44Core	},
 		{ ApiType::core(4,5),	glw::initGL45Core	},
+		{ ApiType::core(4,6),	glw::initGL46Core	},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_initFuncs); ndx++)
@@ -317,6 +318,7 @@ const char* getApiTypeDescription (ApiType type)
 	else if (type == glu::ApiType::core(4, 3))	return "OpenGL 4.3 core";
 	else if (type == glu::ApiType::core(4, 4))	return "OpenGL 4.4 core";
 	else if (type == glu::ApiType::core(4, 5))	return "OpenGL 4.5 core";
+	else if (type == glu::ApiType::core(4, 6))	return "OpenGL 4.6 core";
 	else										return DE_NULL;
 }
 

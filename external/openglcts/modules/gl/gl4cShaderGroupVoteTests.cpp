@@ -237,8 +237,31 @@ bool ShaderGroupVoteTestCaseBase::ComputeShader::validateScreenPixels(deqp::Cont
 ShaderGroupVoteTestCaseBase::ShaderGroupVoteTestCaseBase(deqp::Context& context, const char* name,
 														 const char* description)
 	: TestCaseBase(context, glcts::ExtParameters(glu::GLSL_VERSION_450, glcts::EXTENSIONTYPE_EXT), name, description)
+	, m_glslFunctionPostfix("")
+
 {
-	m_extensionSupported = context.getContextInfo().isExtensionSupported("GL_ARB_shader_group_vote");
+	glu::ContextType contextType		 = m_context.getRenderContext().getType();
+	bool			 contextSupportsGL46 = glu::contextSupports(contextType, glu::ApiType::core(4, 6));
+	m_extensionSupported =
+		contextSupportsGL46 || context.getContextInfo().isExtensionSupported("GL_ARB_shader_group_vote");
+
+	if (contextSupportsGL46)
+	{
+		m_specializationMap["VERSION"]					  = "#version 460 core";
+		m_specializationMap["GROUP_VOTE_EXTENSION"]		  = "";
+		m_specializationMap["ALL_INVOCATIONS_FUNC"]		  = "allInvocations";
+		m_specializationMap["ANY_INVOCATION_FUNC"]		  = "anyInvocation";
+		m_specializationMap["ALL_INVOCATIONS_EQUAL_FUNC"] = "allInvocationsEqual";
+	}
+	else
+	{
+		m_specializationMap["VERSION"]					  = "#version 450 core";
+		m_specializationMap["GROUP_VOTE_EXTENSION"]		  = "#extension GL_ARB_shader_group_vote : enable";
+		m_specializationMap["ALL_INVOCATIONS_FUNC"]		  = "allInvocationsARB";
+		m_specializationMap["ANY_INVOCATION_FUNC"]		  = "anyInvocationARB";
+		m_specializationMap["ALL_INVOCATIONS_EQUAL_FUNC"] = "allInvocationsEqualARB";
+		m_glslFunctionPostfix							  = "ARB";
+	}
 }
 
 void ShaderGroupVoteTestCaseBase::init()
@@ -285,20 +308,20 @@ tcu::TestNode::IterateResult ShaderGroupVoteTestCaseBase::iterate()
 ShaderGroupVoteAvailabilityTestCase::ShaderGroupVoteAvailabilityTestCase(deqp::Context& context)
 	: ShaderGroupVoteTestCaseBase(context, "ShaderGroupVoteAvailabilityTestCase", "Implements ...")
 {
-	std::string shader = "#version 450 core\n"
-						 "#extension GL_ARB_shader_group_vote : enable\n"
+	const char* shader = "${VERSION}\n"
+						 "${GROUP_VOTE_EXTENSION}\n"
 						 "layout(rgba32f, binding = 2) writeonly uniform highp image2D destImage;\n"
 						 "layout(local_size_x = 16, local_size_y = 16) in;\n"
 						 "void main (void)\n"
 						 "{\n"
 						 "	vec4 outColor = vec4(0.0);\n"
-						 "	outColor.r = allInvocationsARB(true) ? 1.0 : 0.0;\n"
-						 "	outColor.g = anyInvocationARB(true) ? 1.0 : 0.0;\n"
-						 "	outColor.b = allInvocationsEqualARB(true) ? 1.0 : 0.0;\n"
+						 "	outColor.r = ${ALL_INVOCATIONS_FUNC}(true) ? 1.0 : 0.0;\n"
+						 "	outColor.g = ${ANY_INVOCATION_FUNC}(true) ? 1.0 : 0.0;\n"
+						 "	outColor.b = ${ALL_INVOCATIONS_EQUAL_FUNC}(true) ? 1.0 : 0.0;\n"
 						 "	imageStore(destImage, ivec2(gl_GlobalInvocationID.xy), outColor);\n"
 						 "}\n";
-
-	m_shaders.push_back(new ComputeShader("availability", shader));
+	std::string cs = specializeShader(1, &shader);
+	m_shaders.push_back(new ComputeShader("availability", cs));
 }
 
 /** Constructor.
@@ -311,8 +334,8 @@ ShaderGroupVoteFunctionTestCaseBase::ShaderGroupVoteFunctionTestCaseBase(deqp::C
 																		 const char* description)
 	: ShaderGroupVoteTestCaseBase(context, name, description)
 {
-	m_shaderBase = "#version 450 core\n"
-				   "#extension GL_ARB_shader_group_vote : enable\n"
+	m_shaderBase = "${VERSION}\n"
+				   "${GROUP_VOTE_EXTENSION}\n"
 				   "layout(rgba32f, binding = 2) writeonly uniform highp image2D destImage;\n"
 				   "layout(local_size_x = 16, local_size_y = 16) in;\n"
 				   "void main (void)\n"
@@ -330,7 +353,7 @@ ShaderGroupVoteFunctionTestCaseBase::ShaderGroupVoteFunctionTestCaseBase(deqp::C
 ShaderGroupVoteAllInvocationsTestCase::ShaderGroupVoteAllInvocationsTestCase(deqp::Context& context)
 	: ShaderGroupVoteFunctionTestCaseBase(context, "ShaderGroupVoteAllInvocationsTestCase", "Implements ...")
 {
-	m_specializationMap["FUNC_RESULT"] = "allInvocationsARB(true)";
+	m_specializationMap["FUNC_RESULT"] = "allInvocations" + m_glslFunctionPostfix + "(true)";
 	m_shaders.push_back(
 		new ComputeShader("allInvocationsARB", specializeShader(1, &m_shaderBase), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)));
 }
@@ -342,7 +365,7 @@ ShaderGroupVoteAllInvocationsTestCase::ShaderGroupVoteAllInvocationsTestCase(deq
 ShaderGroupVoteAnyInvocationTestCase::ShaderGroupVoteAnyInvocationTestCase(deqp::Context& context)
 	: ShaderGroupVoteFunctionTestCaseBase(context, "ShaderGroupVoteAnyInvocationTestCase", "Implements ...")
 {
-	m_specializationMap["FUNC_RESULT"] = "anyInvocationARB(false)";
+	m_specializationMap["FUNC_RESULT"] = "anyInvocation" + m_glslFunctionPostfix + "(false)";
 	m_shaders.push_back(
 		new ComputeShader("anyInvocationARB", specializeShader(1, &m_shaderBase), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 }
@@ -354,12 +377,12 @@ ShaderGroupVoteAnyInvocationTestCase::ShaderGroupVoteAnyInvocationTestCase(deqp:
 ShaderGroupVoteAllInvocationsEqualTestCase::ShaderGroupVoteAllInvocationsEqualTestCase(deqp::Context& context)
 	: ShaderGroupVoteFunctionTestCaseBase(context, "ShaderGroupVoteAllInvocationsEqualTestCase", "Implements ...")
 {
-	m_specializationMap["FUNC_RESULT"] = "allInvocationsEqualARB(true)";
-	m_shaders.push_back(new ComputeShader("allInvocationsEqualARB", specializeShader(1, &m_shaderBase),
+	m_specializationMap["FUNC_RESULT"] = "allInvocationsEqual" + m_glslFunctionPostfix + "(true)";
+	m_shaders.push_back(new ComputeShader("allInvocationsEqual", specializeShader(1, &m_shaderBase),
 										  tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)));
 
-	m_specializationMap["FUNC_RESULT"] = "allInvocationsEqualARB(false)";
-	m_shaders.push_back(new ComputeShader("allInvocationsEqualARB", specializeShader(1, &m_shaderBase),
+	m_specializationMap["FUNC_RESULT"] = "allInvocationsEqual" + m_glslFunctionPostfix + "(false)";
+	m_shaders.push_back(new ComputeShader("allInvocationsEqual", specializeShader(1, &m_shaderBase),
 										  tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f)));
 }
 

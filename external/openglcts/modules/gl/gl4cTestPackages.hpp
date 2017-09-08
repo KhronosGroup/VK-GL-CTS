@@ -102,6 +102,18 @@ public:
 	void init(void);
 };
 
+class GL46TestPackage : public GL45TestPackage
+{
+public:
+	GL46TestPackage(tcu::TestContext& testCtx, const char* packageName,
+					const char*		 description	   = "OpenGL 4.6 Conformance Tests",
+					glu::ContextType renderContextType = glu::ContextType(4, 6, glu::PROFILE_CORE));
+
+	~GL46TestPackage(void);
+
+	void init(void);
+};
+
 } // gl4cts
 
 #endif // _GL4CTESTPACKAGES_HPP

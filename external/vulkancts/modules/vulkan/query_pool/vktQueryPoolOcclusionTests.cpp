@@ -283,6 +283,7 @@ struct OcclusionQueryTestVector
 	vk::VkDeviceSize			queryResultsStride;
 	bool						queryResultsAvailability;
 	vk::VkPrimitiveTopology		primitiveTopology;
+	bool						discardHalf;
 };
 
 class BasicOcclusionQueryTestInstance : public vkt::TestInstance
@@ -709,11 +710,11 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate (void)
 		VK_CHECK(vk.queueWaitIdle(queue));
 	}
 
-	deUint64 queryResults		[NUM_QUERIES_IN_POOL];
-	deUint64 queryAvailability	[NUM_QUERIES_IN_POOL];
+	deUint64	queryResults		[NUM_QUERIES_IN_POOL];
+	deUint64	queryAvailability	[NUM_QUERIES_IN_POOL];
 
 	// Allow not ready results only if nobody waited before getting the query results
-	bool	allowNotReady		= (m_testVector.queryWait == WAIT_NONE);
+	const bool	allowNotReady		= (m_testVector.queryWait == WAIT_NONE);
 
 	captureResults(queryResults, queryAvailability, allowNotReady);
 
@@ -1002,8 +1003,17 @@ bool OcclusionQueryTestInstance::validateResults (const deUint64* results , cons
 							const int primWidth		= StateObjects::WIDTH  / 2;
 							const int primHeight	= StateObjects::HEIGHT / 2;
 							const int primArea		= primWidth * primHeight / 2;
-							expectedValueMin		= (int)(0.97f * primArea);
-							expectedValueMax		= (int)(1.03f * primArea);
+
+							if (m_testVector.discardHalf)
+							{
+								expectedValueMin	= (int)(0.95f * primArea * 0.5f);
+								expectedValueMax	= (int)(1.05f * primArea * 0.5f);
+							}
+							else
+							{
+								expectedValueMin	= (int)(0.97f * primArea);
+								expectedValueMax	= (int)(1.03f * primArea);
+							}
 						}
 				}
 			}
@@ -1056,12 +1066,20 @@ private:
 
 	void initPrograms(vk::SourceCollections& programCollection) const
 	{
-		programCollection.glslSources.add("frag") << glu::FragmentSource("#version 400\n"
-																	   "layout(location = 0) out vec4 out_FragColor;\n"
-																	   "void main()\n"
-																	   "{\n"
-																	   "	out_FragColor = vec4(0.07, 0.48, 0.75, 1.0);\n"
-																	   "}\n");
+		const char* const discard =
+			"	if ((int(gl_FragCoord.x) % 2) == (int(gl_FragCoord.y) % 2))\n"
+			"		discard;\n";
+
+		const std::string fragSrc = std::string(
+			"#version 400\n"
+			"layout(location = 0) out vec4 out_FragColor;\n"
+			"void main()\n"
+			"{\n"
+			"	out_FragColor = vec4(0.07, 0.48, 0.75, 1.0);\n")
+			+ std::string(m_testVector.discardHalf ? discard : "")
+			+ "}\n";
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(fragSrc.c_str());
 
 		programCollection.glslSources.add("vert") << glu::VertexSource("#version 430\n"
 																		 "layout(location = 0) in vec4 in_Position;\n"
@@ -1098,6 +1116,7 @@ void QueryPoolOcclusionTests::init (void)
 	baseTestVector.queryResultsStride		= sizeof(deUint64);
 	baseTestVector.queryResultsAvailability = false;
 	baseTestVector.primitiveTopology		= vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	baseTestVector.discardHalf				= false;
 
 	//Basic tests
 	{
@@ -1110,71 +1129,83 @@ void QueryPoolOcclusionTests::init (void)
 
 	// Functional test
 	{
-		vk::VkQueryControlFlags	controlFlags[]		= { 0,					vk::VK_QUERY_CONTROL_PRECISE_BIT	};
-		const char*				controlFlagsStr[]	= { "conservative",		"precise"							};
+		const vk::VkQueryControlFlags	controlFlags[]		= { 0,					vk::VK_QUERY_CONTROL_PRECISE_BIT	};
+		const char* const				controlFlagsStr[]	= { "conservative",		"precise"							};
 
 		for (int controlFlagIdx = 0; controlFlagIdx < DE_LENGTH_OF_ARRAY(controlFlags); ++controlFlagIdx)
 		{
 
-			vk::VkPrimitiveTopology	primitiveTopology[]		= { vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST };
-			const char*				primitiveTopologyStr[]	= { "points", "triangles" };
+			const vk::VkPrimitiveTopology	primitiveTopology[]		= { vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST };
+			const char* const				primitiveTopologyStr[]	= { "points", "triangles" };
 			for (int primitiveTopologyIdx = 0; primitiveTopologyIdx < DE_LENGTH_OF_ARRAY(primitiveTopology); ++primitiveTopologyIdx)
 			{
 
-				OcclusionQueryResultSize	resultSize[]	= { RESULT_SIZE_32_BIT, RESULT_SIZE_64_BIT };
-				const char*					resultSizeStr[] = { "32",				"64" };
+				const OcclusionQueryResultSize	resultSize[]	= { RESULT_SIZE_32_BIT, RESULT_SIZE_64_BIT };
+				const char* const				resultSizeStr[] = { "32",				"64" };
 
 				for (int resultSizeIdx = 0; resultSizeIdx < DE_LENGTH_OF_ARRAY(resultSize); ++resultSizeIdx)
 				{
 
-					OcclusionQueryWait	wait[]		= { WAIT_QUEUE, WAIT_QUERY };
-					const char*			waitStr[]	= { "queue",	"query" };
+					const OcclusionQueryWait	wait[]		= { WAIT_QUEUE, WAIT_QUERY };
+					const char* const			waitStr[]	= { "queue",	"query" };
 
 					for (int waitIdx = 0; waitIdx < DE_LENGTH_OF_ARRAY(wait); ++waitIdx)
 					{
-						OcclusionQueryResultsMode	resultsMode[]		= { RESULTS_MODE_GET,	RESULTS_MODE_COPY };
-						const char*					resultsModeStr[]	= { "get",				"copy" };
+						const OcclusionQueryResultsMode	resultsMode[]		= { RESULTS_MODE_GET,	RESULTS_MODE_COPY };
+						const char* const				resultsModeStr[]	= { "get",				"copy" };
 
 						for (int resultsModeIdx = 0; resultsModeIdx < DE_LENGTH_OF_ARRAY(resultsMode); ++resultsModeIdx)
 						{
 
-							bool testAvailability[]				= { false, true };
-							const char* testAvailabilityStr[]	= { "without", "with"};
+							const bool			testAvailability[]		= { false, true };
+							const char* const	testAvailabilityStr[]	= { "without", "with"};
 
 							for (int testAvailabilityIdx = 0; testAvailabilityIdx < DE_LENGTH_OF_ARRAY(testAvailability); ++testAvailabilityIdx)
 							{
-								OcclusionQueryTestVector testVector			= baseTestVector;
-								testVector.queryControlFlags				= controlFlags[controlFlagIdx];
-								testVector.queryResultSize					= resultSize[resultSizeIdx];
-								testVector.queryWait						= wait[waitIdx];
-								testVector.queryResultsMode					= resultsMode[resultsModeIdx];
-								testVector.queryResultsStride				= (testVector.queryResultSize == RESULT_SIZE_32_BIT ? sizeof(deUint32) : sizeof(deUint64));
-								testVector.queryResultsAvailability			= testAvailability[testAvailabilityIdx];
-								testVector.primitiveTopology				= primitiveTopology[primitiveTopologyIdx];
+								const bool			discardHalf[]		= { false, true };
+								const char* const	discardHalfStr[]	= { "", "_discard" };
 
-								if (testVector.queryResultsAvailability)
+								for (int discardHalfIdx = 0; discardHalfIdx < DE_LENGTH_OF_ARRAY(discardHalf); ++discardHalfIdx)
 								{
-									testVector.queryResultsStride *= 2;
+									OcclusionQueryTestVector testVector			= baseTestVector;
+									testVector.queryControlFlags				= controlFlags[controlFlagIdx];
+									testVector.queryResultSize					= resultSize[resultSizeIdx];
+									testVector.queryWait						= wait[waitIdx];
+									testVector.queryResultsMode					= resultsMode[resultsModeIdx];
+									testVector.queryResultsStride				= (testVector.queryResultSize == RESULT_SIZE_32_BIT ? sizeof(deUint32) : sizeof(deUint64));
+									testVector.queryResultsAvailability			= testAvailability[testAvailabilityIdx];
+									testVector.primitiveTopology				= primitiveTopology[primitiveTopologyIdx];
+									testVector.discardHalf						= discardHalf[discardHalfIdx];
+
+									if (testVector.discardHalf && testVector.primitiveTopology == vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
+										continue; // Discarding half of the pixels in fragment shader doesn't make sense with one-pixel-sized points.
+
+									if (testVector.queryResultsAvailability)
+									{
+										testVector.queryResultsStride *= 2;
+									}
+
+									std::ostringstream testName;
+									std::ostringstream testDescr;
+
+									testName << resultsModeStr[resultsModeIdx] << "_results"
+											 << "_" << controlFlagsStr[controlFlagIdx]
+											 << "_size_" << resultSizeStr[resultSizeIdx]
+											 << "_wait_" << waitStr[waitIdx]
+											 << "_" << testAvailabilityStr[testAvailabilityIdx] << "_availability"
+											 << "_draw_" <<  primitiveTopologyStr[primitiveTopologyIdx]
+											 << discardHalfStr[discardHalfIdx];
+
+									testDescr << "draw occluded " << primitiveTopologyStr[primitiveTopologyIdx]
+											  << "with " << controlFlagsStr[controlFlagIdx] << ", "
+											  << resultsModeStr[resultsModeIdx] << " results "
+											  << testAvailabilityStr[testAvailabilityIdx] << " availability bit as "
+											  << resultSizeStr[resultSizeIdx] << "bit variables,"
+											  << (testVector.discardHalf ? " discarding half of the fragments," : "")
+											  << "wait for results on" << waitStr[waitIdx];
+
+									addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testDescr.str().c_str(), testVector));
 								}
-
-								std::ostringstream testName;
-								std::ostringstream testDescr;
-
-								testName << resultsModeStr[resultsModeIdx] << "_results"
-										 << "_" << controlFlagsStr[controlFlagIdx]
-										 << "_size_" << resultSizeStr[resultSizeIdx]
-										 << "_wait_" << waitStr[waitIdx]
-										 << "_" << testAvailabilityStr[testAvailabilityIdx] << "_availability"
-										 << "_draw_" <<  primitiveTopologyStr[primitiveTopologyIdx];
-
-								testDescr << "draw occluded " << primitiveTopologyStr[primitiveTopologyIdx]
-										  << "with " << controlFlagsStr[controlFlagIdx] << ", "
-									      << resultsModeStr[resultsModeIdx] << " results "
-									      << testAvailabilityStr[testAvailabilityIdx] << " availability bit as "
-										  << resultSizeStr[resultSizeIdx] << "bit variables,"
-									      << "wait for results on" << waitStr[waitIdx];
-
-								addChild(new QueryPoolOcclusionTest<OcclusionQueryTestInstance>(m_testCtx, testName.str().c_str(), testDescr.str().c_str(), testVector));
 							}
 						}
 					}
@@ -1184,16 +1215,16 @@ void QueryPoolOcclusionTests::init (void)
 	}
 	// Test different strides
 	{
-		OcclusionQueryResultsMode	resultsMode[]		= { RESULTS_MODE_GET,	RESULTS_MODE_COPY	};
-		const char*					resultsModeStr[]	= { "get",				"copy"				};
+		const OcclusionQueryResultsMode	resultsMode[]		= { RESULTS_MODE_GET,	RESULTS_MODE_COPY	};
+		const char* const				resultsModeStr[]	= { "get",				"copy"				};
 
 		for (int resultsModeIdx = 0; resultsModeIdx < DE_LENGTH_OF_ARRAY(resultsMode); ++resultsModeIdx)
 		{
-			OcclusionQueryResultSize	resultSizes[]	= { RESULT_SIZE_32_BIT, RESULT_SIZE_64_BIT };
-			const char*					resultSizeStr[] = { "32", "64" };
+			const OcclusionQueryResultSize	resultSizes[]	= { RESULT_SIZE_32_BIT, RESULT_SIZE_64_BIT };
+			const char* const				resultSizeStr[] = { "32", "64" };
 
-			bool testAvailability[]				= { false,		true	};
-			const char* testAvailabilityStr[]	= { "without",	"with"	};
+			const bool			testAvailability[]		= { false,		true	};
+			const char* const	testAvailabilityStr[]	= { "without",	"with"	};
 
 			for (int testAvailabilityIdx = 0; testAvailabilityIdx < DE_LENGTH_OF_ARRAY(testAvailability); ++testAvailabilityIdx)
 			{

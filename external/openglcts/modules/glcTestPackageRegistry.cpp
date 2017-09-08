@@ -67,6 +67,7 @@
 #include "gtfGL43TestPackage.hpp"
 #include "gtfGL44TestPackage.hpp"
 #include "gtfGL45TestPackage.hpp"
+#include "gtfGL46TestPackage.hpp"
 #endif
 
 namespace glcts
@@ -195,6 +196,10 @@ static tcu::TestPackage* createGL45Package(tcu::TestContext& testCtx)
 {
 	return new gl4cts::GL45TestPackage(testCtx, "KHR-GL45");
 }
+static tcu::TestPackage* createGL46Package(tcu::TestContext& testCtx)
+{
+	return new gl4cts::GL46TestPackage(testCtx, "KHR-GL46");
+}
 
 #if defined(DEQP_GTF_AVAILABLE)
 static tcu::TestPackage* createGL30GTFPackage(tcu::TestContext& testCtx)
@@ -237,6 +242,10 @@ static tcu::TestPackage* createGL44GTFPackage(tcu::TestContext& testCtx)
 static tcu::TestPackage* createGL45GTFPackage(tcu::TestContext& testCtx)
 {
 	return new gtf::gl45::TestPackage(testCtx, "GTF-GL45");
+}
+static tcu::TestPackage* createGL46GTFPackage(tcu::TestContext& testCtx)
+{
+	return new gtf::gl46::TestPackage(testCtx, "GTF-GL46");
 }
 #endif
 
@@ -292,6 +301,7 @@ void registerPackages(void)
 	registry->registerPackage("KHR-GL43", createGL43Package);
 	registry->registerPackage("KHR-GL44", createGL44Package);
 	registry->registerPackage("KHR-GL45", createGL45Package);
+	registry->registerPackage("KHR-GL46", createGL46Package);
 
 #if defined(DEQP_GTF_AVAILABLE)
 	registry->registerPackage("GTF-GL30", createGL30GTFPackage);
@@ -305,6 +315,7 @@ void registerPackages(void)
 	registry->registerPackage("GTF-GL43", createGL43GTFPackage);
 	registry->registerPackage("GTF-GL44", createGL44GTFPackage);
 	registry->registerPackage("GTF-GL45", createGL45GTFPackage);
+	registry->registerPackage("GTF-GL46", createGL46GTFPackage);
 #endif
 }
 }

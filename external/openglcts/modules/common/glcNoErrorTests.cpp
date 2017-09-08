@@ -92,9 +92,11 @@ bool NoErrorContextTest::verifyNoErrorContext(void)
 tcu::TestNode::IterateResult NoErrorContextTest::iterate(void)
 {
 	{
-		deqp::Context context(m_testCtx, glu::ContextType(m_ApiType));
+		glu::ContextType contextType(m_ApiType);
+		deqp::Context	context(m_testCtx, contextType);
 
-		bool noErrorExtensionExists = context.getContextInfo().isExtensionSupported("GL_KHR_no_error");
+		bool noErrorExtensionExists = glu::contextSupports(contextType, glu::ApiType::core(4, 6));
+		noErrorExtensionExists |= context.getContextInfo().isExtensionSupported("GL_KHR_no_error");
 
 		if (!noErrorExtensionExists)
 		{

@@ -94,6 +94,21 @@
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
+		<activity android:name="org.khronos.cts.GL46Activity"
+					android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+					android:label="GL4.6 CTS"
+					android:configChanges="orientation|keyboardHidden"
+					android:launchMode="singleTask"
+					android:exported="true">
+			<meta-data android:name="android.app.lib_name"
+						 android:value="deqp" />
+			<meta-data android:name="android.app.func_name"
+						 android:value="createGL46CTSActivity" />
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity>
     </application>
 
     <uses-sdk android:minSdkVersion="9"/>

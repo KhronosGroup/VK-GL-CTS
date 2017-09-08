@@ -26,7 +26,7 @@
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
 #include "vkSpirVProgram.hpp"
-#include "vkGlslProgram.hpp"
+#include "vkShaderProgram.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSTLUtil.hpp"
@@ -155,17 +155,20 @@ const Program& ProgramCollection<Program>::get (const std::string& name) const
 }
 
 typedef ProgramCollection<GlslSource>		GlslSourceCollection;
+typedef ProgramCollection<HlslSource>		HlslSourceCollection;
 typedef ProgramCollection<SpirVAsmSource>	SpirVAsmCollection;
 
 struct SourceCollections
 {
 	GlslSourceCollection	glslSources;
+	HlslSourceCollection	hlslSources;
 	SpirVAsmCollection		spirvAsmSources;
 };
 
 typedef ProgramCollection<ProgramBinary>		BinaryCollection;
 
 ProgramBinary*			buildProgram		(const GlslSource& program, glu::ShaderProgramInfo* buildInfo);
+ProgramBinary*			buildProgram		(const HlslSource& program, glu::ShaderProgramInfo* buildInfo);
 ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo);
 void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst);
 bool					validateProgram		(const ProgramBinary& program, std::ostream* dst);

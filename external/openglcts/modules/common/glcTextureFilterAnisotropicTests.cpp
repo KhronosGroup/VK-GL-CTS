@@ -180,8 +180,13 @@ void TextureFilterAnisotropicQueriesTestCase::deinit()
 /** Stub init method */
 void TextureFilterAnisotropicQueriesTestCase::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_filter_anisotropic"))
-		TCU_THROW(NotSupportedError, "GL_EXT_texture_filter_anisotropic not supported");
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_filter_anisotropic") &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_texture_filter_anisotropic"))
+	{
+		TCU_THROW(NotSupportedError, "texture filter anisotropic functionality not supported");
+	}
 }
 
 /** Executes test iteration.
@@ -377,8 +382,13 @@ void TextureFilterAnisotropicDrawingTestCase::deinit()
 /** Stub init method */
 void TextureFilterAnisotropicDrawingTestCase::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_filter_anisotropic"))
-		TCU_THROW(NotSupportedError, "GL_EXT_texture_filter_anisotropic not supported");
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_filter_anisotropic") &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_texture_filter_anisotropic"))
+	{
+		TCU_THROW(NotSupportedError, "texture filter anisotropic functionality not supported");
+	}
 
 	const tcu::RenderTarget& rt = m_context.getRenderTarget();
 

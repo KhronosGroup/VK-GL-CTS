@@ -22,7 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkPrograms.hpp"
-#include "vkGlslToSpirV.hpp"
+#include "vkShaderToSpirV.hpp"
 #include "vkSpirVAsm.hpp"
 #include "vkRefUtil.hpp"
 
@@ -99,6 +99,19 @@ ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
 
 } // anonymous
 
+void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramInfo* buildInfo)
+{
+	std::ostringstream validationLog;
+
+	if (!validateSpirV(binary.size(), &binary[0], &validationLog))
+	{
+		buildInfo->program.linkOk	 = false;
+		buildInfo->program.infoLog	+= "\n" + validationLog.str();
+
+		TCU_THROW(InternalError, "Validation failed for compiled SPIR-V binary");
+	}
+}
+
 ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* buildInfo)
 {
 	const bool			validateBinary	= VALIDATE_BINARIES;
@@ -116,17 +129,29 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 	}
 
 	if (validateBinary)
+		validateCompiledBinary(binary, buildInfo);
+
+	return createProgramBinaryFromSpirV(binary);
+}
+
+ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* buildInfo)
+{
+	const bool			validateBinary	= VALIDATE_BINARIES;
+	vector<deUint32>	binary;
+
 	{
-		std::ostringstream validationLog;
+		vector<deUint32> nonStrippedBinary;
 
-		if (!validateSpirV(binary.size(), &binary[0], &validationLog))
-		{
-			buildInfo->program.linkOk	 = false;
-			buildInfo->program.infoLog	+= "\n" + validationLog.str();
+		if (!compileHlslToSpirV(program, &nonStrippedBinary, buildInfo))
+			TCU_THROW(InternalError, "Compiling HLSL to SPIR-V failed");
 
-			TCU_THROW(InternalError, "Validation failed for compiled SPIR-V binary");
-		}
+		TCU_CHECK_INTERNAL(!nonStrippedBinary.empty());
+		stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary);
+		TCU_CHECK_INTERNAL(!binary.empty());
 	}
+
+	if (validateBinary)
+		validateCompiledBinary(binary, buildInfo);
 
 	return createProgramBinaryFromSpirV(binary);
 }

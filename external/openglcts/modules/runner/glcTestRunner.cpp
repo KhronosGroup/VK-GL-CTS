@@ -224,6 +224,8 @@ static const char* getApiName(glu::ApiType apiType)
 		return "gl44";
 	else if (apiType == glu::ApiType::core(4, 5))
 		return "gl45";
+	else if (apiType == glu::ApiType::core(4, 6))
+		return "gl46";
 	else
 		throw std::runtime_error("Unknown context type");
 }
@@ -551,6 +553,8 @@ static const char* getRunTypeName(glu::ApiType type)
 		return "gl44";
 	else if (type == glu::ApiType::core(4, 5))
 		return "gl45";
+	else if (type == glu::ApiType::core(4, 6))
+		return "gl46";
 	else
 		return DE_NULL;
 }

@@ -50,10 +50,10 @@ using namespace vk;
 namespace
 {
 
-std::string getCaseName (const TessPrimitiveType primitiveType, const Winding winding, bool yFlip)
+std::string getCaseName (const TessPrimitiveType primitiveType, const ShaderLanguage shaderLanguage, const Winding winding, bool yFlip)
 {
 	std::ostringstream str;
-	str << getTessPrimitiveTypeShaderName(primitiveType) << "_" << getWindingShaderName(winding);
+	str << getShaderLanguageName(shaderLanguage) << "_" << getTessPrimitiveTypeShaderName(primitiveType) << "_" << getWindingShaderName(winding);
 	if (yFlip)
 		str << "_yflip";
 	return str.str();
@@ -191,6 +191,7 @@ public:
 								WindingTest		(tcu::TestContext&			testCtx,
 												 const TessPrimitiveType	primitiveType,
 												 const MaybeDomainOrigin&	domainOrigin,
+												 const ShaderLanguage		shaderLanguage,
 												 const Winding				winding,
 												 bool						yFlip);
 
@@ -200,6 +201,7 @@ public:
 private:
 	const TessPrimitiveType		m_primitiveType;
 	const MaybeDomainOrigin		m_domainOrigin;
+	const ShaderLanguage		m_shaderLanguage;
 	const Winding				m_winding;
 	const bool					m_yFlip;
 };
@@ -207,11 +209,13 @@ private:
 WindingTest::WindingTest (tcu::TestContext&			testCtx,
 						  const TessPrimitiveType	primitiveType,
 						  const MaybeDomainOrigin&	domainOrigin,
+						  const ShaderLanguage		shaderLanguage,
 						  const Winding				winding,
 						  bool						yFlip)
-	: TestCase			(testCtx, getCaseName(primitiveType, winding, yFlip), "")
+	: TestCase			(testCtx, getCaseName(primitiveType, shaderLanguage, winding, yFlip), "")
 	, m_primitiveType	(primitiveType)
 	, m_domainOrigin	(domainOrigin)
+	, m_shaderLanguage	(shaderLanguage)
 	, m_winding			(winding)
 	, m_yFlip			(yFlip)
 {
@@ -219,70 +223,141 @@ WindingTest::WindingTest (tcu::TestContext&			testCtx,
 
 void WindingTest::initPrograms (SourceCollections& programCollection) const
 {
-	// Vertex shader - no inputs
+	if (m_shaderLanguage == SHADER_LANGUAGE_GLSL)
 	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "}\n";
+		// Vertex shader - no inputs
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "}\n";
 
-		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		}
+
+		// Tessellation control shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "\n"
+				<< "layout(vertices = 1) out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    gl_TessLevelInner[0] = 5.0;\n"
+				<< "    gl_TessLevelInner[1] = 5.0;\n"
+				<< "\n"
+				<< "    gl_TessLevelOuter[0] = 5.0;\n"
+				<< "    gl_TessLevelOuter[1] = 5.0;\n"
+				<< "    gl_TessLevelOuter[2] = 5.0;\n"
+				<< "    gl_TessLevelOuter[3] = 5.0;\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+		}
+
+		// Tessellation evaluation shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "\n"
+				<< "layout(" << getTessPrimitiveTypeShaderName(m_primitiveType) << ", "
+							 << getWindingShaderName(m_winding) << ") in;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    gl_Position = vec4(gl_TessCoord.xy*2.0 - 1.0, 0.0, 1.0);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		}
+
+		// Fragment shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "\n"
+				<< "layout(location = 0) out mediump vec4 o_color;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    o_color = vec4(1.0);\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+		}
 	}
-
-	// Tessellation control shader
+	else
 	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(vertices = 1) out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    gl_TessLevelInner[0] = 5.0;\n"
-			<< "    gl_TessLevelInner[1] = 5.0;\n"
-			<< "\n"
-			<< "    gl_TessLevelOuter[0] = 5.0;\n"
-			<< "    gl_TessLevelOuter[1] = 5.0;\n"
-			<< "    gl_TessLevelOuter[2] = 5.0;\n"
-			<< "    gl_TessLevelOuter[3] = 5.0;\n"
-			<< "}\n";
+		// Vertex shader - no inputs
+		{
+			std::ostringstream src;
+			src << "void main (void)\n"
+				<< "{\n"
+				<< "}\n";
 
-		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
-	}
+			programCollection.hlslSources.add("vert") << glu::VertexSource(src.str());
+		}
 
-	// Tessellation evaluation shader
-	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(" << getTessPrimitiveTypeShaderName(m_primitiveType) << ", "
-						 << getWindingShaderName(m_winding) << ") in;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    gl_Position = vec4(gl_TessCoord.xy*2.0 - 1.0, 0.0, 1.0);\n"
-			<< "}\n";
+		// Tessellation control shader
+		{
+			std::ostringstream src;
+			src << "struct HS_CONSTANT_OUT\n"
+				<< "{\n"
+				<< "    float tessLevelsOuter[4] : SV_TessFactor;\n"
+				<< "    float tessLevelsInner[2] : SV_InsideTessFactor;\n"
+				<< "};\n"
+				<< "\n"
+				<< "[domain(\"" << getDomainName(m_primitiveType) << "\")]\n"
+				<< "[partitioning(\"integer\")]\n"
+				<< "[outputtopology(\"" << getOutputTopologyName (m_primitiveType, m_winding, false) << "\")]\n"
+				<< "[outputcontrolpoints(1)]\n"
+				<< "[patchconstantfunc(\"PCF\")]\n"
+				<< "void main()\n"
+				<< "{\n"
+				<< "}\n"
+				<< "\n"
+				<< "HS_CONSTANT_OUT PCF()\n"
+				<< "{\n"
+				<< "    HS_CONSTANT_OUT output;\n"
+				<< "    output.tessLevelsInner[0] = 5.0;\n"
+				<< "    output.tessLevelsInner[1] = 5.0;\n"
+				<< "    output.tessLevelsOuter[0] = 5.0;\n"
+				<< "    output.tessLevelsOuter[1] = 5.0;\n"
+				<< "    output.tessLevelsOuter[2] = 5.0;\n"
+				<< "    output.tessLevelsOuter[3] = 5.0;\n"
+				<< "    return output;\n"
+				<< "}\n";
 
-		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
-	}
+			programCollection.hlslSources.add("tesc") << glu::TessellationControlSource(src.str());
+		}
 
-	// Fragment shader
-	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "\n"
-			<< "layout(location = 0) out mediump vec4 o_color;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    o_color = vec4(1.0);\n"
-			<< "}\n";
+		// Tessellation evaluation shader
+		{
+			std::ostringstream src;
 
-		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+			src	<< "float4 main(" << (m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? "float3" : "float2") << " tessCoords : SV_DOMAINLOCATION) : SV_POSITION\n"
+				<< "{\n"
+				<< "    return float4(tessCoords.xy*2.0 - 1, 0.0, 1.0);\n"
+				<< "}\n";
+
+			programCollection.hlslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		}
+
+		// Fragment shader
+		{
+			std::ostringstream src;
+			src << "float4 main (void) : COLOR0\n"
+				<< "{\n"
+				<< "    return float4(1.0);\n"
+				<< "}\n";
+
+			programCollection.hlslSources.add("frag") << glu::FragmentSource(src.str());
+		}
 	}
 }
 
@@ -524,11 +599,18 @@ void populateWindingGroup (tcu::TestCaseGroup* group, tcu::Maybe<VkTessellationD
 		TESSPRIMITIVETYPE_QUADS,
 	};
 
+	static const ShaderLanguage shaderLanguage[] =
+	{
+		SHADER_LANGUAGE_GLSL,
+		SHADER_LANGUAGE_HLSL,
+	};
+
 	for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
+	for (int shaderLanguageNdx = 0; shaderLanguageNdx < DE_LENGTH_OF_ARRAY(shaderLanguage); ++shaderLanguageNdx)
 	for (int windingNdx = 0; windingNdx < WINDING_LAST; ++windingNdx)
 	{
-		group->addChild(new WindingTest(group->getTestContext(), primitivesNoIsolines[primitiveTypeNdx], domainOrigin, (Winding)windingNdx, false));
-		group->addChild(new WindingTest(group->getTestContext(), primitivesNoIsolines[primitiveTypeNdx], domainOrigin, (Winding)windingNdx, true));
+		group->addChild(new WindingTest(group->getTestContext(), primitivesNoIsolines[primitiveTypeNdx], domainOrigin, shaderLanguage[shaderLanguageNdx], (Winding)windingNdx, false));
+		group->addChild(new WindingTest(group->getTestContext(), primitivesNoIsolines[primitiveTypeNdx], domainOrigin, shaderLanguage[shaderLanguageNdx], (Winding)windingNdx, true));
 	}
 }
 

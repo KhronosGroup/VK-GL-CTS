@@ -71,4 +71,8 @@ void createGL45CTSActivity(ANativeActivity* activity, void* savedState, size_t s
 	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 5));
 }
 
+void createGL46CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+{
+	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 6));
+}
 DE_END_EXTERN_C

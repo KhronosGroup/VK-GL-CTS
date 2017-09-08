@@ -40,10 +40,11 @@ using namespace glw;
 namespace gl4cts
 {
 
-ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType testedShader, AtomicOperation* newOp)
+ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType testedShader, AtomicOperation* newOp,
+															   bool contextGL46)
 	: m_program(NULL), m_programCompute(NULL), m_testedShader(testedShader), m_atomicOp(newOp)
 {
-	m_shaders[glu::SHADERTYPE_VERTEX] = "#version 450 core\n"
+	m_shaders[glu::SHADERTYPE_VERTEX] = "<version>\n"
 										"<head>"
 										"in highp vec2 inPosition;\n"
 										"out highp vec3 vsPosition;\n"
@@ -57,7 +58,7 @@ ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType t
 										"	vsColor = outColor;\n"
 										"}\n";
 
-	m_shaders[glu::SHADERTYPE_FRAGMENT] = "#version 450 core\n"
+	m_shaders[glu::SHADERTYPE_FRAGMENT] = "<version>\n"
 										  "<head>"
 										  "in highp vec4 gsColor;\n"
 										  "out highp vec4 fsColor;\n"
@@ -68,7 +69,7 @@ ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType t
 										  "	fsColor = outColor;\n"
 										  "}\n";
 
-	m_shaders[glu::SHADERTYPE_TESSELLATION_CONTROL] = "#version 450 core\n"
+	m_shaders[glu::SHADERTYPE_TESSELLATION_CONTROL] = "<version>\n"
 													  "<head>"
 													  "layout(vertices = 3) out;\n"
 													  "in highp vec4 vsColor[];\n"
@@ -87,7 +88,7 @@ ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType t
 													  "	gl_TessLevelOuter[2] = 3;\n"
 													  "}\n";
 
-	m_shaders[glu::SHADERTYPE_TESSELLATION_EVALUATION] = "#version 450 core\n"
+	m_shaders[glu::SHADERTYPE_TESSELLATION_EVALUATION] = "<version>\n"
 														 "<head>"
 														 "layout(triangles, equal_spacing, cw) in;\n"
 														 "in highp vec3 tcsPosition[];\n"
@@ -104,7 +105,7 @@ ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType t
 														 "	gl_Position = vec4(normalize(p0 + p1 + p2), 1.0);\n"
 														 "}\n";
 
-	m_shaders[glu::SHADERTYPE_GEOMETRY] = "#version 450 core\n"
+	m_shaders[glu::SHADERTYPE_GEOMETRY] = "<version>\n"
 										  "<head>"
 										  "layout(triangles) in;\n"
 										  "layout(triangle_strip, max_vertices = 3) out;\n"
@@ -123,7 +124,7 @@ ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType t
 										  "	EndPrimitive();\n"
 										  "}\n";
 
-	m_shaders[glu::SHADERTYPE_COMPUTE] = "#version 450 core\n"
+	m_shaders[glu::SHADERTYPE_COMPUTE] = "<version>\n"
 										 "<head>"
 										 "layout(rgba32f, binding = 2) writeonly uniform highp image2D destImage;\n"
 										 "layout (local_size_x = 16, local_size_y = 16) in;\n"
@@ -136,9 +137,9 @@ ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType t
 
 	// prepare shaders
 
+	std::string		  postfix(contextGL46 ? "" : "ARB");
 	std::stringstream atomicOperationStream;
-
-	atomicOperationStream << "uint returned = " << m_atomicOp->getFunction() + "(counter, ";
+	atomicOperationStream << "uint returned = " << m_atomicOp->getFunction() + postfix + "(counter, ";
 	if (m_atomicOp->getCompareValue() != 0)
 	{
 		atomicOperationStream << m_atomicOp->getCompareValue();
@@ -155,13 +156,26 @@ ShaderAtomicCounterOpsTestBase::ShaderPipeline::ShaderPipeline(glu::ShaderType t
 
 	atomicOperationStream << "atomicCounterIncrement(calls);\n";
 
-	std::string headString = "#extension GL_ARB_shader_atomic_counters: enable\n"
-							 "#extension GL_ARB_shader_atomic_counter_ops: enable\n"
-							 "layout (binding=0) uniform atomic_uint counter;\n"
-							 "layout (binding=1) uniform atomic_uint calls;\n";
+	std::string versionString;
+	std::string headString;
+	if (contextGL46)
+	{
+		versionString = "#version 460 core";
+		headString	= "layout (binding=0) uniform atomic_uint counter;\n"
+					 "layout (binding=1) uniform atomic_uint calls;\n";
+	}
+	else
+	{
+		versionString = "#version 450 core";
+		headString	= "#extension GL_ARB_shader_atomic_counters: enable\n"
+					 "#extension GL_ARB_shader_atomic_counter_ops: enable\n"
+					 "layout (binding=0) uniform atomic_uint counter;\n"
+					 "layout (binding=1) uniform atomic_uint calls;\n";
+	}
 
 	for (unsigned int i = 0; i < glu::SHADERTYPE_LAST; ++i)
 	{
+		prepareShader(m_shaders[i], "<version>", versionString);
 		prepareShader(m_shaders[i], "<head>", i == testedShader ? headString : "");
 		prepareShader(m_shaders[i], "<atomic_operation>", i == testedShader ? atomicOperationStream.str() : "");
 	}
@@ -501,6 +515,8 @@ ShaderAtomicCounterOpsTestBase::ShaderAtomicCounterOpsTestBase(deqp::Context& co
 															   const char* description)
 	: TestCase(context, name, description), m_atomicCounterBuffer(0), m_atomicCounterCallsBuffer(0)
 {
+	glu::ContextType contextType = m_context.getRenderContext().getType();
+	m_contextSupportsGL46		 = glu::contextSupports(contextType, glu::ApiType::core(4, 6));
 }
 
 void ShaderAtomicCounterOpsTestBase::init()
@@ -565,11 +581,14 @@ void ShaderAtomicCounterOpsTestBase::deinit()
 
 tcu::TestNode::IterateResult ShaderAtomicCounterOpsTestBase::iterate()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_atomic_counters") ||
-		!m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_atomic_counter_ops"))
+	if (!m_contextSupportsGL46)
 	{
-		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
-		return STOP;
+		if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_atomic_counters") ||
+			!m_context.getContextInfo().isExtensionSupported("GL_ARB_shader_atomic_counter_ops"))
+		{
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+			return STOP;
+		}
 	}
 
 	for (ShaderPipelineIter iter = m_shaderPipelines.begin(); iter != m_shaderPipelines.end(); ++iter)

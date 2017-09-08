@@ -1659,6 +1659,11 @@ void TextureViewUtilities::getMajorMinorVersionFromContextVersion(const glu::Con
 		*out_major_version = 4;
 		*out_minor_version = 5;
 	}
+	else if (context_type.getAPI() == glu::ApiType::core(4, 6))
+	{
+		*out_major_version = 4;
+		*out_minor_version = 6;
+	}
 	else
 	{
 		TCU_FAIL("Unrecognized rendering context version");

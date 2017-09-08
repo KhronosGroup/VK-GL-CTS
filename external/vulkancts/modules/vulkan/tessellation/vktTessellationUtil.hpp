@@ -188,6 +188,14 @@ enum Winding
 	WINDING_LAST,
 };
 
+enum ShaderLanguage
+{
+	SHADER_LANGUAGE_GLSL = 0,
+	SHADER_LANGUAGE_HLSL = 1,
+
+	SHADER_LANGUAGE_LAST,
+};
+
 enum FeatureFlagBits
 {
 	FEATURE_TESSELLATION_SHADER							= 1u << 0,
@@ -248,9 +256,35 @@ static inline const char* getTessPrimitiveTypeShaderName (const TessPrimitiveTyp
 		case TESSPRIMITIVETYPE_QUADS:		return "quads";
 		case TESSPRIMITIVETYPE_ISOLINES:	return "isolines";
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected primitive type.");
 			return DE_NULL;
 	}
+}
+
+static inline const char* getDomainName (const TessPrimitiveType type)
+{
+	switch (type)
+	{
+		case TESSPRIMITIVETYPE_TRIANGLES:	return "tri";
+		case TESSPRIMITIVETYPE_QUADS:		return "quad";
+		case TESSPRIMITIVETYPE_ISOLINES:	return "isoline";
+		default:
+			DE_FATAL("Unexpected primitive type.");
+			return DE_NULL;
+	}
+}
+
+static inline const char* getOutputTopologyName (const TessPrimitiveType type, const Winding winding, const bool usePointMode)
+{
+	if (usePointMode)
+		return "point";
+	else if (type == TESSPRIMITIVETYPE_TRIANGLES || type == TESSPRIMITIVETYPE_QUADS)
+		return (winding == WINDING_CCW ? "triangle_ccw" : "triangle_cw");
+	else if (type == TESSPRIMITIVETYPE_ISOLINES)
+		return "line";
+
+	DE_FATAL("Unexpected primitive type.");
+	return DE_NULL;
 }
 
 static inline const char* getSpacingModeShaderName (SpacingMode mode)
@@ -261,7 +295,20 @@ static inline const char* getSpacingModeShaderName (SpacingMode mode)
 		case SPACINGMODE_FRACTIONAL_ODD:	return "fractional_odd_spacing";
 		case SPACINGMODE_FRACTIONAL_EVEN:	return "fractional_even_spacing";
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected spacing mode.");
+			return DE_NULL;
+	}
+}
+
+static inline const char* getPartitioningShaderName (SpacingMode mode)
+{
+	switch (mode)
+	{
+		case SPACINGMODE_EQUAL:				return "integer";
+		case SPACINGMODE_FRACTIONAL_ODD:	return "fractional_odd";
+		case SPACINGMODE_FRACTIONAL_EVEN:	return "fractional_even";
+		default:
+			DE_FATAL("Unexpected spacing mode.");
 			return DE_NULL;
 	}
 }
@@ -273,7 +320,19 @@ static inline const char* getWindingShaderName (const Winding winding)
 		case WINDING_CCW:	return "ccw";
 		case WINDING_CW:	return "cw";
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected winding type.");
+			return DE_NULL;
+	}
+}
+
+static inline const char* getShaderLanguageName (const ShaderLanguage language)
+{
+	switch (language)
+	{
+		case SHADER_LANGUAGE_GLSL:	return "glsl";
+		case SHADER_LANGUAGE_HLSL:	return "hlsl";
+		default:
+			DE_FATAL("Unexpected shader language.");
 			return DE_NULL;
 	}
 }
@@ -293,7 +352,7 @@ static inline const char* getGeometryShaderInputPrimitiveTypeShaderName (const T
 			return "lines";
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected primitive type.");
 			return DE_NULL;
 	}
 }
@@ -313,7 +372,7 @@ static inline const char* getGeometryShaderOutputPrimitiveTypeShaderName (const 
 			return "line_strip";
 
 		default:
-			DE_ASSERT(false);
+			DE_FATAL("Unexpected primitive type.");
 			return DE_NULL;
 	}
 }

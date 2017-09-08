@@ -60,9 +60,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpAtom.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpContext.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/Pp.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpMemory.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpScanner.cpp
-		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpSymbols.cpp
 		${GLSLANG_ABS_PATH}/glslang/MachineIndependent/preprocessor/PpTokens.cpp
 
 		${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp
@@ -70,6 +68,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 
 		${GLSLANG_ABS_PATH}/OGLCompilersDLL/InitializeDll.cpp
 
+		${GLSLANG_ABS_PATH}/hlsl/hlslAttributes.cpp
 		${GLSLANG_ABS_PATH}/hlsl/hlslGrammar.cpp
 		${GLSLANG_ABS_PATH}/hlsl/hlslOpMap.cpp
 		${GLSLANG_ABS_PATH}/hlsl/hlslParseables.cpp
@@ -97,6 +96,8 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 
 	add_library(glslang STATIC ${GLSLANG_SRCS})
 	target_link_libraries(glslang dethread ${ZLIB_LIBRARY})
+
+	add_definitions(-DENABLE_HLSL)
 
 	set(GLSLANG_INCLUDE_PATH	${GLSLANG_ABS_PATH}	PARENT_SCOPE)
 	set(GLSLANG_LIBRARY			glslang				PARENT_SCOPE)

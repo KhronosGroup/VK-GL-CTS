@@ -44,7 +44,6 @@
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
 
-#include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deMath.h"
@@ -253,14 +252,21 @@ bool compareFUnord (const std::vector<BufferSp>& inputs, const vector<Allocation
 	if (outputAllocs.size() != 1)
 		return false;
 
-	const BufferSp&	expectedOutput			= expectedOutputs[0];
-	const deInt32*	expectedOutputAsInt		= static_cast<const deInt32*>(expectedOutputs[0]->data());
-	const deInt32*	outputAsInt				= static_cast<const deInt32*>(outputAllocs[0]->getHostPtr());
-	const float*	input1AsFloat			= static_cast<const float*>(inputs[0]->data());
-	const float*	input2AsFloat			= static_cast<const float*>(inputs[1]->data());
-	bool returnValue						= true;
+	vector<deUint8>	input1Bytes;
+	vector<deUint8>	input2Bytes;
+	vector<deUint8>	expectedBytes;
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(deInt32); ++idx)
+	inputs[0]->getBytes(input1Bytes);
+	inputs[1]->getBytes(input2Bytes);
+	expectedOutputs[0]->getBytes(expectedBytes);
+
+	const deInt32* const	expectedOutputAsInt		= reinterpret_cast<const deInt32* const>(&expectedBytes.front());
+	const deInt32* const	outputAsInt				= static_cast<const deInt32* const>(outputAllocs[0]->getHostPtr());
+	const float* const		input1AsFloat			= reinterpret_cast<const float* const>(&input1Bytes.front());
+	const float* const		input2AsFloat			= reinterpret_cast<const float* const>(&input2Bytes.front());
+	bool returnValue								= true;
+
+	for (size_t idx = 0; idx < expectedBytes.size() / sizeof(deInt32); ++idx)
 	{
 		if (outputAsInt[idx] != expectedOutputAsInt[idx])
 		{
@@ -404,14 +410,14 @@ struct OpAtomicCase
 {
 	const char*		name;
 	const char*		assembly;
-	void			(*calculateExpected)(deInt32&, deInt32);
+	OpAtomicType	opAtomic;
 	deInt32			numOutputElements;
 
-					OpAtomicCase			(const char* _name, const char* _assembly, void (*_calculateExpected)(deInt32&, deInt32), deInt32 _numOutputElements)
+					OpAtomicCase			(const char* _name, const char* _assembly, OpAtomicType _opAtomic, deInt32 _numOutputElements)
 						: name				(_name)
 						, assembly			(_assembly)
-						, calculateExpected	(_calculateExpected)
-						, numOutputElements (_numOutputElements) {}
+						, opAtomic			(_opAtomic)
+						, numOutputElements	(_numOutputElements) {}
 };
 
 tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer)
@@ -419,7 +425,6 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx,
 																				useStorageBuffer ? "opatomic_storage_buffer" : "opatomic",
 																				"Test the OpAtomic* opcodes"));
-	de::Random						rnd					(deStringHash(group->getName()));
 	const int						numElements			= 65535;
 	vector<OpAtomicCase>			cases;
 
@@ -479,25 +484,24 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, NUM_OUTPUT_ELEMENTS) \
+	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS) \
 	do { \
 		DE_STATIC_ASSERT((NUM_OUTPUT_ELEMENTS) == 1 || (NUM_OUTPUT_ELEMENTS) == numElements); \
-		struct calculateExpected_##NAME { static void calculateExpected(deInt32& expected, deInt32 input) CALCULATE_EXPECTED }; /* NOLINT(CALCULATE_EXPECTED) */ \
-		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, calculateExpected_##NAME::calculateExpected, NUM_OUTPUT_ELEMENTS)); \
+		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS)); \
 	} while (deGetFalse())
-	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, CALCULATE_EXPECTED) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, 1)
-	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, CALCULATE_EXPECTED) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, CALCULATE_EXPECTED, numElements)
+	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, 1)
+	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, numElements)
 
-	ADD_OPATOMIC_CASE_1(iadd,	"%unused    = OpAtomicIAdd %i32 %outloc %one %zero %inval\n", { expected += input; } );
-	ADD_OPATOMIC_CASE_1(isub,	"%unused    = OpAtomicISub %i32 %outloc %one %zero %inval\n", { expected -= input; } );
-	ADD_OPATOMIC_CASE_1(iinc,	"%unused    = OpAtomicIIncrement %i32 %outloc %one %zero\n",  { ++expected; (void)input;} );
-	ADD_OPATOMIC_CASE_1(idec,	"%unused    = OpAtomicIDecrement %i32 %outloc %one %zero\n",  { --expected; (void)input;} );
+	ADD_OPATOMIC_CASE_1(iadd,	"%unused    = OpAtomicIAdd %i32 %outloc %one %zero %inval\n", OPATOMIC_IADD );
+	ADD_OPATOMIC_CASE_1(isub,	"%unused    = OpAtomicISub %i32 %outloc %one %zero %inval\n", OPATOMIC_ISUB );
+	ADD_OPATOMIC_CASE_1(iinc,	"%unused    = OpAtomicIIncrement %i32 %outloc %one %zero\n",  OPATOMIC_IINC );
+	ADD_OPATOMIC_CASE_1(idec,	"%unused    = OpAtomicIDecrement %i32 %outloc %one %zero\n",  OPATOMIC_IDEC );
 	ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %zero %zero\n"
-								"             OpStore %outloc %inval2\n",  { expected = input;} );
-	ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %zero %zero %inval\n",  { expected = input;} );
+								"             OpStore %outloc %inval2\n",  OPATOMIC_LOAD );
+	ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %zero %zero %inval\n",  OPATOMIC_STORE );
 	ADD_OPATOMIC_CASE_N(compex, "%even      = OpSMod %i32 %inval %two\n"
 								"             OpStore %outloc %even\n"
-								"%unused    = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",  { expected = (input % 2) == 0 ? -1 : 1;} );
+								"%unused    = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",  OPATOMIC_COMPEX );
 
 	#undef ADD_OPATOMIC_CASE
 	#undef ADD_OPATOMIC_CASE_1
@@ -519,14 +523,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		if (useStorageBuffer)
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 
-		fillRandomScalars(rnd, 1, 100, &inputInts[0], numElements);
-		for (size_t ndx = 0; ndx < numElements; ++ndx)
-		{
-			cases[caseNdx].calculateExpected((cases[caseNdx].numOutputElements == 1) ? expected[0] : expected[ndx], inputInts[ndx]);
-		}
-
-		spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
-		spec.outputs.push_back(BufferSp(new Int32Buffer(expected)));
+		spec.inputs.push_back(BufferSp(new OpAtomicBuffer(numElements, cases[caseNdx].numOutputElements, cases[caseNdx].opAtomic, BUFFERTYPE_INPUT)));
+		spec.outputs.push_back(BufferSp(new OpAtomicBuffer(numElements, cases[caseNdx].numOutputElements, cases[caseNdx].opAtomic, BUFFERTYPE_EXPECTED)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -671,11 +669,12 @@ bool compareNoContractCase(const std::vector<BufferSp>&, const vector<Allocation
 	if (outputAllocs.size() != 1)
 		return false;
 
-	// We really just need this for size because we are not comparing the exact values.
-	const BufferSp&	expectedOutput	= expectedOutputs[0];
-	const float*	outputAsFloat	= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+	// Only size is needed because we are not comparing the exact values.
+	size_t byteSize = expectedOutputs[0]->getByteSize();
 
-	for(size_t i = 0; i < expectedOutput->getNumBytes() / sizeof(float); ++i) {
+	const float*	outputAsFloat	= static_cast<const float*>(outputAllocs[0]->getHostPtr());
+
+	for(size_t i = 0; i < byteSize / sizeof(float); ++i) {
 		if (outputAsFloat[i] != 0.f &&
 			outputAsFloat[i] != -ldexp(1, -24)) {
 			return false;
@@ -780,11 +779,13 @@ bool compareFRem(const std::vector<BufferSp>&, const vector<AllocationSp>& outpu
 	if (outputAllocs.size() != 1)
 		return false;
 
-	const BufferSp& expectedOutput = expectedOutputs[0];
-	const float *expectedOutputAsFloat = static_cast<const float*>(expectedOutput->data());
-	const float* outputAsFloat = static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+	vector<deUint8>	expectedBytes;
+	expectedOutputs[0]->getBytes(expectedBytes);
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
+	const float*	expectedOutputAsFloat	= reinterpret_cast<const float*>(&expectedBytes.front());
+	const float*	outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());
+
+	for (size_t idx = 0; idx < expectedBytes.size() / sizeof(float); ++idx)
 	{
 		const float f0 = expectedOutputAsFloat[idx];
 		const float f1 = outputAsFloat[idx];
@@ -879,11 +880,14 @@ bool compareNMin (const std::vector<BufferSp>&, const vector<AllocationSp>& outp
 	if (outputAllocs.size() != 1)
 		return false;
 
-	const BufferSp&		expectedOutput			= expectedOutputs[0];
-	const float* const	expectedOutputAsFloat	= static_cast<const float*>(expectedOutput->data());
-	const float* const	outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+	const BufferSp&			expectedOutput			(expectedOutputs[0]);
+	std::vector<deUint8>	data;
+	expectedOutput->getBytes(data);
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
+	const float* const		expectedOutputAsFloat	= reinterpret_cast<const float*>(&data.front());
+	const float* const		outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());
+
+	for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float); ++idx)
 	{
 		const float f0 = expectedOutputAsFloat[idx];
 		const float f1 = outputAsFloat[idx];
@@ -1000,11 +1004,14 @@ bool compareNMax (const std::vector<BufferSp>&, const vector<AllocationSp>& outp
 	if (outputAllocs.size() != 1)
 		return false;
 
-	const BufferSp&		expectedOutput			= expectedOutputs[0];
-	const float* const	expectedOutputAsFloat	= static_cast<const float*>(expectedOutput->data());
-	const float* const	outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+	const BufferSp&			expectedOutput			= expectedOutputs[0];
+	std::vector<deUint8>	data;
+	expectedOutput->getBytes(data);
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
+	const float* const		expectedOutputAsFloat	= reinterpret_cast<const float*>(&data.front());
+	const float* const		outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());
+
+	for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float); ++idx)
 	{
 		const float f0 = expectedOutputAsFloat[idx];
 		const float f1 = outputAsFloat[idx];
@@ -1120,11 +1127,14 @@ bool compareNClamp (const std::vector<BufferSp>&, const vector<AllocationSp>& ou
 	if (outputAllocs.size() != 1)
 		return false;
 
-	const BufferSp&		expectedOutput			= expectedOutputs[0];
-	const float* const	expectedOutputAsFloat	= static_cast<const float*>(expectedOutput->data());
-	const float* const	outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+	const BufferSp&			expectedOutput			= expectedOutputs[0];
+	std::vector<deUint8>	data;
+	expectedOutput->getBytes(data);
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float) / 2; ++idx)
+	const float* const		expectedOutputAsFloat	= reinterpret_cast<const float*>(&data.front());
+	const float* const		outputAsFloat			= static_cast<const float*>(outputAllocs[0]->getHostPtr());
+
+	for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float) / 2; ++idx)
 	{
 		const float e0 = expectedOutputAsFloat[idx * 2];
 		const float e1 = expectedOutputAsFloat[idx * 2 + 1];
@@ -2524,18 +2534,60 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+string generateConstantDefinitions (int count)
+{
+	std::stringstream	r;
+	for (int i = 0; i < count; i++)
+		r << "%cf" << (i * 10 + 5) << " = OpConstant %f32 " <<(i * 10 + 5) << ".0\n";
+	return r.str() + string("\n");
+}
+
+string generateSwitchCases (int count)
+{
+	std::stringstream	r;
+	for (int i = 0; i < count; i++)
+		r << " " << i << " %case" << i;
+	return r.str() + string("\n");
+}
+
+string generateSwitchTargets (int count)
+{
+	std::stringstream	r;
+	for (int i = 0; i < count; i++)
+		r << "%case" << i << " = OpLabel\n            OpBranch %phi\n";
+	return r.str() + string("\n");
+}
+
+string generateOpPhiParams (int count)
+{
+	std::stringstream	r;
+	for (int i = 0; i < count; i++)
+		r << " %cf" << (i * 10 + 5) << " %case" << i;
+	return r.str() + string("\n");
+}
+
+string generateIntWidth (int value)
+{
+	std::stringstream	r;
+	r << value;
+	return r.str();
+}
+
 tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opphi", "Test the OpPhi instruction"));
 	ComputeShaderSpec				spec1;
 	ComputeShaderSpec				spec2;
 	ComputeShaderSpec				spec3;
+	ComputeShaderSpec				spec4;
 	de::Random						rnd				(deStringHash(group->getName()));
 	const int						numElements		= 100;
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats1	(numElements, 0);
 	vector<float>					outputFloats2	(numElements, 0);
 	vector<float>					outputFloats3	(numElements, 0);
+	vector<float>					outputFloats4	(numElements, 0);
+	const int						test4Width		= 1024;
 
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
 
@@ -2553,6 +2605,9 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 		}
 		outputFloats2[ndx] = inputFloats[ndx] + 6.5f * 3;
 		outputFloats3[ndx] = 8.5f - inputFloats[ndx];
+
+		int index4 = (int)deFloor(deAbs((float)ndx * inputFloats[ndx]));
+		outputFloats4[ndx] = (float)(index4 % test4Width) * 10.0f + 5.0f;
 	}
 
 	spec1.assembly =
@@ -2704,6 +2759,64 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec3.numWorkGroups = IVec3(numElements, 1, 1);
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "swap", "Swap the values of two variables using OpPhi", spec3));
+
+	spec4.assembly =
+		"OpCapability Shader\n"
+		"%ext = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id       = OpVariable %uvec3ptr Input\n"
+		"%zero     = OpConstant %i32 0\n"
+		"%cimod    = OpConstant %u32 " + generateIntWidth(test4Width) + "\n"
+
+		+ generateConstantDefinitions(test4Width) +
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+		"%xf       = OpConvertUToF %f32 %x\n"
+		"%xm       = OpFMul %f32 %xf %inval\n"
+		"%xa       = OpExtInst %f32 %ext FAbs %xm\n"
+		"%xi       = OpConvertFToU %u32 %xa\n"
+		"%selector = OpUMod %u32 %xi %cimod\n"
+		"            OpSelectionMerge %phi None\n"
+		"            OpSwitch %selector %default "
+
+		+ generateSwitchCases(test4Width) +
+
+		"%default  = OpLabel\n"
+		"            OpUnreachable\n"
+
+		+ generateSwitchTargets(test4Width) +
+
+		"%phi      = OpLabel\n"
+		"%result   = OpPhi %f32"
+
+		+ generateOpPhiParams(test4Width) +
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %result\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	spec4.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	spec4.outputs.push_back(BufferSp(new Float32Buffer(outputFloats4)));
+	spec4.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "wide", "OpPhi with a lot of parameters", spec4));
 
 	return group.release();
 }
@@ -3357,11 +3470,12 @@ bool compareOpQuantizeF16ComputeExactCase (const std::vector<BufferSp>&, const v
 	if (outputAllocs.size() != 1)
 		return false;
 
-	// We really just need this for size because we cannot compare Nans.
-	const BufferSp&	expectedOutput	= expectedOutputs[0];
-	const float*	outputAsFloat	= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+	// Only size is needed because we cannot compare Nans.
+	size_t byteSize = expectedOutputs[0]->getByteSize();
 
-	if (expectedOutput->getNumBytes() != 4*sizeof(float)) {
+	const float*	outputAsFloat	= static_cast<const float*>(outputAllocs[0]->getHostPtr());
+
+	if (byteSize != 4*sizeof(float)) {
 		return false;
 	}
 
@@ -3397,11 +3511,12 @@ bool compareNan (const std::vector<BufferSp>&, const vector<AllocationSp>& outpu
 	if (outputAllocs.size() != 1)
 		return false;
 
-	// We really just need this for size because we cannot compare Nans.
-	const BufferSp& expectedOutput		= expectedOutputs[0];
-	const float* output_as_float		= static_cast<const float*>(outputAllocs[0]->getHostPtr());;
+	// Only size is needed because we cannot compare Nans.
+	size_t byteSize = expectedOutputs[0]->getByteSize();
 
-	for (size_t idx = 0; idx < expectedOutput->getNumBytes() / sizeof(float); ++idx)
+	const float* const	output_as_float	= static_cast<const float* const>(outputAllocs[0]->getHostPtr());
+
+	for (size_t idx = 0; idx < byteSize / sizeof(float); ++idx)
 	{
 		if (!deFloatIsNaN(output_as_float[idx]))
 		{
@@ -7649,11 +7764,13 @@ bool compareFloats (const std::vector<BufferSp>&, const vector<AllocationSp>& ou
 
 	for (size_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
-		float expected;
-		memcpy(&expected, expectedOutputs[outputNdx]->data(), expectedOutputs[outputNdx]->getNumBytes());
+		vector<deUint8>	expectedBytes;
+		float			expected;
+		float			actual;
 
-		float actual;
-		memcpy(&actual, outputAllocs[outputNdx]->getHostPtr(), expectedOutputs[outputNdx]->getNumBytes());
+		expectedOutputs[outputNdx]->getBytes(expectedBytes);
+		memcpy(&expected, &expectedBytes.front(), expectedBytes.size());
+		memcpy(&actual, outputAllocs[outputNdx]->getHostPtr(), expectedBytes.size());
 
 		// Test with epsilon
 		if (fabs(expected - actual) > epsilon)
@@ -7675,9 +7792,12 @@ bool passthruVerify (const std::vector<BufferSp>&, const vector<AllocationSp>& o
 	// Copy and discard the result.
 	for (size_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
-		size_t width = expectedOutputs[outputNdx]->getNumBytes();
+		vector<deUint8>	expectedBytes;
+		expectedOutputs[outputNdx]->getBytes(expectedBytes);
 
-		vector<char> data(width);
+		const size_t	width			= expectedBytes.size();
+		vector<char>	data			(width);
+
 		memcpy(&data[0], outputAllocs[outputNdx]->getHostPtr(), width);
 	}
 	return true;

@@ -145,7 +145,10 @@ Move<VkPipelineLayout> createPipelineLayout (const DeviceInterface& vkdi, const 
 
 	if (pushConstants != DE_NULL)
 	{
-		range.size							= static_cast<deUint32>(pushConstants->getNumBytes());
+		vector<deUint8> pushConstantsBytes;
+		pushConstants->getBytes(pushConstantsBytes);
+
+		range.size							= static_cast<deUint32>(pushConstantsBytes.size());
 		createInfo.pushConstantRangeCount	= 1;
 		createInfo.pPushConstantRanges		= &range;
 	}
@@ -374,10 +377,14 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 		AllocationMp		alloc;
 		const BufferSp&		input		= m_shaderSpec.inputs[inputNdx];
-		const size_t		numBytes	= input->getNumBytes();
+		vector<deUint8>		inputBytes;
+
+		input->getBytes(inputBytes);
+
+		const size_t		numBytes	= inputBytes.size();
 		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc));
 
-		setMemory(vkdi, device, &*alloc, numBytes, input->data());
+		setMemory(vkdi, device, &*alloc, numBytes, &inputBytes.front());
 		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
 		inputBuffers.push_back(BufferHandleSp(buffer));
 		inputAllocs.push_back(de::SharedPtr<Allocation>(alloc.release()));
@@ -389,7 +396,11 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 		AllocationMp		alloc;
 		const BufferSp&		output		= m_shaderSpec.outputs[outputNdx];
-		const size_t		numBytes	= output->getNumBytes();
+		vector<deUint8>		outputBytes;
+
+		output->getBytes(outputBytes);
+
+		const size_t		numBytes	= outputBytes.size();
 		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc));
 
 		fillMemoryWithValue(vkdi, device, &*alloc, numBytes, 0xff);
@@ -432,8 +443,11 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	vkdi.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
 	if (m_shaderSpec.pushConstants != DE_NULL)
 	{
-		const deUint32	size	= static_cast<deUint32>(m_shaderSpec.pushConstants->getNumBytes());
-		const void*		data	= m_shaderSpec.pushConstants->data();
+		vector<deUint8>	pushConstantsBytes;
+		m_shaderSpec.pushConstants->getBytes(pushConstantsBytes);
+
+		const deUint32	size	= static_cast<deUint32>(pushConstantsBytes.size());
+		const void*		data	= &pushConstantsBytes.front();
 
 		vkdi.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, /* offset = */ 0, /* size = */ size, data);
 	}
@@ -463,7 +477,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Invalidate output memory ranges before checking on host.
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 	{
-		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.outputs[outputNdx]->getNumBytes());
+		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.outputs[outputNdx]->getByteSize());
 	}
 
 	// Check output.
@@ -476,8 +490,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	{
 		for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 		{
-			const BufferSp& expectedOutput = m_shaderSpec.outputs[outputNdx];
-			if (deMemCmp(expectedOutput->data(), outputAllocs[outputNdx]->getHostPtr(), expectedOutput->getNumBytes()))
+			const BufferSp&	expectedOutput = m_shaderSpec.outputs[outputNdx];
+			vector<deUint8>	expectedBytes;
+
+			expectedOutput->getBytes(expectedBytes);
+
+			if (deMemCmp(&expectedBytes.front(), outputAllocs[outputNdx]->getHostPtr(), expectedBytes.size()))
 				return tcu::TestStatus(m_shaderSpec.failResult, m_shaderSpec.failMessage);
 		}
 	}

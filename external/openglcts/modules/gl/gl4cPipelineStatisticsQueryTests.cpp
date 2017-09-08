@@ -1432,9 +1432,11 @@ tcu::TestNode::IterateResult PipelineStatisticsQueryTestAPICoverage1::iterate()
 	const glu::ContextInfo& context_info   = m_context.getContextInfo();
 	bool					has_passed	 = true;
 	glu::RenderContext&		render_context = m_context.getRenderContext();
+	glu::ContextType		contextType	= m_context.getRenderContext().getType();
 
 	/* Only continue if GL_ARB_pipeline_statistics_query extension is supported */
-	if (!context_info.isExtensionSupported("GL_ARB_pipeline_statistics_query"))
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!context_info.isExtensionSupported("GL_ARB_pipeline_statistics_query"))
 	{
 		throw tcu::NotSupportedError("GL_ARB_pipeline_statistics_query extension is not supported");
 	}
@@ -1574,9 +1576,11 @@ tcu::TestNode::IterateResult PipelineStatisticsQueryTestAPICoverage2::iterate()
 	bool					has_passed	 = true;
 	glu::RenderContext&		render_context = m_context.getRenderContext();
 	const glw::Functions&   gl			   = render_context.getFunctions();
+	glu::ContextType		contextType	= m_context.getRenderContext().getType();
 
 	/* Only continue if GL_ARB_pipeline_statistics_query extension is supported */
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_pipeline_statistics_query"))
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_pipeline_statistics_query"))
 	{
 		throw tcu::NotSupportedError("GL_ARB_pipeline_statistics_query extension is not supported");
 	}
@@ -2139,9 +2143,11 @@ void PipelineStatisticsQueryTestFunctionalBase::initVBO(
 tcu::TestNode::IterateResult PipelineStatisticsQueryTestFunctionalBase::iterate()
 {
 	bool has_passed = true;
+	glu::ContextType contextType = m_context.getRenderContext().getType();
 
 	/* Carry on only if GL_ARB_pipeline_statistics_query extension is supported */
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_pipeline_statistics_query"))
+	if (!glu::contextSupports(contextType, glu::ApiType::core(4, 6)) &&
+		!m_context.getContextInfo().isExtensionSupported("GL_ARB_pipeline_statistics_query"))
 	{
 		throw tcu::NotSupportedError("GL_ARB_pipeline_statistics_query extension is not supported");
 	}

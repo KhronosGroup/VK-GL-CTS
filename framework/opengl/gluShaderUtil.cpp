@@ -48,6 +48,7 @@ const char* getGLSLVersionName (GLSLVersion version)
 		"GLSL 4.3",
 		"GLSL 4.4",
 		"GLSL 4.5",
+		"GLSL 4.6",
 	};
 
 	return de::getSizedArrayElement<GLSL_VERSION_LAST>(s_names, version);
@@ -71,6 +72,7 @@ const char* getGLSLVersionDeclaration (GLSLVersion version)
 		"#version 430",
 		"#version 440",
 		"#version 450",
+		"#version 460",
 	};
 
 	return de::getSizedArrayElement<GLSL_VERSION_LAST>(s_decl, version);
@@ -78,12 +80,12 @@ const char* getGLSLVersionDeclaration (GLSLVersion version)
 
 bool glslVersionUsesInOutQualifiers (GLSLVersion version)
 {
-	return de::inRange<int>(version, GLSL_VERSION_300_ES, GLSL_VERSION_320_ES) || de::inRange<int>(version, GLSL_VERSION_330, GLSL_VERSION_450);
+	return de::inRange<int>(version, GLSL_VERSION_300_ES, GLSL_VERSION_320_ES) || de::inRange<int>(version, GLSL_VERSION_330, GLSL_VERSION_460);
 }
 
 bool glslVersionIsES (GLSLVersion version)
 {
-	DE_STATIC_ASSERT(GLSL_VERSION_LAST == 14);
+	DE_STATIC_ASSERT(GLSL_VERSION_LAST == 15);
 	DE_ASSERT(version != GLSL_VERSION_LAST);
 
 	if (version == GLSL_VERSION_100_ES	||
@@ -114,6 +116,7 @@ static ApiType getMinAPIForGLSLVersion (GLSLVersion version)
 		ApiType::core(4,3),
 		ApiType::core(4,4),
 		ApiType::core(4,5),
+		ApiType::core(4,6),
 	};
 
 	return de::getSizedArrayElement<GLSL_VERSION_LAST>(s_minApi, version);
