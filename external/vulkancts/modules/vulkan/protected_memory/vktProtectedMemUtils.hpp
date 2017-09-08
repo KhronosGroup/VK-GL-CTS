@@ -109,7 +109,7 @@ vk::VkResult						queueSubmit							(ProtectedContext&					context,
 																		 vk::VkQueue						queue,
 																		 vk::VkCommandBuffer				cmdBuffer,
 																		 vk::VkFence						fence,
-																		 uint64_t							timeout);
+																		 deUint64							timeout);
 
 vk::Move<vk::VkDescriptorSet>		makeDescriptorSet					(const vk::DeviceInterface&			vk,
 																		 const vk::VkDevice					device,

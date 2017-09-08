@@ -76,20 +76,19 @@ enum BufferType {
 void					initBufferValidatorPrograms		(vk::SourceCollections&	programCollection, TestType testType, BufferType bufferType);
 vk::VkDescriptorType	getDescriptorType				(BufferType bufferType);
 
-
 template<typename T>
 class BufferValidator
 {
 public:
 									BufferValidator			(const ValidationData<T> data)
 										: m_refData			(data)
-										, m_refDataStorage	()
+										, m_refDataStorage	(*reinterpret_cast<ValidationDataStorage<T>*>( &std::vector<char>(sizeof(ValidationDataStorage<T>), '\0').front()))
 										, m_bufferType		(SAMPLER_BUFFER)
 									{
 									}
 
 									BufferValidator			(const ValidationDataStorage<T> data)
-										: m_refData			()
+										: m_refData			(*reinterpret_cast<ValidationData<T>*>( &std::vector<char>(sizeof(ValidationData<T>), '\0').front()))
 										, m_refDataStorage	(data)
 										, m_bufferType		(STORAGE_BUFFER)
 									{
@@ -107,6 +106,7 @@ private:
 
 	const ValidationData<T>			m_refData;
 	const ValidationDataStorage<T>	m_refDataStorage;
+
 	BufferType						m_bufferType;
 };
 

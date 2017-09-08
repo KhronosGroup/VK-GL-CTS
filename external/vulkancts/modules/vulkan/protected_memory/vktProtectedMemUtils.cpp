@@ -436,7 +436,7 @@ vk::VkResult queueSubmit (ProtectedContext&		context,
 						  vk::VkQueue			queue,
 						  vk::VkCommandBuffer	cmdBuffer,
 						  vk::VkFence			fence,
-						  uint64_t				timeout)
+						  deUint64				timeout)
 {
 	const vk::DeviceInterface&			vk			= context.getDeviceInterface();
 	const vk::VkDevice&					device		= context.getDevice();
