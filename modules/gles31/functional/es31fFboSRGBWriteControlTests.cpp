@@ -1797,8 +1797,8 @@ FboSRGBUnsupportedEnumCase::~FboSRGBUnsupportedEnumCase (void)
 void FboSRGBUnsupportedEnumCase::init (void)
 {
 	// extension requirements for test
-	if (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)) || m_context.getContextInfo().isExtensionSupported("GL_EXT_sRGB_write_control"))
-		TCU_THROW(NotSupportedError, "Test requires extension GL_EXT_sRGB_write_control to be unsupported and a context version less than 3.2");
+	if (m_context.getContextInfo().isExtensionSupported("GL_EXT_sRGB_write_control"))
+		TCU_THROW(NotSupportedError, "Test requires extension GL_EXT_sRGB_write_control to be unsupported");
 }
 
 void FboSRGBUnsupportedEnumCase::deinit (void)
