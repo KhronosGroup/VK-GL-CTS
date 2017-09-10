@@ -384,6 +384,15 @@ inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR c
 	return res;
 }
 
+inline VkExternalMemoryPropertiesKHR makeExternalMemoryPropertiesKHR (VkExternalMemoryFeatureFlagsKHR externalMemoryFeatures, VkExternalMemoryHandleTypeFlagsKHR exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlagsKHR compatibleHandleTypes)
+{
+	VkExternalMemoryPropertiesKHR res;
+	res.externalMemoryFeatures			= externalMemoryFeatures;
+	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
+	res.compatibleHandleTypes			= compatibleHandleTypes;
+	return res;
+}
+
 inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const VkRectLayerKHR* pRectangles)
 {
 	VkPresentRegionKHR res;
@@ -413,15 +422,6 @@ inline VkInputAttachmentAspectReferenceKHR makeInputAttachmentAspectReferenceKHR
 	return res;
 }
 
-inline VkExternalMemoryPropertiesKHR makeExternalMemoryPropertiesKHR (VkExternalMemoryFeatureFlagsKHR externalMemoryFeatures, VkExternalMemoryHandleTypeFlagsKHR exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlagsKHR compatibleHandleTypes)
-{
-	VkExternalMemoryPropertiesKHR res;
-	res.externalMemoryFeatures			= externalMemoryFeatures;
-	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
-	res.compatibleHandleTypes			= compatibleHandleTypes;
-	return res;
-}
-
 inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (deUint64 refreshDuration)
 {
 	VkRefreshCycleDurationGOOGLE res;
@@ -445,5 +445,31 @@ inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (deUint32 presentID, deUint64 d
 	VkPresentTimeGOOGLE res;
 	res.presentID			= presentID;
 	res.desiredPresentTime	= desiredPresentTime;
+	return res;
+}
+
+inline VkViewportSwizzleNV makeViewportSwizzleNV (VkViewportCoordinateSwizzleNV x, VkViewportCoordinateSwizzleNV y, VkViewportCoordinateSwizzleNV z, VkViewportCoordinateSwizzleNV w)
+{
+	VkViewportSwizzleNV res;
+	res.x	= x;
+	res.y	= y;
+	res.z	= z;
+	res.w	= w;
+	return res;
+}
+
+inline VkXYColorEXT makeXYColorEXT (float x, float y)
+{
+	VkXYColorEXT res;
+	res.x	= x;
+	res.y	= y;
+	return res;
+}
+
+inline VkSampleLocationEXT makeSampleLocationEXT (float x, float y)
+{
+	VkSampleLocationEXT res;
+	res.x	= x;
+	res.y	= y;
 	return res;
 }

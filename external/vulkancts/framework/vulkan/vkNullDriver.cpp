@@ -818,7 +818,7 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties (VkPhysicalDevice, VkPhys
 {
 	deMemset(props, 0, sizeof(VkPhysicalDeviceProperties));
 
-	props->apiVersion		= VK_API_VERSION;
+	props->apiVersion		= VK_API_VERSION_1_0;
 	props->driverVersion	= 1u;
 	props->deviceType		= VK_PHYSICAL_DEVICE_TYPE_OTHER;
 

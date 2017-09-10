@@ -175,8 +175,8 @@ MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, cons
 	, m_squareCount		(4u)
 	,m_queueFamilyIndex	(0u)
 {
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHX_multiview"))
-		throw tcu::NotSupportedError("VK_KHX_multiview is not supported");
+	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_multiview"))
+		throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
 
 	createMultiViewDevices();
 
@@ -340,15 +340,15 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		return parameters;
 	else
 	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHX_multiview"))
-			throw tcu::NotSupportedError("VK_KHX_multiview is not supported");
+		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHR_multiview"))
+			throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
 
 		const InstanceInterface&	instance		= m_context.getInstanceInterface();
 		const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
 
-		VkPhysicalDeviceMultiviewPropertiesKHX multiviewProperties =
+		VkPhysicalDeviceMultiviewPropertiesKHR multiviewProperties =
 		{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHX,	// VkStructureType	sType;
+			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	// VkStructureType	sType;
 			DE_NULL,													// void*			pNext;
 			0u,															// deUint32			maxMultiviewViewCount;
 			0u															// deUint32			maxMultiviewInstanceIndex;
@@ -410,9 +410,9 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		&queuePriorities							//const float*				pQueuePriorities;
 	};
 
-	VkPhysicalDeviceMultiviewFeaturesKHX	multiviewFeatures		=
+	VkPhysicalDeviceMultiviewFeaturesKHR	multiviewFeatures		=
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHX,	// VkStructureType	sType;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,	// VkStructureType	sType;
 		DE_NULL,													// void*			pNext;
 		DE_FALSE,													// VkBool32			multiview;
 		DE_FALSE,													// VkBool32			multiviewGeometryShader;
@@ -439,9 +439,9 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	if (TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex && !multiviewFeatures.multiviewTessellationShader)
 		TCU_THROW(NotSupportedError, "Tessellation shader is not supported");
 
-	VkPhysicalDeviceMultiviewPropertiesKHX	multiviewProperties		=
+	VkPhysicalDeviceMultiviewPropertiesKHR	multiviewProperties		=
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHX,	//VkStructureType	sType;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	//VkStructureType	sType;
 		DE_NULL,													//void*				pNext;
 		0u,															//deUint32			maxMultiviewViewCount;
 		0u															//deUint32			maxMultiviewInstanceIndex;

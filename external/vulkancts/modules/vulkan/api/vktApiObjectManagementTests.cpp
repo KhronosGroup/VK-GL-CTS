@@ -608,14 +608,14 @@ struct DeviceGroup
 		deUint32					queueFamilyIndex;
 
 		Resources (const Environment& env, const Parameters& params)
-			: extensions			(1, "VK_KHX_device_group_creation")
+			: extensions			(1, "VK_KHR_device_group_creation")
 			, instance				(env, Instance::Parameters(extensions))
 			, vki					(env.vkp, *instance.object)
 			, physicalDeviceCount	(0)
 			, queueFamilyIndex		(~0u)
 		{
 			{
-				const vector<VkPhysicalDeviceGroupPropertiesKHX> devGroupProperties = enumeratePhysicalDeviceGroupsKHX(vki, *instance.object);
+				const vector<VkPhysicalDeviceGroupPropertiesKHR> devGroupProperties = enumeratePhysicalDeviceGroupsKHR(vki, *instance.object);
 
 				if (devGroupProperties.size() <= (size_t)params.deviceGroupIndex)
 					TCU_THROW(NotSupportedError, "Device Group not found");
@@ -667,9 +667,9 @@ struct DeviceGroup
 			}
 		};
 
-		const VkDeviceGroupDeviceCreateInfoKHX deviceGroupInfo =
+		const VkDeviceGroupDeviceCreateInfoKHR deviceGroupInfo =
 		{
-			VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHX,	//stype
+			VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
 			DE_NULL,												//pNext
 			res.physicalDeviceCount,								//physicalDeviceCount
 			res.physicalDevices.data()								//physicalDevices

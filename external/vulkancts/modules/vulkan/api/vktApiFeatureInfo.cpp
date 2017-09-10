@@ -529,11 +529,11 @@ struct CheckEnumeratePhysicalDevicesIncompleteResult : public CheckIncompleteRes
 	}
 };
 
-struct CheckEnumeratePhysicalDeviceGroupsIncompleteResult : public CheckIncompleteResult<VkPhysicalDeviceGroupPropertiesKHX>
+struct CheckEnumeratePhysicalDeviceGroupsIncompleteResult : public CheckIncompleteResult<VkPhysicalDeviceGroupPropertiesKHR>
 {
-	void getResult (Context& context, VkPhysicalDeviceGroupPropertiesKHX* data)
+	void getResult (Context& context, VkPhysicalDeviceGroupPropertiesKHR* data)
 	{
-		m_result = context.getInstanceInterface().enumeratePhysicalDeviceGroupsKHX(context.getInstance(), &m_count, data);
+		m_result = context.getInstanceInterface().enumeratePhysicalDeviceGroupsKHR(context.getInstance(), &m_count, data);
 	}
 };
 
@@ -610,14 +610,14 @@ Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, cons
 	return createDefaultInstance(vkp, vector<string>() /* layers */, enabledExts);
 }
 
-tcu::TestStatus enumeratePhysicalDeviceGroupsKHX (Context& context)
+tcu::TestStatus enumeratePhysicalDeviceGroupsKHR (Context& context)
 {
 	TestLog&											log				= context.getTestContext().getLog();
 	tcu::ResultCollector								results			(log);
 	const PlatformInterface&							vkp				= context.getPlatformInterface();
-	const Unique<VkInstance>							instance		(createInstanceWithExtension(vkp, "VK_KHX_device_group_creation"));
+	const Unique<VkInstance>							instance		(createInstanceWithExtension(vkp, "VK_KHR_device_group_creation"));
 	const InstanceDriver								vki				(vkp, *instance);
-	const vector<VkPhysicalDeviceGroupPropertiesKHX>	devicegroups	= enumeratePhysicalDeviceGroupsKHX(vki, *instance);
+	const vector<VkPhysicalDeviceGroupPropertiesKHR>	devicegroups	= enumeratePhysicalDeviceGroupsKHR(vki, *instance);
 
 	log << TestLog::Integer("NumDevices", "Number of device groups", "", QP_KEY_TAG_NONE, deInt64(devicegroups.size()));
 
@@ -742,6 +742,9 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_maintenance2",
 		"VK_KHR_image_format_list",
 		"VK_KHR_sampler_ycbcr_conversion",
+		"VK_KHR_device_group",
+		"VK_KHR_device_group_creation",
+		"VK_KHR_multiview",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
@@ -1153,7 +1156,7 @@ tcu::TestStatus deviceProperties (Context& context)
 
 	{
 		const ApiVersion deviceVersion = unpackVersion(props->apiVersion);
-		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION);
+		const ApiVersion deqpVersion = unpackVersion(VK_API_VERSION_1_0);
 
 		if (deviceVersion.majorNum != deqpVersion.majorNum)
 		{
@@ -1304,21 +1307,21 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 {
 	TestLog&							log						= context.getTestContext().getLog();
 	const PlatformInterface&			vkp						= context.getPlatformInterface();
-	const Unique<VkInstance>			instance				(createInstanceWithExtension(vkp, "VK_KHX_device_group_creation"));
+	const Unique<VkInstance>			instance				(createInstanceWithExtension(vkp, "VK_KHR_device_group_creation"));
 	const InstanceDriver				vki						(vkp, *instance);
 	const tcu::CommandLine&				cmdLine					= context.getTestContext().getCommandLine();
 	const deUint32						devGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
 	const deUint32						deviceIdx				= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
 	const float							queuePriority			= 1.0f;
 	VkPhysicalDeviceMemoryProperties	memProps;
-	VkPeerMemoryFeatureFlagsKHX*		peerMemFeatures;
-	deUint8								buffer					[sizeof(VkPeerMemoryFeatureFlagsKHX) + GUARD_SIZE];
+	VkPeerMemoryFeatureFlagsKHR*		peerMemFeatures;
+	deUint8								buffer					[sizeof(VkPeerMemoryFeatureFlagsKHR) + GUARD_SIZE];
 	deUint32							numPhysicalDevices		= 0;
 	deUint32							queueFamilyIndex		= 0;
 
-	const vector<VkPhysicalDeviceGroupPropertiesKHX>		deviceGroupProps = enumeratePhysicalDeviceGroupsKHX(vki, *instance);
+	const vector<VkPhysicalDeviceGroupPropertiesKHR>		deviceGroupProps = enumeratePhysicalDeviceGroupsKHR(vki, *instance);
 	std::vector<const char*>								deviceExtensions;
-	deviceExtensions.push_back("VK_KHX_device_group");
+	deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
@@ -1343,9 +1346,9 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		TCU_THROW(NotSupportedError, "Need a device Group with atleast 2 physical devices.");
 
 	// Create device groups
-	const VkDeviceGroupDeviceCreateInfoKHX					deviceGroupInfo =
+	const VkDeviceGroupDeviceCreateInfoKHR					deviceGroupInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHX,	//stype
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
 		DE_NULL,												//pNext
 		deviceGroupProps[devGroupIdx].physicalDeviceCount,		//physicalDeviceCount
 		deviceGroupProps[devGroupIdx].physicalDevices			//physicalDevices
@@ -1368,7 +1371,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	const DeviceDriver	vk	(vki, *deviceGroup);
 	context.getInstanceInterface().getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
-	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlagsKHX*>(buffer);
+	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlagsKHR*>(buffer);
 	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
 
 	for (deUint32 heapIndex = 0; heapIndex < memProps.memoryHeapCount; heapIndex++)
@@ -1379,21 +1382,21 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 			{
 				if (localDeviceIndex != remoteDeviceIndex)
 				{
-					vk.getDeviceGroupPeerMemoryFeaturesKHX(deviceGroup.get(), heapIndex, localDeviceIndex, remoteDeviceIndex, peerMemFeatures);
+					vk.getDeviceGroupPeerMemoryFeaturesKHR(deviceGroup.get(), heapIndex, localDeviceIndex, remoteDeviceIndex, peerMemFeatures);
 
 					// Check guard
 					for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
 					{
-						if (buffer[ndx + sizeof(VkPeerMemoryFeatureFlagsKHX)] != GUARD_VALUE)
+						if (buffer[ndx + sizeof(VkPeerMemoryFeatureFlagsKHR)] != GUARD_VALUE)
 						{
 							log << TestLog::Message << "deviceGroupPeerMemoryFeatures - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
 							return tcu::TestStatus::fail("deviceGroupPeerMemoryFeatures buffer overflow");
 						}
 					}
 
-					VkPeerMemoryFeatureFlagsKHX requiredFlag = VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHX;
-					VkPeerMemoryFeatureFlagsKHX maxValidFlag = VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT_KHX|VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHX |
-																VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT_KHX|VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT_KHX;
+					VkPeerMemoryFeatureFlagsKHR requiredFlag = VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHR;
+					VkPeerMemoryFeatureFlagsKHR maxValidFlag = VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT_KHR|VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHR|
+																VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT_KHR|VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT_KHR;
 					if ((!(*peerMemFeatures & requiredFlag)) ||
 						*peerMemFeatures > maxValidFlag)
 						return tcu::TestStatus::fail("deviceGroupPeerMemoryFeatures invalid flag");
@@ -1844,7 +1847,7 @@ VkFormatFeatureFlags getAllowedYcbcrFormatFeatures (VkFormat format)
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT_KHR;
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT_KHR;
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT_KHR;
-    flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_KHR;
+    flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
 
 	// multi-plane formats *may* support DISJOINT_BIT_KHR
 	if (getPlaneCount(format) >= 2)
@@ -3023,7 +3026,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		de::MovePtr<tcu::TestCaseGroup> instanceInfoTests	(new tcu::TestCaseGroup(testCtx, "instance", "Instance Information Tests"));
 
 		addFunctionCase(instanceInfoTests.get(), "physical_devices",		"Physical devices",			enumeratePhysicalDevices);
-		addFunctionCase(instanceInfoTests.get(), "physical_device_groups",	"Physical devices Groups",	enumeratePhysicalDeviceGroupsKHX);
+		addFunctionCase(instanceInfoTests.get(), "physical_device_groups",	"Physical devices Groups",	enumeratePhysicalDeviceGroupsKHR);
 		addFunctionCase(instanceInfoTests.get(), "layers",					"Layers",					enumerateInstanceLayers);
 		addFunctionCase(instanceInfoTests.get(), "extensions",				"Extensions",				enumerateInstanceExtensions);
 

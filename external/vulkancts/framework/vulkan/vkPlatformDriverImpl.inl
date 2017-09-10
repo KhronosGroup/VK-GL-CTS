@@ -21,3 +21,8 @@ VkResult PlatformDriver::enumerateInstanceLayerProperties (deUint32* pPropertyCo
 {
 	return m_vk.enumerateInstanceLayerProperties(pPropertyCount, pProperties);
 }
+
+VkResult PlatformDriver::enumerateInstanceVersion (deUint32* pApiVersion) const
+{
+	return m_vk.enumerateInstanceVersion(pApiVersion);
+}

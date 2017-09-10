@@ -39,7 +39,7 @@ INL_HEADER = """\
 """
 
 DEFINITIONS			= [
-	("VK_API_VERSION",						"deUint32"),
+	("VK_API_VERSION_1_0",					"deUint32"),
 	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
 	("VK_MAX_EXTENSION_NAME_SIZE",			"size_t"),
 	("VK_UUID_SIZE",						"size_t"),
@@ -47,7 +47,7 @@ DEFINITIONS			= [
 	("VK_MAX_MEMORY_TYPES",					"size_t"),
 	("VK_MAX_MEMORY_HEAPS",					"size_t"),
 	("VK_MAX_DESCRIPTION_SIZE",				"size_t"),
-	("VK_MAX_DEVICE_GROUP_SIZE_KHX",		"size_t"),
+	("VK_MAX_DEVICE_GROUP_SIZE_KHR",		"size_t"),
 	("VK_ATTACHMENT_UNUSED",				"deUint32"),
 	("VK_SUBPASS_EXTERNAL",					"deUint32"),
 	("VK_QUEUE_FAMILY_IGNORED",				"deUint32"),
@@ -89,6 +89,9 @@ PLATFORM_TYPES		= [
 
 	# VK_ANDROID_external_memory_android_hardware_buffer
 	("AHardwareBuffer*",			"AndroidHardwareBufferPtr",		"void*"),
+
+	# VK_EXT_acquire_xlib_display
+	("RROutput",					"XID",							"deUint32"),
 ]
 PLATFORM_TYPE_NAMESPACE	= "pt"
 TYPE_SUBSTITUTIONS		= [
@@ -109,7 +112,7 @@ TYPE_SUBSTITUTIONS		= [
 	("LPCWSTR",		"char*"),
 ]
 
-EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV", "NVX", "KHX"]
+EXTENSION_POSTFIXES		= ["KHR", "EXT", "MVK", "NN", "NV", "NVX", "KHX"]
 
 def typeNameToEnumValue (name):
 	name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name[2:])

@@ -217,6 +217,31 @@ void InstanceDriver::getPhysicalDeviceSparseImageFormatProperties2KHR (VkPhysica
 	m_vk.getPhysicalDeviceSparseImageFormatProperties2KHR(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
 }
 
+VkResult InstanceDriver::getPhysicalDevicePresentRectanglesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects) const
+{
+	return m_vk.getPhysicalDevicePresentRectanglesKHR(physicalDevice, surface, pRectCount, pRects);
+}
+
+VkResult InstanceDriver::enumeratePhysicalDeviceGroupsKHR (VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupPropertiesKHR* pPhysicalDeviceGroupProperties) const
+{
+	return m_vk.enumeratePhysicalDeviceGroupsKHR(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties);
+}
+
+void InstanceDriver::getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHR* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties) const
+{
+	m_vk.getPhysicalDeviceExternalBufferPropertiesKHR(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
+}
+
+void InstanceDriver::getPhysicalDeviceExternalSemaphorePropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfoKHR* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHR* pExternalSemaphoreProperties) const
+{
+	m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
+}
+
+void InstanceDriver::getPhysicalDeviceExternalFencePropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfoKHR* pExternalFenceInfo, VkExternalFencePropertiesKHR* pExternalFenceProperties) const
+{
+	m_vk.getPhysicalDeviceExternalFencePropertiesKHR(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
+}
+
 VkResult InstanceDriver::getPhysicalDeviceSurfaceCapabilities2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities) const
 {
 	return m_vk.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, pSurfaceInfo, pSurfaceCapabilities);
@@ -227,9 +252,24 @@ VkResult InstanceDriver::getPhysicalDeviceSurfaceFormats2KHR (VkPhysicalDevice p
 	return m_vk.getPhysicalDeviceSurfaceFormats2KHR(physicalDevice, pSurfaceInfo, pSurfaceFormatCount, pSurfaceFormats);
 }
 
-void InstanceDriver::getPhysicalDeviceExternalFencePropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfoKHR* pExternalFenceInfo, VkExternalFencePropertiesKHR* pExternalFenceProperties) const
+VkResult InstanceDriver::getPhysicalDeviceDisplayProperties2KHR (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayProperties2KHR* pProperties) const
 {
-	m_vk.getPhysicalDeviceExternalFencePropertiesKHR(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
+	return m_vk.getPhysicalDeviceDisplayProperties2KHR(physicalDevice, pPropertyCount, pProperties);
+}
+
+VkResult InstanceDriver::getPhysicalDeviceDisplayPlaneProperties2KHR (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayPlaneProperties2KHR* pProperties) const
+{
+	return m_vk.getPhysicalDeviceDisplayPlaneProperties2KHR(physicalDevice, pPropertyCount, pProperties);
+}
+
+VkResult InstanceDriver::getDisplayModeProperties2KHR (VkPhysicalDevice physicalDevice, VkDisplayKHR display, deUint32* pPropertyCount, VkDisplayModeProperties2KHR* pProperties) const
+{
+	return m_vk.getDisplayModeProperties2KHR(physicalDevice, display, pPropertyCount, pProperties);
+}
+
+VkResult InstanceDriver::getDisplayPlaneCapabilities2KHR (VkPhysicalDevice physicalDevice, const VkDisplayPlaneInfo2KHR* pDisplayPlaneInfo, VkDisplayPlaneCapabilities2KHR* pCapabilities) const
+{
+	return m_vk.getDisplayPlaneCapabilities2KHR(physicalDevice, pDisplayPlaneInfo, pCapabilities);
 }
 
 VkResult InstanceDriver::createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) const
@@ -247,24 +287,34 @@ void InstanceDriver::debugReportMessageEXT (VkInstance instance, VkDebugReportFl
 	m_vk.debugReportMessageEXT(instance, flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
 }
 
-void InstanceDriver::getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHR* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties) const
+VkResult InstanceDriver::getPhysicalDeviceExternalImageFormatPropertiesNV (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties) const
 {
-	m_vk.getPhysicalDeviceExternalBufferPropertiesKHR(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
+	return m_vk.getPhysicalDeviceExternalImageFormatPropertiesNV(physicalDevice, format, type, tiling, usage, flags, externalHandleType, pExternalImageFormatProperties);
 }
 
-void InstanceDriver::getPhysicalDeviceExternalSemaphorePropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfoKHR* pExternalSemaphoreInfo, VkExternalSemaphorePropertiesKHR* pExternalSemaphoreProperties) const
+VkResult InstanceDriver::releaseDisplayEXT (VkPhysicalDevice physicalDevice, VkDisplayKHR display) const
 {
-	m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
+	return m_vk.releaseDisplayEXT(physicalDevice, display);
 }
 
-VkResult InstanceDriver::getPhysicalDevicePresentRectanglesKHX (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects) const
+VkResult InstanceDriver::acquireXlibDisplayEXT (VkPhysicalDevice physicalDevice, pt::XlibDisplayPtr dpy, VkDisplayKHR display) const
 {
-	return m_vk.getPhysicalDevicePresentRectanglesKHX(physicalDevice, surface, pRectCount, pRects);
+	return m_vk.acquireXlibDisplayEXT(physicalDevice, dpy, display);
 }
 
-VkResult InstanceDriver::enumeratePhysicalDeviceGroupsKHX (VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupPropertiesKHX* pPhysicalDeviceGroupProperties) const
+VkResult InstanceDriver::getRandROutputDisplayEXT (VkPhysicalDevice physicalDevice, pt::XlibDisplayPtr dpy, pt::XID rrOutput, VkDisplayKHR* pDisplay) const
 {
-	return m_vk.enumeratePhysicalDeviceGroupsKHX(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties);
+	return m_vk.getRandROutputDisplayEXT(physicalDevice, dpy, rrOutput, pDisplay);
+}
+
+VkResult InstanceDriver::getPhysicalDeviceSurfaceCapabilities2EXT (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilities2EXT* pSurfaceCapabilities) const
+{
+	return m_vk.getPhysicalDeviceSurfaceCapabilities2EXT(physicalDevice, surface, pSurfaceCapabilities);
+}
+
+void InstanceDriver::getPhysicalDeviceMultisamplePropertiesEXT (VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties) const
+{
+	m_vk.getPhysicalDeviceMultisamplePropertiesEXT(physicalDevice, samples, pMultisampleProperties);
 }
 
 void InstanceDriver::getPhysicalDeviceAndroidHardwareBufferUsageANDROID (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceAndroidHardwareBufferInfoANDROID* pInfo, VkAndroidHardwareBufferUsageANDROID* pUsage) const

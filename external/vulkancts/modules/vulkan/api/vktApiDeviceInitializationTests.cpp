@@ -78,7 +78,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 			0u,										// deUint32						appVersion;
 			"engineName",							// const char*					pEngineName;
 			0u,										// deUint32						engineVersion;
-			VK_API_VERSION,							// deUint32						apiVersion;
+			VK_API_VERSION_1_0,						// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
@@ -95,7 +95,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 			0u,										// deUint32						appVersion;
 			engineNames[engineNameNdx],				// const char*					pEngineName;
 			0u,										// deUint32						engineVersion;
-			VK_API_VERSION,							// deUint32						apiVersion;
+			VK_API_VERSION_1_0,						// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
@@ -112,7 +112,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 			appVersions[appVersionNdx],				// deUint32						appVersion;
 			"engineName",							// const char*					pEngineName;
 			0u,										// deUint32						engineVersion;
-			VK_API_VERSION,							// deUint32						apiVersion;
+			VK_API_VERSION_1_0,						// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
@@ -129,7 +129,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 			0u,										// deUint32						appVersion;
 			"engineName",							// const char*					pEngineName;
 			engineVersions[engineVersionNdx],		// deUint32						engineVersion;
-			VK_API_VERSION,							// deUint32						apiVersion;
+			VK_API_VERSION_1_0,						// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
@@ -204,7 +204,7 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 	tcu::TestLog&				log					= context.getTestContext().getLog();
 	tcu::ResultCollector		resultCollector		(log);
 	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
-	const ApiVersion			apiVersion			= unpackVersion(VK_API_VERSION);
+	const ApiVersion			apiVersion			= unpackVersion(VK_API_VERSION_1_0);
 	const deUint32				invalidMajorVersion	= (1 << 10) - 1;
 	const deUint32				invalidMinorVersion	= (1 << 10) - 1;
 	vector<ApiVersion>			invalidApiVersions;
@@ -238,7 +238,7 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 
 
 		log << TestLog::Message
-			<<"VK_API_VERSION defined in vulkan.h: " << apiVersion
+			<<"VK_API_VERSION_1_0 defined in vulkan.h: " << apiVersion
 			<< ", api version used to create instance: " << invalidApiVersions[apiVersionNdx]
 			<< TestLog::EndMessage;
 
@@ -312,7 +312,7 @@ tcu::TestStatus createInstanceWithUnsupportedExtensionsTest (Context& context)
 		0u,														// deUint32						appVersion;
 		"engineName",											// const char*					pEngineName;
 		0u,														// deUint32						engineVersion;
-		VK_API_VERSION,											// deUint32						apiVersion;
+		VK_API_VERSION_1_0,										// deUint32						apiVersion;
 	};
 	const VkInstanceCreateInfo			instanceCreateInfo		=
 	{

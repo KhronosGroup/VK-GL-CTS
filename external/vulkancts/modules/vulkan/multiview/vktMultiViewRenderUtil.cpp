@@ -230,9 +230,9 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 	};
 	vector <VkSubpassDescription>				subpassDescriptions			(subpassCount, subpassDescription);
 
-	const VkRenderPassMultiviewCreateInfoKHX	renderPassMultiviewInfo		=
+	const VkRenderPassMultiviewCreateInfoKHR	renderPassMultiviewInfo		=
 	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHX,	//VkStructureType	sType;
+		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR,	//VkStructureType	sType;
 		DE_NULL,													//const void*		pNext;
 		subpassCount,												//uint32_t			subpassCount;
 		&viewMasks[0],												//const uint32_t*	pViewMasks;
@@ -253,7 +253,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,							// VkPipelineStageFlags	dstStageMask;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,							// VkAccessFlags		srcAccessMask;
 			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,							// VkAccessFlags		dstAccessMask;
-			VK_DEPENDENCY_VIEW_LOCAL_BIT_KHX,								// VkDependencyFlags	dependencyFlags;
+			VK_DEPENDENCY_VIEW_LOCAL_BIT_KHR,								// VkDependencyFlags	dependencyFlags;
 		};
 		subpassDependencies.push_back(subpassDependency);
 	}
@@ -344,9 +344,9 @@ Move<VkRenderPass> makeRenderPassWithAttachments (const DeviceInterface&	vk,
 	};
 	vector <VkSubpassDescription>				subpassDescriptions			(subpassCount, subpassDescription);
 
-	const VkRenderPassMultiviewCreateInfoKHX	renderPassMultiviewInfo		=
+	const VkRenderPassMultiviewCreateInfoKHR	renderPassMultiviewInfo		=
 	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHX,	//VkStructureType	sType;
+		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR,	//VkStructureType	sType;
 		DE_NULL,													//const void*		pNext;
 		subpassCount,												//uint32_t			subpassCount;
 		&viewMasks[0],												//const uint32_t*	pViewMasks;
@@ -367,7 +367,7 @@ Move<VkRenderPass> makeRenderPassWithAttachments (const DeviceInterface&	vk,
 			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,							// VkPipelineStageFlags	dstStageMask;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,							// VkAccessFlags		srcAccessMask;
 			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,							// VkAccessFlags		dstAccessMask;
-			VK_DEPENDENCY_VIEW_LOCAL_BIT_KHX,								// VkDependencyFlags	dependencyFlags;
+			VK_DEPENDENCY_VIEW_LOCAL_BIT_KHR,								// VkDependencyFlags	dependencyFlags;
 		};
 		subpassDependencies.push_back(subpassDependency);
 	}

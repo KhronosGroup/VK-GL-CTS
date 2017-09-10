@@ -48,22 +48,22 @@ vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, 
 	return devices;
 }
 
-vector<VkPhysicalDeviceGroupPropertiesKHX> enumeratePhysicalDeviceGroupsKHX(const InstanceInterface& vk, VkInstance instance)
+vector<VkPhysicalDeviceGroupPropertiesKHR> enumeratePhysicalDeviceGroupsKHR(const InstanceInterface& vk, VkInstance instance)
 {
 	deUint32									numDeviceGroups = 0;
-	vector<VkPhysicalDeviceGroupPropertiesKHX>	properties;
+	vector<VkPhysicalDeviceGroupPropertiesKHR>	properties;
 
-	VK_CHECK(vk.enumeratePhysicalDeviceGroupsKHX(instance, &numDeviceGroups, DE_NULL));
+	VK_CHECK(vk.enumeratePhysicalDeviceGroupsKHR(instance, &numDeviceGroups, DE_NULL));
 
 	if (numDeviceGroups > 0)
 	{
 		properties.resize(numDeviceGroups);
 		for (deUint32 i = 0; i < numDeviceGroups; i++)
 		{
-			properties[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES_KHX;
+			properties[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES_KHR;
 			properties[i].pNext = DE_NULL;
 		}
-		VK_CHECK(vk.enumeratePhysicalDeviceGroupsKHX(instance, &numDeviceGroups, &properties[0]));
+		VK_CHECK(vk.enumeratePhysicalDeviceGroupsKHR(instance, &numDeviceGroups, &properties[0]));
 
 		if ((size_t)numDeviceGroups != properties.size())
 			TCU_FAIL("Returned device group count changed between queries");

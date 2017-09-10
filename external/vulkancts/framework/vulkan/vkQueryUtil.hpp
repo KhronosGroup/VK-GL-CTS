@@ -35,7 +35,7 @@ namespace vk
 // API queries
 
 std::vector<VkPhysicalDevice>					enumeratePhysicalDevices						(const InstanceInterface& vk, VkInstance instance);
-std::vector<VkPhysicalDeviceGroupPropertiesKHX>	enumeratePhysicalDeviceGroupsKHX				(const InstanceInterface& vk, VkInstance instance);
+std::vector<VkPhysicalDeviceGroupPropertiesKHR>	enumeratePhysicalDeviceGroupsKHR				(const InstanceInterface& vk, VkInstance instance);
 std::vector<VkQueueFamilyProperties>			getPhysicalDeviceQueueFamilyProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceFeatures						getPhysicalDeviceFeatures						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceProperties						getPhysicalDeviceProperties						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);

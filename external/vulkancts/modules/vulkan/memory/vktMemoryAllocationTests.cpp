@@ -126,9 +126,9 @@ public:
 	{
 		if (m_useDeviceGroups)
 			createDeviceGroup();
-		m_allocFlagsInfo.sType		= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHX;
+		m_allocFlagsInfo.sType		= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
 		m_allocFlagsInfo.pNext		= DE_NULL;
-		m_allocFlagsInfo.flags		= VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT_KHX;
+		m_allocFlagsInfo.flags		= VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT_KHR;
 		m_allocFlagsInfo.deviceMask	= 0;
 	}
 
@@ -139,7 +139,7 @@ public:
 protected:
 	bool									m_useDeviceGroups;
 	bool									m_subsetAllocationAllowed;
-	VkMemoryAllocateFlagsInfoKHX			m_allocFlagsInfo;
+	VkMemoryAllocateFlagsInfoKHR			m_allocFlagsInfo;
 	deUint32								m_numPhysDevices;
 	VkPhysicalDeviceMemoryProperties		m_memoryProperties;
 
@@ -156,17 +156,17 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 	const deUint32									physDeviceIdx			= cmdLine.getVKDeviceId() - 1;
 	const float										queuePriority			= 1.0f;
 	deUint32										queueFamilyIndex		= 0;
-	const std::vector<std::string>					requiredExtensions		(1, "VK_KHX_device_group_creation");
+	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
 	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), requiredExtensions);
-	std::vector<VkPhysicalDeviceGroupPropertiesKHX>	devGroupProperties		= enumeratePhysicalDeviceGroupsKHX(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+	std::vector<VkPhysicalDeviceGroupPropertiesKHR>	devGroupProperties		= enumeratePhysicalDeviceGroupsKHR(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
 	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
 	m_subsetAllocationAllowed												= devGroupProperties[devGroupIdx].subsetAllocation;
 	if (m_numPhysDevices < 2)
 		TCU_THROW(NotSupportedError, "Device group allocation tests not supported with 1 physical device");
-	std::vector<const char*>						deviceExtensions		(1, "VK_KHX_device_group");
-	VkDeviceGroupDeviceCreateInfoKHX				deviceGroupInfo =
+	std::vector<const char*>						deviceExtensions		(1, "VK_KHR_device_group");
+	VkDeviceGroupDeviceCreateInfoKHR				deviceGroupInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHX,								//stype
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
 		DE_NULL,																			//pNext
 		devGroupProperties[devGroupIdx].physicalDeviceCount,								//physicalDeviceCount
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices

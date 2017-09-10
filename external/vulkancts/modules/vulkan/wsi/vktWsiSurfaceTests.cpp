@@ -758,22 +758,22 @@ tcu::TestStatus querySurfacePresentModesTest (Context& context, Type wsiType)
 tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, Type wsiType)
 {
 	tcu::TestLog&							log					= context.getTestContext().getLog();
-	const InstanceHelper					instHelper			(context, wsiType, vector<string>(1, string("VK_KHX_device_group_creation")));
+	const InstanceHelper					instHelper			(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
 	const float								queuePriority		= 1.0f;
 	const tcu::CommandLine&					cmdLine				= context.getTestContext().getCommandLine();
 	const deUint32							devGroupIdx			= cmdLine.getVKDeviceGroupId() - 1;
 	const deUint32							deviceIdx			= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
-	const VkDeviceGroupPresentModeFlagsKHX	requiredFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHX;
-	const VkDeviceGroupPresentModeFlagsKHX	maxValidFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHX|VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHX |
-																	VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHX|VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHX;
-	deUint8									buffer				[sizeof(VkDeviceGroupPresentCapabilitiesKHX) + GUARD_SIZE];
+	const VkDeviceGroupPresentModeFlagsKHR	requiredFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR;
+	const VkDeviceGroupPresentModeFlagsKHR	maxValidFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR |
+																	VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR;
+	deUint8									buffer				[sizeof(VkDeviceGroupPresentCapabilitiesKHR) + GUARD_SIZE];
 	deUint32								queueFamilyIndex	= 0;
-	VkDeviceGroupPresentCapabilitiesKHX*	presentCapabilities;
+	VkDeviceGroupPresentCapabilitiesKHR*	presentCapabilities;
 	std::vector<const char*>				deviceExtensions;
-	deviceExtensions.push_back("VK_KHX_device_group");
+	deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
-	const vector<VkPhysicalDeviceGroupPropertiesKHX>	deviceGroupProps = enumeratePhysicalDeviceGroupsKHX(instHelper.vki, *instHelper.instance);
+	const vector<VkPhysicalDeviceGroupPropertiesKHR>	deviceGroupProps = enumeratePhysicalDeviceGroupsKHR(instHelper.vki, *instHelper.instance);
 
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
@@ -790,9 +790,9 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 		1u,														//queueCount;
 		&queuePriority,											//pQueuePriorities;
 	};
-	const VkDeviceGroupDeviceCreateInfoKHX				deviceGroupInfo =
+	const VkDeviceGroupDeviceCreateInfoKHR				deviceGroupInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHX,	//stype
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
 		DE_NULL,												//pNext
 		deviceGroupProps[devGroupIdx].physicalDeviceCount,		//physicalDeviceCount
 		deviceGroupProps[devGroupIdx].physicalDevices			//physicalDevices
@@ -814,16 +814,16 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	const DeviceDriver	vk	(instHelper.vki, *deviceGroup);
 
 
-	presentCapabilities = reinterpret_cast<VkDeviceGroupPresentCapabilitiesKHX*>(buffer);
+	presentCapabilities = reinterpret_cast<VkDeviceGroupPresentCapabilitiesKHR*>(buffer);
 	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
-	presentCapabilities->sType = VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHX;
+	presentCapabilities->sType = VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR;
 	presentCapabilities->pNext = DE_NULL;
-	VK_CHECK(vk.getDeviceGroupPresentCapabilitiesKHX(deviceGroup.get(), presentCapabilities));
+	VK_CHECK(vk.getDeviceGroupPresentCapabilitiesKHR(deviceGroup.get(), presentCapabilities));
 
 	// Guard check
 	for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
 	{
-		if (buffer[ndx + sizeof(VkDeviceGroupPresentCapabilitiesKHX)] != GUARD_VALUE)
+		if (buffer[ndx + sizeof(VkDeviceGroupPresentCapabilitiesKHR)] != GUARD_VALUE)
 		{
 			log << TestLog::Message << "deviceGroupPresentCapabilities - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
 			return tcu::TestStatus::fail("deviceGroupPresentCapabilities buffer overflow");
@@ -831,7 +831,7 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	}
 
 	// Check each physical device can present on itself
-	for (size_t physDevIdx = 0; physDevIdx < VK_MAX_DEVICE_GROUP_SIZE_KHX; physDevIdx++)
+	for (size_t physDevIdx = 0; physDevIdx < VK_MAX_DEVICE_GROUP_SIZE_KHR; physDevIdx++)
 	{
 		if (presentCapabilities->presentMask[physDevIdx])
 			if (!((1 << physDevIdx) & (presentCapabilities->presentMask[physDevIdx])))
@@ -850,29 +850,29 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 {
 	tcu::TestLog&							log					= context.getTestContext().getLog();
 	tcu::ResultCollector					results				(log);
-	const InstanceHelper					instHelper			(context, wsiType, vector<string>(1, string("VK_KHX_device_group_creation")));
+	const InstanceHelper					instHelper			(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
 	const NativeObjects						native				(context, instHelper.supportedExtensions, wsiType);
 	const Unique<VkSurfaceKHR>				surface				(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
 	const float								queuePriority		= 1.0f;
 	const tcu::CommandLine&					cmdLine				= context.getTestContext().getCommandLine();
 	const deUint32							devGroupIdx			= cmdLine.getVKDeviceGroupId() - 1;
 	const deUint32							deviceIdx			= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
-	const VkDeviceGroupPresentModeFlagsKHX	requiredFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHX;
-	const VkDeviceGroupPresentModeFlagsKHX	maxValidFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHX|VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHX |
-																	VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHX|VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHX;
+	const VkDeviceGroupPresentModeFlagsKHR	requiredFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR;
+	const VkDeviceGroupPresentModeFlagsKHR	maxValidFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR |
+																	VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR;
 	VkResult								result				= VK_SUCCESS;
-	deUint8									buffer				[sizeof(VkDeviceGroupPresentModeFlagsKHX) + GUARD_SIZE];
+	deUint8									buffer				[sizeof(VkDeviceGroupPresentModeFlagsKHR) + GUARD_SIZE];
 	deUint32								rectCount			= 0;
 	deUint32								incompleteRectCount	= 0;
 	deUint32								queueFamilyIndex	= 0;
 	VkRect2D*								presentRectangles;
-	VkDeviceGroupPresentModeFlagsKHX*		presentModeFlags;
+	VkDeviceGroupPresentModeFlagsKHR*		presentModeFlags;
 	vector<deUint8>							rectanglesBuffer;
 	std::vector<const char*>				deviceExtensions;
-	deviceExtensions.push_back("VK_KHX_device_group");
+	deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
-	const vector<VkPhysicalDeviceGroupPropertiesKHX>	deviceGroupProps = enumeratePhysicalDeviceGroupsKHX(instHelper.vki, *instHelper.instance);
+	const vector<VkPhysicalDeviceGroupPropertiesKHR>	deviceGroupProps = enumeratePhysicalDeviceGroupsKHR(instHelper.vki, *instHelper.instance);
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
@@ -888,9 +888,9 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 		1u,															//queueCount;
 		&queuePriority,												//pQueuePriorities;
 	};
-	const VkDeviceGroupDeviceCreateInfoKHX			deviceGroupInfo =
+	const VkDeviceGroupDeviceCreateInfoKHR			deviceGroupInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHX,	//stype
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
 		DE_NULL,												//pNext
 		deviceGroupProps[devGroupIdx].physicalDeviceCount,		//physicalDeviceCount
 		deviceGroupProps[devGroupIdx].physicalDevices			//physicalDevices
@@ -911,15 +911,15 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 
 	Move<VkDevice>		deviceGroup = createDevice(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
 	const DeviceDriver	vk	(instHelper.vki, *deviceGroup);
-	presentModeFlags = reinterpret_cast<VkDeviceGroupPresentModeFlagsKHX*>(buffer);
+	presentModeFlags = reinterpret_cast<VkDeviceGroupPresentModeFlagsKHR*>(buffer);
 	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
 
-	VK_CHECK(vk.getDeviceGroupSurfacePresentModesKHX(deviceGroup.get(), *surface, presentModeFlags));
+	VK_CHECK(vk.getDeviceGroupSurfacePresentModesKHR(deviceGroup.get(), *surface, presentModeFlags));
 
 	// Guard check
 	for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
 	{
-		if (buffer[ndx + sizeof(VkDeviceGroupPresentModeFlagsKHX)] != GUARD_VALUE)
+		if (buffer[ndx + sizeof(VkDeviceGroupPresentModeFlagsKHR)] != GUARD_VALUE)
 		{
 			log << TestLog::Message << "queryDevGroupSurfacePresentModesTest - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
 			return tcu::TestStatus::fail("queryDevGroupSurfacePresentModesTest buffer overflow");
@@ -932,24 +932,24 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 		return tcu::TestStatus::fail("queryDevGroupSurfacePresentModesTest flag not valid");
 
 	// Check presentation rectangles
-	if (*presentModeFlags == VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHX)
+	if (*presentModeFlags == VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR)
 	{
 		for (size_t physDevIdx = 0; physDevIdx < deviceGroupProps[devGroupIdx].physicalDeviceCount; physDevIdx++)
 		{
-			VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHX(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, DE_NULL));
+			VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, DE_NULL));
 			rectanglesBuffer.resize(sizeof(VkRect2D) * rectCount + GUARD_SIZE);
 			presentRectangles = reinterpret_cast<VkRect2D*>(rectanglesBuffer.data());
 			deMemset(rectanglesBuffer.data(), GUARD_VALUE, rectanglesBuffer.size());
 
-			VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHX(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, presentRectangles));
+			VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, presentRectangles));
 
 			// Guard check
 			for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
 			{
 				if (rectanglesBuffer[ndx + sizeof(VkRect2D) * rectCount] != GUARD_VALUE)
 				{
-					log << TestLog::Message << "getPhysicalDevicePresentRectanglesKHX - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
-					return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHX buffer overflow");
+					log << TestLog::Message << "getPhysicalDevicePresentRectanglesKHR - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+					return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHR buffer overflow");
 				}
 			}
 
@@ -972,14 +972,14 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 
 						if (rectALeft < rectBRight && rectARight > rectBLeft &&
 							rectATop < rectBBottom && rectABottom > rectBTop)
-							return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHX rectangles overlap");
+							return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHR rectangles overlap");
 					}
 				}
 			}
 
 			// Check incomplete
 			incompleteRectCount = rectCount / 2;
-			result = instHelper.vki.getPhysicalDevicePresentRectanglesKHX(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &incompleteRectCount, presentRectangles);
+			result = instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &incompleteRectCount, presentRectangles);
 			results.check(result == VK_INCOMPLETE, "Expected VK_INCOMPLETE");
 		}
 	}
