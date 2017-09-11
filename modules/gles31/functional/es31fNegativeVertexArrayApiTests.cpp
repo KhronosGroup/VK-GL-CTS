@@ -701,24 +701,6 @@ void draw_elements_base_vertex (NegativeTestContext& ctx)
 	ctx.endSection();
 }
 
-void draw_elements_base_vertex_invalid_map (NegativeTestContext& ctx)
-{
-	GLuint	buf = 0;
-	GLfloat	vertices[1];
-
-	ctx.beginSection("GL_INVALID_OPERATION is generated if a non-zero buffer object name is bound to an enabled array or the element array and the buffer object's data store is currently mapped.");
-	ctx.glGenBuffers(1, &buf);
-	ctx.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf);
-	ctx.glBufferData(GL_ELEMENT_ARRAY_BUFFER, 10, 0, GL_STATIC_DRAW);
-	ctx.glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, 5, GL_MAP_READ_BIT);
-	ctx.expectError(GL_NO_ERROR);
-	ctx.glDrawElementsBaseVertex(GL_POINTS, 1, GL_UNSIGNED_INT, vertices, 1);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	ctx.glDeleteBuffers(1, &buf);
-	ctx.endSection();
-}
-
 void draw_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
@@ -1085,25 +1067,6 @@ void draw_elements_instanced_base_vertex (NegativeTestContext& ctx)
 	ctx.glUseProgram(0);
 }
 
-void draw_elements_instanced_base_vertex_invalid_map (NegativeTestContext& ctx)
-{
-	GLfloat						vertices[1];
-	GLuint						buf		= 0;
-
-	ctx.beginSection("GL_INVALID_OPERATION is generated if a non-zero buffer object name is bound to an enabled array or the element array and the buffer object's data store is currently mapped.");
-	ctx.glGenBuffers(1, &buf);
-	ctx.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf);
-	ctx.glBufferData(GL_ELEMENT_ARRAY_BUFFER, 10, 0, GL_STATIC_DRAW);
-	ctx.glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, 5, GL_MAP_READ_BIT);
-	ctx.expectError(GL_NO_ERROR);
-	ctx.glDrawElementsInstancedBaseVertex(GL_POINTS, 1, GL_UNSIGNED_INT, vertices, 1, 1);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	ctx.glDeleteBuffers(1, &buf);
-	ctx.endSection();
-
-}
-
 void draw_elements_instanced_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
@@ -1371,24 +1334,6 @@ void draw_range_elements_base_vertex (NegativeTestContext& ctx)
 	ctx.glUseProgram(0);
 }
 
-void draw_range_elements_base_vertex_invalid_map (NegativeTestContext& ctx)
-{
-	GLuint	buf		= 0;
-	GLfloat	vertices[1];
-
-	ctx.beginSection("GL_INVALID_OPERATION is generated if a non-zero buffer object name is bound to an enabled array or the element array and the buffer object's data store is currently mapped.");
-	ctx.glGenBuffers(1, &buf);
-	ctx.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buf);
-	ctx.glBufferData(GL_ELEMENT_ARRAY_BUFFER, 10, 0, GL_STATIC_DRAW);
-	ctx.glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, 5, GL_MAP_READ_BIT);
-	ctx.expectError(GL_NO_ERROR);
-	ctx.glDrawRangeElementsBaseVertex(GL_POINTS, 0, 1, 1, GL_UNSIGNED_INT, vertices, 1);
-	ctx.expectError(GL_INVALID_OPERATION);
-	ctx.glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	ctx.glDeleteBuffers(1, &buf);
-	ctx.endSection();
-}
-
 void draw_range_elements_base_vertex_primitive_mode_mismatch (NegativeTestContext& ctx)
 {
 	TCU_CHECK_AND_THROW(NotSupportedError, contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2)), "This test requires a 3.2 context or higher context version.");
@@ -1430,7 +1375,6 @@ std::vector<FunctionContainer> getNegativeVertexArrayApiTestFunctions ()
 		{draw_arrays_incomplete_primitive,								"draw_arrays_incomplete_primitive",								"Invalid glDrawArrays() usage"						},
 		{draw_elements,													"draw_elements",												"Invalid glDrawElements() usage"					},
 		{draw_elements_base_vertex,										"draw_elements_base_vertex",									"Invalid glDrawElementsBaseVertex() usage"			},
-		{draw_elements_base_vertex_invalid_map,							"draw_elements_base_vertex_invalid_map"	,						"Invalid glDrawElementsBaseVertex() usage"			},
 		{draw_elements_base_vertex_primitive_mode_mismatch,				"draw_elements_base_vertex_primitive_mode_mismatch",			"Invalid glDrawElementsBaseVertex() usage"			},
 		{draw_elements_invalid_program,									"draw_elements_invalid_program",								"Invalid glDrawElements() usage"					},
 		{draw_elements_incomplete_primitive,							"draw_elements_incomplete_primitive",							"Invalid glDrawElements() usage"					},
@@ -1441,13 +1385,11 @@ std::vector<FunctionContainer> getNegativeVertexArrayApiTestFunctions ()
 		{draw_elements_instanced_invalid_program,						"draw_elements_instanced_invalid_program",						"Invalid glDrawElementsInstanced() usage"			},
 		{draw_elements_instanced_incomplete_primitive,					"draw_elements_instanced_incomplete_primitive",					"Invalid glDrawElementsInstanced() usage"			},
 		{draw_elements_instanced_base_vertex,							"draw_elements_instanced_base_vertex",							"Invalid glDrawElementsInstancedBaseVertex() usage"	},
-		{draw_elements_instanced_base_vertex_invalid_map,				"draw_elements_instanced_base_vertex_invalid_map",				"Invalid glDrawElementsInstancedBaseVertex() usage"	},
 		{draw_elements_instanced_base_vertex_primitive_mode_mismatch,	"draw_elements_instanced_base_vertex_primitive_mode_mismatch",	"Invalid glDrawElementsInstancedBaseVertex() usage"	},
 		{draw_range_elements,											"draw_range_elements",											"Invalid glDrawRangeElements() usage"				},
 		{draw_range_elements_invalid_program,							"draw_range_elements_invalid_program",							"Invalid glDrawRangeElements() usage"				},
 		{draw_range_elements_incomplete_primitive,						"draw_range_elements_incomplete_primitive",						"Invalid glDrawRangeElements() usage"				},
 		{draw_range_elements_base_vertex,								"draw_range_elements_base_vertex",								"Invalid glDrawRangeElementsBaseVertex() usage"		},
-		{draw_range_elements_base_vertex_invalid_map,					"draw_range_elements_base_vertex_invalid_map",					"Invalid glDrawRangeElementsBaseVertex() usage"		},
 		{draw_range_elements_base_vertex_primitive_mode_mismatch,		"draw_range_elements_base_vertex_primitive_mode_mismatch",		"Invalid glDrawRangeElementsBaseVertex() usage"		},
 	};
 
