@@ -67,7 +67,6 @@ public:
 	vk::VkInstance								getInstance			(void) const	{ return *m_instance;						}
 	const vk::VkSurfaceKHR						getSurface			(void) const	{ return *m_surface;						}
 
-
 private:
 	vk::Allocator* createAllocator (void)
 	{
