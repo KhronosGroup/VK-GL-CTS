@@ -1125,7 +1125,7 @@ void WideColorSurfaceTest::executeTest (void)
 		attribs.push_back(128);
 		attribs.push_back(EGL_HEIGHT);
 		attribs.push_back(128);
-		if (m_colorSpace)
+		if (m_colorSpace != EGL_NONE)
 		{
 			attribs.push_back(EGL_GL_COLORSPACE_KHR);
 			attribs.push_back(m_colorSpace);
@@ -1153,7 +1153,7 @@ void WideColorSurfaceTest::executeTest (void)
 
 		de::UniquePtr<eglu::NativeWindow>	window			(windowFactory.createWindow(&nativeDisplay, m_eglDisplay, m_eglConfig, DE_NULL, eglu::WindowParams(128, 128, eglu::parseWindowVisibility(m_testCtx.getCommandLine()))));
 		std::vector<EGLAttrib>		attribs;
-		if (m_colorSpace)
+		if (m_colorSpace != EGL_NONE)
 		{
 			attribs.push_back(EGL_GL_COLORSPACE_KHR);
 			attribs.push_back(m_colorSpace);
