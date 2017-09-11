@@ -541,6 +541,9 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
+	if (!subgroups::isSubgroupSupported(context))
+		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
+
 	if (!areSubgroupOperationsSupportedForStage(
 				context, caseDef.shaderStage))
 	{
