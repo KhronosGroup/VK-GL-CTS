@@ -59,10 +59,10 @@ VkPhysicalDevice16BitStorageFeaturesKHR	querySupported16BitStorageFeatures (cons
 		false,															// storagePushConstant16
 		false,															// storageInputOutput16
 	};
-	VkPhysicalDeviceFeatures2KHR			features;
+	VkPhysicalDeviceFeatures2			features;
 
 	deMemset(&features, 0, sizeof(features));
-	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features.pNext	= &extensionFeatures;
 
 	// Call the getter only if supported. Otherwise above "zero" defaults are used
@@ -86,7 +86,7 @@ VkPhysicalDeviceVariablePointerFeaturesKHR querySupportedVariablePointersFeature
 
 	VkPhysicalDeviceFeatures2KHR	features;
 	deMemset(&features, 0, sizeof(features));
-	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features.pNext	= &extensionFeatures;
 
 	// Call the getter only if supported. Otherwise above "zero" defaults are used

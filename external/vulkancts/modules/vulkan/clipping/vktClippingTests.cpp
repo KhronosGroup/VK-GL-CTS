@@ -279,7 +279,7 @@ enum LineOrientation
 	LINE_ORIENTATION_DIAGONAL,
 };
 
-const VkPointClippingBehaviorKHR invalidClippingBehavior = VK_POINT_CLIPPING_BEHAVIOR_KHR_LAST;
+const VkPointClippingBehaviorKHR invalidClippingBehavior = VK_POINT_CLIPPING_BEHAVIOR_LAST;
 
 VkPointClippingBehaviorKHR getClippingBehavior (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
@@ -291,11 +291,11 @@ VkPointClippingBehaviorKHR getClippingBehavior (const InstanceInterface& vk, VkP
 	};
 	VkPhysicalDeviceProperties2KHR				properties2;
 
-	DE_ASSERT(getPointClippingBehaviorKHRName(invalidClippingBehavior) == DE_NULL);
+	DE_ASSERT(getPointClippingBehaviorName(invalidClippingBehavior) == DE_NULL);
 
 	deMemset(&properties2, 0, sizeof(properties2));
 
-	properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+	properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	properties2.pNext = &behaviorProperties;
 
 	vk.getPhysicalDeviceProperties2KHR(physicalDevice, &properties2);

@@ -24,5 +24,9 @@ VkResult PlatformDriver::enumerateInstanceLayerProperties (deUint32* pPropertyCo
 
 VkResult PlatformDriver::enumerateInstanceVersion (deUint32* pApiVersion) const
 {
-	return m_vk.enumerateInstanceVersion(pApiVersion);
+	if (m_vk.enumerateInstanceVersion)
+		return m_vk.enumerateInstanceVersion(pApiVersion);
+
+	*pApiVersion = VK_API_VERSION_1_0;
+	return VK_SUCCESS;
 }

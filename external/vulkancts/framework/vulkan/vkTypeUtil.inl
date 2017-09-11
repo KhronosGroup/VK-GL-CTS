@@ -368,6 +368,36 @@ inline VkDrawIndirectCommand makeDrawIndirectCommand (deUint32 vertexCount, deUi
 	return res;
 }
 
+inline VkInputAttachmentAspectReference makeInputAttachmentAspectReference (deUint32 subpass, deUint32 inputAttachmentIndex, VkImageAspectFlags aspectMask)
+{
+	VkInputAttachmentAspectReference res;
+	res.subpass					= subpass;
+	res.inputAttachmentIndex	= inputAttachmentIndex;
+	res.aspectMask				= aspectMask;
+	return res;
+}
+
+inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
+{
+	VkDescriptorUpdateTemplateEntry res;
+	res.dstBinding		= dstBinding;
+	res.dstArrayElement	= dstArrayElement;
+	res.descriptorCount	= descriptorCount;
+	res.descriptorType	= descriptorType;
+	res.offset			= offset;
+	res.stride			= stride;
+	return res;
+}
+
+inline VkExternalMemoryProperties makeExternalMemoryProperties (VkExternalMemoryFeatureFlags externalMemoryFeatures, VkExternalMemoryHandleTypeFlags exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlags compatibleHandleTypes)
+{
+	VkExternalMemoryProperties res;
+	res.externalMemoryFeatures			= externalMemoryFeatures;
+	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
+	res.compatibleHandleTypes			= compatibleHandleTypes;
+	return res;
+}
+
 inline VkSurfaceFormatKHR makeSurfaceFormatKHR (VkFormat format, VkColorSpaceKHR colorSpace)
 {
 	VkSurfaceFormatKHR res;
@@ -384,15 +414,6 @@ inline VkDisplayPlanePropertiesKHR makeDisplayPlanePropertiesKHR (VkDisplayKHR c
 	return res;
 }
 
-inline VkExternalMemoryPropertiesKHR makeExternalMemoryPropertiesKHR (VkExternalMemoryFeatureFlagsKHR externalMemoryFeatures, VkExternalMemoryHandleTypeFlagsKHR exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlagsKHR compatibleHandleTypes)
-{
-	VkExternalMemoryPropertiesKHR res;
-	res.externalMemoryFeatures			= externalMemoryFeatures;
-	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
-	res.compatibleHandleTypes			= compatibleHandleTypes;
-	return res;
-}
-
 inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const VkRectLayerKHR* pRectangles)
 {
 	VkPresentRegionKHR res;
@@ -401,24 +422,86 @@ inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const V
 	return res;
 }
 
-inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
+inline VkIndirectCommandsTokenNVX makeIndirectCommandsTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, VkBuffer buffer, VkDeviceSize offset)
 {
-	VkDescriptorUpdateTemplateEntryKHR res;
-	res.dstBinding		= dstBinding;
-	res.dstArrayElement	= dstArrayElement;
-	res.descriptorCount	= descriptorCount;
-	res.descriptorType	= descriptorType;
-	res.offset			= offset;
-	res.stride			= stride;
+	VkIndirectCommandsTokenNVX res;
+	res.tokenType	= tokenType;
+	res.buffer		= buffer;
+	res.offset		= offset;
 	return res;
 }
 
-inline VkInputAttachmentAspectReferenceKHR makeInputAttachmentAspectReferenceKHR (deUint32 subpass, deUint32 inputAttachmentIndex, VkImageAspectFlags aspectMask)
+inline VkIndirectCommandsLayoutTokenNVX makeIndirectCommandsLayoutTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, deUint32 bindingUnit, deUint32 dynamicCount, deUint32 divisor)
 {
-	VkInputAttachmentAspectReferenceKHR res;
-	res.subpass					= subpass;
-	res.inputAttachmentIndex	= inputAttachmentIndex;
-	res.aspectMask				= aspectMask;
+	VkIndirectCommandsLayoutTokenNVX res;
+	res.tokenType		= tokenType;
+	res.bindingUnit		= bindingUnit;
+	res.dynamicCount	= dynamicCount;
+	res.divisor			= divisor;
+	return res;
+}
+
+inline VkObjectTableEntryNVX makeObjectTableEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags)
+{
+	VkObjectTableEntryNVX res;
+	res.type	= type;
+	res.flags	= flags;
+	return res;
+}
+
+inline VkObjectTablePipelineEntryNVX makeObjectTablePipelineEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipeline pipeline)
+{
+	VkObjectTablePipelineEntryNVX res;
+	res.type		= type;
+	res.flags		= flags;
+	res.pipeline	= pipeline;
+	return res;
+}
+
+inline VkObjectTableDescriptorSetEntryNVX makeObjectTableDescriptorSetEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipelineLayout pipelineLayout, VkDescriptorSet descriptorSet)
+{
+	VkObjectTableDescriptorSetEntryNVX res;
+	res.type			= type;
+	res.flags			= flags;
+	res.pipelineLayout	= pipelineLayout;
+	res.descriptorSet	= descriptorSet;
+	return res;
+}
+
+inline VkObjectTableVertexBufferEntryNVX makeObjectTableVertexBufferEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkBuffer buffer)
+{
+	VkObjectTableVertexBufferEntryNVX res;
+	res.type	= type;
+	res.flags	= flags;
+	res.buffer	= buffer;
+	return res;
+}
+
+inline VkObjectTableIndexBufferEntryNVX makeObjectTableIndexBufferEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkBuffer buffer, VkIndexType indexType)
+{
+	VkObjectTableIndexBufferEntryNVX res;
+	res.type		= type;
+	res.flags		= flags;
+	res.buffer		= buffer;
+	res.indexType	= indexType;
+	return res;
+}
+
+inline VkObjectTablePushConstantEntryNVX makeObjectTablePushConstantEntryNVX (VkObjectEntryTypeNVX type, VkObjectEntryUsageFlagsNVX flags, VkPipelineLayout pipelineLayout, VkShaderStageFlags stageFlags)
+{
+	VkObjectTablePushConstantEntryNVX res;
+	res.type			= type;
+	res.flags			= flags;
+	res.pipelineLayout	= pipelineLayout;
+	res.stageFlags		= stageFlags;
+	return res;
+}
+
+inline VkViewportWScalingNV makeViewportWScalingNV (float xcoeff, float ycoeff)
+{
+	VkViewportWScalingNV res;
+	res.xcoeff	= xcoeff;
+	res.ycoeff	= ycoeff;
 	return res;
 }
 
@@ -471,5 +554,35 @@ inline VkSampleLocationEXT makeSampleLocationEXT (float x, float y)
 	VkSampleLocationEXT res;
 	res.x	= x;
 	res.y	= y;
+	return res;
+}
+
+inline VkInputAttachmentAspectReferenceKHR makeInputAttachmentAspectReferenceKHR (deUint32 subpass, deUint32 inputAttachmentIndex, VkImageAspectFlags aspectMask)
+{
+	VkInputAttachmentAspectReferenceKHR res;
+	res.subpass					= subpass;
+	res.inputAttachmentIndex	= inputAttachmentIndex;
+	res.aspectMask				= aspectMask;
+	return res;
+}
+
+inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
+{
+	VkDescriptorUpdateTemplateEntryKHR res;
+	res.dstBinding		= dstBinding;
+	res.dstArrayElement	= dstArrayElement;
+	res.descriptorCount	= descriptorCount;
+	res.descriptorType	= descriptorType;
+	res.offset			= offset;
+	res.stride			= stride;
+	return res;
+}
+
+inline VkExternalMemoryPropertiesKHR makeExternalMemoryPropertiesKHR (VkExternalMemoryFeatureFlags externalMemoryFeatures, VkExternalMemoryHandleTypeFlags exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlags compatibleHandleTypes)
+{
+	VkExternalMemoryPropertiesKHR res;
+	res.externalMemoryFeatures			= externalMemoryFeatures;
+	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
+	res.compatibleHandleTypes			= compatibleHandleTypes;
 	return res;
 }

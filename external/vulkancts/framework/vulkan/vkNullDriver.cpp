@@ -204,7 +204,10 @@ public:
 										SurfaceKHR		(VkInstance, const VkAndroidSurfaceCreateInfoKHR*)	{}
 										SurfaceKHR		(VkInstance, const VkWin32SurfaceCreateInfoKHR*)	{}
 										SurfaceKHR		(VkInstance, const VkDisplaySurfaceCreateInfoKHR*)	{}
-										~SurfaceKHR		(void) {}
+										SurfaceKHR		(VkInstance, const VkViSurfaceCreateInfoNN*)		{}
+										SurfaceKHR		(VkInstance, const VkIOSSurfaceCreateInfoMVK*)		{}
+										SurfaceKHR		(VkInstance, const VkMacOSSurfaceCreateInfoMVK*)	{}
+										~SurfaceKHR		(void)												{}
 };
 
 class DisplayModeKHR
@@ -247,10 +250,10 @@ public:
 										~SwapchainKHR	(void) {}
 };
 
-class SamplerYcbcrConversionKHR
+class SamplerYcbcrConversion
 {
 public:
-	SamplerYcbcrConversionKHR (VkDevice, const VkSamplerYcbcrConversionCreateInfoKHR*) {}
+	SamplerYcbcrConversion (VkDevice, const VkSamplerYcbcrConversionCreateInfo*) {}
 };
 
 class Buffer
@@ -464,17 +467,39 @@ private:
 };
 #endif // defined(USE_ANDROID_O_HARDWARE_BUFFER)
 
-class CommandBuffer
+class IndirectCommandsLayoutNVX
 {
 public:
-						CommandBuffer(VkDevice, VkCommandPool, VkCommandBufferLevel)
+						IndirectCommandsLayoutNVX	(VkDevice, const VkIndirectCommandsLayoutCreateInfoNVX*)
 						{}
 };
 
-class DescriptorUpdateTemplateKHR
+class ObjectTableNVX
 {
 public:
-	DescriptorUpdateTemplateKHR (VkDevice, const VkDescriptorUpdateTemplateCreateInfoKHR*) {}
+						ObjectTableNVX				(VkDevice, const VkObjectTableCreateInfoNVX*)
+						{}
+};
+
+class ValidationCacheEXT
+{
+public:
+						ValidationCacheEXT			(VkDevice, const VkValidationCacheCreateInfoEXT*)
+						{}
+};
+
+class CommandBuffer
+{
+public:
+						CommandBuffer				(VkDevice, VkCommandPool, VkCommandBufferLevel)
+						{}
+};
+
+class DescriptorUpdateTemplate
+{
+public:
+						DescriptorUpdateTemplate	(VkDevice, const VkDescriptorUpdateTemplateCreateInfo*)
+						{}
 };
 
 
@@ -818,7 +843,7 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties (VkPhysicalDevice, VkPhys
 {
 	deMemset(props, 0, sizeof(VkPhysicalDeviceProperties));
 
-	props->apiVersion		= VK_API_VERSION_1_0;
+	props->apiVersion		= VK_API_VERSION_1_1;
 	props->driverVersion	= 1u;
 	props->deviceType		= VK_PHYSICAL_DEVICE_TYPE_OTHER;
 
@@ -1430,8 +1455,8 @@ public:
 											, m_driver	(m_library)
 										{}
 
-	const PlatformInterface&			getPlatformInterface	(void) const { return m_driver;	}
-
+	const PlatformInterface&			getPlatformInterface	(void) const	{ return m_driver;	}
+	const tcu::FunctionLibrary&			getFunctionLibrary		(void) const	{ return m_library;	}
 private:
 	const tcu::StaticFunctionLibrary	m_library;
 	const PlatformDriver				m_driver;

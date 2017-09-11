@@ -663,7 +663,7 @@ void genCopies (de::Random&					rng,
 		{
 			// src
 			{
-				srcPlaneInfo.numPlanes > 1 ?  vk::getPlaneAspect(srcPlaneNdx) : vk::VK_IMAGE_ASPECT_COLOR_BIT,
+				static_cast<vk::VkImageAspectFlags>(srcPlaneInfo.numPlanes > 1 ?  vk::getPlaneAspect(srcPlaneNdx) : vk::VK_IMAGE_ASPECT_COLOR_BIT),
 				0u,
 				0u,
 				1u
@@ -675,7 +675,7 @@ void genCopies (de::Random&					rng,
 			},
 			// dst
 			{
-				dstPlaneInfo.numPlanes > 1 ?  vk::getPlaneAspect(dstPlaneNdx) : vk::VK_IMAGE_ASPECT_COLOR_BIT,
+				static_cast<vk::VkImageAspectFlags>(dstPlaneInfo.numPlanes > 1 ?  vk::getPlaneAspect(dstPlaneNdx) : vk::VK_IMAGE_ASPECT_COLOR_BIT),
 				0u,
 				0u,
 				1u

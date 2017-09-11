@@ -30,11 +30,14 @@
 #include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkDebugReportUtil.hpp"
+#include "vkApiVersion.hpp"
 
 #include "tcuCommandLine.hpp"
 
 #include "deSTLUtil.hpp"
 #include "deMemory.h"
+
+#include <set>
 
 namespace vkt
 {
@@ -43,6 +46,7 @@ namespace vkt
 
 using std::vector;
 using std::string;
+using std::set;
 using namespace vk;
 
 namespace
@@ -89,7 +93,7 @@ vector<string> getValidationLayers (const InstanceInterface& vki, VkPhysicalDevi
 	return getValidationLayers(enumerateDeviceLayerProperties(vki, physicalDevice));
 }
 
-vector<string> filterExtensions(const vector<VkExtensionProperties>& deviceExtensions)
+vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions)
 {
 	vector<string>	enabledExtensions;
 	const char*		extensionGroups[] =
@@ -99,22 +103,77 @@ vector<string> filterExtensions(const vector<VkExtensionProperties>& deviceExten
 		"VK_KHX_"
 	};
 
-	for (size_t deviceExtNdx = 0; deviceExtNdx < deviceExtensions.size(); deviceExtNdx++)
+	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
 	{
 		for (int extGroupNdx = 0; extGroupNdx < DE_LENGTH_OF_ARRAY(extensionGroups); extGroupNdx++)
 		{
-			if (deStringBeginsWith(deviceExtensions[deviceExtNdx].extensionName, extensionGroups[extGroupNdx]))
-				enabledExtensions.push_back(deviceExtensions[deviceExtNdx].extensionName);
+			if (deStringBeginsWith(extensions[extNdx].extensionName, extensionGroups[extGroupNdx]))
+				enabledExtensions.push_back(extensions[extNdx].extensionName);
 		}
 	}
 
 	return enabledExtensions;
 }
 
-Move<VkInstance> createInstance (const PlatformInterface& vkp, const vector<string>& enabledExtensions, const tcu::CommandLine& cmdLine)
+vector<string> addExtensions (const vector<string>& a, const vector<const char*>& b)
 {
-	const bool							isValidationEnabled	= cmdLine.isValidationEnabled();
-	vector<string>						enabledLayers;
+	vector<string>	res		(a);
+
+	for (vector<const char*>::const_iterator bIter = b.begin(); bIter != b.end(); ++bIter)
+	{
+		if (!de::contains(res.begin(), res.end(), string(*bIter)))
+			res.push_back(string(*bIter));
+	}
+
+	return res;
+}
+
+vector<string> removeExtensions (const vector<string>& a, const vector<const char*>& b)
+{
+	vector<string>	res;
+	set<string>		removeExts	(b.begin(), b.end());
+
+	for (vector<string>::const_iterator aIter = a.begin(); aIter != a.end(); ++aIter)
+	{
+		if (!de::contains(removeExts, *aIter))
+			res.push_back(*aIter);
+	}
+
+	return res;
+}
+
+vector<string> addCoreInstanceExtensions (const vector<string>& extensions, deUint32 instanceVersion)
+{
+	vector<const char*> coreExtensions;
+	getCoreInstanceExtensions(instanceVersion, coreExtensions);
+	return addExtensions(extensions, coreExtensions);
+}
+
+vector<string> addCoreDeviceExtensions(const vector<string>& extensions, deUint32 instanceVersion)
+{
+	vector<const char*> coreExtensions;
+	getCoreDeviceExtensions(instanceVersion, coreExtensions);
+	return addExtensions(extensions, coreExtensions);
+}
+
+deUint32 getTargetInstanceVersion (const PlatformInterface& vkp)
+{
+	deUint32 version = pack(ApiVersion(1, 0, 0));
+	if (vkp.enumerateInstanceVersion(&version) != VK_SUCCESS)
+		TCU_THROW(InternalError, "Enumerate instance version error");
+	return version;
+}
+
+Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions, const tcu::CommandLine& cmdLine)
+{
+	const bool		isValidationEnabled	= cmdLine.isValidationEnabled();
+	vector<string>	enabledLayers;
+
+	// \note Extensions in core are not explicitly enabled even though
+	//		 they are in the extension list advertised to tests.
+	vector<const char*> coreExtensions;
+	getCoreInstanceExtensions(apiVersion, coreExtensions);
+	vector<string>	nonCoreExtensions	(removeExtensions(enabledExtensions, coreExtensions));
 
 	if (isValidationEnabled)
 	{
@@ -126,7 +185,7 @@ Move<VkInstance> createInstance (const PlatformInterface& vkp, const vector<stri
 			TCU_THROW(NotSupportedError, "No validation layers found");
 	}
 
-	return createDefaultInstance(vkp, enabledLayers, enabledExtensions);
+	return createDefaultInstance(vkp, apiVersion, enabledLayers, nonCoreExtensions);
 }
 
 static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
@@ -144,6 +203,7 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 
 Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 									VkPhysicalDevice					physicalDevice,
+									deUint32							apiVersion,
 									deUint32							queueIndex,
 									const VkPhysicalDeviceFeatures2KHR&	enabledFeatures,
 									const vector<string>&				enabledExtensions,
@@ -171,10 +231,16 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 	for (size_t ndx = 0; ndx < enabledLayers.size(); ++ndx)
 		layerPtrs[ndx] = enabledLayers[ndx].c_str();
 
-	extensionPtrs.resize(enabledExtensions.size());
+	// \note Extensions in core are not explicitly enabled even though
+	//		 they are in the extension list advertised to tests.
+	vector<const char*> coreExtensions;
+	getCoreDeviceExtensions(apiVersion, coreExtensions);
+	vector<string>	nonCoreExtensions(removeExtensions(enabledExtensions, coreExtensions));
 
-	for (size_t ndx = 0; ndx < enabledExtensions.size(); ++ndx)
-		extensionPtrs[ndx] = enabledExtensions[ndx].c_str();
+	extensionPtrs.resize(nonCoreExtensions.size());
+
+	for (size_t ndx = 0; ndx < nonCoreExtensions.size(); ++ndx)
+		extensionPtrs[ndx] = nonCoreExtensions[ndx].c_str();
 
 	// VK_KHR_get_physical_device_propeties2 is used if enabledFeatures.pNext != 0
 
@@ -218,7 +284,7 @@ struct DeviceFeatures
 		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
 		deMemset(&samplerYCbCrConversionFeatures, 0, sizeof(samplerYCbCrConversionFeatures));
 
-		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR;
 
 		if (isPhysicalDeviceFeatures2Supported(instanceExtensions))
@@ -247,54 +313,63 @@ public:
 										DefaultDevice					(const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine);
 										~DefaultDevice					(void);
 
-	VkInstance							getInstance						(void) const	{ return *m_instance;								}
-	const InstanceInterface&			getInstanceInterface			(void) const	{ return m_instanceInterface;						}
-	const vector<string>&				getInstanceExtensions			(void) const	{ return m_instanceExtensions;						}
+	VkInstance							getInstance						(void) const	{ return *m_instance;					}
+	const InstanceInterface&			getInstanceInterface			(void) const	{ return m_instanceInterface;			}
+	deUint32							getInstanceVersion				(void) const	{ return m_instanceVersion;				}
+	const vector<string>&				getInstanceExtensions			(void) const	{ return m_instanceExtensions;			}
 
-	VkPhysicalDevice					getPhysicalDevice				(void) const	{ return m_physicalDevice;							}
-	const VkPhysicalDeviceFeatures&		getDeviceFeatures				(void) const	{ return m_deviceFeatures.coreFeatures.features;	}
-	const VkPhysicalDeviceFeatures2KHR&	getDeviceFeatures2				(void) const	{ return m_deviceFeatures.coreFeatures;				}
-	VkDevice							getDevice						(void) const	{ return *m_device;									}
-	const DeviceInterface&				getDeviceInterface				(void) const	{ return m_deviceInterface;							}
-	const VkPhysicalDeviceProperties&	getDeviceProperties				(void) const	{ return m_deviceProperties;						}
-	const vector<string>&				getDeviceExtensions				(void) const	{ return m_deviceExtensions;						}
+	VkPhysicalDevice					getPhysicalDevice				(void) const	{ return m_physicalDevice;				}
+	deUint32							getDeviceVersion				(void) const	{ return m_deviceVersion;				}
+	const VkPhysicalDeviceFeatures&		getDeviceFeatures				(void) const	{ return m_deviceFeatures;				}
+	const VkPhysicalDeviceFeatures2&	getDeviceFeatures2				(void) const	{ return m_deviceFeatures2;				}
+	VkDevice							getDevice						(void) const	{ return *m_device;						}
+	const DeviceInterface&				getDeviceInterface				(void) const	{ return m_deviceInterface;				}
+	const VkPhysicalDeviceProperties&	getDeviceProperties				(void) const	{ return m_deviceProperties;			}
+	const vector<string>&				getDeviceExtensions				(void) const	{ return m_deviceExtensions;			}
 
-	deUint32							getUniversalQueueFamilyIndex	(void) const	{ return m_universalQueueFamilyIndex;				}
+	deUint32							getUsedApiVersion				(void) const	{ return m_usedApiVersion;				}
+
+	deUint32							getUniversalQueueFamilyIndex	(void) const	{ return m_universalQueueFamilyIndex;	}
 	VkQueue								getUniversalQueue				(void) const;
 
 private:
 	static VkPhysicalDeviceFeatures		filterDefaultDeviceFeatures		(const VkPhysicalDeviceFeatures& deviceFeatures);
 
+	const deUint32						m_instanceVersion;
 	const vector<string>				m_instanceExtensions;
 	const Unique<VkInstance>			m_instance;
 	const InstanceDriver				m_instanceInterface;
 
 	const VkPhysicalDevice				m_physicalDevice;
 
+	const deUint32						m_deviceVersion;
+	const deUint32						m_usedApiVersion;
+
 	const deUint32						m_universalQueueFamilyIndex;
-	const vector<string>				m_deviceExtensions;
-	const DeviceFeatures				m_deviceFeatures;
+	const VkPhysicalDeviceFeatures		m_deviceFeatures;
+	const VkPhysicalDeviceFeatures2		m_deviceFeatures2;
 	const VkPhysicalDeviceProperties	m_deviceProperties;
+	const vector<string>				m_deviceExtensions;
 
 	const Unique<VkDevice>				m_device;
 	const DeviceDriver					m_deviceInterface;
+
 };
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
-	: m_instanceExtensions			(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)))
-	, m_instance					(createInstance(vkPlatform, m_instanceExtensions, cmdLine))
+	: m_instanceVersion				(getTargetInstanceVersion(vkPlatform))
+	, m_instanceExtensions			(addCoreInstanceExtensions(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)), m_instanceVersion))
+	, m_instance					(createInstance(vkPlatform, m_instanceVersion, m_instanceExtensions, cmdLine))
 	, m_instanceInterface			(vkPlatform, *m_instance)
 	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
+	, m_deviceVersion				(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice).apiVersion)
+	, m_usedApiVersion				(deMin32(m_instanceVersion, m_deviceVersion))
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
-	, m_deviceExtensions			(filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)))
-	, m_deviceFeatures				(m_instanceInterface, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
+	, m_deviceFeatures				(filterDefaultDeviceFeatures(getPhysicalDeviceFeatures(m_instanceInterface, m_physicalDevice)))
+	, m_deviceFeatures2				(getPhysicalDeviceFeatures2(m_instanceInterface, m_physicalDevice))
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
-	, m_device						(createDefaultDevice(m_instanceInterface,
-														 m_physicalDevice,
-														 m_universalQueueFamilyIndex,
-														 m_deviceFeatures.coreFeatures,
-														 m_deviceExtensions,
-														 cmdLine))
+	, m_deviceExtensions			(addCoreDeviceExtensions(filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)), m_deviceVersion))
+	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_deviceVersion, m_universalQueueFamilyIndex, m_deviceFeatures2, m_deviceExtensions, cmdLine))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
 }
@@ -308,8 +383,15 @@ VkQueue DefaultDevice::getUniversalQueue (void) const
 	return getDeviceQueue(m_deviceInterface, *m_device, m_universalQueueFamilyIndex, 0);
 }
 
-namespace
+VkPhysicalDeviceFeatures DefaultDevice::filterDefaultDeviceFeatures (const VkPhysicalDeviceFeatures& deviceFeatures)
 {
+	VkPhysicalDeviceFeatures enabledDeviceFeatures = deviceFeatures;
+
+	// Disable robustness by default, as it has an impact on performance on some HW.
+	enabledDeviceFeatures.robustBufferAccess = false;
+
+	return enabledDeviceFeatures;
+}
 
 // Allocator utilities
 
@@ -320,8 +402,6 @@ vk::Allocator* createAllocator (DefaultDevice* device)
 	// \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
 	return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties);
 }
-
-} // anonymous
 
 // Context
 
@@ -340,10 +420,12 @@ Context::~Context (void)
 {
 }
 
+deUint32								Context::getInstanceVersion				(void) const { return m_device->getInstanceVersion();			}
 const vector<string>&					Context::getInstanceExtensions			(void) const { return m_device->getInstanceExtensions();		}
 vk::VkInstance							Context::getInstance					(void) const { return m_device->getInstance();					}
 const vk::InstanceInterface&			Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
 vk::VkPhysicalDevice					Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
+deUint32								Context::getDeviceVersion				(void) const { return m_device->getDeviceVersion();				}
 const vk::VkPhysicalDeviceFeatures&		Context::getDeviceFeatures				(void) const { return m_device->getDeviceFeatures();			}
 const vk::VkPhysicalDeviceFeatures2KHR&	Context::getDeviceFeatures2				(void) const { return m_device->getDeviceFeatures2();			}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
@@ -353,6 +435,7 @@ const vk::DeviceInterface&				Context::getDeviceInterface				(void) const { retu
 deUint32								Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
 vk::VkQueue								Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
 vk::Allocator&							Context::getDefaultAllocator			(void) const { return *m_allocator;								}
+deUint32								Context::getUsedApiVersion				(void) const { return m_device->getUsedApiVersion();			}
 
 // TestCase
 

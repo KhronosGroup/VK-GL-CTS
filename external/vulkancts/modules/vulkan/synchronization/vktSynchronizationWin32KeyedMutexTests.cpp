@@ -139,7 +139,7 @@ SimpleAllocation::~SimpleAllocation (void)
 	m_vkd.freeMemory(m_device, getMemory(), DE_NULL);
 }
 
-vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp)
+vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp, deUint32 version)
 {
 	try
 	{
@@ -149,7 +149,7 @@ vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp)
 
 		extensions.push_back("VK_KHR_external_memory_capabilities");
 
-		return vk::createDefaultInstance(vkp, std::vector<std::string>(), extensions);
+		return vk::createDefaultInstance(vkp, version, std::vector<std::string>(), extensions);
 	}
 	catch (const vk::Error& error)
 	{
@@ -1212,7 +1212,7 @@ public:
 		HRESULT										hr;
 
 		vk::VkPhysicalDeviceIDPropertiesKHR			propertiesId = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR };
-		vk::VkPhysicalDeviceProperties2KHR			properties = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR };
+		vk::VkPhysicalDeviceProperties2KHR			properties = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 };
 
 		properties.pNext = &propertiesId;
 
@@ -1430,7 +1430,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 	, m_supportWriteOp			(makeOperationSupport(config.writeOp, config.resource))
 	, m_supportReadOp			(makeOperationSupport(config.readOp, config.resource))
 
-	, m_instance				(createInstance(context.getPlatformInterface()))
+	, m_instance				(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
 
 	, m_vki						(context.getPlatformInterface(), *m_instance)
 	, m_physicalDevice			(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
@@ -1465,7 +1465,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 		};
 		const vk::VkPhysicalDeviceImageFormatInfo2KHR	imageFormatInfo		=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2_KHR,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 			&externalInfo,
 			m_config.resource.imageFormat,
 			m_config.resource.imageType,
@@ -1481,7 +1481,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 		};
 		vk::VkImageFormatProperties2KHR					formatProperties	=
 		{
-			vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2_KHR,
+			vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
 			&externalProperties,
 			{
 				{ 0u, 0u, 0u },

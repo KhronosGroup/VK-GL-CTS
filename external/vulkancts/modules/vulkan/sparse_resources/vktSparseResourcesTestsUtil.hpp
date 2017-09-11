@@ -89,8 +89,9 @@ std::string						getShaderImageCoordinates			(const ImageType					imageType,
 																	 const std::string&					xyz);
 
 //!< Create instance with specific extensions
-vk::Move<vk::VkInstance>		createInstanceWithExtensions		(const vk::PlatformInterface&      vkp,
-																	 const std::vector<std::string>     enableExtensions);
+vk::Move<vk::VkInstance>		createInstanceWithExtensions		(const vk::PlatformInterface&		vkp,
+																	 const deUint32						version,
+																	 const std::vector<std::string>		enableExtensions);
 
 //!< Size used for addresing image in a compute shader
 tcu::UVec3						getShaderGridSize					(const ImageType					imageType,

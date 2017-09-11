@@ -454,7 +454,7 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 		const deUint32						planeH		= imageData.getSize().y() / formatDesc.planes[planeNdx].heightDivisor;
 		const VkImageSubresource			subresource	=
 		{
-			aspect,
+			static_cast<vk::VkImageAspectFlags>(aspect),
 			0u,
 			0u,
 		};
@@ -584,7 +584,7 @@ void downloadImage (const DeviceInterface&	vkd,
 				VK_QUEUE_FAMILY_IGNORED,
 				image,
 				{
-					aspect,
+					static_cast<vk::VkImageAspectFlags>(aspect),
 					0u,
 					1u,
 					0u,
@@ -759,7 +759,7 @@ void readImageMemory (const vk::DeviceInterface&							vkd,
 		const deUint32						planeH		= imageData->getSize().y() / formatDesc.planes[planeNdx].heightDivisor;
 		const VkImageSubresource			subresource	=
 		{
-			aspect,
+			static_cast<vk::VkImageAspectFlags>(aspect),
 			0u,
 			0u,
 		};
