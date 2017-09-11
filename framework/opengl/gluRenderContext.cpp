@@ -24,7 +24,6 @@
 #include "gluRenderContext.hpp"
 #include "gluDefs.hpp"
 #include "gluRenderConfig.hpp"
-#include "gluES3PlusWrapperContext.hpp"
 #include "gluFboRenderContext.hpp"
 #include "gluPlatform.hpp"
 #include "gluStrUtil.hpp"

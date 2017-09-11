@@ -458,7 +458,6 @@ LOCAL_SRC_FILES := \
 	framework/opengl/gluDefs.cpp \
 	framework/opengl/gluDrawUtil.cpp \
 	framework/opengl/gluDummyRenderContext.cpp \
-	framework/opengl/gluES3PlusWrapperContext.cpp \
 	framework/opengl/gluFboRenderContext.cpp \
 	framework/opengl/gluObjectWrapper.cpp \
 	framework/opengl/gluPixelTransfer.cpp \

@@ -5214,6 +5214,11 @@ private:
 
 /** class StorageMultisampleTest
  *
+ *      @tparam T      Type.
+ *      @tparam S      Size.
+ *      @tparam N      Is normalized.
+ *      @tparam D      Texture dimension.
+ *
  *      Make test for following DSA functions:
  *       -  TextureStorage2DMultisample and
  *       -  TextureStorage3DMultisample.
@@ -5278,11 +5283,12 @@ private:
  *
  *      Release all objects.
  */
+template <typename T, glw::GLint S, bool N, glw::GLuint D>
 class StorageMultisampleTest : public deqp::TestCase, Reference
 {
 public:
 	/* Public member functions. */
-	StorageMultisampleTest(deqp::Context& context);
+	StorageMultisampleTest(deqp::Context& context, const char *name);
 
 	virtual tcu::TestNode::IterateResult iterate();
 
@@ -5292,64 +5298,44 @@ private:
 	StorageMultisampleTest& operator=(const StorageMultisampleTest& other);
 
 	/* Private member functions. */
-	template <glw::GLint S, glw::GLuint D>
 	static glw::GLuint TestReferenceDataCount();
 
-	template <glw::GLuint D>
 	static glw::GLuint	TestReferenceDataWidth();
 
-	template <glw::GLuint D>
 	static glw::GLuint	TestReferenceDataHeight();
 
-	template <glw::GLuint D>
 	static glw::GLuint	TestReferenceDataDepth();
 
-	template <typename T, glw::GLint S, glw::GLuint D>
 	static glw::GLuint TestReferenceDataSize();
 
-	template <typename T, bool N, glw::GLuint D>
 	static const glw::GLchar* FragmentShaderDeclarationMultisample();
 
-	template <typename T, bool N, glw::GLuint D>
 	static const glw::GLchar* FragmentShaderDeclarationAuxiliary();
 
-	template <glw::GLuint	 D>
 	static const glw::GLchar* FragmentShaderTail();
 
-	template <glw::GLuint D>
 	static glw::GLenum	InputTextureTarget();
 
-	template <glw::GLuint D>
+	static glw::GLenum	MultisampleTextureTarget();
+
 	void InputTextureImage(const glw::GLenum internal_format, const glw::GLuint width, const glw::GLuint height,
 						   const glw::GLuint depth, const glw::GLenum format, const glw::GLenum type,
 						   const glw::GLvoid* data);
 
-	template <typename T, glw::GLint S, bool N, glw::GLuint D>
 	void CreateInputTexture();
 
-	template <typename T, glw::GLint S, bool N, glw::GLuint D>
 	bool Check();
 
-	template <typename T, glw::GLint S, bool N, glw::GLuint D>
 	bool Test();
 
-	template <typename T, bool N, glw::GLuint D>
-	bool LoopTestOverS(bool skip_rgb);
-
-	template <typename T, bool N>
-	bool LoopTestOverDOverS(bool skip_rgb);
-
-	template <glw::GLuint D>
 	bool PrepareFramebufferMultisample(const glw::GLenum internal_format);
 
-	template <glw::GLuint D>
 	void PrepareFramebufferAuxiliary(const glw::GLenum internal_format);
 
 	glw::GLuint PrepareProgram(const glw::GLchar* variable_declaration, const glw::GLchar* tail);
 	void PrepareVertexArray();
 
-	template <glw::GLuint D>
-	void				  Draw();
+	void Draw();
 
 	void CleanInputTexture();
 	void CleanAuxiliaryTexture();

@@ -12163,528 +12163,6 @@ public:
 };
 } /* TypeHelpers */
 
-/** Implementations of function objects required by "GPUShaderFP64Test10"
- *
- **/
-namespace FunctionObject
-{
-/** Maps variable type with enumeration Utils::_variable_type
- *
- * @tparam T type
- **/
-template <typename T>
-class typeInfo
-{
-public:
-	static const Utils::_variable_type variable_type =
-		TypeHelpers::typeInfo<typename TypeHelpers::referenceToType<T>::result>::variable_type;
-};
-
-/** Place data from <in> into <buffer>
- *
- * @param buffer Buffer
- * @param in     Input data
- **/
-template <typename T>
-class pack
-{
-public:
-	static void set(glw::GLvoid* buffer, const T& in)
-	{
-		*(T*)buffer = in;
-	}
-};
-
-/** Place tcu::Matrix data from <in> into <buffer>
- *
- * @param buffer Buffer
- * @param in     Input data
- **/
-template <int Cols, int Rows>
-class pack<tcu::Matrix<glw::GLdouble, Rows, Cols> >
-{
-public:
-	static void set(glw::GLvoid* buffer, const tcu::Matrix<glw::GLdouble, Rows, Cols>& in)
-	{
-		glw::GLdouble* data = (glw::GLdouble*)buffer;
-
-		for (glw::GLint column = 0; column < Cols; ++column)
-		{
-			for (glw::GLint row = 0; row < Rows; ++row)
-			{
-				glw::GLint index = column * Rows + row;
-
-				data[index] = in(row, column);
-			}
-		}
-	}
-};
-
-/** Get data of <out> from <buffer>
- *
- * @param buffer Buffer
- * @param out    Output data
- **/
-template <typename T>
-class unpack
-{
-public:
-	static void get(const glw::GLvoid* buffer, T& out)
-	{
-		out = *(T*)buffer;
-	}
-};
-
-/** Get tcu::Matrix data from <buffer>
- *
- * @param buffer Buffer
- * @param out    Output data
- **/
-template <int Cols, int Rows>
-class unpack<tcu::Matrix<glw::GLdouble, Rows, Cols> >
-{
-public:
-	static void get(const glw::GLvoid* buffer, tcu::Matrix<glw::GLdouble, Rows, Cols>& out)
-	{
-		const glw::GLdouble* data = (glw::GLdouble*)buffer;
-
-		for (glw::GLint column = 0; column < Cols; ++column)
-		{
-			for (glw::GLint row = 0; row < Rows; ++row)
-			{
-				glw::GLint index = column * Rows + row;
-
-				out(row, column) = data[index];
-			}
-		}
-	}
-};
-
-/** Base of unary function classes
- *
- **/
-class unaryBase : public GPUShaderFP64Test10::functionObject
-{
-public:
-	unaryBase(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-			  glw::GLvoid* function_pointer, const Utils::_variable_type res_type, const Utils::_variable_type arg_type)
-		: functionObject(function_enum, function_name, function_pointer, res_type), m_arg_type(arg_type)
-	{
-	}
-
-	virtual glw::GLuint getArgumentCount() const
-	{
-		return 1;
-	}
-
-	virtual Utils::_variable_type getArgumentType(glw::GLuint /* argument */) const
-	{
-		return m_arg_type;
-	}
-
-protected:
-	const Utils::_variable_type m_arg_type;
-};
-
-/** Unary function class. It treats input argument as one variable.
- *
- * @tparam ResT Type of result
- * @tparam ArgT Type of argument
- **/
-template <typename ResT, typename ArgT>
-class unary : public unaryBase
-{
-public:
-	typedef ResT (*functionPointer)(const ArgT&);
-
-	unary(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-		  functionPointer function_pointer)
-		: unaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, typeInfo<ResT>::variable_type,
-					typeInfo<ArgT>::variable_type)
-	{
-	}
-
-	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
-	{
-		ResT result;
-		ArgT arg;
-
-		unpack<ArgT>::get(argument_src, arg);
-
-		functionPointer p_function = (functionPointer)m_p_function;
-
-		result = p_function(arg);
-
-		pack<ResT>::set(result_dst, result);
-	}
-};
-
-/** Unary function class. It treats input argument as separate components.
- *
- * @tparam ResT Type of result
- **/
-template <typename ResT>
-class unaryByComponent : public unaryBase
-{
-public:
-	typedef ResT (*functionPointer)(glw::GLdouble);
-
-	unaryByComponent(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-					 functionPointer function_pointer, const Utils::_variable_type res_type,
-					 const Utils::_variable_type arg_type)
-		: unaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, res_type, arg_type)
-	{
-	}
-
-	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
-	{
-		glw::GLuint	n_components = Utils::getNumberOfComponentsForVariableType(m_arg_type);
-		ResT*		   p_result		= (ResT*)result_dst;
-		glw::GLdouble* p_arg		= (glw::GLdouble*)argument_src;
-
-		functionPointer p_function = (functionPointer)m_p_function;
-
-		for (glw::GLuint component = 0; component < n_components; ++component)
-		{
-			p_result[component] = p_function(p_arg[component]);
-		}
-	}
-};
-
-/** Class of functions with one input and one output parameter. It treats arguments as separate components.
- *
- * @tparam ResT Type of result
- * @tparam ArgT Type of argument
- * @tparam OutT Type of output parameter
- **/
-template <typename ResT, typename ArgT, typename OutT>
-class unaryWithOutputByComponent : public unaryBase
-{
-public:
-	typedef ResT (*functionPointer)(ArgT, OutT&);
-
-	unaryWithOutputByComponent(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-							   functionPointer function_pointer, const Utils::_variable_type res_type,
-							   const Utils::_variable_type arg_type, const Utils::_variable_type out_type)
-		: unaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, res_type, arg_type)
-		, m_out_type(out_type)
-	{
-	}
-
-	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
-	{
-		ResT* p_result = (ResT*)result_dst;
-		OutT* p_out	= (OutT*)((glw::GLubyte*)result_dst + getResultOffset(1));
-		ArgT* p_arg	= (ArgT*)argument_src;
-
-		const glw::GLuint n_components_0 = getArgumentComponents(0);
-		const glw::GLuint n_components_1 = getResultComponents(1);
-		const glw::GLuint n_components   = de::max(n_components_0, n_components_1);
-
-		const glw::GLuint component_step_0 = (1 == n_components_0) ? 0 : 1;
-		const glw::GLuint component_step_1 = (1 == n_components_1) ? 0 : 1;
-
-		functionPointer p_function = (functionPointer)m_p_function;
-
-		for (glw::GLuint component = 0; component < n_components; ++component)
-		{
-			const ArgT first_arg  = p_arg[component * component_step_0];
-			OutT&	  second_arg = p_out[component * component_step_1];
-
-			p_result[component] = p_function(first_arg, second_arg);
-		}
-	}
-
-	glw::GLuint getResultCount() const
-	{
-		return 2;
-	}
-
-	Utils::_variable_type getResultType(glw::GLuint result) const
-	{
-		Utils::_variable_type type = Utils::VARIABLE_TYPE_UNKNOWN;
-
-		switch (result)
-		{
-		case 0:
-			type = m_res_type;
-			break;
-		case 1:
-			type = m_out_type;
-			break;
-		default:
-			TCU_FAIL("Not implemented");
-			break;
-		}
-
-		return type;
-	}
-
-protected:
-	const Utils::_variable_type m_out_type;
-};
-
-/** Base of binary function classes.
- *
- **/
-class binaryBase : public GPUShaderFP64Test10::functionObject
-{
-public:
-	binaryBase(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-			   glw::GLvoid* function_pointer, const Utils::_variable_type res_type,
-			   const Utils::_variable_type arg_1_type, const Utils::_variable_type arg_2_type)
-		: functionObject(function_enum, function_name, function_pointer, res_type)
-		, m_arg_1_type(arg_1_type)
-		, m_arg_2_type(arg_2_type)
-	{
-	}
-
-	virtual glw::GLuint getArgumentCount() const
-	{
-		return 2;
-	}
-
-	virtual Utils::_variable_type getArgumentType(glw::GLuint argument) const
-	{
-		switch (argument)
-		{
-		case 0:
-			return m_arg_1_type;
-			break;
-		case 1:
-			return m_arg_2_type;
-			break;
-		default:
-			return Utils::VARIABLE_TYPE_UNKNOWN;
-			break;
-		}
-	}
-
-protected:
-	const Utils::_variable_type m_arg_1_type;
-	const Utils::_variable_type m_arg_2_type;
-};
-
-/** Binary function class. It treats input arguments as two variables.
- *
- * @param ResT  Type of result
- * @param Arg1T Type of first argument
- * @param Arg2T Type of second argument
- **/
-template <typename ResT, typename Arg1T, typename Arg2T>
-class binary : public binaryBase
-{
-public:
-	typedef ResT (*functionPointer)(const Arg1T&, const Arg2T&);
-
-	binary(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-		   functionPointer function_pointer)
-		: binaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, typeInfo<ResT>::variable_type,
-					 typeInfo<Arg1T>::variable_type, typeInfo<Arg2T>::variable_type)
-	{
-	}
-
-	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
-	{
-		const glw::GLuint argument_1_stride = getArgumentStride(0);
-
-		functionPointer p_function = (functionPointer)m_p_function;
-
-		Arg1T arg_1;
-		Arg2T arg_2;
-		ResT  result;
-
-		unpack<Arg1T>::get(argument_src, arg_1);
-		unpack<Arg2T>::get((glw::GLubyte*)argument_src + argument_1_stride, arg_2);
-
-		result = p_function(arg_1, arg_2);
-
-		pack<ResT>::set(result_dst, result);
-	}
-};
-
-/** Binary function class. It treats input arguments as separate components.
- *
- * @param ResT  Type of result
- * @param Arg1T Type of first argument
- * @param Arg2T Type of second argument
- **/
-template <typename ResT, typename Arg1T, typename Arg2T>
-class binaryByComponent : public binaryBase
-{
-public:
-	typedef ResT (*functionPointer)(Arg1T, Arg2T);
-
-	binaryByComponent(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-					  functionPointer function_pointer, const Utils::_variable_type res_type,
-					  const Utils::_variable_type arg_1_type, const Utils::_variable_type arg_2_type)
-		: binaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, res_type, arg_1_type, arg_2_type)
-	{
-	}
-
-	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
-	{
-		ResT*  p_result = (ResT*)result_dst;
-		Arg1T* p_arg_1  = (Arg1T*)argument_src;
-		Arg2T* p_arg_2  = (Arg2T*)((glw::GLubyte*)argument_src + getArgumentOffset(1));
-
-		const glw::GLuint n_components_0 = getArgumentComponents(0);
-		const glw::GLuint n_components_1 = getArgumentComponents(1);
-		const glw::GLuint n_components   = de::max(n_components_0, n_components_1);
-
-		const glw::GLuint component_step_0 = (1 == n_components_0) ? 0 : 1;
-		const glw::GLuint component_step_1 = (1 == n_components_1) ? 0 : 1;
-
-		functionPointer p_function = (functionPointer)m_p_function;
-
-		for (glw::GLuint component = 0; component < n_components; ++component)
-		{
-			const Arg1T first_arg  = p_arg_1[component * component_step_0];
-			const Arg2T second_arg = p_arg_2[component * component_step_1];
-
-			p_result[component] = p_function(first_arg, second_arg);
-		}
-	}
-};
-
-/** Base of tenary function classes.
- *
- **/
-class tenaryBase : public GPUShaderFP64Test10::functionObject
-{
-public:
-	tenaryBase(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-			   glw::GLvoid* function_pointer, const Utils::_variable_type res_type,
-			   const Utils::_variable_type arg_1_type, const Utils::_variable_type arg_2_type,
-			   const Utils::_variable_type arg_3_type)
-		: functionObject(function_enum, function_name, function_pointer, res_type)
-		, m_arg_1_type(arg_1_type)
-		, m_arg_2_type(arg_2_type)
-		, m_arg_3_type(arg_3_type)
-	{
-	}
-
-	virtual glw::GLuint getArgumentCount() const
-	{
-		return 3;
-	}
-
-	virtual Utils::_variable_type getArgumentType(glw::GLuint argument) const
-	{
-		switch (argument)
-		{
-		case 0:
-			return m_arg_1_type;
-			break;
-		case 1:
-			return m_arg_2_type;
-			break;
-		case 2:
-			return m_arg_3_type;
-			break;
-		default:
-			return Utils::VARIABLE_TYPE_UNKNOWN;
-			break;
-		}
-	}
-
-protected:
-	const Utils::_variable_type m_arg_1_type;
-	const Utils::_variable_type m_arg_2_type;
-	const Utils::_variable_type m_arg_3_type;
-};
-
-/** Tenary function class. It treats input arguments as three variables.
- *
- * @param ResT  Type of result
- * @param Arg1T Type of first argument
- * @param Arg2T Type of second argument
- * @param Arg3T Type of third argument
- **/
-template <typename ResT, typename Arg1T, typename Arg2T, typename Arg3T>
-class tenary : public tenaryBase
-{
-public:
-	typedef ResT (*functionPointer)(Arg1T, Arg2T, Arg3T);
-	typedef typename TypeHelpers::referenceToType<Arg1T>::result arg1T;
-	typedef typename TypeHelpers::referenceToType<Arg2T>::result arg2T;
-	typedef typename TypeHelpers::referenceToType<Arg3T>::result arg3T;
-
-	tenary(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-		   functionPointer function_pointer)
-		: tenaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, typeInfo<ResT>::variable_type,
-					 typeInfo<Arg1T>::variable_type, typeInfo<Arg2T>::variable_type, typeInfo<Arg3T>::variable_type)
-	{
-	}
-
-	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
-	{
-		const glw::GLuint argument_2_offset = getArgumentOffset(1);
-		const glw::GLuint argument_3_offset = getArgumentOffset(2);
-
-		functionPointer p_function = (functionPointer)m_p_function;
-
-		arg1T arg_1;
-		arg2T arg_2;
-		arg3T arg_3;
-		ResT  result;
-
-		unpack<arg1T>::get(argument_src, arg_1);
-		unpack<arg2T>::get((glw::GLubyte*)argument_src + argument_2_offset, arg_2);
-		unpack<arg3T>::get((glw::GLubyte*)argument_src + argument_3_offset, arg_3);
-
-		result = p_function(arg_1, arg_2, arg_3);
-
-		pack<ResT>::set(result_dst, result);
-	}
-};
-
-/** Tenary function class. It treats input arguments as separate components.
- *
-
- **/
-class tenaryByComponent : public tenaryBase
-{
-public:
-	typedef glw::GLdouble (*functionPointer)(glw::GLdouble, glw::GLdouble, glw::GLdouble);
-
-	tenaryByComponent(GPUShaderFP64Test10::functionEnum function_enum, const glw::GLchar* function_name,
-					  functionPointer function_pointer, const Utils::_variable_type res_type,
-					  const Utils::_variable_type arg_1_type, const Utils::_variable_type arg_2_type,
-					  const Utils::_variable_type arg_3_type)
-		: tenaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, res_type, arg_1_type, arg_2_type,
-					 arg_3_type)
-	{
-	}
-
-	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
-	{
-		glw::GLdouble*		 p_result = (glw::GLdouble*)result_dst;
-		const glw::GLdouble* p_arg	= (const glw::GLdouble*)argument_src;
-
-		const glw::GLuint n_components_0 = getArgumentComponents(0);
-		const glw::GLuint n_components_1 = getArgumentComponents(1);
-		const glw::GLuint n_components_2 = getArgumentComponents(2);
-		const glw::GLuint n_components   = de::max(de::max(n_components_0, n_components_1), n_components_2);
-
-		const glw::GLuint component_step_0 = (1 == n_components_0) ? 0 : 1;
-		const glw::GLuint component_step_1 = (1 == n_components_1) ? 0 : 1;
-		const glw::GLuint component_step_2 = (1 == n_components_2) ? 0 : 1;
-
-		functionPointer p_function = (functionPointer)m_p_function;
-
-		for (glw::GLuint component = 0; component < n_components; ++component)
-		{
-			const glw::GLdouble first_arg  = p_arg[component * component_step_0];
-			const glw::GLdouble second_arg = p_arg[component * component_step_1 + n_components_0];
-			const glw::GLdouble third_arg  = p_arg[component * component_step_2 + n_components_0 + n_components_1];
-
-			p_result[component] = p_function(first_arg, second_arg, third_arg);
-		}
-	}
-};
-} /* FunctionObject */
-
 /** Implementations of "math" functions required by "GPUShaderFP64Test10"
  *
  **/
@@ -13228,24 +12706,812 @@ static tcu::UVec2 unpackDouble2x32(const glw::GLdouble& val)
 }
 } /* Math */
 
-/* Constants used by GPUShaderFP64Test10 */
+/** Enumeration of tested functions
+ * *_AGAINT_SCALAR enums are used to call glsl function with mixed scalar and genDType arguments.
+ * For example "max" can be called for (dvec3, double).
+ **/
+enum FunctionEnum
+{
+	FUNCTION_ABS = 0,
+	FUNCTION_CEIL,
+	FUNCTION_CLAMP,
+	FUNCTION_CLAMP_AGAINST_SCALAR,
+	FUNCTION_CROSS,
+	FUNCTION_DETERMINANT,
+	FUNCTION_DISTANCE,
+	FUNCTION_DOT,
+	FUNCTION_EQUAL,
+	FUNCTION_FACEFORWARD,
+	FUNCTION_FLOOR,
+	FUNCTION_FMA,
+	FUNCTION_FRACT,
+	FUNCTION_FREXP,
+	FUNCTION_GREATERTHAN,
+	FUNCTION_GREATERTHANEQUAL,
+	FUNCTION_INVERSE,
+	FUNCTION_INVERSESQRT,
+	FUNCTION_LDEXP,
+	FUNCTION_LESSTHAN,
+	FUNCTION_LESSTHANEQUAL,
+	FUNCTION_LENGTH,
+	FUNCTION_MATRIXCOMPMULT,
+	FUNCTION_MAX,
+	FUNCTION_MAX_AGAINST_SCALAR,
+	FUNCTION_MIN,
+	FUNCTION_MIN_AGAINST_SCALAR,
+	FUNCTION_MIX,
+	FUNCTION_MOD,
+	FUNCTION_MOD_AGAINST_SCALAR,
+	FUNCTION_MODF,
+	FUNCTION_NORMALIZE,
+	FUNCTION_NOTEQUAL,
+	FUNCTION_OUTERPRODUCT,
+	FUNCTION_PACKDOUBLE2X32,
+	FUNCTION_REFLECT,
+	FUNCTION_REFRACT,
+	FUNCTION_ROUND,
+	FUNCTION_ROUNDEVEN,
+	FUNCTION_SIGN,
+	FUNCTION_SMOOTHSTEP,
+	FUNCTION_SMOOTHSTEP_AGAINST_SCALAR,
+	FUNCTION_SQRT,
+	FUNCTION_STEP,
+	FUNCTION_STEP_AGAINST_SCALAR,
+	FUNCTION_TRANSPOSE,
+	FUNCTION_TRUNC,
+	FUNCTION_UNPACKDOUBLE2X32,
+	FUNCTION_ISNAN,
+	FUNCTION_ISINF,
+};
+
+struct TypeDefinition
+{
+	std::string name;
+	glw::GLuint n_columns;
+	glw::GLuint n_rows;
+};
+
+/** Implementation of BuiltinFunctionTest test, description follows:
+ *
+ *  Verify double-precision support in common functions works correctly.
+ *  All double-precision types that apply for particular cases should
+ *  be tested for the following functions:
+ *
+ *  - abs();
+ *  - ceil();
+ *  - clamp();
+ *  - cross();
+ *  - determinant();
+ *  - distance();
+ *  - dot();
+ *  - equal();
+ *  - faceforward();
+ *  - floor();
+ *  - fma();
+ *  - fract();
+ *  - frexp();
+ *  - greaterThan();
+ *  - greaterThanEqual();
+ *  - inverse();
+ *  - inversesqrt();
+ *  - ldexp();
+ *  - lessThan();
+ *  - lessThanEqual();
+ *  - length();
+ *  - matrixCompMult();
+ *  - max();
+ *  - min();
+ *  - mix();
+ *  - mod();
+ *  - modf();
+ *  - normalize();
+ *  - notEqual();
+ *  - outerProduct();
+ *  - packDouble2x32();
+ *  - reflect();
+ *  - refract();
+ *  - round();
+ *  - roundEven();
+ *  - sign();
+ *  - smoothstep();
+ *  - sqrt();
+ *  - step();
+ *  - transpose();
+ *  - trunc();
+ *  - unpackDouble2x32();
+ *  - isnan();
+ *  - isinf();
+ *
+ *  The test should work by creating a program object (for each case
+ *  considered), to which a vertex shader should be attached. The
+ *  shader should define input variables that should be used as
+ *  arguments for the function in question. The result of the
+ *  operation should then be XFBed back to the test, where the
+ *  value should be verified.
+ *
+ *  Reference function implementation from pre-DEQP CTS framework
+ *  should be ported to C for verification purposes where available.
+ *
+ *  The test should use 1024 different scalar/vector/matrix argument
+ *  combinations. It should pass if all functions are determined
+ *  to work correctly for all argument combinations used.
+ **/
+class BuiltinFunctionTest : public deqp::TestCase
+{
+public:
+	/* Public methods */
+	BuiltinFunctionTest(deqp::Context& context, std::string caseName, FunctionEnum function,
+						TypeDefinition typeDefinition);
+
+	virtual void						 deinit();
+	virtual tcu::TestNode::IterateResult iterate();
+
+	/** Base class of functionObject. Main goal of it is to keep function details toghether and hide calling code.
+	 *
+	 **/
+	class functionObject
+	{
+	public:
+		functionObject(FunctionEnum function_enum, const glw::GLchar* function_name, glw::GLvoid* function_pointer,
+					   Utils::_variable_type result_type);
+
+		virtual ~functionObject()
+		{
+		}
+
+		virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const = 0;
+
+		virtual glw::GLuint			  getArgumentCount() const					  = 0;
+		virtual Utils::_variable_type getArgumentType(glw::GLuint argument) const = 0;
+		glw::GLuint getArgumentComponents(glw::GLuint argument) const;
+		glw::GLuint getArgumentComponentSize(glw::GLuint argument) const;
+		glw::GLuint getArgumentOffset(glw::GLuint argument) const;
+		glw::GLuint getArgumentStride() const;
+		glw::GLuint getArgumentStride(glw::GLuint argument) const;
+		FunctionEnum	   getFunctionEnum() const;
+		const glw::GLchar* getName() const;
+		glw::GLuint getResultComponents(glw::GLuint result) const;
+		virtual glw::GLuint getResultCount() const;
+		glw::GLuint getResultOffset(glw::GLuint result) const;
+		virtual Utils::_variable_type getResultType(glw::GLuint result) const;
+		glw::GLuint getResultStride(glw::GLuint result) const;
+		glw::GLuint getBaseTypeSize(glw::GLuint result) const;
+		glw::GLuint getResultStride() const;
+
+	protected:
+		const FunctionEnum			m_function_enum;
+		const glw::GLchar*			m_function_name;
+		const glw::GLvoid*			m_p_function;
+		const Utils::_variable_type m_res_type;
+	};
+
+private:
+	/* Private types */
+	/** General type enumeration
+	 *
+	 **/
+	enum generalType
+	{
+		SCALAR = 0,
+		VECTOR,
+		MATRIX,
+	};
+
+	/** Details of variable type
+	 *
+	 **/
+	struct typeDetails
+	{
+		typeDetails(glw::GLuint n_columns, glw::GLuint n_rows);
+
+		generalType m_general_type;
+		glw::GLuint m_n_columns;
+		glw::GLuint m_n_rows;
+		glw::GLenum m_type;
+		std::string m_type_name;
+	};
+
+	/* Typedefs for gl.uniform* function pointers */
+	typedef GLW_APICALL void(GLW_APIENTRY* uniformDMatFunctionPointer)(glw::GLint, glw::GLsizei, glw::GLboolean,
+																	   const glw::GLdouble*);
+	typedef GLW_APICALL void(GLW_APIENTRY* uniformDVecFunctionPointer)(glw::GLint, glw::GLsizei, const glw::GLdouble*);
+	typedef GLW_APICALL void(GLW_APIENTRY* uniformIVecFunctionPointer)(glw::GLint, glw::GLsizei, const glw::GLint*);
+	typedef GLW_APICALL void(GLW_APIENTRY* uniformUVecFunctionPointer)(glw::GLint, glw::GLsizei, const glw::GLuint*);
+
+	/* Private methods */
+	bool compare(Utils::_variable_type type, const glw::GLvoid* left, const glw::GLvoid* right);
+
+	functionObject* getFunctionObject(FunctionEnum function, const typeDetails& type);
+
+	uniformDMatFunctionPointer getUniformFunctionForDMat(glw::GLuint		   argument,
+														 const functionObject& function_object) const;
+
+	uniformDVecFunctionPointer getUniformFunctionForDVec(glw::GLuint		   argument,
+														 const functionObject& function_object) const;
+
+	uniformIVecFunctionPointer getUniformFunctionForIVec(glw::GLuint		   argument,
+														 const functionObject& function_object) const;
+
+	uniformUVecFunctionPointer getUniformFunctionForUVec(glw::GLuint		   argument,
+														 const functionObject& function_object) const;
+
+	const glw::GLchar* getUniformName(glw::GLuint argument) const;
+	const glw::GLchar* getVaryingName(glw::GLuint argument) const;
+
+	bool isFunctionImplemented(FunctionEnum function, const typeDetails& type) const;
+
+	void logVariableType(const glw::GLvoid* buffer, const glw::GLchar* name, Utils::_variable_type type) const;
+
+	void prepareArgument(const functionObject& function_object, glw::GLuint vertex, glw::GLubyte* buffer);
+
+	void prepareComponents(const functionObject& function_object, glw::GLuint vertex, glw::GLuint argument,
+						   glw::GLubyte* buffer);
+
+	void prepareProgram(const functionObject& function_object, Utils::programInfo& program_info);
+
+	void prepareTestData(const functionObject& function_object);
+	void prepareVertexShaderCode(const functionObject& function_object);
+
+	bool test(FunctionEnum function, const typeDetails& type);
+
+	void testBegin(const functionObject& function_object, glw::GLuint program_id, glw::GLuint vertex);
+
+	void testInit();
+
+	bool verifyResults(const functionObject& function_object, glw::GLuint vertex);
+
+	/* Private constants */
+	static const glw::GLdouble m_epsilon;
+	static const glw::GLuint   m_n_veritces;
+
+	/* Private fields */
+	glw::GLuint m_transform_feedback_buffer_id;
+	glw::GLuint m_vertex_array_object_id;
+
+	std::vector<glw::GLubyte> m_expected_results_data;
+	FunctionEnum			  m_function;
+	TypeDefinition			  m_typeDefinition;
+	std::vector<glw::GLubyte> m_argument_data;
+	std::string				  m_vertex_shader_code;
+};
+
+/* Constants used by BuiltinFunctionTest */
 /** Khronos Bug #14010
  *  Using an epsilon value for comparing floating points is error prone.
  *  Rather than writing a new floating point comparison function, I am
  *  increasing the epsilon value to allow greater orders of magnitude
  *  of floating point values.
  **/
-const glw::GLdouble GPUShaderFP64Test10::m_epsilon	= 0.00002;
-const glw::GLuint   GPUShaderFP64Test10::m_n_veritces = 1024;
+const glw::GLdouble BuiltinFunctionTest::m_epsilon	= 0.00002;
+const glw::GLuint   BuiltinFunctionTest::m_n_veritces = 1024;
+
+/** Implementations of function objects required by "BuiltinFunctionTest"
+ *
+ **/
+namespace FunctionObject
+{
+/** Maps variable type with enumeration Utils::_variable_type
+ *
+ * @tparam T type
+ **/
+template <typename T>
+class typeInfo
+{
+public:
+	static const Utils::_variable_type variable_type =
+		TypeHelpers::typeInfo<typename TypeHelpers::referenceToType<T>::result>::variable_type;
+};
+
+/** Place data from <in> into <buffer>
+ *
+ * @param buffer Buffer
+ * @param in     Input data
+ **/
+template <typename T>
+class pack
+{
+public:
+	static void set(glw::GLvoid* buffer, const T& in)
+	{
+		*(T*)buffer = in;
+	}
+};
+
+/** Place tcu::Matrix data from <in> into <buffer>
+ *
+ * @param buffer Buffer
+ * @param in     Input data
+ **/
+template <int Cols, int Rows>
+class pack<tcu::Matrix<glw::GLdouble, Rows, Cols> >
+{
+public:
+	static void set(glw::GLvoid* buffer, const tcu::Matrix<glw::GLdouble, Rows, Cols>& in)
+	{
+		glw::GLdouble* data = (glw::GLdouble*)buffer;
+
+		for (glw::GLint column = 0; column < Cols; ++column)
+		{
+			for (glw::GLint row = 0; row < Rows; ++row)
+			{
+				glw::GLint index = column * Rows + row;
+
+				data[index] = in(row, column);
+			}
+		}
+	}
+};
+
+/** Get data of <out> from <buffer>
+ *
+ * @param buffer Buffer
+ * @param out    Output data
+ **/
+template <typename T>
+class unpack
+{
+public:
+	static void get(const glw::GLvoid* buffer, T& out)
+	{
+		out = *(T*)buffer;
+	}
+};
+
+/** Get tcu::Matrix data from <buffer>
+ *
+ * @param buffer Buffer
+ * @param out    Output data
+ **/
+template <int Cols, int Rows>
+class unpack<tcu::Matrix<glw::GLdouble, Rows, Cols> >
+{
+public:
+	static void get(const glw::GLvoid* buffer, tcu::Matrix<glw::GLdouble, Rows, Cols>& out)
+	{
+		const glw::GLdouble* data = (glw::GLdouble*)buffer;
+
+		for (glw::GLint column = 0; column < Cols; ++column)
+		{
+			for (glw::GLint row = 0; row < Rows; ++row)
+			{
+				glw::GLint index = column * Rows + row;
+
+				out(row, column) = data[index];
+			}
+		}
+	}
+};
+
+/** Base of unary function classes
+ *
+ **/
+class unaryBase : public BuiltinFunctionTest::functionObject
+{
+public:
+	unaryBase(FunctionEnum function_enum, const glw::GLchar* function_name, glw::GLvoid* function_pointer,
+			  const Utils::_variable_type res_type, const Utils::_variable_type arg_type)
+		: functionObject(function_enum, function_name, function_pointer, res_type), m_arg_type(arg_type)
+	{
+	}
+
+	virtual glw::GLuint getArgumentCount() const
+	{
+		return 1;
+	}
+
+	virtual Utils::_variable_type getArgumentType(glw::GLuint /* argument */) const
+	{
+		return m_arg_type;
+	}
+
+protected:
+	const Utils::_variable_type m_arg_type;
+};
+
+/** Unary function class. It treats input argument as one variable.
+ *
+ * @tparam ResT Type of result
+ * @tparam ArgT Type of argument
+ **/
+template <typename ResT, typename ArgT>
+class unary : public unaryBase
+{
+public:
+	typedef ResT (*functionPointer)(const ArgT&);
+
+	unary(FunctionEnum function_enum, const glw::GLchar* function_name, functionPointer function_pointer)
+		: unaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, typeInfo<ResT>::variable_type,
+					typeInfo<ArgT>::variable_type)
+	{
+	}
+
+	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
+	{
+		ResT result;
+		ArgT arg;
+
+		unpack<ArgT>::get(argument_src, arg);
+
+		functionPointer p_function = (functionPointer)m_p_function;
+
+		result = p_function(arg);
+
+		pack<ResT>::set(result_dst, result);
+	}
+};
+
+/** Unary function class. It treats input argument as separate components.
+ *
+ * @tparam ResT Type of result
+ **/
+template <typename ResT>
+class unaryByComponent : public unaryBase
+{
+public:
+	typedef ResT (*functionPointer)(glw::GLdouble);
+
+	unaryByComponent(FunctionEnum function_enum, const glw::GLchar* function_name, functionPointer function_pointer,
+					 const Utils::_variable_type res_type, const Utils::_variable_type arg_type)
+		: unaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, res_type, arg_type)
+	{
+	}
+
+	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
+	{
+		glw::GLuint	n_components = Utils::getNumberOfComponentsForVariableType(m_arg_type);
+		ResT*		   p_result		= (ResT*)result_dst;
+		glw::GLdouble* p_arg		= (glw::GLdouble*)argument_src;
+
+		functionPointer p_function = (functionPointer)m_p_function;
+
+		for (glw::GLuint component = 0; component < n_components; ++component)
+		{
+			p_result[component] = p_function(p_arg[component]);
+		}
+	}
+};
+
+/** Class of functions with one input and one output parameter. It treats arguments as separate components.
+ *
+ * @tparam ResT Type of result
+ * @tparam ArgT Type of argument
+ * @tparam OutT Type of output parameter
+ **/
+template <typename ResT, typename ArgT, typename OutT>
+class unaryWithOutputByComponent : public unaryBase
+{
+public:
+	typedef ResT (*functionPointer)(ArgT, OutT&);
+
+	unaryWithOutputByComponent(FunctionEnum function_enum, const glw::GLchar* function_name,
+							   functionPointer function_pointer, const Utils::_variable_type res_type,
+							   const Utils::_variable_type arg_type, const Utils::_variable_type out_type)
+		: unaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, res_type, arg_type)
+		, m_out_type(out_type)
+	{
+	}
+
+	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
+	{
+		ResT* p_result = (ResT*)result_dst;
+		OutT* p_out	= (OutT*)((glw::GLubyte*)result_dst + getResultOffset(1));
+		ArgT* p_arg	= (ArgT*)argument_src;
+
+		const glw::GLuint n_components_0 = getArgumentComponents(0);
+		const glw::GLuint n_components_1 = getResultComponents(1);
+		const glw::GLuint n_components   = de::max(n_components_0, n_components_1);
+
+		const glw::GLuint component_step_0 = (1 == n_components_0) ? 0 : 1;
+		const glw::GLuint component_step_1 = (1 == n_components_1) ? 0 : 1;
+
+		functionPointer p_function = (functionPointer)m_p_function;
+
+		for (glw::GLuint component = 0; component < n_components; ++component)
+		{
+			const ArgT first_arg  = p_arg[component * component_step_0];
+			OutT&	  second_arg = p_out[component * component_step_1];
+
+			p_result[component] = p_function(first_arg, second_arg);
+		}
+	}
+
+	glw::GLuint getResultCount() const
+	{
+		return 2;
+	}
+
+	Utils::_variable_type getResultType(glw::GLuint result) const
+	{
+		Utils::_variable_type type = Utils::VARIABLE_TYPE_UNKNOWN;
+
+		switch (result)
+		{
+		case 0:
+			type = m_res_type;
+			break;
+		case 1:
+			type = m_out_type;
+			break;
+		default:
+			TCU_FAIL("Not implemented");
+			break;
+		}
+
+		return type;
+	}
+
+protected:
+	const Utils::_variable_type m_out_type;
+};
+
+/** Base of binary function classes.
+ *
+ **/
+class binaryBase : public BuiltinFunctionTest::functionObject
+{
+public:
+	binaryBase(FunctionEnum function_enum, const glw::GLchar* function_name, glw::GLvoid* function_pointer,
+			   const Utils::_variable_type res_type, const Utils::_variable_type arg_1_type,
+			   const Utils::_variable_type arg_2_type)
+		: functionObject(function_enum, function_name, function_pointer, res_type)
+		, m_arg_1_type(arg_1_type)
+		, m_arg_2_type(arg_2_type)
+	{
+	}
+
+	virtual glw::GLuint getArgumentCount() const
+	{
+		return 2;
+	}
+
+	virtual Utils::_variable_type getArgumentType(glw::GLuint argument) const
+	{
+		switch (argument)
+		{
+		case 0:
+			return m_arg_1_type;
+			break;
+		case 1:
+			return m_arg_2_type;
+			break;
+		default:
+			return Utils::VARIABLE_TYPE_UNKNOWN;
+			break;
+		}
+	}
+
+protected:
+	const Utils::_variable_type m_arg_1_type;
+	const Utils::_variable_type m_arg_2_type;
+};
+
+/** Binary function class. It treats input arguments as two variables.
+ *
+ * @param ResT  Type of result
+ * @param Arg1T Type of first argument
+ * @param Arg2T Type of second argument
+ **/
+template <typename ResT, typename Arg1T, typename Arg2T>
+class binary : public binaryBase
+{
+public:
+	typedef ResT (*functionPointer)(const Arg1T&, const Arg2T&);
+
+	binary(FunctionEnum function_enum, const glw::GLchar* function_name, functionPointer function_pointer)
+		: binaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, typeInfo<ResT>::variable_type,
+					 typeInfo<Arg1T>::variable_type, typeInfo<Arg2T>::variable_type)
+	{
+	}
+
+	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
+	{
+		const glw::GLuint argument_1_stride = getArgumentStride(0);
+
+		functionPointer p_function = (functionPointer)m_p_function;
+
+		Arg1T arg_1;
+		Arg2T arg_2;
+		ResT  result;
+
+		unpack<Arg1T>::get(argument_src, arg_1);
+		unpack<Arg2T>::get((glw::GLubyte*)argument_src + argument_1_stride, arg_2);
+
+		result = p_function(arg_1, arg_2);
+
+		pack<ResT>::set(result_dst, result);
+	}
+};
+
+/** Binary function class. It treats input arguments as separate components.
+ *
+ * @param ResT  Type of result
+ * @param Arg1T Type of first argument
+ * @param Arg2T Type of second argument
+ **/
+template <typename ResT, typename Arg1T, typename Arg2T>
+class binaryByComponent : public binaryBase
+{
+public:
+	typedef ResT (*functionPointer)(Arg1T, Arg2T);
+
+	binaryByComponent(FunctionEnum function_enum, const glw::GLchar* function_name, functionPointer function_pointer,
+					  const Utils::_variable_type res_type, const Utils::_variable_type arg_1_type,
+					  const Utils::_variable_type arg_2_type)
+		: binaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, res_type, arg_1_type, arg_2_type)
+	{
+	}
+
+	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
+	{
+		ResT*  p_result = (ResT*)result_dst;
+		Arg1T* p_arg_1  = (Arg1T*)argument_src;
+		Arg2T* p_arg_2  = (Arg2T*)((glw::GLubyte*)argument_src + getArgumentOffset(1));
+
+		const glw::GLuint n_components_0 = getArgumentComponents(0);
+		const glw::GLuint n_components_1 = getArgumentComponents(1);
+		const glw::GLuint n_components   = de::max(n_components_0, n_components_1);
+
+		const glw::GLuint component_step_0 = (1 == n_components_0) ? 0 : 1;
+		const glw::GLuint component_step_1 = (1 == n_components_1) ? 0 : 1;
+
+		functionPointer p_function = (functionPointer)m_p_function;
+
+		for (glw::GLuint component = 0; component < n_components; ++component)
+		{
+			const Arg1T first_arg  = p_arg_1[component * component_step_0];
+			const Arg2T second_arg = p_arg_2[component * component_step_1];
+
+			p_result[component] = p_function(first_arg, second_arg);
+		}
+	}
+};
+
+/** Base of tenary function classes.
+ *
+ **/
+class tenaryBase : public BuiltinFunctionTest::functionObject
+{
+public:
+	tenaryBase(FunctionEnum function_enum, const glw::GLchar* function_name, glw::GLvoid* function_pointer,
+			   const Utils::_variable_type res_type, const Utils::_variable_type arg_1_type,
+			   const Utils::_variable_type arg_2_type, const Utils::_variable_type arg_3_type)
+		: functionObject(function_enum, function_name, function_pointer, res_type)
+		, m_arg_1_type(arg_1_type)
+		, m_arg_2_type(arg_2_type)
+		, m_arg_3_type(arg_3_type)
+	{
+	}
+
+	virtual glw::GLuint getArgumentCount() const
+	{
+		return 3;
+	}
+
+	virtual Utils::_variable_type getArgumentType(glw::GLuint argument) const
+	{
+		switch (argument)
+		{
+		case 0:
+			return m_arg_1_type;
+			break;
+		case 1:
+			return m_arg_2_type;
+			break;
+		case 2:
+			return m_arg_3_type;
+			break;
+		default:
+			return Utils::VARIABLE_TYPE_UNKNOWN;
+			break;
+		}
+	}
+
+protected:
+	const Utils::_variable_type m_arg_1_type;
+	const Utils::_variable_type m_arg_2_type;
+	const Utils::_variable_type m_arg_3_type;
+};
+
+/** Tenary function class. It treats input arguments as three variables.
+ *
+ * @param ResT  Type of result
+ * @param Arg1T Type of first argument
+ * @param Arg2T Type of second argument
+ * @param Arg3T Type of third argument
+ **/
+template <typename ResT, typename Arg1T, typename Arg2T, typename Arg3T>
+class tenary : public tenaryBase
+{
+public:
+	typedef ResT (*functionPointer)(Arg1T, Arg2T, Arg3T);
+	typedef typename TypeHelpers::referenceToType<Arg1T>::result arg1T;
+	typedef typename TypeHelpers::referenceToType<Arg2T>::result arg2T;
+	typedef typename TypeHelpers::referenceToType<Arg3T>::result arg3T;
+
+	tenary(FunctionEnum function_enum, const glw::GLchar* function_name, functionPointer function_pointer)
+		: tenaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, typeInfo<ResT>::variable_type,
+					 typeInfo<Arg1T>::variable_type, typeInfo<Arg2T>::variable_type, typeInfo<Arg3T>::variable_type)
+	{
+	}
+
+	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
+	{
+		const glw::GLuint argument_2_offset = getArgumentOffset(1);
+		const glw::GLuint argument_3_offset = getArgumentOffset(2);
+
+		functionPointer p_function = (functionPointer)m_p_function;
+
+		arg1T arg_1;
+		arg2T arg_2;
+		arg3T arg_3;
+		ResT  result;
+
+		unpack<arg1T>::get(argument_src, arg_1);
+		unpack<arg2T>::get((glw::GLubyte*)argument_src + argument_2_offset, arg_2);
+		unpack<arg3T>::get((glw::GLubyte*)argument_src + argument_3_offset, arg_3);
+
+		result = p_function(arg_1, arg_2, arg_3);
+
+		pack<ResT>::set(result_dst, result);
+	}
+};
+
+/** Tenary function class. It treats input arguments as separate components.
+ *
+
+ **/
+class tenaryByComponent : public tenaryBase
+{
+public:
+	typedef glw::GLdouble (*functionPointer)(glw::GLdouble, glw::GLdouble, glw::GLdouble);
+
+	tenaryByComponent(FunctionEnum function_enum, const glw::GLchar* function_name, functionPointer function_pointer,
+					  const Utils::_variable_type res_type, const Utils::_variable_type arg_1_type,
+					  const Utils::_variable_type arg_2_type, const Utils::_variable_type arg_3_type)
+		: tenaryBase(function_enum, function_name, (glw::GLvoid*)function_pointer, res_type, arg_1_type, arg_2_type,
+					 arg_3_type)
+	{
+	}
+
+	virtual void call(glw::GLvoid* result_dst, const glw::GLvoid* argument_src) const
+	{
+		glw::GLdouble*		 p_result = (glw::GLdouble*)result_dst;
+		const glw::GLdouble* p_arg	= (const glw::GLdouble*)argument_src;
+
+		const glw::GLuint n_components_0 = getArgumentComponents(0);
+		const glw::GLuint n_components_1 = getArgumentComponents(1);
+		const glw::GLuint n_components_2 = getArgumentComponents(2);
+		const glw::GLuint n_components   = de::max(de::max(n_components_0, n_components_1), n_components_2);
+
+		const glw::GLuint component_step_0 = (1 == n_components_0) ? 0 : 1;
+		const glw::GLuint component_step_1 = (1 == n_components_1) ? 0 : 1;
+		const glw::GLuint component_step_2 = (1 == n_components_2) ? 0 : 1;
+
+		functionPointer p_function = (functionPointer)m_p_function;
+
+		for (glw::GLuint component = 0; component < n_components; ++component)
+		{
+			const glw::GLdouble first_arg  = p_arg[component * component_step_0];
+			const glw::GLdouble second_arg = p_arg[component * component_step_1 + n_components_0];
+			const glw::GLdouble third_arg  = p_arg[component * component_step_2 + n_components_0 + n_components_1];
+
+			p_result[component] = p_function(first_arg, second_arg, third_arg);
+		}
+	}
+};
+} /* FunctionObject */
 
 /** Constructor.
  *
  *  @param context Rendering context.
  **/
-GPUShaderFP64Test10::GPUShaderFP64Test10(deqp::Context& context)
-	: TestCase(context, "built_in_functions", "Verify that built-in functions support double-precision types")
+BuiltinFunctionTest::BuiltinFunctionTest(deqp::Context& context, std::string caseName, FunctionEnum function,
+										 TypeDefinition typeDefinition)
+	: TestCase(context, caseName.c_str(), "Verify that built-in functions support double-precision types")
 	, m_transform_feedback_buffer_id(0)
 	, m_vertex_array_object_id(0)
+	, m_function(function)
+	, m_typeDefinition(typeDefinition)
 {
 	/* Nothing to be done here */
 }
@@ -13253,7 +13519,7 @@ GPUShaderFP64Test10::GPUShaderFP64Test10(deqp::Context& context)
 /** Deinitializes all GL objects that may have been created during test execution.
  *
  **/
-void GPUShaderFP64Test10::deinit()
+void BuiltinFunctionTest::deinit()
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -13278,10 +13544,8 @@ void GPUShaderFP64Test10::deinit()
  *
  * @return tcu::TestNode::STOP
  **/
-tcu::TestNode::IterateResult GPUShaderFP64Test10::iterate()
+tcu::TestNode::IterateResult BuiltinFunctionTest::iterate()
 {
-	bool result = true;
-
 	/* Check if extension is supported */
 	if (false == m_context.getContextInfo().isExtensionSupported("GL_ARB_gpu_shader_fp64"))
 	{
@@ -13290,21 +13554,9 @@ tcu::TestNode::IterateResult GPUShaderFP64Test10::iterate()
 
 	testInit();
 
-	/* For each combination of function and type */
-	for (std::vector<typeDetails>::const_iterator type = m_types.begin(); m_types.end() != type; ++type)
-	{
-		for (std::vector<functionEnum>::const_iterator function = m_functions.begin(); m_functions.end() != function;
-			 ++function)
-		{
-			if (false == test(*function, *type))
-			{
-				result = false;
-			}
-		}
-	}
-
-	/* Set result */
-	if (true == result)
+	/* Verify result */
+	typeDetails type(m_typeDefinition.n_columns, m_typeDefinition.n_rows);
+	if (test(m_function, type))
 	{
 		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
@@ -13324,7 +13576,7 @@ tcu::TestNode::IterateResult GPUShaderFP64Test10::iterate()
  * @param function_pointer Pointer to routine that wiil be executed
  * @param result_type      Type of result
  **/
-GPUShaderFP64Test10::functionObject::functionObject(functionEnum function_enum, const glw::GLchar* function_name,
+BuiltinFunctionTest::functionObject::functionObject(FunctionEnum function_enum, const glw::GLchar* function_name,
 													glw::GLvoid* function_pointer, Utils::_variable_type result_type)
 	: m_function_enum(function_enum)
 	, m_function_name(function_name)
@@ -13340,7 +13592,7 @@ GPUShaderFP64Test10::functionObject::functionObject(functionEnum function_enum, 
  *
  * @return Number of components
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentComponents(glw::GLuint argument) const
+glw::GLuint BuiltinFunctionTest::functionObject::getArgumentComponents(glw::GLuint argument) const
 {
 	const Utils::_variable_type type		  = getArgumentType(argument);
 	const glw::GLuint			n_components  = Utils::getNumberOfComponentsForVariableType(type);
@@ -13354,7 +13606,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentComponents(glw::GLui
  *
  * @return Size of component
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentComponentSize(glw::GLuint argument) const
+glw::GLuint BuiltinFunctionTest::functionObject::getArgumentComponentSize(glw::GLuint argument) const
 {
 	const Utils::_variable_type type		   = getArgumentType(argument);
 	const Utils::_variable_type base_type	  = Utils::getBaseVariableType(type);
@@ -13369,7 +13621,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentComponentSize(glw::G
  *
  * @return Offset of arguemnt's data
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentOffset(glw::GLuint argument) const
+glw::GLuint BuiltinFunctionTest::functionObject::getArgumentOffset(glw::GLuint argument) const
 {
 	glw::GLuint result = 0;
 
@@ -13385,7 +13637,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentOffset(glw::GLuint a
  *
  * @return Stride of all arguments
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentStride() const
+glw::GLuint BuiltinFunctionTest::functionObject::getArgumentStride() const
 {
 	const glw::GLuint n_args = getArgumentCount();
 	glw::GLuint		  result = 0;
@@ -13404,7 +13656,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentStride() const
  *
  * @return Stride of argument
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentStride(glw::GLuint argument) const
+glw::GLuint BuiltinFunctionTest::functionObject::getArgumentStride(glw::GLuint argument) const
 {
 	const glw::GLuint component_size = getArgumentComponentSize(argument);
 	const glw::GLuint n_components   = getArgumentComponents(argument);
@@ -13416,7 +13668,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getArgumentStride(glw::GLuint a
  *
  * @return Function enumeration
  **/
-GPUShaderFP64Test10::functionEnum GPUShaderFP64Test10::functionObject::getFunctionEnum() const
+FunctionEnum BuiltinFunctionTest::functionObject::getFunctionEnum() const
 {
 	return m_function_enum;
 }
@@ -13425,7 +13677,7 @@ GPUShaderFP64Test10::functionEnum GPUShaderFP64Test10::functionObject::getFuncti
  *
  * @return Function name
  **/
-const glw::GLchar* GPUShaderFP64Test10::functionObject::getName() const
+const glw::GLchar* BuiltinFunctionTest::functionObject::getName() const
 {
 	return m_function_name;
 }
@@ -13436,7 +13688,7 @@ const glw::GLchar* GPUShaderFP64Test10::functionObject::getName() const
  *
  * @return Number of components
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getResultComponents(glw::GLuint result) const
+glw::GLuint BuiltinFunctionTest::functionObject::getResultComponents(glw::GLuint result) const
 {
 	const Utils::_variable_type type		  = getResultType(result);
 	const glw::GLuint			n_components  = Utils::getNumberOfComponentsForVariableType(type);
@@ -13448,7 +13700,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getResultComponents(glw::GLuint
  *
  * @return Number of results
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getResultCount() const
+glw::GLuint BuiltinFunctionTest::functionObject::getResultCount() const
 {
 	return 1;
 }
@@ -13459,7 +13711,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getResultCount() const
  *
  * @return Offset
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getResultOffset(glw::GLuint result) const
+glw::GLuint BuiltinFunctionTest::functionObject::getResultOffset(glw::GLuint result) const
 {
 	glw::GLuint offset = 0;
 
@@ -13478,7 +13730,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getResultOffset(glw::GLuint res
  *
  * @return Stride
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getResultStride(glw::GLuint result) const
+glw::GLuint BuiltinFunctionTest::functionObject::getResultStride(glw::GLuint result) const
 {
 	const Utils::_variable_type type		   = getResultType(result);
 	const glw::GLuint			n_components   = Utils::getNumberOfComponentsForVariableType(type);
@@ -13492,7 +13744,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getResultStride(glw::GLuint res
  *
  * @return Alignment
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getBaseTypeSize(glw::GLuint result) const
+glw::GLuint BuiltinFunctionTest::functionObject::getBaseTypeSize(glw::GLuint result) const
 {
 	const Utils::_variable_type type		   = getResultType(result);
 	const Utils::_variable_type base_type	  = Utils::getBaseVariableType(type);
@@ -13505,7 +13757,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getBaseTypeSize(glw::GLuint res
  *
  * @return Stride
  **/
-glw::GLuint GPUShaderFP64Test10::functionObject::getResultStride() const
+glw::GLuint BuiltinFunctionTest::functionObject::getResultStride() const
 {
 	const glw::GLuint n_results	= getResultCount();
 	glw::GLuint		  stride	   = 0;
@@ -13530,7 +13782,7 @@ glw::GLuint GPUShaderFP64Test10::functionObject::getResultStride() const
  *
  * @return Type
  **/
-Utils::_variable_type GPUShaderFP64Test10::functionObject::getResultType(glw::GLuint /* result */) const
+Utils::_variable_type BuiltinFunctionTest::functionObject::getResultType(glw::GLuint /* result */) const
 {
 	return m_res_type;
 }
@@ -13540,7 +13792,7 @@ Utils::_variable_type GPUShaderFP64Test10::functionObject::getResultType(glw::GL
  * @param n_columns Number of columns
  * @param n_rows    Number of rows
  **/
-GPUShaderFP64Test10::typeDetails::typeDetails(glw::GLuint n_columns, glw::GLuint n_rows)
+BuiltinFunctionTest::typeDetails::typeDetails(glw::GLuint n_columns, glw::GLuint n_rows)
 	: m_n_columns(n_columns), m_n_rows(n_rows)
 {
 	Utils::_variable_type type = Utils::getDoubleVariableType(n_columns, n_rows);
@@ -13572,7 +13824,7 @@ GPUShaderFP64Test10::typeDetails::typeDetails(glw::GLuint n_columns, glw::GLuint
  *
  * @return true if values are equal, false otherwise
  **/
-bool GPUShaderFP64Test10::compare(Utils::_variable_type type, const glw::GLvoid* left, const glw::GLvoid* right)
+bool BuiltinFunctionTest::compare(Utils::_variable_type type, const glw::GLvoid* left, const glw::GLvoid* right)
 {
 	bool result = true;
 
@@ -13662,7 +13914,7 @@ bool GPUShaderFP64Test10::compare(Utils::_variable_type type, const glw::GLvoid*
  *
  * @return Create object
  **/
-GPUShaderFP64Test10::functionObject* GPUShaderFP64Test10::getFunctionObject(functionEnum	   function,
+BuiltinFunctionTest::functionObject* BuiltinFunctionTest::getFunctionObject(FunctionEnum	   function,
 																			const typeDetails& type)
 {
 	typedef tcu::Matrix<glw::GLdouble, 2, 2> DMat2;
@@ -14383,7 +14635,7 @@ GPUShaderFP64Test10::functionObject* GPUShaderFP64Test10::getFunctionObject(func
  *
  * @return Function pointer
  **/
-GPUShaderFP64Test10::uniformDMatFunctionPointer GPUShaderFP64Test10::getUniformFunctionForDMat(
+BuiltinFunctionTest::uniformDMatFunctionPointer BuiltinFunctionTest::getUniformFunctionForDMat(
 	glw::GLuint argument, const functionObject& function_object) const
 {
 	const Utils::_variable_type argument_type = function_object.getArgumentType(argument);
@@ -14433,7 +14685,7 @@ GPUShaderFP64Test10::uniformDMatFunctionPointer GPUShaderFP64Test10::getUniformF
  *
  * @return Function pointer
  **/
-GPUShaderFP64Test10::uniformDVecFunctionPointer GPUShaderFP64Test10::getUniformFunctionForDVec(
+BuiltinFunctionTest::uniformDVecFunctionPointer BuiltinFunctionTest::getUniformFunctionForDVec(
 	glw::GLuint argument, const functionObject& function_object) const
 {
 	const Utils::_variable_type argument_type = function_object.getArgumentType(argument);
@@ -14468,7 +14720,7 @@ GPUShaderFP64Test10::uniformDVecFunctionPointer GPUShaderFP64Test10::getUniformF
  *
  * @return Function pointer
  **/
-GPUShaderFP64Test10::uniformIVecFunctionPointer GPUShaderFP64Test10::getUniformFunctionForIVec(
+BuiltinFunctionTest::uniformIVecFunctionPointer BuiltinFunctionTest::getUniformFunctionForIVec(
 	glw::GLuint argument, const functionObject& function_object) const
 {
 	const Utils::_variable_type argument_type = function_object.getArgumentType(argument);
@@ -14503,7 +14755,7 @@ GPUShaderFP64Test10::uniformIVecFunctionPointer GPUShaderFP64Test10::getUniformF
  *
  * @return Function pointer
  **/
-GPUShaderFP64Test10::uniformUVecFunctionPointer GPUShaderFP64Test10::getUniformFunctionForUVec(
+BuiltinFunctionTest::uniformUVecFunctionPointer BuiltinFunctionTest::getUniformFunctionForUVec(
 	glw::GLuint argument, const functionObject& function_object) const
 {
 	const Utils::_variable_type argument_type = function_object.getArgumentType(argument);
@@ -14528,7 +14780,7 @@ GPUShaderFP64Test10::uniformUVecFunctionPointer GPUShaderFP64Test10::getUniformF
  *
  * @return Name of uniform
  **/
-const glw::GLchar* GPUShaderFP64Test10::getUniformName(glw::GLuint argument) const
+const glw::GLchar* BuiltinFunctionTest::getUniformName(glw::GLuint argument) const
 {
 	switch (argument)
 	{
@@ -14554,7 +14806,7 @@ const glw::GLchar* GPUShaderFP64Test10::getUniformName(glw::GLuint argument) con
  *
  * @return Name of varying
  **/
-const glw::GLchar* GPUShaderFP64Test10::getVaryingName(glw::GLuint result) const
+const glw::GLchar* BuiltinFunctionTest::getVaryingName(glw::GLuint result) const
 {
 	switch (result)
 	{
@@ -14581,7 +14833,7 @@ const glw::GLchar* GPUShaderFP64Test10::getVaryingName(glw::GLuint result) const
  *
  * @return true if function is available for given type, false otherwise
  **/
-bool GPUShaderFP64Test10::isFunctionImplemented(functionEnum function, const typeDetails& type) const
+bool BuiltinFunctionTest::isFunctionImplemented(FunctionEnum function, const typeDetails& type) const
 {
 	static const bool look_up_table[][3] = {
 		/* SCALAR, VECTOR, MATRIX */
@@ -14664,7 +14916,7 @@ bool GPUShaderFP64Test10::isFunctionImplemented(functionEnum function, const typ
  * @param name   Name of variable
  * @param type   Type of variable
  **/
-void GPUShaderFP64Test10::logVariableType(const glw::GLvoid* buffer, const glw::GLchar* name,
+void BuiltinFunctionTest::logVariableType(const glw::GLvoid* buffer, const glw::GLchar* name,
 										  Utils::_variable_type type) const
 {
 	const Utils::_variable_type base_type	= Utils::getBaseVariableType(type);
@@ -14705,7 +14957,7 @@ void GPUShaderFP64Test10::logVariableType(const glw::GLvoid* buffer, const glw::
  * @param vertex          Vertex index
  * @param buffer          Buffer pointer
  **/
-void GPUShaderFP64Test10::prepareArgument(const functionObject& function_object, glw::GLuint vertex,
+void BuiltinFunctionTest::prepareArgument(const functionObject& function_object, glw::GLuint vertex,
 										  glw::GLubyte* buffer)
 {
 	const glw::GLuint n_arguments = function_object.getArgumentCount();
@@ -14725,7 +14977,7 @@ void GPUShaderFP64Test10::prepareArgument(const functionObject& function_object,
  * @param argument        Argument index
  * @param buffer          Buffer pointer
  **/
-void GPUShaderFP64Test10::prepareComponents(const functionObject& function_object, glw::GLuint vertex,
+void BuiltinFunctionTest::prepareComponents(const functionObject& function_object, glw::GLuint vertex,
 											glw::GLuint argument, glw::GLubyte* buffer)
 {
 	glw::GLuint					argument_index[3]		 = { 0 };
@@ -14863,69 +15115,12 @@ void GPUShaderFP64Test10::prepareComponents(const functionObject& function_objec
 	}
 }
 
-/** Prepare collection of function enumerations
- *
- **/
-void GPUShaderFP64Test10::prepareFunctions()
-{
-	m_functions.push_back(FUNCTION_ABS);
-	m_functions.push_back(FUNCTION_CEIL);
-	m_functions.push_back(FUNCTION_CLAMP);
-	m_functions.push_back(FUNCTION_CLAMP_AGAINST_SCALAR);
-	m_functions.push_back(FUNCTION_CROSS);
-	m_functions.push_back(FUNCTION_DETERMINANT);
-	m_functions.push_back(FUNCTION_DISTANCE);
-	m_functions.push_back(FUNCTION_DOT);
-	m_functions.push_back(FUNCTION_EQUAL);
-	m_functions.push_back(FUNCTION_FACEFORWARD);
-	m_functions.push_back(FUNCTION_FLOOR);
-	m_functions.push_back(FUNCTION_FMA);
-	m_functions.push_back(FUNCTION_FRACT);
-	m_functions.push_back(FUNCTION_FREXP);
-	m_functions.push_back(FUNCTION_GREATERTHAN);
-	m_functions.push_back(FUNCTION_GREATERTHANEQUAL);
-	m_functions.push_back(FUNCTION_INVERSE);
-	m_functions.push_back(FUNCTION_INVERSESQRT);
-	m_functions.push_back(FUNCTION_LDEXP);
-	m_functions.push_back(FUNCTION_LESSTHAN);
-	m_functions.push_back(FUNCTION_LESSTHANEQUAL);
-	m_functions.push_back(FUNCTION_LENGTH);
-	m_functions.push_back(FUNCTION_MATRIXCOMPMULT);
-	m_functions.push_back(FUNCTION_MAX);
-	m_functions.push_back(FUNCTION_MAX_AGAINST_SCALAR);
-	m_functions.push_back(FUNCTION_MIN);
-	m_functions.push_back(FUNCTION_MIN_AGAINST_SCALAR);
-	m_functions.push_back(FUNCTION_MIX);
-	m_functions.push_back(FUNCTION_MOD);
-	m_functions.push_back(FUNCTION_MOD_AGAINST_SCALAR);
-	m_functions.push_back(FUNCTION_MODF);
-	m_functions.push_back(FUNCTION_NORMALIZE);
-	m_functions.push_back(FUNCTION_NOTEQUAL);
-	m_functions.push_back(FUNCTION_OUTERPRODUCT);
-	m_functions.push_back(FUNCTION_PACKDOUBLE2X32);
-	m_functions.push_back(FUNCTION_REFLECT);
-	m_functions.push_back(FUNCTION_REFRACT);
-	m_functions.push_back(FUNCTION_ROUND);
-	m_functions.push_back(FUNCTION_ROUNDEVEN);
-	m_functions.push_back(FUNCTION_SIGN);
-	m_functions.push_back(FUNCTION_SMOOTHSTEP);
-	m_functions.push_back(FUNCTION_SMOOTHSTEP_AGAINST_SCALAR);
-	m_functions.push_back(FUNCTION_SQRT);
-	m_functions.push_back(FUNCTION_STEP);
-	m_functions.push_back(FUNCTION_STEP_AGAINST_SCALAR);
-	m_functions.push_back(FUNCTION_TRANSPOSE);
-	m_functions.push_back(FUNCTION_TRUNC);
-	m_functions.push_back(FUNCTION_UNPACKDOUBLE2X32);
-	m_functions.push_back(FUNCTION_ISNAN);
-	m_functions.push_back(FUNCTION_ISINF);
-}
-
 /** Prepare programInfo for given functionObject
  *
  * @param function_object  Function object
  * @param out_program_info Program info
  **/
-void GPUShaderFP64Test10::prepareProgram(const functionObject& function_object, Utils::programInfo& out_program_info)
+void BuiltinFunctionTest::prepareProgram(const functionObject& function_object, Utils::programInfo& out_program_info)
 {
 	const glw::GLuint		  n_varying_names  = function_object.getResultCount();
 	static const glw::GLchar* varying_names[3] = { getVaryingName(0), getVaryingName(1), getVaryingName(2) };
@@ -14940,7 +15135,7 @@ void GPUShaderFP64Test10::prepareProgram(const functionObject& function_object, 
  *
  * @param function_object Function object
  **/
-void GPUShaderFP64Test10::prepareTestData(const functionObject& function_object)
+void BuiltinFunctionTest::prepareTestData(const functionObject& function_object)
 {
 	const glw::GLuint result_stride		   = function_object.getResultStride();
 	const glw::GLuint result_buffer_size   = result_stride * m_n_veritces;
@@ -14965,31 +15160,11 @@ void GPUShaderFP64Test10::prepareTestData(const functionObject& function_object)
 	}
 }
 
-/** Prepare collection of types
- *
- **/
-void GPUShaderFP64Test10::prepareTypes()
-{
-	m_types.push_back(typeDetails(1 /* n_columns */, 1 /* n_rows */));
-	m_types.push_back(typeDetails(1 /* n_columns */, 2 /* n_rows */));
-	m_types.push_back(typeDetails(1 /* n_columns */, 3 /* n_rows */));
-	m_types.push_back(typeDetails(1 /* n_columns */, 4 /* n_rows */));
-	m_types.push_back(typeDetails(2 /* n_columns */, 2 /* n_rows */));
-	m_types.push_back(typeDetails(2 /* n_columns */, 3 /* n_rows */));
-	m_types.push_back(typeDetails(2 /* n_columns */, 4 /* n_rows */));
-	m_types.push_back(typeDetails(3 /* n_columns */, 2 /* n_rows */));
-	m_types.push_back(typeDetails(3 /* n_columns */, 3 /* n_rows */));
-	m_types.push_back(typeDetails(3 /* n_columns */, 4 /* n_rows */));
-	m_types.push_back(typeDetails(4 /* n_columns */, 2 /* n_rows */));
-	m_types.push_back(typeDetails(4 /* n_columns */, 3 /* n_rows */));
-	m_types.push_back(typeDetails(4 /* n_columns */, 4 /* n_rows */));
-}
-
 /** Prepare source code of vertex shader for given function object. Result is stored in m_vertex_shader_code.
  *
  * @param function_object Function object
  **/
-void GPUShaderFP64Test10::prepareVertexShaderCode(const functionObject& function_object)
+void BuiltinFunctionTest::prepareVertexShaderCode(const functionObject& function_object)
 {
 	static const glw::GLchar* shader_template_code = "#version 400 core\n"
 													 "\n"
@@ -15117,7 +15292,7 @@ void GPUShaderFP64Test10::prepareVertexShaderCode(const functionObject& function
  *
  * @return true if test pass (or function is not available for <type>), false otherwise
  **/
-bool GPUShaderFP64Test10::test(functionEnum function, const typeDetails& type)
+bool BuiltinFunctionTest::test(FunctionEnum function, const typeDetails& type)
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -15165,7 +15340,7 @@ bool GPUShaderFP64Test10::test(functionEnum function, const typeDetails& type)
  * @param program_id      Program object id
  * @param vertex          Vertex index
  **/
-void GPUShaderFP64Test10::testBegin(const functionObject& function_object, glw::GLuint program_id, glw::GLuint vertex)
+void BuiltinFunctionTest::testBegin(const functionObject& function_object, glw::GLuint program_id, glw::GLuint vertex)
 {
 	const glw::GLuint	 arguments_stride   = function_object.getArgumentStride();
 	const glw::Functions& gl				 = m_context.getRenderContext().getFunctions();
@@ -15250,12 +15425,9 @@ void GPUShaderFP64Test10::testBegin(const functionObject& function_object, glw::
 /** Init GL obejcts
  *
  **/
-void GPUShaderFP64Test10::testInit()
+void BuiltinFunctionTest::testInit()
 {
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
-
-	prepareFunctions();
-	prepareTypes();
 
 	gl.genBuffers(1, &m_transform_feedback_buffer_id);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GenBuffers");
@@ -15273,7 +15445,7 @@ void GPUShaderFP64Test10::testInit()
  *
  * @return true if all results are as expected, false otherwise
  **/
-bool GPUShaderFP64Test10::verifyResults(const functionObject& function_object, glw::GLuint vertex)
+bool BuiltinFunctionTest::verifyResults(const functionObject& function_object, glw::GLuint vertex)
 {
 	const glw::Functions& gl			   = m_context.getRenderContext().getFunctions();
 	bool				  test_result	  = true;
@@ -15361,16 +15533,103 @@ GPUShaderFP64Tests::GPUShaderFP64Tests(deqp::Context& context)
  **/
 void GPUShaderFP64Tests::init(void)
 {
-	addChild(new GPUShaderFP64Test1(m_context));
-	addChild(new GPUShaderFP64Test2(m_context));
-	addChild(new GPUShaderFP64Test3(m_context));
-	addChild(new GPUShaderFP64Test4(m_context));
-	addChild(new GPUShaderFP64Test5(m_context));
-	addChild(new GPUShaderFP64Test6(m_context));
-	addChild(new GPUShaderFP64Test7(m_context));
-	addChild(new GPUShaderFP64Test8(m_context));
-	addChild(new GPUShaderFP64Test9(m_context));
-	addChild(new GPUShaderFP64Test10(m_context));
+	TestCaseGroup* fp64 = new TestCaseGroup(m_context, "fp64", "");
+	fp64->addChild(new GPUShaderFP64Test1(m_context));
+	fp64->addChild(new GPUShaderFP64Test2(m_context));
+	fp64->addChild(new GPUShaderFP64Test3(m_context));
+	fp64->addChild(new GPUShaderFP64Test4(m_context));
+	fp64->addChild(new GPUShaderFP64Test5(m_context));
+	fp64->addChild(new GPUShaderFP64Test6(m_context));
+	fp64->addChild(new GPUShaderFP64Test7(m_context));
+	fp64->addChild(new GPUShaderFP64Test8(m_context));
+	fp64->addChild(new GPUShaderFP64Test9(m_context));
+	addChild(fp64);
+
+	TypeDefinition typeDefinition[] =
+	{
+		{ "double",  1, 1 },
+		{ "dvec2",   1, 2 },
+		{ "dvec3",   1, 3 },
+		{ "dvec4",   1, 4 },
+		{ "dmat2",   2, 2 },
+		{ "dmat2x3", 2, 3 },
+		{ "dmat2x4", 2, 4 },
+		{ "dmat3x2", 3, 2 },
+		{ "dmat3",   3, 3 },
+		{ "dmat3x4", 3, 4 },
+		{ "dmat4x2", 4, 2 },
+		{ "dmat4x3", 4, 3 },
+		{ "dmat4",   4, 4 }
+	};
+
+	struct BuiltinFunctions
+	{
+		std::string  name;
+		FunctionEnum function;
+	} builtinFunctions[] = {
+		{ "abs",						FUNCTION_ABS },
+		{ "ceil",						FUNCTION_CEIL },
+		{ "clamp",						FUNCTION_CLAMP },
+		{ "clamp_against_scalar",		FUNCTION_CLAMP_AGAINST_SCALAR },
+		{ "cross",						FUNCTION_CROSS },
+		{ "determinant",				FUNCTION_DETERMINANT },
+		{ "distance",					FUNCTION_DISTANCE },
+		{ "dot",						FUNCTION_DOT },
+		{ "equal",						FUNCTION_EQUAL },
+		{ "faceforward",				FUNCTION_FACEFORWARD },
+		{ "floor",						FUNCTION_FLOOR },
+		{ "fma",						FUNCTION_FMA },
+		{ "fract",						FUNCTION_FRACT },
+		{ "frexp",						FUNCTION_FREXP },
+		{ "greaterthan",				FUNCTION_GREATERTHAN },
+		{ "greaterthanequal",			FUNCTION_GREATERTHANEQUAL },
+		{ "inverse",					FUNCTION_INVERSE },
+		{ "inversesqrt",				FUNCTION_INVERSESQRT },
+		{ "ldexp",						FUNCTION_LDEXP },
+		{ "lessthan",					FUNCTION_LESSTHAN },
+		{ "lessthanequal",				FUNCTION_LESSTHANEQUAL },
+		{ "length",						FUNCTION_LENGTH },
+		{ "matrixcompmult",				FUNCTION_MATRIXCOMPMULT },
+		{ "max",						FUNCTION_MAX },
+		{ "max_against_scalar",			FUNCTION_MAX_AGAINST_SCALAR },
+		{ "min",						FUNCTION_MIN },
+		{ "min_against_scalar",			FUNCTION_MIN_AGAINST_SCALAR },
+		{ "mix",						FUNCTION_MIX },
+		{ "mod",						FUNCTION_MOD },
+		{ "mod_against_scalar",			FUNCTION_MOD_AGAINST_SCALAR },
+		{ "modf",						FUNCTION_MODF },
+		{ "normalize",					FUNCTION_NORMALIZE },
+		{ "notequal",					FUNCTION_NOTEQUAL },
+		{ "outerproduct",				FUNCTION_OUTERPRODUCT },
+		{ "packdouble2x32",				FUNCTION_PACKDOUBLE2X32 },
+		{ "reflect",					FUNCTION_REFLECT },
+		{ "refract",					FUNCTION_REFRACT },
+		{ "round",						FUNCTION_ROUND },
+		{ "roundeven",					FUNCTION_ROUNDEVEN },
+		{ "sign",						FUNCTION_SIGN },
+		{ "smoothstep",					FUNCTION_SMOOTHSTEP },
+		{ "smoothstep_against_scalar",	FUNCTION_SMOOTHSTEP_AGAINST_SCALAR },
+		{ "sqrt",						FUNCTION_SQRT },
+		{ "step",						FUNCTION_STEP },
+		{ "step_against_scalar",		FUNCTION_STEP_AGAINST_SCALAR },
+		{ "transpose",					FUNCTION_TRANSPOSE },
+		{ "trunc",						FUNCTION_TRUNC },
+		{ "unpackdouble2x32",			FUNCTION_UNPACKDOUBLE2X32 },
+		{ "isnan",						FUNCTION_ISNAN },
+		{ "isinf",						FUNCTION_ISINF }
+	};
+
+	TestCaseGroup* builin = new TestCaseGroup(m_context, "builtin", "");
+	for (int i = 0; i < DE_LENGTH_OF_ARRAY(builtinFunctions); ++i)
+	{
+		const BuiltinFunctions& bf = builtinFunctions[i];
+		for (int j = 0; j < DE_LENGTH_OF_ARRAY(typeDefinition); ++j)
+		{
+			std::string caseName = bf.name + "_" + typeDefinition[j].name;
+			builin->addChild(new BuiltinFunctionTest(m_context, caseName, bf.function, typeDefinition[j]));
+		}
+	}
+	addChild(builin);
 }
 
 } /* glcts namespace */

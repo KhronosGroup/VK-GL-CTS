@@ -394,7 +394,75 @@ void Tests::init()
 	addChild(new Textures::StorageAndSubImageTest<glw::GLfloat, 3, true, 3, true>(m_context, "textures_subimage_3d_rgb32f"));
 	addChild(new Textures::StorageAndSubImageTest<glw::GLfloat, 4, true, 3, true>(m_context, "textures_subimage_3d_rgba32f"));
 
-	addChild(new Textures::StorageMultisampleTest(m_context));
+	addChild(new Textures::StorageMultisampleTest<glw::GLbyte, 1, false, 2>(m_context, "textures_storage_multisample_2d_r8i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLbyte, 2, false, 2>(m_context, "textures_storage_multisample_2d_rg8i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLbyte, 4, false, 2>(m_context, "textures_storage_multisample_2d_rgba8i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLbyte, 1, false, 3>(m_context, "textures_storage_multisample_3d_r8i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLbyte, 2, false, 3>(m_context, "textures_storage_multisample_3d_rg8i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLbyte, 4, false, 3>(m_context, "textures_storage_multisample_3d_rgba8i"));
+
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 1, false, 2>(m_context, "textures_storage_multisample_2d_r8ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 2, false, 2>(m_context, "textures_storage_multisample_2d_rg8ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 4, false, 2>(m_context, "textures_storage_multisample_2d_rgba8ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 1, false, 3>(m_context, "textures_storage_multisample_3d_r8ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 2, false, 3>(m_context, "textures_storage_multisample_3d_rg8ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 4, false, 3>(m_context, "textures_storage_multisample_3d_rgba8ui"));
+
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 1, true, 2>(m_context, "textures_storage_multisample_2d_r8ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 2, true, 2>(m_context, "textures_storage_multisample_2d_rg8ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 4, true, 2>(m_context, "textures_storage_multisample_2d_rgba8ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 1, true, 3>(m_context, "textures_storage_multisample_3d_r8ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 2, true, 3>(m_context, "textures_storage_multisample_3d_rg8ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLubyte, 4, true, 3>(m_context, "textures_storage_multisample_3d_rgba8ui_unorm"));
+
+	addChild(new Textures::StorageMultisampleTest<glw::GLshort, 1, false, 2>(m_context, "textures_storage_multisample_2d_r16i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLshort, 2, false, 2>(m_context, "textures_storage_multisample_2d_rg16i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLshort, 4, false, 2>(m_context, "textures_storage_multisample_2d_rgba16i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLshort, 1, false, 3>(m_context, "textures_storage_multisample_3d_r16i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLshort, 2, false, 3>(m_context, "textures_storage_multisample_3d_rg16i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLshort, 4, false, 3>(m_context, "textures_storage_multisample_3d_rgba16i"));
+
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 1, false, 2>(m_context, "textures_storage_multisample_2d_r16u"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 2, false, 2>(m_context, "textures_storage_multisample_2d_rg16u"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 4, false, 2>(m_context, "textures_storage_multisample_2d_rgba16u"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 1, false, 3>(m_context, "textures_storage_multisample_3d_r16u"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 2, false, 3>(m_context, "textures_storage_multisample_3d_rg16u"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 4, false, 3>(m_context, "textures_storage_multisample_3d_rgba16u"));
+
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 1, true, 2>(m_context, "textures_storage_multisample_2d_r16ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 2, true, 2>(m_context, "textures_storage_multisample_2d_rg16ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 4, true, 2>(m_context, "textures_storage_multisample_2d_rgba16ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 1, true, 3>(m_context, "textures_storage_multisample_3d_r16ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 2, true, 3>(m_context, "textures_storage_multisample_3d_rg16ui_unorm"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLushort, 4, true, 3>(m_context, "textures_storage_multisample_3d_rgba16ui_unorm"));
+
+	addChild(new Textures::StorageMultisampleTest<glw::GLint, 1, false, 2>(m_context, "textures_storage_multisample_2d_r32i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLint, 2, false, 2>(m_context, "textures_storage_multisample_2d_rg32i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLint, 3, false, 2>(m_context, "textures_storage_multisample_2d_rgb32i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLint, 4, false, 2>(m_context, "textures_storage_multisample_2d_rgba32i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLint, 1, false, 3>(m_context, "textures_storage_multisample_3d_r32i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLint, 2, false, 3>(m_context, "textures_storage_multisample_3d_rg32i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLint, 3, false, 3>(m_context, "textures_storage_multisample_3d_rgb32i"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLint, 4, false, 3>(m_context, "textures_storage_multisample_3d_rgba32i"));
+
+	addChild(new Textures::StorageMultisampleTest<glw::GLuint, 1, false, 2>(m_context, "textures_storage_multisample_2d_r32ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLuint, 2, false, 2>(m_context, "textures_storage_multisample_2d_rg32ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLuint, 3, false, 2>(m_context, "textures_storage_multisample_2d_rgb32ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLuint, 4, false, 2>(m_context, "textures_storage_multisample_2d_rgba32ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLuint, 1, false, 3>(m_context, "textures_storage_multisample_3d_r32ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLuint, 2, false, 3>(m_context, "textures_storage_multisample_3d_rg32ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLuint, 3, false, 3>(m_context, "textures_storage_multisample_3d_rgb32ui"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLuint, 4, false, 3>(m_context, "textures_storage_multisample_3d_rgba32ui"));
+
+	addChild(new Textures::StorageMultisampleTest<glw::GLfloat, 1, true, 2>(m_context, "textures_storage_multisample_2d_r32f"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLfloat, 2, true, 2>(m_context, "textures_storage_multisample_2d_rg32f"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLfloat, 3, true, 2>(m_context, "textures_storage_multisample_2d_rgb32f"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLfloat, 4, true, 2>(m_context, "textures_storage_multisample_2d_rgba32f"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLfloat, 1, true, 3>(m_context, "textures_storage_multisample_3d_r32f"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLfloat, 2, true, 3>(m_context, "textures_storage_multisample_3d_rg32f"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLfloat, 3, true, 3>(m_context, "textures_storage_multisample_3d_rgb32f"));
+	addChild(new Textures::StorageMultisampleTest<glw::GLfloat, 4, true, 3>(m_context, "textures_storage_multisample_3d_rgba32f"));
+
 	addChild(new Textures::CompressedSubImageTest(m_context));
 	addChild(new Textures::CopyTest(m_context));
 	addChild(new Textures::GetSetParameterTest(m_context));
