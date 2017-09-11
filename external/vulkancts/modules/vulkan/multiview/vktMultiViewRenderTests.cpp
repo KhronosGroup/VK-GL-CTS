@@ -354,11 +354,11 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 			0u															// deUint32			maxMultiviewInstanceIndex;
 		};
 
-		VkPhysicalDeviceProperties2KHR deviceProperties2;
-		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+		VkPhysicalDeviceProperties2 deviceProperties2;
+		deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 		deviceProperties2.pNext = &multiviewProperties;
 
-		instance.getPhysicalDeviceProperties2KHR(physicalDevice, &deviceProperties2);
+		instance.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties2);
 
 		TestParameters newParameters = parameters;
 		newParameters.extent.depth = multiviewProperties.maxMultiviewViewCount;
@@ -419,11 +419,11 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		DE_FALSE,													// VkBool32			multiviewTessellationShader;
 	};
 
-	VkPhysicalDeviceFeatures2KHR			enabledFeatures;
-	enabledFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
-	enabledFeatures.pNext = &multiviewFeatures;
+	VkPhysicalDeviceFeatures2			enabledFeatures;
+	enabledFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	enabledFeatures.pNext				= &multiviewFeatures;
 
-	instance.getPhysicalDeviceFeatures2KHR(physicalDevice, &enabledFeatures);
+	instance.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
 	if (!multiviewFeatures.multiview)
 		TCU_THROW(NotSupportedError, "MultiView not supported");
@@ -447,11 +447,11 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		0u															//deUint32			maxMultiviewInstanceIndex;
 	};
 
-	VkPhysicalDeviceProperties2KHR			propertiesDeviceProperties2;
-	propertiesDeviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
-	propertiesDeviceProperties2.pNext = &multiviewProperties;
+	VkPhysicalDeviceProperties2			propertiesDeviceProperties2;
+	propertiesDeviceProperties2.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	propertiesDeviceProperties2.pNext	= &multiviewProperties;
 
-	instance.getPhysicalDeviceProperties2KHR(physicalDevice, &propertiesDeviceProperties2);
+	instance.getPhysicalDeviceProperties2(physicalDevice, &propertiesDeviceProperties2);
 
 	if (multiviewProperties.maxMultiviewViewCount < 6u)
 		TCU_FAIL("maxMultiviewViewCount below min value");
@@ -485,10 +485,10 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 		};
 
-		m_logicalDevice	= createDevice(instance, physicalDevice, &deviceInfo);
-		m_device	= MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
-		m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
-		m_device->getDeviceQueue(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);
+		m_logicalDevice					= createDevice(instance, physicalDevice, &deviceInfo);
+		m_device						= MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
+		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
+		m_device->getDeviceQueue		(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);
 	}
 }
 

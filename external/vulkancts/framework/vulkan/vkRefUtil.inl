@@ -21,6 +21,8 @@ Move<VkDescriptorPool>				createDescriptorPool				(const DeviceInterface& vk, Vk
 Move<VkFramebuffer>					createFramebuffer					(const DeviceInterface& vk, VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkRenderPass>					createRenderPass					(const DeviceInterface& vk, VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkCommandPool>					createCommandPool					(const DeviceInterface& vk, VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkSamplerYcbcrConversion>		createSamplerYcbcrConversion		(const DeviceInterface& vk, VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkDescriptorUpdateTemplate>	createDescriptorUpdateTemplate		(const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSwapchainKHR>				createSwapchainKHR					(const DeviceInterface& vk, VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>					createDisplayPlaneSurfaceKHR		(const InstanceInterface& vk, VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSwapchainKHR>				createSharedSwapchainsKHR			(const DeviceInterface& vk, VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator = DE_NULL);
@@ -30,6 +32,12 @@ Move<VkSurfaceKHR>					createWaylandSurfaceKHR				(const InstanceInterface& vk, 
 Move<VkSurfaceKHR>					createMirSurfaceKHR					(const InstanceInterface& vk, VkInstance instance, const VkMirSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>					createAndroidSurfaceKHR				(const InstanceInterface& vk, VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkSurfaceKHR>					createWin32SurfaceKHR				(const InstanceInterface& vk, VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
-Move<VkDescriptorUpdateTemplateKHR>	createDescriptorUpdateTemplateKHR	(const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
-Move<VkSamplerYcbcrConversionKHR>	createSamplerYcbcrConversionKHR		(const DeviceInterface& vk, VkDevice device, const VkSamplerYcbcrConversionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkDescriptorUpdateTemplate>	createDescriptorUpdateTemplateKHR	(const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkSamplerYcbcrConversion>		createSamplerYcbcrConversionKHR		(const DeviceInterface& vk, VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
 Move<VkDebugReportCallbackEXT>		createDebugReportCallbackEXT		(const InstanceInterface& vk, VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkSurfaceKHR>					createViSurfaceNN					(const InstanceInterface& vk, VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkIndirectCommandsLayoutNVX>	createIndirectCommandsLayoutNVX		(const DeviceInterface& vk, VkDevice device, const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkObjectTableNVX>				createObjectTableNVX				(const DeviceInterface& vk, VkDevice device, const VkObjectTableCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkSurfaceKHR>					createIOSSurfaceMVK					(const InstanceInterface& vk, VkInstance instance, const VkIOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkSurfaceKHR>					createMacOSSurfaceMVK				(const InstanceInterface& vk, VkInstance instance, const VkMacOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);
+Move<VkValidationCacheEXT>			createValidationCacheEXT			(const DeviceInterface& vk, VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = DE_NULL);

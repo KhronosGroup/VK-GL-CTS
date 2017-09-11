@@ -157,33 +157,32 @@ DeviceId getDeviceId (const vk::InstanceInterface&	vki,
 					  vk::VkPhysicalDevice			physicalDevice)
 {
 	vk::VkPhysicalDeviceIDPropertiesKHR			propertiesId;
-	vk::VkPhysicalDeviceProperties2KHR			properties;
+	vk::VkPhysicalDeviceProperties2				properties;
 
 	deMemset(&properties, 0, sizeof(properties));
 	deMemset(&propertiesId, 0, sizeof(propertiesId));
 
 	propertiesId.sType	= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR;
 
-	properties.sType	= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+	properties.sType	= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	properties.pNext	= &propertiesId;
 
-	vki.getPhysicalDeviceProperties2KHR(physicalDevice, &properties);
+	vki.getPhysicalDeviceProperties2(physicalDevice, &properties);
 
 	return DeviceId(properties.properties.vendorID, properties.properties.driverVersion, propertiesId.driverUUID, propertiesId.deviceUUID);
 }
 
-vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp)
+vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp, deUint32 version)
 {
 	try
 	{
 		std::vector<std::string> extensions;
 
 		extensions.push_back("VK_KHR_get_physical_device_properties2");
-
 		extensions.push_back("VK_KHR_external_semaphore_capabilities");
 		extensions.push_back("VK_KHR_external_memory_capabilities");
 
-		return vk::createDefaultInstance(vkp, std::vector<std::string>(), extensions);
+		return vk::createDefaultInstance(vkp, version, std::vector<std::string>(), extensions);
 	}
 	catch (const vk::Error& error)
 	{
@@ -851,9 +850,9 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_supportWriteOp			(makeOperationSupport(config.writeOp, config.resource))
 	, m_supportReadOp			(makeOperationSupport(config.readOp, config.resource))
 
-	, m_instanceA				(createInstance(context.getPlatformInterface()))
+	, m_instanceA				(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
 
-	, m_vkiA					(context.getPlatformInterface(), *m_instanceA)
+	, m_vkiA					(context.getPlatformInterface(), *m_instanceA) // \todo [2017-06-13 pyry] Provide correct extension list
 	, m_physicalDeviceA			(getPhysicalDevice(m_vkiA, *m_instanceA, context.getTestContext().getCommandLine()))
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
@@ -861,9 +860,9 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_deviceA					(createDevice(m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
 	, m_vkdA					(m_vkiA, *m_deviceA)
 
-	, m_instanceB				(createInstance(context.getPlatformInterface()))
+	, m_instanceB				(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
 
-	, m_vkiB					(context.getPlatformInterface(), *m_instanceB)
+	, m_vkiB					(context.getPlatformInterface(), *m_instanceB) // \todo [2017-06-13 pyry] Provide correct extension list
 	, m_physicalDeviceB			(getPhysicalDevice(m_vkiB, *m_instanceB, getDeviceId(m_vkiA, m_physicalDeviceA)))
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
@@ -888,9 +887,9 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 			DE_NULL,
 			m_memoryHandleType
 		};
-		const vk::VkPhysicalDeviceImageFormatInfo2KHR	imageFormatInfo		=
+		const vk::VkPhysicalDeviceImageFormatInfo2		imageFormatInfo		=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2_KHR,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 			&externalInfo,
 			m_config.resource.imageFormat,
 			m_config.resource.imageType,
@@ -904,9 +903,9 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 			DE_NULL,
 			{ 0u, 0u, 0u }
 		};
-		vk::VkImageFormatProperties2KHR					formatProperties	=
+		vk::VkImageFormatProperties2					formatProperties	=
 		{
-			vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2_KHR,
+			vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
 			&externalProperties,
 			{
 				{ 0u, 0u, 0u },
@@ -917,15 +916,13 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 			}
 		};
 
-		{
-			const vk::VkResult res = m_vkiA.getPhysicalDeviceImageFormatProperties2KHR(m_physicalDeviceA, &imageFormatInfo, &formatProperties);
+		vk::VkResult result = m_vkiA.getPhysicalDeviceImageFormatProperties2(m_physicalDeviceA, &imageFormatInfo, &formatProperties);
+		if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			TCU_THROW(NotSupportedError, "Unsupported image format");
 
-			if (res == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
-				TCU_THROW(NotSupportedError, "Image format not supported");
+		VK_CHECK(result);
 
-			VK_CHECK(res); // Check other errors
-		}
-
+		// \todo How to log this nicely?
 		log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"<< externalProperties << TestLog::EndMessage;
 
 		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR) == 0)
@@ -994,8 +991,10 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 {
 	TestLog&								log					(m_context.getTestContext().getLog());
 
-	const deUint32							queueFamilyA		= (deUint32)m_queueANdx;
-	const deUint32							queueFamilyB		= (deUint32)m_queueBNdx;
+	try
+	{
+		const deUint32							queueFamilyA		= (deUint32)m_queueANdx;
+		const deUint32							queueFamilyB		= (deUint32)m_queueBNdx;
 
 	const tcu::ScopedLogSection				queuePairSection	(log,
 																	"WriteQueue-" + de::toString(queueFamilyA) + "-ReadQueue-" + de::toString(queueFamilyB),
@@ -1012,8 +1011,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 
 	const de::UniquePtr<Resource>			resourceB			(importResource(m_vkdB, *m_deviceB, m_config.resource, m_queueFamilyIndicesB, *m_supportReadOp, *m_supportWriteOp, nativeMemoryHandle, m_memoryHandleType, exportedMemoryTypeIndex, m_config.dedicated));
 
-	try
-	{
+
 		const vk::VkQueue						queueA				(getQueue(m_vkdA, *m_deviceA, queueFamilyA));
 		const vk::Unique<vk::VkCommandPool>		commandPoolA		(createCommandPool(m_vkdA, *m_deviceA, queueFamilyA));
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferA		(createCommandBuffer(m_vkdA, *m_deviceA, *commandPoolA));

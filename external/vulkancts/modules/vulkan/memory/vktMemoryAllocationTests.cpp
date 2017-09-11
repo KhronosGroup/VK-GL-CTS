@@ -101,7 +101,7 @@ struct TestConfigRandom
 	}
 };
 
-vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& vkp, const std::vector<std::string>   enableExtensions)
+vk::Move<VkInstance> createInstanceWithExtensions (const vk::PlatformInterface& vkp, deUint32 version, const std::vector<std::string>& enableExtensions)
 {
 	std::vector<std::string>					enableExtensionPtrs	 (enableExtensions.size());
 	const std::vector<VkExtensionProperties>	availableExtensions	 = enumerateInstanceExtensionProperties(vkp, DE_NULL);
@@ -111,7 +111,8 @@ vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& v
 			TCU_THROW(NotSupportedError, (enableExtensions[extensionID] + " is not supported").c_str());
 		enableExtensionPtrs[extensionID] = enableExtensions[extensionID];
 	}
-	return createDefaultInstance(vkp, std::vector<std::string>() /* layers */, enableExtensionPtrs);
+
+	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, enableExtensionPtrs);
 }
 
 class BaseAllocateTestInstance : public TestInstance
@@ -157,7 +158,7 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 	const float										queuePriority			= 1.0f;
 	deUint32										queueFamilyIndex		= 0;
 	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
-	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), requiredExtensions);
+	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
 	std::vector<VkPhysicalDeviceGroupPropertiesKHR>	devGroupProperties		= enumeratePhysicalDeviceGroupsKHR(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
 	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
 	m_subsetAllocationAllowed												= devGroupProperties[devGroupIdx].subsetAllocation;

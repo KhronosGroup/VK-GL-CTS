@@ -65,6 +65,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 	const deUint32				appVersions[]			= { 0, 1, (deUint32)-1 };
 	const deUint32				engineVersions[]		= { 0, 1, (deUint32)-1 };
 	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
+	const deUint32				apiVersion				= context.getUsedApiVersion();
 	vector<VkApplicationInfo>	appInfos;
 
 	// test over appName
@@ -78,7 +79,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 			0u,										// deUint32						appVersion;
 			"engineName",							// const char*					pEngineName;
 			0u,										// deUint32						engineVersion;
-			VK_API_VERSION_1_0,						// deUint32						apiVersion;
+			apiVersion,								// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
@@ -95,7 +96,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 			0u,										// deUint32						appVersion;
 			engineNames[engineNameNdx],				// const char*					pEngineName;
 			0u,										// deUint32						engineVersion;
-			VK_API_VERSION_1_0,						// deUint32						apiVersion;
+			apiVersion,								// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
@@ -112,7 +113,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 			appVersions[appVersionNdx],				// deUint32						appVersion;
 			"engineName",							// const char*					pEngineName;
 			0u,										// deUint32						engineVersion;
-			VK_API_VERSION_1_0,						// deUint32						apiVersion;
+			apiVersion,								// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
@@ -129,23 +130,26 @@ tcu::TestStatus createInstanceTest (Context& context)
 			0u,										// deUint32						appVersion;
 			"engineName",							// const char*					pEngineName;
 			engineVersions[engineVersionNdx],		// deUint32						engineVersion;
-			VK_API_VERSION_1_0,						// deUint32						apiVersion;
+			apiVersion,								// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
 	}
+	const deUint32	manjorNum	= unpackVersion(apiVersion).majorNum;
+	const deUint32	minorNum	= unpackVersion(apiVersion).minorNum;
+
 	// patch component of api version checking (should be ignored by implementation)
 	for (int patchVersion = 0; patchVersion < DE_LENGTH_OF_ARRAY(patchNumbers); patchVersion++)
 	{
 		const VkApplicationInfo appInfo =
 		{
-			VK_STRUCTURE_TYPE_APPLICATION_INFO,					// VkStructureType				sType;
-			DE_NULL,											// const void*					pNext;
-			"appName",											// const char*					pAppName;
-			0u,													// deUint32						appVersion;
-			"engineName",										// const char*					pEngineName;
-			0u,													// deUint32						engineVersion;
-			VK_MAKE_VERSION(1, 0, patchNumbers[patchVersion]),	// deUint32						apiVersion;
+			VK_STRUCTURE_TYPE_APPLICATION_INFO,									// VkStructureType				sType;
+			DE_NULL,															// const void*					pNext;
+			"appName",															// const char*					pAppName;
+			0u,																	// deUint32						appVersion;
+			"engineName",														// const char*					pEngineName;
+			0u,																	// deUint32						engineVersion;
+			VK_MAKE_VERSION(manjorNum, minorNum, patchNumbers[patchVersion]),	// deUint32						apiVersion;
 		};
 
 		appInfos.push_back(appInfo);
@@ -204,7 +208,7 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 	tcu::TestLog&				log					= context.getTestContext().getLog();
 	tcu::ResultCollector		resultCollector		(log);
 	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
-	const ApiVersion			apiVersion			= unpackVersion(VK_API_VERSION_1_0);
+	const ApiVersion			apiVersion			= unpackVersion(context.getUsedApiVersion());
 	const deUint32				invalidMajorVersion	= (1 << 10) - 1;
 	const deUint32				invalidMinorVersion	= (1 << 10) - 1;
 	vector<ApiVersion>			invalidApiVersions;
@@ -238,7 +242,8 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 
 
 		log << TestLog::Message
-			<<"VK_API_VERSION_1_0 defined in vulkan.h: " << apiVersion
+			<<"VK_API_VERSION_" << apiVersion.majorNum << "_" << apiVersion.minorNum
+			<< " defined in vulkan.h: " << apiVersion
 			<< ", api version used to create instance: " << invalidApiVersions[apiVersionNdx]
 			<< TestLog::EndMessage;
 
@@ -304,6 +309,7 @@ tcu::TestStatus createInstanceWithUnsupportedExtensionsTest (Context& context)
 	tcu::TestLog&						log						= context.getTestContext().getLog();
 	const PlatformInterface&			platformInterface		= context.getPlatformInterface();
 	const char*							enabledExtensions[]		= {"VK_UNSUPPORTED_EXTENSION", "THIS_IS_NOT_AN_EXTENSION"};
+	const deUint32						apiVersion				= context.getUsedApiVersion();
 	const VkApplicationInfo				appInfo					=
 	{
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,						// VkStructureType				sType;
@@ -312,7 +318,7 @@ tcu::TestStatus createInstanceWithUnsupportedExtensionsTest (Context& context)
 		0u,														// deUint32						appVersion;
 		"engineName",											// const char*					pEngineName;
 		0u,														// deUint32						engineVersion;
-		VK_API_VERSION_1_0,										// deUint32						apiVersion;
+		apiVersion,												// deUint32						apiVersion;
 	};
 	const VkInstanceCreateInfo			instanceCreateInfo		=
 	{
@@ -355,7 +361,7 @@ tcu::TestStatus createInstanceWithUnsupportedExtensionsTest (Context& context)
 tcu::TestStatus createDeviceTest (Context& context)
 {
 	const PlatformInterface&		platformInterface		= context.getPlatformInterface();
-	const Unique<VkInstance>		instance				(createDefaultInstance(platformInterface));
+	const Unique<VkInstance>		instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver			instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice			physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
 	const deUint32					queueFamilyIndex		= 0;
@@ -400,7 +406,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 	tcu::ResultCollector								resultCollector			(log);
 	const int											numDevices				= 5;
 	const PlatformInterface&							platformInterface		= context.getPlatformInterface();
-	const Unique<VkInstance>							instance				(createDefaultInstance(platformInterface));
+	const Unique<VkInstance>							instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver								instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice								physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
 	const deUint32										queueFamilyIndex		= 0;
@@ -485,7 +491,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 {
 	tcu::TestLog&					log						= context.getTestContext().getLog();
 	const PlatformInterface&		platformInterface		= context.getPlatformInterface();
-	const Unique<VkInstance>		instance				(createDefaultInstance(platformInterface));
+	const Unique<VkInstance>		instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver			instanceDriver			(platformInterface, instance.get());
 	const char*						enabledExtensions[]		= {"VK_UNSUPPORTED_EXTENSION", "THIS_IS_NOT_AN_EXTENSION", "VK_DONT_SUPPORT_ME"};
 	const VkPhysicalDevice			physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
@@ -556,7 +562,7 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 	tcu::TestLog&							log						= context.getTestContext().getLog();
 	const int								queueCountDiff			= 1;
 	const PlatformInterface&				platformInterface		= context.getPlatformInterface();
-	const Unique<VkInstance>				instance				(createDefaultInstance(platformInterface));
+	const Unique<VkInstance>				instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver					instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice					physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
 	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
@@ -627,7 +633,7 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
-Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, const char* extensionName)
+Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, const char* extensionName, Context& context)
 {
 	const vector<VkExtensionProperties>	instanceExts	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
 	vector<string>						enabledExts;
@@ -637,13 +643,13 @@ Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, cons
 
 	enabledExts.push_back(extensionName);
 
-	return createDefaultInstance(vkp, vector<string>() /* layers */, enabledExts);
+	return createDefaultInstance(vkp, context.getUsedApiVersion(), vector<string>() /* layers */, enabledExts);
 }
 
 tcu::TestStatus createDeviceFeatures2Test (Context& context)
 {
 	const PlatformInterface&		vkp						= context.getPlatformInterface();
-	const Unique<VkInstance>		instance				(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2"));
+	const Unique<VkInstance>		instance				(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver			vki						(vkp, instance.get());
 	const VkPhysicalDevice			physicalDevice			= chooseDevice(vki, instance.get(), context.getTestContext().getCommandLine());
 	const deUint32					queueFamilyIndex		= 0;
@@ -705,7 +711,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 	tcu::TestLog&				log						= context.getTestContext().getLog();
 	tcu::ResultCollector		resultCollector			(log);
 	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
-	const Unique<VkInstance>	instance				(createDefaultInstance(platformInterface));
+	const Move<VkInstance>		instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver		instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice		physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
 	const deUint32				queueFamilyIndex		= 0;

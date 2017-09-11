@@ -80,7 +80,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	if (m_useDeviceGroups)
 	{
 		const std::vector<std::string>	requiredExtensions(1, "VK_KHR_device_group_creation");
-		m_deviceGroupInstance	=		createInstanceWithExtensions(m_context.getPlatformInterface(), requiredExtensions);
+		m_deviceGroupInstance	=		createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
 		devGroupProperties		=		enumeratePhysicalDeviceGroupsKHR(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
 		m_numPhysicalDevices	=		devGroupProperties[m_deviceGroupIdx].physicalDeviceCount;
 

@@ -51,7 +51,7 @@ typedef std::vector<vk::VkVertexInputBindingDescription>	VertexBindings;
 typedef std::vector<vk::VkVertexInputAttributeDescription>	VertexAttribs;
 
 vk::Move<vk::VkInstance>			makeProtectedMemInstance			(const vk::PlatformInterface&		vkp,
-																		 bool								isValidationEnabled);
+																		 const vkt::Context&				context);
 deUint32							chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&			vkd,
 																		 vk::VkPhysicalDevice				physicalDevice);
 

@@ -44,7 +44,7 @@ public:
 		ProtectedContext	(Context& ctx)
 			: m_context				(ctx)
 			, m_interface			(m_context.getPlatformInterface())
-			, m_instance			(makeProtectedMemInstance(m_interface, m_context.getTestContext().getCommandLine().isValidationEnabled()))
+			, m_instance			(makeProtectedMemInstance(m_interface, m_context))
 			, m_vki					(m_interface, *m_instance)
 			, m_phyDevice			(vk::chooseDevice(m_vki, *m_instance, m_context.getTestContext().getCommandLine()))
 			, m_queueFamilyIndex	(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice))

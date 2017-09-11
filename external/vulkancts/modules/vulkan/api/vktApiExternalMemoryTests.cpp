@@ -175,10 +175,9 @@ deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface&	vki,
 	TCU_THROW(NotSupportedError, "Queue type not supported");
 }
 
-vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface&						vkp,
-										 const vk::VkExternalSemaphoreHandleTypeFlagsKHR	externalSemaphoreTypes,
-										 const vk::VkExternalMemoryHandleTypeFlagsKHR		externalMemoryTypes,
-										 const vk::VkExternalFenceHandleTypeFlagsKHR		externalFenceTypes)
+std::vector<std::string> getInstanceExtensions (const vk::VkExternalSemaphoreHandleTypeFlagsKHR	externalSemaphoreTypes,
+												const vk::VkExternalMemoryHandleTypeFlagsKHR	externalMemoryTypes,
+												const vk::VkExternalFenceHandleTypeFlagsKHR		externalFenceTypes)
 {
 	std::vector<std::string> instanceExtensions;
 
@@ -193,9 +192,19 @@ vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface&						vkp,
 	if (externalFenceTypes != 0)
 		instanceExtensions.push_back("VK_KHR_external_fence_capabilities");
 
+	return instanceExtensions;
+}
+
+vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface&						vkp,
+										 const vk::VkExternalSemaphoreHandleTypeFlagsKHR	externalSemaphoreTypes,
+										 const vk::VkExternalMemoryHandleTypeFlagsKHR		externalMemoryTypes,
+										 const vk::VkExternalFenceHandleTypeFlagsKHR		externalFenceTypes)
+{
 	try
 	{
-		return vk::createDefaultInstance(vkp, std::vector<std::string>(), instanceExtensions);
+		deUint32 version = 0u;
+		vkp.enumerateInstanceVersion(&version);
+		return vk::createDefaultInstance(vkp, version, std::vector<std::string>(), getInstanceExtensions(externalSemaphoreTypes, externalMemoryTypes, externalFenceTypes));
 	}
 	catch (const vk::Error& error)
 	{
@@ -430,7 +439,7 @@ void checkImageSupport (const vk::InstanceInterface&				vki,
 	};
 	const vk::VkPhysicalDeviceImageFormatInfo2KHR			info			=
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2_KHR,
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 		&externalInfo,
 
 		format,
@@ -447,7 +456,7 @@ void checkImageSupport (const vk::InstanceInterface&				vki,
 	};
 	vk::VkImageFormatProperties2KHR							properties			=
 	{
-		vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2_KHR,
+		vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
 		&externalProperties,
 		{
 			{ 0u, 0u, 0u },
@@ -3324,7 +3333,7 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 		};
 		const vk::VkPhysicalDeviceImageFormatInfo2KHR			info			=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2_KHR,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 			&externalInfo,
 
 			format,
@@ -3341,7 +3350,7 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 		};
 		vk::VkImageFormatProperties2KHR							properties			=
 		{
-			vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2_KHR,
+			vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
 			&externalProperties,
 			{
 				{ 0u, 0u, 0u },

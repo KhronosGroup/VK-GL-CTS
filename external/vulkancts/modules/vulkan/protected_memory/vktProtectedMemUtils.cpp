@@ -71,11 +71,12 @@ std::vector<std::string> getValidationLayers (const vk::PlatformInterface& vkp)
 }
 
 
-vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& vkp, bool isValidationEnabled)
+vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& vkp, const vkt::Context& context)
 {
 	const Extensions			supportedExtensions(vk::enumerateInstanceExtensionProperties(vkp, DE_NULL));
 	std::vector<std::string>	enabledLayers;
 	std::vector<std::string>	requiredExtensions;
+	const bool					isValidationEnabled	= context.getTestContext().getCommandLine().isValidationEnabled();
 
 	if (isValidationEnabled)
 	{
@@ -97,7 +98,7 @@ vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& 
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 
-	return vk::createDefaultInstance(vkp, enabledLayers, requiredExtensions);
+	return vk::createDefaultInstance(vkp, context.getUsedApiVersion(), enabledLayers, requiredExtensions);
 }
 
 deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
@@ -127,9 +128,9 @@ deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
 	TCU_THROW(NotSupportedError, "No matching universal protected queue found");
 }
 
-vk::Move<vk::VkDevice> makeProtectedMemDevice (const vk::InstanceDriver&	vkd,
-											   vk::VkPhysicalDevice			physicalDevice,
-											   const deUint32				queueFamilyIndex)
+vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&		vkd,
+												 vk::VkPhysicalDevice			physicalDevice,
+												 const deUint32					queueFamilyIndex)
 {
 	const Extensions					supportedExtensions	(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
 	deUint32							extensionsCount		= 1;

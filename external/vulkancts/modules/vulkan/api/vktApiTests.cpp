@@ -40,6 +40,7 @@
 #include "vktApiGranularityTests.hpp"
 #include "vktApiGetMemoryCommitment.hpp"
 #include "vktApiExternalMemoryTests.hpp"
+#include "vktApiVersionCheck.hpp"
 
 namespace vkt
 {
@@ -61,6 +62,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 {
 	tcu::TestContext&	testCtx		= apiTests->getTestContext();
 
+	apiTests->addChild(createVersionSanityCheckTests	(testCtx));
 	apiTests->addChild(createSmokeTests					(testCtx));
 	apiTests->addChild(api::createFeatureInfoTests		(testCtx));
 	apiTests->addChild(createDeviceInitializationTests	(testCtx));

@@ -60,10 +60,12 @@ public:
 	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection				(void) const { return m_progCollection;		}
 
 	// Default instance & device, selected with --deqp-vk-device-id=N
+	deUint32									getInstanceVersion				(void) const;
 	const std::vector<std::string>&				getInstanceExtensions			(void) const;
 	vk::VkInstance								getInstance						(void) const;
 	const vk::InstanceInterface&				getInstanceInterface			(void) const;
 	vk::VkPhysicalDevice						getPhysicalDevice				(void) const;
+	deUint32									getDeviceVersion				(void) const;
 	const vk::VkPhysicalDeviceFeatures&			getDeviceFeatures				(void) const;
 	const vk::VkPhysicalDeviceFeatures2KHR&		getDeviceFeatures2				(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
@@ -72,6 +74,7 @@ public:
 	const vk::DeviceInterface&					getDeviceInterface				(void) const;
 	deUint32									getUniversalQueueFamilyIndex	(void) const;
 	vk::VkQueue									getUniversalQueue				(void) const;
+	deUint32									getUsedApiVersion				(void) const;
 
 	vk::Allocator&								getDefaultAllocator				(void) const;
 

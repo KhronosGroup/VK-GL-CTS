@@ -22,12 +22,34 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkQueryUtil.hpp"
+#include "vkApiVersion.hpp"
+
 #include "deMemory.h"
+#include "deString.h"
+
+#include <vector>
 
 namespace vk
 {
 
 using std::vector;
+
+namespace
+{
+
+#include "vkSupportedExtensions.inl"
+
+}
+
+void getCoreInstanceExtensions(deUint32 apiVersion, vector<const char*>& dst)
+{
+	getCoreInstanceExtensionsImpl(apiVersion, dst);
+}
+
+void getCoreDeviceExtensions(deUint32 apiVersion, vector<const char*>& dst)
+{
+	getCoreDeviceExtensionsImpl(apiVersion, dst);
+}
 
 vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, VkInstance instance)
 {
@@ -97,6 +119,17 @@ VkPhysicalDeviceFeatures getPhysicalDeviceFeatures (const InstanceInterface& vk,
 	deMemset(&features, 0, sizeof(features));
 
 	vk.getPhysicalDeviceFeatures(physicalDevice, &features);
+	return features;
+}
+
+VkPhysicalDeviceFeatures2 getPhysicalDeviceFeatures2 (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceFeatures2	features;
+
+	deMemset(&features, 0, sizeof(features));
+	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+
+	vk.getPhysicalDeviceFeatures2KHR(physicalDevice, &features);
 	return features;
 }
 

@@ -3,6 +3,8 @@
 include_directories(..)
 
 set(DEQP_VK_API_SRCS
+	vktApiVersionCheck.cpp
+	vktApiVersionCheck.hpp
 	vktApiTests.cpp
 	vktApiTests.hpp
 	vktApiSmokeTests.cpp

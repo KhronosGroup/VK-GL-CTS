@@ -36,7 +36,7 @@ namespace vkt
 namespace sparse
 {
 
-vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& vkp, const std::vector<std::string>   enableExtensions)
+vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& vkp, const deUint32 version, const std::vector<std::string>   enableExtensions)
 {
 	std::vector<std::string>					enableExtensionPtrs	 (enableExtensions.size());
 	const std::vector<VkExtensionProperties>	availableExtensions	 = enumerateInstanceExtensionProperties(vkp, DE_NULL);
@@ -47,7 +47,7 @@ vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& v
 		enableExtensionPtrs[extensionID] = enableExtensions[extensionID];
 	}
 
-	return createDefaultInstance(vkp, std::vector<std::string>() /* layers */, enableExtensionPtrs);
+	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, enableExtensionPtrs, DE_NULL);
 }
 
 tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize, const deUint32 mipLevel)
