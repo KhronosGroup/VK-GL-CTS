@@ -646,7 +646,7 @@ void invalid_maximum_work_group_sizes (NegativeTestContext& ctx)
 	ctx.glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &maxWorkGroupInvocations);
 	ctx.expectError(GL_NO_ERROR);
 
-	DE_ASSERT((maxWorkGroupSizeX * maxWorkGroupSizeY * maxWorkGroupSizeZ) > maxWorkGroupInvocations );
+	DE_ASSERT(((deInt64) maxWorkGroupSizeX * maxWorkGroupSizeY * maxWorkGroupSizeZ) > maxWorkGroupInvocations );
 
 	const bool				isES32			= glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	const char* const		shaderVersion	= isES32
