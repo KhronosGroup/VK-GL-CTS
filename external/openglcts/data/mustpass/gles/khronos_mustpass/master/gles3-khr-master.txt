@@ -1494,6 +1494,12 @@ KHR-GLES3.shaders.literal_parsing.int_overflow_2_vertex
 KHR-GLES3.shaders.literal_parsing.int_overflow_2_fragment
 KHR-GLES3.shaders.literal_parsing.int_wrap_1
 KHR-GLES3.shaders.literal_parsing.int_wrap_2
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_1_vertex
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_1_fragment
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_2_vertex
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_2_fragment
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_3_vertex
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_3_fragment
 KHR-GLES3.shaders.struct.local.basic_vertex
 KHR-GLES3.shaders.struct.local.basic_fragment
 KHR-GLES3.shaders.struct.local.nested_vertex
