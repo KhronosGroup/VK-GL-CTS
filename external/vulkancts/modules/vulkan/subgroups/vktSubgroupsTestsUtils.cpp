@@ -789,6 +789,13 @@ std::string vkt::subgroups::getVertShaderForStage(vk::VkShaderStageFlags stage)
 	}
 }
 
+bool vkt::subgroups::isSubgroupSupported(Context& context)
+{
+	VkPhysicalDeviceProperties properties;
+	context.getInstanceInterface().getPhysicalDeviceProperties(context.getPhysicalDevice(), &properties);
+	return (properties.apiVersion < VK_MAKE_VERSION(1, 1, 0)) ? false : true;
+}
+
 bool vkt::subgroups::areSubgroupOperationsSupportedForStage(
 	Context& context, const VkShaderStageFlags stage)
 {

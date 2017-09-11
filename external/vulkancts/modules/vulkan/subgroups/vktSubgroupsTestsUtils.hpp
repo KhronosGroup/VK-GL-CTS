@@ -86,6 +86,8 @@ std::string getSubgroupFeatureName(vk::VkSubgroupFeatureFlagBits bit);
 
 std::string getVertShaderForStage(vk::VkShaderStageFlags stage);
 
+bool isSubgroupSupported(Context& context);
+
 bool areSubgroupOperationsSupportedForStage(
 	Context& context, vk::VkShaderStageFlags stage);
 
