@@ -2563,6 +2563,342 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestContext& testCtx)
+{
+	ComputeShaderSpec	specInt;
+	ComputeShaderSpec	specFloat;
+	ComputeShaderSpec	specVec3;
+	ComputeShaderSpec	specMat4;
+	ComputeShaderSpec	specArray;
+	ComputeShaderSpec	specStruct;
+	de::Random			rnd				(deStringHash(group->getName()));
+	const int			numElements		= 100;
+	vector<float>		inputFloats		(numElements, 0);
+	vector<float>		outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
+
+	// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+	floorAll(inputFloats);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+	{
+		// Just check if the value is positive or not
+		outputFloats[ndx] = (inputFloats[ndx] > 0) ? 1.0f : -1.0f;
+	}
+
+	// All of the tests are of the form:
+	//
+	// testtype r
+	//
+	// if (inputdata > 0)
+	//   r = 1
+	// else
+	//   r = -1
+	//
+	// return (float)r
+
+	specFloat.assembly =
+		string(getComputeAsmShaderPreamble()) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id = OpVariable %uvec3ptr Input\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%float_0    = OpConstant %f32 0.0\n"
+		"%float_1    = OpConstant %f32 1.0\n"
+		"%float_n1   = OpConstant %f32 -1.0\n"
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+
+		"%comp     = OpFOrdGreaterThan %bool %inval %float_0\n"
+		"            OpSelectionMerge %cm None\n"
+		"            OpBranchConditional %comp %tb %fb\n"
+		"%tb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%fb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%cm       = OpLabel\n"
+		"%res      = OpPhi %f32 %float_1 %tb %float_n1 %fb\n"
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %res\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	specFloat.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	specFloat.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	specFloat.numWorkGroups = IVec3(numElements, 1, 1);
+
+	specMat4.assembly =
+		string(getComputeAsmShaderPreamble()) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id = OpVariable %uvec3ptr Input\n"
+		"%v4f32      = OpTypeVector %f32 4\n"
+		"%mat4v4f32  = OpTypeMatrix %v4f32 4\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%float_0    = OpConstant %f32 0.0\n"
+		"%float_1    = OpConstant %f32 1.0\n"
+		"%float_n1   = OpConstant %f32 -1.0\n"
+		"%m11        = OpConstantComposite %v4f32 %float_1 %float_0 %float_0 %float_0\n"
+		"%m12        = OpConstantComposite %v4f32 %float_0 %float_1 %float_0 %float_0\n"
+		"%m13        = OpConstantComposite %v4f32 %float_0 %float_0 %float_1 %float_0\n"
+		"%m14        = OpConstantComposite %v4f32 %float_0 %float_0 %float_0 %float_1\n"
+		"%m1         = OpConstantComposite %mat4v4f32 %m11 %m12 %m13 %m14\n"
+		"%m21        = OpConstantComposite %v4f32 %float_n1 %float_0 %float_0 %float_0\n"
+		"%m22        = OpConstantComposite %v4f32 %float_0 %float_n1 %float_0 %float_0\n"
+		"%m23        = OpConstantComposite %v4f32 %float_0 %float_0 %float_n1 %float_0\n"
+		"%m24        = OpConstantComposite %v4f32 %float_0 %float_0 %float_0 %float_n1\n"
+		"%m2         = OpConstantComposite %mat4v4f32 %m21 %m22 %m23 %m24\n"
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+
+		"%comp     = OpFOrdGreaterThan %bool %inval %float_0\n"
+		"            OpSelectionMerge %cm None\n"
+		"            OpBranchConditional %comp %tb %fb\n"
+		"%tb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%fb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%cm       = OpLabel\n"
+		"%mres     = OpPhi %mat4v4f32 %m1 %tb %m2 %fb\n"
+		"%res      = OpCompositeExtract %f32 %mres 2 2\n"
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %res\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	specMat4.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	specMat4.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	specMat4.numWorkGroups = IVec3(numElements, 1, 1);
+
+	specVec3.assembly =
+		string(getComputeAsmShaderPreamble()) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id = OpVariable %uvec3ptr Input\n"
+		"%v3f32      = OpTypeVector %f32 3\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%float_0    = OpConstant %f32 0.0\n"
+		"%float_1    = OpConstant %f32 1.0\n"
+		"%float_n1   = OpConstant %f32 -1.0\n"
+		"%v1         = OpConstantComposite %v3f32 %float_1 %float_1 %float_1\n"
+		"%v2         = OpConstantComposite %v3f32 %float_n1 %float_n1 %float_n1\n"
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+
+		"%comp     = OpFOrdGreaterThan %bool %inval %float_0\n"
+		"            OpSelectionMerge %cm None\n"
+		"            OpBranchConditional %comp %tb %fb\n"
+		"%tb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%fb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%cm       = OpLabel\n"
+		"%vres     = OpPhi %v3f32 %v1 %tb %v2 %fb\n"
+		"%res      = OpCompositeExtract %f32 %vres 2\n"
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %res\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	specVec3.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	specVec3.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	specVec3.numWorkGroups = IVec3(numElements, 1, 1);
+
+	specInt.assembly =
+		string(getComputeAsmShaderPreamble()) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id = OpVariable %uvec3ptr Input\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%float_0    = OpConstant %f32 0.0\n"
+		"%i1         = OpConstant %i32 1\n"
+		"%i2         = OpConstant %i32 -1\n"
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+
+		"%comp     = OpFOrdGreaterThan %bool %inval %float_0\n"
+		"            OpSelectionMerge %cm None\n"
+		"            OpBranchConditional %comp %tb %fb\n"
+		"%tb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%fb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%cm       = OpLabel\n"
+		"%ires     = OpPhi %i32 %i1 %tb %i2 %fb\n"
+		"%res      = OpConvertSToF %f32 %ires\n"
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %res\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	specInt.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	specInt.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	specInt.numWorkGroups = IVec3(numElements, 1, 1);
+
+	specArray.assembly =
+		string(getComputeAsmShaderPreamble()) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id = OpVariable %uvec3ptr Input\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%u7         = OpConstant %u32 7\n"
+		"%float_0    = OpConstant %f32 0.0\n"
+		"%float_1    = OpConstant %f32 1.0\n"
+		"%float_n1   = OpConstant %f32 -1.0\n"
+		"%f32a7      = OpTypeArray %f32 %u7\n"
+		"%a1         = OpConstantComposite %f32a7 %float_1 %float_1 %float_1 %float_1 %float_1 %float_1 %float_1\n"
+		"%a2         = OpConstantComposite %f32a7 %float_n1 %float_n1 %float_n1 %float_n1 %float_n1 %float_n1 %float_n1\n"
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+
+		"%comp     = OpFOrdGreaterThan %bool %inval %float_0\n"
+		"            OpSelectionMerge %cm None\n"
+		"            OpBranchConditional %comp %tb %fb\n"
+		"%tb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%fb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%cm       = OpLabel\n"
+		"%ares     = OpPhi %f32a7 %a1 %tb %a2 %fb\n"
+		"%res      = OpCompositeExtract %f32 %ares 5\n"
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %res\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	specArray.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	specArray.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	specArray.numWorkGroups = IVec3(numElements, 1, 1);
+
+	specStruct.assembly =
+		string(getComputeAsmShaderPreamble()) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id = OpVariable %uvec3ptr Input\n"
+		"%v3f32      = OpTypeVector %f32 3\n"
+		"%zero       = OpConstant %i32 0\n"
+		"%float_0    = OpConstant %f32 0.0\n"
+		"%float_1    = OpConstant %f32 1.0\n"
+		"%float_n1   = OpConstant %f32 -1.0\n"
+
+		"%v2f32      = OpTypeVector %f32 2\n"
+		"%Data2      = OpTypeStruct %f32 %v2f32\n"
+		"%Data       = OpTypeStruct %Data2 %f32\n"
+
+		"%in1a       = OpConstantComposite %v2f32 %float_1 %float_1\n"
+		"%in1b       = OpConstantComposite %Data2 %float_1 %in1a\n"
+		"%s1         = OpConstantComposite %Data %in1b %float_1\n"
+		"%in2a       = OpConstantComposite %v2f32 %float_n1 %float_n1\n"
+		"%in2b       = OpConstantComposite %Data2 %float_n1 %in2a\n"
+		"%s2         = OpConstantComposite %Data %in2b %float_n1\n"
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+
+		"%comp     = OpFOrdGreaterThan %bool %inval %float_0\n"
+		"            OpSelectionMerge %cm None\n"
+		"            OpBranchConditional %comp %tb %fb\n"
+		"%tb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%fb       = OpLabel\n"
+		"            OpBranch %cm\n"
+		"%cm       = OpLabel\n"
+		"%sres     = OpPhi %Data %s1 %tb %s2 %fb\n"
+		"%res      = OpCompositeExtract %f32 %sres 0 0\n"
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %res\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	specStruct.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	specStruct.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+	specStruct.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vartype_int", "OpPhi with int variables", specInt));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vartype_float", "OpPhi with float variables", specFloat));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vartype_vec3", "OpPhi with vec3 variables", specVec3));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vartype_mat4", "OpPhi with mat4 variables", specMat4));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vartype_array", "OpPhi with array variables", specArray));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "vartype_struct", "OpPhi with struct variables", specStruct));
+}
+
 string generateConstantDefinitions (int count)
 {
 	std::ostringstream	r;
@@ -3106,6 +3442,8 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec5.numWorkGroups = IVec3(numElements, 1, 1);
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "nested", "Stress OpPhi with a lot of nesting", spec5));
+
+	createOpPhiVartypeTests(group, testCtx);
 
 	return group.release();
 }
