@@ -1136,7 +1136,18 @@ void WideColorSurfaceTest::executeTest (void)
 		attribs.push_back(EGL_NONE);
 		attribs.push_back(EGL_NONE);
 
-		const EGLSurface					surface			= eglu::createWindowSurface(nativeDisplay, *window, m_eglDisplay, m_eglConfig, attribs.data());
+		EGLSurface	surface;
+		try
+		{
+			surface = eglu::createWindowSurface(nativeDisplay, *window, m_eglDisplay, m_eglConfig, attribs.data());
+		}
+		catch (const eglu::Error& error)
+		{
+			if (error.getError() == EGL_BAD_MATCH)
+				TCU_THROW(NotSupportedError, "createWindowSurface is not supported for this config");
+
+			throw;
+		}
 		TCU_CHECK(surface != EGL_NO_SURFACE);
 		EGLU_CHECK_MSG(egl, "eglCreateWindowSurface()");
 
