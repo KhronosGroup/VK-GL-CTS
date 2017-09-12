@@ -50,6 +50,7 @@ struct DrawState
 	bool							depthTestEnable;
 	bool							depthWriteEnable;
 	rr::TestFunc					compareOp;
+	bool							depthBoundsTestEnable;
 	bool							blendEnable;
 	float							lineWidth;
 	deUint32						numPatchControlPoints;

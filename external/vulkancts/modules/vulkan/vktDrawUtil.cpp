@@ -312,6 +312,7 @@ DrawState::DrawState(const vk::VkPrimitiveTopology topology_, deUint32 renderWid
 	, depthTestEnable		(false)
 	, depthWriteEnable		(false)
 	, compareOp				(rr::TESTFUNC_LESS)
+	, depthBoundsTestEnable	(false)
 	, blendEnable			(false)
 	, lineWidth				(1.0)
 	, numPatchControlPoints	(0)
@@ -653,6 +654,9 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 			0u,						// write mask
 			0u);					// reference
 
+		if (m_drawState.depthBoundsTestEnable && context.getDeviceFeatures().depthBounds)
+			TCU_THROW(NotSupportedError, "depthBounds not supported");
+
 		const VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo =
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
@@ -661,7 +665,7 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 			m_drawState.depthTestEnable,								// VkBool32									depthTestEnable;
 			m_drawState.depthWriteEnable,								// VkBool32									depthWriteEnable;
 			mapCompareOp(m_drawState.compareOp),						// VkCompareOp								depthCompareOp;
-			VK_TRUE,													// VkBool32									depthBoundsTestEnable;
+			m_drawState.depthBoundsTestEnable,							// VkBool32									depthBoundsTestEnable
 			VK_FALSE,													// VkBool32									stencilTestEnable;
 			stencilOpState,												// VkStencilOpState							front;
 			stencilOpState,												// VkStencilOpState							back;
