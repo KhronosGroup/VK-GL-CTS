@@ -2156,6 +2156,7 @@ KHR-GLES31.core.program_interface_query.output-built-in
 KHR-GLES31.core.program_interface_query.uniform-simple
 KHR-GLES31.core.program_interface_query.uniform-types
 KHR-GLES31.core.program_interface_query.uniform-block-types
+KHR-GLES31.core.program_interface_query.uniform-block-array
 KHR-GLES31.core.program_interface_query.transform-feedback-types
 KHR-GLES31.core.program_interface_query.atomic-counters
 KHR-GLES31.core.program_interface_query.atomic-counters-one-buffer

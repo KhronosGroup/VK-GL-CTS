@@ -3216,6 +3216,67 @@ class ShaderStorageBlock : public SimpleShaders
 	}
 };
 
+class UniformBlockArray : public SimpleShaders
+{
+	virtual std::string Title()
+	{
+		return "Uniform Block Array Test";
+	}
+
+	virtual std::string ShadersDesc()
+	{
+		return "verify BLOCK_INDEX property when an interface block is declared as an array of block instances";
+	}
+
+	virtual std::string PurposeExt()
+	{
+		return "\n\n Purpose is to verify calls using GL_BLOCK_INDEX as an interface param.\n";
+	}
+
+	virtual std::string VertexShader()
+	{
+		return "#version 430                    \n"
+			   "void main(void)                 \n"
+			   "{                               \n"
+			   "    gl_Position = vec4(1.0);    \n"
+			   "}";
+	}
+
+	virtual std::string FragmentShader()
+	{
+		return "#version 430                   \n"
+			   "uniform TestBlock {            \n"
+			   "   mediump vec4 color;         \n"
+			   "} blockInstance[4];            \n"
+			   ""
+			   "out mediump vec4 color;                                      \n"
+			   "void main() {                                                \n"
+			   "    color = blockInstance[2].color + blockInstance[3].color; \n"
+			   "}";
+	}
+
+	virtual long Run()
+	{
+		GLuint program = CreateProgram(VertexShader().c_str(), FragmentShader().c_str(), false);
+		LinkProgram(program);
+
+		long error = NO_ERROR;
+
+		std::map<std::string, GLuint> indicesUB;
+		VerifyGetProgramResourceIndex(program, GL_UNIFORM_BLOCK, indicesUB, "TestBlock", error);
+
+		std::map<std::string, GLuint> indicesU;
+		VerifyGetProgramResourceIndex(program, GL_UNIFORM, indicesU, "TestBlock.color", error);
+
+		GLenum props[]	= { GL_BLOCK_INDEX };
+		GLint  expected[] = { static_cast<GLint>(indicesUB["TestBlock"]) };
+		VerifyGetProgramResourceiv(program, GL_UNIFORM, indicesU["TestBlock.color"], 1, props, 1, expected, error);
+
+		glDeleteProgram(program);
+		return error;
+	}
+};
+
 class TransformFeedbackBuiltin : public SimpleShaders
 {
 	virtual std::string Title()
@@ -5071,6 +5132,7 @@ void ProgramInterfaceQueryTests::init()
 	addChild(new TestSubcase(m_context, "separate-programs-geometry", TestSubcase::Create<SeparateProgramsGeometry>));
 	addChild(new TestSubcase(m_context, "separate-programs-fragment", TestSubcase::Create<SeparateProgramsFragment>));
 	addChild(new TestSubcase(m_context, "uniform-block", TestSubcase::Create<UniformBlockAdvanced>));
+	addChild(new TestSubcase(m_context, "uniform-block-array", TestSubcase::Create<UniformBlockArray>));
 	addChild(new TestSubcase(m_context, "array-names", TestSubcase::Create<ArrayNames>));
 	addChild(new TestSubcase(m_context, "buff-length", TestSubcase::Create<BuffLength>));
 	addChild(new TestSubcase(m_context, "no-locations", TestSubcase::Create<NoLocations>));
