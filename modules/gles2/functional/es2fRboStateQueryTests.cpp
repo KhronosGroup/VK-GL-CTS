@@ -122,15 +122,11 @@ public:
 		checkRenderbufferParam(m_testCtx, *this, GL_RENDERBUFFER_HEIGHT,	0);
 		expectError(GL_NO_ERROR);
 
-		int maxRenderbufferSize = 1;
-		glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
-		expectError(GL_NO_ERROR);
-
 		const int numIterations = 30;
 		for (int i = 0; i < numIterations; ++i)
 		{
-			const GLint w = rnd.getInt(0, maxRenderbufferSize);
-			const GLint h = rnd.getInt(0, maxRenderbufferSize);
+			const GLint w = rnd.getInt(0, 128);
+			const GLint h = rnd.getInt(0, 128);
 
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA4, w, h);
 			expectError(GL_NO_ERROR);
