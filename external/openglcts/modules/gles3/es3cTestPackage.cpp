@@ -126,6 +126,7 @@ public:
 	void init(void)
 	{
 		addChild(new deqp::ShaderLibraryGroup(m_context, "arrays", "Array Tests", "arrays.test"));
+		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "declarations.test"));
 		addChild(new deqp::FragDepthTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderIndexingTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderLoopTests(m_context, glu::GLSL_VERSION_300_ES));

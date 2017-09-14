@@ -327,6 +327,16 @@ KHR-GL45.shaders.arrays.invalid.constructor_c-style1_vertex
 KHR-GL45.shaders.arrays.invalid.constructor_c-style1_fragment
 KHR-GL45.shaders.arrays.invalid.constructor_c-style2_vertex
 KHR-GL45.shaders.arrays.invalid.constructor_c-style2_fragment
+KHR-GL45.shaders.declarations.declarations.missing_variable_name_vertex
+KHR-GL45.shaders.declarations.declarations.missing_variable_name_fragment
+KHR-GL45.shaders.declarations.declarations.comma_preceding_variable_vertex
+KHR-GL45.shaders.declarations.declarations.comma_preceding_variable_fragment
+KHR-GL45.shaders.declarations.declarations.comma_following_variable_vertex
+KHR-GL45.shaders.declarations.declarations.comma_following_variable_fragment
+KHR-GL45.shaders.declarations.declarations.struct_missing_attribute_name_vertex
+KHR-GL45.shaders.declarations.declarations.struct_missing_attribute_name_fragment
+KHR-GL45.shaders.declarations.declarations.struct_comma_preceding_attribute_vertex
+KHR-GL45.shaders.declarations.declarations.struct_comma_preceding_attribute_fragment
 KHR-GL45.shaders.fragdepth.write.no_write
 KHR-GL45.shaders.fragdepth.write.const
 KHR-GL45.shaders.fragdepth.write.uniform
