@@ -33,6 +33,7 @@
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
 #include "glcShaderLoopTests.hpp"
+#include "glcShaderMacroTests.hpp"
 #include "glcShaderNegativeTests.hpp"
 #include "glcShaderStructTests.hpp"
 #include "glcShaderSwitchTests.hpp"
@@ -157,6 +158,7 @@ void ES32TestPackage::init(void)
 		coreGroup->addChild(new glcts::TextureBufferTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::DrawBuffersIndexedTests(getContext(), extParams));
 		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
+		coreGroup->addChild(new glcts::ShaderMacroTests(getContext()));
 		coreGroup->addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 		addChild(coreGroup);
 		tcu::TestCaseGroup* robustGroup = new tcu::TestCaseGroup(getTestContext(), "robust", "");

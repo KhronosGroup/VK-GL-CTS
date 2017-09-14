@@ -1007,6 +1007,11 @@ KHR-GLES32.core.constant_expressions.array_normalize_vec3_tess_eval
 KHR-GLES32.core.constant_expressions.array_normalize_vec4_geometry
 KHR-GLES32.core.constant_expressions.array_normalize_vec4_tess_control
 KHR-GLES32.core.constant_expressions.array_normalize_vec4_tess_eval
+KHR-GLES32.core.shader_macros.fragment_precision_high_vertex
+KHR-GLES32.core.shader_macros.fragment_precision_high_fragment
+KHR-GLES32.core.shader_macros.fragment_precision_high_geometry
+KHR-GLES32.core.shader_macros.fragment_precision_high_tess_control
+KHR-GLES32.core.shader_macros.fragment_precision_high_tess_eval
 KHR-GLES32.core.separable_programs_tf.tessellation_active
 KHR-GLES32.core.separable_programs_tf.geometry_active
 KHR-GLES32.robust.robust_buffer_access_behavior.vertex_buffer_objects
