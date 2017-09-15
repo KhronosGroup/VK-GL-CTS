@@ -581,7 +581,7 @@ std::string GPUShader5ImplicitConversionsTest::getVertexShader(const glw::GLchar
 															   const glw::GLchar* source_type)
 {
 	/* Vertex shader template */
-	const char* vs_body_template = "#version 130\n"
+	const char* vs_body_template = "#version 150\n"
 								   "#extension GL_ARB_gpu_shader5 : require\n"
 								   "\n"
 								   "uniform SOURCE_TYPE u1;\n"
@@ -689,7 +689,7 @@ std::string GPUShader5ImplicitConversionsTest::getVertexShader(const glw::GLchar
  */
 std::string GPUShader5ImplicitConversionsTest::getFragmentShader()
 {
-	const char* fs_body_template = "#version 130\n"
+	const char* fs_body_template = "#version 150\n"
 								   "\n"
 								   "in  vec4 result;\n"
 								   "out vec4 color;\n"
@@ -759,7 +759,7 @@ void GPUShader5FunctionOverloadingTest::execute(const glw::GLint* u1_data, const
 	/* Run test case */
 	{
 		/* Shaders */
-		const char* fs = "#version 130\n"
+		const char* fs = "#version 150\n"
 						 "\n"
 						 "in  vec4 result;\n"
 						 "out vec4 color;\n"
@@ -770,7 +770,7 @@ void GPUShader5FunctionOverloadingTest::execute(const glw::GLint* u1_data, const
 						 "}\n"
 						 "\n";
 
-		const char* vs = "#version 130\n"
+		const char* vs = "#version 150\n"
 						 "#extension GL_ARB_gpu_shader5 : require\n"
 						 "\n"
 						 "uniform ivec4 u1;\n"
@@ -1050,7 +1050,7 @@ void GPUShader5FloatEncodingTest::execute(const testCase& test_case)
 	/* Run test case */
 	{
 		/* Shaders */
-		const char* fs = "#version 130\n"
+		const char* fs = "#version 150\n"
 						 "\n"
 						 "in  vec4 result;\n"
 						 "out vec4 color;\n"
@@ -1099,7 +1099,7 @@ void GPUShader5FloatEncodingTest::execute(const testCase& test_case)
 std::string GPUShader5FloatEncodingTest::getVertexShader(const testCase& test_case) const
 {
 	/* Vertex shader template */
-	const char* vs_body_template = "#version 130\n"
+	const char* vs_body_template = "#version 150\n"
 								   "#extension GL_ARB_gpu_shader5 : require\n"
 								   "\n"
 								   "uniform EXPECTED_VALUE_TYPE expected_value;\n"

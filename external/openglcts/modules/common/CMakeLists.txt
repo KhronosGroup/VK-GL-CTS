@@ -46,6 +46,8 @@ set(GLCTS_COMMON_SRCS
 	glcSeparableProgramsTransformFeedbackTests.hpp
 	glcShaderConstExprTests.hpp
 	glcShaderConstExprTests.cpp
+	glcShaderGroupVoteTests.cpp
+	glcShaderGroupVoteTests.hpp
 	glcShaderIndexingTests.cpp
 	glcShaderIndexingTests.hpp
 	glcShaderIntegerMixTests.cpp
@@ -76,6 +78,8 @@ set(GLCTS_COMMON_SRCS
 	glcTestPackage.hpp
 	glcTextureFilterAnisotropicTests.cpp
 	glcTextureFilterAnisotropicTests.hpp
+	glcTextureRepeatModeTests.cpp
+	glcTextureRepeatModeTests.hpp
 	glcUniformBlockCase.cpp
 	glcUniformBlockCase.hpp
 	glcUniformBlockTests.cpp

@@ -447,7 +447,7 @@ TestNode::IterateResult ShaderRenderCase::iterate (void)
 		computeFragmentReference(refImage, quadGrid);
 
 	// Compare.
-	bool testOk = compareImages(resImage, refImage, 0.05f);
+	bool testOk = compareImages(resImage, refImage, 0.07f);
 
 	// De-initialize.
 	gl.useProgram(0);

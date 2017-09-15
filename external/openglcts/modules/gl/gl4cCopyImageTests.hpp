@@ -292,11 +292,11 @@ private:
  * * Verify that usage of a non-matching target for either the source or
  *   destination objects results in a GL_INVALID_ENUM error.
  **/
-class TargetMissMatchTest : public deqp::TestCase
+class TargetMismatchTest : public deqp::TestCase
 {
 public:
-	TargetMissMatchTest(deqp::Context& context);
-	virtual ~TargetMissMatchTest()
+	TargetMismatchTest(deqp::Context& context);
+	virtual ~TargetMismatchTest()
 	{
 	}
 
@@ -327,9 +327,9 @@ private:
 
 /** Implements negative test C. Description follows:
  *
- * [B]
- * * Verify that usage of a non-matching target for either the source or
- *   destination objects results in a GL_INVALID_ENUM error.
+ * [C]
+ * * Verify that INVALID_OPERATION is generated when the texture provided
+ *   to CopyImageSubData is incomplete
  **/
 class IncompleteTexTest : public deqp::TestCase
 {
@@ -414,11 +414,11 @@ private:
  *   do not match in terms of number of samples they can hold, results in
  *   GL_INVALID_OPERATION error.
  **/
-class SamplesMissMatchTest : public deqp::TestCase
+class SamplesMismatchTest : public deqp::TestCase
 {
 public:
-	SamplesMissMatchTest(deqp::Context& context);
-	virtual ~SamplesMissMatchTest()
+	SamplesMismatchTest(deqp::Context& context);
+	virtual ~SamplesMismatchTest()
 	{
 	}
 
@@ -492,16 +492,16 @@ private:
 /** Implements negative test G. Description follows:
  *
  * [G]
- * * Verify that usage of a mismatching <srcTarget> or <dstTarget> argument
+ * * Verify that usage of an invalid <srcTarget> or <dstTarget> argument
  *   generates GL_INVALID_VALUE error. For the purpose of the test, make sure
  *   to iterate over the set of all objects that can be used as source or
  *   destination objects.
  **/
-class MissMatchObjectTest : public deqp::TestCase
+class InvalidObjectTest : public deqp::TestCase
 {
 public:
-	MissMatchObjectTest(deqp::Context& context);
-	virtual ~MissMatchObjectTest()
+	InvalidObjectTest(deqp::Context& context);
+	virtual ~InvalidObjectTest()
 	{
 	}
 
@@ -512,9 +512,10 @@ private:
 	/* Private types */
 	struct testCase
 	{
-		glw::GLenum m_obj_target;
 		glw::GLenum m_dst_target;
+		bool		m_dst_valid;
 		glw::GLenum m_src_target;
+		bool		m_src_valid;
 		glw::GLenum m_expected_result;
 	};
 
