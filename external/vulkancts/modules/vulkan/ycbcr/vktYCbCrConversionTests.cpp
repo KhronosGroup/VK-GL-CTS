@@ -1915,7 +1915,7 @@ void logTestCaseInfo (TestLog& log, const TestConfig& config)
 	log << TestLog::Message << "XChromaOffset: " << config.xChromaOffset << TestLog::EndMessage;
 	log << TestLog::Message << "YChromaOffset: " << config.yChromaOffset << TestLog::EndMessage;
 	log << TestLog::Message << "ExplicitReconstruction: " << (config.explicitReconstruction ? "true" : "false") << TestLog::EndMessage;
-	log << TestLog::Message << "Disjoint: " << (config.explicitReconstruction ? "true" : "false") << TestLog::EndMessage;
+	log << TestLog::Message << "Disjoint: " << (config.disjoint ? "true" : "false") << TestLog::EndMessage;
 	log << TestLog::Message << "ColorRange: " << config.colorRange << TestLog::EndMessage;
 	log << TestLog::Message << "ColorModel: " << config.colorModel << TestLog::EndMessage;
 	log << TestLog::Message << "ComponentMapping: " << config.componentMapping << TestLog::EndMessage;
