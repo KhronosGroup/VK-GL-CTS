@@ -679,6 +679,144 @@ private:
 	glu::GLSLVersion m_glslVersion;
 };
 
+class UniformBlockNameMatching : public TestCase
+{
+public:
+	UniformBlockNameMatching(Context& context, glu::GLSLVersion glslVersion)
+		: TestCase(context, "name_matching", ""), m_glslVersion(glslVersion)
+	{
+	}
+
+	IterateResult iterate(void)
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+
+		std::string vs1("precision highp float;\n"
+						"layout (std140) uniform Data { vec4 v; };\n"
+						"void main() {\n"
+						"  gl_Position = v;\n"
+						"}");
+		std::string fs1("precision highp float;\n"
+						"out vec4 color;\n"
+						"layout (std140) uniform Data { vec4 v; } myData;\n"
+						"void main() {\n"
+						"  color = vec4(myData.v);\n"
+						"}");
+
+		// check if link error is generated when one of matched blocks has instance name and other doesn't
+		if (!Test(vs1, fs1, GL_FALSE))
+			return STOP;
+
+		std::string vs2("precision highp float;\n"
+						"uniform Data { vec4 v; };\n"
+						"void main() {\n"
+						"  gl_Position = v;\n"
+						"}");
+		std::string fs2("precision highp float;\n"
+						"out vec4 color;\n"
+						"uniform Data { vec4 v; };\n"
+						"void main() {\n"
+						"  color = v;\n"
+						"}");
+
+		// check if linking succeeds when both matched blocks are lacking an instance name
+		if (!Test(vs2, fs2, GL_TRUE))
+			return STOP;
+
+		std::string vs3("precision highp float;\n"
+						"layout (std140) uniform Data { vec4 v; } a;\n"
+						"void main() {\n"
+						"  gl_Position = a.v;\n"
+						"}");
+		std::string fs3("precision highp float;\n"
+						"out vec4 color;\n"
+						"layout (std140) uniform Data { vec4 v; } b;\n"
+						"void main() {\n"
+						"  color = b.v;\n"
+						"}");
+
+		// check if linking succeeds when both matched blocks are lacking an instance name
+		if (!Test(vs3, fs3, GL_TRUE))
+			return STOP;
+
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		return STOP;
+	}
+
+	bool Test(const std::string& vs, const std::string& fs, glw::GLint expectedLinkStatus)
+	{
+		const glw::Functions& gl	  = m_context.getRenderContext().getFunctions();
+		const glw::GLuint	 p		  = gl.createProgram();
+		const std::string	 version = glu::getGLSLVersionDeclaration(m_glslVersion);
+
+		const struct
+		{
+			const char*		   name;
+			const std::string& body;
+			glw::GLenum		   type;
+		} shaderDefinition[] = { { "VS", vs, GL_VERTEX_SHADER }, { "FS", fs, GL_FRAGMENT_SHADER } };
+
+		for (unsigned int index = 0; index < 2; ++index)
+		{
+			std::string shaderSource	= version + "\n" + shaderDefinition[index].body;
+			const char* shaderSourcePtr = shaderSource.c_str();
+
+			glw::GLuint sh = gl.createShader(shaderDefinition[index].type);
+			gl.attachShader(p, sh);
+			gl.deleteShader(sh);
+			gl.shaderSource(sh, 1, &shaderSourcePtr, NULL);
+			gl.compileShader(sh);
+
+			glw::GLint status;
+			gl.getShaderiv(sh, GL_COMPILE_STATUS, &status);
+			if (status == GL_FALSE)
+			{
+				glw::GLint length;
+				gl.getShaderiv(sh, GL_INFO_LOG_LENGTH, &length);
+				if (length > 0)
+				{
+					std::vector<glw::GLchar> log(length);
+					gl.getShaderInfoLog(sh, length, NULL, &log[0]);
+					m_context.getTestContext().getLog() << tcu::TestLog::Message << shaderDefinition[index].name
+														<< " compilation should succed. Info Log:\n"
+														<< &log[0] << tcu::TestLog::EndMessage;
+				}
+				gl.deleteProgram(p);
+				return false;
+			}
+		}
+
+		gl.linkProgram(p);
+
+		bool	   result = true;
+		glw::GLint status;
+		gl.getProgramiv(p, GL_LINK_STATUS, &status);
+		if (status != expectedLinkStatus)
+		{
+			if (status == GL_TRUE)
+			{
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Link operation should fail.\n"
+													<< tcu::TestLog::EndMessage;
+			}
+			else
+			{
+				glw::GLchar log[1024];
+				gl.getProgramInfoLog(p, sizeof(log), NULL, log);
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "Link operation should succed. Info Log:\n"
+					<< log << tcu::TestLog::EndMessage;
+			}
+			result = false;
+		}
+
+		gl.deleteProgram(p);
+		return result;
+	}
+
+private:
+	glu::GLSLVersion m_glslVersion;
+};
+
 UniformBlockTests::UniformBlockTests(Context& context, glu::GLSLVersion glslVersion)
 	: TestCaseGroup(context, "uniform_block", "Uniform Block tests"), m_glslVersion(glslVersion)
 {
@@ -1096,6 +1234,13 @@ void UniformBlockTests::init(void)
 		tcu::TestCaseGroup* commonGroup = new tcu::TestCaseGroup(m_testCtx, "common", "Common Uniform Block cases");
 		addChild(commonGroup);
 		commonGroup->addChild(new UniformBlockPrecisionMatching(m_context, m_glslVersion));
+		commonGroup->addChild(new UniformBlockNameMatching(m_context, m_glslVersion));
+	}
+	else if (glu::isGLSLVersionSupported(m_context.getRenderContext().getType(), glu::GLSL_VERSION_150))
+	{
+		tcu::TestCaseGroup* commonGroup = new tcu::TestCaseGroup(m_testCtx, "common", "Common Uniform Block cases");
+		addChild(commonGroup);
+		commonGroup->addChild(new UniformBlockNameMatching(m_context, m_glslVersion));
 	}
 }
 

@@ -2568,6 +2568,7 @@ KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.17
 KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.18
 KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.19
 KHR-GLES3.shaders.uniform_block.common.precision_matching
+KHR-GLES3.shaders.uniform_block.common.name_matching
 KHR-GLES3.shaders.shader_integer_mix.define
 KHR-GLES3.shaders.shader_integer_mix.prototypes-extension
 KHR-GLES3.shaders.shader_integer_mix.prototypes

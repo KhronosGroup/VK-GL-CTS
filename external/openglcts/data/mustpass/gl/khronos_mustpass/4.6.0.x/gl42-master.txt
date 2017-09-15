@@ -2740,6 +2740,7 @@ KHR-GL42.shaders.uniform_block.random.all_shared_buffer.16
 KHR-GL42.shaders.uniform_block.random.all_shared_buffer.17
 KHR-GL42.shaders.uniform_block.random.all_shared_buffer.18
 KHR-GL42.shaders.uniform_block.random.all_shared_buffer.19
+KHR-GL42.shaders.uniform_block.common.name_matching
 KHR-GL42.shaders.shader_integer_mix.define
 KHR-GL42.shaders.shader_integer_mix.prototypes-extension
 KHR-GL42.shaders.shader_integer_mix.prototypes

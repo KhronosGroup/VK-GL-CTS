@@ -2740,6 +2740,7 @@ KHR-GL45.shaders.uniform_block.random.all_shared_buffer.16
 KHR-GL45.shaders.uniform_block.random.all_shared_buffer.17
 KHR-GL45.shaders.uniform_block.random.all_shared_buffer.18
 KHR-GL45.shaders.uniform_block.random.all_shared_buffer.19
+KHR-GL45.shaders.uniform_block.common.name_matching
 KHR-GL45.shaders.shader_integer_mix.define
 KHR-GL45.shaders.shader_integer_mix.prototypes-extension
 KHR-GL45.shaders.shader_integer_mix.prototypes
@@ -4040,6 +4041,7 @@ KHR-GL45.shader_storage_buffer_object.basic-matrixOperations-case7-vs
 KHR-GL45.shader_storage_buffer_object.basic-matrixOperations-case7-cs
 KHR-GL45.shader_storage_buffer_object.basic-noBindingLayout
 KHR-GL45.shader_storage_buffer_object.basic-readonly-writeonly
+KHR-GL45.shader_storage_buffer_object.basic-name-match
 KHR-GL45.shader_storage_buffer_object.advanced-switchBuffers
 KHR-GL45.shader_storage_buffer_object.advanced-switchBuffers-cs
 KHR-GL45.shader_storage_buffer_object.advanced-switchPrograms

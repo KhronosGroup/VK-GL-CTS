@@ -2740,6 +2740,7 @@ KHR-GL43.shaders.uniform_block.random.all_shared_buffer.16
 KHR-GL43.shaders.uniform_block.random.all_shared_buffer.17
 KHR-GL43.shaders.uniform_block.random.all_shared_buffer.18
 KHR-GL43.shaders.uniform_block.random.all_shared_buffer.19
+KHR-GL43.shaders.uniform_block.common.name_matching
 KHR-GL43.shaders.shader_integer_mix.define
 KHR-GL43.shaders.shader_integer_mix.prototypes-extension
 KHR-GL43.shaders.shader_integer_mix.prototypes
@@ -4039,6 +4040,7 @@ KHR-GL43.shader_storage_buffer_object.basic-matrixOperations-case7-vs
 KHR-GL43.shader_storage_buffer_object.basic-matrixOperations-case7-cs
 KHR-GL43.shader_storage_buffer_object.basic-noBindingLayout
 KHR-GL43.shader_storage_buffer_object.basic-readonly-writeonly
+KHR-GL43.shader_storage_buffer_object.basic-name-match
 KHR-GL43.shader_storage_buffer_object.advanced-switchBuffers
 KHR-GL43.shader_storage_buffer_object.advanced-switchBuffers-cs
 KHR-GL43.shader_storage_buffer_object.advanced-switchPrograms
