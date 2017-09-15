@@ -53,6 +53,7 @@
 #include "vktSpvAsmUboMatrixPaddingTests.hpp"
 #include "vktSpvAsmConditionalBranchTests.hpp"
 #include "vktSpvAsmIndexingTests.hpp"
+#include "vktSpvAsmImageSamplerTests.hpp"
 #include "vktSpvAsmComputeShaderCase.hpp"
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
@@ -6234,8 +6235,7 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 		"%c_vec4_1       = OpConstantComposite %v4f32 %c_f32_1 %c_f32_1 %c_f32_1 %c_f32_1\n"
 		"%c_f32_1pl2_23  = OpConstant %f32 0x1.000002p+0\n" // 1 + 2^-23
 		"%c_f32_1mi2_23  = OpConstant %f32 0x1.fffffcp-1\n" // 1 - 2^-23
-		"%c_f32_n1pn24   = OpConstant %f32 -0x1p-24\n"
-		;
+		"%c_f32_n1pn24   = OpConstant %f32 -0x1p-24\n";
 
 	const char						function[]	 =
 		"%test_code      = OpFunction %v4f32 None %v4f32_function\n"
@@ -6421,8 +6421,8 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		"%b = OpFAdd %f32 %a %actually_zero\n"
 		"%ret = OpVectorInsertDynamic %v4f32 %param1 %b %c_i32_0\n"
 		"OpReturnValue %ret\n"
-		"OpFunctionEnd\n"
-		;
+		"OpFunctionEnd\n";
+
 	createTestsForAllStages("float32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
@@ -6434,8 +6434,8 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		"%a = OpVectorExtractDynamic %f32 %param1 %zero\n"
 		"%ret = OpVectorInsertDynamic %v4f32 %param1 %a %c_i32_0\n"
 		"OpReturnValue %ret\n"
-		"OpFunctionEnd\n"
-		;
+		"OpFunctionEnd\n";
+
 	createTestsForAllStages("sint32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
@@ -6447,8 +6447,8 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		"%a = OpVectorExtractDynamic %f32 %param1 %zero\n"
 		"%ret = OpVectorInsertDynamic %v4f32 %param1 %a %c_i32_0\n"
 		"OpReturnValue %ret\n"
-		"OpFunctionEnd\n"
-		;
+		"OpFunctionEnd\n";
+
 	createTestsForAllStages("uint32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
@@ -6482,8 +6482,8 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		"%ret1 = OpVectorInsertDynamic %v4f32 %ret2 %sum_1 %c_i32_1\n"
 		"%ret = OpVectorInsertDynamic %v4f32 %ret1 %sum_0 %c_i32_0\n"
 		"OpReturnValue %ret\n"
-		"OpFunctionEnd\n"
-		;
+		"OpFunctionEnd\n";
+
 	createTestsForAllStages("vec4float32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["pre_main"] =
@@ -6519,8 +6519,8 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 		"%ret1 = OpVectorInsertDynamic %v4f32 %ret2 %sum_1 %c_i32_1\n"
 		"%ret = OpVectorInsertDynamic %v4f32 %ret1 %sum_0 %c_i32_0\n"
 		"OpReturnValue %ret\n"
-		"OpFunctionEnd\n"
-		;
+		"OpFunctionEnd\n";
+
 	createTestsForAllStages("matrix", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	return opUndefTests.release();
@@ -6946,8 +6946,8 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"%result = OpVectorInsertDynamic %v4f32 %param1 %val %c_i32_0\n"
 		"OpReturnValue %result\n"
 
-		"OpFunctionEnd\n"
-		;
+		"OpFunctionEnd\n";
+
 	createTestsForAllStages("single_block", defaultColors, defaultColors, fragments, testGroup.get());
 
 	// Body comprised of multiple basic blocks.
@@ -8645,6 +8645,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createConditionalBranchComputeGroup(testCtx));
 	computeTests->addChild(createIndexingComputeGroup(testCtx));
 	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
+	computeTests->addChild(createImageSamplerComputeGroup(testCtx));
 	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));
 	graphicsTests->addChild(createOpSourceContinuedTests(testCtx));
@@ -8683,6 +8684,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createConditionalBranchGraphicsGroup(testCtx));
 	graphicsTests->addChild(createIndexingGraphicsGroup(testCtx));
 	graphicsTests->addChild(createVariablePointersGraphicsGroup(testCtx));
+	graphicsTests->addChild(createImageSamplerGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());

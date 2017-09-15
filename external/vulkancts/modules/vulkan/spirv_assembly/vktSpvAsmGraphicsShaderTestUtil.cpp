@@ -176,11 +176,26 @@ VkBufferUsageFlagBits getMatchingBufferUsageFlagBit(VkDescriptorType dType)
 {
 	switch (dType)
 	{
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER: return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER: return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-		default:								DE_ASSERT(0 && "not implemented");
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:			return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:			return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		default:										DE_ASSERT(0 && "not implemented");
 	}
 	return (VkBufferUsageFlagBits)0;
+}
+
+VkImageUsageFlags getMatchingImageUsageFlags(VkDescriptorType dType)
+{
+	switch (dType)
+	{
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			return VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		default:										DE_FATAL("Not implemented");
+	}
+	return (VkImageUsageFlags)0;
 }
 
 static void requireFormatUsageSupport(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkFormat format, VkImageTiling imageTiling, VkImageUsageFlags requiredUsageFlags)
@@ -1102,7 +1117,7 @@ map<string, string> passthruInterface(const IFDataType& data_type)
 // %ip_${input_type} and %op_${output_type} should also be defined in the final code.
 map<string, string> fillInterfacePlaceholderVert (void)
 {
-	map<string, string>	fragments	;
+	map<string, string>	fragments;
 
 	fragments["IF_entrypoint"]		= "%IF_input %IF_output";
 	fragments["IF_variable"]		=
@@ -1136,7 +1151,7 @@ map<string, string> fillInterfacePlaceholderVert (void)
 // %ip_${input_type} and %op_${output_type} should also be defined in the final code.
 map<string, string> fillInterfacePlaceholderFrag (void)
 {
-	map<string, string>	fragments	;
+	map<string, string>	fragments;
 
 	fragments["IF_entrypoint"]		= "%IF_input %IF_output";
 	fragments["IF_variable"]		=
@@ -1172,7 +1187,7 @@ map<string, string> fillInterfacePlaceholderFrag (void)
 // should also be defined in the final code.
 map<string, string> fillInterfacePlaceholderTessCtrl (void)
 {
-	map<string, string>	fragments	;
+	map<string, string>	fragments;
 
 	fragments["IF_entrypoint"]		= "%IF_input %IF_output";
 	fragments["IF_variable"]		=
@@ -1219,7 +1234,7 @@ map<string, string> fillInterfacePlaceholderTessCtrl (void)
 // should also be defined in the final code.
 map<string, string> fillInterfacePlaceholderTessEvalGeom (void)
 {
-	map<string, string>	fragments	;
+	map<string, string>	fragments;
 
 	fragments["IF_entrypoint"]		= "%IF_input %IF_output";
 	fragments["IF_variable"]		=
@@ -2152,7 +2167,7 @@ bool compare32BitFloat (float expected, float returned, tcu::TestLog& log)
 	return false;
 }
 
-Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice vkDevice, const Resource& resource, deUint32 queueFamilyIndex)
+Move<VkBuffer> createBufferForResource (const DeviceInterface& vk, const VkDevice vkDevice, const Resource& resource, deUint32 queueFamilyIndex)
 {
 	vector<deUint8>	resourceBytes;
 	resource.second->getBytes(resourceBytes);
@@ -2170,6 +2185,132 @@ Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice
 	};
 
 	return createBuffer(vk, vkDevice, &resourceBufferParams);
+}
+
+Move<VkImage> createImageForResource (const DeviceInterface& vk, const VkDevice vkDevice, const Resource& resource, deUint32 queueFamilyIndex)
+{
+	const VkImageCreateInfo	resourceImageParams	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,								//	VkStructureType		sType;
+		DE_NULL,															//	const void*			pNext;
+		0u,																	//	VkImageCreateFlags	flags;
+		VK_IMAGE_TYPE_2D,													//	VkImageType			imageType;
+		VK_FORMAT_R32G32B32A32_SFLOAT,										//	VkFormat			format;
+		{ 8, 8, 1 },														//	VkExtent3D			extent;
+		1u,																	//	deUint32			mipLevels;
+		1u,																	//	deUint32			arraySize;
+		VK_SAMPLE_COUNT_1_BIT,												//	deUint32			samples;
+		VK_IMAGE_TILING_OPTIMAL,											//	VkImageTiling		tiling;
+		getMatchingImageUsageFlags(resource.first),							//	VkImageUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,											//	VkSharingMode		sharingMode;
+		1u,																	//	deUint32			queueFamilyCount;
+		&queueFamilyIndex,													//	const deUint32*		pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED											//	VkImageLayout		initialLayout;
+	};
+
+	return createImage(vk, vkDevice, &resourceImageParams);
+}
+
+void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const VkQueue& queue, VkCommandBuffer cmdBuffer, VkBuffer buffer, VkImage image)
+{
+	const VkBufferImageCopy			copyRegion			=
+	{
+		0u,												// VkDeviceSize				bufferOffset;
+		0u,												// deUint32					bufferRowLength;
+		0u,												// deUint32					bufferImageHeight;
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags		aspect;
+			0u,												// deUint32					mipLevel;
+			0u,												// deUint32					baseArrayLayer;
+			1u,												// deUint32					layerCount;
+		},												// VkImageSubresourceLayers	imageSubresource;
+		{ 0, 0, 0 },									// VkOffset3D				imageOffset;
+		{ 8, 8, 1 }										// VkExtent3D				imageExtent;
+	};
+
+	// Copy buffer to image
+	const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
+		DE_NULL,										// const void*								pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags				flags;
+		DE_NULL											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+
+	const VkImageMemoryBarrier		imageBarriers[]		=
+	{
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			DE_NULL,									// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			image,										// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+				0u,								// deUint32				baseMipLevel;
+				1u,								// deUint32				mipLevels;
+				0u,								// deUint32				baseArraySlice;
+				1u								// deUint32				arraySize;
+			}
+		},
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_SHADER_READ_BIT,					// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			image,										// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+				0u,								// deUint32				baseMipLevel;
+				1u,								// deUint32				mipLevels;
+				0u,								// deUint32				baseArraySlice;
+				1u								// deUint32				arraySize;
+			}
+		},
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
+		0u, DE_NULL, 1u, &imageBarriers[0]);
+	vk.cmdCopyBufferToImage(cmdBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
+		0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarriers[1]);
+
+	VK_CHECK(vk.endCommandBuffer(cmdBuffer));
+
+	{
+		const VkFenceCreateInfo	fenceParams	=
+		{
+			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
+			DE_NULL,								//	const void*			pNext;
+			0u,										//	VkFenceCreateFlags	flags;
+		};
+
+		const Unique<VkFence>	fence		(createFence(vk, device, &fenceParams));
+		const VkSubmitInfo		submitInfo	=
+		{
+			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
+			DE_NULL,								// const void*					pNext;
+			0u,										// deUint32						waitSemaphoreCount;
+			DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
+			DE_NULL,								// const VkPipelineStageFlags*	pWaitDstStageMask;
+			1u,										// deUint32						commandBufferCount;
+			&cmdBuffer,								// const VkCommandBuffer*		pCommandBuffers;
+			0u,										// deUint32						signalSemaphoreCount;
+			DE_NULL									// const VkSemaphore*			pSignalSemaphores;
+		};
+
+		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
+		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+	}
 }
 
 TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
@@ -2295,13 +2436,13 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const size_t							singleVertexDataSize	= 2 * sizeof(Vec4);
 	const size_t							vertexCount				= sizeof(vertexData) / singleVertexDataSize;
 
-	Move<VkBuffer>							vertexInputBuffer		;
-	de::MovePtr<Allocation>					vertexInputMemory		;
-	Move<VkBuffer>							fragOutputBuffer		;
-	de::MovePtr<Allocation>					fragOutputMemory		;
-	Move<VkImage>							fragOutputImage			;
-	de::MovePtr<Allocation>					fragOutputImageMemory	;
-	Move<VkImageView>						fragOutputImageView		;
+	Move<VkBuffer>							vertexInputBuffer;
+	de::MovePtr<Allocation>					vertexInputMemory;
+	Move<VkBuffer>							fragOutputBuffer;
+	de::MovePtr<Allocation>					fragOutputMemory;
+	Move<VkImage>							fragOutputImage;
+	de::MovePtr<Allocation>					fragOutputImageMemory;
+	Move<VkImageView>						fragOutputImageView;
 
 	const VkBufferCreateInfo				vertexBufferParams		=
 	{
@@ -2417,8 +2558,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_CHECK(vk.bindImageMemory(*vkDevice, *fragOutputImage, fragOutputImageMemory->getMemory(), fragOutputImageMemory->getOffset()));
 	}
 
-	vector<VkAttachmentDescription>			colorAttDescs			;
-	vector<VkAttachmentReference>			colorAttRefs			;
+	vector<VkAttachmentDescription>			colorAttDescs;
+	vector<VkAttachmentReference>			colorAttRefs;
 	{
 		const VkAttachmentDescription		attDesc					=
 		{
@@ -2525,26 +2666,34 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	};
 	const Unique<VkImageView>				colorAttView			(createImageView(vk, *vkDevice, &colorAttViewParams));
 
-	vector<VkImageView>						attViews				;
+	vector<VkImageView>						attViews;
 	attViews.push_back(*colorAttView);
 
 	// Handle resources requested by the test instantiation.
 	const deUint32							numInResources			= static_cast<deUint32>(instance.resources.inputs.size());
 	const deUint32							numOutResources			= static_cast<deUint32>(instance.resources.outputs.size());
 	// These variables should be placed out of the following if block to avoid deallocation after out of scope.
-	vector<AllocationSp>					inResourceMemories		;
-	vector<AllocationSp>					outResourceMemories		;
-	vector<BufferHandleSp>					inResourceBuffers		;
-	vector<BufferHandleSp>					outResourceBuffers		;
-	Move<VkDescriptorPool>					descriptorPool			;
-	Move<VkDescriptorSetLayout>				setLayout				;
+	vector<AllocationSp>					inResourceMemories;
+	vector<AllocationSp>					outResourceMemories;
+	vector<BufferHandleSp>					inResourceBuffers;
+	vector<BufferHandleSp>					outResourceBuffers;
+	vector<ImageHandleSp>					inResourceImages;
+	vector<ImageViewHandleSp>				inResourceImageViews;
+	vector<SamplerHandleSp>					inResourceSamplers;
+	Move<VkDescriptorPool>					descriptorPool;
+	Move<VkDescriptorSetLayout>				setLayout;
 	VkDescriptorSetLayout					rawSetLayout			= DE_NULL;
 	VkDescriptorSet							rawSet					= DE_NULL;
 
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, *vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+
+	// Command buffer
+	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, *vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
 	if (numResources != 0)
 	{
-		vector<VkDescriptorSetLayoutBinding>	setLayoutBindings	;
-		vector<VkDescriptorPoolSize>			poolSizes			;
+		vector<VkDescriptorSetLayoutBinding>	setLayoutBindings;
+		vector<VkDescriptorPoolSize>			poolSizes;
 
 		setLayoutBindings.reserve(numResources);
 		poolSizes.reserve(numResources);
@@ -2552,30 +2701,81 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		// Process all input resources.
 		for (deUint32 inputNdx = 0; inputNdx < numInResources; ++inputNdx)
 		{
-			const Resource&					resource				= instance.resources.inputs[inputNdx];
-			// Create buffer and allocate memory.
-			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
-			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
-			vector<deUint8>					resourceBytes;
+			const Resource&	resource	= instance.resources.inputs[inputNdx];
 
-			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+			const bool		hasImage	= (resource.first == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
+										  (resource.first == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+										  (resource.first == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-			// Copy data to memory.
-			const VkMappedMemoryRange		range					=
+			const bool		hasSampler	= (resource.first == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+										  (resource.first == VK_DESCRIPTOR_TYPE_SAMPLER)		||
+										  (resource.first == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+			// Resource is a buffer
+			if (!hasImage && !hasSampler)
 			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,				//	VkStructureType	sType;
-				DE_NULL,											//	const void*		pNext;
-				resourceMemory->getMemory(),						//	VkDeviceMemory	mem;
-				0,													//	VkDeviceSize	offset;
-				VK_WHOLE_SIZE,										//	VkDeviceSize	size;
-			};
+				Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
+				de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
 
-			resource.second->getBytes(resourceBytes);
-			deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
-			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
+				VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
-			inResourceMemories.push_back(AllocationSp(resourceMemory.release()));
-			inResourceBuffers.push_back(BufferHandleSp(new BufferHandleUp(resourceBuffer)));
+				// Copy data to memory.
+				{
+					const VkMappedMemoryRange		range					=
+					{
+						VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,				//	VkStructureType	sType;
+						DE_NULL,											//	const void*		pNext;
+						resourceMemory->getMemory(),						//	VkDeviceMemory	mem;
+						0,													//	VkDeviceSize	offset;
+						VK_WHOLE_SIZE,										//	VkDeviceSize	size;
+					};
+
+					vector<deUint8>					resourceBytes;
+					resource.second->getBytes(resourceBytes);
+
+					deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
+					VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
+				}
+
+				inResourceMemories.push_back(AllocationSp(resourceMemory.release()));
+				inResourceBuffers.push_back(BufferHandleSp(new BufferHandleUp(resourceBuffer)));
+			}
+			// Resource is an image
+			else if (hasImage)
+			{
+				Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
+				de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+
+				VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+
+				// Copy data to memory.
+				{
+					const VkMappedMemoryRange		range					=
+					{
+						VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,				//	VkStructureType	sType;
+						DE_NULL,											//	const void*		pNext;
+						resourceMemory->getMemory(),						//	VkDeviceMemory	mem;
+						0,													//	VkDeviceSize	offset;
+						VK_WHOLE_SIZE,										//	VkDeviceSize	size;
+					};
+
+					vector<deUint8>					resourceBytes;
+					resource.second->getBytes(resourceBytes);
+
+					deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
+					VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
+				}
+
+				Move<VkImage>					resourceImage			= createImageForResource(vk, *vkDevice, resource, queueFamilyIndex);
+				de::MovePtr<Allocation>			resourceImageMemory		= allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *resourceImage), MemoryRequirement::Any);
+
+				VK_CHECK(vk.bindImageMemory(*vkDevice, *resourceImage, resourceImageMemory->getMemory(), resourceImageMemory->getOffset()));
+
+				copyBufferToImage(vk, *vkDevice, queue, *cmdBuf, resourceBuffer.get(), resourceImage.get());
+
+				inResourceMemories.push_back(AllocationSp(resourceImageMemory.release()));
+				inResourceImages.push_back(ImageHandleSp(new ImageHandleUp(resourceImage)));
+			}
 
 			// Prepare descriptor bindings and pool sizes for creating descriptor set layout and pool.
 			const VkDescriptorSetLayoutBinding	binding				=
@@ -2679,36 +2879,159 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_CHECK(vk.allocateDescriptorSets(*vkDevice, &setAllocParams, &rawSet));
 
 		// Update descriptor set.
-		vector<VkWriteDescriptorSet>			writeSpecs			;
-		vector<VkDescriptorBufferInfo>			dBufferInfos		;
+		vector<VkWriteDescriptorSet>			writeSpecs;
+		vector<VkDescriptorBufferInfo>			dBufferInfos;
+		vector<VkDescriptorImageInfo>			dImageInfos;
 
 		writeSpecs.reserve(numResources);
 		dBufferInfos.reserve(numResources);
+		dImageInfos.reserve(numResources);
+
+		deUint32								imgResourceNdx		= 0u;
+		deUint32								bufResourceNdx		= 0u;
 
 		for (deUint32 inputNdx = 0; inputNdx < numInResources; ++inputNdx)
 		{
-			const VkDescriptorBufferInfo		bufInfo				=
+			const Resource&	resource	= instance.resources.inputs[inputNdx];
+
+			const bool		hasImage	= (resource.first == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
+										  (resource.first == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+										  (resource.first == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+			const bool		hasSampler	= (resource.first == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+										  (resource.first == VK_DESCRIPTOR_TYPE_SAMPLER)		||
+										  (resource.first == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+			// Create image view and sampler
+			if (hasImage || hasSampler)
 			{
-				**inResourceBuffers[inputNdx],						// buffer
-				0,													// offset
-				VK_WHOLE_SIZE,										// size
-			};
-			dBufferInfos.push_back(bufInfo);
+				if (resource.first != VK_DESCRIPTOR_TYPE_SAMPLER)
+				{
+					const VkImageViewCreateInfo	imgViewParams	=
+					{
+						VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,			//	VkStructureType				sType;
+						DE_NULL,											//	const void*					pNext;
+						0u,													//	VkImageViewCreateFlags		flags;
+						**inResourceImages[imgResourceNdx++],				//	VkImage						image;
+						VK_IMAGE_VIEW_TYPE_2D,								//	VkImageViewType				viewType;
+						VK_FORMAT_R32G32B32A32_SFLOAT,						//	VkFormat					format;
+						{
+							VK_COMPONENT_SWIZZLE_R,
+							VK_COMPONENT_SWIZZLE_G,
+							VK_COMPONENT_SWIZZLE_B,
+							VK_COMPONENT_SWIZZLE_A
+						},													//	VkChannelMapping			channels;
+						{
+							VK_IMAGE_ASPECT_COLOR_BIT,						//	VkImageAspectFlags	aspectMask;
+							0u,												//	deUint32			baseMipLevel;
+							1u,												//	deUint32			mipLevels;
+							0u,												//	deUint32			baseArrayLayer;
+							1u,												//	deUint32			arraySize;
+						},													//	VkImageSubresourceRange		subresourceRange;
+					};
+
+					Move<VkImageView>			imgView			(createImageView(vk, *vkDevice, &imgViewParams));
+					inResourceImageViews.push_back(ImageViewHandleSp(new ImageViewHandleUp(imgView)));
+				}
+
+				if (hasSampler)
+				{
+					const VkSamplerCreateInfo	samplerParams	=
+					{
+						VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		// VkStructureType			sType;
+						DE_NULL,									// const void*				pNext;
+						0,											// VkSamplerCreateFlags		flags;
+						VK_FILTER_NEAREST,							// VkFilter					magFilter:
+						VK_FILTER_NEAREST,							// VkFilter					minFilter;
+						VK_SAMPLER_MIPMAP_MODE_NEAREST,				// VkSamplerMipmapMode		mipmapMode;
+						VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeU;
+						VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeV;
+						VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeW;
+						0.0f,										// float					mipLodBias;
+						VK_FALSE,									// VkBool32					anistoropyÉnable;
+						1.0f,										// float					maxAnisotropy;
+						VK_FALSE,									// VkBool32					compareEnable;
+						VK_COMPARE_OP_ALWAYS,						// VkCompareOp				compareOp;
+						0.0f,										// float					minLod;
+						0.0f,										// float					maxLod;
+						VK_BORDER_COLOR_INT_OPAQUE_BLACK,			// VkBorderColor			borderColor;
+						VK_FALSE									// VkBool32					unnormalizedCoordinates;
+					};
+
+					Move<VkSampler>				sampler			(createSampler(vk, *vkDevice, &samplerParams));
+					inResourceSamplers.push_back(SamplerHandleSp(new SamplerHandleUp(sampler)));
+				}
+			}
+
+			// Create descriptor buffer and image infos
+			switch (resource.first)
+			{
+				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+				{
+					const VkDescriptorBufferInfo	bufInfo	=
+					{
+						**inResourceBuffers[bufResourceNdx++],				// buffer
+						0,													// offset
+						VK_WHOLE_SIZE,										// size
+					};
+					dBufferInfos.push_back(bufInfo);
+					break;
+				}
+				case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+				case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+				{
+					const VkDescriptorImageInfo		imgInfo	=
+					{
+						DE_NULL,												// sampler
+						**inResourceImageViews.back(),							// imageView
+						VK_IMAGE_LAYOUT_GENERAL									// imageLayout
+					};
+					dImageInfos.push_back(imgInfo);
+					break;
+				}
+				case VK_DESCRIPTOR_TYPE_SAMPLER:
+				{
+					const VkDescriptorImageInfo		imgInfo	=
+					{
+						**inResourceSamplers.back(),							// sampler
+						DE_NULL,												// imageView
+						VK_IMAGE_LAYOUT_GENERAL									// imageLayout
+					};
+					dImageInfos.push_back(imgInfo);
+					break;
+				}
+				case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+				{
+
+					const VkDescriptorImageInfo		imgInfo	=
+					{
+						**inResourceSamplers.back(),							// sampler
+						**inResourceImageViews.back(),							// imageView
+						VK_IMAGE_LAYOUT_GENERAL									// imageLayout
+					};
+					dImageInfos.push_back(imgInfo);
+					break;
+				}
+				default:
+					DE_FATAL("Not implemented");
+			}
 
 			const VkWriteDescriptorSet			writeSpec			= {
-				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,				// sType
-				DE_NULL,											// pNext
-				rawSet,												// dstSet
-				inputNdx,											// binding
-				0,													// dstArrayElement
-				1u,													// descriptorCount
-				instance.resources.inputs[inputNdx].first,			// descriptorType
-				DE_NULL,											// pImageInfo
-				&dBufferInfos.back(),								// pBufferInfo
-				DE_NULL,											// pTexelBufferView
+				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,							// sType
+				DE_NULL,														// pNext
+				rawSet,															// dstSet
+				inputNdx,														// binding
+				0,																// dstArrayElement
+				1u,																// descriptorCount
+				instance.resources.inputs[inputNdx].first,						// descriptorType
+				( (hasImage | hasSampler)	? &dImageInfos.back()	: DE_NULL),	// pImageInfo
+				(!(hasImage | hasSampler)	? &dBufferInfos.back()	: DE_NULL),	// pBufferInfo
+				DE_NULL,														// pTexelBufferView
 			};
 			writeSpecs.push_back(writeSpec);
 		}
+
 		for (deUint32 outputNdx = 0; outputNdx < numOutResources; ++outputNdx)
 		{
 			const VkDescriptorBufferInfo		bufInfo				=
@@ -2985,7 +3308,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		vertexInputStateParams.vertexAttributeDescriptionCount += 1;
 	}
 
-	vector<VkPipelineColorBlendAttachmentState>	attBlendStates			;
+	vector<VkPipelineColorBlendAttachmentState>	attBlendStates;
 	const VkPipelineColorBlendAttachmentState	attBlendState			=
 	{
 		DE_FALSE,													//	deUint32		blendEnable;
@@ -3101,11 +3424,6 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, *vkDevice, &framebufferParams));
 
-	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, *vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
-
-	// Command buffer
-	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, *vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
 	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			//	VkStructureType				sType;
@@ -3125,7 +3443,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			VK_ACCESS_HOST_WRITE_BIT,					//	VkMemoryOutputFlags	outputMask;
 			VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,		//	VkMemoryInputFlags	inputMask;
 		};
-		vector<VkImageMemoryBarrier>	colorAttBarriers	;
+		vector<VkImageMemoryBarrier>	colorAttBarriers;
 
 		VkImageMemoryBarrier			imgBarrier          =
 		{
@@ -3160,7 +3478,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	}
 
 	{
-		vector<VkClearValue>			clearValue		;
+		vector<VkClearValue>			clearValue;
 		clearValue.push_back(makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f));
 		if (needInterface)
 		{
@@ -3270,7 +3588,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	}
 
 	{
-		vector<VkBufferMemoryBarrier> cpFinishBarriers		;
+		vector<VkBufferMemoryBarrier> cpFinishBarriers;
 		VkBufferMemoryBarrier			copyFinishBarrier	=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	//	VkStructureType		sType;

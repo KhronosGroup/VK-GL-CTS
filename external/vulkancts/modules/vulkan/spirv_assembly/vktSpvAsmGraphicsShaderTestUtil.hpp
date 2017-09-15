@@ -45,7 +45,13 @@ namespace SpirVAssembly
 {
 
 typedef vk::Unique<VkBuffer>										BufferHandleUp;
+typedef vk::Unique<VkImage>											ImageHandleUp;
+typedef vk::Unique<VkImageView>										ImageViewHandleUp;
+typedef vk::Unique<VkSampler>										SamplerHandleUp;
 typedef de::SharedPtr<BufferHandleUp>								BufferHandleSp;
+typedef de::SharedPtr<ImageHandleUp>								ImageHandleSp;
+typedef de::SharedPtr<ImageViewHandleUp>							ImageViewHandleSp;
+typedef de::SharedPtr<SamplerHandleUp>								SamplerHandleSp;
 typedef vk::Unique<vk::VkShaderModule>								ModuleHandleUp;
 typedef de::SharedPtr<ModuleHandleUp>								ModuleHandleSp;
 typedef std::pair<std::string, vk::VkShaderStageFlagBits>			EntryToStage;

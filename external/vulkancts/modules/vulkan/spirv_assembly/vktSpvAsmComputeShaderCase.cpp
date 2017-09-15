@@ -42,27 +42,39 @@ using std::vector;
 typedef vkt::SpirVAssembly::AllocationMp			AllocationMp;
 typedef vkt::SpirVAssembly::AllocationSp			AllocationSp;
 
-typedef Unique<VkBuffer>							BufferHandleUp;
+//typedef Unique<VkBuffer>							BufferHandleUp;
+//typedef de::SharedPtr<BufferHandleUp>				BufferHandleSp;
+
+typedef vk::Unique<VkBuffer>						BufferHandleUp;
+typedef vk::Unique<VkImage>							ImageHandleUp;
+typedef vk::Unique<VkImageView>						ImageViewHandleUp;
+typedef vk::Unique<VkSampler>						SamplerHandleUp;
 typedef de::SharedPtr<BufferHandleUp>				BufferHandleSp;
+typedef de::SharedPtr<ImageHandleUp>				ImageHandleSp;
+typedef de::SharedPtr<ImageViewHandleUp>			ImageViewHandleSp;
+typedef de::SharedPtr<SamplerHandleUp>				SamplerHandleSp;
 
 /*--------------------------------------------------------------------*//*!
- * \brief Create storage buffer, allocate and bind memory for the buffer
+ * \brief Create a buffer, allocate and bind memory for the buffer
  *
  * The memory is created as host visible and passed back as a vk::Allocation
  * instance via outMemory.
  *//*--------------------------------------------------------------------*/
 Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorType dtype, Allocator& allocator, size_t numBytes, AllocationMp* outMemory)
 {
-	VkBufferUsageFlags			usageBit		= (VkBufferUsageFlags)0;
+	VkBufferUsageFlags			usageBit			= (VkBufferUsageFlags)0;
 
 	switch (dtype)
 	{
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:	usageBit = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; break;
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:	usageBit = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT; break;
-		default:								DE_ASSERT(false);
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:			usageBit = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:			usageBit = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			usageBit = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			usageBit = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	usageBit = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
+		default:										DE_FATAL("Not implemented");
 	}
 
-	const VkBufferCreateInfo bufferCreateInfo	=
+	const VkBufferCreateInfo	bufferCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// sType
 		DE_NULL,								// pNext
@@ -74,14 +86,162 @@ Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface& vkdi, const VkD
 		DE_NULL,								// pQueueFamilyIndices
 	};
 
-	Move<VkBuffer>				buffer			(createBuffer(vkdi, device, &bufferCreateInfo));
-	const VkMemoryRequirements	requirements	= getBufferMemoryRequirements(vkdi, device, *buffer);
-	AllocationMp				bufferMemory	= allocator.allocate(requirements, MemoryRequirement::HostVisible);
+	Move<VkBuffer>				buffer				(createBuffer(vkdi, device, &bufferCreateInfo));
+	const VkMemoryRequirements	requirements		= getBufferMemoryRequirements(vkdi, device, *buffer);
+	AllocationMp				bufferMemory		= allocator.allocate(requirements, MemoryRequirement::HostVisible);
 
 	VK_CHECK(vkdi.bindBufferMemory(device, *buffer, bufferMemory->getMemory(), bufferMemory->getOffset()));
 	*outMemory = bufferMemory;
 
 	return buffer;
+}
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Create image, allocate and bind memory for the image
+ *
+ *//*--------------------------------------------------------------------*/
+Move<VkImage> createImageAndBindMemory (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorType dtype, Allocator& allocator, deUint32 queueFamilyIndex, AllocationMp* outMemory)
+{
+	VkImageUsageFlags			usageBits			= (VkImageUsageFlags)0;
+
+	switch (dtype)
+	{
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			usageBits = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			usageBits = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	usageBits = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;	break;
+		default:										DE_FATAL("Not implemented");
+	}
+
+	const VkImageCreateInfo		resourceImageParams	=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									//	VkStructureType		sType;
+		DE_NULL,																//	const void*			pNext;
+		0u,																		//	VkImageCreateFlags	flags;
+		VK_IMAGE_TYPE_2D,														//	VkImageType			imageType;
+		VK_FORMAT_R32G32B32A32_SFLOAT,											//	VkFormat			format;
+		{ 8, 8, 1 },															//  VkExtent3D			extent;
+		1u,																		//	deUint32			mipLevels;
+		1u,																		//	deUint32			arraySize;
+		VK_SAMPLE_COUNT_1_BIT,													//	deUint32			samples;
+		VK_IMAGE_TILING_OPTIMAL,												//	VkImageTiling		tiling;
+		usageBits,																//  VkImageUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,												//	VkSharingMode		sharingMode;
+		1u,																		//	deUint32			queueFamilyCount;
+		&queueFamilyIndex,														//	const deUint32*		pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED,												//	VkImageLayout		initialLayout;
+	};
+
+	// Create image
+	Move<VkImage>				image				= createImage(vkdi, device, &resourceImageParams);
+	const VkMemoryRequirements	requirements		= getImageMemoryRequirements(vkdi, device, *image);
+	de::MovePtr<Allocation>		imageMemory			= allocator.allocate(requirements, MemoryRequirement::Any);
+
+	VK_CHECK(vkdi.bindImageMemory(device, *image, imageMemory->getMemory(), imageMemory->getOffset()));
+	*outMemory = imageMemory;
+
+	return image;
+}
+
+void copyBufferToImage (const DeviceInterface& vkdi, const VkDevice& device, const VkQueue& queue, VkCommandBuffer cmdBuffer, VkBuffer buffer, VkImage image)
+{
+	const VkBufferImageCopy			copyRegion			=
+	{
+		0u,												// VkDeviceSize				bufferOffset;
+		0u,												// deUint32					bufferRowLength;
+		0u,												// deUint32					bufferImageHeight;
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags		aspect;
+			0u,												// deUint32					mipLevel;
+			0u,												// deUint32					baseArrayLayer;
+			1u,												// deUint32					layerCount;
+		},												// VkImageSubresourceLayers	imageSubresource;
+		{ 0, 0, 0 },									// VkOffset3D				imageOffset;
+		{ 8, 8, 1 }										// VkExtent3D				imageExtent;
+	};
+
+	// Copy buffer to image
+	const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
+		DE_NULL,										// const void*								pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags				flags;
+		DE_NULL											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
+	};
+
+	const VkImageMemoryBarrier		imageBarriers[]		=
+	{
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			DE_NULL,									// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			image,										// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+				0u,								// deUint32				baseMipLevel;
+				1u,								// deUint32				mipLevels;
+				0u,								// deUint32				baseArraySlice;
+				1u								// deUint32				arraySize;
+			}
+		},
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+			DE_NULL,									// const void*				pNext;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_SHADER_READ_BIT,					// VkAccessFlags			dstAccessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			newLayout;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+			image,										// VkImage					image;
+			{											// VkImageSubresourceRange	subresourceRange;
+				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+				0u,								// deUint32				baseMipLevel;
+				1u,								// deUint32				mipLevels;
+				0u,								// deUint32				baseArraySlice;
+				1u								// deUint32				arraySize;
+			}
+		},
+	};
+
+	VK_CHECK(vkdi.beginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
+	vkdi.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
+		0u, DE_NULL, 1u, &imageBarriers[0]);
+	vkdi.cmdCopyBufferToImage(cmdBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
+	vkdi.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
+		0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarriers[1]);
+
+	VK_CHECK(vkdi.endCommandBuffer(cmdBuffer));
+
+	{
+		const VkFenceCreateInfo	fenceParams	=
+		{
+			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
+			DE_NULL,								//	const void*			pNext;
+			0u,										//	VkFenceCreateFlags	flags;
+		};
+
+		const Unique<VkFence>	fence		(createFence(vkdi, device, &fenceParams));
+		const VkSubmitInfo		submitInfo	=
+		{
+			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
+			DE_NULL,								// const void*					pNext;
+			0u,										// deUint32						waitSemaphoreCount;
+			DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
+			DE_NULL,								// const VkPipelineStageFlags*	pWaitDstStageMask;
+			1u,										// deUint32						commandBufferCount;
+			&cmdBuffer,								// const VkCommandBuffer*		pCommandBuffers;
+			0u,										// deUint32						signalSemaphoreCount;
+			DE_NULL									// const VkSemaphore*			pSignalSemaphores;
+		};
+
+		VK_CHECK(vkdi.queueSubmit(queue, 1u, &submitInfo, *fence));
+		VK_CHECK(vkdi.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+	}
 }
 
 void setMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, const void* data)
@@ -176,9 +336,9 @@ inline Move<VkDescriptorPool> createDescriptorPool (const DeviceInterface& vkdi,
  * The descriptor set's layout contains the given descriptor types,
  * sequentially binded to binding points starting from 0.
  *//*--------------------------------------------------------------------*/
-Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorPool pool, VkDescriptorSetLayout layout, const vector<VkDescriptorType>& dtypes, const vector<VkDescriptorBufferInfo>& descriptorInfos)
+Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorPool pool, VkDescriptorSetLayout layout, const vector<VkDescriptorType>& dtypes, const vector<VkDescriptorBufferInfo>& descriptorInfos, const vector<VkDescriptorImageInfo>& descriptorImageInfos)
 {
-	DE_ASSERT(dtypes.size() == descriptorInfos.size());
+	DE_ASSERT(dtypes.size() == descriptorInfos.size() + descriptorImageInfos.size());
 
 	const VkDescriptorSetAllocateInfo	allocInfo	=
 	{
@@ -192,8 +352,31 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const Vk
 	Move<VkDescriptorSet>				descriptorSet	= allocateDescriptorSet(vkdi, device, &allocInfo);
 	DescriptorSetUpdateBuilder			builder;
 
+	deUint32							bufferNdx		= 0u;
+	deUint32							imageNdx		= 0u;
+
 	for (deUint32 descriptorNdx = 0; descriptorNdx < dtypes.size(); ++descriptorNdx)
-		builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx), dtypes[descriptorNdx], &descriptorInfos[descriptorNdx]);
+	{
+		switch (dtypes[descriptorNdx])
+		{
+			// Write buffer descriptor
+			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+				builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx), dtypes[descriptorNdx], &descriptorInfos[bufferNdx++]);
+				break;
+
+			// Write image/sampler descriptor
+			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			case VK_DESCRIPTOR_TYPE_SAMPLER:
+			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+				builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx), dtypes[descriptorNdx], &descriptorImageInfos[imageNdx++]);
+				break;
+
+			default:
+				DE_FATAL("Not implemented");
+		}
+	}
 	builder.update(vkdi, device);
 
 	return descriptorSet;
@@ -247,17 +430,6 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDev
 	};
 
 	return createComputePipeline(vkdi, device, (VkPipelineCache)0u, &pipelineCreateInfo);
-}
-
-/*--------------------------------------------------------------------*//*!
- * \brief Create a command pool
- *
- * The created command pool is designated for use on the queue type
- * represented by the given queueFamilyIndex.
- *//*--------------------------------------------------------------------*/
-Move<VkCommandPool> createCommandPool (const DeviceInterface& vkdi, VkDevice device, deUint32 queueFamilyIndex)
-{
-	return createCommandPool(vkdi, device, 0u, queueFamilyIndex);
 }
 
 } // anonymous
@@ -317,6 +489,18 @@ SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const Co
 {
 }
 
+VkImageUsageFlags getMatchingComputeImageUsageFlags (VkDescriptorType dType)
+{
+	switch (dType)
+	{
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			return VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		default:										DE_FATAL("Not implemented");
+	}
+	return (VkImageUsageFlags)0;
+}
+
 tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 {
 	const VkPhysicalDeviceFeatures&		features			= m_context.getDeviceFeatures();
@@ -360,24 +544,34 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	}
 
 	// defer device and resource creation until after feature checks
-	const Unique<VkDevice>				vkDevice			(createDeviceWithExtensions(m_context, m_context.getUniversalQueueFamilyIndex(), m_context.getDeviceExtensions(), m_shaderSpec.extensions));
+	const deUint32						queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const Unique<VkDevice>				vkDevice			(createDeviceWithExtensions(m_context, queueFamilyIndex, m_context.getDeviceExtensions(), m_shaderSpec.extensions));
 	const VkDevice&						device				= *vkDevice;
 	const DeviceDriver					vkDeviceInterface	(m_context.getInstanceInterface(), device);
 	const DeviceInterface&				vkdi				= vkDeviceInterface;
 	const de::UniquePtr<vk::Allocator>	vkAllocator			(createAllocator(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), vkDeviceInterface, device));
 	Allocator&							allocator			= *vkAllocator;
-	const VkQueue						queue				(getDeviceQueue(vkDeviceInterface, device, m_context.getUniversalQueueFamilyIndex(), 0));
+	const VkQueue						queue				(getDeviceQueue(vkDeviceInterface, device, queueFamilyIndex, 0));
 
 	vector<AllocationSp>				inputAllocs;
 	vector<AllocationSp>				outputAllocs;
 	vector<BufferHandleSp>				inputBuffers;
+	vector<ImageHandleSp>				inputImages;
+	vector<ImageViewHandleSp>			inputImageViews;
+	vector<SamplerHandleSp>				inputSamplers;
 	vector<BufferHandleSp>				outputBuffers;
 	vector<VkDescriptorBufferInfo>		descriptorInfos;
+	vector<VkDescriptorImageInfo>		descriptorImageInfos;
 	vector<VkDescriptorType>			descriptorTypes;
 
 	DE_ASSERT(!m_shaderSpec.outputs.empty());
 
-	// Create buffer object, allocate storage, and create view for all input/output buffers.
+	// Create command pool and command buffer
+
+	const Unique<VkCommandPool>			cmdPool				(createCommandPool(vkdi, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	Unique<VkCommandBuffer>				cmdBuffer			(allocateCommandBuffer(vkdi, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	// Create buffer and image objects, allocate storage, and create view for all input/output buffers and images.
 
 	for (deUint32 inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
 	{
@@ -386,19 +580,194 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		else
 			descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
-		AllocationMp		alloc;
-		const BufferSp&		input		= m_shaderSpec.inputs[inputNdx];
-		vector<deUint8>		inputBytes;
+		const VkDescriptorType	descType	= descriptorTypes[inputNdx];
 
-		input->getBytes(inputBytes);
+		const bool				hasImage	= (descType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
+											  (descType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+											  (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-		const size_t		numBytes	= inputBytes.size();
-		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc));
+		const bool				hasSampler	= (descType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+											  (descType == VK_DESCRIPTOR_TYPE_SAMPLER)			||
+											  (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-		setMemory(vkdi, device, &*alloc, numBytes, &inputBytes.front());
-		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
-		inputBuffers.push_back(BufferHandleSp(buffer));
-		inputAllocs.push_back(de::SharedPtr<Allocation>(alloc.release()));
+		// Buffer
+		if (!hasImage && !hasSampler)
+		{
+			const BufferSp&		input			= m_shaderSpec.inputs[inputNdx];
+			vector<deUint8>		inputBytes;
+
+			input->getBytes(inputBytes);
+
+			const size_t		numBytes		= inputBytes.size();
+
+			AllocationMp		bufferAlloc;
+			BufferHandleUp*		buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc));
+
+			setMemory(vkdi, device, &*bufferAlloc, numBytes, &inputBytes.front());
+			inputBuffers.push_back(BufferHandleSp(buffer));
+			inputAllocs.push_back(de::SharedPtr<Allocation>(bufferAlloc.release()));
+		}
+		// Image
+		else if (hasImage)
+		{
+			const BufferSp&		input			= m_shaderSpec.inputs[inputNdx];
+			vector<deUint8>		inputBytes;
+
+			input->getBytes(inputBytes);
+
+			const size_t		numBytes		= inputBytes.size();
+
+			AllocationMp		bufferAlloc;
+			BufferHandleUp*		buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc));
+
+			AllocationMp		imageAlloc;
+			ImageHandleUp*		image			= new ImageHandleUp(createImageAndBindMemory(vkdi, device, descType, allocator, queueFamilyIndex, &imageAlloc));
+
+			setMemory(vkdi, device, &*bufferAlloc, numBytes, &inputBytes.front());
+
+			inputBuffers.push_back(BufferHandleSp(buffer));
+			inputAllocs.push_back(de::SharedPtr<Allocation>(bufferAlloc.release()));
+
+			inputImages.push_back(ImageHandleSp(image));
+			inputAllocs.push_back(de::SharedPtr<Allocation>(imageAlloc.release()));
+
+			copyBufferToImage(vkdi, device, queue, cmdBuffer.get(), buffer->get(), image->get());
+		}
+	}
+
+	deUint32							imageNdx			= 0u;
+	deUint32							bufferNdx			= 0u;
+
+	for (deUint32 inputNdx = 0; inputNdx < descriptorTypes.size(); ++inputNdx)
+	{
+		const VkDescriptorType	descType	= descriptorTypes[inputNdx];
+
+		const bool				hasImage	= (descType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
+											  (descType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+											  (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		const bool				hasSampler	= (descType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+											  (descType == VK_DESCRIPTOR_TYPE_SAMPLER)			||
+											  (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+		// Create image view and sampler
+		if (hasImage || hasSampler)
+		{
+			if (descType != VK_DESCRIPTOR_TYPE_SAMPLER)
+			{
+				const VkImageViewCreateInfo	imgViewParams	=
+				{
+					VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	//	VkStructureType			sType;
+					DE_NULL,									//	const void*				pNext;
+					0u,											//	VkImageViewCreateFlags	flags;
+					**inputImages[imageNdx++],					//	VkImage					image;
+					VK_IMAGE_VIEW_TYPE_2D,						//	VkImageViewType			viewType;
+					VK_FORMAT_R32G32B32A32_SFLOAT,				//	VkFormat				format;
+					{
+						VK_COMPONENT_SWIZZLE_R,
+						VK_COMPONENT_SWIZZLE_G,
+						VK_COMPONENT_SWIZZLE_B,
+						VK_COMPONENT_SWIZZLE_A
+					},											//	VkChannelMapping		channels;
+					{
+						VK_IMAGE_ASPECT_COLOR_BIT,					//	VkImageAspectFlags		aspectMask;
+						0u,											//	deUint32				baseMipLevel;
+						1u,											//	deUint32				mipLevels;
+						0u,											//	deUint32				baseArrayLayer;
+						1u,											//	deUint32				arraySize;
+					},											//	VkImageSubresourceRange	subresourceRange;
+				};
+
+				Move<VkImageView>			imgView			(createImageView(vkdi, *vkDevice, &imgViewParams));
+				inputImageViews.push_back(ImageViewHandleSp(new ImageViewHandleUp(imgView)));
+			}
+
+			if (hasSampler)
+			{
+				const VkSamplerCreateInfo	samplerParams	=
+				{
+					VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,		// VkStructureType			sType;
+					DE_NULL,									// const void*				pNext;
+					0,											// VkSamplerCreateFlags		flags;
+					VK_FILTER_NEAREST,							// VkFilter					magFilter:
+					VK_FILTER_NEAREST,							// VkFilter					minFilter;
+					VK_SAMPLER_MIPMAP_MODE_NEAREST,				// VkSamplerMipmapMode		mipmapMode;
+					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeU;
+					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeV;
+					VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,		// VkSamplerAddressMode		addressModeW;
+					0.0f,										// float					mipLodBias;
+					VK_FALSE,									// VkBool32					anistoropyÉnable;
+					1.0f,										// float					maxAnisotropy;
+					VK_FALSE,									// VkBool32					compareEnable;
+					VK_COMPARE_OP_ALWAYS,						// VkCompareOp				compareOp;
+					0.0f,										// float					minLod;
+					0.0f,										// float					maxLod;
+					VK_BORDER_COLOR_INT_OPAQUE_BLACK,			// VkBorderColor			borderColor;
+					VK_FALSE									// VkBool32					unnormalizedCoordinates;
+				};
+
+				Move<VkSampler>				sampler			(createSampler(vkdi, *vkDevice, &samplerParams));
+				inputSamplers.push_back(SamplerHandleSp(new SamplerHandleUp(sampler)));
+			}
+		}
+
+		// Create descriptor buffer and image infos
+		switch (descType)
+		{
+			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+			{
+				const VkDescriptorBufferInfo bufInfo =
+				{
+					**inputBuffers[bufferNdx++],				// VkBuffer					buffer;
+					0,											// VkDeviceSize				offset;
+					VK_WHOLE_SIZE,								// VkDeviceSize				size;
+				};
+				descriptorInfos.push_back(bufInfo);
+				break;
+			}
+
+			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			{
+				const VkDescriptorImageInfo	imgInfo	=
+				{
+					DE_NULL,									// VkSampler				sampler;
+					**inputImageViews.back(),					// VkImageView				imageView;
+					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
+				};
+				descriptorImageInfos.push_back(imgInfo);
+				break;
+			}
+
+			case VK_DESCRIPTOR_TYPE_SAMPLER:
+			{
+				const VkDescriptorImageInfo	imgInfo	=
+				{
+					**inputSamplers.back(),						// VkSampler				sampler;
+					DE_NULL,									// VkImageView				imageView;
+					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
+				};
+				descriptorImageInfos.push_back(imgInfo);
+				break;
+			}
+
+			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+			{
+
+				const VkDescriptorImageInfo	imgInfo	=
+				{
+					**inputSamplers.back(),						// VkSampler				sampler;
+					**inputImageViews.back(),					// VkImageView				imageView;
+					VK_IMAGE_LAYOUT_GENERAL						// VkImageLayout			imageLayout;
+				};
+				descriptorImageInfos.push_back(imgInfo);
+				break;
+			}
+
+			default:
+				DE_FATAL("Not implemented");
+		}
 	}
 
 	for (deUint32 outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
@@ -425,7 +794,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	Unique<VkDescriptorSetLayout>		descriptorSetLayout	(createDescriptorSetLayout(vkdi, device, descriptorTypes));
 	Unique<VkPipelineLayout>			pipelineLayout		(createPipelineLayout(vkdi, device, *descriptorSetLayout, m_shaderSpec.pushConstants));
 	Unique<VkDescriptorPool>			descriptorPool		(createDescriptorPool(vkdi, device, descriptorTypes));
-	Unique<VkDescriptorSet>				descriptorSet		(createDescriptorSet(vkdi, device, *descriptorPool, *descriptorSetLayout, descriptorTypes, descriptorInfos));
+	Unique<VkDescriptorSet>				descriptorSet		(createDescriptorSet(vkdi, device, *descriptorPool, *descriptorSetLayout, descriptorTypes, descriptorInfos, descriptorImageInfos));
 
 	// Create compute shader and pipeline.
 
@@ -433,11 +802,6 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	Unique<VkShaderModule>				module				(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
 
 	Unique<VkPipeline>					computePipeline		(createComputePipeline(vkdi, device, *pipelineLayout, *module, m_shaderSpec.entryPoint.c_str(), m_shaderSpec.specConstants));
-
-	// Create command buffer and record commands
-
-	const Unique<VkCommandPool>			cmdPool				(createCommandPool(vkdi, device, m_context.getUniversalQueueFamilyIndex()));
-	Unique<VkCommandBuffer>				cmdBuffer			(allocateCommandBuffer(vkdi, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkCommandBufferBeginInfo		cmdBufferBeginInfo	=
 	{

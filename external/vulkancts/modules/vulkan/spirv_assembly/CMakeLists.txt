@@ -11,6 +11,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmConditionalBranchTests.hpp
 	vktSpvAsmIndexingTests.cpp
 	vktSpvAsmIndexingTests.hpp
+	vktSpvAsmImageSamplerTests.cpp
+	vktSpvAsmImageSamplerTests.hpp
 	vktSpvAsmComputeShaderCase.cpp
 	vktSpvAsmComputeShaderCase.hpp
 	vktSpvAsmComputeShaderTestUtil.cpp
