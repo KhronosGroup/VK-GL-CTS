@@ -1508,32 +1508,15 @@ Move<vk::VkPipelineLayout> createPipelineLayout (Context& context, vk::VkDescrip
 
 Move<vk::VkCommandPool> createCmdPool (Context& context)
 {
-	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const vk::VkCommandPoolCreateInfo	params				=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// sType
-		DE_NULL,												// pNext
-		vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// flags
-		queueFamilyIndex,										// queueFamilyIndex
-	};
+	const deUint32	queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
-	return vk::createCommandPool(context.getDeviceInterface(), context.getDevice(), &params);
+	return vk::createCommandPool(context.getDeviceInterface(), context.getDevice(), vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 }
 
 Move<vk::VkCommandBuffer> createCmdBuffer (Context& context, vk::VkCommandPool cmdPool)
 {
-	const vk::VkCommandBufferAllocateInfo params =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// sType
-		DE_NULL,											// pNext
-		cmdPool,											// commandPool
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
-		1u,													// bufferCount
-	};
-
-	return vk::allocateCommandBuffer(context.getDeviceInterface(), context.getDevice(), &params);
+	return vk::allocateCommandBuffer(context.getDeviceInterface(), context.getDevice(), cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
-
 
 // UniformBlockCaseInstance
 
@@ -1856,13 +1839,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 
 	// Submit the command buffer
 	{
-		const vk::VkFenceCreateInfo fenceParams =
-		{
-			vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			0u,											// VkFenceCreateFlags	flags;
-		};
-		const Unique<vk::VkFence> fence(vk::createFence(vk, device, &fenceParams));
+		const Unique<vk::VkFence> fence(vk::createFence(vk, device));
 
 		const VkSubmitInfo			submitInfo	=
 		{

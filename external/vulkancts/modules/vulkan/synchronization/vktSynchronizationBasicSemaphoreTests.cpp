@@ -49,14 +49,8 @@ tcu::TestStatus basicOneQueueCase (Context& context)
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const VkSemaphoreCreateInfo		semaphoreInfo		=
-														{
-															VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,	//VkStructureType			sType;
-															DE_NULL,									//const void*				pNext;
-															0u											//VkSemaphoreCreateFlags	flags;
-														};
-	const Unique<VkSemaphore>		semaphore			(createSemaphore (vk, device, &semaphoreInfo, DE_NULL));
-	const Unique<VkCommandPool>		cmdPool				(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkSemaphore>		semaphore			(createSemaphore (vk, device));
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
 	const VkCommandBufferBeginInfo	info				=
 														{
@@ -91,13 +85,7 @@ tcu::TestStatus basicOneQueueCase (Context& context)
 																DE_NULL,							// const VkSemaphore*			pSignalSemaphores;
 															}
 														};
-	const VkFenceCreateInfo			fenceInfo			=
-														{
-															VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType		sType;
-															DE_NULL,							 // const void*			pNext;
-															0u,									 // VkFenceCreateFlags	flags;
-														};
-	const Unique<VkFence>			fence				(createFence(vk, device, &fenceInfo));
+	const Unique<VkFence>			fence				(createFence(vk, device));
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &info));
 	endCommandBuffer(vk, *cmdBuffer);
@@ -142,23 +130,11 @@ tcu::TestStatus basicMultiQueueCase (Context& context)
 																			VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,	// VkCommandBufferUsageFlags                flags;
 																			DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
 																		};
-	const VkSemaphoreCreateInfo				semaphoreInfo				=
-																		{
-																			VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,	//VkStructureType			sType;
-																			DE_NULL,									//const void*				pNext;
-																			0u											//VkSemaphoreCreateFlags	flags;
-																		};
 	Move<VkSemaphore>						semaphore;
 	Move<VkCommandPool>						cmdPool[COUNT];
 	Move<VkCommandBuffer>					cmdBuffer[COUNT];
 	const VkPipelineStageFlags				stageBits[]					= { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 	VkSubmitInfo							submitInfo[COUNT];
-	const VkFenceCreateInfo					fenceInfo					=
-																		{
-																			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType		sType;
-																			DE_NULL,							 // const void*			pNext;
-																			0u,									 // VkFenceCreateFlags	flags;
-																		};
 	Move<VkFence>							fence[COUNT];
 
 	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
@@ -219,9 +195,9 @@ tcu::TestStatus basicMultiQueueCase (Context& context)
 			vk.getDeviceQueue(*logicalDevice, queues[queueReqNdx].queueFamilyIndex, 0u, &queues[queueReqNdx].queue);
 	}
 
-	semaphore			= (createSemaphore (vk,*logicalDevice, &semaphoreInfo, DE_NULL));
-	cmdPool[FIRST]		= (makeCommandPool(vk, *logicalDevice, queues[FIRST].queueFamilyIndex));
-	cmdPool[SECOND]		= (makeCommandPool(vk, *logicalDevice, queues[SECOND].queueFamilyIndex));
+	semaphore			= (createSemaphore (vk, *logicalDevice));
+	cmdPool[FIRST]		= (createCommandPool(vk, *logicalDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queues[FIRST].queueFamilyIndex));
+	cmdPool[SECOND]		= (createCommandPool(vk, *logicalDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queues[SECOND].queueFamilyIndex));
 	cmdBuffer[FIRST]	= (makeCommandBuffer(vk, *logicalDevice, *cmdPool[FIRST]));
 	cmdBuffer[SECOND]	= (makeCommandBuffer(vk, *logicalDevice, *cmdPool[SECOND]));
 
@@ -250,8 +226,8 @@ tcu::TestStatus basicMultiQueueCase (Context& context)
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer[SECOND], &info));
 	endCommandBuffer(vk, *cmdBuffer[SECOND]);
 
-	fence[FIRST]  = (createFence(vk, *logicalDevice, &fenceInfo));
-	fence[SECOND] = (createFence(vk, *logicalDevice, &fenceInfo));
+	fence[FIRST]  = (createFence(vk, *logicalDevice));
+	fence[SECOND] = (createFence(vk, *logicalDevice));
 
 	VK_CHECK(vk.queueSubmit(queues[FIRST].queue, 1u, &submitInfo[FIRST], *fence[FIRST]));
 	VK_CHECK(vk.queueSubmit(queues[SECOND].queue, 1u, &submitInfo[SECOND], *fence[SECOND]));

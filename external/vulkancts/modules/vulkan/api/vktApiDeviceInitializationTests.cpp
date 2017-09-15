@@ -387,9 +387,8 @@ tcu::TestStatus createDeviceTest (Context& context)
 
 	const Unique<VkDevice>			device					(createDevice(instanceDriver, physicalDevice, &deviceCreateInfo));
 	const DeviceDriver				deviceDriver			(instanceDriver, device.get());
-	VkQueue							queue;
+	const VkQueue					queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
-	deviceDriver.getDeviceQueue(device.get(), queueFamilyIndex, queueIndex, &queue);
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
 
 	return tcu::TestStatus::pass("Pass");
@@ -445,11 +444,9 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 			}
 
 			{
-				const DeviceDriver	deviceDriver(instanceDriver, devices[deviceNdx]);
-				VkQueue				queue;
+				const DeviceDriver	deviceDriver	(instanceDriver, devices[deviceNdx]);
+				const VkQueue		queue			= getDeviceQueue(deviceDriver, devices[deviceNdx], queueFamilyIndex, queueIndex);
 
-				DE_ASSERT(queueIndex < queueCount);
-				deviceDriver.getDeviceQueue(devices[deviceNdx], queueFamilyIndex, queueIndex, &queue);
 				VK_CHECK(deviceDriver.queueWaitIdle(queue));
 			}
 		}
@@ -498,7 +495,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 		DE_NULL,
 		(VkDeviceQueueCreateFlags)0u,
-		0,										//queueFamiliIndex;
+		0,										//queueFamilyIndex;
 		1,										//queueCount;
 		&queuePriority,							//pQueuePriorities;
 	};
@@ -609,10 +606,9 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 
 		for (deUint32 queueIndex = 0; queueIndex < queueCount; queueIndex++)
 		{
-			VkQueue		queue;
-			VkResult	result;
+			const VkQueue		queue	= getDeviceQueue(deviceDriver, *device, queueFamilyIndex, queueIndex);
+			VkResult			result;
 
-			deviceDriver.getDeviceQueue(device.get(), queueFamilyIndex, queueIndex, &queue);
 			TCU_CHECK(!!queue);
 
 			result = deviceDriver.queueWaitIdle(queue);
@@ -688,9 +684,8 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 	{
 		const Unique<VkDevice>	device		(createDevice(vki, physicalDevice, &deviceCreateInfo));
 		const DeviceDriver		vkd			(vki, device.get());
-		VkQueue					queue;
+		const VkQueue			queue		= getDeviceQueue(vkd, *device, queueFamilyIndex, queueIndex);
 
-		vkd.getDeviceQueue(device.get(), queueFamilyIndex, queueIndex, &queue);
 		VK_CHECK(vkd.queueWaitIdle(queue));
 	}
 

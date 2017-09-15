@@ -36,6 +36,7 @@
 
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deRandom.hpp"
 #include "deMath.h"
@@ -371,8 +372,8 @@ void draw (Context&					context,
 	const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout		(vk, device));
 	const Unique<VkPipeline>		pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule, renderExtent));
 
-	const Unique<VkCommandPool>		cmdPool					(makeCommandPool		(vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer				(makeCommandBuffer		(vk, device, *cmdPool));
+	const Unique<VkCommandPool>		cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Initialize vertex data
 	{

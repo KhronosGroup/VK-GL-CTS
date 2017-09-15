@@ -25,9 +25,11 @@
 #include "vktTessellationWindingTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTessellationUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuRGBA.hpp"
+#include "tcuMaybe.hpp"
 
 #include "vkDefs.hpp"
 #include "vkQueryUtil.hpp"
@@ -48,10 +50,12 @@ using namespace vk;
 namespace
 {
 
-std::string getCaseName (const TessPrimitiveType primitiveType, const Winding winding)
+std::string getCaseName (const TessPrimitiveType primitiveType, const Winding winding, bool yFlip)
 {
 	std::ostringstream str;
 	str << getTessPrimitiveTypeShaderName(primitiveType) << "_" << getWindingShaderName(winding);
+	if (yFlip)
+		str << "_yflip";
 	return str.str();
 }
 
@@ -71,17 +75,22 @@ inline VkFrontFace mapFrontFace (const Winding winding)
 bool verifyResultImage (tcu::TestLog&						log,
 						const tcu::ConstPixelBufferAccess	image,
 						const TessPrimitiveType				primitiveType,
+						const VkTessellationDomainOriginKHR	domainOrigin,
 						const Winding						winding,
+						bool								yFlip,
 						const Winding						frontFaceWinding)
 {
-	const int totalNumPixels	= image.getWidth()*image.getHeight();
-	const int badPixelTolerance = (primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? 5*de::max(image.getWidth(), image.getHeight()) : 0);
+	const bool			expectVisiblePrimitive	= ((frontFaceWinding == winding) == (domainOrigin == VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR)) != yFlip;
 
-	const tcu::Vec4 white = tcu::RGBA::white().toVec();
-	const tcu::Vec4 red   = tcu::RGBA::red().toVec();
+	const int			totalNumPixels			= image.getWidth()*image.getHeight();
 
-	int numWhitePixels = 0;
-	int numRedPixels   = 0;
+	const tcu::Vec4		white					 = tcu::RGBA::white().toVec();
+	const tcu::Vec4		red						 = tcu::RGBA::red().toVec();
+
+	int					numWhitePixels			= 0;
+	int					numRedPixels			= 0;
+
+	// Count red and white pixels
 	for (int y = 0; y < image.getHeight();	y++)
 	for (int x = 0; x < image.getWidth();	x++)
 	{
@@ -93,24 +102,63 @@ bool verifyResultImage (tcu::TestLog&						log,
 
 	log << tcu::TestLog::Message << "Note: got " << numWhitePixels << " white and " << numRedPixels << " red pixels" << tcu::TestLog::EndMessage;
 
-	const int otherPixels = totalNumPixels - numWhitePixels - numRedPixels;
-	if (otherPixels > badPixelTolerance)
 	{
-		log << tcu::TestLog::Message
-			<< "Failure: Got " << otherPixels << " other than white or red pixels (maximum tolerance " << badPixelTolerance << ")"
-			<< tcu::TestLog::EndMessage;
-		return false;
+		const int otherPixels = totalNumPixels - numWhitePixels - numRedPixels;
+		if (otherPixels > 0)
+		{
+			log << tcu::TestLog::Message
+				<< "Failure: Got " << otherPixels << " other than white or red pixels"
+				<< tcu::TestLog::EndMessage;
+			return false;
+		}
 	}
 
-	if (frontFaceWinding == winding)
+	if (expectVisiblePrimitive)
 	{
 		if (primitiveType == TESSPRIMITIVETYPE_TRIANGLES)
 		{
+			const int	badPixelTolerance	= (primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? 5*de::max(image.getWidth(), image.getHeight()) : 0);
+
 			if (de::abs(numWhitePixels - totalNumPixels/2) > badPixelTolerance)
 			{
 				log << tcu::TestLog::Message << "Failure: wrong number of white pixels; expected approximately " << totalNumPixels/2 << tcu::TestLog::EndMessage;
 				return false;
 			}
+
+			// Check number of filled pixels (from left) in top and bottom rows to
+			// determine if triangle is in right orientation.
+			{
+				const tcu::IVec2	expectedStart	(0, 1);
+				const tcu::IVec2	expectedEnd		(image.getWidth()-1, image.getWidth());
+				const tcu::IVec2	expectedTop		= yFlip ? expectedStart : expectedEnd;
+				const tcu::IVec2	expectedBottom	= yFlip ? expectedEnd : expectedStart;
+				int					numTopFilled	= 0;
+				int					numBottomFilled	= 0;
+
+				for (int x = 0; x < image.getWidth(); ++x)
+				{
+					if (image.getPixel(x, 0) == white)
+						numTopFilled += 1;
+					else
+						break;
+				}
+
+				for (int x = 0; x < image.getWidth(); ++x)
+				{
+					if (image.getPixel(x, image.getHeight()-1) == white)
+						numBottomFilled += 1;
+					else
+						break;
+				}
+
+				if (!de::inBounds(numTopFilled, expectedTop[0], expectedTop[1]) ||
+					!de::inBounds(numBottomFilled, expectedBottom[0], expectedBottom[1]))
+				{
+					log << tcu::TestLog::Message << "Failure: triangle orientation is incorrect" << tcu::TestLog::EndMessage;
+					return false;
+				}
+			}
+
 		}
 		else if (primitiveType == TESSPRIMITIVETYPE_QUADS)
 		{
@@ -135,27 +183,37 @@ bool verifyResultImage (tcu::TestLog&						log,
 	return true;
 }
 
+typedef tcu::Maybe<VkTessellationDomainOriginKHR> MaybeDomainOrigin;
+
 class WindingTest : public TestCase
 {
 public:
 								WindingTest		(tcu::TestContext&			testCtx,
 												 const TessPrimitiveType	primitiveType,
-												 const Winding				winding);
+												 const MaybeDomainOrigin&	domainOrigin,
+												 const Winding				winding,
+												 bool						yFlip);
 
 	void						initPrograms	(SourceCollections&			programCollection) const;
 	TestInstance*				createInstance	(Context&					context) const;
 
 private:
 	const TessPrimitiveType		m_primitiveType;
+	const MaybeDomainOrigin		m_domainOrigin;
 	const Winding				m_winding;
+	const bool					m_yFlip;
 };
 
 WindingTest::WindingTest (tcu::TestContext&			testCtx,
 						  const TessPrimitiveType	primitiveType,
-						  const Winding				winding)
-	: TestCase			(testCtx, getCaseName(primitiveType, winding), "")
+						  const MaybeDomainOrigin&	domainOrigin,
+						  const Winding				winding,
+						  bool						yFlip)
+	: TestCase			(testCtx, getCaseName(primitiveType, winding, yFlip), "")
 	, m_primitiveType	(primitiveType)
+	, m_domainOrigin	(domainOrigin)
 	, m_winding			(winding)
+	, m_yFlip			(yFlip)
 {
 }
 
@@ -233,22 +291,43 @@ class WindingTestInstance : public TestInstance
 public:
 								WindingTestInstance (Context&					context,
 													 const TessPrimitiveType	primitiveType,
-													 const Winding				winding);
+													 const MaybeDomainOrigin&	domainOrigin,
+													 const Winding				winding,
+													 bool						yFlip);
 
 	tcu::TestStatus				iterate				(void);
 
 private:
+	void						requireExtension	(const char* name) const;
+
 	const TessPrimitiveType		m_primitiveType;
+	const MaybeDomainOrigin		m_domainOrigin;
 	const Winding				m_winding;
+	const bool					m_yFlip;
 };
 
 WindingTestInstance::WindingTestInstance (Context&					context,
 										  const TessPrimitiveType	primitiveType,
-										  const Winding				winding)
+										  const MaybeDomainOrigin&	domainOrigin,
+										  const Winding				winding,
+										  bool						yFlip)
 	: TestInstance		(context)
 	, m_primitiveType	(primitiveType)
+	, m_domainOrigin	(domainOrigin)
 	, m_winding			(winding)
+	, m_yFlip			(yFlip)
 {
+	if (m_yFlip)
+		requireExtension("VK_KHR_maintenance1");
+
+	if ((bool)m_domainOrigin)
+		requireExtension("VK_KHR_maintenance2");
+}
+
+void WindingTestInstance::requireExtension (const char* name) const
+{
+	if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), name))
+		TCU_THROW(NotSupportedError, (std::string(name) + " is not supported").c_str());
 }
 
 tcu::TestStatus WindingTestInstance::iterate (void)
@@ -285,24 +364,24 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 	// Front face is static state, so we have to create two pipelines.
 
 	const Unique<VkPipeline> pipelineCounterClockwise(GraphicsPipelineBuilder()
-		.setRenderSize	 (renderSize)
-		.setCullModeFlags(cullMode)
-		.setFrontFace	 (VK_FRONT_FACE_COUNTER_CLOCKWISE)
-		.setShader		 (vk, device, VK_SHADER_STAGE_VERTEX_BIT,				   m_context.getBinaryCollection().get("vert"), DE_NULL)
-		.setShader		 (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    m_context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader		 (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get("tese"), DE_NULL)
-		.setShader		 (vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,				   m_context.getBinaryCollection().get("frag"), DE_NULL)
-		.build			 (vk, device, *pipelineLayout, *renderPass));
+		.setCullModeFlags				(cullMode)
+		.setFrontFace					(VK_FRONT_FACE_COUNTER_CLOCKWISE)
+		.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,				   m_context.getBinaryCollection().get("vert"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    m_context.getBinaryCollection().get("tesc"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get("tese"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,				   m_context.getBinaryCollection().get("frag"), DE_NULL)
+		.setTessellationDomainOrigin	(m_domainOrigin)
+		.build							(vk, device, *pipelineLayout, *renderPass));
 
 	const Unique<VkPipeline> pipelineClockwise(GraphicsPipelineBuilder()
-		.setRenderSize   (renderSize)
-		.setCullModeFlags(cullMode)
-		.setFrontFace    (VK_FRONT_FACE_CLOCKWISE)
-		.setShader		 (vk, device, VK_SHADER_STAGE_VERTEX_BIT,				   m_context.getBinaryCollection().get("vert"), DE_NULL)
-		.setShader		 (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	   m_context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader		 (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get("tese"), DE_NULL)
-		.setShader		 (vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,				   m_context.getBinaryCollection().get("frag"), DE_NULL)
-		.build			 (vk, device, *pipelineLayout, *renderPass));
+		.setCullModeFlags				(cullMode)
+		.setFrontFace					(VK_FRONT_FACE_CLOCKWISE)
+		.setShader						(vk, device, VK_SHADER_STAGE_VERTEX_BIT,				   m_context.getBinaryCollection().get("vert"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	   m_context.getBinaryCollection().get("tesc"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get("tese"), DE_NULL)
+		.setShader						(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT,				   m_context.getBinaryCollection().get("frag"), DE_NULL)
+		.setTessellationDomainOrigin	(m_domainOrigin)
+		.build							(vk, device, *pipelineLayout, *renderPass));
 
 	const struct // not static
 	{
@@ -322,7 +401,7 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 	// Draw commands
 
 	const Unique<VkCommandPool>   cmdPool  (makeCommandPool  (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(testCases); ++caseNdx)
 	{
@@ -358,6 +437,24 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
 		}
+
+		const VkViewport viewport =
+		{
+			0.0f,															// float	x;
+			m_yFlip ? static_cast<float>(renderSize.y()) : 0.0f,			// float	y;
+			static_cast<float>(renderSize.x()),								// float	width;
+			static_cast<float>(m_yFlip ? -renderSize.y() : renderSize.y()),	// float	height;
+			0.0f,															// float	minDepth;
+			1.0f,															// float	maxDepth;
+		};
+		vk.cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
+
+		const VkRect2D scissor =
+		{
+			makeOffset2D(0, 0),
+			makeExtent2D(renderSize.x(), renderSize.y()),
+		};
+		vk.cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, testCases[caseNdx].pipeline);
 
@@ -399,7 +496,13 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 			log << tcu::TestLog::Image("color0", "Rendered image", imagePixelAccess);
 
 			// Verify case result
-			success = success && verifyResultImage(log, imagePixelAccess, m_primitiveType, m_winding, frontFaceWinding);
+			success = verifyResultImage(log,
+										imagePixelAccess,
+										m_primitiveType,
+										!m_domainOrigin ? VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR : *m_domainOrigin,
+										m_winding,
+										m_yFlip,
+										frontFaceWinding) && success;
 		}
 	}  // for windingNdx
 
@@ -410,7 +513,23 @@ TestInstance* WindingTest::createInstance (Context& context) const
 {
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_TESSELLATION_SHADER);
 
-	return new WindingTestInstance(context, m_primitiveType, m_winding);
+	return new WindingTestInstance(context, m_primitiveType, m_domainOrigin, m_winding, m_yFlip);
+}
+
+void populateWindingGroup (tcu::TestCaseGroup* group, tcu::Maybe<VkTessellationDomainOriginKHR> domainOrigin)
+{
+	static const TessPrimitiveType primitivesNoIsolines[] =
+	{
+		TESSPRIMITIVETYPE_TRIANGLES,
+		TESSPRIMITIVETYPE_QUADS,
+	};
+
+	for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
+	for (int windingNdx = 0; windingNdx < WINDING_LAST; ++windingNdx)
+	{
+		group->addChild(new WindingTest(group->getTestContext(), primitivesNoIsolines[primitiveTypeNdx], domainOrigin, (Winding)windingNdx, false));
+		group->addChild(new WindingTest(group->getTestContext(), primitivesNoIsolines[primitiveTypeNdx], domainOrigin, (Winding)windingNdx, true));
+	}
 }
 
 } // anonymous
@@ -420,15 +539,9 @@ tcu::TestCaseGroup* createWindingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "winding", "Test the cw and ccw input layout qualifiers"));
 
-	static const TessPrimitiveType primitivesNoIsolines[] =
-	{
-		TESSPRIMITIVETYPE_TRIANGLES,
-		TESSPRIMITIVETYPE_QUADS,
-	};
-
-	for (int primitiveTypeNdx = 0; primitiveTypeNdx < DE_LENGTH_OF_ARRAY(primitivesNoIsolines); ++primitiveTypeNdx)
-	for (int windingNdx = 0; windingNdx < WINDING_LAST; ++windingNdx)
-		group->addChild(new WindingTest(testCtx, primitivesNoIsolines[primitiveTypeNdx], (Winding)windingNdx));
+	addTestGroup(group.get(), "default_domain",		"No tessellation domain specified",	populateWindingGroup,	tcu::nothing<VkTessellationDomainOriginKHR>());
+	addTestGroup(group.get(), "lower_left_domain",	"Lower left tessellation domain",	populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR));
+	addTestGroup(group.get(), "upper_left_domain",	"Upper left tessellation domain",	populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR));
 
 	return group.release();
 }

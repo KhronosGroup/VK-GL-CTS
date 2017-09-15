@@ -261,19 +261,6 @@ Move<VkCommandPool> makeCommandPool (const DeviceInterface& vk, const VkDevice d
 	return createCommandPool(vk, device, &commandPoolParams);
 }
 
-Move<VkCommandBuffer> makeCommandBuffer (const DeviceInterface& vk, const VkDevice device, const VkCommandPool commandPool)
-{
-	const VkCommandBufferAllocateInfo bufferAllocateParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType			sType;
-		DE_NULL,											// const void*				pNext;
-		commandPool,										// VkCommandPool			commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// VkCommandBufferLevel		level;
-		1u,													// deUint32					bufferCount;
-	};
-	return allocateCommandBuffer(vk, device, &bufferAllocateParams);
-}
-
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
 										   const VkDescriptorSetLayout	descriptorSetLayout)
@@ -375,29 +362,6 @@ Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
 		&setLayout,											// const VkDescriptorSetLayout*	pSetLayouts;
 	};
 	return allocateDescriptorSet(vk, device, &allocateParams);
-}
-
-Move<VkSemaphore> makeSemaphore (const DeviceInterface& vk, const VkDevice device)
-{
-	const VkSemaphoreCreateInfo semaphoreCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		DE_NULL,
-		0u
-	};
-
-	return createSemaphore(vk, device, &semaphoreCreateInfo);
-}
-
-Move<VkFence> makeFence (const DeviceInterface& vk, const VkDevice device, const VkFenceCreateFlags flags)
-{
-	const VkFenceCreateInfo fenceCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType       sType;
-		DE_NULL,								// const void*           pNext;
-		flags,									// VkFenceCreateFlags    flags;
-	};
-	return createFence(vk, device, &fenceCreateInfo);
 }
 
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
@@ -806,13 +770,13 @@ deUint32 getImageSizeInBytes(const VkExtent3D& baseExtents, const deUint32 layer
 	return imageSizeInBytes;
 }
 
-VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&		vk,
-													const VkDevice				device,
-													const VkDeviceSize			allocationSize,
-													const deUint32				memoryType,
-													const VkImageSubresource&	subresource,
-													const VkOffset3D&			offset,
-													const VkExtent3D&			extent)
+VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&			vk,
+													const VkDevice					device,
+													const VkDeviceSize				allocationSize,
+													const deUint32					memoryType,
+													const VkImageSubresource&		subresource,
+													const VkOffset3D&				offset,
+													const VkExtent3D&				extent)
 {
 	const VkMemoryAllocateInfo	allocInfo =
 	{
@@ -837,11 +801,12 @@ VkSparseImageMemoryBind	makeSparseImageMemoryBind  (const DeviceInterface&		vk,
 	return imageMemoryBind;
 }
 
-VkSparseMemoryBind makeSparseMemoryBind	(const DeviceInterface&	vk,
-										 const VkDevice			device,
-										 const VkDeviceSize		allocationSize,
-										 const deUint32			memoryType,
-										 const VkDeviceSize		resourceOffset)
+VkSparseMemoryBind makeSparseMemoryBind	(const DeviceInterface&			vk,
+										 const VkDevice					device,
+										 const VkDeviceSize				allocationSize,
+										 const deUint32					memoryType,
+										 const VkDeviceSize				resourceOffset,
+										 const VkSparseMemoryBindFlags	flags)
 {
 	const VkMemoryAllocateInfo allocInfo =
 	{
@@ -860,7 +825,7 @@ VkSparseMemoryBind makeSparseMemoryBind	(const DeviceInterface&	vk,
 	memoryBind.size				= allocationSize;
 	memoryBind.memory			= deviceMemory;
 	memoryBind.memoryOffset		= 0u;
-	memoryBind.flags			= 0u;
+	memoryBind.flags			= flags;
 
 	return memoryBind;
 }

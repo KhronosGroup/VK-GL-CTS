@@ -38,100 +38,19 @@ INL_HEADER = """\
  */\
 """
 
-PLATFORM_FUNCTIONS	= [
-	"vkCreateInstance",
-	"vkGetInstanceProcAddr",
-	"vkEnumerateInstanceExtensionProperties",
-	"vkEnumerateInstanceLayerProperties",
-]
-INSTANCE_FUNCTIONS	= [
-	"vkDestroyInstance",
-	"vkEnumeratePhysicalDevices",
-	"vkGetPhysicalDeviceFeatures",
-	"vkGetPhysicalDeviceFormatProperties",
-	"vkGetPhysicalDeviceImageFormatProperties",
-	"vkGetPhysicalDeviceSparseImageFormatProperties",
-	"vkGetPhysicalDeviceLimits",
-	"vkGetPhysicalDeviceProperties",
-	"vkGetPhysicalDeviceQueueFamilyProperties",
-	"vkGetPhysicalDeviceMemoryProperties",
-	"vkEnumerateDeviceExtensionProperties",
-	"vkEnumerateDeviceLayerProperties",
-	"vkCreateDevice",
-	"vkGetDeviceProcAddr",
-
-	# VK_KHR_surface
-	"vkDestroySurfaceKHR",
-	"vkGetPhysicalDeviceSurfaceSupportKHR",
-	"vkGetPhysicalDeviceSurfaceCapabilitiesKHR",
-	"vkGetPhysicalDeviceSurfaceFormatsKHR",
-	"vkGetPhysicalDeviceSurfacePresentModesKHR",
-
-	# VK_KHR_display
-	"vkGetPhysicalDeviceDisplayPropertiesKHR",
-	"vkGetPhysicalDeviceDisplayPlanePropertiesKHR",
-	"vkGetDisplayPlaneSupportedDisplaysKHR",
-	"vkGetDisplayModePropertiesKHR",
-	"vkCreateDisplayModeKHR",
-	"vkGetDisplayPlaneCapabilitiesKHR",
-	"vkCreateDisplayPlaneSurfaceKHR",
-
-	# VK_KHR_xlib_surface
-	"vkCreateXlibSurfaceKHR",
-	"vkGetPhysicalDeviceXlibPresentationSupportKHR",
-
-	# VK_KHR_xcb_surface
-	"vkCreateXcbSurfaceKHR",
-	"vkGetPhysicalDeviceXcbPresentationSupportKHR",
-
-	# VK_KHR_wayland_surface
-	"vkCreateWaylandSurfaceKHR",
-	"vkGetPhysicalDeviceWaylandPresentationSupportKHR",
-
-	# VK_KHR_mir_surface
-	"vkCreateMirSurfaceKHR",
-	"vkGetPhysicalDeviceMirPresentationSupportKHR",
-
-	# VK_KHR_android_surface
-	"vkCreateAndroidSurfaceKHR",
-
-	# VK_KHR_win32_surface
-	"vkCreateWin32SurfaceKHR",
-	"vkGetPhysicalDeviceWin32PresentationSupportKHR",
-
-	# VK_KHR_get_physical_device_properties2
-	"vkGetPhysicalDeviceFeatures2KHR",
-	"vkGetPhysicalDeviceProperties2KHR",
-	"vkGetPhysicalDeviceFormatProperties2KHR",
-	"vkGetPhysicalDeviceQueueFamilyProperties2KHR",
-	"vkGetPhysicalDeviceImageFormatProperties2KHR",
-	"vkGetPhysicalDeviceMemoryProperties2KHR",
-	"vkGetPhysicalDeviceSparseImageFormatProperties2KHR",
-
-	# VK_EXT_debug_report
-	"vkCreateDebugReportCallbackEXT",
-	"vkDestroyDebugReportCallbackEXT",
-	"vkDebugReportMessageEXT",
-
-	# VK_NV_external_memory_capabilities
-	"vkGetPhysicalDeviceExternalImageFormatPropertiesNV",
-
-	# VK_KHR_get_surface_capabilities2
-	"vkGetPhysicalDeviceSurfaceCapabilities2KHR",
-	"vkGetPhysicalDeviceSurfaceFormats2KHR",
-]
-
 DEFINITIONS			= [
 	("VK_API_VERSION",						"deUint32"),
 	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
 	("VK_MAX_EXTENSION_NAME_SIZE",			"size_t"),
 	("VK_UUID_SIZE",						"size_t"),
+	("VK_LUID_SIZE_KHR",					"size_t"),
 	("VK_MAX_MEMORY_TYPES",					"size_t"),
 	("VK_MAX_MEMORY_HEAPS",					"size_t"),
 	("VK_MAX_DESCRIPTION_SIZE",				"size_t"),
 	("VK_ATTACHMENT_UNUSED",				"deUint32"),
 	("VK_SUBPASS_EXTERNAL",					"deUint32"),
 	("VK_QUEUE_FAMILY_IGNORED",				"deUint32"),
+	("VK_QUEUE_FAMILY_EXTERNAL_KHR",		"deUint32"),
 	("VK_REMAINING_MIP_LEVELS",				"deUint32"),
 	("VK_REMAINING_ARRAY_LAYERS",			"deUint32"),
 	("VK_WHOLE_SIZE",						"vk::VkDeviceSize"),
@@ -182,10 +101,25 @@ TYPE_SUBSTITUTIONS		= [
 
 	# Platform-specific
 	("DWORD",		"deUint32"),
-	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*")
+	("HANDLE*",		PLATFORM_TYPE_NAMESPACE + "::" + "Win32Handle*"),
+	("LPCWSTR",		"char*"),
 ]
 
 EXTENSION_POSTFIXES		= ["KHR", "EXT", "NV", "NVX", "KHX"]
+
+def typeNameToEnumValue (name):
+	name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name[2:])
+	name = re.sub(r'([a-zA-Z])([0-9])', r'\1_\2', name)
+	name = name.upper()
+
+	# Patch irregularities
+	name = name.replace("YCB_CR_", "YCBCR_")
+	name = name.replace("WIN_32_", "WIN32_")
+	name = name.replace("16_BIT_", "16BIT_")
+	name = name.replace("D_3_D_12_", "D3D12_")
+	name = name.replace("_IDPROPERTIES_", "_ID_PROPERTIES_")
+
+	return name
 
 class Handle:
 	TYPE_DISP		= 0
@@ -196,8 +130,7 @@ class Handle:
 		self.name	= name
 
 	def getHandleType (self):
-		name = re.sub(r'([a-z])([A-Z])', r'\1_\2', self.name)
-		return "HANDLE_TYPE_" + name[3:].upper()
+		return "HANDLE_TYPE_" + typeNameToEnumValue(self.name)
 
 class Enum:
 	def __init__ (self, name, values):
@@ -239,12 +172,21 @@ class Function:
 		self.arguments	= arguments
 
 	def getType (self):
-		if self.name in PLATFORM_FUNCTIONS:
+		# Special functions
+		if self.name == "vkGetInstanceProcAddr":
 			return Function.TYPE_PLATFORM
-		elif self.name in INSTANCE_FUNCTIONS:
+		elif self.name == "vkGetDeviceProcAddr":
 			return Function.TYPE_INSTANCE
-		else:
+
+		assert len(self.arguments) > 0
+		firstArgType = self.arguments[0].type
+
+		if firstArgType in ["VkInstance", "VkPhysicalDevice"]:
+			return Function.TYPE_INSTANCE
+		elif firstArgType in ["VkDevice", "VkCommandBuffer", "VkQueue"]:
 			return Function.TYPE_DEVICE
+		else:
+			return Function.TYPE_PLATFORM
 
 class API:
 	def __init__ (self, definitions, handles, enums, bitfields, compositeTypes, functions):
@@ -759,6 +701,18 @@ def writeRefUtilImpl (api, filename):
 
 	writeInlFile(filename, INL_HEADER, makeRefUtilImpl())
 
+def writeStructTraitsImpl (api, filename):
+	def gen ():
+		for type in api.compositeTypes:
+			if type.getClassName() == "struct" and type.members[0].name == "sType":
+				yield "template<> VkStructureType getStructureType<%s> (void)" % type.name
+				yield "{"
+				yield "\treturn VK_STRUCTURE_TYPE_%s;" % typeNameToEnumValue(type.name)
+				yield "}"
+				yield ""
+
+	writeInlFile(filename, INL_HEADER, gen())
+
 def writeNullDriverImpl (api, filename):
 	def genNullDriverImpl ():
 		specialFuncNames	= [
@@ -767,15 +721,21 @@ def writeNullDriverImpl (api, filename):
 				"vkGetInstanceProcAddr",
 				"vkGetDeviceProcAddr",
 				"vkEnumeratePhysicalDevices",
+				"vkEnumerateInstanceExtensionProperties",
+				"vkEnumerateDeviceExtensionProperties",
 				"vkGetPhysicalDeviceFeatures",
+				"vkGetPhysicalDeviceFeatures2KHR",
 				"vkGetPhysicalDeviceProperties",
+				"vkGetPhysicalDeviceProperties2KHR",
 				"vkGetPhysicalDeviceQueueFamilyProperties",
 				"vkGetPhysicalDeviceMemoryProperties",
 				"vkGetPhysicalDeviceFormatProperties",
 				"vkGetPhysicalDeviceImageFormatProperties",
 				"vkGetDeviceQueue",
 				"vkGetBufferMemoryRequirements",
+				"vkGetBufferMemoryRequirements2KHR",
 				"vkGetImageMemoryRequirements",
+				"vkGetImageMemoryRequirements2KHR",
 				"vkMapMemory",
 				"vkAllocateDescriptorSets",
 				"vkFreeDescriptorSets",
@@ -940,5 +900,6 @@ if __name__ == "__main__":
 	writeStrUtilImpl			(api, os.path.join(VULKAN_DIR, "vkStrUtilImpl.inl"))
 	writeRefUtilProto			(api, os.path.join(VULKAN_DIR, "vkRefUtil.inl"))
 	writeRefUtilImpl			(api, os.path.join(VULKAN_DIR, "vkRefUtilImpl.inl"))
+	writeStructTraitsImpl		(api, os.path.join(VULKAN_DIR, "vkGetStructureTypeImpl.inl"))
 	writeNullDriverImpl			(api, os.path.join(VULKAN_DIR, "vkNullDriverImpl.inl"))
 	writeTypeUtil				(api, os.path.join(VULKAN_DIR, "vkTypeUtil.inl"))

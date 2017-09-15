@@ -45,7 +45,7 @@ namespace vk
  * \note No linking is currently supported so src may contain source
  *       for only one shader stage.
  *//*--------------------------------------------------------------------*/
-bool	compileGlslToSpirV		(const glu::ProgramSources& src, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo);
+bool	compileGlslToSpirV		(const GlslSource& src, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Strip SPIR-V binary

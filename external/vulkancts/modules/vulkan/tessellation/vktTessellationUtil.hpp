@@ -32,6 +32,7 @@
 #include "vkQueryUtil.hpp"
 
 #include "tcuVector.hpp"
+#include "tcuMaybe.hpp"
 
 #include "deStringUtil.hpp"
 
@@ -102,13 +103,14 @@ private:
 class GraphicsPipelineBuilder
 {
 public:
-								GraphicsPipelineBuilder	(void) : m_renderSize			(0, 0)
-															   , m_shaderStageFlags		(0u)
-															   , m_cullModeFlags		(vk::VK_CULL_MODE_NONE)
-															   , m_frontFace			(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
-															   , m_patchControlPoints	(1u)
-															   , m_blendEnable			(false)
-															   , m_primitiveTopology	(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {}
+								GraphicsPipelineBuilder	(void) : m_renderSize				(0, 0)
+															   , m_shaderStageFlags			(0u)
+															   , m_cullModeFlags			(vk::VK_CULL_MODE_NONE)
+															   , m_frontFace				(vk::VK_FRONT_FACE_COUNTER_CLOCKWISE)
+															   , m_patchControlPoints		(1u)
+															   , m_blendEnable				(false)
+															   , m_primitiveTopology		(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+															   , m_tessellationDomainOrigin	(tcu::nothing<vk::VkTessellationDomainOriginKHR>()) {}
 
 	GraphicsPipelineBuilder&	setRenderSize					(const tcu::IVec2& size) { m_renderSize = size; return *this; }
 	GraphicsPipelineBuilder&	setShader						(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkShaderStageFlagBits stage, const vk::ProgramBinary& binary, const vk::VkSpecializationInfo* specInfo);
@@ -125,6 +127,10 @@ public:
 
 	//! Basic vertex input configuration (uses biding 0, location 0, etc.)
 	GraphicsPipelineBuilder&	setVertexInputSingleAttribute	(const vk::VkFormat vertexFormat, const deUint32 stride);
+
+	//! If tessellation domain origin is set, pipeline requires VK_KHR_maintenance2
+	GraphicsPipelineBuilder&	setTessellationDomainOrigin		(const vk::VkTessellationDomainOriginKHR domainOrigin) { return setTessellationDomainOrigin(tcu::just(domainOrigin)); }
+	GraphicsPipelineBuilder&	setTessellationDomainOrigin		(const tcu::Maybe<vk::VkTessellationDomainOriginKHR>& domainOrigin) { m_tessellationDomainOrigin = domainOrigin; return *this; }
 
 	vk::Move<vk::VkPipeline>	build							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkPipelineLayout pipelineLayout, const vk::VkRenderPass renderPass);
 
@@ -144,6 +150,7 @@ private:
 	deUint32											m_patchControlPoints;
 	bool												m_blendEnable;
 	vk::VkPrimitiveTopology								m_primitiveTopology;
+	tcu::Maybe<vk::VkTessellationDomainOriginKHR>		m_tessellationDomainOrigin;
 
 	GraphicsPipelineBuilder (const GraphicsPipelineBuilder&); // "deleted"
 	GraphicsPipelineBuilder& operator= (const GraphicsPipelineBuilder&);
@@ -195,7 +202,6 @@ typedef deUint32 FeatureFlags;
 vk::VkBufferCreateInfo			makeBufferCreateInfo						(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
 vk::VkImageCreateInfo			makeImageCreateInfo							(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers);
 vk::Move<vk::VkCommandPool>		makeCommandPool								(const vk::DeviceInterface& vk, const vk::VkDevice device, const deUint32 queueFamilyIndex);
-vk::Move<vk::VkCommandBuffer>	makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
 vk::Move<vk::VkDescriptorSet>	makeDescriptorSet							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayoutWithoutDescriptors		(const vk::DeviceInterface& vk, const vk::VkDevice device);

@@ -254,7 +254,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 	const Unique<VkImage> sparseImage(createImage(deviceInterface, getDevice(), &imageCreateInfo));
 
 	// Create sparse image memory bind semaphore
-	const Unique<VkSemaphore> imageMemoryBindSemaphore(makeSemaphore(deviceInterface, getDevice()));
+	const Unique<VkSemaphore> imageMemoryBindSemaphore(createSemaphore(deviceInterface, getDevice()));
 
 	{
 		// Get image general memory requirements
@@ -270,7 +270,8 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 
 		DE_ASSERT(sparseMemoryRequirements.size() != 0);
 
-		const deUint32 colorAspectIndex = getSparseAspectRequirementsIndex(sparseMemoryRequirements, VK_IMAGE_ASPECT_COLOR_BIT);
+		const deUint32 colorAspectIndex		= getSparseAspectRequirementsIndex(sparseMemoryRequirements, VK_IMAGE_ASPECT_COLOR_BIT);
+		const deUint32 metadataAspectIndex	= getSparseAspectRequirementsIndex(sparseMemoryRequirements, VK_IMAGE_ASPECT_METADATA_BIT);
 
 		if (colorAspectIndex == NO_MATCH_FOUND)
 			TCU_THROW(NotSupportedError, "Not supported image aspect - the test supports currently only VK_IMAGE_ASPECT_COLOR_BIT");
@@ -340,6 +341,24 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 
 				imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
 			}
+
+			// Metadata
+			if (metadataAspectIndex != NO_MATCH_FOUND)
+			{
+				const VkSparseImageMemoryRequirements metadataAspectRequirements = sparseMemoryRequirements[metadataAspectIndex];
+
+				if (!(metadataAspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT))
+				{
+					const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
+						metadataAspectRequirements.imageMipTailSize, memoryType,
+						metadataAspectRequirements.imageMipTailOffset + layerNdx * metadataAspectRequirements.imageMipTailStride,
+						VK_SPARSE_MEMORY_BIND_METADATA_BIT);
+
+					deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+
+					imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+				}
+			}
 		}
 
 		if ((aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) && aspectRequirements.imageMipTailFirstLod < imageCreateInfo.mipLevels)
@@ -350,6 +369,23 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 			deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
 
 			imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+		}
+
+		// Metadata
+		if (metadataAspectIndex != NO_MATCH_FOUND)
+		{
+			const VkSparseImageMemoryRequirements metadataAspectRequirements = sparseMemoryRequirements[metadataAspectIndex];
+
+			if ((metadataAspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT))
+			{
+				const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(deviceInterface, getDevice(),
+					metadataAspectRequirements.imageMipTailSize, memoryType, metadataAspectRequirements.imageMipTailOffset,
+					VK_SPARSE_MEMORY_BIND_METADATA_BIT);
+
+				deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory), Deleter<VkDeviceMemory>(deviceInterface, getDevice(), DE_NULL))));
+
+				imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+			}
 		}
 
 		VkBindSparseInfo bindSparseInfo =
@@ -397,7 +433,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 
 	// Create command buffer for compute and transfer oparations
 	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
-	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, getDevice(), *commandPool));
+	const Unique<VkCommandBuffer> commandBuffer(allocateCommandBuffer(deviceInterface, getDevice(), *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 	beginCommandBuffer(deviceInterface, *commandBuffer);

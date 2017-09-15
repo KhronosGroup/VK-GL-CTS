@@ -243,8 +243,8 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 	const Unique<VkImage> imageWrite(createImage(deviceInterface, getDevice(), &imageSparseInfo));
 
 	// Create semaphores to synchronize sparse binding operations with other operations on the sparse images
-	const Unique<VkSemaphore> memoryBindSemaphoreTransfer(makeSemaphore(deviceInterface, getDevice()));
-	const Unique<VkSemaphore> memoryBindSemaphoreCompute(makeSemaphore(deviceInterface, getDevice()));
+	const Unique<VkSemaphore> memoryBindSemaphoreTransfer(createSemaphore(deviceInterface, getDevice()));
+	const Unique<VkSemaphore> memoryBindSemaphoreCompute(createSemaphore(deviceInterface, getDevice()));
 
 	const VkSemaphore imageMemoryBindSemaphores[] = { memoryBindSemaphoreTransfer.get(), memoryBindSemaphoreCompute.get() };
 
@@ -390,7 +390,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 
 	// Create command buffer for compute and transfer oparations
 	const Unique<VkCommandPool>	  commandPool  (makeCommandPool(deviceInterface, getDevice(), computeQueue.queueFamilyIndex));
-	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, getDevice(), *commandPool));
+	const Unique<VkCommandBuffer> commandBuffer(allocateCommandBuffer(deviceInterface, getDevice(), *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	std::vector<VkBufferImageCopy> bufferImageCopy(imageSparseInfo.mipLevels);
 
