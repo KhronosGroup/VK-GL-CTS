@@ -4023,12 +4023,13 @@ std::string Variable::Descriptor::GetDefinition(FLAVOUR flavour, STORAGE storage
 		replaceToken("QUALIFIERS", position, m_qualifiers.c_str(), definition);
 	}
 
-	// According to spec: integer or unsigned integer type must always be declared with flat qualifier
+	// According to spec: int, uint, and double type must always be declared with flat qualifier
 	bool flat_qualifier = false;
 	if (m_type != BUILTIN && m_interface != NULL)
 	{
 		if (m_interface->m_members[0].m_builtin.m_basic_type == Utils::Type::Int ||
-			m_interface->m_members[0].m_builtin.m_basic_type == Utils::Type::Uint)
+			m_interface->m_members[0].m_builtin.m_basic_type == Utils::Type::Uint ||
+			m_interface->m_members[0].m_builtin.m_basic_type == Utils::Type::Double)
 		{
 			flat_qualifier = true;
 		}
