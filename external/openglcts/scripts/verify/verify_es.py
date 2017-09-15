@@ -4,7 +4,7 @@
 # Khronos OpenGL CTS
 # ------------------
 #
-# Copyright (c) 2016 The Khronos Group Inc.
+# Copyright (c) 2017 The Khronos Group Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,6 +72,14 @@ def compareConfigs(filename, baseConfigs, cmpConfigs):
 		messages.append(error(filename, "Confomant configs reported for %s and %s do not match" % (baseKey,cmpKey)))
 
 	return messages
+
+def numGitLogStatusFile (releaseTag):
+	KC_CTS_RELEASE = ["opengl-es-cts-3\.2\.[2-3]\.[0-9]*", "opengl-cts-4\.6\.[0-9]*\.[0-9]*"]
+	for r in KC_CTS_RELEASE:
+		if re.match(r, releaseTag):
+			return 2
+
+	return 1
 
 def verifyConfigFile (filename, type):
 	messages  = []
@@ -214,8 +222,11 @@ def verifyTestLogs (package):
 def verifyGitStatusFiles (package):
 	messages = []
 
-	if len(package.gitStatus) != 2:
-		messages.append(error(package.basePath, "Exactly two git status files must be present, found %s" % len(package.gitStatus)))
+	errorDict = {1 : 'one git status file', 2 : 'two git status files'}
+	numFiles = numGitLogStatusFile(package.conformVersion)
+
+	if len(package.gitStatus) != numFiles:
+		messages.append(error(package.basePath, "Exactly %s must be present, found %s" % (errorDict[numFiles], len(package.gitStatus))))
 
 	messages += verifyGitStatus(package)
 
@@ -268,11 +279,14 @@ def verifyPatchFiles (package):
 def verifyGitLogFiles (package):
 	messages = []
 
-	if len(package.gitLog) != 2:
-		messages.append(error(package.basePath, "Exactly two git log file must be present, found %s" % len(package.gitLog)))
+	errorDict = {1 : 'one git log file', 2 : 'two git log files'}
+	numFiles = numGitLogStatusFile(package.conformVersion)
+
+	if len(package.gitLog) != numFiles:
+		messages.append(error(package.basePath, "Exactly %s must be present, found %s" % (errorDict[numFiles], len(package.gitLog))))
 
 	for i, gitLog in enumerate(package.gitLog):
-		if "kc-cts" in gitLog[0]:
+		if "kc-cts" in gitLog[0] and numFiles > 1:
 			package.gitLog[i] = gitLog[:1] + ("external/kc-cts/src",) + gitLog[2:]
 
 	messages += verifyGitLogFile(package)

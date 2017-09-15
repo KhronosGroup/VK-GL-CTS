@@ -854,7 +854,7 @@ GLCTS_GLES32_KHR_PKG_N1CFG			= Package(module = ES32KHR_MODULE, useforfirsteglco
 
 GLCTS_NOCTX_ES2_KHR_PKG			= Package(module = NOCTX_ES2_KHR_MODULE, configurations = [
 		# Master
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-noctx-master",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
@@ -863,7 +863,7 @@ GLCTS_NOCTX_ES2_KHR_PKG			= Package(module = NOCTX_ES2_KHR_MODULE, configuration
 
 GLCTS_NOCTX_ES32_KHR_PKG		= Package(module = NOCTX_ES32_KHR_MODULE, configurations = [
 		# Master
-		Configuration(name			= "khr-master",
+		Configuration(name			= "khr-noctx-master",
 					surfacewidth	= "64",
 					surfaceheight	= "64",
 					baseseed		= "1",
