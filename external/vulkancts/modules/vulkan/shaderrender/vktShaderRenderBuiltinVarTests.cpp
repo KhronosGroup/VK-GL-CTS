@@ -792,6 +792,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		drawState.compareOp					= rr::TESTFUNC_ALWAYS;
 		drawState.depthTestEnable			= true;
 		drawState.depthWriteEnable			= true;
+		drawState.depthBoundsTestEnable		= true;
 		drawState.sampleShadingEnable		= true;
 		vulkanProgram.depthImageView		= *depthImageView;
 		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
