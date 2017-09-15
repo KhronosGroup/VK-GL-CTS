@@ -145,12 +145,17 @@ struct CaseDefinition
 {
 	int					opType;
 	VkShaderStageFlags	shaderStage;
-	bool				noSSBO;
 };
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	std::ostringstream bdy;
+	const vk::ShaderBuildOptions	buildOptions	(vk::SPIRV_VERSION_1_3, 0u);
+	std::ostringstream				bdy;
+
+	subgroups::setFragmentShaderFrameBuffer(programCollection);
+
+	if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
+		subgroups::setVertexShaderFrameBuffer(programCollection);
 
 	bdy << "  uvec4 allOnes = uvec4(0xFFFFFFFF);\n"
 		<< "  uvec4 allZeros = uvec4(0);\n"
@@ -291,10 +296,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 
 	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
-		std::ostringstream src;
-		std::ostringstream	fragmentSrc;
-
-		src << "#version 450\n"
+		std::ostringstream				vertex;
+		vertex << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -306,23 +309,79 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "  gl_Position = in_position;\n"
 			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
+		programCollection.glslSources.add("vert")
+			<< glu::VertexSource(vertex.str()) << buildOptions;
+	}
+	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
+	{
+		std::ostringstream geometry;
 
-		programCollection.glslSources.add("vert") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
-
-		fragmentSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
-			<< "layout(location = 0) in float in_color;\n"
-			<< "layout(location = 0) out uint out_color;\n"
-			<< "void main()\n"
-			<<"{\n"
-			<< "	out_color = uint(in_color);\n"
+		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< "layout(points) in;\n"
+			<< "layout(points, max_vertices = 1) out;\n"
+			<< "layout(location = 0) out float out_color;\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< bdy.str()
+			<< "  out_color = float(tempResult);\n"
+			<< "  gl_Position = gl_in[0].gl_Position;\n"
+			<< "  EmitVertex();\n"
+			<< "  EndPrimitive();\n"
 			<< "}\n";
-		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSrc.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+
+		programCollection.glslSources.add("geometry")
+			<< glu::GeometrySource(geometry.str()) << buildOptions;
+	}
+	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
+	{
+		std::ostringstream controlSource;
+
+		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< "layout(vertices = 2) out;\n"
+			<< "layout(location = 0) out float out_color[];\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "  if (gl_InvocationID == 0)\n"
+			<< "  {\n"
+			<< "    gl_TessLevelOuter[0] = 1.0f;\n"
+			<< "    gl_TessLevelOuter[1] = 1.0f;\n"
+			<< "  }\n"
+			<< bdy.str()
+			<< "  out_color[gl_InvocationID ] = float(tempResult);\n"
+			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("tesc")
+			<< glu::TessellationControlSource(controlSource.str()) << buildOptions;
+		subgroups::setTesEvalShaderFrameBuffer(programCollection);
+	}
+	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
+	{
+		std::ostringstream evaluationSource;
+		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< "layout(isolines, equal_spacing, ccw ) in;\n"
+			<< "layout(location = 0) out float out_color;\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< bdy.str()
+			<< "  out_color  = float(tempResult);\n"
+			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+			<< "}\n";
+
+		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
+		programCollection.glslSources.add("tese")
+			<< glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
 	}
 	else
 	{
 		DE_FATAL("Unsupported shader stage");
 	}
 }
+
 
 void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
@@ -592,7 +651,7 @@ void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 }
 
-tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
+void supportedCheck (Context& context)
 {
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
@@ -601,15 +660,45 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	{
 		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
 	}
+}
 
-	if (caseDef.noSSBO && VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
+{
+	supportedCheck(context);
+	if (!subgroups::areSubgroupOperationsSupportedForStage(
+			context, caseDef.shaderStage))
 	{
-		if (!subgroups::areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))
+		if (subgroups::areSubgroupOperationsRequiredForStage(caseDef.shaderStage))
+		{
+			return tcu::TestStatus::fail(
+					   "Shader stage " +
+					   subgroups::getShaderStageName(caseDef.shaderStage) +
+					   " is required to support subgroup operations!");
+		}
+		else
 		{
 			TCU_THROW(NotSupportedError, "Device does not support subgroup operations for this stage");
 		}
-		return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT,
-										 DE_NULL, 0, checkVertexPipelineStages);
+	}
+
+	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
+		return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages);
+	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
+		return subgroups::makeGeometryFrameBufferTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages);
+	else if ((VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) & caseDef.shaderStage)
+		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, DE_NULL, 0, checkVertexPipelineStages);
+	else
+		TCU_THROW(InternalError, "Unhandled shader stage");
+}
+
+tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
+{
+	if (!subgroups::isSubgroupSupported(context))
+		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
+
+	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
+	{
+		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
 	}
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
@@ -663,25 +752,32 @@ tcu::TestCaseGroup* createSubgroupsBallotOtherTests(tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
 			testCtx, "ballot_other", "Subgroup ballot other category tests"));
 
+	const VkShaderStageFlags stages[] =
+	{
+		VK_SHADER_STAGE_VERTEX_BIT,
+		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+		VK_SHADER_STAGE_GEOMETRY_BIT,
+	};
+
 	for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 	{
 		const string	op		= de::toLower(getOpTypeName(opTypeIndex));
-
 		{
-			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, false};
+			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT};
 			addFunctionCaseWithPrograms(group.get(),  op + "_" + getShaderStageName(caseDef.shaderStage), "", initPrograms, test, caseDef);
 		}
 
 		{
-			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, false};
+			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS};
 			addFunctionCaseWithPrograms(group.get(),  op + "_graphic", "", initPrograms, test, caseDef);
 		}
 
+		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
-			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_VERTEX_BIT, true};
-			addFunctionCaseWithPrograms(group.get(), op + "_" + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "", initFrameBufferPrograms, test, caseDef);
+			const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
+			addFunctionCaseWithPrograms(group.get(), op + "_" + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "", initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
-
 	}
 
 	return group.release();

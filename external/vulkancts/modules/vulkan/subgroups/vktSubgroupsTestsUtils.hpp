@@ -115,6 +115,26 @@ std::string getFormatNameForGLSL(vk::VkFormat format);
 void addGeometryShadersFromTemplate (const std::string& glslTemplate, const vk::ShaderBuildOptions& options, vk::GlslSourceCollection& collection);
 void addGeometryShadersFromTemplate (const std::string& spirvTemplate, const vk::SpirVAsmBuildOptions& options, vk::SpirVAsmCollection& collection);
 
+
+void setVertexShaderFrameBuffer (vk::SourceCollections& programCollection);
+
+void setFragmentShaderFrameBuffer (vk::SourceCollections& programCollection);
+
+void setFragmentShaderFrameBuffer (vk::SourceCollections& programCollection);
+
+void setTesCtrlShaderFrameBuffer (vk::SourceCollections& programCollection);
+
+void setTesEvalShaderFrameBuffer (vk::SourceCollections& programCollection);
+
+tcu::TestStatus makeTessellationEvaluationFrameBufferTest(Context& context, vk::VkFormat format,
+	SSBOData* extraData, deUint32 extraDataCount,
+	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
+	const vk::VkShaderStageFlags shaderStage = vk::VK_SHADER_STAGE_ALL_GRAPHICS);
+
+tcu::TestStatus makeGeometryFrameBufferTest(Context& context, vk::VkFormat format, SSBOData* extraData,
+	deUint32 extraDataCount,
+	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize));
+
 tcu::TestStatus allStages(Context& context, vk::VkFormat format,
 	SSBOData* extraData, deUint32 extraDataCount,
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
