@@ -334,7 +334,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 
 	const VkStencilOpState stencilOpState = makeStencilOpState(
 		VK_STENCIL_OP_KEEP,									// stencil fail
-		VK_STENCIL_OP_ZERO,									// depth & stencil pass
+		VK_STENCIL_OP_KEEP,									// depth & stencil pass
 		VK_STENCIL_OP_KEEP,									// depth only fail
 		VK_COMPARE_OP_EQUAL,								// compare op
 		~0u,												// compare mask
