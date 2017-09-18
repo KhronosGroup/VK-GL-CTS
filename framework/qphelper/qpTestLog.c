@@ -824,8 +824,8 @@ deBool qpTestLog_writeImage	(
 	size_t			writeDataBytes		= ~(size_t)0;
 
 	DE_ASSERT(log && name);
-	DE_ASSERT(deInRange32(width, 1, 16384));
-	DE_ASSERT(deInRange32(height, 1, 16384));
+	DE_ASSERT(deInRange32(width, 1, 32768));
+	DE_ASSERT(deInRange32(height, 1, 32768));
 	DE_ASSERT(data);
 
 	if (log->flags & QP_TEST_LOG_EXCLUDE_IMAGES)
