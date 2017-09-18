@@ -406,7 +406,7 @@ void WideColorTest::checkFP16Support (void)
 	if (numConfigs <= 0)
 	{
 		log << tcu::TestLog::Message << "No configs returned." << tcu::TestLog::EndMessage;
-		TCU_THROW(NotSupportedError, "10:10:10:2 pixel format is not supported");
+		TCU_THROW(NotSupportedError, "16:16:16:16 pixel format is not supported");
 	}
 
 	log << tcu::TestLog::Message << numConfigs << " configs returned" << tcu::TestLog::EndMessage;
