@@ -335,3 +335,6 @@ dEQP-VK.glsl.builtin_var.fragcoord_msaa.*
 #VK-GL-CTS 657
 dEQP-VK.memory.requirements.dedicated_allocation.buffer.*
 dEQP-VK.memory.requirements.dedicated_allocation.image.*
+
+# Issue: b/65844886
+dEQP-VK.image.mutable.*
