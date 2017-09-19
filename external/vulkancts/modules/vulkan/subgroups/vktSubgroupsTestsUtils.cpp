@@ -819,7 +819,6 @@ bool vkt::subgroups::areSubgroupOperationsRequiredForStage(
 	{
 		default:
 			return false;
-		case VK_SHADER_STAGE_FRAGMENT_BIT:
 		case VK_SHADER_STAGE_COMPUTE_BIT:
 			return true;
 	}
