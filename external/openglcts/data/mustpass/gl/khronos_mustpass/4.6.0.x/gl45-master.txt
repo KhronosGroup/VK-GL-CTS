@@ -7395,6 +7395,7 @@ KHR-GL45.shader_group_vote.availability
 KHR-GL45.shader_group_vote.all_invocations
 KHR-GL45.shader_group_vote.any_invocation
 KHR-GL45.shader_group_vote.all_invocations_equal
+KHR-GL45.shader_group_vote.invocations_with_variables
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampAvailability
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampMinMax
 KHR-GL45.polygon_offset_clamp.PolygonOffsetClampZeroInfinity

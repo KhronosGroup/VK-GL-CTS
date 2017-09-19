@@ -2255,6 +2255,7 @@ KHR-GLES31.core.shader_group_vote.availability
 KHR-GLES31.core.shader_group_vote.all_invocations
 KHR-GLES31.core.shader_group_vote.any_invocation
 KHR-GLES31.core.shader_group_vote.all_invocations_equal
+KHR-GLES31.core.shader_group_vote.invocations_with_variables
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_non_indiced_lines
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_indiced_lines
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_non_indiced_line_strip
