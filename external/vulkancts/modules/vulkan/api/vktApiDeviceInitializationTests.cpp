@@ -61,7 +61,7 @@ tcu::TestStatus createInstanceTest (Context& context)
 	tcu::ResultCollector		resultCollector			(log);
 	const char*					appNames[]				= { "appName", DE_NULL, "",  "app, name", "app(\"name\"", "app~!@#$%^&*()_+name", "app\nName", "app\r\nName" };
 	const char*					engineNames[]			= { "engineName", DE_NULL, "",  "engine. name", "engine\"(name)", "eng~!@#$%^&*()_+name", "engine\nName", "engine\r\nName" };
-	const int                   patchNumbers[]          = { 0, 1, 2, 3, 4, 5, 13, 4094, 4095 };
+	const int					patchNumbers[]			= { 0, 1, 2, 3, 4, 5, 13, 4094, 4095 };
 	const deUint32				appVersions[]			= { 0, 1, (deUint32)-1 };
 	const deUint32				engineVersions[]		= { 0, 1, (deUint32)-1 };
 	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
@@ -205,12 +205,17 @@ tcu::TestStatus createInstanceTest (Context& context)
 
 tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 {
-	tcu::TestLog&				log					= context.getTestContext().getLog();
-	tcu::ResultCollector		resultCollector		(log);
-	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
-	const ApiVersion			apiVersion			= unpackVersion(context.getUsedApiVersion());
-	const deUint32				invalidMajorVersion	= (1 << 10) - 1;
-	const deUint32				invalidMinorVersion	= (1 << 10) - 1;
+	tcu::TestLog&				log						= context.getTestContext().getLog();
+	tcu::ResultCollector		resultCollector			(log);
+	const PlatformInterface&	platformInterface		= context.getPlatformInterface();
+
+	deUint32					instanceApiVersion		= 0u;
+	context.getPlatformInterface().enumerateInstanceVersion(&instanceApiVersion);
+
+	const ApiVersion			apiVersion				= unpackVersion(instanceApiVersion);
+
+	const deUint32				invalidMajorVersion		= (1 << 10) - 1;
+	const deUint32				invalidMinorVersion		= (1 << 10) - 1;
 	vector<ApiVersion>			invalidApiVersions;
 
 	invalidApiVersions.push_back(ApiVersion(invalidMajorVersion, apiVersion.minorNum, apiVersion.patchNum));
@@ -242,29 +247,49 @@ tcu::TestStatus createInstanceWithInvalidApiVersionTest (Context& context)
 
 
 		log << TestLog::Message
-			<<"VK_API_VERSION_" << apiVersion.majorNum << "_" << apiVersion.minorNum
-			<< " defined in vulkan.h: " << apiVersion
+			<< "API version reported by enumerateInstanceVersion: " << apiVersion
 			<< ", api version used to create instance: " << invalidApiVersions[apiVersionNdx]
 			<< TestLog::EndMessage;
 
 		{
-			VkInstance		instance	= (VkInstance)0;
-			const VkResult	result		= platformInterface.createInstance(&instanceCreateInfo, DE_NULL/*pAllocator*/, &instance);
-			const bool		gotInstance	= !!instance;
+			VkInstance			instance				= (VkInstance)0;
+			const VkResult		result					= platformInterface.createInstance(&instanceCreateInfo, DE_NULL/*pAllocator*/, &instance);
+			const bool			gotInstance				= !!instance;
 
 			if (instance)
 			{
-				const InstanceDriver	instanceIface	(platformInterface, instance);
+				const InstanceDriver	instanceIface(platformInterface, instance);
 				instanceIface.destroyInstance(instance, DE_NULL/*pAllocator*/);
 			}
 
-			if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
+			if (apiVersion.majorNum == 1 && apiVersion.minorNum == 0)
 			{
-				TCU_CHECK(!gotInstance);
-				log << TestLog::Message << "Pass, instance creation with invalid apiVersion is rejected" << TestLog::EndMessage;
+				if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
+				{
+					TCU_CHECK(!gotInstance);
+					log << TestLog::Message << "Pass, instance creation with invalid apiVersion is rejected" << TestLog::EndMessage;
+				}
+				else
+					resultCollector.fail("Fail, instance creation with invalid apiVersion is not rejected");
 			}
-			else
-				resultCollector.fail("Fail, instance creation with invalid apiVersion is not rejected");
+			else if (apiVersion.majorNum == 1 && apiVersion.minorNum >= 1)
+			{
+				if (result == VK_SUCCESS)
+				{
+					TCU_CHECK(gotInstance);
+					log << TestLog::Message << "Pass, instance creation with nonstandard apiVersion succeeds for Vulkan 1.1" << TestLog::EndMessage;
+				}
+				else if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
+				{
+					resultCollector.fail("Fail, In Vulkan 1.1 instance creation must not return VK_ERROR_INCOMPATIBLE_DRIVER.");
+				}
+				else
+				{
+					std::ostringstream message;
+					message << "Fail, createInstance failed with " << result;
+					resultCollector.fail(message.str().c_str());
+				}
+			}
 		}
 	}
 
