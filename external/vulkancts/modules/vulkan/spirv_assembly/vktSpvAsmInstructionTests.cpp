@@ -6048,7 +6048,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	const NameCodePair tests[] =
 	{
 		{"bool", "", "%bool"},
-		{"vec2uint32", "%type = OpTypeVector %u32 2", "%type"},
+		{"vec2uint32", "", "%v2u32"},
 		{"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown", "%type"},
 		{"sampler", "%type = OpTypeSampler", "%type"},
 		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n" "%type = OpTypeSampledImage %img", "%type"},
@@ -7229,6 +7229,12 @@ const string getAsmTypeDeclaration (IntegerType type)
 	return "OpTypeInt " + getBitWidthStr(type) + sign;
 }
 
+const string getAsmTypeName (IntegerType type)
+{
+	const string prefix = isSigned(type) ? "%i" : "%u";
+	return prefix + getBitWidthStr(type);
+}
+
 template<typename T>
 BufferSp getSpecializedBuffer (deInt64 number)
 {
@@ -7293,21 +7299,25 @@ struct ConvertCase
 	, m_inputBuffer		(getBuffer(from, number))
 	, m_outputBuffer	(getBuffer(to, number))
 	{
-		m_asmTypes["inputType"]		= getAsmTypeDeclaration(from);
-		m_asmTypes["outputType"]	= getAsmTypeDeclaration(to);
+		m_asmTypes["inputType"]		= getAsmTypeName(from);
+		m_asmTypes["outputType"]	= getAsmTypeName(to);
 
 		if (m_features == COMPUTE_TEST_USES_INT16)
 		{
 			m_asmTypes["int_capabilities"] = "OpCapability Int16\n";
+			m_asmTypes["int_additional_decl"] = "%i16        = OpTypeInt 16 1\n%u16        = OpTypeInt 16 0\n";
 		}
 		else if (m_features == COMPUTE_TEST_USES_INT64)
 		{
 			m_asmTypes["int_capabilities"] = "OpCapability Int64\n";
+			m_asmTypes["int_additional_decl"] = "%i64        = OpTypeInt 64 1\n%u64        = OpTypeInt 64 0\n";
 		}
 		else if (m_features == COMPUTE_TEST_USES_INT16_INT64)
 		{
 			m_asmTypes["int_capabilities"] = string("OpCapability Int16\n") +
 													"OpCapability Int64\n";
+			m_asmTypes["int_additional_decl"] =	"%i16        = OpTypeInt 16 1\n%u16        = OpTypeInt 16 0\n"
+								"%i64        = OpTypeInt 64 1\n%u64        = OpTypeInt 64 0\n";
 		}
 		else
 		{
@@ -7359,23 +7369,21 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 		"%voidf      = OpTypeFunction %void\n"
 		"%u32        = OpTypeInt 32 0\n"
 		"%i32        = OpTypeInt 32 1\n"
+		"${int_additional_decl}"
 		"%uvec3      = OpTypeVector %u32 3\n"
 		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
-		// Custom types
-		"%in_type    = ${inputType}\n"
-		"%out_type   = ${outputType}\n"
 		// Derived types
-		"%in_ptr     = OpTypePointer Uniform %in_type\n"
-		"%out_ptr    = OpTypePointer Uniform %out_type\n"
-		"%in_arr     = OpTypeRuntimeArray %in_type\n"
-		"%out_arr    = OpTypeRuntimeArray %out_type\n"
+		"%in_ptr     = OpTypePointer Uniform ${inputType}\n"
+		"%out_ptr    = OpTypePointer Uniform ${outputType}\n"
+		"%in_arr     = OpTypeRuntimeArray ${inputType}\n"
+		"%out_arr    = OpTypeRuntimeArray ${outputType}\n"
 		"%in_buf     = OpTypeStruct %in_arr\n"
 		"%out_buf    = OpTypeStruct %out_arr\n"
 		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
 		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
 		"%indata     = OpVariable %in_bufptr Uniform\n"
 		"%outdata    = OpVariable %out_bufptr Uniform\n"
-		"%inputptr   = OpTypePointer Input %in_type\n"
+		"%inputptr   = OpTypePointer Input ${inputType}\n"
 		"%id         = OpVariable %uvec3ptr Input\n"
 		// Constants
 		"%zero       = OpConstant %i32 0\n"
@@ -7386,8 +7394,8 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 		"%x          = OpCompositeExtract %u32 %idval 0\n"
 		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
 		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
-		"%inval      = OpLoad %in_type %inloc\n"
-		"%conv       = ${instruction} %out_type %inval\n"
+		"%inval      = OpLoad ${inputType} %inloc\n"
+		"%conv       = ${instruction} ${outputType} %inval\n"
 		"              OpStore %outloc %conv\n"
 		"              OpReturn\n"
 		"              OpFunctionEnd\n"
@@ -7535,16 +7543,18 @@ void createVectorCompositeCases (vector<map<string, string> >& testCases, de::Ra
 	// Vec2 to Vec4
 	for (int width = 2; width <= 4; ++width)
 	{
-		string randomConst = numberToString(getInt(rnd));
-		string widthStr = numberToString(width);
-		int index = rnd.getInt(0, width-1);
+		const string randomConst = numberToString(getInt(rnd));
+		const string widthStr = numberToString(width);
+		const string composite_type = "${customType}vec" + widthStr;
+		const int index = rnd.getInt(0, width-1);
 
-		params["type"]					= "vec";
-		params["name"]					= params["type"] + "_" + widthStr;
-		params["compositeType"]			= "%composite = OpTypeVector %custom " + widthStr +"\n";
-		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
-		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
-		params["indexes"]				= numberToString(index);
+		params["type"]			= "vec";
+		params["name"]			= params["type"] + "_" + widthStr;
+		params["compositeDecl"]		= composite_type + " = OpTypeVector ${customType} " + widthStr +"\n";
+		params["compositeType"]		= composite_type;
+		params["filler"]		= string("%filler    = OpConstant ${customType} ") + getRandomConstantString(type, rnd) + "\n";
+		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct " + composite_type + repeatString(" %filler", width) + "\n";
+		params["indexes"]		= numberToString(index);
 		testCases.push_back(params);
 	}
 }
@@ -7560,14 +7570,14 @@ void createArrayCompositeCases (vector<map<string, string> >& testCases, de::Ran
 		string widthStr = numberToString(width);
 		int index = rnd.getInt(0, width-1);
 
-		params["type"]					= "array";
-		params["name"]					= params["type"] + "_" + widthStr;
-		params["compositeType"]			= string("%arraywidth = OpConstant %u32 " + widthStr + "\n")
-											+	 "%composite = OpTypeArray %custom %arraywidth\n";
-
-		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
+		params["type"]			= "array";
+		params["name"]			= params["type"] + "_" + widthStr;
+		params["compositeDecl"]		= string("%arraywidth = OpConstant %u32 " + widthStr + "\n")
+											+	 "%composite = OpTypeArray ${customType} %arraywidth\n";
+		params["compositeType"]		= "%composite";
+		params["filler"]		= string("%filler    = OpConstant ${customType} ") + getRandomConstantString(type, rnd) + "\n";
 		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
-		params["indexes"]				= numberToString(index);
+		params["indexes"]		= numberToString(index);
 		testCases.push_back(params);
 	}
 }
@@ -7582,12 +7592,13 @@ void createStructCompositeCases (vector<map<string, string> >& testCases, de::Ra
 		string randomConst = numberToString(getInt(rnd));
 		int index = rnd.getInt(0, width-1);
 
-		params["type"]					= "struct";
-		params["name"]					= params["type"] + "_" + numberToString(width);
-		params["compositeType"]			= "%composite = OpTypeStruct" + repeatString(" %custom", width) + "\n";
-		params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n";
+		params["type"]			= "struct";
+		params["name"]			= params["type"] + "_" + numberToString(width);
+		params["compositeDecl"]		= "%composite = OpTypeStruct" + repeatString(" ${customType}", width) + "\n";
+		params["compositeType"]		= "%composite";
+		params["filler"]		= string("%filler    = OpConstant ${customType} ") + getRandomConstantString(type, rnd) + "\n";
 		params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %filler", width) + "\n";
-		params["indexes"]				= numberToString(index);
+		params["indexes"]		= numberToString(index);
 		testCases.push_back(params);
 	}
 }
@@ -7607,16 +7618,17 @@ void createMatrixCompositeCases (vector<map<string, string> >& testCases, de::Ra
 			int index_1 = rnd.getInt(0, width-1);
 			string columnStr = numberToString(column);
 
-			params["type"]					= "matrix";
-			params["name"]					= params["type"] + "_" + widthStr + "x" + columnStr;
-			params["compositeType"]			= string("%vectype   = OpTypeVector %custom " + widthStr + "\n")
+			params["type"]		= "matrix";
+			params["name"]		= params["type"] + "_" + widthStr + "x" + columnStr;
+			params["compositeDecl"]	= string("%vectype   = OpTypeVector ${customType} " + widthStr + "\n")
 												+	 "%composite = OpTypeMatrix %vectype " + columnStr + "\n";
+			params["compositeType"]	= "%composite";
 
-			params["filler"]				= string("%filler    = OpConstant %custom ") + getRandomConstantString(type, rnd) + "\n"
+			params["filler"]	= string("%filler    = OpConstant ${customType} ") + getRandomConstantString(type, rnd) + "\n"
 												+	 "%fillerVec = OpConstantComposite %vectype" + repeatString(" %filler", width) + "\n";
 
 			params["compositeConstruct"]	= "%instance  = OpCompositeConstruct %composite" + repeatString(" %fillerVec", column) + "\n";
-			params["indexes"]				= numberToString(index_0) + " " + numberToString(index_1);
+			params["indexes"]	= numberToString(index_0) + " " + numberToString(index_1);
 			testCases.push_back(params);
 		}
 	}
@@ -7645,15 +7657,37 @@ const string getAssemblyTypeDeclaration (const NumberType type)
 	}
 }
 
+const string getAssemblyTypeName (const NumberType type)
+{
+	switch (type)
+	{
+		case NUMBERTYPE_INT32:		return "%i32";
+		case NUMBERTYPE_UINT32:		return "%u32";
+		case NUMBERTYPE_FLOAT32:	return "%f32";
+		default:			DE_ASSERT(false); return "";
+	}
+}
+
 const string specializeCompositeInsertShaderTemplate (const NumberType type, const map<string, string>& params)
 {
 	map<string, string>	parameters(params);
 
-	parameters["typeDeclaration"] = getAssemblyTypeDeclaration(type);
-
+	const string customType = getAssemblyTypeName(type);
+	map<string, string> substCustomType;
+	substCustomType["customType"] = customType;
+	parameters["compositeDecl"] = StringTemplate(parameters.at("compositeDecl")).specialize(substCustomType);
+	parameters["compositeType"] = StringTemplate(parameters.at("compositeType")).specialize(substCustomType);
+	parameters["compositeConstruct"] = StringTemplate(parameters.at("compositeConstruct")).specialize(substCustomType);
+	parameters["filler"] = StringTemplate(parameters.at("filler")).specialize(substCustomType);
+	parameters["customType"] = customType;
 	parameters["compositeDecorator"] = (parameters["type"] == "array") ? "OpDecorate %composite ArrayStride 4\n" : "";
 
-	return StringTemplate (
+	if (parameters.at("compositeType") != "%u32vec3")
+	{
+		parameters["u32vec3Decl"] = "%u32vec3   = OpTypeVector %u32 3\n";
+	}
+
+	return StringTemplate(
 		"OpCapability Shader\n"
 		"OpCapability Matrix\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -7680,19 +7714,20 @@ const string specializeCompositeInsertShaderTemplate (const NumberType type, con
 		"%voidf     = OpTypeFunction %void\n"
 		"%u32       = OpTypeInt 32 0\n"
 		"%i32       = OpTypeInt 32 1\n"
-		"%uvec3     = OpTypeVector %u32 3\n"
-		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
+		"%f32       = OpTypeFloat 32\n"
 
-		// Custom type
-		"%custom    = ${typeDeclaration}\n"
-		"${compositeType}"
+		// Composite declaration
+		"${compositeDecl}"
 
 		// Constants
 		"${filler}"
 
+		"${u32vec3Decl:opt}"
+		"%uvec3ptr  = OpTypePointer Input %u32vec3\n"
+
 		// Inherited from custom
-		"%customptr = OpTypePointer Uniform %custom\n"
-		"%customarr = OpTypeRuntimeArray %custom\n"
+		"%customptr = OpTypePointer Uniform ${customType}\n"
+		"%customarr = OpTypeRuntimeArray ${customType}\n"
 		"%buf       = OpTypeStruct %customarr\n"
 		"%bufptr    = OpTypePointer Uniform %buf\n"
 
@@ -7704,19 +7739,19 @@ const string specializeCompositeInsertShaderTemplate (const NumberType type, con
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
-		"%idval     = OpLoad %uvec3 %id\n"
+		"%idval     = OpLoad %u32vec3 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
 
 		"%inloc     = OpAccessChain %customptr %indata %zero %x\n"
 		"%outloc    = OpAccessChain %customptr %outdata %zero %x\n"
 		// Read the input value
-		"%inval     = OpLoad %custom %inloc\n"
+		"%inval     = OpLoad ${customType} %inloc\n"
 		// Create the composite and fill it
 		"${compositeConstruct}"
 		// Insert the input value to a place
-		"%instance2 = OpCompositeInsert %composite %inval %instance ${indexes}\n"
+		"%instance2 = OpCompositeInsert ${compositeType} %inval %instance ${indexes}\n"
 		// Read back the value from the position
-		"%out_val   = OpCompositeExtract %custom %instance2 ${indexes}\n"
+		"%out_val   = OpCompositeExtract ${customType} %instance2 ${indexes}\n"
 		// Store it in the output position
 		"             OpStore %outloc %out_val\n"
 		"             OpReturn\n"
@@ -7805,10 +7840,9 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 	vector<string>		indexes		= de::splitString(fullIndex, ' ');
 
 	map<string, string>	parameters	(params);
-	parameters["typeDeclaration"]	= getAssemblyTypeDeclaration(type);
-	parameters["structType"]		= repeatString(" %composite", structInfo.components);
+	parameters["structType"]	= repeatString(" ${compositeType}", structInfo.components);
 	parameters["structConstruct"]	= repeatString(" %instance", structInfo.components);
-	parameters["insertIndexes"]		= fullIndex;
+	parameters["insertIndexes"]	= fullIndex;
 
 	// In matrix cases the last two index is the CompositeExtract indexes
 	const deUint32 extractIndexes = (parameters["type"] == "matrix") ? 2 : 1;
@@ -7833,7 +7867,25 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 
 	parameters["compositeDecorator"] = (parameters["type"] == "array") ? "OpDecorate %composite ArrayStride 4\n" : "";
 
-	return StringTemplate (
+	const string customType = getAssemblyTypeName(type);
+	map<string, string> substCustomType;
+	substCustomType["customType"] = customType;
+	parameters["compositeDecl"] = StringTemplate(parameters.at("compositeDecl")).specialize(substCustomType);
+	parameters["compositeType"] = StringTemplate(parameters.at("compositeType")).specialize(substCustomType);
+	parameters["compositeConstruct"] = StringTemplate(parameters.at("compositeConstruct")).specialize(substCustomType);
+	parameters["filler"] = StringTemplate(parameters.at("filler")).specialize(substCustomType);
+	parameters["customType"] = customType;
+
+	const string compositeType = parameters.at("compositeType");
+	map<string, string> substCompositeType;
+	substCompositeType["compositeType"] = compositeType;
+	parameters["structType"] = StringTemplate(parameters.at("structType")).specialize(substCompositeType);
+	if (compositeType != "%u32vec3")
+	{
+		parameters["u32vec3Decl"] = "%u32vec3   = OpTypeVector %u32 3\n";
+	}
+
+	return StringTemplate(
 		"OpCapability Shader\n"
 		"OpCapability Matrix\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -7856,23 +7908,24 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 		// General types
 		"%void      = OpTypeVoid\n"
 		"%voidf     = OpTypeFunction %void\n"
+		"%i32       = OpTypeInt 32 1\n"
 		"%u32       = OpTypeInt 32 0\n"
-		"%uvec3     = OpTypeVector %u32 3\n"
-		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
-		// Custom type
-		"%custom    = ${typeDeclaration}\n"
+		"%f32       = OpTypeFloat 32\n"
 		// Custom types
-		"${compositeType}"
+		"${compositeDecl}"
+		// %u32vec3 if not already declared in ${compositeDecl}
+		"${u32vec3Decl:opt}"
+		"%uvec3ptr  = OpTypePointer Input %u32vec3\n"
 		// Inherited from composite
-		"%composite_p = OpTypePointer Function %composite\n"
+		"%composite_p = OpTypePointer Function ${compositeType}\n"
 		"%struct_t  = OpTypeStruct${structType}\n"
 		"%struct_p  = OpTypePointer Function %struct_t\n"
 		// Constants
 		"${filler}"
 		"${accessChainConstDeclaration}"
 		// Inherited from custom
-		"%customptr = OpTypePointer Uniform %custom\n"
-		"%customarr = OpTypeRuntimeArray %custom\n"
+		"%customptr = OpTypePointer Uniform ${customType}\n"
+		"%customarr = OpTypeRuntimeArray ${customType}\n"
 		"%buf       = OpTypeStruct %customarr\n"
 		"%bufptr    = OpTypePointer Uniform %buf\n"
 		"%indata    = OpVariable %bufptr Uniform\n"
@@ -7883,13 +7936,13 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
 		"%struct_v  = OpVariable %struct_p Function\n"
-		"%idval     = OpLoad %uvec3 %id\n"
+		"%idval     = OpLoad %u32vec3 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
 		// Create the input/output type
 		"%inloc     = OpInBoundsAccessChain %customptr %indata %zero %x\n"
 		"%outloc    = OpInBoundsAccessChain %customptr %outdata %zero %x\n"
 		// Read the input value
-		"%inval     = OpLoad %custom %inloc\n"
+		"%inval     = OpLoad ${customType} %inloc\n"
 		// Create the composite and fill it
 		"${compositeConstruct}"
 		// Create the struct and fill it with the composite
@@ -7900,12 +7953,13 @@ const string specializeInBoundsShaderTemplate (const NumberType type, const Asse
 		"             OpStore %struct_v %comp_obj\n"
 		// Get deepest possible composite pointer
 		"%inner_ptr = OpInBoundsAccessChain %composite_p %struct_v${accessChainIndexes}\n"
-		"%read_obj  = OpLoad %composite %inner_ptr\n"
+		"%read_obj  = OpLoad ${compositeType} %inner_ptr\n"
 		// Read back the stored value
-		"%read_val  = OpCompositeExtract %custom %read_obj${extractIndexes}\n"
+		"%read_val  = OpCompositeExtract ${customType} %read_obj${extractIndexes}\n"
 		"             OpStore %outloc %read_val\n"
 		"             OpReturn\n"
-		"             OpFunctionEnd\n").specialize(parameters);
+		"             OpFunctionEnd\n"
+	).specialize(parameters);
 }
 
 tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
@@ -7974,19 +8028,17 @@ const string specializeDefaultOutputShaderTemplate (const NumberType type, const
 {
 	map<string, string> parameters(params);
 
-	parameters["typeDeclaration"] = getAssemblyTypeDeclaration(type);
+	parameters["customType"]	= getAssemblyTypeName(type);
 
 	// Declare the const value, and use it in the initializer
 	if (params.find("constValue") != params.end())
 	{
-		parameters["constDeclaration"]		= "%const      = OpConstant %in_type " + params.at("constValue") + "\n";
-		parameters["variableInitializer"]	= "%const";
+		parameters["variableInitializer"]	= " %const";
 	}
 	// Uninitialized case
 	else
 	{
-		parameters["constDeclaration"]		= "";
-		parameters["variableInitializer"]	= "";
+		parameters["commentDecl"]	= ";";
 	}
 
 	return StringTemplate(
@@ -8011,33 +8063,31 @@ const string specializeDefaultOutputShaderTemplate (const NumberType type, const
 		"%voidf      = OpTypeFunction %void\n"
 		"%u32        = OpTypeInt 32 0\n"
 		"%i32        = OpTypeInt 32 1\n"
+		"%f32        = OpTypeFloat 32\n"
 		"%uvec3      = OpTypeVector %u32 3\n"
 		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
-		// Custom types
-		"%in_type    = ${typeDeclaration}\n"
-		// "%const      = OpConstant %in_type ${constValue}\n"
-		"${constDeclaration}\n"
+		"${commentDecl:opt}%const      = OpConstant ${customType} ${constValue:opt}\n"
 		// Derived types
-		"%in_ptr     = OpTypePointer Uniform %in_type\n"
-		"%in_arr     = OpTypeRuntimeArray %in_type\n"
+		"%in_ptr     = OpTypePointer Uniform ${customType}\n"
+		"%in_arr     = OpTypeRuntimeArray ${customType}\n"
 		"%in_buf     = OpTypeStruct %in_arr\n"
 		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
 		"%indata     = OpVariable %in_bufptr Uniform\n"
 		"%outdata    = OpVariable %in_bufptr Uniform\n"
 		"%id         = OpVariable %uvec3ptr Input\n"
-		"%var_ptr    = OpTypePointer Function %in_type\n"
+		"%var_ptr    = OpTypePointer Function ${customType}\n"
 		// Constants
 		"%zero       = OpConstant %i32 0\n"
 		// Main function
 		"%main       = OpFunction %void None %voidf\n"
 		"%label      = OpLabel\n"
-		"%out_var    = OpVariable %var_ptr Function ${variableInitializer}\n"
+		"%out_var    = OpVariable %var_ptr Function${variableInitializer:opt}\n"
 		"%idval      = OpLoad %uvec3 %id\n"
 		"%x          = OpCompositeExtract %u32 %idval 0\n"
 		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
 		"%outloc     = OpAccessChain %in_ptr %outdata %zero %x\n"
 
-		"%outval     = OpLoad %in_type %out_var\n"
+		"%outval     = OpLoad ${customType} %out_var\n"
 		"              OpStore %outloc %outval\n"
 		"              OpReturn\n"
 		"              OpFunctionEnd\n"
