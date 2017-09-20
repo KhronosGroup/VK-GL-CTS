@@ -266,7 +266,7 @@ protected:
 																	 const UVec3&				size,
 																	 const VkImageUsageFlags	usageFlags,
 																	 const bool					extendedImageCreateFlag);
-	VkImageViewUsageCreateInfoKHR	makeImageViewUsageCreateInfo	(VkImageUsageFlags			imageUsageFlags);
+	VkImageViewUsageCreateInfo	makeImageViewUsageCreateInfo		(VkImageUsageFlags			imageUsageFlags);
 	VkDeviceSize					getUncompressedImageData		(const VkFormat				format,
 																	 const UVec3&				size,
 																	 std::vector<deUint8>&		data);
@@ -304,8 +304,8 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	Allocator&								allocator				= m_context.getDefaultAllocator();
 
 	const VkImageSubresourceRange			subresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, SINGLE_LEVEL, 0u, SINGLE_LAYER);
-	const VkImageViewUsageCreateInfoKHR*	imageViewUsageNull		= (VkImageViewUsageCreateInfoKHR*)DE_NULL;
-	const VkImageViewUsageCreateInfoKHR		imageViewUsage			= makeImageViewUsageCreateInfo(m_parameters.testedImageUsage);
+	const VkImageViewUsageCreateInfo*		imageViewUsageNull		= (VkImageViewUsageCreateInfo*)DE_NULL;
+	const VkImageViewUsageCreateInfo		imageViewUsage			= makeImageViewUsageCreateInfo(m_parameters.testedImageUsage);
 
 	const VkFormat							srcFormat				= (m_parameters.operation == OPERATION_ATTACHMENT_READ)  ? m_parameters.featurelessFormat :
 																	  (m_parameters.operation == OPERATION_ATTACHMENT_WRITE) ? m_parameters.featuredFormat :
@@ -316,7 +316,7 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	const VkImageUsageFlags					srcImageUsageFlags		= (m_parameters.operation == OPERATION_ATTACHMENT_READ)  ? m_parameters.testedImageUsage :
 																	  (m_parameters.operation == OPERATION_ATTACHMENT_WRITE) ? m_parameters.pairedImageUsage :
 																	  0;
-	const VkImageViewUsageCreateInfoKHR*	srcImageViewUsageFlags	= (m_parameters.operation == OPERATION_ATTACHMENT_READ)  ? &imageViewUsage :
+	const VkImageViewUsageCreateInfo*		srcImageViewUsageFlags	= (m_parameters.operation == OPERATION_ATTACHMENT_READ)  ? &imageViewUsage :
 																	  (m_parameters.operation == OPERATION_ATTACHMENT_WRITE) ? imageViewUsageNull :
 																	  imageViewUsageNull;
 	const VkDeviceSize						srcImageSizeInBytes		= getUncompressedImageData(srcFormat, m_parameters.size, srcData);
@@ -330,7 +330,7 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	const VkImageUsageFlags					dstImageUsageFlags		= (m_parameters.operation == OPERATION_ATTACHMENT_READ)  ? m_parameters.pairedImageUsage :
 																	  (m_parameters.operation == OPERATION_ATTACHMENT_WRITE) ? m_parameters.testedImageUsage :
 																	  0;
-	const VkImageViewUsageCreateInfoKHR*	dstImageViewUsageFlags	= (m_parameters.operation == OPERATION_ATTACHMENT_READ)  ? imageViewUsageNull :
+	const VkImageViewUsageCreateInfo*		dstImageViewUsageFlags	= (m_parameters.operation == OPERATION_ATTACHMENT_READ)  ? imageViewUsageNull :
 																	  (m_parameters.operation == OPERATION_ATTACHMENT_WRITE) ? &imageViewUsage :
 																	  imageViewUsageNull;
 	const VkDeviceSize						dstImageSizeInBytes		= getUncompressedImageSizeInBytes(dstFormat, m_parameters.size);
@@ -475,16 +475,16 @@ VkImageCreateInfo GraphicsAttachmentsTestInstance::makeCreateImageInfo (const Vk
 	return createImageInfo;
 }
 
-VkImageViewUsageCreateInfoKHR GraphicsAttachmentsTestInstance::makeImageViewUsageCreateInfo (VkImageUsageFlags imageUsageFlags)
+VkImageViewUsageCreateInfo GraphicsAttachmentsTestInstance::makeImageViewUsageCreateInfo (VkImageUsageFlags imageUsageFlags)
 {
-	VkImageViewUsageCreateInfoKHR imageViewUsageCreateInfoKHR =
+	VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType		sType;
 		DE_NULL,											//const void*			pNext;
 		imageUsageFlags,									//VkImageUsageFlags		usage;
 	};
 
-	return imageViewUsageCreateInfoKHR;
+	return imageViewUsageCreateInfo;
 }
 
 VkDeviceSize GraphicsAttachmentsTestInstance::getUncompressedImageData (const VkFormat format, const UVec3& size, std::vector<deUint8>& data)
@@ -554,8 +554,8 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 	Allocator&								allocator				= m_context.getDefaultAllocator();
 
 	const VkImageSubresourceRange			subresourceRange		= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, SINGLE_LEVEL, 0u, SINGLE_LAYER);
-	const VkImageViewUsageCreateInfoKHR*	imageViewUsageNull		= (VkImageViewUsageCreateInfoKHR*)DE_NULL;
-	const VkImageViewUsageCreateInfoKHR		imageViewUsage			= makeImageViewUsageCreateInfo(m_parameters.testedImageUsage);
+	const VkImageViewUsageCreateInfo*		imageViewUsageNull		= (VkImageViewUsageCreateInfo*)DE_NULL;
+	const VkImageViewUsageCreateInfo		imageViewUsage			= makeImageViewUsageCreateInfo(m_parameters.testedImageUsage);
 
 	const VkFormat							srcFormat				= (m_parameters.operation == OPERATION_TEXTURE_READ)  ? m_parameters.featurelessFormat :
 																	  (m_parameters.operation == OPERATION_TEXTURE_WRITE) ? m_parameters.featuredFormat :
@@ -566,7 +566,7 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 	const VkImageUsageFlags					srcImageUsageFlags		= (m_parameters.operation == OPERATION_TEXTURE_READ)  ? m_parameters.testedImageUsage :
 																	  (m_parameters.operation == OPERATION_TEXTURE_WRITE) ? m_parameters.pairedImageUsage :
 																	  0;
-	const VkImageViewUsageCreateInfoKHR*	srcImageViewUsage		= (m_parameters.operation == OPERATION_TEXTURE_READ)  ? &imageViewUsage :
+	const VkImageViewUsageCreateInfo*		srcImageViewUsage		= (m_parameters.operation == OPERATION_TEXTURE_READ)  ? &imageViewUsage :
 																	  (m_parameters.operation == OPERATION_TEXTURE_WRITE) ? imageViewUsageNull :
 																	  imageViewUsageNull;
 	const VkDeviceSize						srcImageSizeInBytes		= getUncompressedImageData(srcFormat, m_parameters.size, srcData);
@@ -580,7 +580,7 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 	const VkImageUsageFlags					dstImageUsageFlags		= (m_parameters.operation == OPERATION_TEXTURE_READ)  ? m_parameters.pairedImageUsage :
 																	  (m_parameters.operation == OPERATION_TEXTURE_WRITE) ? m_parameters.testedImageUsage :
 																	  0;
-	const VkImageViewUsageCreateInfoKHR*	dstImageViewUsage		= (m_parameters.operation == OPERATION_TEXTURE_READ)  ? imageViewUsageNull :
+	const VkImageViewUsageCreateInfo*		dstImageViewUsage		= (m_parameters.operation == OPERATION_TEXTURE_READ)  ? imageViewUsageNull :
 																	  (m_parameters.operation == OPERATION_TEXTURE_WRITE) ? &imageViewUsage :
 																	  imageViewUsageNull;
 	const VkDeviceSize						dstImageSizeInBytes		= getUncompressedImageSizeInBytes(dstFormat, m_parameters.size);

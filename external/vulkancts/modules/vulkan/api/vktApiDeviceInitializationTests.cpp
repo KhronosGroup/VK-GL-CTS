@@ -657,7 +657,7 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 	const deUint32					queueIndex				= 0;
 	const float						queuePriority			= 1.0f;
 
-	VkPhysicalDeviceFeatures2KHR	enabledFeatures;
+	VkPhysicalDeviceFeatures2		enabledFeatures;
 	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -682,10 +682,10 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 	};
 
 	// Populate enabledFeatures
-	enabledFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+	enabledFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	enabledFeatures.pNext		= DE_NULL;
 
-	vki.getPhysicalDeviceFeatures2KHR(physicalDevice, &enabledFeatures);
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
 	{
 		const Unique<VkDevice>	device		(createDevice(vki, physicalDevice, &deviceCreateInfo));

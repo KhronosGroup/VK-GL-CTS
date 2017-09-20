@@ -270,9 +270,9 @@ private:
 	const VkDeviceSize	m_size;
 };
 
-VkExternalMemoryHandleTypeFlagsKHR getExternalTypesHandle (const VkImageCreateInfo* pCreateInfo)
+VkExternalMemoryHandleTypeFlags getExternalTypesHandle (const VkImageCreateInfo* pCreateInfo)
 {
-	const VkExternalMemoryImageCreateInfoKHR* const	externalInfo	= findStructure<VkExternalMemoryImageCreateInfoKHR>	(pCreateInfo->pNext);
+	const VkExternalMemoryImageCreateInfo* const	externalInfo	= findStructure<VkExternalMemoryImageCreateInfo>	(pCreateInfo->pNext);
 
 	return externalInfo ? externalInfo->handleTypes : 0u;
 }
@@ -299,7 +299,7 @@ public:
 	VkSampleCountFlagBits						getSamples				(void) const { return m_samples;				}
 	VkImageUsageFlags							getUsage				(void) const { return m_usage;					}
 	VkImageCreateFlags							getFlags				(void) const { return m_flags;					}
-	VkExternalMemoryHandleTypeFlagsKHR			getExternalHandleTypes	(void) const { return m_externalHandleTypes;	}
+	VkExternalMemoryHandleTypeFlags				getExternalHandleTypes	(void) const { return m_externalHandleTypes;	}
 
 private:
 	const VkImageType							m_imageType;
@@ -309,7 +309,7 @@ private:
 	const VkSampleCountFlagBits					m_samples;
 	const VkImageUsageFlags						m_usage;
 	const VkImageCreateFlags					m_flags;
-	const VkExternalMemoryHandleTypeFlagsKHR	m_externalHandleTypes;
+	const VkExternalMemoryHandleTypeFlags		m_externalHandleTypes;
 };
 
 void* allocateHeap (const VkMemoryAllocateInfo* pAllocInfo)
@@ -366,9 +366,9 @@ private:
 #if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 AHardwareBuffer* findOrCreateHwBuffer (const VkMemoryAllocateInfo* pAllocInfo)
 {
-	const VkExportMemoryAllocateInfoKHR* const				exportInfo		= findStructure<VkExportMemoryAllocateInfoKHR>(pAllocInfo->pNext);
+	const VkExportMemoryAllocateInfo* const					exportInfo		= findStructure<VkExportMemoryAllocateInfo>(pAllocInfo->pNext);
 	const VkImportAndroidHardwareBufferInfoANDROID* const	importInfo		= findStructure<VkImportAndroidHardwareBufferInfoANDROID>(pAllocInfo->pNext);
-	const VkMemoryDedicatedAllocateInfoKHR* const			dedicatedInfo	= findStructure<VkMemoryDedicatedAllocateInfoKHR>(pAllocInfo->pNext);
+	const VkMemoryDedicatedAllocateInfo* const				dedicatedInfo	= findStructure<VkMemoryDedicatedAllocateInfo>(pAllocInfo->pNext);
 	const Image* const										image			= dedicatedInfo && !!dedicatedInfo->image ? reinterpret_cast<const Image*>(dedicatedInfo->image.getInternal()) : DE_NULL;
 	AHardwareBuffer*										hwbuffer		= DE_NULL;
 
@@ -416,7 +416,7 @@ AHardwareBuffer* findOrCreateHwBuffer (const VkMemoryAllocateInfo* pAllocInfo)
 				hwbufferDesc.usage |= AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
 			if ((image->getUsage() & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0)
 				hwbufferDesc.usage |= AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT;
-			// if ((image->getFlags() & VK_IMAGE_CREATE_PROTECTED_BIT_KHR) != 0)
+			// if ((image->getFlags() & VK_IMAGE_CREATE_PROTECTED_BIT) != 0)
 			//	hwbufferDesc.usage |= AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
 
 			// Make sure we have at least one AHB GPU usage, even if the image doesn't have any
@@ -825,20 +825,6 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures (VkPhysicalDevice physicalD
 	pFeatures->inheritedQueries								= VK_TRUE;
 }
 
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFeatures2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2KHR* pFeatures)
-{
-	// Core features
-	getPhysicalDeviceFeatures(physicalDevice, &pFeatures->features);
-
-	// VK_KHR_sampler_ycbcr_conversion
-	{
-		VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR*	extFeatures	= findStructure<VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR>(pFeatures->pNext);
-
-		if (extFeatures)
-			extFeatures->samplerYcbcrConversion = VK_TRUE;
-	}
-}
-
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties (VkPhysicalDevice, VkPhysicalDeviceProperties* props)
 {
 	deMemset(props, 0, sizeof(VkPhysicalDeviceProperties));
@@ -966,12 +952,6 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties (VkPhysicalDevice, VkPhys
 	props->limits.nonCoherentAtomSize									= 128;
 }
 
-
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceProperties2KHR (VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2KHR* pProperties)
-{
-	getPhysicalDeviceProperties(physicalDevice, &pProperties->properties);
-}
-
 VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyProperties (VkPhysicalDevice, deUint32* count, VkQueueFamilyProperties* props)
 {
 	if (props && *count >= 1u)
@@ -1016,19 +996,19 @@ VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceFormatProperties (VkPhysicalDevice, 
 											| VK_FORMAT_FEATURE_BLIT_SRC_BIT
 											| VK_FORMAT_FEATURE_BLIT_DST_BIT
 											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT
-											| VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR
-											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT_KHR
-											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT_KHR
-											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT_KHR
-											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT_KHR
-											| VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
+											| VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT
+											| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT
+											| VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
 
 	pFormatProperties->linearTilingFeatures		= allFeatures;
 	pFormatProperties->optimalTilingFeatures	= allFeatures;
 	pFormatProperties->bufferFeatures			= allFeatures;
 
 	if (isYCbCrFormat(format) && getPlaneCount(format) > 1)
-		pFormatProperties->optimalTilingFeatures |= VK_FORMAT_FEATURE_DISJOINT_BIT_KHR;
+		pFormatProperties->optimalTilingFeatures |= VK_FORMAT_FEATURE_DISJOINT_BIT;
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties)
@@ -1067,11 +1047,6 @@ VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements (VkDevice, VkBuffer buffe
 	requirements->memoryTypeBits	= 1u;
 	requirements->size				= buffer->getSize();
 	requirements->alignment			= (VkDeviceSize)1u;
-}
-
-VKAPI_ATTR void VKAPI_CALL getBufferMemoryRequirements2KHR (VkDevice device, const VkBufferMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
-{
-	getBufferMemoryRequirements(device, pInfo->buffer, &pMemoryRequirements->memoryRequirements);
 }
 
 VkDeviceSize getPackedImageDataSize (VkFormat format, VkExtent3D extent, VkSampleCountFlagBits samples)
@@ -1137,49 +1112,9 @@ VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements (VkDevice, VkImage imageHa
 		requirements->size = getPackedImageDataSize(image->getFormat(), image->getExtent(), image->getSamples());
 }
 
-VKAPI_ATTR void VKAPI_CALL getImageMemoryRequirements2KHR (VkDevice device, const VkImageMemoryRequirementsInfo2KHR* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
-{
-	const VkImagePlaneMemoryRequirementsInfoKHR* const	planeReqs		= findStructure<VkImagePlaneMemoryRequirementsInfoKHR>(pInfo->pNext);
-	VkMemoryDedicatedRequirementsKHR* const				dedicatedReqs	= findStructure<VkMemoryDedicatedRequirementsKHR>(pMemoryRequirements->pNext);
-
-	if (planeReqs)
-	{
-		const deUint32						planeNdx			= getAspectPlaneNdx(planeReqs->planeAspect);
-		const Image* const					image				= reinterpret_cast<const Image*>(pInfo->image.getInternal());
-		const VkFormat						format				= image->getFormat();
-		const PlanarFormatDescription		formatDesc			= getPlanarFormatDescription(format);
-
-		DE_ASSERT(de::inBounds<deUint32>(planeNdx, 0u, formatDesc.numPlanes));
-
-		const VkExtent3D					extent				= image->getExtent();
-		const deUint32						planeW				= extent.width / formatDesc.planes[planeNdx].widthDivisor;
-		const deUint32						planeH				= extent.height / formatDesc.planes[planeNdx].heightDivisor;
-		const deUint32						elementSize			= formatDesc.planes[planeNdx].elementSizeBytes;
-
-		pMemoryRequirements->memoryRequirements.memoryTypeBits	= 1u;
-		pMemoryRequirements->memoryRequirements.alignment		= 16u;
-		pMemoryRequirements->memoryRequirements.size			= planeW * planeH * elementSize;
-	}
-	else
-		getImageMemoryRequirements(device, pInfo->image, &pMemoryRequirements->memoryRequirements);
-
-	if (dedicatedReqs)
-	{
-		const Image* const					image				= reinterpret_cast<const Image*>(pInfo->image.getInternal());
-		VkExternalMemoryHandleTypeFlagsKHR	externalHandleTypes	= image->getExternalHandleTypes();
-
-		dedicatedReqs->prefersDedicatedAllocation		= VK_FALSE;
-
-		if ((externalHandleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0)
-			dedicatedReqs->requiresDedicatedAllocation	= VK_TRUE;
-		else
-			dedicatedReqs->requiresDedicatedAllocation	= VK_FALSE;
-	}
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL allocateMemory (VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
 {
-	const VkExportMemoryAllocateInfoKHR* const				exportInfo	= findStructure<VkExportMemoryAllocateInfoKHR>(pAllocateInfo->pNext);
+	const VkExportMemoryAllocateInfo* const					exportInfo	= findStructure<VkExportMemoryAllocateInfo>(pAllocateInfo->pNext);
 	const VkImportAndroidHardwareBufferInfoANDROID* const	importInfo	= findStructure<VkImportAndroidHardwareBufferInfoANDROID>(pAllocateInfo->pNext);
 
 	if ((exportInfo && (exportInfo->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0)
@@ -1320,87 +1255,6 @@ VKAPI_ATTR VkResult VKAPI_CALL createSharedSwapchainsKHR (VkDevice device, deUin
 	for (deUint32 ndx = 0; ndx < swapchainCount; ++ndx)
 	{
 		pSwapchains[ndx] = allocateNonDispHandle<SwapchainKHR, VkSwapchainKHR>(device, pCreateInfos+ndx, pAllocator);
-	}
-
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfoKHR* pExternalBufferInfo, VkExternalBufferPropertiesKHR* pExternalBufferProperties)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(pExternalBufferInfo);
-
-	pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = 0;
-	pExternalBufferProperties->externalMemoryProperties.exportFromImportedHandleTypes = 0;
-	pExternalBufferProperties->externalMemoryProperties.compatibleHandleTypes = 0;
-
-#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
-	if (pExternalBufferInfo->handleType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
-	{
-		pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
-		pExternalBufferProperties->externalMemoryProperties.exportFromImportedHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
-		pExternalBufferProperties->externalMemoryProperties.compatibleHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
-	}
-#endif
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2KHR* pImageFormatInfo, VkImageFormatProperties2KHR* pImageFormatProperties)
-{
-	const VkPhysicalDeviceExternalImageFormatInfoKHR* const	externalInfo		= findStructure<VkPhysicalDeviceExternalImageFormatInfoKHR>(pImageFormatInfo->pNext);
-	VkExternalImageFormatPropertiesKHR*	const				externalProperties	= findStructure<VkExternalImageFormatPropertiesKHR>(pImageFormatProperties->pNext);
-	VkResult												result;
-
-	result = getPhysicalDeviceImageFormatProperties(physicalDevice, pImageFormatInfo->format, pImageFormatInfo->type, pImageFormatInfo->tiling, pImageFormatInfo->usage, pImageFormatInfo->flags, &pImageFormatProperties->imageFormatProperties);
-	if (result != VK_SUCCESS)
-		return result;
-
-	if (externalInfo && externalInfo->handleType != 0)
-	{
-#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
-		if (externalInfo->handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
-			return VK_ERROR_FORMAT_NOT_SUPPORTED;
-
-		if (!(pImageFormatInfo->format == VK_FORMAT_R8G8B8A8_UNORM
-			  || pImageFormatInfo->format == VK_FORMAT_R8G8B8_UNORM
-			  || pImageFormatInfo->format == VK_FORMAT_R5G6B5_UNORM_PACK16
-			  || pImageFormatInfo->format == VK_FORMAT_R16G16B16A16_SFLOAT
-			  || pImageFormatInfo->format == VK_FORMAT_A2R10G10B10_UNORM_PACK32))
-		{
-			return VK_ERROR_FORMAT_NOT_SUPPORTED;
-		}
-
-		if (pImageFormatInfo->type != VK_IMAGE_TYPE_2D)
-			return VK_ERROR_FORMAT_NOT_SUPPORTED;
-
-		if ((pImageFormatInfo->usage & ~(VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-										| VK_IMAGE_USAGE_TRANSFER_DST_BIT
-										| VK_IMAGE_USAGE_SAMPLED_BIT
-										| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
-			!= 0)
-		{
-			return VK_ERROR_FORMAT_NOT_SUPPORTED;
-		}
-
-		if ((pImageFormatInfo->flags & ~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
-										/*| VK_IMAGE_CREATE_PROTECTED_BIT_KHR*/
-										/*| VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR*/))
-			!= 0)
-		{
-			return VK_ERROR_FORMAT_NOT_SUPPORTED;
-		}
-
-		if (externalProperties)
-		{
-			externalProperties->externalMemoryProperties.externalMemoryFeatures			= VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR
-																						| VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR
-																						| VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
-			externalProperties->externalMemoryProperties.exportFromImportedHandleTypes	= VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
-			externalProperties->externalMemoryProperties.compatibleHandleTypes			= VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
-		}
-#else
-		DE_UNREF(externalProperties);
-		return VK_ERROR_FORMAT_NOT_SUPPORTED;
-#endif
 	}
 
 	return VK_SUCCESS;

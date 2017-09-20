@@ -229,7 +229,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 
 			const VkSparseBufferMemoryBindInfo sparseBufferBindInfo = makeSparseBufferMemoryBindInfo(*sparseBuffer, static_cast<deUint32>(sparseMemoryBinds.size()), &sparseMemoryBinds[0]);
 
-			const VkDeviceGroupBindSparseInfoKHR devGroupBindSparseInfo =
+			const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo =
 			{
 				VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHR,	//VkStructureType							sType;
 				DE_NULL,												//const void*								pNext;

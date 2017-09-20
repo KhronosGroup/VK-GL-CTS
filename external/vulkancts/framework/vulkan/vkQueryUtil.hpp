@@ -40,7 +40,7 @@ void											getCoreDeviceExtensions							(deUint32 apiVersion, std::vector<c
 // API queries
 
 std::vector<VkPhysicalDevice>					enumeratePhysicalDevices						(const InstanceInterface& vk, VkInstance instance);
-std::vector<VkPhysicalDeviceGroupPropertiesKHR>	enumeratePhysicalDeviceGroupsKHR				(const InstanceInterface& vk, VkInstance instance);
+std::vector<VkPhysicalDeviceGroupProperties>	enumeratePhysicalDeviceGroups					(const InstanceInterface& vk, VkInstance instance);
 std::vector<VkQueueFamilyProperties>			getPhysicalDeviceQueueFamilyProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceFeatures						getPhysicalDeviceFeatures						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceFeatures2						getPhysicalDeviceFeatures2						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
@@ -61,7 +61,7 @@ std::vector<VkLayerProperties>					enumerateDeviceLayerProperties					(const Ins
 std::vector<VkExtensionProperties>				enumerateDeviceExtensionProperties				(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
 
 VkQueue											getDeviceQueue									(const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex);
-VkQueue											getDeviceQueue2KHR								(const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2KHR *queueInfo);
+VkQueue											getDeviceQueue2									(const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2 *queueInfo);
 
 // Feature / extension support
 

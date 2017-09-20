@@ -49,17 +49,6 @@ virtual VkBool32			getPhysicalDeviceMirPresentationSupportKHR			(VkPhysicalDevic
 virtual VkResult			createAndroidSurfaceKHR								(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
 virtual VkResult			createWin32SurfaceKHR								(VkInstance instance, const VkWin32SurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
 virtual VkBool32			getPhysicalDeviceWin32PresentationSupportKHR		(VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex) const = 0;
-virtual void				getPhysicalDeviceFeatures2KHR						(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures) const = 0;
-virtual void				getPhysicalDeviceProperties2KHR						(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2* pProperties) const = 0;
-virtual void				getPhysicalDeviceFormatProperties2KHR				(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2* pFormatProperties) const = 0;
-virtual VkResult			getPhysicalDeviceImageFormatProperties2KHR			(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo, VkImageFormatProperties2* pImageFormatProperties) const = 0;
-virtual void				getPhysicalDeviceQueueFamilyProperties2KHR			(VkPhysicalDevice physicalDevice, deUint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2* pQueueFamilyProperties) const = 0;
-virtual void				getPhysicalDeviceMemoryProperties2KHR				(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2* pMemoryProperties) const = 0;
-virtual void				getPhysicalDeviceSparseImageFormatProperties2KHR	(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2* pFormatInfo, deUint32* pPropertyCount, VkSparseImageFormatProperties2* pProperties) const = 0;
-virtual VkResult			enumeratePhysicalDeviceGroupsKHR					(VkInstance instance, deUint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties) const = 0;
-virtual void				getPhysicalDeviceExternalBufferPropertiesKHR		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfo* pExternalBufferInfo, VkExternalBufferProperties* pExternalBufferProperties) const = 0;
-virtual void				getPhysicalDeviceExternalSemaphorePropertiesKHR		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo, VkExternalSemaphoreProperties* pExternalSemaphoreProperties) const = 0;
-virtual void				getPhysicalDeviceExternalFencePropertiesKHR			(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo, VkExternalFenceProperties* pExternalFenceProperties) const = 0;
 virtual VkResult			getPhysicalDeviceSurfaceCapabilities2KHR			(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities) const = 0;
 virtual VkResult			getPhysicalDeviceSurfaceFormats2KHR					(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, deUint32* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats) const = 0;
 virtual VkResult			getPhysicalDeviceDisplayProperties2KHR				(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayProperties2KHR* pProperties) const = 0;

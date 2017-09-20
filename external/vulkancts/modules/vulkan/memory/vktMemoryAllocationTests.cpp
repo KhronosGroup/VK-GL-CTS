@@ -129,7 +129,7 @@ public:
 			createDeviceGroup();
 		m_allocFlagsInfo.sType		= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
 		m_allocFlagsInfo.pNext		= DE_NULL;
-		m_allocFlagsInfo.flags		= VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT_KHR;
+		m_allocFlagsInfo.flags		= VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
 		m_allocFlagsInfo.deviceMask	= 0;
 	}
 
@@ -140,7 +140,7 @@ public:
 protected:
 	bool									m_useDeviceGroups;
 	bool									m_subsetAllocationAllowed;
-	VkMemoryAllocateFlagsInfoKHR			m_allocFlagsInfo;
+	VkMemoryAllocateFlagsInfo				m_allocFlagsInfo;
 	deUint32								m_numPhysDevices;
 	VkPhysicalDeviceMemoryProperties		m_memoryProperties;
 
@@ -159,13 +159,13 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 	deUint32										queueFamilyIndex		= 0;
 	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
 	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
-	std::vector<VkPhysicalDeviceGroupPropertiesKHR>	devGroupProperties		= enumeratePhysicalDeviceGroupsKHR(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
 	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
 	m_subsetAllocationAllowed												= devGroupProperties[devGroupIdx].subsetAllocation;
 	if (m_numPhysDevices < 2)
 		TCU_THROW(NotSupportedError, "Device group allocation tests not supported with 1 physical device");
 	std::vector<const char*>						deviceExtensions		(1, "VK_KHR_device_group");
-	VkDeviceGroupDeviceCreateInfoKHR				deviceGroupInfo =
+	VkDeviceGroupDeviceCreateInfo					deviceGroupInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
 		DE_NULL,																			//pNext
@@ -201,8 +201,8 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 		&queueInfo,										// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
 		0u,												// uint32_t							enabledLayerCount;
 		DE_NULL,										// const char* const*				ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),												// uint32_t                           enabledExtensionCount;
-		&deviceExtensions[0],										// const char* const*                 ppEnabledExtensionNames;
+		deUint32(deviceExtensions.size()),				// uint32_t							enabledExtensionCount;
+		&deviceExtensions[0],							// const char* const*				ppEnabledExtensionNames;
 		&deviceFeatures,								// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	m_logicalDevice		= createDevice(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);

@@ -776,7 +776,7 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
-	const vector<VkPhysicalDeviceGroupPropertiesKHR>	deviceGroupProps = enumeratePhysicalDeviceGroupsKHR(instHelper.vki, *instHelper.instance);
+	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
 
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
@@ -793,7 +793,7 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 		1u,														//queueCount;
 		&queuePriority,											//pQueuePriorities;
 	};
-	const VkDeviceGroupDeviceCreateInfoKHR				deviceGroupInfo =
+	const VkDeviceGroupDeviceCreateInfo				deviceGroupInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
 		DE_NULL,												//pNext
@@ -875,7 +875,7 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 	deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
-	const vector<VkPhysicalDeviceGroupPropertiesKHR>	deviceGroupProps = enumeratePhysicalDeviceGroupsKHR(instHelper.vki, *instHelper.instance);
+	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
@@ -891,7 +891,7 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 		1u,															//queueCount;
 		&queuePriority,												//pQueuePriorities;
 	};
-	const VkDeviceGroupDeviceCreateInfoKHR			deviceGroupInfo =
+	const VkDeviceGroupDeviceCreateInfo			deviceGroupInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
 		DE_NULL,												//pNext

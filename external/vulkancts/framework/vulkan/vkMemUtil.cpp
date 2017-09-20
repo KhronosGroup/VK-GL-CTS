@@ -244,8 +244,8 @@ de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
 										   const VkBuffer			buffer,
 										   MemoryRequirement		requirement)
 {
-	const VkMemoryRequirements					memoryRequirements		= getBufferMemoryRequirements(vkd, device, buffer);
-	const VkMemoryDedicatedAllocateInfoKHR		dedicatedAllocationInfo	=
+	const VkMemoryRequirements				memoryRequirements		= getBufferMemoryRequirements(vkd, device, buffer);
+	const VkMemoryDedicatedAllocateInfo		dedicatedAllocationInfo	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
 		DE_NULL,															// const void*			pNext
@@ -264,7 +264,7 @@ de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
 										   MemoryRequirement		requirement)
 {
 	const VkMemoryRequirements				memoryRequirements		= getImageMemoryRequirements(vkd, device, image);
-	const VkMemoryDedicatedAllocateInfoKHR	dedicatedAllocationInfo	=
+	const VkMemoryDedicatedAllocateInfo		dedicatedAllocationInfo	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,			// VkStructureType		sType
 		DE_NULL,														// const void*			pNext
@@ -331,13 +331,13 @@ void bindImagePlaneMemory (const DeviceInterface&	vkd,
 						   VkDeviceSize				memoryOffset,
 						   VkImageAspectFlagBits	planeAspect)
 {
-	const VkBindImagePlaneMemoryInfoKHR	planeInfo	=
+	const VkBindImagePlaneMemoryInfo	planeInfo	=
 	{
 		VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
 		DE_NULL,
 		planeAspect
 	};
-	const VkBindImageMemoryInfoKHR		coreInfo	=
+	const VkBindImageMemoryInfo			coreInfo	=
 	{
 		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
 		&planeInfo,
@@ -346,7 +346,7 @@ void bindImagePlaneMemory (const DeviceInterface&	vkd,
 		memoryOffset,
 	};
 
-	VK_CHECK(vkd.bindImageMemory2KHR(device, 1u, &coreInfo));
+	VK_CHECK(vkd.bindImageMemory2(device, 1u, &coreInfo));
 }
 
 } // vk

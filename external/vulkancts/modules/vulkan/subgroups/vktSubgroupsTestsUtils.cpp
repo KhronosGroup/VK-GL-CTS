@@ -729,11 +729,11 @@ deUint32 vkt::subgroups::getSubgroupSize(Context& context)
 	subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
 	subgroupProperties.pNext = DE_NULL;
 
-	VkPhysicalDeviceProperties2KHR properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+	VkPhysicalDeviceProperties2 properties;
+	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	properties.pNext = &subgroupProperties;
 
-	context.getInstanceInterface().getPhysicalDeviceProperties2KHR(context.getPhysicalDevice(), &properties);
+	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
 
 	return subgroupProperties.subgroupSize;
 }
@@ -832,11 +832,11 @@ bool vkt::subgroups::areSubgroupOperationsSupportedForStage(
 	subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
 	subgroupProperties.pNext = DE_NULL;
 
-	VkPhysicalDeviceProperties2KHR properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+	VkPhysicalDeviceProperties2 properties;
+	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	properties.pNext = &subgroupProperties;
 
-	context.getInstanceInterface().getPhysicalDeviceProperties2KHR(context.getPhysicalDevice(), &properties);
+	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
 
 	return (stage & subgroupProperties.supportedStages) ? true : false;
 }
@@ -860,11 +860,11 @@ bool vkt::subgroups::isSubgroupFeatureSupportedForDevice(
 	subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
 	subgroupProperties.pNext = DE_NULL;
 
-	VkPhysicalDeviceProperties2KHR properties;
-	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+	VkPhysicalDeviceProperties2 properties;
+	properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	properties.pNext = &subgroupProperties;
 
-	context.getInstanceInterface().getPhysicalDeviceProperties2KHR(context.getPhysicalDevice(), &properties);
+	context.getInstanceInterface().getPhysicalDeviceProperties2(context.getPhysicalDevice(), &properties);
 
 	return (bit & subgroupProperties.supportedOperations) ? true : false;
 }

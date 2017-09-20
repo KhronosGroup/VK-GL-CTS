@@ -710,7 +710,7 @@ void bindSparseBuffer (const DeviceInterface& vk, const VkDevice device, const V
 		&sparseAllocation.memoryBinds[0],							// const VkSparseMemoryBind*    pBinds;
 	};
 
-	const VkDeviceGroupBindSparseInfoKHR devGroupBindSparseInfo =
+	const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHR,		//VkStructureType							sType;
 		DE_NULL,													//const void*								pNext;

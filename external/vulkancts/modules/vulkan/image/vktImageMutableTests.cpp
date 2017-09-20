@@ -1161,7 +1161,7 @@ void UploadDownloadExecutor::uploadClear(Context& context)
 
 void UploadDownloadExecutor::uploadStore(Context& context)
 {
-	const vk::VkImageViewUsageCreateInfoKHR viewUsageCreateInfo = {
+	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo = {
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_STORAGE_BIT,							// VkImageUsageFlags	usage;
@@ -1338,7 +1338,7 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 
 	for (deUint32 subpassNdx = 0; subpassNdx < m_caseDef.numLayers; ++subpassNdx)
 	{
-		const vk::VkImageViewUsageCreateInfoKHR viewUsageCreateInfo = {
+		const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo = {
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
 			DE_NULL,											// const void*			pNext
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,				// VkImageUsageFlags	usage;
@@ -1416,7 +1416,7 @@ void UploadDownloadExecutor::downloadTexture(Context& context, VkBuffer buffer)
 	m_dTex.outImageAlloc				= bindImage(m_vk, m_device, m_allocator, *m_dTex.outImage, MemoryRequirement::Any);
 	m_dTex.outImageView					= makeImageView(m_vk, m_device, *m_dTex.outImage, getImageViewType(m_caseDef.imageType), m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers));
 
-	const vk::VkImageViewUsageCreateInfoKHR viewUsageCreateInfo = {
+	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo = {
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_SAMPLED_BIT,							// VkImageUsageFlags	usage;
@@ -1497,7 +1497,7 @@ void UploadDownloadExecutor::downloadLoad(Context& context, VkBuffer buffer)
 	m_dLoad.outImageAlloc				= bindImage(m_vk, m_device, m_allocator, *m_dLoad.outImage, MemoryRequirement::Any);
 	m_dLoad.outImageView				= makeImageView(m_vk, m_device, *m_dLoad.outImage, getImageViewType(m_caseDef.imageType), m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers));
 
-	const vk::VkImageViewUsageCreateInfoKHR viewUsageCreateInfo = {
+	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo = {
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_STORAGE_BIT,							// VkImageUsageFlags	usage;

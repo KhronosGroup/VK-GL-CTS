@@ -230,7 +230,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 	};
 	vector <VkSubpassDescription>				subpassDescriptions			(subpassCount, subpassDescription);
 
-	const VkRenderPassMultiviewCreateInfoKHR	renderPassMultiviewInfo		=
+	const VkRenderPassMultiviewCreateInfo	renderPassMultiviewInfo		=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR,	//VkStructureType	sType;
 		DE_NULL,													//const void*		pNext;
@@ -344,7 +344,7 @@ Move<VkRenderPass> makeRenderPassWithAttachments (const DeviceInterface&	vk,
 	};
 	vector <VkSubpassDescription>				subpassDescriptions			(subpassCount, subpassDescription);
 
-	const VkRenderPassMultiviewCreateInfoKHR	renderPassMultiviewInfo		=
+	const VkRenderPassMultiviewCreateInfo	renderPassMultiviewInfo		=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR,	//VkStructureType	sType;
 		DE_NULL,													//const void*		pNext;

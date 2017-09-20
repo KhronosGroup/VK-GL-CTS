@@ -241,8 +241,8 @@ tcu::TestStatus outOfPoolMemoryTest (Context& context)
 			{
 				++numErrorsReturned;
 
-				if (expectOutOfPoolMemoryError && result != VK_ERROR_OUT_OF_POOL_MEMORY_KHR)
-					return tcu::TestStatus::fail("Expected VK_ERROR_OUT_OF_POOL_MEMORY_KHR but got " + string(getResultName(result)) + " instead");
+				if (expectOutOfPoolMemoryError && result != VK_ERROR_OUT_OF_POOL_MEMORY)
+					return tcu::TestStatus::fail("Expected VK_ERROR_OUT_OF_POOL_MEMORY but got " + string(getResultName(result)) + " instead");
 			}
 			else
 				context.getTestContext().getLog() << tcu::TestLog::Message << "  Allocation was successful anyway" << tcu::TestLog::EndMessage;

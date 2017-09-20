@@ -318,7 +318,7 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate (void)
 				}
 			}
 
-			const VkDeviceGroupBindSparseInfoKHR devGroupBindSparseInfo =
+			const VkDeviceGroupBindSparseInfo devGroupBindSparseInfo =
 			{
 				VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHR,	//VkStructureType							sType;
 				DE_NULL,												//const void*								pNext;
