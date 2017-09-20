@@ -656,12 +656,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 	const VkDeviceSize			pixelDataSize		= calculateSize(dst);
 
-	const VkExtent3D			imageExtent			=
-	{
-		(deUint32)dst.getWidth(),
-		(deUint32)dst.getHeight(),
-		(deUint32)dst.getDepth(),
-	};
+	const VkExtent3D			imageExtent			= getExtent3D(imageParms);
 
 	// Create destination buffer
 	{
