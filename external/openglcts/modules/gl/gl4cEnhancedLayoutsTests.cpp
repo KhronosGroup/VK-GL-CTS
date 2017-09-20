@@ -13675,7 +13675,6 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 	};
 
 	const GLchar* array					= "";
-	const GLchar* definition			= block_definition_default;
 	const GLchar* direction				= "out";
 	const GLchar* index					= "";
 	bool		  require_modifications = false;
@@ -13705,6 +13704,9 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 			var_use   = input_use;
 		}
 	}
+
+	const GLchar* definition = test_case.m_qualify_all ? block_definition_all
+			: block_definition_default;
 
 	if (test_case.m_stage == stage)
 	{
