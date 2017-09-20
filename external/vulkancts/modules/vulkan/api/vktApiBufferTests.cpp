@@ -602,7 +602,7 @@ tcu::TestStatus							DedicatedAllocationBufferTestInstance::bufferCreateAndAllo
 		}
 
 		info.buffer = *buffer;
-		vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs); // get the proper size requirement
+		vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);		// get the proper size requirement
 
 		if (size > memReqs.memoryRequirements.size)
 		{

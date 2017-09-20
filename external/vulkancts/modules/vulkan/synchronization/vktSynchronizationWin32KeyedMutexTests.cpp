@@ -85,9 +85,9 @@ static const ResourceDescription s_resourcesWin32KeyedMutex[] =
 
 struct TestConfig
 {
-								TestConfig		(const ResourceDescription&						resource_,
-												 OperationName									writeOp_,
-												 OperationName									readOp_,
+								TestConfig		(const ResourceDescription&					resource_,
+												 OperationName								writeOp_,
+												 OperationName								readOp_,
 												 vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeBuffer_,
 												 vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeImage_)
 		: resource					(resource_)
@@ -249,14 +249,14 @@ deUint32 chooseMemoryType (deUint32 bits)
 	return -1;
 }
 
-vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&					vkd,
-										   vk::VkDevice									device,
-										   const vk::VkMemoryRequirements&				requirements,
+vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				vkd,
+										   vk::VkDevice								device,
+										   const vk::VkMemoryRequirements&			requirements,
 										   vk::VkExternalMemoryHandleTypeFlagBits	externalType,
-										   NativeHandle&								handle,
-										   bool											requiresDedicated,
-										   vk::VkBuffer									buffer,
-										   vk::VkImage									image)
+										   NativeHandle&							handle,
+										   bool										requiresDedicated,
+										   vk::VkBuffer								buffer,
+										   vk::VkImage								image)
 {
 	const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
 	{
@@ -293,7 +293,7 @@ de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&					
 												 vk::VkDevice								device,
 												 vk::VkBuffer								buffer,
 												 NativeHandle&								nativeHandle,
-												 vk::VkExternalMemoryHandleTypeFlagBits	externalType)
+												 vk::VkExternalMemoryHandleTypeFlagBits		externalType)
 {
 	const vk::VkBufferMemoryRequirementsInfo2	requirementsInfo		=
 	{
@@ -323,12 +323,12 @@ de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&					
 }
 
 de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&						vkd,
-												   vk::VkDevice									device,
-												   vk::VkImage									image,
-												   NativeHandle&								nativeHandle,
-												   vk::VkExternalMemoryHandleTypeFlagBits	externalType)
+												 vk::VkDevice									device,
+												 vk::VkImage									image,
+												 NativeHandle&									nativeHandle,
+												 vk::VkExternalMemoryHandleTypeFlagBits			externalType)
 {
-	const vk::VkImageMemoryRequirementsInfo2		requirementsInfo		=
+	const vk::VkImageMemoryRequirementsInfo2	requirementsInfo		=
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
 		DE_NULL,
@@ -387,13 +387,13 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			0u,
 			1u
 		};
-		const vk::VkExternalMemoryImageCreateInfo		externalInfo			=
+		const vk::VkExternalMemoryImageCreateInfo			externalInfo			=
 		{
 			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
 			DE_NULL,
 			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
-		const vk::VkImageCreateInfo			createInfo				=
+		const vk::VkImageCreateInfo							createInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 			&externalInfo,
@@ -414,23 +414,23 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			vk::VK_IMAGE_LAYOUT_UNDEFINED
 		};
 
-		vk::Move<vk::VkImage>			image		= vk::createImage(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>		allocation	= importAndBindMemory(vkd, device, *image, nativeHandle, externalType);
+		vk::Move<vk::VkImage>								image					= vk::createImage(vkd, device, &createInfo);
+		de::MovePtr<vk::Allocation>							allocation				= importAndBindMemory(vkd, device, *image, nativeHandle, externalType);
 
 		return de::MovePtr<Resource>(new Resource(image, allocation, extent, resourceDesc.imageType, resourceDesc.imageFormat, subresourceRange, subresourceLayers));
 	}
 	else
 	{
-		const vk::VkDeviceSize							offset			= 0u;
-		const vk::VkDeviceSize							size			= static_cast<vk::VkDeviceSize>(resourceDesc.size.x());
-		const vk::VkBufferUsageFlags					usage			= readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags();
-		const vk::VkExternalMemoryBufferCreateInfo	externalInfo	=
+		const vk::VkDeviceSize								offset					= 0u;
+		const vk::VkDeviceSize								size					= static_cast<vk::VkDeviceSize>(resourceDesc.size.x());
+		const vk::VkBufferUsageFlags						usage					= readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags();
+		const vk::VkExternalMemoryBufferCreateInfo			externalInfo			=
 		{
 			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
 			DE_NULL,
 			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
-		const vk::VkBufferCreateInfo					createInfo		=
+		const vk::VkBufferCreateInfo						createInfo				=
 		{
 			vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 			&externalInfo,
@@ -442,8 +442,8 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			(deUint32)queueFamilyIndices.size(),
 			&queueFamilyIndices[0]
 		};
-		vk::Move<vk::VkBuffer>		buffer		= vk::createBuffer(vkd, device, &createInfo);
-		de::MovePtr<vk::Allocation>	allocation	= importAndBindMemory(vkd, device, *buffer, nativeHandle, externalType);
+		vk::Move<vk::VkBuffer>								buffer					= vk::createBuffer(vkd, device, &createInfo);
+		de::MovePtr<vk::Allocation>							allocation				= importAndBindMemory(vkd, device, *buffer, nativeHandle, externalType);
 
 		return de::MovePtr<Resource>(new Resource(resourceDesc.type, buffer, allocation, offset, size));
 	}
@@ -456,13 +456,13 @@ void recordWriteBarrier (const vk::DeviceInterface&	vkd,
 						 deUint32					writeQueueFamilyIndex,
 						 const SyncInfo&			readSync)
 {
-	const vk::VkPipelineStageFlags	srcStageMask		= writeSync.stageMask;
-	const vk::VkAccessFlags			srcAccessMask		= writeSync.accessMask;
+	const vk::VkPipelineStageFlags		srcStageMask		= writeSync.stageMask;
+	const vk::VkAccessFlags				srcAccessMask		= writeSync.accessMask;
 
-	const vk::VkPipelineStageFlags	dstStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags			dstAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags		dstStageMask		= readSync.stageMask;
+	const vk::VkAccessFlags				dstAccessMask		= readSync.accessMask;
 
-	const vk::VkDependencyFlags		dependencyFlags		= 0;
+	const vk::VkDependencyFlags			dependencyFlags		= 0;
 
 	if (resource.getType() == RESOURCE_TYPE_IMAGE)
 	{
@@ -515,13 +515,13 @@ void recordReadBarrier (const vk::DeviceInterface&	vkd,
 						const SyncInfo&				readSync,
 						deUint32					readQueueFamilyIndex)
 {
-	const vk::VkPipelineStageFlags	srcStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags			srcAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags		srcStageMask		= readSync.stageMask;
+	const vk::VkAccessFlags				srcAccessMask		= readSync.accessMask;
 
-	const vk::VkPipelineStageFlags	dstStageMask		= readSync.stageMask;
-	const vk::VkAccessFlags			dstAccessMask		= readSync.accessMask;
+	const vk::VkPipelineStageFlags		dstStageMask		= readSync.stageMask;
+	const vk::VkAccessFlags				dstAccessMask		= readSync.accessMask;
 
-	const vk::VkDependencyFlags		dependencyFlags		= 0;
+	const vk::VkDependencyFlags			dependencyFlags		= 0;
 
 	if (resource.getType() == RESOURCE_TYPE_IMAGE)
 	{
@@ -1764,8 +1764,8 @@ tcu::TestCaseGroup* createWin32KeyedMutexTest (tcu::TestContext& testCtx)
 {
 	const struct
 	{
-		vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeBuffer;
-		vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeImage;
+		vk::VkExternalMemoryHandleTypeFlagBits			memoryHandleTypeBuffer;
+		vk::VkExternalMemoryHandleTypeFlagBits			memoryHandleTypeImage;
 		const char*										nameSuffix;
 	} cases[] =
 	{

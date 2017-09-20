@@ -51,8 +51,8 @@ struct TestConfig
 								TestConfig		(const ResourceDescription&						resource_,
 												 OperationName									writeOp_,
 												 OperationName									readOp_,
-												 vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleType_,
-												 vk::VkExternalSemaphoreHandleTypeFlagBits	semaphoreHandleType_,
+												 vk::VkExternalMemoryHandleTypeFlagBits			memoryHandleType_,
+												 vk::VkExternalSemaphoreHandleTypeFlagBits		semaphoreHandleType_,
 												 bool											dedicated_)
 		: resource				(resource_)
 		, writeOp				(writeOp_)
@@ -1210,7 +1210,7 @@ tcu::TestCaseGroup* createCrossInstanceSharingTest (tcu::TestContext& testCtx)
 	{
 		vk::VkExternalMemoryHandleTypeFlagBits		memoryType;
 		vk::VkExternalSemaphoreHandleTypeFlagBits	semaphoreType;
-		const char*										nameSuffix;
+		const char*									nameSuffix;
 	} cases[] =
 	{
 		{

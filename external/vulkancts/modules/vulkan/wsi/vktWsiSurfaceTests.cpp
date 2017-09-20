@@ -759,33 +759,33 @@ tcu::TestStatus querySurfacePresentModesTest (Context& context, Type wsiType)
 
 tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, Type wsiType)
 {
-	tcu::TestLog&							log					= context.getTestContext().getLog();
-	const InstanceHelper					instHelper			(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
-	const float								queuePriority		= 1.0f;
-	const tcu::CommandLine&					cmdLine				= context.getTestContext().getCommandLine();
-	const deUint32							devGroupIdx			= cmdLine.getVKDeviceGroupId() - 1;
-	const deUint32							deviceIdx			= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
-	const VkDeviceGroupPresentModeFlagsKHR	requiredFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR;
-	const VkDeviceGroupPresentModeFlagsKHR	maxValidFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR |
-																	VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR;
-	deUint8									buffer				[sizeof(VkDeviceGroupPresentCapabilitiesKHR) + GUARD_SIZE];
-	deUint32								queueFamilyIndex	= 0;
-	VkDeviceGroupPresentCapabilitiesKHR*	presentCapabilities;
-	std::vector<const char*>				deviceExtensions;
+	tcu::TestLog&									log						= context.getTestContext().getLog();
+	const InstanceHelper							instHelper				(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
+	const float										queuePriority			= 1.0f;
+	const tcu::CommandLine&							cmdLine					= context.getTestContext().getCommandLine();
+	const deUint32									devGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
+	const deUint32									deviceIdx				= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+	const VkDeviceGroupPresentModeFlagsKHR			requiredFlag			= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR;
+	const VkDeviceGroupPresentModeFlagsKHR			maxValidFlag			= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR |
+																				VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR;
+	deUint8											buffer					[sizeof(VkDeviceGroupPresentCapabilitiesKHR) + GUARD_SIZE];
+	deUint32										queueFamilyIndex		= 0;
+	VkDeviceGroupPresentCapabilitiesKHR*			presentCapabilities;
+	std::vector<const char*>						deviceExtensions;
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
-	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
+	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps		= enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
 
-	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
+	const std::vector<VkQueueFamilyProperties>		queueProps				= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
 		if (queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 			queueFamilyIndex = (deUint32)queueNdx;
 	}
-	const VkDeviceQueueCreateInfo			deviceQueueCreateInfo =
+	const VkDeviceQueueCreateInfo					deviceQueueCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,				//type
 		DE_NULL,												//pNext
@@ -794,14 +794,14 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 		1u,														//queueCount;
 		&queuePriority,											//pQueuePriorities;
 	};
-	const VkDeviceGroupDeviceCreateInfo				deviceGroupInfo =
+	const VkDeviceGroupDeviceCreateInfo				deviceGroupInfo			=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
 		DE_NULL,												//pNext
 		deviceGroupProps[devGroupIdx].physicalDeviceCount,		//physicalDeviceCount
 		deviceGroupProps[devGroupIdx].physicalDevices			//physicalDevices
 	};
-	const VkDeviceCreateInfo							deviceCreateInfo =
+	const VkDeviceCreateInfo						deviceCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,					//sType;
 		&deviceGroupInfo,										//pNext;

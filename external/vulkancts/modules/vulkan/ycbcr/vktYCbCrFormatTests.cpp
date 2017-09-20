@@ -104,9 +104,9 @@ Move<VkImageView> createImageView (const DeviceInterface&		vkd,
 								   VkDevice						device,
 								   VkImage						image,
 								   VkFormat						format,
-								   VkSamplerYcbcrConversion	conversion)
+								   VkSamplerYcbcrConversion		conversion)
 {
-	const VkSamplerYcbcrConversionInfo	conversionInfo	=
+	const VkSamplerYcbcrConversionInfo		conversionInfo	=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
@@ -134,11 +134,11 @@ Move<VkImageView> createImageView (const DeviceInterface&		vkd,
 
 Move<VkDescriptorSetLayout> createDescriptorSetLayout (const DeviceInterface& vkd, VkDevice device, VkSampler sampler)
 {
-	const VkDescriptorSetLayoutBinding		binding		=
+	const VkDescriptorSetLayoutBinding		binding			=
 	{
-		0u,												// binding
+		0u,													// binding
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		1u,												// descriptorCount
+		1u,													// descriptorCount
 		VK_SHADER_STAGE_ALL,
 		&sampler
 	};
@@ -180,10 +180,10 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface&	vkd,
 										   VkImageView				imageView,
 										   VkSampler				sampler)
 {
-	Move<VkDescriptorSet>	descSet;
+	Move<VkDescriptorSet>					descSet;
 
 	{
-		const VkDescriptorSetAllocateInfo	allocInfo	=
+		const VkDescriptorSetAllocateInfo	allocInfo			=
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 			DE_NULL,
@@ -196,13 +196,13 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface&	vkd,
 	}
 
 	{
-		const VkDescriptorImageInfo		imageInfo			=
+		const VkDescriptorImageInfo			imageInfo			=
 		{
 			sampler,
 			imageView,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		};
-		const VkWriteDescriptorSet		descriptorWrite		=
+		const VkWriteDescriptorSet			descriptorWrite		=
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 			DE_NULL,
@@ -295,20 +295,21 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 {
 	checkSupport(context, params);
 
-	const DeviceInterface&				vkd				= context.getDeviceInterface();
-	const VkDevice						device			= context.getDevice();
+	const DeviceInterface&					vkd						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
 
-	const VkFormat						format			= params.format;
-	const PlanarFormatDescription		formatInfo		= getPlanarFormatDescription(format);
-	const UVec2							size			= params.size;
-	const VkImageCreateFlags			createFlags		= params.flags;
-	const VkImageTiling					tiling			= params.tiling;
-	const bool							mappedMemory	= params.useMappedMemory;
+	const VkFormat							format					= params.format;
+	const PlanarFormatDescription			formatInfo				= getPlanarFormatDescription(format);
+	const UVec2								size					= params.size;
+	const VkImageCreateFlags				createFlags				= params.flags;
+	const VkImageTiling						tiling					= params.tiling;
+	const bool								mappedMemory			= params.useMappedMemory;
 
-	const Unique<VkImage>				image			(createTestImage(vkd, device, format, size, createFlags, tiling, mappedMemory ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED));
-	const vector<AllocationSp>			allocations		(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags, mappedMemory ? MemoryRequirement::HostVisible : MemoryRequirement::Any));
+	const Unique<VkImage>					image					(createTestImage(vkd, device, format, size, createFlags, tiling, mappedMemory ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED));
+	const vector<AllocationSp>				allocations				(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags, mappedMemory ? MemoryRequirement::HostVisible : MemoryRequirement::Any));
 
-	const VkSamplerYcbcrConversionCreateInfo			conversionInfo			=
+	const VkSamplerYcbcrConversionCreateInfo
+											conversionInfo			=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
 		DE_NULL,
@@ -326,10 +327,10 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 		VK_FILTER_NEAREST,
 		VK_FALSE,									// forceExplicitReconstruction
 	};
-	const Unique<VkSamplerYcbcrConversion>				conversion				(createSamplerYcbcrConversion(vkd, device, &conversionInfo));
-	const Unique<VkImageView>							imageView				(createImageView(vkd, device, *image, format, *conversion));
+	const Unique<VkSamplerYcbcrConversion>	conversion				(createSamplerYcbcrConversion(vkd, device, &conversionInfo));
+	const Unique<VkImageView>				imageView				(createImageView(vkd, device, *image, format, *conversion));
 
-	const VkSamplerYcbcrConversionInfo	samplerConversionInfo	=
+	const VkSamplerYcbcrConversionInfo		samplerConversionInfo	=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
@@ -358,13 +359,13 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 		VK_FALSE,									// unnormalizedCoords
 	};
 
-	const Unique<VkSampler>				sampler		(createSampler(vkd, device, &samplerInfo));
+	const Unique<VkSampler>					sampler					(createSampler(vkd, device, &samplerInfo));
 
-	const Unique<VkDescriptorSetLayout>	descLayout	(createDescriptorSetLayout(vkd, device, *sampler));
-	const Unique<VkDescriptorPool>		descPool	(createDescriptorPool(vkd, device));
-	const Unique<VkDescriptorSet>		descSet		(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView, *sampler));
+	const Unique<VkDescriptorSetLayout>		descLayout				(createDescriptorSetLayout(vkd, device, *sampler));
+	const Unique<VkDescriptorPool>			descPool				(createDescriptorPool(vkd, device));
+	const Unique<VkDescriptorSet>			descSet					(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView, *sampler));
 
-	MultiPlaneImageData					imageData	(format, size);
+	MultiPlaneImageData						imageData				(format, size);
 
 	// Prepare texture data
 	fillGradient(&imageData, Vec4(0.0f), Vec4(1.0f));

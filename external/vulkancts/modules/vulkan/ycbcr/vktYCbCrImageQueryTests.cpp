@@ -335,7 +335,7 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 	const DeviceInterface&				vkd				= context.getDeviceInterface();
 	const VkDevice						device			= context.getDevice();
 
-	const VkSamplerYcbcrConversionCreateInfo			conversionInfo			=
+	const VkSamplerYcbcrConversionCreateInfo		conversionInfo			=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
 		DE_NULL,
@@ -354,8 +354,8 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 		VK_FALSE,									// forceExplicitReconstruction
 	};
 	const Unique<VkSamplerYcbcrConversion>			conversion				(isYCbCrImage
-																				 ? createSamplerYcbcrConversion(vkd, device, &conversionInfo)
-																				 : Move<VkSamplerYcbcrConversion>());
+																			 ? createSamplerYcbcrConversion(vkd, device, &conversionInfo)
+																			 : Move<VkSamplerYcbcrConversion>());
 
 	const VkSamplerYcbcrConversionInfo				samplerConversionInfo	=
 	{
@@ -364,7 +364,7 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 		*conversion,
 	};
 
-	const VkSamplerCreateInfo							samplerInfo				=
+	const VkSamplerCreateInfo						samplerInfo				=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		isYCbCrImage ? &samplerConversionInfo : DE_NULL,
@@ -395,9 +395,9 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 
 	if (params.query == QUERY_TYPE_IMAGE_SIZE_LOD)
 	{
-		const PlanarFormatDescription&		formatDesc	= getPlanarFormatDescription(params.format);
-		const UVec2							maxDivisor	= getMaxPlaneDivisor(formatDesc);
-		vector<UVec2>						testSizes;
+		const PlanarFormatDescription&	formatDesc	= getPlanarFormatDescription(params.format);
+		const UVec2						maxDivisor	= getMaxPlaneDivisor(formatDesc);
+		vector<UVec2>					testSizes;
 
 		testSizes.push_back(maxDivisor);
 		testSizes.push_back(maxDivisor * UVec2(2u, 1u));
@@ -512,7 +512,7 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 		*conversion,
 	};
 
-	const VkSamplerCreateInfo							samplerInfo				=
+	const VkSamplerCreateInfo						samplerInfo				=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		isYCbCrImage ? &samplerConversionInfo : DE_NULL,

@@ -156,7 +156,7 @@ vk::Move<vk::VkImageView>			makeImageView					(const vk::DeviceInterface&					vk
 																	 const vk::VkImageViewType					imageViewType,
 																	 const vk::VkFormat							format,
 																	 const vk::VkImageSubresourceRange			subresourceRange,
-																	 const vk::VkImageViewUsageCreateInfo*	ImageUsageCreateInfoKHR = DE_NULL);
+																	 const vk::VkImageViewUsageCreateInfo*		ImageUsageCreateInfoKHR = DE_NULL);
 
 vk::Move<vk::VkDescriptorSet>		makeDescriptorSet				(const vk::DeviceInterface&					vk,
 																	 const vk::VkDevice							device,

@@ -351,24 +351,24 @@ Move<VkBuffer> makeBuffer(const DeviceInterface& vk, VkDevice device, VkDeviceSi
 
 VkMemoryRequirements getImageMemoryRequirements(const DeviceInterface& vk, VkDevice device, Move<VkImage>& image)
 {
-	VkImageMemoryRequirementsInfo2	info							=
+	VkImageMemoryRequirementsInfo2	info								=
 	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,			// VkStructureType			sType
-		DE_NULL,													// const void*				pNext
-		*image														// VkImage					image
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,				// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		*image															// VkImage					image
 	};
-	VkMemoryDedicatedRequirements	dedicatedRequirements			=
+	VkMemoryDedicatedRequirements	dedicatedRequirements				=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,			// VkStructureType			sType
-		DE_NULL,													// const void*				pNext
-		VK_FALSE,													// VkBool32					prefersDedicatedAllocation
-		VK_FALSE													// VkBool32					requiresDedicatedAllocation
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,				// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		VK_FALSE,														// VkBool32					prefersDedicatedAllocation
+		VK_FALSE														// VkBool32					requiresDedicatedAllocation
 	};
-	VkMemoryRequirements2			req2							=
+	VkMemoryRequirements2			req2								=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,					// VkStructureType			sType
-		&dedicatedRequirements,										// void*					pNext
-		{0, 0, 0}													// VkMemoryRequirements		memoryRequirements
+		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,						// VkStructureType			sType
+		&dedicatedRequirements,											// void*					pNext
+		{0, 0, 0}														// VkMemoryRequirements		memoryRequirements
 	};
 
 	vk.getImageMemoryRequirements2(device, &info, &req2);
@@ -378,24 +378,24 @@ VkMemoryRequirements getImageMemoryRequirements(const DeviceInterface& vk, VkDev
 
 VkMemoryRequirements getBufferMemoryRequirements(const DeviceInterface& vk, VkDevice device, Move<VkBuffer>& buffer)
 {
-	VkBufferMemoryRequirementsInfo2	info							=
+	VkBufferMemoryRequirementsInfo2	info								=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,		// VkStructureType			sType
-		DE_NULL,													// const void*				pNext
-		*buffer														// VkImage					image
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,			// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		*buffer															// VkImage					image
 	};
-	VkMemoryDedicatedRequirements	dedicatedRequirements			=
+	VkMemoryDedicatedRequirements	dedicatedRequirements				=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,			// VkStructureType			sType
-		DE_NULL,													// const void*				pNext
-		VK_FALSE,													// VkBool32					prefersDedicatedAllocation
-		VK_FALSE													// VkBool32					requiresDedicatedAllocation
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,				// VkStructureType			sType
+		DE_NULL,														// const void*				pNext
+		VK_FALSE,														// VkBool32					prefersDedicatedAllocation
+		VK_FALSE														// VkBool32					requiresDedicatedAllocation
 	};
-	VkMemoryRequirements2			req2							=
+	VkMemoryRequirements2			req2								=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,					// VkStructureType		sType
-		&dedicatedRequirements,										// void*				pNext
-		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
+		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,						// VkStructureType		sType
+		&dedicatedRequirements,											// void*				pNext
+		{0, 0, 0}														// VkMemoryRequirements	memoryRequirements
 	};
 
 	vk.getBufferMemoryRequirements2(device, &info, &req2);

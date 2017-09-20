@@ -161,7 +161,7 @@ Move<VkImageView> createImageView (const DeviceInterface&		vkd,
 								   VkImage						image,
 								   VkFormat						format,
 								   VkImageAspectFlagBits		imageAspect,
-								   VkSamplerYcbcrConversion	conversion)
+								   VkSamplerYcbcrConversion		conversion)
 {
 	const VkSamplerYcbcrConversionInfo	samplerConversionInfo	=
 	{

@@ -190,12 +190,12 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 
 	VkDeviceQueueCreateInfo							queueInfo		=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		(VkDeviceQueueCreateFlags)0u,					// VkDeviceQueueCreateFlags			flags;
-		queueFamilyIndex,								// deUint32							queueFamilyIndex;
-		1u,												// deUint32							queueCount;
-		&queuePriority									// const float*						pQueuePriorities;
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,					// VkStructureType					sType;
+		DE_NULL,													// const void*						pNext;
+		(VkDeviceQueueCreateFlags)0u,								// VkDeviceQueueCreateFlags			flags;
+		queueFamilyIndex,											// deUint32							queueFamilyIndex;
+		1u,															// deUint32							queueCount;
+		&queuePriority												// const float*						pQueuePriorities;
 	};
 
 	const VkDeviceCreateInfo						deviceInfo		=
@@ -208,7 +208,7 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 		0u,															// uint32_t							enabledLayerCount;
 		DE_NULL,													// const char* const*				ppEnabledLayerNames;
 		deUint32(deviceExtensions.size()),							// uint32_t							enabledExtensionCount;
-		deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0],	// const char* const*				ppEnabledExtensionNames;
+		deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0],	// const char* const*	ppEnabledExtensionNames;
 		&deviceFeatures,											// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	m_logicalDevice		= createDevice(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);

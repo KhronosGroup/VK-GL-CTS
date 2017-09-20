@@ -184,68 +184,68 @@ Move<VkDescriptorSetLayout> makeDescriptorSetLayout (const DeviceInterface&		vk,
 	return vk::createDescriptorSetLayout(vk, device, &createInfo);
 }
 
-Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
-								   const VkDevice			device,
-								   const VkFormat			colorFormat,
-								   const vector<deUint32>&	viewMasks)
+Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
+								   const VkDevice				device,
+								   const VkFormat				colorFormat,
+								   const vector<deUint32>&		viewMasks)
 {
 	const deUint32								subpassCount				= static_cast<deUint32>(viewMasks.size());
 	const VkAttachmentDescription				colorAttachmentDescription	=
 	{
-		(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags;
-		colorFormat,								// VkFormat							format;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples;
-		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout					initialLayout;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout;
+		(VkAttachmentDescriptionFlags)0,									// VkAttachmentDescriptionFlags	flags;
+		colorFormat,														// VkFormat						format;
+		VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits		samples;
+		VK_ATTACHMENT_LOAD_OP_CLEAR,										// VkAttachmentLoadOp			loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp			storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,									// VkAttachmentLoadOp			stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,									// VkAttachmentStoreOp			stencilStoreOp;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,							// VkImageLayout				initialLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL							// VkImageLayout				finalLayout;
 	};
 
 	const VkAttachmentReference					colorAttachmentReference	=
 	{
-		0u,											// deUint32			attachment;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout;
+		0u,																	// deUint32			attachment;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL							// VkImageLayout	layout;
 	};
 
 	const VkAttachmentReference					depthAttachmentReference	=
 	{
-		VK_ATTACHMENT_UNUSED,		// deUint32			attachment;
-		VK_IMAGE_LAYOUT_UNDEFINED	// VkImageLayout	layout;
+		VK_ATTACHMENT_UNUSED,												// deUint32			attachment;
+		VK_IMAGE_LAYOUT_UNDEFINED											// VkImageLayout	layout;
 	};
 
 	const VkSubpassDescription					subpassDescription			=
 	{
-		(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags;
-		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint;
-		0u,									// deUint32							inputAttachmentCount;
-		DE_NULL,							// const VkAttachmentReference*		pInputAttachments;
-		1u,									// deUint32							colorAttachmentCount;
-		&colorAttachmentReference,			// const VkAttachmentReference*		pColorAttachments;
-		DE_NULL,							// const VkAttachmentReference*		pResolveAttachments;
-		&depthAttachmentReference,			// const VkAttachmentReference*		pDepthStencilAttachment;
-		0u,									// deUint32							preserveAttachmentCount;
-		DE_NULL								// const deUint32*					pPreserveAttachments;
+		(VkSubpassDescriptionFlags)0,										// VkSubpassDescriptionFlags	flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,									// VkPipelineBindPoint			pipelineBindPoint;
+		0u,																	// deUint32						inputAttachmentCount;
+		DE_NULL,															// const VkAttachmentReference*	pInputAttachments;
+		1u,																	// deUint32						colorAttachmentCount;
+		&colorAttachmentReference,											// const VkAttachmentReference*	pColorAttachments;
+		DE_NULL,															// const VkAttachmentReference*	pResolveAttachments;
+		&depthAttachmentReference,											// const VkAttachmentReference*	pDepthStencilAttachment;
+		0u,																	// deUint32						preserveAttachmentCount;
+		DE_NULL																// const deUint32*				pPreserveAttachments;
 	};
 	vector <VkSubpassDescription>				subpassDescriptions			(subpassCount, subpassDescription);
 
-	const VkRenderPassMultiviewCreateInfo	renderPassMultiviewInfo		=
+	const VkRenderPassMultiviewCreateInfo		renderPassMultiviewInfo		=
 	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR,	//VkStructureType	sType;
-		DE_NULL,													//const void*		pNext;
-		subpassCount,												//uint32_t			subpassCount;
-		&viewMasks[0],												//const uint32_t*	pViewMasks;
-		0u,															//uint32_t			dependencyCount;
-		DE_NULL,													//const int32_t*	pViewOffsets;
-		0u,															//uint32_t			correlationMaskCount;
-		DE_NULL,													//const uint32_t*	pCorrelationMasks;
+		VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR,			//VkStructureType	sType;
+		DE_NULL,															//const void*		pNext;
+		subpassCount,														//uint32_t			subpassCount;
+		&viewMasks[0],														//const uint32_t*	pViewMasks;
+		0u,																	//uint32_t			dependencyCount;
+		DE_NULL,															//const int32_t*	pViewOffsets;
+		0u,																	//uint32_t			correlationMaskCount;
+		DE_NULL,															//const uint32_t*	pCorrelationMasks;
 	};
 
 	vector <VkSubpassDependency>				subpassDependencies;
 	for(deUint32 subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
 	{
-		const VkSubpassDependency subpassDependency =
+		const VkSubpassDependency				subpassDependency			=
 		{
 			subpassNdx,														// deUint32				srcSubpass;
 			(subpassNdx ==subpassCount - 1u) ? subpassNdx : subpassNdx+1u,	// deUint32				dstSubpass;
@@ -258,17 +258,17 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 		subpassDependencies.push_back(subpassDependency);
 	}
 
-	const VkRenderPassCreateInfo				renderPassInfo		=
+	const VkRenderPassCreateInfo				renderPassInfo				=
 	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType;
-		&renderPassMultiviewInfo,					// const void*						pNext;
-		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags;
-		1u,											// deUint32							attachmentCount;
-		&colorAttachmentDescription,				// const VkAttachmentDescription*	pAttachments;
-		subpassCount,								// deUint32							subpassCount;
-		&subpassDescriptions[0],					// const VkSubpassDescription*		pSubpasses;
-		subpassCount,								// deUint32							dependencyCount;
-		&subpassDependencies[0]						// const VkSubpassDependency*		pDependencies;
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,							// VkStructureType					sType;
+		&renderPassMultiviewInfo,											// const void*						pNext;
+		(VkRenderPassCreateFlags)0,											// VkRenderPassCreateFlags			flags;
+		1u,																	// deUint32							attachmentCount;
+		&colorAttachmentDescription,										// const VkAttachmentDescription*	pAttachments;
+		subpassCount,														// deUint32							subpassCount;
+		&subpassDescriptions[0],											// const VkSubpassDescription*		pSubpasses;
+		subpassCount,														// deUint32							dependencyCount;
+		&subpassDependencies[0]												// const VkSubpassDependency*		pDependencies;
 	};
 
 	return createRenderPass(vk, device, &renderPassInfo);
