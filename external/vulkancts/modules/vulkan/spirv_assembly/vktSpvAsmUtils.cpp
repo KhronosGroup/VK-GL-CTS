@@ -48,9 +48,9 @@ VkPhysicalDeviceFeatures filterDefaultDeviceFeatures (const VkPhysicalDeviceFeat
 	return enabledDeviceFeatures;
 }
 
-VkPhysicalDevice16BitStorageFeaturesKHR	querySupported16BitStorageFeatures (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
+VkPhysicalDevice16BitStorageFeatures	querySupported16BitStorageFeatures (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
 {
-	VkPhysicalDevice16BitStorageFeaturesKHR	extensionFeatures	=
+	VkPhysicalDevice16BitStorageFeatures	extensionFeatures	=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR,	// sType
 		DE_NULL,														// pNext
@@ -68,15 +68,15 @@ VkPhysicalDevice16BitStorageFeaturesKHR	querySupported16BitStorageFeatures (cons
 	// Call the getter only if supported. Otherwise above "zero" defaults are used
 	if (de::contains(instanceExtensions.begin(), instanceExtensions.end(), "VK_KHR_get_physical_device_properties2"))
 	{
-		vki.getPhysicalDeviceFeatures2KHR(device, &features);
+		vki.getPhysicalDeviceFeatures2(device, &features);
 	}
 
 	return extensionFeatures;
 }
 
-VkPhysicalDeviceVariablePointerFeaturesKHR querySupportedVariablePointersFeatures (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
+VkPhysicalDeviceVariablePointerFeatures querySupportedVariablePointersFeatures (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
 {
-	VkPhysicalDeviceVariablePointerFeaturesKHR extensionFeatures	=
+	VkPhysicalDeviceVariablePointerFeatures extensionFeatures	=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR,	// sType
 		DE_NULL,															// pNext
@@ -84,7 +84,7 @@ VkPhysicalDeviceVariablePointerFeaturesKHR querySupportedVariablePointersFeature
 		false,																// variablePointers
 	};
 
-	VkPhysicalDeviceFeatures2KHR	features;
+	VkPhysicalDeviceFeatures2	features;
 	deMemset(&features, 0, sizeof(features));
 	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features.pNext	= &extensionFeatures;
@@ -92,7 +92,7 @@ VkPhysicalDeviceVariablePointerFeaturesKHR querySupportedVariablePointersFeature
 	// Call the getter only if supported. Otherwise above "zero" defaults are used
 	if (de::contains(instanceExtensions.begin(), instanceExtensions.end(), "VK_KHR_get_physical_device_properties2"))
 	{
-		vki.getPhysicalDeviceFeatures2KHR(device, &features);
+		vki.getPhysicalDeviceFeatures2(device, &features);
 	}
 
 	return extensionFeatures;
@@ -102,7 +102,7 @@ VkPhysicalDeviceVariablePointerFeaturesKHR querySupportedVariablePointersFeature
 
 bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, Extension16BitStorageFeatures toCheck)
 {
-	VkPhysicalDevice16BitStorageFeaturesKHR extensionFeatures	= querySupported16BitStorageFeatures(vki, device, instanceExtensions);
+	VkPhysicalDevice16BitStorageFeatures extensionFeatures	= querySupported16BitStorageFeatures(vki, device, instanceExtensions);
 
 	if ((toCheck & EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK) != 0 && extensionFeatures.storageBuffer16BitAccess == VK_FALSE)
 		return false;
@@ -121,7 +121,7 @@ bool is16BitStorageFeaturesSupported (const InstanceInterface& vki, VkPhysicalDe
 
 bool isVariablePointersFeaturesSupported (const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, ExtensionVariablePointersFeatures toCheck)
 {
-	VkPhysicalDeviceVariablePointerFeaturesKHR extensionFeatures = querySupportedVariablePointersFeatures(vki, device, instanceExtensions);
+	VkPhysicalDeviceVariablePointerFeatures extensionFeatures = querySupportedVariablePointersFeatures(vki, device, instanceExtensions);
 
 	if ((toCheck & EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER) != 0 && extensionFeatures.variablePointersStorageBuffer == VK_FALSE)
 		return false;
@@ -142,8 +142,8 @@ Move<VkDevice> createDeviceWithExtensions (Context&							context,
 	std::vector<const char*>					extensions					(requiredExtensions.size());
 	void*										pExtension					= DE_NULL;
 	const VkPhysicalDeviceFeatures				deviceFeatures				= getPhysicalDeviceFeatures(vki, physicalDevice);
-	VkPhysicalDevice16BitStorageFeaturesKHR		ext16BitStorageFeatures;
-	VkPhysicalDeviceVariablePointerFeaturesKHR	extVariablePointerFeatures;
+	VkPhysicalDevice16BitStorageFeatures		ext16BitStorageFeatures;
+	VkPhysicalDeviceVariablePointerFeatures		extVariablePointerFeatures;
 
 	for (deUint32 extNdx = 0; extNdx < requiredExtensions.size(); ++extNdx)
 	{

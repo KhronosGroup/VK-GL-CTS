@@ -615,7 +615,7 @@ struct DeviceGroup
 			, queueFamilyIndex		(~0u)
 		{
 			{
-				const vector<VkPhysicalDeviceGroupPropertiesKHR> devGroupProperties = enumeratePhysicalDeviceGroupsKHR(vki, *instance.object);
+				const vector<VkPhysicalDeviceGroupProperties> devGroupProperties = enumeratePhysicalDeviceGroups(vki, *instance.object);
 
 				if (devGroupProperties.size() <= (size_t)params.deviceGroupIndex)
 					TCU_THROW(NotSupportedError, "Device Group not found");
@@ -667,26 +667,26 @@ struct DeviceGroup
 			}
 		};
 
-		const VkDeviceGroupDeviceCreateInfoKHR deviceGroupInfo =
+		const VkDeviceGroupDeviceCreateInfo deviceGroupInfo =
 		{
-			VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
-			DE_NULL,												//pNext
-			res.physicalDeviceCount,								//physicalDeviceCount
-			res.physicalDevices.data()								//physicalDevices
+			VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,	//stype
+			DE_NULL,											//pNext
+			res.physicalDeviceCount,							//physicalDeviceCount
+			res.physicalDevices.data()							//physicalDevices
 		};
 
-		const VkDeviceCreateInfo		deviceGroupCreateInfo =
+		const VkDeviceCreateInfo			deviceGroupCreateInfo =
 		{
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 			&deviceGroupInfo,
 			(VkDeviceCreateFlags)0,
 			DE_LENGTH_OF_ARRAY(queues),
 			queues,
-			0u,										// enabledLayerNameCount
-			DE_NULL,								// ppEnabledLayerNames
-			0u,										// enabledExtensionNameCount
-			DE_NULL,								// ppEnabledExtensionNames
-			DE_NULL,								// pEnabledFeatures
+			0u,													// enabledLayerNameCount
+			DE_NULL,											// ppEnabledLayerNames
+			0u,													// enabledExtensionNameCount
+			DE_NULL,											// ppEnabledExtensionNames
+			DE_NULL,											// pEnabledFeatures
 		};
 
 		return createDevice(res.vki, res.physicalDevices[params.deviceIndex], &deviceGroupCreateInfo, env.allocationCallbacks);

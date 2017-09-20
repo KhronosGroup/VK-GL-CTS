@@ -1279,7 +1279,7 @@ tcu::TestStatus trimCommandPoolTest (Context& context, const VkCommandBufferLeve
 				vk.freeCommandBuffers(vkDevice, *cmdPool, static_cast<deUint32>(cmdBuffersPeak.size()), &cmdBuffersPeak[0]);
 			}
 
-			vk.trimCommandPoolKHR(vkDevice, *cmdPool, (VkCommandPoolTrimFlagsKHR)0);
+			vk.trimCommandPool(vkDevice, *cmdPool, (VkCommandPoolTrimFlags)0);
 
 			switch(cmdBufferLevel)
 			{

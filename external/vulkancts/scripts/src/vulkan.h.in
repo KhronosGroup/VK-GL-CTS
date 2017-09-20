@@ -7408,10 +7408,10 @@ typedef struct VkAndroidHardwareBufferExternalFormatPropertiesANDROID {
     void*                               pNext;
     uint32_t                            externalFormat;
     VkFormatFeatureFlags                formatFeatures;
-    VkSamplerYcbcrModelConversionKHR    suggestedYcbcrModel;
-    VkSamplerYcbcrRangeKHR              suggestedYcbcrRange;
-    VkChromaLocationKHR                 suggestedXChromaOffset;
-    VkChromaLocationKHR                 suggestedYChromaOffset;
+    VkSamplerYcbcrModelConversion       suggestedYcbcrModel;
+    VkSamplerYcbcrRange                 suggestedYcbcrRange;
+    VkChromaLocation                    suggestedXChromaOffset;
+    VkChromaLocation                    suggestedYChromaOffset;
 } VkAndroidHardwareBufferExternalFormatPropertiesANDROID;
 
 typedef VkSamplerYcbcrModelConversion VkSamplerYcbcrModelConversionKHR;

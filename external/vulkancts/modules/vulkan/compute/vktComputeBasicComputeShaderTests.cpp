@@ -2403,13 +2403,13 @@ void ComputeTestInstance::createDeviceGroup (void)
 	const float										queuePriority			= 1.0f;
 	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
 	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
-	std::vector<VkPhysicalDeviceGroupPropertiesKHR>	devGroupProperties		= enumeratePhysicalDeviceGroupsKHR(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
 	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
 	std::vector<const char*>						deviceExtensions;
 	deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
-	VkDeviceGroupDeviceCreateInfoKHR				deviceGroupInfo =
+	VkDeviceGroupDeviceCreateInfo				deviceGroupInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
 		DE_NULL,																			//pNext
@@ -2658,7 +2658,7 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 		deUint32 groupCountZ = ((physDevIdx == (m_numPhysDevices - 1)) && (m_splitWorkSize.z() != m_workSize.z())) ? m_workSize.z() - baseGroupZ : m_splitWorkSize.z();
 
 		totalWorkloadSize += (groupCountX * groupCountY * groupCountZ);
-		vk.cmdDispatchBaseKHR(*cmdBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
+		vk.cmdDispatchBase(*cmdBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
 	}
 
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -2825,11 +2825,11 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 		if (memoryTypeNdx == deviceMemProps.memoryTypeCount)
 			TCU_THROW(NotSupportedError, "No compatible memory type found");
 
-		const VkMemoryAllocateFlagsInfoKHR allocDeviceMaskInfo =
+		const VkMemoryAllocateFlagsInfo allocDeviceMaskInfo =
 		{
 			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR,	// sType
 			DE_NULL,											// pNext
-			VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT_KHR,				// flags
+			VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT,					// flags
 			allocDeviceMask,									// deviceMask
 		};
 
@@ -2907,7 +2907,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostUniformWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
-		vk.cmdSetDeviceMaskKHR(*cmdBuffer, physDevMask);
+		vk.cmdSetDeviceMask(*cmdBuffer, physDevMask);
 		vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
 
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -2933,7 +2933,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 			const deUint32 deviceMask = 1 << physDevIdx;
 
 			beginCommandBuffer(vk, *cmdBuffer);
-			vk.cmdSetDeviceMaskKHR(*cmdBuffer, deviceMask);
+			vk.cmdSetDeviceMask(*cmdBuffer, deviceMask);
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT , VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &srcBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 			vk.cmdCopyBuffer(*cmdBuffer, *sboBuffer, *checkBuffer, 1, &copyParams);
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);

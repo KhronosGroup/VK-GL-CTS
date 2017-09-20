@@ -47,15 +47,15 @@ namespace
 
 using namespace vk;
 
-typedef const VkMemoryDedicatedAllocateInfoKHR								ConstDedicatedInfo;
+typedef const VkMemoryDedicatedAllocateInfo									ConstDedicatedInfo;
 typedef de::SharedPtr<Move<VkDeviceMemory> >								MemoryRegionPtr;
 typedef std::vector<MemoryRegionPtr>										MemoryRegionsList;
 typedef de::SharedPtr<Move<VkBuffer> >										BufferPtr;
 typedef std::vector<BufferPtr>												BuffersList;
 typedef de::SharedPtr<Move<VkImage> >										ImagePtr;
 typedef std::vector<ImagePtr>												ImagesList;
-typedef std::vector<VkBindBufferMemoryInfoKHR>								BindBufferMemoryInfosList;
-typedef std::vector<VkBindImageMemoryInfoKHR>								BindImageMemoryInfosList;
+typedef std::vector<VkBindBufferMemoryInfo>									BindBufferMemoryInfosList;
+typedef std::vector<VkBindImageMemoryInfo>									BindImageMemoryInfosList;
 
 class MemoryMappingRAII
 {
@@ -296,10 +296,10 @@ ConstDedicatedInfo						makeDedicatedAllocationInfo			(VkImage				image)
 	return dedicatedAllocationInfo;
 }
 
-const VkBindBufferMemoryInfoKHR			makeBufferMemoryBindingInfo			(VkBuffer				buffer,
+const VkBindBufferMemoryInfo			makeBufferMemoryBindingInfo			(VkBuffer				buffer,
 																			 VkDeviceMemory			memory)
 {
-	const VkBindBufferMemoryInfoKHR		bufferMemoryBinding					=
+	const VkBindBufferMemoryInfo		bufferMemoryBinding					=
 	{
 		VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHR,						// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
@@ -310,10 +310,10 @@ const VkBindBufferMemoryInfoKHR			makeBufferMemoryBindingInfo			(VkBuffer				buf
 	return bufferMemoryBinding;
 }
 
-const VkBindImageMemoryInfoKHR			makeImageMemoryBindingInfo			(VkImage				image,
+const VkBindImageMemoryInfo				makeImageMemoryBindingInfo			(VkImage				image,
 																			 VkDeviceMemory			memory)
 {
-	const VkBindImageMemoryInfoKHR		imageMemoryBinding					=
+	const VkBindImageMemoryInfo		imageMemoryBinding					=
 	{
 		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,						// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
@@ -601,7 +601,7 @@ void									makeBinding<VkBuffer>				(BuffersList&			targets,
 		bindMemoryInfos.push_back(makeBufferMemoryBindingInfo(**targets[i], **memory[i]));
 	}
 
-	VK_CHECK(vk.bindBufferMemory2KHR(vkDevice, count, &bindMemoryInfos.front()));
+	VK_CHECK(vk.bindBufferMemory2(vkDevice, count, &bindMemoryInfos.front()));
 }
 
 template<>
@@ -621,7 +621,7 @@ void									makeBinding<VkImage>				(ImagesList&			targets,
 		bindMemoryInfos.push_back(makeImageMemoryBindingInfo(**targets[i], **memory[i]));
 	}
 
-	VK_CHECK(vk.bindImageMemory2KHR(vkDevice, count, &bindMemoryInfos.front()));
+	VK_CHECK(vk.bindImageMemory2(vkDevice, count, &bindMemoryInfos.front()));
 }
 
 template <typename TTarget>

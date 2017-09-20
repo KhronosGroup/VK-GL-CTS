@@ -346,7 +346,7 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		const InstanceInterface&	instance		= m_context.getInstanceInterface();
 		const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
 
-		VkPhysicalDeviceMultiviewPropertiesKHR multiviewProperties =
+		VkPhysicalDeviceMultiviewProperties multiviewProperties =
 		{
 			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	// VkStructureType	sType;
 			DE_NULL,													// void*			pNext;
@@ -410,7 +410,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		&queuePriorities							//const float*				pQueuePriorities;
 	};
 
-	VkPhysicalDeviceMultiviewFeaturesKHR	multiviewFeatures		=
+	VkPhysicalDeviceMultiviewFeatures	multiviewFeatures		=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,	// VkStructureType	sType;
 		DE_NULL,													// void*			pNext;
@@ -439,7 +439,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	if (TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex && !multiviewFeatures.multiviewTessellationShader)
 		TCU_THROW(NotSupportedError, "Tessellation shader is not supported");
 
-	VkPhysicalDeviceMultiviewPropertiesKHR	multiviewProperties		=
+	VkPhysicalDeviceMultiviewProperties	multiviewProperties		=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	//VkStructureType	sType;
 		DE_NULL,													//void*				pNext;

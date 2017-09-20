@@ -206,16 +206,16 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 	const DeviceInterface&				vk								= context.getDeviceInterface();
 	const deUint32						queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
 	VkPhysicalDeviceMemoryProperties	memoryProperties;
-	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements			=
+	VkMemoryDedicatedRequirements	dedicatedRequirements			=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,			// VkStructureType		sType;
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,				// VkStructureType		sType;
 		DE_NULL,														// const void*			pNext;
 		false,															// VkBool32				prefersDedicatedAllocation
 		false															// VkBool32				requiresDedicatedAllocation
 	};
-	VkMemoryRequirements2KHR			memReqs							=
+	VkMemoryRequirements2			memReqs							=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,					// VkStructureType		sType
+		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,						// VkStructureType		sType
 		&dedicatedRequirements,											// void*				pNext
 		{0, 0, 0}														// VkMemoryRequirements	memoryRequirements
 	};
@@ -241,14 +241,14 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 		return tcu::TestStatus::fail("Buffer creation failed! (Error code: " + de::toString(error.getMessage()) + ")");
 	}
 
-	VkBufferMemoryRequirementsInfo2KHR	info							=
+	VkBufferMemoryRequirementsInfo2	info							=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,		// VkStructureType		sType
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,			// VkStructureType		sType
 		DE_NULL,														// const void*			pNext
 		*testBuffer														// VkBuffer				buffer
 	};
 
-	vk.getBufferMemoryRequirements2KHR(vkDevice, &info, &memReqs);
+	vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);
 
 	if (dedicatedRequirements.requiresDedicatedAllocation == VK_TRUE)
 	{
@@ -271,7 +271,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 	//const VkMemoryType					memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
 	//const VkMemoryHeap					memoryHeap						= memoryProperties.memoryHeaps[memoryType.heapIndex];
 
-	vk.getBufferMemoryRequirements2KHR(vkDevice, &info, &memReqs); // get the proper size requirement
+	vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs); // get the proper size requirement
 
 	if (size > memReqs.memoryRequirements.size)
 	{
@@ -284,10 +284,10 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 		VkResult						result							= VK_ERROR_OUT_OF_HOST_MEMORY;
 		VkDeviceMemory					rawMemory						= DE_NULL;
 
-		vk::VkMemoryDedicatedAllocateInfoKHR
+		vk::VkMemoryDedicatedAllocateInfo
 										dedicatedInfo					=
 		{
-			VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,		// VkStructureType			sType
+			VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,			// VkStructureType			sType
 			DE_NULL,													// const void*				pNext
 			DE_NULL,													// VkImage					image
 			*testBuffer													// VkBuffer					buffer

@@ -288,7 +288,7 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 {
 	const Unique<VkFence> fence(createFence(vk, device));
 
-	VkDeviceGroupSubmitInfoKHR deviceGroupSubmitInfo	=
+	VkDeviceGroupSubmitInfo deviceGroupSubmitInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,	//	VkStructureType		sType;
 		DE_NULL,										//	const void*			pNext;

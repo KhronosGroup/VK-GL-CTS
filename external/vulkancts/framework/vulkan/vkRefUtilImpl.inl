@@ -373,20 +373,6 @@ Move<VkSurfaceKHR> createWin32SurfaceKHR (const InstanceInterface& vk, VkInstanc
 	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vk, instance, pAllocator));
 }
 
-Move<VkDescriptorUpdateTemplate> createDescriptorUpdateTemplateKHR (const DeviceInterface& vk, VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkDescriptorUpdateTemplate object = 0;
-	VK_CHECK(vk.createDescriptorUpdateTemplateKHR(device, pCreateInfo, pAllocator, &object));
-	return Move<VkDescriptorUpdateTemplate>(check<VkDescriptorUpdateTemplate>(object), Deleter<VkDescriptorUpdateTemplate>(vk, device, pAllocator));
-}
-
-Move<VkSamplerYcbcrConversion> createSamplerYcbcrConversionKHR (const DeviceInterface& vk, VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkSamplerYcbcrConversion object = 0;
-	VK_CHECK(vk.createSamplerYcbcrConversionKHR(device, pCreateInfo, pAllocator, &object));
-	return Move<VkSamplerYcbcrConversion>(check<VkSamplerYcbcrConversion>(object), Deleter<VkSamplerYcbcrConversion>(vk, device, pAllocator));
-}
-
 Move<VkDebugReportCallbackEXT> createDebugReportCallbackEXT (const InstanceInterface& vk, VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkDebugReportCallbackEXT object = 0;

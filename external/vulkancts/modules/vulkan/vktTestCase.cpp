@@ -205,7 +205,7 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 									VkPhysicalDevice					physicalDevice,
 									deUint32							apiVersion,
 									deUint32							queueIndex,
-									const VkPhysicalDeviceFeatures2KHR&	enabledFeatures,
+									const VkPhysicalDeviceFeatures2&	enabledFeatures,
 									const vector<string>&				enabledExtensions,
 									const tcu::CommandLine&				cmdLine)
 {
@@ -271,8 +271,8 @@ bool isPhysicalDeviceFeatures2Supported (const vector<string>& instanceExtension
 
 struct DeviceFeatures
 {
-	VkPhysicalDeviceFeatures2KHR						coreFeatures;
-	VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR	samplerYCbCrConversionFeatures;
+	VkPhysicalDeviceFeatures2						coreFeatures;
+	VkPhysicalDeviceSamplerYcbcrConversionFeatures	samplerYCbCrConversionFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					VkPhysicalDevice			physicalDevice,
@@ -295,7 +295,7 @@ struct DeviceFeatures
 				curExtPoint = &samplerYCbCrConversionFeatures.pNext;
 			}
 
-			vki.getPhysicalDeviceFeatures2KHR(physicalDevice, &coreFeatures);
+			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
 		else
 			coreFeatures.features = getPhysicalDeviceFeatures(vki, physicalDevice);
@@ -427,7 +427,7 @@ const vk::InstanceInterface&			Context::getInstanceInterface			(void) const { re
 vk::VkPhysicalDevice					Context::getPhysicalDevice				(void) const { return m_device->getPhysicalDevice();			}
 deUint32								Context::getDeviceVersion				(void) const { return m_device->getDeviceVersion();				}
 const vk::VkPhysicalDeviceFeatures&		Context::getDeviceFeatures				(void) const { return m_device->getDeviceFeatures();			}
-const vk::VkPhysicalDeviceFeatures2KHR&	Context::getDeviceFeatures2				(void) const { return m_device->getDeviceFeatures2();			}
+const vk::VkPhysicalDeviceFeatures2&	Context::getDeviceFeatures2				(void) const { return m_device->getDeviceFeatures2();			}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

@@ -185,8 +185,8 @@ void readStagingBuffers (MultiPlaneImageData*			imageData,
 
 void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags createFlags, VkImageTiling tiling)
 {
-	const bool													disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0;
-	const VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR*	features	= findStructure<VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR>(context.getDeviceFeatures2().pNext);
+	const bool													disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
+	const VkPhysicalDeviceSamplerYcbcrConversionFeatures*		features	= findStructure<VkPhysicalDeviceSamplerYcbcrConversionFeatures>(context.getDeviceFeatures2().pNext);
 	vector<string>												reqExts;
 
 	reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
@@ -214,10 +214,10 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 														? formatProperties.optimalTilingFeatures
 														: formatProperties.linearTilingFeatures;
 
-		if ((featureFlags & (VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR)) == 0)
+		if ((featureFlags & (VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT)) == 0)
 			TCU_THROW(NotSupportedError, "YCbCr conversion is not supported for format");
 
-		if (disjoint && ((featureFlags & VK_FORMAT_FEATURE_DISJOINT_BIT_KHR) == 0))
+		if (disjoint && ((featureFlags & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Disjoint planes are not supported for format");
 	}
 }
@@ -271,7 +271,7 @@ vector<AllocationSp> allocateAndBindImageMemory (const DeviceInterface&	vkd,
 {
 	vector<AllocationSp> allocations;
 
-	if ((createFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0)
+	if ((createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0)
 	{
 		const deUint32	numPlanes	= getPlaneCount(format);
 

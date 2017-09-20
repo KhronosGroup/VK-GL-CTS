@@ -591,11 +591,11 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		VK_FALSE,														// VkBool32                                    primitiveRestartEnable;
 	};
 
-	const VkPipelineTessellationDomainOriginStateCreateInfoKHR tessellationDomainOriginStateInfo =
+	const VkPipelineTessellationDomainOriginStateCreateInfo tessellationDomainOriginStateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO,
 		DE_NULL,
-		(!m_tessellationDomainOrigin ? VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR : *m_tessellationDomainOrigin)
+		(!m_tessellationDomainOrigin ? VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT : *m_tessellationDomainOrigin)
 	};
 	const VkPipelineTessellationStateCreateInfo pipelineTessellationStateInfo =
 	{

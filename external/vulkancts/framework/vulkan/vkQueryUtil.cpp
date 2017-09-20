@@ -70,12 +70,12 @@ vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, 
 	return devices;
 }
 
-vector<VkPhysicalDeviceGroupPropertiesKHR> enumeratePhysicalDeviceGroupsKHR(const InstanceInterface& vk, VkInstance instance)
+vector<VkPhysicalDeviceGroupProperties> enumeratePhysicalDeviceGroups(const InstanceInterface& vk, VkInstance instance)
 {
-	deUint32									numDeviceGroups = 0;
-	vector<VkPhysicalDeviceGroupPropertiesKHR>	properties;
+	deUint32								numDeviceGroups = 0;
+	vector<VkPhysicalDeviceGroupProperties>	properties;
 
-	VK_CHECK(vk.enumeratePhysicalDeviceGroupsKHR(instance, &numDeviceGroups, DE_NULL));
+	VK_CHECK(vk.enumeratePhysicalDeviceGroups(instance, &numDeviceGroups, DE_NULL));
 
 	if (numDeviceGroups > 0)
 	{
@@ -85,7 +85,7 @@ vector<VkPhysicalDeviceGroupPropertiesKHR> enumeratePhysicalDeviceGroupsKHR(cons
 			properties[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES_KHR;
 			properties[i].pNext = DE_NULL;
 		}
-		VK_CHECK(vk.enumeratePhysicalDeviceGroupsKHR(instance, &numDeviceGroups, &properties[0]));
+		VK_CHECK(vk.enumeratePhysicalDeviceGroups(instance, &numDeviceGroups, &properties[0]));
 
 		if ((size_t)numDeviceGroups != properties.size())
 			TCU_FAIL("Returned device group count changed between queries");
@@ -127,9 +127,9 @@ VkPhysicalDeviceFeatures2 getPhysicalDeviceFeatures2 (const InstanceInterface& v
 	VkPhysicalDeviceFeatures2	features;
 
 	deMemset(&features, 0, sizeof(features));
-	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
-	vk.getPhysicalDeviceFeatures2KHR(physicalDevice, &features);
+	vk.getPhysicalDeviceFeatures2(physicalDevice, &features);
 	return features;
 }
 
@@ -230,9 +230,9 @@ VkMemoryRequirements getImagePlaneMemoryRequirements (const DeviceInterface&	vkd
 													  VkImage					image,
 													  VkImageAspectFlagBits		planeAspect)
 {
-	VkImageMemoryRequirementsInfo2KHR		coreInfo;
-	VkImagePlaneMemoryRequirementsInfoKHR	planeInfo;
-	VkMemoryRequirements2KHR				reqs;
+	VkImageMemoryRequirementsInfo2		coreInfo;
+	VkImagePlaneMemoryRequirementsInfo	planeInfo;
+	VkMemoryRequirements2				reqs;
 
 	deMemset(&coreInfo,		0, sizeof(coreInfo));
 	deMemset(&planeInfo,	0, sizeof(planeInfo));
@@ -247,7 +247,7 @@ VkMemoryRequirements getImagePlaneMemoryRequirements (const DeviceInterface&	vkd
 
 	reqs.sType				= VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR;
 
-	vkd.getImageMemoryRequirements2KHR(device, &coreInfo, &reqs);
+	vkd.getImageMemoryRequirements2(device, &coreInfo, &reqs);
 
 	return reqs.memoryRequirements;
 }
@@ -383,11 +383,11 @@ VkQueue getDeviceQueue (const DeviceInterface& vkd, VkDevice device, deUint32 qu
 	return queue;
 }
 
-VkQueue getDeviceQueue2KHR (const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2KHR* queueInfo)
+VkQueue getDeviceQueue2 (const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2* queueInfo)
 {
 	VkQueue queue;
 
-	vkd.getDeviceQueue2KHR(device, queueInfo, &queue);
+	vkd.getDeviceQueue2(device, queueInfo, &queue);
 
 	return queue;
 }

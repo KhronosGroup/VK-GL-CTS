@@ -147,23 +147,23 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&		vkd,
 	}
 
 	// Check if the protected memory can be enabled on the physical device.
-	vk::VkPhysicalDeviceProtectedMemoryFeaturesKHR	protectedFeature =
+	vk::VkPhysicalDeviceProtectedMemoryFeatures	protectedFeature =
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES_KHR,	// sType
-		DE_NULL,																// pNext
-		VK_FALSE																// protectedMemory
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,	// sType
+		DE_NULL,															// pNext
+		VK_FALSE															// protectedMemory
 	};
 	vk::VkPhysicalDeviceFeatures					features;
 	deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
 
-	vk::VkPhysicalDeviceFeatures2KHR				featuresExt		=
+	vk::VkPhysicalDeviceFeatures2				featuresExt		=
 	{
-		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR,					// sType
-		&protectedFeature,														// pNext
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,					// sType
+		&protectedFeature,													// pNext
 		features
 	};
 
-	vkd.getPhysicalDeviceFeatures2KHR(physicalDevice, &featuresExt);
+	vkd.getPhysicalDeviceFeatures2(physicalDevice, &featuresExt);
 
 	if (protectedFeature.protectedMemory == VK_FALSE)
 		TCU_THROW(NotSupportedError, "Protected Memory feature not supported by the device");
@@ -203,16 +203,16 @@ vk::VkQueue getProtectedQueue	(const vk::DeviceInterface&	vk,
 								 const deUint32				queueFamilyIndex,
 								 const deUint32				queueIdx)
 {
-	const vk::VkDeviceQueueInfo2KHR	queueInfo	=
+	const vk::VkDeviceQueueInfo2	queueInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2_KHR,		// sType
-		DE_NULL,											// pNext
-		vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT_KHR,		// flags
-		queueFamilyIndex,									// queueFamilyIndex
-		queueIdx,											// queueIndex
+		vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,		// sType
+		DE_NULL,										// pNext
+		vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,		// flags
+		queueFamilyIndex,								// queueFamilyIndex
+		queueIdx,										// queueIndex
 	};
 
-	vk::VkQueue						queue		= vk::getDeviceQueue2KHR(vk, device, &queueInfo);
+	vk::VkQueue						queue		= vk::getDeviceQueue2(vk, device, &queueInfo);
 
 	if (queue == DE_NULL)
 		TCU_THROW(TestError, "Unable to get a protected queue");

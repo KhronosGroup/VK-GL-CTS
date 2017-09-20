@@ -87,8 +87,8 @@ struct TestConfig
 								TestConfig		(const ResourceDescription&						resource_,
 												 OperationName									writeOp_,
 												 OperationName									readOp_,
-												 vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleTypeBuffer_,
-												 vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleTypeImage_)
+												 vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeBuffer_,
+												 vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeImage_)
 		: resource					(resource_)
 		, writeOp					(writeOp_)
 		, readOp					(readOp_)
@@ -100,8 +100,8 @@ struct TestConfig
 	const ResourceDescription							resource;
 	const OperationName									writeOp;
 	const OperationName									readOp;
-	const vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleTypeBuffer;
-	const vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleTypeImage;
+	const vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeBuffer;
+	const vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeImage;
 };
 
 bool checkQueueFlags (vk::VkQueueFlags availableFlags, const vk::VkQueueFlags neededFlags)
@@ -246,15 +246,15 @@ deUint32 chooseMemoryType (deUint32 bits)
 vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&					vkd,
 										   vk::VkDevice									device,
 										   const vk::VkMemoryRequirements&				requirements,
-										   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+										   vk::VkExternalMemoryHandleTypeFlagBits	externalType,
 										   NativeHandle&								handle,
 										   bool											requiresDedicated,
 										   vk::VkBuffer									buffer,
 										   vk::VkImage									image)
 {
-	const vk::VkMemoryDedicatedAllocateInfoKHR	dedicatedInfo	=
+	const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
 		DE_NULL,
 		image,
 		buffer,
@@ -287,28 +287,28 @@ de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&					
 												 vk::VkDevice								device,
 												 vk::VkBuffer								buffer,
 												 NativeHandle&								nativeHandle,
-												 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType)
+												 vk::VkExternalMemoryHandleTypeFlagBits	externalType)
 {
-	const vk::VkBufferMemoryRequirementsInfo2KHR	requirementsInfo		=
+	const vk::VkBufferMemoryRequirementsInfo2	requirementsInfo		=
 	{
-		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,
+		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
 		DE_NULL,
 		buffer,
 	};
-	vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements	=
+	vk::VkMemoryDedicatedRequirements			dedicatedRequirements	=
 	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
 		DE_NULL,
 		VK_FALSE,
 		VK_FALSE,
 	};
-	vk::VkMemoryRequirements2KHR					requirements			=
+	vk::VkMemoryRequirements2					requirements			=
 	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
 		&dedicatedRequirements,
 		{ 0u, 0u, 0u, },
 	};
-	vkd.getBufferMemoryRequirements2KHR(device, &requirementsInfo, &requirements);
+	vkd.getBufferMemoryRequirements2(device, &requirementsInfo, &requirements);
 
 	vk::Move<vk::VkDeviceMemory> memory = importMemory(vkd, device, requirements.memoryRequirements, externalType, nativeHandle, !!dedicatedRequirements.requiresDedicatedAllocation, buffer, DE_NULL);
 	VK_CHECK(vkd.bindBufferMemory(device, buffer, *memory, 0u));
@@ -320,28 +320,28 @@ de::MovePtr<vk::Allocation> importAndBindMemory (const vk::DeviceInterface&					
 												   vk::VkDevice									device,
 												   vk::VkImage									image,
 												   NativeHandle&								nativeHandle,
-												   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType)
+												   vk::VkExternalMemoryHandleTypeFlagBits	externalType)
 {
-	const vk::VkImageMemoryRequirementsInfo2KHR		requirementsInfo		=
+	const vk::VkImageMemoryRequirementsInfo2		requirementsInfo		=
 	{
-		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
+		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
 		DE_NULL,
 		image,
 	};
-	vk::VkMemoryDedicatedRequirementsKHR			dedicatedRequirements	=
+	vk::VkMemoryDedicatedRequirements			dedicatedRequirements	=
 	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
 		DE_NULL,
 		VK_FALSE,
 		VK_FALSE,
 	};
-	vk::VkMemoryRequirements2KHR					requirements			=
+	vk::VkMemoryRequirements2					requirements			=
 	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
+		vk::VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
 		&dedicatedRequirements,
 		{ 0u, 0u, 0u, },
 	};
-	vkd.getImageMemoryRequirements2KHR(device, &requirementsInfo, &requirements);
+	vkd.getImageMemoryRequirements2(device, &requirementsInfo, &requirements);
 
 	vk::Move<vk::VkDeviceMemory> memory = importMemory(vkd, device, requirements.memoryRequirements, externalType, nativeHandle, !!dedicatedRequirements.requiresDedicatedAllocation, DE_NULL, image);
 	VK_CHECK(vkd.bindImageMemory(device, image, *memory, 0u));
@@ -356,7 +356,7 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 									  const OperationSupport&					readOp,
 									  const OperationSupport&					writeOp,
 									  NativeHandle&								nativeHandle,
-									  vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType)
+									  vk::VkExternalMemoryHandleTypeFlagBits	externalType)
 {
 	if (resourceDesc.type == RESOURCE_TYPE_IMAGE)
 	{
@@ -381,11 +381,11 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 			0u,
 			1u
 		};
-		const vk::VkExternalMemoryImageCreateInfoKHR		externalInfo			=
+		const vk::VkExternalMemoryImageCreateInfo		externalInfo			=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
 			DE_NULL,
-			(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
+			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
 		const vk::VkImageCreateInfo			createInfo				=
 		{
@@ -418,11 +418,11 @@ de::MovePtr<Resource> importResource (const vk::DeviceInterface&				vkd,
 		const vk::VkDeviceSize							offset			= 0u;
 		const vk::VkDeviceSize							size			= static_cast<vk::VkDeviceSize>(resourceDesc.size.x());
 		const vk::VkBufferUsageFlags					usage			= readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags();
-		const vk::VkExternalMemoryBufferCreateInfoKHR	externalInfo	=
+		const vk::VkExternalMemoryBufferCreateInfo	externalInfo	=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
 			DE_NULL,
-			(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
+			(vk::VkExternalMemoryHandleTypeFlags)externalType
 		};
 		const vk::VkBufferCreateInfo					createInfo		=
 		{
@@ -472,7 +472,7 @@ void recordWriteBarrier (const vk::DeviceInterface&	vkd,
 			readSync.imageLayout,
 
 			writeQueueFamilyIndex,
-			VK_QUEUE_FAMILY_EXTERNAL_KHR,
+			VK_QUEUE_FAMILY_EXTERNAL,
 
 			resource.getImage().handle,
 			resource.getImage().subresourceRange
@@ -491,7 +491,7 @@ void recordWriteBarrier (const vk::DeviceInterface&	vkd,
 			dstAccessMask,
 
 			writeQueueFamilyIndex,
-			VK_QUEUE_FAMILY_EXTERNAL_KHR,
+			VK_QUEUE_FAMILY_EXTERNAL,
 
 			resource.getBuffer().handle,
 			0u,
@@ -530,7 +530,7 @@ void recordReadBarrier (const vk::DeviceInterface&	vkd,
 			writeSync.imageLayout,
 			readSync.imageLayout,
 
-			VK_QUEUE_FAMILY_EXTERNAL_KHR,
+			VK_QUEUE_FAMILY_EXTERNAL,
 			readQueueFamilyIndex,
 
 			resource.getImage().handle,
@@ -549,7 +549,7 @@ void recordReadBarrier (const vk::DeviceInterface&	vkd,
 			srcAccessMask,
 			dstAccessMask,
 
-			VK_QUEUE_FAMILY_EXTERNAL_KHR,
+			VK_QUEUE_FAMILY_EXTERNAL,
 			readQueueFamilyIndex,
 
 			resource.getBuffer().handle,
@@ -592,7 +592,7 @@ public:
 
 #if (DE_OS == DE_OS_WIN32)
 	DX11Operation (const ResourceDescription&					resourceDesc,
-				   vk::VkExternalMemoryHandleTypeFlagBitsKHR	memoryHandleType,
+				   vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleType,
 				   ID3D11Device*								pDevice,
 				   ID3D11DeviceContext*							pContext,
 				   LPD3DX11COMPILEFROMMEMORY					fnD3DX11CompileFromMemory,
@@ -614,8 +614,8 @@ public:
 	{
 		HRESULT	hr;
 
-		if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR ||
-			memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHR)
+		if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT ||
+			memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT)
 
 			m_isMemNtHandle = true;
 		else
@@ -1211,12 +1211,12 @@ public:
 #if (DE_OS == DE_OS_WIN32)
 		HRESULT										hr;
 
-		vk::VkPhysicalDeviceIDPropertiesKHR			propertiesId = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR };
-		vk::VkPhysicalDeviceProperties2KHR			properties = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 };
+		vk::VkPhysicalDeviceIDProperties		propertiesId = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES };
+		vk::VkPhysicalDeviceProperties2			properties = { vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 };
 
 		properties.pNext = &propertiesId;
 
-		vki.getPhysicalDeviceProperties2KHR(physicalDevice, &properties);
+		vki.getPhysicalDeviceProperties2(physicalDevice, &properties);
 		if (!propertiesId.deviceLUIDValid)
 			TCU_FAIL("Physical device deviceLUIDValid is not valid");
 
@@ -1351,7 +1351,7 @@ public:
 
 #endif
 
-	virtual de::MovePtr<DX11Operation> build (const ResourceDescription& resourceDesc, vk::VkExternalMemoryHandleTypeFlagBitsKHR memoryHandleType) const
+	virtual de::MovePtr<DX11Operation> build (const ResourceDescription& resourceDesc, vk::VkExternalMemoryHandleTypeFlagBits memoryHandleType) const
 	{
 #if (DE_OS == DE_OS_WIN32)
 		return de::MovePtr<DX11Operation>(new DX11Operation(resourceDesc, memoryHandleType, m_pDevice, m_pContext, m_fnD3DX11CompileFromMemory, m_fnD3DCompile));
@@ -1413,7 +1413,7 @@ private:
 
 	const de::UniquePtr<DX11OperationSupport>			m_supportDX11;
 
-	const vk::VkExternalMemoryHandleTypeFlagBitsKHR		m_memoryHandleType;
+	const vk::VkExternalMemoryHandleTypeFlagBits		m_memoryHandleType;
 
 	// \todo Should this be moved to the group same way as in the other tests?
 	PipelineCacheData									m_pipelineCacheData;
@@ -1454,16 +1454,16 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 	// Check resource support
 	if (m_config.resource.type == RESOURCE_TYPE_IMAGE)
 	{
-		if (m_memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHR && !IsWindows8OrGreater())
+		if (m_memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT && !IsWindows8OrGreater())
 			TCU_THROW(NotSupportedError, "Memory handle type not supported by this OS");
 
-		const vk::VkPhysicalDeviceExternalImageFormatInfoKHR	externalInfo		=
+		const vk::VkPhysicalDeviceExternalImageFormatInfo	externalInfo		=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
 			DE_NULL,
 			m_memoryHandleType
 		};
-		const vk::VkPhysicalDeviceImageFormatInfo2KHR	imageFormatInfo		=
+		const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo		=
 		{
 			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 			&externalInfo,
@@ -1473,13 +1473,13 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 			m_supportReadOp->getResourceUsageFlags() | m_supportWriteOp->getResourceUsageFlags(),
 			0u
 		};
-		vk::VkExternalImageFormatPropertiesKHR			externalProperties	=
+		vk::VkExternalImageFormatProperties					externalProperties	=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
 			DE_NULL,
 			{ 0u, 0u, 0u }
 		};
-		vk::VkImageFormatProperties2KHR					formatProperties	=
+		vk::VkImageFormatProperties2						formatProperties	=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
 			&externalProperties,
@@ -1491,45 +1491,45 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 				0u,
 			}
 		};
-		VK_CHECK(m_vki.getPhysicalDeviceImageFormatProperties2KHR(m_physicalDevice, &imageFormatInfo, &formatProperties));
+		VK_CHECK(m_vki.getPhysicalDeviceImageFormatProperties2(m_physicalDevice, &imageFormatInfo, &formatProperties));
 
 		// \todo How to log this nicely?
 		log << TestLog::Message << "External image format properties: " << imageFormatInfo << "\n"<< externalProperties << TestLog::EndMessage;
 
-		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
+		if ((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Importing image resource not supported");
 
-		if (externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR)
+		if (externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT)
 			m_useDedicatedAllocation = true;
 	}
 	else
 	{
-		if (m_memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR && !IsWindows8OrGreater())
+		if (m_memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT && !IsWindows8OrGreater())
 			TCU_THROW(NotSupportedError, "Memory handle type not supported by this OS");
 
-		const vk::VkPhysicalDeviceExternalBufferInfoKHR	info	=
+		const vk::VkPhysicalDeviceExternalBufferInfo		info	=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,
 			DE_NULL,
 
 			0u,
 			m_supportReadOp->getResourceUsageFlags() | m_supportWriteOp->getResourceUsageFlags(),
 			m_memoryHandleType
 		};
-		vk::VkExternalBufferPropertiesKHR				properties			=
+		vk::VkExternalBufferProperties						properties			=
 		{
-			vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHR,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,
 			DE_NULL,
 			{ 0u, 0u, 0u}
 		};
-		m_vki.getPhysicalDeviceExternalBufferPropertiesKHR(m_physicalDevice, &info, &properties);
+		m_vki.getPhysicalDeviceExternalBufferProperties(m_physicalDevice, &info, &properties);
 
 		log << TestLog::Message << "External buffer properties: " << info << "\n" << properties << TestLog::EndMessage;
 
-		if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR) == 0)
+		if ((properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Importing memory type not supported");
 
-		if (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR)
+		if (properties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT)
 			m_useDedicatedAllocation = true;
 	}
 #else
@@ -1758,19 +1758,19 @@ tcu::TestCaseGroup* createWin32KeyedMutexTest (tcu::TestContext& testCtx)
 {
 	const struct
 	{
-		vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleTypeBuffer;
-		vk::VkExternalMemoryHandleTypeFlagBitsKHR		memoryHandleTypeImage;
+		vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeBuffer;
+		vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleTypeImage;
 		const char*										nameSuffix;
 	} cases[] =
 	{
 		{
-			(vk::VkExternalMemoryHandleTypeFlagBitsKHR)0u,				// DX11 doesn't support buffers with an NT handle
-			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHR,
+			(vk::VkExternalMemoryHandleTypeFlagBits)0u,				// DX11 doesn't support buffers with an NT handle
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT,
 			"_nt"
 		},
 		{
-			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR,
-			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT_KHR,
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,
+			vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT,
 			"_kmt"
 		},
 	};

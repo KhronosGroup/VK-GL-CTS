@@ -564,7 +564,7 @@ void submitCommandsAndWait (const DeviceInterface&		vk,
 
 	const deUint32 deviceMask							= 1 << physicalDeviceID;
 	std::vector<deUint32> deviceIndices					(waitSemaphoreCount, physicalDeviceID);
-	VkDeviceGroupSubmitInfoKHR deviceGroupSubmitInfo	=
+	VkDeviceGroupSubmitInfo deviceGroupSubmitInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,		//VkStructureType	sType
 		DE_NULL,											// const void*		pNext

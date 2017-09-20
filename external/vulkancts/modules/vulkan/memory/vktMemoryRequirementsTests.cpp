@@ -76,20 +76,20 @@ VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, con
 VkMemoryRequirements getBufferMemoryRequirements2 (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize size, const VkBufferCreateFlags flags, const VkBufferUsageFlags usage, void* next = DE_NULL)
 {
 	const Unique<VkBuffer>				buffer		(makeBuffer(vk, device, size, flags, usage));
-	VkBufferMemoryRequirementsInfo2KHR	info	=
+	VkBufferMemoryRequirementsInfo2		info	=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,	// VkStructureType	sType
 		DE_NULL,													// const void*		pNext
 		*buffer														// VkBuffer			buffer
 	};
-	VkMemoryRequirements2KHR			req2	=
+	VkMemoryRequirements2				req2	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,				// VkStructureType		sType
 		next,														// void*				pNext
 		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
 	};
 
-	vk.getBufferMemoryRequirements2KHR(device, &info, &req2);
+	vk.getBufferMemoryRequirements2(device, &info, &req2);
 
 	return req2.memoryRequirements;
 }
@@ -98,20 +98,20 @@ VkMemoryRequirements getImageMemoryRequirements2 (const DeviceInterface& vk, con
 {
 	const Unique<VkImage> image(createImage(vk, device, &createInfo));
 
-	VkImageMemoryRequirementsInfo2KHR	info	=
+	VkImageMemoryRequirementsInfo2		info	=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,		// VkStructureType	sType
 		DE_NULL,													// const void*		pNext
 		*image														// VkImage			image
 	};
-	VkMemoryRequirements2KHR			req2	=
+	VkMemoryRequirements2				req2	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,				// VkStructureType		sType
 		next,														// void*				pNext
 		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
 	};
 
-	vk.getImageMemoryRequirements2KHR(device, &info, &req2);
+	vk.getImageMemoryRequirements2(device, &info, &req2);
 
 	return req2.memoryRequirements;
 }
@@ -585,7 +585,7 @@ void BufferMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (cons
 {
 	const deUint32						invalidVkBool32			= static_cast<deUint32>(~0);
 
-	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements	=
+	VkMemoryDedicatedRequirements	dedicatedRequirements	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,	// VkStructureType	sType
 		DE_NULL,												// void*			pNext
@@ -1517,7 +1517,7 @@ void ImageMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (const
 {
 	const deUint32						invalidVkBool32			= static_cast<deUint32>(~0);
 
-	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements	=
+	VkMemoryDedicatedRequirements	dedicatedRequirements	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,	// VkStructureType	sType
 		DE_NULL,												// void*			pNext
@@ -1703,26 +1703,26 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 				for (deUint32 planeNdx = 0; planeNdx < (deUint32)getPlaneCount(format); planeNdx++)
 				{
 					const VkImageAspectFlagBits					aspect		= getPlaneAspect(planeNdx);
-					const VkImagePlaneMemoryRequirementsInfoKHR	aspectInfo	=
+					const VkImagePlaneMemoryRequirementsInfo	aspectInfo	=
 					{
 						VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO_KHR,
 						DE_NULL,
 						aspect
 					};
-					const VkImageMemoryRequirementsInfo2KHR		info		=
+					const VkImageMemoryRequirementsInfo2		info		=
 					{
 						VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
 						(actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) == 0 ? DE_NULL : &aspectInfo,
 						*image
 					};
-					VkMemoryRequirements2KHR					requirements	=
+					VkMemoryRequirements2						requirements	=
 					{
 						VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
 						DE_NULL,
 						{ 0u, 0u, 0u }
 					};
 
-					vk.getImageMemoryRequirements2KHR(device, &info, &requirements);
+					vk.getImageMemoryRequirements2(device, &info, &requirements);
 
 					log << TestLog::Message << "Aspect: " << getImageAspectFlagsStr(aspect) << ", Requirements: " << requirements << TestLog::EndMessage;
 

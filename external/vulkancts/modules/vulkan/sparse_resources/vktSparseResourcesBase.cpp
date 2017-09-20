@@ -65,9 +65,9 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	typedef std::map<deUint32, QueueFamilyQueuesCount>			SelectedQueuesMap;
 	typedef std::map<deUint32, std::vector<float> >				QueuePrioritiesMap;
 
-	std::vector<VkPhysicalDeviceGroupPropertiesKHR>				devGroupProperties;
+	std::vector<VkPhysicalDeviceGroupProperties>				devGroupProperties;
 	std::vector<const char*>									deviceExtensions;
-	VkDeviceGroupDeviceCreateInfoKHR							deviceGroupInfo =
+	VkDeviceGroupDeviceCreateInfo								deviceGroupInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,		//stype
 		DE_NULL,													//pNext
@@ -81,7 +81,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 	{
 		const std::vector<std::string>	requiredExtensions(1, "VK_KHR_device_group_creation");
 		m_deviceGroupInstance	=		createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
-		devGroupProperties		=		enumeratePhysicalDeviceGroupsKHR(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+		devGroupProperties		=		enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
 		m_numPhysicalDevices	=		devGroupProperties[m_deviceGroupIdx].physicalDeviceCount;
 
 		m_physicalDevices.clear();

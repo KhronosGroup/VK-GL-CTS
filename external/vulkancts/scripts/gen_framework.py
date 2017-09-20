@@ -760,9 +760,6 @@ def genCompositeTypeSrc (type):
 		yield line
 	yield "};"
 
-def genCompositeTypeAliasSrc (type):
-	yield "typedef %s %s;" % (type.name, type.alias.name)
-
 def genHandlesSrc (handles):
 	uniqeHandles, duplicatedHandles = splitUniqueAndDuplicatedEntries(handles)
 
@@ -809,22 +806,12 @@ def writeBasicTypes (api, filename):
 			if not enum.isAlias:
 				for line in genEnumSrc(enum):
 					yield line
-				if enum.alias != None:
-					yield "typedef enum %s %s;" % (enum.name, enum.alias.name)
-					for i, value in enumerate(enum.values):
-						yield "#define "+enum.values[i][0] +"_KHR "+ enum.values[i][0]
 			yield ""
 
 		for bitfield in api.bitfields:
 			if not bitfield.isAlias:
 				for line in genBitfieldSrc(bitfield):
 					yield line
-				if bitfield.alias != None:
-					yield "typedef %s %s;" % (bitfield.name, bitfield.alias.name)
-					if len(bitfield.values) > 0:
-						yield "typedef %s %s;" % (getBitEnumNameForBitfield(bitfield.name), getBitEnumNameForBitfield(bitfield.alias.name))
-						for i, value in enumerate(bitfield.values):
-							yield "#define "+bitfield.values[i][0] +"_KHR "+ bitfield.values[i][0]
 			yield ""
 		for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s);" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
 			yield line
@@ -843,9 +830,6 @@ def writeCompositeTypes (api, filename):
 			if not type.isAlias:
 				for line in genCompositeTypeSrc(type):
 					yield line
-				if type.alias != None:
-					for line in genCompositeTypeAliasSrc(type):
-						yield line
 			yield ""
 
 	writeInlFile(filename, INL_HEADER, gen())
@@ -859,8 +843,8 @@ def writeInterfaceDecl (api, filename, functionTypes, concrete):
 		for function in api.functions:
 			if not function.getType() in functionTypes:
 				continue
-
-			yield "virtual %s\t%s\t(%s) const%s;" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments), postfix)
+			if not function.isAlias:
+				yield "virtual %s\t%s\t(%s) const%s;" % (function.returnType, getInterfaceName(function), argListToStr(function.arguments), postfix)
 
 	writeInlFile(filename, INL_HEADER, indentLines(genProtos()))
 
@@ -887,14 +871,8 @@ def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
 
 def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
 	def makeFuncPtrInterfaceImpl ():
-		refFuncs = {}
-		for f in api.functions:
-			if not f.isAlias:
-				refFuncs[f] = f
-			if f.alias != None:
-				refFuncs[f.alias] = f
 		for function in api.functions:
-			if function.getType() in functionTypes:
+			if function.getType() in functionTypes and not function.isAlias:
 				yield ""
 				yield "%s %s::%s (%s) const" % (function.returnType, className, getInterfaceName(function), argListToStr(function.arguments))
 				yield "{"
@@ -905,7 +883,7 @@ def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
 					yield "	*pApiVersion = VK_API_VERSION_1_0;"
 					yield "	return VK_SUCCESS;"
 				else:
-					yield "	%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(refFuncs[function]), ", ".join(a.name for a in function.arguments))
+					yield "	%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function), ", ".join(a.name for a in function.arguments))
 				yield "}"
 
 	writeInlFile(filename, INL_HEADER, makeFuncPtrInterfaceImpl())
@@ -944,6 +922,8 @@ def writeStrUtilImpl (api, filename):
 		yield "}"
 
 		for enum in api.enums:
+			if enum.isAlias:
+				continue
 			yield ""
 			yield "const char* get%sName (%s value)" % (enum.name[2:], enum.name)
 			yield "{"
@@ -955,6 +935,8 @@ def writeStrUtilImpl (api, filename):
 			yield "}"
 
 		for bitfield in api.bitfields:
+			if bitfield.isAlias:
+				continue
 			yield ""
 			yield "tcu::Format::Bitfield<32> get%sStr (%s value)" % (bitfield.name[2:], bitfield.name)
 			yield "{"
@@ -1019,6 +1001,8 @@ class ConstructorFunction:
 def getConstructorFunctions (api):
 	funcs = []
 	for function in api.functions:
+		if function.isAlias:
+			continue
 		if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "createInfoCount" in [a.name for a in function.arguments]:
 			if function.name == "vkCreateDisplayModeKHR":
 				continue # No way to delete display modes (bug?)
@@ -1266,7 +1250,7 @@ def writeTypeUtil (api, filename):
 
 	def gen ():
 		for type in api.compositeTypes:
-			if not isSimpleStruct(type):
+			if not isSimpleStruct(type) or type.isAlias:
 				continue
 
 			yield ""

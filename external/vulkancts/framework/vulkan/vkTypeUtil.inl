@@ -556,33 +556,3 @@ inline VkSampleLocationEXT makeSampleLocationEXT (float x, float y)
 	res.y	= y;
 	return res;
 }
-
-inline VkInputAttachmentAspectReferenceKHR makeInputAttachmentAspectReferenceKHR (deUint32 subpass, deUint32 inputAttachmentIndex, VkImageAspectFlags aspectMask)
-{
-	VkInputAttachmentAspectReferenceKHR res;
-	res.subpass					= subpass;
-	res.inputAttachmentIndex	= inputAttachmentIndex;
-	res.aspectMask				= aspectMask;
-	return res;
-}
-
-inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
-{
-	VkDescriptorUpdateTemplateEntryKHR res;
-	res.dstBinding		= dstBinding;
-	res.dstArrayElement	= dstArrayElement;
-	res.descriptorCount	= descriptorCount;
-	res.descriptorType	= descriptorType;
-	res.offset			= offset;
-	res.stride			= stride;
-	return res;
-}
-
-inline VkExternalMemoryPropertiesKHR makeExternalMemoryPropertiesKHR (VkExternalMemoryFeatureFlags externalMemoryFeatures, VkExternalMemoryHandleTypeFlags exportFromImportedHandleTypes, VkExternalMemoryHandleTypeFlags compatibleHandleTypes)
-{
-	VkExternalMemoryPropertiesKHR res;
-	res.externalMemoryFeatures			= externalMemoryFeatures;
-	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
-	res.compatibleHandleTypes			= compatibleHandleTypes;
-	return res;
-}
