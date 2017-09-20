@@ -626,7 +626,7 @@ void genTexCoords (std::vector<Vec2>&	coords,
 	}
 }
 
-Interval rangeExpandChroma (vk::VkSamplerYcbcrRange	range,
+Interval rangeExpandChroma (vk::VkSamplerYcbcrRange		range,
 							const FloatFormat&			conversionFormat,
 							const deUint32				bits,
 							const Interval&				sample)
@@ -654,7 +654,7 @@ Interval rangeExpandChroma (vk::VkSamplerYcbcrRange	range,
 	}
 }
 
-Interval rangeExpandLuma (vk::VkSamplerYcbcrRange	range,
+Interval rangeExpandLuma (vk::VkSamplerYcbcrRange		range,
 						  const FloatFormat&			conversionFormat,
 						  const deUint32				bits,
 						  const Interval&				sample)
@@ -945,7 +945,7 @@ int divFloor (int a, int b)
 
 Interval reconstructLinearXChromaSample (const FloatFormat&			filteringFormat,
 										 const FloatFormat&			conversionFormat,
-										 vk::VkChromaLocation	offset,
+										 vk::VkChromaLocation		offset,
 										 vk::VkSamplerAddressMode	addressModeU,
 										 vk::VkSamplerAddressMode	addressModeV,
 										 const ChannelAccess&		access,
@@ -2420,14 +2420,14 @@ deUint32 getFormatChannelCount (vk::VkFormat format)
 struct RangeNamePair
 {
 	const char*					name;
-	vk::VkSamplerYcbcrRange	value;
+	vk::VkSamplerYcbcrRange		value;
 };
 
 
 struct ChromaLocationNamePair
 {
-	const char*				name;
-	vk::VkChromaLocation	value;
+	const char*					name;
+	vk::VkChromaLocation		value;
 };
 
 void initTests (tcu::TestCaseGroup* testGroup)
@@ -2524,8 +2524,8 @@ void initTests (tcu::TestCaseGroup* testGroup)
 		{ "nearest",		vk::VK_FILTER_NEAREST	}
 	};
 	// Used by the chroma reconstruction tests
-	const vk::VkSamplerYcbcrModelConversion	defaultColorModel		(vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY);
-	const vk::VkSamplerYcbcrRange			defaultColorRange		(vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL);
+	const vk::VkSamplerYcbcrModelConversion		defaultColorModel		(vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY);
+	const vk::VkSamplerYcbcrRange				defaultColorRange		(vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL);
 	const vk::VkComponentMapping				identitySwizzle			=
 	{
 		vk::VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -2561,19 +2561,19 @@ void initTests (tcu::TestCaseGroup* testGroup)
 	// Test formats without chroma reconstruction
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(noChromaSubsampledFormats); formatNdx++)
 	{
-		const vk::VkFormat				format		(noChromaSubsampledFormats[formatNdx]);
-		const std::string				formatName	(de::toLower(std::string(getFormatName(format)).substr(10)));
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+		const vk::VkFormat						format					(noChromaSubsampledFormats[formatNdx]);
+		const std::string						formatName				(de::toLower(std::string(getFormatName(format)).substr(10)));
+		de::MovePtr<tcu::TestCaseGroup>			formatGroup				(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
 
 		for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)
 		{
-			const char* const							colorModelName	(colorModels[modelNdx].name);
-			const vk::VkSamplerYcbcrModelConversion	colorModel		(colorModels[modelNdx].value);
+			const char* const						colorModelName		(colorModels[modelNdx].name);
+			const vk::VkSamplerYcbcrModelConversion	colorModel			(colorModels[modelNdx].value);
 
 			if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY && getFormatChannelCount(format) < 3)
 				continue;
 
-			de::MovePtr<tcu::TestCaseGroup>				colorModelGroup	(new tcu::TestCaseGroup(testCtx, colorModelName, ("Tests for color model " + string(colorModelName)).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>			colorModelGroup		(new tcu::TestCaseGroup(testCtx, colorModelName, ("Tests for color model " + string(colorModelName)).c_str()));
 
 			if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY)
 			{
@@ -2584,15 +2584,15 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 					for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 					{
-						const vk::VkImageTiling				tiling				(imageTilings[tilingNdx].value);
-						const char* const					tilingName			(imageTilings[tilingNdx].name);
-						const glu::ShaderType				shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+						const vk::VkImageTiling			tiling				(imageTilings[tilingNdx].value);
+						const char* const				tilingName			(imageTilings[tilingNdx].name);
+						const glu::ShaderType			shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 						const vk::VkSamplerYcbcrRange	colorRange			(rng.choose<RangeNamePair, const RangeNamePair*>(DE_ARRAY_BEGIN(colorRanges), DE_ARRAY_END(colorRanges)).value);
 						const vk::VkChromaLocation		chromaLocation		(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 
-						const TestConfig					config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																					textureFilter, chromaLocation, chromaLocation, false, false,
-																					colorRange, colorModel, identitySwizzle);
+						const TestConfig				config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																				textureFilter, chromaLocation, chromaLocation, false, false,
+																				colorRange, colorModel, identitySwizzle);
 
 						addFunctionCaseWithPrograms(colorModelGroup.get(), std::string(textureFilterName) + "_" + tilingName, "", createTestShaders, textureConversionTest, config);
 					}
@@ -2602,13 +2602,13 @@ void initTests (tcu::TestCaseGroup* testGroup)
 			{
 				for (size_t rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(colorRanges); rangeNdx++)
 				{
-					const char* const					colorRangeName	(colorRanges[rangeNdx].name);
+					const char* const				colorRangeName	(colorRanges[rangeNdx].name);
 					const vk::VkSamplerYcbcrRange	colorRange		(colorRanges[rangeNdx].value);
 
 					// Narrow range doesn't really work with formats that have less than 8 bits
 					if (colorRange == vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW)
 					{
-						const UVec4	bitDepth	(getBitDepth(format));
+						const UVec4					bitDepth		(getBitDepth(format));
 
 						if (bitDepth[0] < 8 || bitDepth[1] < 8 || bitDepth[2] < 8)
 							continue;
@@ -2623,13 +2623,13 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 						for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 						{
-							const vk::VkImageTiling			tiling				(imageTilings[tilingNdx].value);
-							const char* const				tilingName			(imageTilings[tilingNdx].name);
-							const glu::ShaderType			shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+							const vk::VkImageTiling		tiling				(imageTilings[tilingNdx].value);
+							const char* const			tilingName			(imageTilings[tilingNdx].name);
+							const glu::ShaderType		shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 							const vk::VkChromaLocation	chromaLocation		(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
-							const TestConfig				config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																					textureFilter, chromaLocation, chromaLocation, false, false,
-																					colorRange, colorModel, identitySwizzle);
+							const TestConfig			config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																				textureFilter, chromaLocation, chromaLocation, false, false,
+																				colorRange, colorModel, identitySwizzle);
 
 							addFunctionCaseWithPrograms(colorRangeGroup.get(), std::string(textureFilterName) + "_" + tilingName, "", createTestShaders, textureConversionTest, config);
 						}
@@ -2658,12 +2658,12 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 			for (size_t xChromaOffsetNdx = 0; xChromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); xChromaOffsetNdx++)
 			{
-				const char* const				xChromaOffsetName	(chromaLocations[xChromaOffsetNdx].name);
+				const char* const			xChromaOffsetName	(chromaLocations[xChromaOffsetNdx].name);
 				const vk::VkChromaLocation	xChromaOffset		(chromaLocations[xChromaOffsetNdx].value);
 
 				for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)
 				{
-					const char* const							colorModelName	(colorModels[modelNdx].name);
+					const char* const						colorModelName	(colorModels[modelNdx].name);
 					const vk::VkSamplerYcbcrModelConversion	colorModel		(colorModels[modelNdx].value);
 
 					if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY && getFormatChannelCount(format) < 3)
@@ -2674,14 +2674,14 @@ void initTests (tcu::TestCaseGroup* testGroup)
 					{
 						for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 						{
-							const vk::VkImageTiling				tiling			(imageTilings[tilingNdx].value);
-							const char* const					tilingName		(imageTilings[tilingNdx].name);
+							const vk::VkImageTiling			tiling			(imageTilings[tilingNdx].value);
+							const char* const				tilingName		(imageTilings[tilingNdx].name);
 							const vk::VkSamplerYcbcrRange	colorRange		(rng.choose<RangeNamePair, const RangeNamePair*>(DE_ARRAY_BEGIN(colorRanges), DE_ARRAY_END(colorRanges)).value);
-							const glu::ShaderType				shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+							const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 							const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
-							const TestConfig					config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																				 vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
-																				 colorRange, colorModel, identitySwizzle);
+							const TestConfig				config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																			 vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
+																			 colorRange, colorModel, identitySwizzle);
 
 							addFunctionCaseWithPrograms(conversionGroup.get(), std::string(colorModelName) + "_" + tilingName + "_" + xChromaOffsetName, "", createTestShaders, textureConversionTest, config);
 						}
@@ -2690,13 +2690,13 @@ void initTests (tcu::TestCaseGroup* testGroup)
 					{
 						for (size_t rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(colorRanges); rangeNdx++)
 						{
-							const char* const					colorRangeName	(colorRanges[rangeNdx].name);
+							const char* const				colorRangeName	(colorRanges[rangeNdx].name);
 							const vk::VkSamplerYcbcrRange	colorRange		(colorRanges[rangeNdx].value);
 
 							// Narrow range doesn't really work with formats that have less than 8 bits
 							if (colorRange == vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW)
 							{
-								const UVec4	bitDepth	(getBitDepth(format));
+								const UVec4					bitDepth		(getBitDepth(format));
 
 								if (bitDepth[0] < 8 || bitDepth[1] < 8 || bitDepth[2] < 8)
 									continue;
@@ -2704,13 +2704,13 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 							for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 							{
-								const vk::VkImageTiling			tiling			(imageTilings[tilingNdx].value);
-								const char* const				tilingName		(imageTilings[tilingNdx].name);
-								const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+								const vk::VkImageTiling		tiling			(imageTilings[tilingNdx].value);
+								const char* const			tilingName		(imageTilings[tilingNdx].name);
+								const glu::ShaderType		shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 								const vk::VkChromaLocation	yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
-								const TestConfig				config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																				vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
-																				colorRange, colorModel, identitySwizzle);
+								const TestConfig			config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																			vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
+																			colorRange, colorModel, identitySwizzle);
 
 								addFunctionCaseWithPrograms(conversionGroup.get(), (string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + xChromaOffsetName).c_str(), "", createTestShaders, textureConversionTest, config);
 							}
@@ -2747,8 +2747,8 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 							for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 							{
-								const vk::VkImageTiling	tiling		(imageTilings[tilingNdx].value);
-								const char* const		tilingName	(imageTilings[tilingNdx].name);
+								const vk::VkImageTiling		tiling				(imageTilings[tilingNdx].value);
+								const char* const			tilingName			(imageTilings[tilingNdx].name);
 
 								{
 									const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
@@ -2847,7 +2847,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 			for (size_t chromaOffsetNdx = 0; chromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); chromaOffsetNdx++)
 			{
-				const char* const				chromaOffsetName	(chromaLocations[chromaOffsetNdx].name);
+				const char* const			chromaOffsetName	(chromaLocations[chromaOffsetNdx].name);
 				const vk::VkChromaLocation	chromaOffset		(chromaLocations[chromaOffsetNdx].value);
 
 				for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)

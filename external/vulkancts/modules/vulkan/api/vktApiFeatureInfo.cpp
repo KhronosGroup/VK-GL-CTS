@@ -2559,7 +2559,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
 	{
 		VkPhysicalDeviceFeatures		coreFeatures;
-		VkPhysicalDeviceFeatures2	extFeatures;
+		VkPhysicalDeviceFeatures2		extFeatures;
 
 		deMemset(&coreFeatures, 0xcd, sizeof(coreFeatures));
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
@@ -2589,7 +2589,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
 	{
-		VkPhysicalDeviceProperties		coreProperties;
+		VkPhysicalDeviceProperties	coreProperties;
 		VkPhysicalDeviceProperties2	extProperties;
 
 		extProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
@@ -2635,7 +2635,7 @@ tcu::TestStatus deviceFormatProperties2 (Context& context)
 		{
 			const VkFormat			format			= (VkFormat)formatNdx;
 			VkFormatProperties		coreProperties;
-			VkFormatProperties2	extProperties;
+			VkFormatProperties2		extProperties;
 
 			deMemset(&coreProperties, 0xcd, sizeof(VkFormatProperties));
 			deMemset(&extProperties, 0xcd, sizeof(VkFormatProperties2));

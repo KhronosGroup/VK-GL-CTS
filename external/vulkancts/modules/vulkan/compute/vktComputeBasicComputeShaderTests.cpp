@@ -2413,7 +2413,7 @@ void ComputeTestInstance::createDeviceGroup (void)
 		deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
-	VkDeviceGroupDeviceCreateInfo				deviceGroupInfo =
+	VkDeviceGroupDeviceCreateInfo					deviceGroupInfo			=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
 		DE_NULL,																			//pNext
@@ -2421,8 +2421,8 @@ void ComputeTestInstance::createDeviceGroup (void)
 		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
 	};
 	InstanceDriver									instance				(m_context.getPlatformInterface(), m_deviceGroupInstance.get());
-	const VkPhysicalDeviceFeatures					deviceFeatures	=		getPhysicalDeviceFeatures(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
-	const std::vector<VkQueueFamilyProperties>		queueProps		=		getPhysicalDeviceQueueFamilyProperties(instance, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
+	const VkPhysicalDeviceFeatures					deviceFeatures			= getPhysicalDeviceFeatures(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
+	const std::vector<VkQueueFamilyProperties>		queueProps				= getPhysicalDeviceQueueFamilyProperties(instance, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
 
 	m_physicalDevices.resize(m_numPhysDevices);
 	for (deUint32 physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
@@ -2434,7 +2434,7 @@ void ComputeTestInstance::createDeviceGroup (void)
 			m_queueFamilyIndex = (deUint32)queueNdx;
 	}
 
-	VkDeviceQueueCreateInfo							queueInfo		=
+	VkDeviceQueueCreateInfo							queueInfo				=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,										// const void*						pNext;
@@ -2444,7 +2444,7 @@ void ComputeTestInstance::createDeviceGroup (void)
 		&queuePriority									// const float*						pQueuePriorities;
 	};
 
-	const VkDeviceCreateInfo						deviceInfo		=
+	const VkDeviceCreateInfo						deviceInfo				=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
 		&deviceGroupInfo,								// const void*						pNext;

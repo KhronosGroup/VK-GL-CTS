@@ -343,8 +343,8 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_multiview"))
 			throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
 
-		const InstanceInterface&	instance		= m_context.getInstanceInterface();
-		const VkPhysicalDevice		physicalDevice	= m_context.getPhysicalDevice();
+		const InstanceInterface&			instance			= m_context.getInstanceInterface();
+		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
 
 		VkPhysicalDeviceMultiviewProperties multiviewProperties =
 		{
@@ -374,9 +374,9 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 
 void MultiViewRenderTestInstance::createVertexBuffer (void)
 {
-	const VkDeviceSize						vertexDataSize	= static_cast<VkDeviceSize>(deAlignSize(static_cast<size_t>( m_data.size() * sizeof(VertexData)),
-															static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
-	const VkBufferCreateInfo				bufferInfo		= makeBufferCreateInfo(vertexDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	const VkDeviceSize						vertexDataSize			= static_cast<VkDeviceSize>(deAlignSize(static_cast<size_t>( m_data.size() * sizeof(VertexData)),
+																	static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
+	const VkBufferCreateInfo				bufferInfo				= makeBufferCreateInfo(vertexDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
 	m_vertexBuffer		= createBuffer(*m_device, *m_logicalDevice, &bufferInfo);
 	m_allocationBuffer	= m_allocator->allocate(getBufferMemoryRequirements(*m_device, *m_logicalDevice, *m_vertexBuffer),  MemoryRequirement::HostVisible);
@@ -402,26 +402,26 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	const float								queuePriorities			= 1.0f;
 	const VkDeviceQueueCreateInfo			queueInfo				=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	//VkStructureType			sType;
-		DE_NULL,									//const void*				pNext;
-		(VkDeviceQueueCreateFlags)0u,				//VkDeviceQueueCreateFlags	flags;
-		m_queueFamilyIndex,							//deUint32					queueFamilyIndex;
-		1u,											//deUint32					queueCount;
-		&queuePriorities							//const float*				pQueuePriorities;
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,					//VkStructureType			sType;
+		DE_NULL,													//const void*				pNext;
+		(VkDeviceQueueCreateFlags)0u,								//VkDeviceQueueCreateFlags	flags;
+		m_queueFamilyIndex,											//deUint32					queueFamilyIndex;
+		1u,															//deUint32					queueCount;
+		&queuePriorities											//const float*				pQueuePriorities;
 	};
 
-	VkPhysicalDeviceMultiviewFeatures	multiviewFeatures		=
+	VkPhysicalDeviceMultiviewFeatures		multiviewFeatures		=
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,	// VkStructureType	sType;
-		DE_NULL,													// void*			pNext;
-		DE_FALSE,													// VkBool32			multiview;
-		DE_FALSE,													// VkBool32			multiviewGeometryShader;
-		DE_FALSE,													// VkBool32			multiviewTessellationShader;
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR,	// VkStructureType			sType;
+		DE_NULL,													// void*					pNext;
+		DE_FALSE,													// VkBool32					multiview;
+		DE_FALSE,													// VkBool32					multiviewGeometryShader;
+		DE_FALSE,													// VkBool32					multiviewTessellationShader;
 	};
 
-	VkPhysicalDeviceFeatures2			enabledFeatures;
-	enabledFeatures.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	enabledFeatures.pNext				= &multiviewFeatures;
+	VkPhysicalDeviceFeatures2				enabledFeatures;
+	enabledFeatures.sType					= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	enabledFeatures.pNext					= &multiviewFeatures;
 
 	instance.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
@@ -439,7 +439,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	if (TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex && !multiviewFeatures.multiviewTessellationShader)
 		TCU_THROW(NotSupportedError, "Tessellation shader is not supported");
 
-	VkPhysicalDeviceMultiviewProperties	multiviewProperties		=
+	VkPhysicalDeviceMultiviewProperties	multiviewProperties			=
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR,	//VkStructureType	sType;
 		DE_NULL,													//void*				pNext;
@@ -510,11 +510,11 @@ void MultiViewRenderTestInstance::createCommandBuffer (void)
 	{
 		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
 		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*m_cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,												// deUint32					bufferCount;
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType		sType;
+			DE_NULL,											// const void*			pNext;
+			*m_cmdPool,											// VkCommandPool		commandPool;
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// VkCommandBufferLevel	level;
+			1u,													// deUint32				bufferCount;
 		};
 		m_cmdBuffer	= allocateCommandBuffer(*m_device, *m_logicalDevice, &cmdBufferAllocateInfo);
 	}
@@ -623,7 +623,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		VK_FALSE,																																	// VkBool32									primitiveRestartEnable;
 	};
 
-	const VkViewport								viewport						=
+	const VkViewport								viewport							=
 	{
 		0.0f,								// float	originX;
 		0.0f,								// float	originY;
@@ -633,7 +633,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		1.0f								// float	maxDepth;
 	};
 
-	const VkRect2D									scissor							=
+	const VkRect2D									scissor								=
 	{
 		{ 0, 0 },													// VkOffset2D	offset;
 		{ m_parameters.extent.width, m_parameters.extent.height }	// VkExtent2D	extent;

@@ -370,7 +370,7 @@ Transference getHandelTypeTransferences (vk::VkExternalFenceHandleTypeFlagBits t
 int getMemoryFd (const vk::DeviceInterface&					vkd,
 				 vk::VkDevice								device,
 				 vk::VkDeviceMemory							memory,
-				 vk::VkExternalMemoryHandleTypeFlagBits	externalType)
+				 vk::VkExternalMemoryHandleTypeFlagBits		externalType)
 {
 	const vk::VkMemoryGetFdInfoKHR	info	=
 	{
@@ -391,7 +391,7 @@ int getMemoryFd (const vk::DeviceInterface&					vkd,
 void getMemoryNative (const vk::DeviceInterface&					vkd,
 						 vk::VkDevice								device,
 						 vk::VkDeviceMemory							memory,
-						 vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+						 vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 						 NativeHandle&								nativeHandle)
 {
 	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
@@ -445,7 +445,7 @@ void getMemoryNative (const vk::DeviceInterface&					vkd,
 
 vk::Move<vk::VkFence> createExportableFence (const vk::DeviceInterface&					vkd,
 											 vk::VkDevice								device,
-											 vk::VkExternalFenceHandleTypeFlagBits	externalType)
+											 vk::VkExternalFenceHandleTypeFlagBits		externalType)
 {
 	const vk::VkExportFenceCreateInfo	exportCreateInfo	=
 	{
@@ -466,7 +466,7 @@ vk::Move<vk::VkFence> createExportableFence (const vk::DeviceInterface&					vkd,
 int getFenceFd (const vk::DeviceInterface&					vkd,
 				vk::VkDevice								device,
 				vk::VkFence									fence,
-				vk::VkExternalFenceHandleTypeFlagBits	externalType)
+				vk::VkExternalFenceHandleTypeFlagBits		externalType)
 {
 	const vk::VkFenceGetFdInfoKHR	info	=
 	{
@@ -487,7 +487,7 @@ int getFenceFd (const vk::DeviceInterface&					vkd,
 void getFenceNative (const vk::DeviceInterface&					vkd,
 					 vk::VkDevice								device,
 					 vk::VkFence								fence,
-					 vk::VkExternalFenceHandleTypeFlagBits	externalType,
+					 vk::VkExternalFenceHandleTypeFlagBits		externalType,
 					 NativeHandle&								nativeHandle)
 {
 	if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
@@ -543,7 +543,7 @@ void getFenceNative (const vk::DeviceInterface&					vkd,
 void importFence (const vk::DeviceInterface&				vkd,
 				  const vk::VkDevice						device,
 				  const vk::VkFence							fence,
-				  vk::VkExternalFenceHandleTypeFlagBits	externalType,
+				  vk::VkExternalFenceHandleTypeFlagBits		externalType,
 				  NativeHandle&								handle,
 				  vk::VkFenceImportFlags					flags)
 {
@@ -698,7 +698,7 @@ void getSemaphoreNative (const vk::DeviceInterface&					vkd,
 void importSemaphore (const vk::DeviceInterface&					vkd,
 					  const vk::VkDevice							device,
 					  const vk::VkSemaphore							semaphore,
-					  vk::VkExternalSemaphoreHandleTypeFlagBits	externalType,
+					  vk::VkExternalSemaphoreHandleTypeFlagBits		externalType,
 					  NativeHandle&									handle,
 					  vk::VkSemaphoreImportFlags					flags)
 {
@@ -742,9 +742,9 @@ void importSemaphore (const vk::DeviceInterface&					vkd,
 
 vk::Move<vk::VkSemaphore> createAndImportSemaphore (const vk::DeviceInterface&						vkd,
 													const vk::VkDevice								device,
-													vk::VkExternalSemaphoreHandleTypeFlagBits	externalType,
+													vk::VkExternalSemaphoreHandleTypeFlagBits		externalType,
 													NativeHandle&									handle,
-													vk::VkSemaphoreImportFlags					flags)
+													vk::VkSemaphoreImportFlags						flags)
 {
 	vk::Move<vk::VkSemaphore>	semaphore	(createSemaphore(vkd, device));
 
@@ -756,9 +756,9 @@ vk::Move<vk::VkSemaphore> createAndImportSemaphore (const vk::DeviceInterface&		
 vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface&					vkd,
 													   vk::VkDevice									device,
 													   const vk::VkMemoryRequirements&				requirements,
-													   vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+													   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													   vk::VkBuffer									buffer,
-													   deUint32&                                    exportedMemoryTypeIndex)
+													   deUint32&									exportedMemoryTypeIndex)
 {
 	exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 	const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
@@ -788,9 +788,9 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface
 vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface&					vkd,
 													   vk::VkDevice									device,
 													   const vk::VkMemoryRequirements&				requirements,
-													   vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+													   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													   vk::VkImage									image,
-													   deUint32&                                    exportedMemoryTypeIndex)
+													   deUint32&									exportedMemoryTypeIndex)
 {
 	exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
 	const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
@@ -822,7 +822,7 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::InstanceInterfa
 													   const vk::DeviceInterface&					vkd,
 													   vk::VkDevice									device,
 													   const vk::VkMemoryRequirements&				requirements,
-													   vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+													   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													   bool											hostVisible,
 													   vk::VkBuffer									buffer,
 													   deUint32&									exportedMemoryTypeIndex)
@@ -886,7 +886,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			externalType,
 			handle.getFd()
 		};
-		const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
+		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo	=
 		{
 			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
 			&importInfo,
@@ -909,7 +909,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
 			|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 	{
-		const vk::VkImportMemoryWin32HandleInfoKHR	importInfo =
+		const vk::VkImportMemoryWin32HandleInfoKHR	importInfo		=
 		{
 			vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR,
 			DE_NULL,
@@ -917,7 +917,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			handle.getWin32Handle(),
 			DE_NULL
 		};
-		const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
+		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo	=
 		{
 			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
 			&importInfo,
@@ -947,7 +947,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&					vkd,
 										   vk::VkDevice									device,
 										   const vk::VkMemoryRequirements&				requirements,
-										   vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+										   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 										   deUint32										memoryTypeIndex,
 										   NativeHandle&								handle)
 {
@@ -958,7 +958,7 @@ vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&		
 													vk::VkDevice								device,
 													vk::VkBuffer								buffer,
 													const vk::VkMemoryRequirements&				requirements,
-													vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+													vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													deUint32									memoryTypeIndex,
 													NativeHandle&								handle)
 {
@@ -969,7 +969,7 @@ vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&		
 													vk::VkDevice								device,
 													vk::VkImage									image,
 													const vk::VkMemoryRequirements&				requirements,
-													vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+													vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													deUint32									memoryTypeIndex,
 													NativeHandle&								handle)
 {
@@ -979,12 +979,12 @@ vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&		
 vk::Move<vk::VkBuffer> createExternalBuffer (const vk::DeviceInterface&					vkd,
 											 vk::VkDevice								device,
 											 deUint32									queueFamilyIndex,
-											 vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+											 vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 											 vk::VkDeviceSize							size,
 											 vk::VkBufferCreateFlags					createFlags,
 											 vk::VkBufferUsageFlags						usageFlags)
 {
-	const vk::VkExternalMemoryBufferCreateInfo		externalCreateInfo	=
+	const vk::VkExternalMemoryBufferCreateInfo			externalCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
 		DE_NULL,
@@ -1008,7 +1008,7 @@ vk::Move<vk::VkBuffer> createExternalBuffer (const vk::DeviceInterface&					vkd,
 vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 										   vk::VkDevice									device,
 										   deUint32										queueFamilyIndex,
-										   vk::VkExternalMemoryHandleTypeFlagBits	externalType,
+										   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 										   vk::VkFormat									format,
 										   deUint32										width,
 										   deUint32										height,

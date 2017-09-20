@@ -29,8 +29,8 @@
 #include "tcuTestLog.hpp"
 #include "vkPrograms.hpp"
 #include "vkRefUtil.hpp"
-#include "vkQueryUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vkQueryUtil.hpp"
 
 namespace vkt
 {
@@ -207,14 +207,14 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 	const DeviceInterface&				vk								= context.getDeviceInterface();
 	const deUint32						queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
 	VkPhysicalDeviceMemoryProperties	memoryProperties;
-	VkMemoryDedicatedRequirements	dedicatedRequirements			=
+	VkMemoryDedicatedRequirements		dedicatedRequirements			=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,				// VkStructureType		sType;
 		DE_NULL,														// const void*			pNext;
 		false,															// VkBool32				prefersDedicatedAllocation
 		false															// VkBool32				requiresDedicatedAllocation
 	};
-	VkMemoryRequirements2			memReqs							=
+	VkMemoryRequirements2				memReqs							=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,						// VkStructureType		sType
 		&dedicatedRequirements,											// void*				pNext
@@ -242,7 +242,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 		return tcu::TestStatus::fail("Buffer creation failed! (Error code: " + de::toString(error.getMessage()) + ")");
 	}
 
-	VkBufferMemoryRequirementsInfo2	info							=
+	VkBufferMemoryRequirementsInfo2	info								=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,			// VkStructureType		sType
 		DE_NULL,														// const void*			pNext
@@ -269,10 +269,8 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 	vkInstance.getPhysicalDeviceMemoryProperties(vkPhysicalDevice, &memoryProperties);
 
 	const deUint32						heapTypeIndex					= static_cast<deUint32>(deCtz32(memReqs.memoryRequirements.memoryTypeBits));
-	//const VkMemoryType					memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
-	//const VkMemoryHeap					memoryHeap						= memoryProperties.memoryHeaps[memoryType.heapIndex];
 
-	vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs); // get the proper size requirement
+	vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);			// get the proper size requirement
 
 	if (size > memReqs.memoryRequirements.size)
 	{
@@ -419,21 +417,22 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 
 		for (deUint32 format = vk::VK_FORMAT_UNDEFINED + 1; format < VK_CORE_FORMAT_LAST; format++)
 		{
-			const std::string				formatName		= de::toLower(getFormatName((VkFormat)format)).substr(10);
+			const std::string			formatName						= de::toLower(getFormatName((VkFormat)format)).substr(10);
 			de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, "suballocation", "BufferView Construction Tests for Suballocated Buffer"));
 
-			const std::string				testName		= de::toLower(getFormatName((VkFormat)format)).substr(10);
-			const std::string				testDescription	= "vkBufferView test " + testName;
+			const std::string			testName						= de::toLower(getFormatName((VkFormat)format)).substr(10);
+			const std::string			testDescription					= "vkBufferView test " + testName;
 
 			{
-				const BufferViewCaseParameters	testParams					=
+				const BufferViewCaseParameters
+										testParams						=
 				{
-					static_cast<vk::VkFormat>(format),						// VkFormat					format;
-					0,														// VkDeviceSize				offset;
-					range,													// VkDeviceSize				range;
-					usage[usageNdx],										// VkBufferUsageFlags		usage;
-					feature[usageNdx],										// VkFormatFeatureFlags		flags;
-					static_cast<AllocationKind>(allocationKind)				// AllocationKind			bufferAllocationKind;
+					static_cast<vk::VkFormat>(format),					// VkFormat					format;
+					0,													// VkDeviceSize				offset;
+					range,												// VkDeviceSize				range;
+					usage[usageNdx],									// VkBufferUsageFlags		usage;
+					feature[usageNdx],									// VkFormatFeatureFlags		flags;
+					static_cast<AllocationKind>(allocationKind)			// AllocationKind			bufferAllocationKind;
 				};
 
 				usageGroup->addChild(new BufferViewTestCase(testCtx, testName.c_str(), testDescription.c_str(), testParams));

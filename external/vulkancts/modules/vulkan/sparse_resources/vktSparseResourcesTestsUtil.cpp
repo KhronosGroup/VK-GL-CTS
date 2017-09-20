@@ -556,28 +556,28 @@ void submitCommandsAndWait (const DeviceInterface&		vk,
 							const bool					useDeviceGroups,
 							const deUint32				physicalDeviceID)
 {
-	const VkFenceCreateInfo	fenceParams =
+	const VkFenceCreateInfo	fenceParams				=
 	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		0u,										// VkFenceCreateFlags	flags;
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,				// VkStructureType		sType;
+		DE_NULL,											// const void*			pNext;
+		0u,													// VkFenceCreateFlags	flags;
 	};
-	const Unique<VkFence> fence(createFence(vk, device, &fenceParams));
+	const Unique<VkFence>	fence(createFence		(vk, device, &fenceParams));
 
-	const deUint32 deviceMask							= 1 << physicalDeviceID;
-	std::vector<deUint32> deviceIndices					(waitSemaphoreCount, physicalDeviceID);
+	const deUint32			deviceMask				= 1 << physicalDeviceID;
+	std::vector<deUint32>	deviceIndices			(waitSemaphoreCount, physicalDeviceID);
 	VkDeviceGroupSubmitInfo deviceGroupSubmitInfo	=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,		//VkStructureType	sType
-		DE_NULL,											// const void*		pNext
-		waitSemaphoreCount,									// uint32_t			waitSemaphoreCount
-		deviceIndices.size() ? &deviceIndices[0] : DE_NULL,	// const uint32_t*	pWaitSemaphoreDeviceIndices
-		1u,													// uint32_t			commandBufferCount
-		&deviceMask,										// const uint32_t*	pCommandBufferDeviceMasks
-		0u,													// uint32_t			signalSemaphoreCount
-		DE_NULL,											// const uint32_t*	pSignalSemaphoreDeviceIndices
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,		//VkStructureType		sType
+		DE_NULL,											// const void*			pNext
+		waitSemaphoreCount,									// uint32_t				waitSemaphoreCount
+		deviceIndices.size() ? &deviceIndices[0] : DE_NULL,	// const uint32_t*		pWaitSemaphoreDeviceIndices
+		1u,													// uint32_t				commandBufferCount
+		&deviceMask,										// const uint32_t*		pCommandBufferDeviceMasks
+		0u,													// uint32_t				signalSemaphoreCount
+		DE_NULL,											// const uint32_t*		pSignalSemaphoreDeviceIndices
 	};
-	const VkSubmitInfo submitInfo =
+	const VkSubmitInfo		submitInfo				=
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
 		useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL,	// const void*					pNext;
