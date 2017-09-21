@@ -189,12 +189,15 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 	const VkPhysicalDeviceSamplerYcbcrConversionFeatures*		features	= findStructure<VkPhysicalDeviceSamplerYcbcrConversionFeatures>(context.getDeviceFeatures2().pNext);
 	vector<string>												reqExts;
 
-	reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversio"))
+		reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
 
 	if (disjoint)
 	{
-		reqExts.push_back("VK_KHR_bind_memory2");
-		reqExts.push_back("VK_KHR_get_memory_requirements2");
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
+			reqExts.push_back("VK_KHR_bind_memory2");
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_get_memory_requirements2"))
+			reqExts.push_back("VK_KHR_get_memory_requirements2");
 	}
 
 	for (vector<string>::const_iterator extIter = reqExts.begin(); extIter != reqExts.end(); ++extIter)

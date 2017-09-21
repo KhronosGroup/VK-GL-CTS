@@ -95,7 +95,8 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 		deviceGroupInfo.physicalDeviceCount = devGroupProperties[m_deviceGroupIdx].physicalDeviceCount;
 		deviceGroupInfo.pPhysicalDevices = devGroupProperties[m_deviceGroupIdx].physicalDevices;
 
-		deviceExtensions.push_back("VK_KHR_device_group");
+		if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
+			deviceExtensions.push_back("VK_KHR_device_group");
 	}
 
 	InstanceDriver						instance(m_context.getPlatformInterface(), m_useDeviceGroups ? m_deviceGroupInstance.get() : m_context.getInstance());

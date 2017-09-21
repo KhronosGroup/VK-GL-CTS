@@ -36,6 +36,8 @@ namespace vk
 
 void											getCoreInstanceExtensions						(deUint32 apiVersion, std::vector<const char*>& dst);
 void											getCoreDeviceExtensions							(deUint32 apiVersion, std::vector<const char*>& dst);
+bool											isCoreInstanceExtension							(const deUint32 apiVersion, const std::string& extension);
+bool											isCoreDeviceExtension							(const deUint32 apiVersion, const std::string& extension);
 
 // API queries
 
@@ -109,6 +111,10 @@ bool										isCompatible							(const VkLayerProperties& layerProperties, cons
 template<typename ExtensionIterator>
 bool										isExtensionSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
 bool										isExtensionSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+bool										isDeviceExtensionSupported				(const deUint32 deviceVersion, const std::vector<std::string>& extensions, const std::string& required);
+bool										isInstanceExtensionSupported			(const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required);
+bool										isDeviceExtensionSupported				(const deUint32 deviceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+bool										isInstanceExtensionSupported			(const deUint32 instanceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
 
 template<typename LayerIterator>
 bool										isLayerSupported						(LayerIterator begin, LayerIterator end, const RequiredLayer& required);

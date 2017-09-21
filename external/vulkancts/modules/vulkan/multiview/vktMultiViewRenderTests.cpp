@@ -175,7 +175,7 @@ MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, cons
 	, m_squareCount		(4u)
 	,m_queueFamilyIndex	(0u)
 {
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_multiview"))
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview"))
 		throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
 
 	createMultiViewDevices();
@@ -340,7 +340,7 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 		return parameters;
 	else
 	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHR_multiview"))
+		if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_multiview"))
 			throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
 
 		const InstanceInterface&	instance		= m_context.getInstanceInterface();

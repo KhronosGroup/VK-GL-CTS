@@ -288,7 +288,7 @@ class DedicatedAllocationBuffersTestCase : public TestCase
 		tcu::TestLog&					log								= m_testCtx.getLog();
 		log << tcu::TestLog::Message << getBufferUsageFlagsStr(m_testCase.usage) << tcu::TestLog::EndMessage;
 		const std::vector<std::string>&	extensions						= ctx.getDeviceExtensions();
-		const deBool					isSupported						= std::find(extensions.begin(), extensions.end(), "VK_KHR_dedicated_allocation") != extensions.end();
+		const deBool					isSupported						= isDeviceExtensionSupported(ctx.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
 		if (!isSupported)
 		{
 			TCU_THROW(NotSupportedError, "Not supported");

@@ -538,7 +538,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 	||	config.allocationKind == ALLOCATION_KIND_DEDICATED_BUFFER)
 	{
 		const std::vector<std::string>&		extensions					= context.getDeviceExtensions();
-		const deBool						isSupported					= std::find(extensions.begin(), extensions.end(), "VK_KHR_dedicated_allocation") != extensions.end();
+		const deBool						isSupported					= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
 		if (!isSupported)
 		{
 			TCU_THROW(NotSupportedError, "Not supported");

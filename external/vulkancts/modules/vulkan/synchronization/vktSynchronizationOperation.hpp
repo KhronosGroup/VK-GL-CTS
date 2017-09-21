@@ -119,7 +119,8 @@ public:
 																		 const vk::VkDevice			device,
 																		 vk::Allocator&				allocator);
 
-												OperationContext		(const vk::InstanceInterface&				vki,
+												OperationContext		(const deUint32								apiVersion,
+																		 const vk::InstanceInterface&				vki,
 																		 const vk::DeviceInterface&					vkd,
 																		 vk::VkPhysicalDevice						physicalDevice,
 																		 vk::VkDevice								device,
@@ -136,6 +137,7 @@ public:
 	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_progCollection; }
 	PipelineCacheData&							getPipelineCacheData	(void) const { return m_pipelineCacheData; }
 	const std::vector<std::string>&				getDeviceExtensions		(void) const { return m_deviceExtensions;}
+	deUint32									getUsedApiVersion		(void) const { return m_usedApiVersion; }
 
 private:
 	const vk::InstanceInterface&				m_vki;
@@ -146,6 +148,7 @@ private:
 	vk::ProgramCollection<vk::ProgramBinary>&	m_progCollection;
 	PipelineCacheData&							m_pipelineCacheData;
 	const std::vector<std::string>&				m_deviceExtensions;
+	const deUint32								m_usedApiVersion;
 
 	// Disabled
 												OperationContext		(const OperationContext&);

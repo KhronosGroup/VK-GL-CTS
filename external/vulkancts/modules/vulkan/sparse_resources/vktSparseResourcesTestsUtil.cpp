@@ -38,13 +38,15 @@ namespace sparse
 
 vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& vkp, const deUint32 version, const std::vector<std::string>   enableExtensions)
 {
-	std::vector<std::string>					enableExtensionPtrs	 (enableExtensions.size());
+	std::vector<std::string>					enableExtensionPtrs;
 	const std::vector<VkExtensionProperties>	availableExtensions	 = enumerateInstanceExtensionProperties(vkp, DE_NULL);
 	for (size_t extensionID = 0; extensionID < enableExtensions.size(); extensionID++)
 	{
-		if (!isExtensionSupported(availableExtensions, RequiredExtension(enableExtensions[extensionID])))
+		if (!isInstanceExtensionSupported(version, availableExtensions, RequiredExtension(enableExtensions[extensionID])))
 			TCU_THROW(NotSupportedError, (enableExtensions[extensionID] + " is not supported").c_str());
-		enableExtensionPtrs[extensionID] = enableExtensions[extensionID];
+
+		if (!isCoreInstanceExtension(version, enableExtensions[extensionID]))
+			enableExtensionPtrs.push_back(enableExtensions[extensionID]);
 	}
 
 	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, enableExtensionPtrs, DE_NULL);

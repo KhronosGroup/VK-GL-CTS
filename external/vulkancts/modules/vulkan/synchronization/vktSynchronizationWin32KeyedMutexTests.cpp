@@ -65,6 +65,7 @@ using namespace vkt::ExternalMemoryUtil;
 
 namespace vkt
 {
+using namespace vk;
 namespace synchronization
 {
 namespace
@@ -144,10 +145,10 @@ vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp, deUin
 	try
 	{
 		std::vector<std::string> extensions;
-
-		extensions.push_back("VK_KHR_get_physical_device_properties2");
-
-		extensions.push_back("VK_KHR_external_memory_capabilities");
+		if (!isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+			extensions.push_back("VK_KHR_get_physical_device_properties2");
+		if (!isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+			extensions.push_back("VK_KHR_external_memory_capabilities");
 
 		return vk::createDefaultInstance(vkp, version, std::vector<std::string>(), extensions);
 	}
@@ -167,7 +168,8 @@ vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface&	vki,
 	return vk::chooseDevice(vki, instance, cmdLine);
 }
 
-vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&					vki,
+vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
+									 const vk::InstanceInterface&					vki,
 									 vk::VkPhysicalDevice							physicalDevice)
 {
 	const float										priority				= 0.0f;
@@ -175,11 +177,15 @@ vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&					vki,
 	std::vector<deUint32>							queueFamilyIndices		(queueFamilyProperties.size(), 0xFFFFFFFFu);
 	std::vector<const char*>						extensions;
 
-	extensions.push_back("VK_KHR_external_memory");
+	if (!isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory"))
+		extensions.push_back("VK_KHR_external_memory");
+	if (!isCoreDeviceExtension(apiVersion, "VK_KHR_dedicated_allocation"))
+		extensions.push_back("VK_KHR_dedicated_allocation");
+	if (!isCoreDeviceExtension(apiVersion, "VK_KHR_get_memory_requirements2"))
+		extensions.push_back("VK_KHR_get_memory_requirements2");
+
 	extensions.push_back("VK_KHR_external_memory_win32");
 	extensions.push_back("VK_KHR_win32_keyed_mutex");
-	extensions.push_back("VK_KHR_dedicated_allocation");
-	extensions.push_back("VK_KHR_get_memory_requirements2");
 
 	try
 	{
@@ -1436,7 +1442,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 	, m_physicalDevice			(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilies			(vk::getPhysicalDeviceQueueFamilyProperties(m_vki, m_physicalDevice))
 	, m_queueFamilyIndices		(getFamilyIndices(m_queueFamilies))
-	, m_device					(createDevice(m_vki, m_physicalDevice))
+	, m_device					(createDevice(context.getUsedApiVersion(), m_vki, m_physicalDevice))
 	, m_vkd						(m_vki, *m_device)
 
 	, m_supportDX11				(new DX11OperationSupport(m_vki, m_physicalDevice, config.resource))
@@ -1554,7 +1560,7 @@ tcu::TestStatus Win32KeyedMutexTestInstance::iterate (void)
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferRead	(allocateCommandBuffer(m_vkd, *m_device, *commandPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		vk::SimpleAllocator						allocator			(m_vkd, *m_device, vk::getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice));
 		const std::vector<std::string>			deviceExtensions;
-		OperationContext						operationContext	(m_vki, m_vkd, m_physicalDevice, *m_device, allocator, deviceExtensions, m_context.getBinaryCollection(), m_pipelineCacheData);
+		OperationContext						operationContext	(m_context.getUsedApiVersion(), m_vki, m_vkd, m_physicalDevice, *m_device, allocator, deviceExtensions, m_context.getBinaryCollection(), m_pipelineCacheData);
 
 		if (!checkQueueFlags(m_queueFamilies[m_queueNdx].queueFlags, vk::VK_QUEUE_GRAPHICS_BIT))
 			TCU_THROW(NotSupportedError, "Operation not supported by the source queue");

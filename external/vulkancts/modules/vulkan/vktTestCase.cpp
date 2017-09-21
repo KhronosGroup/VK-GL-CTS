@@ -203,7 +203,7 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 
 Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 									VkPhysicalDevice					physicalDevice,
-									deUint32							apiVersion,
+									const deUint32						apiVersion,
 									deUint32							queueIndex,
 									const VkPhysicalDeviceFeatures2&	enabledFeatures,
 									const vector<string>&				enabledExtensions,
@@ -264,9 +264,9 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 	return createDevice(vki, physicalDevice, &deviceInfo);
 };
 
-bool isPhysicalDeviceFeatures2Supported (const vector<string>& instanceExtensions)
+bool isPhysicalDeviceFeatures2Supported (const deUint32 version, const vector<string>& instanceExtensions)
 {
-	return de::contains(instanceExtensions.begin(), instanceExtensions.end(), "VK_KHR_get_physical_device_properties2");
+	return isInstanceExtensionSupported(version, instanceExtensions, "VK_KHR_get_physical_device_properties");
 }
 
 struct DeviceFeatures
@@ -275,6 +275,7 @@ struct DeviceFeatures
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures	samplerYCbCrConversionFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
+					const deUint32				apiVersion,
 					VkPhysicalDevice			physicalDevice,
 					const vector<string>&		instanceExtensions,
 					const vector<string>&		deviceExtensions)
@@ -287,7 +288,7 @@ struct DeviceFeatures
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR;
 
-		if (isPhysicalDeviceFeatures2Supported(instanceExtensions))
+		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_sampler_ycbcr_conversion"))
 			{

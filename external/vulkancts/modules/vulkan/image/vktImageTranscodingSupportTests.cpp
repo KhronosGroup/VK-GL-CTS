@@ -832,7 +832,7 @@ TestInstance* ImageTranscodingCase::createInstance (Context& context) const
 
 	DE_ASSERT(m_parameters.testedImageUsageFeature != 0);
 
-	if (std::find(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2") == context.getDeviceExtensions().end())
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported");
 
 	if (!isFormatUsageFlagSupported(context, featuredFormat, m_parameters.testedImageUsageFeature))

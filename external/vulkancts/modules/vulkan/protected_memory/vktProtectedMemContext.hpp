@@ -48,7 +48,7 @@ public:
 			, m_vki					(m_interface, *m_instance)
 			, m_phyDevice			(vk::chooseDevice(m_vki, *m_instance, m_context.getTestContext().getCommandLine()))
 			, m_queueFamilyIndex	(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice))
-			, m_device				(makeProtectedMemDevice(m_vki, m_phyDevice, m_queueFamilyIndex))
+			, m_device				(makeProtectedMemDevice(m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion()))
 			, m_allocator			(createAllocator())
 			, m_deviceDriver		(m_vki, *m_device)
 			, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))

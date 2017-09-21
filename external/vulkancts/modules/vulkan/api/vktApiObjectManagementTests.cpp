@@ -302,9 +302,9 @@ T alignToPowerOfTwo (T value, T align)
 	return (value + align - T(1)) & ~(align - T(1));
 }
 
-inline bool hasDeviceExtension (Context& context, const string& name)
+inline bool hasDeviceExtension (Context& context, const string name)
 {
-	return de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), name);
+	return isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), name);
 }
 
 VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)

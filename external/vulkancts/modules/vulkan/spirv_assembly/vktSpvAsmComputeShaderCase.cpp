@@ -337,13 +337,13 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 		// 16bit storage features
 		{
-			if (!is16BitStorageFeaturesSupported(vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
+			if (!is16BitStorageFeaturesSupported(m_context.getUsedApiVersion(), vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
 				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 		}
 
 		// VariablePointers features
 		{
-			if (!isVariablePointersFeaturesSupported(vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
+			if (!isVariablePointersFeaturesSupported(m_context.getUsedApiVersion(), vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
 				TCU_THROW(NotSupportedError, "Request Variable Pointer feature not supported");
 		}
 	}

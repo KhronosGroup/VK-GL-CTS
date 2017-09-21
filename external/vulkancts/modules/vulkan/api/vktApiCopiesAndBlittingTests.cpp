@@ -325,10 +325,8 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance (Context& context, 
 
 	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 	}
 
 	// Create command pool
@@ -863,7 +861,7 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 	if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
 		(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
 	{
-		if (std::find(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1") == context.getDeviceExtensions().end())
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
 			TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 	}
 

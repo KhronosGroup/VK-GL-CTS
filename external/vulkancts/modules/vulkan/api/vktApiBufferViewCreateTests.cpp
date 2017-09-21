@@ -29,6 +29,7 @@
 #include "tcuTestLog.hpp"
 #include "vkPrograms.hpp"
 #include "vkRefUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -196,7 +197,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 																		 Move<VkDeviceMemory>&		memory) const
 {
 	const std::vector<std::string>&		extensions						= context.getDeviceExtensions();
-	const deBool						isSupported						= std::find(extensions.begin(), extensions.end(), "VK_KHR_dedicated_allocation") != extensions.end();
+	const deBool						isSupported						= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
 	if (!isSupported)
 		TCU_THROW(NotSupportedError, "Not supported");
 
