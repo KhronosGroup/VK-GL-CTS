@@ -949,7 +949,7 @@ class UploadDownloadExecutor
 public:
 	UploadDownloadExecutor(Context &context, const CaseDef& caseSpec) :
 	m_caseDef(caseSpec),
-	m_haveMaintenance2(de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2")),
+	m_haveMaintenance2(isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2")),
 	m_vk(context.getDeviceInterface()),
 	m_device(context.getDevice()),
 	m_queue(context.getUniversalQueue()),
@@ -1727,7 +1727,7 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	// is not supported by the main format.  With VK_KHR_maintenance2, we
 	// can do this via VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR.
 	if ((imageFormatProps.optimalTilingFeatures & viewFormatFeatureFlags) != viewFormatFeatureFlags &&
-	    !de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2"))
+		 !isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 	{
 		TCU_THROW(NotSupportedError, "Image format doesn't support upload/download method");
 	}

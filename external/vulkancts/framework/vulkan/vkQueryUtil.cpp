@@ -26,6 +26,7 @@
 
 #include "deMemory.h"
 #include "deString.h"
+#include "deSTLUtil.hpp"
 
 #include <vector>
 
@@ -49,6 +50,26 @@ void getCoreInstanceExtensions(deUint32 apiVersion, vector<const char*>& dst)
 void getCoreDeviceExtensions(deUint32 apiVersion, vector<const char*>& dst)
 {
 	getCoreDeviceExtensionsImpl(apiVersion, dst);
+}
+
+bool isCoreInstanceExtension(const deUint32 apiVersion, const std::string& extension)
+{
+	vector<const char*> coreExtensions;
+	getCoreInstanceExtensions(apiVersion, coreExtensions);
+	if (de::contains(coreExtensions.begin(), coreExtensions.end(), extension))
+		return true;
+
+	return false;
+}
+
+bool isCoreDeviceExtension(const deUint32 apiVersion, const std::string& extension)
+{
+	vector<const char*> coreExtensions;
+	getCoreDeviceExtensions(apiVersion, coreExtensions);
+	if (de::contains(coreExtensions.begin(), coreExtensions.end(), extension))
+		return true;
+
+	return false;
 }
 
 vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, VkInstance instance)
@@ -362,6 +383,38 @@ bool isCompatible (const VkLayerProperties& layerProperties, const RequiredLayer
 		return false;
 
 	return true;
+}
+
+bool isInstanceExtensionSupported (const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required)
+{
+	if (isCoreInstanceExtension(instanceVersion, required))
+		return true;
+	else
+		return de::contains(extensions.begin(), extensions.end(), required);
+}
+
+bool isDeviceExtensionSupported (const deUint32 deviceVersion, const std::vector<std::string>& extensions, const std::string& required)
+{
+	if (isCoreDeviceExtension(deviceVersion, required))
+		return true;
+	else
+		return de::contains(extensions.begin(), extensions.end(), required);
+}
+
+bool isInstanceExtensionSupported (const deUint32 instanceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
+{
+	if (isCoreInstanceExtension(instanceVersion, required.name))
+		return true;
+	else
+		return isExtensionSupported(extensions.begin(), extensions.end(), required);
+}
+
+bool isDeviceExtensionSupported (const deUint32 deviceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
+{
+	if (isCoreDeviceExtension(deviceVersion, required.name))
+		return true;
+	else
+		return isExtensionSupported(extensions.begin(), extensions.end(), required);
 }
 
 bool isExtensionSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)

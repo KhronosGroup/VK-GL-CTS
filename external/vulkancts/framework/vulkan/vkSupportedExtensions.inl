@@ -10,8 +10,13 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_device_group");
 		dst.push_back("VK_KHR_shader_draw_parameters");
 		dst.push_back("VK_KHR_maintenance1");
+		dst.push_back("VK_KHR_external_memory");
+		dst.push_back("VK_KHR_external_semaphore");
 		dst.push_back("VK_KHR_16bit_storage");
 		dst.push_back("VK_KHR_descriptor_update_template");
+		dst.push_back("VK_KHR_external_fence");
+		dst.push_back("VK_KHR_maintenance2");
+		dst.push_back("VK_KHR_variable_pointers");
 		dst.push_back("VK_KHR_dedicated_allocation");
 		dst.push_back("VK_KHR_storage_buffer_storage_class");
 		dst.push_back("VK_KHR_relaxed_block_layout");
@@ -30,7 +35,6 @@ void getCoreInstanceExtensionsImpl (deUint32 coreVersion, ::std::vector<const ch
 		dst.push_back("VK_KHR_external_memory_capabilities");
 		dst.push_back("VK_KHR_external_semaphore_capabilities");
 		dst.push_back("VK_KHR_external_fence_capabilities");
-		dst.push_back("VK_KHR_external_fence");
 	}
 }
 

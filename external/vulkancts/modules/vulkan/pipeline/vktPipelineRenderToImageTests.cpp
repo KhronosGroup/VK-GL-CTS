@@ -1244,7 +1244,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 void checkImageViewTypeRequirements (Context& context, const VkImageViewType viewType)
 {
 	if (viewType == VK_IMAGE_VIEW_TYPE_3D &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
+		(!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1")))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 
 	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
@@ -1260,10 +1260,8 @@ tcu::TestStatus testAttachmentSize (Context& context, const CaseDef caseDef)
 
 	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 	}
 
 	return testWithSizeReduction(context, caseDef);
@@ -1430,10 +1428,8 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 
 	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 	}
 
 	if (useDepthStencil && !isDepthStencilFormatSupported(vki, physDevice, caseDef.depthStencilFormat))

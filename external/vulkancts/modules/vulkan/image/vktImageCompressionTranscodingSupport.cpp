@@ -2570,7 +2570,7 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).x() >  0u);
 	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).y() >  0u);
 
-	if (std::find(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2") == context.getDeviceExtensions().end())
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported");
 
 	{

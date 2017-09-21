@@ -1937,7 +1937,7 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 	logTestCaseInfo(log, config);
 
 #if !defined(FAKE_COLOR_CONVERSION)
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_sampler_ycbcr_conversion")))
+	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_ycbcr_conversion"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
 	try

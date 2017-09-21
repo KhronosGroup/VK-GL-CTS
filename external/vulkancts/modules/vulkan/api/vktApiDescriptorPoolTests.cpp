@@ -29,6 +29,7 @@
 #include "vkRefUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -147,7 +148,7 @@ tcu::TestStatus outOfPoolMemoryTest (Context& context)
 {
 	const DeviceInterface&	vkd							= context.getDeviceInterface();
 	const VkDevice			device						= context.getDevice();
-	const bool				expectOutOfPoolMemoryError	= de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1");
+	const bool				expectOutOfPoolMemoryError	= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1");
 	deUint32				numErrorsReturned			= 0;
 
 	const struct FailureCase

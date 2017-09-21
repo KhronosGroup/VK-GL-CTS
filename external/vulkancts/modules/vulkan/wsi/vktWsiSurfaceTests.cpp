@@ -39,6 +39,7 @@
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -168,17 +169,6 @@ struct CheckPhysicalDeviceSurfacePresentModesIncompleteResult : public CheckInco
 
 typedef vector<VkExtensionProperties> Extensions;
 
-void checkAllSupported (const Extensions& supportedExtensions, const vector<string>& requiredExtensions)
-{
-	for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-		 requiredExtName != requiredExtensions.end();
-		 ++requiredExtName)
-	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
-			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-	}
-}
-
 Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 										deUint32						version,
 										const Extensions&				supportedExtensions,
@@ -186,12 +176,21 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 										const vector<string>			extraExtensions,
 										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
-	vector<string>	extensions	= extraExtensions;
+	vector<string>	extensions;
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
 
-	checkAllSupported(supportedExtensions, extensions);
+	for (vector<string>::const_iterator extraExtensionsName = extraExtensions.begin();
+	extraExtensionsName != extraExtensions.end();
+	++extraExtensionsName)
+	{
+		if (!isInstanceExtensionSupported(version, supportedExtensions, RequiredExtension(*extraExtensionsName)))
+			TCU_THROW(NotSupportedError, (*extraExtensionsName + " is not supported").c_str());
+
+		if (!isCoreInstanceExtension(version, *extraExtensionsName))
+			extensions.push_back(*extraExtensionsName);
+	}
 
 	return vk::createDefaultInstance(vkp, version, vector<string>(), extensions, pAllocator);
 }
@@ -773,7 +772,9 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	deUint32								queueFamilyIndex	= 0;
 	VkDeviceGroupPresentCapabilitiesKHR*	presentCapabilities;
 	std::vector<const char*>				deviceExtensions;
-	deviceExtensions.push_back("VK_KHR_device_group");
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
+		deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
 	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
@@ -872,7 +873,10 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 	VkDeviceGroupPresentModeFlagsKHR*		presentModeFlags;
 	vector<deUint8>							rectanglesBuffer;
 	std::vector<const char*>				deviceExtensions;
-	deviceExtensions.push_back("VK_KHR_device_group");
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
+		deviceExtensions.push_back("VK_KHR_device_group");
+
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
 	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);

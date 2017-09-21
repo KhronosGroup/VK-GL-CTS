@@ -103,13 +103,15 @@ struct TestConfigRandom
 
 vk::Move<VkInstance> createInstanceWithExtensions (const vk::PlatformInterface& vkp, deUint32 version, const std::vector<std::string>& enableExtensions)
 {
-	std::vector<std::string>					enableExtensionPtrs	 (enableExtensions.size());
+	std::vector<std::string>					enableExtensionPtrs;
 	const std::vector<VkExtensionProperties>	availableExtensions	 = enumerateInstanceExtensionProperties(vkp, DE_NULL);
 	for (size_t extensionID = 0; extensionID < enableExtensions.size(); extensionID++)
 	{
-		if (!isExtensionSupported(availableExtensions, RequiredExtension(enableExtensions[extensionID])))
+		if (!isInstanceExtensionSupported(version, availableExtensions, RequiredExtension(enableExtensions[extensionID])))
 			TCU_THROW(NotSupportedError, (enableExtensions[extensionID] + " is not supported").c_str());
-		enableExtensionPtrs[extensionID] = enableExtensions[extensionID];
+
+		if (!isCoreInstanceExtension(version, enableExtensions[extensionID]))
+			enableExtensionPtrs.push_back(enableExtensions[extensionID]);
 	}
 
 	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, enableExtensionPtrs);
@@ -164,7 +166,11 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 	m_subsetAllocationAllowed												= devGroupProperties[devGroupIdx].subsetAllocation;
 	if (m_numPhysDevices < 2)
 		TCU_THROW(NotSupportedError, "Device group allocation tests not supported with 1 physical device");
-	std::vector<const char*>						deviceExtensions		(1, "VK_KHR_device_group");
+	std::vector<const char*>						deviceExtensions;
+
+	if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
+		deviceExtensions.push_back("VK_KHR_device_group");
+
 	VkDeviceGroupDeviceCreateInfo					deviceGroupInfo =
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
@@ -194,16 +200,16 @@ void BaseAllocateTestInstance::createDeviceGroup (void)
 
 	const VkDeviceCreateInfo						deviceInfo		=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
-		m_useDeviceGroups ? &deviceGroupInfo : DE_NULL,	// const void*						pNext;
-		(VkDeviceCreateFlags)0,							// VkDeviceCreateFlags				flags;
-		1u	,											// uint32_t							queueCreateInfoCount;
-		&queueInfo,										// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,												// uint32_t							enabledLayerCount;
-		DE_NULL,										// const char* const*				ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),				// uint32_t							enabledExtensionCount;
-		&deviceExtensions[0],							// const char* const*				ppEnabledExtensionNames;
-		&deviceFeatures,								// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType					sType;
+		m_useDeviceGroups ? &deviceGroupInfo : DE_NULL,				// const void*						pNext;
+		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags				flags;
+		1u	,														// uint32_t							queueCreateInfoCount;
+		&queueInfo,													// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,															// uint32_t							enabledLayerCount;
+		DE_NULL,													// const char* const*				ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),							// uint32_t							enabledExtensionCount;
+		deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0],	// const char* const*				ppEnabledExtensionNames;
+		&deviceFeatures,											// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	m_logicalDevice		= createDevice(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));

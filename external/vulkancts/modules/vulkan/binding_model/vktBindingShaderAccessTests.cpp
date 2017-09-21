@@ -161,7 +161,8 @@ bool isDynamicDescriptorType (vk::VkDescriptorType type)
 	return type == vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || type == vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 }
 
-void verifyDriverSupport(const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
+void verifyDriverSupport(const deUint32							apiVersion,
+						 const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 						 const std::vector<std::string>&		deviceExtensions,
 						 DescriptorUpdateMethod					updateMethod,
 						 vk::VkDescriptorType					descType,
@@ -180,7 +181,8 @@ void verifyDriverSupport(const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 		case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
 			extensionNames.push_back("VK_KHR_push_descriptor");
 		case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
-			extensionNames.push_back("VK_KHR_descriptor_update_template");
+			if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_descriptor_update_template"))
+				extensionNames.push_back("VK_KHR_descriptor_update_template");
 			break;
 
 		case DESCRIPTOR_UPDATE_METHOD_NORMAL:
@@ -3322,7 +3324,7 @@ std::string BufferDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* BufferDescriptorCase::createInstance (vkt::Context& context) const
 {
-	verifyDriverSupport(context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
+	verifyDriverSupport(context.getUsedApiVersion(), context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
 
 	if (m_exitingStages == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 	{
@@ -6595,7 +6597,7 @@ std::string ImageDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* ImageDescriptorCase::createInstance (vkt::Context& context) const
 {
-	verifyDriverSupport(context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
+	verifyDriverSupport(context.getUsedApiVersion(), context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
 
 	switch (m_descriptorType)
 	{
@@ -7776,7 +7778,7 @@ std::string TexelBufferDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* TexelBufferDescriptorCase::createInstance (vkt::Context& context) const
 {
-	verifyDriverSupport(context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
+	verifyDriverSupport(context.getUsedApiVersion(), context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
 
 	if (m_exitingStages == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 	{

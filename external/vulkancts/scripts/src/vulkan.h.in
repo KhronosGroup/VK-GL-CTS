@@ -5181,12 +5181,12 @@ typedef VkExportMemoryAllocateInfo VkExportMemoryAllocateInfoKHR;
 #define VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO
 #define VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR VK_ERROR_INVALID_EXTERNAL_HANDLE
 #define VK_QUEUE_FAMILY_EXTERNAL_KHR      VK_QUEUE_FAMILY_EXTERNAL
+//VK_KHR_external_memory DEVICE 1_1_0
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #define VK_KHR_external_memory_win32 1
 #define VK_KHR_EXTERNAL_MEMORY_WIN32_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME "VK_KHR_external_memory_win32"
-//VK_KHR_external_memory DEVICE 1_1_0
 
 typedef struct VkImportMemoryWin32HandleInfoKHR {
     VkStructureType                       sType;
@@ -5324,12 +5324,12 @@ typedef VkExportSemaphoreCreateInfo VkExportSemaphoreCreateInfoKHR;
 #define VK_KHR_EXTERNAL_SEMAPHORE_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME "VK_KHR_external_semaphore"
 #define VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO
+//VK_KHR_external_semaphore DEVICE 1_1_0
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #define VK_KHR_external_semaphore_win32 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_WIN32_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME "VK_KHR_external_semaphore_win32"
-//VK_KHR_external_semaphore DEVICE 1_1_0
 
 typedef struct VkImportSemaphoreWin32HandleInfoKHR {
     VkStructureType                          sType;
@@ -5560,7 +5560,7 @@ typedef VkExportFenceCreateInfo VkExportFenceCreateInfoKHR;
 #define VK_KHR_EXTERNAL_FENCE_SPEC_VERSION 1
 #define VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME "VK_KHR_external_fence"
 #define VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO
-//VK_KHR_external_fence INSTANCE 1_1_0
+//VK_KHR_external_fence DEVICE 1_1_0
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
 #define VK_KHR_external_fence_win32 1
@@ -5660,11 +5660,11 @@ typedef VkPipelineTessellationDomainOriginStateCreateInfo VkPipelineTessellation
 #define VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO_KHR VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO
 #define VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL
 #define VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
+//VK_KHR_maintenance2 DEVICE 1_1_0
 
 #define VK_KHR_get_surface_capabilities2 1
 #define VK_KHR_GET_SURFACE_CAPABILITIES_2_SPEC_VERSION 1
 #define VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME "VK_KHR_get_surface_capabilities2"
-//VK_KHR_maintenance2 DEVICE 1_1_0
 
 typedef struct VkPhysicalDeviceSurfaceInfo2KHR {
     VkStructureType    sType;
@@ -5706,11 +5706,11 @@ typedef VkPhysicalDeviceVariablePointerFeatures VkPhysicalDeviceVariablePointerF
 #define VK_KHR_VARIABLE_POINTERS_SPEC_VERSION 1
 #define VK_KHR_VARIABLE_POINTERS_EXTENSION_NAME "VK_KHR_variable_pointers"
 #define VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES
+//VK_KHR_variable_pointers DEVICE 1_1_0
 
 #define VK_KHR_get_display_properties2 1
 #define VK_KHR_GET_DISPLAY_PROPERTIES_2_SPEC_VERSION 1
 #define VK_KHR_GET_DISPLAY_PROPERTIES_2_EXTENSION_NAME "VK_KHR_get_display_properties2"
-//VK_KHR_variable_pointers DEVICE 1_1_0
 
 typedef struct VkDisplayProperties2KHR {
     VkStructureType           sType;

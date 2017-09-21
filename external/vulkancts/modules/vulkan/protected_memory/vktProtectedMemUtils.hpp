@@ -57,7 +57,8 @@ deUint32							chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&			v
 
 vk::Move<vk::VkDevice>				makeProtectedMemDevice				(const vk::InstanceDriver&			vkd,
 																		 vk::VkPhysicalDevice				physicalDevice,
-																		 const deUint32						queueFamilyIndex);
+																		 const deUint32						queueFamilyIndex,
+																		 const deUint32						apiVersion);
 vk::VkQueue							getProtectedQueue					(const vk::DeviceInterface&			vk,
 																		 vk::VkDevice						device,
 																		 const deUint32						queueFamilyIndex,

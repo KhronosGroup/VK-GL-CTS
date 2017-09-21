@@ -97,11 +97,6 @@ enum LimitType
 #define LIMIT(_X_)		DE_OFFSET_OF(VkPhysicalDeviceLimits, _X_), (const char*)(#_X_)
 #define FEATURE(_X_)	DE_OFFSET_OF(VkPhysicalDeviceFeatures, _X_)
 
-inline bool isExtensionSupported (const vector<string>& extensionStrings, const string& extensionName)
-{
-	return de::contains(extensionStrings.begin(), extensionStrings.end(), extensionName);
-}
-
 bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDeviceFeatures* features, TestLog& log)
 {
 	bool						limitsOk	= true;
@@ -1321,6 +1316,10 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	const vector<VkPhysicalDeviceGroupProperties>		deviceGroupProps = enumeratePhysicalDeviceGroups(vki, *instance);
 	std::vector<const char*>							deviceExtensions;
 	deviceExtensions.push_back("VK_KHR_device_group");
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
+		deviceExtensions.push_back("VK_KHR_device_group");
+
 	deviceExtensions.push_back("VK_KHR_swapchain");
 
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
@@ -1815,11 +1814,14 @@ VkPhysicalDeviceSamplerYcbcrConversionFeatures getPhysicalDeviceSamplerYcbcrConv
 
 void checkYcbcrConversionSupport (Context& context)
 {
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_ycbcr_conversion"))
-		TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
+	if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
+	{
+		if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_ycbcr_conversion"))
+			TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
 
-	// Hard dependency for ycbcr
-	TCU_CHECK(de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_KHR_get_physical_device_properties2"));
+		// Hard dependency for ycbcr
+		TCU_CHECK(de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_KHR_get_physical_device_properties2"));
+	}
 
 	{
 		const VkPhysicalDeviceSamplerYcbcrConversionFeatures	ycbcrFeatures	= getPhysicalDeviceSamplerYcbcrConversionFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
@@ -2401,7 +2403,7 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
 	const VkPhysicalDeviceLimits&	deviceLimits		= context.getDeviceProperties().limits;
 	const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	const bool						hasKhrMaintenance1	= isExtensionSupported(context.getDeviceExtensions(), "VK_KHR_maintenance1");
+	const bool						hasKhrMaintenance1	= isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1");
 
 	const VkFormatFeatureFlags		supportedFeatures	= tiling == VK_IMAGE_TILING_LINEAR ? formatProperties.linearTilingFeatures : formatProperties.optimalTilingFeatures;
 	const VkImageUsageFlags			usageFlagSet		= getValidImageUsageFlags(supportedFeatures, hasKhrMaintenance1);
@@ -2534,10 +2536,15 @@ Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, cons
 	const vector<VkExtensionProperties>	instanceExts	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
 	vector<string>						enabledExts;
 
-	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
-		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+	const deUint32						instanceVersion		= context.getUsedApiVersion();
 
-	enabledExts.push_back(extensionName);
+	if (!isCoreInstanceExtension(instanceVersion, extensionName))
+	{
+		if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
+			TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+		else
+			enabledExts.push_back(extensionName);
+	}
 
 	return createDefaultInstance(vkp, context.getUsedApiVersion(), vector<string>() /* layers */, enabledExts);
 }
@@ -3003,7 +3010,7 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 
 		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(mandatoryExtensions); ++ndx)
 		{
-			if (!isExtensionSupported(extensions, RequiredExtension(mandatoryExtensions[ndx])))
+			if (!isInstanceExtensionSupported(context.getUsedApiVersion(), extensions, RequiredExtension(mandatoryExtensions[ndx])))
 				results.fail(string(mandatoryExtensions[ndx]) + " is not supported");
 		}
 	}
@@ -3018,7 +3025,7 @@ tcu::TestStatus testMandatoryExtensions (Context& context)
 
 		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(mandatoryExtensions); ++ndx)
 		{
-			if (!isExtensionSupported(extensions, RequiredExtension(mandatoryExtensions[ndx])))
+			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, RequiredExtension(mandatoryExtensions[ndx])))
 				results.fail(string(mandatoryExtensions[ndx]) + " is not supported");
 		}
 	}

@@ -840,7 +840,7 @@ public:
 	virtual tcu::TestStatus				iterate								(void)
 	{
 		const std::vector<std::string>&	extensions							= m_context.getDeviceExtensions();
-		const deBool					isSupported							= std::find(extensions.begin(), extensions.end(), "VK_KHR_bind_memory2") != extensions.end();
+		const deBool					isSupported							= isDeviceExtensionSupported(m_context.getUsedApiVersion(), extensions, "VK_KHR_bind_memory2");
 		if (!isSupported)
 		{
 			TCU_THROW(NotSupportedError, "Not supported");
@@ -893,7 +893,7 @@ public:
 	virtual tcu::TestStatus				iterate								(void)
 	{
 		const std::vector<std::string>&	extensions							= m_context.getDeviceExtensions();
-		const deBool					isSupported							= std::find(extensions.begin(), extensions.end(), "VK_KHR_bind_memory2") != extensions.end();
+		const deBool					isSupported							= isDeviceExtensionSupported(m_context.getUsedApiVersion(), extensions, "VK_KHR_bind_memory2");
 		if (!isSupported)
 		{
 			TCU_THROW(NotSupportedError, "Not supported");

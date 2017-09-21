@@ -28,12 +28,16 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkDebugReportUtil.hpp"
+#include "vkApiVersion.hpp"
 
 #include "vkPlatform.hpp"
 #include "vktProtectedMemContext.hpp"
 
 namespace vkt
 {
+
+using namespace vk;
+
 namespace ProtectedMem
 {
 
@@ -88,13 +92,14 @@ vk::Move<vk::VkInstance> makeProtectedMemInstance (const vk::PlatformInterface& 
 			TCU_THROW(NotSupportedError, "No validation layers found");
 	}
 
-	requiredExtensions.push_back("VK_KHR_get_physical_device_properties2");
+	if (!isCoreInstanceExtension(context.getUsedApiVersion(), "VK_KHR_get_physical_device_properties2"))
+		requiredExtensions.push_back("VK_KHR_get_physical_device_properties2");
 
 	for (std::vector<std::string>::const_iterator requiredExtName = requiredExtensions.begin();
 		requiredExtName != requiredExtensions.end();
 		++requiredExtName)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(*requiredExtName)))
+		if (!isInstanceExtensionSupported(context.getUsedApiVersion(), supportedExtensions, vk::RequiredExtension(*requiredExtName)))
 			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
 	}
 
@@ -130,9 +135,11 @@ deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
 
 vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&		vkd,
 												 vk::VkPhysicalDevice			physicalDevice,
-												 const deUint32					queueFamilyIndex)
+												 const deUint32					queueFamilyIndex,
+												 const deUint32					apiVersion)
 {
 	const Extensions					supportedExtensions	(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
+	std::vector<const char*>			requiredExtensions;
 	deUint32							extensionsCount		= 1;
 	const char* const					extensions[]		=
 	{
@@ -142,8 +149,11 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&		vkd,
 	// Check if the physical device supports the protected memory extension name
 	for (deUint32 ndx = 0; ndx < extensionsCount; ++ndx)
 	{
-		if (!isExtensionSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
+		if (!isDeviceExtensionSupported(apiVersion, supportedExtensions, vk::RequiredExtension(extensions[ndx])))
 			TCU_THROW(NotSupportedError, (std::string(extensions[ndx]) + " is not supported").c_str());
+
+		if (!isCoreDeviceExtension(apiVersion, extensions[ndx]))
+			requiredExtensions.push_back(extensions[ndx]);
 	}
 
 	// Check if the protected memory can be enabled on the physical device.
@@ -183,16 +193,16 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&		vkd,
 
 	const vk::VkDeviceCreateInfo		deviceParams		=
 	{
-		vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// sType
-		&featuresExt,										// pNext
-		(vk::VkDeviceCreateFlags)0,							// flags
-		DE_LENGTH_OF_ARRAY(queueInfos),						// queueCreateInfosCount
-		&queueInfos[0],										// pQueueCreateInfos
-		0u,													// enabledLayerCount
-		DE_NULL,											// pEnabledLayerNames
-		extensionsCount,									// enabledExtensionCount
-		DE_ARRAY_BEGIN(extensions),							// pEnabledExtensionNames
-		DE_NULL												// pEnabledFeatures
+		vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// sType
+		&featuresExt,													// pNext
+		(vk::VkDeviceCreateFlags)0,										// flags
+		DE_LENGTH_OF_ARRAY(queueInfos),									// queueCreateInfosCount
+		&queueInfos[0],													// pQueueCreateInfos
+		0u,																// enabledLayerCount
+		DE_NULL,														// pEnabledLayerNames
+		(deUint32)requiredExtensions.size(),							// enabledExtensionCount
+		requiredExtensions.empty() ? DE_NULL : &requiredExtensions[0],	// pEnabledExtensionNames
+		DE_NULL															// pEnabledFeatures
 	};
 
 	return vk::createDevice(vkd, physicalDevice, &deviceParams, DE_NULL);

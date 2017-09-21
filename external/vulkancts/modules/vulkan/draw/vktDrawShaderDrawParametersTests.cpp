@@ -110,7 +110,7 @@ DrawTest::DrawTest (Context &context, TestSpec testSpec)
 
 	// Requirements
 	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), std::string("VK_KHR_shader_draw_parameters")))
+		if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_draw_parameters"))
 			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_draw_parameters");
 
 		if (isMultiDraw() && !m_context.getDeviceFeatures().multiDrawIndirect)

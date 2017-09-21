@@ -401,7 +401,7 @@ WindingTestInstance::WindingTestInstance (Context&					context,
 
 void WindingTestInstance::requireExtension (const char* name) const
 {
-	if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), name))
+	if(!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), name))
 		TCU_THROW(NotSupportedError, (std::string(name) + " is not supported").c_str());
 }
 

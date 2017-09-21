@@ -635,15 +635,20 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 
 Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, const char* extensionName, Context& context)
 {
-	const vector<VkExtensionProperties>	instanceExts	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	const vector<VkExtensionProperties>	instanceExts		= enumerateInstanceExtensionProperties(vkp, DE_NULL);
 	vector<string>						enabledExts;
 
-	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
-		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+	const deUint32						instanceVersion		= context.getUsedApiVersion();
 
-	enabledExts.push_back(extensionName);
+	if (!isCoreInstanceExtension(instanceVersion, extensionName))
+	{
+		if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
+			TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+		else
+			enabledExts.push_back(extensionName);
+	}
 
-	return createDefaultInstance(vkp, context.getUsedApiVersion(), vector<string>() /* layers */, enabledExts);
+	return createDefaultInstance(vkp, instanceVersion, vector<string>() /* layers */, enabledExts);
 }
 
 tcu::TestStatus createDeviceFeatures2Test (Context& context)

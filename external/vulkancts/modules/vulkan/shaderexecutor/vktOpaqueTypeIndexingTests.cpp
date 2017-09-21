@@ -1279,7 +1279,7 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate (void)
 
 	if ((m_flags & FLAG_USE_STORAGE_BUFFER) != 0)
 	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHR_storage_buffer_storage_class"))
+		if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_storage_buffer_storage_class"))
 			TCU_THROW(NotSupportedError, "VK_KHR_storage_buffer_storage_class is not supported");
 	}
 

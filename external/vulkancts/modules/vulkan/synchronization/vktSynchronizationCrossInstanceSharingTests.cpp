@@ -25,7 +25,6 @@
 
 #include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
-
 #include "vktTestCaseUtil.hpp"
 
 #include "vktSynchronizationUtil.hpp"
@@ -177,10 +176,12 @@ vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface& vkp, deUin
 	try
 	{
 		std::vector<std::string> extensions;
-
-		extensions.push_back("VK_KHR_get_physical_device_properties2");
-		extensions.push_back("VK_KHR_external_semaphore_capabilities");
-		extensions.push_back("VK_KHR_external_memory_capabilities");
+		if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+			extensions.push_back("VK_KHR_get_physical_device_properties2");
+		if (!vk::isCoreInstanceExtension(version, "VK_KHR_external_semaphore_capabilities"))
+			extensions.push_back("VK_KHR_external_semaphore_capabilities");
+		if (!vk::isCoreInstanceExtension(version, "VK_KHR_external_memory_capabilities"))
+			extensions.push_back("VK_KHR_external_memory_capabilities");
 
 		return vk::createDefaultInstance(vkp, version, std::vector<std::string>(), extensions);
 	}
@@ -215,7 +216,8 @@ vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface& vki, vk::Vk
 	return (vk::VkPhysicalDevice)0;
 }
 
-vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&					vki,
+vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
+									 const vk::InstanceInterface&					vki,
 									 vk::VkPhysicalDevice							physicalDevice,
 									 vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleType,
 									 vk::VkExternalSemaphoreHandleTypeFlagBits	semaphoreHandleType,
@@ -228,13 +230,17 @@ vk::Move<vk::VkDevice> createDevice (const vk::InstanceInterface&					vki,
 	std::vector<const char*>						extensions;
 
 	if (dedicated)
-		extensions.push_back("VK_KHR_dedicated_allocation");
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_dedicated_allocation"))
+			extensions.push_back("VK_KHR_dedicated_allocation");
 
 	if (khrMemReqSupported)
-		extensions.push_back("VK_KHR_get_memory_requirements2");
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_get_memory_requirements2"))
+			extensions.push_back("VK_KHR_get_memory_requirements2");
 
-	extensions.push_back("VK_KHR_external_semaphore");
-	extensions.push_back("VK_KHR_external_memory");
+	if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_external_semaphore"))
+		extensions.push_back("VK_KHR_external_semaphore");
+	if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory"))
+		extensions.push_back("VK_KHR_external_memory");
 
 	if (memoryHandleType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT
 		|| semaphoreHandleType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
@@ -856,8 +862,8 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_physicalDeviceA			(getPhysicalDevice(m_vkiA, *m_instanceA, context.getTestContext().getCommandLine()))
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
-	, m_getMemReq2Supported		(de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_get_memory_requirements2"))
-	, m_deviceA					(createDevice(m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
+	, m_getMemReq2Supported		(vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
+	, m_deviceA					(createDevice(context.getUsedApiVersion(), m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
 	, m_vkdA					(m_vkiA, *m_deviceA)
 
 	, m_instanceB				(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
@@ -866,7 +872,7 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_physicalDeviceB			(getPhysicalDevice(m_vkiB, *m_instanceB, getDeviceId(m_vkiA, m_physicalDeviceA)))
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
-	, m_deviceB					(createDevice(m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
+	, m_deviceB					(createDevice(context.getUsedApiVersion(), m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
 	, m_vkdB					(m_vkiB, *m_deviceB)
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
@@ -1017,7 +1023,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferA		(createCommandBuffer(m_vkdA, *m_deviceA, *commandPoolA));
 		vk::SimpleAllocator						allocatorA			(m_vkdA, *m_deviceA, vk::getPhysicalDeviceMemoryProperties(m_vkiA, m_physicalDeviceA));
 		const std::vector<std::string>			deviceExtensionsA;
-		OperationContext						operationContextA	(m_vkiA, m_vkdA, m_physicalDeviceA, *m_deviceA, allocatorA, deviceExtensionsA, m_context.getBinaryCollection(), m_pipelineCacheData);
+		OperationContext						operationContextA	(m_context.getUsedApiVersion(), m_vkiA, m_vkdA, m_physicalDeviceA, *m_deviceA, allocatorA, deviceExtensionsA, m_context.getBinaryCollection(), m_pipelineCacheData);
 
 		if (!checkQueueFlags(m_queueFamiliesA[m_queueANdx].queueFlags , m_supportWriteOp->getQueueFlags(operationContextA)))
 			TCU_THROW(NotSupportedError, "Operation not supported by the source queue");
@@ -1027,7 +1033,7 @@ tcu::TestStatus SharingTestInstance::iterate (void)
 		const vk::Unique<vk::VkCommandBuffer>	commandBufferB		(createCommandBuffer(m_vkdB, *m_deviceB, *commandPoolB));
 		vk::SimpleAllocator						allocatorB			(m_vkdB, *m_deviceB, vk::getPhysicalDeviceMemoryProperties(m_vkiB, m_physicalDeviceB));
 		const std::vector<std::string>			deviceExtensionsB;
-		OperationContext						operationContextB	(m_vkiB, m_vkdB, m_physicalDeviceB, *m_deviceB, allocatorB, deviceExtensionsB, m_context.getBinaryCollection(), m_pipelineCacheData);
+		OperationContext						operationContextB	(m_context.getUsedApiVersion(), m_vkiB, m_vkdB, m_physicalDeviceB, *m_deviceB, allocatorB, deviceExtensionsB, m_context.getBinaryCollection(), m_pipelineCacheData);
 
 		if (!checkQueueFlags(m_queueFamiliesB[m_queueBNdx].queueFlags , m_supportReadOp->getQueueFlags(operationContextB)))
 			TCU_THROW(NotSupportedError, "Operation not supported by the destination queue");

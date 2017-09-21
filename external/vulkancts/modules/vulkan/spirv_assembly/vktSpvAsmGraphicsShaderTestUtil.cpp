@@ -2230,13 +2230,13 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	// 16bit storage features
 	{
-		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext16BitStorage))
+		if (!is16BitStorageFeaturesSupported(context.getUsedApiVersion(), vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext16BitStorage))
 			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 	}
 
 	// Variable Pointers features
 	{
-		if (!isVariablePointersFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.extVariablePointers))
+		if (!isVariablePointersFeaturesSupported(context.getUsedApiVersion(), vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.extVariablePointers))
 			TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
 
 		if (instance.requestedFeatures.extVariablePointers)
