@@ -117,13 +117,15 @@ void addComputeIndexingTests (tcu::TestCaseGroup* group)
 					"                             OpDecorate %dataOutput Binding 2\n"
 					"                             OpDecorate %_arr_mat4v4float_uint_32 ArrayStride 64\n"
 					"                             OpDecorate %_arr__arr_mat4v4float_uint_32_uint_32 ArrayStride 2048\n"
-					"                             OpMemberDecorate %Input 0 ColMajor\n"
-					"                             OpMemberDecorate %Input 0 Offset 0\n"
-					"                             OpMemberDecorate %Input 0 MatrixStride 16\n"
+					"                             OpMemberDecorate %InputStruct 0 ColMajor\n"
+					"                             OpMemberDecorate %InputStruct 0 Offset 0\n"
+					"                             OpMemberDecorate %InputStruct 0 MatrixStride 16\n"
+					"                             OpDecorate %InputStructArr ArrayStride 65536\n"
 					"                             OpDecorate %Input ${inputdecoration}\n"
+					"                             OpMemberDecorate %Input 0 Offset 0\n"
 					"                             OpDecorate %dataInput DescriptorSet 0\n"
 					"                             OpDecorate %dataInput Binding 0\n"
-					"                             OpDecorate %_ptr_buffer_Input ArrayStride 65536\n"
+					"                             OpDecorate %_ptr_buffer_InputStruct ArrayStride 65536\n"
 					"                             OpDecorate %_arr_v4uint_uint_128 ArrayStride 16\n"
 					"                             OpMemberDecorate %DataSelector 0 Offset 0\n"
 					"                             OpDecorate %DataSelector BufferBlock\n"
@@ -145,6 +147,7 @@ void addComputeIndexingTests (tcu::TestCaseGroup* group)
 					"                    %float = OpTypeFloat 32\n"
 					"                 %uint_128 = OpConstant %uint32 128\n"
 					"                  %uint_32 = OpConstant %uint32 32\n"
+					"                   %uint_2 = OpConstant %uint32 2\n"
 					"      %_arr_float_uint_128 = OpTypeArray %float %uint_128\n"
 					"                   %Output = OpTypeStruct %_arr_float_uint_128\n"
 					"      %_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
@@ -153,9 +156,12 @@ void addComputeIndexingTests (tcu::TestCaseGroup* group)
 					"              %mat4v4float = OpTypeMatrix %v4float 4\n"
 					" %_arr_mat4v4float_uint_32 = OpTypeArray %mat4v4float %uint_32\n"
 					" %_arr__arr_mat4v4float_uint_32_uint_32 = OpTypeArray %_arr_mat4v4float_uint_32 %uint_32\n"
-					"                    %Input = OpTypeStruct %_arr__arr_mat4v4float_uint_32_uint_32\n"
+					"              %InputStruct = OpTypeStruct %_arr__arr_mat4v4float_uint_32_uint_32\n"
+					"           %InputStructArr = OpTypeArray %InputStruct %uint_2\n"
+					"                    %Input = OpTypeStruct %InputStructArr\n"
 					"        %_ptr_buffer_Input = OpTypePointer ${inputstorageclass} %Input\n"
 					"                %dataInput = OpVariable %_ptr_buffer_Input ${inputstorageclass}\n"
+					"  %_ptr_buffer_InputStruct = OpTypePointer ${inputstorageclass} %InputStruct\n"
 					"                 %v4uint32 = OpTypeVector %uint32 4\n"
 					"     %_arr_v4uint_uint_128 = OpTypeArray %v4uint32 %uint_128\n"
 					"             %DataSelector = OpTypeStruct %_arr_v4uint_uint_128\n"
@@ -184,6 +190,7 @@ void addComputeIndexingTests (tcu::TestCaseGroup* group)
 					"                       %i1 = OpUConvert %idx %44\n"
 					"                       %i2 = OpUConvert %idx %48\n"
 					"                       %i3 = OpUConvert %idx %52\n"
+					"        %inputFirstElement = OpAccessChain %_ptr_buffer_InputStruct %dataInput %idx_0 %idx_0\n"
 					"                       %54 = ${accesschain}\n"
 					"                       %55 = OpLoad %float %54\n"
 					"                       %56 = OpAccessChain %_ptr_Uniform_float %dataOutput %idx_0 %uint_i\n"
@@ -195,18 +202,18 @@ void addComputeIndexingTests (tcu::TestCaseGroup* group)
 				switch (chainOpIdx)
 				{
 					case CHAIN_OP_ACCESS_CHAIN:
-						specs["accesschain"]			= "OpAccessChain %_ptr_buffer_float %dataInput %idx_0 %i0 %i1 %i2 %i3\n";
+						specs["accesschain"]			= "OpAccessChain %_ptr_buffer_float %inputFirstElement %idx_0 %i0 %i1 %i2 %i3\n";
 						specs["inputdecoration"]		= "BufferBlock";
 						specs["inputstorageclass"]		= "Uniform";
 						break;
 					case CHAIN_OP_IN_BOUNDS_ACCESS_CHAIN:
-						specs["accesschain"]			= "OpInBoundsAccessChain %_ptr_buffer_float %dataInput %idx_0 %i0 %i1 %i2 %i3\n";
+						specs["accesschain"]			= "OpInBoundsAccessChain %_ptr_buffer_float %inputFirstElement %idx_0 %i0 %i1 %i2 %i3\n";
 						specs["inputdecoration"]		= "BufferBlock";
 						specs["inputstorageclass"]		= "Uniform";
 						break;
 					default:
 						DE_ASSERT(chainOpIdx == CHAIN_OP_PTR_ACCESS_CHAIN);
-						specs["accesschain"]			= "OpPtrAccessChain %_ptr_buffer_float %dataInput %idx_1 %idx_0 %i0 %i1 %i2 %i3\n";
+						specs["accesschain"]			= "OpPtrAccessChain %_ptr_buffer_float %inputFirstElement %idx_1 %idx_0 %i0 %i1 %i2 %i3\n";
 						specs["inputdecoration"]		= "Block";
 						specs["inputstorageclass"]		= "StorageBuffer";
 						specs["variablepointercaps"]	= "OpCapability VariablePointersStorageBuffer";
@@ -301,6 +308,9 @@ void addGraphicsIndexingTests (tcu::TestCaseGroup* group)
 					"        %_ptr_Input_uint32 = OpTypePointer Input %u32\n"
 					"                 %uint_128 = OpConstant %u32 128\n"
 					"                  %uint_32 = OpConstant %u32 32\n"
+					"                   %uint_1 = OpConstant %uint 1\n"
+					"                   %uint_2 = OpConstant %uint 2\n"
+					"                   %uint_3 = OpConstant %uint 3\n"
 					"      %_arr_float_uint_128 = OpTypeArray %f32 %uint_128\n"
 					"                   %Output = OpTypeStruct %_arr_float_uint_128\n"
 					"      %_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
@@ -311,18 +321,18 @@ void addGraphicsIndexingTests (tcu::TestCaseGroup* group)
 					"              %mat4v4float = OpTypeMatrix %v4float 4\n"
 					" %_arr_mat4v4float_uint_32 = OpTypeArray %mat4v4float %uint_32\n"
 					" %_arr__arr_mat4v4float_uint_32_uint_32 = OpTypeArray %_arr_mat4v4float_uint_32 %uint_32\n"
-					"                    %Input = OpTypeStruct %_arr__arr_mat4v4float_uint_32_uint_32\n"
+					"              %InputStruct = OpTypeStruct %_arr__arr_mat4v4float_uint_32_uint_32\n"
+					"           %InputStructArr = OpTypeArray %InputStruct %uint_2\n"
+					"                    %Input = OpTypeStruct %InputStructArr\n"
 					"        %_ptr_buffer_Input = OpTypePointer ${inputstorageclass} %Input\n"
 					"                %dataInput = OpVariable %_ptr_buffer_Input ${inputstorageclass}\n"
+					"  %_ptr_buffer_InputStruct = OpTypePointer ${inputstorageclass} %InputStruct\n"
 					"                 %v4uint32 = OpTypeVector %u32 4\n"
 					"     %_arr_v4uint_uint_128 = OpTypeArray %v4uint32 %uint_128\n"
 					"             %DataSelector = OpTypeStruct %_arr_v4uint_uint_128\n"
 					"%_ptr_Uniform_DataSelector = OpTypePointer Uniform %DataSelector\n"
 					"                 %selector = OpVariable %_ptr_Uniform_DataSelector Uniform\n"
 					"      %_ptr_Uniform_uint32 = OpTypePointer Uniform %u32\n"
-					"                   %uint_1 = OpConstant %uint 1\n"
-					"                   %uint_2 = OpConstant %uint 2\n"
-					"                   %uint_3 = OpConstant %uint 3\n"
 					"       %_ptr_Uniform_float = OpTypePointer Uniform %f32\n"
 					"        %_ptr_buffer_float = OpTypePointer ${inputstorageclass} %f32\n");
 
@@ -335,13 +345,15 @@ void addGraphicsIndexingTests (tcu::TestCaseGroup* group)
 					"OpDecorate %dataOutput Binding 2\n"
 					"OpDecorate %_arr_mat4v4float_uint_32 ArrayStride 64\n"
 					"OpDecorate %_arr__arr_mat4v4float_uint_32_uint_32 ArrayStride 2048\n"
-					"OpMemberDecorate %Input 0 ColMajor\n"
-					"OpMemberDecorate %Input 0 Offset 0\n"
-					"OpMemberDecorate %Input 0 MatrixStride 16\n"
+					"OpMemberDecorate %InputStruct 0 ColMajor\n"
+					"OpMemberDecorate %InputStruct 0 Offset 0\n"
+					"OpMemberDecorate %InputStruct 0 MatrixStride 16\n"
+					"OpDecorate %InputStructArr ArrayStride 65536\n"
 					"OpDecorate %Input ${inputdecoration}\n"
+					"OpMemberDecorate %Input 0 Offset 0\n"
 					"OpDecorate %dataInput DescriptorSet 0\n"
 					"OpDecorate %dataInput Binding 0\n"
-					"OpDecorate %_ptr_buffer_Input ArrayStride 65536\n"
+					"OpDecorate %_ptr_buffer_InputStruct ArrayStride 65536\n"
 					"OpDecorate %_arr_v4uint_uint_128 ArrayStride 16\n"
 					"OpMemberDecorate %DataSelector 0 Offset 0\n"
 					"OpDecorate %DataSelector BufferBlock\n"
@@ -351,51 +363,51 @@ void addGraphicsIndexingTests (tcu::TestCaseGroup* group)
 				// Index an input buffer containing 2D array of 4x4 matrices. The indices are read from another
 				// input and converted to the desired bit size and sign.
 				const StringTemplate		testFun(
-					"%test_code = OpFunction %v4f32 None %v4f32_function\n"
-					"    %param = OpFunctionParameter %v4f32\n"
+					"        %test_code = OpFunction %v4f32 None %v4f32_function\n"
+					"            %param = OpFunctionParameter %v4f32\n"
 
-					"    %entry = OpLabel\n"
-					"        %i = OpVariable %fp_i32 Function\n"
-					"             OpStore %i %c_i32_0\n"
-					"             OpBranch %loop\n"
+					"            %entry = OpLabel\n"
+					"                %i = OpVariable %fp_i32 Function\n"
+					"                     OpStore %i %c_i32_0\n"
+					"                     OpBranch %loop\n"
 
-					"     %loop = OpLabel\n"
-					"       %15 = OpLoad %i32 %i\n"
-					"       %lt = OpSLessThan %bool %15 %c_i32_128\n"
-					"             OpLoopMerge %merge %inc None\n"
-					"             OpBranchConditional %lt %write %merge\n"
+					"             %loop = OpLabel\n"
+					"               %15 = OpLoad %i32 %i\n"
+					"               %lt = OpSLessThan %bool %15 %c_i32_128\n"
+					"                     OpLoopMerge %merge %inc None\n"
+					"                     OpBranchConditional %lt %write %merge\n"
 
-					"    %write = OpLabel\n"
-					"    %int_i = OpLoad %i32 %i\n"
-					"       %39 = OpAccessChain %_ptr_Uniform_uint32 %selector %int_0 %int_i %uint_0\n"
-					"       %40 = OpLoad %u32 %39\n"
-					"       %43 = OpAccessChain %_ptr_Uniform_uint32 %selector %int_0 %int_i %uint_1\n"
-					"       %44 = OpLoad %u32 %43\n"
-					"       %47 = OpAccessChain %_ptr_Uniform_uint32 %selector %int_0 %int_i %uint_2\n"
-					"       %48 = OpLoad %u32 %47\n"
-					"       %51 = OpAccessChain %_ptr_Uniform_uint32 %selector %int_0 %int_i %uint_3\n"
-					"       %52 = OpLoad %u32 %51\n"
-					"       %i0 = OpUConvert %uint %40\n"
-					"       %i1 = OpUConvert %uint %44\n"
-					"       %i2 = OpUConvert %uint %48\n"
-					"       %i3 = OpUConvert %uint %52\n"
-					"       %54 = ${accesschain}\n"
-					"       %55 = OpLoad %f32 %54\n"
-					"       %56 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %int_i\n"
-					"             OpStore %56 %55\n"
-					"             OpBranch %inc\n"
+					"            %write = OpLabel\n"
+					"            %int_i = OpLoad %i32 %i\n"
+					"               %39 = OpAccessChain %_ptr_Uniform_uint32 %selector %int_0 %int_i %uint_0\n"
+					"               %40 = OpLoad %u32 %39\n"
+					"               %43 = OpAccessChain %_ptr_Uniform_uint32 %selector %int_0 %int_i %uint_1\n"
+					"               %44 = OpLoad %u32 %43\n"
+					"               %47 = OpAccessChain %_ptr_Uniform_uint32 %selector %int_0 %int_i %uint_2\n"
+					"               %48 = OpLoad %u32 %47\n"
+					"               %51 = OpAccessChain %_ptr_Uniform_uint32 %selector %int_0 %int_i %uint_3\n"
+					"               %52 = OpLoad %u32 %51\n"
+					"               %i0 = OpUConvert %uint %40\n"
+					"               %i1 = OpUConvert %uint %44\n"
+					"               %i2 = OpUConvert %uint %48\n"
+					"               %i3 = OpUConvert %uint %52\n"
+					"%inputFirstElement = OpAccessChain %_ptr_buffer_InputStruct %dataInput %uint_0 %uint_0\n"
+					"               %54 = ${accesschain}\n"
+					"               %55 = OpLoad %f32 %54\n"
+					"               %56 = OpAccessChain %_ptr_Uniform_float %dataOutput %int_0 %int_i\n"
+					"                     OpStore %56 %55\n"
+					"                     OpBranch %inc\n"
 
-					"      %inc = OpLabel\n"
-					"       %67 = OpLoad %i32 %i\n"
-					"       %69 = OpIAdd %i32 %67 %c_i32_1\n"
-					"             OpStore %i %69\n"
-					"             OpBranch %loop\n"
+					"              %inc = OpLabel\n"
+					"               %67 = OpLoad %i32 %i\n"
+					"               %69 = OpIAdd %i32 %67 %c_i32_1\n"
+					"                     OpStore %i %69\n"
+					"                     OpBranch %loop\n"
 
-					"    %merge = OpLabel\n"
-					"             OpReturnValue %param\n"
+					"            %merge = OpLabel\n"
+					"                     OpReturnValue %param\n"
 
-					"             OpFunctionEnd\n");
-
+					"                     OpFunctionEnd\n");
 
 				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(inputData))));
 				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Buffer<UVec4>(indexSelectorData))));
@@ -417,18 +429,18 @@ void addGraphicsIndexingTests (tcu::TestCaseGroup* group)
 				switch (chainOpIdx)
 				{
 					case CHAIN_OP_ACCESS_CHAIN:
-						specs["accesschain"]				= "OpAccessChain %_ptr_buffer_float %dataInput %int_0 %i0 %i1 %i2 %i3\n";
+						specs["accesschain"]				= "OpAccessChain %_ptr_buffer_float %inputFirstElement %int_0 %i0 %i1 %i2 %i3\n";
 						specs["inputdecoration"]			= "BufferBlock";
 						specs["inputstorageclass"]			= "Uniform";
 						break;
 					case CHAIN_OP_IN_BOUNDS_ACCESS_CHAIN:
-						specs["accesschain"]				= "OpInBoundsAccessChain %_ptr_buffer_float %dataInput %int_0 %i0 %i1 %i2 %i3\n";
+						specs["accesschain"]				= "OpInBoundsAccessChain %_ptr_buffer_float %inputFirstElement %int_0 %i0 %i1 %i2 %i3\n";
 						specs["inputdecoration"]			= "BufferBlock";
 						specs["inputstorageclass"]			= "Uniform";
 						break;
 					default:
 						DE_ASSERT(chainOpIdx == CHAIN_OP_PTR_ACCESS_CHAIN);
-						specs["accesschain"]				= "OpPtrAccessChain %_ptr_buffer_float %dataInput %uint_1 %int_0 %i0 %i1 %i2 %i3\n";
+						specs["accesschain"]				= "OpPtrAccessChain %_ptr_buffer_float %inputFirstElement %uint_1 %int_0 %i0 %i1 %i2 %i3\n";
 						specs["inputdecoration"]			= "Block";
 						specs["inputstorageclass"]			= "StorageBuffer";
 						fragments["capability"]				+= "OpCapability VariablePointersStorageBuffer";
