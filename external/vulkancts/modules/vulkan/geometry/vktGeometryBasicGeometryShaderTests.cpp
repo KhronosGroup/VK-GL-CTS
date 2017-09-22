@@ -490,7 +490,7 @@ void VaryingOutputCountTestInstance::bindDescriptorSets (const DeviceInterface& 
 															},											// VkImageSubresourceRange	subresourceRange;
 														};
 		m_imageView										= createImageView(vk, device, &viewParams);
-		const VkDescriptorImageInfo descriptorImageInfo = makeDescriptorImageInfo (*m_sampler, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+		const VkDescriptorImageInfo descriptorImageInfo = makeDescriptorImageInfo (*m_sampler, *m_imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		DescriptorSetUpdateBuilder()
 			.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfo)
 			.update(vk, device);

@@ -41,6 +41,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkAllocationCallbackUtil.cpp \
 	external/vulkancts/framework/vulkan/vkApiVersion.cpp \
 	external/vulkancts/framework/vulkan/vkBinaryRegistry.cpp \
+	external/vulkancts/framework/vulkan/vkBufferWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDefs.cpp \
@@ -48,6 +49,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkGlslProgram.cpp \
 	external/vulkancts/framework/vulkan/vkGlslToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
+	external/vulkancts/framework/vulkan/vkImageWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkMemUtil.cpp \
 	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
 	external/vulkancts/framework/vulkan/vkPlatform.cpp \
@@ -83,7 +85,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingModelTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingShaderAccessTests.cpp \
 	external/vulkancts/modules/vulkan/clipping/vktClippingTests.cpp \
-	external/vulkancts/modules/vulkan/clipping/vktClippingUtil.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeBasicComputeShaderTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeIndirectComputeDispatchTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp \
@@ -123,15 +124,19 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/geometry/vktGeometryVaryingGeometryShaderTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageAtomicOperationTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageCompressionTranscodingSupport.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageLoadStoreUtil.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageMultisampleLoadStoreTests.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageMutableTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageQualifiersTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageSizeTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTests.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/image/vktImageTexture.cpp \
+	external/vulkancts/modules/vulkan/image/vktImageTranscodingSupportTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryAllocationTests.cpp \
+	external/vulkancts/modules/vulkan/memory/vktMemoryBindingTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryMappingTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryPipelineBarrierTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryRequirementsTests.cpp \
@@ -252,6 +257,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktRandomUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
+	external/vulkancts/modules/vulkan/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/vktExternalMemoryUtil.cpp \
 	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
 	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
@@ -266,6 +272,13 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrConversionTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrCopyTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrFormatTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrImageQueryTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrTests.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrUtil.cpp \
+	external/vulkancts/modules/vulkan/ycbcr/vktYCbCrViewTests.cpp \
 	framework/common/tcuApp.cpp \
 	framework/common/tcuArray.cpp \
 	framework/common/tcuAstcUtil.cpp \
@@ -1003,7 +1016,8 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/tessellation \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/texture \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
-	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi
+	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/ycbcr \
 
 deqp_compile_flags := \
 	-DDEQP_SUPPORT_GLES1=1 \
