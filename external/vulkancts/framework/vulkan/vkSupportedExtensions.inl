@@ -23,6 +23,7 @@ void getCoreDeviceExtensionsImpl (deUint32 coreVersion, ::std::vector<const char
 		dst.push_back("VK_KHR_get_memory_requirements2");
 		dst.push_back("VK_KHR_sampler_ycbcr_conversion");
 		dst.push_back("VK_KHR_bind_memory2");
+		dst.push_back("VK_KHR_maintenance3");
 	}
 }
 

@@ -45,6 +45,8 @@ set(DEQP_VK_API_SRCS
 	vktApiExternalMemoryTests.hpp
 	vktApiBufferAndImageAllocationUtil.hpp
 	vktApiBufferAndImageAllocationUtil.cpp
+	vktApiMaintenance3Check.hpp
+	vktApiMaintenance3Check.cpp
 	)
 
 set(DEQP_VK_API_LIBS
