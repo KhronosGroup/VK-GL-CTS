@@ -257,10 +257,24 @@ inline deUint32 convertSatRteUint24 (float f)
 	return de::min(rounded, maxUint24);
 }
 
+inline deUint16 convertSatRteUint10 (float f)
+{
+	const deUint16 rounded		= convertSatRte<deUint16>(f);
+	const deUint16 maxUint10	= 0x3FFu;
+	return de::min(rounded, maxUint10);
+}
+
+inline deUint16 convertSatRteUint12 (float f)
+{
+	const deUint16 rounded		= convertSatRte<deUint16>(f);
+	const deUint16 maxUint12	= 0xFFFu;
+	return de::min(rounded, maxUint12);
+}
+
 inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
 
 	switch (type)
 	{
@@ -281,6 +295,8 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 		case TextureFormat::HALF_FLOAT:			return deFloat16To32(*(const deFloat16*)value);
 		case TextureFormat::FLOAT:				return *((const float*)value);
 		case TextureFormat::FLOAT64:			return (float)*((const double*)value);
+		case TextureFormat::UNORM_SHORT_10:		return (float)((*((const deUint16*)value)) >> 6u) / 1023.0f;
+		case TextureFormat::UNORM_SHORT_12:		return (float)((*((const deUint16*)value)) >> 4u) / 4095.0f;
 		default:
 			DE_ASSERT(DE_FALSE);
 			return 0.0f;
@@ -290,7 +306,7 @@ inline float channelToFloat (const deUint8* value, TextureFormat::ChannelType ty
 inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
 
 	switch (type)
 	{
@@ -311,6 +327,8 @@ inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 		case TextureFormat::HALF_FLOAT:			return (int)deFloat16To32(*(const deFloat16*)value);
 		case TextureFormat::FLOAT:				return (int)*((const float*)value);
 		case TextureFormat::FLOAT64:			return (int)*((const double*)value);
+		case TextureFormat::UNORM_SHORT_10:		return (int)((*(((const deUint16*)value))) >> 6u);
+		case TextureFormat::UNORM_SHORT_12:		return (int)((*(((const deUint16*)value))) >> 4u);
 		default:
 			DE_ASSERT(DE_FALSE);
 			return 0;
@@ -320,27 +338,29 @@ inline int channelToInt (const deUint8* value, TextureFormat::ChannelType type)
 void floatToChannel (deUint8* dst, float src, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
 
 	switch (type)
 	{
-		case TextureFormat::SNORM_INT8:			*((deInt8*)dst)			= convertSatRte<deInt8>		(src * 127.0f);			break;
-		case TextureFormat::SNORM_INT16:		*((deInt16*)dst)		= convertSatRte<deInt16>	(src * 32767.0f);		break;
-		case TextureFormat::SNORM_INT32:		*((deInt32*)dst)		= convertSatRte<deInt32>	(src * 2147483647.0f);	break;
-		case TextureFormat::UNORM_INT8:			*((deUint8*)dst)		= convertSatRte<deUint8>	(src * 255.0f);			break;
-		case TextureFormat::UNORM_INT16:		*((deUint16*)dst)		= convertSatRte<deUint16>	(src * 65535.0f);		break;
-		case TextureFormat::UNORM_INT24:		writeUint24(dst,		  convertSatRteUint24		(src * 16777215.0f));	break;
-		case TextureFormat::UNORM_INT32:		*((deUint32*)dst)		= convertSatRte<deUint32>	(src * 4294967295.0f);	break;
-		case TextureFormat::SIGNED_INT8:		*((deInt8*)dst)			= convertSatRte<deInt8>		(src);					break;
-		case TextureFormat::SIGNED_INT16:		*((deInt16*)dst)		= convertSatRte<deInt16>	(src);					break;
-		case TextureFormat::SIGNED_INT32:		*((deInt32*)dst)		= convertSatRte<deInt32>	(src);					break;
-		case TextureFormat::UNSIGNED_INT8:		*((deUint8*)dst)		= convertSatRte<deUint8>	(src);					break;
-		case TextureFormat::UNSIGNED_INT16:		*((deUint16*)dst)		= convertSatRte<deUint16>	(src);					break;
-		case TextureFormat::UNSIGNED_INT24:		writeUint24(dst,		  convertSatRteUint24		(src));					break;
-		case TextureFormat::UNSIGNED_INT32:		*((deUint32*)dst)		= convertSatRte<deUint32>	(src);					break;
-		case TextureFormat::HALF_FLOAT:			*((deFloat16*)dst)		= deFloat32To16				(src);					break;
-		case TextureFormat::FLOAT:				*((float*)dst)			= src;												break;
-		case TextureFormat::FLOAT64:			*((double*)dst)			= (double)src;										break;
+		case TextureFormat::SNORM_INT8:			*((deInt8*)dst)			= convertSatRte<deInt8>		(src * 127.0f);				break;
+		case TextureFormat::SNORM_INT16:		*((deInt16*)dst)		= convertSatRte<deInt16>	(src * 32767.0f);			break;
+		case TextureFormat::SNORM_INT32:		*((deInt32*)dst)		= convertSatRte<deInt32>	(src * 2147483647.0f);		break;
+		case TextureFormat::UNORM_INT8:			*((deUint8*)dst)		= convertSatRte<deUint8>	(src * 255.0f);				break;
+		case TextureFormat::UNORM_INT16:		*((deUint16*)dst)		= convertSatRte<deUint16>	(src * 65535.0f);			break;
+		case TextureFormat::UNORM_INT24:		writeUint24(dst,		  convertSatRteUint24		(src * 16777215.0f));		break;
+		case TextureFormat::UNORM_INT32:		*((deUint32*)dst)		= convertSatRte<deUint32>	(src * 4294967295.0f);		break;
+		case TextureFormat::SIGNED_INT8:		*((deInt8*)dst)			= convertSatRte<deInt8>		(src);						break;
+		case TextureFormat::SIGNED_INT16:		*((deInt16*)dst)		= convertSatRte<deInt16>	(src);						break;
+		case TextureFormat::SIGNED_INT32:		*((deInt32*)dst)		= convertSatRte<deInt32>	(src);						break;
+		case TextureFormat::UNSIGNED_INT8:		*((deUint8*)dst)		= convertSatRte<deUint8>	(src);						break;
+		case TextureFormat::UNSIGNED_INT16:		*((deUint16*)dst)		= convertSatRte<deUint16>	(src);						break;
+		case TextureFormat::UNSIGNED_INT24:		writeUint24(dst,		  convertSatRteUint24		(src));						break;
+		case TextureFormat::UNSIGNED_INT32:		*((deUint32*)dst)		= convertSatRte<deUint32>	(src);						break;
+		case TextureFormat::HALF_FLOAT:			*((deFloat16*)dst)		= deFloat32To16				(src);						break;
+		case TextureFormat::FLOAT:				*((float*)dst)			= src;													break;
+		case TextureFormat::FLOAT64:			*((double*)dst)			= (double)src;											break;
+		case TextureFormat::UNORM_SHORT_10:		*((deUint16*)dst)		= (deUint16)(convertSatRteUint10(src * 1023.0f) << 6u);	break;
+		case TextureFormat::UNORM_SHORT_12:		*((deUint16*)dst)		= (deUint16)(convertSatRteUint12(src * 4095.0f) << 4u);	break;
 		default:
 			DE_ASSERT(DE_FALSE);
 	}
@@ -374,10 +394,38 @@ static inline deUint32 convertSatUint24 (S src)
 		return (deUint32)src;
 }
 
+template <typename S>
+static inline deUint16 convertSatUint10 (S src)
+{
+	S min = (S)0u;
+	S max = (S)0x3FFu;
+
+	if (src < min)
+		return (deUint16)min;
+	else if (src > max)
+		return (deUint16)max;
+	else
+		return (deUint16)src;
+}
+
+template <typename S>
+static inline deUint16 convertSatUint12 (S src)
+{
+	S min = (S)0u;
+	S max = (S)0xFFFu;
+
+	if (src < min)
+		return (deUint16)min;
+	else if (src > max)
+		return (deUint16)max;
+	else
+		return (deUint16)src;
+}
+
 void intToChannel (deUint8* dst, int src, TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
 
 	switch (type)
 	{
@@ -396,6 +444,8 @@ void intToChannel (deUint8* dst, int src, TextureFormat::ChannelType type)
 		case TextureFormat::HALF_FLOAT:			*((deFloat16*)dst)		= deFloat32To16((float)src);				break;
 		case TextureFormat::FLOAT:				*((float*)dst)			= (float)src;								break;
 		case TextureFormat::FLOAT64:			*((double*)dst)			= (double)src;								break;
+		case TextureFormat::UNORM_SHORT_10:		*((deUint16*)dst)		= (deUint16)(convertSatUint10(src) << 6u);	break;
+		case TextureFormat::UNORM_SHORT_12:		*((deUint16*)dst)		= (deUint16)(convertSatUint12(src) << 4u);	break;
 		default:
 			DE_ASSERT(DE_FALSE);
 	}
@@ -584,12 +634,16 @@ bool isValid (TextureFormat format)
 		case TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
 			return format.order == TextureFormat::DS;
 
+		case TextureFormat::UNORM_SHORT_10:
+		case TextureFormat::UNORM_SHORT_12:
+			return isColor;
+
 		default:
 			DE_FATAL("Unknown format");
 			return 0u;
 	}
 
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
 }
 
 int getNumUsedChannels (TextureFormat::ChannelOrder order)
@@ -629,7 +683,7 @@ int getNumUsedChannels (TextureFormat::ChannelOrder order)
 int getChannelSize (TextureFormat::ChannelType type)
 {
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
 
 	switch (type)
 	{
@@ -650,6 +704,8 @@ int getChannelSize (TextureFormat::ChannelType type)
 		case TextureFormat::HALF_FLOAT:			return 2;
 		case TextureFormat::FLOAT:				return 4;
 		case TextureFormat::FLOAT64:			return 8;
+		case TextureFormat::UNORM_SHORT_10:		return 2;
+		case TextureFormat::UNORM_SHORT_12:		return 2;
 		default:
 			DE_ASSERT(DE_FALSE);
 			return 0;
@@ -665,7 +721,7 @@ int getPixelSize (TextureFormat format)
 	DE_ASSERT(isValid(format));
 
 	// make sure this table is updated if format table is updated
-	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 38);
+	DE_STATIC_ASSERT(TextureFormat::CHANNELTYPE_LAST == 40);
 
 	switch (type)
 	{
@@ -3803,7 +3859,9 @@ std::ostream& operator<< (std::ostream& str, TextureFormat::ChannelType type)
 		"HALF_FLOAT",
 		"FLOAT",
 		"FLOAT64",
-		"FLOAT_UNSIGNED_INT_24_8_REV"
+		"FLOAT_UNSIGNED_INT_24_8_REV",
+		"UNORM_SHORT_10",
+		"UNORM_SHORT_12"
 	};
 
 	return str << de::getSizedArrayElement<TextureFormat::CHANNELTYPE_LAST>(typeStrings, type);

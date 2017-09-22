@@ -76,6 +76,7 @@
 #include "vktFragmentOperationsTests.hpp"
 #include "vktTextureTests.hpp"
 #include "vktGeometryTests.hpp"
+#include "vktYCbCrTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -83,9 +84,9 @@
 namespace // compilation
 {
 
-vk::ProgramBinary* compileProgram (const glu::ProgramSources& source, glu::ShaderProgramInfo* buildInfo)
+vk::ProgramBinary* compileProgram (const vk::GlslSource& source, glu::ShaderProgramInfo* buildInfo)
 {
-	return vk::buildProgram(source, vk::PROGRAM_FORMAT_SPIRV, buildInfo);
+	return vk::buildProgram(source, buildInfo);
 }
 
 vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, vk::SpirVProgramInfo* buildInfo)
@@ -398,6 +399,7 @@ void TestPackage::init (void)
 	addChild(FragmentOperations::createTests(m_testCtx));
 	addChild(texture::createTests			(m_testCtx));
 	addChild(geometry::createTests			(m_testCtx));
+	addChild(ycbcr::createTests				(m_testCtx));
 }
 
 } // vkt

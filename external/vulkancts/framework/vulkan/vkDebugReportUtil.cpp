@@ -48,39 +48,42 @@ tcu::Format::Bitfield<32> shortDebugFlagsStr (VkDebugReportFlagsEXT flags)
 
 const char* getShortObjectTypeName (VkDebugReportObjectTypeEXT objectType)
 {
-	static const char* const s_names[] =
+	switch (objectType)
 	{
-		"Unknown",
-		"Instance",
-		"PhysicalDevice",
-		"Device",
-		"Queue",
-		"Semaphore",
-		"CommandBuffer",
-		"Fence",
-		"DeviceMemory",
-		"Buffer",
-		"Image",
-		"Event",
-		"QueryPool",
-		"BufferView",
-		"ImageView",
-		"ShaderModule",
-		"PipelineCache",
-		"PipelineLayout",
-		"RenderPass",
-		"Pipeline",
-		"DescriptorSetLayout",
-		"Sampler",
-		"DescriptorPool",
-		"DescriptorSet",
-		"Framebuffer",
-		"CommandPool",
-		"SurfaceKHR",
-		"SwapchainKHR",
-		"DebugReportCallbackEXT",
-	};
-	return de::getSizedArrayElement<VK_DEBUG_REPORT_OBJECT_TYPE_EXT_LAST>(s_names, objectType);
+		case VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT:							return "Unknown";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT:							return "Instance";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT:					return "PhysicalDevice";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT:							return "Device";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT:								return "Queue";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT:							return "Semaphore";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT:					return "CommandBuffer";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT:								return "Fence";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT:						return "DeviceMemory";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT:							return "Buffer";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT:								return "Image";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_EVENT_EXT:								return "Event";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_QUERY_POOL_EXT:						return "QueryPool";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_VIEW_EXT:						return "BufferView";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT:						return "ImageView";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT:						return "ShaderModule";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_CACHE_EXT:					return "PipelineCache";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT:					return "PipelineLayout";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT:						return "RenderPass";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT:							return "Pipeline";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT_EXT:				return "DescriptorSetLayout";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT:							return "Sampler";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_POOL_EXT:					return "DescriptorPool";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT:					return "DescriptorSet";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT:						return "Framebuffer";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT:						return "CommandPool";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SURFACE_KHR_EXT:						return "SurfaceKHR";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT:						return "SwapchainKHR";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_EXT:						return "DebugReportEXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DISPLAY_KHR_EXT:						return "DisplayKHR";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DISPLAY_MODE_KHR_EXT:					return "DisplayModeKHR";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_KHR_EXT:	return "DescriptorUpdateTemplateKHR";
+		default:																return DE_NULL;
+	}
 }
 
 tcu::Format::Enum<VkDebugReportObjectTypeEXT> shortObjectTypeStr (VkDebugReportObjectTypeEXT objectType)

@@ -82,10 +82,6 @@ vk::Move<vk::VkCommandPool>			makeCommandPool				(const vk::DeviceInterface&			v
 																 const vk::VkDevice					device,
 																 const deUint32						queueFamilyIndex);
 
-vk::Move<vk::VkCommandBuffer>		makeCommandBuffer			(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkCommandPool			commandPool);
-
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&			vk,
 																 const vk::VkDevice					device);
 

@@ -44,6 +44,32 @@ Move<VkPipeline>		createComputePipeline	(const DeviceInterface&					vk,
 Move<VkCommandBuffer>	allocateCommandBuffer	(const DeviceInterface& vk, VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo);
 Move<VkDescriptorSet>	allocateDescriptorSet	(const DeviceInterface& vk, VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo);
 
+Move<VkSemaphore>		createSemaphore			(const DeviceInterface&			vk,
+												 VkDevice						device,
+												 VkSemaphoreCreateFlags			flags		= (VkSemaphoreCreateFlags)0,
+												 const VkAllocationCallbacks*	pAllocator	= DE_NULL);
+
+Move<VkFence>			createFence				(const DeviceInterface&			vk,
+												 VkDevice						device,
+												 VkFenceCreateFlags				flags		= (VkFenceCreateFlags)0,
+												 const VkAllocationCallbacks*	pAllocator	= DE_NULL);
+
+Move<VkCommandPool>		createCommandPool		(const DeviceInterface&			vk,
+												 VkDevice						device,
+												 VkCommandPoolCreateFlags		flags,
+												 deUint32						queueFamilyIndex,
+												 const VkAllocationCallbacks*	pAllocator	= DE_NULL);
+
+Move<VkCommandBuffer>	allocateCommandBuffer	(const DeviceInterface&			vk,
+												 VkDevice						device,
+												 VkCommandPool					commandPool,
+												 VkCommandBufferLevel			level);
+
+Move<VkEvent>			createEvent				(const DeviceInterface&			vk,
+												 VkDevice						device,
+												 VkEventCreateFlags				flags = (VkEventCreateFlags)0u,
+												 const VkAllocationCallbacks*	pAllocateInfo = DE_NULL);
+
 } // vk
 
 #endif // _VKREFUTIL_HPP

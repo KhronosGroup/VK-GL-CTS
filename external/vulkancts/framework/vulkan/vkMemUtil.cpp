@@ -54,14 +54,6 @@ private:
 	void* const					m_ptr;
 };
 
-void* mapMemory (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
-{
-	void* hostPtr = DE_NULL;
-	VK_CHECK(vkd.mapMemory(device, mem, offset, size, flags, &hostPtr));
-	TCU_CHECK(hostPtr);
-	return hostPtr;
-}
-
 HostPtr::HostPtr (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
 	: m_vkd		(vkd)
 	, m_device	(device)
@@ -77,14 +69,13 @@ HostPtr::~HostPtr (void)
 
 deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
 {
-	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
-	{
-		if ((allowedMemTypeBits & (1u << memoryTypeNdx)) != 0 &&
-			requirement.matchesHeap(deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags))
-			return memoryTypeNdx;
-	}
+	const deUint32	compatibleTypes	= getCompatibleMemoryTypes(deviceMemProps, requirement);
+	const deUint32	candidates		= allowedMemTypeBits & compatibleTypes;
 
-	TCU_THROW(NotSupportedError, "No compatible memory type found");
+	if (candidates == 0)
+		TCU_THROW(NotSupportedError, "No compatible memory type found");
+
+	return (deUint32)deCtz32(candidates);
 }
 
 bool isHostVisibleMemory (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 memoryTypeNdx)
@@ -210,6 +201,81 @@ MovePtr<Allocation> SimpleAllocator::allocate (const VkMemoryRequirements& memRe
 	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
 }
 
+static MovePtr<Allocation> allocateDedicated (const InstanceInterface&		vki,
+											  const DeviceInterface&		vkd,
+											  const VkPhysicalDevice&		physDevice,
+											  const VkDevice				device,
+											  const VkMemoryRequirements&	memReqs,
+											  const MemoryRequirement		requirement,
+											  const void*					pNext)
+{
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
+	const deUint32							memoryTypeNdx		= selectMatchingMemoryType(memoryProperties, memReqs.memoryTypeBits, requirement);
+	const VkMemoryAllocateInfo				allocInfo			=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType	sType
+		pNext,									//	const void*		pNext
+		memReqs.size,							//	VkDeviceSize	allocationSize
+		memoryTypeNdx,							//	deUint32		memoryTypeIndex
+	};
+	Move<VkDeviceMemory>					mem					= allocateMemory(vkd, device, &allocInfo);
+	MovePtr<HostPtr>						hostPtr;
+
+	if (requirement & MemoryRequirement::HostVisible)
+	{
+		DE_ASSERT(isHostVisibleMemory(memoryProperties, allocInfo.memoryTypeIndex));
+		hostPtr = MovePtr<HostPtr>(new HostPtr(vkd, device, *mem, 0u, allocInfo.allocationSize, 0u));
+	}
+
+	return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr));
+}
+
+de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
+										   const DeviceInterface&	vkd,
+										   const VkPhysicalDevice&	physDevice,
+										   const VkDevice			device,
+										   const VkBuffer			buffer,
+										   MemoryRequirement		requirement)
+{
+	const VkMemoryRequirements					memoryRequirements		= getBufferMemoryRequirements(vkd, device, buffer);
+	const VkMemoryDedicatedAllocateInfoKHR		dedicatedAllocationInfo	=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
+		DE_NULL,															// const void*			pNext
+		DE_NULL,															// VkImage				image
+		buffer																// VkBuffer				buffer
+	};
+
+	return allocateDedicated(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
+}
+
+de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
+										   const DeviceInterface&	vkd,
+										   const VkPhysicalDevice&	physDevice,
+										   const VkDevice			device,
+										   const VkImage			image,
+										   MemoryRequirement		requirement)
+{
+	const VkMemoryRequirements				memoryRequirements		= getImageMemoryRequirements(vkd, device, image);
+	const VkMemoryDedicatedAllocateInfoKHR	dedicatedAllocationInfo	=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,			// VkStructureType		sType
+		DE_NULL,														// const void*			pNext
+		image,															// VkImage				image
+		DE_NULL															// VkBuffer				buffer
+	};
+
+	return allocateDedicated(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
+}
+
+void* mapMemory (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags)
+{
+	void* hostPtr = DE_NULL;
+	VK_CHECK(vkd.mapMemory(device, mem, offset, size, flags, &hostPtr));
+	TCU_CHECK(hostPtr);
+	return hostPtr;
+}
+
 void flushMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
 {
 	const VkMappedMemoryRange	range	=
@@ -236,6 +302,44 @@ void invalidateMappedMemoryRange (const DeviceInterface& vkd, VkDevice device, V
 	};
 
 	VK_CHECK(vkd.invalidateMappedMemoryRanges(device, 1u, &range));
+}
+
+deUint32 getCompatibleMemoryTypes (const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement)
+{
+	deUint32	compatibleTypes	= 0u;
+
+	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemProps.memoryTypeCount; memoryTypeNdx++)
+	{
+		if (requirement.matchesHeap(deviceMemProps.memoryTypes[memoryTypeNdx].propertyFlags))
+			compatibleTypes |= (1u << memoryTypeNdx);
+	}
+
+	return compatibleTypes;
+}
+
+void bindImagePlaneMemory (const DeviceInterface&	vkd,
+						   VkDevice					device,
+						   VkImage					image,
+						   VkDeviceMemory			memory,
+						   VkDeviceSize				memoryOffset,
+						   VkImageAspectFlagBits	planeAspect)
+{
+	const VkBindImagePlaneMemoryInfoKHR	planeInfo	=
+	{
+		VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
+		DE_NULL,
+		planeAspect
+	};
+	const VkBindImageMemoryInfoKHR		coreInfo	=
+	{
+		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
+		&planeInfo,
+		image,
+		memory,
+		memoryOffset,
+	};
+
+	VK_CHECK(vkd.bindImageMemory2KHR(device, 1u, &coreInfo));
 }
 
 } // vk

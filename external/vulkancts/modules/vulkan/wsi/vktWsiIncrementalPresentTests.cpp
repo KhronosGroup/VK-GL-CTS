@@ -38,6 +38,7 @@
 
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuTestLog.hpp"
 
 #include <vector>
 #include <string>
@@ -213,25 +214,6 @@ de::MovePtr<vk::wsi::Window> createWindow (const vk::wsi::Display& display, cons
 	}
 }
 
-vk::VkQueue getDeviceQueue (const vk::DeviceInterface& vkd, vk::VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex)
-{
-	vk::VkQueue queue = (vk::VkQueue)0;
-	vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
-	return queue;
-}
-
-vk::Move<vk::VkSemaphore> createSemaphore (const vk::DeviceInterface&	vkd,
-										   vk::VkDevice					device)
-{
-	const vk::VkSemaphoreCreateInfo createInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		DE_NULL,
-		0u
-	};
-	return vk::createSemaphore(vkd, device, &createInfo);
-}
-
 void initSemaphores (const vk::DeviceInterface&		vkd,
 					 vk::VkDevice					device,
 					 std::vector<vk::VkSemaphore>&	semaphores)
@@ -253,18 +235,6 @@ void deinitSemaphores (const vk::DeviceInterface&	vkd,
 	}
 
 	semaphores.clear();
-}
-
-vk::Move<vk::VkFence> createFence (const vk::DeviceInterface&	vkd,
-								   vk::VkDevice					device)
-{
-	const vk::VkFenceCreateInfo createInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u
-	};
-	return vk::createFence(vkd, device, &createInfo);
 }
 
 void initFences (const vk::DeviceInterface&	vkd,
@@ -393,6 +363,8 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 												   vk::VkRenderPass				renderPass,
 												   vk::VkFramebuffer			framebuffer,
 												   vk::VkPipeline				pipeline,
+												   vk::VkImage					image,
+												   bool							isFirst,
 												   size_t						imageNextFrame,
 												   size_t						currentFrame,
 												   deUint32						imageWidth,
@@ -417,6 +389,31 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 
 	vk::Move<vk::VkCommandBuffer>	commandBuffer	(vk::allocateCommandBuffer(vkd, device, &allocateInfo));
 	VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &beginInfo));
+
+	{
+		const vk::VkImageSubresourceRange subRange =
+		{
+			vk::VK_IMAGE_ASPECT_COLOR_BIT,
+			0,
+			1,
+			0,
+			1
+		};
+		const vk::VkImageMemoryBarrier barrier =
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			DE_NULL,
+			vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+			vk::VK_ACCESS_TRANSFER_READ_BIT | vk::VK_ACCESS_TRANSFER_WRITE_BIT,
+			isFirst ? vk::VK_IMAGE_LAYOUT_UNDEFINED : vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_QUEUE_FAMILY_IGNORED,
+			VK_QUEUE_FAMILY_IGNORED,
+			image,
+			subRange
+		};
+		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
+	}
 
 	{
 		const vk::VkClearValue			clearValue			= vk::makeClearValueColorF32(0.25f, 0.50f, 0.75f, 1.00f);
@@ -931,6 +928,7 @@ private:
 	vk::Move<vk::VkSwapchainKHR>					m_swapchain;
 	std::vector<vk::VkImage>						m_swapchainImages;
 	std::vector<size_t>								m_imageNextFrames;
+	std::vector<bool>								m_isFirst;
 
 	vk::Move<vk::VkRenderPass>						m_renderPass;
 	vk::Move<vk::VkPipeline>						m_pipeline;
@@ -1109,6 +1107,7 @@ void IncrementalPresentTestInstance::initSwapchainResources (void)
 	m_swapchainImages		= vk::wsi::getSwapchainImages(m_vkd, *m_device, *m_swapchain);
 
 	m_imageNextFrames.resize(m_swapchainImages.size(), 0);
+	m_isFirst.resize(m_swapchainImages.size(), true);
 
 	m_renderPass			= createRenderPass(m_vkd, *m_device, imageFormat);
 	m_pipeline				= createPipeline(m_vkd, *m_device, *m_renderPass, *m_pipelineLayout, *m_vertexShaderModule, *m_fragmentShaderModule, imageWidth, imageHeight);
@@ -1160,6 +1159,7 @@ void IncrementalPresentTestInstance::deinitSwapchainResources (void)
 
 	m_swapchainImages.clear();
 	m_imageNextFrames.clear();
+	m_isFirst.clear();
 
 	m_swapchain		= vk::Move<vk::VkSwapchainKHR>();
 	m_renderPass	= vk::Move<vk::VkRenderPass>();
@@ -1195,8 +1195,9 @@ void IncrementalPresentTestInstance::render (void)
 	// Create command buffer
 	{
 		imageNextFrame = m_imageNextFrames[imageIndex];
-		m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_pipelineLayout, *m_renderPass, m_framebuffers[imageIndex], *m_pipeline, imageNextFrame, m_frameNdx, width, height).disown();
+		m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_pipelineLayout, *m_renderPass, m_framebuffers[imageIndex], *m_pipeline, m_swapchainImages[imageIndex], m_isFirst[imageIndex], imageNextFrame, m_frameNdx, width, height).disown();
 		m_imageNextFrames[imageIndex] = m_frameNdx + 1;
+		m_isFirst[imageIndex] = false;
 	}
 
 	// Submit command buffer

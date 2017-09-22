@@ -486,24 +486,6 @@ struct TestConfig
 	vk::VkSharingMode	sharing;
 };
 
-vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vkd,
-												   vk::VkDevice					device,
-												   vk::VkCommandPool			pool,
-												   vk::VkCommandBufferLevel		level)
-{
-	const vk::VkCommandBufferAllocateInfo bufferInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		DE_NULL,
-
-		pool,
-		level,
-		1u
-	};
-
-	return vk::allocateCommandBuffer(vkd, device, &bufferInfo);
-}
-
 vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer (const vk::DeviceInterface&	vkd,
 														vk::VkDevice				device,
 														vk::VkCommandPool			pool,
@@ -528,27 +510,11 @@ vk::Move<vk::VkCommandBuffer> createBeginCommandBuffer (const vk::DeviceInterfac
 		(level == vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY ? &inheritInfo : (const vk::VkCommandBufferInheritanceInfo*)DE_NULL),
 	};
 
-	vk::Move<vk::VkCommandBuffer> commandBuffer (createCommandBuffer(vkd, device, pool, level));
+	vk::Move<vk::VkCommandBuffer> commandBuffer (allocateCommandBuffer(vkd, device, pool, level));
 
 	vkd.beginCommandBuffer(*commandBuffer, &beginInfo);
 
 	return commandBuffer;
-}
-
-vk::Move<vk::VkCommandPool> createCommandPool (const vk::DeviceInterface&	vkd,
-											   vk::VkDevice					device,
-											   deUint32						queueFamilyIndex)
-{
-	const vk::VkCommandPoolCreateInfo poolInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		DE_NULL,
-
-		vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-		queueFamilyIndex,
-	};
-
-	return vk::createCommandPool(vkd, device, &poolInfo);
 }
 
 vk::Move<vk::VkBuffer> createBuffer (const vk::DeviceInterface&	vkd,
@@ -1034,7 +1000,7 @@ public:
 		, m_queue				(queue)
 		, m_queueFamilyIndex	(queueFamilyIndex)
 		, m_queues				(queues)
-		, m_commandPool			(createCommandPool(vkd, device, queueFamilyIndex))
+		, m_commandPool			(createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex))
 		, m_binaryCollection	(binaryCollection)
 	{
 		for (size_t queueNdx = 0; queueNdx < m_queues.size(); queueNdx++)
@@ -3913,7 +3879,7 @@ void ImageBlitFromImage::verify (VerifyContext& context, size_t)
 
 			for (deInt32 y = 0; y < m_imageHeight; y++)
 			for (deInt32 x = 0; x < m_imageWidth; x++)
-				refAccess.setPixel(source.getAccess().getPixelUint(int(float(x) * xscale), int(float(y) * yscale)), x, y);
+				refAccess.setPixel(source.getAccess().getPixelUint(int((float(x) + 0.5f) * xscale), int((float(y) + 0.5f) * yscale)), x, y);
 		}
 		else
 			DE_FATAL("Unsupported scale");

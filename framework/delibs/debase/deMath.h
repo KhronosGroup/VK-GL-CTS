@@ -45,7 +45,7 @@ DE_BEGIN_EXTERN_C
 
 typedef enum deRoundingMode_e
 {
-	DE_ROUNDINGMODE_TO_NEAREST = 0,
+	DE_ROUNDINGMODE_TO_NEAREST_EVEN = 0,
 	DE_ROUNDINGMODE_TO_ZERO,
 	DE_ROUNDINGMODE_TO_POSITIVE_INF,
 	DE_ROUNDINGMODE_TO_NEGATIVE_INF,
@@ -208,14 +208,22 @@ float				deInt32ToFloatRoundToPosInf	(deInt32 x);
 
 /* Conversion to integer. */
 
-DE_INLINE deInt32	deChopFloatToInt32	(float x)					{ return (deInt32)x; }
-DE_INLINE deInt32	deFloorFloatToInt32	(float x)					{ return (deInt32)(deFloatFloor(x)); }
-DE_INLINE deInt32	deCeilFloatToInt32	(float x)					{ return (deInt32)(deFloatCeil(x)); }
+DE_INLINE deInt32	deChopFloatToInt32		(float x)				{ return (deInt32)x; }
+DE_INLINE deInt32	deFloorFloatToInt32		(float x)				{ return (deInt32)(deFloatFloor(x)); }
+DE_INLINE deInt32	deCeilFloatToInt32		(float x)				{ return (deInt32)(deFloatCeil(x)); }
+
+DE_INLINE deInt32	deChopToInt32			(double x)				{ return (deInt32)x; }
+DE_INLINE deInt32	deFloorToInt32			(double x)				{ return (deInt32)(deFloor(x)); }
+DE_INLINE deInt32	deCeilToInt32			(double x)				{ return (deInt32)(deCeil(x)); }
 
 /* Arithmetic round */
-DE_INLINE deInt16	deRoundFloatToInt16 (float x)				{ if(x >= 0.0f) return (deInt16)(x + 0.5f); else return (deInt16)(x - 0.5f); }
-DE_INLINE deInt32	deRoundFloatToInt32	(float x)				{ if(x >= 0.0f) return (deInt32)(x + 0.5f); else return (deInt32)(x - 0.5f); }
-DE_INLINE deInt64	deRoundFloatToInt64 (float x)				{ if(x >= 0.0f) return (deInt64)(x + 0.5f); else return (deInt64)(x - 0.5f); }
+DE_INLINE deInt16	deRoundFloatToInt16		(float x)				{ if(x >= 0.0f) return (deInt16)(x + 0.5f); else return (deInt16)(x - 0.5f); }
+DE_INLINE deInt32	deRoundFloatToInt32		(float x)				{ if(x >= 0.0f) return (deInt32)(x + 0.5f); else return (deInt32)(x - 0.5f); }
+DE_INLINE deInt64	deRoundFloatToInt64		(float x)				{ if(x >= 0.0f) return (deInt64)(x + 0.5f); else return (deInt64)(x - 0.5f); }
+
+DE_INLINE deInt16	deRoundToInt16			(double x)				{ if(x >= 0.0) return (deInt16)(x + 0.5); else return (deInt16)(x - 0.5); }
+DE_INLINE deInt32	deRoundToInt32			(double x)				{ if(x >= 0.0) return (deInt32)(x + 0.5); else return (deInt32)(x - 0.5); }
+DE_INLINE deInt64	deRoundToInt64			(double x)				{ if(x >= 0.0) return (deInt64)(x + 0.5); else return (deInt64)(x - 0.5); }
 
 DE_END_EXTERN_C
 

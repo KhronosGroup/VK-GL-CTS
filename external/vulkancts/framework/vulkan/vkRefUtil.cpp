@@ -66,4 +66,88 @@ Move<VkDescriptorSet> allocateDescriptorSet (const DeviceInterface& vk, VkDevice
 	return Move<VkDescriptorSet>(check<VkDescriptorSet>(object), Deleter<VkDescriptorSet>(vk, device, pAllocateInfo->descriptorPool));
 }
 
+Move<VkSemaphore> createSemaphore (const DeviceInterface&		vk,
+								   VkDevice						device,
+								   VkSemaphoreCreateFlags		flags,
+								   const VkAllocationCallbacks*	pAllocator)
+{
+	const VkSemaphoreCreateInfo createInfo =
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		DE_NULL,
+
+		flags
+	};
+
+	return createSemaphore(vk, device, &createInfo, pAllocator);
+}
+
+Move<VkFence> createFence (const DeviceInterface&		vk,
+						   VkDevice						device,
+						   VkFenceCreateFlags			flags,
+						   const VkAllocationCallbacks*	pAllocator)
+{
+	const VkFenceCreateInfo createInfo =
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		DE_NULL,
+
+		flags
+	};
+
+	return createFence(vk, device, &createInfo, pAllocator);
+}
+
+Move<VkCommandPool> createCommandPool (const DeviceInterface&		vk,
+									   VkDevice						device,
+									   VkCommandPoolCreateFlags		flags,
+									   deUint32						queueFamilyIndex,
+									   const VkAllocationCallbacks*	pAllocator)
+{
+	const VkCommandPoolCreateInfo createInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		DE_NULL,
+
+		flags,
+		queueFamilyIndex
+	};
+
+	return createCommandPool(vk, device, &createInfo, pAllocator);
+}
+
+Move<VkCommandBuffer> allocateCommandBuffer (const DeviceInterface&	vk,
+											 VkDevice				device,
+											 VkCommandPool			commandPool,
+											 VkCommandBufferLevel	level)
+{
+	const VkCommandBufferAllocateInfo allocInfo =
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		DE_NULL,
+
+		commandPool,
+		level,
+		1
+	};
+
+	return allocateCommandBuffer(vk, device, &allocInfo);
+}
+
+Move<VkEvent> createEvent (const DeviceInterface&		vk,
+						   VkDevice						device,
+						   VkEventCreateFlags			flags,
+						   const VkAllocationCallbacks*	pAllocateInfo)
+{
+	const VkEventCreateInfo createInfo =
+	{
+		VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
+		DE_NULL,
+
+		flags
+	};
+
+	return createEvent(vk, device, &createInfo, pAllocateInfo);
+}
+
 } // vk

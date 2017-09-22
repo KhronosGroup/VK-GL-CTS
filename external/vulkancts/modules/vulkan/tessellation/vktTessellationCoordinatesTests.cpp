@@ -527,11 +527,11 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 
 	// Pipeline: set up vertex processing without rasterization
 
-	const Unique<VkRenderPass>		renderPass    (makeRenderPassWithoutAttachments (vk, device));
-	const Unique<VkFramebuffer>		framebuffer   (makeFramebufferWithoutAttachments(vk, device, *renderPass));
-	const Unique<VkPipelineLayout>	pipelineLayout(makePipelineLayout               (vk, device, *descriptorSetLayout));
-	const Unique<VkCommandPool>		cmdPool       (makeCommandPool                  (vk, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer>	cmdBuffer     (makeCommandBuffer                (vk, device, *cmdPool));
+	const Unique<VkRenderPass>		renderPass		(makeRenderPassWithoutAttachments (vk, device));
+	const Unique<VkFramebuffer>		framebuffer		(makeFramebufferWithoutAttachments(vk, device, *renderPass));
+	const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *descriptorSetLayout));
+	const Unique<VkCommandPool>		cmdPool			(makeCommandPool(vk, device, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
 		.setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)

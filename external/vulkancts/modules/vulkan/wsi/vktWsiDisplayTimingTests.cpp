@@ -38,6 +38,7 @@
 
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuTestLog.hpp"
 #include "deClock.h"
 
 #include <vector>
@@ -49,52 +50,6 @@ using std::string;
 using tcu::Maybe;
 using tcu::UVec2;
 using tcu::TestLog;
-
-namespace vk
-{
-
-Move<VkSemaphore> createSemaphore (const DeviceInterface&		vk,
-								   VkDevice						device,
-								   VkSemaphoreCreateFlags		flags		= (VkSemaphoreCreateFlags)0,
-								   const VkAllocationCallbacks*	pAllocator	= DE_NULL)
-{
-	const VkSemaphoreCreateInfo createInfo =
-	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		DE_NULL,
-
-		flags
-	};
-
-	return createSemaphore(vk, device, &createInfo, pAllocator);
-}
-
-Move<VkFence> createFence (const DeviceInterface&		vk,
-						   VkDevice						device,
-						   VkFenceCreateFlags			flags		= (VkFenceCreateFlags)0,
-						   const VkAllocationCallbacks*	pAllocator	= DE_NULL)
-{
-	const VkFenceCreateInfo createInfo =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-
-		flags
-	};
-
-	return createFence(vk, device, &createInfo, pAllocator);
-}
-
-VkQueue getDeviceQueue (const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex)
-{
-	VkQueue queue;
-
-	vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
-
-	return queue;
-}
-
-} // vk
 
 namespace vkt
 {
@@ -531,7 +486,7 @@ vk::Move<vk::VkRenderPass> createRenderPass (const vk::DeviceInterface&	vkd,
 			vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,
 
-			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			vk::VK_IMAGE_LAYOUT_UNDEFINED,
 			vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 		}
 	};
@@ -1292,7 +1247,7 @@ void DisplayTimingTestInstance::render (void)
 		else
 		{
 			desiredPresentTime = m_prevDesiredPresentTime + m_targetIPD;
-			if (presentTime.presentID == 80)
+			if ((presentTime.presentID == 80) && (m_swapchainConfig.presentMode != vk::VK_PRESENT_MODE_MAILBOX_KHR))
 			{
 				// Test if desiredPresentTime is 1 second earlier (i.e. before the previous image could have been presented)
 				presentTime.desiredPresentTime -= SECOND;

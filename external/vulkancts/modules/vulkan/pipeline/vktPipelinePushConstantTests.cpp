@@ -1070,28 +1070,10 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 	}
 
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,		// VkCmdPoolCreateFlags	flags;
-			queueFamilyIndex							// deUint32				queueFamilyIndex;
-		};
-		m_cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
 	{
-		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*m_cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u												// deUint32					bufferCount;
-		};
-
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
@@ -1130,7 +1112,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
 		};
 
-		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
@@ -1215,16 +1197,7 @@ PushConstantGraphicsTestInstance::PushConstantGraphicsTestInstance (Context&				
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-
-		m_fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	m_fence = createFence(vk, vkDevice);
 }
 
 PushConstantGraphicsTestInstance::~PushConstantGraphicsTestInstance (void)
@@ -1518,29 +1491,11 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 	}
 
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCmdPoolCreateFlags	flags;
-			queueFamilyIndex								// deUint32				queueFamilyIndex;
-		};
-		m_cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
 	{
-		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*m_cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u												// deUint32					bufferCount;
-		};
-
-		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
+		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 		{
@@ -1565,16 +1520,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-
-		m_fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	m_fence = createFence(vk, vkDevice);
 }
 
 PushConstantComputeTestInstance::~PushConstantComputeTestInstance (void)
@@ -1602,6 +1548,8 @@ tcu::TestStatus PushConstantComputeTestInstance::iterate (void)
 	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
 	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity*/));
+
+	invalidateMappedMemoryRange(vk, vkDevice, m_outBufferAlloc->getMemory(), m_outBufferAlloc->getOffset(), (size_t)(sizeof(tcu::Vec4) * 8));
 
 	// verify result
 	std::vector<tcu::Vec4>	expectValue(8, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
