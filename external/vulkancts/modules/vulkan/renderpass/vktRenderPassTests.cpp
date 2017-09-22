@@ -5568,6 +5568,21 @@ void addSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 		addFunctionCaseWithPrograms<TestConfig>(group, "color_depth_stencil", "Color, depth and stencil attachment case.", createTestShaders, renderPassTest, TestConfig(renderPass, TestConfig::RENDERTYPES_DRAW, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 90239, allocationKind));
 	}
+
+	// no attachments
+	{
+		const RenderPass	renderPass	(vector<Attachment>(),
+										 vector<Subpass>(1, Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+																	0u,
+																	vector<AttachmentReference>(),
+																	vector<AttachmentReference>(),
+																	vector<AttachmentReference>(),
+																	AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+																	vector<deUint32>())),
+										vector<SubpassDependency>());
+
+		addFunctionCaseWithPrograms<TestConfig>(group, "no_attachments", "No attachments case.", createTestShaders, renderPassTest, TestConfig(renderPass, TestConfig::RENDERTYPES_DRAW, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 90239, allocationKind));
+	}
 }
 
 std::string formatToName (VkFormat format)
