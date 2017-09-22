@@ -312,7 +312,7 @@ void renderReferenceTriangle (const tcu::PixelBufferAccess& dst, const tcu::Vec4
 	const rr::Program						program			(&vertShader, &fragShader);
 	const rr::MultisamplePixelBufferAccess	colorBuffer		= rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(dst);
 	const rr::RenderTarget					renderTarget	(colorBuffer);
-	const rr::RenderState					renderState		((rr::ViewportState(colorBuffer)));
+	const rr::RenderState					renderState		((rr::ViewportState(colorBuffer)), rr::VIEWPORTORIENTATION_UPPER_LEFT);
 	const rr::Renderer						renderer;
 	const rr::VertexAttrib					vertexAttribs[]	=
 	{

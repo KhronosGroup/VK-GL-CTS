@@ -419,6 +419,7 @@ enum
 	MAX_CONCURRENT_INSTANCES		= 32,
 	MAX_CONCURRENT_DEVICES			= 32,
 	MAX_CONCURRENT_SYNC_PRIMITIVES	= 100,
+	MAX_CONCURRENT_PIPELINE_CACHES	= 128,
 	DEFAULT_MAX_CONCURRENT_OBJECTS	= 16*1024,
 };
 
@@ -1131,7 +1132,7 @@ struct PipelineCache
 
 	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
 	{
-		return getSafeObjectCount<PipelineCache>(context, params, DEFAULT_MAX_CONCURRENT_OBJECTS);
+		return getSafeObjectCount<PipelineCache>(context, params, MAX_CONCURRENT_PIPELINE_CACHES);
 	}
 
 	static Move<VkPipelineCache> create (const Environment& env, const Resources&, const Parameters&)
@@ -2517,7 +2518,12 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 	if (numPassingAllocs == 0)
 		return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "Allocation callbacks not called");
 	else if (numPassingAllocs == maxTries)
-		return tcu::TestStatus(QP_TEST_RESULT_COMPATIBILITY_WARNING, "Max iter count reached; OOM testing incomplete");
+	{
+		context.getTestContext().getLog()
+			<< TestLog::Message << "WARNING: Maximum iteration count (" << maxTries << ") reached without object construction passing. "
+								<< "OOM testing incomplete, use --deqp-test-iteration-count= to test with higher limit." << TestLog::EndMessage;
+		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Max iter count reached");
+	}
 	else
 		return tcu::TestStatus::pass("Ok");
 }

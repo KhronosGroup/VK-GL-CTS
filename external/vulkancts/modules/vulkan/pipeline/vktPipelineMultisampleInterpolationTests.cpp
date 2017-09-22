@@ -25,6 +25,7 @@
 #include "vktPipelineMultisampleTestsUtil.hpp"
 #include "vktPipelineMakeUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include <set>
 
@@ -243,16 +244,17 @@ void MSInterpolationInstanceBase::validateImageInfo	(const InstanceInterface&	in
 
 tcu::TestStatus MSInterpolationInstanceBase::iterate (void)
 {
-	const InstanceInterface&	instance			= m_context.getInstanceInterface();
-	const DeviceInterface&		deviceInterface		= m_context.getDeviceInterface();
-	const VkDevice				device				= m_context.getDevice();
-	const VkPhysicalDevice		physicalDevice		= m_context.getPhysicalDevice();
-	Allocator&					allocator			= m_context.getDefaultAllocator();
-	const VkQueue				queue				= m_context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const InstanceInterface&		instance			= m_context.getInstanceInterface();
+	const DeviceInterface&			deviceInterface		= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	const VkPhysicalDevice			physicalDevice		= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures&	features			= m_context.getDeviceFeatures();
+	Allocator&						allocator			= m_context.getDefaultAllocator();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	VkImageCreateInfo			imageMSInfo;
-	VkImageCreateInfo			imageRSInfo;
+	VkImageCreateInfo				imageMSInfo;
+	VkImageCreateInfo				imageRSInfo;
 
 	// Check if image size does not exceed device limits
 	validateImageSize(instance, physicalDevice, m_imageType, m_imageMSParams.imageSize);
@@ -486,7 +488,7 @@ tcu::TestStatus MSInterpolationInstanceBase::iterate (void)
 		DE_NULL,														// const void*								pNext;
 		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags	flags;
 		imageMSInfo.samples,											// VkSampleCountFlagBits					rasterizationSamples;
-		VK_TRUE,														// VkBool32									sampleShadingEnable;
+		features.sampleRateShading,										// VkBool32									sampleShadingEnable;
 		1.0f,															// float									minSampleShading;
 		DE_NULL,														// const VkSampleMask*						pSampleMask;
 		VK_FALSE,														// VkBool32									alphaToCoverageEnable;
@@ -601,7 +603,7 @@ tcu::TestStatus MSInterpolationInstanceBase::iterate (void)
 	const Unique<VkPipeline> graphicsPipeline(createGraphicsPipeline(deviceInterface, device, DE_NULL, &graphicsPipelineInfo));
 
 	// Create command buffer for compute and transfer oparations
-	const Unique<VkCommandPool>	  commandPool(makeCommandPool(deviceInterface, device, queueFamilyIndex));
+	const Unique<VkCommandPool>	  commandPool(createCommandPool(deviceInterface, device, (VkCommandPoolCreateFlags)VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer> commandBuffer(makeCommandBuffer(deviceInterface, device, *commandPool));
 
 	// Start recording commands
@@ -973,6 +975,9 @@ void MSCaseInterpolateAtSampleDistinctValues::initPrograms (vk::SourceCollection
 
 TestInstance* MSCaseInterpolateAtSampleDistinctValues::createInstance (Context& context) const
 {
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading support required");
+
 	return new MSInstanceDistinctValues(context, m_imageMSParams);
 }
 
@@ -1131,6 +1136,9 @@ void MSCaseInterpolateAtSampleSingleSample::initPrograms (vk::SourceCollections&
 
 TestInstance* MSCaseInterpolateAtSampleSingleSample::createInstance (Context& context) const
 {
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading support required");
+
 	return new MSInstanceInterpolateScreenPosition(context, m_imageMSParams);
 }
 
@@ -1216,6 +1224,9 @@ void MSCaseInterpolateAtSampleIgnoresCentroid::initPrograms (vk::SourceCollectio
 
 TestInstance* MSCaseInterpolateAtSampleIgnoresCentroid::createInstance (Context& context) const
 {
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading support required");
+
 	return new MSInstanceInterpolateScreenPosition(context, m_imageMSParams);
 }
 
@@ -1300,6 +1311,9 @@ void MSCaseInterpolateAtSampleConsistency::initPrograms (vk::SourceCollections& 
 
 TestInstance* MSCaseInterpolateAtSampleConsistency::createInstance (Context& context) const
 {
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading support required");
+
 	return new MSInstanceInterpolateScreenPosition(context, m_imageMSParams);
 }
 
@@ -1384,6 +1398,9 @@ void MSCaseInterpolateAtCentroidConsistency::initPrograms (vk::SourceCollections
 
 TestInstance* MSCaseInterpolateAtCentroidConsistency::createInstance (Context& context) const
 {
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading support required");
+
 	return new MSInstanceInterpolateScreenPosition(context, m_imageMSParams);
 }
 
@@ -1475,6 +1492,9 @@ void MSCaseInterpolateAtOffsetPixelCenter::initPrograms (vk::SourceCollections& 
 
 TestInstance* MSCaseInterpolateAtOffsetPixelCenter::createInstance (Context& context) const
 {
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading support required");
+
 	return new MSInstanceInterpolateScreenPosition(context, m_imageMSParams);
 }
 
@@ -1561,6 +1581,9 @@ void MSCaseInterpolateAtOffsetSamplePosition::initPrograms (vk::SourceCollection
 
 TestInstance* MSCaseInterpolateAtOffsetSamplePosition::createInstance (Context& context) const
 {
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading support required");
+
 	return new MSInstanceInterpolateScreenPosition(context, m_imageMSParams);
 }
 

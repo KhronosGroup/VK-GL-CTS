@@ -24,10 +24,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
-#include "tcuTestLog.hpp"
 #include "deStringUtil.hpp"
 
 #include <string>
+
+namespace tcu
+{
+class TestLog;
+} // tcu
 
 namespace vk
 {

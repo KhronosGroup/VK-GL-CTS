@@ -1240,15 +1240,8 @@ Move<vk::VkFramebuffer> createFramebuffer (Context& context, vk::VkRenderPass re
 Move<vk::VkCommandPool> createCommandPool (Context& context)
 {
 	const deUint32						queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
-	const vk::VkCommandPoolCreateInfo	params				=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// sType
-		DE_NULL,											// pNext
-		(vk::VkCommandPoolCreateFlags)0,
-		queueFamilyIndex,									// queueFamilyIndex
-	};
 
-	return vk::createCommandPool(context.getDeviceInterface(), context.getDevice(), &params);
+	return vk::createCommandPool(context.getDeviceInterface(), context.getDevice(), (vk::VkCommandPoolCreateFlags)0u, queueFamilyIndex);
 }
 
 Move<vk::VkDescriptorPool> createDescriptorPool (Context& context)
@@ -1274,16 +1267,7 @@ Move<vk::VkDescriptorSet> allocateDescriptorSet (Context& context, vk::VkDescrip
 
 Move<vk::VkCommandBuffer> allocateCommandBuffer (Context& context, vk::VkCommandPool cmdPool)
 {
-	const vk::VkCommandBufferAllocateInfo	params	=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// sType
-		DE_NULL,											// pNext
-		cmdPool,											// commandPool
-		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
-		1u,													// bufferCount
-	};
-
-	return vk::allocateCommandBuffer(context.getDeviceInterface(), context.getDevice(), &params);
+	return vk::allocateCommandBuffer(context.getDeviceInterface(), context.getDevice(), cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
 MovePtr<vk::Allocation> allocateAndBindMemory (Context& context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs)
@@ -1683,13 +1667,7 @@ TestStatus ShaderCaseInstance::iterate (void)
 			0u,											// signalSemaphoreCount
 			(const vk::VkSemaphore*)0,					// pSignalSemaphores
 		};
-		const vk::VkFenceCreateInfo	fenceParams	=
-		{
-			vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// sType
-			DE_NULL,									// pNext
-			0u,											// flags
-		};
-		const Unique<vk::VkFence>	fence		(vk::createFence(vkd, device, &fenceParams));
+		const Unique<vk::VkFence>	fence		(vk::createFence(vkd, device));
 
 		VK_CHECK(vkd.queueSubmit	(queue, 1u, &submitInfo, *fence));
 		VK_CHECK(vkd.waitForFences	(device, 1u, &fence.get(), DE_TRUE, ~0ull));
@@ -1779,7 +1757,7 @@ void ShaderCase::initPrograms (SourceCollections& sourceCollection) const
 		{
 			if (!specializedSources[progNdx].sources[shaderType].empty())
 			{
-				glu::ProgramSources& curSrc	= sourceCollection.glslSources.add(getShaderName((glu::ShaderType)shaderType, progNdx));
+				vk::GlslSource& curSrc	= sourceCollection.glslSources.add(getShaderName((glu::ShaderType)shaderType, progNdx));
 				curSrc.sources[shaderType] = specializedSources[progNdx].sources[shaderType];
 			}
 		}

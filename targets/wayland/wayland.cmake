@@ -25,7 +25,7 @@ set(DEQP_TARGET_NAME "Wayland")
 set(DEQP_USE_WAYLAND	ON)
 
 # Add FindWayland module
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/targets/wayland")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/targets/default")
 
 find_package(Wayland)
 if (NOT WAYLAND_FOUND)
@@ -34,15 +34,3 @@ endif ()
 
 set(DEQP_PLATFORM_LIBRARIES ${WAYLAND_LIBRARIES})
 include_directories(${WAYLAND_INCLUDE_DIR})
-
-# Platform sources
-set(TCUTIL_PLATFORM_SRCS
-	wayland/tcuWayland.cpp
-	wayland/tcuWayland.hpp
-	wayland/tcuWaylandPlatform.cpp
-	wayland/tcuWaylandPlatform.hpp
-	wayland/tcuWaylandEglPlatform.cpp
-	wayland/tcuWaylandEglPlatform.hpp
-	wayland/tcuWaylandVulkanPlatform.cpp
-	wayland/tcuWaylandVulkanPlatform.hpp
-	)

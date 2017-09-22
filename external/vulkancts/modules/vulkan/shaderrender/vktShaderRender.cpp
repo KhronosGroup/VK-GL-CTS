@@ -616,9 +616,9 @@ ShaderRenderCaseInstance::SparseContext::SparseContext (vkt::Context& context)
 	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT))
 	, m_device				(createDevice())
 	, m_deviceInterface		(context.getInstanceInterface(), *m_device)
+	, m_queue				(getDeviceQueue(m_deviceInterface, *m_device, m_queueFamilyIndex, 0))
 	, m_allocator			(createAllocator())
 {
-	m_deviceInterface.getDeviceQueue(*m_device, m_queueFamilyIndex, 0, &m_queue);
 }
 
 Move<VkDevice> ShaderRenderCaseInstance::SparseContext::createDevice () const
@@ -1077,40 +1077,11 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	}
 
 	// Create command pool and buffer
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
-			queueFamilyIndex,								// deUint32					queueFamilyIndex;
-		};
-
-		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-
-		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,												// deUint32					bufferCount;
-		};
-
-		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
-	}
+	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			0u											// VkFenceCreateFlags	flags;
-		};
-
-		fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	fence = createFence(vk, vkDevice);
 
 	// Barriers for copying buffer to image
 	const VkBufferMemoryBarrier preBufferBarrier =
@@ -1264,40 +1235,11 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 
 
 	// Create command pool and buffer
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
-			queueFamilyIndex,								// deUint32					queueFamilyIndex;
-		};
-
-		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-
-		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,												// deUint32					bufferCount;
-		};
-
-		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
-	}
+	cmdPool		= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	cmdBuffer	= allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			0u											// VkFenceCreateFlags	flags;
-		};
-
-		fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	fence = createFence(vk, vkDevice);
 
 	const VkImageMemoryBarrier preImageBarrier =
 	{
@@ -1388,19 +1330,6 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
 }
 
-// Sparse utility function
-Move<VkSemaphore> makeSemaphore (const DeviceInterface& vk, const VkDevice device)
-{
-	const VkSemaphoreCreateInfo semaphoreCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-		DE_NULL,
-		0u
-	};
-
-	return createSemaphore(vk, device, &semaphoreCreateInfo);
-}
-
 VkExtent3D mipLevelExtents (const VkExtent3D& baseExtents, const deUint32 mipLevel)
 {
 	VkExtent3D result;
@@ -1484,7 +1413,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 	const bool								isShadowSampler			= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
 	const VkImageAspectFlags				aspectMask				= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
-	const Unique<VkSemaphore>				imageMemoryBindSemaphore(makeSemaphore(vk, vkDevice));
+	const Unique<VkSemaphore>				imageMemoryBindSemaphore(createSemaphore(vk, vkDevice));
 	deUint32								bufferSize				= 0u;
 	std::vector<deUint32>					offsetMultiples;
 	offsetMultiples.push_back(4u);
@@ -1529,6 +1458,16 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 			}
 		}
 
+		deUint32 metadataAspectIndex = noMatchFound;
+		for (deUint32 memoryReqNdx = 0; memoryReqNdx < sparseMemoryReqCount; ++memoryReqNdx)
+		{
+			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask & VK_IMAGE_ASPECT_METADATA_BIT)
+			{
+				metadataAspectIndex = memoryReqNdx;
+				break;
+			}
+		}
+
 		if (colorAspectIndex == noMatchFound)
 			TCU_THROW(NotSupportedError, "Not supported image aspect - the test supports currently only VK_IMAGE_ASPECT_COLOR_BIT.");
 
@@ -1551,7 +1490,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 		if (memoryRequirements.size > deviceProperties.limits.sparseAddressSpaceSize)
 			TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits.");
 
-		// Check if the image format supports sparse oprerations
+		// Check if the image format supports sparse operations
 		const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec =
 			getPhysicalDeviceSparseImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
 
@@ -1623,8 +1562,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 			// 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
 			// 2) otherwise:                                                            only one tail is needed.
 			{
-				if ( imageMipTailMemoryBinds.size() == 0                                                                                                   ||
-					(imageMipTailMemoryBinds.size() != 0 && (aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0))
+				if (imageMipTailMemoryBinds.size() == 0 || (aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
 				{
 					const VkMemoryRequirements allocRequirements =
 					{
@@ -1646,6 +1584,36 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 
 					m_allocations.push_back(allocation);
 					imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+				}
+
+				// Metadata
+				if (metadataAspectIndex != noMatchFound)
+				{
+					const VkSparseImageMemoryRequirements	metadataAspectRequirements = sparseImageMemoryRequirements[metadataAspectIndex];
+
+					if (imageMipTailMemoryBinds.size() == 1 || (metadataAspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
+					{
+						const VkMemoryRequirements metadataAllocRequirements =
+						{
+							metadataAspectRequirements.imageMipTailSize,	// VkDeviceSize	size;
+							memoryRequirements.alignment,					// VkDeviceSize	alignment;
+							memoryRequirements.memoryTypeBits,				// uint32_t		memoryTypeBits;
+						};
+						const de::SharedPtr<Allocation>	metadataAllocation(m_memAlloc.allocate(metadataAllocRequirements, MemoryRequirement::Any).release());
+
+						const VkSparseMemoryBind metadataMipTailMemoryBind =
+						{
+							metadataAspectRequirements.imageMipTailOffset +
+							layerNdx * metadataAspectRequirements.imageMipTailStride,			// VkDeviceSize					resourceOffset;
+							metadataAspectRequirements.imageMipTailSize,						// VkDeviceSize					size;
+							metadataAllocation->getMemory(),									// VkDeviceMemory				memory;
+							metadataAllocation->getOffset(),									// VkDeviceSize					memoryOffset;
+							VK_SPARSE_MEMORY_BIND_METADATA_BIT									// VkSparseMemoryBindFlags		flags;
+						};
+
+						m_allocations.push_back(metadataAllocation);
+						imageMipTailMemoryBinds.push_back(metadataMipTailMemoryBind);
+					}
 				}
 			}
 		}
@@ -1694,32 +1662,12 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 
 	Move<VkCommandPool>		cmdPool;
 	Move<VkCommandBuffer>	cmdBuffer;
+
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
-			queueFamilyIndex,								// deUint32					queueFamilyIndex;
-		};
+	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
-		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
-
-	{
-		// Create command buffer
-		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,												// deUint32					bufferCount;
-		};
-
-		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferAllocateInfo);
-	}
+	// Create command buffer
+	cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// Create source buffer
 	const VkBufferCreateInfo bufferParams =
@@ -1866,14 +1814,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 		DE_NULL									// const VkSemaphore*			pSignalSemaphores;
 	};
 
-	const VkFenceCreateInfo fenceParams =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		0u											// VkFenceCreateFlags	flags;
-	};
-
-	Move<VkFence>	fence = createFence(vk, vkDevice, &fenceParams);
+	Move<VkFence>	fence = createFence(vk, vkDevice);
 
 	try
 	{
@@ -2846,29 +2787,10 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 	}
 
 	// Create command pool
-	{
-		const VkCommandPoolCreateInfo					cmdPoolParams				=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType		sType;
-			DE_NULL,										// const void*			pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCmdPoolCreateFlags	flags;
-			queueFamilyIndex,								// deUint32				queueFamilyIndex;
-		};
-
-		cmdPool = createCommandPool(vk, vkDevice, &cmdPoolParams);
-	}
+	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
 	{
-		const VkCommandBufferAllocateInfo				cmdBufferParams				=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*cmdPool,										// VkCmdPool				cmdPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			1u												// deUint32					bufferCount;
-		};
-
 		const VkCommandBufferBeginInfo					cmdBufferBeginInfo			=
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
@@ -2893,7 +2815,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			&clearValues,											// const VkClearValue*	pClearValues;
 		};
 
-		cmdBuffer = allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 
@@ -2975,15 +2897,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo							fenceParams					=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-		fence = createFence(vk, vkDevice, &fenceParams);
-	}
+	fence = createFence(vk, vkDevice);
 
 	// Execute Draw
 	{
@@ -3025,15 +2939,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 		// Copy image to buffer
-		const VkCommandBufferAllocateInfo				cmdBufferParams				=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*cmdPool,										// VkCmdPool				cmdPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCmdBufferLevel			level;
-			1u												// deUint32					bufferCount;
-		};
-
 		const VkCommandBufferBeginInfo					cmdBufferBeginInfo			=
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
@@ -3042,7 +2947,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
 
-		const Move<VkCommandBuffer>						resultCmdBuffer				= allocateCommandBuffer(vk, vkDevice, &cmdBufferParams);
+		const Move<VkCommandBuffer>						resultCmdBuffer				= allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		const VkBufferImageCopy							copyParams					=
 		{

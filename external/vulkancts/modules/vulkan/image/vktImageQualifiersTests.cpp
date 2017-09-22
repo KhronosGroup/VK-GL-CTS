@@ -376,8 +376,8 @@ tcu::TestStatus	MemoryQualifierInstanceBase::iterate (void)
 	const vk::Unique<VkPipeline> pipeline(makeComputePipeline(deviceInterface, device, *pipelineLayout, *shaderModule));
 
 	// Create command buffer
-	const Unique<VkCommandPool> cmdPool(makeCommandPool(deviceInterface, device, queueFamilyIndex));
-	const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(deviceInterface, device, *cmdPool));
+	const Unique<VkCommandPool> cmdPool(createCommandPool(deviceInterface, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer> cmdBuffer(allocateCommandBuffer(deviceInterface, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// Start recording commands
 	beginCommandBuffer(deviceInterface, *cmdBuffer);

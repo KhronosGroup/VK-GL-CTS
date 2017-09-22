@@ -1,4 +1,4 @@
-/*-------------------------------------------------------------------------
+﻿/*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
@@ -657,6 +657,10 @@ void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string
 		"VK_KHR_xlib_surface",
 		"VK_KHR_get_physical_device_properties2",
 		"VK_KHR_get_surface_capabilities2",
+		"VK_KHR_external_memory_capabilities",
+		"VK_KHR_external_semaphore_capabilities",
+		"VK_KHR_external_fence_capabilities",
+		"VK_KHR_sampler_ycbcr_conversion"
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
@@ -676,6 +680,26 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_descriptor_update_template",
 		"VK_KHR_incremental_present",
 		"VK_KHR_shared_presentable_image",
+		"VK_KHR_storage_buffer_storage_class",
+		"VK_KHR_16bit_storage",
+		"VK_KHR_get_memory_requirements2",
+		"VK_KHR_external_memory",
+		"VK_KHR_external_memory_fd",
+		"VK_KHR_external_memory_win32",
+		"VK_KHR_external_semaphore",
+		"VK_KHR_external_semaphore_fd",
+		"VK_KHR_external_semaphore_win32",
+		"VK_KHR_external_fence",
+		"VK_KHR_external_fence_fd",
+		"VK_KHR_external_fence_win32",
+		"VK_KHR_win32_keyed_mutex",
+		"VK_KHR_dedicated_allocation",
+		"VK_KHR_variable_pointers",
+		"VK_KHR_relaxed_block_layout",
+		"VK_KHR_bind_memory2",
+		"VK_KHR_maintenance2",
+		"VK_KHR_image_format_list",
+		"VK_KHR_sampler_ycbcr_conversion",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
@@ -1564,9 +1588,14 @@ VkFormatFeatureFlags getRequiredBufferFeatures (VkFormat format)
 
 tcu::TestStatus formatProperties (Context& context, VkFormat format)
 {
-	TestLog&					log				= context.getTestContext().getLog();
-	const VkFormatProperties	properties		= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
-	bool						allOk			= true;
+	TestLog&					log					= context.getTestContext().getLog();
+	const VkFormatProperties	properties			= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	bool						allOk				= true;
+
+	// \todo [2017-05-16 pyry] This should be extended to cover for example COLOR_ATTACHMENT for depth formats etc.
+	// \todo [2017-05-18 pyry] Any other color conversion related features that can't be supported by regular formats?
+	const VkFormatFeatureFlags	notAllowedFeatures	= VK_FORMAT_FEATURE_DISJOINT_BIT_KHR;
+
 
 	const struct
 	{
@@ -1577,7 +1606,7 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 	{
 		{ &VkFormatProperties::linearTilingFeatures,	"linearTilingFeatures",		(VkFormatFeatureFlags)0						},
 		{ &VkFormatProperties::optimalTilingFeatures,	"optimalTilingFeatures",	getRequiredOptimalTilingFeatures(format)	},
-		{ &VkFormatProperties::bufferFeatures,			"buffeFeatures",			getRequiredBufferFeatures(format)			}
+		{ &VkFormatProperties::bufferFeatures,			"bufferFeatures",			getRequiredBufferFeatures(format)			}
 	};
 
 	log << TestLog::Message << properties << TestLog::EndMessage;
@@ -1593,6 +1622,153 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
 								    << "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
 									<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
+				<< TestLog::EndMessage;
+			allOk = false;
+		}
+
+		if ((supported & notAllowedFeatures) != 0)
+		{
+			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
+									<< "  has: " << getFormatFeatureFlagsStr(supported & notAllowedFeatures)
+				<< TestLog::EndMessage;
+			allOk = false;
+		}
+	}
+
+	if (allOk)
+		return tcu::TestStatus::pass("Query and validation passed");
+	else
+		return tcu::TestStatus::fail("Required features not supported");
+}
+
+VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR getPhysicalDeviceSamplerYcbcrConversionFeatures (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceFeatures2KHR						coreFeatures;
+	VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR	ycbcrFeatures;
+
+	deMemset(&coreFeatures, 0, sizeof(coreFeatures));
+	deMemset(&ycbcrFeatures, 0, sizeof(ycbcrFeatures));
+
+	coreFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+	coreFeatures.pNext		= &ycbcrFeatures;
+	ycbcrFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR;
+
+	vk.getPhysicalDeviceFeatures2KHR(physicalDevice, &coreFeatures);
+
+	return ycbcrFeatures;
+}
+
+void checkYcbcrConversionSupport (Context& context)
+{
+	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_sampler_ycbcr_conversion"))
+		TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
+
+	// Hard dependency for ycbcr
+	TCU_CHECK(de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_KHR_get_physical_device_properties2"));
+
+	{
+		const VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR	ycbcrFeatures	= getPhysicalDeviceSamplerYcbcrConversionFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+
+		if (ycbcrFeatures.samplerYcbcrConversion == VK_FALSE)
+			TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
+	}
+}
+
+VkFormatFeatureFlags getAllowedYcbcrFormatFeatures (VkFormat format)
+{
+	DE_ASSERT(isYCbCrFormat(format));
+
+	VkFormatFeatureFlags	flags	= (VkFormatFeatureFlags)0;
+
+	// all formats *may* support these
+	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+	flags |= VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR;
+	flags |= VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR;
+	flags |= VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR;
+	flags |= VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
+	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT_KHR;
+	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT_KHR;
+	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT_KHR;
+	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT_KHR;
+    flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_KHR;
+
+	// multi-plane formats *may* support DISJOINT_BIT_KHR
+	if (getPlaneCount(format) >= 2)
+		flags |= VK_FORMAT_FEATURE_DISJOINT_BIT_KHR;
+
+	if (isChromaSubsampled(format))
+		flags |= VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
+
+	return flags;
+}
+
+tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
+{
+	DE_ASSERT(isYCbCrFormat(format));
+	checkYcbcrConversionSupport(context);
+
+	TestLog&					log						= context.getTestContext().getLog();
+	const VkFormatProperties	properties				= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+	bool						allOk					= true;
+	const VkFormatFeatureFlags	allowedImageFeatures	= getAllowedYcbcrFormatFeatures(format);
+
+	const struct
+	{
+		VkFormatFeatureFlags VkFormatProperties::*	field;
+		const char*									fieldName;
+		bool										requiredFeatures;
+		VkFormatFeatureFlags						allowedFeatures;
+	} fields[] =
+	{
+		{ &VkFormatProperties::linearTilingFeatures,	"linearTilingFeatures",		false,	allowedImageFeatures	},
+		{ &VkFormatProperties::optimalTilingFeatures,	"optimalTilingFeatures",	true,	allowedImageFeatures	},
+		{ &VkFormatProperties::bufferFeatures,			"bufferFeatures",			false,	(VkFormatFeatureFlags)0	}
+	};
+	static const VkFormat		s_requiredBaseFormats[]	=
+	{
+		VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR,
+		VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR
+	};
+	const bool					isRequiredBaseFormat	(de::contains(DE_ARRAY_BEGIN(s_requiredBaseFormats), DE_ARRAY_END(s_requiredBaseFormats), format));
+
+	log << TestLog::Message << properties << TestLog::EndMessage;
+
+	for (int fieldNdx = 0; fieldNdx < DE_LENGTH_OF_ARRAY(fields); fieldNdx++)
+	{
+		const char* const				fieldName	= fields[fieldNdx].fieldName;
+		const VkFormatFeatureFlags		supported	= properties.*fields[fieldNdx].field;
+		const VkFormatFeatureFlags		allowed		= fields[fieldNdx].allowedFeatures;
+
+		if (isRequiredBaseFormat && fields[fieldNdx].requiredFeatures)
+		{
+			const VkFormatFeatureFlags	required	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR
+													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR
+													| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT_KHR;
+
+			if ((supported & required) != required)
+			{
+				log << TestLog::Message << "ERROR in " << fieldName << ":\n"
+										<< "  required: " << getFormatFeatureFlagsStr(required) << "\n  "
+										<< "  missing: " << getFormatFeatureFlagsStr(~supported & required)
+					<< TestLog::EndMessage;
+				allOk = false;
+			}
+
+			if ((supported & (VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR)) == 0)
+			{
+				log << TestLog::Message << "ERROR in " << fieldName << ":\n"
+										<< "  Either VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR or VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR required"
+					<< TestLog::EndMessage;
+				allOk = false;
+			}
+		}
+
+		if ((supported & ~allowed) != 0)
+		{
+			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
+								    << "  has: " << getFormatFeatureFlagsStr(supported & ~allowed)
 				<< TestLog::EndMessage;
 			allOk = false;
 		}
@@ -1769,13 +1945,33 @@ void createFormatTests (tcu::TestCaseGroup* testGroup)
 {
 	DE_STATIC_ASSERT(VK_FORMAT_UNDEFINED == 0);
 
-	for (deUint32 formatNdx = VK_FORMAT_UNDEFINED+1; formatNdx < VK_CORE_FORMAT_LAST; ++formatNdx)
+	static const struct
 	{
-		const VkFormat		format			= (VkFormat)formatNdx;
-		const char* const	enumName		= getFormatName(format);
-		const string		caseName		= de::toLower(string(enumName).substr(10));
+		VkFormat								begin;
+		VkFormat								end;
+		FunctionInstance1<VkFormat>::Function	testFunction;
+	} s_formatRanges[] =
+	{
+		// core formats
+		{ (VkFormat)(VK_FORMAT_UNDEFINED+1),	VK_CORE_FORMAT_LAST,										formatProperties },
 
-		addFunctionCase(testGroup, caseName, enumName, formatProperties, format);
+		// YCbCr formats
+		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,		(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR+1),	ycbcrFormatProperties },
+	};
+
+	for (int rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(s_formatRanges); ++rangeNdx)
+	{
+		const VkFormat								rangeBegin		= s_formatRanges[rangeNdx].begin;
+		const VkFormat								rangeEnd		= s_formatRanges[rangeNdx].end;
+		const FunctionInstance1<VkFormat>::Function	testFunction	= s_formatRanges[rangeNdx].testFunction;
+
+		for (VkFormat format = rangeBegin; format != rangeEnd; format = (VkFormat)(format+1))
+		{
+			const char* const	enumName	= getFormatName(format);
+			const string		caseName	= de::toLower(string(enumName).substr(10));
+
+			addFunctionCase(testGroup, caseName, enumName, testFunction, format);
+		}
 	}
 
 	addFunctionCase(testGroup, "depth_stencil",			"",	testDepthStencilSupported);
@@ -2118,8 +2314,7 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 				results.check(imageType != VK_IMAGE_TYPE_3D || properties.maxArrayLayers == 1, "Invalid maxArrayLayers for 3D image");
 
 				if (tiling == VK_IMAGE_TILING_OPTIMAL && imageType == VK_IMAGE_TYPE_2D && !(curCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) &&
-					 ((supportedFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)) ||
-					 ((supportedFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) && deviceFeatures.shaderStorageImageMultisample)))
+					 (supportedFeatures & (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)))
 				{
 					const VkSampleCountFlags	requiredSampleCounts	= getRequiredOptimalTilingSampleCounts(deviceLimits, format, curUsageFlags);
 					results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts, "Required sample counts not supported");
@@ -2709,6 +2904,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 	infoTests->addChild(createTestGroup(testCtx, "format_properties",		"VkGetPhysicalDeviceFormatProperties() Tests",		createFormatTests));
 	infoTests->addChild(createTestGroup(testCtx, "image_format_properties",	"VkGetPhysicalDeviceImageFormatProperties() Tests",	createImageFormatTests,	imageFormatProperties));
+	// \todo [2017-05-16 pyry] Extend image_format_properties to cover ycbcr formats
 
 	{
 		de::MovePtr<tcu::TestCaseGroup> extendedPropertiesTests (new tcu::TestCaseGroup(testCtx, "get_physical_device_properties2", "VK_KHR_get_physical_device_properties2"));
@@ -2724,6 +2920,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 
 	infoTests->addChild(createTestGroup(testCtx, "image_format_properties2",		"VkGetPhysicalDeviceImageFormatProperties2KHR() Tests",			createImageFormatTests, imageFormatProperties2));
 	infoTests->addChild(createTestGroup(testCtx, "sparse_image_format_properties2",	"VkGetPhysicalDeviceSparseImageFormatProperties2KHR() Tests",	createImageFormatTests, sparseImageFormatProperties2));
+	// \todo [2017-05-16 pyry] Extend image_format_properties2 to cover ycbcr formats
 
 	{
 		de::MovePtr<tcu::TestCaseGroup>	androidTests	(new tcu::TestCaseGroup(testCtx, "android", "Android CTS Tests"));

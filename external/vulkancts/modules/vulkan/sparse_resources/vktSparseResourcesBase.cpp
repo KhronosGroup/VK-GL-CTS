@@ -164,10 +164,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 		{
 			Queue& queue = queuesIter->second[queueNdx];
 
-			VkQueue	queueHandle = 0;
-			m_deviceDriver->getDeviceQueue(*m_logicalDevice, queue.queueFamilyIndex, queue.queueIndex, &queueHandle);
-
-			queue.queueHandle = queueHandle;
+			queue.queueHandle = getDeviceQueue(*m_deviceDriver, *m_logicalDevice, queue.queueFamilyIndex, queue.queueIndex);
 		}
 	}
 }

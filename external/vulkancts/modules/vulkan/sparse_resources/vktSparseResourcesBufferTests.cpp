@@ -39,6 +39,8 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 
+#include "tcuTestLog.hpp"
+
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deMath.h"
@@ -202,12 +204,6 @@ inline VkMemoryRequirements requirementsWithSize (VkMemoryRequirements requireme
 	return requirements;
 }
 
-inline VkDeviceSize alignSize (const VkDeviceSize val, const VkDeviceSize align)
-{
-	DE_ASSERT(deIsPowerOfTwo64(align));
-	return (val + align - 1) & ~(align - 1);
-}
-
 MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&	vk,
 														  const VkDevice			device,
 														  Allocator&				allocator,
@@ -220,7 +216,7 @@ MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&
 								referenceCreateInfo.size	= sizeof(deUint32);
 	const Unique<VkBuffer>		refBuffer					(createBuffer(vk, device, &referenceCreateInfo));
 	const VkMemoryRequirements	memoryRequirements			= getBufferMemoryRequirements(vk, device, *refBuffer);
-	const VkDeviceSize			chunkSize					= std::max(memoryRequirements.alignment, alignSize(minChunkSize, memoryRequirements.alignment));
+	const VkDeviceSize			chunkSize					= std::max(memoryRequirements.alignment, static_cast<VkDeviceSize>(deAlign64(minChunkSize, memoryRequirements.alignment)));
 
 	for (std::vector<deUint32>::const_iterator numChunksIter = m_chunksPerAllocation.begin(); numChunksIter != m_chunksPerAllocation.end(); ++numChunksIter)
 	{
@@ -582,7 +578,7 @@ public:
 		m_pipelineLayout	= makePipelineLayout	(vk, device, m_descriptorSetLayout);
 		m_pipeline			= makeGraphicsPipeline	(vk, device, *m_pipelineLayout, *m_renderPass, m_renderSize, m_topology, DE_LENGTH_OF_ARRAY(pShaderStages), pShaderStages);
 		m_cmdPool			= makeCommandPool		(vk, device, queueFamilyIndex);
-		m_cmdBuffer			= makeCommandBuffer		(vk, device, *m_cmdPool);
+		m_cmdBuffer			= allocateCommandBuffer	(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	}
 
 	void draw (const DeviceInterface&	vk,
@@ -726,7 +722,7 @@ void bindSparseBuffer (const DeviceInterface& vk, const VkDevice device, const V
 		DE_NULL,											// const VkSemaphore*                          pSignalSemaphores;
 	};
 
-	const Unique<VkFence> fence(makeFence(vk, device));
+	const Unique<VkFence> fence(createFence(vk, device));
 
 	VK_CHECK(vk.queueBindSparse(sparseQueue, 1u, &bindInfo, *fence));
 	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), VK_TRUE, ~0ull));
@@ -1042,8 +1038,8 @@ public:
 					stagingBufferSize,			// VkDeviceSize    size;
 				};
 
-				const Unique<VkCommandPool>		cmdPool		(makeCommandPool	(vk, getDevice(), m_universalQueue.queueFamilyIndex));
-				const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer	(vk, getDevice(), *cmdPool));
+				const Unique<VkCommandPool>		cmdPool		(makeCommandPool(vk, getDevice(), m_universalQueue.queueFamilyIndex));
+				const Unique<VkCommandBuffer>	cmdBuffer	(allocateCommandBuffer(vk, getDevice(), *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 				beginCommandBuffer	(vk, *cmdBuffer);
 				vk.cmdCopyBuffer	(*cmdBuffer, *stagingBuffer, *sparseBuffer, 1u, &copyRegion);
@@ -1292,8 +1288,8 @@ public:
 				},
 			};
 
-			const Unique<VkCommandPool>		cmdPool		(makeCommandPool	(vk, getDevice(), m_universalQueue.queueFamilyIndex));
-			const Unique<VkCommandBuffer>	cmdBuffer	(makeCommandBuffer	(vk, getDevice(), *cmdPool));
+			const Unique<VkCommandPool>		cmdPool		(makeCommandPool(vk, getDevice(), m_universalQueue.queueFamilyIndex));
+			const Unique<VkCommandBuffer>	cmdBuffer	(allocateCommandBuffer(vk, getDevice(), *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 			beginCommandBuffer	(vk, *cmdBuffer);
 			vk.cmdCopyBuffer	(*cmdBuffer, *m_stagingBuffer, *m_sparseBuffer, DE_LENGTH_OF_ARRAY(copyRegions), copyRegions);
