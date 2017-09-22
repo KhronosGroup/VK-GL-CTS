@@ -369,8 +369,11 @@ std::vector<float> readFloatArray(const int count, const void* memory, const int
 {
 	std::vector<float> results(count);
 
-	const float* pFloatData = reinterpret_cast<const float*>(static_cast<const deUint8*>(memory) + offset);
-	deMemcpy(&results[0], pFloatData, sizeof(float) * count);
+	if (count != 0)
+	{
+		const float* pFloatData = reinterpret_cast<const float*>(static_cast<const deUint8*>(memory) + offset);
+		deMemcpy(&results[0], pFloatData, sizeof(float) * count);
+	}
 
 	return results;
 }
