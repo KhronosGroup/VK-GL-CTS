@@ -169,6 +169,33 @@ VkMemoryRequirements getImageMemoryRequirements (const DeviceInterface& vk, VkDe
 	return req;
 }
 
+VkMemoryRequirements getImagePlaneMemoryRequirements (const DeviceInterface&	vkd,
+													  VkDevice					device,
+													  VkImage					image,
+													  VkImageAspectFlagBits		planeAspect)
+{
+	VkImageMemoryRequirementsInfo2KHR		coreInfo;
+	VkImagePlaneMemoryRequirementsInfoKHR	planeInfo;
+	VkMemoryRequirements2KHR				reqs;
+
+	deMemset(&coreInfo,		0, sizeof(coreInfo));
+	deMemset(&planeInfo,	0, sizeof(planeInfo));
+	deMemset(&reqs,			0, sizeof(reqs));
+
+	coreInfo.sType			= VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR;
+	coreInfo.pNext			= &planeInfo;
+	coreInfo.image			= image;
+
+	planeInfo.sType			= VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO_KHR;
+	planeInfo.planeAspect	= planeAspect;
+
+	reqs.sType				= VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR;
+
+	vkd.getImageMemoryRequirements2KHR(device, &coreInfo, &reqs);
+
+	return reqs.memoryRequirements;
+}
+
 vector<VkLayerProperties> enumerateInstanceLayerProperties (const PlatformInterface& vkp)
 {
 	vector<VkLayerProperties>	properties;
@@ -299,5 +326,34 @@ VkQueue getDeviceQueue (const DeviceInterface& vkd, VkDevice device, deUint32 qu
 
 	return queue;
 }
+
+const void* findStructureInChain (const void* first, VkStructureType type)
+{
+	struct StructureBase
+	{
+		VkStructureType		sType;
+		void*				pNext;
+	};
+
+	const StructureBase*	cur		= reinterpret_cast<const StructureBase*>(first);
+
+	while (cur)
+	{
+		if (cur->sType == type)
+			break;
+		else
+			cur = reinterpret_cast<const StructureBase*>(cur->pNext);
+	}
+
+	return cur;
+}
+
+void* findStructureInChain (void* first, VkStructureType type)
+{
+	return const_cast<void*>(findStructureInChain(const_cast<const void*>(first), type));
+}
+
+// getStructureType<T> implementations
+#include "vkGetStructureTypeImpl.inl"
 
 } // vk

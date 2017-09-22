@@ -155,10 +155,11 @@ private:
 	EdgeFunction			m_edge01;
 	EdgeFunction			m_edge12;
 	EdgeFunction			m_edge20;
-	FaceType				m_face;			//!< Triangle orientation, eg. visible face.
-	tcu::IVec2				m_bboxMin;		//!< Bounding box min (inclusive).
-	tcu::IVec2				m_bboxMax;		//!< Bounding box max (inclusive).
-	tcu::IVec2				m_curPos;		//!< Current rasterization position.
+	FaceType				m_face;					//!< Triangle orientation, eg. visible face.
+	tcu::IVec2				m_bboxMin;				//!< Bounding box min (inclusive).
+	tcu::IVec2				m_bboxMax;				//!< Bounding box max (inclusive).
+	tcu::IVec2				m_curPos;				//!< Current rasterization position.
+	ViewportOrientation		m_viewportOrientation;	//!< Direction of +x+y axis
 } DE_WARN_UNUSED_TYPE;
 
 

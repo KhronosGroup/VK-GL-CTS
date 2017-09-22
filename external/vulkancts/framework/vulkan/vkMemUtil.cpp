@@ -317,4 +317,29 @@ deUint32 getCompatibleMemoryTypes (const VkPhysicalDeviceMemoryProperties& devic
 	return compatibleTypes;
 }
 
+void bindImagePlaneMemory (const DeviceInterface&	vkd,
+						   VkDevice					device,
+						   VkImage					image,
+						   VkDeviceMemory			memory,
+						   VkDeviceSize				memoryOffset,
+						   VkImageAspectFlagBits	planeAspect)
+{
+	const VkBindImagePlaneMemoryInfoKHR	planeInfo	=
+	{
+		VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
+		DE_NULL,
+		planeAspect
+	};
+	const VkBindImageMemoryInfoKHR		coreInfo	=
+	{
+		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
+		&planeInfo,
+		image,
+		memory,
+		memoryOffset,
+	};
+
+	VK_CHECK(vkd.bindImageMemory2KHR(device, 1u, &coreInfo));
+}
+
 } // vk

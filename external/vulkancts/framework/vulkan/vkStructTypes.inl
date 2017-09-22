@@ -1503,6 +1503,42 @@ struct VkSharedPresentSurfaceCapabilitiesKHR
 	VkImageUsageFlags	sharedPresentSupportedUsageFlags;
 };
 
+struct VkPhysicalDevicePointClippingPropertiesKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkPointClippingBehaviorKHR	pointClippingBehavior;
+};
+
+struct VkInputAttachmentAspectReferenceKHR
+{
+	deUint32			subpass;
+	deUint32			inputAttachmentIndex;
+	VkImageAspectFlags	aspectMask;
+};
+
+struct VkRenderPassInputAttachmentAspectCreateInfoKHR
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	deUint32									aspectReferenceCount;
+	const VkInputAttachmentAspectReferenceKHR*	pAspectReferences;
+};
+
+struct VkImageViewUsageCreateInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkImageUsageFlags	usage;
+};
+
+struct VkPipelineTessellationDomainOriginStateCreateInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkTessellationDomainOriginKHR	domainOrigin;
+};
+
 struct VkPhysicalDeviceSurfaceInfo2KHR
 {
 	VkStructureType	sType;
@@ -1642,6 +1678,63 @@ struct VkSparseImageMemoryRequirements2KHR
 	VkStructureType					sType;
 	void*							pNext;
 	VkSparseImageMemoryRequirements	memoryRequirements;
+};
+
+struct VkImageFormatListCreateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		viewFormatCount;
+	const VkFormat*	pViewFormats;
+};
+
+struct VkSamplerYcbcrConversionCreateInfoKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkFormat							format;
+	VkSamplerYcbcrModelConversionKHR	YcbcrModel;
+	VkSamplerYcbcrRangeKHR				YcbcrRange;
+	VkComponentMapping					components;
+	VkChromaLocationKHR					xChromaOffset;
+	VkChromaLocationKHR					yChromaOffset;
+	VkFilter							chromaFilter;
+	VkBool32							forceExplicitReconstruction;
+};
+
+struct VkSamplerYcbcrConversionInfoKHR
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkSamplerYcbcrConversionKHR	conversion;
+};
+
+struct VkBindImagePlaneMemoryInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageAspectFlagBits	planeAspect;
+};
+
+struct VkImagePlaneMemoryRequirementsInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageAspectFlagBits	planeAspect;
+};
+
+struct VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		samplerYcbcrConversion;
+};
+
+struct VkSamplerYcbcrConversionImageFormatPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		combinedImageSamplerDescriptorCount;
 };
 
 struct VkDebugReportCallbackCreateInfoEXT
@@ -1933,5 +2026,23 @@ struct VkPhysicalDeviceVariablePointerFeaturesKHR
 	const void*		pNext;
 	VkBool32		variablePointersStorageBuffer;
 	VkBool32		variablePointers;
+};
+
+struct VkBindBufferMemoryInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBuffer		buffer;
+	VkDeviceMemory	memory;
+	VkDeviceSize	memoryOffset;
+};
+
+struct VkBindImageMemoryInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkImage			image;
+	VkDeviceMemory	memory;
+	VkDeviceSize	memoryOffset;
 };
 
