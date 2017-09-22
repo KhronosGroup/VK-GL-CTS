@@ -14,7 +14,7 @@ Requirements
 
  * Git (for checking out sources)
  * Python 2.7.x (all recent versions in 2.x should work, 3.x is not supported)
- * CMake 2.8 or newer
+ * CMake 2.8 (3.2 for Android builds) or newer
 
 ### Win32
 
@@ -26,7 +26,7 @@ Requirements
 
 ### Android
 
- * Android NDK r11
+ * Android NDK r15
  * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 22
  * Java Development Kit (JDK)
  * Windows: either NMake or Ninja in PATH
@@ -81,7 +81,15 @@ Release build can be done by using -DCMAKE_BUILD_TYPE=Release
 
 Following command will build dEQP.apk:
 
-	python scripts/android/build_apk.py
+	python scripts/android/build_apk.py --sdk <path to Android SDK> --ndk <path to Android NDK>
+
+By default the CTS package will be built for the Android API level 21 (Android 5.0 and above).
+Certain tests, for example tests for VK_ANDROID_external_memory_android_hardware_buffer, may
+require more recent API levels. A required API level may be supplied using --native-api command line option.
+
+Recommended build command for Android 8.0.0 is:
+
+	python scripts/android/build_apk.py --native-api=26 --sdk <path to Android SDK> --ndk <path to Android NDK>
 
 The package can be installed by either running:
 
