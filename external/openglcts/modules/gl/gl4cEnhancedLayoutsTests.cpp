@@ -5068,24 +5068,30 @@ tcu::TestNode::IterateResult TestBase::iterate()
  **/
 GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, GLuint array_length)
 {
-	GLint  divide = 4; /* 4 components per location */
-	GLint  param  = 0;
-	GLenum pname  = 0;
+	GLint  divide		= 4; /* 4 components per location */
+	GLint  param		= 0;
+	GLenum pname		= 0;
+	GLint  paramPrev	= 0;
+	GLenum pnamePrev	= 0;
 
 	/* Select pnmae */
 	switch (stage)
 	{
 	case Utils::Shader::FRAGMENT:
 		pname = GL_MAX_FRAGMENT_INPUT_COMPONENTS;
+		pnamePrev = GL_MAX_GEOMETRY_OUTPUT_COMPONENTS;
 		break;
 	case Utils::Shader::GEOMETRY:
 		pname = GL_MAX_GEOMETRY_INPUT_COMPONENTS;
+		pnamePrev = GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS;
 		break;
 	case Utils::Shader::TESS_CTRL:
 		pname = GL_MAX_TESS_CONTROL_INPUT_COMPONENTS;
+		pnamePrev = GL_MAX_VERTEX_OUTPUT_COMPONENTS;
 		break;
 	case Utils::Shader::TESS_EVAL:
 		pname = GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS;
+		pnamePrev = GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS;
 		break;
 	case Utils::Shader::VERTEX:
 		pname  = GL_MAX_VERTEX_ATTRIBS;
@@ -5108,6 +5114,14 @@ GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::T
 	gl.getIntegerv(pname, &param);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
+	if (pnamePrev) {
+		gl.getIntegerv(pnamePrev, &paramPrev);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+		/* Don't read from a location that doesn't exist in the previous stage */
+		param = de::min(param, paramPrev);
+	}
+
 /* Calculate */
 #if WRKARD_VARYINGLOCATIONSTEST
 
@@ -5124,7 +5138,7 @@ GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::T
 	return n_avl_locations - n_req_location; /* last is max - 1 */
 }
 
-/** Get last input location available for given type at specific stage
+/** Get last output location available for given type at specific stage
  *
  * @param stage        Shader stage
  * @param type         Input type
@@ -5134,23 +5148,29 @@ GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::T
  **/
 GLint TestBase::getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, GLuint array_length)
 {
-	GLint  param = 0;
-	GLenum pname = 0;
+	GLint  param		= 0;
+	GLenum pname		= 0;
+	GLint  paramNext	= 0;
+	GLenum pnameNext	= 0;
 
-	/* Select pnmae */
+	/* Select pname */
 	switch (stage)
 	{
 	case Utils::Shader::GEOMETRY:
 		pname = GL_MAX_GEOMETRY_OUTPUT_COMPONENTS;
+		pnameNext = GL_MAX_FRAGMENT_INPUT_COMPONENTS;
 		break;
 	case Utils::Shader::TESS_CTRL:
 		pname = GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS;
+		pnameNext = GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS;
 		break;
 	case Utils::Shader::TESS_EVAL:
 		pname = GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS;
+		pnameNext = GL_MAX_GEOMETRY_INPUT_COMPONENTS;
 		break;
 	case Utils::Shader::VERTEX:
 		pname = GL_MAX_VERTEX_OUTPUT_COMPONENTS;
+		pnameNext = GL_MAX_TESS_CONTROL_INPUT_COMPONENTS;
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
@@ -5169,12 +5189,18 @@ GLint TestBase::getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::
 	gl.getIntegerv(pname, &param);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
+	gl.getIntegerv(pnameNext, &paramNext);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
 /* Calculate */
 #if WRKARD_VARYINGLOCATIONSTEST
 
 	const GLint n_avl_locations = 16;
 
 #else
+
+	/* Don't write to a location that doesn't exist in the next stage */
+	param = de::min(param, paramNext);
 
 	const GLint n_avl_locations = param / 4; /* 4 components per location */
 
