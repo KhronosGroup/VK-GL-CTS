@@ -24,10 +24,13 @@
 #include "vktImageTests.hpp"
 #include "vktImageLoadStoreTests.hpp"
 #include "vktImageMultisampleLoadStoreTests.hpp"
+#include "vktImageMutableTests.hpp"
 #include "vktImageQualifiersTests.hpp"
 #include "vktImageSizeTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktImageAtomicOperationTests.hpp"
+#include "vktImageCompressionTranscodingSupport.hpp"
+#include "vktImageTranscodingSupportTests.hpp"
 
 namespace vkt
 {
@@ -44,10 +47,13 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageStoreTests(testCtx));
 	imageTests->addChild(createImageLoadStoreTests(testCtx));
 	imageTests->addChild(createImageMultisampleLoadStoreTests(testCtx));
+	imageTests->addChild(createImageMutableTests(testCtx));
 	imageTests->addChild(createImageFormatReinterpretTests(testCtx));
 	imageTests->addChild(createImageQualifiersTests(testCtx));
 	imageTests->addChild(createImageSizeTests(testCtx));
 	imageTests->addChild(createImageAtomicOperationTests(testCtx));
+	imageTests->addChild(createImageCompressionTranscodingTests(testCtx));
+	imageTests->addChild(createImageTranscodingSupportTests(testCtx));
 }
 
 } // anonymous

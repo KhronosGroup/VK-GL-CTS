@@ -9,6 +9,8 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageAtomicOperationTests.hpp
 	vktImageLoadStoreTests.cpp
 	vktImageLoadStoreTests.hpp
+	vktImageMutableTests.cpp
+	vktImageMutableTests.hpp
 	vktImageQualifiersTests.cpp
 	vktImageQualifiersTests.hpp
 	vktImageSizeTests.cpp
@@ -17,8 +19,12 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageTexture.hpp
 	vktImageMultisampleLoadStoreTests.cpp
 	vktImageMultisampleLoadStoreTests.hpp
+	vktImageCompressionTranscodingSupport.cpp
+	vktImageCompressionTranscodingSupport.hpp
 	vktImageLoadStoreUtil.cpp
 	vktImageLoadStoreUtil.hpp
+	vktImageTranscodingSupportTests.cpp
+	vktImageTranscodingSupportTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_LIBS
