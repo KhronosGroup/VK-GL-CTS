@@ -2872,12 +2872,13 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 
 	const DescriptorSetLayout::Parameters	singleUboDescLayout	= DescriptorSetLayout::Parameters::single(0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT);
 
-	static NamedParameters<Instance>					s_instanceCases[]				=
+	static const NamedParameters<Instance>					s_instanceCases[]				=
 	{
 		{ "instance",					Instance::Parameters() },
 	};
 	// \note Device index may change - must not be static
-	const NamedParameters<Device>						s_deviceCases[]					=
+
+	const NamedParameters<Device>				s_deviceCases[]					=
 	{
 		{ "device",						Device::Parameters(testCtx.getCommandLine().getVKDeviceId()-1u, VK_QUEUE_GRAPHICS_BIT)	},
 	};
