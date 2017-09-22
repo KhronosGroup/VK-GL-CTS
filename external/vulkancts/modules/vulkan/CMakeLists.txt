@@ -24,6 +24,7 @@ add_subdirectory(fragment_ops)
 add_subdirectory(geometry)
 add_subdirectory(texture)
 add_subdirectory(renderpass)
+add_subdirectory(ycbcr)
 
 include_directories(
 	api
@@ -50,6 +51,7 @@ include_directories(
 	texture
 	geometry
 	renderpass
+	ycbcr
 	)
 
 set(DEQP_VK_COMMON_SRCS
@@ -67,6 +69,8 @@ set(DEQP_VK_COMMON_SRCS
 	vktInfoTests.hpp
 	vktExternalMemoryUtil.cpp
 	vktExternalMemoryUtil.hpp
+	vktDrawUtil.cpp
+	vktDrawUtil.hpp
 	)
 
 set(DEQP_VK_COMMON_LIBS
@@ -97,6 +101,7 @@ set(DEQP_VK_COMMON_LIBS
 	deqp-vk-texture
 	deqp-vk-geometry
 	deqp-vk-render-pass
+	deqp-vk-ycbcr
 	)
 
 add_library(deqp-vk-common STATIC ${DEQP_VK_COMMON_SRCS})
