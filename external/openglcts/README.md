@@ -231,8 +231,12 @@ conformance submission.
 at [Khronos Gitlab](https://gitlab.khronos.org/) to be able to download
 Khronos Confidential CTS.
 It is possible to run and build the CTS without the Khronos Confidential CTS.
-Khronos Confidential CTS is mandatory only if you plan to make a
+For OpenGL CTS releases, and OpenGL ES CTS releases prior to opengl-es-cts-3.2.4.0
+Khronos Confidential CTS is mandatory if you plan to make a
 conformance submission (see [Creating a Submission Package](#creating-a-submission-package)).
+For opengl-es-cts-3.2.4.0 and later OpenGL ES CTS releases Khronos Confidential CTS
+results must not be included in a submission package.
+
 
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
