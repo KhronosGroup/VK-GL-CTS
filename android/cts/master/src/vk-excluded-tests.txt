@@ -325,3 +325,16 @@ dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_d32_sfloat_s8_uint
 dEQP-VK.pipeline.render_to_image.*.small.r32_uint_d32_sfloat_s8_uint
 dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_d32_sfloat_s8_uint
 dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d32_sfloat_s8_uint
+
+#VK-GL-CTS 655
+dEQP-VK.glsl.builtin_var.fragdepth.*
+
+#VK-GL-CTS 656
+dEQP-VK.glsl.builtin_var.fragcoord_msaa.*
+
+#VK-GL-CTS 657
+dEQP-VK.memory.requirements.dedicated_allocation.buffer.*
+dEQP-VK.memory.requirements.dedicated_allocation.image.*
+
+# Issue: b/65844886
+dEQP-VK.image.mutable.*

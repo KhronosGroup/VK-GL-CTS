@@ -446,12 +446,13 @@ bool doesLineSegmentExitDiamond (const SubpixelLineSegment& line, const tcu::Vec
 } // LineRasterUtil
 
 TriangleRasterizer::TriangleRasterizer (const tcu::IVec4& viewport, const int numSamples, const RasterizationState& state)
-	: m_viewport		(viewport)
-	, m_numSamples		(numSamples)
-	, m_winding			(state.winding)
-	, m_horizontalFill	(state.horizontalFill)
-	, m_verticalFill	(state.verticalFill)
-	, m_face			(FACETYPE_LAST)
+	: m_viewport				(viewport)
+	, m_numSamples				(numSamples)
+	, m_winding					(state.winding)
+	, m_horizontalFill			(state.horizontalFill)
+	, m_verticalFill			(state.verticalFill)
+	, m_face					(FACETYPE_LAST)
+	, m_viewportOrientation		(state.viewportOrientation)
 {
 }
 
@@ -493,7 +494,11 @@ void TriangleRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1, const t
 	// Determine face.
 	const deInt64	s				= evaluateEdge(m_edge01, x2, y2);
 	const bool		positiveArea	= (m_winding == WINDING_CCW) ? (s > 0) : (s < 0);
-	m_face = positiveArea ? FACETYPE_FRONT : FACETYPE_BACK;
+
+	if (m_viewportOrientation == VIEWPORTORIENTATION_UPPER_LEFT)
+		m_face = positiveArea ? FACETYPE_BACK : FACETYPE_FRONT;
+	else
+		m_face = positiveArea ? FACETYPE_FRONT : FACETYPE_BACK;
 
 	if (!positiveArea)
 	{

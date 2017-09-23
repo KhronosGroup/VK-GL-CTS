@@ -37,7 +37,7 @@ namespace rr
  *//*--------------------------------------------------------------------*/
 struct FragmentShadingContext
 {
-								FragmentShadingContext (const GenericVec4* varying0, const GenericVec4* varying1, const GenericVec4* varying2, GenericVec4* outputArray, float* fragmentDepths, int primitiveID, int numFragmentOutputs, int numSamples);
+								FragmentShadingContext (const GenericVec4* varying0, const GenericVec4* varying1, const GenericVec4* varying2, GenericVec4* outputArray, float* fragmentDepths, int primitiveID, int numFragmentOutputs, int numSamples, FaceType visibleFace_);
 
 	const GenericVec4*			varyings[3];		//!< Vertex shader outputs. Pointer will be NULL if there is no such vertex.
 	GenericVec4* const			outputArray;		//!< Fragment output array
@@ -45,6 +45,7 @@ struct FragmentShadingContext
 	const int					numFragmentOutputs;	//!< Fragment output count
 	const int					numSamples;			//!< Number of samples
 	float*						fragmentDepths;		//!< Fragment packet depths. Pointer will be NULL if there is no depth buffer. Each sample has per-sample depth values
+	FaceType					visibleFace;		//!< Which face (front or back) is visible
 };
 
 // Write output
