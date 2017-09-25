@@ -34,7 +34,7 @@
 
 DE_BEGIN_EXTERN_C
 
-void createTestActivity (ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createTestActivity (ANativeActivity* activity, void* savedState, size_t savedStateSize)
 {
 	DE_UNREF(savedState && savedStateSize);
 	try
