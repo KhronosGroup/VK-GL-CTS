@@ -4,6 +4,7 @@
  *
  * Copyright (c) 2015 The Khronos Group Inc.
  * Copyright (c) 2015 Imagination Technologies Ltd.
+ * Copyright (c) 2017 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +86,19 @@ enum RenderType
 	RENDER_TYPE_COPY_SAMPLES
 };
 
-void									initMultisamplePrograms				(SourceCollections& sources, GeometryType geometryType);
+enum ImageBackingMode
+{
+	IMAGE_BACKING_MODE_REGULAR	= 0u,
+	IMAGE_BACKING_MODE_SPARSE
+};
+
+struct MultisampleTestParams
+{
+	GeometryType		geometryType;
+	ImageBackingMode	backingMode;
+};
+
+void									initMultisamplePrograms				(SourceCollections& sources, MultisampleTestParams params);
 bool									isSupportedSampleCount				(const InstanceInterface& instanceInterface, VkPhysicalDevice physicalDevice, VkSampleCountFlagBits rasterizationSamples);
 bool									isSupportedDepthStencilFormat		(const InstanceInterface& vki, const VkPhysicalDevice physDevice, const VkFormat format);
 VkPipelineColorBlendAttachmentState		getDefaultColorBlendAttachmentState	(void);
@@ -104,7 +117,8 @@ public:
 																					 const std::string&								description,
 																					 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																					 const VkPipelineColorBlendAttachmentState&		blendState,
-																					 GeometryType									geometryType);
+																					 GeometryType									geometryType,
+																					 ImageBackingMode								backingMode);
 	virtual										~MultisampleTest					(void) {}
 
 	virtual void								initPrograms						(SourceCollections& programCollection) const;
@@ -119,6 +133,7 @@ protected:
 	VkPipelineMultisampleStateCreateInfo		m_multisampleStateParams;
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
 	const GeometryType							m_geometryType;
+	const ImageBackingMode						m_backingMode;
 	std::vector<VkSampleMask>					m_sampleMask;
 };
 
@@ -130,6 +145,7 @@ public:
 																					 const std::string&		description,
 																					 VkSampleCountFlagBits	rasterizationSamples,
 																					 GeometryType			geometryType,
+																					 ImageBackingMode		backingMode,
 																					 TestModeFlags			modeFlags				= 0u);
 	virtual										~RasterizationSamplesTest			(void) {}
 
@@ -142,6 +158,7 @@ protected:
 
 	static VkPipelineMultisampleStateCreateInfo	getRasterizationSamplesStateParams	(VkSampleCountFlagBits rasterizationSamples);
 
+	const ImageBackingMode						m_backingMode;
 	const TestModeFlags							m_modeFlags;
 };
 
@@ -153,7 +170,8 @@ public:
 																					 const std::string&		description,
 																					 VkSampleCountFlagBits	rasterizationSamples,
 																					 float					minSampleShading,
-																					 GeometryType			geometryType);
+																					 GeometryType			geometryType,
+																					 ImageBackingMode		backingMode);
 	virtual										~MinSampleShadingTest				(void) {}
 
 protected:
@@ -165,6 +183,8 @@ protected:
 																					 const VkPipelineColorBlendAttachmentState&		colorBlendState) const;
 
 	static VkPipelineMultisampleStateCreateInfo	getMinSampleShadingStateParams		(VkSampleCountFlagBits rasterizationSamples, float minSampleShading);
+
+	const ImageBackingMode						m_backingMode;
 };
 
 class SampleMaskTest : public MultisampleTest
@@ -175,7 +195,8 @@ public:
 																					 const std::string&					description,
 																					 VkSampleCountFlagBits				rasterizationSamples,
 																					 const std::vector<VkSampleMask>&	sampleMask,
-																					 GeometryType						geometryType);
+																					 GeometryType						geometryType,
+																					 ImageBackingMode					backingMode);
 
 	virtual										~SampleMaskTest						(void) {}
 
@@ -187,6 +208,8 @@ protected:
 																					 const VkPipelineColorBlendAttachmentState&		colorBlendState) const;
 
 	static VkPipelineMultisampleStateCreateInfo	getSampleMaskStateParams			(VkSampleCountFlagBits rasterizationSamples, const std::vector<VkSampleMask>& sampleMask);
+
+	const ImageBackingMode						m_backingMode;
 };
 
 class AlphaToOneTest : public MultisampleTest
@@ -195,7 +218,8 @@ public:
 												AlphaToOneTest					(tcu::TestContext&					testContext,
 																				 const std::string&					name,
 																				 const std::string&					description,
-																				 VkSampleCountFlagBits				rasterizationSamples);
+																				 VkSampleCountFlagBits				rasterizationSamples,
+																				 ImageBackingMode					backingMode);
 
 	virtual										~AlphaToOneTest					(void) {}
 
@@ -208,6 +232,8 @@ protected:
 
 	static VkPipelineMultisampleStateCreateInfo	getAlphaToOneStateParams		(VkSampleCountFlagBits rasterizationSamples);
 	static VkPipelineColorBlendAttachmentState	getAlphaToOneBlendState			(void);
+
+	const ImageBackingMode						m_backingMode;
 };
 
 class AlphaToCoverageTest : public MultisampleTest
@@ -217,7 +243,8 @@ public:
 																				 const std::string&		name,
 																				 const std::string&		description,
 																				 VkSampleCountFlagBits	rasterizationSamples,
-																				 GeometryType			geometryType);
+																				 GeometryType			geometryType,
+																				 ImageBackingMode		backingMode);
 
 	virtual										~AlphaToCoverageTest			(void) {}
 
@@ -231,6 +258,7 @@ protected:
 	static VkPipelineMultisampleStateCreateInfo	getAlphaToCoverageStateParams	(VkSampleCountFlagBits rasterizationSamples);
 
 	GeometryType								m_geometryType;
+	const ImageBackingMode						m_backingMode;
 };
 
 typedef de::SharedPtr<Unique<VkPipeline> > VkPipelineSp;
@@ -245,7 +273,8 @@ public:
 																			 const std::vector<Vertex4RGBA>&				vertices,
 																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																			 const VkPipelineColorBlendAttachmentState&		blendState,
-																			 const RenderType								renderType);
+																			 const RenderType								renderType,
+																			 const ImageBackingMode							backingMode);
 
 												MultisampleRenderer			(Context&										context,
 																			 const VkFormat									colorFormat,
@@ -258,7 +287,8 @@ public:
 																			 const std::vector<Vertex4RGBA>*				pVertices,
 																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																			 const VkPipelineColorBlendAttachmentState&		blendState,
-																		     const RenderType								renderType);
+																		     const RenderType								renderType,
+																			 const ImageBackingMode							backingMode);
 
 	virtual										~MultisampleRenderer		(void);
 
@@ -272,6 +302,8 @@ protected:
 																			 const std::vector<Vertex4RGBA>*				pVertices);
 
 	Context&									m_context;
+
+	const Unique<VkSemaphore>					m_bindSemaphore;
 
 	const VkFormat								m_colorFormat;
 	const VkFormat								m_depthStencilFormat;
@@ -330,6 +362,10 @@ protected:
 	Move<VkCommandBuffer>						m_cmdBuffer;
 
 	Move<VkFence>								m_fence;
+
+	std::vector<de::SharedPtr<Allocation> >		m_allocations;
+
+	ImageBackingMode							m_backingMode;
 };
 
 class RasterizationSamplesInstance : public vkt::TestInstance
@@ -340,7 +376,8 @@ public:
 																		 const std::vector<Vertex4RGBA>&				vertices,
 																		 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																		 const VkPipelineColorBlendAttachmentState&		blendState,
-																		 const TestModeFlags							modeFlags);
+																		 const TestModeFlags							modeFlags,
+																		 ImageBackingMode								backingMode);
 	virtual								~RasterizationSamplesInstance	(void) {}
 
 	virtual tcu::TestStatus				iterate							(void);
@@ -364,7 +401,8 @@ public:
 																			 VkPrimitiveTopology							topology,
 																			 const std::vector<Vertex4RGBA>&				vertices,
 																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-																			 const VkPipelineColorBlendAttachmentState&		blendState);
+																			 const VkPipelineColorBlendAttachmentState&		blendState,
+																			 ImageBackingMode								backingMode);
 	virtual										~MinSampleShadingInstance	(void) {}
 
 	virtual tcu::TestStatus						iterate						(void);
@@ -379,6 +417,7 @@ protected:
 	const std::vector<Vertex4RGBA>				m_vertices;
 	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
+	const ImageBackingMode						m_backingMode;
 };
 
 class SampleMaskInstance : public vkt::TestInstance
@@ -388,7 +427,8 @@ public:
 																			 VkPrimitiveTopology							topology,
 																			 const std::vector<Vertex4RGBA>&				vertices,
 																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-																			 const VkPipelineColorBlendAttachmentState&		blendState);
+																			 const VkPipelineColorBlendAttachmentState&		blendState,
+																			 ImageBackingMode								backingMode);
 	virtual										~SampleMaskInstance			(void) {}
 
 	virtual tcu::TestStatus						iterate						(void);
@@ -403,6 +443,7 @@ protected:
 	const std::vector<Vertex4RGBA>				m_vertices;
 	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
+	const ImageBackingMode						m_backingMode;
 };
 
 class AlphaToOneInstance : public vkt::TestInstance
@@ -412,7 +453,8 @@ public:
 																			 VkPrimitiveTopology							topology,
 																			 const std::vector<Vertex4RGBA>&				vertices,
 																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-																			 const VkPipelineColorBlendAttachmentState&		blendState);
+																			 const VkPipelineColorBlendAttachmentState&		blendState,
+																			 ImageBackingMode								backingMode);
 	virtual										~AlphaToOneInstance			(void) {}
 
 	virtual tcu::TestStatus						iterate						(void);
@@ -426,6 +468,7 @@ protected:
 	const std::vector<Vertex4RGBA>				m_vertices;
 	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
+	const ImageBackingMode						m_backingMode;
 };
 
 class AlphaToCoverageInstance : public vkt::TestInstance
@@ -436,7 +479,8 @@ public:
 																			 const std::vector<Vertex4RGBA>&				vertices,
 																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																			 const VkPipelineColorBlendAttachmentState&		blendState,
-																			 GeometryType									geometryType);
+																			 GeometryType									geometryType,
+																			 ImageBackingMode								backingMode);
 	virtual										~AlphaToCoverageInstance	(void) {}
 
 	virtual tcu::TestStatus						iterate						(void);
@@ -450,12 +494,13 @@ protected:
 	const VkPipelineMultisampleStateCreateInfo	m_multisampleStateParams;
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
 	const GeometryType							m_geometryType;
+	const ImageBackingMode						m_backingMode;
 };
 
 
 // Helper functions
 
-void initMultisamplePrograms (SourceCollections& sources, GeometryType geometryType)
+void initMultisamplePrograms (SourceCollections& sources, MultisampleTestParams params)
 {
 	std::ostringstream vertexSource;
 
@@ -468,7 +513,7 @@ void initMultisamplePrograms (SourceCollections& sources, GeometryType geometryT
 		"{\n"
 		"	gl_Position = position;\n"
 		"	vtxColor = color;\n"
-		<< (geometryType == GEOMETRY_TYPE_OPAQUE_POINT ? "	gl_PointSize = 3.0f;\n"
+			<< (params.geometryType == GEOMETRY_TYPE_OPAQUE_POINT ? "	gl_PointSize = 3.0f;\n"
 			: "")
 		<< "}\n";
 
@@ -783,11 +828,13 @@ MultisampleTest::MultisampleTest (tcu::TestContext&								testContext,
 								  const std::string&							description,
 								  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 								  const VkPipelineColorBlendAttachmentState&	blendState,
-								  GeometryType									geometryType)
+								  GeometryType									geometryType,
+								  ImageBackingMode								backingMode)
 	: vkt::TestCase				(testContext, name, description)
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
 	, m_geometryType			(geometryType)
+	, m_backingMode				(backingMode)
 {
 	if (m_multisampleStateParams.pSampleMask)
 	{
@@ -804,7 +851,8 @@ MultisampleTest::MultisampleTest (tcu::TestContext&								testContext,
 
 void MultisampleTest::initPrograms (SourceCollections& programCollection) const
 {
-	initMultisamplePrograms(programCollection, m_geometryType);
+	MultisampleTestParams params = {m_geometryType, m_backingMode};
+	initMultisamplePrograms(programCollection, params);
 }
 
 TestInstance* MultisampleTest::createInstance (Context& context) const
@@ -820,8 +868,10 @@ RasterizationSamplesTest::RasterizationSamplesTest (tcu::TestContext&		testConte
 													const std::string&		description,
 													VkSampleCountFlagBits	rasterizationSamples,
 													GeometryType			geometryType,
+													ImageBackingMode		backingMode,
 													TestModeFlags			modeFlags)
-	: MultisampleTest	(testContext, name, description, getRasterizationSamplesStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType)
+	: MultisampleTest	(testContext, name, description, getRasterizationSamplesStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType, backingMode)
+	, m_backingMode		(backingMode)
 	, m_modeFlags		(modeFlags)
 {
 }
@@ -850,7 +900,7 @@ TestInstance* RasterizationSamplesTest::createMultisampleTestInstance (Context&	
 																	   const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																	   const VkPipelineColorBlendAttachmentState&	colorBlendState) const
 {
-	return new RasterizationSamplesInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_modeFlags);
+	return new RasterizationSamplesInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_modeFlags, m_backingMode);
 }
 
 
@@ -861,8 +911,10 @@ MinSampleShadingTest::MinSampleShadingTest (tcu::TestContext&		testContext,
 											const std::string&		description,
 											VkSampleCountFlagBits	rasterizationSamples,
 											float					minSampleShading,
-											GeometryType			geometryType)
-	: MultisampleTest	(testContext, name, description, getMinSampleShadingStateParams(rasterizationSamples, minSampleShading), getDefaultColorBlendAttachmentState(), geometryType)
+											GeometryType			geometryType,
+											ImageBackingMode		backingMode)
+	: MultisampleTest	(testContext, name, description, getMinSampleShadingStateParams(rasterizationSamples, minSampleShading), getDefaultColorBlendAttachmentState(), geometryType, backingMode)
+	, m_backingMode		(backingMode)
 {
 }
 
@@ -877,7 +929,7 @@ TestInstance* MinSampleShadingTest::createMultisampleTestInstance (Context&					
 																   const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																   const VkPipelineColorBlendAttachmentState&	colorBlendState) const
 {
-	return new MinSampleShadingInstance(context, topology, vertices, multisampleStateParams, colorBlendState);
+	return new MinSampleShadingInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_backingMode);
 }
 
 VkPipelineMultisampleStateCreateInfo MinSampleShadingTest::getMinSampleShadingStateParams (VkSampleCountFlagBits rasterizationSamples, float minSampleShading)
@@ -906,8 +958,10 @@ SampleMaskTest::SampleMaskTest (tcu::TestContext&					testContext,
 								const std::string&					description,
 								VkSampleCountFlagBits				rasterizationSamples,
 								const std::vector<VkSampleMask>&	sampleMask,
-								GeometryType						geometryType)
-	: MultisampleTest	(testContext, name, description, getSampleMaskStateParams(rasterizationSamples, sampleMask), getDefaultColorBlendAttachmentState(), geometryType)
+								GeometryType						geometryType,
+								ImageBackingMode					backingMode)
+	: MultisampleTest	(testContext, name, description, getSampleMaskStateParams(rasterizationSamples, sampleMask), getDefaultColorBlendAttachmentState(), geometryType, backingMode)
+	, m_backingMode		(backingMode)
 {
 }
 
@@ -917,7 +971,7 @@ TestInstance* SampleMaskTest::createMultisampleTestInstance (Context&										c
 															 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 															 const VkPipelineColorBlendAttachmentState&		colorBlendState) const
 {
-	return new SampleMaskInstance(context, topology,vertices, multisampleStateParams, colorBlendState);
+	return new SampleMaskInstance(context, topology,vertices, multisampleStateParams, colorBlendState, m_backingMode);
 }
 
 VkPipelineMultisampleStateCreateInfo SampleMaskTest::getSampleMaskStateParams (VkSampleCountFlagBits rasterizationSamples, const std::vector<VkSampleMask>& sampleMask)
@@ -944,8 +998,10 @@ VkPipelineMultisampleStateCreateInfo SampleMaskTest::getSampleMaskStateParams (V
 AlphaToOneTest::AlphaToOneTest (tcu::TestContext&		testContext,
 								const std::string&		name,
 								const std::string&		description,
-								VkSampleCountFlagBits	rasterizationSamples)
-	: MultisampleTest	(testContext, name, description, getAlphaToOneStateParams(rasterizationSamples), getAlphaToOneBlendState(), GEOMETRY_TYPE_GRADIENT_QUAD)
+								VkSampleCountFlagBits	rasterizationSamples,
+								ImageBackingMode		backingMode)
+	: MultisampleTest	(testContext, name, description, getAlphaToOneStateParams(rasterizationSamples), getAlphaToOneBlendState(), GEOMETRY_TYPE_GRADIENT_QUAD, backingMode)
+	, m_backingMode(backingMode)
 {
 }
 
@@ -955,7 +1011,7 @@ TestInstance* AlphaToOneTest::createMultisampleTestInstance (Context&										c
 															 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 															 const VkPipelineColorBlendAttachmentState&		colorBlendState) const
 {
-	return new AlphaToOneInstance(context, topology, vertices, multisampleStateParams, colorBlendState);
+	return new AlphaToOneInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_backingMode);
 }
 
 VkPipelineMultisampleStateCreateInfo AlphaToOneTest::getAlphaToOneStateParams (VkSampleCountFlagBits rasterizationSamples)
@@ -1001,9 +1057,11 @@ AlphaToCoverageTest::AlphaToCoverageTest (tcu::TestContext&			testContext,
 										  const std::string&		name,
 										  const std::string&		description,
 										  VkSampleCountFlagBits		rasterizationSamples,
-										  GeometryType				geometryType)
-	: MultisampleTest	(testContext, name, description, getAlphaToCoverageStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType)
+										  GeometryType				geometryType,
+										  ImageBackingMode			backingMode)
+	: MultisampleTest	(testContext, name, description, getAlphaToCoverageStateParams(rasterizationSamples), getDefaultColorBlendAttachmentState(), geometryType, backingMode)
 	, m_geometryType	(geometryType)
+	, m_backingMode		(backingMode)
 {
 }
 
@@ -1013,7 +1071,7 @@ TestInstance* AlphaToCoverageTest::createMultisampleTestInstance (Context&						
 																  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																  const VkPipelineColorBlendAttachmentState&	colorBlendState) const
 {
-	return new AlphaToCoverageInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_geometryType);
+	return new AlphaToCoverageInstance(context, topology, vertices, multisampleStateParams, colorBlendState, m_geometryType, m_backingMode);
 }
 
 VkPipelineMultisampleStateCreateInfo AlphaToCoverageTest::getAlphaToCoverageStateParams (VkSampleCountFlagBits rasterizationSamples)
@@ -1041,7 +1099,8 @@ RasterizationSamplesInstance::RasterizationSamplesInstance (Context&										co
 															const std::vector<Vertex4RGBA>&					vertices,
 															const VkPipelineMultisampleStateCreateInfo&		multisampleStateParams,
 															const VkPipelineColorBlendAttachmentState&		blendState,
-															const TestModeFlags								modeFlags)
+															const TestModeFlags								modeFlags,
+															ImageBackingMode								backingMode)
 	: vkt::TestInstance		(context)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_renderSize			(32, 32)
@@ -1064,12 +1123,12 @@ RasterizationSamplesInstance::RasterizationSamplesInstance (Context&										co
 
 		m_multisampleRenderer = de::MovePtr<MultisampleRenderer>(
 			new MultisampleRenderer(
-				context, m_colorFormat, depthStencilFormat, m_renderSize, useDepth, useStencil, 2u, pTopology, pVertices, multisampleStateParams, blendState, RENDER_TYPE_RESOLVE));
+				context, m_colorFormat, depthStencilFormat, m_renderSize, useDepth, useStencil, 2u, pTopology, pVertices, multisampleStateParams, blendState, RENDER_TYPE_RESOLVE, backingMode));
 	}
 	else
 	{
 		m_multisampleRenderer = de::MovePtr<MultisampleRenderer>(
-			new MultisampleRenderer(context, m_colorFormat, m_renderSize, topology, vertices, multisampleStateParams, blendState, RENDER_TYPE_RESOLVE));
+			new MultisampleRenderer(context, m_colorFormat, m_renderSize, topology, vertices, multisampleStateParams, blendState, RENDER_TYPE_RESOLVE, backingMode));
 	}
 }
 
@@ -1143,7 +1202,8 @@ MinSampleShadingInstance::MinSampleShadingInstance (Context&									context,
 													VkPrimitiveTopology							topology,
 													const std::vector<Vertex4RGBA>&				vertices,
 													const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-													const VkPipelineColorBlendAttachmentState&	colorBlendState)
+													const VkPipelineColorBlendAttachmentState&	colorBlendState,
+													ImageBackingMode							backingMode)
 	: vkt::TestInstance			(context)
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_renderSize				(32, 32)
@@ -1151,6 +1211,7 @@ MinSampleShadingInstance::MinSampleShadingInstance (Context&									context,
 	, m_vertices				(vertices)
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(colorBlendState)
+	, m_backingMode				(backingMode)
 {
 	VkPhysicalDeviceFeatures deviceFeatures;
 
@@ -1171,13 +1232,13 @@ tcu::TestStatus MinSampleShadingInstance::iterate (void)
 		multisampleStateParms.sampleShadingEnable	= VK_FALSE;
 		multisampleStateParms.minSampleShading		= 0.0;
 
-		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleStateParms, m_colorBlendState, RENDER_TYPE_RESOLVE);
+		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleStateParms, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode);
 		noSampleshadingImage  = renderer.render();
 	}
 
 	// Render with test minSampleShading and collect per-sample images
 	{
-		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_COPY_SAMPLES);
+		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_COPY_SAMPLES, m_backingMode);
 		renderer.render();
 
 		sampleShadedImages.resize(m_multisampleStateParams.rasterizationSamples);
@@ -1271,7 +1332,8 @@ SampleMaskInstance::SampleMaskInstance (Context&										context,
 										VkPrimitiveTopology								topology,
 										const std::vector<Vertex4RGBA>&					vertices,
 										const VkPipelineMultisampleStateCreateInfo&		multisampleStateParams,
-										const VkPipelineColorBlendAttachmentState&		blendState)
+										const VkPipelineColorBlendAttachmentState&		blendState,
+										ImageBackingMode								backingMode)
 	: vkt::TestInstance			(context)
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_renderSize				(32, 32)
@@ -1279,6 +1341,7 @@ SampleMaskInstance::SampleMaskInstance (Context&										context,
 	, m_vertices				(vertices)
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
+	, m_backingMode				(backingMode)
 {
 }
 
@@ -1290,7 +1353,7 @@ tcu::TestStatus SampleMaskInstance::iterate (void)
 
 	// Render with test flags
 	{
-		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE);
+		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode);
 		testSampleMaskImage = renderer.render();
 	}
 
@@ -1301,7 +1364,7 @@ tcu::TestStatus SampleMaskInstance::iterate (void)
 
 		multisampleParams.pSampleMask = sampleMask.data();
 
-		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, RENDER_TYPE_RESOLVE);
+		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode);
 		minSampleMaskImage = renderer.render();
 	}
 
@@ -1312,7 +1375,7 @@ tcu::TestStatus SampleMaskInstance::iterate (void)
 
 		multisampleParams.pSampleMask = sampleMask.data();
 
-		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, RENDER_TYPE_RESOLVE);
+		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode);
 		maxSampleMaskImage = renderer.render();
 	}
 
@@ -1341,11 +1404,8 @@ tcu::TestStatus SampleMaskInstance::verifyImage (const tcu::ConstPixelBufferAcce
 		return tcu::TestStatus::pass("Unique colors within expected bounds");
 }
 
-tcu::TestStatus testRasterSamplesConsistency (Context& context, GeometryType geometryType)
+tcu::TestStatus testRasterSamplesConsistency (Context& context, MultisampleTestParams params)
 {
-	// Use triangle only.
-	DE_UNREF(geometryType);
-
 	const VkSampleCountFlagBits samples[] =
 	{
 		VK_SAMPLE_COUNT_1_BIT,
@@ -1396,7 +1456,7 @@ tcu::TestStatus testRasterSamplesConsistency (Context& context, GeometryType geo
 			false														// VkBool32									alphaToOneEnable;
 		};
 
-		MultisampleRenderer				renderer		(context, VK_FORMAT_R8G8B8A8_UNORM, tcu::IVec2(32, 32), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, vertices, multisampleStateParams, getDefaultColorBlendAttachmentState(), RENDER_TYPE_RESOLVE);
+		MultisampleRenderer				renderer		(context, VK_FORMAT_R8G8B8A8_UNORM, tcu::IVec2(32, 32), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, vertices, multisampleStateParams, getDefaultColorBlendAttachmentState(), RENDER_TYPE_RESOLVE, params.backingMode);
 		de::MovePtr<tcu::TextureLevel>	result			= renderer.render();
 		const deUint32					uniqueColors	= getUniqueColorsCount(result->getAccess());
 
@@ -1426,7 +1486,8 @@ AlphaToOneInstance::AlphaToOneInstance (Context&									context,
 										VkPrimitiveTopology							topology,
 										const std::vector<Vertex4RGBA>&				vertices,
 										const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
-										const VkPipelineColorBlendAttachmentState&	blendState)
+										const VkPipelineColorBlendAttachmentState&	blendState,
+										ImageBackingMode							backingMode)
 	: vkt::TestInstance			(context)
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_renderSize				(32, 32)
@@ -1434,6 +1495,7 @@ AlphaToOneInstance::AlphaToOneInstance (Context&									context,
 	, m_vertices				(vertices)
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
+	, m_backingMode				(backingMode)
 {
 	VkPhysicalDeviceFeatures deviceFeatures;
 
@@ -1453,7 +1515,7 @@ tcu::TestStatus AlphaToOneInstance::iterate	(void)
 
 	// Render with blend enabled and alpha to one on
 	{
-		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE);
+		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode);
 		alphaOneImage = renderer.render();
 	}
 
@@ -1462,7 +1524,7 @@ tcu::TestStatus AlphaToOneInstance::iterate	(void)
 		VkPipelineMultisampleStateCreateInfo	multisampleParams	= m_multisampleStateParams;
 		multisampleParams.alphaToOneEnable = false;
 
-		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, RENDER_TYPE_RESOLVE);
+		MultisampleRenderer renderer (m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, multisampleParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode);
 		noAlphaOneImage = renderer.render();
 	}
 
@@ -1496,7 +1558,8 @@ AlphaToCoverageInstance::AlphaToCoverageInstance (Context&										context,
 												  const std::vector<Vertex4RGBA>&				vertices,
 												  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 												  const VkPipelineColorBlendAttachmentState&	blendState,
-												  GeometryType									geometryType)
+												  GeometryType									geometryType,
+												  ImageBackingMode								backingMode)
 	: vkt::TestInstance			(context)
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_renderSize				(32, 32)
@@ -1505,6 +1568,7 @@ AlphaToCoverageInstance::AlphaToCoverageInstance (Context&										context,
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
 	, m_geometryType			(geometryType)
+	, m_backingMode				(backingMode)
 {
 }
 
@@ -1513,7 +1577,7 @@ tcu::TestStatus AlphaToCoverageInstance::iterate (void)
 	DE_ASSERT(m_multisampleStateParams.alphaToCoverageEnable);
 
 	de::MovePtr<tcu::TextureLevel>	result;
-	MultisampleRenderer				renderer	(m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE);
+	MultisampleRenderer				renderer	(m_context, m_colorFormat, m_renderSize, m_primitiveTopology, m_vertices, m_multisampleStateParams, m_colorBlendState, RENDER_TYPE_RESOLVE, m_backingMode);
 
 	result = renderer.render();
 
@@ -1569,8 +1633,10 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 										  const std::vector<Vertex4RGBA>&				vertices,
 										  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 										  const VkPipelineColorBlendAttachmentState&	blendState,
-										  const RenderType								renderType)
+										  const RenderType								renderType,
+										  const ImageBackingMode						backingMode)
 	: m_context					(context)
+	, m_bindSemaphore			(createSemaphore(context.getDeviceInterface(), context.getDevice()))
 	, m_colorFormat				(colorFormat)
 	, m_depthStencilFormat		(VK_FORMAT_UNDEFINED)
 	, m_renderSize				(renderSize)
@@ -1579,6 +1645,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
 	, m_renderType				(renderType)
+	, m_backingMode				(backingMode)
 {
 	initialize(context, 1u, &topology, &vertices);
 }
@@ -1594,8 +1661,10 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 										  const std::vector<Vertex4RGBA>*				pVertices,
 										  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 										  const VkPipelineColorBlendAttachmentState&	blendState,
-										  const RenderType								renderType)
+										  const RenderType								renderType,
+										  const ImageBackingMode						backingMode)
 	: m_context					(context)
+	, m_bindSemaphore			(createSemaphore(context.getDeviceInterface(), context.getDevice()))
 	, m_colorFormat				(colorFormat)
 	, m_depthStencilFormat		(depthStencilFormat)
 	, m_renderSize				(renderSize)
@@ -1604,6 +1673,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 	, m_multisampleStateParams	(multisampleStateParams)
 	, m_colorBlendState			(blendState)
 	, m_renderType				(renderType)
+	, m_backingMode				(backingMode)
 {
 	initialize(context, numTopologies, pTopology, pVertices);
 }
@@ -1618,21 +1688,23 @@ void MultisampleRenderer::initialize (Context&									context,
 
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const VkDevice				vkDevice				= context.getDevice();
-	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
+	const deUint32				queueFamilyIndices[]	= { context.getUniversalQueueFamilyIndex(), context.getSparseQueueFamilyIndex() };
+	const bool					sparse					= m_backingMode == IMAGE_BACKING_MODE_SPARSE;
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	const VkImageCreateFlags	imageCreateFlags		= sparse ? (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) : 0u;
+	const VkSharingMode			sharingMode				= (sparse && context.getUniversalQueueFamilyIndex() != context.getSparseQueueFamilyIndex()) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+	Allocator&					memAlloc				= m_context.getDefaultAllocator();
 
 	// Create color image
 	{
-
-		const VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+		const VkImageUsageFlags	imageUsageFlags		= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 			(m_renderType == RENDER_TYPE_COPY_SAMPLES ? VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0u);
 
-		const VkImageCreateInfo colorImageParams =
+		const VkImageCreateInfo colorImageParams	=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,										// VkStructureType			sType;
 			DE_NULL,																	// const void*				pNext;
-			0u,																			// VkImageCreateFlags		flags;
+			imageCreateFlags,															// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,															// VkImageType				imageType;
 			m_colorFormat,																// VkFormat					format;
 			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y(), 1u },				// VkExtent3D				extent;
@@ -1641,17 +1713,27 @@ void MultisampleRenderer::initialize (Context&									context,
 			m_multisampleStateParams.rasterizationSamples,								// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,													// VkImageTiling			tiling;
 			imageUsageFlags,															// VkImageUsageFlags		usage;
-			VK_SHARING_MODE_EXCLUSIVE,													// VkSharingMode			sharingMode;
-			1u,																			// deUint32					queueFamilyIndexCount;
-			&queueFamilyIndex,															// const deUint32*			pQueueFamilyIndices;
+			sharingMode,																// VkSharingMode			sharingMode;
+			sharingMode == VK_SHARING_MODE_CONCURRENT ? 2u : 1u,						// deUint32					queueFamilyIndexCount;
+			queueFamilyIndices,															// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED,													// VkImageLayout			initialLayout;
 		};
 
-		m_colorImage			= createImage(vk, vkDevice, &colorImageParams);
+		if (sparse && !checkSparseImageFormatSupport(context.getPhysicalDevice(), context.getInstanceInterface(), colorImageParams))
+			TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
+
+		m_colorImage = createImage(vk, vkDevice, &colorImageParams);
 
 		// Allocate and bind color image memory
-		m_colorImageAlloc		= memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
-		VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(), m_colorImageAlloc->getOffset()));
+		if (sparse)
+		{
+			allocateAndBindSparseImage(vk, vkDevice, context.getPhysicalDevice(), context.getInstanceInterface(), colorImageParams, *m_bindSemaphore, context.getSparseQueue(), memAlloc, m_allocations, mapVkFormat(m_colorFormat), *m_colorImage);
+		}
+		else
+		{
+			m_colorImageAlloc = memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *m_colorImage), MemoryRequirement::Any);
+			VK_CHECK(vk.bindImageMemory(vkDevice, *m_colorImage, m_colorImageAlloc->getMemory(), m_colorImageAlloc->getOffset()));
+		}
 	}
 
 	// Create resolve image
@@ -1673,7 +1755,7 @@ void MultisampleRenderer::initialize (Context&									context,
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 			VK_SHARING_MODE_EXCLUSIVE,														// VkSharingMode			sharingMode;
 			1u,																				// deUint32					queueFamilyIndexCount;
-			&queueFamilyIndex,																// const deUint32*			pQueueFamilyIndices;
+			queueFamilyIndices,																// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED														// VkImageLayout			initialLayout;
 		};
 
@@ -1720,7 +1802,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 			VK_SHARING_MODE_EXCLUSIVE,														// VkSharingMode			sharingMode;
 			1u,																				// deUint32					queueFamilyIndexCount;
-			&queueFamilyIndex,																// const deUint32*			pQueueFamilyIndices;
+			queueFamilyIndices,																// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED														// VkImageLayout			initialLayout;
 		};
 
@@ -1774,7 +1856,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,									// VkImageUsageFlags		usage;
 			VK_SHARING_MODE_EXCLUSIVE,														// VkSharingMode			sharingMode;
 			1u,																				// deUint32					queueFamilyIndexCount;
-			&queueFamilyIndex,																// const deUint32*			pQueueFamilyIndices;
+			queueFamilyIndices,																// const deUint32*			pQueueFamilyIndices;
 			VK_IMAGE_LAYOUT_UNDEFINED														// VkImageLayout			initialLayout;
 		};
 
@@ -2518,7 +2600,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
 			1u,											// deUint32				queueFamilyIndexCount;
-			&queueFamilyIndex							// const deUint32*		pQueueFamilyIndices;
+			&queueFamilyIndices[0]						// const deUint32*		pQueueFamilyIndices;
 		};
 
 		m_vertexBuffer		= createBuffer(vk, vkDevice, &vertexBufferParams);
@@ -2539,7 +2621,7 @@ void MultisampleRenderer::initialize (Context&									context,
 	}
 
 	// Create command pool
-	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndices[0]);
 
 	// Create command buffer
 	{
@@ -2722,7 +2804,6 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const VkQueue				queue				= m_context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	SimpleAllocator				allocator			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkSubmitInfo			submitInfo	=
 	{
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
@@ -2742,7 +2823,7 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 
 	if (m_renderType == RENDER_TYPE_RESOLVE)
 	{
-		return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_resolveImage, m_colorFormat, m_renderSize.cast<deUint32>());
+		return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, m_context.getDefaultAllocator(), *m_resolveImage, m_colorFormat, m_renderSize.cast<deUint32>());
 	}
 	else
 	{
@@ -2752,13 +2833,7 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 
 de::MovePtr<tcu::TextureLevel> MultisampleRenderer::getSingleSampledImage (deUint32 sampleId)
 {
-	const DeviceInterface&		vk					= m_context.getDeviceInterface();
-	const VkDevice				vkDevice			= m_context.getDevice();
-	const VkQueue				queue				= m_context.getUniversalQueue();
-	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	SimpleAllocator				allocator			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-
-	return readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_perSampleImages[sampleId]->m_image, m_colorFormat, m_renderSize.cast<deUint32>());
+	return readColorAttachment(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(), m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), *m_perSampleImages[sampleId]->m_image, m_colorFormat, m_renderSize.cast<deUint32>());
 }
 
 } // anonymous
@@ -2788,13 +2863,21 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 
 			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_triangle", "",	samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_TRIANGLE));
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_line", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_LINE));
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_point", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_POINT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_triangle", "",	samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_TRIANGLE, IMAGE_BACKING_MODE_REGULAR));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_line", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_LINE, IMAGE_BACKING_MODE_REGULAR));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_point", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_POINT, IMAGE_BACKING_MODE_REGULAR));
 
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, TEST_MODE_DEPTH_BIT));
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "stencil", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, TEST_MODE_STENCIL_BIT));
-			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth_stencil", "",	samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, TEST_MODE_DEPTH_BIT | TEST_MODE_STENCIL_BIT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, IMAGE_BACKING_MODE_REGULAR, TEST_MODE_DEPTH_BIT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "stencil", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, IMAGE_BACKING_MODE_REGULAR, TEST_MODE_STENCIL_BIT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth_stencil", "",	samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, IMAGE_BACKING_MODE_REGULAR, TEST_MODE_DEPTH_BIT | TEST_MODE_STENCIL_BIT));
+
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_triangle_sparse", "",	samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_TRIANGLE, IMAGE_BACKING_MODE_SPARSE));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_line_sparse", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_LINE, IMAGE_BACKING_MODE_SPARSE));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "primitive_point_sparse", "",		samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_POINT, IMAGE_BACKING_MODE_SPARSE));
+
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth_sparse", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, IMAGE_BACKING_MODE_SPARSE, TEST_MODE_DEPTH_BIT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "stencil_sparse", "",			samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, IMAGE_BACKING_MODE_SPARSE, TEST_MODE_STENCIL_BIT));
+			samplesTests->addChild(new RasterizationSamplesTest(testCtx, "depth_stencil_sparse", "",	samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_TRIANGLE, IMAGE_BACKING_MODE_SPARSE, TEST_MODE_DEPTH_BIT | TEST_MODE_STENCIL_BIT));
 
 			rasterizationSamplesTests->addChild(samplesTests.release());
 		}
@@ -2804,14 +2887,23 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 
 	// Raster samples consistency check
 	{
-		de::MovePtr<tcu::TestCaseGroup> rasterSamplesConsistencyTests(new tcu::TestCaseGroup(testCtx, "raster_samples_consistency", ""));
+		de::MovePtr<tcu::TestCaseGroup> rasterSamplesConsistencyTests	(new tcu::TestCaseGroup(testCtx, "raster_samples_consistency", ""));
+		MultisampleTestParams			paramsRegular					= {GEOMETRY_TYPE_OPAQUE_TRIANGLE, IMAGE_BACKING_MODE_REGULAR};
+		MultisampleTestParams			paramsSparse					= {GEOMETRY_TYPE_OPAQUE_TRIANGLE, IMAGE_BACKING_MODE_SPARSE};
 
 		addFunctionCaseWithPrograms(rasterSamplesConsistencyTests.get(),
 									"unique_colors_check",
 									"",
 									initMultisamplePrograms,
 									testRasterSamplesConsistency,
-									GEOMETRY_TYPE_OPAQUE_TRIANGLE);
+									paramsRegular);
+
+		addFunctionCaseWithPrograms(rasterSamplesConsistencyTests.get(),
+									"unique_colors_check_sparse",
+									"",
+									initMultisamplePrograms,
+									testRasterSamplesConsistency,
+									paramsSparse);
 
 		multisampleTests->addChild(rasterSamplesConsistencyTests.release());
 	}
@@ -2847,9 +2939,13 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 
 				de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE));
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE));
-				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT));
+				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, IMAGE_BACKING_MODE_REGULAR));
+				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, IMAGE_BACKING_MODE_REGULAR));
+				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, IMAGE_BACKING_MODE_REGULAR));
+
+				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_triangle_sparse", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_TRIANGLE, IMAGE_BACKING_MODE_SPARSE));
+				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_line_sparse", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_LINE, IMAGE_BACKING_MODE_SPARSE));
+				samplesTests->addChild(new MinSampleShadingTest(testCtx, "primitive_point_sparse", "", samples[samplesNdx], testConfig.minSampleShading, GEOMETRY_TYPE_OPAQUE_POINT, IMAGE_BACKING_MODE_SPARSE));
 
 				minShadingValueTests->addChild(samplesTests.release());
 			}
@@ -2896,9 +2992,13 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 				for (deUint32 maskNdx = 0; maskNdx < sampleMaskCount; maskNdx++)
 					mask.push_back(testConfig.sampleMask);
 
-				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_triangle", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_TRIANGLE));
-				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_line", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_LINE));
-				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_point", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_POINT));
+				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_triangle", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_TRIANGLE, IMAGE_BACKING_MODE_REGULAR));
+				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_line", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_LINE, IMAGE_BACKING_MODE_REGULAR));
+				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_point", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_POINT, IMAGE_BACKING_MODE_REGULAR));
+
+				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_triangle_sparse", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_TRIANGLE, IMAGE_BACKING_MODE_SPARSE));
+				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_line_sparse", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_LINE, IMAGE_BACKING_MODE_SPARSE));
+				samplesTests->addChild(new SampleMaskTest(testCtx, "primitive_point_sparse", "", samples[samplesNdx], mask, GEOMETRY_TYPE_OPAQUE_POINT, IMAGE_BACKING_MODE_SPARSE));
 
 				sampleMaskValueTests->addChild(samplesTests.release());
 			}
@@ -2919,7 +3019,10 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 			std::ostringstream caseName;
 			caseName << "samples_" << samples[samplesNdx];
 
-			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", samples[samplesNdx]));
+			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", samples[samplesNdx], IMAGE_BACKING_MODE_REGULAR));
+
+			caseName << "_sparse";
+			alphaToOneTests->addChild(new AlphaToOneTest(testCtx, caseName.str(), "", samples[samplesNdx], IMAGE_BACKING_MODE_SPARSE));
 		}
 
 		multisampleTests->addChild(alphaToOneTests.release());
@@ -2936,9 +3039,13 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 
 			de::MovePtr<tcu::TestCaseGroup> samplesTests	(new tcu::TestCaseGroup(testCtx, caseName.str().c_str(), ""));
 
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD));
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent", "", samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD));
-			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_REGULAR));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent", "", samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_REGULAR));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_REGULAR));
+
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_opaque_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_OPAQUE_QUAD, IMAGE_BACKING_MODE_SPARSE));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_translucent_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_TRANSLUCENT_QUAD, IMAGE_BACKING_MODE_SPARSE));
+			samplesTests->addChild(new AlphaToCoverageTest(testCtx, "alpha_invisible_sparse", "", samples[samplesNdx], GEOMETRY_TYPE_INVISIBLE_QUAD, IMAGE_BACKING_MODE_SPARSE));
 
 			alphaToCoverageTests->addChild(samplesTests.release());
 		}

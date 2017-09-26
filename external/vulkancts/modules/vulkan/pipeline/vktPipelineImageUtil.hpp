@@ -120,6 +120,14 @@ void							uploadTestTextureSparse		(const vk::DeviceInterface&						vk,
 															 vk::VkImage									destImage);
 
 /*--------------------------------------------------------------------*//*!
+ * Checks if the physical device supports creation of the specified
+ * image format.
+ *//*--------------------------------------------------------------------*/
+bool checkSparseImageFormatSupport (const vk::VkPhysicalDevice		physicalDevice,
+									const vk::InstanceInterface&	instance,
+									const vk::VkImageCreateInfo&	imageCreateInfo);
+
+/*--------------------------------------------------------------------*//*!
  * Allocates memory for a sparse image and handles the memory binding.
  *//*--------------------------------------------------------------------*/
 void							allocateAndBindSparseImage	(const vk::DeviceInterface&						vk,
