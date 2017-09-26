@@ -2491,6 +2491,7 @@ public:
 																const tcu::IVec3&	worksize,
 																const tcu::IVec3&	splitsize);
 
+	bool							isInputVectorValid			(const tcu::IVec3& small, const tcu::IVec3& big);
 	tcu::TestStatus					iterate						(void);
 
 private:
@@ -2558,11 +2559,36 @@ DispatchBaseTestInstance::DispatchBaseTestInstance (Context& context,
 	, m_workSize			(worksize)
 	, m_splitWorkSize		(splitsize)
 {
-	if (m_splitWorkSize.x() > m_workSize.x() ||
-		m_splitWorkSize.y() > m_workSize.y() ||
-		m_splitWorkSize.z() > m_workSize.z() ||
-		(multiplyComponents(m_splitWorkSize) >= multiplyComponents(m_workSize)))
-		TCU_THROW(TestError, "Split work group size too big.");
+	// For easy work distribution across physical devices:
+	// WorkSize should be a multiple of SplitWorkSize only in the X component
+	if ((!isInputVectorValid(m_splitWorkSize, m_workSize)) ||
+		(m_workSize.x() <= m_splitWorkSize.x()) ||
+		(m_workSize.y() != m_splitWorkSize.y()) ||
+		(m_workSize.z() != m_splitWorkSize.z()))
+		TCU_THROW(TestError, "Invalid Input.");
+
+	// For easy work distribution within the same physical device:
+	// SplitWorkSize should be a multiple of localSize in Y or Z component
+	if ((!isInputVectorValid(m_localSize, m_splitWorkSize)) ||
+		(m_localSize.x() != m_splitWorkSize.x()) ||
+		(m_localSize.y() >= m_splitWorkSize.y()) ||
+		(m_localSize.z() >= m_splitWorkSize.z()))
+		TCU_THROW(TestError, "Invalid Input.");
+
+	if ((multiplyComponents(m_workSize) / multiplyComponents(m_splitWorkSize)) < (deInt32) m_numPhysDevices)
+		TCU_THROW(TestError, "Not enough work to distribute across all physical devices.");
+
+	deUint32 totalWork = multiplyComponents(m_workSize) * multiplyComponents(m_localSize);
+	if ((totalWork > numValues) || (numValues % totalWork != 0))
+		TCU_THROW(TestError, "Buffer too small/not aligned to cover all values.");
+}
+
+bool DispatchBaseTestInstance::isInputVectorValid(const tcu::IVec3& small, const tcu::IVec3& big)
+{
+	if (((big.x() < small.x()) || (big.y() < small.y()) || (big.z() < small.z())) ||
+		((big.x() % small.x() != 0) || (big.y() % small.y() != 0) || (big.z() % small.z() != 0)))
+		return false;
+	return true;
 }
 
 tcu::TestStatus DispatchBaseTestInstance::iterate (void)
@@ -2650,19 +2676,30 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
-	// Split the workload across all physical devices based on m_splitWorkSize
+	// Split the workload across all physical devices based on m_splitWorkSize.x()
 	for (deUint32 physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
 	{
-		deUint32 baseGroupX = m_splitWorkSize.x() == m_workSize.x() ? 0 : physDevIdx * m_splitWorkSize.x();
-		deUint32 baseGroupY = m_splitWorkSize.y() == m_workSize.y() ? 0 : physDevIdx * m_splitWorkSize.y();
-		deUint32 baseGroupZ = m_splitWorkSize.z() == m_workSize.z() ? 0 : physDevIdx * m_splitWorkSize.z();
+		deUint32 baseGroupX = physDevIdx * m_splitWorkSize.x();
+		deUint32 baseGroupY = 0;
+		deUint32 baseGroupZ = 0;
 
-		deUint32 groupCountX = ((physDevIdx == (m_numPhysDevices - 1)) && (m_splitWorkSize.x() != m_workSize.x())) ? m_workSize.x() - baseGroupX : m_splitWorkSize.x();
-		deUint32 groupCountY = ((physDevIdx == (m_numPhysDevices - 1)) && (m_splitWorkSize.y() != m_workSize.y())) ? m_workSize.y() - baseGroupY : m_splitWorkSize.y();
-		deUint32 groupCountZ = ((physDevIdx == (m_numPhysDevices - 1)) && (m_splitWorkSize.z() != m_workSize.z())) ? m_workSize.z() - baseGroupZ : m_splitWorkSize.z();
+		// Split the workload within the physical device based on m_localSize.y() and m_localSize.z()
+		for (deInt32 localIdxY = 0; localIdxY < (m_splitWorkSize.y() / m_localSize.y()); localIdxY++)
+		{
+			for (deInt32 localIdxZ = 0; localIdxZ < (m_splitWorkSize.z() / m_localSize.z()); localIdxZ++)
+			{
+				deUint32 offsetX = baseGroupX;
+				deUint32 offsetY = baseGroupY + localIdxY * m_localSize.y();
+				deUint32 offsetZ = baseGroupZ + localIdxZ * m_localSize.z();
 
-		totalWorkloadSize += (groupCountX * groupCountY * groupCountZ);
-		vk.cmdDispatchBase(*cmdBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
+				deUint32 localSizeX = (physDevIdx == (m_numPhysDevices - 1)) ? m_workSize.x() - baseGroupX : m_localSize.x();
+				deUint32 localSizeY = m_localSize.y();
+				deUint32 localSizeZ = m_localSize.z();
+
+				totalWorkloadSize += (localSizeX * localSizeY * localSizeZ);
+				vk.cmdDispatchBase(*cmdBuffer, offsetX, offsetY, offsetZ, localSizeX, localSizeY, localSizeZ);
+			}
+		}
 	}
 
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
@@ -3074,8 +3111,8 @@ tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& 
 {
 	de::MovePtr<tcu::TestCaseGroup> deviceGroupComputeTests(new tcu::TestCaseGroup(testCtx, "device_group", "Basic device group compute tests"));
 
-	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups", 4096,	tcu::IVec3(4,1,2),	tcu::IVec3(32,4,2), tcu::IVec3(4,4,2)));
-	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",		"Compute shader using deviceIndex in SPIRV", 96,	tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1)));
+	deviceGroupComputeTests->addChild(new DispatchBaseTest(testCtx,	"dispatch_base",	"Compute shader with base groups",				32768,	tcu::IVec3(4,2,4),	tcu::IVec3(16,8,8),	tcu::IVec3(4,8,8)));
+	deviceGroupComputeTests->addChild(new DeviceIndexTest(testCtx,	"device_index",		"Compute shader using deviceIndex in SPIRV",	96,		tcu::IVec3(3,2,1),	tcu::IVec3(2,4,1)));
 
 	return deviceGroupComputeTests.release();
 
