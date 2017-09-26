@@ -1900,7 +1900,6 @@ KHR-GLES31.core.shader_storage_buffer_object.basic-matrixOperations-case6-vs
 KHR-GLES31.core.shader_storage_buffer_object.basic-matrixOperations-case6-cs
 KHR-GLES31.core.shader_storage_buffer_object.basic-matrixOperations-case7-vs
 KHR-GLES31.core.shader_storage_buffer_object.basic-matrixOperations-case7-cs
-KHR-GLES31.core.shader_storage_buffer_object.basic-readonly-writeonly
 KHR-GLES31.core.shader_storage_buffer_object.advanced-switchBuffers-vs
 KHR-GLES31.core.shader_storage_buffer_object.advanced-switchBuffers-cs
 KHR-GLES31.core.shader_storage_buffer_object.advanced-switchPrograms-vs
@@ -2249,10 +2248,6 @@ KHR-GLES31.core.arrays_of_arrays.InteractionInterfaceArrays4
 KHR-GLES31.core.polygon_offset_clamp.PolygonOffsetClampAvailability
 KHR-GLES31.core.polygon_offset_clamp.PolygonOffsetClampMinMax
 KHR-GLES31.core.polygon_offset_clamp.PolygonOffsetClampZeroInfinity
-KHR-GLES31.core.shader_group_vote.availability
-KHR-GLES31.core.shader_group_vote.all_invocations
-KHR-GLES31.core.shader_group_vote.any_invocation
-KHR-GLES31.core.shader_group_vote.all_invocations_equal
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_non_indiced_lines
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_indiced_lines
 KHR-GLES31.core.geometry_shader.adjacency.adjacency_non_indiced_line_strip
@@ -2464,10 +2459,6 @@ KHR-GLES31.core.tessellation_shader.tessellation_invariance.invariance_rule4
 KHR-GLES31.core.tessellation_shader.tessellation_invariance.invariance_rule5
 KHR-GLES31.core.tessellation_shader.tessellation_invariance.invariance_rule6
 KHR-GLES31.core.tessellation_shader.tessellation_invariance.invariance_rule7
-KHR-GLES31.core.tessellation_shader.winding.triangles_ccw
-KHR-GLES31.core.tessellation_shader.winding.triangles_cw
-KHR-GLES31.core.tessellation_shader.winding.quads_ccw
-KHR-GLES31.core.tessellation_shader.winding.quads_cw
 KHR-GLES31.core.texture_cube_map_array.sampling
 KHR-GLES31.core.texture_cube_map_array.color_depth_attachments
 KHR-GLES31.core.texture_cube_map_array.stencil_attachments_mutable_nonlayered
