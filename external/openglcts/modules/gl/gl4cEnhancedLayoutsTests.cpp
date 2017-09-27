@@ -14808,14 +14808,7 @@ glw::GLuint VaryingComponentsTest::getTestCaseNumber()
 /* Prepare test cases */
 void VaryingComponentsTest::testInit()
 {
-	m_test_cases.push_back(testCase(GVEC4, Utils::Type::Double));
-	m_test_cases.push_back(testCase(SCALAR_GVEC3, Utils::Type::Double));
-	m_test_cases.push_back(testCase(GVEC3_SCALAR, Utils::Type::Double));
-	m_test_cases.push_back(testCase(GVEC2_GVEC2, Utils::Type::Double));
-	m_test_cases.push_back(testCase(GVEC2_SCALAR_SCALAR, Utils::Type::Double));
-	m_test_cases.push_back(testCase(SCALAR_GVEC2_SCALAR, Utils::Type::Double));
-	m_test_cases.push_back(testCase(SCALAR_SCALAR_GVEC2, Utils::Type::Double));
-	m_test_cases.push_back(testCase(SCALAR_SCALAR_SCALAR_SCALAR, Utils::Type::Double));
+	// FIXME: add tests for doubles, which have specific rules
 
 	m_test_cases.push_back(testCase(GVEC4, Utils::Type::Float));
 	m_test_cases.push_back(testCase(SCALAR_GVEC3, Utils::Type::Float));
