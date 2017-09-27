@@ -3,6 +3,8 @@
 set(GLCTS_GLES2_SRCS
 	es2cTestPackage.cpp
 	es2cTestPackage.hpp
+	es2cTexture3DTests.cpp
+	es2cTexture3DTests.hpp
 	)
 
 set(GLCTS_GLES2_LIBS

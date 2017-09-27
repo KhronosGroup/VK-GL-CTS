@@ -23,6 +23,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es2cTestPackage.hpp"
+#include "es2cTexture3DTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
@@ -140,6 +141,7 @@ void TestPackage::init(void)
 	try
 	{
 		addChild(new ShaderTests(getContext()));
+		addChild(new Texture3DTests(getContext()));
 		tcu::TestCaseGroup* coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
 		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
 		addChild(coreGroup);
