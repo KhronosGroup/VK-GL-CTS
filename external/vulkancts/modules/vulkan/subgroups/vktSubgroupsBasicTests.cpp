@@ -37,7 +37,7 @@ namespace
 {
 static const deUint32			ELECTED_VALUE		= 42u;
 static const deUint32			UNELECTED_VALUE		= 13u;
-static const vk::VkDeviceSize	SHADER_BUFFER_SIZE	= 16384ull; //maxUniformBufferRange 128*128
+static const vk::VkDeviceSize	SHADER_BUFFER_SIZE	= 4096ull; // min(maxUniformBufferRange, maxImageDimension1D)
 
 static bool checkFragmentSubgroupElect(std::vector<const void*> datas,
 									   deUint32 width, deUint32 height, deUint32)

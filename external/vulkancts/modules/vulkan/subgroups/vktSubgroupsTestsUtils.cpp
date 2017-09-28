@@ -2704,7 +2704,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	const Unique<VkCommandBuffer> cmdBuffer(
 		makeCommandBuffer(context, *cmdPool));
 
-	const deUint32 numWorkgroups[3] = {4, 4, 4};
+	const deUint32 numWorkgroups[3] = {4, 2, 2};
 
 	const deUint32 localSizesToTestCount = 15;
 	deUint32 localSizesToTest[localSizesToTestCount][3] =
