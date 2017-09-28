@@ -1475,7 +1475,7 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 		};
 		vk::VkExternalImageFormatProperties					externalProperties	=
 		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+			vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
 			DE_NULL,
 			{ 0u, 0u, 0u }
 		};
