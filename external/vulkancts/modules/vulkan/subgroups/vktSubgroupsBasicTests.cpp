@@ -1100,6 +1100,14 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 				   " is a required capability!");
 	}
 
+	if (OPTYPE_ELECT != caseDef.opType && VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage)
+	{
+		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Subgroup basic operation non-compute stage test required that ballot operations are supported!");
+		}
+	}
+
 	//Tests which don't use the SSBO
 	if(caseDef.noSSBO)
 	{
@@ -1176,14 +1184,6 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		if (!subgroups::isFragmentSSBOSupportedForDevice(context))
 		{
 			TCU_THROW(NotSupportedError, "Subgroup basic operation require that the fragment stage be able to write to SSBOs!");
-		}
-
-		if (OPTYPE_ELECT != caseDef.opType)
-		{
-			if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
-			{
-				TCU_THROW(NotSupportedError, "Subgroup basic operation fragment stage test required that ballot operations are supported!");
-			}
 		}
 
 		if (OPTYPE_ELECT == caseDef.opType)
