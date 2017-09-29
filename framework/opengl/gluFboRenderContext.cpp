@@ -180,7 +180,7 @@ FboRenderContext::FboRenderContext (const ContextFactory& factory, const RenderC
 		nativeRenderConfig.type				= config.type;
 		nativeRenderConfig.windowVisibility	= config.windowVisibility;
 		// \note All other properties are defaults, mostly DONT_CARE
-		m_context = factory.createContext(nativeRenderConfig, cmdLine);
+		m_context = factory.createContext(nativeRenderConfig, cmdLine, DE_NULL);
 		createFramebuffer(config);
 	}
 	catch (...)

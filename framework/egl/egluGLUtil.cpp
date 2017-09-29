@@ -80,6 +80,7 @@ EGLContext createGLContext (const Library&					egl,
 							EGLDisplay						display,
 							EGLContext						eglConfig,
 							const glu::ContextType&			contextType,
+							eglw::EGLContext				sharedContext,
 							glu::ResetNotificationStrategy	resetNotificationStrategy)
 {
 	const bool			khrCreateContextSupported			= hasExtension(egl, display, "EGL_KHR_create_context");
@@ -193,7 +194,7 @@ EGLContext createGLContext (const Library&					egl,
 	attribList.push_back(EGL_NONE);
 
 	EGLU_CHECK_CALL(egl, bindAPI(api));
-	context = egl.createContext(display, eglConfig, EGL_NO_CONTEXT, &(attribList[0]));
+	context = egl.createContext(display, eglConfig, sharedContext, &(attribList[0]));
 	EGLU_CHECK_MSG(egl, "eglCreateContext()");
 
 	return context;

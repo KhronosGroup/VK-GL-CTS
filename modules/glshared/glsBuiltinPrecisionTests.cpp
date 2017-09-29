@@ -3300,17 +3300,102 @@ protected:
 	}
 };
 
-class Min : public PreciseFunc2 { public: Min (void) : PreciseFunc2("min", deMin) {} };
-class Max : public PreciseFunc2 { public: Max (void) : PreciseFunc2("max", deMax) {} };
+int compare(const EvalContext& ctx, double x, double y)
+{
+	if (ctx.format.hasSubnormal() != tcu::YES)
+	{
+		const int		minExp			= ctx.format.getMinExp();
+		const int		fractionBits	= ctx.format.getFractionBits();
+		const double	minQuantum		= deLdExp(1.0f, minExp - fractionBits);
+		const double	minNormalized	= deLdExp(1.0f, minExp);
+		const double	maxSubnormal	= minNormalized - minQuantum;
+		const double	minSubnormal	= -maxSubnormal;
+
+		if (minSubnormal <= x && x <= maxSubnormal &&
+		    minSubnormal <= y && y <= maxSubnormal)
+			return 0;
+	}
+
+	if (x < y)
+		return -1;
+	if (y < x)
+		return 1;
+	return 0;
+}
+
+class MinMaxFunc : public FloatFunc2
+{
+public:
+	MinMaxFunc	(const string&	name,
+				 int			sign)
+				: m_name(name)
+				, m_sign(sign)
+	{
+	}
+
+	string	getName				(void) const { return m_name; }
+
+protected:
+	Interval applyPoint(const EvalContext& ctx, double x, double y) const
+	{
+		const int cmp = compare(ctx, x, y) * m_sign;
+
+		if (cmp > 0)
+			return x;
+		if (cmp < 0)
+			return y;
+
+		// An implementation without subnormals may not be able to distinguish
+		// between x and y even when they're not equal in host arithmetic.
+		return Interval(x, y);
+	}
+
+	double	precision	(const EvalContext&, double, double, double) const
+	{
+		return 0.0;
+	}
+
+	const string	m_name;
+	const int		m_sign;
+};
+
+class Min : public MinMaxFunc { public: Min (void) : MinMaxFunc("min", -1) {} };
+class Max : public MinMaxFunc { public: Max (void) : MinMaxFunc("max", 1) {} };
 
 class Clamp : public FloatFunc3
 {
 public:
 	string	getName		(void) const { return "clamp"; }
 
-	double	applyExact	(double x, double minVal, double maxVal) const
+protected:
+	Interval applyPoint(const EvalContext& ctx, double x, double minVal, double maxVal) const
 	{
-		return de::min(de::max(x, minVal), maxVal);
+		if (minVal > maxVal)
+			return TCU_NAN;
+
+		const int cmpMin = compare(ctx, x, minVal);
+		const int cmpMax = compare(ctx, x, maxVal);
+		const int cmpMinMax = compare(ctx, minVal, maxVal);
+
+		if (cmpMin < 0) {
+			if (cmpMinMax < 0)
+				return minVal;
+			else
+				return Interval(minVal, maxVal);
+		}
+		if (cmpMax > 0) {
+			if (cmpMinMax < 0)
+				return maxVal;
+			else
+				return Interval(minVal, maxVal);
+		}
+
+		Interval result = x;
+		if (cmpMin == 0)
+			result |= minVal;
+		if (cmpMax == 0)
+			result |= maxVal;
+		return result;
 	}
 
 	double	precision	(const EvalContext&, double, double, double minVal, double maxVal) const

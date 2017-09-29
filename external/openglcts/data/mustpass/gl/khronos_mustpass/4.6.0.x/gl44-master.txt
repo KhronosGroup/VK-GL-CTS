@@ -3910,6 +3910,7 @@ KHR-GL44.program_interface_query.separate-programs-tess-eval
 KHR-GL44.program_interface_query.separate-programs-geometry
 KHR-GL44.program_interface_query.separate-programs-fragment
 KHR-GL44.program_interface_query.uniform-block
+KHR-GL44.program_interface_query.uniform-block-array
 KHR-GL44.program_interface_query.array-names
 KHR-GL44.program_interface_query.buff-length
 KHR-GL44.program_interface_query.no-locations

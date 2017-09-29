@@ -36,7 +36,8 @@ class ContextFactory : public glu::ContextFactory
 {
 public:
 								ContextFactory	(HINSTANCE instance);
-	virtual glu::RenderContext*	createContext	(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const;
+	virtual glu::RenderContext*	createContext	(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine,
+												 const glu::RenderContext* sharedContext) const;
 
 private:
 	const HINSTANCE				m_instance;

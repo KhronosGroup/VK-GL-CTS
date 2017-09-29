@@ -620,7 +620,7 @@ public:
 		const glw::GLuint	 p		  = gl.createProgram();
 		const std::string	 version = glu::getGLSLVersionDeclaration(m_glslVersion);
 
-		static const struct
+		const struct
 		{
 			const char*		   name;
 			const std::string& body;

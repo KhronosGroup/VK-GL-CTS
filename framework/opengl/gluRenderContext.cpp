@@ -130,7 +130,7 @@ static ContextFlags parseContextFlags (const std::string& flagsStr)
 	return flags;
 }
 
-RenderContext* createRenderContext (tcu::Platform& platform, const tcu::CommandLine& cmdLine, const RenderConfig& config)
+RenderContext* createRenderContext (tcu::Platform& platform, const tcu::CommandLine& cmdLine, const RenderConfig& config, const RenderContext* sharedContext)
 {
 	const ContextFactoryRegistry&	registry		= platform.getGLPlatform().getContextFactoryRegistry();
 	const char*						factoryName		= cmdLine.getGLContextType();
@@ -161,9 +161,13 @@ RenderContext* createRenderContext (tcu::Platform& platform, const tcu::CommandL
 		factory = registry.getDefaultFactory();
 
 	if (cmdLine.getSurfaceType() == tcu::SURFACETYPE_FBO)
+	{
+		if (sharedContext)
+			TCU_FAIL("Shared context not implemented for  FBO surface type");
 		return new FboRenderContext(*factory, config, cmdLine);
+	}
 	else
-		return factory->createContext(config, cmdLine);
+		return factory->createContext(config, cmdLine, sharedContext);
 }
 
 RenderContext* createDefaultRenderContext (tcu::Platform& platform, const tcu::CommandLine& cmdLine, ApiType apiType)

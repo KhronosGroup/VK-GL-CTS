@@ -65,6 +65,7 @@
 #include <string>
 #include <sstream>
 #include <utility>
+#include <stack>
 
 namespace vkt
 {
@@ -2564,41 +2565,214 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 string generateConstantDefinitions (int count)
 {
-	std::stringstream	r;
+	std::ostringstream	r;
 	for (int i = 0; i < count; i++)
 		r << "%cf" << (i * 10 + 5) << " = OpConstant %f32 " <<(i * 10 + 5) << ".0\n";
-	return r.str() + string("\n");
+	r << "\n";
+	return r.str();
 }
 
 string generateSwitchCases (int count)
 {
-	std::stringstream	r;
+	std::ostringstream	r;
 	for (int i = 0; i < count; i++)
 		r << " " << i << " %case" << i;
-	return r.str() + string("\n");
+	r << "\n";
+	return r.str();
 }
 
 string generateSwitchTargets (int count)
 {
-	std::stringstream	r;
+	std::ostringstream	r;
 	for (int i = 0; i < count; i++)
 		r << "%case" << i << " = OpLabel\n            OpBranch %phi\n";
-	return r.str() + string("\n");
+	r << "\n";
+	return r.str();
 }
 
 string generateOpPhiParams (int count)
 {
-	std::stringstream	r;
+	std::ostringstream	r;
 	for (int i = 0; i < count; i++)
 		r << " %cf" << (i * 10 + 5) << " %case" << i;
-	return r.str() + string("\n");
+	r << "\n";
+	return r.str();
 }
 
 string generateIntWidth (int value)
 {
-	std::stringstream	r;
+	std::ostringstream	r;
 	r << value;
 	return r.str();
+}
+
+// Expand input string by injecting "ABC" between the input
+// string characters. The acc/add/treshold parameters are used
+// to skip some of the injections to make the result less
+// uniform (and a lot shorter).
+string expandOpPhiCase5 (const string& s, int &acc, int add, int treshold)
+{
+	std::ostringstream	res;
+	const char*			p = s.c_str();
+
+	while (*p)
+	{
+		res << *p;
+		acc += add;
+		if (acc > treshold)
+		{
+			acc -= treshold;
+			res << "ABC";
+		}
+		p++;
+	}
+	return res.str();
+}
+
+// Calculate expected result based on the code string
+float calcOpPhiCase5 (float val, const string& s)
+{
+	const char*		p		= s.c_str();
+	float			x[8];
+	bool			b[8];
+	const float		tv[8]	= { 0.5f, 1.5f, 3.5f, 7.5f, 15.5f, 31.5f, 63.5f, 127.5f };
+	const float		v		= deFloatAbs(val);
+	float			res		= 0;
+	int				depth	= -1;
+	int				skip	= 0;
+
+	for (int i = 7; i >= 0; --i)
+		x[i] = std::fmod((float)v, (float)(2 << i));
+	for (int i = 7; i >= 0; --i)
+		b[i] = x[i] > tv[i];
+
+	while (*p)
+	{
+		if (*p == 'A')
+		{
+			depth++;
+			if (skip == 0 && b[depth])
+			{
+				res++;
+			}
+			else
+				skip++;
+		}
+		if (*p == 'B')
+		{
+			if (skip)
+				skip--;
+			if (b[depth] || skip)
+				skip++;
+		}
+		if (*p == 'C')
+		{
+			depth--;
+			if (skip)
+				skip--;
+		}
+		p++;
+	}
+	return res;
+}
+
+// In the code string, the letters represent the following:
+//
+// A:
+//     if (certain bit is set)
+//     {
+//       result++;
+//
+// B:
+//     } else {
+//
+// C:
+//     }
+//
+// examples:
+// AABCBC leads to if(){r++;if(){r++;}else{}}else{}
+// ABABCC leads to if(){r++;}else{if(){r++;}else{}}
+// ABCABC leads to if(){r++;}else{}if(){r++;}else{}
+//
+// Code generation gets a bit complicated due to the else-branches,
+// which do not generate new values. Thus, the generator needs to
+// keep track of the previous variable change seen by the else
+// branch.
+string generateOpPhiCase5 (const string& s)
+{
+	std::stack<int>				idStack;
+	std::stack<std::string>		value;
+	std::stack<std::string>		valueLabel;
+	std::stack<std::string>		mergeLeft;
+	std::stack<std::string>		mergeRight;
+	std::ostringstream			res;
+	const char*					p			= s.c_str();
+	int							depth		= -1;
+	int							currId		= 0;
+	int							iter		= 0;
+
+	idStack.push(-1);
+	value.push("%f32_0");
+	valueLabel.push("%f32_0 %entry");
+
+	while (*p)
+	{
+		if (*p == 'A')
+		{
+			depth++;
+			currId = iter;
+			idStack.push(currId);
+			res << "\tOpSelectionMerge %m" << currId << " None\n";
+			res << "\tOpBranchConditional %b" << depth << " %t" << currId << " %f" << currId << "\n";
+			res << "%t" << currId << " = OpLabel\n";
+			res << "%rt" << currId << " = OpFAdd %f32 " << value.top() << " %f32_1\n";
+			std::ostringstream tag;
+			tag << "%rt" << currId;
+			value.push(tag.str());
+			tag << " %t" << currId;
+			valueLabel.push(tag.str());
+		}
+
+		if (*p == 'B')
+		{
+			mergeLeft.push(valueLabel.top());
+			value.pop();
+			valueLabel.pop();
+			res << "\tOpBranch %m" << currId << "\n";
+			res << "%f" << currId << " = OpLabel\n";
+			std::ostringstream tag;
+			tag << value.top() << " %f" << currId;
+			valueLabel.pop();
+			valueLabel.push(tag.str());
+		}
+
+		if (*p == 'C')
+		{
+			mergeRight.push(valueLabel.top());
+			res << "\tOpBranch %m" << currId << "\n";
+			res << "%m" << currId << " = OpLabel\n";
+			if (*(p + 1) == 0)
+				res << "%res"; // last result goes to %res
+			else
+				res << "%rm" << currId;
+			res << " = OpPhi %f32  " << mergeLeft.top() << "  " << mergeRight.top() << "\n";
+			std::ostringstream tag;
+			tag << "%rm" << currId;
+			value.pop();
+			value.push(tag.str());
+			tag << " %m" << currId;
+			valueLabel.pop();
+			valueLabel.push(tag.str());
+			mergeLeft.pop();
+			mergeRight.pop();
+			depth--;
+			idStack.pop();
+			currId = idStack.top();
+		}
+		p++;
+		iter++;
+	}
+	return res.str();
 }
 
 tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
@@ -2608,6 +2782,7 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	ComputeShaderSpec				spec2;
 	ComputeShaderSpec				spec3;
 	ComputeShaderSpec				spec4;
+	ComputeShaderSpec				spec5;
 	de::Random						rnd				(deStringHash(group->getName()));
 	const int						numElements		= 100;
 	vector<float>					inputFloats		(numElements, 0);
@@ -2615,7 +2790,15 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	vector<float>					outputFloats2	(numElements, 0);
 	vector<float>					outputFloats3	(numElements, 0);
 	vector<float>					outputFloats4	(numElements, 0);
+	vector<float>					outputFloats5	(numElements, 0);
+	std::string						codestring		= "ABC";
 	const int						test4Width		= 1024;
+
+	// Build case 5 code string. Each iteration makes the hierarchy more complicated.
+	// 9 iterations with (7, 24) parameters makes the hierarchy 8 deep with about 1500 lines of
+	// shader code.
+	for (int i = 0, acc = 0; i < 9; i++)
+		codestring = expandOpPhiCase5(codestring, acc, 7, 24);
 
 	fillRandomScalars(rnd, -300.f, 300.f, &inputFloats[0], numElements);
 
@@ -2636,6 +2819,8 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 
 		int index4 = (int)deFloor(deAbs((float)ndx * inputFloats[ndx]));
 		outputFloats4[ndx] = (float)(index4 % test4Width) * 10.0f + 5.0f;
+
+		outputFloats5[ndx] = calcOpPhiCase5(inputFloats[ndx], codestring);
 	}
 
 	spec1.assembly =
@@ -2845,6 +3030,82 @@ tcu::TestCaseGroup* createOpPhiGroup (tcu::TestContext& testCtx)
 	spec4.numWorkGroups = IVec3(numElements, 1, 1);
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "wide", "OpPhi with a lot of parameters", spec4));
+
+	spec5.assembly =
+		"OpCapability Shader\n"
+		"%ext      = OpExtInstImport \"GLSL.std.450\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"%code     = OpString \"" + codestring + "\"\n"
+
+		"OpSource GLSL 430\n"
+		"OpName %main \"main\"\n"
+		"OpName %id \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id       = OpVariable %uvec3ptr Input\n"
+		"%zero     = OpConstant %i32 0\n"
+		"%f32_0    = OpConstant %f32 0.0\n"
+		"%f32_0_5  = OpConstant %f32 0.5\n"
+		"%f32_1    = OpConstant %f32 1.0\n"
+		"%f32_1_5  = OpConstant %f32 1.5\n"
+		"%f32_2    = OpConstant %f32 2.0\n"
+		"%f32_3_5  = OpConstant %f32 3.5\n"
+		"%f32_4    = OpConstant %f32 4.0\n"
+		"%f32_7_5  = OpConstant %f32 7.5\n"
+		"%f32_8    = OpConstant %f32 8.0\n"
+		"%f32_15_5 = OpConstant %f32 15.5\n"
+		"%f32_16   = OpConstant %f32 16.0\n"
+		"%f32_31_5 = OpConstant %f32 31.5\n"
+		"%f32_32   = OpConstant %f32 32.0\n"
+		"%f32_63_5 = OpConstant %f32 63.5\n"
+		"%f32_64   = OpConstant %f32 64.0\n"
+		"%f32_127_5 = OpConstant %f32 127.5\n"
+		"%f32_128  = OpConstant %f32 128.0\n"
+		"%f32_256  = OpConstant %f32 256.0\n"
+
+		"%main     = OpFunction %void None %voidf\n"
+		"%entry    = OpLabel\n"
+		"%idval    = OpLoad %uvec3 %id\n"
+		"%x        = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc    = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval    = OpLoad %f32 %inloc\n"
+
+		"%xabs     = OpExtInst %f32 %ext FAbs %inval\n"
+		"%x8       = OpFMod %f32 %xabs %f32_256\n"
+		"%x7       = OpFMod %f32 %xabs %f32_128\n"
+		"%x6       = OpFMod %f32 %xabs %f32_64\n"
+		"%x5       = OpFMod %f32 %xabs %f32_32\n"
+		"%x4       = OpFMod %f32 %xabs %f32_16\n"
+		"%x3       = OpFMod %f32 %xabs %f32_8\n"
+		"%x2       = OpFMod %f32 %xabs %f32_4\n"
+		"%x1       = OpFMod %f32 %xabs %f32_2\n"
+
+		"%b7       = OpFOrdGreaterThanEqual %bool %x8 %f32_127_5\n"
+		"%b6       = OpFOrdGreaterThanEqual %bool %x7 %f32_63_5\n"
+		"%b5       = OpFOrdGreaterThanEqual %bool %x6 %f32_31_5\n"
+		"%b4       = OpFOrdGreaterThanEqual %bool %x5 %f32_15_5\n"
+		"%b3       = OpFOrdGreaterThanEqual %bool %x4 %f32_7_5\n"
+		"%b2       = OpFOrdGreaterThanEqual %bool %x3 %f32_3_5\n"
+		"%b1       = OpFOrdGreaterThanEqual %bool %x2 %f32_1_5\n"
+		"%b0       = OpFOrdGreaterThanEqual %bool %x1 %f32_0_5\n"
+
+		+ generateOpPhiCase5(codestring) +
+
+		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"            OpStore %outloc %res\n"
+		"            OpReturn\n"
+
+		"            OpFunctionEnd\n";
+	spec5.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+	spec5.outputs.push_back(BufferSp(new Float32Buffer(outputFloats5)));
+	spec5.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "nested", "Stress OpPhi with a lot of nesting", spec5));
 
 	return group.release();
 }
