@@ -450,7 +450,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemapho
 std::ostream&	operator<<	(std::ostream& s, const VkExternalSemaphoreProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutSupport& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParameterFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormatKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupPresentCapabilitiesKHR& value);

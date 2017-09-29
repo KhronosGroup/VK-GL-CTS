@@ -113,6 +113,32 @@ DrawTest::DrawTest (Context &context, TestSpec testSpec)
 		if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_draw_parameters"))
 			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_draw_parameters");
 
+		// Shader draw parameters is part of Vulkan 1.1 but is optional
+		if (context.getUsedApiVersion() >= VK_API_VERSION_1_1)
+		{
+			// Check if shader draw parameters is supported on the physical device.
+			vk::VkPhysicalDeviceShaderDrawParameterFeatures	drawParameters =
+			{
+				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES,	// sType
+				DE_NULL,																// pNext
+				VK_FALSE																// shaderDrawParameters
+			};
+			vk::VkPhysicalDeviceFeatures					features;
+			deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
+
+			vk::VkPhysicalDeviceFeatures2					featuresExt		=
+			{
+				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,					// sType
+				&drawParameters,													// pNext
+				features
+			};
+
+			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &featuresExt);
+
+			if (drawParameters.shaderDrawParameters == VK_FALSE)
+				TCU_THROW(NotSupportedError, "shaderDrawParameters feature not supported by the device");
+		}
+
 		if (isMultiDraw() && !m_context.getDeviceFeatures().multiDrawIndirect)
 			TCU_THROW(NotSupportedError, "Missing feature: multiDrawIndirect");
 

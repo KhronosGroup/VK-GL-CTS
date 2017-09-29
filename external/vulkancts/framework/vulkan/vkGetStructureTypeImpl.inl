@@ -551,9 +551,9 @@ template<> VkStructureType getStructureType<VkDescriptorSetLayoutSupport> (void)
 	return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDrawParametersFeatures> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDrawParameterFeatures> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES;
 }
 
 template<> VkStructureType getStructureType<VkDeviceGroupPresentCapabilitiesKHR> (void)

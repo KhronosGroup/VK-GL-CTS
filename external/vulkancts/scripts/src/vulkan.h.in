@@ -249,7 +249,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO = 1000060014,
     VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT = 1000061000,
     VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN = 1000062000,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES = 100063000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = 100063000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES = 1000070000,
     VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO = 1000070001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO = 1000071000,
@@ -4143,11 +4143,11 @@ typedef struct VkDescriptorSetLayoutSupport {
     VkBool32           supported;
 } VkDescriptorSetLayoutSupport;
 
-typedef struct VkPhysicalDeviceShaderDrawParametersFeatures {
+typedef struct VkPhysicalDeviceShaderDrawParameterFeatures {
     VkStructureType    sType;
     void*              pNext;
     VkBool32           shaderDrawParameters;
-} VkPhysicalDeviceShaderDrawParametersFeatures;
+} VkPhysicalDeviceShaderDrawParameterFeatures;
 
 typedef VkResult (VKAPI_PTR *PFN_vkEnumerateInstanceVersion)(uint32_t* pApiVersion);
 typedef VkResult (VKAPI_PTR *PFN_vkBindBufferMemory2)(VkDevice device, uint32_t bindInfoCount, const VkBindBufferMemoryInfo* pBindInfos);

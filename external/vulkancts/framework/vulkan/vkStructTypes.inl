@@ -1721,7 +1721,7 @@ struct VkDescriptorSetLayoutSupport
 	VkBool32		supported;
 };
 
-struct VkPhysicalDeviceShaderDrawParametersFeatures
+struct VkPhysicalDeviceShaderDrawParameterFeatures
 {
 	VkStructureType	sType;
 	void*			pNext;
