@@ -207,7 +207,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO:								return "VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO";
 		case VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT:											return "VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT";
 		case VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN:										return "VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES";
 		case VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO:									return "VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO";
@@ -4528,9 +4528,9 @@ std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutSupport& v
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderDrawParameterFeatures& value)
 {
-	s << "VkPhysicalDeviceShaderDrawParametersFeatures = {\n";
+	s << "VkPhysicalDeviceShaderDrawParameterFeatures = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderDrawParameters = " << value.shaderDrawParameters << '\n';
