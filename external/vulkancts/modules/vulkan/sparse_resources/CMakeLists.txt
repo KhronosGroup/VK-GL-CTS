@@ -19,6 +19,8 @@ set(DEQP_VK_SPARSE_RESOURCES_SRCS
 	vktSparseResourcesImageSparseResidency.hpp
 	vktSparseResourcesImageAlignedMipSize.cpp
 	vktSparseResourcesImageAlignedMipSize.hpp
+	vktSparseResourcesImageBlockShapes.cpp
+	vktSparseResourcesImageBlockShapes.hpp
 	vktSparseResourcesMipmapSparseResidency.cpp
 	vktSparseResourcesMipmapSparseResidency.hpp
 	vktSparseResourcesQueueBindSparseTests.cpp
