@@ -44,7 +44,6 @@ VULKAN_MODULE		= Module("dEQP-VK", "../external/vulkancts/modules/vulkan", "deqp
 DEFAULT_BUILD_DIR	= os.path.join(tempfile.gettempdir(), "spirv-binaries", "{targetName}-{buildType}")
 DEFAULT_TARGET		= "null"
 DEFAULT_DST_DIR		= os.path.join(DEQP_DIR, "external", "vulkancts", "data", "vulkan", "prebuilt")
-DEFAULT_VULKAN_VERSION	= "1.1"
 
 def getBuildConfig (buildPathPtrn, targetName, buildType):
 	buildPath = buildPathPtrn.format(
@@ -98,7 +97,8 @@ def parseArgs ():
 	parser.add_argument("-u",
 						"--target-vulkan-version",
 						dest="vulkanVersion",
-						default=DEFAULT_VULKAN_VERSION,
+						default="1.1",
+						choices=["1.0", "1.1"],
 						help="Target Vulkan version")
 	return parser.parse_args()
 
