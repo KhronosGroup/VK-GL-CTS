@@ -792,7 +792,6 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		drawState.compareOp					= rr::TESTFUNC_ALWAYS;
 		drawState.depthTestEnable			= true;
 		drawState.depthWriteEnable			= true;
-		drawState.depthBoundsTestEnable		= true;
 		drawState.sampleShadingEnable		= true;
 		vulkanProgram.depthImageView		= *depthImageView;
 		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
@@ -1837,6 +1836,7 @@ void BuiltinFragDepthCase::initPrograms (SourceCollections& programCollection) c
 				<< "void main()\n"
 				<< "{\n"
 				<< "	gl_Position = position;\n"
+				<< "	gl_PointSize = 1.0;\n"
 				<< "}\n";
 			programCollection.glslSources.add("FragDepthVert") << glu::VertexSource(vertexSource.str());
 		}
@@ -1851,6 +1851,7 @@ void BuiltinFragDepthCase::initPrograms (SourceCollections& programCollection) c
 				<< "void main()\n"
 				<< "{\n"
 				<< "	gl_Position = position;\n"
+				<< "	gl_PointSize = 1.0;\n"
 				<< "	texCoord = position.xy/2 + vec2(0.5);\n"
 				<< "}\n";
 			programCollection.glslSources.add("FragDepthVertPass2") << glu::VertexSource(vertexSource.str());
