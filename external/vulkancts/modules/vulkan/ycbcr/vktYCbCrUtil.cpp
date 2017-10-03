@@ -189,7 +189,7 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 	const VkPhysicalDeviceSamplerYcbcrConversionFeatures*		features	= findStructure<VkPhysicalDeviceSamplerYcbcrConversionFeatures>(context.getDeviceFeatures2().pNext);
 	vector<string>												reqExts;
 
-	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversio"))
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
 		reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
 
 	if (disjoint)
