@@ -118,24 +118,24 @@ public:
 		}
 
 		{
-			const std::vector<std::string>&	deviceExtensions	= context.getDeviceExtensions();
-			std::vector<const char*>		charDevExtensions;
+			const std::vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+			std::vector<const char*>					charDevExtensions;
 
-			for (size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
-				charDevExtensions.push_back(deviceExtensions[ndx].c_str());
+			for (size_t ndx = 0; ndx < deviceExtensions.size(); ndx++)
+				charDevExtensions.push_back(deviceExtensions[ndx].extensionName);
 
 			const VkDeviceCreateInfo		deviceInfo		=
 			{
-				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			//VkStructureType					sType;
-				DE_NULL,										//const void*						pNext;
-				0u,												//VkDeviceCreateFlags				flags;
-				static_cast<deUint32>(queueInfos.size()),		//deUint32							queueCreateInfoCount;
-				&queueInfos[0],									//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-				0u,												//deUint32							enabledLayerCount;
-				DE_NULL,										//const char* const*				ppEnabledLayerNames;
-				static_cast<deUint32>(deviceExtensions.size()),	//deUint32							enabledExtensionCount;
-				&charDevExtensions[0],							//const char* const*				ppEnabledExtensionNames;
-				&context.getDeviceFeatures()					//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
+				DE_NULL,														//const void*						pNext;
+				0u,																//VkDeviceCreateFlags				flags;
+				static_cast<deUint32>(queueInfos.size()),						//deUint32							queueCreateInfoCount;
+				&queueInfos[0],													//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+				0u,																//deUint32							enabledLayerCount;
+				DE_NULL,														//const char* const*				ppEnabledLayerNames;
+				static_cast<deUint32>(deviceExtensions.size()),					//deUint32							enabledExtensionCount;
+				charDevExtensions.empty() ? DE_NULL : &charDevExtensions[0],	//const char* const*				ppEnabledExtensionNames;
+				&context.getDeviceFeatures()									//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
 			m_logicalDevice	= createDevice(instance, physicalDevice, &deviceInfo);
