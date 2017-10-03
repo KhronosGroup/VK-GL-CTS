@@ -176,23 +176,25 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 										const vector<string>			extraExtensions,
 										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
-	vector<string>	extensions;
+	vector<string>	extensions = extraExtensions;
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
 
-	for (vector<string>::const_iterator extraExtensionsName = extraExtensions.begin();
-	extraExtensionsName != extraExtensions.end();
-	++extraExtensionsName)
-	{
-		if (!isInstanceExtensionSupported(version, supportedExtensions, RequiredExtension(*extraExtensionsName)))
-			TCU_THROW(NotSupportedError, (*extraExtensionsName + " is not supported").c_str());
+	vector<string>	instanceExtensions;
 
-		if (!isCoreInstanceExtension(version, *extraExtensionsName))
-			extensions.push_back(*extraExtensionsName);
+	for (vector<string>::const_iterator extensionName = extensions.begin();
+		 extensionName != extensions.end();
+		 ++extensionName)
+	{
+		if (!isInstanceExtensionSupported(version, supportedExtensions, RequiredExtension(*extensionName)))
+			TCU_THROW(NotSupportedError, (*extensionName + " is not supported").c_str());
+
+		if (!isCoreInstanceExtension(version, *extensionName))
+			instanceExtensions.push_back(*extensionName);
 	}
 
-	return vk::createDefaultInstance(vkp, version, vector<string>(), extensions, pAllocator);
+	return vk::createDefaultInstance(vkp, version, vector<string>(), instanceExtensions, pAllocator);
 }
 
 struct InstanceHelper
