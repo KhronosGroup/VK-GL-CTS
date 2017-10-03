@@ -61,6 +61,7 @@ add_deqp_module(glcts "${GLCTS_SRCS}" "${GLCTS_LIBS}" glcTestPackageEntry.cpp)
 add_data_dir(glcts ../data gl_cts/data)
 add_data_dir(glcts ../../../data/gles2 gles2)
 add_data_dir(glcts ../../../data/gles3 gles3)
+add_data_dir(glcts ../../../external/graphicsfuzz/data/gles3 gles3)
 add_data_dir(glcts ../../../data/gles31 gles31)
 
 # CTS Test Runner
