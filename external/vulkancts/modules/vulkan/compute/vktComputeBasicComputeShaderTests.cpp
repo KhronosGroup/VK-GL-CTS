@@ -2411,7 +2411,6 @@ void ComputeTestInstance::createDeviceGroup (void)
 
 	if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
-	deviceExtensions.push_back("VK_KHR_swapchain");
 
 	VkDeviceGroupDeviceCreateInfo					deviceGroupInfo			=
 	{
@@ -2446,16 +2445,16 @@ void ComputeTestInstance::createDeviceGroup (void)
 
 	const VkDeviceCreateInfo						deviceInfo				=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			// VkStructureType					sType;
-		&deviceGroupInfo,								// const void*						pNext;
-		(VkDeviceCreateFlags)0,							// VkDeviceCreateFlags				flags;
-		1u	,											// uint32_t							queueCreateInfoCount;
-		&queueInfo,										// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-		0u,												// uint32_t							enabledLayerCount;
-		DE_NULL,										// const char* const*				ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),				// uint32_t							enabledExtensionCount;
-		&deviceExtensions[0],							// const char* const*				ppEnabledExtensionNames;
-		&deviceFeatures,								// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							// VkStructureType					sType;
+		&deviceGroupInfo,												// const void*						pNext;
+		(VkDeviceCreateFlags)0,											// VkDeviceCreateFlags				flags;
+		1u	,															// uint32_t							queueCreateInfoCount;
+		&queueInfo,														// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,																// uint32_t							enabledLayerCount;
+		DE_NULL,														// const char* const*				ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),								// uint32_t							enabledExtensionCount;
+		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	// const char* const*				ppEnabledExtensionNames;
+		&deviceFeatures,												// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 	m_logicalDevice		= createDevice(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
 	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));

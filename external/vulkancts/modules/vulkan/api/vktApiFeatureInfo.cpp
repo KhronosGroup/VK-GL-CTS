@@ -1321,8 +1321,6 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
 
-	deviceExtensions.push_back("VK_KHR_swapchain");
-
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
@@ -1354,16 +1352,16 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	};
 	const VkDeviceCreateInfo								deviceCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,				//sType;
-		&deviceGroupInfo,									//pNext;
-		(VkDeviceCreateFlags)0u,							//flags
-		1,													//queueRecordCount;
-		&deviceQueueCreateInfo,								//pRequestedQueues;
-		0,													//layerCount;
-		DE_NULL,											//ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),					//extensionCount;
-		&deviceExtensions[0],								//ppEnabledExtensionNames;
-		DE_NULL,											//pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+		&deviceGroupInfo,												//pNext;
+		(VkDeviceCreateFlags)0u,										//flags
+		1,																//queueRecordCount;
+		&deviceQueueCreateInfo,											//pRequestedQueues;
+		0,																//layerCount;
+		DE_NULL,														//ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),								//extensionCount;
+		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	//ppEnabledExtensionNames;
+		DE_NULL,														//pEnabledFeatures;
 	};
 
 	Move<VkDevice>		deviceGroup = createDevice(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
