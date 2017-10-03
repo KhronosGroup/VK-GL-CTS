@@ -190,9 +190,16 @@ class Configuration:
 		if not NDKEnv.isHostOsSupported(self.env.ndk.hostOsName):
 			raise Exception("NDK '%s' is not supported on this machine" % self.env.ndk.hostOsName)
 
-		supportedNDKVersion = [15]
+		supportedNDKVersion = [11, 15]
 		if self.env.ndk.version[0] not in supportedNDKVersion:
 			raise Exception("Android NDK version %d is not supported; build requires NDK version %s" % (self.env.ndk.version[0], supportedNDKVersion))
+
+		# https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/723
+		if self.env.ndk.version[0] == 15:
+			if "armeabi-v7a" in self.abis:
+				raise Exception("dEQP is incompatible with NDK r15 for armeabi-v7a")
+			else:
+				print >> sys.stderr, "WARNING: Support for NDK r15 is experimental; NDK r11c is recommended for official submissions"
 
 		if self.env.sdk.buildToolsVersion == (0,0,0):
 			raise Exception("No build tools directory found at %s" % os.path.join(self.env.sdk.path, "build-tools"))
