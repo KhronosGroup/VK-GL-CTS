@@ -1674,7 +1674,7 @@ void BufferRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInter
 		0,
 		0,			// descriptorUpdateEntryCount
 		DE_NULL,	// pDescriptorUpdateEntries
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -2266,7 +2266,7 @@ private:
 	const bool										m_setDynamicOffset;
 	const bool										m_dynamicOffsetNonZero;
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>		m_updateTemplate;
+	vk::Move<vk::VkDescriptorUpdateTemplate>		m_updateTemplate;
 	const vk::DeviceInterface&						m_vki;
 	const vk::VkDevice								m_device;
 	const vk::VkQueue								m_queue;
@@ -2480,7 +2480,7 @@ void BufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet 
 		0,
 		0,			// descriptorUpdateEntryCount
 		DE_NULL,	// pDescriptorUpdateEntries
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -3874,7 +3874,7 @@ private:
 																					 vk::VkImageView								viewA,
 																					 vk::VkImageView								viewB,
 																					 vk::DescriptorSetUpdateBuilder&				updateBuilder,
-																					 vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																					 vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																					 RawUpdateRegistry&								updateRegistry,
 																					 vk::VkPipelineLayout							pipelineLayout = DE_NULL);
 
@@ -3899,7 +3899,7 @@ private:
 																					 vk::VkImageView								viewA,
 																					 vk::VkImageView								viewB,
 																					 vk::VkDescriptorSet							descriptorSet,
-																					 vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																					 vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																					 RawUpdateRegistry&								updateRegistry,
 																					 bool											withPush = false,
 																					 vk::VkPipelineLayout							pipelineLayout = 0);
@@ -3922,7 +3922,7 @@ private:
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>		m_updateTemplate;
+	vk::Move<vk::VkDescriptorUpdateTemplate>		m_updateTemplate;
 	RawUpdateRegistry								m_updateRegistry;
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	const vk::Unique<vk::VkDescriptorSetLayout>		m_descriptorSetLayout;
@@ -4035,7 +4035,7 @@ vk::Move<vk::VkDescriptorSet> ImageFetchRenderInstance::createDescriptorSet (con
 																			 vk::VkImageView								viewA,
 																			 vk::VkImageView								viewB,
 																			 vk::DescriptorSetUpdateBuilder&				updateBuilder,
-																			 vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																			 vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																			 RawUpdateRegistry&								updateRegistry,
 																			 vk::VkPipelineLayout							pipelineLayout)
 {
@@ -4132,7 +4132,7 @@ void ImageFetchRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceI
 															   vk::VkImageView								viewA,
 															   vk::VkImageView								viewB,
 															   vk::VkDescriptorSet							descriptorSet,
-															   vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+															   vk::Move<vk::VkDescriptorUpdateTemplate>&	updateTemplate,
 															   RawUpdateRegistry&							updateRegistry,
 															   bool											withPush,
 															   vk::VkPipelineLayout							pipelineLayout)
@@ -4146,7 +4146,7 @@ void ImageFetchRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceI
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -4316,7 +4316,7 @@ private:
 	const vk::VkImageViewType						m_viewType;
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>		m_updateTemplate;
+	vk::Move<vk::VkDescriptorUpdateTemplate>		m_updateTemplate;
 
 	const vk::DeviceInterface&						m_vki;
 	const vk::VkDevice								m_device;
@@ -4490,7 +4490,7 @@ void ImageFetchComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptor
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -5038,7 +5038,7 @@ private:
 																								 bool											isImmutable,
 																								 const ImageSampleInstanceImages&				images,
 																								 vk::DescriptorSetUpdateBuilder&				updateBuilder,
-																								 vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																								 vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																								 RawUpdateRegistry&								updateRegistry,
 																								 vk::VkPipelineLayout							pipelineLayout = DE_NULL);
 
@@ -5067,7 +5067,7 @@ private:
 																								 const ImageSampleInstanceImages&				images,
 																								 vk::VkDescriptorSet							descriptorSet,
 																								 vk::VkDescriptorSetLayout						layout,
-																								 vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																								 vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																								 RawUpdateRegistry&								updateRegistry,
 																								 bool											withPush = false,
 																								 vk::VkPipelineLayout							pipelineLayout = 0);
@@ -5079,7 +5079,7 @@ private:
 																								 const ImageSampleInstanceImages&				images,
 																								 vk::VkDescriptorSet							descriptorSet,
 																								 vk::VkDescriptorSetLayout						layout,
-																								 vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																								 vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																								 RawUpdateRegistry&								updateRegistry,
 																								 bool											withPush = false,
 																								 vk::VkPipelineLayout							pipelineLayout = 0);
@@ -5102,7 +5102,7 @@ private:
 	const deUint32									m_baseMipLevel;
 	const deUint32									m_baseArraySlice;
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>		m_updateTemplate;
+	vk::Move<vk::VkDescriptorUpdateTemplate>		m_updateTemplate;
 	RawUpdateRegistry								m_updateRegistry;
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	const ImageSampleInstanceImages					m_images;
@@ -5254,7 +5254,7 @@ vk::Move<vk::VkDescriptorSet> ImageSampleRenderInstance::createDescriptorSet (co
 																			  bool											isImmutable,
 																			  const ImageSampleInstanceImages&				images,
 																			  vk::DescriptorSetUpdateBuilder&				updateBuilder,
-																			  vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																			  vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																			  RawUpdateRegistry&							updateRegistry,
 																			  vk::VkPipelineLayout							pipelineLayout)
 {
@@ -5425,7 +5425,7 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSetWithTemplate (const vk:
 																	   const ImageSampleInstanceImages&				images,
 																	   vk::VkDescriptorSet							descriptorSet,
 																	   vk::VkDescriptorSetLayout					layout,
-																	   vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																	   vk::Move<vk::VkDescriptorUpdateTemplate>&	updateTemplate,
 																	   RawUpdateRegistry&							updateRegistry,
 																	   bool											withPush,
 																	   vk::VkPipelineLayout							pipelineLayout)
@@ -5447,7 +5447,7 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSetWithTemplate (const vk:
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -5507,7 +5507,7 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSetWithTemplate (cons
 																			const ImageSampleInstanceImages&				images,
 																			vk::VkDescriptorSet								descriptorSet,
 																			vk::VkDescriptorSetLayout						layout,
-																			vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																			vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																			RawUpdateRegistry&								updateRegistry,
 																			bool											withPush,
 																			vk::VkPipelineLayout							pipelineLayout)
@@ -5531,7 +5531,7 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSetWithTemplate (cons
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -5729,7 +5729,7 @@ private:
 	const deUint32								m_baseMipLevel;
 	const deUint32								m_baseArraySlice;
 	const bool									m_isImmutableSampler;
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>	m_updateTemplate;
+	vk::Move<vk::VkDescriptorUpdateTemplate>	m_updateTemplate;
 
 	const vk::DeviceInterface&					m_vki;
 	const vk::VkDevice							m_device;
@@ -5957,7 +5957,7 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate (vk::VkDe
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -6071,7 +6071,7 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate (vk:
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -6894,7 +6894,7 @@ private:
 																					 vk::VkBufferView								viewA,
 																					 vk::VkBufferView								viewB,
 																					 vk::DescriptorSetUpdateBuilder&				updateBuilder,
-																					 vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																					 vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																					 RawUpdateRegistry&								updateRegistry,
 																					 vk::VkPipelineLayout							pipelineLayout = DE_NULL);
 
@@ -6919,7 +6919,7 @@ private:
 																					 vk::VkBufferView								viewA,
 																					 vk::VkBufferView								viewB,
 																					 vk::VkDescriptorSet							descriptorSet,
-																					 vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																					 vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																					 RawUpdateRegistry&								updateRegistry,
 																					 bool											withPush = false,
 																					 vk::VkPipelineLayout							pipelineLayout = 0);
@@ -6940,7 +6940,7 @@ private:
 	const ShaderInputInterface						m_shaderInterface;
 	const bool										m_nonzeroViewOffset;
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>		m_updateTemplate;
+	vk::Move<vk::VkDescriptorUpdateTemplate>		m_updateTemplate;
 	RawUpdateRegistry								m_updateRegistry;
 	vk::DescriptorSetUpdateBuilder					m_updateBuilder;
 	const vk::Unique<vk::VkDescriptorSetLayout>		m_descriptorSetLayout;
@@ -7049,7 +7049,7 @@ vk::Move<vk::VkDescriptorSet> TexelBufferRenderInstance::createDescriptorSet (co
 																			  vk::VkBufferView								viewA,
 																			  vk::VkBufferView								viewB,
 																			  vk::DescriptorSetUpdateBuilder&				updateBuilder,
-																			  vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																			  vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																			  RawUpdateRegistry&							updateRegistry,
 																			  vk::VkPipelineLayout							pipelineLayout)
 {
@@ -7146,7 +7146,7 @@ void TexelBufferRenderInstance::writeDescriptorSetWithTemplate (const vk::Device
 																vk::VkBufferView								viewA,
 																vk::VkBufferView								viewB,
 																vk::VkDescriptorSet								descriptorSet,
-																vk::Move<vk::VkDescriptorUpdateTemplateKHR>&	updateTemplate,
+																vk::Move<vk::VkDescriptorUpdateTemplate>&		updateTemplate,
 																RawUpdateRegistry&								updateRegistry,
 																bool											withPush,
 																vk::VkPipelineLayout							pipelineLayout)
@@ -7165,7 +7165,7 @@ void TexelBufferRenderInstance::writeDescriptorSetWithTemplate (const vk::Device
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -7326,7 +7326,7 @@ private:
 	const vk::VkQueue								m_queue;
 	const deUint32									m_queueFamilyIndex;
 	vk::Allocator&									m_allocator;
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>		m_updateTemplate;
+	vk::Move<vk::VkDescriptorUpdateTemplate>		m_updateTemplate;
 
 	const ComputeInstanceResultBuffer				m_result;
 	const TexelBufferInstanceBuffers				m_texelBuffers;
@@ -7489,7 +7489,7 @@ void TexelBufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescripto
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,

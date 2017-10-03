@@ -436,6 +436,11 @@ template<> VkStructureType getStructureType<VkDeviceQueueInfo2> (void)
 	return VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2;
 }
 
+template<> VkStructureType getStructureType<VkProtectedSubmitInfo> (void)
+{
+	return VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO;
+}
+
 template<> VkStructureType getStructureType<VkSamplerYcbcrConversionCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO;
@@ -594,11 +599,6 @@ template<> VkStructureType getStructureType<VkDeviceGroupPresentInfoKHR> (void)
 template<> VkStructureType getStructureType<VkDeviceGroupSwapchainCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_GROUP_SWAPCHAIN_CREATE_INFO_KHR;
-}
-
-template<> VkStructureType getStructureType<VkProtectedSubmitInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDisplayModeCreateInfoKHR> (void)

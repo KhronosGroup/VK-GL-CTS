@@ -149,8 +149,6 @@ m_vk.trimCommandPool									= (TrimCommandPoolFunc)									GET_PROC_ADDR("vkTr
 if (!m_vk.trimCommandPool)
 	m_vk.trimCommandPool								= (TrimCommandPoolFunc)									GET_PROC_ADDR("vkTrimCommandPoolKHR");
 m_vk.getDeviceQueue2									= (GetDeviceQueue2Func)									GET_PROC_ADDR("vkGetDeviceQueue2");
-if (!m_vk.getDeviceQueue2)
-	m_vk.getDeviceQueue2								= (GetDeviceQueue2Func)									GET_PROC_ADDR("vkGetDeviceQueue2KHR");
 m_vk.createSamplerYcbcrConversion						= (CreateSamplerYcbcrConversionFunc)					GET_PROC_ADDR("vkCreateSamplerYcbcrConversion");
 if (!m_vk.createSamplerYcbcrConversion)
 	m_vk.createSamplerYcbcrConversion					= (CreateSamplerYcbcrConversionFunc)					GET_PROC_ADDR("vkCreateSamplerYcbcrConversionKHR");

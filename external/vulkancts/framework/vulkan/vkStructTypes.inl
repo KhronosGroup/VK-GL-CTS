@@ -1518,6 +1518,13 @@ struct VkDeviceQueueInfo2
 	deUint32					queueIndex;
 };
 
+struct VkProtectedSubmitInfo
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		protectedSubmit;
+};
+
 struct VkSamplerYcbcrConversionCreateInfo
 {
 	VkStructureType					sType;
@@ -1830,13 +1837,6 @@ struct VkDeviceGroupSwapchainCreateInfoKHR
 	VkStructureType						sType;
 	const void*							pNext;
 	VkDeviceGroupPresentModeFlagsKHR	modes;
-};
-
-struct VkProtectedSubmitInfoKHR
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkBool32		protectedSubmit;
 };
 
 struct VkDisplayPropertiesKHR
@@ -2868,10 +2868,6 @@ struct VkExternalFormatANDROID
 	void*			pNext;
 	deUint32		externalFormat;
 };
-
-
-
-
 
 
 

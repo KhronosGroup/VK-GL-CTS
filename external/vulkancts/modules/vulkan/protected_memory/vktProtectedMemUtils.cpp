@@ -125,7 +125,7 @@ deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
 	// Get a universal protected queue family index
 	vk::VkQueueFlags	requiredFlags = vk::VK_QUEUE_GRAPHICS_BIT
 										| vk::VK_QUEUE_COMPUTE_BIT
-										| vk::VK_QUEUE_PROTECTED_BIT_KHR;
+										| vk::VK_QUEUE_PROTECTED_BIT;
 	for (size_t idx = 0; idx < properties.size(); ++idx)
 	{
 		vk::VkQueueFlags	flags = properties[idx].queueFlags;
@@ -198,7 +198,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
 		{
 			vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 			DE_NULL,
-			(vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT_KHR,
+			(vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,
 			queueFamilyIndex,
 			DE_LENGTH_OF_ARRAY(queuePriorities),
 			queuePriorities
@@ -257,7 +257,7 @@ de::MovePtr<vk::ImageWithMemory>	createImage2D		(ProtectedContext&		context,
 	vk::Allocator&				allocator	= context.getDefaultAllocator();
 
 	deUint32					flags		= (protectionMode == PROTECTION_ENABLED)
-												? vk::VK_IMAGE_CREATE_PROTECTED_BIT_KHR
+												? vk::VK_IMAGE_CREATE_PROTECTED_BIT
 												: (vk::VkImageCreateFlagBits)0u;
 
 	const vk::VkImageCreateInfo	params		=
@@ -298,7 +298,7 @@ de::MovePtr<vk::BufferWithMemory> makeBuffer (ProtectedContext&			context,
 	vk::Allocator&					allocator	= context.getDefaultAllocator();
 
 	deUint32						flags		= (protectionMode == PROTECTION_ENABLED)
-													? vk::VK_BUFFER_CREATE_PROTECTED_BIT_KHR
+													? vk::VK_BUFFER_CREATE_PROTECTED_BIT
 													: (vk::VkBufferCreateFlagBits)0u;
 
 	const vk::VkBufferCreateInfo	params		=
@@ -481,9 +481,9 @@ vk::VkResult queueSubmit (ProtectedContext&		context,
 	};
 
 	// Protected extension submit info
-	const vk::VkProtectedSubmitInfoKHR	protectedInfo	=
+	const vk::VkProtectedSubmitInfo		protectedInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR,	// sType
+		vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO,		// sType
 		DE_NULL,											// pNext
 		VK_TRUE,											// protectedSubmit
 	};
@@ -594,7 +594,7 @@ vk::Move<vk::VkCommandPool> makeCommandPool (const vk::DeviceInterface&	vk,
 											 const deUint32				queueFamilyIdx)
 {
 	const deUint32	poolFlags	= vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
-									| ((protectionMode == PROTECTION_ENABLED) ? vk::VK_COMMAND_POOL_CREATE_PROTECTED_BIT_KHR : 0x0);
+									| ((protectionMode == PROTECTION_ENABLED) ? vk::VK_COMMAND_POOL_CREATE_PROTECTED_BIT : 0x0);
 
 	return vk::createCommandPool(vk, device, poolFlags, queueFamilyIdx);
 }

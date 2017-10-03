@@ -425,6 +425,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVariablePointer
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueInfo2& value);
+std::ostream&	operator<<	(std::ostream& s, const VkProtectedSubmitInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSamplerYcbcrConversionInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindImagePlaneMemoryInfo& value);
@@ -461,7 +462,6 @@ std::ostream&	operator<<	(std::ostream& s, const VkBindImageMemorySwapchainInfoK
 std::ostream&	operator<<	(std::ostream& s, const VkAcquireNextImageInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupPresentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupSwapchainCreateInfoKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkProtectedSubmitInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayModeParametersKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayModePropertiesKHR& value);
