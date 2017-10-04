@@ -1269,18 +1269,25 @@ map<string, string> passthruFragments(void)
 // Vertex shader gets custom code from context, the rest are pass-through.
 void addShaderCodeCustomVertex (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	} else {
 		map<string, string> passthru = passthruFragments();
 
-		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 }
 
@@ -1294,24 +1301,31 @@ void addShaderCodeCustomVertex (vk::SourceCollections& dst, InstanceContext cont
 // pass-through.
 void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
 
-		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << makeTessControlShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << makeTessEvalShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << makeTessControlShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << makeTessEvalShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 }
 
@@ -1325,23 +1339,30 @@ void addShaderCodeCustomTessControl (vk::SourceCollections& dst, InstanceContext
 // pass-through.
 void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << makeTessControlShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << makeTessEvalShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << makeTessControlShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << makeTessEvalShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 }
 
@@ -1354,21 +1375,28 @@ void addShaderCodeCustomTessEval (vk::SourceCollections& dst, InstanceContext co
 // Geometry shader gets custom code from context, the rest are pass-through.
 void addShaderCodeCustomGeometry (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("geom", spirVAsmBuildOptions) << StringTemplate(makeGeometryShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("geom", spirVAsmBuildOptions) << StringTemplate(makeGeometryShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("geom", spirVAsmBuildOptions) << makeGeometryShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("geom", spirVAsmBuildOptions) << makeGeometryShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 }
 
@@ -1381,19 +1409,26 @@ void addShaderCodeCustomGeometry (vk::SourceCollections& dst, InstanceContext co
 // Fragment shader gets custom code from context, the rest are pass-through.
 void addShaderCodeCustomFragment (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(context.resources.spirvVersion);
-		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(context.resources.spirvVersion);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 }
 
