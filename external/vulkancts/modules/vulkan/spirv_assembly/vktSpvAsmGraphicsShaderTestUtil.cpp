@@ -2204,9 +2204,9 @@ Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice
 
 TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
 {
-	if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) < context.getUsedApiVersion())
+	if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getUsedApiVersion())
 	{
-		TCU_THROW(NotSupportedError, string("Vulkan higher than " + getVulkanName(context.getUsedApiVersion()) + " is required for this test to run").c_str());
+		TCU_THROW(NotSupportedError, string("Vulkan higher than or equal to " + getVulkanName(getMinRequiredVulkanVersion(instance.resources.spirvVersion)) + " is required for this test to run").c_str());
 	}
 
 	const InstanceInterface&					vkInstance				= context.getInstanceInterface();

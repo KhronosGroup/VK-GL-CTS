@@ -283,9 +283,9 @@ void SpvAsmComputeShaderCase::initPrograms (SourceCollections& programCollection
 
 TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 {
-	if (getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion) < ctx.getUsedApiVersion())
+	if (getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion) > ctx.getUsedApiVersion())
 	{
-		TCU_THROW(NotSupportedError, std::string("Vulkan higher than " + getVulkanName(ctx.getUsedApiVersion()) + " is required for this test to run").c_str());
+		TCU_THROW(NotSupportedError, std::string("Vulkan higher than or equal to " + getVulkanName(getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion)) + " is required for this test to run").c_str());
 	}
 	return new SpvAsmComputeShaderInstance(ctx, m_shaderSpec, m_features);
 }
