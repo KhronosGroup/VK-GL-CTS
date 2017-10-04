@@ -421,7 +421,9 @@ tcu::TestCaseGroup*					createFillAndUpdateBufferTests	(tcu::TestContext&			test
 	for (deUint32 buffersAllocationNdx = 0u; buffersAllocationNdx < DE_LENGTH_OF_ARRAY(bufferAllocators); ++buffersAllocationNdx)
 	{
 		DE_ASSERT(params.dstSize <= TestParams::TEST_DATA_SIZE);
-		deMemset(params.testData, 0xFFu, (size_t)params.dstSize);
+		deUint8* data = (deUint8*) params.testData;
+		for (deUint32 b = 0u; b < (params.dstSize * sizeof(params.testData[0])); b++)
+			data[b] = (deUint8) (b % 255);
 		params.bufferAllocator = bufferAllocators[buffersAllocationNdx];
 		const deUint32				testCaseGroupNdx					= buffersAllocationNdx;
 		tcu::TestCaseGroup*			currentTestsGroup					= bufferViewAllocationGroupTests[testCaseGroupNdx];
