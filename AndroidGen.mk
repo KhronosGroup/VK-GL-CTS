@@ -199,6 +199,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseBinding.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferSparseResidency.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesBufferTests.cpp \
+	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageAlignedMipSize.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageMemoryAliasing.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseBinding.cpp \
 	external/vulkancts/modules/vulkan/sparse_resources/vktSparseResourcesImageSparseResidency.cpp \
