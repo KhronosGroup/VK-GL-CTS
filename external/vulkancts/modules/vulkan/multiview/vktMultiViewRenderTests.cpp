@@ -465,11 +465,11 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	m_hasMultiDrawIndirect = enabledFeatures.features.multiDrawIndirect;
 
 	{
-		const vector<string>&			deviceExtensions	= m_context.getDeviceExtensions();
-		vector<const char*>				charDevExtensions;
+		const std::vector<VkExtensionProperties>	deviceExtensions	= enumerateDeviceExtensionProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), DE_NULL);
+		vector<const char*>							charDevExtensions;
 
 		for (std::size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
-			charDevExtensions.push_back(deviceExtensions[ndx].c_str());
+			charDevExtensions.push_back(deviceExtensions[ndx].extensionName);
 
 		const VkDeviceCreateInfo		deviceInfo			=
 		{
