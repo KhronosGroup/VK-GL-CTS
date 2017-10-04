@@ -150,7 +150,9 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
 	const Extensions					supportedExtensions	(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
 	std::vector<std::string>			requiredExtensions;
 	std::vector<std::string>			extensions			= extraExtensions;
-	extensions.push_back("VK_KHR_protected_memory");
+
+	if (apiVersion < VK_API_VERSION_1_1)
+		TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
 
 	// Check if the physical device supports the protected memory extension name
 	for (deUint32 ndx = 0; ndx < extensions.size(); ++ndx)
