@@ -327,7 +327,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "  gl_Position = in_position;\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
 
 		fragmentSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "layout(location = 0) in float in_color;\n"
@@ -336,7 +336,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<<"{\n"
 			<< "	out_color = uint(in_color);\n"
 			<< "}\n";
-		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSrc.str());
+		programCollection.glslSources.add("fragment") << glu::FragmentSource(fragmentSrc.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else
 	{
@@ -514,7 +514,7 @@ void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
 	{
 		programCollection.glslSources.add("vert")
-				<< glu::VertexSource(subgroups::getVertShaderForStage(caseDef.shaderStage));
+				<< glu::VertexSource(subgroups::getVertShaderForStage(caseDef.shaderStage)) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
 
 		std::ostringstream frag;
 
@@ -578,7 +578,7 @@ void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
 	{
 		programCollection.glslSources.add("vert")
-				<< glu::VertexSource(subgroups::getVertShaderForStage(caseDef.shaderStage));
+				<< glu::VertexSource(subgroups::getVertShaderForStage(caseDef.shaderStage)) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
 
 		programCollection.glslSources.add("tese")
 				<< glu::TessellationEvaluationSource("#version 450\nlayout(isolines) in;\nvoid main (void) {}\n");
@@ -605,7 +605,7 @@ void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
 	{
 		programCollection.glslSources.add("vert")
-				<< glu::VertexSource(subgroups::getVertShaderForStage(caseDef.shaderStage));
+				<< glu::VertexSource(subgroups::getVertShaderForStage(caseDef.shaderStage)) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
 
 		programCollection.glslSources.add("tesc")
 				<< glu::TessellationControlSource("#version 450\nlayout(vertices=1) out;\nvoid main (void) { for(uint i = 0; i < 4; i++) { gl_TessLevelOuter[i] = 1.0f; } }\n");
