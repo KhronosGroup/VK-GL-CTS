@@ -62,6 +62,17 @@ Tests
           Perform drawing and verify the result. Expect the same result as for
           previous case.
 
+      * Shader Binary Multiple Shader Objects
+
+        - Create GLSL shader for at least two shading stages. Use glslang to compile
+          GLSL shaders to single SPIR-V module. Create shader object for each stage and
+          perform ShaderBinary function passing shader set as an argument, use
+          SHADER_BINARY_FORMAT_SPIR_V_ARB binary format. Specialize shader objects
+          using SpecializeShader function with proper entry point argument for each
+          shader.
+
+          Perform drawing and verify if the result is as expected.
+
       * State Queries
 
         - Verify if GetShaderiv with <pname> set to SPIR_V_BINARY_ARB used on valid
