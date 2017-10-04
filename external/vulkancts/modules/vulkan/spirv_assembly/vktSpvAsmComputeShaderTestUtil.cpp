@@ -27,6 +27,37 @@ namespace vkt
 {
 namespace SpirVAssembly
 {
+namespace
+{
+bool verifyOutputWithEpsilon (const std::vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, tcu::TestLog& log, const float epsilon)
+{
+	DE_ASSERT(outputAllocs.size() != 0);
+	DE_ASSERT(outputAllocs.size() == expectedOutputs.size());
+
+	for (size_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
+	{
+		std::vector<deUint8>	expectedBytes;
+		expectedOutputs[outputNdx]->getBytes(expectedBytes);
+
+		std::vector<float>	expectedFloats	(expectedBytes.size() / sizeof (float));
+		std::vector<float>	actualFloats	(expectedBytes.size() / sizeof (float));
+
+		memcpy(&expectedFloats[0], &expectedBytes.front(), expectedBytes.size());
+		memcpy(&actualFloats[0], outputAllocs[outputNdx]->getHostPtr(), expectedBytes.size());
+		for (size_t floatNdx = 0; floatNdx < actualFloats.size(); ++floatNdx)
+		{
+			// Use custom epsilon because of the float->string conversion
+			if (fabs(expectedFloats[floatNdx] - actualFloats[floatNdx]) > epsilon)
+			{
+				log << tcu::TestLog::Message << "Error: The actual and expected values not matching."
+					<< " Expected: " << expectedFloats[floatNdx] << " Actual: " << actualFloats[floatNdx] << " Epsilon: " << epsilon << tcu::TestLog::EndMessage;
+				return false;
+			}
+		}
+	}
+	return true;
+}
+}
 
 const char* getComputeAsmShaderPreamble (void)
 {
@@ -82,6 +113,12 @@ const char* getComputeAsmInputOutputBufferTraits (void)
 		"OpDecorate %outdata Binding 1\n"
 		"OpDecorate %f32arr ArrayStride 4\n"
 		"OpMemberDecorate %buf 0 Offset 0\n";
+}
+
+bool verifyOutput (const std::vector<BufferSp>&, const std::vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, tcu::TestLog& log)
+{
+	const float	epsilon	= 0.00001f;
+	return verifyOutputWithEpsilon(outputAllocs, expectedOutputs, log, epsilon);
 }
 
 } // SpirVAssembly

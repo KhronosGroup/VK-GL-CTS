@@ -267,6 +267,11 @@ const char* getComputeAsmInputOutputBuffer			(void);
  *//*--------------------------------------------------------------------*/
 const char* getComputeAsmInputOutputBufferTraits	(void);
 
+bool verifyOutput									(const std::vector<BufferSp>&,
+													const std::vector<AllocationSp>& outputAllocs,
+													const std::vector<BufferSp>&		expectedOutputs,
+													tcu::TestLog&						log);
+
 } // SpirVAssembly
 } // vkt
 
