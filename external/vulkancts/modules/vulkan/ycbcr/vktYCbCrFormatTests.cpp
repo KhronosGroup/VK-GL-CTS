@@ -34,6 +34,8 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkDeviceUtil.hpp"
+#include "vkPlatform.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
@@ -69,6 +71,19 @@ using std::string;
 
 typedef de::SharedPtr<Allocation>				AllocationSp;
 typedef de::SharedPtr<vk::Unique<VkBuffer> >	VkBufferSp;
+
+Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, deUint32 version, const char* extensionName)
+{
+	const vector<VkExtensionProperties>	instanceExts	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	vector<string>						enabledExts;
+
+	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
+		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+
+	enabledExts.push_back(extensionName);
+
+	return vk::createDefaultInstance(vkp, version, vector<string>() /* layers */, enabledExts);
+}
 
 Move<VkImage> createTestImage (const DeviceInterface&	vkd,
 							   VkDevice					device,
@@ -366,6 +381,49 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 	const Unique<VkDescriptorSet>			descSet					(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView, *sampler));
 
 	MultiPlaneImageData						imageData				(format, size);
+
+	const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo	=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+		DE_NULL,
+		params.format,
+		VK_IMAGE_TYPE_2D,
+		params.tiling,
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT,
+		params.flags,
+	};
+	VkSamplerYcbcrConversionImageFormatProperties		ycbcrProperties =
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES,
+		DE_NULL,
+		0,
+	};
+	VkImageFormatProperties2				extProperties =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+		&ycbcrProperties,
+		{
+			{
+				0,	// width
+				0,	// height
+				0,	// depth
+			},
+			0u,		// maxMipLevels
+			0u,		// maxArrayLayers
+			0,		// sampleCounts
+			0u,		// maxResourceSize
+		},
+	};
+	VkResult				propsResult;
+	const PlatformInterface&		vkp			= context.getPlatformInterface();
+	const Unique<VkInstance>		instance		(createInstanceWithExtension(vkp, context.getUsedApiVersion(), "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver			vki			(vkp, *instance);
+
+	// Verify that a yuv image consumes at least one descriptor
+	propsResult = vki.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &extProperties);
+
+	TCU_CHECK(propsResult == VK_SUCCESS);
+	TCU_CHECK(ycbcrProperties.combinedImageSamplerDescriptorCount >= 1);
 
 	// Prepare texture data
 	fillGradient(&imageData, Vec4(0.0f), Vec4(1.0f));
