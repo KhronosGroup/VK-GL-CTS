@@ -129,7 +129,7 @@ public:
 																				 deUint32						numInstanceValues,
 																				 deUint32						numVertices,
 																				 deUint32						numInstances,
-																				 const std::vector<deUint32>	indices);
+																				 const std::vector<deUint32>&	indices);
 
 	virtual								~VertexAccessInstance					(void) {}
 	virtual tcu::TestStatus				iterate									(void);
@@ -420,14 +420,14 @@ TestInstance* DrawIndexedAccessTest::createInstance (Context& context) const
 
 // VertexAccessInstance
 
-VertexAccessInstance::VertexAccessInstance (Context&					context,
-											Move<VkDevice>				device,
-											VkFormat					inputFormat,
-											deUint32					numVertexValues,
-											deUint32					numInstanceValues,
-											deUint32					numVertices,
-											deUint32					numInstances,
-											const std::vector<deUint32>	indices)
+VertexAccessInstance::VertexAccessInstance (Context&						context,
+											Move<VkDevice>					device,
+											VkFormat						inputFormat,
+											deUint32						numVertexValues,
+											deUint32						numInstanceValues,
+											deUint32						numVertices,
+											deUint32						numInstances,
+											const std::vector<deUint32>&	indices)
 
 	: vkt::TestInstance			(context)
 	, m_device					(device)
@@ -793,7 +793,7 @@ bool VertexAccessInstance::verifyResult (void)
 			numInBufferValues	= m_numInstanceValues;
 			inBufferPtr			= m_instanceRateBufferAlloc->getHostPtr();
 			inBufferAllocSize	= m_instanceRateBufferAllocSize;
-			inBufferValueIndex	= (getIndex(elementIndex) * numChannels) + (valueNdx % numScalarsPerVertex) - (2 * numChannels);
+			inBufferValueIndex	= (elementIndex * numChannels) + (valueNdx % numScalarsPerVertex) - (2 * numChannels);
 		}
 		else
 		{
