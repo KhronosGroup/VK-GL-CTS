@@ -222,6 +222,7 @@ private:
 		deUint32							maxPerStageDescriptorStorageBuffers		= 0u;
 		deUint32							maxPerStageDescriptorSampledImages		= 0u;
 		deUint32							maxPerStageDescriptorStorageImages		= 0u;
+		deUint32							maxPerStageDescriptorInputAttachments	= 0u;
 
 		for(deUint32 ndx = curNdx; ndx < curNdx + size; ++ndx)
 		{
@@ -245,6 +246,9 @@ private:
 			if ((descriptorSetLayoutBinding[ndx].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
 					(descriptorSetLayoutBinding[ndx].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER))
 				maxPerStageDescriptorStorageImages += descriptorSetLayoutBinding->descriptorCount;
+
+			if (descriptorSetLayoutBinding[ndx].descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+				maxPerStageDescriptorInputAttachments += descriptorSetLayoutBinding->descriptorCount;
 		}
 
 		if (prop1.limits.maxPerStageDescriptorSamplers < maxPerStageDescriptorSamplers)
@@ -255,7 +259,9 @@ private:
 			return false;
 		if (prop1.limits.maxPerStageDescriptorSampledImages < maxPerStageDescriptorSampledImages)
 			return false;
-		if (prop1.limits.maxPerStageDescriptorStorageBuffers < maxPerStageDescriptorStorageBuffers)
+		if (prop1.limits.maxPerStageDescriptorStorageImages < maxPerStageDescriptorStorageImages)
+			return false;
+		if (prop1.limits.maxPerStageDescriptorInputAttachments < maxPerStageDescriptorInputAttachments)
 			return false;
 
 		return true;
