@@ -773,10 +773,19 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	deUint8											buffer					[sizeof(VkDeviceGroupPresentCapabilitiesKHR) + GUARD_SIZE];
 	deUint32										queueFamilyIndex		= 0;
 	VkDeviceGroupPresentCapabilitiesKHR*			presentCapabilities;
+	VkPhysicalDevice								physicalDevice			= chooseDevice(instHelper.vki, *instHelper.instance, cmdLine);
+	const Extensions&								supportedExtensions		= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
 	std::vector<const char*>						deviceExtensions;
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
+	deviceExtensions.push_back("VK_KHR_swapchain");
+
+	for (int ndx = 0; ndx < int(deviceExtensions.size()); ++ndx)
+	{
+		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
+	}
 
 	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps		= enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
 
@@ -873,10 +882,19 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 	VkRect2D*								presentRectangles;
 	VkDeviceGroupPresentModeFlagsKHR*		presentModeFlags;
 	vector<deUint8>							rectanglesBuffer;
+	VkPhysicalDevice						physicalDevice		= chooseDevice(instHelper.vki, *instHelper.instance, cmdLine);
+	const Extensions&						supportedExtensions	= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
 	std::vector<const char*>				deviceExtensions;
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
+	deviceExtensions.push_back("VK_KHR_swapchain");
+
+	for (int ndx = 0; ndx < int(deviceExtensions.size()); ++ndx)
+	{
+		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
+	}
 
 	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
