@@ -277,3 +277,6 @@ dEQP-VK.spirv_assembly.instruction.compute.opfunord.*
 
 # New tests from AOSP
 dEQP-VK.texture.explicit_lod.*
+
+#VK-GL-CTS 749
+dEQP-VK.glsl.builtin.precision.atan2.mediump_compute.*
