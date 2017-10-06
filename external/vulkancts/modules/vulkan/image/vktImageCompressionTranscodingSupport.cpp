@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktImageCompressionTranscodingSupport.hpp"
+#include "vktImageLoadStoreUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -2603,6 +2604,11 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 		if (deInRange32(m_parameters.formatCompressed, VK_FORMAT_ASTC_4x4_UNORM_BLOCK, VK_FORMAT_ASTC_12x12_SRGB_BLOCK) &&
 			!physicalDeviceFeatures.textureCompressionASTC_LDR)
 			TCU_THROW(NotSupportedError, "textureCompressionASTC_LDR not supported");
+
+		if ((m_parameters.uncompressedImageUsage & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) &&
+			isStorageImageExtendedFormat(m_parameters.formatUncompressed) &&
+			!physicalDeviceFeatures.shaderStorageImageExtendedFormats)
+			TCU_THROW(NotSupportedError, "Storage view format requires shaderStorageImageExtended");
 	}
 
 	switch (m_parameters.shader)
