@@ -561,11 +561,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDrawParameterF
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES;
 }
 
-template<> VkStructureType getStructureType<VkDeviceGroupPresentCapabilitiesKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR;
-}
-
 template<> VkStructureType getStructureType<VkSwapchainCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -589,6 +584,11 @@ template<> VkStructureType getStructureType<VkBindImageMemorySwapchainInfoKHR> (
 template<> VkStructureType getStructureType<VkAcquireNextImageInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceGroupPresentCapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDeviceGroupPresentInfoKHR> (void)

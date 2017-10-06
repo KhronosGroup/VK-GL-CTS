@@ -137,13 +137,13 @@ virtual VkResult	createDescriptorUpdateTemplate					(VkDevice device, const VkDe
 virtual void		destroyDescriptorUpdateTemplate					(VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual void		updateDescriptorSetWithTemplate					(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const void* pData) const = 0;
 virtual void		getDescriptorSetLayoutSupport					(VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const = 0;
-virtual VkResult	getDeviceGroupPresentCapabilitiesKHR			(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities) const = 0;
-virtual VkResult	getDeviceGroupSurfacePresentModesKHR			(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const = 0;
 virtual VkResult	createSwapchainKHR								(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const = 0;
 virtual void		destroySwapchainKHR								(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult	getSwapchainImagesKHR							(VkDevice device, VkSwapchainKHR swapchain, deUint32* pSwapchainImageCount, VkImage* pSwapchainImages) const = 0;
 virtual VkResult	acquireNextImageKHR								(VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, deUint32* pImageIndex) const = 0;
 virtual VkResult	queuePresentKHR									(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const = 0;
+virtual VkResult	getDeviceGroupPresentCapabilitiesKHR			(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities) const = 0;
+virtual VkResult	getDeviceGroupSurfacePresentModesKHR			(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const = 0;
 virtual VkResult	acquireNextImage2KHR							(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, deUint32* pImageIndex) const = 0;
 virtual VkResult	createSharedSwapchainsKHR						(VkDevice device, deUint32 swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains) const = 0;
 virtual VkResult	getMemoryWin32HandleKHR							(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;

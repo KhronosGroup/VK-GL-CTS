@@ -682,16 +682,6 @@ void DeviceDriver::getDescriptorSetLayoutSupport (VkDevice device, const VkDescr
 	m_vk.getDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
 }
 
-VkResult DeviceDriver::getDeviceGroupPresentCapabilitiesKHR (VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities) const
-{
-	return m_vk.getDeviceGroupPresentCapabilitiesKHR(device, pDeviceGroupPresentCapabilities);
-}
-
-VkResult DeviceDriver::getDeviceGroupSurfacePresentModesKHR (VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const
-{
-	return m_vk.getDeviceGroupSurfacePresentModesKHR(device, surface, pModes);
-}
-
 VkResult DeviceDriver::createSwapchainKHR (VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const
 {
 	return m_vk.createSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
@@ -715,6 +705,16 @@ VkResult DeviceDriver::acquireNextImageKHR (VkDevice device, VkSwapchainKHR swap
 VkResult DeviceDriver::queuePresentKHR (VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const
 {
 	return m_vk.queuePresentKHR(queue, pPresentInfo);
+}
+
+VkResult DeviceDriver::getDeviceGroupPresentCapabilitiesKHR (VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities) const
+{
+	return m_vk.getDeviceGroupPresentCapabilitiesKHR(device, pDeviceGroupPresentCapabilities);
+}
+
+VkResult DeviceDriver::getDeviceGroupSurfacePresentModesKHR (VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const
+{
+	return m_vk.getDeviceGroupSurfacePresentModesKHR(device, surface, pModes);
 }
 
 VkResult DeviceDriver::acquireNextImage2KHR (VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, deUint32* pImageIndex) const

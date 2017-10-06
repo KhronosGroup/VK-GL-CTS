@@ -1218,30 +1218,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfacePresentModesKHR (VkPhysic
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupPresentCapabilitiesKHR (VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities)
-{
-	DE_UNREF(device);
-	DE_UNREF(pDeviceGroupPresentCapabilities);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupSurfacePresentModesKHR (VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes)
-{
-	DE_UNREF(device);
-	DE_UNREF(surface);
-	DE_UNREF(pModes);
-	return VK_SUCCESS;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDevicePresentRectanglesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(surface);
-	DE_UNREF(pRectCount);
-	DE_UNREF(pRects);
-	return VK_SUCCESS;
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR swapchain, deUint32* pSwapchainImageCount, VkImage* pSwapchainImages)
 {
 	DE_UNREF(device);
@@ -1266,6 +1242,30 @@ VKAPI_ATTR VkResult VKAPI_CALL queuePresentKHR (VkQueue queue, const VkPresentIn
 {
 	DE_UNREF(queue);
 	DE_UNREF(pPresentInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupPresentCapabilitiesKHR (VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities)
+{
+	DE_UNREF(device);
+	DE_UNREF(pDeviceGroupPresentCapabilities);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDeviceGroupSurfacePresentModesKHR (VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes)
+{
+	DE_UNREF(device);
+	DE_UNREF(surface);
+	DE_UNREF(pModes);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDevicePresentRectanglesKHR (VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(surface);
+	DE_UNREF(pRectCount);
+	DE_UNREF(pRects);
 	return VK_SUCCESS;
 }
 
@@ -2005,13 +2005,13 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyDescriptorUpdateTemplate,					destroyDescriptorUpdateTemplate),
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplate,					updateDescriptorSetWithTemplate),
 	VK_NULL_FUNC_ENTRY(vkGetDescriptorSetLayoutSupport,						getDescriptorSetLayoutSupport),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPresentCapabilitiesKHR,				getDeviceGroupPresentCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModesKHR,				getDeviceGroupSurfacePresentModesKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateSwapchainKHR,								createSwapchainKHR),
 	VK_NULL_FUNC_ENTRY(vkDestroySwapchainKHR,								destroySwapchainKHR),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainImagesKHR,								getSwapchainImagesKHR),
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImageKHR,								acquireNextImageKHR),
 	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,									queuePresentKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupPresentCapabilitiesKHR,				getDeviceGroupPresentCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceGroupSurfacePresentModesKHR,				getDeviceGroupSurfacePresentModesKHR),
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImage2KHR,								acquireNextImage2KHR),
 	VK_NULL_FUNC_ENTRY(vkCreateSharedSwapchainsKHR,							createSharedSwapchainsKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatchBaseKHR,								cmdDispatchBase),

@@ -224,8 +224,8 @@ tcu::Format::Bitfield<32>	getExternalSemaphoreHandleTypeFlagsStr				(VkExternalS
 tcu::Format::Bitfield<32>	getExternalSemaphoreFeatureFlagsStr					(VkExternalSemaphoreFeatureFlags value);
 tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr						(VkSurfaceTransformFlagsKHR value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr						(VkCompositeAlphaFlagsKHR value);
-tcu::Format::Bitfield<32>	getDeviceGroupPresentModeFlagsKHRStr				(VkDeviceGroupPresentModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getSwapchainCreateFlagsKHRStr						(VkSwapchainCreateFlagsKHR value);
+tcu::Format::Bitfield<32>	getDeviceGroupPresentModeFlagsKHRStr				(VkDeviceGroupPresentModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr						(VkDisplayPlaneAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr							(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr				(VkExternalMemoryHandleTypeFlagsNV value);
@@ -454,12 +454,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutSupport& v
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParameterFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormatKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupPresentCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSwapchainCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindImageMemorySwapchainInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAcquireNextImageInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupPresentCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupPresentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupSwapchainCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPropertiesKHR& value);

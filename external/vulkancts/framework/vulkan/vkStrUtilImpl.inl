@@ -1973,6 +1973,16 @@ tcu::Format::Bitfield<32> getCompositeAlphaFlagsKHRStr (VkCompositeAlphaFlagsKHR
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR,	"VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,	"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getDeviceGroupPresentModeFlagsKHRStr (VkDeviceGroupPresentModeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -1981,16 +1991,6 @@ tcu::Format::Bitfield<32> getDeviceGroupPresentModeFlagsKHRStr (VkDeviceGroupPre
 		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR,				"VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR,					"VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR,	"VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR"),
-	};
-	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
-}
-
-tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsKHR value)
-{
-	static const tcu::Format::BitDesc s_desc[] =
-	{
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR,	"VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR"),
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,	"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4574,17 +4574,6 @@ std::ostream& operator<< (std::ostream& s, const VkSurfaceFormatKHR& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDeviceGroupPresentCapabilitiesKHR& value)
-{
-	s << "VkDeviceGroupPresentCapabilitiesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tpresentMask = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.presentMask), DE_ARRAY_END(value.presentMask)) << '\n';
-	s << "\tmodes = " << getDeviceGroupPresentModeFlagsKHRStr(value.modes) << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkSwapchainCreateInfoKHR& value)
 {
 	s << "VkSwapchainCreateInfoKHR = {\n";
@@ -4656,6 +4645,17 @@ std::ostream& operator<< (std::ostream& s, const VkAcquireNextImageInfoKHR& valu
 	s << "\tsemaphore = " << value.semaphore << '\n';
 	s << "\tfence = " << value.fence << '\n';
 	s << "\tdeviceMask = " << value.deviceMask << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceGroupPresentCapabilitiesKHR& value)
+{
+	s << "VkDeviceGroupPresentCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpresentMask = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.presentMask), DE_ARRAY_END(value.presentMask)) << '\n';
+	s << "\tmodes = " << getDeviceGroupPresentModeFlagsKHRStr(value.modes) << '\n';
 	s << '}';
 	return s;
 }

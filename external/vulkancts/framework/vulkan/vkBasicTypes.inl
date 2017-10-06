@@ -1693,6 +1693,13 @@ enum VkCompositeAlphaFlagBitsKHR
 };
 typedef deUint32 VkCompositeAlphaFlagsKHR;
 
+enum VkSwapchainCreateFlagBitsKHR
+{
+	VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR	= 0x00000001,
+	VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR	= 0x00000002,
+};
+typedef deUint32 VkSwapchainCreateFlagsKHR;
+
 enum VkDeviceGroupPresentModeFlagBitsKHR
 {
 	VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR				= 0x00000001,
@@ -1701,13 +1708,6 @@ enum VkDeviceGroupPresentModeFlagBitsKHR
 	VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR	= 0x00000008,
 };
 typedef deUint32 VkDeviceGroupPresentModeFlagsKHR;
-
-enum VkSwapchainCreateFlagBitsKHR
-{
-	VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR	= 0x00000001,
-	VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR	= 0x00000002,
-};
-typedef deUint32 VkSwapchainCreateFlagsKHR;
 
 enum VkDisplayPlaneAlphaFlagBitsKHR
 {

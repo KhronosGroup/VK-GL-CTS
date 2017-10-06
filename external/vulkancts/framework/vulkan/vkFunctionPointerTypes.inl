@@ -171,14 +171,14 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceSupportKHRFu
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceCapabilitiesKHRFunc)				(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR* pSurfaceCapabilities);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfaceFormatsKHRFunc)					(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pSurfaceFormatCount, VkSurfaceFormatKHR* pSurfaceFormats);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceSurfacePresentModesKHRFunc)				(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pPresentModeCount, VkPresentModeKHR* pPresentModes);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupPresentCapabilitiesKHRFunc)					(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupSurfacePresentModesKHRFunc)					(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDevicePresentRectanglesKHRFunc)					(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSwapchainKHRFunc)									(VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroySwapchainKHRFunc)									(VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainImagesKHRFunc)									(VkDevice device, VkSwapchainKHR swapchain, deUint32* pSwapchainImageCount, VkImage* pSwapchainImages);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireNextImageKHRFunc)									(VkDevice device, VkSwapchainKHR swapchain, deUint64 timeout, VkSemaphore semaphore, VkFence fence, deUint32* pImageIndex);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* QueuePresentKHRFunc)										(VkQueue queue, const VkPresentInfoKHR* pPresentInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupPresentCapabilitiesKHRFunc)					(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceGroupSurfacePresentModesKHRFunc)					(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDevicePresentRectanglesKHRFunc)					(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, deUint32* pRectCount, VkRect2D* pRects);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireNextImage2KHRFunc)									(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, deUint32* pImageIndex);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceDisplayPropertiesKHRFunc)					(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayPropertiesKHR* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceDisplayPlanePropertiesKHRFunc)			(VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties);

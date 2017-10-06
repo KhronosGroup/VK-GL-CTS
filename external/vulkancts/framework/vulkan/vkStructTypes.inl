@@ -1755,14 +1755,6 @@ struct VkSurfaceFormatKHR
 	VkColorSpaceKHR	colorSpace;
 };
 
-struct VkDeviceGroupPresentCapabilitiesKHR
-{
-	VkStructureType						sType;
-	const void*							pNext;
-	deUint32							presentMask[VK_MAX_DEVICE_GROUP_SIZE];
-	VkDeviceGroupPresentModeFlagsKHR	modes;
-};
-
 struct VkSwapchainCreateInfoKHR
 {
 	VkStructureType					sType;
@@ -1821,6 +1813,14 @@ struct VkAcquireNextImageInfoKHR
 	VkSemaphore		semaphore;
 	VkFence			fence;
 	deUint32		deviceMask;
+};
+
+struct VkDeviceGroupPresentCapabilitiesKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	deUint32							presentMask[VK_MAX_DEVICE_GROUP_SIZE];
+	VkDeviceGroupPresentModeFlagsKHR	modes;
 };
 
 struct VkDeviceGroupPresentInfoKHR
