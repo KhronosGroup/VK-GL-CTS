@@ -196,8 +196,9 @@ void readStagingBuffers (MultiPlaneImageData*			imageData,
 
 void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags createFlags, VkImageTiling tiling)
 {
-	const bool		disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
-	vector<string>	reqExts;
+	const bool													disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
+	const VkPhysicalDeviceSamplerYcbcrConversionFeatures		features	= context.getSamplerYCbCrConversionFeatures();
+	vector<string>												reqExts;
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
 		reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
@@ -216,28 +217,9 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 			TCU_THROW(NotSupportedError, (*extIter + " is not supported").c_str());
 	}
 
+	if (features.samplerYcbcrConversion == VK_FALSE)
 	{
-		vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures		ycbcrFeature	=
-		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES,
-			DE_NULL,
-			VK_FALSE
-		};
-
-		vk::VkPhysicalDeviceFeatures					features;
-		deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
-
-		vk::VkPhysicalDeviceFeatures2				featuresExt		=
-		{
-			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-			&ycbcrFeature,
-			features
-		};
-
-		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &featuresExt);
-
-		if (ycbcrFeature.samplerYcbcrConversion == VK_FALSE)
-			TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
+		TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
 	}
 
 	{
