@@ -30,7 +30,6 @@
 #include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkDebugReportUtil.hpp"
-#include "vkApiVersion.hpp"
 
 #include "tcuCommandLine.hpp"
 
@@ -425,6 +424,12 @@ deUint32								Context::getUniversalQueueFamilyIndex	(void) const { return m_de
 vk::VkQueue								Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
 vk::Allocator&							Context::getDefaultAllocator			(void) const { return *m_allocator;								}
 deUint32								Context::getUsedApiVersion				(void) const { return m_device->getUsedApiVersion();			}
+bool									Context::contextSupports				(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const
+																							{ return m_device->getUsedApiVersion() >= VK_MAKE_VERSION(majorNum, minorNum, patchNum); }
+bool									Context::contextSupports				(const ApiVersion version) const
+																							{ return m_device->getUsedApiVersion() >= pack(version); }
+bool									Context::contextSupports				(const deUint32 requiredApiVersionBits) const
+																							{ return m_device->getUsedApiVersion() >= requiredApiVersionBits; }
 
 // TestCase
 

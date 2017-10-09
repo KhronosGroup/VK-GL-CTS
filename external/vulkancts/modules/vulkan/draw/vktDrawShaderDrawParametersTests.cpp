@@ -114,7 +114,7 @@ DrawTest::DrawTest (Context &context, TestSpec testSpec)
 			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_draw_parameters");
 
 		// Shader draw parameters is part of Vulkan 1.1 but is optional
-		if (context.getUsedApiVersion() >= VK_API_VERSION_1_1)
+		if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) )
 		{
 			// Check if shader draw parameters is supported on the physical device.
 			vk::VkPhysicalDeviceShaderDrawParameterFeatures	drawParameters =
