@@ -156,7 +156,6 @@ void initApisMap (ApisMap& apis)
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkCmdNextSubpass",									FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkCmdEndRenderPass",								FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkCmdExecuteCommands",								FUNCTIONORIGIN_DEVICE));
-	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkEnumerateInstanceVersion",						FUNCTIONORIGIN_PLATFORM));
 
 	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkCreateInstance",									FUNCTIONORIGIN_PLATFORM));
 	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkDestroyInstance",								FUNCTIONORIGIN_INSTANCE));

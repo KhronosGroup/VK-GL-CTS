@@ -189,7 +189,8 @@ static ComputeShaderSpec getComputeShaderSpec ()
 
 	spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
-	spec.numWorkGroups = tcu::IVec3(numElements, 1, 1);
+	spec.numWorkGroups	= tcu::IVec3(numElements, 1, 1);
+	spec.verifyIO		= &verifyOutput;
 
 	return spec;
 }

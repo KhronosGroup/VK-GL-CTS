@@ -436,6 +436,11 @@ template<> VkStructureType getStructureType<VkDeviceQueueInfo2> (void)
 	return VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2;
 }
 
+template<> VkStructureType getStructureType<VkProtectedSubmitInfo> (void)
+{
+	return VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO;
+}
+
 template<> VkStructureType getStructureType<VkSamplerYcbcrConversionCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO;
@@ -556,11 +561,6 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDrawParameterF
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES;
 }
 
-template<> VkStructureType getStructureType<VkDeviceGroupPresentCapabilitiesKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR;
-}
-
 template<> VkStructureType getStructureType<VkSwapchainCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -586,6 +586,11 @@ template<> VkStructureType getStructureType<VkAcquireNextImageInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkDeviceGroupPresentCapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDeviceGroupPresentInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHR;
@@ -594,11 +599,6 @@ template<> VkStructureType getStructureType<VkDeviceGroupPresentInfoKHR> (void)
 template<> VkStructureType getStructureType<VkDeviceGroupSwapchainCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_GROUP_SWAPCHAIN_CREATE_INFO_KHR;
-}
-
-template<> VkStructureType getStructureType<VkProtectedSubmitInfoKHR> (void)
-{
-	return VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDisplayModeCreateInfoKHR> (void)
@@ -769,31 +769,6 @@ template<> VkStructureType getStructureType<VkSurfaceCapabilities2KHR> (void)
 template<> VkStructureType getStructureType<VkSurfaceFormat2KHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR;
-}
-
-template<> VkStructureType getStructureType<VkDisplayProperties2KHR> (void)
-{
-	return VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR;
-}
-
-template<> VkStructureType getStructureType<VkDisplayPlaneProperties2KHR> (void)
-{
-	return VK_STRUCTURE_TYPE_DISPLAY_PLANE_PROPERTIES_2_KHR;
-}
-
-template<> VkStructureType getStructureType<VkDisplayModeProperties2KHR> (void)
-{
-	return VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR;
-}
-
-template<> VkStructureType getStructureType<VkDisplayPlaneInfo2KHR> (void)
-{
-	return VK_STRUCTURE_TYPE_DISPLAY_PLANE_INFO_2_KHR;
-}
-
-template<> VkStructureType getStructureType<VkDisplayPlaneCapabilities2KHR> (void)
-{
-	return VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImageFormatListCreateInfoKHR> (void)

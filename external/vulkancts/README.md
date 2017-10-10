@@ -120,6 +120,12 @@ SPIR-V binaries can be pre-built with following command:
 
 	python external/vulkancts/scripts/build_spirv_binaries.py
 
+By default the script builds SPIR-V binaries for Vulkan 1.1.
+Binaries for other Vulkan versions can be requested by supplying
+an extra command line option:
+
+	python external/vulkancts/scripts/build_spirv_binaries.py --target-vulkan-version <Vulkan version>
+
 Binaries will be written to `external/vulkancts/data/vulkan/prebuilt/`.
 
 Test modules (or in case of Android, the APK) must be re-built after building

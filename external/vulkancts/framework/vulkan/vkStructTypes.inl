@@ -1518,6 +1518,13 @@ struct VkDeviceQueueInfo2
 	deUint32					queueIndex;
 };
 
+struct VkProtectedSubmitInfo
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		protectedSubmit;
+};
+
 struct VkSamplerYcbcrConversionCreateInfo
 {
 	VkStructureType					sType;
@@ -1748,14 +1755,6 @@ struct VkSurfaceFormatKHR
 	VkColorSpaceKHR	colorSpace;
 };
 
-struct VkDeviceGroupPresentCapabilitiesKHR
-{
-	VkStructureType						sType;
-	const void*							pNext;
-	deUint32							presentMask[VK_MAX_DEVICE_GROUP_SIZE];
-	VkDeviceGroupPresentModeFlagsKHR	modes;
-};
-
 struct VkSwapchainCreateInfoKHR
 {
 	VkStructureType					sType;
@@ -1816,6 +1815,14 @@ struct VkAcquireNextImageInfoKHR
 	deUint32		deviceMask;
 };
 
+struct VkDeviceGroupPresentCapabilitiesKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	deUint32							presentMask[VK_MAX_DEVICE_GROUP_SIZE];
+	VkDeviceGroupPresentModeFlagsKHR	modes;
+};
+
 struct VkDeviceGroupPresentInfoKHR
 {
 	VkStructureType						sType;
@@ -1830,13 +1837,6 @@ struct VkDeviceGroupSwapchainCreateInfoKHR
 	VkStructureType						sType;
 	const void*							pNext;
 	VkDeviceGroupPresentModeFlagsKHR	modes;
-};
-
-struct VkProtectedSubmitInfoKHR
-{
-	VkStructureType	sType;
-	const void*		pNext;
-	VkBool32		protectedSubmit;
 };
 
 struct VkDisplayPropertiesKHR
@@ -2190,42 +2190,6 @@ struct VkSurfaceFormat2KHR
 	VkStructureType		sType;
 	void*				pNext;
 	VkSurfaceFormatKHR	surfaceFormat;
-};
-
-struct VkDisplayProperties2KHR
-{
-	VkStructureType			sType;
-	void*					pNext;
-	VkDisplayPropertiesKHR	displayProperties;
-};
-
-struct VkDisplayPlaneProperties2KHR
-{
-	VkStructureType				sType;
-	void*						pNext;
-	VkDisplayPlanePropertiesKHR	displayPlaneProperties;
-};
-
-struct VkDisplayModeProperties2KHR
-{
-	VkStructureType				sType;
-	void*						pNext;
-	VkDisplayModePropertiesKHR	displayModeProperties;
-};
-
-struct VkDisplayPlaneInfo2KHR
-{
-	VkStructureType		sType;
-	const void*			pNext;
-	VkDisplayModeKHR	mode;
-	deUint32			planeIndex;
-};
-
-struct VkDisplayPlaneCapabilities2KHR
-{
-	VkStructureType					sType;
-	void*							pNext;
-	VkDisplayPlaneCapabilitiesKHR	capabilities;
 };
 
 struct VkImageFormatListCreateInfoKHR
@@ -2868,10 +2832,6 @@ struct VkExternalFormatANDROID
 	void*			pNext;
 	deUint32		externalFormat;
 };
-
-
-
-
 
 
 

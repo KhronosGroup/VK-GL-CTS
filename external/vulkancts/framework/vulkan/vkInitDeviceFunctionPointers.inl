@@ -149,8 +149,6 @@ m_vk.trimCommandPool									= (TrimCommandPoolFunc)									GET_PROC_ADDR("vkTr
 if (!m_vk.trimCommandPool)
 	m_vk.trimCommandPool								= (TrimCommandPoolFunc)									GET_PROC_ADDR("vkTrimCommandPoolKHR");
 m_vk.getDeviceQueue2									= (GetDeviceQueue2Func)									GET_PROC_ADDR("vkGetDeviceQueue2");
-if (!m_vk.getDeviceQueue2)
-	m_vk.getDeviceQueue2								= (GetDeviceQueue2Func)									GET_PROC_ADDR("vkGetDeviceQueue2KHR");
 m_vk.createSamplerYcbcrConversion						= (CreateSamplerYcbcrConversionFunc)					GET_PROC_ADDR("vkCreateSamplerYcbcrConversion");
 if (!m_vk.createSamplerYcbcrConversion)
 	m_vk.createSamplerYcbcrConversion					= (CreateSamplerYcbcrConversionFunc)					GET_PROC_ADDR("vkCreateSamplerYcbcrConversionKHR");
@@ -169,13 +167,13 @@ if (!m_vk.updateDescriptorSetWithTemplate)
 m_vk.getDescriptorSetLayoutSupport						= (GetDescriptorSetLayoutSupportFunc)					GET_PROC_ADDR("vkGetDescriptorSetLayoutSupport");
 if (!m_vk.getDescriptorSetLayoutSupport)
 	m_vk.getDescriptorSetLayoutSupport					= (GetDescriptorSetLayoutSupportFunc)					GET_PROC_ADDR("vkGetDescriptorSetLayoutSupportKHR");
-m_vk.getDeviceGroupPresentCapabilitiesKHR				= (GetDeviceGroupPresentCapabilitiesKHRFunc)			GET_PROC_ADDR("vkGetDeviceGroupPresentCapabilitiesKHR");
-m_vk.getDeviceGroupSurfacePresentModesKHR				= (GetDeviceGroupSurfacePresentModesKHRFunc)			GET_PROC_ADDR("vkGetDeviceGroupSurfacePresentModesKHR");
 m_vk.createSwapchainKHR									= (CreateSwapchainKHRFunc)								GET_PROC_ADDR("vkCreateSwapchainKHR");
 m_vk.destroySwapchainKHR								= (DestroySwapchainKHRFunc)								GET_PROC_ADDR("vkDestroySwapchainKHR");
 m_vk.getSwapchainImagesKHR								= (GetSwapchainImagesKHRFunc)							GET_PROC_ADDR("vkGetSwapchainImagesKHR");
 m_vk.acquireNextImageKHR								= (AcquireNextImageKHRFunc)								GET_PROC_ADDR("vkAcquireNextImageKHR");
 m_vk.queuePresentKHR									= (QueuePresentKHRFunc)									GET_PROC_ADDR("vkQueuePresentKHR");
+m_vk.getDeviceGroupPresentCapabilitiesKHR				= (GetDeviceGroupPresentCapabilitiesKHRFunc)			GET_PROC_ADDR("vkGetDeviceGroupPresentCapabilitiesKHR");
+m_vk.getDeviceGroupSurfacePresentModesKHR				= (GetDeviceGroupSurfacePresentModesKHRFunc)			GET_PROC_ADDR("vkGetDeviceGroupSurfacePresentModesKHR");
 m_vk.acquireNextImage2KHR								= (AcquireNextImage2KHRFunc)							GET_PROC_ADDR("vkAcquireNextImage2KHR");
 m_vk.createSharedSwapchainsKHR							= (CreateSharedSwapchainsKHRFunc)						GET_PROC_ADDR("vkCreateSharedSwapchainsKHR");
 m_vk.getMemoryWin32HandleKHR							= (GetMemoryWin32HandleKHRFunc)							GET_PROC_ADDR("vkGetMemoryWin32HandleKHR");

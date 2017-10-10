@@ -69,20 +69,19 @@ public:
 		const deUint32						maxMemoryAllocationSize					= 1073741824u;
 		const deUint32						maxDescriptorsInSet						= 1024u;
 
+		// set values to be a bit smaller than required minimum values
 		MainDevProp3 mainProp3 =
 		{
 			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,				//VkStructureType						sType;
 			DE_NULL,																//void*									pNext;
-			maxDescriptorsInSet,													//deUint32								maxPerSetDescriptors;
-			maxMemoryAllocationSize													//VkDeviceSize							maxMemoryAllocationSize;
+			maxDescriptorsInSet - 1u,												//deUint32								maxPerSetDescriptors;
+			maxMemoryAllocationSize - 1u											//VkDeviceSize							maxMemoryAllocationSize;
 		};
 
-		DevProp2 prop2 =
-		{
-			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,							//VkStructureType						sType;
-			&mainProp3,																//void*									pNext;
-			VkPhysicalDeviceProperties()											//VkPhysicalDeviceProperties			properties;
-		};
+		DevProp2 prop2;
+		deMemset(&prop2, 0, sizeof(prop2)); // zero the structure
+		prop2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		prop2.pNext = &mainProp3;
 
 		m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &prop2);
 
@@ -90,12 +89,6 @@ public:
 			return tcu::TestStatus::fail("Fail");
 
 		if (mainProp3.maxPerSetDescriptors < maxDescriptorsInSet)
-			return tcu::TestStatus::fail("Fail");
-
-		if (mainProp3.maxMemoryAllocationSize == maxMemoryAllocationSize)
-			return tcu::TestStatus::fail("Fail");
-
-		if (mainProp3.maxPerSetDescriptors == maxDescriptorsInSet)
 			return tcu::TestStatus::fail("Fail");
 
 		log << tcu::TestLog::Message << "maxMemoryAllocationSize: "	<< mainProp3.maxMemoryAllocationSize	<< tcu::TestLog::EndMessage;
@@ -229,6 +222,7 @@ private:
 		deUint32							maxPerStageDescriptorStorageBuffers		= 0u;
 		deUint32							maxPerStageDescriptorSampledImages		= 0u;
 		deUint32							maxPerStageDescriptorStorageImages		= 0u;
+		deUint32							maxPerStageDescriptorInputAttachments	= 0u;
 
 		for(deUint32 ndx = curNdx; ndx < curNdx + size; ++ndx)
 		{
@@ -252,6 +246,9 @@ private:
 			if ((descriptorSetLayoutBinding[ndx].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ||
 					(descriptorSetLayoutBinding[ndx].descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER))
 				maxPerStageDescriptorStorageImages += descriptorSetLayoutBinding->descriptorCount;
+
+			if (descriptorSetLayoutBinding[ndx].descriptorType == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+				maxPerStageDescriptorInputAttachments += descriptorSetLayoutBinding->descriptorCount;
 		}
 
 		if (prop1.limits.maxPerStageDescriptorSamplers < maxPerStageDescriptorSamplers)
@@ -262,7 +259,9 @@ private:
 			return false;
 		if (prop1.limits.maxPerStageDescriptorSampledImages < maxPerStageDescriptorSampledImages)
 			return false;
-		if (prop1.limits.maxPerStageDescriptorStorageBuffers < maxPerStageDescriptorStorageBuffers)
+		if (prop1.limits.maxPerStageDescriptorStorageImages < maxPerStageDescriptorStorageImages)
+			return false;
+		if (prop1.limits.maxPerStageDescriptorInputAttachments < maxPerStageDescriptorInputAttachments)
 			return false;
 
 		return true;

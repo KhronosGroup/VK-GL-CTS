@@ -24,7 +24,7 @@
 
 #include "vktProtectedMemUtils.hpp"
 
-#include <deString.h>
+#include "deString.h"
 
 #include "vkDeviceUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -125,7 +125,10 @@ deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
 	// Get a universal protected queue family index
 	vk::VkQueueFlags	requiredFlags = vk::VK_QUEUE_GRAPHICS_BIT
 										| vk::VK_QUEUE_COMPUTE_BIT
-										| vk::VK_QUEUE_PROTECTED_BIT_KHR;
+#ifndef NOT_PROTECTED
+										| vk::VK_QUEUE_PROTECTED_BIT
+#endif
+										;
 	for (size_t idx = 0; idx < properties.size(); ++idx)
 	{
 		vk::VkQueueFlags	flags = properties[idx].queueFlags;
@@ -150,7 +153,11 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
 	const Extensions					supportedExtensions	(vk::enumerateDeviceExtensionProperties(vkd, physicalDevice, DE_NULL));
 	std::vector<std::string>			requiredExtensions;
 	std::vector<std::string>			extensions			= extraExtensions;
-	extensions.push_back("VK_KHR_protected_memory");
+
+	if (apiVersion < VK_API_VERSION_1_1)
+		TCU_THROW(NotSupportedError, "Vulkan 1.1 is not supported");
+
+	bool								useYCbCr			= de::contains(extensions.begin(), extensions.end(), std::string("VK_KHR_sampler_ycbcr_conversion"));
 
 	// Check if the physical device supports the protected memory extension name
 	for (deUint32 ndx = 0; ndx < extensions.size(); ++ndx)
@@ -168,11 +175,17 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
 		enabledExts[idx] = requiredExtensions[idx].c_str();
 	}
 
+	vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures		ycbcrFeature	=
+	{
+		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES,
+		DE_NULL,
+		VK_FALSE
+	};
 	// Check if the protected memory can be enabled on the physical device.
 	vk::VkPhysicalDeviceProtectedMemoryFeatures	protectedFeature =
 	{
 		vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES,	// sType
-		DE_NULL,															// pNext
+		&ycbcrFeature,														// pNext
 		VK_FALSE															// protectedMemory
 	};
 	vk::VkPhysicalDeviceFeatures					features;
@@ -187,8 +200,13 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
 
 	vkd.getPhysicalDeviceFeatures2(physicalDevice, &featuresExt);
 
+#ifndef NOT_PROTECTED
 	if (protectedFeature.protectedMemory == VK_FALSE)
 		TCU_THROW(NotSupportedError, "Protected Memory feature not supported by the device");
+#endif
+
+	if (useYCbCr && !ycbcrFeature.samplerYcbcrConversion)
+		TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
 
 	const float							queuePriorities[]	= { 1.0f };
 	const vk::VkDeviceQueueCreateInfo	queueInfos[]		=
@@ -196,7 +214,11 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
 		{
 			vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
 			DE_NULL,
-			(vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT_KHR,
+#ifndef NOT_PROTECTED
+			(vk::VkDeviceQueueCreateFlags)vk::VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT,
+#else
+			(vk::VkDeviceQueueCreateFlags)0u,
+#endif
 			queueFamilyIndex,
 			DE_LENGTH_OF_ARRAY(queuePriorities),
 			queuePriorities
@@ -234,7 +256,13 @@ vk::VkQueue getProtectedQueue	(const vk::DeviceInterface&	vk,
 		queueIdx,										// queueIndex
 	};
 
-	vk::VkQueue						queue		= vk::getDeviceQueue2(vk, device, &queueInfo);
+	(void)queueInfo;
+	vk::VkQueue						queue		=
+#ifndef NOT_PROTECTED
+													vk::getDeviceQueue2(vk, device, &queueInfo);
+#else
+													vk::getDeviceQueue(vk, device, queueFamilyIndex, 0);
+#endif
 
 	if (queue == DE_NULL)
 		TCU_THROW(TestError, "Unable to get a protected queue");
@@ -254,9 +282,13 @@ de::MovePtr<vk::ImageWithMemory>	createImage2D		(ProtectedContext&		context,
 	const vk::VkDevice&			device		= context.getDevice();
 	vk::Allocator&				allocator	= context.getDefaultAllocator();
 
+#ifndef NOT_PROTECTED
 	deUint32					flags		= (protectionMode == PROTECTION_ENABLED)
-												? vk::VK_IMAGE_CREATE_PROTECTED_BIT_KHR
+												? vk::VK_IMAGE_CREATE_PROTECTED_BIT
 												: (vk::VkImageCreateFlagBits)0u;
+#else
+	deUint32					flags		= 0u;
+#endif
 
 	const vk::VkImageCreateInfo	params		=
 	{
@@ -277,9 +309,13 @@ de::MovePtr<vk::ImageWithMemory>	createImage2D		(ProtectedContext&		context,
 		vk::VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			initialLayout
 	};
 
+#ifndef NOT_PROTECTED
 	vk::MemoryRequirement		memReq		= (protectionMode == PROTECTION_ENABLED)
 												? vk::MemoryRequirement::Protected
 												: vk::MemoryRequirement::Any;
+#else
+	vk::MemoryRequirement		memReq		= vk::MemoryRequirement::Any;
+#endif
 
 	return de::MovePtr<vk::ImageWithMemory>(new vk::ImageWithMemory(vk, device, allocator, params, memReq));
 }
@@ -295,9 +331,18 @@ de::MovePtr<vk::BufferWithMemory> makeBuffer (ProtectedContext&			context,
 	const vk::VkDevice&				device		= context.getDevice();
 	vk::Allocator&					allocator	= context.getDefaultAllocator();
 
+#ifndef NOT_PROTECTED
 	deUint32						flags		= (protectionMode == PROTECTION_ENABLED)
-													? vk::VK_BUFFER_CREATE_PROTECTED_BIT_KHR
+													? vk::VK_BUFFER_CREATE_PROTECTED_BIT
 													: (vk::VkBufferCreateFlagBits)0u;
+	vk::MemoryRequirement			requirement	= memReq;
+#else
+	deUint32						flags		= 0u;
+	vk::MemoryRequirement			requirement	= memReq & (
+													vk::MemoryRequirement::HostVisible
+													| vk::MemoryRequirement::Coherent
+													| vk::MemoryRequirement::LazilyAllocated);
+#endif
 
 	const vk::VkBufferCreateInfo	params		=
 	{
@@ -311,7 +356,7 @@ de::MovePtr<vk::BufferWithMemory> makeBuffer (ProtectedContext&			context,
 		&queueFamilyIdx,							// pQueueFamilyIndices
 	};
 
-	return de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(vk, device, allocator, params, memReq));
+	return de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(vk, device, allocator, params, requirement));
 }
 
 vk::Move<vk::VkImageView> createImageView (ProtectedContext& context, vk::VkImage image, vk::VkFormat format)
@@ -479,16 +524,17 @@ vk::VkResult queueSubmit (ProtectedContext&		context,
 	};
 
 	// Protected extension submit info
-	const vk::VkProtectedSubmitInfoKHR	protectedInfo	=
+	const vk::VkProtectedSubmitInfo		protectedInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR,	// sType
+		vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO,		// sType
 		DE_NULL,											// pNext
 		VK_TRUE,											// protectedSubmit
 	};
-
+#ifndef NOT_PROTECTED
 	if (protectionMode == PROTECTION_ENABLED) {
 		submitInfo.pNext = &protectedInfo;
 	}
+#endif
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence));
 	return vk.waitForFences(device, 1u, &fence, DE_TRUE, timeout);
@@ -592,7 +638,10 @@ vk::Move<vk::VkCommandPool> makeCommandPool (const vk::DeviceInterface&	vk,
 											 const deUint32				queueFamilyIdx)
 {
 	const deUint32	poolFlags	= vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
-									| ((protectionMode == PROTECTION_ENABLED) ? vk::VK_COMMAND_POOL_CREATE_PROTECTED_BIT_KHR : 0x0);
+#ifndef NOT_PROTECTED
+									| ((protectionMode == PROTECTION_ENABLED) ? vk::VK_COMMAND_POOL_CREATE_PROTECTED_BIT : 0x0)
+#endif
+									;
 
 	return vk::createCommandPool(vk, device, poolFlags, queueFamilyIdx);
 }

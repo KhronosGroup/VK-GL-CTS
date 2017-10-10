@@ -697,6 +697,7 @@ void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string
 		"VK_KHR_external_memory_capabilities",
 		"VK_KHR_external_semaphore_capabilities",
 		"VK_KHR_external_fence_capabilities",
+		"VK_KHR_device_group_creation",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
@@ -737,8 +738,8 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_image_format_list",
 		"VK_KHR_sampler_ycbcr_conversion",
 		"VK_KHR_device_group",
-		"VK_KHR_device_group_creation",
 		"VK_KHR_multiview",
+		"VK_KHR_maintenance3",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
@@ -1320,8 +1321,6 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
 
-	deviceExtensions.push_back("VK_KHR_swapchain");
-
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
 	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
 	{
@@ -1353,16 +1352,16 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	};
 	const VkDeviceCreateInfo								deviceCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,				//sType;
-		&deviceGroupInfo,									//pNext;
-		(VkDeviceCreateFlags)0u,							//flags
-		1,													//queueRecordCount;
-		&deviceQueueCreateInfo,								//pRequestedQueues;
-		0,													//layerCount;
-		DE_NULL,											//ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),					//extensionCount;
-		&deviceExtensions[0],								//ppEnabledExtensionNames;
-		DE_NULL,											//pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+		&deviceGroupInfo,												//pNext;
+		(VkDeviceCreateFlags)0u,										//flags
+		1,																//queueRecordCount;
+		&deviceQueueCreateInfo,											//pRequestedQueues;
+		0,																//layerCount;
+		DE_NULL,														//ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),								//extensionCount;
+		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	//ppEnabledExtensionNames;
+		DE_NULL,														//pEnabledFeatures;
 	};
 
 	Move<VkDevice>		deviceGroup = createDevice(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
@@ -1848,7 +1847,7 @@ VkFormatFeatureFlags getAllowedYcbcrFormatFeatures (VkFormat format)
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT;
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT;
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT;
-    flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT;
+    flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
 
 	// multi-plane formats *may* support DISJOINT_BIT
 	if (getPlaneCount(format) >= 2)

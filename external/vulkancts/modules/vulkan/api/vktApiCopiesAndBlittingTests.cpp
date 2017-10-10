@@ -660,7 +660,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	{
 		(deUint32)dst.getWidth(),
 		(deUint32)dst.getHeight(),
-		imageParms.imageType == VK_IMAGE_TYPE_2D ? 1u : (deUint32)dst.getDepth()
+		(imageParms.imageType == VK_IMAGE_TYPE_3D) ? (deUint32)dst.getDepth() : 1,
 	};
 
 	// Create destination buffer

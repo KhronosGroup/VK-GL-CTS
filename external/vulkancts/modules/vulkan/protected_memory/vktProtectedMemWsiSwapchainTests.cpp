@@ -1124,9 +1124,9 @@ tcu::TestStatus basicRenderTest (Context& baseCtx, vk::wsi::Type wsiType)
 					&renderingCompleteSemaphore
 				};
 
-				const vk::VkProtectedSubmitInfoKHR  protectedInfo   =
+				const vk::VkProtectedSubmitInfo		protectedInfo   =
 				{
-					vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO_KHR,	// sType
+					vk::VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO,		// sType
 					DE_NULL,											// pNext
 					VK_TRUE,											// protectedSubmit
 				};

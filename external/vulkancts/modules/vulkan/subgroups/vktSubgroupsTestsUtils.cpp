@@ -709,7 +709,8 @@ std::string vkt::subgroups::getSharedMemoryBallotHelper()
 			"  subgroupMemoryBarrierShared();\n"
 			"  if (vote)\n"
 			"  {\n"
-			"    const highp uint bitToSet = 1u << (gl_SubgroupInvocationID % 32);\n"
+			"    const highp uint invocationId = gl_SubgroupInvocationID % 32;\n"
+			"    const highp uint bitToSet = 1u << invocationId;\n"
 			"    switch (gl_SubgroupInvocationID / 32)\n"
 			"    {\n"
 			"    case 0: atomicOr(superSecretComputeShaderHelper[groupOffset].x, bitToSet); break;\n"
@@ -2703,7 +2704,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 	const Unique<VkCommandBuffer> cmdBuffer(
 		makeCommandBuffer(context, *cmdPool));
 
-	const deUint32 numWorkgroups[3] = {4, 4, 4};
+	const deUint32 numWorkgroups[3] = {4, 2, 2};
 
 	const deUint32 localSizesToTestCount = 15;
 	deUint32 localSizesToTest[localSizesToTestCount][3] =

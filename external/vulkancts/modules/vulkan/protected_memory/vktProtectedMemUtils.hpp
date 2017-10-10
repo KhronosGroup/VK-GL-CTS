@@ -35,6 +35,9 @@
 #include "vkImageWithMemory.hpp"
 #include "tcuVector.hpp"
 
+// enable the define to disable protected memory
+//#define NOT_PROTECTED	1
+
 namespace vkt
 {
 namespace ProtectedMem

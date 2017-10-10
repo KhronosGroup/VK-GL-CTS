@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	../ycbcr
+	)
 
 set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemContext.hpp
@@ -33,6 +36,8 @@ set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemShaderImageAccessTests.hpp
 	vktProtectedMemWsiSwapchainTests.cpp
 	vktProtectedMemWsiSwapchainTests.hpp
+	vktProtectedMemYCbCrConversionTests.cpp
+	vktProtectedMemYCbCrConversionTests.hpp
 	vktProtectedMemTests.cpp
 	vktProtectedMemTests.hpp
 	)

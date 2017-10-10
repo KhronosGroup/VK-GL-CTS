@@ -130,7 +130,7 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 		return false;
 
 	// protected
-	if ((m_flags & FLAG_PROTECTED) && !(heapFlags & VK_MEMORY_PROPERTY_PROTECTED_BIT_KHR))
+	if ((m_flags & FLAG_PROTECTED) && !(heapFlags & VK_MEMORY_PROPERTY_PROTECTED_BIT))
 		return false;
 
 	return true;

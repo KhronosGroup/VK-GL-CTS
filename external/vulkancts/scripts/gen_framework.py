@@ -326,12 +326,13 @@ class Function:
 	TYPE_INSTANCE		= 1 # Bound to VkInstance
 	TYPE_DEVICE			= 2 # Bound to VkDevice
 
-	def __init__ (self, name, returnType, arguments):
+	def __init__ (self, name, returnType, arguments, apiVersion = None):
 		self.name		= name
 		self.returnType	= returnType
 		self.arguments	= arguments
 		self.alias		= None
 		self.isAlias	= False
+		self.apiVersion	= apiVersion
 
 	def getType (self):
 		# Special functions
@@ -551,6 +552,22 @@ def parseFunctions (src):
 		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList)))
 	return functions
 
+def parseFunctionsByVersion (src):
+	ptrnVer10	= 'VK_VERSION_1_0 1'
+	ptrnVer11	= 'VK_VERSION_1_1 1'
+	matchVer10	= re.search(ptrnVer10, src)
+	matchVer11	= re.search(ptrnVer11, src)
+	ptrn		= r'VKAPI_ATTR\s+(' + TYPE_PTRN + ')\s+VKAPI_CALL\s+(' + IDENT_PTRN + r')\s*\(([^)]*)\)\s*;'
+	regPtrn		= re.compile(ptrn)
+	matches		= regPtrn.findall(src, matchVer10.start(), matchVer11.start())
+	functions	= []
+	for returnType, name, argList in matches:
+		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList), 'VK_VERSION_1_0'))
+	matches		= regPtrn.findall(src, matchVer11.start())
+	for returnType, name, argList in matches:
+		functions.append(Function(name.strip(), returnType.strip(), parseArgList(argList), 'VK_VERSION_1_1'))
+	return functions
+
 def splitByExtension (src):
 	ptrn		= r'#define\s+[A-Z0-9_]+_EXTENSION_NAME\s+"([^"]+)"'
 	match		= "#define\s+("
@@ -638,7 +655,7 @@ def parseAPI (src):
 	bitfields		= []
 	bitfieldEnums	= set([getBitEnumNameForBitfield(n) for n in bitfieldNames if getBitEnumNameForBitfield(n) in [enum.name for enum in rawEnums]])
 	compositeTypes	= parseCompositeTypes(src)
-	allFunctions	= parseFunctions(src)
+	allFunctions	= parseFunctionsByVersion(src)
 
 	for enum in rawEnums:
 		if enum.name in bitfieldEnums:
@@ -1325,9 +1342,9 @@ def writeCoreFunctionalities(api, filename):
 	"	apis.insert(::std::pair<deUint32, FunctionInfosList>(" + str(Version((1, 1, 0))) + ", FunctionInfosList()));",
 	""]
 
-	def listUpgradedFuncs ():
-		for fun in api.extensions[0].functions:
-			if not fun.isAlias and fun.alias == None:
+	def list10Funcs ():
+		for fun in api.functions:
+			if fun.apiVersion == 'VK_VERSION_1_0':
 				insert = '	apis[' + str(Version((1, 0, 0))) + '].push_back(FunctionInfo("' + fun.name + '",\t' + functionOriginValues[fun.getType()] + '));'
 				yield insert
 
@@ -1336,7 +1353,7 @@ def writeCoreFunctionalities(api, filename):
 			insert = '	apis[' + str(Version((1, 1, 0))) + '].push_back(FunctionInfo("' + fun.name + '",\t' + functionOriginValues[fun.getType()] + '));'
 			yield insert
 
-	lines = lines + [line for line in indentLines(listUpgradedFuncs())]
+	lines = lines + [line for line in indentLines(list10Funcs())]
 	lines.append("")
 	lines = lines + [line for line in indentLines(listAllFuncs())]
 

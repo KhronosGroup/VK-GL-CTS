@@ -465,11 +465,10 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 	m_hasMultiDrawIndirect = enabledFeatures.features.multiDrawIndirect;
 
 	{
-		const vector<string>&			deviceExtensions	= m_context.getDeviceExtensions();
-		vector<const char*>				charDevExtensions;
+		vector<const char*>							deviceExtensions;
 
-		for (std::size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
-			charDevExtensions.push_back(deviceExtensions[ndx].c_str());
+		if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_multiview"))
+			deviceExtensions.push_back("VK_KHR_multiview");
 
 		const VkDeviceCreateInfo		deviceInfo			=
 		{
@@ -481,7 +480,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			0u,																//deUint32							enabledLayerCount;
 			DE_NULL,														//const char* const*				ppEnabledLayerNames;
 			static_cast<deUint32>(deviceExtensions.size()),					//deUint32							enabledExtensionCount;
-			charDevExtensions.empty() ? DE_NULL : &charDevExtensions[0],	//const char* const*				pEnabledExtensionNames;
+			deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0],		//const char* const*				pEnabledExtensionNames;
 			DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 		};
 

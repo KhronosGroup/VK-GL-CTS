@@ -176,23 +176,25 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 										const vector<string>			extraExtensions,
 										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
-	vector<string>	extensions;
+	vector<string>	extensions = extraExtensions;
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
 
-	for (vector<string>::const_iterator extraExtensionsName = extraExtensions.begin();
-	extraExtensionsName != extraExtensions.end();
-	++extraExtensionsName)
-	{
-		if (!isInstanceExtensionSupported(version, supportedExtensions, RequiredExtension(*extraExtensionsName)))
-			TCU_THROW(NotSupportedError, (*extraExtensionsName + " is not supported").c_str());
+	vector<string>	instanceExtensions;
 
-		if (!isCoreInstanceExtension(version, *extraExtensionsName))
-			extensions.push_back(*extraExtensionsName);
+	for (vector<string>::const_iterator extensionName = extensions.begin();
+		 extensionName != extensions.end();
+		 ++extensionName)
+	{
+		if (!isInstanceExtensionSupported(version, supportedExtensions, RequiredExtension(*extensionName)))
+			TCU_THROW(NotSupportedError, (*extensionName + " is not supported").c_str());
+
+		if (!isCoreInstanceExtension(version, *extensionName))
+			instanceExtensions.push_back(*extensionName);
 	}
 
-	return vk::createDefaultInstance(vkp, version, vector<string>(), extensions, pAllocator);
+	return vk::createDefaultInstance(vkp, version, vector<string>(), instanceExtensions, pAllocator);
 }
 
 struct InstanceHelper
@@ -771,11 +773,19 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	deUint8											buffer					[sizeof(VkDeviceGroupPresentCapabilitiesKHR) + GUARD_SIZE];
 	deUint32										queueFamilyIndex		= 0;
 	VkDeviceGroupPresentCapabilitiesKHR*			presentCapabilities;
+	VkPhysicalDevice								physicalDevice			= chooseDevice(instHelper.vki, *instHelper.instance, cmdLine);
+	const Extensions&								supportedExtensions		= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
 	std::vector<const char*>						deviceExtensions;
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
 	deviceExtensions.push_back("VK_KHR_swapchain");
+
+	for (int ndx = 0; ndx < int(deviceExtensions.size()); ++ndx)
+	{
+		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
+	}
 
 	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps		= enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
 
@@ -803,16 +813,16 @@ tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, T
 	};
 	const VkDeviceCreateInfo						deviceCreateInfo		=
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,					//sType;
-		&deviceGroupInfo,										//pNext;
-		(VkDeviceCreateFlags)0u,								//flags
-		1,														//queueRecordCount;
-		&deviceQueueCreateInfo,									//pRequestedQueues;
-		0,														//layerCount;
-		DE_NULL,												//ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),						//enabledExtensionCount;
-		&deviceExtensions[0],									//ppEnabledExtensionNames;
-		DE_NULL,												//pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+		&deviceGroupInfo,												//pNext;
+		(VkDeviceCreateFlags)0u,										//flags
+		1,																//queueRecordCount;
+		&deviceQueueCreateInfo,											//pRequestedQueues;
+		0,																//layerCount;
+		DE_NULL,														//ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),								//enabledExtensionCount;
+		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	//ppEnabledExtensionNames;
+		DE_NULL,														//pEnabledFeatures;
 	};
 	Move<VkDevice>		deviceGroup = createDevice(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
 	const DeviceDriver	vk	(instHelper.vki, *deviceGroup);
@@ -872,12 +882,19 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 	VkRect2D*								presentRectangles;
 	VkDeviceGroupPresentModeFlagsKHR*		presentModeFlags;
 	vector<deUint8>							rectanglesBuffer;
+	VkPhysicalDevice						physicalDevice		= chooseDevice(instHelper.vki, *instHelper.instance, cmdLine);
+	const Extensions&						supportedExtensions	= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
 	std::vector<const char*>				deviceExtensions;
 
 	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
 		deviceExtensions.push_back("VK_KHR_device_group");
-
 	deviceExtensions.push_back("VK_KHR_swapchain");
+
+	for (int ndx = 0; ndx < int(deviceExtensions.size()); ++ndx)
+	{
+		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
+	}
 
 	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
 	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
@@ -904,16 +921,16 @@ tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsi
 	};
 	const VkDeviceCreateInfo						deviceCreateInfo =
 	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,					//sType;
-		&deviceGroupInfo,										//pNext;
-		(VkDeviceCreateFlags)0u,								//flags
-		1,														//queueRecordCount;
-		&deviceQueueCreateInfo,									//pRequestedQueues;
-		0,														//layerCount;
-		DE_NULL,												//ppEnabledLayerNames;
-		deUint32(deviceExtensions.size()),						//enabledExtensionCount;
-		&deviceExtensions[0],									//ppEnabledExtensionNames;
-		DE_NULL,												//pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+		&deviceGroupInfo,												//pNext;
+		(VkDeviceCreateFlags)0u,										//flags
+		1,																//queueRecordCount;
+		&deviceQueueCreateInfo,											//pRequestedQueues;
+		0,																//layerCount;
+		DE_NULL,														//ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),								//enabledExtensionCount;
+		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	//ppEnabledExtensionNames;
+		DE_NULL,														//pEnabledFeatures;
 	};
 
 	Move<VkDevice>		deviceGroup = createDevice(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);

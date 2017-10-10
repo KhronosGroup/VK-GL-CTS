@@ -34,13 +34,22 @@
 #include "deSharedPtr.hpp"
 #include "deRandom.hpp"
 
+#include "tcuTextureUtil.hpp"
+#include "tcuFloatFormat.hpp"
+#include "tcuFloat.hpp"
+#include "tcuInterval.hpp"
+#include "tcuFloatFormat.hpp"
+#include "tcuFloat.hpp"
+
+#include <vector>
+
 namespace vkt
 {
 namespace ycbcr
 {
 
-#define VK_YCBCR_FORMAT_FIRST	VK_FORMAT_G8B8G8R8_422_UNORM_KHR
-#define VK_YCBCR_FORMAT_LAST	((vk::VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR+1))
+#define VK_YCBCR_FORMAT_FIRST	VK_FORMAT_G8B8G8R8_422_UNORM
+#define VK_YCBCR_FORMAT_LAST	((vk::VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM+1))
 
 class MultiPlaneImageData
 {
@@ -118,6 +127,77 @@ void										readImageMemory				(const vk::DeviceInterface&							vkd,
 																		 MultiPlaneImageData*								imageData,
 																		 vk::VkAccessFlags									prevAccess,
 																		 vk::VkImageLayout									initialLayout);
+
+class ChannelAccess
+{
+public:
+						ChannelAccess	(tcu::TextureChannelClass	channelClass,
+										 deUint8					channelSize,
+										 const tcu::IVec3&			size,
+										 const tcu::IVec3&			bitPitch,
+										 void*						data,
+										 deUint32					bitOffset);
+
+	const tcu::IVec3&	getSize			(void) const { return m_size; }
+	const tcu::IVec3&	getBitPitch		(void) const { return m_bitPitch; }
+	void*				getDataPtr		(void) const { return m_data; }
+
+	tcu::Interval		getChannel		(const tcu::FloatFormat&	conversionFormat,
+										 const tcu::IVec3&			pos) const;
+	deUint32			getChannelUint	(const tcu::IVec3&			pos) const;
+	float				getChannel		(const tcu::IVec3&			pos) const;
+	void				setChannel		(const tcu::IVec3&			pos,
+										 deUint32					x);
+	void				setChannel		(const tcu::IVec3&			pos,
+										 float						x);
+
+private:
+	const tcu::TextureChannelClass	m_channelClass;
+	const deUint8					m_channelSize;
+	const tcu::IVec3				m_size;
+	const tcu::IVec3				m_bitPitch;
+	void* const						m_data;
+	const deInt32					m_bitOffset;
+};
+
+ChannelAccess			getChannelAccess			(ycbcr::MultiPlaneImageData&			data,
+													 const vk::PlanarFormatDescription&		formatInfo,
+													 const tcu::UVec2&						size,
+													 int									channelNdx);
+bool					isYChromaSubsampled			(vk::VkFormat							format);
+bool					isXChromaSubsampled			(vk::VkFormat							format);
+
+tcu::UVec4				getYCbCrBitDepth			(vk::VkFormat							format);
+tcu::FloatFormat		getYCbCrFilteringPrecision	(vk::VkFormat							format);
+tcu::FloatFormat		getYCbCrConversionPrecision	(vk::VkFormat							format);
+deUint32				getYCbCrFormatChannelCount	(vk::VkFormat							format);
+
+int						wrap						(vk::VkSamplerAddressMode addressMode, int coord, int size);
+int						divFloor					(int a, int b);
+
+void					calculateBounds				(const ChannelAccess&					rPlane,
+													 const ChannelAccess&					gPlane,
+													 const ChannelAccess&					bPlane,
+													 const ChannelAccess&					aPlane,
+													 const tcu::UVec4&						bitDepth,
+													 const std::vector<tcu::Vec2>&			sts,
+													 const tcu::FloatFormat&				filteringFormat,
+													 const tcu::FloatFormat&				conversionFormat,
+													 const deUint32							subTexelPrecisionBits,
+													 vk::VkFilter							filter,
+													 vk::VkSamplerYcbcrModelConversion		colorModel,
+													 vk::VkSamplerYcbcrRange				range,
+													 vk::VkFilter							chromaFilter,
+													 vk::VkChromaLocation					xChromaOffset,
+													 vk::VkChromaLocation					yChromaOffset,
+													 const vk::VkComponentMapping&			componentMapping,
+													 bool									explicitReconstruction,
+													 vk::VkSamplerAddressMode				addressModeU,
+													 vk::VkSamplerAddressMode				addressModeV,
+													 std::vector<tcu::Vec4>&				minBounds,
+													 std::vector<tcu::Vec4>&				maxBounds,
+													 std::vector<tcu::Vec4>&				uvBounds,
+													 std::vector<tcu::IVec4>&				ijBounds);
 
 } // ycbcr
 } // vkt

@@ -98,7 +98,8 @@ def parseArgs ():
 	parser.add_argument("-u",
 						"--target-vulkan-version",
 						dest="vulkanVersion",
-						default=DEFAULT_VULKAN_VERSION,
+						default="1.1",
+						choices=["1.0", "1.1"],
 						help="Target Vulkan version")
 	return parser.parse_args()
 

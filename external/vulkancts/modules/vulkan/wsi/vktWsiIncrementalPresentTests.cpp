@@ -1191,7 +1191,7 @@ void IncrementalPresentTestInstance::render (void)
 	deUint32			imageIndex;
 
 	// Acquire next image
-	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, fence, &imageIndex));
+	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0, &imageIndex));
 
 	// Create command buffer
 	{
@@ -1217,7 +1217,7 @@ void IncrementalPresentTestInstance::render (void)
 			&currentRenderSemaphore
 		};
 
-		VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, (vk::VkFence)0));
+		VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, fence));
 	}
 
 	// Present frame
