@@ -178,7 +178,7 @@ struct CaseParameter
 	CaseParameter	(const char* case_, const string& param_) : name(case_), param(param_) {}
 };
 
-// Assembly code used for testing OpNop, OpConstant{Null|Composite}, Op[No]Line, OpSource[Continued], OpSourceExtension, OpUndef is based on GLSL source code:
+// Assembly code used for testing LocalSize, OpNop, OpConstant{Null|Composite}, Op[No]Line, OpSource[Continued], OpSourceExtension, OpUndef is based on GLSL source code:
 //
 // #version 430
 //
@@ -196,12 +196,15 @@ struct CaseParameter
 //   output_data.elements[x] = -input_data.elements[x];
 // }
 
-
-static string getAsmForOpNopTest(bool useLiteralLocalSize, bool useSpecConstantWorkgroupSize) {
+static string getAsmForLocalSizeTest(bool useLiteralLocalSize, bool useSpecConstantWorkgroupSize, IVec3 workGroupSize, deUint32 ndx)
+{
 	std::ostringstream out;
 	out << getComputeAsmShaderPreambleWithoutLocalSize();
-	if (useLiteralLocalSize) {
-		out << "OpExecutionMode %main LocalSize 1 1 1\n";
+
+	if (useLiteralLocalSize)
+	{
+		out << "OpExecutionMode %main LocalSize "
+			<< workGroupSize.x() << " " << workGroupSize.y() << " " << workGroupSize.z() << "\n";
 	}
 
 	out << "OpSource GLSL 430\n"
@@ -209,42 +212,101 @@ static string getAsmForOpNopTest(bool useLiteralLocalSize, bool useSpecConstantW
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 		"OpDecorate %id BuiltIn GlobalInvocationId\n";
 
-	if (useSpecConstantWorkgroupSize) {
+	if (useSpecConstantWorkgroupSize)
+	{
 		out << "OpDecorate %spec_0 SpecId 100\n"
-			    "OpDecorate %spec_0 SpecId 100\n"
-			    "OpDecorate %spec_1 SpecId 101\n"
-			    "OpDecorate %spec_2 SpecId 102\n"
-			    "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
+			<< "OpDecorate %spec_1 SpecId 101\n"
+			<< "OpDecorate %spec_2 SpecId 102\n"
+			<< "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
 	}
 
 	out << getComputeAsmInputOutputBufferTraits()
 		<< getComputeAsmCommonTypes()
 		<< getComputeAsmInputOutputBuffer()
 		<< "%id        = OpVariable %uvec3ptr Input\n"
-		<< "%zero      = OpConstant %i32 0\n";
+		<< "%zero      = OpConstant %i32 0 \n";
 
-	if (useSpecConstantWorkgroupSize) {
-		out << "%spec_0   = OpSpecConstant %u32 1\n"
-		"%spec_1   = OpSpecConstant %u32 1\n"
-		"%spec_2   = OpSpecConstant %u32 1\n"
-		"%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %spec_0 %spec_1 %spec_2\n";
+	if (useSpecConstantWorkgroupSize)
+	{
+		out	<< "%spec_0   = OpSpecConstant %u32 "<< workGroupSize.x() << "\n"
+			<< "%spec_1   = OpSpecConstant %u32 "<< workGroupSize.y() << "\n"
+			<< "%spec_2   = OpSpecConstant %u32 "<< workGroupSize.z() << "\n"
+			<< "%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %spec_0 %spec_1 %spec_2\n";
 	}
 
 	out << "%main      = OpFunction %void None %voidf\n"
-		"%label     = OpLabel\n"
-		"%idval     = OpLoad %uvec3 %id\n"
-		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		<< "%label     = OpLabel\n"
+		<< "%idval     = OpLoad %uvec3 %id\n"
+		<< "%ndx         = OpCompositeExtract %u32 %idval " << ndx << "\n"
 
-		"             OpNop\n" // Inside a function body
+			"%inloc     = OpAccessChain %f32ptr %indata %zero %ndx\n"
+			"%inval     = OpLoad %f32 %inloc\n"
+			"%neg       = OpFNegate %f32 %inval\n"
+			"%outloc    = OpAccessChain %f32ptr %outdata %zero %ndx\n"
+			"             OpStore %outloc %neg\n"
+			"             OpReturn\n"
+			"             OpFunctionEnd\n";
+	return out.str();
+}
 
-		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
-		"%inval     = OpLoad %f32 %inloc\n"
-		"%neg       = OpFNegate %f32 %inval\n"
-		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
-		"             OpStore %outloc %neg\n"
-		"             OpReturn\n"
-		"             OpFunctionEnd\n";
-    return out.str();
+tcu::TestCaseGroup* createLocalSizeGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "localsize", ""));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const deUint32					numElements		= 64u;
+	vector<float>					positiveFloats	(numElements, 0);
+	vector<float>					negativeFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
+
+	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize", "", spec));
+
+	spec.numWorkGroups = IVec3(1, 1, 1);
+
+	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(numElements, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_x", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(numElements, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_x", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(numElements, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_x", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, numElements, 1), 1u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_y", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, numElements, 1), 1u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_y", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, numElements, 1), 1u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_y", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, 1, numElements), 2u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_z", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, 1, numElements), 2u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_z", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, 1, numElements), 2u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_z", "", spec));
+
+	return group.release();
 }
 
 tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
@@ -261,18 +323,41 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		negativeFloats[ndx] = -positiveFloats[ndx];
 
+	spec.assembly =
+		string(getComputeAsmShaderPreamble()) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes())
+
+		+ string(getComputeAsmInputOutputBuffer()) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+		"             OpNop\n" // Inside a function body
+
+		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %f32 %inloc\n"
+		"%neg       = OpFNegate %f32 %inval\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %neg\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 
-    spec.assembly = getAsmForOpNopTest(true, false);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize", "OpNop appearing at different places", spec));
-
-    spec.assembly = getAsmForOpNopTest(true, true);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize", "OpNop appearing at different places", spec));
-
-    spec.assembly = getAsmForOpNopTest(false, true);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize", "OpNop appearing at different places", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpNop appearing at different places", spec));
 
 	return group.release();
 }
@@ -8592,6 +8677,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> computeTests		(new tcu::TestCaseGroup(testCtx, "compute", "Compute Instructions with special opcodes/operands"));
 	de::MovePtr<tcu::TestCaseGroup> graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics Instructions with special opcodes/operands"));
 
+	computeTests->addChild(createLocalSizeGroup(testCtx));
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx));
 	computeTests->addChild(createOpAtomicGroup(testCtx, false));
