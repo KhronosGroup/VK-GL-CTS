@@ -2654,8 +2654,8 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 		.update(vk, device);
 
 	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout, true));
-	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
+	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
+	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_DISPATCH_BASE), *shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u)));
 
 	const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
 	const VkBufferMemoryBarrier hostUniformWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
@@ -2922,7 +2922,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 		.update(vk, device);
 
 	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0u));
-	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout, true));
+	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, *descriptorSetLayout));
 	const Unique<VkPipeline> pipeline(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
 
 	const VkBufferMemoryBarrier hostUniformWriteBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT, *uniformBuffer, 0ull, uniformBufferSizeBytes);
