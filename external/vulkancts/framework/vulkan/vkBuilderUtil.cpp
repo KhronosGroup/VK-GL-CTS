@@ -276,10 +276,13 @@ void DescriptorSetUpdateBuilder::update (const DeviceInterface& vk, VkDevice dev
 	vk.updateDescriptorSets(device, (deUint32)writes.size(), writePtr, (deUint32)m_copies.size(), copyPtr);
 }
 
-void DescriptorSetUpdateBuilder::updateWithPush (const DeviceInterface& vk, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout, deUint32 setIdx) const
+void DescriptorSetUpdateBuilder::updateWithPush (const DeviceInterface& vk, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout, deUint32 setIdx, deUint32 descriptorIdx, deUint32 numDescriptors) const
 {
+	// Write all descriptors or just a subset?
+	deUint32							count		= (numDescriptors) ? numDescriptors : (deUint32)m_writes.size();
+
 	// Update VkWriteDescriptorSet structures with stored info
-	std::vector<VkWriteDescriptorSet> writes	= m_writes;
+	std::vector<VkWriteDescriptorSet>	writes		= m_writes;
 
 	for (size_t writeNdx = 0; writeNdx < m_writes.size(); writeNdx++)
 	{
@@ -295,9 +298,16 @@ void DescriptorSetUpdateBuilder::updateWithPush (const DeviceInterface& vk, VkCo
 			writes[writeNdx].pTexelBufferView	= &writeInfo.texelBufferViews[0];
 	}
 
-	const VkWriteDescriptorSet* const	writePtr	= (m_writes.empty()) ? (DE_NULL) : (&writes[0]);
+	const VkWriteDescriptorSet* const	writePtr	= (m_writes.empty()) ? (DE_NULL) : (&writes[descriptorIdx]);
 
-	vk.cmdPushDescriptorSetKHR(cmd, bindPoint, pipelineLayout, setIdx, (deUint32)m_writes.size(), writePtr);
+	vk.cmdPushDescriptorSetKHR(cmd, bindPoint, pipelineLayout, setIdx, count, writePtr);
+}
+
+void DescriptorSetUpdateBuilder::clear(void)
+{
+	m_writeDescriptorInfos.clear();
+	m_writes.clear();
+	m_copies.clear();
 }
 
 } // vk

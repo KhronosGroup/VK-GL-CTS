@@ -165,7 +165,8 @@ public:
 																	 deUint32			count);
 
 	void								update						(const DeviceInterface& vk, VkDevice device) const;
-	void								updateWithPush				(const DeviceInterface& vk, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout, deUint32 setIdx) const;
+	void								updateWithPush				(const DeviceInterface& vk, VkCommandBuffer cmd, VkPipelineBindPoint bindPoint, VkPipelineLayout pipelineLayout, deUint32 setIdx, deUint32 descriptorIdx = 0, deUint32 numDescriptors = 0) const;
+	void								clear						(void);
 
 	// helpers
 
