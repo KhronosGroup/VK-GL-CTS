@@ -117,7 +117,7 @@ const char* getComputeAsmInputOutputBufferTraits (void)
 
 bool verifyOutput (const std::vector<BufferSp>&, const std::vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, tcu::TestLog& log)
 {
-	const float	epsilon	= 0.00001f;
+	const float	epsilon	= 0.001f;
 	return verifyOutputWithEpsilon(outputAllocs, expectedOutputs, log, epsilon);
 }
 
