@@ -37,10 +37,19 @@ using namespace glw;
 namespace glcts
 {
 
-enum TextureSize
+// Helper structure that wpraps workgroup size
+struct WorkGroupSize
 {
-	RENDER_WIDTH  = 16,
-	RENDER_HEIGHT = 16
+	WorkGroupSize(deqp::Context& context)
+	{
+		width  = 16;
+		height = 16;
+		if (glu::isContextTypeES(context.getRenderContext().getType()))
+			height = 8;
+	}
+
+	GLsizei width;
+	GLsizei height;
 };
 
 ShaderGroupVoteTestCaseBase::ComputeShader::ComputeShader(const std::string& name, const std::string& shader)
@@ -86,6 +95,7 @@ void ShaderGroupVoteTestCaseBase::ComputeShader::execute(deqp::Context& context)
 
 	const glw::Functions& gl = context.getRenderContext().getFunctions();
 	const glu::Texture	outputTexture(context.getRenderContext());
+	const WorkGroupSize   renderSize(context);
 
 	gl.clearColor(0.5f, 0.5f, 0.5f, 1.0f);
 	gl.clear(GL_COLOR_BUFFER_BIT);
@@ -95,7 +105,7 @@ void ShaderGroupVoteTestCaseBase::ComputeShader::execute(deqp::Context& context)
 
 	// output image
 	gl.bindTexture(GL_TEXTURE_2D, *outputTexture);
-	gl.texStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, RENDER_WIDTH, RENDER_HEIGHT);
+	gl.texStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, renderSize.width, renderSize.height);
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	gl.texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading image data failed");
@@ -165,7 +175,7 @@ void ShaderGroupVoteTestCaseBase::ComputeShader::execute(deqp::Context& context)
 	glu::VertexArrayBinding vertexArrays[] = { glu::va::Float("position", 2, 4, 0, position),
 											   glu::va::Float("inTexcoord", 2, 4, 0, texCoord) };
 
-	gl.viewport(0, 0, RENDER_WIDTH, RENDER_HEIGHT);
+	gl.viewport(0, 0, renderSize.width, renderSize.height);
 	glu::draw(context.getRenderContext(), renderShader.getProgram(), DE_LENGTH_OF_ARRAY(vertexArrays), vertexArrays,
 			  glu::pr::TriangleStrip(DE_LENGTH_OF_ARRAY(quadIndices), quadIndices));
 
@@ -190,11 +200,12 @@ void ShaderGroupVoteTestCaseBase::ComputeShader::validate(deqp::Context& context
 bool ShaderGroupVoteTestCaseBase::ComputeShader::validateScreenPixels(deqp::Context& context, tcu::IVec4 desiredColor)
 {
 	const glw::Functions&	 gl		= context.getRenderContext().getFunctions();
-	std::size_t				  totalSize = RENDER_WIDTH * RENDER_HEIGHT * 4;
+	const WorkGroupSize		  renderSize(context);
+	std::size_t				  totalSize = renderSize.width * renderSize.height * 4;
 	std::vector<glw::GLubyte> pixels(totalSize, 128);
 
 	// read pixels
-	gl.readPixels(0, 0, RENDER_WIDTH, RENDER_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+	gl.readPixels(0, 0, renderSize.width, renderSize.height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
 
 	// compare pixels to desired color
 	for (std::size_t i = 0; i < totalSize; i += 4)
@@ -218,8 +229,13 @@ ShaderGroupVoteTestCaseBase::ShaderGroupVoteTestCaseBase(deqp::Context& context,
 	: TestCaseBase(context, glcts::ExtParameters(glu::GLSL_VERSION_450, glcts::EXTENSIONTYPE_EXT), name, description)
 	, m_extensionSupported(true)
 {
+	const WorkGroupSize workGroupSize(context);
 	glu::ContextType contextType   = m_context.getRenderContext().getType();
 	m_specializationMap["VERSION"] = glu::getGLSLVersionDeclaration(extParam.glslVersion);
+
+	std::stringstream stream;
+	stream << workGroupSize.width << " " << workGroupSize.height;
+	stream >> m_specializationMap["SIZE_X"] >> m_specializationMap["SIZE_Y"];
 
 	if (glu::contextSupports(contextType, glu::ApiType::core(4, 6)))
 	{
@@ -287,7 +303,7 @@ ShaderGroupVoteAvailabilityTestCase::ShaderGroupVoteAvailabilityTestCase(deqp::C
 	const char* shader = "${VERSION}\n"
 						 "${GROUP_VOTE_EXTENSION}\n"
 						 "layout(rgba8, binding = 2) writeonly uniform highp image2D destImage;\n"
-						 "layout(local_size_x = 16, local_size_y = 16) in;\n"
+						 "layout(local_size_x = ${SIZE_X}, local_size_y = ${SIZE_Y}) in;\n"
 						 "void main (void)\n"
 						 "{\n"
 						 "	vec4 outColor = vec4(0.0);\n"
@@ -314,7 +330,7 @@ ShaderGroupVoteFunctionTestCaseBase::ShaderGroupVoteFunctionTestCaseBase(deqp::C
 	m_shaderBase += "${VERSION}\n"
 					"${GROUP_VOTE_EXTENSION}\n"
 					"layout(rgba8, binding = 2) writeonly uniform highp image2D destImage;\n"
-					"layout(local_size_x = 16, local_size_y = 16) in;\n"
+					"layout(local_size_x = ${SIZE_X}, local_size_y = ${SIZE_Y}) in;\n"
 					"void main (void)\n"
 					"{\n"
 					"	bool result = ${FUNC}${EXT_TYPE}(${FUNC_PARAMETER});\n"
@@ -377,6 +393,44 @@ ShaderGroupVoteAllInvocationsEqualTestCase::ShaderGroupVoteAllInvocationsEqualTe
 
 /** Constructor.
 *
+*  @param context Rendering context
+*/
+ShaderGroupVoteWithVariablesTestCase::ShaderGroupVoteWithVariablesTestCase(deqp::Context& context,
+																		   ExtParameters& extParam)
+	: ShaderGroupVoteTestCaseBase(context, extParam, "invocations_with_variables", "Implements ...")
+{
+	const char* shaderBase = "${VERSION}\n"
+							 "${GROUP_VOTE_EXTENSION}\n"
+							 "layout(rgba8, binding = 2) writeonly uniform highp image2D destImage;\n"
+							 "layout(local_size_x = ${SIZE_X}, local_size_y = ${SIZE_Y}) in;\n"
+							 "void main (void)\n"
+							 "{\n"
+							 "	bool result = ${EXPRESSION};\n"
+							 "	vec4 outColor = vec4(vec3(result ? 1.0 : 0.0), 1.0);\n"
+							 "	imageStore(destImage, ivec2(gl_GlobalInvocationID.xy), outColor);\n"
+							 "}\n";
+
+	// first specialization EXPRESSION and then whole shader
+	const char* expression1 = "allInvocations${EXT_TYPE}((gl_LocalInvocationIndex % 2u) == 1u) && "
+							  "anyInvocation${EXT_TYPE}((gl_LocalInvocationIndex % 2u) == 0u) && "
+							  "anyInvocation${EXT_TYPE}((gl_LocalInvocationIndex % 2u) == 1u)";
+	m_specializationMap["EXPRESSION"] = specializeShader(1, &expression1);
+	m_shaders.push_back(
+		new ComputeShader("allInvocations", specializeShader(1, &shaderBase), tcu::IVec4(0, 0, 0, 255)));
+
+	const char* expression2			  = "anyInvocation${EXT_TYPE}(gl_LocalInvocationIndex < 256u)";
+	m_specializationMap["EXPRESSION"] = specializeShader(1, &expression2);
+	m_shaders.push_back(
+		new ComputeShader("anyInvocation", specializeShader(1, &shaderBase), tcu::IVec4(255, 255, 255, 255)));
+
+	const char* expression3			  = "allInvocationsEqual${EXT_TYPE}(gl_WorkGroupID.x == 0u)";
+	m_specializationMap["EXPRESSION"] = specializeShader(1, &expression3);
+	m_shaders.push_back(
+		new ComputeShader("anyInvocation", specializeShader(1, &shaderBase), tcu::IVec4(255, 255, 255, 255)));
+}
+
+/** Constructor.
+*
 *  @param context Rendering context.
 */
 ShaderGroupVote::ShaderGroupVote(deqp::Context& context)
@@ -395,5 +449,6 @@ void ShaderGroupVote::init()
 	addChild(new ShaderGroupVoteAllInvocationsTestCase(m_context, extParam));
 	addChild(new ShaderGroupVoteAnyInvocationTestCase(m_context, extParam));
 	addChild(new ShaderGroupVoteAllInvocationsEqualTestCase(m_context, extParam));
+	addChild(new ShaderGroupVoteWithVariablesTestCase(m_context, extParam));
 }
 } /* glcts namespace */

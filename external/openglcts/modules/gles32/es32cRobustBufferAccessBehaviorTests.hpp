@@ -19,11 +19,6 @@
  * limitations under the License.
  *
  */ /*!
- * \file
- * \brief
- */ /*-------------------------------------------------------------------*/
-
-/**
  * \file  es32cRobustBufferAccessBehaviorTests.hpp
  * \brief Declares test classes for "Robust Buffer Access Behavior" functionality.
  */ /*-------------------------------------------------------------------*/
@@ -51,16 +46,12 @@ public:
 	{
 	}
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
-
 protected:
 	/* Protected methods */
-	virtual std::string getFragmentShader();
-	virtual std::string getVertexShader();
-	//virtual void        cleanTexture        (glw::GLuint texture_id);
-	virtual bool verifyInvalidResults(glw::GLuint texture_id);
-	virtual bool verifyResults(glw::GLuint texture_id);
+	std::string getFragmentShader();
+	std::string getVertexShader();
+	bool verifyInvalidResults(glw::GLuint texture_id);
+	bool verifyResults(glw::GLuint texture_id);
 };
 
 /** Implementation of test TexelFetch. Description follows:
@@ -78,20 +69,16 @@ public:
 	{
 	}
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
+protected:
+	/* Protected methods */
+	void prepareTexture(bool is_source, glw::GLuint texture_id);
 
 protected:
 	/* Protected methods */
-	virtual void prepareTexture(bool is_source, glw::GLuint texture_id);
-
-protected:
-	/* Protected methods */
-	virtual std::string getFragmentShader(bool is_case_valid);
-	virtual std::string getGeometryShader();
-	virtual std::string getVertexShader();
-	virtual bool verifyInvalidResults(glw::GLuint texture_id);
-	virtual bool verifyValidResults(glw::GLuint texture_id);
+	std::string getGeometryShader();
+	std::string getVertexShader();
+	bool verifyInvalidResults(glw::GLuint texture_id);
+	bool verifyValidResults(glw::GLuint texture_id);
 };
 
 /** Implementation of test ImageLoadStore. Description follows:
@@ -112,10 +99,10 @@ public:
 
 protected:
 	/* Protected methods */
-	virtual std::string getComputeShader(VERSION version);
-	virtual void setTextures(glw::GLuint id_destination, glw::GLuint id_source);
-	virtual bool verifyInvalidResults(glw::GLuint texture_id);
-	virtual bool verifyValidResults(glw::GLuint texture_id);
+	std::string getComputeShader(VERSION version, glw::GLuint coord_offset = 0);
+	void setTextures(glw::GLuint id_destination, glw::GLuint id_source);
+	bool verifyInvalidResults(glw::GLuint texture_id);
+	bool verifyValidResults(glw::GLuint texture_id);
 };
 
 /** Implementation of test StorageBuffer. Description follows:
@@ -131,13 +118,10 @@ public:
 	{
 	}
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
-
 protected:
 	/* Protected methods */
-	virtual std::string getComputeShader();
-	virtual bool verifyResults(glw::GLfloat* buffer_data);
+	std::string getComputeShader(glw::GLuint offset);
+	bool verifyResults(glw::GLfloat* buffer_data);
 };
 
 /** Implementation of test UniformBuffer. Description follows:
@@ -154,13 +138,9 @@ public:
 	{
 	}
 
-	/* Public methods inherited from TestCase */
-	virtual tcu::TestNode::IterateResult iterate(void);
-
 protected:
 	/* Protected methods */
-	virtual std::string getComputeShader();
-	virtual bool verifyResults(glw::GLfloat* buffer_data);
+	std::string getComputeShader(glw::GLuint offset);
 };
 
 } /* RobustBufferAccessBehavior */

@@ -123,6 +123,15 @@ public:
 	ShaderGroupVoteAllInvocationsEqualTestCase(deqp::Context& context, ExtParameters& extParam);
 };
 
+/** Test verifies allInvocationsARB function calls
+**/
+class ShaderGroupVoteWithVariablesTestCase : public ShaderGroupVoteTestCaseBase
+{
+public:
+	/* Public methods */
+	ShaderGroupVoteWithVariablesTestCase(deqp::Context& context, ExtParameters& extParam);
+};
+
 /** Test group which encapsulates all ARB_shader_group_vote conformance tests */
 class ShaderGroupVote : public deqp::TestCaseGroup
 {

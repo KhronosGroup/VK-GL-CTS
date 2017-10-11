@@ -19,10 +19,6 @@
  * limitations under the License.
  *
  */ /*!
- * \file
- * \brief
- */ /*-------------------------------------------------------------------*/
-/**
  * \file  glcRobustBufferAccessBehaviorTests.hpp
  * \brief Declares test classes for "Robust Buffer Access Behavior" functionality.
  */ /*-------------------------------------------------------------------*/
@@ -415,7 +411,7 @@ protected:
 
 protected:
 	/* Protected methods */
-	virtual std::string getFragmentShader(bool is_case_valid);
+	virtual std::string getFragmentShader(bool is_case_valid, glw::GLuint fetch_offset = 0);
 	virtual std::string getGeometryShader();
 	virtual std::string getVertexShader();
 	virtual bool verifyInvalidResults(glw::GLuint texture_id);
@@ -451,7 +447,7 @@ public:
 
 protected:
 	/* Protected methods */
-	virtual std::string getComputeShader(VERSION version);
+	virtual std::string getComputeShader(VERSION version, glw::GLuint coord_offset = 0, glw::GLuint sample_offset = 0);
 	virtual void setTextures(glw::GLuint id_destination, glw::GLuint id_source);
 	virtual bool verifyInvalidResults(glw::GLuint texture_id);
 	virtual bool verifyValidResults(glw::GLuint texture_id);
@@ -508,7 +504,7 @@ protected:
 	};
 
 	/* Private methods */
-	virtual std::string getComputeShader();
+	virtual std::string getComputeShader(glw::GLuint offset);
 	virtual bool verifyResults(glw::GLfloat* buffer_data);
 
 	/* Protected fields */
@@ -553,7 +549,7 @@ protected:
 	};
 
 	/* Protected methods */
-	virtual std::string getComputeShader();
+	virtual std::string getComputeShader(glw::GLuint offset);
 	virtual bool verifyResults(glw::GLfloat* buffer_data);
 
 	/* Protected fields */

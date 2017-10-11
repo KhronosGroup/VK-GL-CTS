@@ -4923,6 +4923,84 @@ class BasicReadonlyWriteonly : public ShaderStorageBufferObjectBase
 	}
 };
 
+//----------------------------------------------------------------------------
+// 1.15 BasicNameMatch
+//-----------------------------------------------------------------------------
+class BasicNameMatch : public ShaderStorageBufferObjectBase
+{
+	virtual long Run()
+	{
+		GLint blocksVS, blocksFS;
+		glGetIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &blocksVS);
+		glGetIntegerv(GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS, &blocksFS);
+		if ((blocksVS == 0) || (blocksFS == 0))
+			return NOT_SUPPORTED;
+
+		// check if link error is generated when one of matched blocks has instance name and other doesn't
+		std::string vs1("buffer Buf { float x; };\n"
+						"void main() {\n"
+						"  gl_Position = vec4(x);\n"
+						"}");
+		std::string fs1("buffer Buf { float x; } b;\n"
+						"out vec4 color;\n"
+						"void main() {\n"
+						"  color = vec4(b.x);\n"
+						"}");
+		if (Link(vs1, fs1))
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Linking should fail." << tcu::TestLog::EndMessage;
+			return ERROR;
+		}
+
+		// check if linking succeeds when both matched blocks are lacking an instance name
+		std::string vs2("buffer Buf { float x; };\n"
+						"void main() {\n"
+						"  gl_Position = vec4(x);\n"
+						"}");
+		std::string fs2("buffer Buf { float x; };\n"
+						"out vec4 color;\n"
+						"void main() {\n"
+						"  color = vec4(x);\n"
+						"}");
+		if (!Link(vs2, fs2))
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Linking should succeed." << tcu::TestLog::EndMessage;
+			return ERROR;
+		}
+
+		// check if linking succeeds when both matched blocks have different instance names
+		std::string vs3("buffer Buf { float x; } a;\n"
+						"void main() {\n"
+						"  gl_Position = vec4(a.x);\n"
+						"}");
+		std::string fs3("buffer Buf { float x; } b;\n"
+						"out vec4 color;\n"
+						"void main() {\n"
+						"  color = vec4(b.x);\n"
+						"}");
+		if (!Link(vs3, fs3))
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Linking should succeed." << tcu::TestLog::EndMessage;
+			return ERROR;
+		}
+
+		return NO_ERROR;
+	}
+
+	bool Link(const std::string& vs, const std::string& fs)
+	{
+		GLuint program = CreateProgram(vs, fs);
+		glLinkProgram(program);
+		GLint status;
+		glGetProgramiv(program, GL_LINK_STATUS, &status);
+		glDeleteProgram(program);
+		return (status == GL_TRUE);
+	}
+};
+
 //-----------------------------------------------------------------------------
 // 2.1 AdvancedSwitchBuffers
 //-----------------------------------------------------------------------------
@@ -8599,6 +8677,7 @@ void ShaderStorageBufferObjectTests::init()
 	addChild(new TestSubcase(m_context, "basic-matrixOperations-case7-cs",
 							 TestSubcase::Create<BasicMatrixOperationsCase7CS>));
 	addChild(new TestSubcase(m_context, "basic-readonly-writeonly", TestSubcase::Create<BasicReadonlyWriteonly>));
+	addChild(new TestSubcase(m_context, "basic-name-match", TestSubcase::Create<BasicNameMatch>));
 	addChild(new TestSubcase(m_context, "advanced-switchBuffers-vs", TestSubcase::Create<AdvancedSwitchBuffersVS>));
 	addChild(new TestSubcase(m_context, "advanced-switchBuffers-cs", TestSubcase::Create<AdvancedSwitchBuffersCS>));
 	addChild(new TestSubcase(m_context, "advanced-switchPrograms-vs", TestSubcase::Create<AdvancedSwitchProgramsVS>));

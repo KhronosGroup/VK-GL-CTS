@@ -17,17 +17,13 @@
  * limitations under the License.
  *
  */ /*!
- * \file
- * \brief
- */ /*-------------------------------------------------------------------*/
-
-/**
  * \file  es32cRobustBufferAccessBehaviorTests.cpp
  * \brief Implements conformance tests for "Robust Buffer Access Behavior" functionality.
  */ /*-------------------------------------------------------------------*/
 
 #include "es32cRobustBufferAccessBehaviorTests.hpp"
 
+#include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluStrUtil.hpp"
 #include "glwEnums.hpp"
@@ -53,15 +49,6 @@ VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context)
 		  context, "vertex_buffer_objects", "Verifies that out-of-bound reads from VB result in zero")
 {
 	/* Nothing to be done */
-}
-
-/** Execute test
- *
- * @return tcu::TestNode::STOP
- **/
-tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
-{
-	return deqp::RobustBufferAccessBehavior::VertexBufferObjectsTest::iterate();
 }
 
 /** Prepare shader for current test case
@@ -165,104 +152,6 @@ TexelFetchTest::TexelFetchTest(deqp::Context& context, const glw::GLchar* name, 
 	: deqp::RobustBufferAccessBehavior::TexelFetchTest(context, name, description)
 {
 	/* Nothing to be done */
-}
-
-/** Execute test
- *
- * @return tcu::TestNode::STOP
- **/
-tcu::TestNode::IterateResult TexelFetchTest::iterate()
-{
-	return deqp::RobustBufferAccessBehavior::TexelFetchTest::iterate();
-}
-
-/** Prepares source code for fragment shader
- *
- * @param is_case_valid Selects if valid or invalid case is tested
- *
- * @return string with prepared code
- **/
-std::string TexelFetchTest::getFragmentShader(bool is_case_valid)
-{
-	static const GLchar* plane_0 = "    int   plane  = 0;\n";
-
-	static const GLchar* plane_1 = "    int   plane  = 1;\n";
-
-	static const GLchar* plane_2 = "    int   plane  = 2;\n";
-
-	static const GLchar* plane_sample_invalid = "    int   plane  = 9;\n";
-
-	static const GLchar* plane_sample_valid = "    int   plane  = gl_SampleID;\n";
-
-	static const GLchar* point_invalid = "    ivec2 point  = ivec2(gs_fs_tex_coord * 16.0) + ivec2(16, 16);\n";
-
-	static const GLchar* point_valid = "    ivec2 point  = ivec2(gs_fs_tex_coord * 16.0);\n";
-
-	static const GLchar* sampler_regular		= "sampler2D";
-	static const GLchar* sampler_regular_u		= "usampler2D";
-	static const GLchar* sampler_multisampled_u = "usampler2DMS";
-
-	static const GLchar* template_code = "#version 320 es\n"
-										 "\n"
-										 "                      in  lowp vec2      gs_fs_tex_coord;\n"
-										 "layout (location = 0) out lowp TYPE      out_fs_color;\n"
-										 "\n"
-										 "layout (location = 0) uniform lowp SAMPLER uni_texture;\n"
-										 "\n"
-										 "void main()\n"
-										 "{\n"
-										 "PLANE\n"
-										 "POINT\n"
-										 "    out_fs_color = texelFetch(uni_texture, point, plane);\n"
-										 "}\n"
-										 "\n";
-
-	static const GLchar* type_vec4  = "vec4";
-	static const GLchar* type_uvec4 = "uvec4";
-
-	const GLchar* plane   = plane_0;
-	const GLchar* point   = point_valid;
-	const GLchar* sampler = sampler_regular;
-	const GLchar* type	= type_vec4;
-
-	if ((R8 == m_test_case) || (RG8_SNORM == m_test_case) || (RGBA32F == m_test_case))
-	{
-		if (false == is_case_valid)
-		{
-			point = point_invalid;
-		}
-	}
-	else if (R32UI_MIPMAP == m_test_case)
-	{
-		plane   = plane_1;
-		sampler = sampler_regular_u;
-		type	= type_uvec4;
-
-		if (false == is_case_valid)
-		{
-			plane = plane_2;
-		}
-	}
-	else if (R32UI_MULTISAMPLE == m_test_case)
-	{
-		plane   = plane_sample_valid;
-		sampler = sampler_multisampled_u;
-		type	= type_uvec4;
-
-		if (false == is_case_valid)
-		{
-			plane = plane_sample_invalid;
-		}
-	}
-
-	size_t		position = 0;
-	std::string source   = template_code;
-	replaceToken("TYPE", position, type, source);
-	replaceToken("SAMPLER", position, sampler, source);
-	replaceToken("PLANE", position, plane, source);
-	replaceToken("POINT", position, point, source);
-
-	return source;
 }
 
 /** Prepare shader for current test case
@@ -759,12 +648,22 @@ ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context)
  **/
 tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 {
+	if (!m_context.getContextInfo().isExtensionSupported("GL_KHR_robust_buffer_access_behavior"))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
+		return STOP;
+	}
+
 	/* Constants */
 	static const GLuint height = 16;
 	static const GLuint width  = 16;
 
 	/* GL entry points */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
+
+	const unsigned int coord_offsets[] = {
+		16, 512, 1024, 2048,
+	};
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -777,14 +676,8 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 
 		/* Test case objects */
 		Texture destination_texture(m_context);
-		Program invalid_destination_program(m_context);
-		Program invalid_source_program(m_context);
 		Texture source_texture(m_context);
-		Program valid_program(m_context);
-
-		const std::string& cs_invalid_destination = getComputeShader(DESTINATION_INVALID);
-		const std::string& cs_invalid_source	  = getComputeShader(SOURCE_INVALID);
-		const std::string& cs_valid				  = getComputeShader(VALID);
+		Program program(m_context);
 
 		/* Prepare textures */
 		Texture::Generate(gl, destination_texture.m_id);
@@ -793,33 +686,30 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 		prepareTexture(false, destination_texture.m_id);
 		prepareTexture(true, source_texture.m_id);
 
-		/* Prepare programs */
-		invalid_destination_program.Init(cs_invalid_destination, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */,
-										 "" /* vs */);
-		invalid_source_program.Init(cs_invalid_source, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */,
-									"" /* vs */);
-		valid_program.Init(cs_valid, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */, "" /* vs */);
-
-		/* Test invalid source case */
-		/* Set program */
-		invalid_source_program.Use();
-
-		/* Set texture */
-		setTextures(destination_texture.m_id, source_texture.m_id);
-
-		/* Dispatch */
-		gl.dispatchCompute(width, height, 1 /* depth */);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
-
-		/* Verification */
-		if (false == verifyInvalidResults(destination_texture.m_id))
+		/* Test invalid source cases */
+		for (GLuint i = 0; i < DE_LENGTH_OF_ARRAY(coord_offsets); ++i)
 		{
-			case_result = false;
+			const std::string& cs = getComputeShader(SOURCE_INVALID, coord_offsets[i]);
+			program.Init(cs, "", "", "", "", "");
+			program.Use();
+
+			/* Set texture */
+			setTextures(destination_texture.m_id, source_texture.m_id);
+
+			/* Dispatch */
+			gl.dispatchCompute(width, height, 1 /* depth */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
+
+			/* Verification */
+			if (false == verifyInvalidResults(destination_texture.m_id))
+			{
+				case_result = false;
+			}
 		}
 
 		/* Test valid case */
-		/* Set program */
-		valid_program.Use();
+		program.Init(getComputeShader(VALID), "", "", "", "", "");
+		program.Use();
 
 		/* Set texture */
 		setTextures(destination_texture.m_id, source_texture.m_id);
@@ -834,21 +724,25 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 			case_result = false;
 		}
 
-		/* Test invalid destination case */
-		/* Set program */
-		invalid_destination_program.Use();
-
-		/* Set texture */
-		setTextures(destination_texture.m_id, source_texture.m_id);
-
-		/* Dispatch */
-		gl.dispatchCompute(width, height, 1 /* depth */);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
-
-		/* Verification */
-		if (false == verifyValidResults(destination_texture.m_id))
+		/* Test invalid destination cases */
+		for (GLuint i = 0; i < DE_LENGTH_OF_ARRAY(coord_offsets); ++i)
 		{
-			case_result = false;
+			const std::string& cs = getComputeShader(DESTINATION_INVALID, coord_offsets[i]);
+			program.Init(cs, "", "", "", "", "");
+			program.Use();
+
+			/* Set texture */
+			setTextures(destination_texture.m_id, source_texture.m_id);
+
+			/* Dispatch */
+			gl.dispatchCompute(width, height, 1 /* depth */);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
+
+			/* Verification */
+			if (false == verifyValidResults(destination_texture.m_id))
+			{
+				case_result = false;
+			}
 		}
 
 		/* Set test result */
@@ -884,7 +778,7 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
  *
  * @return Source
  **/
-std::string ImageLoadStoreTest::getComputeShader(VERSION version)
+std::string ImageLoadStoreTest::getComputeShader(VERSION version, GLuint coord_offset)
 {
 	static const GLchar* template_code =
 		"#version 320 es\n"
@@ -896,8 +790,8 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 		"\n"
 		"void main()\n"
 		"{\n"
-		"    ivec2 point_destination = POINT;\n"
-		"    ivec2 point_source      = POINT;\n"
+		"    ivec2 point_destination = ivec2(gl_WorkGroupID.xy) + ivec2(COORD_OFFSETU);\n"
+		"    ivec2 point_source      = ivec2(gl_WorkGroupID.xy) + ivec2(COORD_OFFSETU);\n"
 		"\n"
 		"COPY"
 		"}\n"
@@ -913,33 +807,24 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 
 	static const GLchar* image_uvec4 = "uimage2D";
 
-	static const GLchar* point_invalid = "ivec2(gl_WorkGroupID.x + 16U, gl_WorkGroupID.y + 16U)";
-
-	static const GLchar* point_valid = "ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y)";
-
 	static const GLchar* type_vec4  = "vec4";
 	static const GLchar* type_uvec4 = "uvec4";
 
 	const GLchar* copy				 = copy_regular;
 	const GLchar* format			 = format_rgba32f;
 	const GLchar* image				 = image_vec4;
-	const GLchar* point_destination  = point_valid;
-	const GLchar* point_source		 = point_valid;
 	const GLchar* type				 = type_vec4;
+	const GLchar* src_coord_offset   = "0";
+	const GLchar* dst_coord_offset   = "0";
 
-	switch (version)
-	{
-	case VALID:
-		break;
-	case SOURCE_INVALID:
-		point_source  = point_invalid;
-		break;
-	case DESTINATION_INVALID:
-		point_destination  = point_invalid;
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
-	}
+	std::stringstream coord_offset_stream;
+	coord_offset_stream << coord_offset;
+	std::string coord_offset_str = coord_offset_stream.str();
+
+	if (version == SOURCE_INVALID)
+		src_coord_offset = coord_offset_str.c_str();
+	else if (version == DESTINATION_INVALID)
+		dst_coord_offset = coord_offset_str.c_str();
 
 	switch (m_test_case)
 	{
@@ -962,8 +847,8 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version)
 	replaceToken("IMAGE", position, image, source);
 	replaceToken("FORMAT", position, format, source);
 	replaceToken("IMAGE", position, image, source);
-	replaceToken("POINT", position, point_destination, source);
-	replaceToken("POINT", position, point_source, source);
+	replaceToken("COORD_OFFSET", position, dst_coord_offset, source);
+	replaceToken("COORD_OFFSET", position, src_coord_offset, source);
 
 	size_t temp_position = position;
 	replaceToken("COPY", position, copy, source);
@@ -1142,20 +1027,11 @@ StorageBufferTest::StorageBufferTest(deqp::Context& context)
 	/* Nothing to be done here */
 }
 
-/** Execute test
- *
- * @return tcu::TestNode::STOP
- **/
-tcu::TestNode::IterateResult StorageBufferTest::iterate()
-{
-	return deqp::RobustBufferAccessBehavior::StorageBufferTest::iterate();
-}
-
 /** Prepare shader for current test case
  *
  * @return Source
  **/
-std::string StorageBufferTest::getComputeShader()
+std::string StorageBufferTest::getComputeShader(glw::GLuint offset)
 {
 	static const GLchar* cs = "#version 320 es\n"
 							  "\n"
@@ -1178,31 +1054,21 @@ std::string StorageBufferTest::getComputeShader()
 							  "}\n"
 							  "\n";
 
-	const GLchar* destination_offset;
+	std::string   destination_offset("0");
+	std::string   source_offset("0");
 	size_t		  position = 0;
 	std::string   source   = cs;
-	const GLchar* source_offset;
 
-	switch (m_test_case)
-	{
-	case VALID:
-		destination_offset = "0";
-		source_offset	  = "0";
-		break;
-	case SOURCE_INVALID:
-		destination_offset = "0";
-		source_offset	  = "16";
-		break;
-	case DESTINATION_INVALID:
-		destination_offset = "16";
-		source_offset	  = "0";
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
-	}
+	std::stringstream offset_stream;
+	offset_stream << offset;
 
-	replaceToken("OFFSET", position, destination_offset, source);
-	replaceToken("OFFSET", position, source_offset, source);
+	if (m_test_case == SOURCE_INVALID)
+		source_offset = offset_stream.str();
+	else if (m_test_case == DESTINATION_INVALID)
+		destination_offset = offset_stream.str();
+
+	replaceToken("OFFSET", position, destination_offset.c_str(), source);
+	replaceToken("OFFSET", position, source_offset.c_str(), source);
 
 	return source;
 }
@@ -1264,30 +1130,21 @@ UniformBufferTest::UniformBufferTest(deqp::Context& context)
 	/* Nothing to be done here */
 }
 
-/** Execute test
- *
- * @return tcu::TestNode::STOP
- **/
-tcu::TestNode::IterateResult UniformBufferTest::iterate()
-{
-	return deqp::RobustBufferAccessBehavior::UniformBufferTest::iterate();
-}
-
 /** Prepare shader for current test case
  *
  * @return Source
  **/
-std::string UniformBufferTest::getComputeShader()
+std::string UniformBufferTest::getComputeShader(GLuint offset)
 {
 	static const GLchar* cs = "#version 320 es\n"
 							  "\n"
 							  "layout (local_size_x = 4, local_size_y = 1, local_size_z = 1) in;\n"
 							  "\n"
-							  "layout (binding = 0) uniform Source {\n"
+							  "layout (binding = 0, std140) uniform Source {\n"
 							  "    float data[16];\n"
 							  "} source;\n"
 							  "\n"
-							  "layout (binding = 0) buffer Destination {\n"
+							  "layout (binding = 0, std430) buffer Destination {\n"
 							  "    float data[];\n"
 							  "} destination;\n"
 							  "\n"
@@ -1300,70 +1157,21 @@ std::string UniformBufferTest::getComputeShader()
 							  "}\n"
 							  "\n";
 
-	const GLchar* destination_offset;
+	const GLchar* destination_offset = "0";
+	std::string   source_offset("0");
 	size_t		  position = 0;
 	std::string   source   = cs;
-	const GLchar* source_offset;
 
-	switch (m_test_case)
-	{
-	case VALID:
-		destination_offset = "0";
-		source_offset	  = "0";
-		break;
-	case SOURCE_INVALID:
-		destination_offset = "0";
-		source_offset	  = "16";
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
-	}
+	std::stringstream offset_stream;
+	offset_stream << offset;
+
+	if (m_test_case == SOURCE_INVALID)
+		source_offset = offset_stream.str();
 
 	replaceToken("OFFSET", position, destination_offset, source);
-	replaceToken("OFFSET", position, source_offset, source);
+	replaceToken("OFFSET", position, source_offset.c_str(), source);
 
 	return source;
-}
-
-/** Verify test case results
- *
- * @param buffer_data Buffer data to verify
- *
- * @return true if buffer_data is as expected, false othrewise
- **/
-bool UniformBufferTest::verifyResults(GLfloat* buffer_data)
-{
-	static const GLfloat expected_data_valid[4]			 = { 2.0f, 3.0f, 4.0f, 5.0f };
-	static const GLfloat expected_data_invalid_source[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-	int size = sizeof(GLfloat) * 4;
-
-	/* Prepare expected data const for proper case*/
-	const GLfloat* expected_data = 0;
-	const GLchar*  name			 = 0;
-	switch (m_test_case)
-	{
-	case VALID:
-		expected_data = expected_data_valid;
-		name		  = "valid indices";
-		break;
-	case SOURCE_INVALID:
-		expected_data = expected_data_invalid_source;
-		name		  = "invalid source indices";
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
-	}
-
-	/* Verify buffer data */
-	if (m_test_case == VALID && memcmp(expected_data, buffer_data, size) != 0)
-	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
-											<< tcu::TestLog::EndMessage;
-		return false;
-	}
-
-	return true;
 }
 
 } /* RobustBufferAccessBehavior */

@@ -110,6 +110,16 @@ KHR-GLES3.shaders.arrays.invalid.constructor_c-style1_vertex
 KHR-GLES3.shaders.arrays.invalid.constructor_c-style1_fragment
 KHR-GLES3.shaders.arrays.invalid.constructor_c-style2_vertex
 KHR-GLES3.shaders.arrays.invalid.constructor_c-style2_fragment
+KHR-GLES3.shaders.declarations.declarations.missing_variable_name_vertex
+KHR-GLES3.shaders.declarations.declarations.missing_variable_name_fragment
+KHR-GLES3.shaders.declarations.declarations.comma_preceding_variable_vertex
+KHR-GLES3.shaders.declarations.declarations.comma_preceding_variable_fragment
+KHR-GLES3.shaders.declarations.declarations.comma_following_variable_vertex
+KHR-GLES3.shaders.declarations.declarations.comma_following_variable_fragment
+KHR-GLES3.shaders.declarations.declarations.struct_missing_attribute_name_vertex
+KHR-GLES3.shaders.declarations.declarations.struct_missing_attribute_name_fragment
+KHR-GLES3.shaders.declarations.declarations.struct_comma_preceding_attribute_vertex
+KHR-GLES3.shaders.declarations.declarations.struct_comma_preceding_attribute_fragment
 KHR-GLES3.shaders.fragdepth.write.no_write
 KHR-GLES3.shaders.fragdepth.write.const
 KHR-GLES3.shaders.fragdepth.write.uniform
@@ -1494,6 +1504,12 @@ KHR-GLES3.shaders.literal_parsing.int_overflow_2_vertex
 KHR-GLES3.shaders.literal_parsing.int_overflow_2_fragment
 KHR-GLES3.shaders.literal_parsing.int_wrap_1
 KHR-GLES3.shaders.literal_parsing.int_wrap_2
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_1_vertex
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_1_fragment
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_2_vertex
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_2_fragment
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_3_vertex
+KHR-GLES3.shaders.name_hiding.basic.hidden_name_3_fragment
 KHR-GLES3.shaders.struct.local.basic_vertex
 KHR-GLES3.shaders.struct.local.basic_fragment
 KHR-GLES3.shaders.struct.local.nested_vertex
@@ -2562,6 +2578,7 @@ KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.17
 KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.18
 KHR-GLES3.shaders.uniform_block.random.all_shared_buffer.19
 KHR-GLES3.shaders.uniform_block.common.precision_matching
+KHR-GLES3.shaders.uniform_block.common.name_matching
 KHR-GLES3.shaders.shader_integer_mix.define
 KHR-GLES3.shaders.shader_integer_mix.prototypes-extension
 KHR-GLES3.shaders.shader_integer_mix.prototypes
