@@ -105,7 +105,7 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
+		static_cast<VkPipelineLayoutCreateFlags>(0u),		// VkPipelineLayoutCreateFlags		flags;
 		0u,													// deUint32							setLayoutCount;
 		DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
 		0u,													// deUint32							pushConstantRangeCount;
@@ -116,33 +116,33 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
-										   const VkDescriptorSetLayout	descriptorSetLayout,
-										   const bool					useDeviceGroups)
+										   const VkDescriptorSetLayout	descriptorSetLayout)
 {
 	const VkPipelineLayoutCreateInfo pipelineLayoutParams =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,					// VkStructureType					sType;
-		DE_NULL,														// const void*						pNext;
-		useDeviceGroups ? VK_PIPELINE_CREATE_DISPATCH_BASE_KHR :
-			(VkPipelineCreateFlagBits)0u,								// VkPipelineLayoutCreateFlags		flags;
-		1u,																// deUint32							setLayoutCount;
-		&descriptorSetLayout,											// const VkDescriptorSetLayout*		pSetLayouts;
-		0u,																// deUint32							pushConstantRangeCount;
-		DE_NULL,														// const VkPushConstantRange*		pPushConstantRanges;
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
+		DE_NULL,											// const void*						pNext;
+		static_cast<VkPipelineLayoutCreateFlags>(0u),		// VkPipelineLayoutCreateFlags		flags;
+		1u,													// deUint32							setLayoutCount;
+		&descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
+		0u,													// deUint32							pushConstantRangeCount;
+		DE_NULL,											// const VkPushConstantRange*		pPushConstantRanges;
 	};
 	return createPipelineLayout(vk, device, &pipelineLayoutParams);
 }
 
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
-									  const VkDevice			device,
-									  const VkPipelineLayout	pipelineLayout,
-									  const VkShaderModule		shaderModule)
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
+									  const VkDevice							device,
+									  const VkPipelineLayout					pipelineLayout,
+									  const VkPipelineCreateFlags				pipelineFlags,
+									  const VkShaderModule						shaderModule,
+									  const VkPipelineShaderStageCreateFlags	shaderFlags)
 {
 	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
 		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineShaderStageCreateFlags		flags;
+		shaderFlags,											// VkPipelineShaderStageCreateFlags		flags;
 		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
 		shaderModule,											// VkShaderModule						module;
 		"main",													// const char*							pName;
@@ -152,13 +152,21 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineCreateFlags			flags;
+		pipelineFlags,										// VkPipelineCreateFlags			flags;
 		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
 		pipelineLayout,										// VkPipelineLayout					layout;
 		DE_NULL,											// VkPipeline						basePipelineHandle;
 		0,													// deInt32							basePipelineIndex;
 	};
 	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
+}
+
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
+									  const VkDevice			device,
+									  const VkPipelineLayout	pipelineLayout,
+									  const VkShaderModule		shaderModule)
+{
+	return makeComputePipeline(vk, device, pipelineLayout, static_cast<VkPipelineCreateFlags>(0u), shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u));
 }
 
 Move<VkBufferView> makeBufferView (const DeviceInterface&	vk,

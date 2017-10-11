@@ -21,3 +21,7 @@ dEQP-VK.glsl.builtin.function.common.frexp.vec4_highp_vertex
 
 # Issue 340: Cube map corner texel selection
 dEQP-VK.pipeline.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.linear
+
+# Issue 702: Tests use invalid conversion operations
+dEQP-VK.spirv_assembly.instruction.*.indexing.*u32*
+dEQP-VK.spirv_assembly.instruction.*.indexing.*s32*
