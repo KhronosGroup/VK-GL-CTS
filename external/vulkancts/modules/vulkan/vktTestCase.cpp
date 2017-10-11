@@ -363,9 +363,9 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_usedApiVersion				(deMin32(m_instanceVersion, m_deviceVersion))
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
-	, m_deviceExtensions			(addCoreDeviceExtensions(filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)), m_deviceVersion))
-	, m_deviceFeatures				(m_instanceInterface, m_deviceVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
-	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_deviceVersion, m_universalQueueFamilyIndex, getDeviceFeatures2(), m_deviceExtensions, cmdLine))
+	, m_deviceExtensions			(addCoreDeviceExtensions(filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)), m_usedApiVersion))
+	, m_deviceFeatures				(m_instanceInterface, m_usedApiVersion, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
+	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_deviceFeatures.coreFeatures, m_deviceExtensions, cmdLine))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
 }
