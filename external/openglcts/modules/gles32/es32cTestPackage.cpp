@@ -28,6 +28,7 @@
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcInternalformatTests.hpp"
 #include "glcSeparableProgramsTransformFeedbackTests.hpp"
 #include "glcShaderConstExprTests.hpp"
 #include "glcShaderIndexingTests.hpp"
@@ -163,6 +164,7 @@ void ES32TestPackage::init(void)
 		coreGroup->addChild(new glcts::ShaderMacroTests(getContext()));
 		coreGroup->addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 		coreGroup->addChild(new glcts::CopyImageTests(getContext()));
+		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
 		addChild(coreGroup);
 	}
 	catch (...)
