@@ -119,7 +119,7 @@ public:
 		ApisMap::const_iterator				lastGoodVersion	= functions.begin();
 		for (ApisMap::const_iterator it = lastGoodVersion; it != functions.end(); ++it)
 		{
-			if (it->first < m_context.getUsedApiVersion())
+			if (it->first <= m_context.getUsedApiVersion())
 				lastGoodVersion	= it;
 		}
 		failChecking(log, failsQuantity, lastGoodVersion->second);

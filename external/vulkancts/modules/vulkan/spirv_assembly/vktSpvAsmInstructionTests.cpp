@@ -7588,12 +7588,6 @@ void createUConvertCases (vector<ConvertCase>& testCases)
 	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_UNSIGNED_64,	17991));
 
 	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_32,	INTEGER_TYPE_UNSIGNED_64,	904256275));
-
-	// Convert unsigned int to int
-	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_SIGNED_32,		38002));
-	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_SIGNED_64,		64921));
-
-	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_32,	INTEGER_TYPE_SIGNED_64,		4294956295ll));
 }
 
 //  Test for the OpUConvert instruction.
