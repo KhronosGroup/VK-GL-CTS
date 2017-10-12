@@ -52,6 +52,10 @@ struct NAME {											\
 #define VK_MAKE_VERSION(MAJOR, MINOR, PATCH)	(((deUint32)(MAJOR) << 22u) | ((deUint32)(MINOR) << 12u) | (deUint32)(PATCH))
 #define VK_BIT(NUM)								(1u<<(deUint32)(NUM))
 
+#define VK_VERSION_MAJOR(version)				((uint32_t)(version) >> 22)
+#define VK_VERSION_MINOR(version)				(((uint32_t)(version) >> 12) & 0x3ff)
+#define VK_VERSION_PATCH(version)				((uint32_t)(version) & 0xfff)
+
 #define VK_CHECK(EXPR)							vk::checkResult((EXPR), #EXPR, __FILE__, __LINE__)
 #define VK_CHECK_MSG(EXPR, MSG)					vk::checkResult((EXPR), MSG, __FILE__, __LINE__)
 
