@@ -65,11 +65,13 @@ enum TestType
 	TEST_TYPE_VIEW_INDEX_IN_GEOMETRY,
 	TEST_TYPE_VIEW_INDEX_IN_TESELLATION,
 	TEST_TYPE_INPUT_ATTACHMENTS,
+	TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY,
 	TEST_TYPE_INSTANCED_RENDERING,
 	TEST_TYPE_INPUT_RATE_INSTANCE,
 	TEST_TYPE_DRAW_INDIRECT,
 	TEST_TYPE_CLEAR_ATTACHMENTS,
 	TEST_TYPE_SECONDARY_CMD_BUFFER,
+	TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY,
 	TEST_TYPE_LAST
 };
 
@@ -429,8 +431,8 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 		TCU_THROW(NotSupportedError, "MultiView not supported");
 
 	bool requiresGeomShader = (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == m_parameters.viewIndex) ||
-								(TEST_TYPE_INPUT_ATTACHMENTS == m_parameters.viewIndex) ||
-								(TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex) ||
+								(TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == m_parameters.viewIndex) ||
+								(TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex) ||
 								(TEST_TYPE_CLEAR_ATTACHMENTS == m_parameters.viewIndex);
 
 	if (requiresGeomShader && !multiviewFeatures.multiviewGeometryShader)
@@ -530,13 +532,15 @@ void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, S
 		case TEST_TYPE_INSTANCED_RENDERING:
 		case TEST_TYPE_INPUT_RATE_INSTANCE:
 		case TEST_TYPE_DRAW_INDIRECT:
+		case TEST_TYPE_SECONDARY_CMD_BUFFER:
+		case TEST_TYPE_INPUT_ATTACHMENTS:
 			shaderModule[VK_SHADER_STAGE_VERTEX_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("vertex"), 0))));
 			shaderModule[VK_SHADER_STAGE_FRAGMENT_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("fragment"), 0))));
 			break;
 		case TEST_TYPE_VIEW_INDEX_IN_GEOMETRY:
-		case TEST_TYPE_INPUT_ATTACHMENTS:
+		case TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY:
 		case TEST_TYPE_CLEAR_ATTACHMENTS:
-		case TEST_TYPE_SECONDARY_CMD_BUFFER:
+		case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
 			shaderModule[VK_SHADER_STAGE_VERTEX_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("vertex"), 0))));
 			shaderModule[VK_SHADER_STAGE_GEOMETRY_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("geometry"), 0))));
 			shaderModule[VK_SHADER_STAGE_FRAGMENT_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("fragment"), 0))));
@@ -1661,7 +1665,8 @@ private:
 
 	vkt::TestInstance*	createInstance		(vkt::Context& context) const
 	{
-		if (TEST_TYPE_INPUT_ATTACHMENTS == m_parameters.viewIndex)
+		if (TEST_TYPE_INPUT_ATTACHMENTS == m_parameters.viewIndex ||
+			TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == m_parameters.viewIndex)
 			return new MultiViewAttachmentsTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_INSTANCED_RENDERING == m_parameters.viewIndex)
@@ -1676,7 +1681,8 @@ private:
 		if (TEST_TYPE_CLEAR_ATTACHMENTS == m_parameters.viewIndex)
 			return new	MultiViewClearAttachmentsTestInstance(context, m_parameters);
 
-		if (TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex)
+		if (TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex ||
+			TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex)
 			return new	MultiViewSecondaryCommandBufferTestInstance(context, m_parameters);
 
 		return new MultiViewRenderTestInstance(context, m_parameters);
@@ -1796,10 +1802,10 @@ private:
 			programCollection.glslSources.add("tessellation_evaluation") << glu::TessellationEvaluationSource(source_te.str());
 		}
 
-		if (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY	== m_parameters.viewIndex ||
-			TEST_TYPE_INPUT_ATTACHMENTS			== m_parameters.viewIndex ||
-			TEST_TYPE_CLEAR_ATTACHMENTS			== m_parameters.viewIndex ||
-			TEST_TYPE_SECONDARY_CMD_BUFFER		== m_parameters.viewIndex)
+		if (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY		== m_parameters.viewIndex ||
+			TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY	== m_parameters.viewIndex ||
+			TEST_TYPE_CLEAR_ATTACHMENTS				== m_parameters.viewIndex ||
+			TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY	== m_parameters.viewIndex)
 		{// Geometry Shader
 			std::ostringstream	source;
 			source	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
@@ -1850,7 +1856,8 @@ private:
 					<< "layout(location = 0) out vec4 out_color;\n"
 					<< "void main()\n"
 					<<"{\n";
-				if (TEST_TYPE_VIEW_INDEX_IN_FRAGMENT == m_parameters.viewIndex)
+				if (TEST_TYPE_VIEW_INDEX_IN_FRAGMENT == m_parameters.viewIndex ||
+					TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex)
 					source << "	out_color = in_color + vec4(0.0, gl_ViewIndex * 0.10f, 0.0, 0.0);\n";
 				else
 					source << "	out_color = in_color;\n";
@@ -1874,11 +1881,13 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		"geometry_shader",
 		"tesellation_shader",
 		"input_attachments",
+		"input_attachments_geometry",
 		"instanced",
 		"input_instance",
 		"draw_indirect",
 		"clear_attachments",
-		"secondary_cmd_buffer"
+		"secondary_cmd_buffer",
+		"secondary_cmd_buffer_geometry"
 	};
 	const VkExtent3D			extent3D[testCaseCount]		=
 	{
@@ -1947,11 +1956,13 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		{
 			case TEST_TYPE_VIEW_MASK:
 			case TEST_TYPE_INPUT_ATTACHMENTS:
+			case TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY:
 			case TEST_TYPE_INSTANCED_RENDERING:
 			case TEST_TYPE_INPUT_RATE_INSTANCE:
 			case TEST_TYPE_DRAW_INDIRECT:
 			case TEST_TYPE_CLEAR_ATTACHMENTS:
 			case TEST_TYPE_SECONDARY_CMD_BUFFER:
+			case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
 				group->addChild(groupShader.release());
 				break;
 			case TEST_TYPE_VIEW_INDEX_IN_VERTEX:
