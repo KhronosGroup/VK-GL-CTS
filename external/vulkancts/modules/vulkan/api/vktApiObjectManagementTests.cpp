@@ -474,7 +474,7 @@ struct Instance
 			0u,									// applicationVersion
 			DE_NULL,							// pEngineName
 			0u,									// engineVersion
-			VK_MAKE_VERSION(1,0,0)
+			env.apiVersion
 		};
 
 		const VkInstanceCreateInfo	instanceInfo	=
