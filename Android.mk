@@ -1027,6 +1027,8 @@ deqp_compile_flags := \
 	-DDEQP_GLES3_RUNTIME_LOAD=1 \
 	-DDEQP_GLES2_RUNTIME_LOAD=1 \
 	-DQP_SUPPORT_PNG=1 \
+	-Wall \
+	-Werror \
 	-Wconversion \
 	-fwrapv \
 	-Wno-sign-conversion
