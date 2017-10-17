@@ -5609,7 +5609,8 @@ void BufferTestBase::getBufferDescriptors(glw::GLuint /* test_case_index */,
  * @param ignored
  **/
 void BufferTestBase::getCapturedVaryings(glw::GLuint /* test_case_index */,
-										 Utils::Program::NameVector& /* captured_varyings */)
+										 Utils::Program::NameVector& /* captured_varyings */,
+										 GLint* /* xfb_components */)
 {
 	/* Nothing to be done */
 }
@@ -5701,7 +5702,21 @@ bool BufferTestBase::testCase(GLuint test_case_index)
 		Utils::VertexArray		   vao(m_context);
 
 		/* Get captured varyings */
-		getCapturedVaryings(test_case_index, captured_varyings);
+		GLint xfb_components;
+		getCapturedVaryings(test_case_index, captured_varyings, &xfb_components);
+
+		/* Don't generate shaders that try to capture more XFB components than the implementation's limit */
+		if (captured_varyings.size() > 0)
+		{
+			const Functions& gl	= m_context.getRenderContext().getFunctions();
+
+			GLint max_xfb_components;
+			gl.getIntegerv(GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS, &max_xfb_components);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+			if (xfb_components > max_xfb_components)
+				return true;
+		}
 
 		/* Get shader sources */
 		const std::string& fragment_shader  = getShaderSource(test_case_index, Utils::Shader::FRAGMENT);
@@ -20441,9 +20456,11 @@ void XFBStrideOfEmptyListAndAPITest::getBufferDescriptors(glw::GLuint				test_ca
  * @param captured_varyings Vector of varying names to be captured
  **/
 void XFBStrideOfEmptyListAndAPITest::getCapturedVaryings(glw::GLuint /* test_case_index */,
-														 Utils::Program::NameVector& captured_varyings)
+														 Utils::Program::NameVector& captured_varyings,
+														 GLint* xfb_components)
 {
 	captured_varyings.push_back("gs_fs");
+	*xfb_components	= 4;
 }
 
 /** Get body of main function for given shader stage
@@ -22809,12 +22826,18 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
  * @param ignored
  * @param captured_varyings List of names
  **/
-void XFBOverrideQualifiersWithAPITest::getCapturedVaryings(glw::GLuint /* test_case_index */,
-														   Utils::Program::NameVector& captured_varyings)
+void XFBOverrideQualifiersWithAPITest::getCapturedVaryings(glw::GLuint test_case_index,
+														   Utils::Program::NameVector& captured_varyings,
+														   GLint* xfb_components)
 {
 	captured_varyings.resize(1);
 
 	captured_varyings[0] = "trunks";
+
+	/* The test captures 3 varyings of type 'type' */
+	Utils::Type	type		= getType(test_case_index);
+	GLint		type_size	= type.GetSize(false);
+	*xfb_components			= 3 * type_size / 4;
 }
 
 /** Get body of main function for given shader stage
