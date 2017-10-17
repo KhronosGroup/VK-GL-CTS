@@ -83,6 +83,12 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			include_directories(wayland)
 		endif()
 
+	elseif (DE_OS_IS_UNIX AND DEQP_USE_SURFACELESS)
+		set(TCUTIL_PLATFORM_SRCS
+			surfaceless/tcuSurfacelessPlatform.hpp
+			surfaceless/tcuSurfacelessPlatform.cpp
+			)
+
 	elseif (DE_OS_IS_ANDROID)
 		set(TCUTIL_PLATFORM_SRCS
 			android/tcuAndroidExecService.cpp
