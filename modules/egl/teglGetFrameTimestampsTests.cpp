@@ -47,6 +47,7 @@
 #include "deClock.h"
 #include "deMath.h"
 #include "deUniquePtr.hpp"
+#include "deStringUtil.hpp"
 #include "deThread.hpp"
 
 #include <algorithm>
@@ -201,59 +202,77 @@ bool timestampPending (EGLnsecsANDROID timestamp)
 	return timestamp == EGL_TIMESTAMP_PENDING_ANDROID;
 }
 
+template<typename T>
+void check_lt(tcu::ResultCollector& result, const T& a, const T& b, const std::string& msg) {
+	if (a < b)
+		return;
+	std::string m = msg + "!(" + de::toString(a) + " < " + de::toString(b) + ")";
+	result.fail(m);
+}
+
+template<typename T>
+void check_le(tcu::ResultCollector& result, const T& a, const T& b, const std::string& msg) {
+	if (a <= b)
+		return;
+	std::string m = msg + "!(" + de::toString(a) + " <= " + de::toString(b) + ")";
+	result.fail(m);
+}
+
 void verifySingleFrame (const FrameTimes& frameTimes, tcu::ResultCollector& result, bool verifyReadsDone)
 {
 	// Verify CPU timeline is monotonic.
-	result.check(frameTimes.swapBufferBeginNs < frameTimes.latch, "Buffer latched before it was swapped.");
-	result.check(frameTimes.latch < frameTimes.firstCompositionStart, "Buffer composited before it was latched.");
-	result.check(frameTimes.firstCompositionStart <= frameTimes.lastCompositionStart, "First composition start after last composition start.");
-	result.check(frameTimes.lastCompositionStart < frameTimes.dequeueReady, "Buffer composited after it was ready to be dequeued.");
+	check_lt(result, frameTimes.swapBufferBeginNs, frameTimes.latch, "Buffer latched before it was swapped.");
+	check_lt(result, frameTimes.latch, frameTimes.firstCompositionStart, "Buffer composited before it was latched.");
+	check_le(result, frameTimes.firstCompositionStart, frameTimes.lastCompositionStart, "First composition start after last composition start.");
+	check_lt(result, frameTimes.lastCompositionStart, frameTimes.dequeueReady, "Buffer composited after it was ready to be dequeued.");
 
 	// Verify GPU timeline is monotonic.
 	if (timestampValid(frameTimes.firstCompositionGpuFinished))
-		result.check(frameTimes.renderingComplete < frameTimes.firstCompositionGpuFinished, "Buffer rendering completed after compositor GPU work finished.");
+		check_lt(result, frameTimes.renderingComplete, frameTimes.firstCompositionGpuFinished, "Buffer rendering completed after compositor GPU work finished.");
 
 	if (timestampValid(frameTimes.displayPresent))
-		result.check(frameTimes.renderingComplete < frameTimes.displayPresent, "Buffer displayed before rendering completed.");
+		check_lt(result, frameTimes.renderingComplete, frameTimes.displayPresent, "Buffer displayed before rendering completed.");
 
 	if (timestampValid(frameTimes.firstCompositionGpuFinished) && timestampValid(frameTimes.displayPresent))
-		result.check(frameTimes.firstCompositionGpuFinished < frameTimes.displayPresent, "Buffer displayed before compositor GPU work completed");
+		check_lt(result, frameTimes.firstCompositionGpuFinished, frameTimes.displayPresent, "Buffer displayed before compositor GPU work completed");
 
 	// Drivers may maintain shadow copies of the buffer, so the readsDone time
 	// of the real buffer may be earlier than apparent dependencies. We can only
 	// be sure that the readsDone time must be after the renderingComplete time.
+    // It may also be equal to the renderingComplete time if no reads were
+    // peformed.
 	if (verifyReadsDone)
-		result.check(frameTimes.renderingComplete < frameTimes.readsDone, "Buffer rendering completed after reads completed.");
+		check_le(result, frameTimes.renderingComplete, frameTimes.readsDone, "Buffer rendering completed after reads completed.");
 
 	// Verify CPU/GPU dependencies
-	result.check(frameTimes.renderingComplete < frameTimes.latch, "Buffer latched before rendering completed.");
+	check_lt(result, frameTimes.renderingComplete, frameTimes.latch, "Buffer latched before rendering completed.");
 	if (timestampValid(frameTimes.firstCompositionGpuFinished))
-		result.check(frameTimes.firstCompositionStart < frameTimes.firstCompositionGpuFinished, "Composition CPU work started after GPU work finished.");
+		check_lt(result, frameTimes.firstCompositionStart, frameTimes.firstCompositionGpuFinished, "Composition CPU work started after GPU work finished.");
 
 	if (timestampValid(frameTimes.displayPresent))
-		result.check(frameTimes.firstCompositionStart < frameTimes.displayPresent, "Buffer displayed before it was composited.");
+		check_lt(result, frameTimes.firstCompositionStart, frameTimes.displayPresent, "Buffer displayed before it was composited.");
 }
 
 void verifyNeighboringFrames (const FrameTimes& frame1, const FrameTimes& frame2, tcu::ResultCollector& result, bool verifyReadsDone)
 {
 	// CPU timeline.
-	result.check(frame1.swapBufferBeginNs < frame2.swapBufferBeginNs, "Swap begin times not monotonic.");
-	result.check(frame1.latch < frame2.latch, "Latch times not monotonic.");
-	result.check(frame1.lastCompositionStart < frame2.latch, "Old buffer composited after new buffer latched.");
-	result.check(frame1.lastCompositionStart < frame2.firstCompositionStart, "Composition times overlap.");
-	result.check(frame1.dequeueReady < frame2.dequeueReady, "Dequeue ready times not monotonic.");
+	check_lt(result, frame1.swapBufferBeginNs, frame2.swapBufferBeginNs, "Swap begin times not monotonic.");
+	check_lt(result, frame1.latch, frame2.latch, "Latch times not monotonic.");
+	check_lt(result, frame1.lastCompositionStart, frame2.latch, "Old buffer composited after new buffer latched.");
+	check_lt(result, frame1.lastCompositionStart, frame2.firstCompositionStart, "Composition times overlap.");
+	check_lt(result, frame1.dequeueReady, frame2.dequeueReady, "Dequeue ready times not monotonic.");
 
 	// GPU timeline.
-	result.check(frame1.renderingComplete < frame2.renderingComplete, "Rendering complete times not monotonic.");
+	check_lt(result, frame1.renderingComplete, frame2.renderingComplete, "Rendering complete times not monotonic.");
 
 	if (timestampValid(frame1.firstCompositionGpuFinished) && timestampValid(frame2.firstCompositionGpuFinished))
-		result.check(frame1.firstCompositionGpuFinished < frame2.firstCompositionGpuFinished, "Composition GPU work complete times not monotonic.");
+		check_lt(result, frame1.firstCompositionGpuFinished, frame2.firstCompositionGpuFinished, "Composition GPU work complete times not monotonic.");
 
 	if (timestampValid(frame1.displayPresent) && timestampValid(frame2.displayPresent))
-		result.check(frame1.displayPresent < frame2.displayPresent, "Display present times not monotonic.");
+		check_lt(result, frame1.displayPresent, frame2.displayPresent, "Display present times not monotonic.");
 
 	if (verifyReadsDone && timestampValid(frame1.readsDone) && timestampValid(frame2.readsDone))
-		result.check(frame1.readsDone < frame2.readsDone, "Reads done times not monotonic.");
+		check_lt(result, frame1.readsDone, frame2.readsDone, "Reads done times not monotonic.");
 }
 
 EGLContext createGLES2Context (const Library& egl, EGLDisplay display, EGLConfig config)
@@ -616,14 +635,14 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 			frame.compositeToPresentLatency	=	compositorTimingValues[2];
 
 			// Verify compositor timing is sane.
-			m_result.check(1000000 < frame.compositeInterval, "Reported refresh rate greater than 1kHz.");
-			m_result.check(frame.compositeInterval < 1000000000, "Reported refresh rate less than 1Hz.");
-			m_result.check(0 < frame.compositeToPresentLatency, "Composite to present latency must be greater than 0.");
-			m_result.check(frame.compositeToPresentLatency < frame.compositeInterval * 3, "Composite to present latency is more than 3 vsyncs.");
+			check_lt<EGLnsecsANDROID>(m_result, 1000000, frame.compositeInterval, "Reported refresh rate greater than 1kHz.");
+			check_lt<EGLnsecsANDROID>(m_result, frame.compositeInterval, 1000000000, "Reported refresh rate less than 1Hz.");
+			check_lt<EGLnsecsANDROID>(m_result, 0, frame.compositeToPresentLatency, "Composite to present latency must be greater than 0.");
+			check_lt(m_result, frame.compositeToPresentLatency, frame.compositeInterval * 3, "Composite to present latency is more than 3 vsyncs.");
 			const EGLnsecsANDROID minDeadline = now;
-			m_result.check(minDeadline < frame.compositeDeadline, "Next composite deadline is in the past.");
+			check_lt(m_result, minDeadline, frame.compositeDeadline, "Next composite deadline is in the past.");
 			const EGLnsecsANDROID maxDeadline = now + frame.compositeInterval * 2;
-			m_result.check(frame.compositeDeadline < maxDeadline, "Next composite deadline over two intervals away.");
+			check_lt(m_result, frame.compositeDeadline, maxDeadline, "Next composite deadline over two intervals away.");
 
 			const float colorAngle = (static_cast<float>(i) / static_cast<float>(frameCount)) * 6.28318f;
 			gl.clearColor((1.0f + deFloatSin(colorAngle)) / 2.0f, 0.7f, (1.0f + deFloatCos(colorAngle)) / 2.0f, 1.0f);
