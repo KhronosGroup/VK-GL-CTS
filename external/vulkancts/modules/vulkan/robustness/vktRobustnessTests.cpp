@@ -25,6 +25,7 @@
 #include "vktRobustnessTests.hpp"
 #include "vktRobustnessBufferAccessTests.hpp"
 #include "vktRobustnessVertexAccessTests.hpp"
+#include "vktRobustBufferAccessWithVariablePointersTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -32,12 +33,45 @@ namespace vkt
 namespace robustness
 {
 
+namespace
+{
+
+class IsNodeNamed
+{
+public:
+	IsNodeNamed(const std::string& name)
+		: checkName(name)
+	{}
+	bool operator()(tcu::TestNode* node)
+	{
+		return checkName == std::string(node->getName());
+	}
+private:
+	const std::string checkName;
+};
+
+}
+
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> robustnessTests(new tcu::TestCaseGroup(testCtx, "robustness", ""));
 
 	robustnessTests->addChild(createBufferAccessTests(testCtx));
 	robustnessTests->addChild(createVertexAccessTests(testCtx));
+
+	std::vector<tcu::TestNode*> children;
+	robustnessTests->getChildren(children);
+	std::vector<tcu::TestNode*>::iterator buffer_access = std::find_if(children.begin(), children.end(), IsNodeNamed("buffer_access"));
+	if (buffer_access != children.end())
+	{
+		(*buffer_access)->addChild(createBufferAccessWithVariablePointersTests(testCtx));
+	}
+	else
+	{
+		de::MovePtr<tcu::TestCaseGroup> bufferAccess(new tcu::TestCaseGroup(testCtx, "buffer_access", ""));
+		bufferAccess->addChild(createBufferAccessWithVariablePointersTests(testCtx));
+		robustnessTests->addChild(bufferAccess.release());
+	}
 
 	return robustnessTests.release();
 }

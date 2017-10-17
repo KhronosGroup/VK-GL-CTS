@@ -88,6 +88,17 @@ DE_INLINE deUint32 deMinu32 (deUint32 a, deUint32 b)
 }
 
 /*--------------------------------------------------------------------*//*!
+ * \brief Compute the unsigned minimum of two values.
+ * \param a	First input value.
+ * \param b Second input value.
+ * \return The smallest of the two input values.
+ *//*--------------------------------------------------------------------*/
+DE_INLINE deUint64 deMinu64 (deUint64 a, deUint64 b)
+{
+	return (a <= b) ? a : b;
+}
+
+/*--------------------------------------------------------------------*//*!
  * \brief Compute the unsigned maximum of two values.
  * \param a	First input value.
  * \param b Second input value.
