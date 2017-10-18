@@ -271,9 +271,10 @@ vk::SpirvVersion getSpirvVersionForAsm (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
 
-	if (vulkanVersion == VK_API_VERSION_1_0)
+	deUint32 vulkanVersionMajorMinor = VK_MAKE_VERSION(VK_VERSION_MAJOR(vulkanVersion), VK_VERSION_MINOR(vulkanVersion), 0);
+	if (vulkanVersionMajorMinor == VK_API_VERSION_1_0)
 		result = vk::SPIRV_VERSION_1_0;
-	else if (vulkanVersion >= VK_API_VERSION_1_1)
+	else if (vulkanVersionMajorMinor >= VK_API_VERSION_1_1)
 		result = vk::SPIRV_VERSION_1_3;
 
 	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);
@@ -285,9 +286,10 @@ vk::SpirvVersion getSpirvVersionForGlsl (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
 
-	if (vulkanVersion == VK_API_VERSION_1_0)
+	deUint32 vulkanVersionMajorMinor = VK_MAKE_VERSION(VK_VERSION_MAJOR(vulkanVersion), VK_VERSION_MINOR(vulkanVersion), 0);
+	if (vulkanVersionMajorMinor == VK_API_VERSION_1_0)
 		result = vk::SPIRV_VERSION_1_0;
-	else if (vulkanVersion >= VK_API_VERSION_1_1)
+	else if (vulkanVersionMajorMinor >= VK_API_VERSION_1_1)
 		result = vk::SPIRV_VERSION_1_3;
 
 	DE_ASSERT(result < vk::SPIRV_VERSION_LAST);

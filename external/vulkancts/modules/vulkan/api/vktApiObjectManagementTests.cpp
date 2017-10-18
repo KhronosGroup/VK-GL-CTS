@@ -230,6 +230,7 @@ deUint32 getDefaultTestThreadCount (void)
 struct Environment
 {
 	const PlatformInterface&		vkp;
+	deUint32						apiVersion;
 	const DeviceInterface&			vkd;
 	VkDevice						device;
 	deUint32						queueFamilyIndex;
@@ -239,6 +240,7 @@ struct Environment
 
 	Environment (Context& context, deUint32 maxResourceConsumers_)
 		: vkp					(context.getPlatformInterface())
+		, apiVersion			(context.getUsedApiVersion())
 		, vkd					(context.getDeviceInterface())
 		, device				(context.getDevice())
 		, queueFamilyIndex		(context.getUniversalQueueFamilyIndex())
@@ -249,6 +251,7 @@ struct Environment
 	}
 
 	Environment (const PlatformInterface&		vkp_,
+				 deUint32						apiVersion_,
 				 const DeviceInterface&			vkd_,
 				 VkDevice						device_,
 				 deUint32						queueFamilyIndex_,
@@ -256,6 +259,7 @@ struct Environment
 				 const VkAllocationCallbacks*	allocationCallbacks_,
 				 deUint32						maxResourceConsumers_)
 		: vkp					(vkp_)
+		, apiVersion			(apiVersion_)
 		, vkd					(vkd_)
 		, device				(device_)
 		, queueFamilyIndex		(queueFamilyIndex_)
@@ -338,6 +342,7 @@ size_t computeSystemMemoryUsage (Context& context, const typename Object::Parame
 {
 	AllocationCallbackRecorder			allocRecorder		(getSystemAllocator());
 	const Environment					env					(context.getPlatformInterface(),
+															 context.getUsedApiVersion(),
 															 context.getDeviceInterface(),
 															 context.getDevice(),
 															 context.getUniversalQueueFamilyIndex(),
@@ -450,13 +455,15 @@ struct Instance
 
 	static Move<VkInstance> create (const Environment& env, const Resources&, const Parameters& params)
 	{
-		vector<const char*>					extensionNamePtrs(params.instanceExtensions.size());
+		vector<const char*>					extensionNamePtrs;
 		const vector<VkExtensionProperties>	instanceExts = enumerateInstanceExtensionProperties(env.vkp, DE_NULL);
 		for (size_t extensionID = 0; extensionID < params.instanceExtensions.size(); extensionID++)
 		{
-			if (!isExtensionSupported(instanceExts, RequiredExtension(params.instanceExtensions[extensionID])))
+			if (!isInstanceExtensionSupported(env.apiVersion, instanceExts, RequiredExtension(params.instanceExtensions[extensionID])))
 				TCU_THROW(NotSupportedError, (params.instanceExtensions[extensionID] + " is not supported").c_str());
-			extensionNamePtrs[extensionID] = params.instanceExtensions[extensionID].c_str();
+
+			if (!isCoreInstanceExtension(env.apiVersion, params.instanceExtensions[extensionID]))
+				extensionNamePtrs.push_back(params.instanceExtensions[extensionID].c_str());
 		}
 
 		const VkApplicationInfo		appInfo			=
@@ -2489,7 +2496,7 @@ struct EnvClone
 		: deviceRes	(parent, deviceParams)
 		, device	(Device::create(parent, deviceRes, deviceParams))
 		, vkd		(deviceRes.vki, *device)
-		, env		(parent.vkp, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers)
+		, env		(parent.vkp, parent.apiVersion, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers)
 	{
 	}
 };
@@ -2540,6 +2547,7 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 
 	// Root environment still uses default instance and device, created without callbacks
 	const Environment					rootEnv			(context.getPlatformInterface(),
+														 context.getUsedApiVersion(),
 														 context.getDeviceInterface(),
 														 context.getDevice(),
 														 context.getUniversalQueueFamilyIndex(),
@@ -2555,6 +2563,7 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 		// Supply a separate callback recorder just for object construction
 		AllocationCallbackRecorder			objCallbacks(getSystemAllocator(), 128);
 		const Environment					objEnv		(resEnv.env.vkp,
+														 resEnv.env.apiVersion,
 														 resEnv.env.vkd,
 														 resEnv.env.device,
 														 resEnv.env.queueFamilyIndex,
@@ -2589,6 +2598,7 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 {
 	AllocationCallbackRecorder			resCallbacks		(getSystemAllocator(), 128);
 	const Environment					rootEnv				(context.getPlatformInterface(),
+															 context.getUsedApiVersion(),
 															 context.getDeviceInterface(),
 															 context.getDevice(),
 															 context.getUniversalQueueFamilyIndex(),
@@ -2611,6 +2621,7 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 															 numPassingAllocs);
 			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
 			const Environment					objEnv		(resEnv.env.vkp,
+															 resEnv.env.apiVersion,
 															 resEnv.env.vkd,
 															 resEnv.env.device,
 															 resEnv.env.queueFamilyIndex,
@@ -2698,6 +2709,7 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename
 			DeterministicFailAllocator			objAllocator(getSystemAllocator(), DeterministicFailAllocator::MODE_DO_NOT_COUNT, 0);
 			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
 			const Environment					objEnv		(context.getPlatformInterface(),
+															 context.getUsedApiVersion(),
 															 context.getDeviceInterface(),
 															 context.getDevice(),
 															 context.getUniversalQueueFamilyIndex(),
