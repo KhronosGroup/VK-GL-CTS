@@ -388,12 +388,12 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 	// Loop through all physical devices in the device group
 	for (deUint32 physDevID = 0; physDevID < m_physicalDeviceCount; physDevID++)
 	{
-		const deUint32					firstDeviceID		= physDevID;
-		const deUint32					secondDeviceID		= (firstDeviceID + 1 ) % m_physicalDeviceCount;
-		vector<deUint32>				deviceIndices		  (m_physicalDeviceCount);
-
+		const deUint32			firstDeviceID				= physDevID;
+		const deUint32			secondDeviceID				= (firstDeviceID + 1 ) % m_physicalDeviceCount;
+		vector<deUint32>		deviceIndices				(m_physicalDeviceCount);
+		bool					isPeerMemAsCopySrcAllowed	= true;
 		// Set broadcast on memory allocation
-		const deUint32					allocDeviceMask		= m_subsetAllocation ? (1 << firstDeviceID) | (1 << secondDeviceID) : (1 << m_physicalDeviceCount) - 1;
+		const deUint32			allocDeviceMask				= m_subsetAllocation ? (1 << firstDeviceID) | (1 << secondDeviceID) : (1 << m_physicalDeviceCount) - 1;
 
 		for (deUint32 i = 0; i < m_physicalDeviceCount; i++)
 			deviceIndices[i] = i;
@@ -816,7 +816,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			}
 
 			VkImageCreateFlags	imageCreateFlags = VK_IMAGE_CREATE_ALIAS_BIT;	// The image objects alias same memory
-			if (m_testMode & TEST_MODE_SFR)
+			if ((m_testMode & TEST_MODE_SFR) && (m_physicalDeviceCount > 1))
 			{
 				imageCreateFlags |= VK_IMAGE_CREATE_BIND_SFR_BIT;
 			}
@@ -852,10 +852,16 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			imageMemory = allocateMemory(vk, *m_deviceGroup, &allocInfo);
 		}
 
-		if (m_testMode & TEST_MODE_SFR)
+		if ((m_testMode & TEST_MODE_SFR) && (m_physicalDeviceCount > 1))
 		{
 			if (m_usePeerFetch && !isPeerFetchAllowed(memoryTypeNdx, firstDeviceID, secondDeviceID))
 				TCU_THROW(NotSupportedError, "Peer texture reads is not supported.");
+
+			// Check if peer memory can be used as source of a copy command in case of SFR bindings, always allowed in case of 1 device
+			VkPeerMemoryFeatureFlags				peerMemFeatures;
+			const VkPhysicalDeviceMemoryProperties	deviceMemProps = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_physicalDevices[secondDeviceID]);
+			vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps.memoryTypes[memoryTypeNdx].heapIndex, firstDeviceID, secondDeviceID, &peerMemFeatures);
+			isPeerMemAsCopySrcAllowed = (peerMemFeatures & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT);
 
 			VkRect2D zeroRect = {
 				{
@@ -1758,7 +1764,8 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 				VK_CHECK(vk.bindImageMemory2(*m_deviceGroup, 1, &bindInfo));
 			}
 
-			// Copy peer image
+			// Copy peer image (only needed in SFR case when peer memory as copy source is not allowed)
+			if ((m_testMode & TEST_MODE_AFR) || (!isPeerMemAsCopySrcAllowed))
 			{
 				// Image barriers
 				const VkImageMemoryBarrier	preImageBarrier	 =
@@ -1908,7 +1915,9 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 						1u
 					}										// imageExtent
 				};
-				vk.cmdCopyImageToBuffer(*cmdBuffer, *readImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
+
+				// Use a diffferent binding in SFR when peer memory as copy source is not allowed
+				vk.cmdCopyImageToBuffer(*cmdBuffer, isPeerMemAsCopySrcAllowed ? *renderImage : *readImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 
 				const VkBufferMemoryBarrier	copyFinishBarrier =
 				{
