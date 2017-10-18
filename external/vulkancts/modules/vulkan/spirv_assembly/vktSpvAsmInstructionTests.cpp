@@ -7277,6 +7277,70 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"OpFunctionEnd\n";
 	createTestsForAllStages("return", defaultColors, defaultColors, fragments, testGroup.get());
 
+	// Continue inside a switch block to break to enclosing loop's merge block.
+	// Matches roughly the following GLSL code:
+	// for (; keep_going; keep_going = false)
+	// {
+	//     switch (int(param1.x))
+	//     {
+	//         case 0: continue;
+	//         case 1: continue;
+	//         default: continue;
+	//     }
+	//     dead code: modify return value to invalid result.
+	// }
+	fragments["pre_main"] =
+		"%fp_bool = OpTypePointer Function %bool\n"
+		"%true = OpConstantTrue %bool\n"
+		"%false = OpConstantFalse %bool\n";
+
+	fragments["testfun"] =
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+
+		"%entry = OpLabel\n"
+		"%keep_going = OpVariable %fp_bool Function\n"
+		"%val_ptr = OpVariable %fp_f32 Function\n"
+		"%param1_x = OpCompositeExtract %f32 %param1 0\n"
+		"OpStore %keep_going %true\n"
+		"OpBranch %forloop_begin\n"
+
+		"%forloop_begin = OpLabel\n"
+		"OpLoopMerge %forloop_merge %forloop_continue None\n"
+		"OpBranch %forloop\n"
+
+		"%forloop = OpLabel\n"
+		"%for_condition = OpLoad %bool %keep_going\n"
+		"OpBranchConditional %for_condition %forloop_body %forloop_merge\n"
+
+		"%forloop_body = OpLabel\n"
+		"OpStore %val_ptr %param1_x\n"
+		"%param1_x_int = OpConvertFToS %i32 %param1_x\n"
+
+		"OpSelectionMerge %switch_merge None\n"
+		"OpSwitch %param1_x_int %default 0 %case_0 1 %case_1\n"
+		"%case_0 = OpLabel\n"
+		"OpBranch %forloop_continue\n"
+		"%case_1 = OpLabel\n"
+		"OpBranch %forloop_continue\n"
+		"%default = OpLabel\n"
+		"OpBranch %forloop_continue\n"
+		"%switch_merge = OpLabel\n"
+		";should never get here, so change the return value to invalid result\n"
+		"OpStore %val_ptr %c_f32_1\n"
+		"OpBranch %forloop_continue\n"
+
+		"%forloop_continue = OpLabel\n"
+		"OpStore %keep_going %false\n"
+		"OpBranch %forloop_begin\n"
+		"%forloop_merge = OpLabel\n"
+
+		"%val = OpLoad %f32 %val_ptr\n"
+		"%result = OpVectorInsertDynamic %v4f32 %param1 %val %c_i32_0\n"
+		"OpReturnValue %result\n"
+		"OpFunctionEnd\n";
+	createTestsForAllStages("switch_continue", defaultColors, defaultColors, fragments, testGroup.get());
+
 	return testGroup.release();
 }
 
