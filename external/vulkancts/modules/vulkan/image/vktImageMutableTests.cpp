@@ -109,7 +109,7 @@ static const deUint32 COLOR_TABLE_SIZE = 4;
 static const Vec4	COLOR_TABLE_FLOAT[COLOR_TABLE_SIZE]	=
 {
 	Vec4(0.00f, 0.40f, 0.80f, 0.10f),
-	Vec4(0.10f, 0.50f, 0.90f, 0.20f),
+	Vec4(0.50f, 0.10f, 0.90f, 0.20f),
 	Vec4(0.20f, 0.60f, 1.00f, 0.30f),
 	Vec4(0.30f, 0.70f, 0.00f, 0.40f),
 };
