@@ -62,6 +62,8 @@ set(GLCTS_COMMON_SRCS
 	glcShaderLoopTests.hpp
 	glcShaderNegativeTests.hpp
 	glcShaderNegativeTests.cpp
+	glcShaderMacroTests.cpp
+	glcShaderMacroTests.hpp
 	glcShaderMultisampleInterpolationTests.cpp
 	glcShaderMultisampleInterpolationTests.hpp
 	glcShaderRenderCase.cpp

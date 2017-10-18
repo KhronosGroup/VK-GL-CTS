@@ -49,6 +49,7 @@
 #include "glcShaderConstExprTests.hpp"
 #include "glcShaderGroupVoteTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
+#include "glcShaderMacroTests.hpp"
 #include "glcShaderMultisampleInterpolationTests.hpp"
 #include "glcShaderNegativeTests.hpp"
 
@@ -182,6 +183,7 @@ void ES31TestPackage::init(void)
 		coreGroup->addChild(new glcts::ShaderConstExprTests(getContext()));
 		coreGroup->addChild(new glcts::BlendEquationAdvancedTests(getContext(), glu::GLSL_VERSION_310_ES));
 		coreGroup->addChild(new glcts::VertexAttribBindingTests(getContext()));
+		coreGroup->addChild(new glcts::ShaderMacroTests(getContext()));
 		coreGroup->addChild(new glcts::ShaderStorageBufferObjectTests(getContext()));
 		coreGroup->addChild(new glcts::ComputeShaderTests(getContext()));
 		coreGroup->addChild(new glcts::ShaderImageLoadStoreTests(getContext()));

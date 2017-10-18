@@ -48,3 +48,12 @@ dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.level_1
 dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_1
 dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.level_2
 dEQP-VK.glsl.texture_gather.basic.cube.depth32f.base_level.sparse_level_2
+
+
+#
+# VK-GL-CTS Issue #757
+#
+# This occurs on some versions of Broadcom's Videocore GPUs. On affected devices depth clipping
+# is incorrectly disabled when the viewport minDepth is equal to maxDepth.
+#
+dEQP-VK.draw.inverted_depth_ranges.nodepthclamp_deltazero

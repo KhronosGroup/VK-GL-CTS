@@ -1831,6 +1831,11 @@ KHR-GLES31.core.vertex_attrib_binding.negative-bindVertexBuffer
 KHR-GLES31.core.vertex_attrib_binding.negative-vertexAttribFormat
 KHR-GLES31.core.vertex_attrib_binding.negative-vertexAttribBinding
 KHR-GLES31.core.vertex_attrib_binding.negative-vertexAttribDivisor
+KHR-GLES31.core.shader_macros.fragment_precision_high_vertex
+KHR-GLES31.core.shader_macros.fragment_precision_high_fragment
+KHR-GLES31.core.shader_macros.fragment_precision_high_geometry
+KHR-GLES31.core.shader_macros.fragment_precision_high_tess_control
+KHR-GLES31.core.shader_macros.fragment_precision_high_tess_eval
 KHR-GLES31.core.shader_storage_buffer_object.basic-basic-vs
 KHR-GLES31.core.shader_storage_buffer_object.basic-basic-cs
 KHR-GLES31.core.shader_storage_buffer_object.basic-max
