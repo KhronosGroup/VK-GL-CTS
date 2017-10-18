@@ -17853,7 +17853,8 @@ void VaryingLocationAliasingWithMixedTypesTest::testInit()
 						testCase test_case_out = { gohan,	  goten,	 false, (Utils::Shader::STAGES)stage,
 												   type_gohan, type_goten };
 
-						m_test_cases.push_back(test_case_in);
+						if (Utils::Shader::VERTEX != stage)
+							m_test_cases.push_back(test_case_in);
 
 						/* Skip double outputs in fragment shader */
 						if ((Utils::Shader::FRAGMENT != stage) || ((Utils::Type::Double != type_gohan.m_basic_type) &&
@@ -17871,7 +17872,8 @@ void VaryingLocationAliasingWithMixedTypesTest::testInit()
 						testCase test_case_out = { gohan,	  goten,	 false, (Utils::Shader::STAGES)stage,
 												   type_gohan, type_goten };
 
-						m_test_cases.push_back(test_case_in);
+						if (Utils::Shader::VERTEX != stage)
+							m_test_cases.push_back(test_case_in);
 
 						/* Skip double outputs in fragment shader */
 						if ((Utils::Shader::FRAGMENT != stage) || ((Utils::Type::Double != type_gohan.m_basic_type) &&
