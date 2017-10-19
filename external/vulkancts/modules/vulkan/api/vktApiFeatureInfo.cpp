@@ -2548,12 +2548,79 @@ Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, cons
 	return createDefaultInstance(vkp, context.getUsedApiVersion(), vector<string>() /* layers */, enabledExts);
 }
 
+string toString (const VkPhysicalDevice16BitStorageFeatures& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDevice16BitStorageFeatures = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tstorageBuffer16BitAccess = " << value.storageBuffer16BitAccess << '\n';
+	s << "\tuniformAndStorageBuffer16BitAccess = " << value.uniformAndStorageBuffer16BitAccess << '\n';
+	s << "\tstoragePushConstant16 = " << value.storagePushConstant16 << '\n';
+	s << "\tstorageInputOutput16 = " << value.storageInputOutput16 << '\n';
+	s << '}';
+	return s.str();
+}
+
+string toString (const VkPhysicalDeviceMultiviewFeatures& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceMultiviewFeatures = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tmultiview = " << value.multiview << '\n';
+	s << "\tmultiviewGeometryShader = " << value.multiviewGeometryShader << '\n';
+	s << "\tmultiviewTessellationShader = " << value.multiviewTessellationShader << '\n';
+	s << '}';
+	return s.str();
+}
+
+string toString (const VkPhysicalDeviceProtectedMemoryFeatures& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceProtectedMemoryFeatures = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tprotectedMemory = " << value.protectedMemory << '\n';
+	s << '}';
+	return s.str();
+}
+
+string toString (const VkPhysicalDeviceSamplerYcbcrConversionFeatures& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceSamplerYcbcrConversionFeatures = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tsamplerYcbcrConversion = " << value.samplerYcbcrConversion << '\n';
+	s << '}';
+	return s.str();
+}
+
+string toString (const VkPhysicalDeviceVariablePointerFeatures& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceVariablePointerFeatures = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tvariablePointersStorageBuffer = " << value.variablePointersStorageBuffer << '\n';
+	s << "\tvariablePointers = " << value.variablePointers << '\n';
+	s << '}';
+	return s.str();
+}
+
+bool checkExtension (vector<VkExtensionProperties>& properties, const char* extension)
+{
+	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
+	{
+		if (strcmp(properties[ndx].extensionName, extension) == 0)
+			return true;
+	}
+	return false;
+}
+
 tcu::TestStatus deviceFeatures2 (Context& context)
 {
 	const PlatformInterface&			vkp			= context.getPlatformInterface();
 	const VkInstance					instance	(context.getInstance());
 	const InstanceDriver				vki			(vkp, instance);
 	const vector<VkPhysicalDevice>		devices		= enumeratePhysicalDevices(vki, instance);
+	TestLog&							log			= context.getTestContext().getLog();
 
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
 	{
@@ -2562,6 +2629,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 		deMemset(&coreFeatures, 0xcd, sizeof(coreFeatures));
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+		std::vector<std::string> instExtensions = context.getInstanceExtensions();
 
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		extFeatures.pNext = DE_NULL;
@@ -2574,9 +2642,181 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 		if (deMemCmp(&coreFeatures, &extFeatures.features, sizeof(VkPhysicalDeviceFeatures)) != 0)
 			TCU_FAIL("Mismatch between features reported by vkGetPhysicalDeviceFeatures and vkGetPhysicalDeviceFeatures2");
-	}
 
+		log << TestLog::Message << "device = " << deviceNdx << TestLog::EndMessage
+		<< TestLog::Message << extFeatures << TestLog::EndMessage;
+
+		bool khr_16bit_storage			= true;
+		bool khr_multiview				= true;
+		bool deviceProtectedMemory		= true;
+		bool sampler_ycbcr_conversion	= true;
+		bool variable_pointers			= true;
+		if (getPhysicalDeviceProperties(vki, devices[deviceNdx]).apiVersion < VK_API_VERSION_1_1)
+		{
+			vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, devices[deviceNdx], DE_NULL);
+			khr_16bit_storage = checkExtension(properties,"VK_KHR_16bit_storage");
+			khr_multiview = checkExtension(properties,"VK_KHR_multiview");
+			deviceProtectedMemory = false;
+			sampler_ycbcr_conversion = checkExtension(properties,"VK_KHR_sampler_ycbcr_conversion");
+			variable_pointers = checkExtension(properties,"VK_KHR_variable_pointers");
+		}
+
+		const int count = 2u;
+		VkPhysicalDevice16BitStorageFeatures				device16BitStorageFeatures[count];
+		VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures[count];
+		VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
+		VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
+		VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			deMemset(&device16BitStorageFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDevice16BitStorageFeatures));
+			deMemset(&deviceMultiviewFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
+			deMemset(&protectedMemoryFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
+			deMemset(&samplerYcbcrConversionFeatures[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
+			deMemset(&variablePointerFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
+
+			device16BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+			device16BitStorageFeatures[ndx].pNext = &deviceMultiviewFeatures[ndx];
+
+			deviceMultiviewFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES;
+			deviceMultiviewFeatures[ndx].pNext = &protectedMemoryFeatures[ndx];
+
+			protectedMemoryFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
+			protectedMemoryFeatures[ndx].pNext = &samplerYcbcrConversionFeatures[ndx];
+
+			samplerYcbcrConversionFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
+			samplerYcbcrConversionFeatures[ndx].pNext = &variablePointerFeatures[ndx].sType;
+
+			variablePointerFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
+			variablePointerFeatures[ndx].pNext = DE_NULL;
+
+			deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+			extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			extFeatures.pNext = &device16BitStorageFeatures[ndx];
+
+			vki.getPhysicalDeviceFeatures2(devices[deviceNdx], &extFeatures);
+		}
+
+		if ( khr_16bit_storage &&
+			(device16BitStorageFeatures[0].storageBuffer16BitAccess				!= device16BitStorageFeatures[1].storageBuffer16BitAccess ||
+			device16BitStorageFeatures[0].uniformAndStorageBuffer16BitAccess	!= device16BitStorageFeatures[1].uniformAndStorageBuffer16BitAccess ||
+			device16BitStorageFeatures[0].storagePushConstant16					!= device16BitStorageFeatures[1].storagePushConstant16 ||
+			device16BitStorageFeatures[0].storageInputOutput16					!= device16BitStorageFeatures[1].storageInputOutput16)
+			)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDevice16BitStorageFeatures");
+		}
+
+		if (khr_multiview &&
+			(deviceMultiviewFeatures[0].multiview					!= deviceMultiviewFeatures[1].multiview ||
+			deviceMultiviewFeatures[0].multiviewGeometryShader		!= deviceMultiviewFeatures[1].multiviewGeometryShader ||
+			deviceMultiviewFeatures[0].multiviewTessellationShader	!= deviceMultiviewFeatures[1].multiviewTessellationShader)
+			)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceMultiviewFeatures");
+		}
+
+		if (deviceProtectedMemory && protectedMemoryFeatures[0].protectedMemory != protectedMemoryFeatures[1].protectedMemory)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceProtectedMemoryFeatures");
+		}
+
+		if (sampler_ycbcr_conversion && samplerYcbcrConversionFeatures[0].samplerYcbcrConversion != samplerYcbcrConversionFeatures[1].samplerYcbcrConversion)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceSamplerYcbcrConversionFeatures");
+		}
+
+		if (variable_pointers &&
+			(variablePointerFeatures[0].variablePointersStorageBuffer	!= variablePointerFeatures[1].variablePointersStorageBuffer ||
+			variablePointerFeatures[0].variablePointers					!= variablePointerFeatures[1].variablePointers)
+			)
+		{
+			TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointerFeatures");
+		}
+		if (khr_16bit_storage)
+			log << TestLog::Message << toString(device16BitStorageFeatures[0])		<< TestLog::EndMessage;
+		if (khr_multiview)
+			log << TestLog::Message << toString(deviceMultiviewFeatures[0])			<< TestLog::EndMessage;
+		if (deviceProtectedMemory)
+			log << TestLog::Message << toString(protectedMemoryFeatures[0])			<< TestLog::EndMessage;
+		if (sampler_ycbcr_conversion)
+			log << TestLog::Message << toString(samplerYcbcrConversionFeatures[0])	<< TestLog::EndMessage;
+		if(variable_pointers)
+			log << TestLog::Message << toString(variablePointerFeatures[0])			<< TestLog::EndMessage;
+	}
 	return tcu::TestStatus::pass("Querying device features succeeded");
+}
+
+
+string toString (const VkPhysicalDeviceIDProperties& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceIDProperties = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceUUID))) << '\n';
+	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.driverUUID))) << '\n';
+	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceLUID))) << '\n';
+	s << "\tdeviceNodeMask = " << value.deviceNodeMask << '\n';
+	s << "\tdeviceLUIDValid = " << value.deviceLUIDValid << '\n';
+	s << '}';
+	return s.str();
+}
+
+string toString (const VkPhysicalDeviceMaintenance3Properties& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceMaintenance3Properties = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tmaxPerSetDescriptors = " << value.maxPerSetDescriptors << '\n';
+	s << "\tmaxMemoryAllocationSize = " << value.maxMemoryAllocationSize << '\n';
+	s << '}';
+	return s.str();
+}
+
+string toString (const VkPhysicalDeviceMultiviewProperties& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceMultiviewProperties = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tmaxMultiviewViewCount = " << value.maxMultiviewViewCount << '\n';
+	s << "\tmaxMultiviewInstanceIndex = " << value.maxMultiviewInstanceIndex << '\n';
+	s << '}';
+	return s.str();
+}
+
+string toString (const VkPhysicalDevicePointClippingProperties& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDevicePointClippingProperties = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpointClippingBehavior = " << value.pointClippingBehavior << '\n';
+	s << '}';
+	return s.str();
+}
+
+string toString (const VkPhysicalDeviceProtectedMemoryProperties& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceProtectedMemoryProperties = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tprotectedNoFault = " << value.protectedNoFault << '\n';
+	s << '}';
+	return s.str();
+}
+
+
+string toString (const VkPhysicalDeviceSubgroupProperties& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceSubgroupProperties = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tsubgroupSize = " << value.subgroupSize << '\n';
+	s << "\tsupportedStages = " << getShaderStageFlagsStr(value.supportedStages) << '\n';
+	s << "\tsupportedOperations = " << getSubgroupFeatureFlagsStr(value.supportedOperations) << '\n';
+	s << "\tquadOperationsInAllStages = " << value.quadOperationsInAllStages << '\n';
+	s << '}';
+	return s.str();
 }
 
 tcu::TestStatus deviceProperties2 (Context& context)
@@ -2585,6 +2825,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	const Unique<VkInstance>		instance	(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver			vki			(vkp, *instance);
 	const vector<VkPhysicalDevice>	devices		= enumeratePhysicalDevices(vki, *instance);
+	TestLog&						log			= context.getTestContext().getLog();
 
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
 	{
@@ -2614,9 +2855,98 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			if (deMemCmp(corePropertyBytes, extPropertyBytes, size) != 0)
 				TCU_FAIL("Mismatch between properties reported by vkGetPhysicalDeviceProperties and vkGetPhysicalDeviceProperties2");
 		}
+
+		log << TestLog::Message << "device " << deviceNdx << TestLog::EndMessage
+			<< TestLog::Message << extProperties.properties << TestLog::EndMessage;
+
+		if (getPhysicalDeviceProperties(vki, devices[deviceNdx]).apiVersion >= VK_API_VERSION_1_1)
+		{
+			const int count = 2u;
+			VkPhysicalDeviceIDProperties								IDProperties[count];
+			VkPhysicalDeviceMaintenance3Properties						maintenance3Properties[count];
+			VkPhysicalDeviceMultiviewProperties							multiviewProperties[count];
+			VkPhysicalDevicePointClippingProperties						pointClippingProperties[count];
+			VkPhysicalDeviceProtectedMemoryProperties					protectedMemoryPropertiesKHR[count];
+			VkPhysicalDeviceSubgroupProperties							subgroupProperties[count];
+
+			for (int ndx = 0; ndx < count; ++ndx)
+			{
+
+				deMemset(&IDProperties[ndx],					0xFF, sizeof(VkPhysicalDeviceIDProperties						));
+				deMemset(&maintenance3Properties[ndx],			0xFF, sizeof(VkPhysicalDeviceMaintenance3Properties				));
+				deMemset(&multiviewProperties[ndx],				0xFF, sizeof(VkPhysicalDeviceMultiviewProperties				));
+				deMemset(&pointClippingProperties[ndx],			0xFF, sizeof(VkPhysicalDevicePointClippingProperties			));
+				deMemset(&protectedMemoryPropertiesKHR[ndx],	0xFF, sizeof(VkPhysicalDeviceProtectedMemoryProperties			));
+				deMemset(&subgroupProperties[ndx],				0xFF, sizeof(VkPhysicalDeviceSubgroupProperties					));
+
+
+				IDProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+				IDProperties[ndx].pNext = &maintenance3Properties[ndx];
+
+				maintenance3Properties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
+				maintenance3Properties[ndx].pNext = &multiviewProperties[ndx];
+
+				multiviewProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
+				multiviewProperties[ndx].pNext = &pointClippingProperties[ndx];
+
+				pointClippingProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES;
+				pointClippingProperties[ndx].pNext = &protectedMemoryPropertiesKHR[ndx];
+
+				protectedMemoryPropertiesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES;
+				protectedMemoryPropertiesKHR[ndx].pNext = &subgroupProperties[ndx];
+
+				subgroupProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+				subgroupProperties[ndx].pNext = DE_NULL;
+
+				extProperties.pNext = &IDProperties[ndx];
+
+				vki.getPhysicalDeviceProperties2(devices[deviceNdx], &extProperties);
+
+
+				IDProperties[ndx].pNext						= DE_NULL;
+				maintenance3Properties[ndx].pNext			= DE_NULL;
+				multiviewProperties[ndx].pNext				= DE_NULL;
+				pointClippingProperties[ndx].pNext			= DE_NULL;
+				protectedMemoryPropertiesKHR[ndx].pNext		= DE_NULL;
+				subgroupProperties[ndx].pNext				= DE_NULL;
+			}
+
+			if (
+				deMemCmp(&IDProperties[0],					&IDProperties[1],					sizeof(VkPhysicalDeviceIDProperties	))							!= 0 ||
+				deMemCmp(&maintenance3Properties[0],		&maintenance3Properties[1],			sizeof(VkPhysicalDeviceMaintenance3Properties))					!= 0 ||
+				deMemCmp(&multiviewProperties[0],			&multiviewProperties[1],			sizeof(VkPhysicalDeviceMultiviewProperties))					!= 0 ||
+				deMemCmp(&pointClippingProperties[0],		&pointClippingProperties[1],		sizeof(VkPhysicalDevicePointClippingProperties))				!= 0 ||
+				deMemCmp(&protectedMemoryPropertiesKHR[0],	&protectedMemoryPropertiesKHR[1],	sizeof(VkPhysicalDeviceProtectedMemoryProperties))				!= 0 ||
+				deMemCmp(&subgroupProperties[0],			&subgroupProperties[1],				sizeof(VkPhysicalDeviceSubgroupProperties))						!= 0
+				)
+			{
+				TCU_FAIL("Mismatch in vkGetPhysicalDeviceProperties2");
+			}
+
+			log << TestLog::Message	<< toString(IDProperties[0])				<< TestLog::EndMessage
+			<< TestLog::Message		<< toString(maintenance3Properties[0])			<< TestLog::EndMessage
+			<< TestLog::Message		<< toString(multiviewProperties[0])				<< TestLog::EndMessage
+			<< TestLog::Message		<< toString(pointClippingProperties[0])			<< TestLog::EndMessage
+			<< TestLog::Message		<< toString(protectedMemoryPropertiesKHR[0])	<< TestLog::EndMessage
+			<< TestLog::Message		<< toString(subgroupProperties[0])				<< TestLog::EndMessage;
+		}
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");
+}
+
+string toString (const VkFormatProperties2& value)
+{
+	std::ostringstream	s;
+	s << "VkFormatProperties2 = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tformatProperties = {\n";
+	s << "\tlinearTilingFeatures = " << getFormatFeatureFlagsStr(value.formatProperties.linearTilingFeatures) << '\n';
+	s << "\toptimalTilingFeatures = " << getFormatFeatureFlagsStr(value.formatProperties.optimalTilingFeatures) << '\n';
+	s << "\tbufferFeatures = " << getFormatFeatureFlagsStr(value.formatProperties.bufferFeatures) << '\n';
+	s << "\t}";
+	s << "}";
+	return s.str();
 }
 
 tcu::TestStatus deviceFormatProperties2 (Context& context)
@@ -2625,6 +2955,7 @@ tcu::TestStatus deviceFormatProperties2 (Context& context)
 	const Unique<VkInstance>		instance	(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver			vki			(vkp, *instance);
 	const vector<VkPhysicalDevice>	devices		= enumeratePhysicalDevices(vki, *instance);
+	TestLog&						log			= context.getTestContext().getLog();
 
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
 	{
@@ -2650,10 +2981,23 @@ tcu::TestStatus deviceFormatProperties2 (Context& context)
 
 		if (deMemCmp(&coreProperties, &extProperties.formatProperties, sizeof(VkFormatProperties)) != 0)
 			TCU_FAIL("Mismatch between format properties reported by vkGetPhysicalDeviceFormatProperties and vkGetPhysicalDeviceFormatProperties2");
+
+		log << TestLog::Message << "device = " << deviceNdx << " VkFormat = " << format << TestLog::EndMessage
+			<< TestLog::Message << toString (extProperties) << TestLog::EndMessage;
 		}
 	}
 
 	return tcu::TestStatus::pass("Querying device format properties succeeded");
+}
+
+string toString (const VkQueueFamilyProperties2& value)
+{
+	std::ostringstream	s;
+	s << "VkQueueFamilyProperties2 = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tqueueFamilyProperties = " << value.queueFamilyProperties << '\n';
+	s << '}';
+	return s.str();
 }
 
 tcu::TestStatus deviceQueueFamilyProperties2 (Context& context)
@@ -2662,6 +3006,7 @@ tcu::TestStatus deviceQueueFamilyProperties2 (Context& context)
 	const Unique<VkInstance>		instance	(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver			vki			(vkp, *instance);
 	const vector<VkPhysicalDevice>	devices		= enumeratePhysicalDevices(vki, *instance);
+	TestLog&						log			= context.getTestContext().getLog();
 
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
 	{
@@ -2677,7 +3022,7 @@ tcu::TestStatus deviceQueueFamilyProperties2 (Context& context)
 
 		{
 			std::vector<VkQueueFamilyProperties>		coreProperties	(numCoreQueueFamilies);
-			std::vector<VkQueueFamilyProperties2>	extProperties	(numExtQueueFamilies);
+			std::vector<VkQueueFamilyProperties2>		extProperties	(numExtQueueFamilies);
 
 			deMemset(&coreProperties[0], 0xcd, sizeof(VkQueueFamilyProperties)*numCoreQueueFamilies);
 			deMemset(&extProperties[0], 0xcd, sizeof(VkQueueFamilyProperties2)*numExtQueueFamilies);
@@ -2702,6 +3047,9 @@ tcu::TestStatus deviceQueueFamilyProperties2 (Context& context)
 
 				if (deMemCmp(&coreProperties[ndx], &extProperties[ndx].queueFamilyProperties, sizeof(VkQueueFamilyProperties)) != 0)
 					TCU_FAIL("Mismatch between format properties reported by vkGetPhysicalDeviceQueueFamilyProperties and vkGetPhysicalDeviceQueueFamilyProperties2");
+
+				log << TestLog::Message << "device = " << deviceNdx << " queueFamilyNdx = " << ndx <<TestLog::EndMessage
+				<< TestLog::Message << toString(extProperties[ndx]) << TestLog::EndMessage;
 			}
 		}
 	}
@@ -2715,6 +3063,7 @@ tcu::TestStatus deviceMemoryProperties2 (Context& context)
 	const Unique<VkInstance>		instance	(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver			vki			(vkp, *instance);
 	const vector<VkPhysicalDevice>	devices		= enumeratePhysicalDevices(vki, *instance);
+	TestLog&						log			= context.getTestContext().getLog();
 
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
 	{
@@ -2735,6 +3084,9 @@ tcu::TestStatus deviceMemoryProperties2 (Context& context)
 
 		if (deMemCmp(&coreProperties, &extProperties.memoryProperties, sizeof(VkPhysicalDeviceMemoryProperties)) != 0)
 			TCU_FAIL("Mismatch between properties reported by vkGetPhysicalDeviceMemoryProperties and vkGetPhysicalDeviceMemoryProperties2");
+
+		log << TestLog::Message << "device = " << deviceNdx << TestLog::EndMessage
+			<< TestLog::Message << extProperties << TestLog::EndMessage;
 	}
 
 	return tcu::TestStatus::pass("Querying device memory properties succeeded");
