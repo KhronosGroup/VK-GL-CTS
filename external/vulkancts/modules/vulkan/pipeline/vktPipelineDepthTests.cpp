@@ -112,24 +112,37 @@ public:
 
 	static const float					quadDepths[QUAD_COUNT];
 
+	enum
+	{
+		DEPTH_BOUNDS_MIN	= 0,
+		DEPTH_BOUNDS_MAX	= 1,
+		DEPTH_BOUNDS_COUNT	= 2
+	};
+	static const float					depthBounds[DEPTH_BOUNDS_COUNT];
+
 										DepthTest				(tcu::TestContext&		testContext,
 																 const std::string&		name,
 																 const std::string&		description,
 																 const VkFormat			depthFormat,
-																 const VkCompareOp		depthCompareOps[QUAD_COUNT]);
+																 const VkCompareOp		depthCompareOps[QUAD_COUNT],
+																 const bool				depthBoundsTestEnable			= false);
 	virtual								~DepthTest				(void);
 	virtual void						initPrograms			(SourceCollections& programCollection) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
 
 private:
 	const VkFormat						m_depthFormat;
+	const bool							m_depthBoundsTestEnable;
 	VkCompareOp							m_depthCompareOps[QUAD_COUNT];
 };
 
 class DepthTestInstance : public vkt::TestInstance
 {
 public:
-										DepthTestInstance		(Context& context, const VkFormat depthFormat, const VkCompareOp depthCompareOps[DepthTest::QUAD_COUNT]);
+										DepthTestInstance		(Context&			context,
+																 const VkFormat		depthFormat,
+																 const VkCompareOp	depthCompareOps[DepthTest::QUAD_COUNT],
+																 const bool			depthBoundsTestEnable);
 	virtual								~DepthTestInstance		(void);
 	virtual tcu::TestStatus				iterate					(void);
 
@@ -141,6 +154,7 @@ private:
 	const tcu::UVec2					m_renderSize;
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_depthFormat;
+	const bool							m_depthBoundsTestEnable;
 	VkImageSubresourceRange				m_depthImageSubresourceRange;
 
 	Move<VkImage>						m_colorImage;
@@ -176,13 +190,21 @@ const float DepthTest::quadDepths[QUAD_COUNT] =
 	0.2f
 };
 
+const float DepthTest::depthBounds[DEPTH_BOUNDS_COUNT] =
+{
+	0.1f,
+	0.25f
+};
+
 DepthTest::DepthTest (tcu::TestContext&		testContext,
 					  const std::string&	name,
 					  const std::string&	description,
 					  const VkFormat		depthFormat,
-					  const VkCompareOp		depthCompareOps[QUAD_COUNT])
+					  const VkCompareOp		depthCompareOps[QUAD_COUNT],
+					  const bool			depthBoundsTestEnable)
 	: vkt::TestCase	(testContext, name, description)
-	, m_depthFormat	(depthFormat)
+	, m_depthFormat				(depthFormat)
+	, m_depthBoundsTestEnable	(depthBoundsTestEnable)
 {
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * QUAD_COUNT);
 }
@@ -193,7 +215,7 @@ DepthTest::~DepthTest (void)
 
 TestInstance* DepthTest::createInstance (Context& context) const
 {
-	return new DepthTestInstance(context, m_depthFormat, m_depthCompareOps);
+	return new DepthTestInstance(context, m_depthFormat, m_depthCompareOps, m_depthBoundsTestEnable);
 }
 
 void DepthTest::initPrograms (SourceCollections& programCollection) const
@@ -221,17 +243,23 @@ void DepthTest::initPrograms (SourceCollections& programCollection) const
 
 DepthTestInstance::DepthTestInstance (Context&				context,
 									  const VkFormat		depthFormat,
-									  const VkCompareOp		depthCompareOps[DepthTest::QUAD_COUNT])
-	: vkt::TestInstance	(context)
-	, m_renderSize		(32, 32)
-	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_depthFormat		(depthFormat)
+									  const VkCompareOp		depthCompareOps[DepthTest::QUAD_COUNT],
+									  const bool			depthBoundsTestEnable)
+	: vkt::TestInstance			(context)
+	, m_renderSize				(32, 32)
+	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_depthFormat				(depthFormat)
+	, m_depthBoundsTestEnable	(depthBoundsTestEnable)
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const VkDevice				vkDevice				= context.getDevice();
 	const deUint32				queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
 	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()));
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+
+	// Check depthBounds support
+	if (m_depthBoundsTestEnable && !context.getDeviceFeatures().depthBounds)
+		TCU_THROW(NotSupportedError, "depthBounds feature is not supported");
 
 	// Copy depth operators
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * DepthTest::QUAD_COUNT);
@@ -608,7 +636,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			true,														// VkBool32									depthTestEnable;
 			true,														// VkBool32									depthWriteEnable;
 			VK_COMPARE_OP_LESS,											// VkCompareOp								depthCompareOp;
-			false,														// VkBool32									depthBoundsTestEnable;
+			m_depthBoundsTestEnable,									// VkBool32									depthBoundsTestEnable;
 			false,														// VkBool32									stencilTestEnable;
 			// VkStencilOpState	front;
 			{
@@ -630,8 +658,8 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 				0u,						// deUint32		writeMask;
 				0u,						// deUint32		reference;
 			},
-			0.0f,														// float			minDepthBounds;
-			1.0f,														// float			maxDepthBounds;
+			m_depthBoundsTestEnable ? DepthTest::depthBounds[DepthTest::DEPTH_BOUNDS_MIN] : 0.0f,	// float			minDepthBounds;
+			m_depthBoundsTestEnable ? DepthTest::depthBounds[DepthTest::DEPTH_BOUNDS_MAX] : 1.0f,	// float			maxDepthBounds;
 		};
 
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
@@ -758,7 +786,8 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(imageLayoutBarriers), imageLayoutBarriers);
 
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -829,6 +858,12 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 			rr::RenderState renderState(refRenderer.getViewportState());
 			renderState.fragOps.depthTestEnabled = true;
 			renderState.fragOps.depthFunc = mapVkCompareOp(m_depthCompareOps[quadNdx]);
+			if (m_depthBoundsTestEnable)
+			{
+				renderState.fragOps.depthBoundsTestEnabled = true;
+				renderState.fragOps.minDepthBound = DepthTest::depthBounds[DepthTest::DEPTH_BOUNDS_MIN];
+				renderState.fragOps.maxDepthBound = DepthTest::depthBounds[DepthTest::DEPTH_BOUNDS_MAX];
+			}
 
 			refRenderer.draw(renderState,
 							 rr::PRIMITIVETYPE_TRIANGLES,
@@ -1051,6 +1086,13 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 														getCompareOpsDescription(depthOps[opsNdx]),
 														depthFormats[formatNdx],
 														depthOps[opsNdx]));
+
+				compareOpsTests->addChild(new DepthTest(testCtx,
+														getCompareOpsName(depthOps[opsNdx]) + "_depth_bounds_test",
+														getCompareOpsDescription(depthOps[opsNdx]) + " with depth bounds test enabled",
+														depthFormats[formatNdx],
+														depthOps[opsNdx],
+														true));
 			}
 			formatTest->addChild(compareOpsTests.release());
 			formatTests->addChild(formatTest.release());

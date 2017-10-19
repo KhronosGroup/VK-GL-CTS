@@ -45,13 +45,16 @@ public:
 protected:
 	void					initialize						(void);
 
+	virtual void			initRenderPass					(const vk::VkDevice				device);
+	virtual void			initFramebuffer					(const vk::VkDevice				device);
 	virtual void			initPipeline					(const vk::VkDevice				device);
 
 	virtual tcu::TestStatus iterate							(void);
 
 	void					beginRenderPass					(void);
 
-	void					beginRenderPassWithClearColor	(const vk::VkClearColorValue&	clearColor);
+	void					beginRenderPassWithClearColor	(const vk::VkClearColorValue&	clearColor,
+															 const bool						skipBeginCmdBuffer	= false);
 
 	void					setDynamicViewportState			(const deUint32					width,
 															const deUint32					height);

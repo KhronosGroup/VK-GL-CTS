@@ -26,6 +26,7 @@
 
 #include "vktTestCaseUtil.hpp"
 #include "vktDynamicStateTestCaseUtil.hpp"
+#include "vktDynamicStateBaseClass.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
@@ -36,6 +37,7 @@
 
 #include "vkRefUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkTypeUtil.hpp"
 
 #include "vktDrawCreateInfoUtil.hpp"
 #include "vktDrawImageObjectUtil.hpp"
@@ -525,6 +527,266 @@ public:
 	}
 };
 
+class DepthBoundsTestInstance : public DynamicStateBaseClass
+{
+public:
+	enum
+	{
+		DEPTH_BOUNDS_MIN	= 0,
+		DEPTH_BOUNDS_MAX	= 1,
+		DEPTH_BOUNDS_COUNT	= 2
+	};
+	static const float					depthBounds[DEPTH_BOUNDS_COUNT];
+
+								DepthBoundsTestInstance		(Context&				context,
+															 ShaderMap				shaders);
+	virtual void				initRenderPass				(const vk::VkDevice		device);
+	virtual void				initFramebuffer				(const vk::VkDevice		device);
+	virtual void				initPipeline				(const vk::VkDevice		device);
+	virtual tcu::TestStatus		iterate						(void);
+private:
+	const vk::VkFormat			m_depthAttachmentFormat;
+
+	de::SharedPtr<Draw::Image>	m_depthImage;
+	vk::Move<vk::VkImageView>	m_depthView;
+};
+
+const float DepthBoundsTestInstance::depthBounds[DEPTH_BOUNDS_COUNT] =
+{
+	0.3f,
+	0.9f
+};
+
+DepthBoundsTestInstance::DepthBoundsTestInstance(Context& context, ShaderMap shaders)
+	: DynamicStateBaseClass		(context, shaders[glu::SHADERTYPE_VERTEX], shaders[glu::SHADERTYPE_FRAGMENT])
+	, m_depthAttachmentFormat	(vk::VK_FORMAT_D16_UNORM)
+{
+	// Check depthBounds support
+	if (!context.getDeviceFeatures().depthBounds)
+		TCU_THROW(NotSupportedError, "depthBounds feature is not supported");
+
+	const vk::VkDevice device = m_context.getDevice();
+
+	const vk::VkExtent3D depthImageExtent = { WIDTH, HEIGHT, 1 };
+	const ImageCreateInfo depthImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_depthAttachmentFormat, depthImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
+												vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+	m_depthImage = Image::createAndAlloc(m_vk, device, depthImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
+
+	const ImageViewCreateInfo depthViewInfo(m_depthImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_depthAttachmentFormat);
+	m_depthView = vk::createImageView(m_vk, device, &depthViewInfo);
+
+	m_topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+	m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f,  1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+	m_data.push_back(PositionColorVertex(tcu::Vec4( 1.0f,  1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+	m_data.push_back(PositionColorVertex(tcu::Vec4(-1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+	m_data.push_back(PositionColorVertex(tcu::Vec4( 1.0f, -1.0f, 1.0f, 1.0f), tcu::RGBA::green().toVec()));
+
+	DynamicStateBaseClass::initialize();
+}
+
+
+void DepthBoundsTestInstance::initRenderPass (const vk::VkDevice device)
+{
+	RenderPassCreateInfo renderPassCreateInfo;
+	renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
+		vk::VK_SAMPLE_COUNT_1_BIT,
+		vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+		vk::VK_ATTACHMENT_STORE_OP_STORE,
+		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		vk::VK_ATTACHMENT_STORE_OP_STORE,
+		vk::VK_IMAGE_LAYOUT_GENERAL,
+		vk::VK_IMAGE_LAYOUT_GENERAL));
+	renderPassCreateInfo.addAttachment(AttachmentDescription(m_depthAttachmentFormat,
+		vk::VK_SAMPLE_COUNT_1_BIT,
+		vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+		vk::VK_ATTACHMENT_STORE_OP_STORE,
+		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		vk::VK_ATTACHMENT_STORE_OP_STORE,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
+
+	const vk::VkAttachmentReference colorAttachmentReference =
+	{
+		0,
+		vk::VK_IMAGE_LAYOUT_GENERAL
+	};
+
+	const vk::VkAttachmentReference depthAttachmentReference =
+	{
+		1,
+		vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+	};
+
+	renderPassCreateInfo.addSubpass(SubpassDescription(
+		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
+		0,
+		0,
+		DE_NULL,
+		1,
+		&colorAttachmentReference,
+		DE_NULL,
+		depthAttachmentReference,
+		0,
+		DE_NULL
+	)
+	);
+
+	m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
+}
+
+void DepthBoundsTestInstance::initFramebuffer (const vk::VkDevice device)
+{
+	std::vector<vk::VkImageView> attachments(2);
+	attachments[0] = *m_colorTargetView;
+	attachments[1] = *m_depthView;
+
+	const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, attachments, WIDTH, HEIGHT, 1);
+
+	m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
+}
+
+void DepthBoundsTestInstance::initPipeline (const vk::VkDevice device)
+{
+	const vk::Unique<vk::VkShaderModule> vs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_vertexShaderName), 0));
+	const vk::Unique<vk::VkShaderModule> fs(createShaderModule(m_vk, device, m_context.getBinaryCollection().get(m_fragmentShaderName), 0));
+
+	const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
+
+	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
+	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
+	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
+	pipelineCreateInfo.addState(PipelineCreateInfo::VertexInputState(m_vertexInputState));
+	pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_topology));
+	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &vkCbAttachmentState));
+	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1));
+	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState(false, false, vk::VK_COMPARE_OP_NEVER, true));
+	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
+	pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
+	pipelineCreateInfo.addState(PipelineCreateInfo::DynamicState());
+
+	m_pipeline = vk::createGraphicsPipeline(m_vk, device, DE_NULL, &pipelineCreateInfo);
+}
+
+
+tcu::TestStatus DepthBoundsTestInstance::iterate (void)
+{
+	tcu::TestLog		&log		= m_context.getTestContext().getLog();
+	const vk::VkQueue	queue		= m_context.getUniversalQueue();
+	const vk::VkDevice	device		= m_context.getDevice();
+
+	// Prepare depth image
+	tcu::Texture2D depthData(vk::mapVkFormat(m_depthAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+	depthData.allocLevel(0);
+
+	const deInt32 depthDataWidth	= depthData.getWidth();
+	const deInt32 depthDataHeight	= depthData.getHeight();
+
+	for (int y = 0; y < depthDataHeight; ++y)
+		for (int x = 0; x < depthDataWidth; ++x)
+			depthData.getLevel(0).setPixDepth((float)(y * depthDataWidth + x % 11) / 10, x, y);
+
+	const vk::VkDeviceSize dataSize = depthData.getLevel(0).getWidth() * depthData.getLevel(0).getHeight()
+		* tcu::getPixelSize(mapVkFormat(m_depthAttachmentFormat));
+	de::SharedPtr<Draw::Buffer> stageBuffer = Buffer::createAndAlloc(m_vk, device, BufferCreateInfo(dataSize, vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+		m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
+
+	deUint8* ptr = reinterpret_cast<unsigned char *>(stageBuffer->getBoundMemory().getHostPtr());
+	deMemcpy(ptr, depthData.getLevel(0).getDataPtr(), (size_t)dataSize);
+
+	vk::flushMappedMemoryRange(m_vk, device,
+		stageBuffer->getBoundMemory().getMemory(),
+		stageBuffer->getBoundMemory().getOffset(),
+		dataSize);
+
+	const CmdBufferBeginInfo beginInfo;
+	m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+
+	initialTransitionDepth2DImage(m_vk, *m_cmdBuffer, m_depthImage->object(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+								  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+	const vk::VkBufferImageCopy bufferImageCopy =
+	{
+		(vk::VkDeviceSize)0,														// VkDeviceSize					bufferOffset;
+		0u,																			// deUint32						bufferRowLength;
+		0u,																			// deUint32						bufferImageHeight;
+		vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u),	// VkImageSubresourceLayers		imageSubresource;
+		vk::makeOffset3D(0, 0, 0),													// VkOffset3D					imageOffset;
+		vk::makeExtent3D(WIDTH, HEIGHT, 1u)											// VkExtent3D					imageExtent;
+	};
+	m_vk.cmdCopyBufferToImage(*m_cmdBuffer, stageBuffer->object(), m_depthImage->object(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &bufferImageCopy);
+
+	transition2DImage(m_vk, *m_cmdBuffer, m_depthImage->object(), vk::VK_IMAGE_ASPECT_DEPTH_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					  vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+					  vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+	const vk::VkClearColorValue clearColor = { { 1.0f, 1.0f, 1.0f, 1.0f } };
+	beginRenderPassWithClearColor(clearColor, true);
+
+	// Bind states
+	setDynamicViewportState(WIDTH, HEIGHT);
+	setDynamicRasterizationState();
+	setDynamicBlendState();
+	setDynamicDepthStencilState(depthBounds[DEPTH_BOUNDS_MIN], depthBounds[DEPTH_BOUNDS_MAX]);
+
+	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+	const vk::VkDeviceSize	vertexBufferOffset	= 0;
+	const vk::VkBuffer		vertexBuffer		= m_vertexBuffer->object();
+	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+
+	m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
+
+	m_vk.cmdEndRenderPass(*m_cmdBuffer);
+	m_vk.endCommandBuffer(*m_cmdBuffer);
+
+	vk::VkSubmitInfo submitInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
+		DE_NULL,							// const void*				pNext;
+		0,									// deUint32					waitSemaphoreCount;
+		DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
+		(const vk::VkPipelineStageFlags*)DE_NULL,
+		1,									// deUint32					commandBufferCount;
+		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
+		0,									// deUint32					signalSemaphoreCount;
+		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
+	};
+	m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
+	VK_CHECK(m_vk.queueWaitIdle(queue));
+
+	// Validation
+	{
+		tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
+		referenceFrame.allocLevel(0);
+
+		const deInt32 frameWidth	= referenceFrame.getWidth();
+		const deInt32 frameHeight	= referenceFrame.getHeight();
+
+		tcu::clear(referenceFrame.getLevel(0), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+		for (int y = 0; y < frameHeight; ++y)
+			for (int x = 0; x < frameWidth; ++x)
+				if (depthData.getLevel(0).getPixDepth(x, y) >= depthBounds[DEPTH_BOUNDS_MIN]
+					&& depthData.getLevel(0).getPixDepth(x, y) <= depthBounds[DEPTH_BOUNDS_MAX])
+					referenceFrame.getLevel(0).setPixel(tcu::RGBA::green().toVec(), x, y);
+
+		const vk::VkOffset3D zeroOffset = { 0, 0, 0 };
+		const tcu::ConstPixelBufferAccess renderedFrame = m_colorTargetImage->readSurface(queue, m_context.getDefaultAllocator(),
+			vk::VK_IMAGE_LAYOUT_GENERAL, zeroOffset, WIDTH, HEIGHT, vk::VK_IMAGE_ASPECT_COLOR_BIT);
+
+		if (!tcu::fuzzyCompare(log, "Result", "Image comparison result",
+			referenceFrame.getLevel(0), renderedFrame, 0.05f,
+			tcu::COMPARE_LOG_RESULT))
+		{
+			return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Image verification failed");
+		}
+
+		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Image verification passed");
+	}
+}
+
 class StencilParamsBasicTestInstance : public DepthStencilBaseCase
 {
 protected:
@@ -863,7 +1125,8 @@ void DynamicStateDSTests::init (void)
 	shaderPaths[glu::SHADERTYPE_VERTEX] = "vulkan/dynamic_state/VertexFetch.vert";
 	shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
-	addChild(new InstanceFactory<DepthBoundsParamTestInstance>(m_testCtx, "depth_bounds", "Perform depth bounds test", shaderPaths));
+	addChild(new InstanceFactory<DepthBoundsParamTestInstance>(m_testCtx, "depth_bounds_1", "Perform depth bounds test 1", shaderPaths));
+	addChild(new InstanceFactory<DepthBoundsTestInstance>(m_testCtx, "depth_bounds_2", "Perform depth bounds test 1", shaderPaths));
 	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_1", "Perform basic stencil test 1", 0x0D, 0x06, 0x05, tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f)));
 	addChild(new StencilParamsBasicTestCase(m_testCtx, "stencil_params_basic_2", "Perform basic stencil test 2", 0x06, 0x02, 0x05, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)));
 	addChild(new InstanceFactory<StencilParamsAdvancedTestInstance>(m_testCtx, "stencil_params_advanced", "Perform advanced stencil test", shaderPaths));
