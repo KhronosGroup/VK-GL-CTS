@@ -1665,6 +1665,7 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGroup*
 		"OpDecorate %arr2_v4float        ArrayStride 16			\n"
 		"OpDecorate %arr2_inner_struct   ArrayStride 64			\n"
 		"OpDecorate %mat2x2_inner_struct ArrayStride 128		\n"
+		"OpDecorate %mat2x2_ptr			 ArrayStride 128		\n"
 		"OpDecorate %sb_buf              ArrayStride 256		\n"
 		"OpDecorate %v4f32_ptr           ArrayStride 16			\n"
 
@@ -1743,6 +1744,10 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGroup*
 		"%param			= OpFunctionParameter %v4f32\n"
 		"%entry			= OpLabel\n"
 
+		// Define base pointers for OpPtrAccessChain
+		"%in_a_matptr	= OpAccessChain %mat2x2_ptr %in_a %c_i32_0\n"
+		"%in_b_matptr	= OpAccessChain %mat2x2_ptr %in_b %c_i32_0\n"
+
 		// Define the 2 pointers from which we're going to choose one.
 		"${a_loc} \n"
 		"${b_loc} \n"
@@ -1799,34 +1804,34 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGroup*
 											"%b_loc = OpAccessChain %sb_f32ptr        %in_b %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_3"};
 
 		const string inputAPtrAccessChain[]	= {	"",
-											"%a_loc = OpPtrAccessChain %mat2x2_ptr       %in_a %c_i32_0 %c_i32_0",
-											"%a_loc = OpPtrAccessChain %arr2_ptr         %in_a %c_i32_0 %c_i32_0 %c_i32_0",
-											"%a_loc = OpPtrAccessChain %inner_struct_ptr %in_a %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1",
-											"%a_loc = OpPtrAccessChain %arr_v4f32_ptr    %in_a %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_1",
-											"%a_loc = OpPtrAccessChain %v4f32_ptr        %in_a %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_0 %c_i32_0 %c_i32_0",
+											"%a_loc = OpPtrAccessChain %mat2x2_ptr       %in_a_matptr %c_i32_0",
+											"%a_loc = OpPtrAccessChain %arr2_ptr         %in_a_matptr %c_i32_0 %c_i32_0",
+											"%a_loc = OpPtrAccessChain %inner_struct_ptr %in_a_matptr %c_i32_0 %c_i32_1 %c_i32_1",
+											"%a_loc = OpPtrAccessChain %arr_v4f32_ptr    %in_a_matptr %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_1",
+											"%a_loc = OpPtrAccessChain %v4f32_ptr        %in_a_matptr %c_i32_0 %c_i32_1 %c_i32_0 %c_i32_0 %c_i32_0",
 											// Next case emulates:
-											// %a_loc = OpPtrAccessChain %sb_f32ptr      %in_a %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_3
+											// %a_loc = OpPtrAccessChain %sb_f32ptr      %in_a_matptr %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_3
 											// But rewrite it to exercise OpPtrAccessChain with a non-zero first index:
 											//    %a_loc_arr is a pointer to an array that we want to index with 1.
 											// But instead of just using OpAccessChain with first index 1, use OpAccessChain with index 0 to
 											// get a pointer to the first element, then send that into OpPtrAccessChain with index 1.
-											"%a_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_a %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
+											"%a_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_a_matptr %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
 											"%a_loc_first_elem = OpAccessChain %v4f32_ptr %a_loc_arr %c_i32_0 "
 											"%a_loc = OpPtrAccessChain %sb_f32ptr %a_loc_first_elem %c_i32_1 %c_i32_3"};
 
 		const string inputBPtrAccessChain[]	= {	"",
-											"%b_loc = OpPtrAccessChain %mat2x2_ptr       %in_b %c_i32_0 %c_i32_0",
-											"%b_loc = OpPtrAccessChain %arr2_ptr         %in_b %c_i32_0 %c_i32_0 %c_i32_0",
-											"%b_loc = OpPtrAccessChain %inner_struct_ptr %in_b %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1",
-											"%b_loc = OpPtrAccessChain %arr_v4f32_ptr    %in_b %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_1",
-											"%b_loc = OpPtrAccessChain %v4f32_ptr        %in_b %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_0 %c_i32_0 %c_i32_0",
+											"%b_loc = OpPtrAccessChain %mat2x2_ptr       %in_b_matptr %c_i32_0",
+											"%b_loc = OpPtrAccessChain %arr2_ptr         %in_b_matptr %c_i32_0 %c_i32_0",
+											"%b_loc = OpPtrAccessChain %inner_struct_ptr %in_b_matptr %c_i32_0 %c_i32_1 %c_i32_1",
+											"%b_loc = OpPtrAccessChain %arr_v4f32_ptr    %in_b_matptr %c_i32_0 %c_i32_0 %c_i32_0 %c_i32_1",
+											"%b_loc = OpPtrAccessChain %v4f32_ptr        %in_b_matptr %c_i32_0 %c_i32_1 %c_i32_0 %c_i32_0 %c_i32_0",
 											// Next case emulates:
-											// %b_loc = OpPtrAccessChain %sb_f32ptr      %in_b %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_3
+											// %b_loc = OpPtrAccessChain %sb_f32ptr      %in_b_matptr %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_1 %c_i32_3
 											// But rewrite it to exercise OpPtrAccessChain with a non-zero first index:
 											//    %b_loc_arr is a pointer to an array that we want to index with 1.
 											// But instead of just using OpAccessChain with first index 1, use OpAccessChain with index 0 to
 											// get a pointer to the first element, then send that into OpPtrAccessChain with index 1.
-											"%b_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_b %c_i32_0 %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
+											"%b_loc_arr = OpPtrAccessChain %arr_v4f32_ptr %in_b_matptr %c_i32_0 %c_i32_1 %c_i32_1 %c_i32_1 "
 											"%b_loc_first_elem = OpAccessChain %v4f32_ptr %b_loc_arr %c_i32_0 "
 											"%b_loc = OpPtrAccessChain %sb_f32ptr %b_loc_first_elem %c_i32_1 %c_i32_3"};
 
