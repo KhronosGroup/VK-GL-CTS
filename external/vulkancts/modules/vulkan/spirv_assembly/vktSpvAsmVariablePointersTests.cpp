@@ -2466,7 +2466,6 @@ void addNullptrVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 
 		// VARIABLES
 		"%input				= OpVariable %float_struct_ptr	StorageBuffer				\n"
-		"%float_var			= OpVariable %sb_f32ptr			StorageBuffer %c_null_ptr	\n"
 	);
 
 	const StringTemplate testFunction	(
@@ -2488,7 +2487,7 @@ void addNullptrVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 		"OpReturnValue %output_color\n"
 		"OpFunctionEnd\n");
 
-	// float_var has been inintialized to NULL.
+	// f32_ptr_var has been inintialized to NULL.
 	// Now set it to the input variable and return it as output
 	{
 		GraphicsResources				resources;
