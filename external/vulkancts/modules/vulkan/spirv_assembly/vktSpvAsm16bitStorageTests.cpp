@@ -162,6 +162,16 @@ bool graphicsCheck16BitFloats (const std::vector<Resource>&	originalFloats,
 	return true;
 }
 
+bool computeCheckBuffersFloats (const std::vector<BufferSp>&	originalFloats,
+								const vector<AllocationSp>&		outputAllocs,
+								const std::vector<BufferSp>&	/*expectedOutputs*/,
+								tcu::TestLog&					/*log*/)
+{
+	std::vector<deUint8> result;
+	originalFloats.front()->getBytes(result);
+	return deMemCmp(&result[0], outputAllocs.front()->getHostPtr(), result.size()) == 0;
+}
+
 template<RoundingModeFlags RoundingMode>
 bool computeCheck16BitFloats (const std::vector<BufferSp>&	originalFloats,
 							  const vector<AllocationSp>&	outputAllocs,
@@ -1176,6 +1186,87 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 
 				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 			}
+}
+
+void addCompute16bitStorageUniform16To16Group (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&		testCtx				= group->getTestContext();
+	de::Random				rnd					(deStringHash(group->getName()));
+	const int				numElements			= 128;
+	const vector<deFloat16>	float16Data			= getFloat16s(rnd, numElements);
+	const vector<deFloat16>	float16DummyData	(numElements, 0);
+	ComputeShaderSpec		spec;
+
+	std::ostringstream		shaderTemplate;
+		shaderTemplate<<"OpCapability Shader\n"
+			<< "OpCapability StorageUniformBufferBlock16\n"
+			<< "OpExtension \"SPV_KHR_16bit_storage\"\n"
+			<< "OpMemoryModel Logical GLSL450\n"
+			<< "OpEntryPoint GLCompute %main \"main\" %id\n"
+			<< "OpExecutionMode %main LocalSize 1 1 1\n"
+			<< "OpDecorate %id BuiltIn GlobalInvocationId\n"
+			<< "OpDecorate %f16arr ArrayStride 2\n"
+			<< "OpMemberDecorate %SSBO_IN 0 Coherent\n"
+			<< "OpMemberDecorate %SSBO_OUT 0 Coherent\n"
+			<< "OpMemberDecorate %SSBO_IN 0 Offset 0\n"
+			<< "OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
+			<< "OpDecorate %SSBO_IN BufferBlock\n"
+			<< "OpDecorate %SSBO_OUT BufferBlock\n"
+			<< "OpDecorate %ssboIN DescriptorSet 0\n"
+			<< "OpDecorate %ssboOUT DescriptorSet 0\n"
+			<< "OpDecorate %ssboIN Binding 0\n"
+			<< "OpDecorate %ssboOUT Binding 1\n"
+			<< "\n"
+			<< "%bool      = OpTypeBool\n"
+			<< "%void      = OpTypeVoid\n"
+			<< "%voidf     = OpTypeFunction %void\n"
+			<< "%u32       = OpTypeInt 32 0\n"
+			<< "%i32       = OpTypeInt 32 1\n"
+			<< "%uvec3     = OpTypeVector %u32 3\n"
+			<< "%uvec3ptr  = OpTypePointer Input %uvec3\n"
+			<< "%f16       = OpTypeFloat 16\n"
+			<< "%f16ptr    = OpTypePointer Uniform %f16\n"
+			<< "\n"
+			<< "%zero      = OpConstant %i32 0\n"
+			<< "%c_size    = OpConstant %i32 " << numElements << "\n"
+			<< "\n"
+			<< "%f16arr    = OpTypeArray %f16 %c_size\n"
+			<< "%SSBO_IN   = OpTypeStruct %f16arr\n"
+			<< "%SSBO_OUT  = OpTypeStruct %f16arr\n"
+			<< "%up_SSBOIN = OpTypePointer Uniform %SSBO_IN\n"
+			<< "%up_SSBOOUT = OpTypePointer Uniform %SSBO_OUT\n"
+			<< "%ssboIN    = OpVariable %up_SSBOIN Uniform\n"
+			<< "%ssboOUT   = OpVariable %up_SSBOOUT Uniform\n"
+			<< "\n"
+			<< "%id        = OpVariable %uvec3ptr Input\n"
+			<< "%main      = OpFunction %void None %voidf\n"
+			<< "%label     = OpLabel\n"
+			<< "%idval     = OpLoad %uvec3 %id\n"
+			<< "%x         = OpCompositeExtract %u32 %idval 0\n"
+			<< "%y         = OpCompositeExtract %u32 %idval 1\n"
+			<< "\n"
+			<< "%inlocx     = OpAccessChain %f16ptr %ssboIN %zero %x \n"
+			<< "%valx       = OpLoad %f16 %inlocx\n"
+			<< "%outlocx    = OpAccessChain %f16ptr %ssboOUT %zero %x \n"
+			<< "             OpStore %outlocx %valx\n"
+
+			<< "%inlocy    = OpAccessChain %f16ptr %ssboIN %zero %y \n"
+			<< "%valy      = OpLoad %f16 %inlocy\n"
+			<< "%outlocy   = OpAccessChain %f16ptr %ssboOUT %zero %y \n"
+			<< "             OpStore %outlocy %valy\n"
+			<< "\n"
+			<< "             OpReturn\n"
+			<< "             OpFunctionEnd\n";
+
+	spec.assembly			= shaderTemplate.str();
+	spec.numWorkGroups		= IVec3(numElements, numElements, 1);
+	spec.verifyIO			= computeCheckBuffersFloats;
+	spec.coherentMemory		= true;
+	spec.inputs.push_back(BufferSp(new Float16Buffer(float16Data)));
+	spec.outputs.push_back(BufferSp(new Float16Buffer(float16DummyData)));
+	spec.extensions.push_back("VK_KHR_16bit_storage");
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "stress_test", "Granularity stress test", spec));
 }
 
 void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
@@ -3193,6 +3284,8 @@ tcu::TestCaseGroup* create16BitStorageComputeGroup (tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "uniform_32_to_16", "32bit floats/ints to 16bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform32To16Group);
 	addTestGroup(group.get(), "uniform_16_to_32", "16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16To32Group);
 	addTestGroup(group.get(), "push_constant_16_to_32", "16bit floats/ints to 32bit tests under capability StoragePushConstant16", addCompute16bitStoragePushConstant16To32Group);
+
+	addTestGroup(group.get(), "uniform_16_to_16", "16bit floats/ints to 16bit tests under capability StoragePushConstant16", addCompute16bitStorageUniform16To16Group);
 
 	return group.release();
 }

@@ -234,6 +234,7 @@ struct ComputeShaderSpec
 	ComputeVerifyIOFunc						verifyIO;
 	ComputeVerifyBinaryFunc					verifyBinary;
 	SpirvVersion							spirvVersion;
+	bool									coherentMemory;
 
 											ComputeShaderSpec (void)
 												: entryPoint					("main")
@@ -244,6 +245,7 @@ struct ComputeShaderSpec
 												, verifyIO						(DE_NULL)
 												, verifyBinary					(DE_NULL)
 												, spirvVersion					(SPIRV_VERSION_1_0)
+												, coherentMemory				(false)
 											{}
 };
 

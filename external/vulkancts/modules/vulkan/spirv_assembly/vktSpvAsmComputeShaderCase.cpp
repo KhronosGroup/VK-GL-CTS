@@ -60,7 +60,13 @@ typedef de::SharedPtr<SamplerHandleUp>				SamplerHandleSp;
  * The memory is created as host visible and passed back as a vk::Allocation
  * instance via outMemory.
  *//*--------------------------------------------------------------------*/
-Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface& vkdi, const VkDevice& device, VkDescriptorType dtype, Allocator& allocator, size_t numBytes, AllocationMp* outMemory)
+Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface&	vkdi,
+										  const VkDevice&			device,
+										  VkDescriptorType			dtype,
+										  Allocator&				allocator,
+										  size_t					numBytes,
+										  AllocationMp*				outMemory,
+										  bool						coherent = false)
 {
 	VkBufferUsageFlags			usageBit			= (VkBufferUsageFlags)0;
 
@@ -86,9 +92,9 @@ Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface& vkdi, const VkD
 		DE_NULL,								// pQueueFamilyIndices
 	};
 
-	Move<VkBuffer>				buffer				(createBuffer(vkdi, device, &bufferCreateInfo));
-	const VkMemoryRequirements	requirements		= getBufferMemoryRequirements(vkdi, device, *buffer);
-	AllocationMp				bufferMemory		= allocator.allocate(requirements, MemoryRequirement::HostVisible);
+	Move<VkBuffer>				buffer			(createBuffer(vkdi, device, &bufferCreateInfo));
+	const VkMemoryRequirements	requirements	= getBufferMemoryRequirements(vkdi, device, *buffer);
+	AllocationMp				bufferMemory	= allocator.allocate(requirements, coherent ? MemoryRequirement::Coherent | MemoryRequirement::HostVisible : MemoryRequirement::HostVisible);
 
 	VK_CHECK(vkdi.bindBufferMemory(device, *buffer, bufferMemory->getMemory(), bufferMemory->getOffset()));
 	*outMemory = bufferMemory;
@@ -244,25 +250,30 @@ void copyBufferToImage (const DeviceInterface& vkdi, const VkDevice& device, con
 	}
 }
 
-void setMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, const void* data)
+void setMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, const void* data, bool coherent = false)
 {
 	void* const hostPtr = destAlloc->getHostPtr();
 
 	deMemcpy((deUint8*)hostPtr, data, numBytes);
-	flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
+
+	if (!coherent)
+		flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
 }
 
-void fillMemoryWithValue (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, deUint8 value)
+void fillMemoryWithValue (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, deUint8 value, bool coherent = false)
 {
 	void* const hostPtr = destAlloc->getHostPtr();
 
 	deMemset((deUint8*)hostPtr, value, numBytes);
-	flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
+
+	if (!coherent)
+		flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
 }
 
-void invalidateMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* srcAlloc, size_t numBytes)
+void invalidateMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* srcAlloc, size_t numBytes, bool coherent = false)
 {
-	invalidateMappedMemoryRange(vkdi, device, srcAlloc->getMemory(), srcAlloc->getOffset(), numBytes);
+	if (!coherent)
+		invalidateMappedMemoryRange(vkdi, device, srcAlloc->getMemory(), srcAlloc->getOffset(), numBytes);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -577,9 +588,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			const size_t		numBytes		= inputBytes.size();
 
 			AllocationMp		bufferAlloc;
-			BufferHandleUp*		buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc));
+			BufferHandleUp*		buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc, m_shaderSpec.coherentMemory));
 
-			setMemory(vkdi, device, &*bufferAlloc, numBytes, &inputBytes.front());
+			setMemory(vkdi, device, &*bufferAlloc, numBytes, &inputBytes.front(), m_shaderSpec.coherentMemory);
 			inputBuffers.push_back(BufferHandleSp(buffer));
 			inputAllocs.push_back(de::SharedPtr<Allocation>(bufferAlloc.release()));
 		}
@@ -757,9 +768,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		output->getBytes(outputBytes);
 
 		const size_t		numBytes	= outputBytes.size();
-		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc));
+		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc, m_shaderSpec.coherentMemory));
 
-		fillMemoryWithValue(vkdi, device, &*alloc, numBytes, 0xff);
+		fillMemoryWithValue(vkdi, device, &*alloc, numBytes, 0xff, m_shaderSpec.coherentMemory);
 		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
 		outputBuffers.push_back(BufferHandleSp(buffer));
 		outputAllocs.push_back(de::SharedPtr<Allocation>(alloc.release()));
@@ -782,6 +793,8 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	Unique<VkShaderModule>				module				(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
 
 	Unique<VkPipeline>					computePipeline		(createComputePipeline(vkdi, device, *pipelineLayout, *module, m_shaderSpec.entryPoint.c_str(), m_shaderSpec.specConstants));
+
+	// Create command buffer and record commands
 
 	const VkCommandBufferBeginInfo		cmdBufferBeginInfo	=
 	{
@@ -832,7 +845,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Invalidate output memory ranges before checking on host.
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 	{
-		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.outputs[outputNdx]->getByteSize());
+		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.outputs[outputNdx]->getByteSize(), m_shaderSpec.coherentMemory);
 	}
 
 	// Check output.
