@@ -194,7 +194,8 @@ void populateFrameTimes(FrameTimes* frameTimes, TimestampInfoMap& map, const std
 
 bool timestampValid (EGLnsecsANDROID timestamp)
 {
-	return (timestamp >= 0) || (timestamp == EGL_TIMESTAMP_PENDING_ANDROID);
+	// \todo [2017-10-19 brianderson] Don't consider 0 invalid once kernel fix is in.
+	return (timestamp > 0) || (timestamp == EGL_TIMESTAMP_PENDING_ANDROID);
 }
 
 bool timestampPending (EGLnsecsANDROID timestamp)
@@ -241,7 +242,7 @@ void verifySingleFrame (const FrameTimes& frameTimes, tcu::ResultCollector& resu
 	// be sure that the readsDone time must be after the renderingComplete time.
     // It may also be equal to the renderingComplete time if no reads were
     // peformed.
-	if (verifyReadsDone)
+	if (verifyReadsDone && timestampValid(frameTimes.readsDone))
 		check_le(result, frameTimes.renderingComplete, frameTimes.readsDone, "Buffer rendering completed after reads completed.");
 
 	// Verify CPU/GPU dependencies
