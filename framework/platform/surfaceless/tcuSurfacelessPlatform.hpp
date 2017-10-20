@@ -1,5 +1,5 @@
-#ifndef _TCU_SURFACELESS_PLATFORM_HPP
-#define _TCU_SURFACELESS_PLATFORM_HPP
+#ifndef _TCUSURFACELESSPLATFORM_HPP
+#define _TCUSURFACELESSPLATFORM_HPP
 
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
@@ -31,4 +31,4 @@ namespace tcu
 
 tcu::Platform* createPlatform (void);
 
-#endif
+#endif // _TCUSURFACELESSPLATFORM_HPP
