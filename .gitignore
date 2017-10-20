@@ -5,3 +5,4 @@
 .*
 !.gitignore
 !.editorconfig
+!.travis.yml
