@@ -1709,6 +1709,38 @@ bool TestBase::test()
 	return result;
 }
 
+int TestBase::maxImageUniforms(Utils::SHADER_STAGES stage) const
+{
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	GLint max_image_uniforms;
+
+	switch (stage)
+	{
+	case Utils::COMPUTE_SHADER:
+		gl.getIntegerv(GL_MAX_COMPUTE_IMAGE_UNIFORMS, &max_image_uniforms);
+		break;
+	case Utils::FRAGMENT_SHADER:
+		gl.getIntegerv(GL_MAX_FRAGMENT_IMAGE_UNIFORMS, &max_image_uniforms);
+		break;
+	case Utils::GEOMETRY_SHADER:
+		gl.getIntegerv(GL_MAX_GEOMETRY_IMAGE_UNIFORMS, &max_image_uniforms);
+		break;
+	case Utils::TESS_CTRL_SHADER:
+		gl.getIntegerv(GL_MAX_TESS_CONTROL_IMAGE_UNIFORMS, &max_image_uniforms);
+		break;
+	case Utils::TESS_EVAL_SHADER:
+		gl.getIntegerv(GL_MAX_TESS_EVALUATION_IMAGE_UNIFORMS, &max_image_uniforms);
+		break;
+	case Utils::VERTEX_SHADER:
+		gl.getIntegerv(GL_MAX_VERTEX_IMAGE_UNIFORMS, &max_image_uniforms);
+		break;
+	default:
+		TCU_FAIL("Invalid enum");
+		break;
+	}
+	return max_image_uniforms;
+}
+
 /** Constructor
  *
  * @param context          Test context
@@ -11744,16 +11776,20 @@ void BindingImagesTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, bool 
 													"in  vec4 tes_gs_result[];\n"
 													"out vec4 gs_fs_result;\n"
 													"\n"
+													"#if IMAGES\n"
 													"UNI_TRUNKS\n"
 													"UNI_GOKU\n"
 													"UNI_VEGETA\n"
+													"#endif\n"
 													"\n"
 													"void main()\n"
 													"{\n"
 													"    vec4 result = vec4(0, 1, 0, 1);\n"
 													"\n"
-													"VERIFICATION"
-													"    else if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
+													"#if IMAGES\n"
+													"VERIFICATION else\n"
+													"#endif\n"
+													"    if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
 													"    {\n"
 													"         result = vec4(1, 0, 0, 1);\n"
 													"    }\n"
@@ -11782,16 +11818,20 @@ void BindingImagesTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, bool 
 		"in  vec4 vs_tcs_result[];\n"
 		"out vec4 tcs_tes_result[];\n"
 		"\n"
+		"#if IMAGES\n"
 		"UNI_VEGETA\n"
 		"UNI_TRUNKS\n"
 		"UNI_GOKU\n"
+		"#endif\n"
 		"\n"
 		"void main()\n"
 		"{\n"
 		"    vec4 result = vec4(0, 1, 0, 1);\n"
 		"\n"
-		"VERIFICATION"
-		"    else if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
+		"#if IMAGES\n"
+		"VERIFICATION else\n"
+		"#endif\n"
+		"    if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
 		"    {\n"
 		"         result = vec4(1, 0, 0, 1);\n"
 		"    }\n"
@@ -11815,16 +11855,20 @@ void BindingImagesTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, bool 
 													 "in  vec4 tcs_tes_result[];\n"
 													 "out vec4 tes_gs_result;\n"
 													 "\n"
+													 "#if IMAGES\n"
 													 "UNI_GOKU\n"
 													 "UNI_TRUNKS\n"
 													 "UNI_VEGETA\n"
+													 "#endif\n"
 													 "\n"
 													 "void main()\n"
 													 "{\n"
 													 "    vec4 result = vec4(0, 1, 0, 1);\n"
 													 "\n"
-													 "VERIFICATION"
-													 "    else if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
+													 "#if IMAGES\n"
+													 "VERIFICATION else\n"
+													 "#endif\n"
+													 "    if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
 													 "    {\n"
 													 "         result = vec4(1, 0, 0, 1);\n"
 													 "    }\n"
@@ -11838,15 +11882,19 @@ void BindingImagesTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, bool 
 												  "\n"
 												  "out vec4 vs_tcs_result;\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "UNI_TRUNKS\n"
 												  "UNI_VEGETA\n"
 												  "UNI_GOKU\n"
+												  "#endif\n"
 												  "\n"
 												  "void main()\n"
 												  "{\n"
 												  "    vec4 result = vec4(0, 1, 0, 1);\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "VERIFICATION"
+												  "#endif\n"
 												  "\n"
 												  "    vs_tcs_result = result;\n"
 												  "}\n"
@@ -11918,6 +11966,9 @@ void BindingImagesTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, bool 
 	Utils::replaceToken("COORDINATES", position, coordinates_read, out_source.m_parts[0].m_code);
 
 	Utils::replaceToken("COORDINATES", position, coordinates_write, out_source.m_parts[0].m_code);
+
+	Utils::replaceAllTokens("IMAGES", maxImageUniforms(in_stage) > 0 ? "1" : "0",
+							out_source.m_parts[0].m_code);
 
 	Utils::replaceAllTokens("UNI_GOKU", uni_goku, out_source.m_parts[0].m_code);
 
@@ -12101,14 +12152,18 @@ void BindingImageSingleTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, 
 													"in  vec4 tes_gs_result[];\n"
 													"out vec4 gs_fs_result;\n"
 													"\n"
+													"#if IMAGES\n"
 													"UNI_GOKU\n"
+													"#endif\n"
 													"\n"
 													"void main()\n"
 													"{\n"
 													"    vec4 result = vec4(0, 1, 0, 1);\n"
 													"\n"
-													"VERIFICATION"
-													"    else if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
+													"#if IMAGES\n"
+													"VERIFICATION else\n"
+													"#endif\n"
+													"    if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
 													"    {\n"
 													"         result = vec4(1, 0, 0, 1);\n"
 													"    }\n"
@@ -12137,14 +12192,18 @@ void BindingImageSingleTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, 
 		"in  vec4 vs_tcs_result[];\n"
 		"out vec4 tcs_tes_result[];\n"
 		"\n"
+		"#if IMAGES\n"
 		"UNI_GOKU\n"
+		"#endif\n"
 		"\n"
 		"void main()\n"
 		"{\n"
 		"    vec4 result = vec4(0, 1, 0, 1);\n"
 		"\n"
-		"VERIFICATION"
-		"    else if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
+		"#if IMAGES\n"
+		"VERIFICATION else\n"
+		"#endif\n"
+		"    if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
 		"    {\n"
 		"         result = vec4(1, 0, 0, 1);\n"
 		"    }\n"
@@ -12168,14 +12227,18 @@ void BindingImageSingleTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, 
 													 "in  vec4 tcs_tes_result[];\n"
 													 "out vec4 tes_gs_result;\n"
 													 "\n"
+													 "#if IMAGES\n"
 													 "UNI_GOKU\n"
+													 "#endif\n"
 													 "\n"
 													 "void main()\n"
 													 "{\n"
 													 "    vec4 result = vec4(0, 1, 0, 1);\n"
 													 "\n"
-													 "VERIFICATION"
-													 "    else if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
+													 "#if IMAGES\n"
+													 "VERIFICATION else\n"
+													 "#endif\n"
+													 "    if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
 													 "    {\n"
 													 "         result = vec4(1, 0, 0, 1);\n"
 													 "    }\n"
@@ -12189,13 +12252,17 @@ void BindingImageSingleTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, 
 												  "\n"
 												  "out vec4 vs_tcs_result;\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "UNI_GOKU\n"
+												  "#endif\n"
 												  "\n"
 												  "void main()\n"
 												  "{\n"
 												  "    vec4 result = vec4(0, 1, 0, 1);\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "VERIFICATION"
+												  "#endif\n"
 												  "\n"
 												  "    vs_tcs_result = result;\n"
 												  "}\n"
@@ -12212,6 +12279,11 @@ void BindingImageSingleTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, 
 		break;
 	case Utils::FRAGMENT_SHADER:
 		shader_template = fragment_shader_template;
+		/* We can't rely on the binding qualifier being present in m_test_stage
+		 * if images are unsupported in that stage.
+		 */
+		if (maxImageUniforms(m_test_stage) == 0)
+			uniform_definition = uni_goku_with_binding;
 		break;
 	case Utils::GEOMETRY_SHADER:
 		shader_template = geometry_shader_template;
@@ -12243,6 +12315,9 @@ void BindingImageSingleTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, 
 						out_source.m_parts[0].m_code);
 
 	Utils::replaceToken("VERIFICATION", position, verification_snippet, out_source.m_parts[0].m_code);
+
+	Utils::replaceAllTokens("IMAGES", maxImageUniforms(in_stage) > 0 ? "1" : "0",
+							out_source.m_parts[0].m_code);
 
 	Utils::replaceAllTokens("UNI_GOKU", uniform_definition, out_source.m_parts[0].m_code);
 }
@@ -12374,14 +12449,18 @@ void BindingImageArrayTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, b
 													"in  vec4 tes_gs_result[];\n"
 													"out vec4 gs_fs_result;\n"
 													"\n"
+													"#if IMAGES\n"
 													"UNI_GOKU\n"
+													"#endif\n"
 													"\n"
 													"void main()\n"
 													"{\n"
 													"    vec4 result = vec4(0, 1, 0, 1);\n"
 													"\n"
-													"VERIFICATION"
-													"    else if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
+													"#if IMAGES\n"
+													"VERIFICATION else\n"
+													"#endif\n"
+													"    if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
 													"    {\n"
 													"         result = vec4(1, 0, 0, 1);\n"
 													"    }\n"
@@ -12410,14 +12489,18 @@ void BindingImageArrayTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, b
 		"in  vec4 vs_tcs_result[];\n"
 		"out vec4 tcs_tes_result[];\n"
 		"\n"
+		"#if IMAGES\n"
 		"UNI_GOKU\n"
+		"#endif\n"
 		"\n"
 		"void main()\n"
 		"{\n"
 		"    vec4 result = vec4(0, 1, 0, 1);\n"
 		"\n"
-		"VERIFICATION"
-		"    else if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
+		"#if IMAGES\n"
+		"VERIFICATION else\n"
+		"#endif\n"
+		"    if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
 		"    {\n"
 		"         result = vec4(1, 0, 0, 1);\n"
 		"    }\n"
@@ -12441,14 +12524,18 @@ void BindingImageArrayTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, b
 													 "in  vec4 tcs_tes_result[];\n"
 													 "out vec4 tes_gs_result;\n"
 													 "\n"
+													 "#if IMAGES\n"
 													 "UNI_GOKU\n"
+													 "#endif\n"
 													 "\n"
 													 "void main()\n"
 													 "{\n"
 													 "    vec4 result = vec4(0, 1, 0, 1);\n"
 													 "\n"
-													 "VERIFICATION"
-													 "    else if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
+													 "#if IMAGES\n"
+													 "VERIFICATION else\n"
+													 "#endif\n"
+													 "    if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
 													 "    {\n"
 													 "         result = vec4(1, 0, 0, 1);\n"
 													 "    }\n"
@@ -12462,13 +12549,17 @@ void BindingImageArrayTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, b
 												  "\n"
 												  "out vec4 vs_tcs_result;\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "UNI_GOKU\n"
+												  "#endif\n"
 												  "\n"
 												  "void main()\n"
 												  "{\n"
 												  "    vec4 result = vec4(0, 1, 0, 1);\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "VERIFICATION"
+												  "#endif\n"
 												  "\n"
 												  "    vs_tcs_result = result;\n"
 												  "}\n"
@@ -12509,6 +12600,9 @@ void BindingImageArrayTest::prepareShaderSource(Utils::SHADER_STAGES in_stage, b
 						out_source.m_parts[0].m_code);
 
 	Utils::replaceToken("VERIFICATION", position, verification_snippet, out_source.m_parts[0].m_code);
+
+	Utils::replaceAllTokens("IMAGES", maxImageUniforms(in_stage) > 0 ? "1" : "0",
+							out_source.m_parts[0].m_code);
 
 	Utils::replaceAllTokens("UNI_GOKU", uni_goku, out_source.m_parts[0].m_code);
 }
@@ -12657,14 +12751,18 @@ void BindingImageDefaultTest::prepareShaderSource(Utils::SHADER_STAGES in_stage,
 													"in  vec4 tes_gs_result[];\n"
 													"out vec4 gs_fs_result;\n"
 													"\n"
+													"#if IMAGES\n"
 													"UNI_GOKU\n"
+													"#endif\n"
 													"\n"
 													"void main()\n"
 													"{\n"
 													"    vec4 result = vec4(0, 1, 0, 1);\n"
 													"\n"
-													"VERIFICATION"
-													"    else if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
+													"#if IMAGES\n"
+													"VERIFICATION else\n"
+													"#endif\n"
+													"    if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
 													"    {\n"
 													"         result = vec4(1, 0, 0, 1);\n"
 													"    }\n"
@@ -12693,14 +12791,18 @@ void BindingImageDefaultTest::prepareShaderSource(Utils::SHADER_STAGES in_stage,
 		"in  vec4 vs_tcs_result[];\n"
 		"out vec4 tcs_tes_result[];\n"
 		"\n"
+		"#if IMAGES\n"
 		"UNI_GOKU\n"
+		"#endif\n"
 		"\n"
 		"void main()\n"
 		"{\n"
 		"    vec4 result = vec4(0, 1, 0, 1);\n"
 		"\n"
-		"VERIFICATION"
-		"    else if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
+		"#if IMAGES\n"
+		"VERIFICATION else\n"
+		"#endif\n"
+		"    if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
 		"    {\n"
 		"         result = vec4(1, 0, 0, 1);\n"
 		"    }\n"
@@ -12724,14 +12826,18 @@ void BindingImageDefaultTest::prepareShaderSource(Utils::SHADER_STAGES in_stage,
 													 "in  vec4 tcs_tes_result[];\n"
 													 "out vec4 tes_gs_result;\n"
 													 "\n"
+													 "#if IMAGES\n"
 													 "UNI_GOKU\n"
+													 "#endif\n"
 													 "\n"
 													 "void main()\n"
 													 "{\n"
 													 "    vec4 result = vec4(0, 1, 0, 1);\n"
 													 "\n"
-													 "VERIFICATION"
-													 "    else if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
+													 "#if IMAGES\n"
+													 "VERIFICATION else\n"
+													 "#endif\n"
+													 "    if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
 													 "    {\n"
 													 "         result = vec4(1, 0, 0, 1);\n"
 													 "    }\n"
@@ -12745,13 +12851,17 @@ void BindingImageDefaultTest::prepareShaderSource(Utils::SHADER_STAGES in_stage,
 												  "\n"
 												  "out vec4 vs_tcs_result;\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "UNI_GOKU\n"
+												  "#endif\n"
 												  "\n"
 												  "void main()\n"
 												  "{\n"
 												  "    vec4 result = vec4(0, 1, 0, 1);\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "VERIFICATION"
+												  "#endif\n"
 												  "\n"
 												  "    vs_tcs_result = result;\n"
 												  "}\n"
@@ -12792,6 +12902,9 @@ void BindingImageDefaultTest::prepareShaderSource(Utils::SHADER_STAGES in_stage,
 						out_source.m_parts[0].m_code);
 
 	Utils::replaceToken("VERIFICATION", position, verification_snippet, out_source.m_parts[0].m_code);
+
+	Utils::replaceAllTokens("IMAGES", maxImageUniforms(in_stage) > 0 ? "1" : "0",
+							out_source.m_parts[0].m_code);
 
 	Utils::replaceAllTokens("UNI_GOKU", uni_goku, out_source.m_parts[0].m_code);
 }
@@ -12876,14 +12989,18 @@ void BindingImageAPIOverrideTest::prepareShaderSource(Utils::SHADER_STAGES in_st
 													"in  vec4 tes_gs_result[];\n"
 													"out vec4 gs_fs_result;\n"
 													"\n"
+													"#if IMAGES\n"
 													"UNI_GOKU\n"
+													"#endif\n"
 													"\n"
 													"void main()\n"
 													"{\n"
 													"    vec4 result = vec4(0, 1, 0, 1);\n"
 													"\n"
-													"VERIFICATION"
-													"    else if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
+													"#if IMAGES\n"
+													"VERIFICATION else\n"
+													"#endif\n"
+													"    if (vec4(0, 1, 0, 1) != tes_gs_result[0])\n"
 													"    {\n"
 													"         result = vec4(1, 0, 0, 1);\n"
 													"    }\n"
@@ -12912,14 +13029,18 @@ void BindingImageAPIOverrideTest::prepareShaderSource(Utils::SHADER_STAGES in_st
 		"in  vec4 vs_tcs_result[];\n"
 		"out vec4 tcs_tes_result[];\n"
 		"\n"
+		"#if IMAGES\n"
 		"UNI_GOKU\n"
+		"#endif\n"
 		"\n"
 		"void main()\n"
 		"{\n"
 		"    vec4 result = vec4(0, 1, 0, 1);\n"
 		"\n"
-		"VERIFICATION"
-		"    else if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
+		"#if IMAGES\n"
+		"VERIFICATION else\n"
+		"#endif\n"
+		"    if (vec4(0, 1, 0, 1) != vs_tcs_result[gl_InvocationID])\n"
 		"    {\n"
 		"         result = vec4(1, 0, 0, 1);\n"
 		"    }\n"
@@ -12943,14 +13064,18 @@ void BindingImageAPIOverrideTest::prepareShaderSource(Utils::SHADER_STAGES in_st
 													 "in  vec4 tcs_tes_result[];\n"
 													 "out vec4 tes_gs_result;\n"
 													 "\n"
+													 "#if IMAGES\n"
 													 "UNI_GOKU\n"
+													 "#endif\n"
 													 "\n"
 													 "void main()\n"
 													 "{\n"
 													 "    vec4 result = vec4(0, 1, 0, 1);\n"
 													 "\n"
-													 "VERIFICATION"
-													 "    else if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
+													 "#if IMAGES\n"
+													 "VERIFICATION else\n"
+													 "#endif\n"
+													 "    if (vec4(0, 1, 0, 1) != tcs_tes_result[0])\n"
 													 "    {\n"
 													 "         result = vec4(1, 0, 0, 1);\n"
 													 "    }\n"
@@ -12964,13 +13089,17 @@ void BindingImageAPIOverrideTest::prepareShaderSource(Utils::SHADER_STAGES in_st
 												  "\n"
 												  "out vec4 vs_tcs_result;\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "UNI_GOKU\n"
+												  "#endif\n"
 												  "\n"
 												  "void main()\n"
 												  "{\n"
 												  "    vec4 result = vec4(0, 1, 0, 1);\n"
 												  "\n"
+												  "#if IMAGES\n"
 												  "VERIFICATION"
+												  "#endif\n"
 												  "\n"
 												  "    vs_tcs_result = result;\n"
 												  "}\n"
@@ -13011,6 +13140,9 @@ void BindingImageAPIOverrideTest::prepareShaderSource(Utils::SHADER_STAGES in_st
 						out_source.m_parts[0].m_code);
 
 	Utils::replaceToken("VERIFICATION", position, verification_snippet, out_source.m_parts[0].m_code);
+
+	Utils::replaceAllTokens("IMAGES", maxImageUniforms(in_stage) > 0 ? "1" : "0",
+							out_source.m_parts[0].m_code);
 
 	Utils::replaceAllTokens("UNI_GOKU", uni_goku, out_source.m_parts[0].m_code);
 }

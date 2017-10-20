@@ -472,6 +472,7 @@ protected:
 	const glw::GLchar* getStageSpecificLayout(Utils::SHADER_STAGES stage) const;
 	const glw::GLchar* getVersionString(Utils::SHADER_STAGES stage, bool use_version_400) const;
 	void initShaderSource(Utils::SHADER_STAGES in_stage, bool in_use_version_400, Utils::shaderSource& out_source);
+	int maxImageUniforms(Utils::SHADER_STAGES stage) const;
 
 	/* Protected variables */
 	bool m_is_compute_shader_supported;
