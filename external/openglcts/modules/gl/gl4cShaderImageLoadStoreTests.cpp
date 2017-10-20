@@ -11332,7 +11332,7 @@ private:
 	 **/
 	void testCombinedShaderStages()
 	{
-		static const char* const fragment_shader_code =
+		std::string fragment_shader_code =
 			"#version 400 core\n"
 			"#extension GL_ARB_shader_image_load_store : require\n"
 			"\n"
@@ -11356,7 +11356,7 @@ private:
 			"    discard;\n"
 			"}\n\n";
 
-		static const char* const geometry_shader_code =
+		std::string geometry_shader_code =
 			"#version 400 core\n"
 			"#extension GL_ARB_shader_image_load_store : require\n"
 			"\n"
@@ -11370,10 +11370,13 @@ private:
 			"flat in  ivec2 tes_gs_coord[];\n"
 			"flat out ivec2 gs_fs_coord;\n"
 			"\n"
+			"#ifdef IMAGES\n"
 			"layout(r32i) uniform iimage2D u_image_geometry[N_UNIFORMS];\n"
+			"#endif\n"
 			"\n"
 			"void main()\n"
 			"{\n"
+			"#ifdef IMAGES\n"
 			"    int value = 1;\n"
 			"\n"
 			"    for (int i = 0; i < N_UNIFORMS; ++i)\n"
@@ -11381,11 +11384,12 @@ private:
 			"        value = imageAtomicAdd(u_image_geometry[i], tes_gs_coord[0], value);\n"
 			"    }\n"
 			"\n"
+			"#endif\n"
 			"    gs_fs_coord = tes_gs_coord[0];\n"
 			"    EmitVertex();\n"
 			"}\n\n";
 
-		static const char* const tesselation_control_shader_code =
+		std::string tesselation_control_shader_code =
 			"#version 400 core\n"
 			"#extension GL_ARB_shader_image_load_store : require\n"
 			"\n"
@@ -11398,10 +11402,13 @@ private:
 			"flat in  ivec2 vs_tcs_coord[];\n"
 			"flat out ivec2 tcs_tes_coord[];\n"
 			"\n"
+			"#ifdef IMAGES\n"
 			"layout(r32i) uniform iimage2D u_image_tess_control[N_UNIFORMS];\n"
+			"#endif\n"
 			"\n"
 			"void main()\n"
 			"{\n"
+			"#ifdef IMAGES\n"
 			"    int value = 1;\n"
 			"\n"
 			"    for (int i = 0; i < N_UNIFORMS; ++i)\n"
@@ -11409,10 +11416,11 @@ private:
 			"        value = imageAtomicAdd(u_image_tess_control[i], vs_tcs_coord[0], value);\n"
 			"    }\n"
 			"\n"
+			"#endif\n"
 			"    tcs_tes_coord[gl_InvocationID] = vs_tcs_coord[0];\n"
 			"}\n\n";
 
-		static const char* const tesselation_evaluation_shader_code =
+		std::string tesselation_evaluation_shader_code =
 			"#version 400 core\n"
 			"#extension GL_ARB_shader_image_load_store : require\n"
 			"\n"
@@ -11425,10 +11433,13 @@ private:
 			"flat in  ivec2 tcs_tes_coord[];\n"
 			"flat out ivec2 tes_gs_coord;\n"
 			"\n"
+			"#ifdef IMAGES\n"
 			"layout(r32i) uniform iimage2D u_image_tess_evaluation[N_UNIFORMS];\n"
+			"#endif\n"
 			"\n"
 			"void main()\n"
 			"{\n"
+			"#ifdef IMAGES\n"
 			"    int value = 1;\n"
 			"\n"
 			"    for (int i = 0; i < N_UNIFORMS; ++i)\n"
@@ -11436,10 +11447,11 @@ private:
 			"        value = imageAtomicAdd(u_image_tess_evaluation[i], tcs_tes_coord[0], value);\n"
 			"    }\n"
 			"\n"
+			"#endif\n"
 			"    tes_gs_coord = tcs_tes_coord[0];\n"
 			"}\n\n";
 
-		static const char* const vertex_shader_code =
+		std::string vertex_shader_code =
 			"#version 400 core\n"
 			"#extension GL_ARB_shader_image_load_store : require\n"
 			"\n"
@@ -11450,10 +11462,13 @@ private:
 			"\n"
 			"#define N_UNIFORMS gl_MaxVertexImageUniforms\n"
 			"\n"
+			"#ifdef IMAGES\n"
 			"layout(r32i) uniform iimage2D u_image[N_UNIFORMS];\n"
+			"#endif\n"
 			"\n"
 			"void main()\n"
 			"{\n"
+			"#ifdef IMAGES\n"
 			"    int value = 1;\n"
 			"\n"
 			"    for (int i = 0; i < N_UNIFORMS; ++i)\n"
@@ -11461,6 +11476,7 @@ private:
 			"        value = imageAtomicAdd(u_image[i], vs_in_coord, value);\n"
 			"    }\n"
 			"\n"
+			"#endif\n"
 			"    vs_tcs_coord = vs_tcs_coord;\n"
 			"}\n\n";
 
@@ -11481,10 +11497,22 @@ private:
 		glGetIntegerv(GL_MAX_VERTEX_IMAGE_UNIFORMS, &max_vertex_image_uniforms);
 		GLU_EXPECT_NO_ERROR(glGetError(), "GetIntegerv");
 
+		if (max_vertex_image_uniforms)
+			vertex_shader_code.insert(18, "#define IMAGES\n");
+		if (max_geometry_image_uniforms)
+			geometry_shader_code.insert(18, "#define IMAGES\n");
+		if (max_tesselation_control_image_uniforms)
+			tesselation_control_shader_code.insert(18, "#define IMAGES\n");
+		if (max_tesselation_evaluation_image_uniforms)
+			tesselation_evaluation_shader_code.insert(18, "#define IMAGES\n");
+
 		/* Check if program builds */
 		m_result_for_combined =
-			!doesProgramLink(fragment_shader_code, geometry_shader_code, tesselation_control_shader_code,
-							 tesselation_evaluation_shader_code, vertex_shader_code);
+			!doesProgramLink(fragment_shader_code.c_str(),
+							 geometry_shader_code.c_str(),
+							 tesselation_control_shader_code.c_str(),
+							 tesselation_evaluation_shader_code.c_str(),
+							 vertex_shader_code.c_str());
 
 		/* Result depends on the limit values */
 		if (max_combined_image_uniforms >=
