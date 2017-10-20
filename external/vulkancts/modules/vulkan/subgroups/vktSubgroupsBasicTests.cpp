@@ -485,7 +485,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "  uint id = 0;\n"
 				<< "  if (subgroupElect())\n"
 				<< "  {\n"
-				<< "    id = uint(gl_FragCoord.x*100.0f);\n"
+				<< "    id = uint(gl_FragCoord.x);\n"
 				<< "  }\n"
 				<< "  id = subgroupBroadcastFirst(id);\n"
 				<< "  uint localId = id;\n"
@@ -1139,6 +1139,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 					inputDatas[2].isImage = true;
 				}
 
+				DE_ASSERT(SHADER_BUFFER_SIZE/4ull > subgroups::getSubgroupSize(context));
 				return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32G32B32A32_SFLOAT,
 												 &inputDatas[0], inputDatasCount, checkVertexPipelineStagesSubgroupBarriersNoSSBO);
 			}

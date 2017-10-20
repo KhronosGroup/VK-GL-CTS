@@ -200,6 +200,10 @@ for example `TestResults-armeabi-v7a.qpa`. On platforms where multiple different
 builds (for example 64-bit and 32-bit) are present, CTS logs must be provided
 for each driver build as part of the submission package.
 
+Test logs generated on a system which exposes more than one physical device
+in a device group can be used for products that expose one or more physical
+devices in their device group.
+
 The CTS build must always be done from clean git repository that doesn't have any
 uncommitted changes. Thus it is necessary to run and capture output of `git
 status` and `git log` (2) in the source directory:
