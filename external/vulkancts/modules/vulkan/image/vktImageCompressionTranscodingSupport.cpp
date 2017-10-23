@@ -1131,21 +1131,28 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 						referenceImage.get(), subresourceRange)
 				};
 
-				 const VkBufferMemoryBarrier		preCopyBufferBarrier[]		=
+				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL,
+					DE_LENGTH_OF_ARRAY(postShaderImageBarriers), postShaderImageBarriers);
+			}
+
+			vk.cmdCopyImageToBuffer(cmdBuffer, resultImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resultBuffer.get(), 1u, &copyRegion);
+			vk.cmdCopyImageToBuffer(cmdBuffer, referenceImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, referenceBuffer.get(), 1u, &copyRegion);
+
+			{
+				const VkBufferMemoryBarrier		postCopyBufferBarrier[]		=
 				{
-					makeBufferMemoryBarrier( 0, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
 						resultBuffer.get(), 0ull, bufferSize),
 
-					makeBufferMemoryBarrier( 0, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
 						referenceBuffer.get(), 0ull, bufferSize),
 				};
 
-				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(preCopyBufferBarrier), preCopyBufferBarrier,
-					DE_LENGTH_OF_ARRAY(postShaderImageBarriers), postShaderImageBarriers);
+				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(postCopyBufferBarrier), postCopyBufferBarrier,
+					0u, (const VkImageMemoryBarrier*)DE_NULL);
 			}
-			vk.cmdCopyImageToBuffer(cmdBuffer, resultImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resultBuffer.get(), 1u, &copyRegion);
-			vk.cmdCopyImageToBuffer(cmdBuffer, referenceImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, referenceBuffer.get(), 1u, &copyRegion);
 		}
 		endCommandBuffer(vk, cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, cmdBuffer);
