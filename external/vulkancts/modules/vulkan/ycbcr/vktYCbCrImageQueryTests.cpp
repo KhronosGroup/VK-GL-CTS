@@ -168,12 +168,20 @@ Move<VkImage> createTestImage (const DeviceInterface&	vkd,
 Move<VkImageView> createImageView (const DeviceInterface&	vkd,
 								   VkDevice					device,
 								   VkImage					image,
-								   VkFormat					format)
+								   VkFormat					format,
+								   VkSamplerYcbcrConversion	conversion)
 {
+	const VkSamplerYcbcrConversionInfo				samplerConversionInfo	=
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
+		DE_NULL,
+		conversion
+	};
+
 	const VkImageViewCreateInfo	viewInfo	=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		DE_NULL,
+		(conversion != DE_NULL) ? &samplerConversionInfo : DE_NULL,
 		(VkImageViewCreateFlags)0,
 		image,
 		VK_IMAGE_VIEW_TYPE_2D,
@@ -198,7 +206,8 @@ public:
 												 Allocator&					allocator,
 												 VkFormat					format,
 												 const UVec2&				size,
-												 const VkImageCreateFlags	createFlags);
+												 const VkImageCreateFlags	createFlags,
+												 VkSamplerYcbcrConversion	conversion);
 
 	const UVec2&				getSize			(void) const { return m_size;		}
 	VkImageView					getImageView	(void) const { return *m_imageView; }
@@ -215,11 +224,12 @@ TestImage::TestImage (const DeviceInterface&	vkd,
 					  Allocator&				allocator,
 					  VkFormat					format,
 					  const UVec2&				size,
-					  const VkImageCreateFlags	createFlags)
+					  const VkImageCreateFlags	createFlags,
+					  VkSamplerYcbcrConversion	conversion)
 	: m_size		(size)
 	, m_image		(createTestImage(vkd, device, format, size, createFlags))
 	, m_allocations	(allocateAndBindImageMemory(vkd, device, allocator, *m_image, format, createFlags))
-	, m_imageView	(createImageView(vkd, device, *m_image, format))
+	, m_imageView	(createImageView(vkd, device, *m_image, format, conversion))
 {
 }
 
@@ -409,10 +419,10 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 		testImages.resize(testSizes.size());
 
 		for (size_t ndx = 0; ndx < testSizes.size(); ++ndx)
-			testImages[ndx] = TestImageSp(new TestImage(vkd, device, context.getDefaultAllocator(), params.format, testSizes[ndx], params.flags));
+			testImages[ndx] = TestImageSp(new TestImage(vkd, device, context.getDefaultAllocator(), params.format, testSizes[ndx], params.flags, *conversion));
 	}
 	else
-		testImages.push_back(TestImageSp(new TestImage(vkd, device, context.getDefaultAllocator(), params.format, UVec2(16, 18), params.flags)));
+		testImages.push_back(TestImageSp(new TestImage(vkd, device, context.getDefaultAllocator(), params.format, UVec2(16, 18), params.flags, *conversion)));
 
 	{
 		UniquePtr<ShaderExecutor>	executor	(createExecutor(context, params.shaderType, getShaderSpec(params), *descLayout));
@@ -559,7 +569,7 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 		testImages.resize(testSizes.size());
 
 		for (size_t ndx = 0; ndx < testSizes.size(); ++ndx)
-			testImages[ndx] = TestImageSp(new TestImage(vkd, device, context.getDefaultAllocator(), params.format, testSizes[ndx], params.flags));
+			testImages[ndx] = TestImageSp(new TestImage(vkd, device, context.getDefaultAllocator(), params.format, testSizes[ndx], params.flags, *conversion));
 	}
 
 	{
