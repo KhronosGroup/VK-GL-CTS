@@ -62,12 +62,13 @@ public:
 class Image
 {
 public:
-	static de::SharedPtr<Image> create				(const vk::DeviceInterface& vk, vk::VkDevice device, const vk::VkImageCreateInfo& createInfo);
+	static de::SharedPtr<Image> create				(const vk::DeviceInterface& vk, vk::VkDevice device, const vk::VkImageCreateInfo& createInfo, deUint32 queueFamilyIndex);
 
 	static de::SharedPtr<Image> createAndAlloc		(const vk::DeviceInterface&				vk,
 													 vk::VkDevice							device,
 													 const vk::VkImageCreateInfo&			createInfo,
 													 vk::Allocator&							allocator,
+													 deUint32								queueFamilyIndex,
 													 vk::MemoryRequirement					memoryRequirement = vk::MemoryRequirement::Any);
 
 	tcu::ConstPixelBufferAccess readSurface			(vk::VkQueue							queue,
@@ -232,6 +233,7 @@ public:
 private:
 								Image				(const vk::DeviceInterface&				vk,
 													 vk::VkDevice							device,
+													 deUint32								queueFamilyIndex,
 													 vk::VkFormat							format,
 													 const vk::VkExtent3D&					extend,
 													 deUint32								levelCount,
@@ -243,6 +245,8 @@ private:
 
 	de::MovePtr<vk::Allocation>	m_allocation;
 	vk::Unique<vk::VkImage>		m_object;
+
+	deUint32					m_queueFamilyIndex;
 
 	vk::VkFormat				m_format;
 	vk::VkExtent3D				m_extent;
@@ -261,21 +265,26 @@ void transition2DImage (const vk::DeviceInterface&	vk,
 						vk::VkImageAspectFlags		aspectMask,
 						vk::VkImageLayout			oldLayout,
 						vk::VkImageLayout			newLayout,
-						vk::VkAccessFlags			srcAccessMask = 0,
-						vk::VkAccessFlags			dstAccessMask = 0);
+						vk::VkAccessFlags			srcAccessMask,
+						vk::VkAccessFlags			dstAccessMask,
+						vk::VkPipelineStageFlags	srcStageMask,
+						vk::VkPipelineStageFlags	dstStageMask);
 
-void initialTransitionColor2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
+void initialTransitionColor2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout,
+									vk::VkAccessFlags dstAccessMask, vk::VkPipelineStageFlags dstStageMask);
 
-void initialTransitionDepth2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
+void initialTransitionDepth2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout,
+									vk::VkAccessFlags dstAccessMask, vk::VkPipelineStageFlags dstStageMask);
 
-void initialTransitionStencil2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout);
+void initialTransitionStencil2DImage (const vk::DeviceInterface& vk, vk::VkCommandBuffer cmdBuffer, vk::VkImage image, vk::VkImageLayout layout,
+									  vk::VkAccessFlags dstAccessMask, vk::VkPipelineStageFlags dstStageMask);
 
 void initialTransitionDepthStencil2DImage (const vk::DeviceInterface&	vk,
 										   vk::VkCommandBuffer			cmdBuffer,
 										   vk::VkImage					image,
 										   vk::VkImageLayout			layout,
-										   vk::VkAccessFlags			srcAccessMask = 0,
-										   vk::VkAccessFlags			dstAccessMask = 0);
+										   vk::VkAccessFlags			dstAccessMask,
+										   vk::VkPipelineStageFlags		dstStageMask);
 
 } // Draw
 } // vkt

@@ -128,7 +128,7 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 			VK_IMAGE_TILING_OPTIMAL,				// tiling,
 			targetImageUsageFlags);					// usage,
 
-		m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
+		m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
 
 		RenderPassCreateInfo	renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
@@ -264,7 +264,8 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 		const VkClearColorValue		clearColor			= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f).color;
 		const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 
-		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL);
+		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL,
+									  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
 	}
 	{
