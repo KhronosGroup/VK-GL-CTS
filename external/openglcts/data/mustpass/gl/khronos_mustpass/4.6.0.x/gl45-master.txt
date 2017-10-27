@@ -3881,6 +3881,7 @@ KHR-GL45.copy_image.incompatible_formats_compression
 KHR-GL45.copy_image.non_existent_mipmap
 KHR-GL45.copy_image.exceeding_boundaries
 KHR-GL45.copy_image.invalid_alignment
+KHR-GL45.copy_image.integer_tex
 KHR-GL45.draw_indirect_43.advanced-twoPass-Compute-arrays
 KHR-GL45.draw_indirect_43.advanced-twoPass-Compute-elements
 KHR-GL45.khr_debug.api_errors_non_debug

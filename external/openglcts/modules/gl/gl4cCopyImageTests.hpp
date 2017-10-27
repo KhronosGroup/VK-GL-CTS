@@ -19,8 +19,8 @@
  * limitations under the License.
  *
  */ /*!
- * \file
- * \brief
+ * \file gl4cCopyImageTests.hpp
+ * \brief CopyImageSubData functional tests.
  */ /*-------------------------------------------------------------------*/
 
 #include "glcTestCase.hpp"
@@ -656,6 +656,46 @@ private:
 	glw::GLuint			  m_src_tex_name;
 	glw::GLuint			  m_test_case_index;
 	std::vector<testCase> m_test_cases;
+};
+
+/** Implements functional test. Description follows:
+ *
+ * [B]
+ * 1. Create a single level integer texture, with BASE_LEVEL and MAX_LEVEL set to 0.
+ * 2. Leave the mipmap filters at the default of GL_NEAREST_MIPMAP_LINEAR and GL_LINEAR.
+ * 3. Do glCopyImageSubData to or from that texture.
+ * 4. Make sure it succeeds and does not raise GL_INVALID_OPERATION.
+ **/
+class IntegerTexTest : public deqp::TestCase
+{
+public:
+	IntegerTexTest(deqp::Context& context);
+	virtual ~IntegerTexTest()
+	{
+	}
+
+	/* Implementation of tcu::TestNode methods */
+	virtual IterateResult iterate(void);
+
+private:
+	/* Private types */
+	struct testCase
+	{
+		glw::GLint  m_internal_format;
+		glw::GLuint m_type;
+	};
+
+	/* Private methods */
+	unsigned int createTexture(int width, int height, glw::GLint internalFormat, glw::GLuint type, const void* data,
+							   int minFilter, int magFilter);
+	void clean();
+
+	/* Private fields */
+	glw::GLuint m_dst_buf_name;
+	glw::GLuint m_dst_tex_name;
+	glw::GLuint m_src_buf_name;
+	glw::GLuint m_src_tex_name;
+	glw::GLuint m_test_case_index;
 };
 }
 
