@@ -87,6 +87,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/draw/vktDrawBaseClass.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBufferObjectUtil.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawCreateInfoUtil.cpp \
+	external/vulkancts/modules/vulkan/draw/vktDrawDifferingInterpolationTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawImageObjectUtil.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawIndexedTest.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawIndirectTest.cpp \
