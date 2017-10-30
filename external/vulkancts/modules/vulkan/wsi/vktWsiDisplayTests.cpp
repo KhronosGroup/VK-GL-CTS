@@ -774,7 +774,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
 		TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
 	if (displayCountReported == 0)
-		TCU_THROW(ResourceError, std::string("Cannot perform test: no displays found").c_str());
+		TCU_THROW(NotSupportedError, std::string("Cannot perform test: no displays found").c_str());
 
 	displayCountToTest = displayCountReported;
 	if (displayCountReported > MAX_TESTED_DISPLAY_COUNT)
@@ -902,7 +902,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
 		TCU_FAIL("Failed to retrieve displays");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	displaySet = DisplaySet(displaysVector.begin(), displaysVector.end());
 
@@ -1025,7 +1025,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneSupportedDisplay
 		TCU_FAIL("Failed to retrieve displays");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	displaySet = DisplaySet(displaysVector.begin(), displaysVector.end());
 
@@ -1149,7 +1149,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModePropertiesKHR (vo
 		TCU_FAIL("Failed to retrieve displays list");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	for (DisplayVector::iterator	it =  displaysVector.begin();
 									it != displaysVector.end();
@@ -1241,7 +1241,7 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayModeKHR (void)
 		TCU_FAIL("Failed to retrieve displays");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	for (DisplayVector::iterator	it =  displaysVector.begin();
 									it != displaysVector.end();
@@ -1533,7 +1533,7 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR (v
 		TCU_FAIL("Failed to retrieve displays");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	// Iterate through displays-modes
 	for (DisplayVector::iterator	it =  displaysVector.begin();
