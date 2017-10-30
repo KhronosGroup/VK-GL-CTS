@@ -335,6 +335,8 @@ private:
 		TOKEN_GROUP,
 		TOKEN_CASE,
 		TOKEN_END,
+		TOKEN_OUTPUT_COLOR,
+		TOKEN_FORMAT,
 		TOKEN_VALUES,
 		TOKEN_BOTH,
 		TOKEN_VERTEX,
@@ -414,6 +416,7 @@ private:
 	deUint32					parseShaderStageList		(void);
 	void						parseRequirement			(CaseRequirement& valueBlock);
 	void						parseExpectResult			(ExpectResult& expectResult);
+	void						parseFormat					(DataType& format);
 	void						parseGLSLVersion			(glu::GLSLVersion& version);
 	void						parsePipelineProgram		(ProgramSpecification& program);
 	void						parseShaderCase				(vector<tcu::TestNode*>& shaderNodeList);
@@ -612,6 +615,8 @@ void ShaderParser::advanceToken (void)
 			{ "group",						TOKEN_GROUP						},
 			{ "case",						TOKEN_CASE						},
 			{ "end",						TOKEN_END						},
+			{ "output_color",				TOKEN_OUTPUT_COLOR				},
+			{ "format",						TOKEN_FORMAT					},
 			{ "values",						TOKEN_VALUES					},
 			{ "both",						TOKEN_BOTH						},
 			{ "vertex",						TOKEN_VERTEX					},
@@ -1245,6 +1250,12 @@ void ShaderParser::parseExpectResult (ExpectResult& expectResult)
 	advanceToken();
 }
 
+void ShaderParser::parseFormat (DataType& format)
+{
+	format = mapDataTypeToken(m_curToken);
+	advanceToken();
+}
+
 void ShaderParser::parseGLSLVersion (glu::GLSLVersion& version)
 {
 	int			versionNum		= 0;
@@ -1353,6 +1364,8 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 	// Setup case.
 	GLSLVersion						version			= DEFAULT_GLSL_VERSION;
 	ExpectResult					expectResult	= EXPECT_PASS;
+	OutputType						outputType		= OUTPUT_RESULT;
+	DataType						format			= TYPE_LAST;
 	string							description;
 	string							bothSource;
 	vector<string>					vertexSources;
@@ -1380,6 +1393,12 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 		{
 			advanceToken();
 			parseExpectResult(expectResult);
+		}
+		else if (m_curToken == TOKEN_OUTPUT_COLOR)
+		{
+			outputType = OUTPUT_COLOR;
+			advanceToken();
+			parseFormat(format);
 		}
 		else if (m_curToken == TOKEN_VALUES)
 		{
@@ -1516,6 +1535,8 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 		ShaderCaseSpecification	spec;
 		spec.caseType				= CASETYPE_COMPLETE;
 		spec.expectResult			= expectResult;
+		spec.outputType				= outputType;
+		spec.outputFormat			= format;
 		spec.targetVersion			= version;
 		spec.fullGLSLES100Required	= fullGLSLES100Required;
 		spec.requiredCaps			= requiredCaps;
