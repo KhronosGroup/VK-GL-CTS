@@ -1057,7 +1057,7 @@ bool verifyVarying(Program& program, const std::string& parent_name, const Varia
  *
  * @return true if verification is positive, false otherwise
  **/
-bool checkVarying(Program& program, const Variable& variable, std::stringstream& stream, bool is_input)
+bool checkVarying(Program& program, Shader::STAGES stage, const Variable& variable, std::stringstream& stream, bool is_input)
 {
 	bool result = true;
 
@@ -1091,6 +1091,17 @@ bool checkVarying(Program& program, const Variable& variable, std::stringstream&
 		Utils::Interface* interface		 = variable.m_descriptor.m_interface;
 		const size_t	  n_members		 = interface->m_members.size();
 		std::string		  structVariable = variable.m_descriptor.m_name;
+
+		switch (Variable::GetFlavour(stage, is_input ? Variable::INPUT : Variable::OUTPUT))
+		{
+		case Variable::ARRAY:
+		case Variable::INDEXED_BY_INVOCATION_ID:
+			structVariable.append("[0]");
+			break;
+		default:
+			break;
+		}
+
 		// If struct variable is an array
 		if (0 != variable.m_descriptor.m_n_array_elements)
 		{
@@ -1319,7 +1330,7 @@ bool checkProgramStage(Program& program, const ProgramInterface& program_interfa
 
 		for (const_iterator it = inputs.begin(); it != inputs.end(); ++it)
 		{
-			if (false == checkVarying(program, **it, stream, true))
+			if (false == checkVarying(program, stage, **it, stream, true))
 			{
 				result = false;
 			}
@@ -1333,7 +1344,7 @@ bool checkProgramStage(Program& program, const ProgramInterface& program_interfa
 
 		for (const_iterator it = outputs.begin(); it != outputs.end(); ++it)
 		{
-			if (false == checkVarying(program, **it, stream, false))
+			if (false == checkVarying(program, stage, **it, stream, false))
 			{
 				result = false;
 			}
