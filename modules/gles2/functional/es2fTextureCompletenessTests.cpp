@@ -128,7 +128,7 @@ public:
 	IterateResult			iterate					(void);
 
 protected:
-	virtual void			createTexture			(void) = 0;
+	virtual void			createTexture			(GLuint texture) = 0;
 
 	tcu::TestContext&		m_testCtx;
 	glu::RenderContext&		m_renderCtx;
@@ -160,11 +160,16 @@ Tex2DCompletenessCase::IterateResult Tex2DCompletenessCase::iterate (void)
 
 	glViewport				(offsetX, offsetY, viewportWidth, viewportHeight);
 
-	createTexture			();
+	GLuint texture;
+	glGenTextures(1, &texture);
+	createTexture(texture);
+
 	renderer.renderQuad		(0, &texCoord[0], glu::TextureTestUtil::TEXTURETYPE_2D);
 	glu::readPixels			(m_renderCtx, offsetX, offsetY, renderedFrame.getAccess());
 
 	bool isOk = compareToConstantColor(log, "Result", "Image comparison result", renderedFrame, tcu::COMPARE_LOG_RESULT, m_compareColor);
+
+	glDeleteTextures(1, &texture);
 
 	m_testCtx.setTestResult(isOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
 							isOk ? "Pass"				: "Image comparison failed");
@@ -180,7 +185,7 @@ public:
 	IterateResult			iterate						(void);
 
 protected:
-	virtual void			createTexture				(void) = 0;
+	virtual void			createTexture				(GLuint texture) = 0;
 
 	tcu::TestContext&		m_testCtx;
 	glu::RenderContext&		m_renderCtx;
@@ -209,7 +214,9 @@ TexCubeCompletenessCase::IterateResult TexCubeCompletenessCase::iterate (void)
 	int					offsetX			= random.getInt(0, de::max(0,m_renderCtx.getRenderTarget().getWidth()	- 64));
 	int					offsetY			= random.getInt(0, de::max(0,m_renderCtx.getRenderTarget().getHeight()	- 64));
 
-	createTexture();
+	GLuint texture;
+	glGenTextures(1, &texture);
+	createTexture(texture);
 
 	for (int face = 0; face < tcu::CUBEFACE_LAST; face++)
 	{
@@ -226,6 +233,8 @@ TexCubeCompletenessCase::IterateResult TexCubeCompletenessCase::iterate (void)
 			allFacesOk = false;
 	}
 
+	glDeleteTextures(1, &texture);
+
 	m_testCtx.setTestResult(allFacesOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
 							allFacesOk ? "Pass"					: "Image comparison failed");
 	return STOP;
@@ -239,7 +248,7 @@ public:
 								Incomplete2DSizeCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size, IVec2 invalidLevelSize, int invalidLevelNdx, const glu::ContextInfo& ctxInfo);
 								~Incomplete2DSizeCase	(void) {}
 
-	virtual void				createTexture			(void);
+	virtual void				createTexture			(GLuint texture);
 
 private:
 	int							m_invalidLevelNdx;
@@ -257,7 +266,7 @@ Incomplete2DSizeCase::Incomplete2DSizeCase (tcu::TestContext& testCtx, glu::Rend
 {
 }
 
-void Incomplete2DSizeCase::createTexture (void)
+void Incomplete2DSizeCase::createTexture (GLuint texture)
 {
 	static const char* const s_relaxingExtensions[] =
 	{
@@ -269,8 +278,6 @@ void Incomplete2DSizeCase::createTexture (void)
 	tcu::TextureLevel		levelData		(fmt);
 	TestLog&				log				= m_testCtx.getLog();
 
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_2D, texture);
 
@@ -315,7 +322,7 @@ public:
 							Incomplete2DFormatCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size, deUint32 format, deUint32 invalidFormat, int invalidLevelNdx);
 							~Incomplete2DFormatCase	(void) {}
 
-	virtual void			createTexture			(void);
+	virtual void			createTexture			(GLuint texture);
 
 private:
 	int						m_invalidLevelNdx;
@@ -333,13 +340,11 @@ Incomplete2DFormatCase::Incomplete2DFormatCase (tcu::TestContext& testCtx, glu::
 {
 }
 
-void Incomplete2DFormatCase::createTexture (void)
+void Incomplete2DFormatCase::createTexture (GLuint texture)
 {
 	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(m_format, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel	levelData	(fmt);
 
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_2D, texture);
 
@@ -372,7 +377,7 @@ public:
 						Incomplete2DMissingLevelCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size, int missingLevelNdx);
 						~Incomplete2DMissingLevelCase	(void) {}
 
-	virtual void		createTexture					(void);
+	virtual void		createTexture					(GLuint texture);
 
 private:
 	int					m_missingLevelNdx;
@@ -386,13 +391,11 @@ Incomplete2DMissingLevelCase::Incomplete2DMissingLevelCase (tcu::TestContext& te
 {
 }
 
-void Incomplete2DMissingLevelCase::createTexture (void)
+void Incomplete2DMissingLevelCase::createTexture (GLuint texture)
 {
 	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel	levelData	(fmt);
 
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_2D, texture);
 
@@ -425,7 +428,7 @@ public:
 								Incomplete2DWrapModeCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size, deUint32 wrapT, deUint32 wrapS, const glu::ContextInfo& ctxInfo);
 								~Incomplete2DWrapModeCase	(void) {}
 
-	virtual void				createTexture				(void);
+	virtual void				createTexture				(GLuint texture);
 
 private:
 	deUint32					m_wrapT;
@@ -443,14 +446,12 @@ Incomplete2DWrapModeCase::Incomplete2DWrapModeCase (tcu::TestContext& testCtx, g
 {
 }
 
-void Incomplete2DWrapModeCase::createTexture (void)
+void Incomplete2DWrapModeCase::createTexture (GLuint texture)
 {
 	TestLog&			log			= m_testCtx.getLog();
 	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel	levelData	(fmt);
 
-	GLuint texture;
-	glGenTextures(1, &texture);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -480,7 +481,7 @@ public:
 						Complete2DExtraLevelCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size);
 						~Complete2DExtraLevelCase	(void) {}
 
-	virtual void		createTexture				(void);
+	virtual void		createTexture				(GLuint texture);
 
 private:
 	IVec2				m_size;
@@ -492,13 +493,11 @@ Complete2DExtraLevelCase::Complete2DExtraLevelCase (tcu::TestContext& testCtx, g
 {
 }
 
-void Complete2DExtraLevelCase::createTexture (void)
+void Complete2DExtraLevelCase::createTexture (GLuint texture)
 {
 	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel	levelData	(fmt);
 
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_2D, texture);
 
@@ -533,7 +532,7 @@ public:
 						Incomplete2DEmptyObjectCase		(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size);
 						~Incomplete2DEmptyObjectCase	(void) {}
 
-	virtual void		createTexture					(void);
+	virtual void		createTexture					(GLuint texture);
 
 private:
 	IVec2				m_size;
@@ -545,10 +544,8 @@ Incomplete2DEmptyObjectCase::Incomplete2DEmptyObjectCase (tcu::TestContext& test
 {
 }
 
-void Incomplete2DEmptyObjectCase::createTexture (void)
+void Incomplete2DEmptyObjectCase::createTexture (GLuint texture)
 {
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_2D, texture);
 
@@ -569,7 +566,7 @@ public:
 							IncompleteCubeSizeCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size, IVec2 invalidLevelSize, int invalidLevelNdx, tcu::CubeFace invalidCubeFace);
 							~IncompleteCubeSizeCase	(void) {}
 
-	virtual void			createTexture			(void);
+	virtual void			createTexture			(GLuint texture);
 
 private:
 	int						m_invalidLevelNdx;
@@ -596,13 +593,11 @@ IncompleteCubeSizeCase::IncompleteCubeSizeCase (tcu::TestContext& testCtx, glu::
 {
 }
 
-void IncompleteCubeSizeCase::createTexture (void)
+void IncompleteCubeSizeCase::createTexture (GLuint texture)
 {
 	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel	levelData	(fmt);
 
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_CUBE_MAP, texture);
 
@@ -641,7 +636,7 @@ public:
 							IncompleteCubeFormatCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size, deUint32 format, deUint32 invalidFormat, tcu::CubeFace invalidCubeFace);
 							~IncompleteCubeFormatCase	(void) {}
 
-	virtual void			createTexture				(void);
+	virtual void			createTexture				(GLuint texture);
 
 private:
 	deUint32				m_format;
@@ -668,13 +663,11 @@ IncompleteCubeFormatCase::IncompleteCubeFormatCase (tcu::TestContext& testCtx, g
 {
 }
 
-void IncompleteCubeFormatCase::createTexture (void)
+void IncompleteCubeFormatCase::createTexture (GLuint texture)
 {
 	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel	levelData	(fmt);
 
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_CUBE_MAP, texture);
 
@@ -713,7 +706,7 @@ public:
 							IncompleteCubeMissingLevelCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size, int invalidLevelNdx, tcu::CubeFace invalidCubeFace);
 							~IncompleteCubeMissingLevelCase	(void) {}
 
-	virtual void			createTexture					(void);
+	virtual void			createTexture					(GLuint texture);
 
 private:
 	int						m_invalidLevelNdx;
@@ -737,13 +730,11 @@ IncompleteCubeMissingLevelCase::IncompleteCubeMissingLevelCase (tcu::TestContext
 {
 }
 
-void IncompleteCubeMissingLevelCase::createTexture (void)
+void IncompleteCubeMissingLevelCase::createTexture (GLuint texture)
 {
 	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel	levelData	(fmt);
 
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_CUBE_MAP, texture);
 
@@ -782,7 +773,7 @@ public:
 								IncompleteCubeWrapModeCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size, deUint32 wrapT, deUint32 wrapS, const glu::ContextInfo& ctxInfo);
 								~IncompleteCubeWrapModeCase	(void) {}
 
-	virtual void				createTexture				(void);
+	virtual void				createTexture				(GLuint texture);
 
 private:
 	deUint32					m_wrapT;
@@ -800,14 +791,12 @@ IncompleteCubeWrapModeCase::IncompleteCubeWrapModeCase (tcu::TestContext& testCt
 {
 }
 
-void IncompleteCubeWrapModeCase::createTexture (void)
+void IncompleteCubeWrapModeCase::createTexture (GLuint texture)
 {
 	TestLog&			log			= m_testCtx.getLog();
 	tcu::TextureFormat	fmt			= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel	levelData	(fmt);
 
-	GLuint texture;
-	glGenTextures(1, &texture);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -838,7 +827,7 @@ public:
 						CompleteCubeExtraLevelCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size);
 						~CompleteCubeExtraLevelCase	(void) {}
 
-	virtual void		createTexture				(void);
+	virtual void		createTexture				(GLuint texture);
 
 private:
 	IVec2				m_size;
@@ -850,13 +839,11 @@ CompleteCubeExtraLevelCase::CompleteCubeExtraLevelCase (tcu::TestContext& testCt
 {
 }
 
-void CompleteCubeExtraLevelCase::createTexture (void)
+void CompleteCubeExtraLevelCase::createTexture (GLuint texture)
 {
 	tcu::TextureFormat		fmt				= glu::mapGLTransferFormat(GL_RGBA, GL_UNSIGNED_BYTE);
 	tcu::TextureLevel		levelData		(fmt);
 
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_2D, texture);
 
@@ -894,7 +881,7 @@ public:
 							IncompleteCubeEmptyObjectCase	(tcu::TestContext& testCtx, glu::RenderContext& renderCtx, const char* name, const char* description, IVec2 size);
 							~IncompleteCubeEmptyObjectCase	(void) {}
 
-	virtual void			createTexture				(void);
+	virtual void			createTexture				(GLuint texture);
 
 private:
 	IVec2					m_size;
@@ -906,10 +893,8 @@ IncompleteCubeEmptyObjectCase::IncompleteCubeEmptyObjectCase (tcu::TestContext& 
 {
 }
 
-void IncompleteCubeEmptyObjectCase::createTexture (void)
+void IncompleteCubeEmptyObjectCase::createTexture (GLuint texture)
 {
-	GLuint texture;
-	glGenTextures	(1, &texture);
 	glPixelStorei	(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture	(GL_TEXTURE_2D, texture);
 
