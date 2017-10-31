@@ -172,6 +172,7 @@ vk::Move<vk::VkDescriptorSet>	makeDescriptorSet			(const vk::DeviceInterface& vk
 vk::Move<vk::VkRenderPass>		makeRenderPass				(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat);
 vk::Move<vk::VkImageView>		makeImageView				(const vk::DeviceInterface& vk, const vk::VkDevice vkDevice, const vk::VkImage image, const vk::VkImageViewType viewType, const vk::VkFormat format, const vk::VkImageSubresourceRange subresourceRange);
 vk::VkBufferImageCopy			makeBufferImageCopy			(const vk::VkExtent3D extent, const vk::VkImageSubresourceLayers subresourceLayers);
+vk::VkBufferImageCopy			makeBufferImageCopy			(const vk::VkDeviceSize& bufferOffset, const vk::VkImageSubresourceLayers& imageSubresource, const vk::VkOffset3D& imageOffset, const vk::VkExtent3D& imageExtent);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout = DE_NULL);
 vk::Move<vk::VkFramebuffer>		makeFramebuffer				(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const vk::VkImageView colorAttachment, const deUint32 width, const deUint32 height, const deUint32 layers);
 vk::VkImageMemoryBarrier		makeImageMemoryBarrier		(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange);
@@ -187,6 +188,8 @@ void							submitCommandsAndWait		(const vk::DeviceInterface& vk, const vk::VkDe
 
 bool							compareWithFileImage		(Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string name);
 
+void							fillBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size, const vk::VkDeviceSize offset, const vk::VkFormat format, const tcu::Vec4& color);
+void							fillBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size, const vk::VkDeviceSize offset, const vk::VkFormat format, const float depth);
 void							zeroBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size);
 
 void							checkGeometryShaderSupport	(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const int numGeometryShaderInvocations = 0);
