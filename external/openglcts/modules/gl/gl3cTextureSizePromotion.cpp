@@ -125,7 +125,14 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 						}
 
 						/* Prepare source texture to be tested. */
-						prepareSourceTexture(s_formats[i], s_source_texture_targets[j]);
+						try
+						{
+							prepareSourceTexture(s_formats[i], s_source_texture_targets[j]);
+						}
+						catch (tcu::NotSupportedError e)
+						{
+							continue;
+						}
 
 						/* Check basic API queries for source texture. */
 						is_ok = is_ok & checkSourceTextureSizeAndType(s_formats[i], s_source_texture_targets[j]);
@@ -235,6 +242,14 @@ void FunctionalTest::prepareSourceTexture(TextureInternalFormatDescriptor descri
 	gl.bindTexture(target, m_source_texture);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexLevelParameteriv have failed");
 
+	if (!isTargetMultisampled(target))
+	{
+		gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexLevelParameteriv have failed");
+	}
+
 	/* Select proper data set. */
 	glw::GLvoid* source_data   = DE_NULL;
 	glw::GLenum  source_type   = GL_NONE;
@@ -282,15 +297,15 @@ void FunctionalTest::prepareSourceTexture(TextureInternalFormatDescriptor descri
 					{
 						if (isDepthType(descriptor)) /* For depth type. */
 						{
-							source_data   = NULL;
-							source_type   = GL_UNSIGNED_INT;
+							source_data   = (glw::GLvoid*)s_source_texture_data_f;
+							source_type   = GL_FLOAT;
 							source_format = GL_DEPTH_COMPONENT;
 						}
 						else
 						{
 							if (isStencilType(descriptor)) /* For stencil type. */
 							{
-								source_data   = NULL;
+								source_data   = (glw::GLvoid*)s_source_texture_data_ui;
 								source_type   = GL_UNSIGNED_INT;
 								source_format = GL_STENCIL_INDEX;
 							}
@@ -452,7 +467,10 @@ void FunctionalTest::prepareDestinationTextureAndFramebuffer(TextureInternalForm
 	/* Check framebuffer completness. */
 	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		throw 0;
+		if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_UNSUPPORTED)
+			throw tcu::NotSupportedError("unsupported framebuffer configuration");
+		else
+			throw 0;
 	}
 
 	/* Setup viewport. */
@@ -832,7 +850,7 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Check depending on format. */
-	if (isFloatType(descriptor) || isDepthType(descriptor) || isStencilType(descriptor))
+	if (isDepthType(descriptor) || isStencilType(descriptor))
 	{
 		/* Fetch results from destination texture (attached to current framebuffer). */
 		glw::GLfloat pixel = 3.1415927f;
@@ -840,9 +858,9 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels have failed");
 
 		/* Setup expected value. */
-		glw::GLfloat expected_value = isChannelTypeNone(descriptor, channel) ?
-										  ((channel == ALPHA_COMPONENT) ? 1.f : 0.f) :
-										  s_source_texture_data_f[channel];
+		glw::GLfloat expected_value = (channel == RED_COMPONENT) ?
+			                                                 s_source_texture_data_f[0] :
+			                                                 (channel == ALPHA_COMPONENT) ? 1.f : 0.f;
 
 		/* Compare expected and fetched values. */
 		if (fabs(pixel - expected_value) <= getMinPrecision(descriptor, channel))
@@ -862,7 +880,7 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 	}
 	else
 	{
-		if (isFixedSignedType(descriptor))
+		if (isFloatType(descriptor))
 		{
 			/* Fetch results from destination texture (attached to current framebuffer). */
 			glw::GLfloat pixel = 3.1415927f;
@@ -870,10 +888,9 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels have failed");
 
 			/* Setup expected value. */
-			/* Signed fixed-point read color are clamped to [0, 1] by default */
 			glw::GLfloat expected_value = isChannelTypeNone(descriptor, channel) ?
 											  ((channel == ALPHA_COMPONENT) ? 1.f : 0.f) :
-											  deFloatClamp(s_source_texture_data_sn[channel], 0, 1);
+											  s_source_texture_data_f[channel];
 
 			/* Compare expected and fetched values. */
 			if (fabs(pixel - expected_value) <= getMinPrecision(descriptor, channel))
@@ -893,7 +910,7 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 		}
 		else
 		{
-			if (isFixedUnsignedType(descriptor))
+			if (isFixedSignedType(descriptor))
 			{
 				/* Fetch results from destination texture (attached to current framebuffer). */
 				glw::GLfloat pixel = 3.1415927f;
@@ -901,21 +918,10 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels have failed");
 
 				/* Setup expected value. */
+				/* Signed fixed-point read color are clamped to [0, 1] by default */
 				glw::GLfloat expected_value = isChannelTypeNone(descriptor, channel) ?
 												  ((channel == ALPHA_COMPONENT) ? 1.f : 0.f) :
-												  s_source_texture_data_n[channel];
-
-				/* For sRGB internal formats convert value to linear space. */
-				if (descriptor.is_sRGB && (channel < ALPHA_COMPONENT))
-				{
-					expected_value = convert_from_sRGB(expected_value);
-
-					if (isTargetMultisampled(
-							target)) /* In multisampled targets two conversions are made (in upload and in shader) */
-					{
-						expected_value = convert_from_sRGB(expected_value);
-					}
-				}
+												  deFloatClamp(s_source_texture_data_sn[channel], 0, 1);
 
 				/* Compare expected and fetched values. */
 				if (fabs(pixel - expected_value) <= getMinPrecision(descriptor, channel))
@@ -935,20 +941,32 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 			}
 			else
 			{
-				if (isIntegerSignedType(descriptor))
+				if (isFixedUnsignedType(descriptor))
 				{
 					/* Fetch results from destination texture (attached to current framebuffer). */
-					glw::GLint pixel = 5;
-					gl.readPixels(0, 0, 1, 1, GL_RED_INTEGER, GL_INT, &pixel);
+					glw::GLfloat pixel = 3.1415927f;
+					gl.readPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &pixel);
 					GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels have failed");
 
 					/* Setup expected value. */
-					glw::GLint expected_value = isChannelTypeNone(descriptor, channel) ?
-													((channel == ALPHA_COMPONENT) ? 1 : 0) :
-													s_source_texture_data_i[channel];
+					glw::GLfloat expected_value = isChannelTypeNone(descriptor, channel) ?
+													  ((channel == ALPHA_COMPONENT) ? 1.f : 0.f) :
+													  s_source_texture_data_n[channel];
+
+					/* For sRGB internal formats convert value to linear space. */
+					if (descriptor.is_sRGB && (channel < ALPHA_COMPONENT))
+					{
+						expected_value = convert_from_sRGB(expected_value);
+
+						if (isTargetMultisampled(
+								target)) /* In multisampled targets two conversions are made (in upload and in shader) */
+						{
+							expected_value = convert_from_sRGB(expected_value);
+						}
+					}
 
 					/* Compare expected and fetched values. */
-					if (pixel == expected_value)
+					if (fabs(pixel - expected_value) <= getMinPrecision(descriptor, channel))
 					{
 						/* Test succeeded*/
 						return true;
@@ -957,26 +975,25 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 					{
 						/* Log failure. */
 						m_context.getTestContext().getLog()
-							<< tcu::TestLog::Message << "Promotion from internal format "
-							<< descriptor.internal_format_name << " have failed during functional test of "
-							<< s_color_channel_names[channel] << " channel with target " << target_name
-							<< ". Expected value = " << expected_value << " read value = " << pixel << "."
-							<< tcu::TestLog::EndMessage;
+							<< tcu::TestLog::Message << "Promotion from internal format " << descriptor.internal_format_name
+							<< " have failed during functional test of " << s_color_channel_names[channel]
+							<< " channel with target " << target_name << ". Expected value = " << expected_value
+							<< " read value = " << pixel << "." << tcu::TestLog::EndMessage;
 					}
 				}
 				else
 				{
-					if (isIntegerUnsignedType(descriptor))
+					if (isIntegerSignedType(descriptor))
 					{
 						/* Fetch results from destination texture (attached to current framebuffer). */
-						glw::GLuint pixel = 5;
-						gl.readPixels(0, 0, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixel);
+						glw::GLint pixel = 5;
+						gl.readPixels(0, 0, 1, 1, GL_RED_INTEGER, GL_INT, &pixel);
 						GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels have failed");
 
 						/* Setup expected value. */
-						glw::GLuint expected_value = isChannelTypeNone(descriptor, channel) ?
-														 ((channel == ALPHA_COMPONENT) ? 1 : 0) :
-														 s_source_texture_data_ui[channel];
+						glw::GLint expected_value = isChannelTypeNone(descriptor, channel) ?
+														((channel == ALPHA_COMPONENT) ? 1 : 0) :
+														s_source_texture_data_i[channel];
 
 						/* Compare expected and fetched values. */
 						if (pixel == expected_value)
@@ -993,6 +1010,38 @@ bool FunctionalTest::checkDestinationTexture(TextureInternalFormatDescriptor des
 								<< s_color_channel_names[channel] << " channel with target " << target_name
 								<< ". Expected value = " << expected_value << " read value = " << pixel << "."
 								<< tcu::TestLog::EndMessage;
+						}
+					}
+					else
+					{
+						if (isIntegerUnsignedType(descriptor))
+						{
+							/* Fetch results from destination texture (attached to current framebuffer). */
+							glw::GLuint pixel = 5;
+							gl.readPixels(0, 0, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixel);
+							GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels have failed");
+
+							/* Setup expected value. */
+							glw::GLuint expected_value = isChannelTypeNone(descriptor, channel) ?
+															 ((channel == ALPHA_COMPONENT) ? 1 : 0) :
+															 s_source_texture_data_ui[channel];
+
+							/* Compare expected and fetched values. */
+							if (pixel == expected_value)
+							{
+								/* Test succeeded*/
+								return true;
+							}
+							else
+							{
+								/* Log failure. */
+								m_context.getTestContext().getLog()
+									<< tcu::TestLog::Message << "Promotion from internal format "
+									<< descriptor.internal_format_name << " have failed during functional test of "
+									<< s_color_channel_names[channel] << " channel with target " << target_name
+									<< ". Expected value = " << expected_value << " read value = " << pixel << "."
+									<< tcu::TestLog::EndMessage;
+							}
 						}
 					}
 				}
@@ -1122,12 +1171,12 @@ glw::GLfloat FunctionalTest::getMinPrecision(TextureInternalFormatDescriptor des
 	/* Fixed types precision */
 	if (isFixedSignedType(descriptor))
 	{
-		return (float)(1.0 / pow(2.0, (double)(size - 1 /* sign bit */)));
+		return (float)(2.0 / pow(2.0, (double)(size - 1 /* sign bit */)));
 	}
 
 	if (isFixedUnsignedType(descriptor))
 	{
-		return (float)(1.0 / pow(2.0, (double)(size)));
+		return (float)(2.0 / pow(2.0, (double)(size)));
 	}
 
 	/* other aka (unsigned) integer */

@@ -5509,7 +5509,6 @@ bool TestBase::test()
 
 	for (GLuint test_case = 0; test_case < n_test_cases; ++test_case)
 	{
-
 #endif /* DEBUG_REPEAT_TEST_CASE */
 
 		bool case_result = true;
@@ -5609,7 +5608,8 @@ void BufferTestBase::getBufferDescriptors(glw::GLuint /* test_case_index */,
  * @param ignored
  **/
 void BufferTestBase::getCapturedVaryings(glw::GLuint /* test_case_index */,
-										 Utils::Program::NameVector& /* captured_varyings */)
+										 Utils::Program::NameVector& /* captured_varyings */,
+										 GLint* /* xfb_components */)
 {
 	/* Nothing to be done */
 }
@@ -5701,7 +5701,21 @@ bool BufferTestBase::testCase(GLuint test_case_index)
 		Utils::VertexArray		   vao(m_context);
 
 		/* Get captured varyings */
-		getCapturedVaryings(test_case_index, captured_varyings);
+		GLint xfb_components;
+		getCapturedVaryings(test_case_index, captured_varyings, &xfb_components);
+
+		/* Don't generate shaders that try to capture more XFB components than the implementation's limit */
+		if (captured_varyings.size() > 0)
+		{
+			const Functions& gl	= m_context.getRenderContext().getFunctions();
+
+			GLint max_xfb_components;
+			gl.getIntegerv(GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS, &max_xfb_components);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+			if (xfb_components > max_xfb_components)
+				return true;
+		}
 
 		/* Get shader sources */
 		const std::string& fragment_shader  = getShaderSource(test_case_index, Utils::Shader::FRAGMENT);
@@ -6716,23 +6730,52 @@ void TextureTestBase::prepareAttributes(GLuint test_case_index, Utils::ProgramIn
 		return;
 	}
 
-	/* Calculate vertex stride and check */
-	GLint vertex_stride = 0;
+	const Functions& gl = m_context.getRenderContext().getFunctions();
 
+	/* Calculate vertex stride and check */
+	GLint max_inputs;
+	gl.getIntegerv(GL_MAX_VERTEX_ATTRIBS, &max_inputs);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+	/* dvec3/4 vertex inputs use a single location but require 2x16B slots */
+	GLint max_slots = max_inputs * 2;
+
+	/* Compute used slots */
+	std::vector<GLint> slot_sizes;
+	slot_sizes.resize(max_slots);
+	std::fill(slot_sizes.begin(), slot_sizes.end(), 0);
 	for (GLuint i = 0; i < si.m_inputs.size(); ++i)
 	{
 		Utils::Variable& variable = *si.m_inputs[i];
 
 		GLint variable_size = static_cast<GLuint>(variable.m_data_size);
 
-		GLint ends_at = variable_size + variable.m_descriptor.m_offset;
+		GLint base_slot = variable.m_descriptor.m_expected_location + variable.m_descriptor.m_offset / 16;
+		GLint ends_at = variable.m_descriptor.m_offset % 16 + variable_size;
 
-		vertex_stride = std::max(vertex_stride, ends_at);
+		GLint array_length = std::max(1u, variable.m_descriptor.m_n_array_elements);
+		for (GLint loc = 0; loc < array_length; loc++) {
+			GLint slot = base_slot + loc;
+			slot_sizes[slot] = std::max(slot_sizes[slot], ends_at);
+		}
+	}
+
+	/* Compute the offsets where we need to put vertex buffer data for each slot */
+	std::vector<GLint> slot_offsets;
+	slot_offsets.resize(max_slots);
+	std::fill(slot_offsets.begin(), slot_offsets.end(), -1);
+	GLint buffer_size = 0;
+	for (GLint i = 0; i < max_slots; i++)
+	{
+		if (slot_sizes[i] == 0)
+			continue;
+		slot_offsets[i] = buffer_size;
+		buffer_size += slot_sizes[i];
 	}
 
 	/* Prepare buffer data and set up vao */
 	std::vector<GLubyte> buffer_data;
-	buffer_data.resize(vertex_stride);
+	buffer_data.resize(buffer_size);
 
 	GLubyte* ptr = &buffer_data[0];
 
@@ -6740,13 +6783,19 @@ void TextureTestBase::prepareAttributes(GLuint test_case_index, Utils::ProgramIn
 	{
 		Utils::Variable& variable = *si.m_inputs[i];
 
-		memcpy(ptr + variable.m_descriptor.m_offset, variable.m_data, variable.m_data_size);
+		GLint base_slot = variable.m_descriptor.m_expected_location + variable.m_descriptor.m_offset / 16;
+		GLint variable_offset = variable.m_descriptor.m_offset % 16;
+		GLint array_length = std::max(1u, variable.m_descriptor.m_n_array_elements);
+		for (GLint loc = 0; loc < array_length; loc++) {
+			GLint slot = base_slot + loc;
+			memcpy(ptr + slot_offsets[slot] + variable_offset, variable.m_data, variable.m_data_size);
+		}
 
 		if (false == use_component_qualifier)
 		{
 			vao.Attribute(variable.m_descriptor.m_expected_location, variable.m_descriptor.m_builtin,
 						  variable.m_descriptor.m_n_array_elements, variable.m_descriptor.m_normalized,
-						  variable.GetStride(), (GLvoid*)(intptr_t)variable.m_descriptor.m_offset);
+						  variable.GetStride(), (GLvoid*)(intptr_t)(slot_offsets[base_slot] + variable_offset));
 		}
 		else if (0 == variable.m_descriptor.m_expected_component)
 		{
@@ -6757,12 +6806,12 @@ void TextureTestBase::prepareAttributes(GLuint test_case_index, Utils::ProgramIn
 
 			vao.Attribute(variable.m_descriptor.m_expected_location, type, variable.m_descriptor.m_n_array_elements,
 						  variable.m_descriptor.m_normalized, variable.GetStride(),
-						  (GLvoid*)(intptr_t)variable.m_descriptor.m_offset);
+						  (GLvoid*)(intptr_t)(slot_offsets[base_slot] + variable_offset));
 		}
 	}
 
 	/* Update buffer */
-	buffer.Data(Utils::Buffer::StaticDraw, vertex_stride, ptr);
+	buffer.Data(Utils::Buffer::StaticDraw, buffer_size, ptr);
 }
 
 /** Get locations for all outputs with automatic_location
@@ -17853,7 +17902,8 @@ void VaryingLocationAliasingWithMixedTypesTest::testInit()
 						testCase test_case_out = { gohan,	  goten,	 false, (Utils::Shader::STAGES)stage,
 												   type_gohan, type_goten };
 
-						m_test_cases.push_back(test_case_in);
+						if (Utils::Shader::VERTEX != stage)
+							m_test_cases.push_back(test_case_in);
 
 						/* Skip double outputs in fragment shader */
 						if ((Utils::Shader::FRAGMENT != stage) || ((Utils::Type::Double != type_gohan.m_basic_type) &&
@@ -17871,7 +17921,8 @@ void VaryingLocationAliasingWithMixedTypesTest::testInit()
 						testCase test_case_out = { gohan,	  goten,	 false, (Utils::Shader::STAGES)stage,
 												   type_gohan, type_goten };
 
-						m_test_cases.push_back(test_case_in);
+						if (Utils::Shader::VERTEX != stage)
+							m_test_cases.push_back(test_case_in);
 
 						/* Skip double outputs in fragment shader */
 						if ((Utils::Shader::FRAGMENT != stage) || ((Utils::Type::Double != type_gohan.m_basic_type) &&
@@ -20439,9 +20490,11 @@ void XFBStrideOfEmptyListAndAPITest::getBufferDescriptors(glw::GLuint				test_ca
  * @param captured_varyings Vector of varying names to be captured
  **/
 void XFBStrideOfEmptyListAndAPITest::getCapturedVaryings(glw::GLuint /* test_case_index */,
-														 Utils::Program::NameVector& captured_varyings)
+														 Utils::Program::NameVector& captured_varyings,
+														 GLint* xfb_components)
 {
 	captured_varyings.push_back("gs_fs");
+	*xfb_components	= 4;
 }
 
 /** Get body of main function for given shader stage
@@ -22807,12 +22860,18 @@ void XFBOverrideQualifiersWithAPITest::getBufferDescriptors(glw::GLuint				  tes
  * @param ignored
  * @param captured_varyings List of names
  **/
-void XFBOverrideQualifiersWithAPITest::getCapturedVaryings(glw::GLuint /* test_case_index */,
-														   Utils::Program::NameVector& captured_varyings)
+void XFBOverrideQualifiersWithAPITest::getCapturedVaryings(glw::GLuint test_case_index,
+														   Utils::Program::NameVector& captured_varyings,
+														   GLint* xfb_components)
 {
 	captured_varyings.resize(1);
 
 	captured_varyings[0] = "trunks";
+
+	/* The test captures 3 varyings of type 'type' */
+	Utils::Type	type		= getType(test_case_index);
+	GLint		type_size	= type.GetSize(false);
+	*xfb_components			= 3 * type_size / 4;
 }
 
 /** Get body of main function for given shader stage
