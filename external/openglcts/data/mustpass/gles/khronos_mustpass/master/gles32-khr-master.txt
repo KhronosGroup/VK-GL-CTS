@@ -1016,8 +1016,3 @@ KHR-GLES32.core.separable_programs_tf.tessellation_active
 KHR-GLES32.core.separable_programs_tf.geometry_active
 KHR-GLES32.core.copy_image.r32i_texture
 KHR-GLES32.core.copy_image.r32ui_texture
-KHR-GLES32.robust.robust_buffer_access_behavior.vertex_buffer_objects
-KHR-GLES32.robust.robust_buffer_access_behavior.texel_fetch
-KHR-GLES32.robust.robust_buffer_access_behavior.image_load_store
-KHR-GLES32.robust.robust_buffer_access_behavior.storage_buffer
-KHR-GLES32.robust.robust_buffer_access_behavior.uniform_buffer

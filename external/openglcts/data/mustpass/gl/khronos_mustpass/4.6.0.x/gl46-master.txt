@@ -3950,11 +3950,6 @@ KHR-GL46.compute_shader.api-indirect
 KHR-GL46.compute_shader.api-program
 KHR-GL46.compute_shader.glsl-compile-time-errors
 KHR-GL46.compute_shader.glsl-link-time-errors
-KHR-GL46.robust_buffer_access_behavior.vertex_buffer_objects
-KHR-GL46.robust_buffer_access_behavior.texel_fetch
-KHR-GL46.robust_buffer_access_behavior.image_load_store
-KHR-GL46.robust_buffer_access_behavior.storage_buffer
-KHR-GL46.robust_buffer_access_behavior.uniform_buffer
 KHR-GL46.shader_storage_buffer_object.basic-basic
 KHR-GL46.shader_storage_buffer_object.basic-basic-cs
 KHR-GL46.shader_storage_buffer_object.basic-max

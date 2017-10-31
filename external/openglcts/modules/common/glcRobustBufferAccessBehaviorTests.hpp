@@ -23,11 +23,14 @@
  * \brief Declares test classes for "Robust Buffer Access Behavior" functionality.
  */ /*-------------------------------------------------------------------*/
 
+#include "glcRobustnessTests.hpp"
 #include "glcTestCase.hpp"
 #include "glwDefs.hpp"
 #include "glwEnums.hpp"
 
-namespace deqp
+#include <map>
+
+namespace glcts
 {
 namespace RobustBufferAccessBehavior
 {
@@ -43,7 +46,7 @@ class Buffer
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Buffer(deqp::Context& context);
+	Buffer(const glw::Functions& gl);
 	~Buffer();
 
 	/* Init & Release */
@@ -76,7 +79,7 @@ private:
 	/* Private enums */
 
 	/* Private fields */
-	deqp::Context& m_context;
+	const glw::Functions& m_gl;
 	glw::GLenum	m_target;
 };
 
@@ -88,7 +91,7 @@ class Framebuffer
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Framebuffer(deqp::Context& context);
+	Framebuffer(const glw::Functions& gl);
 	~Framebuffer();
 
 	/* Init & Release */
@@ -109,7 +112,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	const glw::Functions& m_gl;
 };
 
 /** Represents shader instance.
@@ -120,7 +123,7 @@ class Shader
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Shader(deqp::Context& context);
+	Shader(const glw::Functions& gl);
 	~Shader();
 
 	/* Init & Realese */
@@ -141,7 +144,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	const glw::Functions& m_gl;
 };
 
 /** Represents program instance.
@@ -152,7 +155,7 @@ class Program
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Program(deqp::Context& context);
+	Program(const glw::Functions& gl);
 	~Program();
 
 	/* Init & Release */
@@ -187,7 +190,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	const glw::Functions& m_gl;
 };
 
 /** Represents texture instance
@@ -197,7 +200,7 @@ class Texture
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	Texture(deqp::Context& context);
+	Texture(const glw::Functions& gl);
 	~Texture();
 
 	/* Init & Release */
@@ -241,7 +244,7 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	const glw::Functions& m_gl;
 };
 
 /** Represents Vertex array object
@@ -252,7 +255,7 @@ class VertexArray
 public:
 	/* Public methods */
 	/* Ctr & Dtr */
-	VertexArray(deqp::Context& Context);
+	VertexArray(const glw::Functions& gl);
 	~VertexArray();
 
 	/* Init & Release */
@@ -270,7 +273,23 @@ public:
 
 private:
 	/* Private fields */
-	deqp::Context& m_context;
+	const glw::Functions& m_gl;
+};
+
+class RobustnessBase : public tcu::TestCase
+{
+public:
+	RobustnessBase(tcu::TestContext& testCtx, const char* name, const char* description, glu::ApiType apiType);
+
+	glu::RenderContext* createRobustContext(
+		glu::ResetNotificationStrategy reset = glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION);
+
+protected:
+	glu::ApiType m_api_type;
+	bool		 m_context_is_es;
+	bool		 m_has_khr_robust_buffer_access;
+
+	std::map<std::string, std::string> m_specializationMap;
 };
 
 /** Implementation of test VertexBufferObjects. Description follows:
@@ -319,12 +338,11 @@ private:
  * - inspect contents of framebuffer, it is expected that it is filled with
  * value 1.
  **/
-class VertexBufferObjectsTest : public deqp::TestCase
+class VertexBufferObjectsTest : public RobustnessBase
 {
 public:
 	/* Public methods */
-	VertexBufferObjectsTest(deqp::Context& context);
-	VertexBufferObjectsTest(deqp::Context& context, const char* name, const char* description);
+	VertexBufferObjectsTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~VertexBufferObjectsTest()
 	{
 	}
@@ -334,12 +352,12 @@ public:
 
 protected:
 	/* Protected methods */
-	virtual std::string getFragmentShader();
-	virtual std::string getVertexShader();
-	virtual void cleanTexture(glw::GLuint texture_id);
-	virtual bool verifyInvalidResults(glw::GLuint texture_id);
-	virtual bool verifyValidResults(glw::GLuint texture_id);
-	virtual bool verifyResults(glw::GLuint texture_id);
+	std::string getFragmentShader();
+	std::string getVertexShader();
+	void cleanTexture(const glw::Functions& gl, glw::GLuint texture_id);
+	bool verifyInvalidResults(const glw::Functions& gl, glw::GLuint texture_id);
+	bool verifyValidResults(const glw::Functions& gl, glw::GLuint texture_id);
+	bool verifyResults(const glw::Functions& gl, glw::GLuint texture_id);
 };
 
 /** Implementation of test TexelFetch. Description follows:
@@ -369,12 +387,12 @@ protected:
  * - mipmap at level 1;
  * - a texture with 4 samples.
  **/
-class TexelFetchTest : public deqp::TestCase
+class TexelFetchTest : public RobustnessBase
 {
 public:
 	/* Public methods */
-	TexelFetchTest(deqp::Context& context);
-	TexelFetchTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description);
+	TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType);
+	TexelFetchTest(tcu::TestContext& testCtx, const char* name, const char* description, glu::ApiType apiType);
 	virtual ~TexelFetchTest()
 	{
 	}
@@ -403,19 +421,20 @@ protected:
 	};
 
 	/* Protected methods */
-	virtual const glw::GLchar* getTestCaseName() const;
-	virtual void prepareTexture(bool is_source, glw::GLuint texture_id);
+	const glw::GLchar* getTestCaseName() const;
+	void prepareTexture(const glw::Functions& gl, bool is_source, glw::GLuint texture_id);
 
 	/* Protected fields */
 	TEST_CASES m_test_case;
 
 protected:
 	/* Protected methods */
-	virtual std::string getFragmentShader(bool is_case_valid, glw::GLuint fetch_offset = 0);
-	virtual std::string getGeometryShader();
-	virtual std::string getVertexShader();
-	virtual bool verifyInvalidResults(glw::GLuint texture_id);
-	virtual bool verifyValidResults(glw::GLuint texture_id);
+	std::string getFragmentShader(const glu::ContextType& contextType, bool is_case_valid,
+								  glw::GLuint fetch_offset = 0);
+	std::string  getGeometryShader();
+	std::string  getVertexShader();
+	virtual bool verifyInvalidResults(const glw::Functions& gl, glw::GLuint texture_id);
+	virtual bool verifyValidResults(const glw::Functions& gl, glw::GLuint texture_id);
 };
 
 /** Implementation of test ImageLoadStore. Description follows:
@@ -436,8 +455,7 @@ class ImageLoadStoreTest : public TexelFetchTest
 {
 public:
 	/* Public methods */
-	ImageLoadStoreTest(deqp::Context& context);
-	ImageLoadStoreTest(deqp::Context& context, const char* name, const char* description);
+	ImageLoadStoreTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~ImageLoadStoreTest()
 	{
 	}
@@ -447,10 +465,10 @@ public:
 
 protected:
 	/* Protected methods */
-	virtual std::string getComputeShader(VERSION version, glw::GLuint coord_offset = 0, glw::GLuint sample_offset = 0);
-	virtual void setTextures(glw::GLuint id_destination, glw::GLuint id_source);
-	virtual bool verifyInvalidResults(glw::GLuint texture_id);
-	virtual bool verifyValidResults(glw::GLuint texture_id);
+	std::string getComputeShader(VERSION version, glw::GLuint coord_offset = 0, glw::GLuint sample_offset = 0);
+	void setTextures(const glw::Functions& gl, glw::GLuint id_destination, glw::GLuint id_source);
+	bool verifyInvalidResults(const glw::Functions& gl, glw::GLuint texture_id);
+	bool verifyValidResults(const glw::Functions& gl, glw::GLuint texture_id);
 };
 
 /** Implementation of test StorageBuffer. Description follows:
@@ -479,12 +497,11 @@ protected:
  *   * value of src_index is equal to gl_LocalInvocationID.x + 16; It is
  *   expected that destination buffer will be filled with value 0.
  **/
-class StorageBufferTest : public deqp::TestCase
+class StorageBufferTest : public RobustnessBase
 {
 public:
 	/* Public methods */
-	StorageBufferTest(deqp::Context& context);
-	StorageBufferTest(deqp::Context& context, const char* name, const char* description);
+	StorageBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~StorageBufferTest()
 	{
 	}
@@ -504,12 +521,11 @@ protected:
 	};
 
 	/* Private methods */
-	virtual std::string getComputeShader(glw::GLuint offset);
-	virtual bool verifyResults(glw::GLfloat* buffer_data);
+	std::string getComputeShader(glw::GLuint offset);
+	bool verifyResults(glw::GLfloat* buffer_data);
 
 	/* Protected fields */
 	VERSION m_test_case;
-	bool m_hasKhrRobustBufferAccess;
 
 	/* Protected constants */
 	static const glw::GLfloat m_destination_data[4];
@@ -525,12 +541,11 @@ protected:
  * - use uniform buffer for source instead of storage buffer;
  * - ignore the case with invalid value of dst_index.
  **/
-class UniformBufferTest : public deqp::TestCase
+class UniformBufferTest : public RobustnessBase
 {
 public:
 	/* Public methods */
-	UniformBufferTest(deqp::Context& context);
-	UniformBufferTest(deqp::Context& context, const char* name, const char* description);
+	UniformBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~UniformBufferTest()
 	{
 	}
@@ -549,8 +564,8 @@ protected:
 	};
 
 	/* Protected methods */
-	virtual std::string getComputeShader(glw::GLuint offset);
-	virtual bool verifyResults(glw::GLfloat* buffer_data);
+	std::string getComputeShader(glw::GLuint offset);
+	bool verifyResults(glw::GLfloat* buffer_data);
 
 	/* Protected fields */
 	VERSION m_test_case;
@@ -558,11 +573,11 @@ protected:
 } /* RobustBufferAccessBehavior */
 
 /** Group class for multi bind conformance tests */
-class RobustBufferAccessBehaviorTests : public deqp::TestCaseGroup
+class RobustBufferAccessBehaviorTests : public tcu::TestCaseGroup
 {
 public:
 	/* Public methods */
-	RobustBufferAccessBehaviorTests(deqp::Context& context);
+	RobustBufferAccessBehaviorTests(tcu::TestContext& testCtx, glu::ApiType apiType);
 	virtual ~RobustBufferAccessBehaviorTests(void)
 	{
 	}
@@ -573,8 +588,10 @@ private:
 	/* Private methods */
 	RobustBufferAccessBehaviorTests(const RobustBufferAccessBehaviorTests& other);
 	RobustBufferAccessBehaviorTests& operator=(const RobustBufferAccessBehaviorTests& other);
+
+	glu::ApiType m_ApiType;
 };
 
-} /* deqp */
+} /* glcts */
 
 #endif // _GLCROBUSTBUFFERACCESSBEHAVIORTESTS_HPP

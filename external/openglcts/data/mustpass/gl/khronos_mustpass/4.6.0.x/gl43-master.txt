@@ -3949,11 +3949,6 @@ KHR-GL43.compute_shader.api-indirect
 KHR-GL43.compute_shader.api-program
 KHR-GL43.compute_shader.glsl-compile-time-errors
 KHR-GL43.compute_shader.glsl-link-time-errors
-KHR-GL43.robust_buffer_access_behavior.vertex_buffer_objects
-KHR-GL43.robust_buffer_access_behavior.texel_fetch
-KHR-GL43.robust_buffer_access_behavior.image_load_store
-KHR-GL43.robust_buffer_access_behavior.storage_buffer
-KHR-GL43.robust_buffer_access_behavior.uniform_buffer
 KHR-GL43.shader_storage_buffer_object.basic-basic
 KHR-GL43.shader_storage_buffer_object.basic-basic-cs
 KHR-GL43.shader_storage_buffer_object.basic-max

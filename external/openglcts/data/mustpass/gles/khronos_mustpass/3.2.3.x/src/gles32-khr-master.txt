@@ -303,8 +303,3 @@ KHR-GLES32.core.draw_buffers_indexed.set_get
 KHR-GLES32.core.draw_buffers_indexed.color_masks
 KHR-GLES32.core.draw_buffers_indexed.blending
 KHR-GLES32.core.draw_buffers_indexed.negative
-KHR-GLES32.robust.robust_buffer_access_behavior.vertex_buffer_objects
-KHR-GLES32.robust.robust_buffer_access_behavior.texel_fetch
-KHR-GLES32.robust.robust_buffer_access_behavior.image_load_store
-KHR-GLES32.robust.robust_buffer_access_behavior.storage_buffer
-KHR-GLES32.robust.robust_buffer_access_behavior.uniform_buffer

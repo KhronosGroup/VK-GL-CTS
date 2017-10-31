@@ -3950,11 +3950,6 @@ KHR-GL45.compute_shader.api-indirect
 KHR-GL45.compute_shader.api-program
 KHR-GL45.compute_shader.glsl-compile-time-errors
 KHR-GL45.compute_shader.glsl-link-time-errors
-KHR-GL45.robust_buffer_access_behavior.vertex_buffer_objects
-KHR-GL45.robust_buffer_access_behavior.texel_fetch
-KHR-GL45.robust_buffer_access_behavior.image_load_store
-KHR-GL45.robust_buffer_access_behavior.storage_buffer
-KHR-GL45.robust_buffer_access_behavior.uniform_buffer
 KHR-GL45.shader_storage_buffer_object.basic-basic
 KHR-GL45.shader_storage_buffer_object.basic-basic-cs
 KHR-GL45.shader_storage_buffer_object.basic-max

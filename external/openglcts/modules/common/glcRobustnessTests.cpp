@@ -34,7 +34,7 @@
 #include <cstring>
 
 using namespace glw;
-using namespace deqp::RobustBufferAccessBehavior;
+using namespace glcts::RobustBufferAccessBehavior;
 
 namespace glcts
 {
@@ -283,7 +283,7 @@ tcu::TestNode::IterateResult GetnUniformTest::iterate()
 	bool test_result = true;
 
 	/* Iterate over all cases */
-	Program program(*context);
+	Program program(gl);
 
 	/* Compute Shader */
 	bool			   glslES320 = contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
@@ -533,11 +533,11 @@ tcu::TestNode::IterateResult ReadnPixelsTest::iterate()
 	const Functions& gl = context->getRenderContext().getFunctions();
 
 	/* Test case objects */
-	Program		program(*context);
-	Texture		texture(*context);
-	Buffer		elements_buffer(*context);
-	Buffer		vertices_buffer(*context);
-	VertexArray vao(*context);
+	Program		program(gl);
+	Texture		texture(gl);
+	Buffer		elements_buffer(gl);
+	Buffer		vertices_buffer(gl);
+	VertexArray vao(gl);
 
 	/* Vertex array initialization */
 	VertexArray::Generate(gl, vao.m_id);
