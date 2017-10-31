@@ -4200,6 +4200,396 @@ template class StorageMultisampleTest<glw::GLfloat, 4, true, 3>;
 
 /******************************** Compressed SubImage Test Implementation   ********************************/
 
+/* Compressed m_reference data for unsupported compression formats */
+
+static const unsigned char data_0x8dbb_2D_8[] = {
+	34, 237, 94, 207,
+	252, 29, 75, 25
+};
+
+static const unsigned char data_0x8dbb_3D_32[] = {
+	34, 237, 94, 207,
+	252, 29, 75, 25,
+	34, 237, 44, 173,
+	101, 230, 139, 254,
+	34, 237, 176, 88,
+	174, 127, 248, 206,
+	34, 237, 127, 209,
+	211, 203, 100, 150
+};
+
+static const unsigned char data_0x8dbc_2D_8[] = {
+	127, 0, 233, 64,
+	0, 42, 71, 231
+};
+
+static const unsigned char data_0x8dbc_3D_32[] = {
+	127, 0, 233, 64,
+	0, 42, 71, 231,
+	127, 0, 20, 227,
+	162, 33, 246, 1,
+	127, 0, 143, 57,
+	86, 0, 136, 53,
+	127, 0, 192, 62,
+	48, 69, 29, 138
+};
+
+static const unsigned char data_0x8dbd_2D_16[] = {
+	34, 237, 94, 207,
+	252, 29, 75, 25,
+	28, 242, 94, 111,
+	44, 101, 35, 145
+};
+
+static const unsigned char data_0x8dbd_3D_64[] = {
+	34, 237, 94, 207,
+	252, 29, 75, 25,
+	28, 242, 94, 111,
+	44, 101, 35, 145,
+	34, 237, 44, 173,
+	101, 230, 139, 254,
+	28, 242, 170, 45,
+	98, 236, 202, 228,
+	34, 237, 176, 88,
+	174, 127, 248, 206,
+	28, 242, 164, 148,
+	178, 25, 252, 206,
+	34, 237, 127, 209,
+	211, 203, 100, 150,
+	28, 242, 79, 216,
+	149, 3, 101, 87
+};
+
+static const unsigned char data_0x8dbe_2D_16[] = {
+	127, 0, 233, 64,
+	0, 42, 71, 231,
+	127, 0, 233, 144,
+	23, 163, 100, 115
+};
+
+static const unsigned char data_0x8dbe_3D_64[] = {
+	127, 0, 233, 64,
+	0, 42, 71, 231,
+	127, 0, 233, 144,
+	23, 163, 100, 115,
+	127, 0, 20, 227,
+	162, 33, 246, 1,
+	127, 0, 94, 98,
+	190, 84, 55, 1,
+	127, 0, 143, 57,
+	86, 0, 136, 53,
+	127, 0, 163, 45,
+	113, 232, 131, 53,
+	127, 0, 192, 62,
+	48, 69, 29, 138,
+	127, 0, 128, 182,
+	138, 61, 157, 204
+};
+
+static const unsigned char data_0x8e8c_2D_16[] = {
+	144, 43, 143, 15,
+	254, 15, 152, 153,
+	153, 153, 89, 143,
+	140, 166, 183, 113
+};
+
+static const unsigned char data_0x8e8c_3D_64[] = {
+	144, 43, 143, 15,
+	254, 15, 152, 153,
+	153, 153, 89, 143,
+	140, 166, 183, 113,
+	144, 43, 143, 15,
+	254, 15, 152, 153,
+	153, 153, 55, 48,
+	102, 244, 186, 241,
+	144, 43, 143, 15,
+	254, 15, 152, 153,
+	153, 153, 231, 54,
+	211, 92, 240, 14,
+	144, 121, 253, 241,
+	193, 15, 152, 153,
+	153, 153, 25, 41,
+	102, 244, 248, 135
+};
+
+static const unsigned char data_0x8e8d_2D_16[] = {
+	144, 43, 143, 15,
+	254, 15, 152, 153,
+	153, 153, 89, 143,
+	140, 166, 183, 113
+};
+
+static const unsigned char data_0x8e8d_3D_64[] = {
+	144, 43, 143, 15,
+	254, 15, 152, 153,
+	153, 153, 89, 143,
+	140, 166, 183, 113,
+	144, 43, 143, 15,
+	254, 15, 152, 153,
+	153, 153, 55, 48,
+	102, 244, 186, 241,
+	144, 43, 143, 15,
+	254, 15, 152, 153,
+	153, 153, 231, 54,
+	211, 92, 240, 14,
+	144, 121, 253, 241,
+	193, 15, 152, 153,
+	153, 153, 25, 41,
+	102, 244, 248, 135
+};
+
+static const unsigned char data_0x8e8e_2D_16[] = {
+	67, 155, 82, 120,
+	142, 7, 31, 124,
+	224, 255, 165, 221,
+	239, 223, 122, 223
+};
+
+static const unsigned char data_0x8e8e_3D_64[] = {
+	67, 155, 82, 120,
+	142, 7, 31, 124,
+	224, 255, 165, 221,
+	239, 223, 122, 223,
+	35, 30, 124, 240,
+	209, 166, 20, 158,
+	11, 250, 24, 21,
+	0, 2, 34, 2,
+	35, 30, 124, 240,
+	209, 166, 20, 158,
+	5, 88, 2, 1,
+	34, 165, 0, 241,
+	35, 30, 124, 240,
+	209, 166, 20, 158,
+	33, 34, 32, 0,
+	81, 129, 175, 80
+};
+
+static const unsigned char data_0x8e8f_2D_16[] = {
+	131, 54, 165, 148,
+	26, 47, 62, 248,
+	176, 254, 149, 203,
+	222, 206, 187, 173
+};
+
+static const unsigned char data_0x8e8f_3D_64[] = {
+	131, 54, 165, 148,
+	26, 47, 62, 248,
+	176, 254, 149, 203,
+	222, 206, 187, 173,
+	99, 188, 248, 224,
+	163, 77, 41, 165,
+	24, 250, 36, 70,
+	18, 20, 53, 3,
+	99, 188, 248, 224,
+	163, 77, 41, 165,
+	42, 68, 19, 18,
+	67, 166, 16, 244,
+	99, 188, 248, 224,
+	163, 77, 41, 165,
+	48, 83, 65, 33,
+	100, 66, 175, 65
+};
+
+static const unsigned char data_GL_COMPRESSED_R11_EAC_2D_8[] = {
+	146, 253, 99, 81,
+	202, 222, 63, 243
+};
+
+static const unsigned char data_GL_COMPRESSED_R11_EAC_3D_32[] = {
+	146, 253, 99, 81,
+	202, 222, 63, 243,
+	146, 253, 169, 188,
+	102, 31, 246, 55,
+	146, 253, 123, 247,
+	62, 71, 139, 131,
+	146, 253, 248, 63,
+	248, 208, 230, 213
+};
+
+static const unsigned char data_GL_COMPRESSED_RG11_EAC_2D_16[] = {
+	146, 253, 99, 81,
+	202, 222, 63, 243,
+	140, 254, 110, 0,
+	160, 130, 207, 180
+};
+
+static const unsigned char data_GL_COMPRESSED_RG11_EAC_3D_64[] = {
+	146, 253, 99, 81,
+	202, 222, 63, 243,
+	140, 254, 110, 0,
+	160, 130, 207, 180,
+	146, 253, 169, 188,
+	102, 31, 246, 55,
+	140, 254, 2, 73,
+	46, 104, 102, 39,
+	146, 253, 123, 247,
+	62, 71, 139, 131,
+	140, 254, 155, 121,
+	68, 17, 1, 27,
+	146, 253, 248, 63,
+	248, 208, 230, 213,
+	140, 254, 240, 60,
+	19, 214, 73, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_RGB8_ETC2_2D_8[] = {
+	168, 122, 150, 252,
+	234, 35, 0, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_RGB8_ETC2_3D_32[] = {
+	168, 122, 150, 252,
+	234, 35, 0, 0,
+	168, 122, 150, 253,
+	31, 140, 0, 0,
+	138, 167, 105, 252,
+	196, 87, 0, 0,
+	138, 167, 105, 253,
+	49, 248, 0, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2_2D_8[] = {
+	83, 83, 75, 252,
+	240, 240, 15, 4
+};
+
+static const unsigned char data_GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2_3D_32[] = {
+	83, 83, 75, 252,
+	240, 240, 15, 4,
+	107, 99, 99, 253,
+	240, 240, 14, 15,
+	135, 135, 135, 252,
+	240, 240, 15, 15,
+	108, 108, 108, 253,
+	240, 248, 11, 11
+};
+
+static const unsigned char data_GL_COMPRESSED_RGBA8_ETC2_EAC_2D_16[] = {
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	168, 122, 150, 252,
+	234, 35, 0, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_RGBA8_ETC2_EAC_3D_64[] = {
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	168, 122, 150, 252,
+	234, 35, 0, 0,
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	168, 122, 150, 253,
+	31, 140, 0, 0,
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	138, 167, 105, 252,
+	196, 87, 0, 0,
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	138, 167, 105, 253,
+	49, 248, 0, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_SIGNED_R11_EAC_2D_8[] = {
+	73, 221, 99, 81,
+	201, 222, 63, 241
+};
+
+static const unsigned char data_GL_COMPRESSED_SIGNED_R11_EAC_3D_32[] = {
+	73, 221, 99, 81,
+	201, 222, 63, 241,
+	73, 221, 165, 156,
+	102, 31, 246, 55,
+	73, 221, 59, 247,
+	62, 39, 139, 131,
+	73, 221, 248, 63,
+	248, 208, 226, 205
+};
+
+static const unsigned char data_GL_COMPRESSED_SIGNED_RG11_EAC_2D_16[] = {
+	73, 221, 99, 81,
+	201, 222, 63, 241,
+	66, 191, 110, 0,
+	96, 131, 77, 180
+};
+
+static const unsigned char data_GL_COMPRESSED_SIGNED_RG11_EAC_3D_64[] = {
+	73, 221, 99, 81,
+	201, 222, 63, 241,
+	66, 191, 110, 0,
+	96, 131, 77, 180,
+	73, 221, 165, 156,
+	102, 31, 246, 55,
+	66, 191, 2, 73,
+	54, 100, 102, 38,
+	73, 221, 59, 247,
+	62, 39, 139, 131,
+	66, 191, 155, 105,
+	132, 16, 129, 27,
+	73, 221, 248, 63,
+	248, 208, 226, 205,
+	66, 191, 208, 60,
+	11, 218, 73, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC_2D_16[] = {
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	150, 122, 168, 252,
+	234, 35, 0, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC_3D_64[] = {
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	150, 122, 168, 252,
+	234, 35, 0, 0,
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	150, 122, 168, 253,
+	31, 140, 0, 0,
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	105, 167, 138, 252,
+	196, 87, 0, 0,
+	127, 245, 255, 244,
+	146, 255, 244, 146,
+	105, 167, 138, 253,
+	49, 248, 0, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_SRGB8_ETC2_2D_8[] = {
+	168, 122, 150, 252,
+	234, 35, 0, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_SRGB8_ETC2_3D_32[] = {
+	168, 122, 150, 252,
+	234, 35, 0, 0,
+	168, 122, 150, 253,
+	31, 140, 0, 0,
+	138, 167, 105, 252,
+	196, 87, 0, 0,
+	138, 167, 105, 253,
+	49, 248, 0, 0
+};
+
+static const unsigned char data_GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2_2D_8[] = {
+	75, 83, 83, 252,
+	240, 240, 15, 4
+};
+
+static const unsigned char data_GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2_3D_32[] = {
+	75, 83, 83, 252,
+	240, 240, 15, 4,
+	99, 99, 107, 253,
+	240, 240, 14, 15,
+	135, 135, 135, 252,
+	240, 240, 15, 15,
+	108, 108, 108, 253,
+	240, 248, 11, 11
+};
+
 /** @brief Compressed SubImage Test constructor.
  *
  *  @param [in] context     OpenGL context.
@@ -4270,15 +4660,25 @@ glw::GLenum CompressedSubImageTest::TextureTarget<3>()
  *  @tparam D      Texture dimenisons.
  *
  *  @note parameters as passed to texImage*
+ *
+ *  @return False if the internal format is unsupported for online compression, True otherwise
  */
 template <>
-void CompressedSubImageTest::TextureImage<1>(glw::GLint internalformat)
+bool CompressedSubImageTest::TextureImage<1>(glw::GLint internalformat)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	gl.texImage1D(TextureTarget<1>(), 0, internalformat, s_texture_width, 0, GL_RGBA, GL_UNSIGNED_BYTE, s_texture_data);
+
+	/* Online compression may be unsupported for some formats */
+	GLenum error = gl.getError();
+	if (error == GL_INVALID_OPERATION)
+		return false;
+
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
+
+	return true;
 }
 
 /** @brief Prepare texture data for the auxiliary texture.
@@ -4286,16 +4686,26 @@ void CompressedSubImageTest::TextureImage<1>(glw::GLint internalformat)
  *  @tparam D      Texture dimenisons.
  *
  *  @note parameters as passed to texImage*
+ *
+ *  @return False if the internal format is unsupported for online compression, True otherwise
  */
 template <>
-void CompressedSubImageTest::TextureImage<2>(glw::GLint internalformat)
+bool CompressedSubImageTest::TextureImage<2>(glw::GLint internalformat)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	gl.texImage2D(TextureTarget<2>(), 0, internalformat, s_texture_width, s_texture_height, 0, GL_RGBA,
 				  GL_UNSIGNED_BYTE, s_texture_data);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage2D has failed");
+
+	/* Online compression may be unsupported for some formats */
+	GLenum error = gl.getError();
+	if (error == GL_INVALID_OPERATION)
+		return false;
+
+	GLU_EXPECT_NO_ERROR(error, "glTexImage2D has failed");
+
+	return true;
 }
 
 /** @brief Prepare texture data for the auxiliary texture.
@@ -4303,16 +4713,26 @@ void CompressedSubImageTest::TextureImage<2>(glw::GLint internalformat)
  *  @tparam D      Texture dimenisons.
  *
  *  @note parameters as passed to texImage*
+ *
+ *  @return False if the internal format is unsupported for online compression, True otherwise
  */
 template <>
-void CompressedSubImageTest::TextureImage<3>(glw::GLint internalformat)
+bool CompressedSubImageTest::TextureImage<3>(glw::GLint internalformat)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	gl.texImage3D(TextureTarget<3>(), 0, internalformat, s_texture_width, s_texture_height, s_texture_depth, 0, GL_RGBA,
 				  GL_UNSIGNED_BYTE, s_texture_data);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage3D has failed");
+
+	/* Online compression may be unsupported for some formats */
+	GLenum error = gl.getError();
+	if (error == GL_INVALID_OPERATION)
+		return false;
+
+	GLU_EXPECT_NO_ERROR(error, "glTexImage3D has failed");
+
+	return true;
 }
 
 /** @brief Prepare texture data for the auxiliary texture.
@@ -4369,8 +4789,6 @@ void CompressedSubImageTest::CompressedTexImage<3>(glw::GLint internalformat)
 /** @brief Prepare texture data for the compressed texture.
  *
  *  @tparam D      Texture dimenisons.
- *
- *  @param [in] internalformat      Texture internal format.
  *
  *  @return True if tested function succeeded, false otherwise.
  */
@@ -4496,12 +4914,92 @@ bool CompressedSubImageTest::CompressedTextureSubImage<3>(glw::GLint internalfor
 	return true;
 }
 
+struct CompressedData
+{
+	glw::GLenum iformat;
+	const unsigned char *data;
+	int data_size;
+	int dimensions;
+};
+
+static CompressedData compressed_images[] =
+{
+	/* 2D images */
+
+	{GL_COMPRESSED_RED_RGTC1, data_0x8dbb_2D_8, sizeof data_0x8dbb_2D_8, 2},
+	{GL_COMPRESSED_SIGNED_RED_RGTC1, data_0x8dbc_2D_8, sizeof data_0x8dbc_2D_8, 2},
+	{GL_COMPRESSED_RG_RGTC2, data_0x8dbd_2D_16, sizeof data_0x8dbd_2D_16, 2},
+	{GL_COMPRESSED_SIGNED_RG_RGTC2, data_0x8dbe_2D_16, sizeof data_0x8dbe_2D_16, 2},
+	{GL_COMPRESSED_RGBA_BPTC_UNORM, data_0x8e8c_2D_16, sizeof data_0x8e8c_2D_16, 2},
+	{GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM, data_0x8e8d_2D_16, sizeof data_0x8e8d_2D_16, 2},
+	{GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT, data_0x8e8e_2D_16, sizeof data_0x8e8e_2D_16, 2},
+	{GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT, data_0x8e8f_2D_16, sizeof data_0x8e8f_2D_16, 2},
+	{GL_COMPRESSED_RGB8_ETC2, data_GL_COMPRESSED_RGB8_ETC2_2D_8,
+			sizeof data_GL_COMPRESSED_RGB8_ETC2_2D_8, 2},
+	{GL_COMPRESSED_SRGB8_ETC2, data_GL_COMPRESSED_SRGB8_ETC2_2D_8,
+			sizeof data_GL_COMPRESSED_SRGB8_ETC2_2D_8, 2},
+	{GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+			data_GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2_2D_8,
+			sizeof data_GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2_2D_8, 2},
+	{GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+			data_GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2_2D_8,
+			sizeof data_GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2_2D_8, 2},
+	{GL_COMPRESSED_RGBA8_ETC2_EAC, data_GL_COMPRESSED_RGBA8_ETC2_EAC_2D_16,
+			sizeof data_GL_COMPRESSED_RGBA8_ETC2_EAC_2D_16, 2},
+	{GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, data_GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC_2D_16,
+			sizeof data_GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC_2D_16, 2},
+	{GL_COMPRESSED_R11_EAC, data_GL_COMPRESSED_R11_EAC_2D_8,
+			sizeof data_GL_COMPRESSED_R11_EAC_2D_8, 2},
+	{GL_COMPRESSED_SIGNED_R11_EAC, data_GL_COMPRESSED_SIGNED_R11_EAC_2D_8,
+			sizeof data_GL_COMPRESSED_SIGNED_R11_EAC_2D_8, 2},
+	{GL_COMPRESSED_RG11_EAC, data_GL_COMPRESSED_RG11_EAC_2D_16,
+			sizeof data_GL_COMPRESSED_SIGNED_RG11_EAC_2D_16, 2},
+	{GL_COMPRESSED_SIGNED_RG11_EAC, data_GL_COMPRESSED_SIGNED_RG11_EAC_2D_16,
+			sizeof data_GL_COMPRESSED_SIGNED_RG11_EAC_2D_16, 2},
+
+	/* 3D images */
+
+	{0x8dbb, data_0x8dbb_3D_32, sizeof data_0x8dbb_3D_32, 3},
+	{0x8dbc, data_0x8dbc_3D_32, sizeof data_0x8dbc_3D_32, 3},
+	{0x8dbd, data_0x8dbd_3D_64, sizeof data_0x8dbd_3D_64, 3},
+	{0x8dbe, data_0x8dbe_3D_64, sizeof data_0x8dbe_3D_64, 3},
+	{0x8e8c, data_0x8e8c_3D_64, sizeof data_0x8e8c_3D_64, 3},
+	{0x8e8d, data_0x8e8d_3D_64, sizeof data_0x8e8d_3D_64, 3},
+	{0x8e8e, data_0x8e8e_3D_64, sizeof data_0x8e8e_3D_64, 3},
+	{0x8e8f, data_0x8e8f_3D_64, sizeof data_0x8e8f_3D_64, 3},
+	{GL_COMPRESSED_RGB8_ETC2, data_GL_COMPRESSED_RGB8_ETC2_3D_32,
+			sizeof data_GL_COMPRESSED_RGB8_ETC2_3D_32, 3},
+	{GL_COMPRESSED_SRGB8_ETC2, data_GL_COMPRESSED_SRGB8_ETC2_3D_32,
+			sizeof data_GL_COMPRESSED_SRGB8_ETC2_3D_32, 3},
+	{GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+			data_GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2_3D_32,
+			sizeof data_GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2_3D_32, 3},
+	{GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2,
+			data_GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2_3D_32,
+			sizeof data_GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2_3D_32, 3},
+	{GL_COMPRESSED_R11_EAC, data_GL_COMPRESSED_R11_EAC_3D_32,
+			sizeof data_GL_COMPRESSED_R11_EAC_3D_32, 3},
+	{GL_COMPRESSED_SIGNED_R11_EAC, data_GL_COMPRESSED_SIGNED_R11_EAC_3D_32,
+			sizeof data_GL_COMPRESSED_SIGNED_R11_EAC_3D_32, 3},
+
+	{GL_COMPRESSED_RGBA8_ETC2_EAC, data_GL_COMPRESSED_RGBA8_ETC2_EAC_3D_64,
+			sizeof data_GL_COMPRESSED_RGBA8_ETC2_EAC_3D_64, 3},
+	{GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, data_GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC_3D_64,
+			sizeof data_GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC_3D_64, 3},
+	{GL_COMPRESSED_RG11_EAC, data_GL_COMPRESSED_RG11_EAC_3D_64,
+			sizeof data_GL_COMPRESSED_RG11_EAC_3D_64, 3},
+	{GL_COMPRESSED_SIGNED_RG11_EAC, data_GL_COMPRESSED_SIGNED_RG11_EAC_3D_64,
+			sizeof data_GL_COMPRESSED_SIGNED_RG11_EAC_3D_64, 3}
+};
+
 /** @brief Prepare the reference data.
  *
  *  @tparam D      Texture dimenisons.
+ *
+ *  @return False if the internal format is unsupported for online compression, True otherwise
  */
 template <glw::GLuint D>
-void CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
+bool CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -4510,7 +5008,8 @@ void CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 	gl.bindTexture(TextureTarget<D>(), m_to_aux);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
 
-	TextureImage<D>(internalformat);
+	glw::GLint is_compressed_texture = 0;
+	glw::GLint compressed_texture_size = 0;
 
 	/* Sanity checks. */
 	if ((DE_NULL != m_reference) || (DE_NULL != m_compressed_texture_data))
@@ -4518,58 +5017,91 @@ void CompressedSubImageTest::PrepareReferenceData(glw::GLenum internalformat)
 		throw 0;
 	}
 
-	/* Check that really compressed texture. */
-	glw::GLint is_compressed_texture = 0;
-	gl.getTexLevelParameteriv(TextureTarget<D>(), 0, GL_TEXTURE_COMPRESSED, &is_compressed_texture);
-
-	if (is_compressed_texture)
+	/* "if" path is taken when there is no support for online compression for the format
+	 * and we upload compressed data directly */
+	if (!TextureImage<D>(internalformat))
 	{
-		/* Query texture size. */
-		glw::GLint compressed_texture_size = 0;
-		gl.getTexLevelParameteriv(TextureTarget<D>(), 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &compressed_texture_size);
-
-		/* If compressed then download. */
-		if (compressed_texture_size)
+		for (unsigned int i=0; i<sizeof compressed_images / sizeof *compressed_images; i++)
 		{
-			/* Prepare storage. */
-			m_compressed_texture_data = new glw::GLubyte[compressed_texture_size];
-
-			if (DE_NULL != m_compressed_texture_data)
+			if (internalformat == compressed_images[i].iformat
+					&& D == compressed_images[i].dimensions)
 			{
+				is_compressed_texture = 1;
+				compressed_texture_size = compressed_images[i].data_size;
+
 				m_reference_size = compressed_texture_size;
+				m_reference_internalformat = compressed_images[i].iformat;
+
+				m_reference = new glw::GLubyte[compressed_texture_size];
+				m_compressed_texture_data = new glw::GLubyte[compressed_texture_size];
+
+				memcpy(m_reference, compressed_images[i].data, compressed_texture_size);
+				memcpy(m_compressed_texture_data, compressed_images[i].data, compressed_texture_size);
 			}
-			else
-			{
-				throw 0;
-			}
-
-			/* Download the source compressed texture image. */
-			gl.getCompressedTexImage(TextureTarget<D>(), 0, m_compressed_texture_data);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
-
-			// Upload the source compressed texture image to the texture object.
-			// Some compressed texture format can be emulated by the driver (like the ETC2/EAC formats)
-			// The compressed data sent by CompressedTexImage will be stored uncompressed by the driver
-			// and will be re-compressed if the application call glGetCompressedTexImage.
-			// The compression/decompression is not lossless, so when this happen it's possible for the source
-			// and destination (from glGetCompressedTexImage) compressed data to be different.
-			// To avoid that we will store both the source (in m_compressed_texture_data) and the destination
-			// (in m_reference). The destination will be used later to make sure getCompressedTextureSubImage
-			// return the expected value
-			CompressedTexImage<D>(internalformat);
-
-			m_reference = new glw::GLubyte[m_reference_size];
-
-			if (DE_NULL == m_reference)
-			{
-				throw 0;
-			}
-
-			/* Download compressed texture image. */
-			gl.getCompressedTexImage(TextureTarget<D>(), 0, m_reference);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
 		}
+
+		if (!is_compressed_texture)
+			return false;
+
+		PrepareCompressedStorage<D>(m_reference_internalformat);
 	}
+	else
+	{
+		/* Check that really compressed texture. */
+		gl.getTexLevelParameteriv(TextureTarget<D>(), 0, GL_TEXTURE_COMPRESSED, &is_compressed_texture);
+
+		if (is_compressed_texture)
+		{
+			/* Query texture size. */
+			gl.getTexLevelParameteriv(TextureTarget<D>(), 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &compressed_texture_size);
+
+			/* If compressed then download. */
+			if (compressed_texture_size)
+			{
+				/* Prepare storage. */
+				m_compressed_texture_data = new glw::GLubyte[compressed_texture_size];
+
+				if (DE_NULL != m_compressed_texture_data)
+				{
+					m_reference_size = compressed_texture_size;
+				}
+				else
+				{
+					throw 0;
+				}
+
+				/* Download the source compressed texture image. */
+				gl.getCompressedTexImage(TextureTarget<D>(), 0, m_compressed_texture_data);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
+
+				// Upload the source compressed texture image to the texture object.
+				// Some compressed texture format can be emulated by the driver (like the ETC2/EAC formats)
+				// The compressed data sent by CompressedTexImage will be stored uncompressed by the driver
+				// and will be re-compressed if the application call glGetCompressedTexImage.
+				// The compression/decompression is not lossless, so when this happen it's possible for the source
+				// and destination (from glGetCompressedTexImage) compressed data to be different.
+				// To avoid that we will store both the source (in m_compressed_texture_data) and the destination
+				// (in m_reference). The destination will be used later to make sure getCompressedTextureSubImage
+				// return the expected value
+				CompressedTexImage<D>(internalformat);
+
+				m_reference = new glw::GLubyte[m_reference_size];
+
+				if (DE_NULL == m_reference)
+				{
+					throw 0;
+				}
+
+				/* Download compressed texture image. */
+				gl.getCompressedTexImage(TextureTarget<D>(), 0, m_reference);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "glGetCompressedTexImage has failed");
+			}
+		}
+
+		PrepareStorage<D>(internalformat);
+	}
+
+	return true;
 }
 
 /** @brief Prepare texture storage.
@@ -4631,6 +5163,72 @@ void CompressedSubImageTest::PrepareStorage<3>(glw::GLenum internalformat)
 				  s_texture_height * s_block_3d_size, s_texture_depth * s_block_3d_size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 				  NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glTexImage1D has failed");
+}
+
+/** @brief Prepare compressed texture storage.
+ * @tparam D		Texture dimensions.
+ *
+ * @tparam [in] internalformat		Texture internal format.
+ */
+template <>
+void CompressedSubImageTest::PrepareCompressedStorage<1>(glw::GLenum internalformat)
+{
+	/* Shortcut for GL functionality */
+	const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+	gl.bindTexture(TextureTarget<1>(), m_to);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
+
+	gl.compressedTexImage1D(TextureTarget<1>(), 0, internalformat, s_texture_width * s_block_count,
+			0, s_texture_width * s_block_count, 0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage1D has failed");
+}
+
+/** @brief Prepare compressed texture storage.
+ * @tparam D		Texture dimensions.
+ *
+ * @tparam [in] internalformat		Texture internal format.
+ */
+template <>
+void CompressedSubImageTest::PrepareCompressedStorage<2>(glw::GLenum internalformat)
+{
+	/* Shortcut for GL functionality */
+	const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+	gl.bindTexture(TextureTarget<2>(), m_to);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
+
+	GLsizei size_x = s_texture_width * s_block_2d_size_x;
+	GLsizei size_y = s_texture_height * s_block_2d_size_y;
+	GLsizei size = m_reference_size * s_block_2d_size_x * s_block_2d_size_y;
+
+	gl.compressedTexImage2D(TextureTarget<2>(), 0, internalformat, size_x, size_y,
+			0, size, 0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage2D has failed");
+}
+
+/** @brief Prepare compressed texture storage.
+ * @tparam D		Texture dimensions.
+ *
+ * @tparam [in] internalformat		Texture internal format.
+ */
+template <>
+void CompressedSubImageTest::PrepareCompressedStorage<3>(glw::GLenum internalformat)
+{
+	/* Shortcut for GL functionality */
+	const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+	gl.bindTexture(TextureTarget<3>(), m_to);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture has failed");
+
+	GLsizei size_x = s_texture_width * s_block_3d_size;
+	GLsizei size_y = s_texture_height * s_block_3d_size;
+	GLsizei size_z = s_texture_depth * s_block_3d_size;
+	GLsizei size = m_reference_size * s_block_3d_size * s_block_3d_size * s_block_3d_size;
+
+	gl.compressedTexImage3D(TextureTarget<3>(), 0, internalformat, size_x, size_y, size_z, 0,
+			size, 0);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glCompressedTexImage3D has failed");
 }
 
 /** @brief Compare results with the reference.
@@ -4737,15 +5335,21 @@ bool CompressedSubImageTest::CheckData<3>(glw::GLenum internalformat)
  *
  *  @param [in] internal format     Texture internal format.
  *
+ *  @param [in] can be unsupported     If the format may not support online compression
+ *
  *  @return True if test succeeded, false otherwise.
  */
 template <glw::GLuint D>
-bool CompressedSubImageTest::Test(glw::GLenum internalformat)
+bool CompressedSubImageTest::Test(glw::GLenum internalformat, bool can_be_unsupported)
 {
 	/* Create texture image. */
 	CreateTextures(TextureTarget<D>());
-	PrepareReferenceData<D>(internalformat);
-	PrepareStorage<D>(internalformat);
+
+	if (!PrepareReferenceData<D>(internalformat))
+	{
+		CleanAll();
+		return can_be_unsupported;
+	}
 
 	/* Setup data with CompressedTextureSubImage<D>D function and check for errors. */
 	if (!CompressedTextureSubImage<D>(internalformat))
@@ -4880,45 +5484,45 @@ tcu::TestNode::IterateResult CompressedSubImageTest::iterate()
 
 	try
 	{
-		is_ok &= Test<1>(GL_COMPRESSED_RGB);
+		is_ok &= Test<1>(GL_COMPRESSED_RGB, false);
 
-		is_ok &= Test<2>(GL_COMPRESSED_RED_RGTC1);
-		is_ok &= Test<2>(GL_COMPRESSED_SIGNED_RED_RGTC1);
-		is_ok &= Test<2>(GL_COMPRESSED_RG_RGTC2);
-		is_ok &= Test<2>(GL_COMPRESSED_SIGNED_RG_RGTC2);
-		is_ok &= Test<2>(GL_COMPRESSED_RGBA_BPTC_UNORM);
-		is_ok &= Test<2>(GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM);
-		is_ok &= Test<2>(GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT);
-		is_ok &= Test<2>(GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT);
-		is_ok &= Test<2>(GL_COMPRESSED_RGB8_ETC2);
-		is_ok &= Test<2>(GL_COMPRESSED_SRGB8_ETC2);
-		is_ok &= Test<2>(GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2);
-		is_ok &= Test<2>(GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2);
-		is_ok &= Test<2>(GL_COMPRESSED_RGBA8_ETC2_EAC);
-		is_ok &= Test<2>(GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC);
-		is_ok &= Test<2>(GL_COMPRESSED_R11_EAC);
-		is_ok &= Test<2>(GL_COMPRESSED_SIGNED_R11_EAC);
-		is_ok &= Test<2>(GL_COMPRESSED_RG11_EAC);
-		is_ok &= Test<2>(GL_COMPRESSED_SIGNED_RG11_EAC);
+		is_ok &= Test<2>(GL_COMPRESSED_RED_RGTC1, false);
+		is_ok &= Test<2>(GL_COMPRESSED_SIGNED_RED_RGTC1, false);
+		is_ok &= Test<2>(GL_COMPRESSED_RG_RGTC2, false);
+		is_ok &= Test<2>(GL_COMPRESSED_SIGNED_RG_RGTC2, false);
+		is_ok &= Test<2>(GL_COMPRESSED_RGBA_BPTC_UNORM, false);
+		is_ok &= Test<2>(GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM, false);
+		is_ok &= Test<2>(GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT, false);
+		is_ok &= Test<2>(GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT, false);
+		is_ok &= Test<2>(GL_COMPRESSED_RGB8_ETC2, true);
+		is_ok &= Test<2>(GL_COMPRESSED_SRGB8_ETC2, true);
+		is_ok &= Test<2>(GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2, true);
+		is_ok &= Test<2>(GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2, true);
+		is_ok &= Test<2>(GL_COMPRESSED_RGBA8_ETC2_EAC, true);
+		is_ok &= Test<2>(GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, true);
+		is_ok &= Test<2>(GL_COMPRESSED_R11_EAC, true);
+		is_ok &= Test<2>(GL_COMPRESSED_SIGNED_R11_EAC, true);
+		is_ok &= Test<2>(GL_COMPRESSED_RG11_EAC, true);
+		is_ok &= Test<2>(GL_COMPRESSED_SIGNED_RG11_EAC, true);
 
-		is_ok &= Test<3>(GL_COMPRESSED_RED_RGTC1);
-		is_ok &= Test<3>(GL_COMPRESSED_SIGNED_RED_RGTC1);
-		is_ok &= Test<3>(GL_COMPRESSED_RG_RGTC2);
-		is_ok &= Test<3>(GL_COMPRESSED_SIGNED_RG_RGTC2);
-		is_ok &= Test<3>(GL_COMPRESSED_RGBA_BPTC_UNORM);
-		is_ok &= Test<3>(GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM);
-		is_ok &= Test<3>(GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT);
-		is_ok &= Test<3>(GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT);
-		is_ok &= Test<3>(GL_COMPRESSED_RGB8_ETC2);
-		is_ok &= Test<3>(GL_COMPRESSED_SRGB8_ETC2);
-		is_ok &= Test<3>(GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2);
-		is_ok &= Test<3>(GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2);
-		is_ok &= Test<3>(GL_COMPRESSED_RGBA8_ETC2_EAC);
-		is_ok &= Test<3>(GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC);
-		is_ok &= Test<3>(GL_COMPRESSED_R11_EAC);
-		is_ok &= Test<3>(GL_COMPRESSED_SIGNED_R11_EAC);
-		is_ok &= Test<3>(GL_COMPRESSED_RG11_EAC);
-		is_ok &= Test<3>(GL_COMPRESSED_SIGNED_RG11_EAC);
+		is_ok &= Test<3>(GL_COMPRESSED_RED_RGTC1, false);
+		is_ok &= Test<3>(GL_COMPRESSED_SIGNED_RED_RGTC1, false);
+		is_ok &= Test<3>(GL_COMPRESSED_RG_RGTC2, false);
+		is_ok &= Test<3>(GL_COMPRESSED_SIGNED_RG_RGTC2, false);
+		is_ok &= Test<3>(GL_COMPRESSED_RGBA_BPTC_UNORM, false);
+		is_ok &= Test<3>(GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM, false);
+		is_ok &= Test<3>(GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT, false);
+		is_ok &= Test<3>(GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT, false);
+		is_ok &= Test<3>(GL_COMPRESSED_RGB8_ETC2, true);
+		is_ok &= Test<3>(GL_COMPRESSED_SRGB8_ETC2, true);
+		is_ok &= Test<3>(GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2, true);
+		is_ok &= Test<3>(GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2, true);
+		is_ok &= Test<3>(GL_COMPRESSED_RGBA8_ETC2_EAC, true);
+		is_ok &= Test<3>(GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC, true);
+		is_ok &= Test<3>(GL_COMPRESSED_R11_EAC, true);
+		is_ok &= Test<3>(GL_COMPRESSED_SIGNED_R11_EAC, true);
+		is_ok &= Test<3>(GL_COMPRESSED_RG11_EAC, true);
+		is_ok &= Test<3>(GL_COMPRESSED_SIGNED_RG11_EAC, true);
 	}
 	catch (...)
 	{

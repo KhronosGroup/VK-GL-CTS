@@ -374,7 +374,7 @@ PixelFormatInfo Core::getPixelFormatInfo (HDC deviceCtx, int pixelFormat) const
 	info.pixelFormat		= pixelFormat;
 	info.surfaceTypes		|= (values[WGL_DRAW_TO_WINDOW_ARB] ? PixelFormatInfo::SURFACE_WINDOW : 0);
 	info.surfaceTypes		|= (values[WGL_DRAW_TO_BITMAP_ARB] ? PixelFormatInfo::SURFACE_PIXMAP : 0);
-	info.acceleration		= translateAcceleration(values[2]);
+	info.acceleration		= translateAcceleration(values[WGL_ACCELERATION_ARB]);
 	info.needPalette		= values[WGL_NEED_PALETTE_ARB] != 0;
 	info.needSystemPalette	= values[WGL_NEED_SYSTEM_PALETTE_ARB] != 0;
 	info.numOverlays		= values[WGL_NUMBER_OVERLAYS_ARB] != 0;
@@ -566,6 +566,9 @@ void Context::swapBuffers (void) const
 bool isSupportedByTests (const PixelFormatInfo& info)
 {
 	if (!info.supportOpenGL)
+		return false;
+
+	if (info.acceleration != wgl::PixelFormatInfo::ACCELERATION_FULL)
 		return false;
 
 	if (info.pixelType != wgl::PixelFormatInfo::PIXELTYPE_RGBA)

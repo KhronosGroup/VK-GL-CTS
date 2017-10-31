@@ -1081,7 +1081,7 @@ protected:
 
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
-	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings);
+	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings, glw::GLint* xfb_components);
 
 	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
 							   std::string& out_calculations);
@@ -3479,7 +3479,7 @@ protected:
 	virtual bool executeDrawCall(bool tesEnabled, glw::GLuint test_case_index);
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
-	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings);
+	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings, glw::GLint* xfb_components);
 
 	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
 							   std::string& out_calculations);
@@ -3924,7 +3924,7 @@ protected:
 	/* Protected methods */
 	virtual void getBufferDescriptors(glw::GLuint test_case_index, bufferDescriptor::Vector& out_descriptors);
 
-	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings);
+	virtual void getCapturedVaryings(glw::GLuint test_case_index, Utils::Program::NameVector& captured_varyings, glw::GLint* xfb_components);
 
 	virtual void getShaderBody(glw::GLuint test_case_index, Utils::Shader::STAGES stage, std::string& out_assignments,
 							   std::string& out_calculations);
