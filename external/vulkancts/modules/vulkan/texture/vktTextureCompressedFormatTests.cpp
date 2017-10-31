@@ -30,6 +30,7 @@
 #include "tcuCompressedTexture.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuAstcUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTextureTestUtil.hpp"
@@ -101,8 +102,16 @@ tcu::TestStatus Compressed2DTestInstance::iterate (void)
 	sampleParams.sampler			= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
 	sampleParams.samplerType		= SAMPLERTYPE_FLOAT;
 	sampleParams.lodMode			= LODMODE_EXACT;
-	sampleParams.colorBias			= formatInfo.lookupBias;
-	sampleParams.colorScale			= formatInfo.lookupScale;
+	if (isAstcFormat(m_compressedFormat))
+	{
+		sampleParams.colorBias			= tcu::Vec4(0.0f);
+		sampleParams.colorScale			= tcu::Vec4(1.0f);
+	}
+	else
+	{
+		sampleParams.colorBias			= formatInfo.lookupBias;
+		sampleParams.colorScale			= formatInfo.lookupScale;
+	}
 
 	log << TestLog::Message << "Compare reference value = " << sampleParams.ref << TestLog::EndMessage;
 
@@ -118,7 +127,7 @@ tcu::TestStatus Compressed2DTestInstance::iterate (void)
 	sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat), m_texture->getTexture(), &texCoord[0], sampleParams);
 
 	// Compare and log.
-	const bool isOk = compareImages(log, referenceFrame, rendered, pixelFormat.getColorThreshold() + tcu::RGBA(1, 1, 1, 1));
+	const bool isOk = compareImages(log, referenceFrame, rendered, pixelFormat.getColorThreshold() + tcu::RGBA(2, 2, 2, 2));
 
 	return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
 }
@@ -127,10 +136,9 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 {
 	tcu::TestContext&	testCtx	= compressedTextureTests->getTestContext();
 
-	// ETC2 and EAC compressed formats.
 	const struct {
 		const VkFormat	format;
-	} etc2Formats[] =
+	} formats[] =
 	{
 		{ VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK		},
 		{ VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK		},
@@ -143,6 +151,35 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		{ VK_FORMAT_EAC_R11_SNORM_BLOCK			},
 		{ VK_FORMAT_EAC_R11G11_UNORM_BLOCK		},
 		{ VK_FORMAT_EAC_R11G11_SNORM_BLOCK		},
+
+		{ VK_FORMAT_ASTC_4x4_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_4x4_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_5x4_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_5x4_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_5x5_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_5x5_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_6x5_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_6x5_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_6x6_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_6x6_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_8x5_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_8x5_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_8x6_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_8x6_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_8x8_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_8x8_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_10x5_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_10x5_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_10x6_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_10x6_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_10x8_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_10x8_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_10x10_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_10x10_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_12x10_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_12x10_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_12x12_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_12x12_SRGB_BLOCK		}
 	};
 
 	const struct {
@@ -156,13 +193,13 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 	};
 
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
-	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(etc2Formats); formatNdx++)
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 	{
-		const string	formatStr	= de::toString(getFormatStr(etc2Formats[formatNdx].format));
+		const string	formatStr	= de::toString(getFormatStr(formats[formatNdx].format));
 		const string	nameBase	= de::toLower(formatStr.substr(10));
 
 		Compressed2DTestParameters	testParameters;
-		testParameters.format		= etc2Formats[formatNdx].format;
+		testParameters.format		= formats[formatNdx].format;
 		testParameters.width		= sizes[sizeNdx].width;
 		testParameters.height		= sizes[sizeNdx].height;
 		testParameters.minFilter	= tcu::Sampler::NEAREST;
