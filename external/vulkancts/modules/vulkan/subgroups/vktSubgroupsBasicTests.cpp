@@ -1096,7 +1096,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 	{
 		return tcu::TestStatus::fail(
 				   "Subgroup feature " +
-				   subgroups::getShaderStageName(VK_SUBGROUP_FEATURE_BASIC_BIT) +
+				   subgroups::getSubgroupFeatureName(VK_SUBGROUP_FEATURE_BASIC_BIT) +
 				   " is a required capability!");
 	}
 
