@@ -21,7 +21,7 @@
 #-------------------------------------------------------------------------
 
 import os
-import re
+import subprocess
 import sys
 import argparse
 
@@ -36,28 +36,10 @@ def writeFile (filename, data):
 	f.write(data)
 	f.close()
 
-COMMIT	= 0
-REF		= 1
-
-def getCommitOrRef (filename):
-	src = readFile(filename)
-	m = re.search(r'^[a-zA-Z0-9]{40}', src)
-	if m:
-		return (COMMIT, m.group(0))
-	m = re.search(r'^ref:\s+([^\s]+)', src)
-	if m:
-		return (REF, m.group(1))
-	raise Exception("Coulnd't parse %s" % filename)
-
 def getHead (gitDir):
-	curFile = os.path.join(gitDir, "HEAD")
-	while True:
-		type, ptr = getCommitOrRef(curFile)
-		if type == COMMIT:
-			return ptr
-		else:
-			assert type == REF
-			curFile = os.path.join(gitDir, ptr)
+	commit = subprocess.check_output(["git", "--git-dir", gitDir,
+									  "rev-parse", "HEAD"])
+	return commit.decode().strip()
 
 def makeReleaseInfo (name, id):
 	return """
