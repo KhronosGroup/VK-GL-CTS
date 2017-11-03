@@ -1094,8 +1094,8 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 	else
 		DE_ASSERT(DE_FALSE);
 
-	Unique<VkShaderModule>					vertexShaderModule		(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("vertext_" + std::string(getProgramName(progSpec))), 0));
-	Unique<VkShaderModule>					fragmentShaderModule	(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("fragment_" + std::string(getProgramName(progSpec))), 0));
+	Unique<VkShaderModule>					vertexShaderModule			(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("vertext_" + std::string(getProgramName(progSpec))), 0));
+	Unique<VkShaderModule>					fragmentShaderModule		(createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("fragment_" + std::string(getProgramName(progSpec))), 0));
 
 	Move<VkSampler>							sampler;
 	Move<VkDescriptorSet>					descriptorSet[2];
@@ -1106,10 +1106,14 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 	Move<VkPipeline>						graphicsPipeline;
 	Move<VkBuffer>							vertexBuffer;
 	de::MovePtr<Allocation>					vertexBufferMemory;
-	const deUint32							positionDataSize		= deUint32(sizeof(float) * 4 * 4);
-	const deUint32							textureCoordDataSize	= deUint32(sizeof(float) * numComps * 4);
 
-	const VkPhysicalDeviceProperties		properties				= m_context.getDeviceProperties();
+	const VkDeviceSize						vertexBufferOffset			= 0;
+	const deUint32							vertexPositionStrideSize	= deUint32(sizeof(tcu::Vec4));
+	const deUint32							vertexTextureStrideSize		= deUint32(numComps * sizeof(float));
+	const deUint32							positionDataSize			= vertexPositionStrideSize * 4u;
+	const deUint32							textureCoordDataSize		= vertexTextureStrideSize * 4u;
+
+	const VkPhysicalDeviceProperties		properties					= m_context.getDeviceProperties();
 
 	if (positionDataSize > properties.limits.maxVertexInputAttributeOffset)
 	{
@@ -1141,9 +1145,6 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 				DE_NULL														// const VkSpecializationInfo*		pSpecializationInfo;
 			}
 		};
-
-		const deUint32							vertexPositionStrideSize			= deUint32(sizeof(tcu::Vec4));
-		const deUint32							vertexTextureStrideSize				= deUint32(numComps * sizeof(float));
 
 		const VkVertexInputBindingDescription	vertexInputBindingDescription[2]	=
 		{
@@ -1395,12 +1396,17 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 	// Create Vertex Buffer
 	{
+		VkDeviceSize bufferSize = positionDataSize + textureCoordDataSize;
+
+		// Pad the buffer size to a stride multiple for the last element so that it isn't out of bounds
+		bufferSize += vertexTextureStrideSize - ((bufferSize - vertexBufferOffset) % vertexTextureStrideSize);
+
 		const VkBufferCreateInfo			vertexBufferParams		=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
 			0u,											// VkBufferCreateFlags	flags;
-			positionDataSize + textureCoordDataSize,	// VkDeviceSize			size;
+			bufferSize,									// VkDeviceSize			size;
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
 			1u,											// deUint32				queueFamilyCount;
@@ -1452,8 +1458,6 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 		vkd.cmdBeginRenderPass(*commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
-
-	const VkDeviceSize						vertexBufferOffset		= 0;
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1, &descriptorSet[0].get(), 0u, DE_NULL);
