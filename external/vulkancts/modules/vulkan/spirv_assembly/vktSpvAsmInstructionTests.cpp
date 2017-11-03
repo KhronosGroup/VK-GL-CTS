@@ -49,6 +49,7 @@
 #include "deMath.h"
 #include "tcuStringTemplate.hpp"
 
+#include "vktSpvAsmCrossStageInterfaceTests.hpp"
 #include "vktSpvAsm16bitStorageTests.hpp"
 #include "vktSpvAsmUboMatrixPaddingTests.hpp"
 #include "vktSpvAsmConditionalBranchTests.hpp"
@@ -7838,7 +7839,6 @@ tcu::TestCaseGroup* createOpSModGraphicsTests(tcu::TestContext& testCtx, qpTestR
 	return testGroup.release();
 }
 
-
 enum IntegerType
 {
 	INTEGER_TYPE_SIGNED_16,
@@ -8999,13 +8999,13 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 		computeTests->addChild(computeAndroidTests.release());
 	}
-
 	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
 	computeTests->addChild(createUboMatrixPaddingComputeGroup(testCtx));
 	computeTests->addChild(createConditionalBranchComputeGroup(testCtx));
 	computeTests->addChild(createIndexingComputeGroup(testCtx));
 	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	computeTests->addChild(createImageSamplerComputeGroup(testCtx));
+	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
 	graphicsTests->addChild(createOpNopTests(testCtx));
 	graphicsTests->addChild(createOpSourceTests(testCtx));

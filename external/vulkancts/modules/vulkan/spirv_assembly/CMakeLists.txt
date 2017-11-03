@@ -3,6 +3,8 @@
 include_directories(..)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
+	vktSpvAsmCrossStageInterfaceTests.cpp
+	vktSpvAsmCrossStageInterfaceTests.hpp
 	vktSpvAsm16bitStorageTests.cpp
 	vktSpvAsm16bitStorageTests.hpp
 	vktSpvAsmUboMatrixPaddingTests.cpp
