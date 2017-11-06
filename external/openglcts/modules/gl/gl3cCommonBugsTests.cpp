@@ -1511,7 +1511,8 @@ tcu::TestNode::IterateResult ParenthesisInLayoutQualifierIntegerValuesTest::iter
 									  "}\n";
 
 	const char* cs_body_parts[] = { (!glu::contextSupports(context_type, glu::ApiType::core(4, 3))) ?
-										"#version 420 core\n" :
+										"#version 420 core\n"
+										"#extension GL_ARB_compute_shader : enable\n" :
 										(!glu::contextSupports(context_type, glu::ApiType::core(4, 4))) ?
 										"#version 430 core\n" :
 										"#version 440 core\n",
