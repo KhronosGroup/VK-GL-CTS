@@ -25,8 +25,10 @@
 
 #include <string>
 #include <vector>
+#include <sys/utsname.h>
 
 #include "deDynamicLibrary.hpp"
+#include "deMemory.h"
 #include "deSTLUtil.hpp"
 #include "egluUtil.hpp"
 #include "egluGLUtil.hpp"
@@ -37,9 +39,11 @@
 #include "glwInitES20Direct.hpp"
 #include "glwInitES30Direct.hpp"
 #include "glwInitFunctions.hpp"
+#include "tcuFunctionLibrary.hpp"
 #include "tcuPixelFormat.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuRenderTarget.hpp"
+#include "vkPlatform.hpp"
 
 #include <EGL/egl.h>
 
@@ -80,6 +84,62 @@ namespace tcu
 {
 namespace surfaceless
 {
+
+class VulkanLibrary : public vk::Library
+{
+public:
+	VulkanLibrary (void)
+		: m_library	("libvulkan.so.1")
+		, m_driver	(m_library)
+	{
+	}
+
+	const vk::PlatformInterface& getPlatformInterface (void) const
+	{
+		return m_driver;
+	}
+
+private:
+	const tcu::DynamicFunctionLibrary	m_library;
+	const vk::PlatformDriver			m_driver;
+};
+
+// Copied from tcuX11Platform.cpp
+class VulkanPlatform : public vk::Platform
+{
+public:
+	vk::Library* createLibrary (void) const
+	{
+		return new VulkanLibrary();
+	}
+
+	void describePlatform (std::ostream& dst) const
+	{
+		utsname		sysInfo;
+
+		deMemset(&sysInfo, 0, sizeof(sysInfo));
+
+		if (uname(&sysInfo) != 0)
+			throw std::runtime_error("uname() failed");
+
+		dst << "OS: " << sysInfo.sysname << " " << sysInfo.release << " " << sysInfo.version << "\n";
+		dst << "CPU: " << sysInfo.machine << "\n";
+	}
+
+	// FINISHME: Query actual memory limits.
+	//
+	// These hard-coded memory limits were copied from tcuX11Platform.cpp,
+	// and they work well enough for Intel platforms.
+	void getMemoryLimits (vk::PlatformMemoryLimits& limits) const
+	{
+		limits.totalSystemMemory					= 256*1024*1024;
+		limits.totalDeviceLocalMemory				= 128*1024*1024;
+		limits.deviceMemoryAllocationGranularity	= 64*1024;
+		limits.devicePageSize						= 4096;
+		limits.devicePageTableEntrySize				= 8;
+		limits.devicePageTableHierarchyLevels		= 3;
+	}
+};
 
 bool isEGLExtensionSupported(
 		const eglw::Library& egl,
@@ -126,6 +186,10 @@ class Platform : public tcu::Platform, public glu::Platform
 public:
 					Platform	(void);
 	const glu::Platform&		getGLPlatform	(void) const { return *this; }
+	const vk::Platform&			getVulkanPlatform	(void) const { return m_vkPlatform; }
+
+private:
+	VulkanPlatform		m_vkPlatform;
 };
 
 class ContextFactory : public glu::ContextFactory
