@@ -1195,6 +1195,14 @@ private:
 	void drawInstanced();
 	bool check();
 	void clean();
+
+	typedef glw::GLuint (*GetUniformBlockIndex_ProcAddress)(glw::GLuint program, const glw::GLchar* uniformBlockName);
+	typedef void        (*UniformBlockBinding_ProcAddress)(glw::GLuint program,
+														   glw::GLuint uniformIndex,
+														   glw::GLuint uniformBlockBinding);
+
+	GetUniformBlockIndex_ProcAddress m_glGetUniformBlockIndex;
+	UniformBlockBinding_ProcAddress  m_glUniformBlockBinding;
 };
 
 /** DrawXFBStreamInstanced
@@ -1271,6 +1279,14 @@ private:
 	void drawStreamInstanced();
 	bool check();
 	void clean();
+
+	typedef glw::GLuint (*GetUniformBlockIndex_ProcAddress)(glw::GLuint program, const glw::GLchar* uniformBlockName);
+	typedef void        (*UniformBlockBinding_ProcAddress)(glw::GLuint program,
+														   glw::GLuint uniformIndex,
+														   glw::GLuint uniformBlockBinding);
+
+	GetUniformBlockIndex_ProcAddress m_glGetUniformBlockIndex;
+	UniformBlockBinding_ProcAddress  m_glUniformBlockBinding;
 };
 
 namespace Utilities
