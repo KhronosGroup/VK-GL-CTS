@@ -343,3 +343,6 @@ dEQP-VK.image.mutable.*
 dEQP-VK.ubo.random.all_out_of_order_offsets.11
 dEQP-VK.ubo.random.all_out_of_order_offsets.45
 dEQP-VK.ubo.random.all_shared_buffer.48
+
+# Issue: b/66464066
+dEQP-VK.wsi.android.shared_presentable_image.scale_down.*
