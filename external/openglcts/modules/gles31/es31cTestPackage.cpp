@@ -42,6 +42,7 @@
 #include "es31cTextureGatherTests.hpp"
 #include "es31cTextureStorageMultisampleTests.hpp"
 #include "es31cVertexAttribBindingTests.hpp"
+#include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
@@ -158,6 +159,7 @@ public:
 	void init(void)
 	{
 		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_310_ES));
+		addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
 	}
 };
 

@@ -68,6 +68,7 @@
 #include "gl4cTextureViewTests.hpp"
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
+#include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
@@ -244,6 +245,7 @@ void GL43TestPackage::init(void)
 		addChild(new gl4cts::IndirectParametersTests(getContext()));
 		addChild(new gl4cts::ShaderBallotTests(getContext()));
 		addChild(new glcts::ShaderConstExprTests(getContext()));
+		addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
 	}
 	catch (...)
 	{

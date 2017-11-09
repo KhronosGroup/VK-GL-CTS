@@ -6046,3 +6046,15 @@ KHR-GL43.constant_expressions.array_normalize_vec4_compute
 KHR-GL43.constant_expressions.array_normalize_vec4_geometry
 KHR-GL43.constant_expressions.array_normalize_vec4_tess_control
 KHR-GL43.constant_expressions.array_normalize_vec4_tess_eval
+KHR-GL43.aggressive_optimizations.sin_float_vert
+KHR-GL43.aggressive_optimizations.sin_float_frag
+KHR-GL43.aggressive_optimizations.sin_vec2_vert
+KHR-GL43.aggressive_optimizations.sin_vec2_frag
+KHR-GL43.aggressive_optimizations.sin_vec3_vert
+KHR-GL43.aggressive_optimizations.sin_vec3_frag
+KHR-GL43.aggressive_optimizations.cos_float_vert
+KHR-GL43.aggressive_optimizations.cos_float_frag
+KHR-GL43.aggressive_optimizations.cos_vec2_vert
+KHR-GL43.aggressive_optimizations.cos_vec2_frag
+KHR-GL43.aggressive_optimizations.cos_vec3_vert
+KHR-GL43.aggressive_optimizations.cos_vec3_frag

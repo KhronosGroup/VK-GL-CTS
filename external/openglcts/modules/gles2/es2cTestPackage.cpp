@@ -23,6 +23,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es2cTestPackage.hpp"
+#include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcShaderNegativeTests.hpp"
 #include "gluRenderContext.hpp"
@@ -116,6 +117,7 @@ public:
 	void init(void)
 	{
 		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_100_ES));
+		addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
 	}
 };
 

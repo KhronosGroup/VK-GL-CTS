@@ -25,6 +25,7 @@
 #include "es32cTestPackage.hpp"
 #include "es32cCopyImageTests.hpp"
 #include "esextcTestPackage.hpp"
+#include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcSeparableProgramsTransformFeedbackTests.hpp"
@@ -146,6 +147,7 @@ void ES32TestPackage::init(void)
 		tcu::TestCaseGroup* shadersGroup = new tcu::TestCaseGroup(getTestContext(), "shaders", "");
 		shadersGroup->addChild(new deqp::ShaderIntegerMixTests(getContext(), glu::GLSL_VERSION_320_ES));
 		shadersGroup->addChild(new deqp::ShaderNegativeTests(getContext(), glu::GLSL_VERSION_320_ES));
+		shadersGroup->addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
 		addChild(shadersGroup);
 
 		tcu::TestCaseGroup*  coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "");
