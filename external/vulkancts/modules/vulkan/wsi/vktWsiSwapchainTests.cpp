@@ -1398,7 +1398,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 																		  *swapchain,
 																		  std::numeric_limits<deUint64>::max(),
 																		  imageReadySemaphore,
-																		  imageReadyFence,
+																		  (VkFence)0,
 																		  &imageNdx);
 
 				if (acquireResult == VK_SUBOPTIMAL_KHR)
@@ -1438,7 +1438,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 				};
 
 				renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
-				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, (VkFence)0));
+				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, imageReadyFence));
 				VK_CHECK(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
 			}
 		}
