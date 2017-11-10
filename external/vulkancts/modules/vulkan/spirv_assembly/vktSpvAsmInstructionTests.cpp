@@ -2795,13 +2795,12 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id = OpVariable %uvec3ptr Input\n"
-		"%v3f32      = OpTypeVector %f32 3\n"
 		"%zero       = OpConstant %i32 0\n"
 		"%float_0    = OpConstant %f32 0.0\n"
 		"%float_1    = OpConstant %f32 1.0\n"
 		"%float_n1   = OpConstant %f32 -1.0\n"
-		"%v1         = OpConstantComposite %v3f32 %float_1 %float_1 %float_1\n"
-		"%v2         = OpConstantComposite %v3f32 %float_n1 %float_n1 %float_n1\n"
+		"%v1         = OpConstantComposite %fvec3 %float_1 %float_1 %float_1\n"
+		"%v2         = OpConstantComposite %fvec3 %float_n1 %float_n1 %float_n1\n"
 
 		"%main     = OpFunction %void None %voidf\n"
 		"%entry    = OpLabel\n"
@@ -2818,7 +2817,7 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		"%fb       = OpLabel\n"
 		"            OpBranch %cm\n"
 		"%cm       = OpLabel\n"
-		"%vres     = OpPhi %v3f32 %v1 %tb %v2 %fb\n"
+		"%vres     = OpPhi %fvec3 %v1 %tb %v2 %fb\n"
 		"%res      = OpCompositeExtract %f32 %vres 2\n"
 
 		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
@@ -2933,7 +2932,6 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id = OpVariable %uvec3ptr Input\n"
-		"%v3f32      = OpTypeVector %f32 3\n"
 		"%zero       = OpConstant %i32 0\n"
 		"%float_0    = OpConstant %f32 0.0\n"
 		"%float_1    = OpConstant %f32 1.0\n"
