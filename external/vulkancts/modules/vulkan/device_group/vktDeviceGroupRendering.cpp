@@ -147,11 +147,12 @@ public:
 	DeviceGroupTestInstance(Context& context, deUint32 mode);
 	~DeviceGroupTestInstance(void) {}
 private:
-			void						init					(void);
-			deUint32					getMemoryIndex			(deUint32 memoryTypeBits, deUint32 memoryPropertyFlag);
-			void						getDeviceLayers			(vector<string>& enabledLayers);
-			bool						isPeerFetchAllowed		(deUint32 memoryTypeIndex, deUint32 firstdeviceID, deUint32 seconddeviceID);
-	virtual	tcu::TestStatus				iterate					(void);
+			void						init						(void);
+			deUint32					getMemoryIndex				(deUint32 memoryTypeBits, deUint32 memoryPropertyFlag);
+			void						getDeviceLayers				(vector<string>& enabledLayers);
+			bool						isPeerFetchAllowed			(deUint32 memoryTypeIndex, deUint32 firstdeviceID, deUint32 seconddeviceID);
+			void						SubmitBufferAndWaitForIdle	(const DeviceDriver& vk, VkCommandBuffer cmdBuf, VkDeviceGroupSubmitInfo);
+	virtual	tcu::TestStatus				iterate						(void);
 
 			Move<VkDevice>				m_deviceGroup;
 			deUint32					m_physicalDeviceCount;
@@ -348,6 +349,33 @@ void DeviceGroupTestInstance::init (void)
 
 	deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(instanceInterface, *m_deviceGroup));
 	m_deviceGroupQueue = getDeviceQueue(*deviceDriver, *m_deviceGroup, queueFamilyIndex, queueIndex);
+}
+
+void DeviceGroupTestInstance::SubmitBufferAndWaitForIdle(const DeviceDriver& vk, VkCommandBuffer cmdBuf, VkDeviceGroupSubmitInfo deviceGroupSubmitInfo)
+{
+	const VkFenceCreateInfo	fenceParams =
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// sType
+		DE_NULL,								// pNext
+		0u,										// flags
+	};
+	const VkSubmitInfo		submitInfo =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
+		&deviceGroupSubmitInfo,					// pNext
+		0u,										// waitSemaphoreCount
+		DE_NULL,								// pWaitSemaphores
+		(const VkPipelineStageFlags*)DE_NULL,	// pWaitDstStageMask
+		1u,										// commandBufferCount
+		&cmdBuf,								// pCommandBuffers
+		0u,										// signalSemaphoreCount
+		DE_NULL,								// pSignalSemaphores
+	};
+	const Unique<VkFence>	fence(createFence(vk, *m_deviceGroup, &fenceParams));
+
+	VK_CHECK(vk.queueSubmit(m_deviceGroupQueue, 1u, &submitInfo, *fence));
+	VK_CHECK(vk.waitForFences(*m_deviceGroup, 1u, &fence.get(), DE_TRUE, ~0ull));
+	VK_CHECK(vk.deviceWaitIdle(*m_deviceGroup));
 }
 
 tcu::TestStatus DeviceGroupTestInstance::iterate (void)
@@ -1690,34 +1718,11 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
 			deviceGroupSubmitInfo.commandBufferCount = 1;
 			deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
-
-			const VkFenceCreateInfo	fenceParams =
-			{
-				VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// sType
-				DE_NULL,								// pNext
-				0u,										// flags
-			};
-			const VkSubmitInfo		submitInfo =
-			{
-				VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
-				&deviceGroupSubmitInfo,					// pNext
-				0u,										// waitSemaphoreCount
-				DE_NULL,								// pWaitSemaphores
-				(const VkPipelineStageFlags*)DE_NULL,	// pWaitDstStageMask
-				1u,										// commandBufferCount
-				&cmdBuffer.get(),						// pCommandBuffers
-				0u,										// signalSemaphoreCount
-				DE_NULL,								// pSignalSemaphores
-			};
-			const Unique<VkFence>	fence(createFence(vk, *m_deviceGroup, &fenceParams));
-
-			VK_CHECK(vk.queueSubmit(m_deviceGroupQueue, 1u, &submitInfo, *fence));
-			VK_CHECK(vk.waitForFences(*m_deviceGroup, 1u, &fence.get(), DE_TRUE, ~0ull));
-			VK_CHECK(vk.deviceWaitIdle(*m_deviceGroup));
+			SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
 		}
 
-		// Copy image from secondDeviceID
-		if (m_physicalDeviceCount > 1)
+		// Copy image from secondDeviceID in case of AFR and SFR(only if Peer memory as copy source is not allowed)
+		if ((m_physicalDeviceCount > 1) && ((m_testMode & TEST_MODE_AFR) || (!isPeerMemAsCopySrcAllowed)))
 		{
 			Move<VkImage>			peerImage;
 
@@ -1765,113 +1770,111 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			}
 
 			// Copy peer image (only needed in SFR case when peer memory as copy source is not allowed)
-			if ((m_testMode & TEST_MODE_AFR) || (!isPeerMemAsCopySrcAllowed))
 			{
-				// Image barriers
-				const VkImageMemoryBarrier	preImageBarrier	 =
+				// Change layout on firstDeviceID
 				{
-					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType		 sType;
-					DE_NULL,									// const void*			 pNext;
-					0,											// VkAccessFlags		 srcAccessMask;
-					VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		 dstAccessMask;
-					VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout		 oldLayout;
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout		 newLayout;
-					VK_QUEUE_FAMILY_IGNORED,					// deUint32				 srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,					// deUint32				 dstQueueFamilyIndex;
-					*peerImage,									// VkImage				 image;
-					{											// VkImageSubresourceRange subresourceRange;
-						VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	 aspectMask;
-						0u,										// deUint32				 baseMipLevel;
-						1u,										// deUint32				 mipLevels;
-						0u,										// deUint32				 baseArraySlice;
-						1u										// deUint32				 arraySize;
-					}
-				};
-
-				const VkImageMemoryBarrier	postImageBarrier =
-				{
-					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-					DE_NULL,									// const void*				pNext;
-					VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-					VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
-					VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-					*peerImage,
-					{											// VkImageSubresourceRange	subresourceRange;
-						VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags		aspectMask;
-						0u,										// deUint32					baseMipLevel;
-						1u,										// deUint32					mipLevels;
-						0u,										// deUint32					baseArraySlice;
-						1u										// deUint32					arraySize;
-					}
-				};
-
-				// AFR: Copy entire image from secondDeviceID
-				// SFR: Copy the right half of image from secondDeviceID to firstDeviceID, so that the copy
-				// to a buffer below (for checking) does not require VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT
-				deInt32 imageOffsetX = (m_testMode & TEST_MODE_AFR) ? 0 : renderSize.x()/2;
-				deUint32 imageExtentX = (m_testMode & TEST_MODE_AFR) ? (deUint32)renderSize.x() : (deUint32)renderSize.x()/2;
-
-				const VkImageCopy	imageCopy	=
-				{
+					const VkImageMemoryBarrier	preCopyBarrier =
 					{
-						VK_IMAGE_ASPECT_COLOR_BIT,
-						0, // mipLevel
-						0, // arrayLayer
-						1  // layerCount
-					},
-					{ imageOffsetX, 0, 0 },
-					{
-						VK_IMAGE_ASPECT_COLOR_BIT,
-						0, // mipLevel
-						0, // arrayLayer
-						1  // layerCount
-					},
-					{ imageOffsetX, 0, 0 },
-					{
-						imageExtentX,
-						(deUint32)renderSize.y(),
-						1u
-					}
-				};
+						VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType		 sType;
+						DE_NULL,									// const void*			 pNext;
+						0,											// VkAccessFlags		 srcAccessMask;
+						VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		 dstAccessMask;
+						VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout		 oldLayout;
+						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout		 newLayout;
+						VK_QUEUE_FAMILY_IGNORED,					// deUint32				 srcQueueFamilyIndex;
+						VK_QUEUE_FAMILY_IGNORED,					// deUint32				 dstQueueFamilyIndex;
+						*renderImage,								// VkImage				 image;
+						{											// VkImageSubresourceRange subresourceRange;
+							VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	 aspectMask;
+							0u,										// deUint32				 baseMipLevel;
+							1u,										// deUint32				 mipLevels;
+							0u,										// deUint32				 baseArraySlice;
+							1u										// deUint32				 arraySize;
+						}
+					};
 
-				VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
-				vk.cmdSetDeviceMask(*cmdBuffer, 1 << secondDeviceID);
-				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &preImageBarrier);
-				vk.cmdCopyImage(*cmdBuffer, *renderImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *peerImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
-				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &postImageBarrier);
-				VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-			}
+					VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+					vk.cmdSetDeviceMask(*cmdBuffer, 1 << firstDeviceID);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &preCopyBarrier);
+					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-			// Submit & wait for completion
-			{
-				const deUint32 deviceMask = 1 << secondDeviceID;
-				deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
-				const VkFenceCreateInfo	fenceParams =
+					const deUint32 deviceMask = 1 << firstDeviceID;
+					deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
+					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
+				}
+
+				// Copy Image from secondDeviceID to firstDeviceID
 				{
-					VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// sType
-					DE_NULL,								// pNext
-					0u,										// flags
-				};
-				const VkSubmitInfo		submitInfo =
-				{
-					VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
-					&deviceGroupSubmitInfo,					// pNext
-					0u,										// waitSemaphoreCount
-					DE_NULL,								// pWaitSemaphores
-					(const VkPipelineStageFlags*)DE_NULL,
-					1u,										// commandBufferCount
-					&cmdBuffer.get(),						// pCommandBuffers
-					0u,										// signalSemaphoreCount
-					DE_NULL,								// pSignalSemaphores
-				};
-				const Unique<VkFence>	fence(createFence(vk, *m_deviceGroup, &fenceParams));
+					// AFR: Copy entire image from secondDeviceID
+					// SFR: Copy the right half of image from secondDeviceID to firstDeviceID, so that the copy
+					// to a buffer below (for checking) does not require VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT
+					deInt32 imageOffsetX = (m_testMode & TEST_MODE_AFR) ? 0 : renderSize.x() / 2;
+					deUint32 imageExtentX = (m_testMode & TEST_MODE_AFR) ? (deUint32)renderSize.x() : (deUint32)renderSize.x() / 2;
 
-				VK_CHECK(vk.queueSubmit(m_deviceGroupQueue, 1u, &submitInfo, *fence));
-				VK_CHECK(vk.waitForFences(*m_deviceGroup, 1u, &fence.get(), DE_TRUE, ~0ull));
-				VK_CHECK(vk.deviceWaitIdle(*m_deviceGroup));
+					const VkImageCopy	imageCopy =
+					{
+						{
+							VK_IMAGE_ASPECT_COLOR_BIT,
+							0, // mipLevel
+							0, // arrayLayer
+							1  // layerCount
+						},
+						{ imageOffsetX, 0, 0 },
+						{
+							VK_IMAGE_ASPECT_COLOR_BIT,
+							0, // mipLevel
+							0, // arrayLayer
+							1  // layerCount
+						},
+						{ imageOffsetX, 0, 0 },
+						{
+							imageExtentX,
+							(deUint32)renderSize.y(),
+							1u
+						}
+					};
+
+					VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+					vk.cmdSetDeviceMask(*cmdBuffer, 1 << secondDeviceID);
+					vk.cmdCopyImage(*cmdBuffer, *renderImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *peerImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
+					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+
+					const deUint32 deviceMask = 1 << secondDeviceID;
+					deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
+					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
+				}
+
+				// Change layout back on firstDeviceID
+				{
+					const VkImageMemoryBarrier	postCopyBarrier =
+					{
+						VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
+						DE_NULL,									// const void*				pNext;
+						VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
+						VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
+						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
+						VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
+						VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
+						*renderImage,								// VkImage					image;
+						{											// VkImageSubresourceRange	subresourceRange;
+							VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags		aspectMask;
+							0u,										// deUint32					baseMipLevel;
+							1u,										// deUint32					mipLevels;
+							0u,										// deUint32					baseArraySlice;
+							1u										// deUint32					arraySize;
+						}
+					};
+
+					VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+					vk.cmdSetDeviceMask(*cmdBuffer, 1 << firstDeviceID);
+					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &postCopyBarrier);
+					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+
+					const deUint32 deviceMask = 1 << firstDeviceID;
+					deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
+					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
+				}
 			}
 		}
 
@@ -1939,29 +1942,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			{
 				const deUint32 deviceMask = 1 << firstDeviceID;
 				deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
-				const VkFenceCreateInfo	fenceParams =
-				{
-					VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// sType
-					DE_NULL,								// pNext
-					0u,										// flags
-				};
-				const VkSubmitInfo		submitInfo =
-				{
-					VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
-					&deviceGroupSubmitInfo,					// pNext
-					0u,										// waitSemaphoreCount
-					DE_NULL,								// pWaitSemaphores
-					(const VkPipelineStageFlags*)DE_NULL,	// flags
-					1u,										// commandBufferCount
-					&cmdBuffer.get(),						// pCommandBuffers
-					0u,										// signalSemaphoreCount
-					DE_NULL,								// pSignalSemaphores
-				};
-				const Unique<VkFence>	fence(createFence(vk, *m_deviceGroup, &fenceParams));
-
-				VK_CHECK(vk.queueSubmit(m_deviceGroupQueue, 1u, &submitInfo, *fence));
-				VK_CHECK(vk.waitForFences(*m_deviceGroup, 1u, &fence.get(), DE_TRUE, ~0ull));
-				VK_CHECK(vk.deviceWaitIdle(*m_deviceGroup));
+				SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
 			}
 
 			// Read results and check against reference image
