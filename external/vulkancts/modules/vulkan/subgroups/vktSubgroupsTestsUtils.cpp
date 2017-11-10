@@ -821,7 +821,7 @@ std::string vkt::subgroups::getVertShaderForStage(vk::VkShaderStageFlags stage)
 
 bool vkt::subgroups::isSubgroupSupported(Context& context)
 {
-	return context.getUsedApiVersion() < VK_API_VERSION_1_1 ? false : true;
+	return context.contextSupports(vk::ApiVersion(1, 1, 0));
 }
 
 bool vkt::subgroups::areSubgroupOperationsSupportedForStage(

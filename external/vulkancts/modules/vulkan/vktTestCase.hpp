@@ -28,6 +28,7 @@
 #include "vkDefs.hpp"
 #include "deUniquePtr.hpp"
 #include "vkPrograms.hpp"
+#include "vkApiVersion.hpp"
 
 namespace glu
 {
@@ -79,6 +80,9 @@ public:
 	deUint32									getUsedApiVersion				(void) const;
 
 	vk::Allocator&								getDefaultAllocator				(void) const;
+	bool										contextSupports					(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
+	bool										contextSupports					(const vk::ApiVersion version) const;
+	bool										contextSupports					(const deUint32 requiredApiVersionBits) const;
 
 protected:
 	tcu::TestContext&							m_testCtx;
@@ -92,7 +96,6 @@ private:
 												Context							(const Context&); // Not allowed
 	Context&									operator=						(const Context&); // Not allowed
 };
-
 
 class TestInstance;
 

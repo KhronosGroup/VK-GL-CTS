@@ -224,7 +224,7 @@ void SpvAsmLoopControlDependencyLengthCase::initPrograms (SourceCollections& pro
 
 TestInstance* SpvAsmLoopControlDependencyLengthCase::createInstance (Context& context) const
 {
-	if (context.getUsedApiVersion() < VK_API_VERSION_1_1)
+	if (context.contextSupports(vk::ApiVersion(1, 1, 0)))
 		TCU_THROW(NotSupportedError, "SPIR-V higher than 1.3 is required for this test to run");
 
 	return new SpvAsmLoopControlDependencyLengthInstance(context);
