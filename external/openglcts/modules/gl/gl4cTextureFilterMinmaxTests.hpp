@@ -47,7 +47,6 @@ public:
 	enum TextureTestFlag
 	{
 		MINMAX		  = (1u << 0),
-		COMPATIBILITY = (1u << 1),
 		EXCLUDE_3D	= (1u << 2),
 		EXCLUDE_CUBE  = (1u << 3)
 	};
