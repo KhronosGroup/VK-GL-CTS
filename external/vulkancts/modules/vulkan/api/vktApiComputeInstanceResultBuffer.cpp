@@ -98,8 +98,8 @@ VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier(VkB
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		VK_ACCESS_SHADER_WRITE_BIT,									// outputMask
-		VK_ACCESS_SHADER_READ_BIT,									// inputMask
+		VK_ACCESS_SHADER_WRITE_BIT,									// srcAccessMask
+		VK_ACCESS_HOST_READ_BIT,									// dstAccessMask
 		VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
 		VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
 		buffer,														// buffer

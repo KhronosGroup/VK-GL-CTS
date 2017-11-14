@@ -464,7 +464,7 @@ de::MovePtr<tcu::TextureLevel> CommandBufferRenderPassTestEnvironment::readColor
 	beginPrimaryCommandBuffer(0);
 	m_vkd.cmdPipelineBarrier(m_primaryCommandBuffers[0], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 	m_vkd.cmdCopyImageToBuffer(m_primaryCommandBuffers[0], *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1, &copyRegion);
-	m_vkd.cmdPipelineBarrier(m_primaryCommandBuffers[0], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	m_vkd.cmdPipelineBarrier(m_primaryCommandBuffers[0], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vkd.endCommandBuffer(m_primaryCommandBuffers[0]));
 
 	submitPrimaryCommandBuffer();
@@ -4029,8 +4029,8 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 		{
 			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 			DE_NULL,
-			VK_ACCESS_HOST_WRITE_BIT,									// outputMask
-			inputBit,													// inputMask
+			VK_ACCESS_HOST_WRITE_BIT,									// srcAccessMask
+			inputBit,													// dstAccessMask
 			VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
 			VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
 			*bufferA,													// buffer
@@ -4040,8 +4040,8 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 		{
 			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 			DE_NULL,
-			VK_ACCESS_HOST_WRITE_BIT,									// outputMask
-			inputBit,													// inputMask
+			VK_ACCESS_HOST_WRITE_BIT,									// srcAccessMask
+			inputBit,													// dstAccessMask
 			VK_QUEUE_FAMILY_IGNORED,									// srcQueueFamilyIndex
 			VK_QUEUE_FAMILY_IGNORED,									// destQueueFamilyIndex
 			*bufferB,													// buffer
@@ -4107,13 +4107,13 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 	vk.cmdBindDescriptorSets(*cmd, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, numDescriptorSets, descriptorSets, numDynamicOffsets, dynamicOffsets);
 
 	if (numPreBarriers)
-		vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0,
+		vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0,
 							  0, (const VkMemoryBarrier*)DE_NULL,
 							  numPreBarriers, bufferBarriers,
 							  0, (const VkImageMemoryBarrier*)DE_NULL);
 
 	vk.cmdDispatch(*cmd, numWorkGroups.x(), numWorkGroups.y(), numWorkGroups.z());
-	vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+	vk.cmdPipelineBarrier(*cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
 						  0, (const VkMemoryBarrier*)DE_NULL,
 						  numPostBarriers, postBarriers,
 						  0, (const VkImageMemoryBarrier*)DE_NULL);
