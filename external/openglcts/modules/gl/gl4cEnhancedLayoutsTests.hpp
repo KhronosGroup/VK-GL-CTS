@@ -3381,8 +3381,8 @@ private:
 
 /** Implementation of test XFBStrideOfEmptyList. Description follows:
  *
- * Test verifies that xfb_stride directive is respected even if there are no
- * variables qualified with xfb_offset.
+ * Test verifies correct behavior when xfb_stride qualifier is specified
+ * but no variables are qualified with xfb_offset.
  *
  * Test implements Buffer algorithm. Rasterization can be discarded.
  *
@@ -3398,10 +3398,10 @@ private:
  *     3 Provide buffer to XFB at index 0, index 1 should be missing
  *
  * It is expected that:
- *     - BeginTransformFeedback operation will report GL_INVALID_OPERATION in cases
- *     2 and 3,
- *     - XFB at index 1 will not be modified in case 1.
+ *     - BeginTransformFeedback operation will report GL_INVALID_OPERATION in case 2
+ *     - XFB at index 1 will not be modified in cases 1 and 3.
  **/
+
 class XFBStrideOfEmptyListTest : public BufferTestBase
 {
 public:

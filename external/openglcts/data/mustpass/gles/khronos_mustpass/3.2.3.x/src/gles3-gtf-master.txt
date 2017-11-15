@@ -419,7 +419,6 @@ GTF-GLES3.gtf.GL3Tests.npot_textures.npot_cubemap_render
 GTF-GLES3.gtf.GL3Tests.npot_textures.npot_fbo_render
 GTF-GLES3.gtf.GL3Tests.npot_textures.npot_gen_mipmap
 GTF-GLES3.gtf.GL3Tests.npot_textures.npot_tex2d_array_render
-GTF-GLES3.gtf.GL3Tests.npot_textures.npot_tex2d_render
 GTF-GLES3.gtf.GL3Tests.npot_textures.npot_tex3d_render
 GTF-GLES3.gtf.GL3Tests.npot_textures.npot_tex_image
 GTF-GLES3.gtf.GL3Tests.npot_textures.npot_tex_storage

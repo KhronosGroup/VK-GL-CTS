@@ -5723,6 +5723,8 @@ gl3cts::TransformFeedback::DrawXFBInstanced::DrawXFBInstanced(deqp::Context& con
 	, m_bo_id_uniform(0)
 	, m_fbo_id(0)
 	, m_rbo_id(0)
+	, m_glGetUniformBlockIndex(DE_NULL)
+	, m_glUniformBlockBinding(DE_NULL)
 {
 }
 
@@ -5740,6 +5742,20 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::DrawXFBInstanced::iterat
 
 	bool is_ok		= true;
 	bool test_error = false;
+
+	if (is_arb_ubo)
+	{
+		m_glGetUniformBlockIndex =
+			(GetUniformBlockIndex_ProcAddress)m_context.getRenderContext().getProcAddress("glGetUniformBlockIndex");
+
+		m_glUniformBlockBinding =
+			(UniformBlockBinding_ProcAddress)m_context.getRenderContext().getProcAddress("glUniformBlockBinding");
+
+		if (DE_NULL == m_glGetUniformBlockIndex || DE_NULL == m_glUniformBlockBinding)
+		{
+			throw 0;
+		}
+	}
 
 	try
 	{
@@ -5857,7 +5873,7 @@ void gl3cts::TransformFeedback::DrawXFBInstanced::prepareObjects()
 	gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, m_bo_id_uniform);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferRange call failed.");
 
-	glw::GLuint uniform_index = gl.getUniformBlockIndex(m_program_id_draw, s_uniform);
+	glw::GLuint uniform_index = m_glGetUniformBlockIndex(m_program_id_draw, s_uniform);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetUniformBlockIndex call failed.");
 
 	if (GL_INVALID_INDEX == uniform_index)
@@ -5865,7 +5881,7 @@ void gl3cts::TransformFeedback::DrawXFBInstanced::prepareObjects()
 		throw 0;
 	}
 
-	gl.uniformBlockBinding(m_program_id_draw, uniform_index, 0);
+	m_glUniformBlockBinding(m_program_id_draw, uniform_index, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniformBlockBinding call failed.");
 
 	/* Prepare framebuffer. */
@@ -6144,6 +6160,8 @@ gl3cts::TransformFeedback::DrawXFBStreamInstanced::DrawXFBStreamInstanced(deqp::
 	, m_bo_id_uniform(0)
 	, m_fbo_id(0)
 	, m_rbo_id(0)
+	, m_glGetUniformBlockIndex(DE_NULL)
+	, m_glUniformBlockBinding(DE_NULL)
 {
 }
 
@@ -6163,6 +6181,20 @@ tcu::TestNode::IterateResult gl3cts::TransformFeedback::DrawXFBStreamInstanced::
 
 	bool is_ok		= true;
 	bool test_error = false;
+
+	if (is_arb_ubo)
+	{
+		m_glGetUniformBlockIndex =
+			(GetUniformBlockIndex_ProcAddress)m_context.getRenderContext().getProcAddress("glGetUniformBlockIndex");
+
+		m_glUniformBlockBinding =
+			(UniformBlockBinding_ProcAddress)m_context.getRenderContext().getProcAddress("glUniformBlockBinding");
+
+		if (DE_NULL == m_glGetUniformBlockIndex || DE_NULL == m_glUniformBlockBinding)
+		{
+			throw 0;
+		}
+	}
 
 	/* Test. */
 	try
@@ -6295,7 +6327,7 @@ void gl3cts::TransformFeedback::DrawXFBStreamInstanced::prepareObjects()
 	gl.bindBufferBase(GL_UNIFORM_BUFFER, 0, m_bo_id_uniform);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBufferRange call failed.");
 
-	glw::GLuint uniform_index = gl.getUniformBlockIndex(m_program_id_draw, s_uniform);
+	glw::GLuint uniform_index = m_glGetUniformBlockIndex(m_program_id_draw, s_uniform);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetUniformBlockIndex call failed.");
 
 	if (GL_INVALID_INDEX == uniform_index)
@@ -6303,7 +6335,7 @@ void gl3cts::TransformFeedback::DrawXFBStreamInstanced::prepareObjects()
 		throw 0;
 	}
 
-	gl.uniformBlockBinding(m_program_id_draw, uniform_index, 0);
+	m_glUniformBlockBinding(m_program_id_draw, uniform_index, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glUniformBlockBinding call failed.");
 
 	/* Prepare framebuffer. */
