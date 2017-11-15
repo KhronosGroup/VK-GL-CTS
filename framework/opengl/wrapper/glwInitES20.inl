@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
+ * Generated from Khronos GL API description (gl.xml) revision eb89d296a623aaa8a440d9f060e8c68570d18f4b.
  */
 gl->activeTexture						= (glActiveTextureFunc)							loader->get("glActiveTexture");
 gl->attachShader						= (glAttachShaderFunc)							loader->get("glAttachShader");
