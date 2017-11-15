@@ -3375,6 +3375,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validMultiSamplingFunc(Valid
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
 
+	const int epsilon = 2;
 	bool result = true;
 	for (int o = 0; o < outputs.size(); ++o)
 	{
@@ -3382,11 +3383,32 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validMultiSamplingFunc(Valid
 		gl.readPixels(outputs[o].x, outputs[o].y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)&output);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels");
 
-		if (!commonUtils::compareUintColors(output, outputs[o].value, 2))
+		// The fragment shader for this case is rendering to a 2-sample FBO discarding
+		// sample 0 and rendering 100% green to sample 1, so we expect a green output.
+		// However, because sample locations may not be the same across implementations,
+		// and that can influence their weights during the multisample resolve,
+		// we can only check that there has to be some green in the output (since we know
+		// that we have a green sample being selected) and that the level of green is not
+		// 100% (since we know that pixel coverage is not 100% because we are
+		// discarding one of the samples).
+
+		int r1	= (output & 0xFF);
+		int g1	= ((output >> 8) & 0xFF);
+		int b1	= ((output >> 16) & 0xFF);
+		int a1	= ((output >> 24) & 0xFF);
+
+		int r2	= (outputs[o].value & 0xFF);
+		int b2	= ((outputs[o].value >> 16) & 0xFF);
+		int a2	= ((outputs[o].value >> 24) & 0xFF);
+
+		if (r1 < r2 - epsilon || r1 > r2 + epsilon ||
+		    g1 == 0x00 || g1 == 0xFF ||
+		    b1 < b2 - epsilon || b1 > b2 + epsilon ||
+		    a1 < a2 - epsilon || a1 > a2 + epsilon)
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "Invalid output color read at [" << (int)outputs[o].x << "/"
-							   << (int)outputs[o].y << "]. Expected: " << outputs[o].value << ", "
-							   << "Read: " << output << tcu::TestLog::EndMessage;
+							   << (int)outputs[o].y << "]. Expected 0xff00xx00, with xx anything but ff or 00. "
+							   << "Read: " << std::hex << output << tcu::TestLog::EndMessage;
 
 			result = false;
 		}
