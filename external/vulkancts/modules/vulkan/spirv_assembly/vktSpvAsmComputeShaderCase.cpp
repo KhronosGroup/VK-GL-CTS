@@ -526,6 +526,11 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		TCU_THROW(NotSupportedError, "shaderInt64 feature is not supported");
 	}
 
+	if ((m_features == COMPUTE_TEST_USES_FLOAT64) && !features.shaderFloat64)
+	{
+		TCU_THROW(NotSupportedError, "shaderFloat64 feature is not supported");
+	}
+
 	{
 		const InstanceInterface&			vki					= m_context.getInstanceInterface();
 		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();

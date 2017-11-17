@@ -2361,6 +2361,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				if (features.shaderInt64 != VK_TRUE)
 					TCU_THROW(NotSupportedError, "Device feature not supported: shaderInt64");
 			}
+			else if (feature == "shaderFloat64")
+			{
+				if (features.shaderFloat64 != VK_TRUE)
+					TCU_THROW(NotSupportedError, "Device feature not supported: shaderFloat64");
+			}
 			else
 			{
 				TCU_THROW(InternalError, (std::string("Unimplemented physical device feature: ") + feature).c_str());

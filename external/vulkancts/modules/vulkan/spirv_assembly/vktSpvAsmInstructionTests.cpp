@@ -2478,7 +2478,8 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	vector<deInt32>					outputInts3		(numElements, 0);
 	vector<deInt32>					outputInts4		(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(getComputeAsmShaderPreamble()) +
+		"${CAPABILITIES:opt}"
+		+ string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -2490,6 +2491,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
+		"${OPTYPE_DEFINITIONS:opt}"
 		"%buf     = OpTypeStruct %i32arr\n"
 		"%bufptr  = OpTypePointer Uniform %buf\n"
 		"%indata    = OpVariable %bufptr Uniform\n"
@@ -2504,6 +2506,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
+		"${TYPE_CONVERT:opt}"
 		"%idval     = OpLoad %uvec3 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
 		"%inloc     = OpAccessChain %i32ptr %indata %zero %x\n"
@@ -2525,6 +2528,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	}
 
 	const char addScToInput[]		= "OpIAdd %i32 %inval %sc_final";
+	const char addSc32ToInput[]		= "OpIAdd %i32 %inval %sc_final32";
 	const char selectTrueUsingSc[]	= "OpSelect %i32 %sc_final %inval %zero";
 	const char selectFalseUsingSc[]	= "OpSelect %i32 %sc_final %zero %inval";
 
@@ -2559,18 +2563,39 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntCase("not",					" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",				-43,	0,		addScToInput,		outputInts1));
 	cases.push_back(SpecConstantTwoIntCase("logicalnot",			"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",				1,		0,		selectFalseUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("select",				"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %zero",	1,		42,		addScToInput,		outputInts1));
-	// OpSConvert, OpFConvert: these two instructions involve ints/floats of different bitwidths.
+	cases.push_back(SpecConstantTwoIntCase("sconvert",				" %i32 0",		" %i32 0",		"%i16",		"SConvert             %sc_0",				-11200,	0,		addSc32ToInput,		outputInts3));
+	// -969998336 stored as 32-bit two's complement is the binary representation of -11200 as IEEE-754 Float
+	cases.push_back(SpecConstantTwoIntCase("fconvert",				" %f32 0",		" %f32 0",		"%f64",		"FConvert             %sc_0",				-969998336, 0,	addSc32ToInput,		outputInts3));
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
 		map<string, string>		specializations;
 		ComputeShaderSpec		spec;
+		ComputeTestFeatures		features = COMPUTE_TEST_USES_NONE;
 
 		specializations["SC_DEF0"]			= cases[caseNdx].scDefinition0;
 		specializations["SC_DEF1"]			= cases[caseNdx].scDefinition1;
 		specializations["SC_RESULT_TYPE"]	= cases[caseNdx].scResultType;
 		specializations["SC_OP"]			= cases[caseNdx].scOperation;
 		specializations["GEN_RESULT"]		= cases[caseNdx].resultOperation;
+
+		// Special SPIR-V code for SConvert-case
+		if (strcmp(cases[caseNdx].caseName, "sconvert") == 0)
+		{
+			features								= COMPUTE_TEST_USES_INT16;
+			specializations["CAPABILITIES"]			= "OpCapability Int16\n";							// Adds 16-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]	= "%i16 = OpTypeInt 16 1\n";						// Adds 16-bit integer type
+			specializations["TYPE_CONVERT"]			= "%sc_final32 = OpSConvert %i32 %sc_final\n";		// Converts 16-bit integer to 32-bit integer
+		}
+
+		// Special SPIR-V code for FConvert-case
+		if (strcmp(cases[caseNdx].caseName, "fconvert") == 0)
+		{
+			features								= COMPUTE_TEST_USES_FLOAT64;
+			specializations["CAPABILITIES"]			= "OpCapability Float64\n";							// Adds 64-bit float capability
+			specializations["OPTYPE_DEFINITIONS"]	= "%f64 = OpTypeFloat 64\n";						// Adds 64-bit float type
+			specializations["TYPE_CONVERT"]			= "%sc_final32 = OpConvertFToS %i32 %sc_final\n";	// Converts 64-bit float to 32-bit integer
+		}
 
 		spec.assembly = shaderTemplate.specialize(specializations);
 		spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
@@ -2579,7 +2604,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		spec.specConstants.push_back(cases[caseNdx].scActualValue0);
 		spec.specConstants.push_back(cases[caseNdx].scActualValue1);
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].caseName, cases[caseNdx].caseName, spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].caseName, cases[caseNdx].caseName, spec, features));
 	}
 
 	ComputeShaderSpec				spec;
@@ -5965,6 +5990,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"OpDecorate %sc_1  SpecId 1\n";
 
 	const char	typesAndConstants1[]	=
+		"${OPTYPE_DEFINITIONS:opt}"
 		"%sc_0      = OpSpecConstant${SC_DEF0}\n"
 		"%sc_1      = OpSpecConstant${SC_DEF1}\n"
 		"%sc_op     = OpSpecConstantOp ${SC_RESULT_TYPE} ${SC_OP}\n";
@@ -5973,6 +5999,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
+		"${TYPE_CONVERT:opt}"
 		"%result    = OpVariable %fp_v4f32 Function\n"
 		"             OpStore %result %param\n"
 		"%gen       = ${GEN_RESULT}\n"
@@ -6009,6 +6036,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 	outputColors2[3] = RGBA(0,   0,   255, 255);
 
 	const char addZeroToSc[]		= "OpIAdd %i32 %c_i32_0 %sc_op";
+	const char addZeroToSc32[]		= "OpIAdd %i32 %c_i32_0 %sc_op32";
 	const char selectTrueUsingSc[]	= "OpSelect %i32 %sc_op %c_i32_1 %c_i32_0";
 	const char selectFalseUsingSc[]	= "OpSelect %i32 %sc_op %c_i32_0 %c_i32_1";
 
@@ -6043,14 +6071,39 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntGraphicsCase("not",					" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",					-2,		0,		addZeroToSc,		outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalnot",			"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",					1,		0,		selectFalseUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("select",				"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %c_i32_0",	1,		1,		addZeroToSc,		outputColors2));
-	// OpSConvert, OpFConvert: these two instructions involve ints/floats of different bitwidths.
+	cases.push_back(SpecConstantTwoIntGraphicsCase("sconvert",				" %i32 0",		" %i32 0",		"%i16",		"SConvert             %sc_0",					-1,		0,		addZeroToSc32,		outputColors0));
+	// -1082130432 stored as 32-bit two's complement is the binary representation of -1 as IEEE-754 Float
+	cases.push_back(SpecConstantTwoIntGraphicsCase("fconvert",				" %f32 0",		" %f32 0",		"%f64",		"FConvert             %sc_0",					-1082130432, 0,	addZeroToSc32,		outputColors0));
 	// \todo[2015-12-1 antiagainst] OpQuantizeToF16
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
-		map<string, string>	specializations;
-		map<string, string>	fragments;
-		vector<deInt32>		specConstants;
+		map<string, string>			specializations;
+		map<string, string>			fragments;
+		vector<deInt32>				specConstants;
+		vector<string>				features;
+		PushConstants				noPushConstants;
+		GraphicsResources			noResources;
+		GraphicsInterfaces			noInterfaces;
+		std::vector<std::string>	noExtensions;
+
+		// Special SPIR-V code for SConvert-case
+		if (strcmp(cases[caseNdx].caseName, "sconvert") == 0)
+		{
+			features.push_back("shaderInt16");
+			fragments["capability"]					= "OpCapability Int16\n";					// Adds 16-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]	= "%i16 = OpTypeInt 16 1\n";				// Adds 16-bit integer type
+			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpSConvert %i32 %sc_op\n";	// Converts 16-bit integer to 32-bit integer
+		}
+
+		// Special SPIR-V code for FConvert-case
+		if (strcmp(cases[caseNdx].caseName, "fconvert") == 0)
+		{
+			features.push_back("shaderFloat64");
+			fragments["capability"]					= "OpCapability Float64\n";					// Adds 64-bit float capability
+			specializations["OPTYPE_DEFINITIONS"]	= "%f64 = OpTypeFloat 64\n";				// Adds 64-bit float type
+			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpConvertFToS %i32 %sc_op\n";	// Converts 64-bit float to 32-bit integer
+		}
 
 		specializations["SC_DEF0"]			= cases[caseNdx].scDefinition0;
 		specializations["SC_DEF1"]			= cases[caseNdx].scDefinition1;
@@ -6065,7 +6118,9 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		specConstants.push_back(cases[caseNdx].scActualValue0);
 		specConstants.push_back(cases[caseNdx].scActualValue1);
 
-		createTestsForAllStages(cases[caseNdx].caseName, inputColors, cases[caseNdx].expectedColors, fragments, specConstants, group.get());
+		createTestsForAllStages(
+			cases[caseNdx].caseName, inputColors, cases[caseNdx].expectedColors, fragments, specConstants,
+			noPushConstants, noResources, noInterfaces, noExtensions, features, VulkanFeatures(), group.get());
 	}
 
 	const char	decorations2[]			=

@@ -39,6 +39,7 @@ enum ComputeTestFeatures
 	COMPUTE_TEST_USES_INT16,
 	COMPUTE_TEST_USES_INT64,
 	COMPUTE_TEST_USES_INT16_INT64,
+	COMPUTE_TEST_USES_FLOAT64
 };
 
 class SpvAsmComputeShaderCase : public TestCase
