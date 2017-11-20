@@ -834,7 +834,7 @@ bool gl3cts::TransformFeedback::APIErrors::testExtension1(void)
 
 	for (glw::GLint i = 0; i < more_than_max_separate_attribs; ++i)
 	{
-		delete attrib[i];
+		delete[] attrib[i];
 	}
 
 	delete[] attrib;
