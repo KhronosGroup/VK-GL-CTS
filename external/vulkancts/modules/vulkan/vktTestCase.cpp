@@ -163,16 +163,38 @@ deUint32 getTargetInstanceVersion (const PlatformInterface& vkp)
 	return version;
 }
 
+std::pair<deUint32, deUint32> determineDeviceVersions(const PlatformInterface& vkp, deUint32 apiVersion, const tcu::CommandLine& cmdLine)
+{
+	Move<VkInstance>						preinstance				= createDefaultInstance(vkp, apiVersion);
+	InstanceDriver							preinterface			(vkp, preinstance.get());
+
+	const vector<VkPhysicalDevice>			devices					= enumeratePhysicalDevices(preinterface, preinstance.get());
+	deUint32								lowestDeviceVersion		= 0xFFFFFFFFu;
+	for (deUint32 deviceNdx = 0u; deviceNdx < devices.size(); ++deviceNdx)
+	{
+		const VkPhysicalDeviceProperties	props					= getPhysicalDeviceProperties(preinterface, devices[deviceNdx]);
+		if (props.apiVersion < lowestDeviceVersion)
+			lowestDeviceVersion = props.apiVersion;
+	}
+
+	const vk::VkPhysicalDevice				choosenDevice			= chooseDevice(preinterface, *preinstance, cmdLine);
+	const VkPhysicalDeviceProperties		props					= getPhysicalDeviceProperties(preinterface, choosenDevice);
+	const deUint32							choosenDeviceVersion	= props.apiVersion;
+
+	return std::make_pair(choosenDeviceVersion, lowestDeviceVersion);
+}
+
+
 Move<VkInstance> createInstance (const PlatformInterface& vkp, deUint32 apiVersion, const vector<string>& enabledExtensions, const tcu::CommandLine& cmdLine)
 {
-	const bool		isValidationEnabled	= cmdLine.isValidationEnabled();
-	vector<string>	enabledLayers;
+	const bool								isValidationEnabled	= cmdLine.isValidationEnabled();
+	vector<string>							enabledLayers;
 
 	// \note Extensions in core are not explicitly enabled even though
 	//		 they are in the extension list advertised to tests.
-	vector<const char*> coreExtensions;
+	vector<const char*>						coreExtensions;
 	getCoreInstanceExtensions(apiVersion, coreExtensions);
-	vector<string>	nonCoreExtensions	(removeExtensions(enabledExtensions, coreExtensions));
+	vector<string>							nonCoreExtensions	(removeExtensions(enabledExtensions, coreExtensions));
 
 	if (isValidationEnabled)
 	{
@@ -311,7 +333,7 @@ public:
 
 	VkInstance												getInstance							(void) const	{ return *m_instance;										}
 	const InstanceInterface&								getInstanceInterface				(void) const	{ return m_instanceInterface;								}
-	deUint32												getInstanceVersion					(void) const	{ return m_instanceVersion;									}
+	deUint32												getAvailableInstanceVersion			(void) const	{ return m_availableInstanceVersion;						}
 	const vector<string>&									getInstanceExtensions				(void) const	{ return m_instanceExtensions;								}
 
 	VkPhysicalDevice										getPhysicalDevice					(void) const	{ return m_physicalDevice;									}
@@ -331,15 +353,17 @@ public:
 
 private:
 
-	const deUint32						m_instanceVersion;
+	const deUint32						m_availableInstanceVersion;
+
+	const std::pair<deUint32, deUint32> m_deviceVersions;
+	const deUint32						m_usedApiVersion;
+
 	const vector<string>				m_instanceExtensions;
 	const Unique<VkInstance>			m_instance;
 	const InstanceDriver				m_instanceInterface;
 
 	const VkPhysicalDevice				m_physicalDevice;
-
 	const deUint32						m_deviceVersion;
-	const deUint32						m_usedApiVersion;
 
 	const deUint32						m_universalQueueFamilyIndex;
 	const VkPhysicalDeviceProperties	m_deviceProperties;
@@ -353,13 +377,17 @@ private:
 };
 
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
-	: m_instanceVersion				(getTargetInstanceVersion(vkPlatform))
-	, m_instanceExtensions			(addCoreInstanceExtensions(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)), m_instanceVersion))
-	, m_instance					(createInstance(vkPlatform, m_instanceVersion, m_instanceExtensions, cmdLine))
+	: m_availableInstanceVersion	(getTargetInstanceVersion(vkPlatform))
+	, m_deviceVersions				(determineDeviceVersions(vkPlatform, m_availableInstanceVersion, cmdLine))
+	, m_usedApiVersion				(deMinu32(m_availableInstanceVersion, m_deviceVersions.first))
+
+	, m_instanceExtensions			(addCoreInstanceExtensions(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)), m_usedApiVersion))
+	, m_instance					(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine))
+
 	, m_instanceInterface			(vkPlatform, *m_instance)
 	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
 	, m_deviceVersion				(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice).apiVersion)
-	, m_usedApiVersion				(deMin32(m_instanceVersion, m_deviceVersion))
+
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
 	, m_deviceExtensions			(addCoreDeviceExtensions(filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)), m_usedApiVersion))
@@ -367,6 +395,7 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_deviceFeatures.coreFeatures, m_deviceExtensions, cmdLine))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
+	DE_ASSERT(m_deviceVersions.first == m_deviceVersion);
 }
 
 DefaultDevice::~DefaultDevice (void)
@@ -405,7 +434,7 @@ Context::~Context (void)
 {
 }
 
-deUint32								Context::getInstanceVersion				(void) const { return m_device->getInstanceVersion();			}
+deUint32								Context::getAvailableInstanceVersion	(void) const { return m_device->getAvailableInstanceVersion();	}
 const vector<string>&					Context::getInstanceExtensions			(void) const { return m_device->getInstanceExtensions();		}
 vk::VkInstance							Context::getInstance					(void) const { return m_device->getInstance();					}
 const vk::InstanceInterface&			Context::getInstanceInterface			(void) const { return m_device->getInstanceInterface();			}
