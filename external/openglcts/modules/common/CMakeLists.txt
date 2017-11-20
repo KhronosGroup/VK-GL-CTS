@@ -36,12 +36,16 @@ set(GLCTS_COMMON_SRCS
 	glcInfoTests.hpp
 	glcInternalformatTests.cpp
 	glcInternalformatTests.hpp
+	glcMisc.cpp
+	glcMisc.hpp
 	glcMultipleContextsTests.cpp
 	glcMultipleContextsTests.hpp
 	glcNoErrorTests.cpp
 	glcNoErrorTests.hpp
 	glcRobustnessTests.cpp
 	glcRobustnessTests.hpp
+	glcPackedPixelsTests.cpp
+	glcPackedPixelsTests.hpp
 	glcPolygonOffsetClampTests.cpp
 	glcPolygonOffsetClampTests.hpp
 	glcParallelShaderCompileTests.cpp
