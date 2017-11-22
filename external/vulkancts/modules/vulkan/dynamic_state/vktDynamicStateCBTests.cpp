@@ -92,13 +92,13 @@ public:
 		const vk::VkClearColorValue clearColor = { { 1.0f, 1.0f, 1.0f, 1.0f } };
 		beginRenderPassWithClearColor(clearColor);
 
+		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
 		// bind states here
 		setDynamicViewportState(WIDTH, HEIGHT);
 		setDynamicRasterizationState();
 		setDynamicDepthStencilState();
 		setDynamicBlendState(0.33f, 0.1f, 0.66f, 0.5f);
-
-		m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
 		const vk::VkDeviceSize vertexBufferOffset = 0;
 		const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
