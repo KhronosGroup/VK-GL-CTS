@@ -44,6 +44,8 @@ namespace gl4cts
 
 typedef std::map<std::string, std::vector<std::string> > SpirVMapping;
 
+typedef std::vector<std::string> CapabilitiesVec;
+
 /**  Verifies if using SPIR-V modules for each shader stage works as expected. */
 class SpirvModulesPositiveTest : public deqp::TestCase
 {
@@ -210,8 +212,7 @@ public:
 
 	tcu::TestNode::IterateResult iterate();
 
-private:
-	/* Private structs */
+private: /* Private structs */
 	struct ValidationOutputStruct
 	{
 		GLubyte x, y, z;
@@ -267,6 +268,48 @@ private:
 	std::string m_tesselationEval;
 	std::string m_geometry;
 	std::string m_fragment;
+};
+
+/**  Verifies if Spir-V capabilities works as expected. */
+class SpirvValidationCapabilitiesTest : public deqp::TestCase
+{
+public:
+	/* Public methods */
+	SpirvValidationCapabilitiesTest(deqp::Context& context);
+
+	void init();
+	void deinit();
+
+	tcu::TestNode::IterateResult iterate();
+
+	int spirVCapabilityCutOff(std::string spirVSrcInput, std::string& spirVSrcOutput, CapabilitiesVec& capabilities,
+							  int& currentCapability);
+
+private:
+	typedef std::map<glu::ShaderType, CapabilitiesVec> CapabilitiesMap;
+
+	struct ShaderStage
+	{
+		std::string		name;
+		ShaderSource	source;
+		ShaderBinary	binary;
+		CapabilitiesVec caps;
+
+		ShaderStage()
+		{
+		}
+
+		ShaderStage(std::string _name) : name(_name)
+		{
+		}
+	};
+
+	typedef std::vector<ShaderStage> Pipeline;
+
+	/* Private methods */
+
+	/* Private members */
+	std::vector<Pipeline> m_pipelines;
 };
 
 /** Test group which encapsulates all sparse buffer conformance tests */
