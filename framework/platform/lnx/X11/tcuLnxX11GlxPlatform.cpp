@@ -35,8 +35,13 @@
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
 
+
 #ifndef GLX_CONTEXT_OPENGL_NO_ERROR_ARB
 #define GLX_CONTEXT_OPENGL_NO_ERROR_ARB 0x31B3
+#endif
+
+#ifndef PFNGLXSWAPINTERVALMESAPROC
+#define PFNGLXSWAPINTERVALMESAPROC PFNGLXSWAPINTERVALSGIPROC
 #endif
 
 namespace tcu
@@ -181,6 +186,7 @@ public:
 	virtual void						postIterate			(void);
 	virtual void						makeCurrent			(void);
 	void								clearCurrent		(void);
+	void								swapInterval		(int interval);
 	virtual const glw::Functions&		getFunctions		(void) const;
 	virtual const tcu::RenderTarget&	getRenderTarget		(void) const;
 	virtual glw::GenericFuncType		getProcAddress		(const char* name) const;
@@ -245,12 +251,17 @@ GlxDisplay::GlxDisplay (EventState& eventState, const char* name)
 	{
 		const int screen = XDefaultScreen(m_display);
 		// nVidia doesn't seem to report client-side extensions correctly,
-		// so only use server side
-		const char* const extensions =
+		// so use also server side
+		const char* const server_extensions =
 			TCU_CHECK_GLX(glXQueryServerString(m_display, screen, GLX_EXTENSIONS));
-		istringstream extStream(extensions);
-		m_extensions = set<string>(istream_iterator<string>(extStream),
+		const char* const client_extensions =
+			TCU_CHECK_GLX(glXQueryExtensionsString(m_display, screen));
+		istringstream srvExtStream(server_extensions);
+		istringstream cliExtStream(client_extensions);
+		m_extensions = set<string>(istream_iterator<string>(srvExtStream),
 								   istream_iterator<string>());
+		m_extensions.insert(istream_iterator<string>(cliExtStream),
+							istream_iterator<string>());
 	}
 }
 
@@ -714,6 +725,7 @@ GlxRenderContext::GlxRenderContext (const GlxContextFactory&	factory,
 	const GlxFunctionLoader loader;
 	makeCurrent();
 	glu::initFunctions(&m_functions, &loader, config.type.getAPI());
+	swapInterval(0);
 }
 
 GlxRenderContext::~GlxRenderContext (void)
@@ -739,6 +751,30 @@ void GlxRenderContext::clearCurrent (void)
 glw::GenericFuncType GlxRenderContext::getProcAddress(const char *name) const
 {
 	return glXGetProcAddress(reinterpret_cast<const GLubyte*>(name));
+}
+
+void GlxRenderContext::swapInterval (int interval)
+{
+	if (m_glxVisual.getGlxDisplay().isGlxExtensionSupported("GLX_EXT_swap_control"))
+	{
+		PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT =
+			reinterpret_cast<PFNGLXSWAPINTERVALEXTPROC>(
+				TCU_CHECK_GLX(
+					glXGetProcAddress(
+						reinterpret_cast<const GLubyte*>("glXSwapIntervalEXT"))));
+
+		glXSwapIntervalEXT(m_glxVisual.getXDisplay(), m_glxDrawable->getGLXDrawable(), interval);
+	}
+	else if (m_glxVisual.getGlxDisplay().isGlxExtensionSupported("GLX_MESA_swap_control"))
+	{
+		PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA =
+			reinterpret_cast<PFNGLXSWAPINTERVALMESAPROC>(
+				TCU_CHECK_GLX(
+					glXGetProcAddress(
+						reinterpret_cast<const GLubyte*>("glXSwapIntervalMESA"))));
+
+		glXSwapIntervalMESA(interval);
+	}
 }
 
 ContextType GlxRenderContext::getType (void) const

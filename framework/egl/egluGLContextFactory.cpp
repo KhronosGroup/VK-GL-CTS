@@ -466,6 +466,8 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 
 		m_glRenderTarget = tcu::RenderTarget(width, height, pixelFmt, depthBits, stencilBits, numSamples);
 	}
+
+	egl.swapInterval(m_eglDisplay, 0);
 }
 
 void RenderContext::destroy (void)
