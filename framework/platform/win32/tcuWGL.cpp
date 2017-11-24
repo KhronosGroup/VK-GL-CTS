@@ -136,6 +136,9 @@ typedef BOOL		(WINAPI* wglChoosePixelFormatARBFunc)		(HDC hdc, const int *piAttr
 typedef HGLRC		(WINAPI* wglCreateContextAttribsARBFunc)	(HDC hdc, HGLRC hshareContext, const int* attribList);
 typedef const char*	(WINAPI* wglGetExtensionsStringARBFunc)		(HDC hdc);
 
+// WGL_EXT_swap_control
+typedef BOOL		(WINAPI* wglSwapIntervalEXTFunc)			(int interval);
+
 DE_END_EXTERN_C
 
 namespace tcu
@@ -162,6 +165,10 @@ struct Functions
 	// WGL_ARB_create_context
 	wglCreateContextAttribsARBFunc		createContextAttribsARB;
 	wglGetExtensionsStringARBFunc		getExtensionsStringARB;
+
+	// WGL_EXT_swap_control
+	wglSwapIntervalEXTFunc				swapIntervalEXT;
+
 
 	Functions (void)
 		: createContext				(DE_NULL)
@@ -248,6 +255,9 @@ Library::Library (HINSTANCE instance)
 	// WGL_ARB_create_context
 	m_functions.createContextAttribsARB		= (wglCreateContextAttribsARBFunc)m_functions.getProcAddress("wglCreateContextAttribsARB");
 	m_functions.getExtensionsStringARB		= (wglGetExtensionsStringARBFunc)m_functions.getProcAddress("wglGetExtensionsStringARB");
+
+	// WGL_EXT_swap_control
+	m_functions.swapIntervalEXT				= (wglSwapIntervalEXTFunc)m_functions.getProcAddress("wglSwapIntervalEXT");
 
 	m_functions.makeCurrent(tmpWindow.getDeviceContext(), NULL);
 	m_functions.deleteContext(tmpCtx);
@@ -525,6 +535,9 @@ Context::Context (const Core*						core,
 		wgl.deleteContext(m_context);
 		TCU_THROW(ResourceError, "wglMakeCurrent() failed");
 	}
+
+	if (core->getLibrary()->isWglExtensionSupported("WGL_EXT_swap_control"))
+		core->getLibrary()->getFunctions().swapIntervalEXT(0);
 }
 
 Context::~Context (void)
