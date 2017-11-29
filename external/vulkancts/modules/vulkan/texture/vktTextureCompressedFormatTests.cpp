@@ -127,7 +127,16 @@ tcu::TestStatus Compressed2DTestInstance::iterate (void)
 	sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat), m_texture->getTexture(), &texCoord[0], sampleParams);
 
 	// Compare and log.
-	const bool isOk = compareImages(log, referenceFrame, rendered, pixelFormat.getColorThreshold() + tcu::RGBA(2, 2, 2, 2));
+	tcu::RGBA threshold;
+
+	if (isBcBitExactFormat(m_compressedFormat))
+		threshold = tcu::RGBA(1, 1, 1, 1);
+	else if (isBcFormat(m_compressedFormat))
+		threshold = tcu::RGBA(8, 8, 8, 8);
+	else
+		threshold = pixelFormat.getColorThreshold() + tcu::RGBA(2, 2, 2, 2);
+
+	const bool isOk = compareImages(log, referenceFrame, rendered, threshold);
 
 	return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
 }
@@ -179,7 +188,24 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		{ VK_FORMAT_ASTC_12x10_UNORM_BLOCK		},
 		{ VK_FORMAT_ASTC_12x10_SRGB_BLOCK		},
 		{ VK_FORMAT_ASTC_12x12_UNORM_BLOCK		},
-		{ VK_FORMAT_ASTC_12x12_SRGB_BLOCK		}
+		{ VK_FORMAT_ASTC_12x12_SRGB_BLOCK		},
+
+		{ VK_FORMAT_BC1_RGB_UNORM_BLOCK			},
+		{ VK_FORMAT_BC1_RGB_SRGB_BLOCK			},
+		{ VK_FORMAT_BC1_RGBA_UNORM_BLOCK		},
+		{ VK_FORMAT_BC1_RGBA_SRGB_BLOCK			},
+		{ VK_FORMAT_BC2_UNORM_BLOCK				},
+		{ VK_FORMAT_BC2_SRGB_BLOCK				},
+		{ VK_FORMAT_BC3_UNORM_BLOCK				},
+		{ VK_FORMAT_BC3_SRGB_BLOCK				},
+		{ VK_FORMAT_BC4_UNORM_BLOCK				},
+		{ VK_FORMAT_BC4_SNORM_BLOCK				},
+		{ VK_FORMAT_BC5_UNORM_BLOCK				},
+		{ VK_FORMAT_BC5_SNORM_BLOCK				},
+		{ VK_FORMAT_BC6H_UFLOAT_BLOCK			},
+		{ VK_FORMAT_BC6H_SFLOAT_BLOCK			},
+		{ VK_FORMAT_BC7_UNORM_BLOCK				},
+		{ VK_FORMAT_BC7_SRGB_BLOCK				}
 	};
 
 	const struct {
