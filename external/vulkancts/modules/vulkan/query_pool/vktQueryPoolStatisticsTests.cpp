@@ -1058,12 +1058,11 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 	const VkDevice			device		= m_context.getDevice();
 	deUint64				result		= 0u;
 	deUint64				expectedMin	= 0u;
-	deUint64				expectedMax	= 0u;
+
 	switch(m_parametersGraphic.queryStatisticFlags)
 	{
 		case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT:
 			expectedMin = 16u;
-			expectedMax = expectedMin + 3u;
 			break;
 		case VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT:
 			expectedMin =	m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST					? 15u :
@@ -1072,7 +1071,6 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 							m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY		?  6u :
 							m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY	?  8u :
 							16u;
-			expectedMax =	m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY		? 12u : 19u;
 			break;
 		case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT:
 			expectedMin =	m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST						? 16u :
@@ -1086,7 +1084,6 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 							m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY		?  2u :
 							m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY	?  6u :
 							0u;
-			expectedMax = expectedMin + 3u;
 			break;
 		case VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT:
 			expectedMin =	m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST						?     9u :
@@ -1100,7 +1097,6 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 							m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY		?   992u :
 							m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY	?  3072u :
 							0u;
-			expectedMax = 4u * expectedMin;
 			break;
 		default:
 			DE_ASSERT(0);
@@ -1108,7 +1104,7 @@ tcu::TestStatus VertexShaderTestInstance::checkResult (VkQueryPool queryPool)
 	}
 
 	VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
-	if (result < expectedMin || result > expectedMax)
+	if (result < expectedMin)
 		return tcu::TestStatus::fail("QueryPoolResults incorrect");
 
 	if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP && !checkImage())
@@ -1458,7 +1454,6 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult (VkQueryPool queryPool)
 	const VkDevice			device		= m_context.getDevice();
 	deUint64				result		= 0u;
 	deUint64				expectedMin	= 0u;
-	deUint64				expectedMax	= 0u;
 
 	switch(m_parametersGraphic.queryStatisticFlags)
 	{
@@ -1495,10 +1490,8 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult (VkQueryPool queryPool)
 		break;
 	}
 
-	expectedMax = expectedMin + 1;
-
 	VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
-	if (result < expectedMin || result > expectedMax)
+	if (result < expectedMin)
 		return tcu::TestStatus::fail("QueryPoolResults incorrect");
 
 	if ( (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST || m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP ) && !checkImage())
@@ -1836,23 +1829,21 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult (VkQueryPool queryPo
 	const VkDevice			device		= m_context.getDevice();
 	deUint64				result		= 0u;
 	deUint64				expectedMin	= 0u;
-	deUint64				expectedMax	= 0u;
+
 	switch(m_parametersGraphic.queryStatisticFlags)
 	{
 		case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT:
 			expectedMin = 4u;
-			expectedMax = expectedMin * 4u;
 			break;
 		case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT:
 			expectedMin = 100u;
-			expectedMax = expectedMin * 4u;
 			break;
 		default:
 			DE_ASSERT(0);
 			break;
 	}
 	VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, 1u, sizeof(deUint64), &result, 0u, VK_QUERY_RESULT_64_BIT));
-	if (result < expectedMin || result > expectedMax)
+	if (result < expectedMin)
 		return tcu::TestStatus::fail("QueryPoolResults incorrect");
 
 	if (!checkImage())
