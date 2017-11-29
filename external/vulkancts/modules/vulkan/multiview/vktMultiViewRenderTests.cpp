@@ -41,6 +41,8 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuRGBA.hpp"
 
+#include "deRandom.hpp"
+#include "deMath.h"
 #include "deSharedPtr.hpp"
 
 namespace vkt
@@ -69,23 +71,32 @@ enum TestType
 	TEST_TYPE_INSTANCED_RENDERING,
 	TEST_TYPE_INPUT_RATE_INSTANCE,
 	TEST_TYPE_DRAW_INDIRECT,
+	TEST_TYPE_DRAW_INDIRECT_INDEXED,
+	TEST_TYPE_DRAW_INDEXED,
 	TEST_TYPE_CLEAR_ATTACHMENTS,
 	TEST_TYPE_SECONDARY_CMD_BUFFER,
 	TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY,
+	TEST_TYPE_POINT_SIZE,
+	TEST_TYPE_MULTISAMPLE,
 	TEST_TYPE_LAST
 };
 
 struct TestParameters
 {
-	VkExtent3D			extent;
-	vector<deUint32>	viewMasks;
-	TestType			viewIndex;
+	VkExtent3D				extent;
+	vector<deUint32>		viewMasks;
+	TestType				viewIndex;
+	VkSampleCountFlagBits	samples;
+	VkFormat				colorFormat;
 };
+
+const int	TEST_POINT_SIZE_SMALL	= 2;
+const int	TEST_POINT_SIZE_WIDE	= 4;
 
 class ImageAttachment
 {
 public:
-				ImageAttachment	(VkDevice logicalDevice, DeviceInterface& device, Allocator& allocator, const VkExtent3D extent, VkFormat colorFormat);
+				ImageAttachment	(VkDevice logicalDevice, DeviceInterface& device, Allocator& allocator, const VkExtent3D extent, VkFormat colorFormat, const VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
 	VkImageView	getImageView	(void) const
 	{
 		return *m_imageView;
@@ -100,11 +111,11 @@ private:
 	Move<VkImageView>		m_imageView;
 };
 
-ImageAttachment::ImageAttachment (VkDevice logicalDevice, DeviceInterface& device, Allocator& allocator, const VkExtent3D extent, VkFormat colorFormat)
+ImageAttachment::ImageAttachment (VkDevice logicalDevice, DeviceInterface& device, Allocator& allocator, const VkExtent3D extent, VkFormat colorFormat, const VkSampleCountFlagBits samples)
 {
 	const VkImageSubresourceRange	colorImageSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, extent.depth);
-	const VkImageCreateInfo			colorAttachmentImageInfo	= makeImageCreateInfo(VK_IMAGE_TYPE_2D, extent, colorFormat,
-																VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+	const VkImageUsageFlags			imageUsageFlags				= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	const VkImageCreateInfo			colorAttachmentImageInfo	= makeImageCreateInfo(VK_IMAGE_TYPE_2D, extent, colorFormat, imageUsageFlags, samples);
 
 	m_image							= createImage(device, logicalDevice, &colorAttachmentImageInfo);
 	m_allocationImage				= allocator.allocate(getImageMemoryRequirements(device, logicalDevice, *m_image), MemoryRequirement::Any);
@@ -119,16 +130,6 @@ public:
 protected:
 	typedef de::SharedPtr<Unique<VkPipeline> >		PipelineSp;
 	typedef de::SharedPtr<Unique<VkShaderModule> >	ShaderModuleSP;
-
-	struct VertexData
-	{
-		VertexData (const tcu::Vec4 position_, const tcu::Vec4 color_)
-			: position	(position_)
-			, color		(color_)
-		{}
-		tcu::Vec4	position;
-		tcu::Vec4	color;
-	};
 
 	virtual tcu::TestStatus			iterate					(void);
 	virtual void					beforeDraw				(void);
@@ -152,18 +153,28 @@ protected:
 	void							readImage				(VkImage image, const tcu::PixelBufferAccess& dst);
 	bool							checkImage				(tcu::ConstPixelBufferAccess& dst);
 	MovePtr<tcu::Texture2DArray>	imageData				(void);
+	const tcu::Vec4					getQuarterRefColor		(const deUint32 quarterNdx, const int colorNdx, const int layerNdx, const bool background = true);
+	void							appendVertex			(const tcu::Vec4& coord, const tcu::Vec4& color);
+	void							setPoint				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& pointColor, const int pointSize, const int layerNdx, const deUint32 quarter);
+	void							fillTriangle			(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter);
 
 	const TestParameters			m_parameters;
-	VkFormat						m_colorFormat;
+	const int						m_seed;
 	const deUint32					m_squareCount;
 	Move<VkDevice>					m_logicalDevice;
 	MovePtr<DeviceInterface>		m_device;
 	MovePtr<Allocator>				m_allocator;
 	deUint32						m_queueFamilyIndex;
 	VkQueue							m_queue;
-	vector<VertexData>				m_data;
-	Move<VkBuffer>					m_vertexBuffer;
-	MovePtr<Allocation>				m_allocationBuffer;
+	vector<tcu::Vec4>				m_vertexCoord;
+	Move<VkBuffer>					m_vertexCoordBuffer;
+	MovePtr<Allocation>				m_vertexCoordAlloc;
+	vector<tcu::Vec4>				m_vertexColor;
+	Move<VkBuffer>					m_vertexColorBuffer;
+	MovePtr<Allocation>				m_vertexColorAlloc;
+	vector<deUint32>				m_vertexIndices;
+	Move<VkBuffer>					m_vertexIndicesBuffer;
+	MovePtr<Allocation>				m_vertexIndicesAllocation;
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
 	de::SharedPtr<ImageAttachment>	m_colorAttachment;
@@ -171,11 +182,11 @@ protected:
 };
 
 MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, const TestParameters& parameters)
-	: TestInstance		(context)
-	, m_parameters		(fillMissingParameters(parameters))
-	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_squareCount		(4u)
-	,m_queueFamilyIndex	(0u)
+	: TestInstance			(context)
+	, m_parameters			(fillMissingParameters(parameters))
+	, m_seed				(context.getTestContext().getCommandLine().getBaseSeed())
+	, m_squareCount			(4u)
+	, m_queueFamilyIndex	(0u)
 {
 	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview"))
 		throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
@@ -183,7 +194,7 @@ MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, cons
 	createMultiViewDevices();
 
 	// Color attachment
-	m_colorAttachment = de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_colorFormat));
+	m_colorAttachment = de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_parameters.colorFormat, m_parameters.samples));
 }
 
 tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
@@ -191,7 +202,7 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
 	const deUint32								subpassCount				= static_cast<deUint32>(m_parameters.viewMasks.size());
 
 	// FrameBuffer & renderPass
-	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_colorFormat, m_parameters.viewMasks));
+	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks));
 
 	vector<VkImageView>							attachments;
 	attachments.push_back(m_colorAttachment->getImageView());
@@ -219,10 +230,11 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
 	draw(subpassCount, *renderPass, *frameBuffer, pipelines);
 
 	{
-		vector<deUint8>			pixelAccessData	(m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * mapVkFormat(m_colorFormat).getPixelSize());
-		tcu::PixelBufferAccess	dst				(mapVkFormat(m_colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth, pixelAccessData.data());
+		vector<deUint8>			pixelAccessData	(m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * mapVkFormat(m_parameters.colorFormat).getPixelSize());
+		tcu::PixelBufferAccess	dst				(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth, pixelAccessData.data());
 
 		readImage(m_colorAttachment->getImage(), dst);
+
 		if (!checkImage(dst))
 			return tcu::TestStatus::fail("Fail");
 	}
@@ -240,13 +252,18 @@ void MultiViewRenderTestInstance::beforeDraw (void)
 		0u,							//deUint32				baseArrayLayer;
 		m_parameters.extent.depth,	//deUint32				layerCount;
 	};
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT);
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		0, 0,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
 	const VkClearValue renderPassClearValue = makeClearValueColor(tcu::Vec4(0.0f));
 	m_device->cmdClearColorImage(*m_cmdBuffer, m_colorAttachment->getImage(),  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &renderPassClearValue.color, 1, &subresourceRange);
 
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
 void MultiViewRenderTestInstance::afterDraw (void)
@@ -260,15 +277,18 @@ void MultiViewRenderTestInstance::afterDraw (void)
 		m_parameters.extent.depth,	//deUint32				layerCount;
 	};
 
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(),
-		subresourceRange, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
-void MultiViewRenderTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
+void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
-	const VkDeviceSize				vertexBufferOffset		= 0u;
+	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
 
 	const VkRenderPassBeginInfo		renderPassBeginInfo		=
@@ -288,14 +308,20 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount,VkRenderPass
 
 	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
+	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+	if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDEXED)
+		m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
 		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
-			m_device->cmdDraw(*m_cmdBuffer, 4u, 1u, (drawNdx + subpassNdx % m_squareCount) * 4u, 0u);
+			if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDEXED)
+				m_device->cmdDrawIndexed(*m_cmdBuffer, 4u, 1u, (drawNdx + subpassNdx % m_squareCount) * 4u, 0u, 0u);
+			else
+				m_device->cmdDraw(*m_cmdBuffer, 4u, 1u, (drawNdx + subpassNdx % m_squareCount) * 4u, 0u);
 
 		if (subpassNdx < subpassCount - 1u)
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
@@ -312,28 +338,51 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount,VkRenderPass
 void MultiViewRenderTestInstance::createVertexData (void)
 {
 	tcu::Vec4 color = tcu::Vec4(0.2f, 0.0f, 0.1f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4(-1.0f,-1.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color));
+
+	appendVertex(tcu::Vec4(-1.0f,-1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color);
 
 	color = tcu::Vec4(0.3f, 0.0f, 0.2f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 1.0f, 1.0f, 1.0f), color));
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 1.0f, 1.0f, 1.0f), color);
 
 	color = tcu::Vec4(0.4f, 0.2f, 0.3f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 1.0f,-1.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 1.0f, 0.0f, 1.0f, 1.0f), color));
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f,-1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 0.0f, 1.0f, 1.0f), color);
 
 	color = tcu::Vec4(0.5f, 0.0f, 0.4f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 1.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 1.0f, 0.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 1.0f, 1.0f, 1.0f, 1.0f), color));
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 1.0f, 1.0f, 1.0f), color);
+
+	if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDEXED || m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+	{
+		const size_t		verticesCount	= m_vertexCoord.size();
+		vector<tcu::Vec4>	vertexColor		(verticesCount);
+		vector<tcu::Vec4>	vertexCoord		(verticesCount);
+
+		m_vertexIndices.clear();
+		m_vertexIndices.reserve(verticesCount);
+		for (deUint32 vertexIdx = 0; vertexIdx < verticesCount; ++vertexIdx)
+			m_vertexIndices.push_back(vertexIdx);
+
+		de::Random(m_seed).shuffle(m_vertexIndices.begin(), m_vertexIndices.end());
+
+		for (deUint32 vertexIdx = 0; vertexIdx < verticesCount; ++vertexIdx)
+			vertexColor[m_vertexIndices[vertexIdx]] = m_vertexColor[vertexIdx];
+		m_vertexColor.assign(vertexColor.begin(), vertexColor.end());
+
+		for (deUint32 vertexIdx = 0; vertexIdx < verticesCount; ++vertexIdx)
+			vertexCoord[m_vertexIndices[vertexIdx]] = m_vertexCoord[vertexIdx];
+		m_vertexCoord.assign(vertexCoord.begin(), vertexCoord.end());
+	}
 }
 
 TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestParameters& parameters)
@@ -376,17 +425,58 @@ TestParameters MultiViewRenderTestInstance::fillMissingParameters (const TestPar
 
 void MultiViewRenderTestInstance::createVertexBuffer (void)
 {
-	const VkDeviceSize						vertexDataSize			= static_cast<VkDeviceSize>(deAlignSize(static_cast<size_t>( m_data.size() * sizeof(VertexData)),
-																	static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
-	const VkBufferCreateInfo				bufferInfo				= makeBufferCreateInfo(vertexDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	DE_ASSERT(m_vertexCoord.size() == m_vertexColor.size());
+	DE_ASSERT(m_vertexCoord.size() != 0);
 
-	m_vertexBuffer		= createBuffer(*m_device, *m_logicalDevice, &bufferInfo);
-	m_allocationBuffer	= m_allocator->allocate(getBufferMemoryRequirements(*m_device, *m_logicalDevice, *m_vertexBuffer),  MemoryRequirement::HostVisible);
+	const size_t	nonCoherentAtomSize	= static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize);
 
-	// Init host buffer data
-	VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *m_vertexBuffer, m_allocationBuffer->getMemory(), m_allocationBuffer->getOffset()));
-	deMemcpy(m_allocationBuffer->getHostPtr(), m_data.data(), static_cast<size_t>(vertexDataSize));
-	flushMappedMemoryRange(*m_device, *m_logicalDevice, m_allocationBuffer->getMemory(), m_allocationBuffer->getOffset(), static_cast<size_t>(vertexDataSize));
+	// Upload vertex coordinates
+	{
+		const size_t				dataSize		= static_cast<size_t>(m_vertexCoord.size() * sizeof(m_vertexCoord[0]));
+		const VkDeviceSize			bufferDataSize	= static_cast<VkDeviceSize>(deAlignSize(dataSize, nonCoherentAtomSize));
+		const VkBufferCreateInfo	bufferInfo		= makeBufferCreateInfo(bufferDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+		m_vertexCoordBuffer	= createBuffer(*m_device, *m_logicalDevice, &bufferInfo);
+		m_vertexCoordAlloc	= m_allocator->allocate(getBufferMemoryRequirements(*m_device, *m_logicalDevice, *m_vertexCoordBuffer), MemoryRequirement::HostVisible);
+
+		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *m_vertexCoordBuffer, m_vertexCoordAlloc->getMemory(), m_vertexCoordAlloc->getOffset()));
+		deMemcpy(m_vertexCoordAlloc->getHostPtr(), m_vertexCoord.data(), static_cast<size_t>(dataSize));
+		flushMappedMemoryRange(*m_device, *m_logicalDevice, m_vertexCoordAlloc->getMemory(), m_vertexCoordAlloc->getOffset(), static_cast<size_t>(bufferDataSize));
+	}
+
+	// Upload vertex colors
+	{
+		const size_t				dataSize		= static_cast<size_t>(m_vertexColor.size() * sizeof(m_vertexColor[0]));
+		const VkDeviceSize			bufferDataSize	= static_cast<VkDeviceSize>(deAlignSize(dataSize, nonCoherentAtomSize));
+		const VkBufferCreateInfo	bufferInfo		= makeBufferCreateInfo(bufferDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+		m_vertexColorBuffer	= createBuffer(*m_device, *m_logicalDevice, &bufferInfo);
+		m_vertexColorAlloc	= m_allocator->allocate(getBufferMemoryRequirements(*m_device, *m_logicalDevice, *m_vertexColorBuffer), MemoryRequirement::HostVisible);
+
+		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *m_vertexColorBuffer, m_vertexColorAlloc->getMemory(), m_vertexColorAlloc->getOffset()));
+		deMemcpy(m_vertexColorAlloc->getHostPtr(), m_vertexColor.data(), static_cast<size_t>(dataSize));
+		flushMappedMemoryRange(*m_device, *m_logicalDevice, m_vertexColorAlloc->getMemory(), m_vertexColorAlloc->getOffset(), static_cast<size_t>(bufferDataSize));
+	}
+
+	// Upload vertex indices
+	if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDEXED || m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+	{
+		const size_t				dataSize		= static_cast<size_t>(m_vertexIndices.size() * sizeof(m_vertexIndices[0]));
+		const VkDeviceSize			bufferDataSize	= static_cast<VkDeviceSize>(deAlignSize(dataSize, nonCoherentAtomSize));
+		const VkBufferCreateInfo	bufferInfo		= makeBufferCreateInfo(bufferDataSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+		DE_ASSERT(m_vertexIndices.size() == m_vertexCoord.size());
+
+		m_vertexIndicesBuffer		= createBuffer(*m_device, *m_logicalDevice, &bufferInfo);
+		m_vertexIndicesAllocation	= m_allocator->allocate(getBufferMemoryRequirements(*m_device, *m_logicalDevice, *m_vertexIndicesBuffer), MemoryRequirement::HostVisible);
+
+		// Init host buffer data
+		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *m_vertexIndicesBuffer, m_vertexIndicesAllocation->getMemory(), m_vertexIndicesAllocation->getOffset()));
+		deMemcpy(m_vertexIndicesAllocation->getHostPtr(), m_vertexIndices.data(), static_cast<size_t>(dataSize));
+		flushMappedMemoryRange(*m_device, *m_logicalDevice, m_vertexIndicesAllocation->getMemory(), m_vertexIndicesAllocation->getOffset(), static_cast<size_t>(bufferDataSize));
+	}
+	else
+		DE_ASSERT(m_vertexIndices.empty());
 }
 
 void MultiViewRenderTestInstance::createMultiViewDevices (void)
@@ -397,7 +487,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 	for (; m_queueFamilyIndex < queueFamilyProperties.size(); ++m_queueFamilyIndex)
 	{
-		if (queueFamilyProperties[m_queueFamilyIndex].queueFlags | VK_QUEUE_GRAPHICS_BIT )
+		if ((queueFamilyProperties[m_queueFamilyIndex].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
 			break;
 	}
 
@@ -532,8 +622,12 @@ void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, S
 		case TEST_TYPE_INSTANCED_RENDERING:
 		case TEST_TYPE_INPUT_RATE_INSTANCE:
 		case TEST_TYPE_DRAW_INDIRECT:
+		case TEST_TYPE_DRAW_INDIRECT_INDEXED:
+		case TEST_TYPE_DRAW_INDEXED:
 		case TEST_TYPE_SECONDARY_CMD_BUFFER:
 		case TEST_TYPE_INPUT_ATTACHMENTS:
+		case TEST_TYPE_POINT_SIZE:
+		case TEST_TYPE_MULTISAMPLE:
 			shaderModule[VK_SHADER_STAGE_VERTEX_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("vertex"), 0))));
 			shaderModule[VK_SHADER_STAGE_FRAGMENT_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("fragment"), 0))));
 			break;
@@ -582,48 +676,58 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 																	const deUint32								subpass,
 																	const VkVertexInputRate						vertexInputRate)
 {
-	const VkVertexInputBindingDescription			vertexInputBindingDescription		=
+	const VkVertexInputBindingDescription			vertexInputBindingDescriptions[]	=
 	{
-		0u,											// binding;
-		static_cast<deUint32>(sizeof(VertexData)),	// stride;
-		vertexInputRate								// inputRate
+		{
+			0u,													// binding;
+			static_cast<deUint32>(sizeof(m_vertexCoord[0])),	// stride;
+			vertexInputRate										// inputRate
+		},
+		{
+			1u,													// binding;
+			static_cast<deUint32>(sizeof(m_vertexColor[0])),	// stride;
+			vertexInputRate										// inputRate
+		}
 	};
 
 	const VkVertexInputAttributeDescription			vertexInputAttributeDescriptions[]	=
 	{
 		{
-			0u,
-			0u,
-			VK_FORMAT_R32G32B32A32_SFLOAT,
-			0u
+			0u,											// deUint32	location;
+			0u,											// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,				// VkFormat	format;
+			0u											// deUint32	offset;
 		},	// VertexElementData::position
 		{
-			1u,
-			0u,
-			VK_FORMAT_R32G32B32A32_SFLOAT,
-			static_cast<deUint32>(sizeof(tcu::Vec4))
+			1u,											// deUint32	location;
+			1u,											// deUint32	binding;
+			VK_FORMAT_R32G32B32A32_SFLOAT,				// VkFormat	format;
+			0u											// deUint32	offset;
 		},	// VertexElementData::color
 	};
 
 	const VkPipelineVertexInputStateCreateInfo		vertexInputStateParams				=
-	{																	// sType;
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// pNext;
-		NULL,															// flags;
-		0u,																// vertexBindingDescriptionCount;
-		1u,																// pVertexBindingDescriptions;
-		&vertexInputBindingDescription,									// vertexAttributeDescriptionCount;
-		2u,																// pVertexAttributeDescriptions;
-		vertexInputAttributeDescriptions
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
+		NULL,															// const void*								pNext;
+		0u,																// VkPipelineVertexInputStateCreateFlags	flags;
+		DE_LENGTH_OF_ARRAY(vertexInputBindingDescriptions),				// deUint32									vertexBindingDescriptionCount;
+		vertexInputBindingDescriptions,									// const VkVertexInputBindingDescription*	pVertexBindingDescriptions;
+		DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),			// deUint32									vertexAttributeDescriptionCount;
+		vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
 
+	const VkPrimitiveTopology						topology							= (TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST :
+																						  (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex) ? VK_PRIMITIVE_TOPOLOGY_POINT_LIST :
+																						  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
 
 	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateParams			=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,																				// VkStructureType							sType;
-		DE_NULL,																																	// const void*								pNext;
-		0u,																																			// VkPipelineInputAssemblyStateCreateFlags	flags;
-		(TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// VkPrimitiveTopology						topology;
-		VK_FALSE,																																	// VkBool32									primitiveRestartEnable;
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,														// const void*								pNext;
+		0u,																// VkPipelineInputAssemblyStateCreateFlags	flags;
+		topology,														// VkPrimitiveTopology						topology;
+		VK_FALSE,														// VkBool32									primitiveRestartEnable;
 	};
 
 	const VkViewport								viewport							=
@@ -642,7 +746,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		{ m_parameters.extent.width, m_parameters.extent.height }	// VkExtent2D	extent;
 	};
 
-	const VkPipelineViewportStateCreateInfo		viewportStateParams						=
+	const VkPipelineViewportStateCreateInfo			viewportStateParams					=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType						sType;
 		DE_NULL,												// const void*							pNext;
@@ -670,12 +774,14 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		1.0f,														// float									lineWidth;
 	};
 
+	const VkSampleCountFlagBits						sampleCountFlagBits					= (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex) ? VK_SAMPLE_COUNT_2_BIT :
+																						  VK_SAMPLE_COUNT_1_BIT;
 	const VkPipelineMultisampleStateCreateInfo		multisampleStateParams				=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
 		DE_NULL,													// const void*								pNext;
 		0u,															// VkPipelineMultisampleStateCreateFlags	flags;
-		VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits					rasterizationSamples;
+		sampleCountFlagBits,										// VkSampleCountFlagBits					rasterizationSamples;
 		VK_FALSE,													// VkBool32									sampleShadingEnable;
 		0.0f,														// float									minSampleShading;
 		DE_NULL,													// const VkSampleMask*						pSampleMask;
@@ -782,11 +888,11 @@ void MultiViewRenderTestInstance::readImage (VkImage image, const tcu::PixelBuff
 {
 	Move<VkBuffer>				buffer;
 	MovePtr<Allocation>			bufferAlloc;
-	const VkDeviceSize			pixelDataSize	= dst.getWidth() * dst.getHeight() * dst.getDepth() * mapVkFormat(m_colorFormat).getPixelSize();
+	const VkDeviceSize			pixelDataSize	= dst.getWidth() * dst.getHeight() * dst.getDepth() * mapVkFormat(m_parameters.colorFormat).getPixelSize();
 
 	// Create destination buffer
 	{
-		const VkBufferCreateInfo bufferParams =
+		const VkBufferCreateInfo bufferParams	=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
@@ -847,8 +953,10 @@ void MultiViewRenderTestInstance::readImage (VkImage image, const tcu::PixelBuff
 			m_parameters.extent.depth,	// deUint32				arraySize;
 		};
 
-		imageBarrier (*m_device, *m_cmdBuffer, image, subresourceRange, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-						VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		imageBarrier (*m_device, *m_cmdBuffer, image, subresourceRange,
+			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 		m_device->cmdCopyImageToBuffer(*m_cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1u, &copyRegion);
 		m_device->cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0u, DE_NULL);
@@ -864,27 +972,100 @@ void MultiViewRenderTestInstance::readImage (VkImage image, const tcu::PixelBuff
 bool MultiViewRenderTestInstance::checkImage (tcu::ConstPixelBufferAccess& renderedFrame)
 {
 	const MovePtr<tcu::Texture2DArray>	referenceFrame	= imageData();
+	const bool							result			= tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
+															"Result", "Image comparison result", referenceFrame->getLevel(0), renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
 
-	if (tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", referenceFrame->getLevel(0), renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR))
-		return true;
+	if (!result)
+		for (deUint32 layerNdx = 0u; layerNdx < m_parameters.extent.depth; layerNdx++)
+		{
+			tcu::ConstPixelBufferAccess ref (mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, 1u, referenceFrame->getLevel(0).getPixelPtr(0, 0, layerNdx));
+			tcu::ConstPixelBufferAccess dst (mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, 1u, renderedFrame.getPixelPtr(0 ,0, layerNdx));
+			tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", ref, dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+		}
 
-	for (deUint32 layerNdx = 0u; layerNdx < m_parameters.extent.depth; layerNdx++)
+	return result;
+}
+
+const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor (const deUint32 quarterNdx, const int colorNdx, const int layerNdx, const bool background)
+{
+	switch (m_parameters.viewIndex)
 	{
-		tcu::ConstPixelBufferAccess ref (mapVkFormat(m_colorFormat), m_parameters.extent.width, m_parameters.extent.height, 1u, referenceFrame->getLevel(0).getPixelPtr(0, 0, layerNdx));
-		tcu::ConstPixelBufferAccess dst (mapVkFormat(m_colorFormat), m_parameters.extent.width, m_parameters.extent.height, 1u, renderedFrame.getPixelPtr(0 ,0, layerNdx));
-		tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", ref, dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
-	}
+		case TEST_TYPE_VIEW_MASK:
+			return m_vertexColor[colorNdx];
 
-	return false;
+		case TEST_TYPE_DRAW_INDEXED:
+			return m_vertexColor[m_vertexIndices[colorNdx]];
+
+		case TEST_TYPE_INSTANCED_RENDERING:
+			return m_vertexColor[0] + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, static_cast<float>(quarterNdx + 1u) * 0.10f, 0.0);
+
+		case TEST_TYPE_INPUT_RATE_INSTANCE:
+			return m_vertexColor[colorNdx / 4] + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, static_cast<float>(quarterNdx + 1u) * 0.10f, 0.0);
+
+		case TEST_TYPE_DRAW_INDIRECT_INDEXED:
+			return m_vertexColor[m_vertexIndices[colorNdx]] + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.0, 0.0);
+
+		case TEST_TYPE_VIEW_INDEX_IN_VERTEX:
+		case TEST_TYPE_VIEW_INDEX_IN_FRAGMENT:
+		case TEST_TYPE_VIEW_INDEX_IN_GEOMETRY:
+		case TEST_TYPE_VIEW_INDEX_IN_TESELLATION:
+		case TEST_TYPE_INPUT_ATTACHMENTS:
+		case TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY:
+		case TEST_TYPE_DRAW_INDIRECT:
+		case TEST_TYPE_CLEAR_ATTACHMENTS:
+		case TEST_TYPE_SECONDARY_CMD_BUFFER:
+		case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
+			return m_vertexColor[colorNdx] + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.0, 0.0);
+
+		case TEST_TYPE_POINT_SIZE:
+		case TEST_TYPE_MULTISAMPLE:
+			if (background)
+				return tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+			else
+				return m_vertexColor[colorNdx];
+
+		default:
+			TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+void MultiViewRenderTestInstance::setPoint (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& pointColor, const int pointSize, const int layerNdx, const deUint32 quarter)
+{
+	DE_ASSERT(TEST_POINT_SIZE_WIDE > TEST_POINT_SIZE_SMALL);
+
+	const int	pointOffset	= 1 + TEST_POINT_SIZE_WIDE / 2 - (pointSize + 1) / 2;
+	const int	offsetX		= pointOffset + static_cast<int>((quarter == 0u || quarter == 1u) ? 0 : m_parameters.extent.width / 2u);
+	const int	offsetY		= pointOffset + static_cast<int>((quarter == 0u || quarter == 2u) ? 0 : m_parameters.extent.height / 2u);
+
+	for (int y = 0; y < pointSize; ++y)
+	for (int x = 0; x < pointSize; ++x)
+		pixelBuffer.setPixel(pointColor, offsetX + x, offsetY + y, layerNdx);
+}
+
+void MultiViewRenderTestInstance::fillTriangle (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter)
+{
+	const int		offsetX				= static_cast<int>((quarter == 0u || quarter == 1u) ? 0 : m_parameters.extent.width / 2u);
+	const int		offsetY				= static_cast<int>((quarter == 0u || quarter == 2u) ? 0 : m_parameters.extent.height / 2u);
+	const int		maxY				= static_cast<int>(m_parameters.extent.height / 2u);
+	const tcu::Vec4	multisampledColor	= tcu::Vec4(color[0], color[1], color[2], color[3]) * 0.5f;
+
+	for (int y = 0; y < maxY; ++y)
+	{
+		for (int x = 0; x < y; ++x)
+			pixelBuffer.setPixel(color, offsetX + x, offsetY + (maxY - 1) - y, layerNdx);
+
+		// Multisampled pixel is on the triangle margin
+		pixelBuffer.setPixel(multisampledColor, offsetX + y, offsetY + (maxY - 1) - y, layerNdx);
+	}
 }
 
 MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 {
-	MovePtr<tcu::Texture2DArray>	referenceFrame	= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(mapVkFormat(m_colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth));
+	MovePtr<tcu::Texture2DArray>	referenceFrame	= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth));
 	const deUint32					subpassCount	= static_cast<deUint32>(m_parameters.viewMasks.size());
 	referenceFrame->allocLevel(0);
 
-	deMemset (referenceFrame->getLevel(0).getDataPtr(), 0, m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth* mapVkFormat(m_colorFormat).getPixelSize());
+	deMemset (referenceFrame->getLevel(0).getDataPtr(), 0, m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth* mapVkFormat(m_parameters.colorFormat).getPixelSize());
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -934,22 +1115,18 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 				const deUint32 subpassQuarterNdx = subpassNdx % m_squareCount;
 				if (subpassQuarterNdx == 0u || TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex)
 				{
-					const tcu::Vec4 color = (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex) ? m_data[colorNdx].color :
-											(TEST_TYPE_INSTANCED_RENDERING == m_parameters.viewIndex) ? m_data[0].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.10f, 0.0) :
-											(TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex) ? m_data[colorNdx / 4].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.10f, 0.0) :
-											m_data[colorNdx].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.0, 0.0);
+					const tcu::Vec4 color = getQuarterRefColor(0u, colorNdx, layerNdx);
+
 					for (deUint32 y = 0u; y < m_parameters.extent.height/2u; ++y)
 					for (deUint32 x = 0u; x < m_parameters.extent.width/2u; ++x)
-							referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
+						referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
 				}
 
 				colorNdx += 4;
 				if (subpassQuarterNdx == 1u || subpassCount == 1u || TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex)
 				{
-					const tcu::Vec4 color = (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex) ? m_data[colorNdx].color :
-											(TEST_TYPE_INSTANCED_RENDERING == m_parameters.viewIndex) ? m_data[0].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.20f, 0.0) :
-											(TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex) ? m_data[colorNdx / 4].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.20f, 0.0) :
-											m_data[colorNdx].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.0, 0.0);
+					const tcu::Vec4 color = getQuarterRefColor(1u, colorNdx, layerNdx);
+
 					for (deUint32 y = m_parameters.extent.height/2u; y < m_parameters.extent.height; ++y)
 					for (deUint32 x = 0u; x < m_parameters.extent.width/2u; ++x)
 						referenceFrame->getLevel(0).setPixel(color , x, y, layerNdx);
@@ -958,25 +1135,21 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 				colorNdx += 4;
 				if (subpassQuarterNdx == 2u || subpassCount == 1u || TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex)
 				{
-					const tcu::Vec4 color = (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex) ? m_data[colorNdx].color :
-											(TEST_TYPE_INSTANCED_RENDERING == m_parameters.viewIndex) ? m_data[0].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.30f, 0.0) :
-											(TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex) ? m_data[colorNdx / 4].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.30f, 0.0) :
-											m_data[colorNdx].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.0, 0.0);
+					const tcu::Vec4 color = getQuarterRefColor(2u, colorNdx, layerNdx);
+
 					for (deUint32 y = 0u; y < m_parameters.extent.height/2u; ++y)
 					for (deUint32 x =  m_parameters.extent.width/2u; x < m_parameters.extent.width; ++x)
-							referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
+						referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
 				}
 
 				colorNdx += 4;
 				if (subpassQuarterNdx == 3u || subpassCount == 1u || TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex)
 				{
-					const tcu::Vec4 color = (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex) ? m_data[colorNdx].color :
-											(TEST_TYPE_INSTANCED_RENDERING == m_parameters.viewIndex) ? m_data[0].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f,  0.40f, 0.0) :
-											(TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex) ? m_data[colorNdx / 4].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.40f, 0.0) :
-											m_data[colorNdx].color + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.0, 0.0);
+					const tcu::Vec4 color = getQuarterRefColor(3u, colorNdx, layerNdx);
+
 					for (deUint32 y =  m_parameters.extent.height/2u; y < m_parameters.extent.height; ++y)
 					for (deUint32 x =  m_parameters.extent.width/2u; x < m_parameters.extent.width; ++x)
-							referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
+						referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
 				}
 
 				if (TEST_TYPE_CLEAR_ATTACHMENTS == m_parameters.viewIndex)
@@ -988,6 +1161,31 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 					for (int x = static_cast<int>(m_parameters.extent.width / 4u); x < maxX; ++x)
 						referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
 				}
+
+				if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+				{
+					const deUint32	vertexPerPrimitive	= 1u;
+					const deUint32	dummyQuarterNdx		= 0u;
+					const int		pointSize			= static_cast<int>(layerNdx == 0u ? TEST_POINT_SIZE_WIDE : TEST_POINT_SIZE_SMALL);
+
+					if (subpassCount == 1)
+						for (deUint32 drawNdx = 0u; drawNdx < m_squareCount; ++drawNdx)
+							setPoint(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), pointSize, layerNdx, drawNdx);
+					else
+						setPoint(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), pointSize, layerNdx, subpassQuarterNdx);
+				}
+
+				if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
+				{
+					const deUint32	vertexPerPrimitive	= 3u;
+					const deUint32	dummyQuarterNdx		= 0u;
+
+					if (subpassCount == 1)
+						for (deUint32 drawNdx = 0u; drawNdx < m_squareCount; ++drawNdx)
+							fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * drawNdx, layerNdx, false), layerNdx, drawNdx);
+					else
+						fillTriangle(referenceFrame->getLevel(0), getQuarterRefColor(dummyQuarterNdx, vertexPerPrimitive * subpassQuarterNdx, layerNdx, false), layerNdx, subpassQuarterNdx);
+				}
 			}
 
 			mask = mask >> 1;
@@ -995,6 +1193,12 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 		}
 	}
 	return referenceFrame;
+}
+
+void MultiViewRenderTestInstance::appendVertex (const tcu::Vec4& coord, const tcu::Vec4& color)
+{
+	m_vertexCoord.push_back(coord);
+	m_vertexColor.push_back(color);
 }
 
 class MultiViewAttachmentsTestInstance : public MultiViewRenderTestInstance
@@ -1022,11 +1226,11 @@ tcu::TestStatus MultiViewAttachmentsTestInstance::iterate (void)
 {
 	const deUint32								subpassCount			= static_cast<deUint32>(m_parameters.viewMasks.size());
 	// All color attachment
-	m_colorAttachment	= de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_colorFormat));
-	m_inputAttachment	= de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_colorFormat));
+	m_colorAttachment	= de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_parameters.colorFormat));
+	m_inputAttachment	= de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_parameters.colorFormat));
 
 	// FrameBuffer & renderPass
-	Unique<VkRenderPass>						renderPass				(makeRenderPassWithAttachments(*m_device, *m_logicalDevice, m_colorFormat, m_parameters.viewMasks));
+	Unique<VkRenderPass>						renderPass				(makeRenderPassWithAttachments(*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks));
 
 	vector<VkImageView>							attachments;
 	attachments.push_back(m_colorAttachment->getImageView());
@@ -1056,8 +1260,8 @@ tcu::TestStatus MultiViewAttachmentsTestInstance::iterate (void)
 	draw(subpassCount, *renderPass, *frameBuffer, pipelines);
 
 	{
-		vector<deUint8>			pixelAccessData	(m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * mapVkFormat(m_colorFormat).getPixelSize());
-		tcu::PixelBufferAccess	dst				(mapVkFormat(m_colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth, pixelAccessData.data());
+		vector<deUint8>			pixelAccessData	(m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * mapVkFormat(m_parameters.colorFormat).getPixelSize());
+		tcu::PixelBufferAccess	dst				(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth, pixelAccessData.data());
 
 		readImage (m_colorAttachment->getImage(), dst);
 		if (!checkImage(dst))
@@ -1131,21 +1335,25 @@ void MultiViewAttachmentsTestInstance::beforeDraw (void)
 	};
 	m_device->cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &(*m_descriptorSet), 0u, NULL);
 
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0, VK_ACCESS_TRANSFER_WRITE_BIT);
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		0, VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	const VkClearValue renderPassClearValue = makeClearValueColor(tcu::Vec4(0.0f));
 	m_device->cmdClearColorImage(*m_cmdBuffer, m_colorAttachment->getImage(),  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &renderPassClearValue.color, 1, &subresourceRange);
 
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-
-	imageBarrier(*m_device, *m_cmdBuffer,  m_inputAttachment->getImage(), subresourceRange, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, 0, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
 void MultiViewAttachmentsTestInstance::setImageData (VkImage image)
 {
 	const MovePtr<tcu::Texture2DArray>		data		= imageData();
 	Move<VkBuffer>					buffer;
-	const deUint32					bufferSize	= m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * tcu::getPixelSize(mapVkFormat(m_colorFormat));
+	const deUint32					bufferSize	= m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * tcu::getPixelSize(mapVkFormat(m_parameters.colorFormat));
 	MovePtr<Allocation>				bufferAlloc;
 
 	// Create source buffer
@@ -1181,7 +1389,7 @@ void MultiViewAttachmentsTestInstance::setImageData (VkImage image)
 		bufferSize										// VkDeviceSize		size;
 	};
 
-	const VkImageAspectFlags				formatAspect			= getAspectFlags(mapVkFormat(m_colorFormat));
+	const VkImageAspectFlags				formatAspect			= getAspectFlags(mapVkFormat(m_parameters.colorFormat));
 	VkImageSubresourceRange					subresourceRange		=
 	{												// VkImageSubresourceRange	subresourceRange;
 		formatAspect,				// VkImageAspectFlags	aspect;
@@ -1214,10 +1422,14 @@ void MultiViewAttachmentsTestInstance::setImageData (VkImage image)
 
 	m_device->cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	imageBarrier(*m_device, *m_cmdBuffer, image, subresourceRange,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	m_device->cmdCopyBufferToImage(*m_cmdBuffer, *buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 	imageBarrier(*m_device, *m_cmdBuffer, image, subresourceRange,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
 
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
@@ -1239,22 +1451,24 @@ MultiViewInstancedTestInstance::MultiViewInstancedTestInstance (Context& context
 	: MultiViewRenderTestInstance	(context, parameters)
 {
 }
+
 void MultiViewInstancedTestInstance::createVertexData (void)
 {
-	tcu::Vec4 color = tcu::Vec4(0.2f, 0.0f, 0.1f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4(-1.0f,-1.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color));
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color));
+	const tcu::Vec4 color = tcu::Vec4(0.2f, 0.0f, 0.1f, 1.0f);
+
+	appendVertex(tcu::Vec4(-1.0f,-1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color);
 }
 
 void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
-	const VkDeviceSize				vertexBufferOffset		= 0u;
+	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
 	const VkRenderPassBeginInfo		renderPassBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
@@ -1272,7 +1486,7 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount,VkRenderP
 
 	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
+	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -1311,26 +1525,19 @@ MultiViewInputRateInstanceTestInstance::MultiViewInputRateInstanceTestInstance (
 
 void MultiViewInputRateInstanceTestInstance::createVertexData (void)
 {
-	tcu::Vec4 color = tcu::Vec4(0.2f, 0.0f, 0.1f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4(-1.0f,-1.0f, 1.0f, 1.0f), color));
-
-	color = tcu::Vec4(0.3f, 0.0f, 0.2f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color));
-
-	color = tcu::Vec4(0.4f, 0.2f, 0.3f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color));
-
-	color = tcu::Vec4(0.5f, 0.0f, 0.4f, 1.0f);
-	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color));
+	appendVertex(tcu::Vec4(-1.0f,-1.0f, 1.0f, 1.0f), tcu::Vec4(0.2f, 0.0f, 0.1f, 1.0f));
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(0.3f, 0.0f, 0.2f, 1.0f));
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), tcu::Vec4(0.4f, 0.2f, 0.3f, 1.0f));
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(0.5f, 0.0f, 0.4f, 1.0f));
 }
 
 void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
-	const VkDeviceSize				vertexBufferOffset		= 0u;
+	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
 	const VkRenderPassBeginInfo		renderPassBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
@@ -1348,7 +1555,7 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount,V
 
 	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
+	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -1369,60 +1576,92 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount,V
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-class MultiViewIDrawIndirectTestInstance : public MultiViewRenderTestInstance
+class MultiViewDrawIndirectTestInstance : public MultiViewRenderTestInstance
 {
 public:
-				MultiViewIDrawIndirectTestInstance	(Context& context, const TestParameters& parameters);
+				MultiViewDrawIndirectTestInstance	(Context& context, const TestParameters& parameters);
 protected:
-	void		draw									(const deUint32			subpassCount,
-														 VkRenderPass			renderPass,
-														 VkFramebuffer			frameBuffer,
-														 vector<PipelineSp>&	pipelines);
+	void		draw								(const deUint32			subpassCount,
+													 VkRenderPass			renderPass,
+													 VkFramebuffer			frameBuffer,
+													 vector<PipelineSp>&	pipelines);
 };
 
-MultiViewIDrawIndirectTestInstance::MultiViewIDrawIndirectTestInstance (Context& context, const TestParameters& parameters)
+MultiViewDrawIndirectTestInstance::MultiViewDrawIndirectTestInstance (Context& context, const TestParameters& parameters)
 	: MultiViewRenderTestInstance	(context, parameters)
 {
 }
 
-void MultiViewIDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
+void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	typedef de::SharedPtr<Unique<VkBuffer> >		BufferSP;
 	typedef de::SharedPtr<UniquePtr<Allocation> >	AllocationSP;
 
+	const size_t					nonCoherentAtomSize		= static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize);
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
-	const VkDeviceSize				vertexBufferOffset		= 0u;
+	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-	vector< BufferSP >				indirectBuffers(subpassCount);
-	vector< AllocationSP >			indirectAllocations(subpassCount);
-	deUint32						strideInBuffer = (deUint32)sizeof(vk::VkDrawIndirectCommand);
+	const deUint32					strideInBuffer			= (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+															? static_cast<deUint32>(sizeof(vk::VkDrawIndexedIndirectCommand))
+															: static_cast<deUint32>(sizeof(vk::VkDrawIndirectCommand));
+	vector< BufferSP >				indirectBuffers			(subpassCount);
+	vector< AllocationSP >			indirectAllocations		(subpassCount);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
-		vector<VkDrawIndirectCommand>	drawCommands;
+		vector<VkDrawIndirectCommand>			drawCommands;
+		vector<VkDrawIndexedIndirectCommand>	drawCommandsIndexed;
+
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
 		{
-			const VkDrawIndirectCommand	drawCommand =
+			if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
 			{
-				4u,												//deUint32	vertexCount;
-				1u,												//deUint32	instanceCount;
-				(drawNdx + subpassNdx % m_squareCount) * 4u,	//deUint32	firstVertex;
-				0u												//deUint32	firstInstance;
-			};
-			drawCommands.push_back(drawCommand);
+				const VkDrawIndexedIndirectCommand	drawCommandIndexed	=
+				{
+					4u,												//  deUint32	indexCount;
+					1u,												//  deUint32	instanceCount;
+					(drawNdx + subpassNdx % m_squareCount) * 4u,	//  deUint32	firstIndex;
+					0u,												//  deInt32		vertexOffset;
+					0u,												//  deUint32	firstInstance;
+				};
+
+				drawCommandsIndexed.push_back(drawCommandIndexed);
+			}
+			else
+			{
+				const VkDrawIndirectCommand	drawCommand	=
+				{
+					4u,												//  deUint32	vertexCount;
+					1u,												//  deUint32	instanceCount;
+					(drawNdx + subpassNdx % m_squareCount) * 4u,	//  deUint32	firstVertex;
+					0u												//  deUint32	firstInstance;
+				};
+
+				drawCommands.push_back(drawCommand);
+			}
 		}
 
-		const VkDeviceSize			bufferSize			=	static_cast<VkDeviceSize>(deAlignSize(static_cast<size_t>(drawCommands.size() * strideInBuffer),
-															static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
-		const VkBufferCreateInfo	bufferInfo			= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+		const size_t				drawCommandsLength	= (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+														? drawCommandsIndexed.size()
+														: drawCommands.size();
+		const void*					drawCommandsDataPtr	= (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+														? (void*)&drawCommandsIndexed[0]
+														: (void*)&drawCommands[0];
+		const size_t				dataSize			= static_cast<size_t>(drawCommandsLength * strideInBuffer);
+		const VkDeviceSize			bufferDataSize		= static_cast<VkDeviceSize>(deAlignSize(dataSize, nonCoherentAtomSize));
+		const VkBufferCreateInfo	bufferInfo			= makeBufferCreateInfo(bufferDataSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 		Move<VkBuffer>				indirectBuffer		= createBuffer(*m_device, *m_logicalDevice, &bufferInfo);
-		MovePtr<Allocation>			allocationBuffer	= m_allocator->allocate(getBufferMemoryRequirements(*m_device, *m_logicalDevice, *m_vertexBuffer),  MemoryRequirement::HostVisible);
+		MovePtr<Allocation>			allocationBuffer	= m_allocator->allocate(getBufferMemoryRequirements(*m_device, *m_logicalDevice, *indirectBuffer),  MemoryRequirement::HostVisible);
+
+		DE_ASSERT(drawCommandsLength != 0);
+
 		VK_CHECK(m_device->bindBufferMemory(*m_logicalDevice, *indirectBuffer, allocationBuffer->getMemory(), allocationBuffer->getOffset()));
 
-		deMemcpy(allocationBuffer->getHostPtr(), &drawCommands[0], static_cast<size_t>(bufferSize));
+		deMemcpy(allocationBuffer->getHostPtr(), drawCommandsDataPtr, static_cast<size_t>(dataSize));
 
-		flushMappedMemoryRange(*m_device, *m_logicalDevice, allocationBuffer->getMemory(), allocationBuffer->getOffset(), static_cast<size_t>(bufferSize));
+		flushMappedMemoryRange(*m_device, *m_logicalDevice, allocationBuffer->getMemory(), allocationBuffer->getOffset(), static_cast<size_t>(bufferDataSize));
 		indirectBuffers[subpassNdx] = (BufferSP(new Unique<VkBuffer>(indirectBuffer)));
 		indirectAllocations[subpassNdx] = (AllocationSP(new UniquePtr<Allocation>(allocationBuffer)));
 	}
@@ -1444,7 +1683,10 @@ void MultiViewIDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRen
 
 	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
+	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+	if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+		m_device->cmdBindIndexBuffer(*m_cmdBuffer, *m_vertexIndicesBuffer, 0u, VK_INDEX_TYPE_UINT32);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -1452,13 +1694,19 @@ void MultiViewIDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRen
 
 		if (m_hasMultiDrawIndirect)
 		{
-			m_device->cmdDrawIndirect(*m_cmdBuffer, **indirectBuffers[subpassNdx], 0u, drawCountPerSubpass, strideInBuffer);
+			if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+				m_device->cmdDrawIndexedIndirect(*m_cmdBuffer, **indirectBuffers[subpassNdx], 0u, drawCountPerSubpass, strideInBuffer);
+			else
+				m_device->cmdDrawIndirect(*m_cmdBuffer, **indirectBuffers[subpassNdx], 0u, drawCountPerSubpass, strideInBuffer);
 		}
 		else
 		{
 			for (deUint32 drawNdx = 0; drawNdx < drawCountPerSubpass; drawNdx++)
 			{
-				m_device->cmdDrawIndirect(*m_cmdBuffer, **indirectBuffers[subpassNdx], drawNdx * strideInBuffer, 1, strideInBuffer);
+				if (m_parameters.viewIndex == TEST_TYPE_DRAW_INDIRECT_INDEXED)
+					m_device->cmdDrawIndexedIndirect(*m_cmdBuffer, **indirectBuffers[subpassNdx], drawNdx * strideInBuffer, 1, strideInBuffer);
+				else
+					m_device->cmdDrawIndirect(*m_cmdBuffer, **indirectBuffers[subpassNdx], drawNdx * strideInBuffer, 1, strideInBuffer);
 			}
 		}
 
@@ -1494,7 +1742,8 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount,Vk
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
-	const VkDeviceSize				vertexBufferOffset		= 0u;
+	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
 
 	const VkRenderPassBeginInfo		renderPassBeginInfo		=
@@ -1514,7 +1763,7 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount,Vk
 
 	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
+	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -1572,7 +1821,6 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount,Vk
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
-
 class MultiViewSecondaryCommandBufferTestInstance : public MultiViewRenderTestInstance
 {
 public:
@@ -1593,12 +1841,12 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 {
 	typedef de::SharedPtr<Unique<VkCommandBuffer> >	VkCommandBufferSp;
 
-	const VkRect2D						renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue					renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
-	const VkDeviceSize					vertexBufferOffset		= 0u;
-	const deUint32						drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
-	const VkRenderPassBeginInfo			renderPassBeginInfo		=
+	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
+	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
+	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
+	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
+	const VkRenderPassBeginInfo		renderPassBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
 		DE_NULL,									// const void*			pNext;
@@ -1631,7 +1879,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 		cmdBufferSecondary.push_back(VkCommandBufferSp(new Unique<VkCommandBuffer>(allocateCommandBuffer(*m_device, *m_logicalDevice, &cmdBufferAllocateInfo))));
 
 		beginSecondaryCommandBuffer(*m_device, cmdBufferSecondary.back().get()->get(), renderPass, subpassNdx, frameBuffer);
-		m_device->cmdBindVertexBuffers(cmdBufferSecondary.back().get()->get(), 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
+		m_device->cmdBindVertexBuffers(cmdBufferSecondary.back().get()->get(), 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 		m_device->cmdBindPipeline(cmdBufferSecondary.back().get()->get(), VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
 
 		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
@@ -1652,6 +1900,284 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
 }
 
+class MultiViewPointSizeTestInstance : public MultiViewRenderTestInstance
+{
+public:
+				MultiViewPointSizeTestInstance	(Context& context, const TestParameters& parameters);
+protected:
+	void		validatePointSize				(const VkPhysicalDeviceLimits& limits, const deUint32 pointSize);
+	void		createVertexData				(void);
+	void		draw							(const deUint32			subpassCount,
+												 VkRenderPass			renderPass,
+												 VkFramebuffer			frameBuffer,
+												 vector<PipelineSp>&	pipelines);
+};
+
+MultiViewPointSizeTestInstance::MultiViewPointSizeTestInstance (Context& context, const TestParameters& parameters)
+	: MultiViewRenderTestInstance	(context, parameters)
+{
+	const InstanceInterface&		vki					= m_context.getInstanceInterface();
+	const VkPhysicalDevice			physDevice			= m_context.getPhysicalDevice();
+	const VkPhysicalDeviceLimits	limits				= getPhysicalDeviceProperties(vki, physDevice).limits;
+
+	validatePointSize(limits, static_cast<deUint32>(TEST_POINT_SIZE_WIDE));
+	validatePointSize(limits, static_cast<deUint32>(TEST_POINT_SIZE_SMALL));
+}
+
+void MultiViewPointSizeTestInstance::validatePointSize (const VkPhysicalDeviceLimits& limits, const deUint32 pointSize)
+{
+	const float	testPointSizeFloat	= static_cast<float>(pointSize);
+	float		granuleCount		= 0.0f;
+
+	if (!de::inRange(testPointSizeFloat, limits.pointSizeRange[0], limits.pointSizeRange[1]))
+		TCU_THROW(NotSupportedError, "Required point size is outside of the the limits range");
+
+	granuleCount = static_cast<float>(deCeilFloatToInt32((testPointSizeFloat - limits.pointSizeRange[0]) / limits.pointSizeGranularity));
+
+	if (limits.pointSizeRange[0] + granuleCount * limits.pointSizeGranularity != testPointSizeFloat)
+		TCU_THROW(NotSupportedError, "Granuliraty does not allow to get required point size");
+
+	DE_ASSERT(pointSize + 1 <= m_parameters.extent.width / 2);
+	DE_ASSERT(pointSize + 1 <= m_parameters.extent.height / 2);
+}
+
+void MultiViewPointSizeTestInstance::createVertexData (void)
+{
+	const float		pixelStepX	= 2.0f / static_cast<float>(m_parameters.extent.width);
+	const float		pixelStepY	= 2.0f / static_cast<float>(m_parameters.extent.height);
+	const int		pointMargin	= 1 + TEST_POINT_SIZE_WIDE / 2;
+
+	appendVertex(tcu::Vec4(-1.0f + pointMargin * pixelStepX,-1.0f + pointMargin * pixelStepY, 1.0f, 1.0f), tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	appendVertex(tcu::Vec4(-1.0f + pointMargin * pixelStepX, 0.0f + pointMargin * pixelStepY, 1.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+	appendVertex(tcu::Vec4( 0.0f + pointMargin * pixelStepX,-1.0f + pointMargin * pixelStepY, 1.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+	appendVertex(tcu::Vec4( 0.0f + pointMargin * pixelStepX, 0.0f + pointMargin * pixelStepY, 1.0f, 1.0f), tcu::Vec4(1.0f, 0.5f, 0.3f, 1.0f));
+}
+
+void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
+{
+	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
+	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
+	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
+	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
+
+	const VkRenderPassBeginInfo		renderPassBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		renderPass,									// VkRenderPass			renderPass;
+		frameBuffer,								// VkFramebuffer		framebuffer;
+		renderArea,									// VkRect2D				renderArea;
+		1u,											// uint32_t				clearValueCount;
+		&renderPassClearValue,						// const VkClearValue*	pClearValues;
+	};
+
+	beginCommandBuffer(*m_device, *m_cmdBuffer);
+
+	beforeDraw();
+
+	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
+	{
+		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
+
+		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
+			m_device->cmdDraw(*m_cmdBuffer, 1u, 1u, drawNdx + subpassNdx % m_squareCount, 0u);
+
+		if (subpassNdx < subpassCount - 1u)
+			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	m_device->cmdEndRenderPass(*m_cmdBuffer);
+
+	afterDraw();
+
+	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
+	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
+}
+
+class MultiViewMultsampleTestInstance : public MultiViewRenderTestInstance
+{
+public:
+					MultiViewMultsampleTestInstance	(Context& context, const TestParameters& parameters);
+protected:
+	tcu::TestStatus	iterate							(void);
+	void			createVertexData				(void);
+	void			draw							(const deUint32			subpassCount,
+													 VkRenderPass			renderPass,
+													 VkFramebuffer			frameBuffer,
+													 vector<PipelineSp>&	pipelines);
+	void			afterDraw						(void);
+private:
+	de::SharedPtr<ImageAttachment>	m_resolveAttachment;
+};
+
+MultiViewMultsampleTestInstance::MultiViewMultsampleTestInstance (Context& context, const TestParameters& parameters)
+	: MultiViewRenderTestInstance	(context, parameters)
+{
+	// Color attachment
+	m_resolveAttachment = de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_parameters.colorFormat, VK_SAMPLE_COUNT_1_BIT));
+}
+
+tcu::TestStatus MultiViewMultsampleTestInstance::iterate (void)
+{
+	const deUint32								subpassCount				= static_cast<deUint32>(m_parameters.viewMasks.size());
+
+	// FrameBuffer & renderPass
+	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, VK_SAMPLE_COUNT_2_BIT));
+
+	vector<VkImageView>							attachments;
+	attachments.push_back(m_colorAttachment->getImageView());
+	Unique<VkFramebuffer>						frameBuffer					(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+
+	// pipelineLayout
+	Unique<VkPipelineLayout>					pipelineLayout				(makePipelineLayout(*m_device, *m_logicalDevice));
+
+	// pipelines
+	map<VkShaderStageFlagBits, ShaderModuleSP>	shaderModule;
+	vector<PipelineSp>							pipelines(subpassCount);
+	const VkVertexInputRate						vertexInputRate				= (TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex) ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+
+	{
+		vector<VkPipelineShaderStageCreateInfo>	shaderStageParams;
+		madeShaderModule(shaderModule, shaderStageParams);
+		for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
+			pipelines[subpassNdx] = (PipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(*renderPass, *pipelineLayout, static_cast<deUint32>(shaderStageParams.size()), shaderStageParams.data(), subpassNdx, vertexInputRate))));
+	}
+
+	createCommandBuffer();
+	createVertexData();
+	createVertexBuffer();
+
+	draw(subpassCount, *renderPass, *frameBuffer, pipelines);
+
+	{
+		vector<deUint8>			pixelAccessData	(m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * mapVkFormat(m_parameters.colorFormat).getPixelSize());
+		tcu::PixelBufferAccess	dst				(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth, pixelAccessData.data());
+
+		readImage(m_resolveAttachment->getImage(), dst);
+
+		if (!checkImage(dst))
+			return tcu::TestStatus::fail("Fail");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void MultiViewMultsampleTestInstance::createVertexData (void)
+{
+	tcu::Vec4	color	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	color	= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4(-1.0f,-1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color);
+
+	color	= tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	appendVertex(tcu::Vec4(-1.0f, 1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color);
+
+	color	= tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f,-1.0f, 1.0f, 1.0f), color);
+
+	color	= tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	appendVertex(tcu::Vec4( 0.0f, 1.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 0.0f, 1.0f, 1.0f), color);
+}
+
+void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
+{
+	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
+	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
+	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
+	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
+	const deUint32					vertexPerPrimitive		= 3u;
+	const VkImageSubresourceLayers	subresourceLayer		=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,	//  VkImageAspectFlags	aspectMask;
+		0u,							//  deUint32			mipLevel;
+		0u,							//  deUint32			baseArrayLayer;
+		m_parameters.extent.depth,	//  deUint32			layerCount;
+	};
+	const VkImageResolve			imageResolveRegion		=
+	{
+		subresourceLayer,															//  VkImageSubresourceLayers	srcSubresource;
+		makeOffset3D(0, 0, 0),														//  VkOffset3D					srcOffset;
+		subresourceLayer,															//  VkImageSubresourceLayers	dstSubresource;
+		makeOffset3D(0, 0, 0),														//  VkOffset3D					dstOffset;
+		makeExtent3D(m_parameters.extent.width, m_parameters.extent.height, 1u),	//  VkExtent3D					extent;
+	};
+
+	const VkRenderPassBeginInfo		renderPassBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		renderPass,									// VkRenderPass			renderPass;
+		frameBuffer,								// VkFramebuffer		framebuffer;
+		renderArea,									// VkRect2D				renderArea;
+		1u,											// uint32_t				clearValueCount;
+		&renderPassClearValue,						// const VkClearValue*	pClearValues;
+	};
+
+	beginCommandBuffer(*m_device, *m_cmdBuffer);
+
+	beforeDraw();
+
+	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
+	{
+		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
+
+		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
+			m_device->cmdDraw(*m_cmdBuffer, vertexPerPrimitive, 1u, (drawNdx + subpassNdx % m_squareCount) * vertexPerPrimitive, 0u);
+
+		if (subpassNdx < subpassCount - 1u)
+			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	m_device->cmdEndRenderPass(*m_cmdBuffer);
+
+	afterDraw();
+
+	m_device->cmdResolveImage(*m_cmdBuffer, m_colorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL, m_resolveAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL, 1u, &imageResolveRegion);
+
+	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
+	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
+}
+
+void MultiViewMultsampleTestInstance::afterDraw (void)
+{
+	const VkImageSubresourceRange	subresourceRange		=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,	//  VkImageAspectFlags	aspectMask;
+		0u,							//  deUint32			baseMipLevel;
+		1u,							//  deUint32			levelCount;
+		0u,							//  deUint32			baseArrayLayer;
+		m_parameters.extent.depth,	//  deUint32			layerCount;
+	};
+
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+	imageBarrier(*m_device, *m_cmdBuffer, m_resolveAttachment->getImage(), subresourceRange,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+		0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+}
+
 class MultiViewRenderTestsCase : public vkt::TestCase
 {
 public:
@@ -1659,6 +2185,7 @@ public:
 		: TestCase			(context, name, description)
 		, m_parameters		(parameters)
 	{
+		DE_ASSERT(m_parameters.extent.width == m_parameters.extent.height);
 	}
 private:
 	const TestParameters	m_parameters;
@@ -1675,17 +2202,32 @@ private:
 		if (TEST_TYPE_INPUT_RATE_INSTANCE == m_parameters.viewIndex)
 			return new MultiViewInputRateInstanceTestInstance(context, m_parameters);
 
-		if (TEST_TYPE_DRAW_INDIRECT == m_parameters.viewIndex)
-			return new	MultiViewIDrawIndirectTestInstance(context, m_parameters);
+		if (TEST_TYPE_DRAW_INDIRECT == m_parameters.viewIndex ||
+			TEST_TYPE_DRAW_INDIRECT_INDEXED == m_parameters.viewIndex)
+			return new MultiViewDrawIndirectTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_CLEAR_ATTACHMENTS == m_parameters.viewIndex)
-			return new	MultiViewClearAttachmentsTestInstance(context, m_parameters);
+			return new MultiViewClearAttachmentsTestInstance(context, m_parameters);
 
 		if (TEST_TYPE_SECONDARY_CMD_BUFFER == m_parameters.viewIndex ||
 			TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex)
-			return new	MultiViewSecondaryCommandBufferTestInstance(context, m_parameters);
+			return new MultiViewSecondaryCommandBufferTestInstance(context, m_parameters);
 
-		return new MultiViewRenderTestInstance(context, m_parameters);
+		if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+			return new MultiViewPointSizeTestInstance(context, m_parameters);
+
+		if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
+			return new MultiViewMultsampleTestInstance(context, m_parameters);
+
+		if (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex ||
+			TEST_TYPE_VIEW_INDEX_IN_VERTEX == m_parameters.viewIndex ||
+			TEST_TYPE_VIEW_INDEX_IN_FRAGMENT == m_parameters.viewIndex ||
+			TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == m_parameters.viewIndex ||
+			TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex ||
+			TEST_TYPE_DRAW_INDEXED == m_parameters.viewIndex)
+			return new MultiViewRenderTestInstance(context, m_parameters);
+
+		TCU_THROW(InternalError, "Unknown test type");
 	}
 
 	void				initPrograms		(SourceCollections& programCollection) const
@@ -1739,6 +2281,25 @@ private:
 					<< "}\n";
 			programCollection.glslSources.add("vertex") << glu::VertexSource(source.str());
 		}
+		else if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+		{
+			std::ostringstream source;
+			source	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+					<< "#extension GL_EXT_multiview : enable\n"
+					<< "layout(location = 0) in highp vec4 in_position;\n"
+					<< "layout(location = 1) in highp vec4 in_color;\n"
+					<< "layout(location = 0) out vec4 out_color;\n"
+					<< "void main (void)\n"
+					<< "{\n"
+					<< "	gl_Position = in_position;\n"
+					<< "	if (gl_ViewIndex == 0)\n"
+					<< "		gl_PointSize = " << de::floatToString(static_cast<float>(TEST_POINT_SIZE_WIDE), 1) << "f;\n"
+					<< "	else\n"
+					<< "		gl_PointSize = " << de::floatToString(static_cast<float>(TEST_POINT_SIZE_SMALL), 1) << "f;\n"
+					<< "	out_color = in_color;\n"
+					<< "}\n";
+			programCollection.glslSources.add("vertex") << glu::VertexSource(source.str());
+		}
 		else
 		{
 			std::ostringstream source;
@@ -1750,7 +2311,7 @@ private:
 					<< "void main (void)\n"
 					<< "{\n"
 					<< "	gl_Position = in_position;\n";
-				if (TEST_TYPE_VIEW_INDEX_IN_VERTEX == m_parameters.viewIndex || TEST_TYPE_DRAW_INDIRECT == m_parameters.viewIndex)
+				if (TEST_TYPE_VIEW_INDEX_IN_VERTEX == m_parameters.viewIndex || TEST_TYPE_DRAW_INDIRECT == m_parameters.viewIndex || TEST_TYPE_DRAW_INDIRECT_INDEXED == m_parameters.viewIndex)
 					source << "	out_color = in_color + vec4(0.0, gl_ViewIndex * 0.10f, 0.0, 0.0);\n";
 				else
 					source << "	out_color = in_color;\n";
@@ -1885,9 +2446,13 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		"instanced",
 		"input_instance",
 		"draw_indirect",
+		"draw_indirect_indexed",
+		"draw_indexed",
 		"clear_attachments",
 		"secondary_cmd_buffer",
-		"secondary_cmd_buffer_geometry"
+		"secondary_cmd_buffer_geometry",
+		"point_size",
+		"multisample",
 	};
 	const VkExtent3D			extent3D[testCaseCount]		=
 	{
@@ -1927,12 +2492,16 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 
 	for (int testTypeNdx = TEST_TYPE_VIEW_MASK; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
 	{
-		MovePtr<tcu::TestCaseGroup>	groupShader	(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str(), ""));
+		MovePtr<tcu::TestCaseGroup>	groupShader			(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str(), ""));
+		const TestType				testType			= static_cast<TestType>(testTypeNdx);
+		const VkSampleCountFlagBits	sampleCountFlags	= (testType == TEST_TYPE_MULTISAMPLE) ? VK_SAMPLE_COUNT_2_BIT : VK_SAMPLE_COUNT_1_BIT;
+		const VkFormat				colorFormat			= (testType == TEST_TYPE_MULTISAMPLE) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_UNORM;
+
 		for (deUint32 testCaseNdx = 0u; testCaseNdx < testCaseCount; ++testCaseNdx)
 		{
-			const TestParameters	parameters		=	{extent3D[testCaseNdx], viewMasks[testCaseNdx], (TestType)testTypeNdx};
-			std::ostringstream		masks;
+			const TestParameters	parameters		=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, sampleCountFlags, colorFormat };
 			const deUint32			viewMaksSize	=	static_cast<deUint32>(viewMasks[testCaseNdx].size());
+			std::ostringstream		masks;
 
 			for (deUint32 ndx = 0u; ndx < viewMaksSize; ++ndx)
 			{
@@ -1947,12 +2516,12 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		{
 			const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
 			const vector<deUint32>	dummyMasks;
-			const TestParameters	parameters			= { incompleteExtent3D, dummyMasks, (TestType)testTypeNdx };
+			const TestParameters	parameters			= { incompleteExtent3D, dummyMasks, testType, sampleCountFlags, colorFormat };
 
 			groupShader->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
 		}
 
-		switch (testTypeNdx)
+		switch (testType)
 		{
 			case TEST_TYPE_VIEW_MASK:
 			case TEST_TYPE_INPUT_ATTACHMENTS:
@@ -1960,9 +2529,13 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 			case TEST_TYPE_INSTANCED_RENDERING:
 			case TEST_TYPE_INPUT_RATE_INSTANCE:
 			case TEST_TYPE_DRAW_INDIRECT:
+			case TEST_TYPE_DRAW_INDIRECT_INDEXED:
+			case TEST_TYPE_DRAW_INDEXED:
 			case TEST_TYPE_CLEAR_ATTACHMENTS:
 			case TEST_TYPE_SECONDARY_CMD_BUFFER:
 			case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
+			case TEST_TYPE_POINT_SIZE:
+			case TEST_TYPE_MULTISAMPLE:
 				group->addChild(groupShader.release());
 				break;
 			case TEST_TYPE_VIEW_INDEX_IN_VERTEX:

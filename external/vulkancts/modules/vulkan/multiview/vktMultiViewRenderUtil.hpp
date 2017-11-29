@@ -34,16 +34,16 @@ namespace MultiView
 
 vk::VkImageAspectFlags				getAspectFlags					(tcu::TextureFormat format);
 vk::VkBufferCreateInfo				makeBufferCreateInfo			(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
-vk::VkImageCreateInfo				makeImageCreateInfo				(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
+vk::VkImageCreateInfo				makeImageCreateInfo				(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const vk::VkSampleCountFlagBits samples);
 vk::Move<vk::VkImageView>			makeImageView					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkImage image, const vk::VkImageViewType viewType, const vk::VkFormat format, const vk::VkImageSubresourceRange subresourceRange);
 vk::Move<vk::VkFramebuffer>			makeFramebuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const std::vector<vk::VkImageView>& attachments, const deUint32 width, const deUint32 height, const deUint32 layers);
 vk::Move<vk::VkPipelineLayout>		makePipelineLayout				(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout* pSetLayouts = DE_NULL);
 vk::Move<vk::VkDescriptorSetLayout>	makeDescriptorSetLayout			(const vk::DeviceInterface& vk, const vk::VkDevice device);
-vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks);
+vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkSampleCountFlagBits samples = vk::VK_SAMPLE_COUNT_1_BIT);
 vk::Move<vk::VkRenderPass>			makeRenderPassWithAttachments	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks);
 void								beginCommandBuffer				(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void								beginSecondaryCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const deUint32 subpass, const vk::VkFramebuffer framebuffer);
-void								imageBarrier					(const vk::DeviceInterface& vk, const vk::VkCommandBuffer cmdBuffer, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkPipelineStageFlags srcStageMask = vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, const vk::VkPipelineStageFlags dstStageMas = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+void								imageBarrier					(const vk::DeviceInterface& vk, const vk::VkCommandBuffer cmdBuffer, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkPipelineStageFlags srcStageMask = vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, const vk::VkPipelineStageFlags dstStageMask = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 void								submitCommandsAndWait			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkQueue queue, const vk::VkCommandBuffer commandBuffer);
 
 } // MultiView

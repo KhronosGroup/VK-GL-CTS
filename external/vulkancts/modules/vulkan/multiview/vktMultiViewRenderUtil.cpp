@@ -77,7 +77,7 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize bufferSize, const Vk
 	return bufferCreateInfo;
 }
 
-VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExtent3D& extent, const VkFormat format, const VkImageUsageFlags usage)
+VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExtent3D& extent, const VkFormat format, const VkImageUsageFlags usage, const VkSampleCountFlagBits samples)
 {
 	const VkImageCreateInfo imageInfo	=
 	{
@@ -89,7 +89,7 @@ VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExte
 		{extent.width, extent.height, 1u},			// VkExtent3D				extent;
 		1u,											// uint32_t					mipLevels;
 		extent.depth,								// uint32_t					arrayLayers;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
+		samples,									// VkSampleCountFlagBits	samples;
 		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
 		usage,										// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
@@ -187,14 +187,16 @@ Move<VkDescriptorSetLayout> makeDescriptorSetLayout (const DeviceInterface&		vk,
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 								   const VkDevice				device,
 								   const VkFormat				colorFormat,
-								   const vector<deUint32>&		viewMasks)
+								   const vector<deUint32>&		viewMasks,
+								   const VkSampleCountFlagBits	samples)
+
 {
 	const deUint32								subpassCount				= static_cast<deUint32>(viewMasks.size());
 	const VkAttachmentDescription				colorAttachmentDescription	=
 	{
 		(VkAttachmentDescriptionFlags)0,									// VkAttachmentDescriptionFlags	flags;
 		colorFormat,														// VkFormat						format;
-		VK_SAMPLE_COUNT_1_BIT,												// VkSampleCountFlagBits		samples;
+		samples,															// VkSampleCountFlagBits		samples;
 		VK_ATTACHMENT_LOAD_OP_CLEAR,										// VkAttachmentLoadOp			loadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp			storeOp;
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,									// VkAttachmentLoadOp			stencilLoadOp;
