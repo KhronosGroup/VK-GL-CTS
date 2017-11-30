@@ -162,6 +162,60 @@ void FragmentProcessor::executeStencilSFail (int fragNdxOffset, int numSamplesPe
 #undef SAMPLE_REGISTER_SFAIL
 }
 
+
+void FragmentProcessor::executeDepthBoundsTest (int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, const float minDepthBound, const float maxDepthBound, const tcu::ConstPixelBufferAccess& depthBuffer)
+{
+	if (depthBuffer.getFormat().type == tcu::TextureFormat::FLOAT || depthBuffer.getFormat().type == tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV)
+	{
+		for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; ++regSampleNdx)
+		{
+			if (m_sampleRegister[regSampleNdx].isAlive)
+			{
+				const int			fragSampleNdx		= regSampleNdx % numSamplesPerFragment;
+				const Fragment&		frag				= inputFragments[fragNdxOffset + regSampleNdx/numSamplesPerFragment];
+				const float			depthBufferValue	= depthBuffer.getPixDepth(fragSampleNdx, frag.pixelCoord.x(), frag.pixelCoord.y());
+
+				if (!de::inRange(depthBufferValue, minDepthBound, maxDepthBound))
+					m_sampleRegister[regSampleNdx].isAlive = false;
+			}
+		}
+	}
+	else
+	{
+		/* Convert float bounds to target buffer format for comparison */
+
+		deUint32 minDepthBoundUint, maxDepthBoundUint;
+		{
+			deUint32 buffer[2];
+			DE_ASSERT(sizeof(buffer) >= (size_t)depthBuffer.getFormat().getPixelSize());
+
+			tcu::PixelBufferAccess access(depthBuffer.getFormat(), 1, 1, 1, &buffer);
+			access.setPixDepth(minDepthBound, 0, 0, 0);
+			minDepthBoundUint = access.getPixelUint(0, 0, 0).x();
+		}
+		{
+			deUint32 buffer[2];
+
+			tcu::PixelBufferAccess access(depthBuffer.getFormat(), 1, 1, 1, &buffer);
+			access.setPixDepth(maxDepthBound, 0, 0, 0);
+			maxDepthBoundUint = access.getPixelUint(0, 0, 0).x();
+		}
+
+		for (int regSampleNdx = 0; regSampleNdx < SAMPLE_REGISTER_SIZE; ++regSampleNdx)
+		{
+			if (m_sampleRegister[regSampleNdx].isAlive)
+			{
+				const int			fragSampleNdx		= regSampleNdx % numSamplesPerFragment;
+				const Fragment&		frag				= inputFragments[fragNdxOffset + regSampleNdx / numSamplesPerFragment];
+				const deUint32		depthBufferValue	= depthBuffer.getPixelUint(fragSampleNdx, frag.pixelCoord.x(), frag.pixelCoord.y()).x();
+
+				if (!de::inRange(depthBufferValue, minDepthBoundUint, maxDepthBoundUint))
+					m_sampleRegister[regSampleNdx].isAlive = false;
+			}
+		}
+	}
+}
+
 void FragmentProcessor::executeDepthCompare (int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, TestFunc depthFunc, const tcu::ConstPixelBufferAccess& depthBuffer)
 {
 #define SAMPLE_REGISTER_DEPTH_COMPARE_F(COMPARE_EXPRESSION)																						\
@@ -754,8 +808,9 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 
 	bool							hasDepth			= depthBuffer.getWidth() > 0	&& depthBuffer.getHeight() > 0		&& depthBuffer.getDepth() > 0;
 	bool							hasStencil			= stencilBuffer.getWidth() > 0	&& stencilBuffer.getHeight() > 0	&& stencilBuffer.getDepth() > 0;
-	bool							doDepthTest			= hasDepth && state.depthTestEnabled;
-	bool							doStencilTest		= hasStencil && state.stencilTestEnabled;
+	bool							doDepthBoundsTest	= hasDepth		&& state.depthBoundsTestEnabled;
+	bool							doDepthTest			= hasDepth		&& state.depthTestEnabled;
+	bool							doStencilTest		= hasStencil	&& state.stencilTestEnabled;
 
 	tcu::TextureChannelClass		colorbufferClass	= tcu::getTextureChannelClass(msColorBuffer.raw().getFormat().type);
 	rr::GenericVecType				fragmentDataType	= (colorbufferClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER) ? (rr::GENERICVECTYPE_INT32) : ((colorbufferClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER) ? (rr::GENERICVECTYPE_UINT32) : (rr::GENERICVECTYPE_FLOAT));
@@ -806,6 +861,11 @@ void FragmentProcessor::render (const rr::MultisamplePixelBufferAccess&		msColor
 
 		if (state.scissorTestEnabled)
 			executeScissorTest(groupFirstFragNdx, numSamplesPerFragment, inputFragments, state.scissorRectangle);
+
+		// Depth bounds test.
+
+		if (doDepthBoundsTest)
+			executeDepthBoundsTest(groupFirstFragNdx, numSamplesPerFragment, inputFragments, state.minDepthBound, state.maxDepthBound, depthBuffer);
 
 		// Stencil test.
 

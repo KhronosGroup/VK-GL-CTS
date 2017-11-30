@@ -761,7 +761,7 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 							 0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 							 1, &imageBarrier);
 	m_vki.cmdCopyImageToBuffer(*cmd, *m_colorAttachmentImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1, &copyRegion);
-	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
 							 0, (const vk::VkMemoryBarrier*)DE_NULL,
 							 1, &memoryBarrier,
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
@@ -841,7 +841,7 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 		const deUint64							infiniteTimeout		= ~(deUint64)0u;
 
 		VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
-		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0,
 								 0, (const vk::VkMemoryBarrier*)DE_NULL,
 								 0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 								 1, &imageBarrier);
@@ -1916,8 +1916,8 @@ vk::VkBufferMemoryBarrier ComputeInstanceResultBuffer::createResultBufferBarrier
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_ACCESS_SHADER_WRITE_BIT,				// outputMask
-		vk::VK_ACCESS_HOST_READ_BIT,				// inputMask
+		vk::VK_ACCESS_SHADER_WRITE_BIT,				// srcAccessMask
+		vk::VK_ACCESS_HOST_READ_BIT,				// dstAccessMask
 		VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
 		VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
 		buffer,										// buffer
@@ -2130,13 +2130,13 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	}
 
 	if (m_numPreBarriers)
-		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
+		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
 								 0, (const vk::VkMemoryBarrier*)DE_NULL,
 								 m_numPreBarriers, m_preBarriers,
 								 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	m_vki.cmdDispatch(*cmd, m_numWorkGroups.x(), m_numWorkGroups.y(), m_numWorkGroups.z());
-	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
 							 0, (const vk::VkMemoryBarrier*)DE_NULL,
 							 m_numPostBarriers, m_postBarriers,
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
@@ -2196,13 +2196,13 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	updateBuilder.updateWithPush(m_vki, *cmd, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipelineLayout, 0);
 
 	if (m_numPreBarriers)
-		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
+		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0,
 								 0, (const vk::VkMemoryBarrier*)DE_NULL,
 								 m_numPreBarriers, m_preBarriers,
 								 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	m_vki.cmdDispatch(*cmd, m_numWorkGroups.x(), m_numWorkGroups.y(), m_numWorkGroups.z());
-	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
 							 0, (const vk::VkMemoryBarrier*)DE_NULL,
 							 m_numPostBarriers, m_postBarriers,
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
@@ -2617,8 +2617,8 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 		{
 			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 			DE_NULL,
-			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
-			inputBit,									// inputMask
+			vk::VK_ACCESS_HOST_WRITE_BIT,				// srcAccessMask
+			inputBit,									// dstAccessMask
 			VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
 			VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
 			*bufferA,									// buffer
@@ -2628,8 +2628,8 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess (void)
 		{
 			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 			DE_NULL,
-			vk::VK_ACCESS_HOST_WRITE_BIT,				// outputMask
-			inputBit,									// inputMask
+			vk::VK_ACCESS_HOST_WRITE_BIT,				// srcAccessMask
+			inputBit,									// dstAccessMask
 			VK_QUEUE_FAMILY_IGNORED,					// srcQueueFamilyIndex
 			VK_QUEUE_FAMILY_IGNORED,					// destQueueFamilyIndex
 			*bufferB,									// buffer
@@ -3614,8 +3614,8 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_ACCESS_HOST_WRITE_BIT,						// outputMask
-		vk::VK_ACCESS_TRANSFER_READ_BIT,					// inputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,						// srcAccessMask
+		vk::VK_ACCESS_TRANSFER_READ_BIT,					// dstAccessMask
 		VK_QUEUE_FAMILY_IGNORED,							// srcQueueFamilyIndex
 		VK_QUEUE_FAMILY_IGNORED,							// destQueueFamilyIndex
 		*dataBuffer,										// buffer
@@ -3634,8 +3634,8 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		DE_NULL,
-		0u,													// outputMask
-		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// inputMask
+		0u,													// srcAccessMask
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// dstAccessMask
 		vk::VK_IMAGE_LAYOUT_UNDEFINED,						// oldLayout
 		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// newLayout
 		VK_QUEUE_FAMILY_IGNORED,							// srcQueueFamilyIndex
@@ -3647,8 +3647,8 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// outputMask
-		vk::VK_ACCESS_SHADER_READ_BIT,						// inputMask
+		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// srcAccessMask
+		vk::VK_ACCESS_SHADER_READ_BIT,						// dstAccessMask
 		vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// oldLayout
 		layout,												// newLayout
 		VK_QUEUE_FAMILY_IGNORED,							// srcQueueFamilyIndex
@@ -3683,12 +3683,12 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 
 	// record command buffer
 	VK_CHECK(vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
-	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
+	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
 						   0, (const vk::VkMemoryBarrier*)DE_NULL,
 						   1, &preMemoryBarrier,
 						   1, &preImageBarrier);
 	vki.cmdCopyBufferToImage(*cmd, *dataBuffer, image, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copySlices.size(), &copySlices[0]);
-	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (vk::VkDependencyFlags)0,
+	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (vk::VkDependencyFlags)0,
 						   0, (const vk::VkMemoryBarrier*)DE_NULL,
 						   0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 						   1, &postImageBarrier);
@@ -6796,8 +6796,8 @@ vk::VkBufferMemoryBarrier TexelBufferInstanceBuffers::createBarrier (vk::VkDescr
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
 		DE_NULL,
-		vk::VK_ACCESS_HOST_WRITE_BIT,			// outputMask
-		inputBit,								// inputMask
+		vk::VK_ACCESS_HOST_WRITE_BIT,			// srcAccessMask
+		inputBit,								// dstAccessMask
 		VK_QUEUE_FAMILY_IGNORED,				// srcQueueFamilyIndex
 		VK_QUEUE_FAMILY_IGNORED,				// destQueueFamilyIndex
 		buffer	,								// buffer

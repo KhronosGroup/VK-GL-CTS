@@ -183,7 +183,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			const VkExtent3D				targetImageExtent		= { WIDTH, HEIGHT, 1 };
 			const ImageCreateInfo			targetImageCreateInfo	(VK_IMAGE_TYPE_2D, VK_FORMAT_R8G8B8A8_UNORM, targetImageExtent, 1, 1, VK_SAMPLE_COUNT_1_BIT,
 				VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-			colorTargetImages[frameIdx]								= Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
+			colorTargetImages[frameIdx]								= Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
 		}
 
 		// Create render pass and frame buffer.
@@ -313,7 +313,8 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 
 			vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
 
-			initialTransitionColor2DImage(vk, *cmdBuffer, colorTargetImages[frameIdx]->object(), VK_IMAGE_LAYOUT_GENERAL);
+			initialTransitionColor2DImage(vk, *cmdBuffer, colorTargetImages[frameIdx]->object(), VK_IMAGE_LAYOUT_GENERAL,
+										  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			vk.cmdClearColorImage(*cmdBuffer, colorTargetImages[frameIdx]->object(),
 				VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);

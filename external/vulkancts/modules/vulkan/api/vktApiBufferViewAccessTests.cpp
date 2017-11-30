@@ -635,8 +635,8 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
 			DE_NULL,													// const void*				pNext;
-			0,															// VkMemoryOutputFlags		outputMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkMemoryInputFlags		inputMask;
+			0,															// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,									// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
@@ -667,8 +667,8 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
 			DE_NULL,													// const void*				pNext;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkMemoryOutputFlags		outputMask;
-			VK_ACCESS_TRANSFER_READ_BIT,								// VkMemoryInputFlags		inputMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_TRANSFER_READ_BIT,								// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			oldLayout;
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,						// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
@@ -687,8 +687,8 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 		{
 			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType			sType;
 			DE_NULL,													// const void*				pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,								// VkMemoryOutputFlags		outputMask;
-			VK_ACCESS_HOST_READ_BIT,									// VkMemoryInputFlags		inputMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,								// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_HOST_READ_BIT,									// VkAccessFlags			dstAccessMask;
 			VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
 			*m_resultBuffer,											// VkBuffer					buffer;
@@ -712,7 +712,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 		vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}

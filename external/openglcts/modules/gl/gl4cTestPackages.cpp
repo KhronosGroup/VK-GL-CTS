@@ -35,6 +35,7 @@
 #include "gl4cEnhancedLayoutsTests.hpp"
 #include "gl4cGPUShaderFP64Tests.hpp"
 #include "gl4cGetTextureSubImageTests.hpp"
+#include "gl4cGlSpirvTests.hpp"
 #include "gl4cIncompleteTextureAccessTests.hpp"
 #include "gl4cIndirectParametersTests.hpp"
 #include "gl4cKHRDebugTests.hpp"
@@ -67,12 +68,12 @@
 #include "gl4cTextureViewTests.hpp"
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
+#include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
-#include "glcRobustBufferAccessBehaviorTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcSeparableProgramsTransformFeedbackTests.hpp"
 #include "glcShaderConstExprTests.hpp"
@@ -232,7 +233,6 @@ void GL43TestPackage::init(void)
 		addChild(new gl4cts::KHRDebugTests(getContext()));
 		addChild(new gl4cts::ProgramInterfaceQueryTests(getContext()));
 		addChild(new gl4cts::ComputeShaderTests(getContext()));
-		addChild(new deqp::RobustBufferAccessBehaviorTests(getContext()));
 		addChild(new gl4cts::ShaderStorageBufferObjectTests(getContext()));
 		addChild(new gl4cts::VertexAttribBindingTests(getContext()));
 		addChild(new gl4cts::ShaderImageSizeTests(getContext()));
@@ -245,6 +245,7 @@ void GL43TestPackage::init(void)
 		addChild(new gl4cts::IndirectParametersTests(getContext()));
 		addChild(new gl4cts::ShaderBallotTests(getContext()));
 		addChild(new glcts::ShaderConstExprTests(getContext()));
+		addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
 	}
 	catch (...)
 	{
@@ -372,6 +373,7 @@ void GL45TestPackage::init(void)
 		addChild(new glcts::PolygonOffsetClamp(getContext()));
 		addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
 		addChild(new gl4cts::SpirvExtensionsTests(getContext()));
+		addChild(new gl4cts::GlSpirvTests(getContext()));
 	}
 	catch (...)
 	{

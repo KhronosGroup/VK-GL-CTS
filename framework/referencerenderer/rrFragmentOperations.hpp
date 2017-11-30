@@ -134,6 +134,7 @@ private:
 	void		executeScissorTest				(int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, const WindowRectangle& scissorRect);
 	void		executeStencilCompare			(int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, const StencilState& stencilState, int numStencilBits, const tcu::ConstPixelBufferAccess& stencilBuffer);
 	void		executeStencilSFail				(int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, const StencilState& stencilState, int numStencilBits, const tcu::PixelBufferAccess& stencilBuffer);
+	void		executeDepthBoundsTest			(int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, const float minDepthBound, const float maxDepthBound, const tcu::ConstPixelBufferAccess& depthBuffer);
 	void		executeDepthCompare				(int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, TestFunc depthFunc, const tcu::ConstPixelBufferAccess& depthBuffer);
 	void		executeDepthWrite				(int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, const tcu::PixelBufferAccess& depthBuffer);
 	void		executeStencilDpFailAndPass		(int fragNdxOffset, int numSamplesPerFragment, const Fragment* inputFragments, const StencilState& stencilState, int numStencilBits, const tcu::PixelBufferAccess& stencilBuffer);

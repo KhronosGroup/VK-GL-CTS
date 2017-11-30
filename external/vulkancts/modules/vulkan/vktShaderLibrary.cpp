@@ -31,6 +31,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkImageUtil.hpp"
 
 #include "gluShaderLibrary.hpp"
 #include "gluShaderUtil.hpp"
@@ -1281,6 +1282,25 @@ MovePtr<vk::Allocation> allocateAndBindMemory (Context& context, vk::VkBuffer bu
 	return memory;
 }
 
+vk::VkFormat getRenderTargetFormat (DataType dataType)
+{
+	switch (dataType)
+	{
+		case glu::TYPE_FLOAT_VEC2:
+			return vk::VK_FORMAT_R8G8_UNORM;
+		case glu::TYPE_FLOAT_VEC3:
+			return vk::VK_FORMAT_R5G6B5_UNORM_PACK16;
+		case glu::TYPE_FLOAT_VEC4:
+			return vk::VK_FORMAT_R8G8B8A8_UNORM;
+		case glu::TYPE_INT_VEC2:
+			return vk::VK_FORMAT_R8G8_SINT;
+		case glu::TYPE_INT_VEC4:
+			return vk::VK_FORMAT_R8G8B8A8_SINT;
+		default:
+			return vk::VK_FORMAT_R8G8B8A8_UNORM;
+	}
+}
+
 MovePtr<vk::Allocation> allocateAndBindMemory (Context& context, vk::VkImage image, vk::MemoryRequirement memReqs)
 {
 	const vk::DeviceInterface&		vkd		= context.getDeviceInterface();
@@ -1340,12 +1360,13 @@ private:
 	const Unique<vk::VkBuffer>						m_uniformBuffer;		// Uniform values. Can be NULL if no uniforms present
 	const UniquePtr<vk::Allocation>					m_uniformMem;			// Uniform memory, can be NULL if no uniform buffer exists
 
-	const Unique<vk::VkBuffer>						m_readImageBuffer;
-	const UniquePtr<vk::Allocation>					m_readImageMem;
-
+	const vk::VkFormat								m_rtFormat;
 	const Unique<vk::VkImage>						m_rtImage;
 	const UniquePtr<vk::Allocation>					m_rtMem;
 	const Unique<vk::VkImageView>					m_rtView;
+
+	const Unique<vk::VkBuffer>						m_readImageBuffer;
+	const UniquePtr<vk::Allocation>					m_readImageMem;
 
 	const Unique<vk::VkRenderPass>					m_renderPass;
 	const Unique<vk::VkFramebuffer>					m_framebuffer;
@@ -1382,14 +1403,15 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 	, m_uniformBuffer		(m_uniformLayout.size > 0 ? createBuffer(context, (vk::VkDeviceSize)m_uniformLayout.size, vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) : Move<vk::VkBuffer>())
 	, m_uniformMem			(m_uniformLayout.size > 0 ? allocateAndBindMemory(context, *m_uniformBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
 
-	, m_readImageBuffer		(createBuffer(context, (vk::VkDeviceSize)(RENDER_WIDTH*RENDER_HEIGHT*4), vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT))
+	, m_rtFormat			(getRenderTargetFormat(spec.outputFormat))
+	, m_rtImage				(createImage2D(context, RENDER_WIDTH, RENDER_HEIGHT, m_rtFormat, vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT))
+	, m_rtMem				(allocateAndBindMemory(context, *m_rtImage, vk::MemoryRequirement::Any))
+	, m_rtView				(createAttachmentView(context, *m_rtImage, m_rtFormat))
+
+	, m_readImageBuffer		(createBuffer(context, (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * tcu::getPixelSize(vk::mapVkFormat(m_rtFormat))), vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT))
 	, m_readImageMem		(allocateAndBindMemory(context, *m_readImageBuffer, vk::MemoryRequirement::HostVisible))
 
-	, m_rtImage				(createImage2D(context, RENDER_WIDTH, RENDER_HEIGHT, vk::VK_FORMAT_R8G8B8A8_UNORM, vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT))
-	, m_rtMem				(allocateAndBindMemory(context, *m_rtImage, vk::MemoryRequirement::Any))
-	, m_rtView				(createAttachmentView(context, *m_rtImage, vk::VK_FORMAT_R8G8B8A8_UNORM))
-
-	, m_renderPass			(createRenderPass(context, vk::VK_FORMAT_R8G8B8A8_UNORM))
+	, m_renderPass			(createRenderPass(context, m_rtFormat))
 	, m_framebuffer			(createFramebuffer(context, *m_renderPass, *m_rtView, RENDER_WIDTH, RENDER_HEIGHT))
 	, m_program				(context, spec)
 	, m_descriptorSetLayout	(createDescriptorSetLayout(context, m_program.getStages()))
@@ -1587,6 +1609,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 	}
 
 	{
+		const vk::VkDeviceSize			size				= (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * tcu::getPixelSize(vk::mapVkFormat(m_rtFormat)));
 		const vk::VkBufferMemoryBarrier	copyFinishBarrier	=
 		{
 			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// sType
@@ -1597,7 +1620,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 			queueFamilyIndex,									// destQueueFamilyIndex
 			*m_readImageBuffer,									// buffer
 			0u,													// offset
-			(vk::VkDeviceSize)(RENDER_WIDTH*RENDER_HEIGHT*4)	// size
+			size												// size
 		};
 
 		vkd.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
@@ -1639,6 +1662,21 @@ bool checkResultImage (const ConstPixelBufferAccess& result)
 	return true;
 }
 
+bool checkResultImageWithReference (const ConstPixelBufferAccess& result, tcu::IVec4 refPix)
+{
+	for (int y = 0; y < result.getHeight(); y++)
+	{
+		for (int x = 0; x < result.getWidth(); x++)
+		{
+			const tcu::IVec4	resPix	= result.getPixelInt(x, y);
+
+			if (boolAny(notEqual(resPix, refPix)))
+				return false;
+		}
+	}
+
+	return true;
+}
 TestStatus ShaderCaseInstance::iterate (void)
 {
 	const vk::DeviceInterface&	vkd		= m_context.getDeviceInterface();
@@ -1673,6 +1711,8 @@ TestStatus ShaderCaseInstance::iterate (void)
 		VK_CHECK(vkd.waitForFences	(device, 1u, &fence.get(), DE_TRUE, ~0ull));
 	}
 
+	// Result was checked in fragment shader
+	if (m_spec.outputType == glu::sl::OUTPUT_RESULT)
 	{
 		const ConstPixelBufferAccess	imgAccess	(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), RENDER_WIDTH, RENDER_HEIGHT, 1, m_readImageMem->getHostPtr());
 
@@ -1690,6 +1730,39 @@ TestStatus ShaderCaseInstance::iterate (void)
 			return TestStatus::fail(string("Got invalid pixels at sub-case ") + de::toString(m_subCaseNdx));
 		}
 	}
+	// Result was written to color buffer
+	else
+	{
+		const ConstPixelBufferAccess	imgAccess		(vk::mapVkFormat(m_rtFormat), RENDER_WIDTH, RENDER_HEIGHT, 1, m_readImageMem->getHostPtr());
+		const DataType					dataType		= m_spec.values.outputs[0].type.getBasicType();
+		const int						numComponents	= getDataTypeScalarSize(dataType);
+		tcu::IVec4						reference		(0, 0, 0, 1);
+
+		for (int refNdx = 0; refNdx < numComponents; refNdx++)
+		{
+			if (isDataTypeFloatOrVec(dataType))
+				reference[refNdx] = (int)m_spec.values.outputs[0].elements[m_subCaseNdx * numComponents + refNdx].float32;
+			else if (isDataTypeIntOrIVec(dataType))
+				reference[refNdx] = m_spec.values.outputs[0].elements[m_subCaseNdx * numComponents + refNdx].int32;
+			else
+				DE_FATAL("Unknown data type");
+		}
+
+		invalidateMappedMemoryRange(vkd, device, m_readImageMem->getMemory(), m_readImageMem->getOffset(), (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * tcu::getPixelSize(vk::mapVkFormat(m_rtFormat))));
+
+		if (!checkResultImageWithReference(imgAccess, reference))
+		{
+			TestLog&	log		= m_context.getTestContext().getLog();
+
+			log << TestLog::Message << "ERROR: Got nonmatching pixels on sub-case " << m_subCaseNdx << TestLog::EndMessage
+				<< TestLog::Image("Result", "Result", imgAccess);
+
+			dumpValues(log, m_spec.values, m_subCaseNdx);
+
+			return TestStatus::fail(string("Got invalid pixels at sub-case ") + de::toString(m_subCaseNdx));
+		}
+	}
+
 
 	if (++m_subCaseNdx < getNumSubCases(m_spec.values))
 		return TestStatus::incomplete();

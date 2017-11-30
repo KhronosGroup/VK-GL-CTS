@@ -2575,3 +2575,15 @@ KHR-GLES31.core.viewport_array.depth_range_depth_test
 KHR-GLES31.core.viewport_array.provoking_vertex
 KHR-GLES31.shaders.negative.initialize
 KHR-GLES31.shaders.negative.constant_sequence
+KHR-GLES31.shaders.aggressive_optimizations.sin_float_vert
+KHR-GLES31.shaders.aggressive_optimizations.sin_float_frag
+KHR-GLES31.shaders.aggressive_optimizations.sin_vec2_vert
+KHR-GLES31.shaders.aggressive_optimizations.sin_vec2_frag
+KHR-GLES31.shaders.aggressive_optimizations.sin_vec3_vert
+KHR-GLES31.shaders.aggressive_optimizations.sin_vec3_frag
+KHR-GLES31.shaders.aggressive_optimizations.cos_float_vert
+KHR-GLES31.shaders.aggressive_optimizations.cos_float_frag
+KHR-GLES31.shaders.aggressive_optimizations.cos_vec2_vert
+KHR-GLES31.shaders.aggressive_optimizations.cos_vec2_frag
+KHR-GLES31.shaders.aggressive_optimizations.cos_vec3_vert
+KHR-GLES31.shaders.aggressive_optimizations.cos_vec3_frag

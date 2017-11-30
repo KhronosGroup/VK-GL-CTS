@@ -866,7 +866,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		};
 
 		VK_CHECK(vk.beginCommandBuffer(*transferCmdBuffer, &cmdBufferBeginInfo));
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_HOST_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
 				0, (const VkBufferMemoryBarrier*)DE_NULL,

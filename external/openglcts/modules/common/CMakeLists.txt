@@ -10,6 +10,8 @@ include_directories(
 	)
 
 set(GLCTS_COMMON_SRCS
+	glcAggressiveShaderOptimizationsTests.cpp
+	glcAggressiveShaderOptimizationsTests.hpp
 	glcBlendEquationAdvancedTests.cpp
 	glcBlendEquationAdvancedTests.hpp
 	glcConfigList.hpp

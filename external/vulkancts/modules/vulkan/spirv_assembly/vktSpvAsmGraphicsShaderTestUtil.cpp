@@ -2432,6 +2432,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				if (features.shaderInt64 != VK_TRUE)
 					TCU_THROW(NotSupportedError, "Device feature not supported: shaderInt64");
 			}
+			else if (feature == "shaderFloat64")
+			{
+				if (features.shaderFloat64 != VK_TRUE)
+					TCU_THROW(NotSupportedError, "Device feature not supported: shaderFloat64");
+			}
 			else
 			{
 				TCU_THROW(InternalError, (std::string("Unimplemented physical device feature: ") + feature).c_str());
@@ -3316,7 +3321,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType	sType;
 		DE_NULL,													//	const void*		pNext;
 		(VkPipelineRasterizationStateCreateFlags)0,
-		DE_TRUE,													//	deUint32		depthClipEnable;
+		DE_FALSE,													//	deUint32		depthClampEnable;
 		DE_FALSE,													//	deUint32		rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,										//	VkFillMode		fillMode;
 		VK_CULL_MODE_NONE,											//	VkCullMode		cullMode;

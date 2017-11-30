@@ -147,6 +147,8 @@ Tests
 
         - Verify if built-in functions are converted from GLSL to SPIR-V as expected.
 
+        NOTE: noise* built-in functions are excluded from testing as they are deprecated.
+
       * Specialization Constants
 
         - Create fragment shader with specialized constant floats - one for each color

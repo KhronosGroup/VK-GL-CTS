@@ -224,7 +224,7 @@ void attachment_advanced_equation (NegativeTestContext& ctx)
 	ctx.expectError(GL_NO_ERROR);
 	ctx.glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-	ctx.beginSection("GL_INVALID_OPERATION is generated if blending is enabled, advanced equations are used, and the draw buffer for other color outputs is not NONE.");
+	ctx.beginSection("GL_INVALID_OPERATION is generated if blending is enabled, advanced equations are used, and the draw buffer for other color outputs is not NONE unless NVX_blend_equation_advanced_multi_draw_buffers is supported.");
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_equations); ++ndx)
 	{
 		glu::ShaderProgram	program(ctx.getRenderContext(), generateProgramSources(ctx, s_equations[ndx]));
@@ -237,7 +237,10 @@ void attachment_advanced_equation (NegativeTestContext& ctx)
 		ctx.expectError(GL_NO_ERROR);
 		ctx.glBlendEquation(getEquation(s_equations[ndx]));
 		ctx.glDrawElements(GL_TRIANGLES, 0, GL_UNSIGNED_INT, 0);
-		ctx.expectError(GL_INVALID_OPERATION);
+		if (ctx.isExtensionSupported("GL_NVX_blend_equation_advanced_multi_draw_buffers"))
+			ctx.expectError(GL_NO_ERROR);
+		else
+			ctx.expectError(GL_INVALID_OPERATION);
 	}
 	ctx.endSection();
 

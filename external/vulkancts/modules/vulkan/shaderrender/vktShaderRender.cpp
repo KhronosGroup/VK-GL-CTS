@@ -1206,7 +1206,7 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
 	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	const VkSubmitInfo submitInfo =
@@ -1322,7 +1322,7 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	{
 		vk.cmdClearDepthStencilImage(*cmdBuffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.depthStencil, 1, &clearRange);
 	}
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	const VkSubmitInfo submitInfo =
@@ -1466,12 +1466,12 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 
 		const deUint32 noMatchFound = ~((deUint32)0);
 
-		deUint32 colorAspectIndex = noMatchFound;
+		deUint32 aspectIndex = noMatchFound;
 		for (deUint32 memoryReqNdx = 0; memoryReqNdx < sparseMemoryReqCount; ++memoryReqNdx)
 		{
-			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask & VK_IMAGE_ASPECT_COLOR_BIT)
+			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask == aspectMask)
 			{
-				colorAspectIndex = memoryReqNdx;
+				aspectIndex = memoryReqNdx;
 				break;
 			}
 		}
@@ -1486,8 +1486,8 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 			}
 		}
 
-		if (colorAspectIndex == noMatchFound)
-			TCU_THROW(NotSupportedError, "Not supported image aspect - the test supports currently only VK_IMAGE_ASPECT_COLOR_BIT.");
+		if (aspectIndex == noMatchFound)
+			TCU_THROW(NotSupportedError, "Required image aspect not supported.");
 
 		const VkMemoryRequirements	memoryRequirements	= getImageMemoryRequirements(vk, vkDevice, sparseImage);
 
@@ -1515,7 +1515,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 		if (sparseImageFormatPropVec.size() == 0)
 			TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
 
-		const VkSparseImageMemoryRequirements		aspectRequirements	= sparseImageMemoryRequirements[colorAspectIndex];
+		const VkSparseImageMemoryRequirements		aspectRequirements	= sparseImageMemoryRequirements[aspectIndex];
 		const VkExtent3D							imageGranularity	= aspectRequirements.formatProperties.imageGranularity;
 
 		std::vector<VkSparseImageMemoryBind>		imageResidencyMemoryBinds;
@@ -1814,7 +1814,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
 	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, sparseImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;

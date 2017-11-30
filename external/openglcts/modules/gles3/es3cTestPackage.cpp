@@ -23,6 +23,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es3cTestPackage.hpp"
+#include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
@@ -140,6 +141,7 @@ public:
 		addChild(new deqp::UniformBlockTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderIntegerMixTests(m_context, glu::GLSL_VERSION_300_ES));
 		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_300_ES));
+		addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
 	}
 };
 

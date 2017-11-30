@@ -57,6 +57,14 @@ enum ExpectResult
 	EXPECT_LAST
 };
 
+enum OutputType
+{
+	OUTPUT_RESULT = 0,
+	OUTPUT_COLOR,
+
+	OUTPUT_LAST
+};
+
 struct Value
 {
 	union Element
@@ -137,6 +145,8 @@ struct ShaderCaseSpecification
 {
 	CaseType							caseType;
 	ExpectResult						expectResult;
+	OutputType							outputType;
+	DataType							outputFormat;
 	glu::GLSLVersion					targetVersion;
 
 	// \todo [pyry] Clean this up
@@ -149,6 +159,8 @@ struct ShaderCaseSpecification
 	ShaderCaseSpecification (void)
 		: caseType				(CASETYPE_LAST)
 		, expectResult			(EXPECT_LAST)
+		, outputType			(OUTPUT_RESULT)
+		, outputFormat			(TYPE_LAST)
 		, targetVersion			(glu::GLSL_VERSION_LAST)
 		, fullGLSLES100Required	(false)
 	{

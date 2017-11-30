@@ -133,26 +133,43 @@ public:
 
 		TYPE_LAST
 	};
-										TextureBinding				(Context& context);
-										TextureBinding				(Context& context, const TestTextureSp& textureData, const Type type);
-	vk::VkImage							getImage					(void) { return *m_textureImage; }
-	vk::VkImageView						getImageView				(void) { return *m_textureImageView; }
-	Type								getType						(void) { return m_type; }
-	const pipeline::TestTexture&		getTestTexture				(void) { return *m_textureData; }
-	void								updateTextureViewMipLevels	(deUint32 baseLevel, deUint32 maxLevel);
+
+	enum ImageBackingMode
+	{
+		IMAGE_BACKING_MODE_REGULAR = 0,
+		IMAGE_BACKING_MODE_SPARSE,
+
+		IMAGE_BACKING_MODE_LAST
+	};
+													TextureBinding				(Context& context);
+													TextureBinding				(Context& context, const TestTextureSp& textureData, const Type type,
+																				 const ImageBackingMode backingMode = IMAGE_BACKING_MODE_REGULAR);
+	vk::VkImage										getImage					(void) { return *m_textureImage; }
+	vk::VkImageView									getImageView				(void) { return *m_textureImageView; }
+	Type											getType						(void) { return m_type; }
+	const pipeline::TestTexture&					getTestTexture				(void) { return *m_textureData; }
+	void											updateTextureViewMipLevels	(deUint32 baseLevel, deUint32 maxLevel);
 
 private:
-										TextureBinding				(const TextureBinding&);	// not allowed!
-	TextureBinding&						operator=					(const TextureBinding&);	// not allowed!
+													TextureBinding				(const TextureBinding&);	// not allowed!
+	TextureBinding&									operator=					(const TextureBinding&);	// not allowed!
 
-	void								updateTextureData			(const TestTextureSp& textureData, const Type type);
+	void											updateTextureData			(const TestTextureSp& textureData, const Type type);
+	vk::Allocator*									createAllocator				(void) const;
+	vk::Move<vk::VkDevice>							createDevice				(void) const;
 
-	Context&							m_context;
-	Type								m_type;
-	TestTextureSp						m_textureData;
-	vk::Move<vk::VkImage>				m_textureImage;
-	de::MovePtr<vk::Allocation>			m_textureImageMemory;
-	vk::Move<vk::VkImageView>			m_textureImageView;
+	Context&										m_context;
+	const deUint32									m_queueFamilyIndex;
+	Type											m_type;
+	ImageBackingMode								m_backingMode;
+	TestTextureSp									m_textureData;
+	vk::Move<vk::VkImage>							m_textureImage;
+	de::MovePtr<vk::Allocation>						m_textureImageMemory;
+	vk::Move<vk::VkImageView>						m_textureImageView;
+	vk::Unique<vk::VkDevice>						m_device;
+	vk::DeviceDriver								m_deviceInterface;
+	const de::UniquePtr<vk::Allocator>				m_allocator;
+	std::vector<de::SharedPtr<vk::Allocation> >		m_allocations;
 };
 
 typedef de::SharedPtr<TextureBinding>	TextureBindingSp;
@@ -173,16 +190,20 @@ public:
 																	 const float									maxAnisotropy);
 
 	void								clearImage					(vk::VkImage image);
-	void								add2DTexture				(const TestTexture2DSp& texture);
+	void								add2DTexture				(const TestTexture2DSp& texture,
+																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
 	const pipeline::TestTexture2D&		get2DTexture				(int textureIndex) const;
 
-	void								addCubeTexture				(const TestTextureCubeSp& texture);
+	void								addCubeTexture				(const TestTextureCubeSp& texture,
+																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
 	const pipeline::TestTextureCube&	getCubeTexture				(int textureIndex) const;
 
-	void								add2DArrayTexture			(const TestTexture2DArraySp& texture);
+	void								add2DArrayTexture			(const TestTexture2DArraySp& texture,
+																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
 	const pipeline::TestTexture2DArray&	get2DArrayTexture			(int textureIndex) const;
 
-	void								add3DTexture				(const TestTexture3DSp& texture);
+	void								add3DTexture				(const TestTexture3DSp& texture,
+																	 TextureBinding::ImageBackingMode backingMode = TextureBinding::IMAGE_BACKING_MODE_REGULAR);
 	const pipeline::TestTexture3D&		get3DTexture				(int textureIndex) const;
 
 	void								setViewport					(float viewportX, float viewportY, float viewportW, float viewportH);

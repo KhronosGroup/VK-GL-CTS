@@ -10,8 +10,6 @@ set(GLCTS_ES32_SRCS
 	es32cTestPackage.hpp
 	es32cCopyImageTests.cpp
 	es32cCopyImageTests.hpp
-	es32cRobustBufferAccessBehaviorTests.cpp
-	es32cRobustBufferAccessBehaviorTests.hpp
 	)
 
 set(GLCTS_ES32_LIBS

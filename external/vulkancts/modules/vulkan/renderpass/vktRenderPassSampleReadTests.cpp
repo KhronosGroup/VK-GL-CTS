@@ -824,7 +824,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vkd,
 		pipelineLayout,
 
 		renderPass,
-		0u,
+		1u,
 		DE_NULL,
 		0u
 	};

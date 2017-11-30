@@ -383,6 +383,25 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 													 s_es310Tests[ndx].description,
 													 std::string("vulkan/glsl/es310/") + s_es310Tests[ndx].name + ".test").release());
 
+	static const struct
+	{
+		const char*		name;
+		const char*		description;
+	} s_440Tests[] =
+	{
+		{ "linkage",					"Linking"					},
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> glsl440Tests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "440", ""));
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_440Tests); ndx++)
+		glsl440Tests->addChild(createShaderLibraryGroup(testCtx,
+													 s_440Tests[ndx].name,
+													 s_440Tests[ndx].description,
+													 std::string("vulkan/glsl/440/") + s_440Tests[ndx].name + ".test").release());
+
+	glslTests->addChild(glsl440Tests.release());
+
 	// ShaderRenderCase-based tests
 	glslTests->addChild(sr::createDerivateTests			(testCtx));
 	glslTests->addChild(sr::createDiscardTests			(testCtx));

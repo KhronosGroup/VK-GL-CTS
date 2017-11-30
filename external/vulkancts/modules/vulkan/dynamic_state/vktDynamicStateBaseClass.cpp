@@ -55,49 +55,10 @@ void DynamicStateBaseClass::initialize (void)
 	const ImageCreateInfo targetImageCreateInfo(vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, targetImageExtent, 1, 1, vk::VK_SAMPLE_COUNT_1_BIT,
 												vk::VK_IMAGE_TILING_OPTIMAL, vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
-	m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
+	m_colorTargetImage = Image::createAndAlloc(m_vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
 
 	const ImageViewCreateInfo colorTargetViewInfo(m_colorTargetImage->object(), vk::VK_IMAGE_VIEW_TYPE_2D, m_colorAttachmentFormat);
 	m_colorTargetView = vk::createImageView(m_vk, device, &colorTargetViewInfo);
-
-	RenderPassCreateInfo renderPassCreateInfo;
-	renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
-															 vk::VK_SAMPLE_COUNT_1_BIT,
-															 vk::VK_ATTACHMENT_LOAD_OP_LOAD,
-															 vk::VK_ATTACHMENT_STORE_OP_STORE,
-															 vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-															 vk::VK_ATTACHMENT_STORE_OP_STORE,
-															 vk::VK_IMAGE_LAYOUT_GENERAL,
-															 vk::VK_IMAGE_LAYOUT_GENERAL));
-
-	const vk::VkAttachmentReference colorAttachmentReference =
-	{
-		0,
-		vk::VK_IMAGE_LAYOUT_GENERAL
-	};
-
-	renderPassCreateInfo.addSubpass(SubpassDescription(
-		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-		0,
-		0,
-		DE_NULL,
-		1,
-		&colorAttachmentReference,
-		DE_NULL,
-		AttachmentReference(),
-		0,
-		DE_NULL
-		)
-		);
-
-	m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
-
-	std::vector<vk::VkImageView> colorAttachments(1);
-	colorAttachments[0] = *m_colorTargetView;
-
-	const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
-
-	m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 
 	const vk::VkVertexInputBindingDescription vertexInputBindingDescription =
 	{
@@ -153,7 +114,55 @@ void DynamicStateBaseClass::initialize (void)
 	};
 	m_cmdBuffer = vk::allocateCommandBuffer(m_vk, device, &cmdBufferAllocateInfo);
 
+	initRenderPass(device);
+	initFramebuffer(device);
 	initPipeline(device);
+}
+
+
+void DynamicStateBaseClass::initRenderPass (const vk::VkDevice device)
+{
+	RenderPassCreateInfo renderPassCreateInfo;
+	renderPassCreateInfo.addAttachment(AttachmentDescription(m_colorAttachmentFormat,
+		vk::VK_SAMPLE_COUNT_1_BIT,
+		vk::VK_ATTACHMENT_LOAD_OP_LOAD,
+		vk::VK_ATTACHMENT_STORE_OP_STORE,
+		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+		vk::VK_ATTACHMENT_STORE_OP_STORE,
+		vk::VK_IMAGE_LAYOUT_GENERAL,
+		vk::VK_IMAGE_LAYOUT_GENERAL));
+
+	const vk::VkAttachmentReference colorAttachmentReference =
+	{
+		0,
+		vk::VK_IMAGE_LAYOUT_GENERAL
+	};
+
+	renderPassCreateInfo.addSubpass(SubpassDescription(
+		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
+		0,
+		0,
+		DE_NULL,
+		1,
+		&colorAttachmentReference,
+		DE_NULL,
+		AttachmentReference(),
+		0,
+		DE_NULL
+	)
+	);
+
+	m_renderPass = vk::createRenderPass(m_vk, device, &renderPassCreateInfo);
+}
+
+void DynamicStateBaseClass::initFramebuffer (const vk::VkDevice device)
+{
+	std::vector<vk::VkImageView> colorAttachments(1);
+	colorAttachments[0] = *m_colorTargetView;
+
+	const FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, colorAttachments, WIDTH, HEIGHT, 1);
+
+	m_framebuffer = vk::createFramebuffer(m_vk, device, &framebufferCreateInfo);
 }
 
 void DynamicStateBaseClass::initPipeline (const vk::VkDevice device)
@@ -190,12 +199,16 @@ void DynamicStateBaseClass::beginRenderPass (void)
 	beginRenderPassWithClearColor(clearColor);
 }
 
-void DynamicStateBaseClass::beginRenderPassWithClearColor (const vk::VkClearColorValue& clearColor)
+void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColorValue& clearColor, const bool skipBeginCmdBuffer)
 {
-	const CmdBufferBeginInfo beginInfo;
-	m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+	if (!skipBeginCmdBuffer)
+	{
+		const CmdBufferBeginInfo beginInfo;
+		m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+	}
 
-	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL);
+	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
+								  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	const ImageSubresourceRange subresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT);
 	m_vk.cmdClearColorImage(*m_cmdBuffer, m_colorTargetImage->object(),

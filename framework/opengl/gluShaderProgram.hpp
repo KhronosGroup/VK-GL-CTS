@@ -25,6 +25,7 @@
 
 #include "gluDefs.hpp"
 #include "gluShaderUtil.hpp"
+#include "glwEnums.hpp"
 #include "qpTestLog.h"
 
 #include <string>
@@ -39,6 +40,8 @@ namespace glu
 {
 
 class RenderContext;
+
+typedef std::vector<deUint32> ShaderBinaryDataType;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Shader information (compile status, log, etc.).
@@ -87,6 +90,8 @@ public:
 
 	void					setSources			(int numSourceStrings, const char* const* sourceStrings, const int* lengths);
 	void					compile				(void);
+	void					specialize			(const char* entryPoint, glw::GLuint numSpecializationConstants,
+												 const glw::GLuint* constantIndex, const glw::GLuint* constantValue);
 
 	deUint32				getShader			(void) const { return m_shader;				}
 	const ShaderInfo&		getInfo				(void) const { return m_info;				}
@@ -173,6 +178,7 @@ private:
 };
 
 struct ProgramSources;
+struct ProgramBinaries;
 
 /*--------------------------------------------------------------------*//*!
  * \brief Shader program manager.
@@ -184,13 +190,16 @@ class ShaderProgram
 {
 public:
 							ShaderProgram				(const glw::Functions& gl, const ProgramSources& sources);
+							ShaderProgram				(const glw::Functions& gl, const ProgramBinaries& binaries);
 							ShaderProgram				(const RenderContext& renderCtx, const ProgramSources& sources);
+							ShaderProgram				(const RenderContext& renderCtx, const ProgramBinaries& binaries);
 							~ShaderProgram				(void);
 
 	bool					isOk						(void) const											{ return m_program.getLinkStatus();						}
 	deUint32				getProgram					(void) const											{ return m_program.getProgram();						}
 
 	bool					hasShader					(glu::ShaderType shaderType) const						{ return !m_shaders[shaderType].empty();				}
+	Shader*					getShader					(glu::ShaderType shaderType, int shaderNdx = 0) const	{ return m_shaders[shaderType][shaderNdx];	}
 	int						getNumShaders				(glu::ShaderType shaderType) const						{ return (int)m_shaders[shaderType].size();				}
 	const ShaderInfo&		getShaderInfo				(glu::ShaderType shaderType, int shaderNdx = 0) const	{ return m_shaders[shaderType][shaderNdx]->getInfo();	}
 	const ProgramInfo&		getProgramInfo				(void) const											{ return m_program.getInfo();							}
@@ -199,6 +208,8 @@ private:
 							ShaderProgram				(const ShaderProgram& other);
 	ShaderProgram&			operator=					(const ShaderProgram& other);
 	void					init						(const glw::Functions& gl, const ProgramSources& sources);
+	void					init						(const glw::Functions& gl, const ProgramBinaries& binaries);
+	void					setBinary					(const glw::Functions& gl, std::vector<Shader*>& shaders, glw::GLenum binaryFormat, const void* binaryData, const int length);
 
 	std::vector<Shader*>	m_shaders[SHADERTYPE_LAST];
 	Program					m_program;
@@ -315,6 +326,97 @@ struct ProgramSources
 
 	template<typename Iterator>
 	ProgramSources&						operator<<			(const TransformFeedbackVaryings<Iterator>& varyings);
+};
+
+struct SpecializationData
+{
+	deUint32 index;
+	deUint32 value;
+
+	SpecializationData (void) : index(0), value(0) {}
+	SpecializationData (const deUint32 index_, const deUint32 value_) : index(index_), value(value_) {}
+};
+
+struct ShaderBinary
+{
+	ShaderBinaryDataType		binary;
+	std::vector<ShaderType>		shaderTypes;
+	std::vector<std::string>	shaderEntryPoints;
+	std::vector<deUint32>		specializationIndices;
+	std::vector<deUint32>		specializationValues;
+
+	ShaderBinary (void) {}
+	ShaderBinary (const ShaderBinaryDataType binary_) : binary(binary_)
+	{
+		DE_ASSERT(!binary_.empty());
+	}
+	ShaderBinary (const ShaderBinaryDataType binary_, glu::ShaderType shaderType_) : binary(binary_)
+	{
+		DE_ASSERT(!binary_.empty());
+		shaderTypes.push_back(shaderType_);
+		shaderEntryPoints.push_back("main");
+	}
+
+	ShaderBinary& operator<< (const ShaderType& shaderType)
+	{
+		shaderTypes.push_back(shaderType);
+		return *this;
+	}
+
+	ShaderBinary& operator<< (const std::string& entryPoint)
+	{
+		shaderEntryPoints.push_back(entryPoint);
+		return *this;
+	}
+
+	ShaderBinary& operator<< (const SpecializationData& specData)
+	{
+		specializationIndices.push_back(specData.index);
+		specializationValues.push_back(specData.value);
+		return *this;
+	}
+};
+
+struct VertexBinary : public ShaderBinary
+{
+	VertexBinary (const ShaderBinaryDataType binary_) : ShaderBinary(binary_, glu::SHADERTYPE_VERTEX) {}
+};
+
+struct FragmentBinary : public ShaderBinary
+{
+	FragmentBinary (const ShaderBinaryDataType binary_) : ShaderBinary(binary_, glu::SHADERTYPE_FRAGMENT) {}
+};
+
+struct GeometryBinary : public ShaderBinary
+{
+	GeometryBinary (const ShaderBinaryDataType binary_) : ShaderBinary(binary_, glu::SHADERTYPE_GEOMETRY) {}
+};
+
+struct ComputeBinary : public ShaderBinary
+{
+	ComputeBinary (const ShaderBinaryDataType binary_) : ShaderBinary(binary_, glu::SHADERTYPE_COMPUTE) {}
+};
+
+struct TessellationControlBinary : public ShaderBinary
+{
+	TessellationControlBinary (const ShaderBinaryDataType binary_) : ShaderBinary(binary_, glu::SHADERTYPE_TESSELLATION_CONTROL) {}
+};
+
+struct TessellationEvaluationBinary : public ShaderBinary
+{
+	TessellationEvaluationBinary (const ShaderBinaryDataType binary_) : ShaderBinary(binary_, glu::SHADERTYPE_TESSELLATION_EVALUATION) {}
+};
+
+struct ProgramBinaries
+{
+	std::vector<ShaderBinary>	binaries;
+
+	glw::GLenum					binaryFormat;
+
+	ProgramBinaries (void) : binaryFormat(GL_SHADER_BINARY_FORMAT_SPIR_V_ARB) {}
+	ProgramBinaries (glw::GLenum binaryFormat_) : binaryFormat(binaryFormat_) {}
+
+	ProgramBinaries& operator<< (const ShaderBinary& shaderBinary)	{ binaries.push_back(shaderBinary);	return *this;	}
 };
 
 template<typename Iterator>

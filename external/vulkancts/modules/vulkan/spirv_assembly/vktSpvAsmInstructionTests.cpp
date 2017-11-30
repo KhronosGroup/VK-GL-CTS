@@ -181,7 +181,7 @@ struct CaseParameter
 	CaseParameter	(const char* case_, const string& param_) : name(case_), param(param_) {}
 };
 
-// Assembly code used for testing OpNop, OpConstant{Null|Composite}, Op[No]Line, OpSource[Continued], OpSourceExtension, OpUndef is based on GLSL source code:
+// Assembly code used for testing LocalSize, OpNop, OpConstant{Null|Composite}, Op[No]Line, OpSource[Continued], OpSourceExtension, OpUndef is based on GLSL source code:
 //
 // #version 430
 //
@@ -199,12 +199,15 @@ struct CaseParameter
 //   output_data.elements[x] = -input_data.elements[x];
 // }
 
-
-static string getAsmForOpNopTest(bool useLiteralLocalSize, bool useSpecConstantWorkgroupSize) {
+static string getAsmForLocalSizeTest(bool useLiteralLocalSize, bool useSpecConstantWorkgroupSize, IVec3 workGroupSize, deUint32 ndx)
+{
 	std::ostringstream out;
 	out << getComputeAsmShaderPreambleWithoutLocalSize();
-	if (useLiteralLocalSize) {
-		out << "OpExecutionMode %main LocalSize 1 1 1\n";
+
+	if (useLiteralLocalSize)
+	{
+		out << "OpExecutionMode %main LocalSize "
+			<< workGroupSize.x() << " " << workGroupSize.y() << " " << workGroupSize.z() << "\n";
 	}
 
 	out << "OpSource GLSL 430\n"
@@ -212,42 +215,101 @@ static string getAsmForOpNopTest(bool useLiteralLocalSize, bool useSpecConstantW
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 		"OpDecorate %id BuiltIn GlobalInvocationId\n";
 
-	if (useSpecConstantWorkgroupSize) {
+	if (useSpecConstantWorkgroupSize)
+	{
 		out << "OpDecorate %spec_0 SpecId 100\n"
-			    "OpDecorate %spec_0 SpecId 100\n"
-			    "OpDecorate %spec_1 SpecId 101\n"
-			    "OpDecorate %spec_2 SpecId 102\n"
-			    "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
+			<< "OpDecorate %spec_1 SpecId 101\n"
+			<< "OpDecorate %spec_2 SpecId 102\n"
+			<< "OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n";
 	}
 
 	out << getComputeAsmInputOutputBufferTraits()
 		<< getComputeAsmCommonTypes()
 		<< getComputeAsmInputOutputBuffer()
 		<< "%id        = OpVariable %uvec3ptr Input\n"
-		<< "%zero      = OpConstant %i32 0\n";
+		<< "%zero      = OpConstant %i32 0 \n";
 
-	if (useSpecConstantWorkgroupSize) {
-		out << "%spec_0   = OpSpecConstant %u32 1\n"
-		"%spec_1   = OpSpecConstant %u32 1\n"
-		"%spec_2   = OpSpecConstant %u32 1\n"
-		"%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %spec_0 %spec_1 %spec_2\n";
+	if (useSpecConstantWorkgroupSize)
+	{
+		out	<< "%spec_0   = OpSpecConstant %u32 "<< workGroupSize.x() << "\n"
+			<< "%spec_1   = OpSpecConstant %u32 "<< workGroupSize.y() << "\n"
+			<< "%spec_2   = OpSpecConstant %u32 "<< workGroupSize.z() << "\n"
+			<< "%gl_WorkGroupSize = OpSpecConstantComposite %uvec3 %spec_0 %spec_1 %spec_2\n";
 	}
 
 	out << "%main      = OpFunction %void None %voidf\n"
-		"%label     = OpLabel\n"
-		"%idval     = OpLoad %uvec3 %id\n"
-		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		<< "%label     = OpLabel\n"
+		<< "%idval     = OpLoad %uvec3 %id\n"
+		<< "%ndx         = OpCompositeExtract %u32 %idval " << ndx << "\n"
 
-		"             OpNop\n" // Inside a function body
+			"%inloc     = OpAccessChain %f32ptr %indata %zero %ndx\n"
+			"%inval     = OpLoad %f32 %inloc\n"
+			"%neg       = OpFNegate %f32 %inval\n"
+			"%outloc    = OpAccessChain %f32ptr %outdata %zero %ndx\n"
+			"             OpStore %outloc %neg\n"
+			"             OpReturn\n"
+			"             OpFunctionEnd\n";
+	return out.str();
+}
 
-		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
-		"%inval     = OpLoad %f32 %inloc\n"
-		"%neg       = OpFNegate %f32 %inval\n"
-		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
-		"             OpStore %outloc %neg\n"
-		"             OpReturn\n"
-		"             OpFunctionEnd\n";
-    return out.str();
+tcu::TestCaseGroup* createLocalSizeGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "localsize", ""));
+	ComputeShaderSpec				spec;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const deUint32					numElements		= 64u;
+	vector<float>					positiveFloats	(numElements, 0);
+	vector<float>					negativeFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		negativeFloats[ndx] = -positiveFloats[ndx];
+
+	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
+	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
+
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize", "", spec));
+
+	spec.numWorkGroups = IVec3(1, 1, 1);
+
+	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(numElements, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_x", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(numElements, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_x", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(numElements, 1, 1), 0u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_x", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, numElements, 1), 1u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_y", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, numElements, 1), 1u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_y", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, numElements, 1), 1u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_y", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, false, IVec3(1, 1, numElements), 2u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize_z", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(true, true, IVec3(1, 1, numElements), 2u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize_z", "", spec));
+
+	spec.assembly = getAsmForLocalSizeTest(false, true, IVec3(1, 1, numElements), 2u);
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize_z", "", spec));
+
+	return group.release();
 }
 
 tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
@@ -264,18 +326,41 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 		negativeFloats[ndx] = -positiveFloats[ndx];
 
+	spec.assembly =
+		string(getComputeAsmShaderPreamble()) +
+
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes())
+
+		+ string(getComputeAsmInputOutputBuffer()) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+		"             OpNop\n" // Inside a function body
+
+		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %f32 %inloc\n"
+		"%neg       = OpFNegate %f32 %inval\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %neg\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
 	spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 	spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 	spec.numWorkGroups = IVec3(numElements, 1, 1);
 
-    spec.assembly = getAsmForOpNopTest(true, false);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_localsize", "OpNop appearing at different places", spec));
-
-    spec.assembly = getAsmForOpNopTest(true, true);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "literal_and_specid_localsize", "OpNop appearing at different places", spec));
-
-    spec.assembly = getAsmForOpNopTest(false, true);
-	group->addChild(new SpvAsmComputeShaderCase(testCtx, "specid_localsize", "OpNop appearing at different places", spec));
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "all", "OpNop appearing at different places", spec));
 
 	return group.release();
 }
@@ -2493,7 +2578,8 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	vector<deInt32>					outputInts3		(numElements, 0);
 	vector<deInt32>					outputInts4		(numElements, 0);
 	const StringTemplate			shaderTemplate	(
-		string(getComputeAsmShaderPreamble()) +
+		"${CAPABILITIES:opt}"
+		+ string(getComputeAsmShaderPreamble()) +
 
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -2505,6 +2591,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
 
+		"${OPTYPE_DEFINITIONS:opt}"
 		"%buf     = OpTypeStruct %i32arr\n"
 		"%bufptr  = OpTypePointer Uniform %buf\n"
 		"%indata    = OpVariable %bufptr Uniform\n"
@@ -2519,6 +2606,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
+		"${TYPE_CONVERT:opt}"
 		"%idval     = OpLoad %uvec3 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
 		"%inloc     = OpAccessChain %i32ptr %indata %zero %x\n"
@@ -2540,6 +2628,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	}
 
 	const char addScToInput[]		= "OpIAdd %i32 %inval %sc_final";
+	const char addSc32ToInput[]		= "OpIAdd %i32 %inval %sc_final32";
 	const char selectTrueUsingSc[]	= "OpSelect %i32 %sc_final %inval %zero";
 	const char selectFalseUsingSc[]	= "OpSelect %i32 %sc_final %zero %inval";
 
@@ -2574,18 +2663,39 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntCase("not",					" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",				-43,	0,		addScToInput,		outputInts1));
 	cases.push_back(SpecConstantTwoIntCase("logicalnot",			"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",				1,		0,		selectFalseUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("select",				"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %zero",	1,		42,		addScToInput,		outputInts1));
-	// OpSConvert, OpFConvert: these two instructions involve ints/floats of different bitwidths.
+	cases.push_back(SpecConstantTwoIntCase("sconvert",				" %i32 0",		" %i32 0",		"%i16",		"SConvert             %sc_0",				-11200,	0,		addSc32ToInput,		outputInts3));
+	// -969998336 stored as 32-bit two's complement is the binary representation of -11200 as IEEE-754 Float
+	cases.push_back(SpecConstantTwoIntCase("fconvert",				" %f32 0",		" %f32 0",		"%f64",		"FConvert             %sc_0",				-969998336, 0,	addSc32ToInput,		outputInts3));
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
 		map<string, string>		specializations;
 		ComputeShaderSpec		spec;
+		ComputeTestFeatures		features = COMPUTE_TEST_USES_NONE;
 
 		specializations["SC_DEF0"]			= cases[caseNdx].scDefinition0;
 		specializations["SC_DEF1"]			= cases[caseNdx].scDefinition1;
 		specializations["SC_RESULT_TYPE"]	= cases[caseNdx].scResultType;
 		specializations["SC_OP"]			= cases[caseNdx].scOperation;
 		specializations["GEN_RESULT"]		= cases[caseNdx].resultOperation;
+
+		// Special SPIR-V code for SConvert-case
+		if (strcmp(cases[caseNdx].caseName, "sconvert") == 0)
+		{
+			features								= COMPUTE_TEST_USES_INT16;
+			specializations["CAPABILITIES"]			= "OpCapability Int16\n";							// Adds 16-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]	= "%i16 = OpTypeInt 16 1\n";						// Adds 16-bit integer type
+			specializations["TYPE_CONVERT"]			= "%sc_final32 = OpSConvert %i32 %sc_final\n";		// Converts 16-bit integer to 32-bit integer
+		}
+
+		// Special SPIR-V code for FConvert-case
+		if (strcmp(cases[caseNdx].caseName, "fconvert") == 0)
+		{
+			features								= COMPUTE_TEST_USES_FLOAT64;
+			specializations["CAPABILITIES"]			= "OpCapability Float64\n";							// Adds 64-bit float capability
+			specializations["OPTYPE_DEFINITIONS"]	= "%f64 = OpTypeFloat 64\n";						// Adds 64-bit float type
+			specializations["TYPE_CONVERT"]			= "%sc_final32 = OpConvertFToS %i32 %sc_final\n";	// Converts 64-bit float to 32-bit integer
+		}
 
 		spec.assembly = shaderTemplate.specialize(specializations);
 		spec.inputs.push_back(BufferSp(new Int32Buffer(inputInts)));
@@ -2594,7 +2704,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		spec.specConstants.push_back(cases[caseNdx].scActualValue0);
 		spec.specConstants.push_back(cases[caseNdx].scActualValue1);
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].caseName, cases[caseNdx].caseName, spec));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].caseName, cases[caseNdx].caseName, spec, features));
 	}
 
 	ComputeShaderSpec				spec;
@@ -2810,13 +2920,12 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id = OpVariable %uvec3ptr Input\n"
-		"%v3f32      = OpTypeVector %f32 3\n"
 		"%zero       = OpConstant %i32 0\n"
 		"%float_0    = OpConstant %f32 0.0\n"
 		"%float_1    = OpConstant %f32 1.0\n"
 		"%float_n1   = OpConstant %f32 -1.0\n"
-		"%v1         = OpConstantComposite %v3f32 %float_1 %float_1 %float_1\n"
-		"%v2         = OpConstantComposite %v3f32 %float_n1 %float_n1 %float_n1\n"
+		"%v1         = OpConstantComposite %fvec3 %float_1 %float_1 %float_1\n"
+		"%v2         = OpConstantComposite %fvec3 %float_n1 %float_n1 %float_n1\n"
 
 		"%main     = OpFunction %void None %voidf\n"
 		"%entry    = OpLabel\n"
@@ -2833,7 +2942,7 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		"%fb       = OpLabel\n"
 		"            OpBranch %cm\n"
 		"%cm       = OpLabel\n"
-		"%vres     = OpPhi %v3f32 %v1 %tb %v2 %fb\n"
+		"%vres     = OpPhi %fvec3 %v1 %tb %v2 %fb\n"
 		"%res      = OpCompositeExtract %f32 %vres 2\n"
 
 		"%outloc   = OpAccessChain %f32ptr %outdata %zero %x\n"
@@ -2948,7 +3057,6 @@ void createOpPhiVartypeTests (de::MovePtr<tcu::TestCaseGroup>& group, tcu::TestC
 		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
 
 		"%id = OpVariable %uvec3ptr Input\n"
-		"%v3f32      = OpTypeVector %f32 3\n"
 		"%zero       = OpConstant %i32 0\n"
 		"%float_0    = OpConstant %f32 0.0\n"
 		"%float_1    = OpConstant %f32 1.0\n"
@@ -6021,6 +6129,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"OpDecorate %sc_1  SpecId 1\n";
 
 	const char	typesAndConstants1[]	=
+		"${OPTYPE_DEFINITIONS:opt}"
 		"%sc_0      = OpSpecConstant${SC_DEF0}\n"
 		"%sc_1      = OpSpecConstant${SC_DEF1}\n"
 		"%sc_op     = OpSpecConstantOp ${SC_RESULT_TYPE} ${SC_OP}\n";
@@ -6029,6 +6138,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
+		"${TYPE_CONVERT:opt}"
 		"%result    = OpVariable %fp_v4f32 Function\n"
 		"             OpStore %result %param\n"
 		"%gen       = ${GEN_RESULT}\n"
@@ -6065,6 +6175,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 	outputColors2[3] = RGBA(0,   0,   255, 255);
 
 	const char addZeroToSc[]		= "OpIAdd %i32 %c_i32_0 %sc_op";
+	const char addZeroToSc32[]		= "OpIAdd %i32 %c_i32_0 %sc_op32";
 	const char selectTrueUsingSc[]	= "OpSelect %i32 %sc_op %c_i32_1 %c_i32_0";
 	const char selectFalseUsingSc[]	= "OpSelect %i32 %sc_op %c_i32_0 %c_i32_1";
 
@@ -6099,14 +6210,39 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntGraphicsCase("not",					" %i32 0",		" %i32 0",		"%i32",		"Not                  %sc_0",					-2,		0,		addZeroToSc,		outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalnot",			"False %bool",	"False %bool",	"%bool",	"LogicalNot           %sc_0",					1,		0,		selectFalseUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("select",				"False %bool",	" %i32 0",		"%i32",		"Select               %sc_0 %sc_1 %c_i32_0",	1,		1,		addZeroToSc,		outputColors2));
-	// OpSConvert, OpFConvert: these two instructions involve ints/floats of different bitwidths.
+	cases.push_back(SpecConstantTwoIntGraphicsCase("sconvert",				" %i32 0",		" %i32 0",		"%i16",		"SConvert             %sc_0",					-1,		0,		addZeroToSc32,		outputColors0));
+	// -1082130432 stored as 32-bit two's complement is the binary representation of -1 as IEEE-754 Float
+	cases.push_back(SpecConstantTwoIntGraphicsCase("fconvert",				" %f32 0",		" %f32 0",		"%f64",		"FConvert             %sc_0",					-1082130432, 0,	addZeroToSc32,		outputColors0));
 	// \todo[2015-12-1 antiagainst] OpQuantizeToF16
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
-		map<string, string>	specializations;
-		map<string, string>	fragments;
-		vector<deInt32>		specConstants;
+		map<string, string>			specializations;
+		map<string, string>			fragments;
+		vector<deInt32>				specConstants;
+		vector<string>				features;
+		PushConstants				noPushConstants;
+		GraphicsResources			noResources;
+		GraphicsInterfaces			noInterfaces;
+		std::vector<std::string>	noExtensions;
+
+		// Special SPIR-V code for SConvert-case
+		if (strcmp(cases[caseNdx].caseName, "sconvert") == 0)
+		{
+			features.push_back("shaderInt16");
+			fragments["capability"]					= "OpCapability Int16\n";					// Adds 16-bit integer capability
+			specializations["OPTYPE_DEFINITIONS"]	= "%i16 = OpTypeInt 16 1\n";				// Adds 16-bit integer type
+			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpSConvert %i32 %sc_op\n";	// Converts 16-bit integer to 32-bit integer
+		}
+
+		// Special SPIR-V code for FConvert-case
+		if (strcmp(cases[caseNdx].caseName, "fconvert") == 0)
+		{
+			features.push_back("shaderFloat64");
+			fragments["capability"]					= "OpCapability Float64\n";					// Adds 64-bit float capability
+			specializations["OPTYPE_DEFINITIONS"]	= "%f64 = OpTypeFloat 64\n";				// Adds 64-bit float type
+			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpConvertFToS %i32 %sc_op\n";	// Converts 64-bit float to 32-bit integer
+		}
 
 		specializations["SC_DEF0"]			= cases[caseNdx].scDefinition0;
 		specializations["SC_DEF1"]			= cases[caseNdx].scDefinition1;
@@ -6121,7 +6257,9 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		specConstants.push_back(cases[caseNdx].scActualValue0);
 		specConstants.push_back(cases[caseNdx].scActualValue1);
 
-		createTestsForAllStages(cases[caseNdx].caseName, inputColors, cases[caseNdx].expectedColors, fragments, specConstants, group.get());
+		createTestsForAllStages(
+			cases[caseNdx].caseName, inputColors, cases[caseNdx].expectedColors, fragments, specConstants,
+			noPushConstants, noResources, noInterfaces, noExtensions, features, VulkanFeatures(), group.get());
 	}
 
 	const char	decorations2[]			=
@@ -8792,6 +8930,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> graphicsTests		(new tcu::TestCaseGroup(testCtx, "graphics", "Graphics Instructions with special opcodes/operands"));
 
 	computeTests->addChild(createSpivVersionCheckTests(testCtx, testComputePipeline));
+	computeTests->addChild(createLocalSizeGroup(testCtx));
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx));
 	computeTests->addChild(createOpAtomicGroup(testCtx, false));

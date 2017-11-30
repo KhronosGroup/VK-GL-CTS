@@ -23,11 +23,14 @@
 
 #include "glcRobustBufferAccessBehaviorTests.hpp"
 
+#include "deSharedPtr.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluShaderUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "tcuCommandLine.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
 
 #include <cstring>
@@ -35,7 +38,7 @@
 
 using namespace glw;
 
-namespace deqp
+namespace glcts
 {
 namespace RobustBufferAccessBehavior
 {
@@ -62,7 +65,7 @@ const GLenum Buffer::m_targets[Buffer::m_n_targets] = {
  *
  * @param context CTS context.
  **/
-Buffer::Buffer(deqp::Context& context) : m_id(m_invalid_id), m_context(context), m_target(GL_ARRAY_BUFFER)
+Buffer::Buffer(const glw::Functions& gl) : m_id(m_invalid_id), m_gl(gl), m_target(GL_ARRAY_BUFFER)
 {
 }
 
@@ -88,11 +91,9 @@ void Buffer::InitData(glw::GLenum target, glw::GLenum usage, glw::GLsizeiptr siz
 
 	m_target = target;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
-	Generate(gl, m_id);
-	Bind(gl, m_id, m_target);
-	Data(gl, m_target, usage, size, data);
+	Generate(m_gl, m_id);
+	Bind(m_gl, m_id, m_target);
+	Data(m_gl, m_target, usage, size, data);
 }
 
 /** Release buffer instance
@@ -102,9 +103,7 @@ void Buffer::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
-
-		gl.deleteBuffers(1, &m_id);
+		m_gl.deleteBuffers(1, &m_id);
 		m_id = m_invalid_id;
 	}
 }
@@ -114,9 +113,7 @@ void Buffer::Release()
  **/
 void Buffer::Bind() const
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
-	Bind(gl, m_id, m_target);
+	Bind(m_gl, m_id, m_target);
 }
 
 /** Binds indexed buffer
@@ -125,9 +122,7 @@ void Buffer::Bind() const
  **/
 void Buffer::BindBase(glw::GLuint index) const
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
-	BindBase(gl, m_id, m_target, index);
+	BindBase(m_gl, m_id, m_target, index);
 }
 
 /** Bind buffer to given target
@@ -212,7 +207,7 @@ const GLuint Framebuffer::m_invalid_id = -1;
  *
  * @param context CTS context.
  **/
-Framebuffer::Framebuffer(deqp::Context& context) : m_id(m_invalid_id), m_context(context)
+Framebuffer::Framebuffer(const glw::Functions& gl) : m_id(m_invalid_id), m_gl(gl)
 {
 	/* Nothing to done here */
 }
@@ -232,9 +227,7 @@ void Framebuffer::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
-
-		gl.deleteFramebuffers(1, &m_id);
+		m_gl.deleteFramebuffers(1, &m_id);
 		m_id = m_invalid_id;
 	}
 }
@@ -296,15 +289,15 @@ const GLuint Program::m_invalid_id = 0;
  *
  * @param context CTS context.
  **/
-Program::Program(deqp::Context& context)
+Program::Program(const glw::Functions& gl)
 	: m_id(m_invalid_id)
-	, m_compute(context)
-	, m_fragment(context)
-	, m_geometry(context)
-	, m_tess_ctrl(context)
-	, m_tess_eval(context)
-	, m_vertex(context)
-	, m_context(context)
+	, m_compute(gl)
+	, m_fragment(gl)
+	, m_geometry(gl)
+	, m_tess_ctrl(gl)
+	, m_tess_eval(gl)
+	, m_vertex(gl)
+	, m_gl(gl)
 {
 	/* Nothing to be done here */
 }
@@ -333,9 +326,6 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
 	/* Delete previous program */
 	Release();
 
-	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
 	/* Initialize shaders */
 	m_compute.Init(GL_COMPUTE_SHADER, compute_shader);
 	m_fragment.Init(GL_FRAGMENT_SHADER, fragment_shader);
@@ -345,16 +335,16 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
 	m_vertex.Init(GL_VERTEX_SHADER, vertex_shader);
 
 	/* Create program, set up transform feedback and attach shaders */
-	Create(gl, m_id);
-	Attach(gl, m_id, m_compute.m_id);
-	Attach(gl, m_id, m_fragment.m_id);
-	Attach(gl, m_id, m_geometry.m_id);
-	Attach(gl, m_id, m_tess_ctrl.m_id);
-	Attach(gl, m_id, m_tess_eval.m_id);
-	Attach(gl, m_id, m_vertex.m_id);
+	Create(m_gl, m_id);
+	Attach(m_gl, m_id, m_compute.m_id);
+	Attach(m_gl, m_id, m_fragment.m_id);
+	Attach(m_gl, m_id, m_geometry.m_id);
+	Attach(m_gl, m_id, m_tess_ctrl.m_id);
+	Attach(m_gl, m_id, m_tess_eval.m_id);
+	Attach(m_gl, m_id, m_vertex.m_id);
 
 	/* Link program */
-	Link(gl, m_id);
+	Link(m_gl, m_id);
 }
 
 /** Release program instance
@@ -362,13 +352,11 @@ void Program::Init(const std::string& compute_shader, const std::string& fragmen
  **/
 void Program::Release()
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
 	if (m_invalid_id != m_id)
 	{
-		Use(gl, m_invalid_id);
+		Use(m_gl, m_invalid_id);
 
-		gl.deleteProgram(m_id);
+		m_gl.deleteProgram(m_id);
 		m_id = m_invalid_id;
 	}
 
@@ -385,9 +373,7 @@ void Program::Release()
  **/
 void Program::Use() const
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
-	Use(gl, m_id);
+	Use(m_gl, m_id);
 }
 
 /** Attach shader to program
@@ -480,7 +466,7 @@ const GLuint Shader::m_invalid_id = 0;
  *
  * @param context CTS context.
  **/
-Shader::Shader(deqp::Context& context) : m_id(m_invalid_id), m_context(context)
+Shader::Shader(const glw::Functions& gl) : m_id(m_invalid_id), m_gl(gl)
 {
 	/* Nothing to be done here */
 }
@@ -509,13 +495,10 @@ void Shader::Init(glw::GLenum stage, const std::string& source)
 	/* Delete any previous shader */
 	Release();
 
-	/* Create, set source and compile */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	Create(m_gl, stage, m_id);
+	Source(m_gl, m_id, source);
 
-	Create(gl, stage, m_id);
-	Source(gl, m_id, source);
-
-	Compile(gl, m_id);
+	Compile(m_gl, m_id);
 }
 
 /** Release shader instance
@@ -525,9 +508,7 @@ void Shader::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
-
-		gl.deleteShader(m_id);
+		m_gl.deleteShader(m_id);
 		m_id = m_invalid_id;
 	}
 }
@@ -610,7 +591,7 @@ const GLuint Texture::m_invalid_id = -1;
  *
  * @param context CTS context.
  **/
-Texture::Texture(deqp::Context& context) : m_id(m_invalid_id), m_context(context)
+Texture::Texture(const glw::Functions& gl) : m_id(m_invalid_id), m_gl(gl)
 {
 	/* Nothing to done here */
 }
@@ -630,9 +611,7 @@ void Texture::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
-
-		gl.deleteTextures(1, &m_id);
+		m_gl.deleteTextures(1, &m_id);
 		m_id = m_invalid_id;
 	}
 }
@@ -935,7 +914,7 @@ const GLuint VertexArray::m_invalid_id = -1;
  *
  * @param context CTS context.
  **/
-VertexArray::VertexArray(deqp::Context& context) : m_id(m_invalid_id), m_context(context)
+VertexArray::VertexArray(const glw::Functions& gl) : m_id(m_invalid_id), m_gl(gl)
 {
 }
 
@@ -954,11 +933,9 @@ void VertexArray::Release()
 {
 	if (m_invalid_id != m_id)
 	{
-		const Functions& gl = m_context.getRenderContext().getFunctions();
+		Bind(m_gl, 0);
 
-		Bind(gl, 0);
-
-		gl.deleteVertexArrays(1, &m_id);
+		m_gl.deleteVertexArrays(1, &m_id);
 
 		m_id = m_invalid_id;
 	}
@@ -995,53 +972,93 @@ void VertexArray::Generate(const glw::Functions& gl, glw::GLuint& out_id)
 	out_id = id;
 }
 
-/** Replace first occurance of <token> with <text> in <string> starting at <search_posistion>
- *
- * @param token           Token string
- * @param search_position Position at which find will start, it is updated to position at which replaced text ends
- * @param text            String that will be used as replacement for <token>
- * @param string          String to work on
- **/
-void replaceToken(const GLchar* token, size_t& search_position, const GLchar* text, std::string& string)
+template <typename TYPE>
+void initPixels(std::vector<TYPE>& pixels, GLuint n_pixels, GLuint n_channels)
 {
-	const size_t text_length	= strlen(text);
-	const size_t token_length   = strlen(token);
-	const size_t token_position = string.find(token, search_position);
-
-	string.replace(token_position, token_length, text, text_length);
-
-	search_position = token_position + text_length;
-}
-
-bool isRobustBufferAccessBehaviorFeatureSupported(deqp::Context& context)
-{
-	glu::ContextType context_type = context.getRenderContext().getType();
-	if (context.getContextInfo().isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
-		context.getContextInfo().isExtensionSupported("GL_ARB_robust_buffer_access_behavior") ||
-		contextSupports(context_type, glu::ApiType::core(4, 3)))
+	if (n_channels == 1)
 	{
-		return true;
+		for (GLuint i = 0; i < n_pixels; ++i)
+			pixels[i] = static_cast<TYPE>(i);
 	}
-	context.getTestContext().setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not Supported");
-	return false;
+	else if (n_channels == 2)
+	{
+		for (GLuint i = 0; i < n_pixels; ++i)
+		{
+			GLuint idx		= i * 2;
+			pixels[idx]		= static_cast<TYPE>(i);
+			pixels[idx + 1] = pixels[idx];
+		}
+	}
+	else if (n_channels == 4)
+	{
+		for (GLuint i = 0; i < n_pixels; ++i)
+		{
+			GLuint idx		= i * 4;
+			pixels[idx]		= static_cast<TYPE>(i);
+			pixels[idx + 1] = pixels[idx];
+			pixels[idx + 2] = pixels[idx];
+			pixels[idx + 3] = pixels[idx];
+		}
+	}
+	else
+		TCU_FAIL("Unsuported number of channels");
 }
 
-/** Constructor
- *
- * @param context Test context
- **/
-VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context)
-	: TestCase(context, "vertex_buffer_objects", "Verifies that out-of-bound reads from VB result in zero")
+RobustnessBase::RobustnessBase(tcu::TestContext& testCtx, const char* name, const char* description,
+							   glu::ApiType apiType)
+	: tcu::TestCase(testCtx, name, description), m_api_type(apiType), m_has_khr_robust_buffer_access(false)
 {
-	/* Nothing to be done */
+}
+
+glu::RenderContext* RobustnessBase::createRobustContext(glu::ResetNotificationStrategy reset)
+{
+	// Create test context to verify if required extensions are available
+	{
+		deqp::Context			context(m_testCtx, glu::ContextType(m_api_type));
+		const glu::ContextInfo& contextInfo  = context.getContextInfo();
+		glu::ContextType		context_type = context.getRenderContext().getType();
+		if (!contextInfo.isExtensionSupported("GL_KHR_robustness") &&
+			!contextSupports(context_type, glu::ApiType::es(3, 2)))
+		{
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "GL_KHR_robustness extension not supported");
+			return NULL;
+		}
+
+		m_has_khr_robust_buffer_access = contextInfo.isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
+										 contextInfo.isExtensionSupported("GL_ARB_robust_buffer_access_behavior") ||
+										 contextSupports(context_type, glu::ApiType::core(4, 5));
+		if (!m_has_khr_robust_buffer_access && !contextSupports(context_type, glu::ApiType::core(4, 3)))
+		{
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED,
+									"robust_buffer_access_behavior extension not supported");
+			return NULL;
+		}
+
+		glu::GLSLVersion glslVersion   = glu::getContextTypeGLSLVersion(context_type);
+		m_specializationMap["VERSION"] = glu::getGLSLVersionDeclaration(glslVersion);
+		m_context_is_es				   = glu::isContextTypeES(context_type);
+	}
+
+	glu::RenderConfig		renderCfg(glu::ContextType(m_api_type, glu::CONTEXT_ROBUST));
+	const tcu::CommandLine& commandLine = m_testCtx.getCommandLine();
+	glu::parseRenderConfig(&renderCfg, commandLine);
+
+	if (commandLine.getSurfaceType() == tcu::SURFACETYPE_WINDOW)
+		renderCfg.resetNotificationStrategy = reset;
+	else
+		throw tcu::NotSupportedError("Test not supported in non-windowed context");
+
+	/* Try to create core/es robusness context */
+	return createRenderContext(m_testCtx.getPlatform(), commandLine, renderCfg);
 }
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
  **/
-VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context, const char* name, const char* description)
-	: TestCase(context, name, description)
+VertexBufferObjectsTest::VertexBufferObjectsTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: RobustnessBase(testCtx, "vertex_buffer_objects", "Verifies that out-of-bound reads from VB result in zero",
+					 apiType)
 {
 	/* Nothing to be done */
 }
@@ -1052,7 +1069,8 @@ VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context, const c
  **/
 tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 {
-	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+	de::SharedPtr<glu::RenderContext> robustContext(createRobustContext());
+	if (!robustContext.get())
 		return STOP;
 
 	static const GLuint invalid_elements[] = {
@@ -1080,15 +1098,15 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 	static const GLuint width	  = 8;
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = robustContext->getFunctions();
 
 	/* Test case objects */
-	Framebuffer framebuffer(m_context);
-	Program		program(m_context);
-	Texture		texture(m_context);
-	Buffer		elements_buffer(m_context);
-	Buffer		vertices_buffer(m_context);
-	VertexArray vao(m_context);
+	Framebuffer framebuffer(gl);
+	Program		program(gl);
+	Texture		texture(gl);
+	Buffer		elements_buffer(gl);
+	Buffer		vertices_buffer(gl);
+	VertexArray vao(gl);
 
 	/* Vertex array */
 	VertexArray::Generate(gl, vao.m_id);
@@ -1123,17 +1141,16 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 	/* Binding elements/indices buffer */
 	elements_buffer.Bind();
 
-	cleanTexture(texture.m_id);
+	cleanTexture(gl, texture.m_id);
 
 	gl.drawElements(GL_TRIANGLES, n_vertices, GL_UNSIGNED_INT, 0 /* indices */);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElements");
 
-	if (false == verifyValidResults(texture.m_id))
+	if (false == verifyValidResults(gl, texture.m_id))
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid result for valid input"
-											<< tcu::TestLog::EndMessage;
+		m_testCtx.getLog() << tcu::TestLog::Message << "Invalid result for valid input" << tcu::TestLog::EndMessage;
 
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 		return tcu::TestNode::STOP;
 	}
 
@@ -1161,22 +1178,22 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 								 invalid_elements_set[buffer_index]);
 		elements_buffer.Bind();
 
-		cleanTexture(texture.m_id);
+		cleanTexture(gl, texture.m_id);
 
 		gl.drawElements(GL_TRIANGLES, n_vertices, GL_UNSIGNED_INT, 0 /* indices */);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "DrawElements");
 
-		if (false == verifyInvalidResults(texture.m_id))
+		if (false == verifyInvalidResults(gl, texture.m_id))
 		{
-			m_context.getTestContext().getLog()
-				<< tcu::TestLog::Message << "Invalid result for invalid input" << tcu::TestLog::EndMessage;
-			m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+			m_testCtx.getLog() << tcu::TestLog::Message << "Invalid result for invalid input"
+							   << tcu::TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 			return tcu::TestNode::STOP;
 		}
 	}
 
 	/* Done */
-	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	return tcu::TestNode::STOP;
 }
 
@@ -1186,15 +1203,13 @@ tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
  **/
 std::string VertexBufferObjectsTest::getFragmentShader()
 {
-	return std::string("#version 430 core\n"
-					   "\n"
-					   "layout (location = 0) out vec4 out_fs_color;\n"
-					   "\n"
-					   "void main()\n"
-					   "{\n"
-					   "    out_fs_color = vec4(1.0 / 256.0, 1.0, 1.0, 1.0);\n"
-					   "}\n"
-					   "\n");
+	const char* source = "${VERSION}\n"
+						 "layout (location = 0) out lowp uvec4 out_fs_color;\n"
+						 "void main()\n"
+						 "{\n"
+						 "    out_fs_color = uvec4(1, 255, 255, 255);\n"
+						 "}\n";
+	return tcu::StringTemplate(source).specialize(m_specializationMap);
 }
 
 /** Prepare shader for current test case
@@ -1203,27 +1218,24 @@ std::string VertexBufferObjectsTest::getFragmentShader()
  **/
 std::string VertexBufferObjectsTest::getVertexShader()
 {
-	return std::string("#version 430 core\n"
-					   "\n"
-					   "layout (location = 0) in vec4 in_vs_position;\n"
-					   "\n"
-					   "void main()\n"
-					   "{\n"
-					   "    gl_Position = in_vs_position;\n"
-					   "}\n"
-					   "\n");
+	const char* source = "${VERSION}\n"
+						 "layout (location = 0) in vec4 in_vs_position;\n"
+						 "void main()\n"
+						 "{\n"
+						 "    gl_Position = in_vs_position;\n"
+						 "}\n";
+
+	return tcu::StringTemplate(source).specialize(m_specializationMap);
 }
 
 /** Fill texture with value 128
  *
  * @param texture_id Id of texture
  **/
-void VertexBufferObjectsTest::cleanTexture(glw::GLuint texture_id)
+void VertexBufferObjectsTest::cleanTexture(const Functions& gl, glw::GLuint texture_id)
 {
 	static const GLuint height = 8;
 	static const GLuint width  = 8;
-
-	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	GLubyte pixels[width * height];
 	for (GLuint i = 0; i < width * height; ++i)
@@ -1246,9 +1258,12 @@ void VertexBufferObjectsTest::cleanTexture(glw::GLuint texture_id)
  *
  * @return false when image is filled with 1, true otherwise
  **/
-bool VertexBufferObjectsTest::verifyInvalidResults(glw::GLuint texture_id)
+bool VertexBufferObjectsTest::verifyInvalidResults(const Functions& gl, glw::GLuint texture_id)
 {
-	return !verifyResults(texture_id);
+	// In OpenGL ES there is undefined out-of-bound behavior - no verification
+	if (m_context_is_es)
+		return true;
+	return !verifyResults(gl, texture_id);
 }
 
 /** Verifies that texutre is filled with 1
@@ -1257,9 +1272,9 @@ bool VertexBufferObjectsTest::verifyInvalidResults(glw::GLuint texture_id)
  *
  * @return true when image is filled with 1, false otherwise
  **/
-bool VertexBufferObjectsTest::verifyValidResults(glw::GLuint texture_id)
+bool VertexBufferObjectsTest::verifyValidResults(const Functions& gl, glw::GLuint texture_id)
 {
-	return verifyResults(texture_id);
+	return verifyResults(gl, texture_id);
 }
 
 /** Verifies that texutre is filled with 1
@@ -1268,30 +1283,22 @@ bool VertexBufferObjectsTest::verifyValidResults(glw::GLuint texture_id)
  *
  * @return true when image is filled with 1, false otherwise
  **/
-bool VertexBufferObjectsTest::verifyResults(glw::GLuint texture_id)
+bool VertexBufferObjectsTest::verifyResults(const Functions& gl, glw::GLuint texture_id)
 {
 	static const GLuint height = 8;
 	static const GLuint width  = 8;
+	GLuint				pixel_size	 = 4 * sizeof(GLuint);
+	GLuint				expected_value = 1;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
-	GLubyte pixels[width * height];
-	for (GLuint i = 0; i < width * height; ++i)
-	{
-		pixels[i] = 0;
-	}
-
+	std::vector<GLubyte> pixels(width * height * pixel_size, 0);
 	Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
-
-	Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RED_INTEGER, GL_UNSIGNED_BYTE, pixels);
-
-	/* Unbind */
+	Texture::GetData(gl, texture_id, 0 /* level */, width, height, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
 	Texture::Bind(gl, 0, GL_TEXTURE_2D);
 
 	/* Verify */
-	for (GLuint i = 0; i < width * height; ++i)
+	for (GLuint i = 0; i < pixels.size(); i += pixel_size)
 	{
-		if (255 != pixels[i])
+		if (expected_value != pixels[i])
 			return false;
 	}
 
@@ -1300,10 +1307,10 @@ bool VertexBufferObjectsTest::verifyResults(glw::GLuint texture_id)
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
  **/
-TexelFetchTest::TexelFetchTest(deqp::Context& context)
-	: TestCase(context, "texel_fetch", "Verifies that out-of-bound fetches from texture result in zero")
+TexelFetchTest::TexelFetchTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: RobustnessBase(testCtx, "texel_fetch", "Verifies that out-of-bound fetches from texture result in zero", apiType)
 	, m_test_case(R8)
 {
 	/* Nothing to be done */
@@ -1311,10 +1318,14 @@ TexelFetchTest::TexelFetchTest(deqp::Context& context)
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param name Test name
+ * @param description Test description
+ * @param apiType Api type
  **/
-TexelFetchTest::TexelFetchTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: TestCase(context, name, description), m_test_case(R8)
+TexelFetchTest::TexelFetchTest(tcu::TestContext& testCtx, const char* name, const char* description,
+							   glu::ApiType apiType)
+	: RobustnessBase(testCtx, name, description, apiType), m_test_case(R8)
 {
 	/* Nothing to be done */
 }
@@ -1325,7 +1336,8 @@ TexelFetchTest::TexelFetchTest(deqp::Context& context, const glw::GLchar* name, 
  **/
 tcu::TestNode::IterateResult TexelFetchTest::iterate()
 {
-	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+	de::SharedPtr<glu::RenderContext> robustContext(createRobustContext());
+	if (!robustContext.get())
 		return STOP;
 
 	/* Constants */
@@ -1333,7 +1345,7 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 	static const GLuint width  = 16;
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = robustContext->getFunctions();
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -1344,6 +1356,7 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		1008, // high fetch
 	};
 	GLuint fetch_offsets_count = sizeof(invalid_fetch_offsets) / sizeof(GLuint);
+	glu::ContextType contextType		 = robustContext->getType();
 
 	/* Iterate over all cases */
 	for (; m_test_case < LAST; m_test_case = (TEST_CASES)((GLuint)m_test_case + 1))
@@ -1367,11 +1380,11 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		}
 
 		/* */
-		Texture		destination_texture(m_context);
-		Framebuffer framebuffer(m_context);
-		Texture		source_texture(m_context);
-		Program		program(m_context);
-		VertexArray vao(m_context);
+		Texture		destination_texture(gl);
+		Framebuffer framebuffer(gl);
+		Texture		source_texture(gl);
+		Program		program(gl);
+		VertexArray vao(gl);
 
 		/* Prepare VAO */
 		VertexArray::Generate(gl, vao.m_id);
@@ -1398,15 +1411,15 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 				 * to upload the texture so max_image_samples >= 4
 				 * is also required.
 				 */
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
-													<< " not supported" << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName() << " not supported"
+								   << tcu::TestLog::EndMessage;
 
 				continue;
 			}
 		}
 
-		prepareTexture(false, destination_texture.m_id);
-		prepareTexture(true, source_texture.m_id);
+		prepareTexture(gl, false, destination_texture.m_id);
+		prepareTexture(gl, true, source_texture.m_id);
 
 		/* Select FBO settings */
 		if (R32UI_MIPMAP == m_test_case)
@@ -1425,7 +1438,7 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 								   width, height);
 
 		/* Prepare valid program */
-		program.Init("" /* cs */, getFragmentShader(true), getGeometryShader(), "" /* tcs */, "" /* tes */,
+		program.Init("" /* cs */, getFragmentShader(contextType, true), getGeometryShader(), "" /* tcs */, "" /* tes */,
 					 getVertexShader());
 
 		/* Test valid case */
@@ -1444,8 +1457,8 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		GLU_EXPECT_NO_ERROR(gl.getError(), "CheckFramebufferStatus");
 		if (GL_FRAMEBUFFER_COMPLETE != fbo_status)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
-												<< " not supported" << tcu::TestLog::EndMessage;
+			m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName() << " not supported"
+							   << tcu::TestLog::EndMessage;
 
 			continue;
 		}
@@ -1475,7 +1488,7 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		}
 
 		/* Verification */
-		if (false == verifyValidResults(destination_texture.m_id))
+		if (false == verifyValidResults(gl, destination_texture.m_id))
 		{
 			test_result = false;
 		}
@@ -1484,9 +1497,10 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 		for (GLuint index = 0; index < fetch_offsets_count; ++index)
 		{
 			/* Prepare invalid program */
-			program.Init("" /* cs */, getFragmentShader(false, invalid_fetch_offsets[index]), getGeometryShader(),
-						 "" /* tcs */, "" /* tes */, getVertexShader());
+			program.Init("" /* cs */, getFragmentShader(contextType, false, invalid_fetch_offsets[index]),
+						 getGeometryShader(), "" /* tcs */, "" /* tes */, getVertexShader());
 			Program::Use(gl, program.m_id);
+			Framebuffer::Bind(gl, GL_DRAW_FRAMEBUFFER, framebuffer.m_id);
 
 			/* Set texture */
 			gl.activeTexture(GL_TEXTURE0); /* location = 0 */
@@ -1496,15 +1510,16 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 			GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
 
 			/* Draw */
+			gl.clear(GL_COLOR_BUFFER_BIT);
 			gl.drawArrays(GL_POINTS, 0 /* first */, 1 /* count */);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "DrawArrays");
 
 			/* Verification */
-			if (false == verifyInvalidResults(destination_texture.m_id))
+			if (false == verifyInvalidResults(gl, destination_texture.m_id))
 			{
 				test_result = false;
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
-													<< " failed" << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName() << " failed for "
+								   << invalid_fetch_offsets[index] << " offset" << tcu::TestLog::EndMessage;
 			}
 		}
 	}
@@ -1512,11 +1527,11 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
@@ -1529,86 +1544,53 @@ tcu::TestNode::IterateResult TexelFetchTest::iterate()
  *
  * @return string with prepared code
  **/
-std::string TexelFetchTest::getFragmentShader(bool is_case_valid, GLuint fetch_offset)
+std::string TexelFetchTest::getFragmentShader(const glu::ContextType&, bool is_case_valid, GLuint fetch_offset)
 {
-	static const GLchar* plane_0 = "    int   plane  = 0;\n";
+	const GLchar* source = "${VERSION}\n"
+						   "in lowp vec2 gs_fs_tex_coord;\n"
+						   "layout (location = 0) out lowp ${TYPE} out_fs_color;\n"
+						   "layout (location = 0) uniform lowp ${SAMPLER} uni_texture;\n"
+						   "\n"
+						   "void main()\n"
+						   "{\n"
+						   "  ivec2 point  = ivec2(gs_fs_tex_coord * 16.0 + float(${OFFSET}));\n"
+						   "  out_fs_color = texelFetch(uni_texture, point, ${PLANE});\n"
+						   "}\n";
 
-	static const GLchar* plane_1 = "    int   plane  = 1;\n";
-
-	static const GLchar* plane_2 = "    int   plane  = 2;\n";
-
-	static const GLchar* plane_sample_invalid = "    int   plane  = 9;\n";
-	//"    int   plane  = gl_SampleID + 4;\n";
-
-	static const GLchar* plane_sample_valid = "    int   plane  = gl_SampleID;\n";
-
-	static const GLchar* sampler_regular		= "sampler2D";
-	static const GLchar* sampler_regular_u		= "usampler2D";
-	static const GLchar* sampler_multisampled_u = "usampler2DMS";
-
-	static const GLchar* template_code = "VERSION"
-										 "\n"
-										 "                      in  lowp vec2      gs_fs_tex_coord;\n"
-										 "layout (location = 0) out lowp TYPE      out_fs_color;\n"
-										 "layout (location = 0) uniform lowp SAMPLER uni_texture;\n"
-										 "\n"
-										 "void main()\n"
-										 "{\n"
-										 "PLANE\n"
-										 "    ivec2 point  = ivec2(gs_fs_tex_coord * 16.0) + ivec2(OFFSET);\n"
-										 "    out_fs_color = texelFetch(uni_texture, point, plane);\n"
-										 "}\n"
-										 "\n";
-
-	static const GLchar* type_vec4  = "vec4";
-	static const GLchar* type_uvec4 = "uvec4";
-
-	const GLchar* plane   = plane_0;
-	const GLchar* sampler = sampler_regular;
-	const GLchar* type	= type_vec4;
+	m_specializationMap["PLANE"]   = "0";
+	m_specializationMap["SAMPLER"] = "sampler2D";
+	m_specializationMap["TYPE"]	= "vec4";
 
 	if (R32UI_MIPMAP == m_test_case)
 	{
-		plane   = plane_1;
-		sampler = sampler_regular_u;
-		type	= type_uvec4;
+		m_specializationMap["PLANE"]   = "1";
+		m_specializationMap["SAMPLER"] = "usampler2D";
+		m_specializationMap["TYPE"]	= "uvec4";
 
 		if (false == is_case_valid)
 		{
 			fetch_offset = 0;
-			plane = plane_2;
+			m_specializationMap["PLANE"] = "2";
 		}
 	}
 	else if (R32UI_MULTISAMPLE == m_test_case)
 	{
-		plane   = plane_sample_valid;
-		sampler = sampler_multisampled_u;
-		type	= type_uvec4;
+		m_specializationMap["PLANE"]   = "9";
+		m_specializationMap["SAMPLER"] = "usampler2DMS";
+		m_specializationMap["TYPE"]	= "uvec4";
 
 		if (false == is_case_valid)
 		{
 			fetch_offset = 0;
-			plane = plane_sample_invalid;
+			m_specializationMap["PLANE"] = "gl_SampleID";
 		}
 	}
 
-	glu::ContextType contextType = m_context.getRenderContext().getType();
-	glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(contextType);
-	const GLchar*	version	 = glu::getGLSLVersionDeclaration(glslVersion);
-
-	size_t		position = 0;
-	std::string source   = template_code;
 	std::stringstream offset;
 	offset << fetch_offset;
-	std::string offset_str = offset.str();
+	m_specializationMap["OFFSET"] = offset.str();
 
-	replaceToken("VERSION", position, version, source);
-	replaceToken("TYPE", position, type, source);
-	replaceToken("SAMPLER", position, sampler, source);
-	replaceToken("PLANE", position, plane, source);
-	replaceToken("OFFSET", position, offset_str.c_str(), source);
-
-	return source;
+	return tcu::StringTemplate(source).specialize(m_specializationMap);
 }
 
 /** Prepare shader for current test case
@@ -1617,32 +1599,32 @@ std::string TexelFetchTest::getFragmentShader(bool is_case_valid, GLuint fetch_o
  **/
 std::string TexelFetchTest::getGeometryShader()
 {
-	return std::string("#version 430 core\n"
-					   "\n"
-					   "layout(points)                           in;\n"
-					   "layout(triangle_strip, max_vertices = 4) out;\n"
-					   "\n"
-					   "out vec2 gs_fs_tex_coord;\n"
-					   "\n"
-					   "void main()\n"
-					   "{\n"
-					   "    gs_fs_tex_coord = vec2(0, 0);\n"
-					   "    gl_Position     = vec4(-1, -1, 0, 1);\n"
-					   "    EmitVertex();\n"
-					   "\n"
-					   "    gs_fs_tex_coord = vec2(0, 1);\n"
-					   "    gl_Position     = vec4(-1, 1, 0, 1);\n"
-					   "    EmitVertex();\n"
-					   "\n"
-					   "    gs_fs_tex_coord = vec2(1, 0);\n"
-					   "    gl_Position     = vec4(1, -1, 0, 1);\n"
-					   "    EmitVertex();\n"
-					   "\n"
-					   "    gs_fs_tex_coord = vec2(1, 1);\n"
-					   "    gl_Position     = vec4(1, 1, 0, 1);\n"
-					   "    EmitVertex();\n"
-					   "}\n"
-					   "\n");
+	static const GLchar* source = "${VERSION}\n"
+								  "layout(points)                           in;\n"
+								  "layout(triangle_strip, max_vertices = 4) out;\n"
+								  "\n"
+								  "out vec2 gs_fs_tex_coord;\n"
+								  "\n"
+								  "void main()\n"
+								  "{\n"
+								  "    gs_fs_tex_coord = vec2(0, 0);\n"
+								  "    gl_Position     = vec4(-1, -1, 0, 1);\n"
+								  "    EmitVertex();\n"
+								  "\n"
+								  "    gs_fs_tex_coord = vec2(0, 1);\n"
+								  "    gl_Position     = vec4(-1, 1, 0, 1);\n"
+								  "    EmitVertex();\n"
+								  "\n"
+								  "    gs_fs_tex_coord = vec2(1, 0);\n"
+								  "    gl_Position     = vec4(1, -1, 0, 1);\n"
+								  "    EmitVertex();\n"
+								  "\n"
+								  "    gs_fs_tex_coord = vec2(1, 1);\n"
+								  "    gl_Position     = vec4(1, 1, 0, 1);\n"
+								  "    EmitVertex();\n"
+								  "}\n";
+
+	return tcu::StringTemplate(source).specialize(m_specializationMap);
 }
 
 /** Prepare shader for current test case
@@ -1651,13 +1633,13 @@ std::string TexelFetchTest::getGeometryShader()
  **/
 std::string TexelFetchTest::getVertexShader()
 {
-	return std::string("#version 430 core\n"
-					   "\n"
-					   "void main()\n"
-					   "{\n"
-					   "    gl_Position = vec4(0, 0, 0, 1);\n"
-					   "}\n"
-					   "\n");
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "void main()\n"
+								  "{\n"
+								  "    gl_Position = vec4(0, 0, 0, 1);\n"
+								  "}\n";
+	return tcu::StringTemplate(source).specialize(m_specializationMap);
 }
 
 /** Returns name of current test case
@@ -1671,19 +1653,19 @@ const glw::GLchar* TexelFetchTest::getTestCaseName() const
 	switch (m_test_case)
 	{
 	case R8:
-		name = "\"Sampling GL_R8 texture\"";
+		name = "Sampling GL_R8 texture";
 		break;
 	case RG8_SNORM:
-		name = "\"Sampling GL_RG8_SNORM  texture\"";
+		name = "Sampling GL_RG8_SNORM  texture";
 		break;
 	case RGBA32F:
-		name = "\"Sampling GL_RGBA32F  texture\"";
+		name = "Sampling GL_RGBA32F  texture";
 		break;
 	case R32UI_MIPMAP:
-		name = "\"Sampling mipmap of GL_32UI texture\"";
+		name = "Sampling mipmap of GL_32UI texture";
 		break;
 	case R32UI_MULTISAMPLE:
-		name = "\"Sampling GL_32UI multisampled texture\"";
+		name = "Sampling GL_32UI multisampled texture";
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
@@ -1698,14 +1680,11 @@ const glw::GLchar* TexelFetchTest::getTestCaseName() const
  * @param is_source  Selects if texutre will be used as source or destination
  * @param texture_id Id of texutre
  **/
-void TexelFetchTest::prepareTexture(bool is_source, glw::GLuint texture_id)
+void TexelFetchTest::prepareTexture(const Functions& gl, bool is_source, glw::GLuint texture_id)
 {
 	/* Image size */
 	static const GLuint image_height = 16;
 	static const GLuint image_width  = 16;
-
-	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Texture storage parameters */
 	GLuint  height			= image_height;
@@ -1745,8 +1724,12 @@ void TexelFetchTest::prepareTexture(bool is_source, glw::GLuint texture_id)
 	Texture::Bind(gl, texture_id, target);
 	Texture::Storage(gl, target, n_levels, internal_format, width, height, 0);
 
-	gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	/* Set samplers to NEAREST/NEAREST if required */
+	if (R32UI_MULTISAMPLE != m_test_case)
+	{
+		gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}
 
 	/* Destination image can be left empty */
 	if (false == is_source)
@@ -1811,25 +1794,37 @@ void TexelFetchTest::prepareTexture(bool is_source, glw::GLuint texture_id)
 	else if (R32UI_MULTISAMPLE == m_test_case)
 	{
 		/* Compute shader */
-		static const GLchar* cs = "#version 430 core\n"
-								  "\n"
-								  "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-								  "\n"
-								  "layout (location = 0) writeonly uniform uimage2DMS uni_image;\n"
-								  "\n"
-								  "void main()\n"
-								  "{\n"
-								  "    const ivec2 point = ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y);\n"
-								  "    const uint  index = gl_WorkGroupID.y * 16 + gl_WorkGroupID.x;\n"
-								  "\n"
-								  "    imageStore(uni_image, point, 0, uvec4(index + 0, 0, 0, 0));\n"
-								  "    imageStore(uni_image, point, 1, uvec4(index + 1, 0, 0, 0));\n"
-								  "    imageStore(uni_image, point, 2, uvec4(index + 2, 0, 0, 0));\n"
-								  "    imageStore(uni_image, point, 3, uvec4(index + 3, 0, 0, 0));\n"
-								  "}\n"
-								  "\n";
+		static const GLchar* source =
+			"${VERSION}\n"
+			"\n"
+			"layout (local_size_x = ${LOCAL_SIZE}, local_size_y = ${LOCAL_SIZE}, local_size_z = 1) in;\n"
+			"layout (${QUALIFIER​S}) writeonly uniform highp uimage2DMS uni_image;\n"
+			"\n"
+			"void main()\n"
+			"{\n"
+			"    const ivec2 point = ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y);\n"
+			"    const uint  index = gl_WorkGroupID.y * 16U + gl_WorkGroupID.x;\n"
+			"\n"
+			"    imageStore(uni_image, point, 0, uvec4(index + 0U, 0, 0, 0));\n"
+			"    imageStore(uni_image, point, 1, uvec4(index + 1U, 0, 0, 0));\n"
+			"    imageStore(uni_image, point, 2, uvec4(index + 2U, 0, 0, 0));\n"
+			"    imageStore(uni_image, point, 3, uvec4(index + 3U, 0, 0, 0));\n"
+			"}\n"
+			"\n";
 
-		Program program(m_context);
+		if (m_context_is_es)
+		{
+			m_specializationMap["LOCAL_SIZE"]	= "16";
+			m_specializationMap["QUALIFIER​S"] = "binding = 0, r32ui";
+		}
+		else
+		{
+			m_specializationMap["LOCAL_SIZE"]	= "1";
+			m_specializationMap["QUALIFIER​S"] = "location = 0";
+		}
+
+		Program		program(gl);
+		std::string cs = tcu::StringTemplate(source).specialize(m_specializationMap);
 		program.Init(cs, "", "", "", "", "");
 		program.Use();
 
@@ -1837,8 +1832,11 @@ void TexelFetchTest::prepareTexture(bool is_source, glw::GLuint texture_id)
 							GL_WRITE_ONLY, GL_R32UI);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "BindImageTexture");
 
-		gl.uniform1i(0 /* location */, 0 /* image unit*/);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+		if (!m_context_is_es)
+		{
+			gl.uniform1i(0 /* location */, 0 /* image unit*/);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+		}
 
 		gl.dispatchCompute(16, 16, 1);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
@@ -1854,30 +1852,28 @@ void TexelFetchTest::prepareTexture(bool is_source, glw::GLuint texture_id)
  *
  * @return true when image is filled with 0, 1 or biggest represetable integer number, false otherwise
  **/
-bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
+bool TexelFetchTest::verifyInvalidResults(const Functions& gl, glw::GLuint texture_id)
 {
 	static const GLuint height   = 16;
 	static const GLuint width	= 16;
 	static const GLuint n_pixels = height * width;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	// OpenGL ES has undefined out-of-bound behavior - no verification
+	if (m_context_is_es)
+		return true;
 
 	bool result = true;
 
 	if (R8 == m_test_case)
 	{
-		static const GLuint n_channels = 1;
+		static const GLuint n_channels = 4;
 
-		std::vector<GLubyte> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = static_cast<GLubyte>(i);
-		}
+		std::vector<GLubyte> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RED, GL_UNSIGNED_BYTE, &pixels[0]);
+		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -1886,13 +1882,13 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
 			const GLubyte expected_red = 0;
-			const GLubyte drawn_red	= pixels[i];
+			const GLubyte drawn_red	= pixels[i * n_channels];
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
-													<< ". Expected value: " << (GLuint)expected_red
-													<< " at offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
+								   << ". Expected value: " << (GLuint)expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -1901,19 +1897,14 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 	}
 	else if (RG8_SNORM == m_test_case)
 	{
-		static const GLuint n_channels = 2;
+		static const GLuint n_channels = 4;
 
-		std::vector<GLbyte> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i * n_channels + 0] = static_cast<GLubyte>(i);
-			pixels[i * n_channels + 1] = static_cast<GLubyte>(i);
-		}
+		std::vector<GLbyte> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RG, GL_BYTE, &pixels[0]);
+		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RGBA, GL_BYTE, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -1928,10 +1919,9 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green))
 			{
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", " << (GLint)drawn_green
-					<< ". Expected value: " << (GLint)expected_red << ", " << (GLint)expected_green
-					<< ". At offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", "
+								   << (GLint)drawn_green << ". Expected value: " << (GLint)expected_red << ", "
+								   << (GLint)expected_green << ". At offset: " << i << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -1942,14 +1932,15 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 	{
 		static const GLuint n_channels = 4;
 
-		std::vector<GLfloat> pixels;
-		pixels.resize(n_pixels * n_channels);
+		std::vector<GLfloat> pixels(n_pixels * n_channels);
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
-			pixels[i * n_channels + 0] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 1] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 2] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 3] = (GLfloat)i / (GLfloat)n_pixels;
+			const GLuint  idx   = i * n_channels;
+			const GLfloat value = static_cast<GLfloat>(i) / n_pixels;
+			pixels[idx + 0]		= value;
+			pixels[idx + 1]		= value;
+			pixels[idx + 2]		= value;
+			pixels[idx + 3]		= value;
 		}
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
@@ -1981,11 +1972,10 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 				((de::abs(expected_alpha_0 - drawn_alpha) > precision) &&
 				 (de::abs(expected_alpha_1 - drawn_alpha) > precision)))
 			{
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green << ", "
-					<< drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red << ", "
-					<< expected_green << ", " << expected_blue << ", " << expected_alpha_0 << " or " << expected_alpha_1
-					<< ". At offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green
+								   << ", " << drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red
+								   << ", " << expected_green << ", " << expected_blue << ", " << expected_alpha_0
+								   << " or " << expected_alpha_1 << ". At offset: " << i << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -1994,18 +1984,14 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 	}
 	else if (R32UI_MIPMAP == m_test_case)
 	{
-		static const GLuint n_channels = 1;
+		static const GLuint n_channels = 4;
 
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = i;
-		}
+		std::vector<GLuint> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		Texture::GetData(gl, 1 /* level */, GL_TEXTURE_2D, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
+		Texture::GetData(gl, texture_id, 1 /* level */, width, height, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -2014,13 +2000,13 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
 			const GLuint expected_red = 0;
-			const GLuint drawn_red	= pixels[i];
+			const GLuint drawn_red	= pixels[i * n_channels];
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+								   << ". Expected value: " << expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2029,43 +2015,45 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 	}
 	else if (R32UI_MULTISAMPLE == m_test_case)
 	{
-		static const GLuint n_channels = 1;
+		static const GLuint n_channels = 4;
 
 		/* Compute shader */
-		static const GLchar* cs = "#version 430 core\n"
-								  "\n"
-								  "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-								  "\n"
-								  "layout (location = 1)        writeonly uniform uimage2D   uni_destination_image;\n"
-								  "layout (location = 0, r32ui) readonly  uniform uimage2DMS uni_source_image;\n"
-								  "\n"
-								  "void main()\n"
-								  "{\n"
-								  "    const ivec2 point = ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y);\n"
-								  "\n"
-								  "    const uvec4 color_0 = imageLoad(uni_source_image, point, 0);\n"
-								  "    const uvec4 color_1 = imageLoad(uni_source_image, point, 1);\n"
-								  "    const uvec4 color_2 = imageLoad(uni_source_image, point, 2);\n"
-								  "    const uvec4 color_3 = imageLoad(uni_source_image, point, 3);\n"
-								  "\n"
-								  "    if (any(equal(uvec4(color_0.r, color_1.r, color_2.r, color_3.r), uvec4(0))))\n"
-								  "    {\n"
-								  "        imageStore(uni_destination_image, point, uvec4(1, 1, 1, 1));\n"
-								  "    }\n"
-								  "    else\n"
-								  "    {\n"
-								  "        imageStore(uni_destination_image, point, uvec4(0, 0, 0, 0));\n"
-								  "    }\n"
-								  "}\n"
-								  "\n";
+		static const GLchar* source =
+			"${VERSION}\n"
+			"\n"
+			"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+			"\n"
+			"layout (location = 1)        writeonly uniform uimage2D   uni_destination_image;\n"
+			"layout (location = 0, r32ui) readonly  uniform uimage2DMS uni_source_image;\n"
+			"\n"
+			"void main()\n"
+			"{\n"
+			"    const ivec2 point = ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y);\n"
+			"\n"
+			"    const uvec4 color_0 = imageLoad(uni_source_image, point, 0);\n"
+			"    const uvec4 color_1 = imageLoad(uni_source_image, point, 1);\n"
+			"    const uvec4 color_2 = imageLoad(uni_source_image, point, 2);\n"
+			"    const uvec4 color_3 = imageLoad(uni_source_image, point, 3);\n"
+			"\n"
+			"    if (any(equal(uvec4(color_0.r, color_1.r, color_2.r, color_3.r), uvec4(0))))\n"
+			"    {\n"
+			"        imageStore(uni_destination_image, point, uvec4(1, 1, 1, 1));\n"
+			"    }\n"
+			"    else\n"
+			"    {\n"
+			"        imageStore(uni_destination_image, point, uvec4(0, 0, 0, 0));\n"
+			"    }\n"
+			"}\n"
+			"\n";
 
-		Program program(m_context);
-		Texture destination_texture(m_context);
+		Program program(gl);
+		Texture destination_texture(gl);
 
 		Texture::Generate(gl, destination_texture.m_id);
 		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
 		Texture::Storage(gl, GL_TEXTURE_2D, 1, GL_R32UI, width, height, 0 /* depth */);
 
+		std::string cs = tcu::StringTemplate(source).specialize(m_specializationMap);
 		program.Init(cs, "", "", "", "", "");
 		program.Use();
 		gl.bindImageTexture(0 /* unit */, texture_id, 0 /* level */, GL_FALSE /* layered */, 0 /* layer */,
@@ -2085,14 +2073,10 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
 		/* Pixels buffer initialization */
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = i;
-		}
+		std::vector<GLuint> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
-		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
+		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -2101,13 +2085,13 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
 			const GLuint expected_red = 1;
-			const GLuint drawn_red	= pixels[i];
+			const GLuint drawn_red	= pixels[i * n_channels];
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+								   << ". Expected value: " << expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2124,30 +2108,24 @@ bool TexelFetchTest::verifyInvalidResults(glw::GLuint texture_id)
  *
  * @return true when image is filled with increasing values, false otherwise
  **/
-bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
+bool TexelFetchTest::verifyValidResults(const Functions& gl, glw::GLuint texture_id)
 {
 	static const GLuint height   = 16;
 	static const GLuint width	= 16;
 	static const GLuint n_pixels = height * width;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
 	bool result = true;
 
 	if (R8 == m_test_case)
 	{
-		static const GLuint n_channels = 1;
+		static const GLuint n_channels = 4;
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		std::vector<GLubyte> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = static_cast<GLubyte>(i);
-		}
+		std::vector<GLubyte> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
-		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RED, GL_UNSIGNED_BYTE, &pixels[0]);
+		Texture::GetData(gl, texture_id, 0 /* level */, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -2156,13 +2134,13 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
 			const GLubyte expected_red = static_cast<GLubyte>(i);
-			const GLubyte drawn_red	= pixels[i];
+			const GLubyte drawn_red	= pixels[i * n_channels];
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
-													<< ". Expected value: " << (GLuint)expected_red
-													<< " at offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
+								   << ". Expected value: " << (GLuint)expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2171,19 +2149,14 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 	}
 	else if (RG8_SNORM == m_test_case)
 	{
-		static const GLuint n_channels = 2;
+		static const GLuint n_channels = 4;
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		std::vector<GLbyte> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i * n_channels + 0] = static_cast<GLubyte>(i);
-			pixels[i * n_channels + 1] = static_cast<GLubyte>(i);
-		}
+		std::vector<GLbyte> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
-		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RG, GL_BYTE, &pixels[0]);
+		Texture::GetData(gl, texture_id, 0 /* level */, width, height, GL_RGBA, GL_BYTE, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -2198,10 +2171,9 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green))
 			{
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", " << (GLint)drawn_green
-					<< ". Expected value: " << (GLint)expected_red << ", " << (GLint)expected_green
-					<< ". At offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", "
+								   << (GLint)drawn_green << ". Expected value: " << (GLint)expected_red << ", "
+								   << (GLint)expected_green << ". At offset: " << i << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2214,17 +2186,18 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		std::vector<GLfloat> pixels;
-		pixels.resize(n_pixels * n_channels);
+		std::vector<GLfloat> pixels(n_pixels * n_channels);
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
-			pixels[i * n_channels + 0] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 1] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 2] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 3] = (GLfloat)i / (GLfloat)n_pixels;
+			const GLuint  idx   = i * n_channels;
+			const GLfloat value = static_cast<GLfloat>(i) / n_pixels;
+			pixels[idx + 0]		= value;
+			pixels[idx + 1]		= value;
+			pixels[idx + 2]		= value;
+			pixels[idx + 3]		= value;
 		}
 
-		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RGBA, GL_FLOAT, &pixels[0]);
+		Texture::GetData(gl, texture_id, 0 /* level */, width, height, GL_RGBA, GL_FLOAT, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -2236,19 +2209,19 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 			const GLfloat expected_green = (GLfloat)(i / 16) / 16.0f;
 			const GLfloat expected_blue  = (GLfloat)i / 256.0f;
 			const GLfloat expected_alpha = 1.0f;
-			const GLfloat drawn_red		 = pixels[i * n_channels + 0];
-			const GLfloat drawn_green	= pixels[i * n_channels + 1];
-			const GLfloat drawn_blue	 = pixels[i * n_channels + 2];
-			const GLfloat drawn_alpha	= pixels[i * n_channels + 3];
+			const GLuint  idx			 = i * n_channels;
+			const GLfloat drawn_red		 = pixels[idx + 0];
+			const GLfloat drawn_green	= pixels[idx + 1];
+			const GLfloat drawn_blue	 = pixels[idx + 2];
+			const GLfloat drawn_alpha	= pixels[idx + 3];
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green) || (expected_blue != drawn_blue) ||
 				(expected_alpha != drawn_alpha))
 			{
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green << ", "
-					<< drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red << ", "
-					<< expected_green << ", " << expected_blue << ", " << expected_alpha << ". At offset: " << i
-					<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green
+								   << ", " << drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red
+								   << ", " << expected_green << ", " << expected_blue << ", " << expected_alpha
+								   << ". At offset: " << i << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2257,18 +2230,13 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 	}
 	else if (R32UI_MIPMAP == m_test_case)
 	{
-		static const GLuint n_channels = 1;
+		static const GLuint n_channels = 4;
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels * 4);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = 0;
-		}
+		std::vector<GLuint> pixels(n_pixels * n_channels, 0);
 
-		Texture::GetData(gl, 1 /* level */, GL_TEXTURE_2D, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
+		Texture::GetData(gl, texture_id, 1 /* level */, width, height, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -2277,13 +2245,13 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
 			const GLuint expected_red = i;
-			const GLuint drawn_red	= pixels[i];
+			const GLuint drawn_red	= pixels[i * n_channels];
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+								   << ". Expected value: " << expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2292,45 +2260,46 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 	}
 	else if (R32UI_MULTISAMPLE == m_test_case)
 	{
-		static const GLuint n_channels = 1;
+		static const GLuint n_channels = 4;
 
 		/* Compute shader */
-		static const GLchar* cs =
-			"#version 430 core\n"
+		static const GLchar* source =
+			"${VERSION}\n"
 			"\n"
 			"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 			"\n"
-			"layout (location = 1)        writeonly uniform uimage2D   uni_destination_image;\n"
+			"layout (location = 1, r32ui) writeonly uniform uimage2D   uni_destination_image;\n"
 			"layout (location = 0, r32ui) readonly  uniform uimage2DMS uni_source_image;\n"
 			"\n"
 			"void main()\n"
 			"{\n"
 			"    const ivec2 point = ivec2(gl_WorkGroupID.x, gl_WorkGroupID.y);\n"
-			"    const uint  index = gl_WorkGroupID.y * 16 + gl_WorkGroupID.x;\n"
+			"    const uint  index = gl_WorkGroupID.y * 16U + gl_WorkGroupID.x;\n"
 			"\n"
 			"    const uvec4 color_0 = imageLoad(uni_source_image, point, 0);\n"
 			"    const uvec4 color_1 = imageLoad(uni_source_image, point, 1);\n"
 			"    const uvec4 color_2 = imageLoad(uni_source_image, point, 2);\n"
 			"    const uvec4 color_3 = imageLoad(uni_source_image, point, 3);\n"
 			"\n"
-			"    if (any(equal(uvec4(color_0.r, color_1.r, color_2.r, color_3.r), uvec4(index + 3))))\n"
+			"    if (any(equal(uvec4(color_0.r, color_1.r, color_2.r, color_3.r), uvec4(index + 3U))))\n"
 			"    {\n"
-			"        imageStore(uni_destination_image, point, uvec4(1, 1, 1, 1));\n"
+			"        imageStore(uni_destination_image, point, uvec4(1U));\n"
 			"    }\n"
 			"    else\n"
 			"    {\n"
-			"        imageStore(uni_destination_image, point, uvec4(0, 0, 0, 0));\n"
+			"        imageStore(uni_destination_image, point, uvec4(0U));\n"
 			"    }\n"
 			"}\n"
 			"\n";
 
-		Program program(m_context);
-		Texture destination_texture(m_context);
+		Program program(gl);
+		Texture destination_texture(gl);
 
 		Texture::Generate(gl, destination_texture.m_id);
 		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
 		Texture::Storage(gl, GL_TEXTURE_2D, 1, GL_R32UI, width, height, 0 /* depth */);
 
+		std::string cs = tcu::StringTemplate(source).specialize(m_specializationMap);
 		program.Init(cs, "", "", "", "", "");
 		program.Use();
 		gl.bindImageTexture(0 /* unit */, texture_id, 0 /* level */, GL_FALSE /* layered */, 0 /* layer */,
@@ -2340,24 +2309,24 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 							0 /* layer */, GL_WRITE_ONLY, GL_R32UI);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "BindImageTexture");
 
-		gl.uniform1i(0 /* location */, 0 /* image unit*/);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+		if (!m_context_is_es)
+		{
+			gl.uniform1i(0 /* location */, 0 /* image unit*/);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
 
-		gl.uniform1i(1 /* location */, 1 /* image unit*/);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+			gl.uniform1i(1 /* location */, 1 /* image unit*/);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+		}
 
 		gl.dispatchCompute(16, 16, 1);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
 		/* Pixels buffer initialization */
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = i;
-		}
+		std::vector<GLuint> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
-		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
+		Texture::GetData(gl, destination_texture.m_id, 0 /* level */, width, height, GL_RGBA_INTEGER, GL_UNSIGNED_INT,
+						 &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -2366,13 +2335,13 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
 			const GLuint expected_red = 1;
-			const GLuint drawn_red	= pixels[i];
+			const GLuint drawn_red	= pixels[i * n_channels];
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+								   << ". Expected value: " << expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2385,22 +2354,13 @@ bool TexelFetchTest::verifyValidResults(glw::GLuint texture_id)
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api type
  **/
-ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context)
-	: TexelFetchTest(context, "image_load_store", "Verifies that out-of-bound to image result in zero or is discarded")
+ImageLoadStoreTest::ImageLoadStoreTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TexelFetchTest(testCtx, "image_load_store", "Verifies that out-of-bound to image result in zero or is discarded",
+					 apiType)
 {
-	/* Nothing to be done */
-}
-
-/** Constructor
- *
- * @param context Test context
- **/
-ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: TexelFetchTest(context, name, description)
-{
-	/* Nothing to be done */
 }
 
 /** Execute test
@@ -2409,7 +2369,8 @@ ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context, const glw::GLchar
  **/
 tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 {
-	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+	de::SharedPtr<glu::RenderContext> robustContext(createRobustContext());
+	if (!robustContext.get())
 		return STOP;
 
 	/* Constants */
@@ -2417,7 +2378,7 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 	static const GLuint width  = 16;
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = robustContext->getFunctions();
 
 	struct FetchingOffset
 	{
@@ -2427,6 +2388,10 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 	const FetchingOffset fetching_offsets[] = {
 		{ 16, 4 }, { 512, 4 }, { 1024, 8 }, { 2048, 8 },
 	};
+
+	/* For ES start from RGBA32F as R8, R32UI_MULTISAMPLE and R8_SNORM are not supported */
+	if (m_context_is_es)
+		m_test_case = RGBA32F;
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -2442,14 +2407,13 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 			// Skip invalid program test in multi sample case
 			// texelFetch with invalid lod plane results undefined value
 			// OpenGL 4.5 Core Spec, around page 377
-			m_test_case = (TEST_CASES)((GLuint)m_test_case + 1);
 			continue;
 		}
 
 		/* Test case objects */
-		Texture destination_texture(m_context);
-		Texture source_texture(m_context);
-		Program program(m_context);
+		Texture destination_texture(gl);
+		Texture source_texture(gl);
+		Program program(gl);
 
 		/* Prepare textures */
 		Texture::Generate(gl, destination_texture.m_id);
@@ -2472,15 +2436,14 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 				 * to upload the texture so max_image_samples >= 4
 				 * is also required.
 				 */
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
-													<< " not supported" << tcu::TestLog::EndMessage;
-
+				m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName() << " not supported"
+								   << tcu::TestLog::EndMessage;
 				continue;
 			}
 		}
 
-		prepareTexture(false, destination_texture.m_id);
-		prepareTexture(true, source_texture.m_id);
+		prepareTexture(gl, false, destination_texture.m_id);
+		prepareTexture(gl, true, source_texture.m_id);
 
 		/* Test invalid source cases */
 		for (GLuint i = 0; i < DE_LENGTH_OF_ARRAY(fetching_offsets); ++i)
@@ -2491,14 +2454,14 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 			program.Use();
 
 			/* Set texture */
-			setTextures(destination_texture.m_id, source_texture.m_id);
+			setTextures(gl, destination_texture.m_id, source_texture.m_id);
 
 			/* Dispatch */
 			gl.dispatchCompute(width, height, 1 /* depth */);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
 			/* Verification */
-			if (false == verifyInvalidResults(destination_texture.m_id))
+			if (false == verifyInvalidResults(gl, destination_texture.m_id))
 			{
 				case_result = false;
 			}
@@ -2509,14 +2472,14 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 		program.Use();
 
 		/* Set texture */
-		setTextures(destination_texture.m_id, source_texture.m_id);
+		setTextures(gl, destination_texture.m_id, source_texture.m_id);
 
 		/* Dispatch */
 		gl.dispatchCompute(width, height, 1 /* depth */);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
 		/* Verification */
-		if (false == verifyValidResults(destination_texture.m_id))
+		if (false == verifyValidResults(gl, destination_texture.m_id))
 		{
 			case_result = false;
 		}
@@ -2530,14 +2493,14 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 			program.Use();
 
 			/* Set texture */
-			setTextures(destination_texture.m_id, source_texture.m_id);
+			setTextures(gl, destination_texture.m_id, source_texture.m_id);
 
 			/* Dispatch */
 			gl.dispatchCompute(width, height, 1 /* depth */);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
 			/* Verification */
-			if (false == verifyValidResults(destination_texture.m_id))
+			if (false == verifyValidResults(gl, destination_texture.m_id))
 			{
 				case_result = false;
 			}
@@ -2546,8 +2509,8 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 		/* Set test result */
 		if (false == case_result)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName()
-												<< " failed" << tcu::TestLog::EndMessage;
+			m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << getTestCaseName() << " failed"
+							   << tcu::TestLog::EndMessage;
 
 			test_result = false;
 		}
@@ -2556,11 +2519,11 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
@@ -2575,53 +2538,34 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
  **/
 std::string ImageLoadStoreTest::getComputeShader(VERSION version, GLuint coord_offset, GLuint sample_offset)
 {
-	static const GLchar* template_code =
-		"#version 430 core\n"
+	static const GLchar* source =
+		"${VERSION}\n"
 		"\n"
 		"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		"\n"
-		"layout (location = 1) writeonly uniform IMAGE uni_destination_image;\n"
-		"layout (location = 0, FORMAT) readonly  uniform IMAGE uni_source_image;\n"
+		"layout (${QUALIFIER} = 1, ${FORMAT}) writeonly uniform highp ${IMAGE} uni_destination_image;\n"
+		"layout (${QUALIFIER} = 0, ${FORMAT}) readonly  uniform highp ${IMAGE} uni_source_image;\n"
 		"\n"
 		"void main()\n"
 		"{\n"
-		"    const ivec2 point_destination = ivec2(gl_WorkGroupID.xy) + ivec2(COORD_OFFSET);\n"
-		"    const ivec2 point_source      = ivec2(gl_WorkGroupID.xy) + ivec2(COORD_OFFSET);\n"
+		"  ivec2 point_destination = ivec2(gl_WorkGroupID.xy) + ivec2(${DST_COORD_OFFSET}U);\n"
+		"  ivec2 point_source      = ivec2(gl_WorkGroupID.xy) + ivec2(${SRC_COORD_OFFSET}U);\n"
 		"\n"
-		"COPY"
-		"}\n"
-		"\n";
+		"${COPY}"
+		"}\n";
 
 	static const GLchar* copy_multisampled =
-		"    const TYPE color_0 = imageLoad(uni_source_image, point_source, 0 + SAMPLE_OFFSET);\n"
-		"    const TYPE color_1 = imageLoad(uni_source_image, point_source, 1 + SAMPLE_OFFSET);\n"
-		"    const TYPE color_2 = imageLoad(uni_source_image, point_source, 2 + SAMPLE_OFFSET);\n"
-		"    const TYPE color_3 = imageLoad(uni_source_image, point_source, 3 + SAMPLE_OFFSET);\n"
-		"    imageStore(uni_destination_image, point_destination, 0 + SAMPLE_OFFSET, color_0);\n"
-		"    imageStore(uni_destination_image, point_destination, 1 + SAMPLE_OFFSET, color_1);\n"
-		"    imageStore(uni_destination_image, point_destination, 2 + SAMPLE_OFFSET, color_2);\n"
-		"    imageStore(uni_destination_image, point_destination, 3 + SAMPLE_OFFSET, color_3);\n";
+		"  ${TYPE} color_0 = imageLoad(uni_source_image, point_source, 0 + ${SRC_SAMPLE_OFFSET});\n"
+		"  ${TYPE} color_1 = imageLoad(uni_source_image, point_source, 1 + ${SRC_SAMPLE_OFFSET});\n"
+		"  ${TYPE} color_2 = imageLoad(uni_source_image, point_source, 2 + ${SRC_SAMPLE_OFFSET});\n"
+		"  ${TYPE} color_3 = imageLoad(uni_source_image, point_source, 3 + ${SRC_SAMPLE_OFFSET});\n"
+		"  imageStore(uni_destination_image, point_destination, 0 + ${DST_SAMPLE_OFFSET}, color_0);\n"
+		"  imageStore(uni_destination_image, point_destination, 1 + ${DST_SAMPLE_OFFSET}, color_1);\n"
+		"  imageStore(uni_destination_image, point_destination, 2 + ${DST_SAMPLE_OFFSET}, color_2);\n"
+		"  imageStore(uni_destination_image, point_destination, 3 + ${DST_SAMPLE_OFFSET}, color_3);\n";
 
-	static const GLchar* copy_regular =
-		"    const TYPE color = imageLoad(uni_source_image, point_source);\n"
-		"    imageStore(uni_destination_image, point_destination, color);\n";
-
-	static const GLchar* format_r8		  = "r8";
-	static const GLchar* format_rg8_snorm = "rg8_snorm";
-	static const GLchar* format_rgba32f   = "rgba32f";
-	static const GLchar* format_r32ui	 = "r32ui";
-
-	static const GLchar* image_vec4		= "image2D";
-	static const GLchar* image_uvec4	= "uimage2D";
-	static const GLchar* image_uvec4_ms = "uimage2DMS";
-
-	static const GLchar* type_vec4  = "vec4";
-	static const GLchar* type_uvec4 = "uvec4";
-
-	const GLchar* copy   = copy_regular;
-	const GLchar* format = format_r8;
-	const GLchar* image  = image_vec4;
-	const GLchar* type   = type_vec4;
+	static const GLchar* copy_regular = "  ${TYPE} color = imageLoad(uni_source_image, point_source);\n"
+										"  imageStore(uni_destination_image, point_destination, color);\n";
 
 	std::string src_coord_offset_str("0");
 	std::string dst_coord_offset_str("0");
@@ -2633,83 +2577,54 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version, GLuint coord_o
 	std::stringstream sample_offset_stream;
 	sample_offset_stream << sample_offset;
 
-	if (version == SOURCE_INVALID)
-	{
-		src_coord_offset_str  = coord_offset_stream.str();
-		src_sample_offset_str = sample_offset_stream.str();
-	}
-	else if (version == DESTINATION_INVALID)
-	{
-		dst_coord_offset_str  = coord_offset_stream.str();
-		dst_sample_offset_str = sample_offset_stream.str();
-	}
-
+	m_specializationMap["QUALIFIER"] = m_context_is_es ? "binding" : "location";
+	m_specializationMap["IMAGE"]	 = "image2D";
+	m_specializationMap["TYPE"]		 = "vec4";
 	switch (m_test_case)
 	{
 	case R8:
+		m_specializationMap["FORMAT"] = "r8";
 		break;
 	case RG8_SNORM:
-		format = format_rg8_snorm;
+		m_specializationMap["FORMAT"] = "rg8_snorm";
 		break;
 	case RGBA32F:
-		format = format_rgba32f;
+		m_specializationMap["FORMAT"] = "rgba32f";
 		break;
 	case R32UI_MIPMAP:
-		format = format_r32ui;
-		image  = image_uvec4;
-		type   = type_uvec4;
+		m_specializationMap["FORMAT"] = "r32ui";
+		m_specializationMap["IMAGE"]  = "uimage2D";
+		m_specializationMap["TYPE"]   = "uvec4";
 		break;
 	case R32UI_MULTISAMPLE:
-		copy		 = copy_multisampled;
-		format		 = format_r32ui;
-		image		 = image_uvec4_ms;
-		coord_offset = 0;
-		type		 = type_uvec4;
+		m_specializationMap["FORMAT"] = "r32ui";
+		m_specializationMap["IMAGE"]  = "uimage2DMS";
+		m_specializationMap["TYPE"]   = "uvec4";
 		break;
 	default:
 		TCU_FAIL("Invalid enum");
 	};
 
-	size_t		position = 0;
-	std::string source   = template_code;
+	m_specializationMap["SRC_COORD_OFFSET"]  = "0";
+	m_specializationMap["SRC_SAMPLE_OFFSET"] = "0";
+	m_specializationMap["DST_COORD_OFFSET"]  = "0";
+	m_specializationMap["DST_SAMPLE_OFFSET"] = "0";
 
-	replaceToken("IMAGE", position, image, source);
-	replaceToken("FORMAT", position, format, source);
-	replaceToken("IMAGE", position, image, source);
-	replaceToken("COORD_OFFSET", position, dst_coord_offset_str.c_str(), source);
-	replaceToken("COORD_OFFSET", position, src_coord_offset_str.c_str(), source);
-
-	size_t temp_position = position;
-	replaceToken("COPY", position, copy, source);
-	position = temp_position;
-
-	switch (m_test_case)
+	if (version == SOURCE_INVALID)
 	{
-	case R8:
-	case RG8_SNORM:
-	case RGBA32F:
-	case R32UI_MIPMAP:
-		replaceToken("TYPE", position, type, source);
-		break;
-	case R32UI_MULTISAMPLE:
-		replaceToken("TYPE", position, type, source);
-		replaceToken("SAMPLE_OFFSET", position, src_sample_offset_str.c_str(), source);
-		replaceToken("TYPE", position, type, source);
-		replaceToken("SAMPLE_OFFSET", position, src_sample_offset_str.c_str(), source);
-		replaceToken("TYPE", position, type, source);
-		replaceToken("SAMPLE_OFFSET", position, src_sample_offset_str.c_str(), source);
-		replaceToken("TYPE", position, type, source);
-		replaceToken("SAMPLE_OFFSET", position, src_sample_offset_str.c_str(), source);
-		replaceToken("SAMPLE_OFFSET", position, dst_sample_offset_str.c_str(), source);
-		replaceToken("SAMPLE_OFFSET", position, dst_sample_offset_str.c_str(), source);
-		replaceToken("SAMPLE_OFFSET", position, dst_sample_offset_str.c_str(), source);
-		replaceToken("SAMPLE_OFFSET", position, dst_sample_offset_str.c_str(), source);
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
+		m_specializationMap["SRC_COORD_OFFSET"]  = coord_offset_stream.str();
+		m_specializationMap["SRC_SAMPLE_OFFSET"] = sample_offset_stream.str();
+	}
+	else if (version == DESTINATION_INVALID)
+	{
+		m_specializationMap["DST_COORD_OFFSET"]  = coord_offset_stream.str();
+		m_specializationMap["DST_SAMPLE_OFFSET"] = sample_offset_stream.str();
 	}
 
-	return source;
+	const GLchar* copy			= (m_test_case == R32UI_MULTISAMPLE) ? copy_multisampled : copy_regular;
+	m_specializationMap["COPY"] = tcu::StringTemplate(copy).specialize(m_specializationMap);
+
+	return tcu::StringTemplate(source).specialize(m_specializationMap);
 }
 
 /** Set textures as images
@@ -2717,10 +2632,8 @@ std::string ImageLoadStoreTest::getComputeShader(VERSION version, GLuint coord_o
  * @param id_destination Id of texture used as destination
  * @param id_source      Id of texture used as source
  **/
-void ImageLoadStoreTest::setTextures(glw::GLuint id_destination, glw::GLuint id_source)
+void ImageLoadStoreTest::setTextures(const Functions& gl, glw::GLuint id_destination, glw::GLuint id_source)
 {
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
 	GLenum format = 0;
 	GLint  level  = 0;
 
@@ -2753,11 +2666,14 @@ void ImageLoadStoreTest::setTextures(glw::GLuint id_destination, glw::GLuint id_
 						format);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "BindImageTexture");
 
-	gl.uniform1i(0 /* location */, 0 /* image unit*/);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+	if (!m_context_is_es)
+	{
+		gl.uniform1i(0 /* location */, 0 /* image unit*/);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
 
-	gl.uniform1i(1 /* location */, 1 /* image unit*/);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+		gl.uniform1i(1 /* location */, 1 /* image unit*/);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
+	}
 }
 
 /** Verifies that texutre is filled with 0
@@ -2766,13 +2682,16 @@ void ImageLoadStoreTest::setTextures(glw::GLuint id_destination, glw::GLuint id_
  *
  * @return true when image is filled with 0, false otherwise
  **/
-bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
+bool ImageLoadStoreTest::verifyInvalidResults(const Functions& gl, glw::GLuint texture_id)
 {
 	static const GLuint height   = 16;
 	static const GLuint width	= 16;
 	static const GLuint n_pixels = height * width;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	// OpenGL ES has undefined out-of-bound behavior - no verification
+	if (m_context_is_es)
+		return true;
+
 	gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
 
@@ -2782,12 +2701,8 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 	{
 		static const GLuint n_channels = 1;
 
-		std::vector<GLubyte> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = static_cast<GLubyte>(i);
-		}
+		std::vector<GLubyte> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
@@ -2804,9 +2719,9 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
-													<< ". Expected value: " << (GLuint)expected_red
-													<< " at offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
+								   << ". Expected value: " << (GLuint)expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2817,13 +2732,8 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 	{
 		static const GLuint n_channels = 2;
 
-		std::vector<GLbyte> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i * n_channels + 0] = static_cast<GLubyte>(i);
-			pixels[i * n_channels + 1] = static_cast<GLubyte>(i);
-		}
+		std::vector<GLbyte> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
@@ -2842,10 +2752,9 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green))
 			{
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", " << (GLint)drawn_green
-					<< ". Expected value: " << (GLint)expected_red << ", " << (GLint)expected_green
-					<< ". At offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", "
+								   << (GLint)drawn_green << ". Expected value: " << (GLint)expected_red << ", "
+								   << (GLint)expected_green << ". At offset: " << i << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2856,14 +2765,15 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 	{
 		static const GLuint n_channels = 4;
 
-		std::vector<GLfloat> pixels;
-		pixels.resize(n_pixels * n_channels);
+		std::vector<GLfloat> pixels(n_pixels * n_channels);
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
-			pixels[i * n_channels + 0] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 1] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 2] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 3] = (GLfloat)i / (GLfloat)n_pixels;
+			GLuint  idx		= i * n_channels;
+			GLfloat value   = static_cast<GLfloat>(i) / n_pixels;
+			pixels[idx + 0] = value;
+			pixels[idx + 1] = value;
+			pixels[idx + 2] = value;
+			pixels[idx + 3] = value;
 		}
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
@@ -2880,19 +2790,19 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 			const GLfloat expected_green = 0.0f;
 			const GLfloat expected_blue  = 0.0f;
 			const GLfloat expected_alpha = 0.0f;
-			const GLfloat drawn_red		 = pixels[i * n_channels + 0];
-			const GLfloat drawn_green	= pixels[i * n_channels + 1];
-			const GLfloat drawn_blue	 = pixels[i * n_channels + 2];
-			const GLfloat drawn_alpha	= pixels[i * n_channels + 3];
+			const GLuint  idx			 = i * n_channels;
+			const GLfloat drawn_red		 = pixels[idx + 0];
+			const GLfloat drawn_green	= pixels[idx + 1];
+			const GLfloat drawn_blue	 = pixels[idx + 2];
+			const GLfloat drawn_alpha	= pixels[idx + 3];
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green) || (expected_blue != drawn_blue) ||
 				(expected_alpha != drawn_alpha))
 			{
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green << ", "
-					<< drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red << ", "
-					<< expected_green << ", " << expected_blue << ", " << expected_alpha << ". At offset: " << i
-					<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green
+								   << ", " << drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red
+								   << ", " << expected_green << ", " << expected_blue << ", " << expected_alpha
+								   << ". At offset: " << i << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2903,12 +2813,8 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 	{
 		static const GLuint n_channels = 1;
 
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = i;
-		}
+		std::vector<GLuint> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
@@ -2925,9 +2831,9 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+								   << ". Expected value: " << expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -2939,7 +2845,7 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 		static const GLuint n_channels = 1;
 
 		/* Compute shader */
-		static const GLchar* cs = "#version 430 core\n"
+		static const GLchar* cs = "${VERSION}\n"
 								  "\n"
 								  "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 								  "\n"
@@ -2966,8 +2872,8 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 								  "}\n"
 								  "\n";
 
-		Program program(m_context);
-		Texture destination_texture(m_context);
+		Program program(gl);
+		Texture destination_texture(gl);
 
 		Texture::Generate(gl, destination_texture.m_id);
 		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
@@ -2992,12 +2898,8 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
 		/* Pixels buffer initialization */
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = i;
-		}
+		std::vector<GLuint> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
 
@@ -3012,9 +2914,9 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+								   << ". Expected value: " << expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -3031,13 +2933,12 @@ bool ImageLoadStoreTest::verifyInvalidResults(glw::GLuint texture_id)
  *
  * @return true when image is filled with increasing values, false otherwise
  **/
-bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
+bool ImageLoadStoreTest::verifyValidResults(const glw::Functions& gl, glw::GLuint texture_id)
 {
 	static const GLuint height   = 16;
 	static const GLuint width	= 16;
 	static const GLuint n_pixels = height * width;
 
-	const Functions& gl = m_context.getRenderContext().getFunctions();
 	gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
 
@@ -3049,12 +2950,8 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		std::vector<GLubyte> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = static_cast<GLubyte>(i);
-		}
+		std::vector<GLubyte> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RED, GL_UNSIGNED_BYTE, &pixels[0]);
 
@@ -3069,9 +2966,9 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
-													<< ". Expected value: " << (GLuint)expected_red
-													<< " at offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLuint)drawn_red
+								   << ". Expected value: " << (GLuint)expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -3084,13 +2981,8 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		std::vector<GLbyte> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i * n_channels + 0] = static_cast<GLubyte>(i);
-			pixels[i * n_channels + 1] = static_cast<GLubyte>(i);
-		}
+		std::vector<GLbyte> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RG, GL_BYTE, &pixels[0]);
 
@@ -3107,10 +2999,9 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green))
 			{
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", " << (GLint)drawn_green
-					<< ". Expected value: " << (GLint)expected_red << ", " << (GLint)expected_green
-					<< ". At offset: " << i << tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << (GLint)drawn_red << ", "
+								   << (GLint)drawn_green << ". Expected value: " << (GLint)expected_red << ", "
+								   << (GLint)expected_green << ". At offset: " << i << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -3123,17 +3014,17 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		std::vector<GLfloat> pixels;
-		pixels.resize(n_pixels * n_channels);
+		std::vector<GLfloat> pixels(n_pixels * n_channels);
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
-			pixels[i * n_channels + 0] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 1] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 2] = (GLfloat)i / (GLfloat)n_pixels;
-			pixels[i * n_channels + 3] = (GLfloat)i / (GLfloat)n_pixels;
+			GLfloat value			   = static_cast<GLfloat>(i) / n_pixels;
+			pixels[i * n_channels + 0] = value;
+			pixels[i * n_channels + 1] = value;
+			pixels[i * n_channels + 2] = value;
+			pixels[i * n_channels + 3] = value;
 		}
 
-		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RGBA, GL_FLOAT, &pixels[0]);
+		Texture::GetData(gl, texture_id, 0 /* level */, width, height, GL_RGBA, GL_FLOAT, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -3145,19 +3036,19 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 			const GLfloat expected_green = (GLfloat)(i / 16) / 16.0f;
 			const GLfloat expected_blue  = (GLfloat)i / 256.0f;
 			const GLfloat expected_alpha = 1.0f;
-			const GLfloat drawn_red		 = pixels[i * n_channels + 0];
-			const GLfloat drawn_green	= pixels[i * n_channels + 1];
-			const GLfloat drawn_blue	 = pixels[i * n_channels + 2];
-			const GLfloat drawn_alpha	= pixels[i * n_channels + 3];
+			const GLuint  idx			 = i * n_channels;
+			const GLfloat drawn_red		 = pixels[idx + 0];
+			const GLfloat drawn_green	= pixels[idx + 1];
+			const GLfloat drawn_blue	 = pixels[idx + 2];
+			const GLfloat drawn_alpha	= pixels[idx + 3];
 
 			if ((expected_red != drawn_red) || (expected_green != drawn_green) || (expected_blue != drawn_blue) ||
 				(expected_alpha != drawn_alpha))
 			{
-				m_context.getTestContext().getLog()
-					<< tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green << ", "
-					<< drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red << ", "
-					<< expected_green << ", " << expected_blue << ", " << expected_alpha << ". At offset: " << i
-					<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red << ", " << drawn_green
+								   << ", " << drawn_blue << ", " << drawn_alpha << ". Expected value: " << expected_red
+								   << ", " << expected_green << ", " << expected_blue << ", " << expected_alpha
+								   << ". At offset: " << i << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -3166,18 +3057,14 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 	}
 	else if (R32UI_MIPMAP == m_test_case)
 	{
-		static const GLuint n_channels = 1;
+		static const GLuint n_channels = 4;
 
 		Texture::Bind(gl, texture_id, GL_TEXTURE_2D);
 
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels * 4);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = 0;
-		}
+		std::vector<GLuint> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
-		Texture::GetData(gl, 1 /* level */, GL_TEXTURE_2D, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
+		Texture::GetData(gl, texture_id, 1 /* level */, width, height, GL_RGBA_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
 
 		/* Unbind */
 		Texture::Bind(gl, 0, GL_TEXTURE_2D);
@@ -3186,13 +3073,13 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 		for (GLuint i = 0; i < n_pixels; ++i)
 		{
 			const GLuint expected_red = i;
-			const GLuint drawn_red	= pixels[i];
+			const GLuint drawn_red	= pixels[i * n_channels];
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+								   << ". Expected value: " << expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -3205,7 +3092,7 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 		/* Compute shader */
 		static const GLchar* cs =
-			"#version 430 core\n"
+			"${VERSION}\n"
 			"\n"
 			"layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 			"\n"
@@ -3233,8 +3120,8 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 			"}\n"
 			"\n";
 
-		Program program(m_context);
-		Texture destination_texture(m_context);
+		Program program(gl);
+		Texture destination_texture(gl);
 
 		Texture::Generate(gl, destination_texture.m_id);
 		Texture::Bind(gl, destination_texture.m_id, GL_TEXTURE_2D);
@@ -3259,12 +3146,8 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
 
 		/* Pixels buffer initialization */
-		std::vector<GLuint> pixels;
-		pixels.resize(n_pixels * n_channels);
-		for (GLuint i = 0; i < n_pixels; ++i)
-		{
-			pixels[i] = i;
-		}
+		std::vector<GLuint> pixels(n_pixels * n_channels);
+		initPixels(pixels, n_pixels, n_channels);
 
 		Texture::GetData(gl, 0 /* level */, GL_TEXTURE_2D, GL_RED_INTEGER, GL_UNSIGNED_INT, &pixels[0]);
 
@@ -3279,9 +3162,9 @@ bool ImageLoadStoreTest::verifyValidResults(glw::GLuint texture_id)
 
 			if (expected_red != drawn_red)
 			{
-				m_context.getTestContext().getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
-													<< ". Expected value: " << expected_red << " at offset: " << i
-													<< tcu::TestLog::EndMessage;
+				m_testCtx.getLog() << tcu::TestLog::Message << "Invalid value: " << drawn_red
+								   << ". Expected value: " << expected_red << " at offset: " << i
+								   << tcu::TestLog::EndMessage;
 
 				result = false;
 				break;
@@ -3298,25 +3181,17 @@ const GLfloat StorageBufferTest::m_source_data[4]		= { 2.0f, 3.0f, 4.0f, 5.0f };
 
 /** Constructor
  *
- * @param context Test context
+ * @param testCtx Test context
+ * @param apiType Api type
  **/
-StorageBufferTest::StorageBufferTest(deqp::Context& context)
-	: TestCase(context, "storage_buffer", "Verifies that out-of-bound access to SSBO is discared or resutls in 0")
+StorageBufferTest::StorageBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: RobustnessBase(testCtx, "storage_buffer", "Verifies that out-of-bound access to SSBO is discared or resutls in 0",
+					 apiType)
 	, m_test_case(VALID)
-	, m_hasKhrRobustBufferAccess(false)
 {
 	/* Nothing to be done here */
 }
 
-/** Constructor
- *
- * @param context Test context
- **/
-StorageBufferTest::StorageBufferTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: TestCase(context, name, description), m_test_case(VALID)
-{
-	/* Nothing to be done */
-}
 
 /** Execute test
  *
@@ -3324,16 +3199,12 @@ StorageBufferTest::StorageBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult StorageBufferTest::iterate()
 {
-	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+	de::SharedPtr<glu::RenderContext> robustContext(createRobustContext());
+	if (!robustContext.get())
 		return STOP;
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
-
-	glu::ContextType contextType = m_context.getRenderContext().getType();
-	m_hasKhrRobustBufferAccess =
-		m_context.getContextInfo().isExtensionSupported("GL_KHR_robust_buffer_access_behavior") ||
-		contextSupports(contextType, glu::ApiType::core(4, 5));
+	const Functions& gl = robustContext->getFunctions();
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -3349,9 +3220,9 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
 	while (LAST != m_test_case)
 	{
 		/* Test case objects */
-		Buffer  destination_buffer(m_context);
-		Buffer  source_buffer(m_context);
-		Program program(m_context);
+		Buffer  destination_buffer(gl);
+		Buffer  source_buffer(gl);
+		Program program(gl);
 
 		/* Buffers initialization */
 		destination_buffer.InitData(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, sizeof(m_destination_data),
@@ -3395,11 +3266,11 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
@@ -3412,44 +3283,38 @@ tcu::TestNode::IterateResult StorageBufferTest::iterate()
  **/
 std::string StorageBufferTest::getComputeShader(GLuint offset)
 {
-	static const GLchar* cs = "#version 430 core\n"
-							  "\n"
-							  "layout (local_size_x = 4, local_size_y = 1, local_size_z = 1) in;\n"
-							  "\n"
-							  "layout (binding = 1, std430) buffer Source {\n"
-							  "    float data[];\n"
-							  "} source;\n"
-							  "\n"
-							  "layout (binding = 0, std430) buffer Destination {\n"
-							  "    float data[];\n"
-							  "} destination;\n"
-							  "\n"
-							  "void main()\n"
-							  "{\n"
-							  "    const uint index_destination = gl_LocalInvocationID.x + OFFSET;\n"
-							  "    const uint index_source      = gl_LocalInvocationID.x + OFFSET;\n"
-							  "\n"
-							  "    destination.data[index_destination] = source.data[index_source];\n"
-							  "}\n"
-							  "\n";
-
-	std::string   destination_offset("0");
-	std::string   source_offset("0");
-	size_t		  position = 0;
-	std::string   source   = cs;
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "layout (local_size_x = 4, local_size_y = 1, local_size_z = 1) in;\n"
+								  "\n"
+								  "layout (binding = 1, std430) buffer Source {\n"
+								  "    float data[];\n"
+								  "} source;\n"
+								  "\n"
+								  "layout (binding = 0, std430) buffer Destination {\n"
+								  "    float data[];\n"
+								  "} destination;\n"
+								  "\n"
+								  "void main()\n"
+								  "{\n"
+								  "    uint index_destination = gl_LocalInvocationID.x + ${DST_OFFSET}U;\n"
+								  "    uint index_source      = gl_LocalInvocationID.x + ${SRC_OFFSET}U;\n"
+								  "\n"
+								  "    destination.data[index_destination] = source.data[index_source];\n"
+								  "}\n"
+								  "\n";
 
 	std::stringstream offset_stream;
 	offset_stream << offset;
 
+	m_specializationMap["DST_OFFSET"] = "0";
+	m_specializationMap["SRC_OFFSET"] = "0";
 	if (m_test_case == SOURCE_INVALID)
-		source_offset = offset_stream.str();
+		m_specializationMap["SRC_OFFSET"] = offset_stream.str();
 	else if (m_test_case == DESTINATION_INVALID)
-		destination_offset = offset_stream.str();
+		m_specializationMap["DST_OFFSET"] = offset_stream.str();
 
-	replaceToken("OFFSET", position, destination_offset.c_str(), source);
-	replaceToken("OFFSET", position, source_offset.c_str(), source);
-
-	return source;
+	return tcu::StringTemplate(source).specialize(m_specializationMap);
 }
 
 /** Verify test case results
@@ -3472,6 +3337,10 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 	static const GLfloat expected_data_invalid_source[4]	   = { 0.0f, 0.0f, 0.0f, 0.0f };
 	static const GLfloat expected_data_invalid_destination[4]  = { 1.0f, 1.0f, 1.0f, 1.0f };
 
+	/* OpenGL ES has undefined out-of-bound behavior - verify only valid result*/
+	if (m_context_is_es && (m_test_case != VALID))
+		return true;
+
 	/* Prepare expected data const for proper case*/
 	const GLchar*  name				   = 0;
 	bool		   check_expected_data = false;
@@ -3485,7 +3354,7 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 		break;
 	case SOURCE_INVALID:
 		name				= "invalid source indices";
-		if (m_hasKhrRobustBufferAccess)
+		if (m_has_khr_robust_buffer_access)
 		{
 			for (int b = 0; b < 4; b++)
 			{
@@ -3509,8 +3378,8 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 				}
 				if (!valid)
 				{
-					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
-														<< tcu::TestLog::EndMessage;
+					m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+									   << tcu::TestLog::EndMessage;
 				}
 			}
 		}
@@ -3522,7 +3391,7 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 		break;
 	case DESTINATION_INVALID:
 		name				= "invalid destination indices";
-		if (m_hasKhrRobustBufferAccess)
+		if (m_has_khr_robust_buffer_access)
 		{
 			for (int b = 0; b < 4; b++)
 			{
@@ -3548,8 +3417,8 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 				}
 				if (!valid)
 				{
-					m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
-														<< tcu::TestLog::EndMessage;
+					m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+									   << tcu::TestLog::EndMessage;
 				}
 			}
 		}
@@ -3569,8 +3438,8 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
 		int size = static_cast<int>(sizeof(GLfloat) * 4);
 		if (0 != memcmp(expected_data, buffer_data, size))
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
-												<< tcu::TestLog::EndMessage;
+			m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
+							   << tcu::TestLog::EndMessage;
 			return false;
 		}
 	}
@@ -3582,20 +3451,11 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
  *
  * @param context Test context
  **/
-UniformBufferTest::UniformBufferTest(deqp::Context& context)
-	: TestCase(context, "uniform_buffer", "Verifies that out-of-bound access to UBO resutls in 0"), m_test_case(VALID)
+UniformBufferTest::UniformBufferTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: RobustnessBase(testCtx, "uniform_buffer", "Verifies that out-of-bound access to UBO resutls in 0", apiType)
+	, m_test_case(VALID)
 {
 	/* Nothing to be done here */
-}
-
-/** Constructor
- *
- * @param context Test context
- **/
-UniformBufferTest::UniformBufferTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: TestCase(context, name, description), m_test_case(VALID)
-{
-	/* Nothing to be done */
 }
 
 /** Execute test
@@ -3604,7 +3464,8 @@ UniformBufferTest::UniformBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult UniformBufferTest::iterate()
 {
-	if (!isRobustBufferAccessBehaviorFeatureSupported(m_context))
+	de::SharedPtr<glu::RenderContext> robustContext(createRobustContext());
+	if (!robustContext.get())
 		return STOP;
 
 	static const GLfloat destination_data[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -3621,7 +3482,7 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
 	};
 
 	/* GL entry points */
-	const Functions& gl = m_context.getRenderContext().getFunctions();
+	const Functions& gl = robustContext->getFunctions();
 
 	/* Test result indicator */
 	bool test_result = true;
@@ -3630,9 +3491,9 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
 	while (LAST != m_test_case)
 	{
 		/* Test case objects */
-		Buffer  destination_buffer(m_context);
-		Buffer  source_buffer(m_context);
-		Program program(m_context);
+		Buffer  destination_buffer(gl);
+		Buffer  source_buffer(gl);
+		Program program(gl);
 
 		/* Buffers initialization */
 		destination_buffer.InitData(GL_SHADER_STORAGE_BUFFER, GL_DYNAMIC_COPY, sizeof(destination_data),
@@ -3676,11 +3537,11 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
 	/* Set result */
 	if (true == test_result)
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	}
 	else
 	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
 	/* Done */
@@ -3693,42 +3554,36 @@ tcu::TestNode::IterateResult UniformBufferTest::iterate()
  **/
 std::string UniformBufferTest::getComputeShader(GLuint offset)
 {
-	static const GLchar* cs = "#version 430 core\n"
-							  "\n"
-							  "layout (local_size_x = 4, local_size_y = 1, local_size_z = 1) in;\n"
-							  "\n"
-							  "layout (binding = 0, std140) uniform Source {\n"
-							  "    float data[16];\n"
-							  "} source;\n"
-							  "\n"
-							  "layout (binding = 0, std430) buffer Destination {\n"
-							  "    float data[];\n"
-							  "} destination;\n"
-							  "\n"
-							  "void main()\n"
-							  "{\n"
-							  "    const uint index_destination = gl_LocalInvocationID.x + OFFSET;\n"
-							  "    const uint index_source      = gl_LocalInvocationID.x + OFFSET;\n"
-							  "\n"
-							  "    destination.data[index_destination] = source.data[index_source];\n"
-							  "}\n"
-							  "\n";
+	static const GLchar* source = "${VERSION}\n"
+								  "\n"
+								  "layout (local_size_x = 4, local_size_y = 1, local_size_z = 1) in;\n"
+								  "\n"
+								  "layout (binding = 0, std140) uniform Source {\n"
+								  "    float data[16];\n"
+								  "} source;\n"
+								  "\n"
+								  "layout (binding = 0, std430) buffer Destination {\n"
+								  "    float data[];\n"
+								  "} destination;\n"
+								  "\n"
+								  "void main()\n"
+								  "{\n"
+								  "    uint index_destination = gl_LocalInvocationID.x;\n"
+								  "    uint index_source      = gl_LocalInvocationID.x + ${OFFSET}U;\n"
+								  "\n"
+								  "    destination.data[index_destination] = source.data[index_source];\n"
+								  "}\n"
+								  "\n";
 
-	const GLchar* destination_offset = "0";
-	std::string   source_offset("0");
-	size_t		  position = 0;
-	std::string   source   = cs;
-
-	std::stringstream offset_stream;
-	offset_stream << offset;
-
+	m_specializationMap["OFFSET"] = "0";
 	if (m_test_case == SOURCE_INVALID)
-		source_offset = offset_stream.str();
+	{
+		std::stringstream offset_stream;
+		offset_stream << offset;
+		m_specializationMap["OFFSET"] = offset_stream.str();
+	}
 
-	replaceToken("OFFSET", position, destination_offset, source);
-	replaceToken("OFFSET", position, source_offset.c_str(), source);
-
-	return source;
+	return tcu::StringTemplate(source).specialize(m_specializationMap);
 }
 
 /** Verify test case results
@@ -3764,8 +3619,7 @@ bool UniformBufferTest::verifyResults(GLfloat* buffer_data)
 	/* Verify buffer data */
 	if (0 != memcmp(expected_data, buffer_data, size))
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Test case: " << name << " failed"
-											<< tcu::TestLog::EndMessage;
+		m_testCtx.getLog() << tcu::TestLog::Message << "Test case: " << name << " failed" << tcu::TestLog::EndMessage;
 		return false;
 	}
 
@@ -3777,9 +3631,10 @@ bool UniformBufferTest::verifyResults(GLfloat* buffer_data)
  *
  *  @param context Rendering context.
  **/
-RobustBufferAccessBehaviorTests::RobustBufferAccessBehaviorTests(deqp::Context& context)
-	: TestCaseGroup(context, "robust_buffer_access_behavior",
-					"Verifies \"robust buffer access behavior\" functionality")
+RobustBufferAccessBehaviorTests::RobustBufferAccessBehaviorTests(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: tcu::TestCaseGroup(testCtx, "robust_buffer_access_behavior",
+						 "Verifies \"robust buffer access behavior\" functionality")
+	, m_ApiType(apiType)
 {
 	/* Left blank on purpose */
 }
@@ -3789,11 +3644,11 @@ RobustBufferAccessBehaviorTests::RobustBufferAccessBehaviorTests(deqp::Context& 
  **/
 void RobustBufferAccessBehaviorTests::init(void)
 {
-	addChild(new RobustBufferAccessBehavior::VertexBufferObjectsTest(m_context));
-	addChild(new RobustBufferAccessBehavior::TexelFetchTest(m_context));
-	addChild(new RobustBufferAccessBehavior::ImageLoadStoreTest(m_context));
-	addChild(new RobustBufferAccessBehavior::StorageBufferTest(m_context));
-	addChild(new RobustBufferAccessBehavior::UniformBufferTest(m_context));
+	addChild(new RobustBufferAccessBehavior::VertexBufferObjectsTest(m_testCtx, m_ApiType));
+	addChild(new RobustBufferAccessBehavior::TexelFetchTest(m_testCtx, m_ApiType));
+	addChild(new RobustBufferAccessBehavior::ImageLoadStoreTest(m_testCtx, m_ApiType));
+	addChild(new RobustBufferAccessBehavior::StorageBufferTest(m_testCtx, m_ApiType));
+	addChild(new RobustBufferAccessBehavior::UniformBufferTest(m_testCtx, m_ApiType));
 }
 
-} /* deqp */
+} /* glcts */

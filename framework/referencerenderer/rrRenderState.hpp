@@ -248,6 +248,10 @@ struct FragmentOperationState
 	TestFunc					depthFunc;
 	bool						depthMask;
 
+	bool						depthBoundsTestEnabled;
+	float						minDepthBound;
+	float						maxDepthBound;
+
 	BlendMode					blendMode;
 
 	// Standard blending state
@@ -281,6 +285,10 @@ struct FragmentOperationState
 		, depthTestEnabled		(false)
 		, depthFunc				(TESTFUNC_LESS)
 		, depthMask				(true)
+
+		, depthBoundsTestEnabled(false)
+		, minDepthBound			(0.0f)
+		, maxDepthBound			(1.0f)
 
 		, blendMode				(BLENDMODE_NONE)
 		, blendRGBState			()

@@ -86,6 +86,18 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 	const VkDevice			device	= m_context.getDevice();
 
+	if (m_params.depthClampEnable && !m_context.getDeviceFeatures().depthClamp)
+		TCU_THROW(NotSupportedError, "DepthClamp device feature not supported.");
+
+	if (params.minDepth > 1.0f	||
+		params.minDepth < 0.0f	||
+		params.maxDepth > 1.0f	||
+		params.maxDepth < 0.0f)
+	{
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_EXT_depth_range_unrestricted"))
+			throw tcu::NotSupportedError("Test variant with minDepth/maxDepth outside 0..1 requires the VK_EXT_depth_range_unrestricted extension");
+	}
+
 	// Vertex data
 	{
 		std::vector<Vec4> vertexData;
@@ -117,7 +129,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 			VK_IMAGE_TILING_OPTIMAL,				// tiling,
 			targetImageUsageFlags);					// usage,
 
-		m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator());
+		m_colorTargetImage = Image::createAndAlloc(vk, device, targetImageCreateInfo, m_context.getDefaultAllocator(), m_context.getUniversalQueueFamilyIndex());
 
 		RenderPassCreateInfo	renderPassCreateInfo;
 		renderPassCreateInfo.addAttachment(AttachmentDescription(
@@ -253,7 +265,7 @@ tcu::ConstPixelBufferAccess InvertedDepthRangesTestInstance::draw (const VkViewp
 		const VkClearColorValue		clearColor			= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f).color;
 		const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 
-		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL);
+		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
 	}
 	{
@@ -343,12 +355,6 @@ MovePtr<tcu::TextureLevel> InvertedDepthRangesTestInstance::generateReferenceIma
 
 tcu::TestStatus InvertedDepthRangesTestInstance::iterate (void)
 {
-	// Check requirements
-
-	if (m_params.depthClampEnable && !m_context.getDeviceFeatures().depthClamp)
-		TCU_THROW(NotSupportedError, "DepthClamp device feature not supported.");
-
-
 	// Set up the viewport and draw
 
 	const VkViewport viewport =
@@ -447,10 +453,12 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup)
 		float				delta;
 	} delta[] =
 	{
-		{ "deltazero",	0.0f	},
-		{ "deltasmall",	0.3f	},
-		{ "deltaone",	1.0f	},
-		{ "deltalarge",	2.7f	},
+		{ "deltazero",					0.0f	},
+		{ "deltasmall",					0.3f	},
+		{ "deltaone",					1.0f	},
+
+		// Range > 1.0 requires VK_EXT_depth_range_unrestricted extension
+		{ "depth_range_unrestricted",	2.7f	},
 	};
 
 	for (int ndxDepthClamp = 0; ndxDepthClamp < DE_LENGTH_OF_ARRAY(depthClamp); ++ndxDepthClamp)
