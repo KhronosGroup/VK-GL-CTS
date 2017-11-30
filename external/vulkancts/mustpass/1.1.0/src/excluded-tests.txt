@@ -14,6 +14,8 @@ dEQP-VK.glsl.texture_functions.texturegrad.samplercubeshadow_fragment
 dEQP-VK.glsl.texture_functions.texturegrad.samplercubeshadow_vertex
 
 # Excluded sparse version of the above texture function tests
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_fragment
+dEQP-VK.glsl.texture_functions.texturegrad.sparse_samplercubeshadow_vertex
 dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_fragment
 dEQP-VK.glsl.texture_functions.texturegrad.sparse_isamplercube_vertex
 dEQP-VK.glsl.texture_functions.texturegrad.sparse_usamplercube_fragment
