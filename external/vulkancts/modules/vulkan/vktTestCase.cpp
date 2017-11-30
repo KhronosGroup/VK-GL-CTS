@@ -244,14 +244,14 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 	// VK_KHR_get_physical_device_propeties2 is used if enabledFeatures.pNext != 0
 
 	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo.pNext							= enabledFeatures.pNext ? &enabledFeatures : DE_NULL;
+	queueInfo.pNext							= DE_NULL;
 	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
 	queueInfo.queueFamilyIndex				= queueIndex;
 	queueInfo.queueCount					= 1u;
 	queueInfo.pQueuePriorities				= &queuePriority;
 
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext						= DE_NULL;
+	deviceInfo.pNext						= enabledFeatures.pNext ? &enabledFeatures : DE_NULL;
 	deviceInfo.queueCreateInfoCount			= 1u;
 	deviceInfo.pQueueCreateInfos			= &queueInfo;
 	deviceInfo.enabledExtensionCount		= (deUint32)extensionPtrs.size();
