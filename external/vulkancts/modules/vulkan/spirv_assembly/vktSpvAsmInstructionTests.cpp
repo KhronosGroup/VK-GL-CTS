@@ -7780,20 +7780,29 @@ struct ConvertCase
 
 		if (m_features == COMPUTE_TEST_USES_INT16)
 		{
-			m_asmTypes["int_capabilities"] = "OpCapability Int16\n";
-			m_asmTypes["int_additional_decl"] = "%i16        = OpTypeInt 16 1\n%u16        = OpTypeInt 16 0\n";
+			m_asmTypes["int_capabilities"]	  = "OpCapability Int16\n"
+												"OpCapability StorageUniformBufferBlock16\n";
+			m_asmTypes["int_additional_decl"] = "%i16        = OpTypeInt 16 1\n"
+												"%u16        = OpTypeInt 16 0\n";
+			m_asmTypes["int_extensions"]	  = "OpExtension \"SPV_KHR_16bit_storage\"\n";
 		}
 		else if (m_features == COMPUTE_TEST_USES_INT64)
 		{
-			m_asmTypes["int_capabilities"] = "OpCapability Int64\n";
-			m_asmTypes["int_additional_decl"] = "%i64        = OpTypeInt 64 1\n%u64        = OpTypeInt 64 0\n";
+			m_asmTypes["int_capabilities"]	  = "OpCapability Int64\n";
+			m_asmTypes["int_additional_decl"] = "%i64        = OpTypeInt 64 1\n"
+												"%u64        = OpTypeInt 64 0\n";
+			m_asmTypes["int_extensions"]	  = "";
 		}
 		else if (m_features == COMPUTE_TEST_USES_INT16_INT64)
 		{
-			m_asmTypes["int_capabilities"] = string("OpCapability Int16\n") +
-													"OpCapability Int64\n";
-			m_asmTypes["int_additional_decl"] =	"%i16        = OpTypeInt 16 1\n%u16        = OpTypeInt 16 0\n"
-								"%i64        = OpTypeInt 64 1\n%u64        = OpTypeInt 64 0\n";
+			m_asmTypes["int_capabilities"]	  = "OpCapability Int16\n"
+												"OpCapability StorageUniformBufferBlock16\n"
+												"OpCapability Int64\n";
+			m_asmTypes["int_additional_decl"] = "%i16        = OpTypeInt 16 1\n"
+												"%u16        = OpTypeInt 16 0\n"
+												"%i64        = OpTypeInt 64 1\n"
+												"%u64        = OpTypeInt 64 0\n";
+			m_asmTypes["int_extensions"]	  = "OpExtension \"SPV_KHR_16bit_storage\"\n";
 		}
 		else
 		{
@@ -7822,6 +7831,7 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 	const StringTemplate shader (
 		"OpCapability Shader\n"
 		"${int_capabilities}"
+		"${int_extensions}"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n"
@@ -7912,6 +7922,11 @@ tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
 		spec.outputs.push_back(test->m_outputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
 
+		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64)
+		{
+			spec.extensions.push_back("VK_KHR_16bit_storage");
+		}
+
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
 	}
 
@@ -7949,6 +7964,11 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 		spec.inputs.push_back(test->m_inputBuffer);
 		spec.outputs.push_back(test->m_outputBuffer);
 		spec.numWorkGroups = IVec3(1, 1, 1);
+
+		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64)
+		{
+			spec.extensions.push_back("VK_KHR_16bit_storage");
+		}
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
 	}
