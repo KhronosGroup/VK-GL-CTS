@@ -1144,7 +1144,7 @@ void UploadDownloadExecutor::uploadClear(Context& context)
 		subresourceRange								// VkImageSubresourceRange	subresourceRange;
 	};
 
-	m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+	m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 		0u, DE_NULL, 0u, DE_NULL, 1u, &imageInitBarrier);
 
 	for (deUint32 layer = 0; layer < m_caseDef.numLayers; layer++)
@@ -1262,8 +1262,8 @@ void UploadDownloadExecutor::uploadCopy(Context& context)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
 		DE_NULL,											// const void*				pNext;
-		0u,													// VkAccessFlags			outputMask;
-		VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags			inputMask;
+		0u,													// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,							// deUint32					srcQueueFamilyIndex;
@@ -1300,8 +1300,8 @@ void UploadDownloadExecutor::uploadCopy(Context& context)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType			sType;
 		DE_NULL,											// const void*				pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags			outputMask;
-		VK_ACCESS_TRANSFER_READ_BIT,						// VkAccessFlags			inputMask;
+		VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,						// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,							// deUint32					srcQueueFamilyIndex;
@@ -1310,7 +1310,7 @@ void UploadDownloadExecutor::uploadCopy(Context& context)
 		makeColorSubresourceRange(0, m_caseDef.numLayers)	// VkImageSubresourceRange	subresourceRange;
 	};
 
-	m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+	m_vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 		0u, DE_NULL, 0u, DE_NULL, 1u, &imagePostInitBarrier);
 
 	m_imageLayoutAfterUpload	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -1581,8 +1581,8 @@ void UploadDownloadExecutor::copyImageToBuffer(VkImage				sourceImage,
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 		DE_NULL,									// const void*				pNext;
-		srcAccessMask,								// VkAccessFlags			outputMask;
-		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			inputMask;
+		srcAccessMask,								// VkAccessFlags			srcAccessMask;
+		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
 		oldLayout,									// VkImageLayout			oldLayout;
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
