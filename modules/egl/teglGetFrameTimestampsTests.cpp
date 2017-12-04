@@ -226,7 +226,6 @@ void verifySingleFrame (const FrameTimes& frameTimes, tcu::ResultCollector& resu
 		result.check(frameTimes.renderingComplete < frameTimes.readsDone, "Buffer rendering completed after reads completed.");
 
 	// Verify CPU/GPU dependencies
-	result.check(frameTimes.renderingComplete < frameTimes.latch, "Buffer latched before rendering completed.");
 	if (timestampValid(frameTimes.firstCompositionGpuFinished))
 		result.check(frameTimes.firstCompositionStart < frameTimes.firstCompositionGpuFinished, "Composition CPU work started after GPU work finished.");
 
