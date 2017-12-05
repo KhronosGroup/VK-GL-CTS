@@ -661,10 +661,10 @@ void NegativeApiTests::init (void)
 
 			log << TestLog::EndSection;
 
-			log << TestLog::Section("Test2", "EGL_BAD_CONFIG is generated if config is not an EGL frame buffer configuration");
+			log << TestLog::Section("Test2", "EGL_BAD_CONFIG or EGL_BAD_PARAMETER is generated if config is not an EGL frame buffer configuration or if the PixmapSurface call is not supported");
 
 			expectNoSurface(eglCreatePixmapSurface(display, (EGLConfig)-1, DE_NULL, s_emptyAttribList));
-			expectError(EGL_BAD_CONFIG);
+			expectEitherError(EGL_BAD_CONFIG, EGL_BAD_PARAMETER);
 
 			log << TestLog::EndSection;
 		});
