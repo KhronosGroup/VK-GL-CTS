@@ -1121,15 +1121,19 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 		return STOP;
 	}
 
-	// 3) Check if queries for ACTIVE_ATTRIBUTE_MAX_LENGTH, ACTIVE_UNIFORM_MAX_LENGTH, TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH,
-	//    ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH return value equal to 1.
+	// 3) Check if queries for ACTIVE_ATTRIBUTE_MAX_LENGTH, ACTIVE_UNIFORM_MAX_LENGTH,
+	//    ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH return value equal to 1, and
+	//    TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH value equals to 0
 	GLint programState[4];
+	GLint expectedValues[4] = {1, 1, 0, 1};
 	gl.getProgramiv(program.getProgram(), GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &programState[0]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 
 	gl.getProgramiv(program.getProgram(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &programState[1]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 
+	// We expect 0 for GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH because the current program
+	// doesn't activate transform feedback so there isn't any active varying.
 	gl.getProgramiv(program.getProgram(), GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH, &programState[2]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 
@@ -1139,11 +1143,12 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 	bool programStateResult = true;
 	for (int i = 0; i < 4; ++i)
 	{
-		if (programState[i] != 1)
+		if (programState[i] != expectedValues[i])
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "Check max name length [" << i << "] failed. "
-							   << "Expected: 1, Queried: " << programState[i] << "\n"
-							   << tcu::TestLog::EndMessage;
+                                                          << "Expected: " << expectedValues[i] <<", Queried: "
+                                                          << programState[i] << "\n"
+                                                          << tcu::TestLog::EndMessage;
 			programStateResult = false;
 		}
 	}
