@@ -53,6 +53,11 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	# Turn on -Wstrict-overflow=5 and check all warnings before removing
 	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} -fwrapv")
 	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} -fwrapv")
+
+	# Force compiler to not export any symbols.
+	# Any static libraries build are linked into the standalone executable binaries.
+	set(CMAKE_C_FLAGS			"${CMAKE_C_FLAGS} -fvisibility=hidden")
+	set(CMAKE_CXX_FLAGS			"${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
 elseif (DE_COMPILER_IS_MSC)
 	# Compiler flags for msc
 

@@ -66,8 +66,14 @@ endif ()
 include_directories(${ZLIB_INCLUDE_PATH})
 
 # libpng
-find_path(PNG_INCLUDE_PATH	png.h)
-find_library(PNG_LIBRARY	png)
+#
+# The FindPNG module defines PNG_INCLUDE_DIRS and PNG_LIBRARIES. But dEQP's
+# CMake files expect the non-standard PNG_INCLUDE_PATH and PNG_LIBRARY. Set the
+# non-standard variables here to retain compatibility with dEQP's existing
+# CMake files.
+include(FindPNG)
+set(PNG_INCLUDE_PATH ${PNG_INCLUDE_DIRS})
+set(PNG_LIBRARY ${PNG_LIBRARIES})
 
 if (NOT PNG_INCLUDE_PATH OR NOT PNG_LIBRARY)
 	message(STATUS "System version of libpng not found, using external/libpng")

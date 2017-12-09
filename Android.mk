@@ -26,6 +26,8 @@ deqp_compile_flags := \
 	-D_XOPEN_SOURCE=600 \
 	-DDEQP_TARGET_NAME=\"android\" \
 	-DQP_SUPPORT_PNG=1 \
+	-Wall \
+	-Werror \
 	-Wconversion \
 	-fwrapv \
 	-Wno-sign-conversion

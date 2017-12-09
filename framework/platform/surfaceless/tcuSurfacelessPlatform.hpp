@@ -1,8 +1,11 @@
+#ifndef _TCUSURFACELESSPLATFORM_HPP
+#define _TCUSURFACELESSPLATFORM_HPP
+
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright 2015 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,36 +21,14 @@
  *
  *//*!
  * \file
- * \brief Android activity constructors.
+ * \brief DRM platform
  *//*--------------------------------------------------------------------*/
 
-#include "deDefs.h"
-
-#if (DE_OS != DE_OS_ANDROID)
-#	error Unsupported OS
-#endif
-
-#if (DE_ANDROID_API >= 9)
-// Add NativeActivity entry point
-
-#include "tcuAndroidTestActivity.hpp"
-
-DE_BEGIN_EXTERN_C
-
-JNIEXPORT void JNICALL createTestActivity (ANativeActivity* activity, void* savedState, size_t savedStateSize)
+namespace tcu
 {
-	DE_UNREF(savedState && savedStateSize);
-	try
-	{
-		tcu::Android::TestActivity* obj = new tcu::Android::TestActivity(activity);
-		DE_UNREF(obj);
-	}
-	catch (const std::exception& e)
-	{
-		tcu::die("Failed to create activity: %s", e.what());
-	}
+	class Platform;
 }
 
-DE_END_EXTERN_C
+tcu::Platform* createPlatform (void);
 
-#endif // DE_ANDROID_API >= 9
+#endif // _TCUSURFACELESSPLATFORM_HPP
