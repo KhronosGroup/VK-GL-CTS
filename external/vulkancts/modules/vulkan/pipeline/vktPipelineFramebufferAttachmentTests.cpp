@@ -1502,6 +1502,82 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 	return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus testUnusedAtt (Context& context)
+{
+	const DeviceInterface&			vk						= context.getDeviceInterface();
+	const VkDevice					device					= context.getDevice();
+	const Move<VkCommandPool>		cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
+	const Move<VkCommandBuffer>		cmdBuffer				(makeCommandBuffer(vk, device, *cmdPool));
+
+	const VkAttachmentReference		attRef					=
+	{
+		VK_ATTACHMENT_UNUSED,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+	};
+
+	const VkSubpassDescription		subpass					=
+	{
+		0,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		0,
+		DE_NULL,
+		1,
+		&attRef,
+		DE_NULL,
+		DE_NULL,
+		0,
+		DE_NULL
+	};
+
+	const VkRenderPassCreateInfo	renderPassCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		DE_NULL,
+		0,
+		0,
+		DE_NULL,
+		1,
+		&subpass,
+		0,
+		DE_NULL
+	};
+
+	const Move<VkRenderPass>		renderPass				= createRenderPass(vk, device, &renderPassCreateInfo, DE_NULL);
+
+	const VkFramebufferCreateInfo	framebufferCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		DE_NULL,
+		0,
+		*renderPass,
+		0,
+		DE_NULL,
+		32,
+		32,
+		1
+	};
+
+	const Move<VkFramebuffer>		framebuffer				= createFramebuffer(vk, device, &framebufferCreateInfo, DE_NULL);
+
+	const VkRenderPassBeginInfo		renderPassBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		DE_NULL,
+		*renderPass,
+		*framebuffer,
+		{{0, 0}, {32, 32}},
+		0,
+		DE_NULL
+	};
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vk.cmdEndRenderPass(*cmdBuffer);
+	vk.endCommandBuffer(*cmdBuffer);
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 void initDifferentAttachmentSizesPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 {
 	DE_UNREF(caseDef);
@@ -1638,6 +1714,9 @@ void addAttachmentTestCasesWithFunctions (tcu::TestCaseGroup* group)
 	// fragment shader writes to an image via imageStore().
 	addFunctionCaseWithPrograms(group, "no_attachments", "", initImagePrograms, testNoAtt, false);
 	addFunctionCaseWithPrograms(group, "no_attachments_ms", "", initImagePrograms, testNoAtt, true);
+
+	// Test render pass with attachment set as unused.
+	addFunctionCase(group, "unused_attachment", "", testUnusedAtt);
 
 	const CaseDef	differentAttachmentSizesCaseDef[]	=
 	{
