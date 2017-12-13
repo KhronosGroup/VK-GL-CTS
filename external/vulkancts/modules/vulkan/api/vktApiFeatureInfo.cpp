@@ -597,10 +597,13 @@ Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, deUi
 	const vector<VkExtensionProperties>	instanceExts = enumerateInstanceExtensionProperties(vkp, DE_NULL);
 	vector<string>						enabledExts;
 
-	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
-		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
-
-	enabledExts.push_back(extensionName);
+	if (!isCoreInstanceExtension(version, extensionName))
+	{
+		if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
+			TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+		else
+			enabledExts.push_back(extensionName);
+	}
 
 	return createDefaultInstance(vkp, version, vector<string>() /* layers */, enabledExts, DE_NULL);
 }
