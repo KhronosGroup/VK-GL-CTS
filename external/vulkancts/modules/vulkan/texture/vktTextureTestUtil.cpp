@@ -299,22 +299,14 @@ void initializePrograms(vk::SourceCollections& programCollection, glu::Precision
 
 TextureBinding::TextureBinding (Context& context)
 	: m_context				(context)
-	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT))
-	, m_device				(createDevice())
-	, m_deviceInterface		(context.getInstanceInterface(), *m_device)
-	, m_allocator			(createAllocator())
 {
 }
 
 TextureBinding::TextureBinding (Context& context, const TestTextureSp& textureData, const TextureBinding::Type type, const TextureBinding::ImageBackingMode backingMode)
 	: m_context				(context)
-	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT))
 	, m_type				(type)
 	, m_backingMode			(backingMode)
 	, m_textureData			(textureData)
-	, m_device				(createDevice())
-	, m_deviceInterface		(context.getInstanceInterface(), *m_device)
-	, m_allocator			(createAllocator())
 {
 	updateTextureData(m_textureData, m_type);
 }
@@ -324,8 +316,7 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const VkDevice								vkDevice				= m_context.getDevice();
 	const bool									sparse					= m_backingMode == IMAGE_BACKING_MODE_SPARSE;
-	const deUint32								queueFamilyIndex		= sparse ? m_queueFamilyIndex : m_context.getUniversalQueueFamilyIndex();
-	const VkQueue								queue					= sparse ? getDeviceQueue(vkd, vkDevice, queueFamilyIndex, 0) : m_context.getUniversalQueue();
+	const deUint32								queueFamilyIndices[]	= {m_context.getUniversalQueueFamilyIndex(), m_context.getSparseQueueFamilyIndex()};
 	Allocator&									allocator				= m_context.getDefaultAllocator();
 	m_type			= textureType;
 	m_textureData	= textureData;
@@ -342,6 +333,7 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 	const deUint32								arraySize				= textureData->getArraySize();
 	vk::VkImageFormatProperties					imageFormatProperties;
 	const VkResult								imageFormatQueryResult	= m_context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(), format, imageType, imageTiling, imageUsageFlags, imageCreateFlags, &imageFormatProperties);
+	const VkSharingMode							sharingMode				= (sparse && m_context.getUniversalQueueFamilyIndex() != m_context.getSparseQueueFamilyIndex()) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
 
 	if (imageFormatQueryResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
 	{
@@ -381,9 +373,9 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 		VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits	samples;
 		imageTiling,													// VkImageTiling			tiling;
 		imageUsageFlags,												// VkImageUsageFlags		usage;
-		VK_SHARING_MODE_EXCLUSIVE,										// VkSharingMode			sharingMode;
-		1u,																// deUint32					queueFamilyIndexCount;
-		&queueFamilyIndex,												// const deUint32*			pQueueFamilyIndices;
+		sharingMode,													// VkSharingMode			sharingMode;
+		sharingMode == VK_SHARING_MODE_CONCURRENT ? 2u : 1u,			// deUint32					queueFamilyIndexCount;
+		queueFamilyIndices,												// const deUint32*			pQueueFamilyIndices;
 		VK_IMAGE_LAYOUT_UNDEFINED										// VkImageLayout			initialLayout;
 	};
 
@@ -396,9 +388,10 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 											 m_context.getPhysicalDevice(),
 											 m_context.getInstanceInterface(),
 											 imageParams,
-											 queue,
-											 queueFamilyIndex,
-											 *m_allocator,
+											 m_context.getUniversalQueue(),
+											 m_context.getUniversalQueueFamilyIndex(),
+											 m_context.getSparseQueue(),
+											 allocator,
 											 m_allocations,
 											 *m_textureData,
 											 *m_textureImage);
@@ -410,8 +403,8 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 
 		pipeline::uploadTestTexture	(vkd,
 									 vkDevice,
-									 queue,
-									 queueFamilyIndex,
+									 m_context.getUniversalQueue(),
+									 m_context.getUniversalQueueFamilyIndex(),
 									 allocator,
 									 *m_textureData,
 									 *m_textureImage);
@@ -448,45 +441,6 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	};
 
 	m_textureImageView		= createImageView(vkd, vkDevice, &viewParams);
-}
-
-vk::Allocator* TextureBinding::createAllocator() const
-{
-	VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
-	return new SimpleAllocator(m_deviceInterface, *m_device, memoryProperties);
-}
-
-Move<VkDevice> TextureBinding::createDevice() const
-{
-	const InstanceInterface&				vk					= m_context.getInstanceInterface();
-	const VkPhysicalDevice					physicalDevice		= m_context.getPhysicalDevice();
-	const VkPhysicalDeviceFeatures			deviceFeatures		= getPhysicalDeviceFeatures(vk, physicalDevice);
-
-	VkDeviceQueueCreateInfo					queueInfo;
-	VkDeviceCreateInfo						deviceInfo;
-	const float								queuePriority		= 1.0f;
-
-	deMemset(&queueInfo,	0, sizeof(queueInfo));
-	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
-
-	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo.pNext							= DE_NULL;
-	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
-	queueInfo.queueFamilyIndex				= m_queueFamilyIndex;
-	queueInfo.queueCount					= 1u;
-	queueInfo.pQueuePriorities				= &queuePriority;
-
-	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext						= DE_NULL;
-	deviceInfo.queueCreateInfoCount			= 1u;
-	deviceInfo.pQueueCreateInfos			= &queueInfo;
-	deviceInfo.enabledExtensionCount		= 0u;
-	deviceInfo.ppEnabledExtensionNames		= DE_NULL;
-	deviceInfo.enabledLayerCount			= 0u;
-	deviceInfo.ppEnabledLayerNames			= DE_NULL;
-	deviceInfo.pEnabledFeatures				= &deviceFeatures;
-
-	return vk::createDevice(vk, physicalDevice, &deviceInfo);
 }
 
 const deUint16		TextureRenderer::s_vertexIndices[6] = { 0, 1, 2, 2, 1, 3 };

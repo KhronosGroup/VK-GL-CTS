@@ -802,8 +802,9 @@ void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
 									  const VkPhysicalDevice					physicalDevice,
 									  const InstanceInterface&					instance,
 									  const VkImageCreateInfo&					imageCreateInfo,
-									  VkQueue									queue,
-									  deUint32									queueFamilyIndex,
+									  VkQueue									universalQueue,
+									  deUint32									universalQueueFamilyIndex,
+									  VkQueue									sparseQueue,
 									  Allocator&								allocator,
 									  std::vector<de::SharedPtr<Allocation> >&	allocations,
 									  const TestTexture&						srcTexture,
@@ -825,7 +826,7 @@ void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
 		bufferSize		= stencilOffset + srcStencilTexture->getSize();
 	}
 
-	allocateAndBindSparseImage (vk, device, physicalDevice, instance, imageCreateInfo, imageMemoryBindSemaphore.get(), queue, allocator, allocations, format, destImage);
+	allocateAndBindSparseImage (vk, device, physicalDevice, instance, imageCreateInfo, imageMemoryBindSemaphore.get(), sparseQueue, allocator, allocations, format, destImage);
 
 	{
 		// Create source buffer
@@ -843,7 +844,7 @@ void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
 
 		Move<VkBuffer>			buffer		= createBuffer(vk, device, &bufferParams);
 		de::MovePtr<Allocation>	bufferAlloc = allocator.allocate(getBufferMemoryRequirements(vk, device, *buffer), MemoryRequirement::HostVisible);
-		Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+		Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, universalQueueFamilyIndex);
 		Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		Move<VkFence>			fence		= createFence(vk, device);
 
@@ -958,7 +959,7 @@ void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
 
 		try
 		{
-			VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
+			VK_CHECK(vk.queueSubmit(universalQueue, 1, &submitInfo, *fence));
 			VK_CHECK(vk.waitForFences(device, 1, &fence.get(), true, ~(0ull) /* infinity */));
 		}
 		catch (...)
@@ -1017,8 +1018,9 @@ void uploadTestTextureSparse (const DeviceInterface&					vk,
 							  const VkPhysicalDevice					physicalDevice,
 							  const InstanceInterface&					instance,
 							  const VkImageCreateInfo&					imageCreateInfo,
-							  VkQueue									queue,
-							  deUint32									queueFamilyIndex,
+							  VkQueue									universalQueue,
+							  deUint32									universalQueueFamilyIndex,
+							  VkQueue									sparseQueue,
 							  Allocator&								allocator,
 							  std::vector<de::SharedPtr<Allocation> >&	allocations,
 							  const TestTexture&						srcTexture,
@@ -1058,8 +1060,9 @@ void uploadTestTextureSparse (const DeviceInterface&					vk,
 										 physicalDevice,
 										 instance,
 										 imageCreateInfo,
-										 queue,
-										 queueFamilyIndex,
+										 universalQueue,
+										 universalQueueFamilyIndex,
+										 sparseQueue,
 										 allocator,
 										 allocations,
 										 *srcDepthTexture,
@@ -1074,8 +1077,9 @@ void uploadTestTextureSparse (const DeviceInterface&					vk,
 										 physicalDevice,
 										 instance,
 										 imageCreateInfo,
-										 queue,
-										 queueFamilyIndex,
+										 universalQueue,
+										 universalQueueFamilyIndex,
+										 sparseQueue,
 										 allocator,
 										 allocations,
 										 srcTexture,

@@ -145,16 +145,18 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 									VkPhysicalDevice					physicalDevice,
 									deUint32							queueIndex,
+									deUint32							sparseQueueIndex,
 									const VkPhysicalDeviceFeatures2KHR&	enabledFeatures,
 									const vector<string>&				enabledExtensions,
 									const tcu::CommandLine&				cmdLine)
 {
-	VkDeviceQueueCreateInfo		queueInfo;
+	VkDeviceQueueCreateInfo		queueInfo[2];
 	VkDeviceCreateInfo			deviceInfo;
 	vector<string>				enabledLayers;
 	vector<const char*>			layerPtrs;
 	vector<const char*>			extensionPtrs;
 	const float					queuePriority	= 1.0f;
+	const deUint32				numQueues = enabledFeatures.features.sparseBinding ? 2 : 1;
 
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
 	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
@@ -176,19 +178,25 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 	for (size_t ndx = 0; ndx < enabledExtensions.size(); ++ndx)
 		extensionPtrs[ndx] = enabledExtensions[ndx].c_str();
 
-	// VK_KHR_get_physical_device_propeties2 is used if enabledFeatures.pNext != 0
+	queueInfo[0].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo[0].pNext						= DE_NULL;
+	queueInfo[0].flags						= (VkDeviceQueueCreateFlags)0u;
+	queueInfo[0].queueFamilyIndex			= queueIndex;
+	queueInfo[0].queueCount					= 1u;
+	queueInfo[0].pQueuePriorities			= &queuePriority;
 
-	queueInfo.sType							= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo.pNext							= DE_NULL;
-	queueInfo.flags							= (VkDeviceQueueCreateFlags)0u;
-	queueInfo.queueFamilyIndex				= queueIndex;
-	queueInfo.queueCount					= 1u;
-	queueInfo.pQueuePriorities				= &queuePriority;
+	queueInfo[1].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo[1].pNext						= DE_NULL;
+	queueInfo[1].flags						= (VkDeviceQueueCreateFlags)0u;
+	queueInfo[1].queueFamilyIndex			= sparseQueueIndex;
+	queueInfo[1].queueCount					= 1u;
+	queueInfo[1].pQueuePriorities			= &queuePriority;
 
+	// VK_KHR_get_physical_device_properties2 is used if enabledFeatures.pNext != 0
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pNext						= enabledFeatures.pNext ? &enabledFeatures : DE_NULL;
-	deviceInfo.queueCreateInfoCount			= 1u;
-	deviceInfo.pQueueCreateInfos			= &queueInfo;
+	deviceInfo.queueCreateInfoCount			= numQueues;
+	deviceInfo.pQueueCreateInfos			= queueInfo;
 	deviceInfo.enabledExtensionCount		= (deUint32)extensionPtrs.size();
 	deviceInfo.ppEnabledExtensionNames		= (extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]);
 	deviceInfo.enabledLayerCount			= (deUint32)layerPtrs.size();
@@ -261,6 +269,8 @@ public:
 
 	deUint32							getUniversalQueueFamilyIndex	(void) const	{ return m_universalQueueFamilyIndex;				}
 	VkQueue								getUniversalQueue				(void) const;
+	deUint32							getSparseQueueFamilyIndex		(void) const	{ return m_sparseQueueFamilyIndex;					}
+	VkQueue								getSparseQueue					(void) const;
 
 private:
 	static VkPhysicalDeviceFeatures		filterDefaultDeviceFeatures		(const VkPhysicalDeviceFeatures& deviceFeatures);
@@ -270,10 +280,11 @@ private:
 	const InstanceDriver				m_instanceInterface;
 
 	const VkPhysicalDevice				m_physicalDevice;
-
-	const deUint32						m_universalQueueFamilyIndex;
 	const vector<string>				m_deviceExtensions;
 	const DeviceFeatures				m_deviceFeatures;
+
+	const deUint32						m_universalQueueFamilyIndex;
+	const deUint32						m_sparseQueueFamilyIndex;
 	const VkPhysicalDeviceProperties	m_deviceProperties;
 
 	const Unique<VkDevice>				m_device;
@@ -285,16 +296,12 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_instance					(createInstance(vkPlatform, m_instanceExtensions, cmdLine))
 	, m_instanceInterface			(vkPlatform, *m_instance)
 	, m_physicalDevice				(chooseDevice(m_instanceInterface, *m_instance, cmdLine))
-	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_deviceExtensions			(filterExtensions(enumerateDeviceExtensionProperties(m_instanceInterface, m_physicalDevice, DE_NULL)))
 	, m_deviceFeatures				(m_instanceInterface, m_physicalDevice, m_instanceExtensions, m_deviceExtensions)
+	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
+	, m_sparseQueueFamilyIndex		(m_deviceFeatures.coreFeatures.features.sparseBinding ? findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_SPARSE_BINDING_BIT) : 0)
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
-	, m_device						(createDefaultDevice(m_instanceInterface,
-														 m_physicalDevice,
-														 m_universalQueueFamilyIndex,
-														 m_deviceFeatures.coreFeatures,
-														 m_deviceExtensions,
-														 cmdLine))
+	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.coreFeatures, m_deviceExtensions, cmdLine))
 	, m_deviceInterface				(m_instanceInterface, *m_device)
 {
 }
@@ -308,9 +315,16 @@ VkQueue DefaultDevice::getUniversalQueue (void) const
 	return getDeviceQueue(m_deviceInterface, *m_device, m_universalQueueFamilyIndex, 0);
 }
 
+VkQueue DefaultDevice::getSparseQueue (void) const
+{
+	if (!m_deviceFeatures.coreFeatures.features.sparseBinding)
+		TCU_THROW(NotSupportedError, "Sparse binding not supported.");
+
+	return getDeviceQueue(m_deviceInterface, *m_device, m_sparseQueueFamilyIndex, 0);
+}
+
 namespace
 {
-
 // Allocator utilities
 
 vk::Allocator* createAllocator (DefaultDevice* device)
@@ -352,6 +366,8 @@ vk::VkDevice							Context::getDevice						(void) const { return m_device->getDe
 const vk::DeviceInterface&				Context::getDeviceInterface				(void) const { return m_device->getDeviceInterface();			}
 deUint32								Context::getUniversalQueueFamilyIndex	(void) const { return m_device->getUniversalQueueFamilyIndex();	}
 vk::VkQueue								Context::getUniversalQueue				(void) const { return m_device->getUniversalQueue();			}
+deUint32								Context::getSparseQueueFamilyIndex		(void) const { return m_device->getSparseQueueFamilyIndex();	}
+vk::VkQueue								Context::getSparseQueue					(void) const { return m_device->getSparseQueue();				}
 vk::Allocator&							Context::getDefaultAllocator			(void) const { return *m_allocator;								}
 
 // TestCase

@@ -111,14 +111,13 @@ void							uploadTestTextureSparse		(const vk::DeviceInterface&						vk,
 															 const vk::VkPhysicalDevice						physicalDevice,
 															 const vk::InstanceInterface&					instance,
 															 const vk::VkImageCreateInfo&					imageCreateInfo,
-															 vk::VkQueue									queue,
-															 deUint32										queueFamilyIndex,
+															 vk::VkQueue									universalQueue,
+															 deUint32										universalQueueFamilyIndex,
+															 vk::VkQueue									sparseQueue,
 															 vk::Allocator&									allocator,
 															 std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
 															 const TestTexture&								srcTexture,
 															 vk::VkImage									destImage);
-
-
 
 /*--------------------------------------------------------------------*//*!
  * Allocates memory for a sparse image and handles the memory binding.
