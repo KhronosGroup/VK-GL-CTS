@@ -252,7 +252,7 @@ void addComputeIndexingTests (tcu::TestCaseGroup* group)
 					specs["intdecl"] =	"                      %u64 = OpTypeInt 64 0\n"
 								"                      %i64 = OpTypeInt 64 1\n";
 				} else {
-					specs["convert"] = "OpCopyObject";
+					specs["convert"] = "OpBitcast";
 				}
 
 				specs["idx_uint"] = "%u" + de::toString(idxSize);

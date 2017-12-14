@@ -72,6 +72,7 @@
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcInternalformatTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
 #include "glcSampleVariablesTests.hpp"
@@ -124,6 +125,7 @@ void GL40TestPackage::init(void)
 	{
 		glcts::ExtParameters extParams(glu::GLSL_VERSION_400, glcts::EXTENSIONTYPE_NONE);
 		addChild(new glcts::DrawElementsBaseVertexTests(getContext(), extParams));
+		addChild(new glcts::InternalformatTests(getContext()));
 		addChild(new gl4cts::GPUShaderFP64Tests(getContext()));
 		addChild(new gl4cts::TextureGatherTests(getContext()));
 		addChild(new glcts::DrawIndirectTestsGL40(getContext()));

@@ -31,6 +31,7 @@
 #include "vktWsiIncrementalPresentTests.hpp"
 #include "vktWsiDisplayTimingTests.hpp"
 #include "vktWsiSharedPresentableImageTests.hpp"
+#include "vktWsiColorSpaceTests.hpp"
 
 namespace vkt
 {
@@ -47,6 +48,7 @@ void createTypeSpecificTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiTy
 	addTestGroup(testGroup, "incremental_present",	"Incremental present tests",	createIncrementalPresentTests,	wsiType);
 	addTestGroup(testGroup, "display_timing",		"Display Timing Tests",			createDisplayTimingTests,		wsiType);
 	addTestGroup(testGroup, "shared_presentable_image",	"VK_KHR_shared_presentable_image tests",	createSharedPresentableImageTests,	wsiType);
+	addTestGroup(testGroup, "colorspace",	        "ColorSpace tests",	            createColorSpaceTests,	        wsiType);
 }
 
 void createWsiTests (tcu::TestCaseGroup* apiTests)

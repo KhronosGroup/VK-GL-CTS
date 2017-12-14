@@ -763,8 +763,8 @@ VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
 		DE_NULL,										// const void*				pNext;
-		srcAccessMask,									// VkAccessFlags			outputMask;
-		dstAccessMask,									// VkAccessFlags			inputMask;
+		srcAccessMask,									// VkAccessFlags			srcAccessMask;
+		dstAccessMask,									// VkAccessFlags			dstAccessMask;
 		oldLayout,										// VkImageLayout			oldLayout;
 		newLayout,										// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;

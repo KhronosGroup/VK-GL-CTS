@@ -871,7 +871,7 @@ void TextureRenderer::clearImage(VkImage image)
 	vkd.cmdClearColorImage(*commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &subResourcerange);
 
 	addImageTransitionBarrier(*commandBuffer, image,
-							  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags		srcStageMask
+							  VK_PIPELINE_STAGE_TRANSFER_BIT,					// VkPipelineStageFlags		srcStageMask
 							  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,				// VkPipelineStageFlags		dstStageMask
 							  VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags			srcAccessMask
 							  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags			dstAccessMask
@@ -1563,8 +1563,8 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 		{
 			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkMemoryOutputFlags	outputMask;
-			VK_ACCESS_HOST_READ_BIT,					// VkMemoryInputFlags	inputMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		srcAccessMask;
+			VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags		dstAccessMask;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32				srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32				destQueueFamilyIndex;
 			*m_resultBuffer,							// VkBuffer				buffer;

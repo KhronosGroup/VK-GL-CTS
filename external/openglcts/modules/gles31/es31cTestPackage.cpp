@@ -45,6 +45,7 @@
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcInternalformatTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcShaderConstExprTests.hpp"
@@ -197,6 +198,7 @@ void ES31TestPackage::init(void)
 		coreGroup->addChild(new glcts::ArrayOfArraysTestGroup(getContext()));
 		coreGroup->addChild(new glcts::PolygonOffsetClamp(getContext()));
 		coreGroup->addChild(new glcts::ShaderGroupVote(getContext()));
+		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
 
 		glcts::ExtParameters extParams(glu::GLSL_VERSION_310_ES, glcts::EXTENSIONTYPE_OES);
 		coreGroup->addChild(new glcts::GeometryShaderTests(getContext(), extParams));

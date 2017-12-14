@@ -25,6 +25,7 @@
 #include "es2cTestPackage.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcInternalformatTests.hpp"
 #include "glcShaderNegativeTests.hpp"
 #include "gluRenderContext.hpp"
 #include "gluStateReset.hpp"
@@ -139,6 +140,9 @@ void TestPackage::init(void)
 	try
 	{
 		addChild(new ShaderTests(getContext()));
+		tcu::TestCaseGroup* coreGroup = new tcu::TestCaseGroup(getTestContext(), "core", "core tests");
+		coreGroup->addChild(new glcts::InternalformatTests(getContext()));
+		addChild(coreGroup);
 	}
 	catch (...)
 	{

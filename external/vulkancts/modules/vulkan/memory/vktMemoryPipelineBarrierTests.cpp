@@ -83,7 +83,8 @@ namespace
 enum
 {
 	MAX_UNIFORM_BUFFER_SIZE = 1024,
-	MAX_STORAGE_BUFFER_SIZE = (1<<28)
+	MAX_STORAGE_BUFFER_SIZE = (1<<28),
+	MAX_SIZE = (128 * 1024)
 };
 
 // \todo [mika] Add to utilities
@@ -6129,7 +6130,7 @@ void RenderFragmentUniformBuffer::prepare (PrepareRenderPassContext& context)
 	const vk::Unique<vk::VkShaderModule>		fragmentShaderModule	(vk::createShaderModule(vkd, device, context.getBinaryCollection().get("uniform-buffer.frag"), 0));
 	vector<vk::VkDescriptorSetLayoutBinding>	bindings;
 
-	m_bufferSize	= context.getBufferSize();
+	m_bufferSize	= de::min(context.getBufferSize(), (vk::VkDeviceSize)MAX_SIZE);
 	m_targetWidth	= context.getTargetWidth();
 	m_targetHeight	= context.getTargetHeight();
 

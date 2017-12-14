@@ -17,6 +17,8 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiSharedPresentableImageTests.hpp
 	vktWsiDisplayTests.hpp
 	vktWsiDisplayTests.cpp
+	vktWsiColorSpaceTests.cpp
+	vktWsiColorSpaceTests.hpp
 	)
 
 set(DEQP_VK_WSI_LIBS

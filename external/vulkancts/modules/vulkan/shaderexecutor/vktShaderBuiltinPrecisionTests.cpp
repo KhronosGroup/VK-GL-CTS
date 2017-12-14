@@ -2457,7 +2457,7 @@ protected:
 		if (ctx.floatPrecision == glu::PRECISION_HIGHP)
 			return ctx.format.ulp(ret, 4096.0);
 		else
-			return ctx.format.ulp(ret, 2.0);
+			return ctx.format.ulp(ret, 5.0);
 	}
 
 	// Codomain could be [-pi, pi], but that would probably be too strict.

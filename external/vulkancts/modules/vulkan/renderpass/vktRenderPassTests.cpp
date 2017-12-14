@@ -567,8 +567,8 @@ public:
 												 VkPipelineStageFlags	srcStageMask,
 												 VkPipelineStageFlags	dstStageMask,
 
-												 VkAccessFlags			outputMask,
-												 VkAccessFlags			inputMask,
+												 VkAccessFlags			srcAccessMask,
+												 VkAccessFlags			dstAccessMask,
 
 												 VkDependencyFlags		flags)
 		: m_srcPass			(srcPass)
@@ -577,8 +577,8 @@ public:
 		, m_srcStageMask	(srcStageMask)
 		, m_dstStageMask	(dstStageMask)
 
-		, m_outputMask		(outputMask)
-		, m_inputMask		(inputMask)
+		, m_srcAccessMask	(srcAccessMask)
+		, m_dstAccessMask	(dstAccessMask)
 		, m_flags			(flags)
 	{
 	}
@@ -589,8 +589,8 @@ public:
 	VkPipelineStageFlags	getSrcStageMask		(void) const { return m_srcStageMask;	}
 	VkPipelineStageFlags	getDstStageMask		(void) const { return m_dstStageMask;	}
 
-	VkAccessFlags			getOutputMask		(void) const { return m_outputMask;		}
-	VkAccessFlags			getInputMask		(void) const { return m_inputMask;		}
+	VkAccessFlags			getSrcAccessMask	(void) const { return m_srcAccessMask;	}
+	VkAccessFlags			getDstAccessMask	(void) const { return m_dstAccessMask;	}
 
 	VkDependencyFlags		getFlags			(void) const { return m_flags;		}
 
@@ -601,8 +601,8 @@ private:
 	VkPipelineStageFlags	m_srcStageMask;
 	VkPipelineStageFlags	m_dstStageMask;
 
-	VkAccessFlags			m_outputMask;
-	VkAccessFlags			m_inputMask;
+	VkAccessFlags			m_srcAccessMask;
+	VkAccessFlags			m_dstAccessMask;
 	VkDependencyFlags		m_flags;
 };
 
@@ -893,8 +893,8 @@ void logRenderPassInfo (TestLog&			log,
 			log << TestLog::Message << "Source Stage Mask: " << dep.getSrcStageMask() << TestLog::EndMessage;
 			log << TestLog::Message << "Destination Stage Mask: " << dep.getDstStageMask() << TestLog::EndMessage;
 
-			log << TestLog::Message << "Input Mask: " << dep.getInputMask() << TestLog::EndMessage;
-			log << TestLog::Message << "Output Mask: " << dep.getOutputMask() << TestLog::EndMessage;
+			log << TestLog::Message << "Input Mask: " << dep.getDstAccessMask() << TestLog::EndMessage;
+			log << TestLog::Message << "Output Mask: " << dep.getSrcAccessMask() << TestLog::EndMessage;
 			log << TestLog::Message << "Dependency Flags: " << getDependencyFlagsStr(dep.getFlags()) << TestLog::EndMessage;
 		}
 	}
@@ -1134,8 +1134,8 @@ VkSubpassDependency createSubpassDependency	(const SubpassDependency& dependency
 		dependencyInfo.getSrcStageMask(),	// srcStageMask;
 		dependencyInfo.getDstStageMask(),	// destStageMask;
 
-		dependencyInfo.getOutputMask(),		// outputMask;
-		dependencyInfo.getInputMask(),		// inputMask;
+		dependencyInfo.getSrcAccessMask(),	// srcAccessMask;
+		dependencyInfo.getDstAccessMask(),	// dstAccessMask;
 
 		dependencyInfo.getFlags()			// dependencyFlags;
 	};
@@ -2403,7 +2403,7 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 
 		if (!initializeLayouts.empty())
 			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-								  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+								  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0,
 								  0, (const VkMemoryBarrier*)DE_NULL,
 								  0, (const VkBufferMemoryBarrier*)DE_NULL,
 								  (deUint32)initializeLayouts.size(), &initializeLayouts[0]);
@@ -2489,7 +2489,7 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 
 		if (!renderPassLayouts.empty())
 			vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-								  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0,
+								  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0,
 								  0, (const VkMemoryBarrier*)DE_NULL,
 								  0, (const VkBufferMemoryBarrier*)DE_NULL,
 								  (deUint32)renderPassLayouts.size(), &renderPassLayouts[0]);

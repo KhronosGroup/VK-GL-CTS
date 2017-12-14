@@ -1,6 +1,9 @@
 # dEQP cmake file
 
-cmake_minimum_required(VERSION 2.8)
+# Module FindGit requires cmake >= 2.8.2
+cmake_minimum_required(VERSION 2.8.2)
+
+find_package(Git)
 
 # dEQP Target.
 set(DEQP_TARGET "default" CACHE STRING "dEQP Target (default, android...)")

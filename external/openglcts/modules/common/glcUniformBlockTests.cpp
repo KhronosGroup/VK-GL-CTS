@@ -739,6 +739,22 @@ public:
 		if (!Test(vs3, fs3, GL_TRUE))
 			return STOP;
 
+		std::string vs4("precision highp float;\n"
+						"layout (std140) uniform Data { float f; };\n"
+						"void main() {\n"
+						"  gl_Position = vec4(f);\n"
+						"}\n");
+		std::string fs4("precision highp float;\n"
+						"uniform float f;\n"
+						"out vec4 color;\n"
+						"void main() {\n"
+						"  color = vec4(f);\n"
+						"}\n");
+
+		// check if link error is generated when the same name is used for block and non-block uniform
+		if (!Test(vs4, fs4, GL_FALSE))
+			return STOP;
+
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		return STOP;
 	}

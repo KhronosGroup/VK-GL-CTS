@@ -51,6 +51,352 @@ group varying "Varying linkage"
 			""
 		end
 
+		# vec4 vs vec3
+		case legal_mismatch_vec4_vec3
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (vec4 to vec3)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump vec4 var;
+				void main()
+				{
+					var.x = 0.0;
+					var.y = 0.0;
+					var.z = 0.0;
+					var.w = 0.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump vec3 var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAG_COLOR} = vec4(1.0 + var.x + var.y + var.z);
+				}
+			""
+		end
+
+		# vec4 vs vec2
+		case legal_mismatch_vec4_vec2
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (vec4 to vec2)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump vec4 var;
+				void main()
+				{
+					var.x = 0.0;
+					var.y = 0.0;
+					var.z = 0.0;
+					var.w = 0.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump vec2 var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAG_COLOR} = vec4(1.0 + var.x + var.y);
+				}
+			""
+		end
+
+		# vec4 vs float
+		case legal_mismatch_vec4_float
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (vec4 to float)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump vec4 var;
+				void main()
+				{
+					var.x = 0.0;
+					var.y = 0.0;
+					var.z = 0.0;
+					var.w = 0.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump float var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAG_COLOR} = vec4(1.0 + var);
+				}
+			""
+		end
+
+		# vec3 vs vec2
+		case legal_mismatch_vec3_vec2
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (vec3 to vec2)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump vec3 var;
+				void main()
+				{
+					var.x = 0.0;
+					var.y = 0.0;
+					var.z = 0.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump vec2 var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAG_COLOR} = vec4(1.0 + var.x + var.y);
+				}
+			""
+		end
+
+		# vec3 vs float
+		case legal_mismatch_vec3_float
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (vec3 to float)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump vec3 var;
+				void main()
+				{
+					var.x = 0.0;
+					var.y = 0.0;
+					var.z = 0.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump float var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAG_COLOR} = vec4(1.0 + var);
+				}
+			""
+		end
+
+		# vec2 vs float
+		case legal_mismatch_vec2_float
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (vec2 to float)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump vec2 var;
+				void main()
+				{
+					var.x = 0.0;
+					var.y = 0.0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump float var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					${FRAG_COLOR} = vec4(1.0 + var);
+				}
+			""
+		end
+
+		# ivec4 vs ivec3
+		case legal_mismatch_ivec4_ivec3
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (ivec4 to ivec3)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump ivec4 var;
+				void main()
+				{
+					var.x = 0;
+					var.y = 0;
+					var.z = 0;
+					var.w = 0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump flat ivec3 var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					if (var.x + var.y + var.z == 0)
+						${FRAG_COLOR} = vec4(1.0);
+					else
+						${FRAG_COLOR} = vec4(0.0);
+				}
+			""
+		end
+
+		# ivec4 vs ivec2
+		case legal_mismatch_ivec4_ivec2
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (ivec4 to ivec2)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump ivec4 var;
+				void main()
+				{
+					var.x = 0;
+					var.y = 0;
+					var.z = 0;
+					var.w = 0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump flat ivec2 var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					if (var.x + var.y == 0)
+						${FRAG_COLOR} = vec4(1.0);
+					else
+						${FRAG_COLOR} = vec4(0.0);
+				}
+			""
+		end
+
+		# ivec4 vs int
+		case legal_mismatch_ivec4_int
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (ivec4 to int)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump ivec4 var;
+				void main()
+				{
+					var.x = 0;
+					var.y = 0;
+					var.z = 0;
+					var.w = 0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump flat int var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					if (var == 0)
+						${FRAG_COLOR} = vec4(1.0);
+					else
+						${FRAG_COLOR} = vec4(0.0);
+				}
+			""
+		end
+
+		# ivec3 vs ivec2
+		case legal_mismatch_ivec3_ivec2
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (ivec3 to ivec2)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump ivec3 var;
+				void main()
+				{
+					var.x = 0;
+					var.y = 0;
+					var.z = 0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump flat ivec2 var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					if (var.x + var.y == 0)
+						${FRAG_COLOR} = vec4(1.0);
+					else
+						${FRAG_COLOR} = vec4(0.0);
+				}
+			""
+		end
+
+		# ivec3 vs int
+		case legal_mismatch_ivec3_int
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (ivec3 to int)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump ivec3 var;
+				void main()
+				{
+					var.x = 0;
+					var.y = 0;
+					var.z = 0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump flat int var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					if (var == 0)
+						${FRAG_COLOR} = vec4(1.0);
+					else
+						${FRAG_COLOR} = vec4(0.0);
+				}
+			""
+		end
+
+		# ivec2 vs int
+		case legal_mismatch_ivec2_int
+			version 310 es
+			desc "legal vertex to fragment shader varying type mismatches (ivec2 to int)"
+			vertex ""
+				#version 310 es
+				${VERTEX_DECLARATIONS}
+				layout(location = 0) out mediump ivec2 var;
+				void main()
+				{
+					var.x = 0;
+					var.y = 0;
+					${VERTEX_OUTPUT}
+				}
+			""
+			fragment ""
+				#version 310 es
+				layout(location = 0) in mediump flat int var;
+				${FRAGMENT_DECLARATIONS}
+				void main()
+				{
+					if (var == 0)
+						${FRAG_COLOR} = vec4(1.0);
+					else
+						${FRAG_COLOR} = vec4(0.0);
+				}
+			""
+		end
+
 		# declared in vertex shader, static use in frag shader
 		case vertex_declare_fragment_use
 			version 310 es
