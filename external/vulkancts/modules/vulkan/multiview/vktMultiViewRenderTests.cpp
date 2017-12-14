@@ -78,6 +78,9 @@ enum TestType
 	TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY,
 	TEST_TYPE_POINT_SIZE,
 	TEST_TYPE_MULTISAMPLE,
+	TEST_TYPE_QUERIES,
+	TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR,
+	TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR,
 	TEST_TYPE_LAST
 };
 
@@ -157,6 +160,7 @@ protected:
 	void							appendVertex			(const tcu::Vec4& coord, const tcu::Vec4& color);
 	void							setPoint				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& pointColor, const int pointSize, const int layerNdx, const deUint32 quarter);
 	void							fillTriangle			(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx, const deUint32 quarter);
+	void							fillLayer				(const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx);
 
 	const TestParameters			m_parameters;
 	const int						m_seed;
@@ -179,6 +183,7 @@ protected:
 	Move<VkCommandBuffer>			m_cmdBuffer;
 	de::SharedPtr<ImageAttachment>	m_colorAttachment;
 	VkBool32						m_hasMultiDrawIndirect;
+	vector<tcu::Vec4>				m_colorTable;
 };
 
 MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, const TestParameters& parameters)
@@ -190,6 +195,18 @@ MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, cons
 {
 	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview"))
 		throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
+
+	const float v	= 0.75f;
+	const float o	= 0.25f;
+
+	m_colorTable.push_back(tcu::Vec4(v, o, o, 1.0f));
+	m_colorTable.push_back(tcu::Vec4(o, v, o, 1.0f));
+	m_colorTable.push_back(tcu::Vec4(o, o, v, 1.0f));
+	m_colorTable.push_back(tcu::Vec4(o, v, v, 1.0f));
+	m_colorTable.push_back(tcu::Vec4(v, o, v, 1.0f));
+	m_colorTable.push_back(tcu::Vec4(v, v, o, 1.0f));
+	m_colorTable.push_back(tcu::Vec4(o, o, o, 1.0f));
+	m_colorTable.push_back(tcu::Vec4(v, v, v, 1.0f));
 
 	createMultiViewDevices();
 
@@ -522,8 +539,7 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 	bool requiresGeomShader = (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY == m_parameters.viewIndex) ||
 								(TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == m_parameters.viewIndex) ||
-								(TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex) ||
-								(TEST_TYPE_CLEAR_ATTACHMENTS == m_parameters.viewIndex);
+								(TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == m_parameters.viewIndex);
 
 	if (requiresGeomShader && !multiviewFeatures.multiviewGeometryShader)
 		TCU_THROW(NotSupportedError, "Geometry shader is not supported");
@@ -624,16 +640,19 @@ void MultiViewRenderTestInstance::madeShaderModule (map<VkShaderStageFlagBits, S
 		case TEST_TYPE_DRAW_INDIRECT:
 		case TEST_TYPE_DRAW_INDIRECT_INDEXED:
 		case TEST_TYPE_DRAW_INDEXED:
+		case TEST_TYPE_CLEAR_ATTACHMENTS:
 		case TEST_TYPE_SECONDARY_CMD_BUFFER:
 		case TEST_TYPE_INPUT_ATTACHMENTS:
 		case TEST_TYPE_POINT_SIZE:
 		case TEST_TYPE_MULTISAMPLE:
+		case TEST_TYPE_QUERIES:
+		case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
+		case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 			shaderModule[VK_SHADER_STAGE_VERTEX_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("vertex"), 0))));
 			shaderModule[VK_SHADER_STAGE_FRAGMENT_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("fragment"), 0))));
 			break;
 		case TEST_TYPE_VIEW_INDEX_IN_GEOMETRY:
 		case TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY:
-		case TEST_TYPE_CLEAR_ATTACHMENTS:
 		case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
 			shaderModule[VK_SHADER_STAGE_VERTEX_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("vertex"), 0))));
 			shaderModule[VK_SHADER_STAGE_GEOMETRY_BIT]					= (ShaderModuleSP(new Unique<VkShaderModule>(createShaderModule(*m_device, *m_logicalDevice, m_context.getBinaryCollection().get("geometry"), 0))));
@@ -1017,6 +1036,18 @@ const tcu::Vec4 MultiViewRenderTestInstance::getQuarterRefColor (const deUint32 
 		case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
 			return m_vertexColor[colorNdx] + tcu::Vec4(0.0, static_cast<float>(layerNdx) * 0.10f, 0.0, 0.0);
 
+		case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
+			if (background)
+				return m_colorTable[4 + quarterNdx % 4];
+			else
+				return m_colorTable[layerNdx % 4];
+
+		case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
+			if (background)
+				return m_colorTable[4 + quarterNdx % 4];
+			else
+				return m_colorTable[0];
+
 		case TEST_TYPE_POINT_SIZE:
 		case TEST_TYPE_MULTISAMPLE:
 			if (background)
@@ -1059,6 +1090,13 @@ void MultiViewRenderTestInstance::fillTriangle (const tcu::PixelBufferAccess& pi
 	}
 }
 
+void MultiViewRenderTestInstance::fillLayer (const tcu::PixelBufferAccess& pixelBuffer, const tcu::Vec4& color, const int layerNdx)
+{
+	for (deUint32 y = 0u; y < m_parameters.extent.height; ++y)
+	for (deUint32 x = 0u; x < m_parameters.extent.width; ++x)
+		pixelBuffer.setPixel(color, x, y, layerNdx);
+}
+
 MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 {
 	MovePtr<tcu::Texture2DArray>	referenceFrame	= MovePtr<tcu::Texture2DArray>(new tcu::Texture2DArray(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth));
@@ -1066,6 +1104,27 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 	referenceFrame->allocLevel(0);
 
 	deMemset (referenceFrame->getLevel(0).getDataPtr(), 0, m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth* mapVkFormat(m_parameters.colorFormat).getPixelSize());
+
+	if (TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR == m_parameters.viewIndex || TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR == m_parameters.viewIndex)
+	{
+		deUint32	clearedViewMask	= 0;
+
+		// Start from last clear command color, which actually takes effect
+		for (int subpassNdx = static_cast<int>(subpassCount) - 1; subpassNdx >= 0; --subpassNdx)
+		{
+			deUint32	subpassToClearViewMask	= m_parameters.viewMasks[subpassNdx] & ~clearedViewMask;
+
+			if (subpassToClearViewMask == 0)
+				continue;
+
+			for (deUint32 layerNdx = 0; layerNdx < m_parameters.extent.depth; ++layerNdx)
+				if ((subpassToClearViewMask & (1 << layerNdx)) != 0 && (clearedViewMask & (1 << layerNdx)) == 0)
+					fillLayer(referenceFrame->getLevel(0), getQuarterRefColor(0u, 0u, subpassNdx, false), layerNdx);
+
+			// These has been cleared. Exclude these layers from upcoming attempts to clear
+			clearedViewMask |= subpassToClearViewMask;
+		}
+	}
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -1075,6 +1134,7 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData (void)
 		while (mask > 0u)
 		{
 			int colorNdx	= 0;
+
 			if (mask & 1u)
 			{
 				if (TEST_TYPE_CLEAR_ATTACHMENTS == m_parameters.viewIndex)
@@ -2178,6 +2238,476 @@ void MultiViewMultsampleTestInstance::afterDraw (void)
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 }
 
+class MultiViewQueriesTestInstance : public MultiViewRenderTestInstance
+{
+public:
+						MultiViewQueriesTestInstance	(Context& context, const TestParameters& parameters);
+protected:
+	tcu::TestStatus		iterate							(void);
+	void				createVertexData				(void);
+	void				draw							(const deUint32			subpassCount,
+														 VkRenderPass			renderPass,
+														 VkFramebuffer			frameBuffer,
+														 vector<PipelineSp>&	pipelines);
+	deUint32			getUsedViewsCount				(const deUint32			viewMaskIndex);
+	deUint32			getQueryCountersNumber			();
+private:
+	const deUint32		m_verticesPerPrimitive;
+	deUint64			m_timestampMask;
+	vector<deUint64>	m_timestampStartValues;
+	vector<deUint64>	m_timestampEndValues;
+	vector<deBool>		m_counterSeriesStart;
+	vector<deBool>		m_counterSeriesEnd;
+	vector<deUint64>	m_occlusionValues;
+	vector<deUint64>	m_occlusionExpectedValues;
+	deUint32			m_occlusionObjectsOffset;
+	vector<deUint64>	m_occlusionObjectPixelsCount;
+};
+
+MultiViewQueriesTestInstance::MultiViewQueriesTestInstance (Context& context, const TestParameters& parameters)
+	: MultiViewRenderTestInstance	(context, parameters)
+	, m_verticesPerPrimitive(4u)
+{
+	// Generate the timestamp mask
+	const std::vector<VkQueueFamilyProperties>	queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice());
+
+	if(queueProperties[0].timestampValidBits == 0)
+		TCU_THROW(NotSupportedError, "Device does not support timestamp.");
+
+	m_timestampMask = 0xFFFFFFFFFFFFFFFFull >> (64 - queueProperties[0].timestampValidBits);
+}
+
+tcu::TestStatus MultiViewQueriesTestInstance::iterate (void)
+{
+	const deUint32								subpassCount			= static_cast<deUint32>(m_parameters.viewMasks.size());
+	Unique<VkRenderPass>						renderPass				(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks));
+	vector<VkImageView>							attachments				(1u, m_colorAttachment->getImageView());
+	Unique<VkFramebuffer>						frameBuffer				(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+	Unique<VkPipelineLayout>					pipelineLayout			(makePipelineLayout(*m_device, *m_logicalDevice));
+	vector<PipelineSp>							pipelines				(subpassCount);
+	deUint64									occlusionValue			= 0;
+	deUint64									occlusionExpectedValue	= 0;
+	map<VkShaderStageFlagBits, ShaderModuleSP>	shaderModule;
+
+	{
+		vector<VkPipelineShaderStageCreateInfo>	shaderStageParams;
+
+		madeShaderModule(shaderModule, shaderStageParams);
+		for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
+			pipelines[subpassNdx] = (PipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(*renderPass, *pipelineLayout, static_cast<deUint32>(shaderStageParams.size()), shaderStageParams.data(), subpassNdx))));
+	}
+
+	createCommandBuffer();
+	createVertexData();
+	createVertexBuffer();
+
+	draw(subpassCount, *renderPass, *frameBuffer, pipelines);
+
+	DE_ASSERT(!m_occlusionValues.empty());
+	DE_ASSERT(m_occlusionValues.size() == m_occlusionExpectedValues.size());
+	DE_ASSERT(m_occlusionValues.size() == m_counterSeriesEnd.size());
+	for (size_t ndx = 0; ndx < m_counterSeriesEnd.size(); ++ndx)
+	{
+		occlusionValue			+= m_occlusionValues[ndx];
+		occlusionExpectedValue	+= m_occlusionExpectedValues[ndx];
+
+		if (m_counterSeriesEnd[ndx])
+			if (occlusionExpectedValue != occlusionValue)
+				return tcu::TestStatus::fail("occlusion, result:" + de::toString(occlusionValue) + ", expected:" + de::toString(occlusionExpectedValue));
+	}
+
+	DE_ASSERT(!m_timestampStartValues.empty());
+	DE_ASSERT(m_timestampStartValues.size() == m_timestampEndValues.size());
+	DE_ASSERT(m_timestampStartValues.size() == m_counterSeriesStart.size());
+	for (size_t ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
+	{
+		if (m_counterSeriesStart[ndx])
+		{
+			if (m_timestampEndValues[ndx] > 0 && m_timestampEndValues[ndx] >= m_timestampStartValues[ndx])
+				continue;
+		}
+		else
+		{
+			if (m_timestampEndValues[ndx] > 0 && m_timestampEndValues[ndx] >= m_timestampStartValues[ndx])
+				continue;
+
+			if (m_timestampEndValues[ndx] == 0 && m_timestampStartValues[ndx] == 0)
+				continue;
+		}
+
+		return tcu::TestStatus::fail("timestamp");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void MultiViewQueriesTestInstance::createVertexData (void)
+{
+	tcu::Vec4 color = tcu::Vec4(0.2f, 0.0f, 0.1f, 1.0f);
+
+	appendVertex(tcu::Vec4(-1.0f,-1.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f), color);
+
+	color = tcu::Vec4(0.3f, 0.0f, 0.2f, 1.0f);
+	appendVertex(tcu::Vec4(-1.0f, 0.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f), color);
+
+	color = tcu::Vec4(0.4f, 0.2f, 0.3f, 1.0f);
+	appendVertex(tcu::Vec4( 0.0f,-1.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f,-1.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 0.0f, 0.0f, 1.0f), color);
+
+	color = tcu::Vec4(0.5f, 0.0f, 0.4f, 1.0f);
+	appendVertex(tcu::Vec4( 0.0f, 0.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 0.0f, 1.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 0.0f, 0.0f, 1.0f), color);
+	appendVertex(tcu::Vec4( 1.0f, 1.0f, 0.0f, 1.0f), color);
+
+	// Create occluded square objects as zoom out of main
+	const deUint32	mainObjectsVerticesCount		= static_cast<deUint32>(m_vertexCoord.size());
+	const deUint32	mainObjectsCount				= mainObjectsVerticesCount / m_verticesPerPrimitive;
+	const deUint32	occlusionObjectMultiplierX[]	= { 1, 2, 2, 1 };
+	const deUint32	occlusionObjectMultiplierY[]	= { 1, 1, 3, 3 };
+	const deUint32	occlusionObjectDivisor			= 4u;
+	const float		occlusionObjectDivisorFloat		= static_cast<float>(occlusionObjectDivisor);
+
+	DE_ASSERT(0 == m_parameters.extent.width  % (2 * occlusionObjectDivisor));
+	DE_ASSERT(0 == m_parameters.extent.height % (2 * occlusionObjectDivisor));
+	DE_ASSERT(DE_LENGTH_OF_ARRAY(occlusionObjectMultiplierX) == mainObjectsCount);
+	DE_ASSERT(DE_LENGTH_OF_ARRAY(occlusionObjectMultiplierY) == mainObjectsCount);
+
+	for (size_t objectNdx = 0; objectNdx < mainObjectsCount; ++objectNdx)
+	{
+		const size_t	objectStart			= objectNdx * m_verticesPerPrimitive;
+		const float		xRatio				= static_cast<float>(occlusionObjectMultiplierX[objectNdx]) / occlusionObjectDivisorFloat;
+		const float		yRatio				= static_cast<float>(occlusionObjectMultiplierY[objectNdx]) / occlusionObjectDivisorFloat;
+		const double	areaRatio			= static_cast<double>(xRatio) * static_cast<double>(yRatio);
+		const deUint64	occludedPixelsCount	= static_cast<deUint64>(areaRatio * (m_parameters.extent.width / 2) * (m_parameters.extent.height / 2));
+
+		m_occlusionObjectPixelsCount.push_back(occludedPixelsCount);
+
+		for (size_t vertexNdx = 0; vertexNdx < m_verticesPerPrimitive; ++vertexNdx)
+		{
+			const float		occludedObjectVertexXCoord	= m_vertexCoord[objectStart + vertexNdx][0] * xRatio;
+			const float		occludedObjectVertexYCoord	= m_vertexCoord[objectStart + vertexNdx][1] * yRatio;
+			const tcu::Vec4	occludedObjectVertexCoord	= tcu::Vec4(occludedObjectVertexXCoord, occludedObjectVertexYCoord, 1.0f, 1.0f);
+
+			appendVertex(occludedObjectVertexCoord, m_vertexColor[objectStart + vertexNdx]);
+		}
+	}
+
+	m_occlusionObjectsOffset = mainObjectsVerticesCount;
+}
+
+void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
+{
+	const VkRect2D				renderArea						= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
+	const VkClearValue			renderPassClearValue			= makeClearValueColor(tcu::Vec4(0.0f));
+	const VkBuffer				vertexBuffers[]					= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
+	const VkDeviceSize			vertexBufferOffsets[]			= {                   0u,                   0u };
+	const deUint32				drawCountPerSubpass				= (subpassCount == 1) ? m_squareCount : 1u;
+	const deUint32				queryCountersNumber				= (subpassCount == 1) ? m_squareCount * getUsedViewsCount(0) : getQueryCountersNumber();
+	const VkRenderPassBeginInfo	renderPassBeginInfo				=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	//  VkStructureType		sType;
+		DE_NULL,									//  const void*			pNext;
+		renderPass,									//  VkRenderPass		renderPass;
+		frameBuffer,								//  VkFramebuffer		framebuffer;
+		renderArea,									//  VkRect2D			renderArea;
+		1u,											//  uint32_t			clearValueCount;
+		&renderPassClearValue,						//  const VkClearValue*	pClearValues;
+	};
+	const VkQueryPoolCreateInfo	occlusionQueryPoolCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	//  VkStructureType					sType;
+		DE_NULL,									//  const void*						pNext;
+		(VkQueryPoolCreateFlags)0,					//  VkQueryPoolCreateFlags			flags;
+		VK_QUERY_TYPE_OCCLUSION,					//  VkQueryType						queryType;
+		queryCountersNumber,						//  deUint32						queryCount;
+		0u,											//  VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+	const VkQueryPoolCreateInfo	timestampQueryPoolCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	//  VkStructureType					sType;
+		DE_NULL,									//  const void*						pNext;
+		(VkQueryPoolCreateFlags)0,					//  VkQueryPoolCreateFlags			flags;
+		VK_QUERY_TYPE_TIMESTAMP,					//  VkQueryType						queryType;
+		queryCountersNumber,						//  deUint32						queryCount;
+		0u,											//  VkQueryPipelineStatisticFlags	pipelineStatistics;
+	};
+	const Unique<VkQueryPool>	occlusionQueryPool				(createQueryPool(*m_device, *m_logicalDevice, &occlusionQueryPoolCreateInfo));
+	const Unique<VkQueryPool>	timestampStartQueryPool			(createQueryPool(*m_device, *m_logicalDevice, &timestampQueryPoolCreateInfo));
+	const Unique<VkQueryPool>	timestampEndQueryPool			(createQueryPool(*m_device, *m_logicalDevice, &timestampQueryPoolCreateInfo));
+	VkQueryControlFlags			occlusionQueryFlags				= VK_QUERY_CONTROL_PRECISE_BIT;
+	deUint32					queryStartIndex					= 0;
+
+	beginCommandBuffer(*m_device, *m_cmdBuffer);
+
+	beforeDraw();
+
+	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
+
+	m_occlusionExpectedValues.reserve(queryCountersNumber);
+	m_counterSeriesStart.reserve(queryCountersNumber);
+	m_counterSeriesEnd.reserve(queryCountersNumber);
+
+	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
+	{
+		deUint32	queryCountersToUse	= getUsedViewsCount(subpassNdx);
+
+		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
+
+		for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
+		{
+			const deUint32 primitiveNumber	= drawNdx + subpassNdx % m_squareCount;
+			const deUint32 firstVertex		= primitiveNumber * m_verticesPerPrimitive;
+
+			m_device->cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, *timestampStartQueryPool, queryStartIndex);
+			{
+				m_device->cmdDraw(*m_cmdBuffer, m_verticesPerPrimitive, 1u, firstVertex, 0u);
+
+				// Render occluded object
+				m_device->cmdBeginQuery(*m_cmdBuffer, *occlusionQueryPool, queryStartIndex, occlusionQueryFlags);
+				m_device->cmdDraw(*m_cmdBuffer, m_verticesPerPrimitive, 1u, m_occlusionObjectsOffset + firstVertex, 0u);
+				m_device->cmdEndQuery(*m_cmdBuffer, *occlusionQueryPool, queryStartIndex);
+
+				for (deUint32 viewMaskNdx = 0; viewMaskNdx < queryCountersToUse; ++viewMaskNdx)
+				{
+					m_occlusionExpectedValues.push_back(m_occlusionObjectPixelsCount[primitiveNumber]);
+					m_counterSeriesStart.push_back(viewMaskNdx == 0);
+					m_counterSeriesEnd.push_back(viewMaskNdx + 1 == queryCountersToUse);
+				}
+			}
+			m_device->cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, *timestampEndQueryPool, queryStartIndex);
+
+			queryStartIndex += queryCountersToUse;
+		}
+
+		if (subpassNdx < subpassCount - 1u)
+			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	DE_ASSERT(queryStartIndex == queryCountersNumber);
+
+	m_device->cmdEndRenderPass(*m_cmdBuffer);
+
+	afterDraw();
+
+	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
+	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
+
+	m_occlusionValues.resize(queryCountersNumber, 0ull);
+	m_device->getQueryPoolResults(*m_logicalDevice, *occlusionQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_occlusionValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+
+	m_timestampStartValues.resize(queryCountersNumber, 0ull);
+	m_device->getQueryPoolResults(*m_logicalDevice, *timestampStartQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_timestampStartValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	for (deUint32 ndx = 0; ndx < m_timestampStartValues.size(); ++ndx)
+		m_timestampStartValues[ndx] &= m_timestampMask;
+
+	m_timestampEndValues.resize(queryCountersNumber, 0ull);
+	m_device->getQueryPoolResults(*m_logicalDevice, *timestampEndQueryPool, 0u, queryCountersNumber, sizeof(deUint64) * queryCountersNumber, (void*)&m_timestampEndValues[0], sizeof(deUint64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+	for (deUint32 ndx = 0; ndx < m_timestampEndValues.size(); ++ndx)
+		m_timestampEndValues[ndx] &= m_timestampMask;
+}
+
+deUint32 MultiViewQueriesTestInstance::getUsedViewsCount (const deUint32 viewMaskIndex)
+{
+	deUint32 result = 0;
+
+	for (deUint32 viewMask = m_parameters.viewMasks[viewMaskIndex]; viewMask != 0; viewMask >>= 1)
+		if ((viewMask & 1) != 0)
+			result++;
+
+	return result;
+}
+
+deUint32 MultiViewQueriesTestInstance::getQueryCountersNumber ()
+{
+	deUint32 result = 0;
+
+	for (deUint32 i = 0; i < m_parameters.viewMasks.size(); ++i)
+		result += getUsedViewsCount(i);
+
+	return result;
+}
+
+class MultiViewReadbackTestInstance : public MultiViewRenderTestInstance
+{
+public:
+						MultiViewReadbackTestInstance	(Context& context, const TestParameters& parameters);
+protected:
+	tcu::TestStatus		iterate							(void);
+	void				beforeDraw						(void);
+	void				drawClears						(const deUint32				subpassCount,
+														 VkRenderPass				renderPass,
+														 VkFramebuffer				frameBuffer,
+														 vector<PipelineSp>&		pipelines,
+														 const bool					clearPass);
+	void				clear							(const VkCommandBuffer		commandBuffer,
+														 const VkRect2D&			clearRect2D,
+														 const tcu::Vec4&			clearColor);
+private:
+	vector<VkRect2D>	m_quarters;
+};
+
+MultiViewReadbackTestInstance::MultiViewReadbackTestInstance (Context& context, const TestParameters& parameters)
+	: MultiViewRenderTestInstance	(context, parameters)
+{
+	const deUint32 halfWidth	= m_parameters.extent.width / 2;
+	const deUint32 halfHeight	= m_parameters.extent.height / 2;
+
+	for (deInt32 x = 0; x < 2; ++x)
+	for (deInt32 y = 0; y < 2; ++y)
+	{
+		const deInt32	offsetX	= static_cast<deInt32>(halfWidth) * x;
+		const deInt32	offsetY	= static_cast<deInt32>(halfHeight) * y;
+		const VkRect2D	area	= { { offsetX, offsetY}, {halfWidth, halfHeight} };
+
+		m_quarters.push_back(area);
+	}
+}
+
+tcu::TestStatus MultiViewReadbackTestInstance::iterate (void)
+{
+	const deUint32	subpassCount	= static_cast<deUint32>(m_parameters.viewMasks.size());
+
+	createCommandBuffer();
+
+	for (deUint32 pass = 0; pass < 2; ++pass)
+	{
+		const bool									fullClearPass	= (pass == 0);
+		const VkAttachmentLoadOp					loadOp			= (!fullClearPass) ? VK_ATTACHMENT_LOAD_OP_LOAD :
+																	  (m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR) ? VK_ATTACHMENT_LOAD_OP_CLEAR :
+																	  (m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR) ? VK_ATTACHMENT_LOAD_OP_DONT_CARE :
+																	  VK_ATTACHMENT_LOAD_OP_LAST;
+		Unique<VkRenderPass>						renderPass		(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, VK_SAMPLE_COUNT_1_BIT, loadOp));
+		vector<VkImageView>							attachments		(1u, m_colorAttachment->getImageView());
+		Unique<VkFramebuffer>						frameBuffer		(makeFramebuffer(*m_device, *m_logicalDevice, *renderPass, attachments, m_parameters.extent.width, m_parameters.extent.height, 1u));
+		Unique<VkPipelineLayout>					pipelineLayout	(makePipelineLayout(*m_device, *m_logicalDevice));
+		vector<PipelineSp>							pipelines		(subpassCount);
+		map<VkShaderStageFlagBits, ShaderModuleSP>	shaderModule;
+
+		{
+			vector<VkPipelineShaderStageCreateInfo>	shaderStageParams;
+			madeShaderModule(shaderModule, shaderStageParams);
+			for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; ++subpassNdx)
+				pipelines[subpassNdx] = (PipelineSp(new Unique<VkPipeline>(makeGraphicsPipeline(*renderPass, *pipelineLayout, static_cast<deUint32>(shaderStageParams.size()), shaderStageParams.data(), subpassNdx))));
+		}
+
+		drawClears(subpassCount, *renderPass, *frameBuffer, pipelines, fullClearPass);
+	}
+
+	{
+		vector<deUint8>			pixelAccessData	(m_parameters.extent.width * m_parameters.extent.height * m_parameters.extent.depth * mapVkFormat(m_parameters.colorFormat).getPixelSize());
+		tcu::PixelBufferAccess	dst				(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width, m_parameters.extent.height, m_parameters.extent.depth, pixelAccessData.data());
+
+		readImage(m_colorAttachment->getImage(), dst);
+
+		if (!checkImage(dst))
+			return tcu::TestStatus::fail("Fail");
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void MultiViewReadbackTestInstance::beforeDraw (void)
+{
+	const VkImageSubresourceRange	subresourceRange		=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask;
+		0u,							//deUint32				baseMipLevel;
+		1u,							//deUint32				levelCount;
+		0u,							//deUint32				baseArrayLayer;
+		m_parameters.extent.depth,	//deUint32				layerCount;
+	};
+
+	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		0, 0,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+}
+
+void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines, const bool clearPass)
+{
+	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
+	const VkClearValue				renderPassClearValue	= makeClearValueColor(m_colorTable[0]);
+	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
+	const bool						withClearColor			= (clearPass && m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR);
+	const VkRenderPassBeginInfo		renderPassBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			//  VkStructureType		sType;
+		DE_NULL,											//  const void*			pNext;
+		renderPass,											//  VkRenderPass		renderPass;
+		frameBuffer,										//  VkFramebuffer		framebuffer;
+		renderArea,											//  VkRect2D			renderArea;
+		withClearColor ? 1u : 0u,							//  uint32_t			clearValueCount;
+		withClearColor ? &renderPassClearValue : DE_NULL,	//  const VkClearValue*	pClearValues;
+	};
+
+	beginCommandBuffer(*m_device, *m_cmdBuffer);
+
+	if (clearPass)
+		beforeDraw();
+
+	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
+	{
+		m_device->cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipelines[subpassNdx]);
+
+		if (clearPass)
+		{
+			if (m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR)
+				clear(*m_cmdBuffer, renderArea, m_colorTable[subpassNdx % 4]);
+		}
+		else
+		{
+			for (deUint32 drawNdx = 0u; drawNdx < drawCountPerSubpass; ++drawNdx)
+			{
+				const deUint32 primitiveNumber	= drawNdx + subpassNdx % m_squareCount;
+
+				clear(*m_cmdBuffer, m_quarters[primitiveNumber], m_colorTable[4 + primitiveNumber]);
+			}
+		}
+
+		if (subpassNdx < subpassCount - 1u)
+			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	m_device->cmdEndRenderPass(*m_cmdBuffer);
+
+	if (!clearPass)
+		afterDraw();
+
+	VK_CHECK(m_device->endCommandBuffer(*m_cmdBuffer));
+	submitCommandsAndWait(*m_device, *m_logicalDevice, m_queue, *m_cmdBuffer);
+}
+
+void MultiViewReadbackTestInstance::clear (const VkCommandBuffer commandBuffer, const VkRect2D& clearRect2D, const tcu::Vec4& clearColor)
+{
+	const VkClearRect		clearRect		=
+	{
+		clearRect2D,						//  VkRect2D	rect
+		0u,									//  deUint32	baseArrayLayer
+		1u,									//  deUint32	layerCount
+	};
+	const VkClearAttachment	clearAttachment	=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,			//  VkImageAspectFlags	aspectMask
+		0u,									//  deUint32			colorAttachment
+		makeClearValueColor(clearColor)		//  VkClearValue		clearValue
+	};
+
+	m_device->cmdClearAttachments(commandBuffer, 1u, &clearAttachment, 1u, &clearRect);
+}
+
 class MultiViewRenderTestsCase : public vkt::TestCase
 {
 public:
@@ -2219,6 +2749,9 @@ private:
 		if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
 			return new MultiViewMultsampleTestInstance(context, m_parameters);
 
+		if (TEST_TYPE_QUERIES == m_parameters.viewIndex)
+			return new MultiViewQueriesTestInstance(context, m_parameters);
+
 		if (TEST_TYPE_VIEW_MASK == m_parameters.viewIndex ||
 			TEST_TYPE_VIEW_INDEX_IN_VERTEX == m_parameters.viewIndex ||
 			TEST_TYPE_VIEW_INDEX_IN_FRAGMENT == m_parameters.viewIndex ||
@@ -2226,6 +2759,10 @@ private:
 			TEST_TYPE_VIEW_INDEX_IN_TESELLATION == m_parameters.viewIndex ||
 			TEST_TYPE_DRAW_INDEXED == m_parameters.viewIndex)
 			return new MultiViewRenderTestInstance(context, m_parameters);
+
+		if (TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR == m_parameters.viewIndex ||
+			TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR == m_parameters.viewIndex)
+			return new MultiViewReadbackTestInstance(context, m_parameters);
 
 		TCU_THROW(InternalError, "Unknown test type");
 	}
@@ -2302,6 +2839,10 @@ private:
 		}
 		else
 		{
+			const bool generateColor	=  (TEST_TYPE_VIEW_INDEX_IN_VERTEX == m_parameters.viewIndex)
+										|| (TEST_TYPE_DRAW_INDIRECT == m_parameters.viewIndex)
+										|| (TEST_TYPE_DRAW_INDIRECT_INDEXED == m_parameters.viewIndex)
+										|| (TEST_TYPE_CLEAR_ATTACHMENTS == m_parameters.viewIndex);
 			std::ostringstream source;
 			source	<< glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 					<< "#extension GL_EXT_multiview : enable\n"
@@ -2311,7 +2852,7 @@ private:
 					<< "void main (void)\n"
 					<< "{\n"
 					<< "	gl_Position = in_position;\n";
-				if (TEST_TYPE_VIEW_INDEX_IN_VERTEX == m_parameters.viewIndex || TEST_TYPE_DRAW_INDIRECT == m_parameters.viewIndex || TEST_TYPE_DRAW_INDIRECT_INDEXED == m_parameters.viewIndex)
+				if (generateColor)
 					source << "	out_color = in_color + vec4(0.0, gl_ViewIndex * 0.10f, 0.0, 0.0);\n";
 				else
 					source << "	out_color = in_color;\n";
@@ -2365,7 +2906,6 @@ private:
 
 		if (TEST_TYPE_VIEW_INDEX_IN_GEOMETRY		== m_parameters.viewIndex ||
 			TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY	== m_parameters.viewIndex ||
-			TEST_TYPE_CLEAR_ATTACHMENTS				== m_parameters.viewIndex ||
 			TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY	== m_parameters.viewIndex)
 		{// Geometry Shader
 			std::ostringstream	source;
@@ -2432,7 +2972,7 @@ private:
 void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&			testCtx						= group->getTestContext();
-	const deUint32				testCaseCount				= 6u;
+	const deUint32				testCaseCount				= 7u;
 	MovePtr<tcu::TestCaseGroup>	groupViewIndex				(new tcu::TestCaseGroup(testCtx, "index", "ViewIndex rendering tests."));
 	const string				shaderName[TEST_TYPE_LAST]	=
 	{
@@ -2453,6 +2993,9 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		"secondary_cmd_buffer_geometry",
 		"point_size",
 		"multisample",
+		"queries",
+		"readback_implicit_clear",
+		"readback_explicit_clear",
 	};
 	const VkExtent3D			extent3D[testCaseCount]		=
 	{
@@ -2461,6 +3004,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 		{128u,	128u,	4u},
 		{32u,	32u,	5u},
 		{64u,	64u,	6u},
+		{32u,	32u,	4u},
 		{16u,	16u,	10u},
 	};
 	vector<deUint32>			viewMasks[testCaseCount];
@@ -2484,11 +3028,16 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 	viewMasks[4].push_back(1u);		//0001
 	viewMasks[4].push_back(8u);		//1000
 
+	viewMasks[5].push_back(5u);		//0101
+	viewMasks[5].push_back(10u);	//1010
+	viewMasks[5].push_back(5u);		//0101
+	viewMasks[5].push_back(10u);	//1010
+
 	const deUint32 minSupportedMultiviewViewCount	= 6u;
 	const deUint32 maxViewMask						= (1u << minSupportedMultiviewViewCount) - 1u;
 
 	for (deUint32 mask = 1u; mask <= maxViewMask; mask = mask << 1u)
-		viewMasks[5].push_back(mask);
+		viewMasks[testCaseCount - 1].push_back(mask);
 
 	for (int testTypeNdx = TEST_TYPE_VIEW_MASK; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
 	{
@@ -2536,6 +3085,9 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 			case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
 			case TEST_TYPE_POINT_SIZE:
 			case TEST_TYPE_MULTISAMPLE:
+			case TEST_TYPE_QUERIES:
+			case TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR:
+			case TEST_TYPE_READBACK_WITH_EXPLICIT_CLEAR:
 				group->addChild(groupShader.release());
 				break;
 			case TEST_TYPE_VIEW_INDEX_IN_VERTEX:

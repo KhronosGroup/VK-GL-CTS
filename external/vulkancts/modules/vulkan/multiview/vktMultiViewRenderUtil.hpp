@@ -39,7 +39,7 @@ vk::Move<vk::VkImageView>			makeImageView					(const vk::DeviceInterface& vk, co
 vk::Move<vk::VkFramebuffer>			makeFramebuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const std::vector<vk::VkImageView>& attachments, const deUint32 width, const deUint32 height, const deUint32 layers);
 vk::Move<vk::VkPipelineLayout>		makePipelineLayout				(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout* pSetLayouts = DE_NULL);
 vk::Move<vk::VkDescriptorSetLayout>	makeDescriptorSetLayout			(const vk::DeviceInterface& vk, const vk::VkDevice device);
-vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkSampleCountFlagBits samples = vk::VK_SAMPLE_COUNT_1_BIT);
+vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkSampleCountFlagBits samples = vk::VK_SAMPLE_COUNT_1_BIT, const vk::VkAttachmentLoadOp colorLoadOp = vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
 vk::Move<vk::VkRenderPass>			makeRenderPassWithAttachments	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks);
 void								beginCommandBuffer				(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void								beginSecondaryCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const deUint32 subpass, const vk::VkFramebuffer framebuffer);

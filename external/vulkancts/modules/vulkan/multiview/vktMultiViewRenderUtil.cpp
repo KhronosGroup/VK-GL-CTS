@@ -188,7 +188,8 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 								   const VkDevice				device,
 								   const VkFormat				colorFormat,
 								   const vector<deUint32>&		viewMasks,
-								   const VkSampleCountFlagBits	samples)
+								   const VkSampleCountFlagBits	samples,
+								   const VkAttachmentLoadOp		colorLoadOp)
 
 {
 	const deUint32								subpassCount				= static_cast<deUint32>(viewMasks.size());
@@ -197,7 +198,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 		(VkAttachmentDescriptionFlags)0,									// VkAttachmentDescriptionFlags	flags;
 		colorFormat,														// VkFormat						format;
 		samples,															// VkSampleCountFlagBits		samples;
-		VK_ATTACHMENT_LOAD_OP_CLEAR,										// VkAttachmentLoadOp			loadOp;
+		colorLoadOp,														// VkAttachmentLoadOp			loadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,										// VkAttachmentStoreOp			storeOp;
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,									// VkAttachmentLoadOp			stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,									// VkAttachmentStoreOp			stencilStoreOp;
