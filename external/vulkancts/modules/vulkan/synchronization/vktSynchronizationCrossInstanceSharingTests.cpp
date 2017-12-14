@@ -125,7 +125,7 @@ public:
 				DE_NULL,
 				config.memoryHandleType
 			};
-			const vk::VkPhysicalDeviceImageFormatInfo2	imageFormatInfo		=
+			const vk::VkPhysicalDeviceImageFormatInfo2			imageFormatInfo		=
 			{
 				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
 				&externalInfo,
@@ -135,7 +135,7 @@ public:
 				readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags(),
 				0u
 			};
-			vk::VkExternalImageFormatProperties			externalProperties	=
+			vk::VkExternalImageFormatProperties				externalProperties	=
 			{
 				vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
 				DE_NULL,
@@ -187,7 +187,7 @@ public:
 				readOp.getResourceUsageFlags() | writeOp.getResourceUsageFlags(),
 				config.memoryHandleType
 			};
-			vk::VkExternalBufferProperties				properties			=
+			vk::VkExternalBufferProperties					properties			=
 			{
 				vk::VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,
 				DE_NULL,
