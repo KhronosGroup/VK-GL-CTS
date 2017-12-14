@@ -138,6 +138,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< "  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
 			<< "  out_color = float(tempResult);\n"
 			<< "  gl_Position = in_position;\n"
+			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);

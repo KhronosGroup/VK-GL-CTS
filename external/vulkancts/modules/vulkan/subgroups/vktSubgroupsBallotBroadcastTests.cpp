@@ -211,6 +211,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< bdy.str()
 			<< "  out_color = float(tempResult);\n"
 			<< "  gl_Position = in_position;\n"
+			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert")
