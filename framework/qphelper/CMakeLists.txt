@@ -43,7 +43,7 @@ set(USE_RELEASE_INFO_FILE OFF)
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/qpReleaseInfo.inl")
 	set(USE_RELEASE_INFO_FILE ON)
 
-elseif (EXISTS "${CMAKE_SOURCE_DIR}/.git" AND Git_FOUND)
+elseif (EXISTS "${CMAKE_SOURCE_DIR}/.git" AND GIT_FOUND)
 	find_package(PythonInterp 2.7)
 
 	if (PYTHON_EXECUTABLE)
