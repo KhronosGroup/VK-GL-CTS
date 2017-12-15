@@ -505,7 +505,7 @@ bool gl4cts::GetTextureSubImage::Errors::testTwoDimmensionalTextureErrors()
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Test. */
-	static const struct
+	const struct
 	{
 		glw::GLuint		   id;
 		const glw::GLchar* target_name;
@@ -542,7 +542,7 @@ bool gl4cts::GetTextureSubImage::Errors::testTwoDimmensionalTextureErrors()
 	}
 
 	/* Test (compressed textures). */
-	static const struct
+	const struct
 	{
 		glw::GLuint		   id;
 		const glw::GLchar* target_name;
