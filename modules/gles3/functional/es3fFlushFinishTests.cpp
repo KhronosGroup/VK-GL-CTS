@@ -79,7 +79,7 @@ DE_STATIC_ASSERT(MAX_SAMPLE_DURATION_US < 1000*WAIT_TIME_MS);
 
 const float		NO_CORR_COEF_THRESHOLD				= 0.1f;
 const float		FLUSH_COEF_THRESHOLD				= 0.2f;
-const float		CORRELATED_COEF_THRESHOLD			= 0.5f;
+const float		CORRELATED_COEF_THRESHOLD			= 0.3f;
 const float		CALIBRATION_VERIFICATION_THRESHOLD	= 0.10f;	// Rendering time needs to be within 10% of MAX_SAMPLE_DURATION_US
 
 static void busyWait (int milliseconds)

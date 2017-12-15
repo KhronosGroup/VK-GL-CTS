@@ -55,6 +55,13 @@ WindowBase::~WindowBase (void)
 XlibDisplay::XlibDisplay (EventState& eventState, const char* name)
 	: DisplayBase	(eventState)
 {
+	// From man:XinitThreads(3):
+	//
+	//     The XInitThreads function initializes Xlib support for concurrent
+	//     threads.  This function must be the first Xlib function
+	//     a multi-threaded program calls, and it must complete before any other
+	//     Xlib call is made.
+	DE_CHECK_RUNTIME_ERR(XInitThreads() != 0);
 	m_display = XOpenDisplay((char*)name); // Won't modify argument string.
 	if (!m_display)
 		throw ResourceError("Failed to open display", name, __FILE__, __LINE__);
