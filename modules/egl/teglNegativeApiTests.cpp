@@ -384,31 +384,55 @@ void NegativeApiTests::init (void)
 
 			log << TestLog::EndSection;
 
-			log << TestLog::Section("Test4", "EGL_BAD_CONFIG is generated if OpenGL ES 1.x context is requested and EGL_RENDERABLE_TYPE attribute of config does not contain EGL_OPENGL_ES_BIT");
+			log << TestLog::Section("Test4", "EGL_BAD_CONFIG or EGL_BAD_MATCH is generated if OpenGL ES 1.x context is requested and EGL_RENDERABLE_TYPE attribute of config does not contain EGL_OPENGL_ES_BIT");
 
 			if (isAPISupported(EGL_OPENGL_ES_API))
 			{
 				EGLConfig notES1Config;
 				if (getConfig(&notES1Config, FilterList() << notRenderable<EGL_OPENGL_ES_BIT>))
 				{
+					// EGL 1.4, EGL 1.5, and EGL_KHR_create_context contain contradictory language about the expected error.
+					Version version = eglu::getVersion(m_eglTestCtx.getLibrary(), display);
+					bool hasKhrCreateContext = eglu::hasExtension(m_eglTestCtx.getLibrary(), display, "EGL_KHR_create_context");
+
 					expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
 					expectNoContext(eglCreateContext(display, notES1Config, EGL_NO_CONTEXT, s_es1ContextAttribList));
-					expectError(EGL_BAD_CONFIG);
+					if (hasKhrCreateContext)
+						expectEitherError(EGL_BAD_CONFIG, EGL_BAD_MATCH);
+					else
+					{
+						if (version >= eglu::Version(1, 5))
+							expectError(EGL_BAD_MATCH);
+						else
+							expectError(EGL_BAD_CONFIG);
+					}
 				}
 			}
 
 			log << TestLog::EndSection;
 
-			log << TestLog::Section("Test5", "EGL_BAD_CONFIG is generated if OpenGL ES 2.x context is requested and EGL_RENDERABLE_TYPE attribute of config does not contain EGL_OPENGL_ES2_BIT");
+			log << TestLog::Section("Test5", "EGL_BAD_CONFIG or EGL_BAD_MATCH is generated if OpenGL ES 2.x context is requested and EGL_RENDERABLE_TYPE attribute of config does not contain EGL_OPENGL_ES2_BIT");
 
 			if (isAPISupported(EGL_OPENGL_ES_API))
 			{
 				EGLConfig notES2Config;
 				if (getConfig(&notES2Config, FilterList() << notRenderable<EGL_OPENGL_ES2_BIT>))
 				{
+					// EGL 1.4, EGL 1.5, and EGL_KHR_create_context contain contradictory language about the expected error.
+					Version version = eglu::getVersion(m_eglTestCtx.getLibrary(), display);
+					bool hasKhrCreateContext = eglu::hasExtension(m_eglTestCtx.getLibrary(), display, "EGL_KHR_create_context");
+
 					expectTrue(eglBindAPI(EGL_OPENGL_ES_API));
 					expectNoContext(eglCreateContext(display, notES2Config, EGL_NO_CONTEXT, s_es2ContextAttribList));
-					expectError(EGL_BAD_CONFIG);
+					if (hasKhrCreateContext)
+						expectEitherError(EGL_BAD_CONFIG, EGL_BAD_MATCH);
+					else
+					{
+						if (version >= eglu::Version(1, 5))
+							expectError(EGL_BAD_MATCH);
+						else
+							expectError(EGL_BAD_CONFIG);
+					}
 				}
 			}
 
