@@ -1029,7 +1029,7 @@ void SpirvModulesStateQueriesTest::init()
 			   "\n"
 			   "layout (location = 0) in vec4 position;\n"
 			   "layout (location = 20) uniform vec4 extPosition;\n"
-			   "layout (location = 40) uniform ComponentsBlock\n"
+			   "layout (binding = 5) uniform ComponentsBlock\n"
 			   "{\n"
 			   "    vec4 c1;\n"
 			   "    vec2 c2;\n"
