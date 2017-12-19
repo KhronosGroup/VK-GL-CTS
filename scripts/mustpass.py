@@ -306,6 +306,7 @@ def genAndroidTestXml (mustpass):
 	configElement = ElementTree.Element("configuration")
 
 	# add in metadata option for component name
+	ElementTree.subElement(configElement, "option", name="test-suite-tag", value="cts")
 	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="component", value="deqp")
 
 	for package in mustpass.packages:
