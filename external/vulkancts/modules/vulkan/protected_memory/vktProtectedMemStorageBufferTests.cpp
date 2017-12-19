@@ -258,6 +258,7 @@ void StorageBufferTestCase<T>::initPrograms (vk::SourceCollections& programColle
 		"void main() {\n"
 		"    vec2 pos[4] = vec2[4]( vec2(-0.7, 0.7), vec2(0.7, 0.7), vec2(0.0, -0.7), vec2(-0.7, -0.7) );\n"
 		"    vIndex = vec4(gl_VertexIndex);\n"
+		"    gl_PointSize = 1.0;\n"
 		"    gl_Position = vec4(pos[gl_VertexIndex], 0.0, 1.0);\n"
 		"}";
 
