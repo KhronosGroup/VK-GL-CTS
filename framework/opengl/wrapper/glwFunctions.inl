@@ -176,6 +176,8 @@ glFramebufferTexture1DFunc							framebufferTexture1D;
 glFramebufferTexture2DFunc							framebufferTexture2D;
 glFramebufferTexture3DFunc							framebufferTexture3D;
 glFramebufferTextureLayerFunc						framebufferTextureLayer;
+glFramebufferTextureMultisampleMultiviewOVRFunc		framebufferTextureMultisampleMultiviewOVR;
+glFramebufferTextureMultiviewOVRFunc				framebufferTextureMultiviewOVR;
 glFrontFaceFunc										frontFace;
 glGenBuffersFunc									genBuffers;
 glGenFramebuffersFunc								genFramebuffers;

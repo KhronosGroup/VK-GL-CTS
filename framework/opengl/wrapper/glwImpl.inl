@@ -1388,6 +1388,22 @@ void glwFramebufferTextureLayer (GLenum target, GLenum attachment, GLuint textur
 	gl->framebufferTextureLayer(target, attachment, texture, level, layer);
 }
 
+void glwFramebufferTextureMultisampleMultiviewOVR (GLenum target, GLenum attachment, GLuint texture, GLint level, GLsizei samples, GLint baseViewIndex, GLsizei numViews)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->framebufferTextureMultisampleMultiviewOVR(target, attachment, texture, level, samples, baseViewIndex, numViews);
+}
+
+void glwFramebufferTextureMultiviewOVR (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->framebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+}
+
 void glwFrontFace (GLenum mode)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
