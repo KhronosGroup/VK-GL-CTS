@@ -1037,7 +1037,6 @@ void SparseTextureAllocationTestCase::init()
 	mSupportedTargets.push_back(GL_TEXTURE_3D);
 	mSupportedTargets.push_back(GL_TEXTURE_RECTANGLE);
 
-	mFullArrayTargets.push_back(GL_TEXTURE_1D_ARRAY);
 	mFullArrayTargets.push_back(GL_TEXTURE_2D_ARRAY);
 	mFullArrayTargets.push_back(GL_TEXTURE_CUBE_MAP);
 	mFullArrayTargets.push_back(GL_TEXTURE_CUBE_MAP_ARRAY);
@@ -1141,8 +1140,7 @@ tcu::TestNode::IterateResult SparseTextureAllocationTestCase::iterate()
 			mLog << "Testing sparse texture allocation for target [full array]: " << target << ", format: " << format
 				 << " - ";
 
-			result = verifyTexStorageFullArrayCubeMipmapsError(gl, target, format) &&
-					 verifyTexStorageInvalidValueErrors(gl, target, format);
+			result = verifyTexStorageFullArrayCubeMipmapsError(gl, target, format);
 
 			if (!result)
 			{
@@ -1396,44 +1394,36 @@ bool SparseTextureAllocationTestCase::verifyTexStorageFullArrayCubeMipmapsError(
 			mLog, "getBooleanv", target, GL_SPARSE_TEXTURE_FULL_ARRAY_CUBE_MIPMAPS_ARB, gl.getError(), GL_NO_ERROR))
 		return false;
 
-	if (fullArrayCubeMipmaps == GL_FALSE)
+	if (fullArrayCubeMipmaps == GL_FALSE &&
+		(target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP || target == GL_TEXTURE_CUBE_MAP_ARRAY))
 	{
-		if (target != GL_TEXTURE_1D_ARRAY && target != GL_TEXTURE_2D_ARRAY && target != GL_TEXTURE_CUBE_MAP &&
-			target != GL_TEXTURE_CUBE_MAP_ARRAY)
+		Texture::Generate(gl, texture);
+		Texture::Bind(gl, texture, target);
+
+		GLint pageSizeX;
+		GLint pageSizeY;
+		GLint pageSizeZ;
+		SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
+
+		gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
+
+		GLint levels = 4;
+		GLint width  = pageSizeX * (int)pow(2, levels - 1);
+		GLint height = pageSizeY * (int)pow(2, levels - 1);
+
+		// Check 2 different cases:
+		// 1) wrong width
+		// 2) wrong height
+		if (target == GL_TEXTURE_CUBE_MAP ||  target == GL_TEXTURE_CUBE_MAP_ARRAY)
 		{
-			// Case 1: test GL_TEXTURE_SPARSE_ARB
-			Texture::Generate(gl, texture);
-			Texture::Bind(gl, texture, target);
-
-			gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
-			if (!SparseTextureUtils::verifyQueryError(mLog, "texParameteri", target, GL_TEXTURE_SPARSE_ARB,
-													  gl.getError(), GL_NO_ERROR))
-				return false;
-
-			Texture::Storage(gl, target, 1, format, 8, 8, depth);
-			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [sparse texture]", gl.getError(),
-												 GL_INVALID_OPERATION))
-			{
-				Texture::Delete(gl, texture);
-				return false;
-			}
-
-			// Case 2: test wrong texture size
-			Texture::Generate(gl, texture);
-			Texture::Bind(gl, texture, target);
-
-			GLint pageSizeX;
-			GLint pageSizeY;
-			GLint pageSizeZ;
-			SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
-
-			GLint levels = 4;
-			GLint width  = pageSizeX * (int)pow(2, levels - 1);
-			GLint height = pageSizeY * (int)pow(2, levels - 1);
-
-			// Check 2 different cases:
-			// 1) wrong width
-			// 2) wrong height
+			GLint widthHeight = de::max(width, height);
+			GLint pageSize = de::max(pageSizeX, pageSizeY);
+			Texture::Storage(gl, target, levels, format, widthHeight + pageSize, widthHeight + pageSize, depth);
+			result =
+				SparseTextureUtils::verifyError(mLog, "TexStorage [wrong width]", gl.getError(), GL_INVALID_OPERATION);
+		}
+		else
+		{
 			Texture::Storage(gl, target, levels, format, width + pageSizeX, height, depth);
 			result =
 				SparseTextureUtils::verifyError(mLog, "TexStorage [wrong width]", gl.getError(), GL_INVALID_OPERATION);
@@ -1442,26 +1432,11 @@ bool SparseTextureAllocationTestCase::verifyTexStorageFullArrayCubeMipmapsError(
 			{
 				Texture::Storage(gl, target, levels, format, width, height + pageSizeY, depth);
 				result = SparseTextureUtils::verifyError(mLog, "TexStorage [wrong height]", gl.getError(),
-														 GL_INVALID_OPERATION);
+															GL_INVALID_OPERATION);
 			}
-
-			Texture::Delete(gl, texture);
 		}
-		else
-		{
-			// Case 3: test full array mipmaps targets
-			Texture::Generate(gl, texture);
-			Texture::Bind(gl, texture, target);
 
-			if (target == GL_TEXTURE_1D_ARRAY)
-				Texture::Storage(gl, target, 1, format, 8, depth, 0);
-			else
-				Texture::Storage(gl, target, 1, format, 8, 8, depth);
-
-			result = SparseTextureUtils::verifyError(mLog, "TexStorage [case 3]", gl.getError(), GL_INVALID_OPERATION);
-
-			Texture::Delete(gl, texture);
-		}
+		Texture::Delete(gl, texture);
 	}
 
 	return result;
@@ -1482,13 +1457,16 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 	mLog << "Verify Invalid Value errors - ";
 
 	GLuint texture;
+
+	Texture::Generate(gl, texture);
+	Texture::Bind(gl, texture, target);
+
 	GLint  pageSizeX;
 	GLint  pageSizeY;
 	GLint  pageSizeZ;
 	SparseTextureUtils::getTexturePageSizes(gl, target, format, pageSizeX, pageSizeY, pageSizeZ);
 
-	Texture::Generate(gl, texture);
-	Texture::Bind(gl, texture, target);
+	gl.texParameteri(target, GL_TEXTURE_SPARSE_ARB, GL_TRUE);
 
 	GLint width  = pageSizeX;
 	GLint height = pageSizeY;
