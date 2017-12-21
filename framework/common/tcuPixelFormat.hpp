@@ -55,6 +55,20 @@ struct PixelFormat
 	{
 	}
 
+	static inline int channelThreshold(int bits)
+	{
+		if (bits <= 8)
+		{
+			// Threshold is 2^(8 - bits)
+			return 1 << (8 - bits);
+		}
+		else
+		{
+			// Threshold is bound by the 8-bit buffer value
+			return 1;
+		}
+	}
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Get default threshold for per-pixel comparison for this format
 	 *
@@ -64,21 +78,33 @@ struct PixelFormat
 	inline RGBA getColorThreshold (void) const
 	{
 		return RGBA(
-			1 << (8 - redBits),
-			1 << (8 - greenBits),
-			1 << (8 - blueBits),
-			(alphaBits > 0) ? (1 << (8 - alphaBits)) : 0);
+			channelThreshold(redBits),
+			channelThreshold(greenBits),
+			channelThreshold(blueBits),
+			alphaBits ? channelThreshold(alphaBits) : 0);
 	}
 
 	static inline int convertChannel (int val, int bits)
 	{
-		if (bits == 1)
+		if (bits == 0)
+		{
+			return 0;
+		}
+		else if (bits == 1)
+		{
 			return (val & 0x80) ? 0xff : 0;
+		}
+		else if (bits < 8)
+		{
+			// Emulate precision reduction by replicating the upper bits as the fractional component
+			int intComp   = val >> (8 - bits);
+			int fractComp = (intComp << (24 - bits)) | (intComp << (24 - 2 * bits)) | (intComp << (24 - 3 * bits));
+			return (intComp << (8 - bits)) | (fractComp >> (bits + 16));
+		}
 		else
 		{
-			DE_ASSERT(deInRange32(bits, 4, 8));
-			int c = val >> (8-bits);
-			return (c << (8-bits)) | (c >> (2*bits-8));
+			// Bits greater than or equal to 8 will have full precision, so no reduction
+			return val;
 		}
 	}
 
