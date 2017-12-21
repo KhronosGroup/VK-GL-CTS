@@ -1051,7 +1051,7 @@ LOCAL_CFLAGS += \
 
 LOCAL_SDK_VERSION := 22
 LOCAL_CPPFLAGS += -Wno-non-virtual-dtor -Wno-delete-non-virtual-dtor
-LOCAL_NDK_STL_VARIANT := gnustl_static
+LOCAL_NDK_STL_VARIANT := c++_static
 LOCAL_RTTI_FLAG := -frtti -fexceptions
 LOCAL_MULTILIB := both
 LOCAL_TIDY_CHECKS := \
