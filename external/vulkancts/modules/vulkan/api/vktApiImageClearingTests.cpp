@@ -976,9 +976,9 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 
 	beginCommandBuffer(0);
 
-	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+	pipelineImageBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 						 VK_PIPELINE_STAGE_TRANSFER_BIT,
-						 VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+						 0u,
 						 VK_ACCESS_TRANSFER_READ_BIT,
 						 VK_IMAGE_LAYOUT_GENERAL,
 						 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -987,9 +987,9 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 	m_vkd.cmdPipelineBarrier(*m_commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-						 VK_PIPELINE_STAGE_TRANSFER_BIT,
+						 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 						 VK_ACCESS_TRANSFER_READ_BIT,
-						 VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+						 0u,
 						 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 						 VK_IMAGE_LAYOUT_GENERAL);
 
