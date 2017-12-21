@@ -97,6 +97,58 @@ tcu::TestStatus basicOneQueueCase (Context& context)
 	return tcu::TestStatus::pass("Basic semaphore tests with one queue passed");
 }
 
+tcu::TestStatus basicChainCase (Context& context)
+{
+	VkResult					err			= VK_SUCCESS;
+	const DeviceInterface&		vk			= context.getDeviceInterface();
+	const VkDevice&				device		= context.getDevice();
+	const VkQueue				queue		= context.getUniversalQueue();
+	const int					chainLength = 32768;
+	VkPipelineStageFlags		flags		= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	VkSemaphoreCreateInfo		sci			= { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, DE_NULL, 0 };
+	VkFenceCreateInfo			fci			= { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, DE_NULL, 0 };
+	std::vector<VkSemaphore>	semaphores;
+	VkFence						fence;
+
+	for (int i = 0; err == VK_SUCCESS && i < chainLength; i++)
+	{
+		VkSemaphore				semaphore;
+		err = vk.createSemaphore(device, &sci, DE_NULL, &semaphore);
+		if (err == VK_SUCCESS)
+		{
+			semaphores.push_back(semaphore);
+
+			VkSubmitInfo si = { VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				DE_NULL,
+				semaphores.size() > 1 ? 1u : 0u,
+				semaphores.size() > 1 ? &semaphores[semaphores.size() - 2] : DE_NULL,
+				&flags,
+				0,
+				DE_NULL,
+				1,
+				&semaphores[semaphores.size() - 1] };
+			err = vk.queueSubmit(queue, 1, &si, 0);
+		}
+	}
+
+	VK_CHECK(vk.createFence(device, &fci, DE_NULL, &fence));
+
+	VkSubmitInfo si = { VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1, &semaphores.back(), &flags, 0, DE_NULL, 0, DE_NULL };
+	VK_CHECK(vk.queueSubmit(queue, 1, &si, fence));
+
+	vk.waitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+
+	vk.destroyFence(device, fence, DE_NULL);
+
+	for (unsigned int i = 0; i < semaphores.size(); i++)
+		vk.destroySemaphore(device, semaphores[i], DE_NULL);
+
+	if (err == VK_SUCCESS)
+		return tcu::TestStatus::pass("Basic semaphore chain test passed");
+
+	return tcu::TestStatus::fail("Basic semaphore chain test failed");
+}
+
 tcu::TestStatus basicMultiQueueCase (Context& context)
 {
 	enum {NO_MATCH_FOUND = ~((deUint32)0)};
@@ -268,6 +320,7 @@ tcu::TestCaseGroup* createBasicSemaphoreTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "semaphore", "Basic semaphore tests"));
 	addFunctionCase(basicTests.get(), "one_queue",   "Basic semaphore tests with one queue",   basicOneQueueCase);
 	addFunctionCase(basicTests.get(), "multi_queue", "Basic semaphore tests with multi queue", basicMultiQueueCase);
+	addFunctionCase(basicTests.get(), "chain", "Semaphore chain test", basicChainCase);
 
 	return basicTests.release();
 }

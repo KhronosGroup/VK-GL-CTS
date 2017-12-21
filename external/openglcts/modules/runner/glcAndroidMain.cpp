@@ -46,32 +46,32 @@ static void createCTSActivity(ANativeActivity* activity, void* savedState, size_
 
 DE_BEGIN_EXTERN_C
 
-void createES2CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createES2CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
 {
 	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(2, 0));
 }
 
-void createES3CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createES3CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
 {
 	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 0));
 }
 
-void createES31CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createES31CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
 {
 	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 1));
 }
 
-void createES32CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createES32CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
 {
 	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::es(3, 2));
 }
 
-void createGL45CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createGL45CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
 {
 	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 5));
 }
 
-void createGL46CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
+JNIEXPORT void JNICALL createGL46CTSActivity(ANativeActivity* activity, void* savedState, size_t savedStateSize)
 {
 	createCTSActivity(activity, savedState, savedStateSize, glu::ApiType::core(4, 6));
 }
