@@ -297,7 +297,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"{\n"
 				+ bdy +
 				"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult;\n"
-				"  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+				"  float pixelSize = 2.0f/1024.0f;\n"
+				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
 
 			programCollection.glslSources.add("tese")
@@ -308,7 +309,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			const string geometry =
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
-				"layout(points) in;\n"
+				"layout(${TOPOLOGY}) in;\n"
 				"layout(points, max_vertices = 1) out;\n"
 				"layout(set = 0, binding = 3, std430) buffer Output\n"
 				"{\n"
@@ -324,8 +325,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  EndPrimitive();\n"
 				"}\n";
 
-			programCollection.glslSources.add("geometry")
-					<< glu::GeometrySource(geometry) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+			subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u),
+													  programCollection.glslSources);
 		}
 
 		{
