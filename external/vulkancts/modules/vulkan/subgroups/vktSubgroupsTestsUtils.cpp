@@ -25,6 +25,7 @@
 #include "vktSubgroupsTestsUtils.hpp"
 #include "deRandom.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuStringTemplate.hpp"
 #include "vkImageUtil.hpp"
 
 using namespace tcu;
@@ -960,70 +961,76 @@ void vkt::subgroups::addNoSubgroupShader (SourceCollections& programCollection)
 		"\n"
 		"void main (void)\n"
 		"{\n"
-		"  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
+		"  float pixelSize = 2.0f/1024.0f;\n"
+		"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 		"}\n";
 	*/
 		const std::string teseNoSubgroup =
 			"; SPIR-V\n"
 			"; Version: 1.3\n"
-			"; Generator: Khronos Glslang Reference Front End; 1\n"
-			"; Bound: 38\n"
+			"; Generator: Khronos Glslang Reference Front End; 2\n"
+			"; Bound: 42\n"
 			"; Schema: 0\n"
 			"OpCapability Tessellation\n"
 			"%1 = OpExtInstImport \"GLSL.std.450\"\n"
 			"OpMemoryModel Logical GLSL450\n"
-			"OpEntryPoint TessellationEvaluation %4 \"main\" %13 %20 %29\n"
+			"OpEntryPoint TessellationEvaluation %4 \"main\" %16 %23 %29\n"
 			"OpExecutionMode %4 Isolines\n"
 			"OpExecutionMode %4 SpacingEqual\n"
 			"OpExecutionMode %4 VertexOrderCcw\n"
-			"OpMemberDecorate %11 0 BuiltIn Position\n"
-			"OpMemberDecorate %11 1 BuiltIn PointSize\n"
-			"OpMemberDecorate %11 2 BuiltIn ClipDistance\n"
-			"OpMemberDecorate %11 3 BuiltIn CullDistance\n"
-			"OpDecorate %11 Block\n"
-			"OpMemberDecorate %16 0 BuiltIn Position\n"
-			"OpMemberDecorate %16 1 BuiltIn PointSize\n"
-			"OpMemberDecorate %16 2 BuiltIn ClipDistance\n"
-			"OpMemberDecorate %16 3 BuiltIn CullDistance\n"
-			"OpDecorate %16 Block\n"
+			"OpMemberDecorate %14 0 BuiltIn Position\n"
+			"OpMemberDecorate %14 1 BuiltIn PointSize\n"
+			"OpMemberDecorate %14 2 BuiltIn ClipDistance\n"
+			"OpMemberDecorate %14 3 BuiltIn CullDistance\n"
+			"OpDecorate %14 Block\n"
+			"OpMemberDecorate %19 0 BuiltIn Position\n"
+			"OpMemberDecorate %19 1 BuiltIn PointSize\n"
+			"OpMemberDecorate %19 2 BuiltIn ClipDistance\n"
+			"OpMemberDecorate %19 3 BuiltIn CullDistance\n"
+			"OpDecorate %19 Block\n"
 			"OpDecorate %29 BuiltIn TessCoord\n"
 			"%2 = OpTypeVoid\n"
 			"%3 = OpTypeFunction %2\n"
 			"%6 = OpTypeFloat 32\n"
-			"%7 = OpTypeVector %6 4\n"
-			"%8 = OpTypeInt 32 0\n"
-			"%9 = OpConstant %8 1\n"
-			"%10 = OpTypeArray %6 %9\n"
-			"%11 = OpTypeStruct %7 %6 %10 %10\n"
-			"%12 = OpTypePointer Output %11\n"
-			"%13 = OpVariable %12 Output\n"
-			"%14 = OpTypeInt 32 1\n"
-			"%15 = OpConstant %14 0\n"
-			"%16 = OpTypeStruct %7 %6 %10 %10\n"
-			"%17 = OpConstant %8 32\n"
-			"%18 = OpTypeArray %16 %17\n"
-			"%19 = OpTypePointer Input %18\n"
-			"%20 = OpVariable %19 Input\n"
-			"%21 = OpTypePointer Input %7\n"
-			"%24 = OpConstant %14 1\n"
+			"%7 = OpTypePointer Function %6\n"
+			"%9 = OpConstant %6 0.00195313\n"
+			"%10 = OpTypeVector %6 4\n"
+			"%11 = OpTypeInt 32 0\n"
+			"%12 = OpConstant %11 1\n"
+			"%13 = OpTypeArray %6 %12\n"
+			"%14 = OpTypeStruct %10 %6 %13 %13\n"
+			"%15 = OpTypePointer Output %14\n"
+			"%16 = OpVariable %15 Output\n"
+			"%17 = OpTypeInt 32 1\n"
+			"%18 = OpConstant %17 0\n"
+			"%19 = OpTypeStruct %10 %6 %13 %13\n"
+			"%20 = OpConstant %11 32\n"
+			"%21 = OpTypeArray %19 %20\n"
+			"%22 = OpTypePointer Input %21\n"
+			"%23 = OpVariable %22 Input\n"
+			"%24 = OpTypePointer Input %10\n"
 			"%27 = OpTypeVector %6 3\n"
 			"%28 = OpTypePointer Input %27\n"
 			"%29 = OpVariable %28 Input\n"
-			"%30 = OpConstant %8 0\n"
+			"%30 = OpConstant %11 0\n"
 			"%31 = OpTypePointer Input %6\n"
-			"%36 = OpTypePointer Output %7\n"
+			"%36 = OpConstant %6 2\n"
+			"%40 = OpTypePointer Output %10\n"
 			"%4 = OpFunction %2 None %3\n"
 			"%5 = OpLabel\n"
-			"%22 = OpAccessChain %21 %20 %15 %15\n"
-			"%23 = OpLoad %7 %22\n"
-			"%25 = OpAccessChain %21 %20 %24 %15\n"
-			"%26 = OpLoad %7 %25\n"
+			"%8 = OpVariable %7 Function\n"
+			"OpStore %8 %9\n"
+			"%25 = OpAccessChain %24 %23 %18 %18\n"
+			"%26 = OpLoad %10 %25\n"
 			"%32 = OpAccessChain %31 %29 %30\n"
 			"%33 = OpLoad %6 %32\n"
-			"%34 = OpCompositeConstruct %7 %33 %33 %33 %33\n"
-			"%35 = OpExtInst %7 %1 FMix %23 %26 %34\n"
-			"%37 = OpAccessChain %36 %13 %15\n"
-			"OpStore %37 %35\n"
+			"%34 = OpLoad %6 %8\n"
+			"%35 = OpFMul %6 %33 %34\n"
+			"%37 = OpFDiv %6 %35 %36\n"
+			"%38 = OpCompositeConstruct %10 %37 %37 %37 %37\n"
+			"%39 = OpFAdd %10 %26 %38\n"
+			"%41 = OpAccessChain %40 %16 %18\n"
+			"OpStore %41 %39\n"
 			"OpReturn\n"
 			"OpFunctionEnd\n";
 		programCollection.spirvAsmSources.add("tese_noSubgroup") << teseNoSubgroup;
@@ -1147,7 +1154,7 @@ bool vkt::subgroups::isDoubleFormat(VkFormat format)
 	}
 }
 
-std::string vkt::subgroups::getFormatNameForGLSL(VkFormat format)
+std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)
 {
 	switch (format)
 	{
@@ -1194,6 +1201,34 @@ std::string vkt::subgroups::getFormatNameForGLSL(VkFormat format)
 		case VK_FORMAT_R8G8B8A8_USCALED:
 			return "bvec4";
 	}
+}
+
+void vkt::subgroups::addGeometryShadersFromTemplate (const std::string& glslTemplate, const vk::ShaderBuildOptions& options,  vk::GlslSourceCollection& collection)
+{
+	tcu::StringTemplate geometryTemplate(glslTemplate);
+
+	map<string, string>		linesParams;
+	linesParams.insert(pair<string, string>("TOPOLOGY", "lines"));
+
+	map<string, string>		pointsParams;
+	pointsParams.insert(pair<string, string>("TOPOLOGY", "points"));
+
+	collection.add("geometry_lines")	<< glu::GeometrySource(geometryTemplate.specialize(linesParams))	<< options;
+	collection.add("geometry_points")	<< glu::GeometrySource(geometryTemplate.specialize(pointsParams))	<< options;
+}
+
+void vkt::subgroups::addGeometryShadersFromTemplate (const std::string& spirvTemplate, const vk::SpirVAsmBuildOptions& options, vk::SpirVAsmCollection& collection)
+{
+	tcu::StringTemplate geometryTemplate(spirvTemplate);
+
+	map<string, string>		linesParams;
+	linesParams.insert(pair<string, string>("TOPOLOGY", "InputLines"));
+
+	map<string, string>		pointsParams;
+	pointsParams.insert(pair<string, string>("TOPOLOGY", "InputPoints"));
+
+	collection.add("geometry_lines")	<< geometryTemplate.specialize(linesParams)		<< options;
+	collection.add("geometry_points")	<< geometryTemplate.specialize(pointsParams)	<< options;
 }
 
 void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBOData& data)
@@ -1400,7 +1435,18 @@ tcu::TestStatus vkt::subgroups::allStages(
 		teEvalShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get(tese), 0u);
 	}
 	if (shaderStageRequired & VK_SHADER_STAGE_GEOMETRY_BIT)
-		geometryShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("geometry"), 0u);
+	{
+		if (shaderStageRequired & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
+		{
+			// tessellation shaders output line primitives
+			geometryShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("geometry_lines"), 0u);
+		}
+		else
+		{
+			// otherwise points are processed by geometry shader
+			geometryShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("geometry_points"), 0u);
+		}
+	}
 	if (shaderStageRequired & VK_SHADER_STAGE_FRAGMENT_BIT)
 		fragmentShaderModule = createShaderModule(context.getDeviceInterface(), context.getDevice(), context.getBinaryCollection().get("fragment"), 0u);
 
