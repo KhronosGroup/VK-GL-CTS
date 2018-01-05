@@ -1274,6 +1274,22 @@ deUint32 getInterfaceNumResources (ShaderInputInterface shaderInterface)
 	}
 }
 
+deUint32 getArbitraryBindingIndex (deUint32 ndx)
+{
+	DE_ASSERT(ndx < 2);
+
+	// Binding decoration value can be any 32-bit unsigned integer value.
+	// 0xFFFE is the largest binding value accepted by glslang
+
+	const deUint32	bufferIndices[] =
+	{
+		0x7FFEu,
+		0xFFFEu
+	};
+
+	return bufferIndices[ndx];
+}
+
 typedef de::MovePtr<vk::Allocation>						AllocationMp;
 typedef de::SharedPtr<vk::Allocation>					AllocationSp;
 typedef vk::Unique<vk::VkBuffer>						BufferHandleUp;
@@ -1675,9 +1691,14 @@ std::vector<DescriptorSetLayoutHandleSp> BufferRenderInstance::createDescriptorS
 				builder.addSingleBinding(descriptorType, stageFlags);
 				break;
 
+			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+				builder.addSingleIndexedBinding(descriptorType, stageFlags, 0u);
+				builder.addSingleIndexedBinding(descriptorType, stageFlags, 2u);
+				break;
+
 			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
-				builder.addSingleIndexedBinding(descriptorType, stageFlags, 0x7FFEu);
-				builder.addSingleIndexedBinding(descriptorType, stageFlags, 0xFFFEu);
+				builder.addSingleIndexedBinding(descriptorType, stageFlags, getArbitraryBindingIndex(0));
+				builder.addSingleIndexedBinding(descriptorType, stageFlags, getArbitraryBindingIndex(1));
 				break;
 
 			case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -1800,37 +1821,43 @@ void BufferRenderInstance::writeDescriptorSet (const vk::DeviceInterface&			vki,
 		vk::makeDescriptorBufferInfo(bufferA, (vk::VkDeviceSize)offsetA, (vk::VkDeviceSize)BUFFER_DATA_SIZE),
 		vk::makeDescriptorBufferInfo(bufferB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)BUFFER_DATA_SIZE),
 	};
-	deUint32								numBindings		= 0u;
+	deUint32								numDescriptors	= 0u;
 
 	switch (shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &bufferInfos[0]);
-			numBindings++;
+			numDescriptors++;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &bufferInfos[0]);
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType, &bufferInfos[1]);
-			numBindings += 2;
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &bufferInfos[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), descriptorType, &bufferInfos[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
-			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0x7FFEu), descriptorType, &bufferInfos[0]);
-			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0xFFFEu), descriptorType, &bufferInfos[1]);
-			numBindings += 2;
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), descriptorType, &bufferInfos[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), descriptorType, &bufferInfos[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, 2u, bufferInfos);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
 
-	descriptorsPerSet.push_back(numBindings);
+	descriptorsPerSet.push_back(numDescriptors);
 
 	if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -1893,9 +1920,14 @@ void BufferRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInter
 			updateEntries.push_back(createTemplateBinding(1u, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(0u, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(2u, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
+			break;
+
 		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
-			updateEntries.push_back(createTemplateBinding(0x7FFEu, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(0), 0));
-			updateEntries.push_back(createTemplateBinding(0xFFFEu, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -1928,6 +1960,7 @@ void BufferRenderInstance::logTestPlan (void) const
 		<< "Each descriptor set contains "
 		<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
@@ -2580,7 +2613,8 @@ vk::Move<vk::VkBuffer> BufferComputeInstance::createColorDataBuffer (deUint32 of
 vk::Move<vk::VkDescriptorSetLayout> BufferComputeInstance::createDescriptorSetLayout (deUint32 setNdx) const
 {
 	vk::DescriptorSetLayoutBuilder			builder;
-	vk::VkDescriptorSetLayoutCreateFlags	extraFlags = 0;
+	vk::VkDescriptorSetLayoutCreateFlags	extraFlags	= 0;
+	deUint32								binding		= 0;
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
@@ -2589,7 +2623,7 @@ vk::Move<vk::VkDescriptorSetLayout> BufferComputeInstance::createDescriptorSetLa
 	}
 
 	if (setNdx == 0)
-		builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+		builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
 
 	switch (m_shaderInterface)
 	{
@@ -2602,9 +2636,14 @@ vk::Move<vk::VkDescriptorSetLayout> BufferComputeInstance::createDescriptorSetLa
 			builder.addSingleBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding + 0u);
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding + 2u);
+			break;
+
 		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
-			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, 0x7FFEu);
-			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, 0xFFFEu);
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, getArbitraryBindingIndex(0));
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, getArbitraryBindingIndex(1));
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -2668,14 +2707,14 @@ void BufferComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descriptorSe
 		vk::makeDescriptorBufferInfo(viewB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)sizeof(tcu::Vec4[2])),
 	};
 
-	deUint32								numBindings		= 0u;
+	deUint32								numDescriptors	= 0u;
 	deUint32								binding			= 0u;
 
 	// result
 	if (setNdx == 0)
 	{
 		m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
-		numBindings++;
+		numDescriptors++;
 	}
 
 	// buffers
@@ -2683,31 +2722,37 @@ void BufferComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descriptorSe
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &bufferInfos[0]);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &bufferInfos[0]);
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &bufferInfos[1]);
-			numBindings += 2;
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding), m_descriptorType, &bufferInfos[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding + 2), m_descriptorType, &bufferInfos[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
-			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0x7FFEu), m_descriptorType, &bufferInfos[0]);
-			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0xFFFEu), m_descriptorType, &bufferInfos[1]);
-			numBindings += 2;
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), m_descriptorType, &bufferInfos[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), m_descriptorType, &bufferInfos[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			m_updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, 2u, bufferInfos);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
 
-	m_descriptorsPerSet.push_back(numBindings);
+	m_descriptorsPerSet.push_back(numDescriptors);
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -2764,9 +2809,14 @@ void BufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet 
 			updateEntries.push_back(createTemplateBinding(binding++, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(binding, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(binding + 2, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			break;
+
 		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
-			updateEntries.push_back(createTemplateBinding(0x7FFEu, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
-			updateEntries.push_back(createTemplateBinding(0xFFFEu, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -2805,6 +2855,7 @@ void BufferComputeInstance::logTestPlan (void) const
 		<< "Each descriptor set contains "
 		<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 				(const char*)DE_NULL)
@@ -3571,13 +3622,26 @@ std::string BufferDescriptorCase::genResourceDeclarations (vk::VkShaderStageFlag
 					<< "} b_instance" << setNdxPostfix << "B;\n";
 				break;
 
-			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
-				buf	<< "layout(set = " << setNdx << ", binding = " << de::toString(0x7FFEu) << ", std140) " << storageType << " BufferName" << setNdxPostfix << "A\n"
+			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+				buf	<< "layout(set = " << setNdx << ", binding = " << de::toString(descBinding) << ", std140) " << storageType << " BufferName" << setNdxPostfix << "A\n"
 					<< "{\n"
 					<< "	highp vec4 colorA;\n"
 					<< "	highp vec4 colorB;\n"
 					<< "} b_instance" << setNdxPostfix << "A;\n"
-					<< "layout(set = " << setNdx << ", binding = " << de::toString(0xFFFEu) << ", std140) " << storageType << " BufferName" << setNdxPostfix << "B\n"
+					<< "layout(set = " << setNdx << ", binding = " << de::toString(descBinding + 2) << ", std140) " << storageType << " BufferName" << setNdxPostfix << "B\n"
+					<< "{\n"
+					<< "	highp vec4 colorA;\n"
+					<< "	highp vec4 colorB;\n"
+					<< "} b_instance" << setNdxPostfix << "B;\n";
+				break;
+
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+				buf	<< "layout(set = " << setNdx << ", binding = " << de::toString(getArbitraryBindingIndex(0)) << ", std140) " << storageType << " BufferName" << setNdxPostfix << "A\n"
+					<< "{\n"
+					<< "	highp vec4 colorA;\n"
+					<< "	highp vec4 colorB;\n"
+					<< "} b_instance" << setNdxPostfix << "A;\n"
+					<< "layout(set = " << setNdx << ", binding = " << de::toString(getArbitraryBindingIndex(1)) << ", std140) " << storageType << " BufferName" << setNdxPostfix << "B\n"
 					<< "{\n"
 					<< "	highp vec4 colorA;\n"
 					<< "	highp vec4 colorB;\n"
@@ -3622,12 +3686,7 @@ std::string BufferDescriptorCase::genResourceAccessSource (vk::VkShaderStageFlag
 				break;
 
 			case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-				buf << "	if (quadrant_id == 1 || quadrant_id == 2)\n"
-					<< "		result_color += b_instance" << setNdxPostfix << "A.colorA;\n"
-					<< "	else\n"
-					<< "		result_color += b_instance" << setNdxPostfix << "B.colorB;\n";
-				break;
-
+			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
 				buf << "	if (quadrant_id == 1 || quadrant_id == 2)\n"
 					<< "		result_color += b_instance" << setNdxPostfix << "A.colorA;\n"
@@ -4404,6 +4463,16 @@ std::vector<DescriptorSetLayoutHandleSp> ImageFetchRenderInstance::createDescrip
 			builder.addSingleBinding(descriptorType, stageFlags);
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			builder.addSingleIndexedBinding(descriptorType, stageFlags, 0u);
+			builder.addSingleIndexedBinding(descriptorType, stageFlags, 2u);
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			builder.addSingleIndexedBinding(descriptorType, stageFlags, getArbitraryBindingIndex(0));
+			builder.addSingleIndexedBinding(descriptorType, stageFlags, getArbitraryBindingIndex(1));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			builder.addArrayBinding(descriptorType, 2u, stageFlags);
 			break;
@@ -4535,31 +4604,43 @@ void ImageFetchRenderInstance::writeDescriptorSet (const vk::DeviceInterface&		v
 		makeDescriptorImageInfo(viewA, imageLayout),
 		makeDescriptorImageInfo(viewB, imageLayout),
 	};
-	deUint32												numBindings			= 0u;
+	deUint32												numDescriptors		= 0u;
 
 	switch (shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &imageInfos[0]);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &imageInfos[0]);
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType, &imageInfos[1]);
-			numBindings += 2;
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &imageInfos[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), descriptorType, &imageInfos[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), descriptorType, &imageInfos[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), descriptorType, &imageInfos[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, 2u, imageInfos);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
 
-	descriptorsPerSet.push_back(numBindings);
+	descriptorsPerSet.push_back(numDescriptors);
 
 	if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -4620,6 +4701,16 @@ void ImageFetchRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceI
 			updateEntries.push_back(createTemplateBinding(1, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(0, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(2, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateEntries.push_back(createTemplateBinding(0, 0, 2, descriptorType, updateRegistry.getWriteObjectOffset(0), sizeof(imageInfos[0])));
 			break;
@@ -4650,7 +4741,9 @@ void ImageFetchRenderInstance::logTestPlan (void) const
 		<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Image view type is " << vk::getImageViewTypeName(m_viewType) << "\n";
@@ -4845,7 +4938,8 @@ ImageFetchComputeInstance::ImageFetchComputeInstance (Context&					context,
 vk::Move<vk::VkDescriptorSetLayout> ImageFetchComputeInstance::createDescriptorSetLayout (deUint32 setNdx) const
 {
 	vk::DescriptorSetLayoutBuilder			builder;
-	vk::VkDescriptorSetLayoutCreateFlags	extraFlags = 0;
+	vk::VkDescriptorSetLayoutCreateFlags	extraFlags	= 0;
+	deUint32								binding		= 0;
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
@@ -4854,7 +4948,7 @@ vk::Move<vk::VkDescriptorSetLayout> ImageFetchComputeInstance::createDescriptorS
 	}
 
 	if (setNdx == 0)
-		builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+		builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
 
 	switch (m_shaderInterface)
 	{
@@ -4865,6 +4959,16 @@ vk::Move<vk::VkDescriptorSetLayout> ImageFetchComputeInstance::createDescriptorS
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			builder.addSingleBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 			builder.addSingleBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding);
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding + 2);
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, getArbitraryBindingIndex(0));
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, getArbitraryBindingIndex(1));
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -4930,32 +5034,51 @@ void ImageFetchComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descript
 	};
 
 	deUint32							binding			= 0u;
+	deUint32							numDescriptors	= 0u;
 
 	// result
 	if (setNdx == 0)
+	{
 		m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
+		numDescriptors++;
+	}
 
 	// images
 	switch (m_shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &imageInfos[0]);
+			numDescriptors++;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &imageInfos[0]);
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &imageInfos[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding), m_descriptorType, &imageInfos[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding + 2), m_descriptorType, &imageInfos[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), m_descriptorType, &imageInfos[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), m_descriptorType, &imageInfos[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			m_updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, 2u, imageInfos);
+			numDescriptors++;
 			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
 
-	m_descriptorsPerSet.push_back(binding);
+	m_descriptorsPerSet.push_back(numDescriptors);
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -5014,6 +5137,16 @@ void ImageFetchComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptor
 			updateEntries.push_back(createTemplateBinding(binding++, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(binding, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(binding + 2, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateEntries.push_back(createTemplateBinding(binding++, 0, 2, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), sizeof(imageInfos[0])));
 			break;
@@ -5050,7 +5183,9 @@ void ImageFetchComputeInstance::logTestPlan (void) const
 		<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
 		<< "Image view type is " << vk::getImageViewTypeName(m_viewType) << "\n";
@@ -5729,8 +5864,8 @@ std::vector<DescriptorSetLayoutHandleSp> ImageSampleRenderInstance::createDescri
 		};
 
 		vk::DescriptorSetLayoutBuilder			builder;
-		const bool								addSeparateImage = descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER;
-		vk::VkDescriptorSetLayoutCreateFlags	extraFlags = 0;
+		const bool								addSeparateImage	= descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER;
+		vk::VkDescriptorSetLayoutCreateFlags	extraFlags			= 0;
 
 		if (updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
@@ -5755,10 +5890,17 @@ std::vector<DescriptorSetLayoutHandleSp> ImageSampleRenderInstance::createDescri
 				break;
 
 			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
-				builder.addSingleSamplerBinding(descriptorType, stageFlags, (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+				builder.addSingleIndexedSamplerBinding(descriptorType, stageFlags, 0u, (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+				if (addSeparateImage)
+					builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags, 1u);
+				builder.addSingleIndexedSamplerBinding(descriptorType, stageFlags, 2u, (images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+				break;
+
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
 				if (addSeparateImage)
 					builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, stageFlags);
-				builder.addSingleSamplerBinding(descriptorType, stageFlags, (images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+				builder.addSingleIndexedSamplerBinding(descriptorType, stageFlags, getArbitraryBindingIndex(0), (images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+				builder.addSingleIndexedSamplerBinding(descriptorType, stageFlags, getArbitraryBindingIndex(1), (images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
 				break;
 
 			case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -5926,7 +6068,7 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSet (const vk::DeviceInter
 	};
 
 	const deUint32						samplerLocation		= shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS ? 1u : 0u;
-	deUint32							numBindings			= 1u;
+	deUint32							numDescriptors		= 1u;
 
 	// stand alone texture
 	updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(samplerLocation), vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo);
@@ -5938,24 +6080,30 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSet (const vk::DeviceInter
 		{
 			case SHADER_INPUT_SINGLE_DESCRIPTOR:
 				updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
-				numBindings += 1;
+				numDescriptors++;
 				break;
 
 			case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 				updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
 				updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[1]);
-				numBindings += 2;
+				numDescriptors += 2;
 				break;
 
 			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 				updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
 				updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[1]);
-				numBindings += 2;
+				numDescriptors += 2;
+				break;
+
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+				updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
+				updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[1]);
+				numDescriptors += 2;
 				break;
 
 			case SHADER_INPUT_DESCRIPTOR_ARRAY:
 				updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), vk::VK_DESCRIPTOR_TYPE_SAMPLER, 2u, samplersInfos);
-				numBindings += 1;
+				numDescriptors++;
 				break;
 
 			default:
@@ -5963,7 +6111,7 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSet (const vk::DeviceInter
 		}
 	}
 
-	descriptorsPerSet.push_back(numBindings);
+	descriptorsPerSet.push_back(numDescriptors);
 
 	if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -5993,32 +6141,44 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSet (const vk::Device
 		vk::makeDescriptorImageInfo(samplers[0], images.getImageView(setNdx * getInterfaceNumResources(shaderInterface)), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
 		vk::makeDescriptorImageInfo(samplers[1], images.getImageView(setNdx * getInterfaceNumResources(shaderInterface) + 1), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
 	};
-	deUint32							numBindings			= 0u;
+	deUint32							numDescriptors		= 0u;
 
 	// combined image samplers
 	switch (shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
-			numBindings += 2;
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2u, imageSamplers);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
 
-	descriptorsPerSet.push_back(numBindings);
+	descriptorsPerSet.push_back(numDescriptors);
 
 	if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -6090,6 +6250,11 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSetWithTemplate (const vk:
 			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 				updateEntries.push_back(createTemplateBinding(0, 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(1), 0));
 				updateEntries.push_back(createTemplateBinding(2, 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(2), 0));
+				break;
+
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+				updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(1), 0));
+				updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(2), 0));
 				break;
 
 			case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -6171,6 +6336,16 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSetWithTemplate (cons
 			updateEntries.push_back(createTemplateBinding(1, 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(1), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(0, 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(2, 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(1), 0));
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(1), 0));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateEntries.push_back(createTemplateBinding(0, 0, 2, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(0), sizeof(imageSamplers[0])));
 			break;
@@ -6205,7 +6380,8 @@ void ImageSampleRenderInstance::logTestPlan (void) const
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_SAMPLER descriptor(s) and a single texture.\n";
 	}
@@ -6216,7 +6392,8 @@ void ImageSampleRenderInstance::logTestPlan (void) const
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
 				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER descriptor(s).\n";
 	}
@@ -6439,7 +6616,8 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
 	};
 
 	vk::DescriptorSetLayoutBuilder			builder;
-	vk::VkDescriptorSetLayoutCreateFlags	extraFlags = 0;
+	vk::VkDescriptorSetLayoutCreateFlags	extraFlags	= 0;
+	deUint32								binding		= 0;
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
@@ -6449,25 +6627,41 @@ vk::Move<vk::VkDescriptorSetLayout> ImageSampleComputeInstance::createDescriptor
 
 	// result buffer
 	if (setNdx == 0)
-		builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
-
-	// with samplers, separate texture at binding 0
-	if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
-		builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+		builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
 
 	// (combined)samplers follow
 	switch (m_shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
-			builder.addSingleSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+			if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
+				builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
+			builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++, (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-			builder.addSingleSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
-			builder.addSingleSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, (m_images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+			if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
+				builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
+			builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++, (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+			builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++, (m_images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding, (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+			if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
+				builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding + 1u);
+			builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding + 2u, (m_images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
+				builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
+			builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, getArbitraryBindingIndex(0), (m_images.isImmutable()) ? (&samplers[0]) : (DE_NULL));
+			builder.addSingleIndexedSamplerBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, getArbitraryBindingIndex(1), (m_images.isImmutable()) ? (&samplers[1]) : (DE_NULL));
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
+			if (m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER)
+				builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
 			builder.addArraySamplerBinding(m_descriptorType, 2u, vk::VK_SHADER_STAGE_COMPUTE_BIT, (m_images.isImmutable()) ? (samplers) : (DE_NULL));
 			break;
 
@@ -6563,13 +6757,21 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSet (vk::VkDescriptorSet 
 		makeDescriptorImageInfo(m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
 	};
 	deUint32							binding				= 0u;
+	deUint32							numDescriptors		= 0u;
 
 	// result
 	if (setNdx == 0)
+	{
 		m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
+		numDescriptors++;
+	}
 
 	// stand alone texture
-	m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo);
+	{
+		const deUint32 texutreBinding = (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? (binding + 1) : (binding++);
+		m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(texutreBinding), vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, &imageInfo);
+		numDescriptors++;
+	}
 
 	// samplers
 	if (!m_isImmutableSampler || (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH))
@@ -6578,15 +6780,30 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSet (vk::VkDescriptorSet 
 		{
 			case SHADER_INPUT_SINGLE_DESCRIPTOR:
 				m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
+				numDescriptors++;
 				break;
 
 			case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 				m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
 				m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[1]);
+				numDescriptors += 2;
+				break;
+
+			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+				m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
+				m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding + 2), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[1]);
+				numDescriptors += 2;
+				break;
+
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+				m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[0]);
+				m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), vk::VK_DESCRIPTOR_TYPE_SAMPLER, &samplersInfos[1]);
+				numDescriptors += 2;
 				break;
 
 			case SHADER_INPUT_DESCRIPTOR_ARRAY:
 				m_updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_SAMPLER, 2u, samplersInfos);
+				numDescriptors++;
 				break;
 
 			default:
@@ -6594,7 +6811,7 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSet (vk::VkDescriptorSet 
 		}
 	}
 
-	m_descriptorsPerSet.push_back(binding);
+	m_descriptorsPerSet.push_back(numDescriptors);
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -6642,7 +6859,10 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate (vk::VkDe
 		updateEntries.push_back(createTemplateBinding(binding++, 0, 1, vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, updateRegistry.getWriteObjectOffset(offset++), 0));
 
 	// stand alone texture
-	updateEntries.push_back(createTemplateBinding(binding++, 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, updateRegistry.getWriteObjectOffset(offset++), 0));
+	{
+		const deUint32 textureBinding = (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? (binding + 1) : (binding++);
+		updateEntries.push_back(createTemplateBinding(textureBinding, 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, updateRegistry.getWriteObjectOffset(offset++), 0));
+	}
 
 	// samplers
 	if (!m_isImmutableSampler || withPush)
@@ -6656,6 +6876,16 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate (vk::VkDe
 			case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 				updateEntries.push_back(createTemplateBinding(binding++, 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
 				updateEntries.push_back(createTemplateBinding(binding++, 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
+				break;
+
+			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+				updateEntries.push_back(createTemplateBinding(binding, 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
+				updateEntries.push_back(createTemplateBinding(binding + 2, 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
+				break;
+
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+				updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
+				updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, vk::VK_DESCRIPTOR_TYPE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
 				break;
 
 			case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -6694,32 +6924,51 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSet (vk::VkDescripto
 		makeDescriptorImageInfo(samplers[1], m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
 	};
 	deUint32							binding				= 0u;
+	deUint32							numDescriptors		= 0u;
 
 	// result
 	if (setNdx == 0)
+	{
 		m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
+		numDescriptors++;
+	}
 
 	// combined image samplers
 	switch (m_shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
+			numDescriptors++;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding + 2u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageSamplers[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			m_updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2u, imageSamplers);
+			numDescriptors++;
 			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
 
-	m_descriptorsPerSet.push_back(binding);
+	m_descriptorsPerSet.push_back(numDescriptors);
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -6782,6 +7031,16 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate (vk:
 			updateEntries.push_back(createTemplateBinding(binding++, 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(binding, 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(binding + 2, 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), 0));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateEntries.push_back(createTemplateBinding(binding++, 0, 2, vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, updateRegistry.getWriteObjectOffset(offset++), sizeof(imageSamplers[0])));
 			break;
@@ -6821,7 +7080,9 @@ void ImageSampleComputeInstance::logTestPlan (void) const
 			<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_SAMPLER descriptor(s) and a single texture.\n";
 	}
@@ -6831,7 +7092,9 @@ void ImageSampleComputeInstance::logTestPlan (void) const
 			<< "Each descriptor set contains "
 			<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
-			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
+				(m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 			<< " VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER descriptor(s).\n";
 	}
@@ -7083,9 +7346,6 @@ std::string ImageDescriptorCase::genResourceDeclarations (vk::VkShaderStageFlagB
 	const std::string	dimension		= isImageViewTypeArray(m_viewType) ? dimensionArray : dimensionBase;
 	const deUint32		numSets			= getDescriptorSetCount(m_descriptorSetCount);
 
-	if (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)
-		DE_ASSERT(m_descriptorType == vk::VK_DESCRIPTOR_TYPE_SAMPLER);
-
 	std::string buf;
 
 	for (deUint32 setNdx = 0; setNdx < numSets; setNdx++)
@@ -7118,21 +7378,14 @@ std::string ImageDescriptorCase::genResourceDeclarations (vk::VkShaderStageFlagB
 				}
 				break;
 			}
-
 			case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
 			{
 				switch (m_descriptorType)
 				{
 					case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
-						if (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)
-							buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ") uniform highp texture" + dimension + " u_separateTexture" + setNdxPostfix + ";\n"
-									"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 1) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "A;\n"
-									"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 2) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "B;\n";
-						else
-							buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "A;\n"
-									"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 1) + ") uniform highp texture" + dimension + " u_separateTexture" + setNdxPostfix + ";\n"
-									"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 2) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "B;\n";
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ") uniform highp texture" + dimension + " u_separateTexture" + setNdxPostfix + ";\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 1) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 2) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "B;\n";
 						break;
 					case vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ") uniform highp sampler" + dimension + " u_combinedTextureSampler" + setNdxPostfix + "A;\n"
@@ -7145,6 +7398,58 @@ std::string ImageDescriptorCase::genResourceDeclarations (vk::VkShaderStageFlagB
 					case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ", rgba8) readonly uniform highp image" + dimension + " u_image" + setNdxPostfix + "A;\n"
 								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 1) + ", rgba8) readonly uniform highp image" + dimension + " u_image" + setNdxPostfix + "B;\n";
+						break;
+					default:
+						DE_FATAL("invalid descriptor");
+				}
+				break;
+			}
+			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			{
+				switch (m_descriptorType)
+				{
+					case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 1) + ") uniform highp texture" + dimension + " u_separateTexture" + setNdxPostfix + ";\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 2) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "B;\n";
+						break;
+					case vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ") uniform highp sampler" + dimension + " u_combinedTextureSampler" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 2) + ") uniform highp sampler" + dimension + " u_combinedTextureSampler" + setNdxPostfix + "B;\n";
+						break;
+					case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ") uniform highp texture" + dimensionBase + " u_separateTexture" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 2) + ") uniform highp texture" + dimensionBase + " u_separateTexture" + setNdxPostfix + "B;\n";
+						break;
+					case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ", rgba8) readonly uniform highp image" + dimension + " u_image" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding + 2) + ", rgba8) readonly uniform highp image" + dimension + " u_image" + setNdxPostfix + "B;\n";
+						break;
+					default:
+						DE_FATAL("invalid descriptor");
+				}
+				break;
+			}
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			{
+				switch (m_descriptorType)
+				{
+					case vk::VK_DESCRIPTOR_TYPE_SAMPLER:
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(descBinding) + ") uniform highp texture" + dimension + " u_separateTexture" + setNdxPostfix + ";\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(getArbitraryBindingIndex(0)) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(getArbitraryBindingIndex(1)) + ") uniform highp sampler u_separateSampler" + setNdxPostfix + "B;\n";
+						break;
+					case vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(getArbitraryBindingIndex(0)) + ") uniform highp sampler" + dimension + " u_combinedTextureSampler" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(getArbitraryBindingIndex(1)) + ") uniform highp sampler" + dimension + " u_combinedTextureSampler" + setNdxPostfix + "B;\n";
+						break;
+					case vk::VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(getArbitraryBindingIndex(0)) + ") uniform highp texture" + dimensionBase + " u_separateTexture" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(getArbitraryBindingIndex(1)) + ") uniform highp texture" + dimensionBase + " u_separateTexture" + setNdxPostfix + "B;\n";
+						break;
+					case vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+						buf +=	"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(getArbitraryBindingIndex(0)) + ", rgba8) readonly uniform highp image" + dimension + " u_image" + setNdxPostfix + "A;\n"
+								"layout(set = " + de::toString(setNdx) + ", binding = " + de::toString(getArbitraryBindingIndex(1)) + ", rgba8) readonly uniform highp image" + dimension + " u_image" + setNdxPostfix + "B;\n";
 						break;
 					default:
 						DE_FATAL("invalid descriptor");
@@ -7249,11 +7554,13 @@ std::string ImageDescriptorCase::genResourceAccessSource (vk::VkShaderStageFlagB
 	const char* const	accessPostfixA	= (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)						? ("")
 										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)		? ("A")
 										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)	? ("A")
+										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)		? ("A")
 										: (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)						? ("[0]")
 										: (DE_NULL);
 	const char* const	accessPostfixB	= (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)						? ("")
 										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)		? ("B")
 										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)	? ("B")
+										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)		? ("B")
 										: (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)						? ("[1]")
 										: (DE_NULL);
 	const deUint32		numSets			= getDescriptorSetCount(m_descriptorSetCount);
@@ -7860,6 +8167,16 @@ std::vector<DescriptorSetLayoutHandleSp> TexelBufferRenderInstance::createDescri
 				builder.addSingleBinding(descriptorType, stageFlags);
 				break;
 
+			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+				builder.addSingleIndexedBinding(descriptorType, stageFlags, 0);
+				builder.addSingleIndexedBinding(descriptorType, stageFlags, 2);
+				break;
+
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+				builder.addSingleIndexedBinding(descriptorType, stageFlags, getArbitraryBindingIndex(0));
+				builder.addSingleIndexedBinding(descriptorType, stageFlags, getArbitraryBindingIndex(1));
+				break;
+
 			case SHADER_INPUT_DESCRIPTOR_ARRAY:
 				builder.addArrayBinding(descriptorType, 2u, stageFlags);
 				break;
@@ -7992,31 +8309,43 @@ void TexelBufferRenderInstance::writeDescriptorSet (const vk::DeviceInterface&		
 		viewA,
 		viewB,
 	};
-	deUint32								numBindings			= 0u;
+	deUint32								numDescriptors		= 0u;
 
 	switch (shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &texelBufferInfos[0]);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &texelBufferInfos[0]);
 			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u), descriptorType, &texelBufferInfos[1]);
-			numBindings += 2;
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, &texelBufferInfos[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u), descriptorType, &texelBufferInfos[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), descriptorType, &texelBufferInfos[0]);
+			updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), descriptorType, &texelBufferInfos[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType, 2u, texelBufferInfos);
-			numBindings += 1;
+			numDescriptors++;
 			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
 
-	descriptorsPerSet.push_back(numBindings);
+	descriptorsPerSet.push_back(numDescriptors);
 
 	if (updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -8077,6 +8406,16 @@ void TexelBufferRenderInstance::writeDescriptorSetWithTemplate (const vk::Device
 			updateEntries.push_back(createTemplateBinding(1, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(0, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(2, 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(0), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, descriptorType, updateRegistry.getWriteObjectOffset(1), 0));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateEntries.push_back(createTemplateBinding(0, 0, 2, descriptorType, updateRegistry.getWriteObjectOffset(0), sizeof(texelBufferInfos[0])));
 			break;
@@ -8107,6 +8446,8 @@ void TexelBufferRenderInstance::logTestPlan (void) const
 		<< "Each descriptor set contains "
 		<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
@@ -8302,7 +8643,8 @@ TexelBufferComputeInstance::TexelBufferComputeInstance (Context&					context,
 vk::Move<vk::VkDescriptorSetLayout> TexelBufferComputeInstance::createDescriptorSetLayout (deUint32 setNdx) const
 {
 	vk::DescriptorSetLayoutBuilder			builder;
-	vk::VkDescriptorSetLayoutCreateFlags	extraFlags = 0;
+	vk::VkDescriptorSetLayoutCreateFlags	extraFlags	= 0;
+	deUint32								binding		= 0;
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE ||
 			m_updateMethod == DESCRIPTOR_UPDATE_METHOD_WITH_PUSH)
@@ -8311,7 +8653,7 @@ vk::Move<vk::VkDescriptorSetLayout> TexelBufferComputeInstance::createDescriptor
 	}
 
 	if (setNdx == 0)
-		builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+		builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding++);
 
 	switch (m_shaderInterface)
 	{
@@ -8322,6 +8664,16 @@ vk::Move<vk::VkDescriptorSetLayout> TexelBufferComputeInstance::createDescriptor
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			builder.addSingleBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
 			builder.addSingleBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding);
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, binding + 2);
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, getArbitraryBindingIndex(0));
+			builder.addSingleIndexedBinding(m_descriptorType, vk::VK_SHADER_STAGE_COMPUTE_BIT, getArbitraryBindingIndex(1));
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
@@ -8386,32 +8738,51 @@ void TexelBufferComputeInstance::writeDescriptorSet (vk::VkDescriptorSet descrip
 		m_texelBuffers.getBufferView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)
 	};
 	deUint32								binding				= 0u;
+	deUint32								numDescriptors		= 0u;
 
 	// result
 	if (setNdx == 0)
+	{
 		m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &resultInfo);
+		numDescriptors++;
+	}
 
 	// texel buffers
 	switch (m_shaderInterface)
 	{
 		case SHADER_INPUT_SINGLE_DESCRIPTOR:
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &texelBufferInfos[0]);
+			numDescriptors++;
 			break;
 
 		case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &texelBufferInfos[0]);
 			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, &texelBufferInfos[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding), m_descriptorType, &texelBufferInfos[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding + 2), m_descriptorType, &texelBufferInfos[1]);
+			numDescriptors += 2;
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(0)), m_descriptorType, &texelBufferInfos[0]);
+			m_updateBuilder.writeSingle(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(getArbitraryBindingIndex(1)), m_descriptorType, &texelBufferInfos[1]);
+			numDescriptors += 2;
 			break;
 
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			m_updateBuilder.writeArray(descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(binding++), m_descriptorType, 2u, texelBufferInfos);
+			numDescriptors++;
 			break;
 
 		default:
 			DE_FATAL("Impossible");
 	}
 
-	m_descriptorsPerSet.push_back(binding);
+	m_descriptorsPerSet.push_back(numDescriptors);
 
 	if (m_updateMethod == DESCRIPTOR_UPDATE_METHOD_NORMAL)
 	{
@@ -8468,6 +8839,16 @@ void TexelBufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescripto
 			updateEntries.push_back(createTemplateBinding(binding++, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
 			break;
 
+		case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(binding, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(binding + 2, 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			break;
+
+		case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(0), 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			updateEntries.push_back(createTemplateBinding(getArbitraryBindingIndex(1), 0, 1, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), 0));
+			break;
+
 		case SHADER_INPUT_DESCRIPTOR_ARRAY:
 			updateEntries.push_back(createTemplateBinding(binding++, 0, 2, m_descriptorType, updateRegistry.getWriteObjectOffset(offset++), sizeof(texelBufferInfos[0])));
 			break;
@@ -8504,6 +8885,8 @@ void TexelBufferComputeInstance::logTestPlan (void) const
 		<< "Each descriptor set contains "
 		<< ((m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR) ? "single" :
 			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS) ? "two" :
+			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) ? "two" :
+			    (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) ? "two" :
 			    (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY) ? "an array (size 2) of" :
 			    (const char*)DE_NULL)
 		<< " descriptor(s) of type " << vk::getDescriptorTypeName(m_descriptorType) << "\n"
@@ -8718,14 +9101,22 @@ std::string TexelBufferDescriptorCase::genResourceDeclarations (vk::VkShaderStag
 		switch (m_shaderInterface)
 		{
 			case SHADER_INPUT_SINGLE_DESCRIPTOR:
-				buf <<	"layout(set = " << setNdx << ", binding = " + de::toString(descBinding) + formatQualifier + ") uniform highp " + storageType + " u_texelBuffer" << setNdxPostfix << ";\n";
+				buf <<	"layout(set = " << setNdx << ", binding = " + de::toString(descBinding) + formatQualifier + ") uniform highp " + storageType + "u_texelBuffer" << setNdxPostfix << ";\n";
 				break;
 			case SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS:
-				buf <<	"layout(set = " << setNdx << ", binding = " + de::toString(descBinding) + formatQualifier + ") uniform highp " + storageType + " u_texelBuffer" << setNdxPostfix << "A;\n"
-						"layout(set = " << setNdx << ", binding = " + de::toString(descBinding + 1) + formatQualifier + ") uniform highp " + storageType + " u_texelBuffer" << setNdxPostfix << "B;\n";
+				buf <<	"layout(set = " << setNdx << ", binding = " + de::toString(descBinding) + formatQualifier + ") uniform highp " + storageType + "u_texelBuffer" << setNdxPostfix << "A;\n"
+						"layout(set = " << setNdx << ", binding = " + de::toString(descBinding + 1) + formatQualifier + ") uniform highp " + storageType + "u_texelBuffer" << setNdxPostfix << "B;\n";
+				break;
+			case SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS:
+				buf <<	"layout(set = " << setNdx << ", binding = " + de::toString(descBinding) + formatQualifier + ") uniform highp " + storageType + "u_texelBuffer" << setNdxPostfix << "A;\n"
+						"layout(set = " << setNdx << ", binding = " + de::toString(descBinding + 2) + formatQualifier + ") uniform highp " + storageType + "u_texelBuffer" << setNdxPostfix << "B;\n";
+				break;
+			case SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS:
+				buf <<	"layout(set = " << setNdx << ", binding = " + de::toString(getArbitraryBindingIndex(0)) + formatQualifier + ") uniform highp " + storageType + "u_texelBuffer" << setNdxPostfix << "A;\n"
+						"layout(set = " << setNdx << ", binding = " + de::toString(getArbitraryBindingIndex(1)) + formatQualifier + ") uniform highp " + storageType + "u_texelBuffer" << setNdxPostfix << "B;\n";
 				break;
 			case SHADER_INPUT_DESCRIPTOR_ARRAY:
-				buf <<	"layout(set = " << setNdx << ", binding = " + de::toString(descBinding) + formatQualifier + ") uniform highp " + storageType + " u_texelBuffer" << setNdxPostfix << "[2];\n";
+				buf <<	"layout(set = " << setNdx << ", binding = " + de::toString(descBinding) + formatQualifier + ") uniform highp " + storageType + "u_texelBuffer" << setNdxPostfix << "[2];\n";
 				break;
 			default:
 				DE_FATAL("Impossible");
@@ -8741,10 +9132,14 @@ std::string TexelBufferDescriptorCase::genResourceAccessSource (vk::VkShaderStag
 
 	const char* const	accessPostfixA	= (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)						? ("")
 										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)		? ("A")
+										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)	? ("A")
+										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)		? ("A")
 										: (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)						? ("[0]")
 										: (DE_NULL);
 	const char* const	accessPostfixB	= (m_shaderInterface == SHADER_INPUT_SINGLE_DESCRIPTOR)						? ("")
 										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_CONTIGUOUS_DESCRIPTORS)		? ("B")
+										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)	? ("B")
+										: (m_shaderInterface == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)		? ("B")
 										: (m_shaderInterface == SHADER_INPUT_DESCRIPTOR_ARRAY)						? ("[1]")
 										: (DE_NULL);
 	const char* const	fetchFunc		= (isUniformDescriptorType(m_descriptorType)) ? ("texelFetch") : ("imageLoad");
@@ -8839,7 +9234,7 @@ void createShaderAccessImageTests (tcu::TestCaseGroup*		group,
 
 		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array",				"Cube image view",								0u										},
 		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_mip",		"Cube image subview with base mip level",		ImageDescriptorCase::FLAG_BASE_MIP		},
-		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_slice",	"Cube image subview with base array slice",		ImageDescriptorCase::FLAG_BASE_SLICE	},
+		{ vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,	"cube_array_base_slice",	"Cube image subview with base array slice",		ImageDescriptorCase::FLAG_BASE_SLICE	}
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_imageTypes); ++ndx)
@@ -8847,13 +9242,14 @@ void createShaderAccessImageTests (tcu::TestCaseGroup*		group,
 		// never overlap
 		DE_ASSERT((s_imageTypes[ndx].flags & resourceFlags) == 0u);
 
-
-		if (dimension == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)
+		// skip some image view variations to avoid unnecessary bloating
+		if ((descriptorType != vk::VK_DESCRIPTOR_TYPE_SAMPLER) && (dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) && (s_imageTypes[ndx].viewType != vk::VK_IMAGE_VIEW_TYPE_2D))
 			continue;
 
-		// SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS only supported in VK_DESCRIPTOR_TYPE_SAMPLER on graphics shaders for now
-		if (dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS &&
-			(descriptorType != vk::VK_DESCRIPTOR_TYPE_SAMPLER || activeStages == vk::VK_SHADER_STAGE_COMPUTE_BIT))
+		if ((dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS) && (activeStages & vk::VK_SHADER_STAGE_COMPUTE_BIT) && (s_imageTypes[ndx].viewType != vk::VK_IMAGE_VIEW_TYPE_2D))
+			continue;
+
+		if ((dimension == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS) && (s_imageTypes[ndx].viewType != vk::VK_IMAGE_VIEW_TYPE_2D))
 			continue;
 
 		group->addChild(new ImageDescriptorCase(group->getTestContext(),
@@ -8897,9 +9293,6 @@ void createShaderAccessTexelBufferTests (tcu::TestCaseGroup*	group,
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_texelBufferTypes); ++ndx)
 	{
-		if (dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS || dimension == SHADER_INPUT_MULTIPLE_ARBITRARY_DESCRIPTORS)
-			continue;
-
 		group->addChild(new TexelBufferDescriptorCase(group->getTestContext(),
 													  updateMethod,
 													  s_texelBufferTypes[ndx].name,
@@ -8957,9 +9350,6 @@ void createShaderAccessBufferTests (tcu::TestCaseGroup*		group,
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_bufferTypes); ++ndx)
 	{
-		if (dimension == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS)
-			continue;
-
 		if (isDynamicCase == s_bufferTypes[ndx].isForDynamicCases)
 			group->addChild(new BufferDescriptorCase(group->getTestContext(),
 													 updateMethod,
