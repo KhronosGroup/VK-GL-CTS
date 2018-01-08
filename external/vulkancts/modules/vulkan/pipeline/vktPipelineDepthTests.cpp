@@ -112,20 +112,16 @@ public:
 
 	static const float					quadDepths[QUAD_COUNT];
 
-	enum
-	{
-		DEPTH_BOUNDS_MIN	= 0,
-		DEPTH_BOUNDS_MAX	= 1,
-		DEPTH_BOUNDS_COUNT	= 2
-	};
-	static const float					depthBounds[DEPTH_BOUNDS_COUNT];
-
 										DepthTest				(tcu::TestContext&		testContext,
 																 const std::string&		name,
 																 const std::string&		description,
 																 const VkFormat			depthFormat,
 																 const VkCompareOp		depthCompareOps[QUAD_COUNT],
-																 const bool				depthBoundsTestEnable			= false);
+																 const bool				depthBoundsTestEnable			= false,
+																 const float			depthBoundsMin					= 0.0f,
+																 const float			depthBoundsMax					= 1.0f,
+																 const bool				depthTestEnable					= true,
+																 const bool				stencilTestEnable				= false);
 	virtual								~DepthTest				(void);
 	virtual void						initPrograms			(SourceCollections& programCollection) const;
 	virtual TestInstance*				createInstance			(Context& context) const;
@@ -133,6 +129,10 @@ public:
 private:
 	const VkFormat						m_depthFormat;
 	const bool							m_depthBoundsTestEnable;
+	const float							m_depthBoundsMin;
+	const float							m_depthBoundsMax;
+	const bool							m_depthTestEnable;
+	const bool							m_stencilTestEnable;
 	VkCompareOp							m_depthCompareOps[QUAD_COUNT];
 };
 
@@ -142,7 +142,11 @@ public:
 										DepthTestInstance		(Context&			context,
 																 const VkFormat		depthFormat,
 																 const VkCompareOp	depthCompareOps[DepthTest::QUAD_COUNT],
-																 const bool			depthBoundsTestEnable);
+																 const bool			depthBoundsTestEnable,
+																 const float		depthBoundsMin,
+																 const float		depthBoundsMax,
+																 const bool			depthTestEnable,
+																 const bool			stencilTestEnable);
 	virtual								~DepthTestInstance		(void);
 	virtual tcu::TestStatus				iterate					(void);
 
@@ -155,6 +159,10 @@ private:
 	const VkFormat						m_colorFormat;
 	const VkFormat						m_depthFormat;
 	const bool							m_depthBoundsTestEnable;
+	const float							m_depthBoundsMin;
+	const float							m_depthBoundsMax;
+	const bool							m_depthTestEnable;
+	const bool							m_stencilTestEnable;
 	VkImageSubresourceRange				m_depthImageSubresourceRange;
 
 	Move<VkImage>						m_colorImage;
@@ -190,21 +198,23 @@ const float DepthTest::quadDepths[QUAD_COUNT] =
 	0.2f
 };
 
-const float DepthTest::depthBounds[DEPTH_BOUNDS_COUNT] =
-{
-	0.1f,
-	0.25f
-};
-
 DepthTest::DepthTest (tcu::TestContext&		testContext,
 					  const std::string&	name,
 					  const std::string&	description,
 					  const VkFormat		depthFormat,
 					  const VkCompareOp		depthCompareOps[QUAD_COUNT],
-					  const bool			depthBoundsTestEnable)
+					  const bool			depthBoundsTestEnable,
+					  const float			depthBoundsMin,
+					  const float			depthBoundsMax,
+					  const bool			depthTestEnable,
+					  const bool			stencilTestEnable)
 	: vkt::TestCase	(testContext, name, description)
 	, m_depthFormat				(depthFormat)
 	, m_depthBoundsTestEnable	(depthBoundsTestEnable)
+	, m_depthBoundsMin			(depthBoundsMin)
+	, m_depthBoundsMax			(depthBoundsMax)
+	, m_depthTestEnable			(depthTestEnable)
+	, m_stencilTestEnable		(stencilTestEnable)
 {
 	deMemcpy(m_depthCompareOps, depthCompareOps, sizeof(VkCompareOp) * QUAD_COUNT);
 }
@@ -215,7 +225,7 @@ DepthTest::~DepthTest (void)
 
 TestInstance* DepthTest::createInstance (Context& context) const
 {
-	return new DepthTestInstance(context, m_depthFormat, m_depthCompareOps, m_depthBoundsTestEnable);
+	return new DepthTestInstance(context, m_depthFormat, m_depthCompareOps, m_depthBoundsTestEnable, m_depthBoundsMin, m_depthBoundsMax, m_depthTestEnable, m_stencilTestEnable);
 }
 
 void DepthTest::initPrograms (SourceCollections& programCollection) const
@@ -244,12 +254,20 @@ void DepthTest::initPrograms (SourceCollections& programCollection) const
 DepthTestInstance::DepthTestInstance (Context&				context,
 									  const VkFormat		depthFormat,
 									  const VkCompareOp		depthCompareOps[DepthTest::QUAD_COUNT],
-									  const bool			depthBoundsTestEnable)
+									  const bool			depthBoundsTestEnable,
+									  const float			depthBoundsMin,
+									  const float			depthBoundsMax,
+									  const bool			depthTestEnable,
+									  const bool			stencilTestEnable)
 	: vkt::TestInstance			(context)
 	, m_renderSize				(32, 32)
 	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_depthFormat				(depthFormat)
 	, m_depthBoundsTestEnable	(depthBoundsTestEnable)
+	, m_depthBoundsMin			(depthBoundsMin)
+	, m_depthBoundsMax			(depthBoundsMax)
+	, m_depthTestEnable			(depthTestEnable)
+	, m_stencilTestEnable		(stencilTestEnable)
 {
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const VkDevice				vkDevice				= context.getDevice();
@@ -633,11 +651,11 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType;
 			DE_NULL,													// const void*								pNext;
 			0u,															// VkPipelineDepthStencilStateCreateFlags	flags;
-			true,														// VkBool32									depthTestEnable;
+			m_depthTestEnable,											// VkBool32									depthTestEnable;
 			true,														// VkBool32									depthWriteEnable;
 			VK_COMPARE_OP_LESS,											// VkCompareOp								depthCompareOp;
 			m_depthBoundsTestEnable,									// VkBool32									depthBoundsTestEnable;
-			false,														// VkBool32									stencilTestEnable;
+			m_stencilTestEnable,										// VkBool32									stencilTestEnable;
 			// VkStencilOpState	front;
 			{
 				VK_STENCIL_OP_KEEP,		// VkStencilOp	failOp;
@@ -658,8 +676,8 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 				0u,						// deUint32		writeMask;
 				0u,						// deUint32		reference;
 			},
-			m_depthBoundsTestEnable ? DepthTest::depthBounds[DepthTest::DEPTH_BOUNDS_MIN] : 0.0f,	// float			minDepthBounds;
-			m_depthBoundsTestEnable ? DepthTest::depthBounds[DepthTest::DEPTH_BOUNDS_MAX] : 1.0f,	// float			maxDepthBounds;
+			m_depthBoundsMin,			// float			minDepthBounds;
+			m_depthBoundsMax,			// float			maxDepthBounds;
 		};
 
 		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
@@ -861,8 +879,8 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 			if (m_depthBoundsTestEnable)
 			{
 				renderState.fragOps.depthBoundsTestEnabled = true;
-				renderState.fragOps.minDepthBound = DepthTest::depthBounds[DepthTest::DEPTH_BOUNDS_MIN];
-				renderState.fragOps.maxDepthBound = DepthTest::depthBounds[DepthTest::DEPTH_BOUNDS_MAX];
+				renderState.fragOps.minDepthBound = m_depthBoundsMin;
+				renderState.fragOps.maxDepthBound = m_depthBoundsMax;
 			}
 
 			refRenderer.draw(renderState,
@@ -1092,6 +1110,23 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 														getCompareOpsDescription(depthOps[opsNdx]) + " with depth bounds test enabled",
 														depthFormats[formatNdx],
 														depthOps[opsNdx],
+														true,
+														0.1f,
+														0.25f));
+			}
+			// Special VkPipelineDepthStencilStateCreateInfo known to have issues
+			{
+				const VkCompareOp depthOpsSpecial[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER, VK_COMPARE_OP_NEVER };
+
+				compareOpsTests->addChild(new DepthTest(testCtx,
+														"never_zerodepthbounds_depthdisabled_stencilenabled",
+														"special VkPipelineDepthStencilStateCreateInfo",
+														depthFormats[formatNdx],
+														depthOpsSpecial,
+														true,
+														0.0f,
+														0.0f,
+														false,
 														true));
 			}
 			formatTest->addChild(compareOpsTests.release());
