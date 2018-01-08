@@ -2495,6 +2495,10 @@ tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 		/* Set texture */
 		setTextures(destination_texture.m_id, source_texture.m_id);
 
+		/* Set memory barrier with previous invalid tests */
+		gl.memoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "MemoryBarrier");
+
 		/* Dispatch */
 		gl.dispatchCompute(width, height, 1 /* depth */);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "DispatchCompute");
