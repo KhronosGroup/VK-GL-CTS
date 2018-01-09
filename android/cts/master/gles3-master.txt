@@ -30428,6 +30428,10 @@ dEQP-GLES3.functional.fbo.msaa.8_samples.depth_component16
 dEQP-GLES3.functional.fbo.msaa.8_samples.depth32f_stencil8
 dEQP-GLES3.functional.fbo.msaa.8_samples.depth24_stencil8
 dEQP-GLES3.functional.fbo.msaa.8_samples.stencil_index8
+dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.nonms_to_nonms
+dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.nonms_to_ms
+dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_nonms
+dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_ms
 dEQP-GLES3.functional.fbo.multiview.samples_1
 dEQP-GLES3.functional.fbo.multiview.samples_2
 dEQP-GLES3.functional.fbo.multiview.samples_4
