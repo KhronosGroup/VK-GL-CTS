@@ -136,7 +136,7 @@ tcu::TestStatus basicChainCase (Context& context)
 	VkSubmitInfo si = { VK_STRUCTURE_TYPE_SUBMIT_INFO, DE_NULL, 1, &semaphores.back(), &flags, 0, DE_NULL, 0, DE_NULL };
 	VK_CHECK(vk.queueSubmit(queue, 1, &si, fence));
 
-	vk.waitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+	vk.waitForFences(device, 1, &fence, VK_TRUE, ~(0ull));
 
 	vk.destroyFence(device, fence, DE_NULL);
 
