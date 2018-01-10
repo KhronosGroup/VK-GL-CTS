@@ -140,6 +140,8 @@ XlibWindow::XlibWindow (XlibDisplay& display, int width, int height, ::Visual* v
 	// other issues, so this is disabled by default.
 	const bool				overrideRedirect	= false;
 
+	int depth = CopyFromParent;
+
 	if (overrideRedirect)
 	{
 		mask |= CWOverrideRedirect;
@@ -159,6 +161,8 @@ XlibWindow::XlibWindow (XlibDisplay& display, int width, int height, ::Visual* v
 		m_colormap			= XCreateColormap(dpy, root, visual, AllocNone);
 		swa.colormap		= m_colormap;
 		mask |= CWColormap;
+
+		depth = info.depth;
 	}
 
 	swa.border_pixel	= 0;
@@ -170,7 +174,7 @@ XlibWindow::XlibWindow (XlibDisplay& display, int width, int height, ::Visual* v
 		height = DEFAULT_WINDOW_HEIGHT;
 
 	m_window = XCreateWindow(dpy, root, 0, 0, width, height, 0,
-							 CopyFromParent, InputOutput, visual, mask, &swa);
+							 depth, InputOutput, visual, mask, &swa);
 	TCU_CHECK(m_window);
 
 	Atom deleteAtom = m_display.getDeleteAtom();
