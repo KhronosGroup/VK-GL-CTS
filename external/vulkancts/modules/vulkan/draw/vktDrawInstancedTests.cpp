@@ -121,23 +121,23 @@ rr::PrimitiveType mapVkPrimitiveTopology (vk::VkPrimitiveTopology primitiveTopol
 }
 
 template<typename T>
-de::SharedPtr<Buffer> createAndUploadBuffer(const std::vector<T> data, const vk::DeviceInterface& vk, const Context& context)
+de::SharedPtr<Buffer> createAndUploadBuffer(const std::vector<T> data, const vk::DeviceInterface& vk, const Context& context, vk::VkBufferUsageFlags usage)
 {
 	const vk::VkDeviceSize dataSize = data.size() * sizeof(T);
-	de::SharedPtr<Buffer> vertexBuffer = Buffer::createAndAlloc(vk, context.getDevice(),
-																BufferCreateInfo(dataSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
-																context.getDefaultAllocator(),
-																vk::MemoryRequirement::HostVisible);
+	de::SharedPtr<Buffer> buffer = Buffer::createAndAlloc(vk, context.getDevice(),
+														  BufferCreateInfo(dataSize, usage),
+														  context.getDefaultAllocator(),
+														  vk::MemoryRequirement::HostVisible);
 
-	deUint8* ptr = reinterpret_cast<deUint8*>(vertexBuffer->getBoundMemory().getHostPtr());
+	deUint8* ptr = reinterpret_cast<deUint8*>(buffer->getBoundMemory().getHostPtr());
 
 	deMemcpy(ptr, &data[0], static_cast<size_t>(dataSize));
 
 	vk::flushMappedMemoryRange(vk, context.getDevice(),
-							   vertexBuffer->getBoundMemory().getMemory(),
-							   vertexBuffer->getBoundMemory().getOffset(),
+							   buffer->getBoundMemory().getMemory(),
+							   buffer->getBoundMemory().getOffset(),
 							   VK_WHOLE_SIZE);
-	return vertexBuffer;
+	return buffer;
 }
 
 class TestVertShader : public rr::VertexShader
@@ -455,8 +455,8 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			const deUint32 firstInstance = firstInstanceIndices[firstInstanceIndexNdx];
 
 			prepareVertexData(instanceCount, firstInstance);
-			const de::SharedPtr<Buffer>	vertexBuffer			= createAndUploadBuffer(m_data, m_vk, m_context);
-			const de::SharedPtr<Buffer>	instancedVertexBuffer	= createAndUploadBuffer(m_instancedColor, m_vk, m_context);
+			const de::SharedPtr<Buffer>	vertexBuffer			= createAndUploadBuffer(m_data, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+			const de::SharedPtr<Buffer>	instancedVertexBuffer	= createAndUploadBuffer(m_instancedColor, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 			de::SharedPtr<Buffer>		indexBuffer;
 			de::SharedPtr<Buffer>		indirectBuffer;
 			m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
@@ -486,7 +486,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
 			if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
 			{
-				indexBuffer = createAndUploadBuffer(m_indexes, m_vk, m_context);
+				indexBuffer = createAndUploadBuffer(m_indexes, m_vk, m_context, vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 				m_vk.cmdBindIndexBuffer(*m_cmdBuffer, indexBuffer->object(), 0, vk::VK_INDEX_TYPE_UINT32);
 			}
 
@@ -530,7 +530,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 					};
 					std::vector<vk::VkDrawIndirectCommand> drawCommands;
 					drawCommands.push_back(drawCommand);
-					indirectBuffer = createAndUploadBuffer(drawCommands, m_vk, m_context);
+					indirectBuffer = createAndUploadBuffer(drawCommands, m_vk, m_context, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 
 					m_vk.cmdDrawIndirect(*m_cmdBuffer, indirectBuffer->object(), 0, 1u, 0u);
 					break;
@@ -547,7 +547,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 					};
 					std::vector<vk::VkDrawIndexedIndirectCommand> drawCommands;
 					drawCommands.push_back(drawCommand);
-					indirectBuffer = createAndUploadBuffer(drawCommands, m_vk, m_context);
+					indirectBuffer = createAndUploadBuffer(drawCommands, m_vk, m_context, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 
 					m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, indirectBuffer->object(), 0, 1u, 0u);
 					break;
