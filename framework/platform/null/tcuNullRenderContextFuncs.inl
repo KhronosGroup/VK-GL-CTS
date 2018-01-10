@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision eb89d296a623aaa8a440d9f060e8c68570d18f4b.
+ * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -4227,7 +4227,7 @@ GLW_APICALL void GLW_APIENTRY glMulticastBlitFramebufferNV (GLuint srcGpu, GLuin
 
 }
 
-GLW_APICALL void GLW_APIENTRY glMulticastBufferSubDataNV (GLbitfield gpuMask, GLuint buffer, GLintptr offset, GLsizeiptr size, const GLvoid *data)
+GLW_APICALL void GLW_APIENTRY glMulticastBufferSubDataNV (GLbitfield gpuMask, GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data)
 {
 	DE_UNREF(gpuMask);
 	DE_UNREF(buffer);

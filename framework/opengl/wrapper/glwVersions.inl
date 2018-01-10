@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision eb89d296a623aaa8a440d9f060e8c68570d18f4b.
+ * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
  */
 #define GL_ES_VERSION_2_0	1
 #define GL_ES_VERSION_3_0	1

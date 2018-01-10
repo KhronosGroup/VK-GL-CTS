@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision eb89d296a623aaa8a440d9f060e8c68570d18f4b.
+ * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
  */
 void					glActiveShaderProgram								(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture										(glw::GLenum texture);
@@ -497,7 +497,7 @@ void					glMultiTexSubImage2DEXT								(glw::GLenum texunit, glw::GLenum target
 void					glMultiTexSubImage3DEXT								(glw::GLenum texunit, glw::GLenum target, glw::GLint level, glw::GLint xoffset, glw::GLint yoffset, glw::GLint zoffset, glw::GLsizei width, glw::GLsizei height, glw::GLsizei depth, glw::GLenum format, glw::GLenum type, const void *pixels);
 void					glMulticastBarrierNV								(void);
 void					glMulticastBlitFramebufferNV						(glw::GLuint srcGpu, glw::GLuint dstGpu, glw::GLint srcX0, glw::GLint srcY0, glw::GLint srcX1, glw::GLint srcY1, glw::GLint dstX0, glw::GLint dstY0, glw::GLint dstX1, glw::GLint dstY1, glw::GLbitfield mask, glw::GLenum filter);
-void					glMulticastBufferSubDataNV							(glw::GLbitfield gpuMask, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size, const glw::GLvoid *data);
+void					glMulticastBufferSubDataNV							(glw::GLbitfield gpuMask, glw::GLuint buffer, glw::GLintptr offset, glw::GLsizeiptr size, const void *data);
 void					glMulticastCopyBufferSubDataNV						(glw::GLuint readGpu, glw::GLbitfield writeGpuMask, glw::GLuint readBuffer, glw::GLuint writeBuffer, glw::GLintptr readOffset, glw::GLintptr writeOffset, glw::GLsizeiptr size);
 void					glMulticastCopyImageSubDataNV						(glw::GLuint srcGpu, glw::GLbitfield dstGpuMask, glw::GLuint srcName, glw::GLenum srcTarget, glw::GLint srcLevel, glw::GLint srcX, glw::GLint srcY, glw::GLint srcZ, glw::GLuint dstName, glw::GLenum dstTarget, glw::GLint dstLevel, glw::GLint dstX, glw::GLint dstY, glw::GLint dstZ, glw::GLsizei srcWidth, glw::GLsizei srcHeight, glw::GLsizei srcDepth);
 void					glMulticastFramebufferSampleLocationsfvNV			(glw::GLuint gpu, glw::GLuint framebuffer, glw::GLuint start, glw::GLsizei count, const glw::GLfloat *v);

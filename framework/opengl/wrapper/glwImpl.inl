@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision eb89d296a623aaa8a440d9f060e8c68570d18f4b.
+ * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -3956,7 +3956,7 @@ void glwMulticastBlitFramebufferNV (GLuint srcGpu, GLuint dstGpu, GLint srcX0, G
 	gl->multicastBlitFramebufferNV(srcGpu, dstGpu, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
 }
 
-void glwMulticastBufferSubDataNV (GLbitfield gpuMask, GLuint buffer, GLintptr offset, GLsizeiptr size, const GLvoid *data)
+void glwMulticastBufferSubDataNV (GLbitfield gpuMask, GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)

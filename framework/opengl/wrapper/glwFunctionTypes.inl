@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision eb89d296a623aaa8a440d9f060e8c68570d18f4b.
+ * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -497,7 +497,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glMultiTexSubImage2DEXTFunc)								(G
 typedef GLW_APICALL void			(GLW_APIENTRY* glMultiTexSubImage3DEXTFunc)								(GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMulticastBarrierNVFunc)								(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMulticastBlitFramebufferNVFunc)						(GLuint srcGpu, GLuint dstGpu, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
-typedef GLW_APICALL void			(GLW_APIENTRY* glMulticastBufferSubDataNVFunc)							(GLbitfield gpuMask, GLuint buffer, GLintptr offset, GLsizeiptr size, const GLvoid *data);
+typedef GLW_APICALL void			(GLW_APIENTRY* glMulticastBufferSubDataNVFunc)							(GLbitfield gpuMask, GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMulticastCopyBufferSubDataNVFunc)						(GLuint readGpu, GLbitfield writeGpuMask, GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMulticastCopyImageSubDataNVFunc)						(GLuint srcGpu, GLbitfield dstGpuMask, GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth);
 typedef GLW_APICALL void			(GLW_APIENTRY* glMulticastFramebufferSampleLocationsfvNVFunc)			(GLuint gpu, GLuint framebuffer, GLuint start, GLsizei count, const GLfloat *v);
