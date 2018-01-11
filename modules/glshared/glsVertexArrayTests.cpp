@@ -2127,6 +2127,7 @@ MultiVertexArrayTest::IterateResult MultiVertexArrayTest::iterate (void)
 		try
 		{
 			m_glArrayPack->render(m_spec.primitive, m_spec.first, m_spec.drawCount * (int)primitiveSize, useVao, coordScale, colorScale);
+			m_testCtx.touchWatchdog();
 			m_rrArrayPack->render(m_spec.primitive, m_spec.first, m_spec.drawCount * (int)primitiveSize, useVao, coordScale, colorScale);
 		}
 		catch (glu::Error& err)
