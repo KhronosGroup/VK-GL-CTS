@@ -7,6 +7,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingModelTests.hpp
 	vktBindingShaderAccessTests.cpp
 	vktBindingShaderAccessTests.hpp
+	vktBindingDescriptorUpdateTests.cpp
+	vktBindingDescriptorUpdateTests.hpp
 	)
 
 set(DEQP_VK_BINDING_MODEL_LIBS
