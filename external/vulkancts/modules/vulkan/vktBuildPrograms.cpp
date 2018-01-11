@@ -240,16 +240,17 @@ void writeBuildLogs (const glu::ShaderProgramInfo& buildInfo, std::ostream& dst)
 		<< "---\n";
 }
 
-class BuildGlslTask : public Task
+template <typename Source>
+class BuildHighLevelShaderTask : public Task
 {
 public:
 
-	BuildGlslTask (const vk::GlslSource& source, Program* program)
+	BuildHighLevelShaderTask (const Source& source, Program* program)
 		: m_source	(source)
 		, m_program	(program)
 	{}
 
-	BuildGlslTask (void) : m_program(DE_NULL) {}
+	BuildHighLevelShaderTask (void) : m_program(DE_NULL) {}
 
 	void execute (void)
 	{
@@ -274,8 +275,8 @@ public:
 	}
 
 private:
-	vk::GlslSource	m_source;
-	Program*		m_program;
+	Source		m_source;
+	Program*	m_program;
 };
 
 void writeBuildLogs (const vk::SpirVProgramInfo& buildInfo, std::ostream& dst)
@@ -390,7 +391,8 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 
 	{
 		de::MemPool							tmpPool;
-		de::PoolArray<BuildGlslTask>		buildGlslTasks		(&tmpPool);
+		de::PoolArray<BuildHighLevelShaderTask<vk::GlslSource> >	buildGlslTasks		(&tmpPool);
+		de::PoolArray<BuildHighLevelShaderTask<vk::HlslSource> >	buildHlslTasks		(&tmpPool);
 		de::PoolArray<BuildSpirVAsmTask>	buildSpirvAsmTasks	(&tmpPool);
 
 		// Collect build tasks
@@ -410,7 +412,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 					vk::ShaderBuildOptions		defaultGlslBuildOptions		(spirvVersionForGlsl, 0u);
 					vk::ShaderBuildOptions		defaultHlslBuildOptions		(spirvVersionForGlsl, 0u);
 					vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(spirvVersionForAsm);
-					vk::SourceCollections		sourcePrograms				(usedVulkanVersion, defaultGlslBuildOptions, defaultGlslBuildOptions, defaultSpirvAsmBuildOptions);
+					vk::SourceCollections		sourcePrograms				(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
 
 					try
 					{
@@ -432,8 +434,21 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 							continue;
 
 						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.targetVersion));
-						buildGlslTasks.pushBack(BuildGlslTask(progIter.getProgram(), &programs.back()));
+						buildGlslTasks.pushBack(BuildHighLevelShaderTask<vk::GlslSource>(progIter.getProgram(), &programs.back()));
 						executor.submit(&buildGlslTasks.back());
+					}
+
+					for (vk::HlslSourceCollection::Iterator progIter = sourcePrograms.hlslSources.begin();
+						 progIter != sourcePrograms.hlslSources.end();
+						 ++progIter)
+					{
+						// Source program requires higher SPIR-V version than available: skip it to avoid fail
+						if (progIter.getProgram().buildOptions.targetVersion > spirvVersionForGlsl)
+							continue;
+
+						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.targetVersion));
+						buildHlslTasks.pushBack(BuildHighLevelShaderTask<vk::HlslSource>(progIter.getProgram(), &programs.back()));
+						executor.submit(&buildHlslTasks.back());
 					}
 
 					for (vk::SpirVAsmCollection::Iterator progIter = sourcePrograms.spirvAsmSources.begin();
