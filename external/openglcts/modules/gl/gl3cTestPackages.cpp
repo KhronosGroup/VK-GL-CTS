@@ -35,6 +35,7 @@
 #include "gl4cPipelineStatisticsQueryTests.hpp"
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
+#include "glcPackedPixelsTests.hpp"
 #include "glcShaderIndexingTests.hpp"
 #include "glcShaderIntegerMixTests.hpp"
 #include "glcShaderLibrary.hpp"
@@ -212,6 +213,7 @@ void GL32TestPackage::init(void)
 		addChild(new gl3cts::GPUShader5Tests(getContext()));
 		addChild(new gl3cts::TransformFeedbackOverflowQueryTests(
 			getContext(), gl3cts::TransformFeedbackOverflowQueryTests::API_GL_ARB_transform_feedback_overflow_query));
+		addChild(new glcts::PackedPixelsTests(getContext()));
 	}
 	catch (...)
 	{

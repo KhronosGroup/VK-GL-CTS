@@ -349,6 +349,51 @@ static bool isTrilinearRangeValid (const LookupPrecision&	prec,
 	return false;
 }
 
+static bool isReductionValid (const LookupPrecision&		prec,
+							  const Vec4&					c0,
+							  const Vec4&					c1,
+							  tcu::Sampler::ReductionMode	reductionMode,
+							  const Vec4&					result)
+{
+	DE_ASSERT(reductionMode == tcu::Sampler::MIN || reductionMode == tcu::Sampler::MAX);
+
+	const Vec4 color = (reductionMode == tcu::Sampler::MIN ? tcu::min(c0, c1) : tcu::max(c0, c1));
+
+	return isColorValid(prec, color, result);
+}
+
+static bool isReductionValid (const LookupPrecision&		prec,
+							  const ColorQuad&				quad,
+							  tcu::Sampler::ReductionMode	reductionMode,
+							  const Vec4&					result)
+{
+	DE_ASSERT(reductionMode == tcu::Sampler::MIN || reductionMode == tcu::Sampler::MAX);
+
+	const Vec4 c0 = (reductionMode == tcu::Sampler::MIN ? tcu::min(quad.p00, quad.p01) : tcu::max(quad.p00, quad.p01));
+	const Vec4 c1 = (reductionMode == tcu::Sampler::MIN ? tcu::min(quad.p10, quad.p11) : tcu::max(quad.p10, quad.p11));
+
+	return isReductionValid(prec, c0, c1, reductionMode, result);
+}
+
+static bool isReductionValid (const LookupPrecision&		prec,
+							  const ColorQuad&				quad0,
+							  const ColorQuad&				quad1,
+							  tcu::Sampler::ReductionMode	reductionMode,
+							  const Vec4&					result)
+{
+	DE_ASSERT(reductionMode == tcu::Sampler::MIN || reductionMode == tcu::Sampler::MAX);
+
+	const ColorQuad quad =
+	{
+		reductionMode == tcu::Sampler::MIN ? tcu::min(quad0.p00, quad1.p00) : tcu::max(quad0.p00, quad1.p00),			// p00
+		reductionMode == tcu::Sampler::MIN ? tcu::min(quad0.p01, quad1.p01) : tcu::max(quad0.p01, quad1.p01),			// p01
+		reductionMode == tcu::Sampler::MIN ? tcu::min(quad0.p10, quad1.p10) : tcu::max(quad0.p10, quad1.p10),			// p10
+		reductionMode == tcu::Sampler::MIN ? tcu::min(quad0.p11, quad1.p11) : tcu::max(quad0.p11, quad1.p11),			// p11
+	};
+
+	return isReductionValid(prec, quad, reductionMode, result);
+}
+
 static bool is1DTrilinearFilterResultValid (const LookupPrecision&	prec,
 											const ColorLine&		line0,
 											const ColorLine&		line1,
@@ -636,9 +681,11 @@ bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 	const TextureFormat			format			= level.getFormat();
 	const TextureChannelClass	texClass		= getTextureChannelClass(format.type);
 
-	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_ASSERT(texClass				== TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_FLOATING_POINT		||
+			  sampler.reductionMode != Sampler::WEIGHTED_AVERAGE);
+
 	DE_UNREF(texClass);
 	DE_UNREF(format);
 
@@ -655,8 +702,16 @@ bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 		const Vec4	colorA	= lookup<float>(level, sampler, x0, coordY, 0);
 		const Vec4	colorB	= lookup<float>(level, sampler, x1, coordY, 0);
 
-		if (isLinearRangeValid(prec, colorA, colorB, Vec2(minA, maxA), result))
-			return true;
+		if (sampler.reductionMode == Sampler::WEIGHTED_AVERAGE)
+		{
+			if (isLinearRangeValid(prec, colorA, colorB, Vec2(minA, maxA), result))
+				return true;
+		}
+		else
+		{
+			if (isReductionValid(prec, colorA, colorB, sampler.reductionMode, result))
+				return true;
+		}
 	}
 
 	return false;
@@ -686,9 +741,10 @@ bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
 
-	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_ASSERT(texClass				== TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_FLOATING_POINT		||
+			  sampler.reductionMode != Sampler::WEIGHTED_AVERAGE);
 
 	// \todo [2013-07-03 pyry] This could be optimized by first computing ranges based on wrap mode.
 
@@ -714,8 +770,16 @@ bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 			if (texClass == TEXTURECHANNELCLASS_FLOATING_POINT)
 				searchStep = computeBilinearSearchStepFromFloatQuad(prec, quad);
 
-			if (isBilinearRangeValid(prec, quad, Vec2(minA, maxA), Vec2(minB, maxB), searchStep, result))
-				return true;
+			if (sampler.reductionMode == Sampler::WEIGHTED_AVERAGE)
+			{
+				if (isBilinearRangeValid(prec, quad, Vec2(minA, maxA), Vec2(minB, maxB), searchStep, result))
+					return true;
+			}
+			else
+			{
+				if (isReductionValid(prec, quad, sampler.reductionMode, result))
+					return true;
+			}
 		}
 	}
 
@@ -749,9 +813,10 @@ static bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
 
-	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_ASSERT(texClass				== TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_FLOATING_POINT		||
+			  sampler.reductionMode	!= Sampler::WEIGHTED_AVERAGE);
 
 	// \todo [2013-07-03 pyry] This could be optimized by first computing ranges based on wrap mode.
 
@@ -784,8 +849,16 @@ static bool isLinearSampleResultValid (const ConstPixelBufferAccess&		level,
 				if (texClass == TEXTURECHANNELCLASS_FLOATING_POINT)
 					searchStep = de::min(computeBilinearSearchStepFromFloatQuad(prec, quad0), computeBilinearSearchStepFromFloatQuad(prec, quad1));
 
-				if (isTrilinearRangeValid(prec, quad0, quad1, Vec2(minA, maxA), Vec2(minB, maxB), Vec2(minC, maxC), searchStep, result))
-					return true;
+				if (sampler.reductionMode == Sampler::WEIGHTED_AVERAGE)
+				{
+					if (isTrilinearRangeValid(prec, quad0, quad1, Vec2(minA, maxA), Vec2(minB, maxB), Vec2(minC, maxC), searchStep, result))
+						return true;
+				}
+				else
+				{
+					if (isReductionValid(prec, quad0, quad1, sampler.reductionMode, result))
+						return true;
+				}
 			}
 		}
 	}
@@ -971,9 +1044,10 @@ static bool isLinearMipmapLinearSampleResultValid (const ConstPixelBufferAccess&
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
 
-	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_ASSERT(texClass				== TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_FLOATING_POINT		||
+			  sampler.reductionMode	!= Sampler::WEIGHTED_AVERAGE);
 
 	for (int i0 = minI0; i0 <= maxI0; i0++)
 	{
@@ -1058,9 +1132,10 @@ static bool isLinearMipmapLinearSampleResultValid (const ConstPixelBufferAccess&
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
 
-	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_ASSERT(texClass				== TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_FLOATING_POINT		||
+			  sampler.reductionMode	!= Sampler::WEIGHTED_AVERAGE);
 
 	for (int j0 = minJ0; j0 <= maxJ0; j0++)
 	{
@@ -1167,9 +1242,10 @@ static bool isLinearMipmapLinearSampleResultValid (const ConstPixelBufferAccess&
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
 
-	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_ASSERT(texClass				== TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_FLOATING_POINT		||
+			  sampler.reductionMode	!= Sampler::WEIGHTED_AVERAGE);
 
 	for (int k0 = minK0; k0 <= maxK0; k0++)
 	{
@@ -1462,9 +1538,10 @@ static bool isSeamlessLinearSampleResultValid (const ConstPixelBufferAccess (&fa
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
 
-	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_ASSERT(texClass				== TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_FLOATING_POINT		||
+			  sampler.reductionMode != Sampler::WEIGHTED_AVERAGE);
 
 	for (int j = minJ; j <= maxJ; j++)
 	{
@@ -1495,8 +1572,16 @@ static bool isSeamlessLinearSampleResultValid (const ConstPixelBufferAccess (&fa
 			if (texClass == TEXTURECHANNELCLASS_FLOATING_POINT)
 				searchStep = computeBilinearSearchStepFromFloatQuad(prec, quad);
 
-			if (isBilinearRangeValid(prec, quad, Vec2(minA, maxA), Vec2(minB, maxB), searchStep, result))
-				return true;
+			if (sampler.reductionMode == Sampler::WEIGHTED_AVERAGE)
+			{
+				if (isBilinearRangeValid(prec, quad, Vec2(minA, maxA), Vec2(minB, maxB), searchStep, result))
+					return true;
+			}
+			else
+			{
+				if (isReductionValid(prec, quad, sampler.reductionMode, result))
+					return true;
+			}
 		}
 	}
 
@@ -1537,9 +1622,10 @@ static bool isSeamplessLinearMipmapLinearSampleResultValid (const ConstPixelBuff
 												  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	? computeBilinearSearchStepForSnorm(prec) :
 												  0.0f; // Step is computed for floating-point quads based on texel values.
 
-	DE_ASSERT(texClass == TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
-			  texClass == TEXTURECHANNELCLASS_FLOATING_POINT);
+	DE_ASSERT(texClass				== TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_SIGNED_FIXED_POINT	||
+			  texClass				== TEXTURECHANNELCLASS_FLOATING_POINT		||
+			  sampler.reductionMode	!= Sampler::WEIGHTED_AVERAGE);
 
 	for (int j0 = minJ0; j0 <= maxJ0; j0++)
 	{

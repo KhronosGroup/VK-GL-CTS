@@ -1605,6 +1605,64 @@ VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 	return flags;
 }
 
+VkFormatFeatureFlags getRequiredOptimalExtendedTilingFeatures (Context& context, VkFormat format, VkFormatFeatureFlags queriedFlags)
+{
+	VkFormatFeatureFlags	flags	= (VkFormatFeatureFlags)0;
+
+	// VK_EXT_sampler_filter_minmax:
+	//	If filterMinmaxSingleComponentFormats is VK_TRUE, the following formats must
+	//	support the VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT feature with
+	//	VK_IMAGE_TILING_OPTIMAL, if they support VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT.
+
+	static const VkFormat s_requiredSampledImageFilterMinMaxFormats[] =
+	{
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8_SNORM,
+		VK_FORMAT_R16_UNORM,
+		VK_FORMAT_R16_SNORM,
+		VK_FORMAT_R16_SFLOAT,
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_D16_UNORM,
+		VK_FORMAT_X8_D24_UNORM_PACK32,
+		VK_FORMAT_D32_SFLOAT,
+		VK_FORMAT_D16_UNORM_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
+	};
+
+	if ((queriedFlags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0)
+	{
+		if (de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_EXT_sampler_filter_minmax"))
+		{
+			if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterMinMaxFormats), DE_ARRAY_END(s_requiredSampledImageFilterMinMaxFormats), format))
+			{
+				VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT	physicalDeviceSamplerMinMaxProperties =
+				{
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
+					DE_NULL,
+					DE_FALSE,
+					DE_FALSE
+				};
+
+				{
+					VkPhysicalDeviceProperties2		physicalDeviceProperties;
+					physicalDeviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+					physicalDeviceProperties.pNext	= &physicalDeviceSamplerMinMaxProperties;
+
+					const InstanceInterface&		vk = context.getInstanceInterface();
+					vk.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &physicalDeviceProperties);
+				}
+
+				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxImageComponentMapping)
+				{
+					flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
+				}
+			}
+		}
+	}
+	return flags;
+}
+
 VkFormatFeatureFlags getRequiredBufferFeatures (VkFormat format)
 {
 	static const VkFormat s_requiredVertexBufferFormats[] =
@@ -1750,8 +1808,9 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 
 	// \todo [2017-05-16 pyry] This should be extended to cover for example COLOR_ATTACHMENT for depth formats etc.
 	// \todo [2017-05-18 pyry] Any other color conversion related features that can't be supported by regular formats?
-	const VkFormatFeatureFlags	notAllowedFeatures	= VK_FORMAT_FEATURE_DISJOINT_BIT;
+	const VkFormatFeatureFlags	extOptimalFeatures	= getRequiredOptimalExtendedTilingFeatures(context, format, properties.optimalTilingFeatures);
 
+	const VkFormatFeatureFlags	notAllowedFeatures	= VK_FORMAT_FEATURE_DISJOINT_BIT;
 
 	const struct
 	{
@@ -1760,9 +1819,9 @@ tcu::TestStatus formatProperties (Context& context, VkFormat format)
 		VkFormatFeatureFlags						requiredFeatures;
 	} fields[] =
 	{
-		{ &VkFormatProperties::linearTilingFeatures,	"linearTilingFeatures",		(VkFormatFeatureFlags)0						},
-		{ &VkFormatProperties::optimalTilingFeatures,	"optimalTilingFeatures",	getRequiredOptimalTilingFeatures(format)	},
-		{ &VkFormatProperties::bufferFeatures,			"bufferFeatures",			getRequiredBufferFeatures(format)			}
+		{ &VkFormatProperties::linearTilingFeatures,	"linearTilingFeatures",		(VkFormatFeatureFlags)0											},
+		{ &VkFormatProperties::optimalTilingFeatures,	"optimalTilingFeatures",	getRequiredOptimalTilingFeatures(format) | extOptimalFeatures	},
+		{ &VkFormatProperties::bufferFeatures,			"bufferFeatures",			getRequiredBufferFeatures(format)								}
 	};
 
 	log << TestLog::Message << properties << TestLog::EndMessage;
@@ -1927,7 +1986,7 @@ tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
 		if ((supported & ~allowed) != 0)
 		{
 			log << TestLog::Message << "ERROR in " << fieldName << ":\n"
-								    << "  has: " << getFormatFeatureFlagsStr(supported & ~allowed)
+									<< "  has: " << getFormatFeatureFlagsStr(supported & ~allowed)
 				<< TestLog::EndMessage;
 			allOk = false;
 		}

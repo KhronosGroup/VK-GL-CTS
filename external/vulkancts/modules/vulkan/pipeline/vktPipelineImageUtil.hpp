@@ -58,6 +58,11 @@ bool							isLinearFilteringSupported	(const vk::InstanceInterface&	instanceInte
 															 vk::VkFormat					format,
 															 vk::VkImageTiling				tiling);
 
+bool							isMinMaxFilteringSupported	(const vk::InstanceInterface&	instanceInterface,
+															 vk::VkPhysicalDevice			device,
+															 vk::VkFormat					format,
+															 vk::VkImageTiling				tiling);
+
 vk::VkBorderColor				getFormatBorderColor		(BorderColor color, vk::VkFormat format);
 
 void							getLookupScaleBias			(vk::VkFormat					format,
