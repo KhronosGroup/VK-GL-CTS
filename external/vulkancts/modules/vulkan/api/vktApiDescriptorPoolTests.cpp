@@ -213,7 +213,13 @@ tcu::TestStatus outOfPoolMemoryTest (Context& context)
 				DE_NULL,													// const VkSampler*      pImmutableSamplers;
 			};
 
-			const vector<VkDescriptorSetLayoutBinding>	descriptorSetLayoutBindings (params.bindingCount, descriptorSetLayoutBinding);
+			vector<VkDescriptorSetLayoutBinding>	descriptorSetLayoutBindings (params.bindingCount, descriptorSetLayoutBinding);
+
+			for (deUint32 binding = 0; binding < deUint32(descriptorSetLayoutBindings.size()); ++binding)
+			{
+				descriptorSetLayoutBindings[binding].binding = binding;
+			}
+
 			const VkDescriptorSetLayoutCreateInfo		descriptorSetLayoutInfo =
 			{
 				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,		// VkStructureType                        sType;

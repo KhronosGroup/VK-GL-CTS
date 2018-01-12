@@ -227,6 +227,8 @@ template<> void MSCase<MSCaseSampleQualifierDistinctValues>::initPrograms (vk::S
 
 template<> TestInstance* MSCase<MSCaseSampleQualifierDistinctValues>::createInstance (Context& context) const
 {
+	if (!context.getDeviceFeatures().sampleRateShading)
+		TCU_THROW(NotSupportedError, "sampleRateShading support required");
 	return new MSInstance<MSInstanceDistinctValues>(context, m_imageMSParams);
 }
 
