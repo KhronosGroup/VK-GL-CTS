@@ -409,7 +409,6 @@ InstanceContext createInstanceContext (const ShaderElement							(&elements)[N],
 	return createInstanceContext(elements, defaultColors, defaultColors, testCodeFragments);
 }
 
-
 void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
 void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
 void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);

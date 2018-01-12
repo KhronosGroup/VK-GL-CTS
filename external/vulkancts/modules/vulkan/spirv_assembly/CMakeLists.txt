@@ -27,6 +27,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmTests.hpp
 	vktSpvAsmUtils.cpp
 	vktSpvAsmUtils.hpp
+	vktSpvAsmVariableInitTests.cpp
+	vktSpvAsmVariableInitTests.hpp
 	vktSpvAsmVariablePointersTests.cpp
 	vktSpvAsmVariablePointersTests.hpp
 	vktSpvAsmSpirvVersionTests.cpp

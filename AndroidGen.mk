@@ -255,6 +255,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmUboMatrixPaddingTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmUtils.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVariableInitTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVariablePointersTests.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutCase.cpp \
 	external/vulkancts/modules/vulkan/ssbo/vktSSBOLayoutTests.cpp \

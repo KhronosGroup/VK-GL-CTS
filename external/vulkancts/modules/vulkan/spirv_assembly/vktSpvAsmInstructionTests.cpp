@@ -59,6 +59,7 @@
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
 #include "vktSpvAsmVariablePointersTests.hpp"
+#include "vktSpvAsmVariableInitTests.hpp"
 #include "vktSpvAsmSpirvVersionTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktSpvAsmLoopDepLenTests.hpp"
@@ -9001,6 +9002,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	}
 	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
 	computeTests->addChild(createUboMatrixPaddingComputeGroup(testCtx));
+	computeTests->addChild(createVariableInitComputeGroup(testCtx));
 	computeTests->addChild(createConditionalBranchComputeGroup(testCtx));
 	computeTests->addChild(createIndexingComputeGroup(testCtx));
 	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
@@ -9043,6 +9045,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
 	graphicsTests->addChild(createUboMatrixPaddingGraphicsGroup(testCtx));
+	graphicsTests->addChild(createVariableInitGraphicsGroup(testCtx));
 	graphicsTests->addChild(createConditionalBranchGraphicsGroup(testCtx));
 	graphicsTests->addChild(createIndexingGraphicsGroup(testCtx));
 	graphicsTests->addChild(createVariablePointersGraphicsGroup(testCtx));
