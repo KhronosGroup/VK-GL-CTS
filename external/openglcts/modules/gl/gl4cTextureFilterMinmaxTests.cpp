@@ -72,7 +72,6 @@ TextureFilterMinmaxUtils::TextureFilterMinmaxUtils()
 		SupportedTextureDataType(GL_DEPTH_COMPONENT, GL_FLOAT, MINMAX | EXCLUDE_3D | EXCLUDE_CUBE));
 	m_supportedTextureDataTypes.push_back(
 		SupportedTextureDataType(GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, MINMAX | EXCLUDE_3D | EXCLUDE_CUBE));
-	m_supportedTextureDataTypes.push_back(SupportedTextureDataType(GL_LUMINANCE, GL_FLOAT, COMPATIBILITY));
 }
 
 TextureFilterMinmaxUtils::~TextureFilterMinmaxUtils()
@@ -566,14 +565,9 @@ void TextureFilterMinmaxParameterQueriesTestCase::testReductionModeQueriesDefaul
 		TCU_CHECK_MSG(params == GL_WEIGHTED_AVERAGE_ARB, "getTexParameterIiv value mismatch with expected default");
 	}
 
-	bool is_arb_es31_compatibility = m_context.getContextInfo().isExtensionSupported("GL_ARB_ES3_1_compatibility");
-
 	for (TextureFilterMinmaxUtils::SupportedTextureDataTypeIter iter = m_utils.getSupportedTextureDataTypes().begin();
 		 iter != m_utils.getSupportedTextureDataTypes().end(); ++iter)
 	{
-		if (iter->hasFlag(TextureFilterMinmaxUtils::COMPATIBILITY) && !is_arb_es31_compatibility)
-			continue;
-
 		de::MovePtr<glu::Texture2D> texture = de::MovePtr<glu::Texture2D>(new glu::Texture2D(
 			renderContext, iter->m_format, iter->m_type, TEXTURE_FILTER_MINMAX_SIZE, TEXTURE_FILTER_MINMAX_SIZE));
 		texture->upload();
@@ -610,14 +604,9 @@ void TextureFilterMinmaxParameterQueriesTestCase::testReductionModeQueries(const
 		GLU_EXPECT_NO_ERROR(gl.getError(), "texParameterIiv error occurred");
 	}
 
-	bool is_arb_es31_compatibility = m_context.getContextInfo().isExtensionSupported("GL_ARB_ES3_1_compatibility");
-
 	for (TextureFilterMinmaxUtils::SupportedTextureDataTypeIter iter = m_utils.getSupportedTextureDataTypes().begin();
 		 iter != m_utils.getSupportedTextureDataTypes().end(); ++iter)
 	{
-		if (iter->hasFlag(TextureFilterMinmaxUtils::COMPATIBILITY) && !is_arb_es31_compatibility)
-			continue;
-
 		de::MovePtr<glu::Texture2D> texture = de::MovePtr<glu::Texture2D>(new glu::Texture2D(
 			renderContext, iter->m_format, iter->m_type, TEXTURE_FILTER_MINMAX_SIZE, TEXTURE_FILTER_MINMAX_SIZE));
 		texture->upload();
@@ -797,6 +786,16 @@ tcu::TestNode::IterateResult TextureFilterMinmaxSupportTestCase::iterate()
 				 m_utils.getSupportedTextureDataTypes().begin();
 			 dataTypeIter != m_utils.getSupportedTextureDataTypes().end(); ++dataTypeIter)
 		{
+			if (!dataTypeIter->hasFlag(TextureFilterMinmaxUtils::MINMAX))
+				continue;
+
+			if (dataTypeIter->hasFlag(TextureFilterMinmaxUtils::EXCLUDE_3D) && textureType->getType() == GL_TEXTURE_3D)
+				continue;
+
+			if (dataTypeIter->hasFlag(TextureFilterMinmaxUtils::EXCLUDE_CUBE) &&
+				textureType->getType() == GL_TEXTURE_CUBE_MAP)
+				continue;
+
 			glw::GLint params = 0;
 			gl.getInternalformativ(textureType->getType(), dataTypeIter->m_format, GL_TEXTURE_REDUCTION_MODE_ARB,
 								   sizeof(glw::GLint), &params);

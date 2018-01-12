@@ -5078,7 +5078,7 @@ tcu::TestNode::IterateResult TestBase::iterate()
  *
  * @return Last location index
  **/
-GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, GLuint array_length)
+GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, GLuint array_length, bool ignore_prev_stage)
 {
 	GLint  divide		= 4; /* 4 components per location */
 	GLint  param		= 0;
@@ -5126,7 +5126,7 @@ GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::T
 	gl.getIntegerv(pname, &param);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
-	if (pnamePrev) {
+	if (pnamePrev && !ignore_prev_stage) {
 		gl.getIntegerv(pnamePrev, &paramPrev);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
@@ -5158,7 +5158,7 @@ GLint TestBase::getLastInputLocation(Utils::Shader::STAGES stage, const Utils::T
  *
  * @return Last location index
  **/
-GLint TestBase::getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, GLuint array_length)
+GLint TestBase::getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, GLuint array_length, bool ignore_next_stage)
 {
 	GLint  param		= 0;
 	GLenum pname		= 0;
@@ -5201,9 +5201,6 @@ GLint TestBase::getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::
 	gl.getIntegerv(pname, &param);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
 
-	gl.getIntegerv(pnameNext, &paramNext);
-	GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
-
 /* Calculate */
 #if WRKARD_VARYINGLOCATIONSTEST
 
@@ -5212,7 +5209,13 @@ GLint TestBase::getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::
 #else
 
 	/* Don't write to a location that doesn't exist in the next stage */
-	param = de::min(param, paramNext);
+	if (!ignore_next_stage)
+	{
+		gl.getIntegerv(pnameNext, &paramNext);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "GetIntegerv");
+
+		param = de::min(param, paramNext);
+	}
 
 	const GLint n_avl_locations = param / 4; /* 4 components per location */
 
@@ -12430,7 +12433,7 @@ void VaryingLocationsTest::prepareShaderStage(Utils::Shader::STAGES stage, const
 	const GLuint array_length  = 1;
 	const GLuint first_in_loc  = 0;
 	const GLuint first_out_loc = 0;
-	const GLuint last_in_loc   = getLastInputLocation(stage, type, array_length);
+	const GLuint last_in_loc   = getLastInputLocation(stage, type, array_length, false);
 	size_t		 position	  = 0;
 
 	const GLchar* prefix_in = Utils::ProgramInterface::GetStagePrefix(stage, Utils::Variable::VARYING_INPUT);
@@ -12482,7 +12485,7 @@ void VaryingLocationsTest::prepareShaderStage(Utils::Shader::STAGES stage, const
 
 	if (Utils::Shader::FRAGMENT != stage)
 	{
-		const GLuint last_out_loc = getLastOutputLocation(stage, type, array_length);
+		const GLuint last_out_loc = getLastOutputLocation(stage, type, array_length, false);
 
 		Utils::Variable* first_out =
 			si.Output(first_out_name.c_str(), qual_first_out /* qualifiers */, 0 /* expected_componenet */,
@@ -12800,7 +12803,7 @@ void VaryingArrayLocationsTest::prepareShaderStage(Utils::Shader::STAGES stage, 
 	const GLuint array_length  = 1u;
 	const GLuint first_in_loc  = 0;
 	const GLuint first_out_loc = 0;
-	const GLuint last_in_loc   = getLastInputLocation(stage, type, array_length);
+	const GLuint last_in_loc   = getLastInputLocation(stage, type, array_length, false);
 	size_t		 position	  = 0;
 
 	const GLchar* prefix_in = Utils::ProgramInterface::GetStagePrefix(stage, Utils::Variable::VARYING_INPUT);
@@ -12853,7 +12856,7 @@ void VaryingArrayLocationsTest::prepareShaderStage(Utils::Shader::STAGES stage, 
 
 	if (Utils::Shader::FRAGMENT != stage)
 	{
-		const GLuint last_out_loc = getLastOutputLocation(stage, type, array_length);
+		const GLuint last_out_loc = getLastOutputLocation(stage, type, array_length, false);
 
 		Utils::Variable* first_out =
 			si.Output(first_out_name.c_str(), qual_first_out /* qualifiers */, 0 /* expected_componenet */,
@@ -14592,7 +14595,7 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 		const GLchar*			 direction = "in ";
 		const GLchar*			 flat	  = "";
 		const GLchar*			 index	 = "";
-		GLuint					 last	  = getLastInputLocation(stage, test_case.m_type, 0);
+		GLuint					 last	  = getLastInputLocation(stage, test_case.m_type, 0, true);
 		size_t					 position  = 0;
 		size_t					 temp;
 		const GLchar*			 type_name = test_case.m_type.GetGLSLTypeName();
@@ -14602,7 +14605,7 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 		if (false == test_case.m_is_input)
 		{
 			direction = "out";
-			last	  = getLastOutputLocation(stage, test_case.m_type, 0);
+			last	  = getLastOutputLocation(stage, test_case.m_type, 0, true);
 			storage   = Utils::Variable::VARYING_OUTPUT;
 			var_use   = output_use;
 		}
@@ -15009,7 +15012,7 @@ void VaryingComponentsTest::prepareShaderStage(Utils::Shader::STAGES stage, cons
 	const GLuint			first_in_loc  = 0;
 	const GLuint			first_out_loc = 0;
 	const GLchar*			interpolation = "";
-	const GLuint			last_in_loc   = getLastInputLocation(stage, vector_type, array_length);
+	const GLuint			last_in_loc   = getLastInputLocation(stage, vector_type, array_length, false);
 	GLuint					last_out_loc  = 0;
 	GLuint					n_desc		  = 0;
 	Utils::ShaderInterface& si			  = program_interface.GetShaderInterface(stage);
@@ -15022,7 +15025,7 @@ void VaryingComponentsTest::prepareShaderStage(Utils::Shader::STAGES stage, cons
 
 	if (Utils::Shader::FRAGMENT != stage)
 	{
-		last_out_loc = getLastOutputLocation(stage, vector_type, array_length);
+		last_out_loc = getLastOutputLocation(stage, vector_type, array_length, false);
 	}
 
 	switch (test_case.m_layout)

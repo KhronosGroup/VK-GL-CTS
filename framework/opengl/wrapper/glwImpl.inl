@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
+ * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -2156,6 +2156,14 @@ GLenum glwGetGraphicsResetStatus (void)
 	return gl->getGraphicsResetStatus();
 }
 
+GLenum glwGetGraphicsResetStatusEXT (void)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return (GLenum)0;
+	return gl->getGraphicsResetStatusEXT();
+}
+
 void glwGetInteger64i_v (GLenum target, GLuint index, GLint64 *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3932,6 +3940,94 @@ void glwMultiTexSubImage3DEXT (GLenum texunit, GLenum target, GLint level, GLint
 	gl->multiTexSubImage3DEXT(texunit, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
+void glwMulticastBarrierNV (void)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastBarrierNV();
+}
+
+void glwMulticastBlitFramebufferNV (GLuint srcGpu, GLuint dstGpu, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastBlitFramebufferNV(srcGpu, dstGpu, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+}
+
+void glwMulticastBufferSubDataNV (GLbitfield gpuMask, GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastBufferSubDataNV(gpuMask, buffer, offset, size, data);
+}
+
+void glwMulticastCopyBufferSubDataNV (GLuint readGpu, GLbitfield writeGpuMask, GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastCopyBufferSubDataNV(readGpu, writeGpuMask, readBuffer, writeBuffer, readOffset, writeOffset, size);
+}
+
+void glwMulticastCopyImageSubDataNV (GLuint srcGpu, GLbitfield dstGpuMask, GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastCopyImageSubDataNV(srcGpu, dstGpuMask, srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
+}
+
+void glwMulticastFramebufferSampleLocationsfvNV (GLuint gpu, GLuint framebuffer, GLuint start, GLsizei count, const GLfloat *v)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastFramebufferSampleLocationsfvNV(gpu, framebuffer, start, count, v);
+}
+
+void glwMulticastGetQueryObjecti64vNV (GLuint gpu, GLuint id, GLenum pname, GLint64 *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastGetQueryObjecti64vNV(gpu, id, pname, params);
+}
+
+void glwMulticastGetQueryObjectivNV (GLuint gpu, GLuint id, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastGetQueryObjectivNV(gpu, id, pname, params);
+}
+
+void glwMulticastGetQueryObjectui64vNV (GLuint gpu, GLuint id, GLenum pname, GLuint64 *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastGetQueryObjectui64vNV(gpu, id, pname, params);
+}
+
+void glwMulticastGetQueryObjectuivNV (GLuint gpu, GLuint id, GLenum pname, GLuint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastGetQueryObjectuivNV(gpu, id, pname, params);
+}
+
+void glwMulticastWaitSyncNV (GLuint signalGpu, GLbitfield waitGpuMask)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multicastWaitSyncNV(signalGpu, waitGpuMask);
+}
+
 void glwNamedBufferData (GLuint buffer, GLsizeiptr size, const void *data, GLenum usage)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -5018,6 +5114,14 @@ void glwReleaseShaderCompiler (void)
 	if (!gl)
 		return;
 	gl->releaseShaderCompiler();
+}
+
+void glwRenderGpuMaskNV (GLbitfield mask)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->renderGpuMaskNV(mask);
 }
 
 void glwRenderbufferStorage (GLenum target, GLenum internalformat, GLsizei width, GLsizei height)

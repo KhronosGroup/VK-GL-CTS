@@ -1018,9 +1018,9 @@ protected:
 	glw::GLuint calculateStride(const Utils::Interface& interface) const;
 	void generateData(const Utils::Interface& interface, glw::GLuint offset, std::vector<glw::GLubyte>& out_data) const;
 
-	glw::GLint getLastInputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, glw::GLuint array_lenth);
+	glw::GLint getLastInputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, glw::GLuint array_lenth, bool ignore_prev_stage);
 
-	glw::GLint getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, glw::GLuint array_lenth);
+	glw::GLint getLastOutputLocation(Utils::Shader::STAGES stage, const Utils::Type& type, glw::GLuint array_lenth, bool ignore_next_stage);
 
 	Utils::Type getType(glw::GLuint index) const;
 	std::string getTypeName(glw::GLuint index) const;

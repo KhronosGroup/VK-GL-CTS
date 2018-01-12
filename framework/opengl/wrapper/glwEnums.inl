@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
+ * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
  */
 #define GL_DEPTH_BUFFER_BIT												0x00000100
 #define GL_STENCIL_BUFFER_BIT											0x00000400
@@ -25,6 +25,8 @@
 #define GL_DYNAMIC_STORAGE_BIT											0x0100
 #define GL_CLIENT_STORAGE_BIT											0x0200
 #define GL_SPARSE_STORAGE_BIT_ARB										0x0400
+#define GL_PER_GPU_STORAGE_BIT_NV										0x0800
+#define GL_EXTERNAL_STORAGE_BIT_NVX										0x2000
 #define GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT								0x00000001
 #define GL_ELEMENT_ARRAY_BARRIER_BIT									0x00000002
 #define GL_UNIFORM_BARRIER_BIT											0x00000004
@@ -1604,6 +1606,7 @@
 #define GL_HSL_COLOR_KHR												0x92AF
 #define GL_HSL_LUMINOSITY												0x92B0
 #define GL_HSL_LUMINOSITY_KHR											0x92B0
+#define GL_MULTICAST_GPUS_NV											0x92BA
 #define GL_PRIMITIVE_BOUNDING_BOX										0x92BE
 #define GL_PRIMITIVE_BOUNDING_BOX_EXT									0x92BE
 #define GL_ATOMIC_COUNTER_BUFFER										0x92C0
@@ -1779,9 +1782,12 @@
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR						0x93DC
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12							0x93DD
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR						0x93DD
+#define GL_PER_GPU_STORAGE_NV											0x9548
+#define GL_MULTICAST_PROGRAMMABLE_SAMPLE_LOCATION_NV					0x9549
 #define GL_SHADER_BINARY_FORMAT_SPIR_V									0x9551
 #define GL_SHADER_BINARY_FORMAT_SPIR_V_ARB								0x9551
 #define GL_SPIR_V_BINARY												0x9552
 #define GL_SPIR_V_BINARY_ARB											0x9552
 #define GL_SPIR_V_EXTENSIONS											0x9553
 #define GL_NUM_SPIR_V_EXTENSIONS										0x9554
+#define GL_RENDER_GPU_MASK_NV											0x9558

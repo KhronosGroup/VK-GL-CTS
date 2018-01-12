@@ -335,66 +335,67 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 
 	gl.viewport(0, 0, width, height);
 
-	for (GLint z = 0; z < depth; ++z)
+	for (int sample = 0; sample < mState.samples; ++sample)
 	{
-		for (int sample = 0; sample < mState.samples; ++sample)
+		std::string vertex   = stc_vertex_common;
+		std::string fragment = stc_fragment_lookupResidency;
+
+		// Make token copy to work on
+		FunctionToken f = funcToken;
+
+		// Adjust shader source to texture format
+		TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
+
+		replaceToken("<COORD_TYPE>", s.coordType.c_str(), vertex);
+
+		replaceToken("<FUNCTION>", f.name.c_str(), fragment);
+		replaceToken("<ARGUMENTS>", f.arguments.c_str(), fragment);
+
+		replaceToken("<OUTPUT_TYPE>", s.outputType.c_str(), fragment);
+		replaceToken("<INPUT_TYPE>", s.inputType.c_str(), fragment);
+		replaceToken("<SIZE_DEF>", s.sizeDef.c_str(), fragment);
+		replaceToken("<LOD>", s.lod.c_str(), fragment);
+		replaceToken("<LOD_DEF>", s.lodDef.c_str(), fragment);
+		replaceToken("<COORD_TYPE>", s.coordType.c_str(), fragment);
+		replaceToken("<ICOORD_TYPE>", s.iCoordType.c_str(), fragment);
+		replaceToken("<COORD_DEF>", s.coordDef.c_str(), fragment);
+		replaceToken("<POINT_TYPE>", s.pointType.c_str(), fragment);
+		replaceToken("<POINT_DEF>", s.pointDef.c_str(), fragment);
+		replaceToken("<RETURN_TYPE>", s.returnType.c_str(), fragment);
+		replaceToken("<RESULT_EXPECTED>", s.resultExpected.c_str(), fragment);
+		replaceToken("<EPSILON>", s.epsilon.c_str(), fragment);
+		replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), fragment);
+		replaceToken("<REFZ_DEF>", s.refZDef.c_str(), fragment);
+		replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), fragment);
+		replaceToken("<POINT_COORD>", s.pointCoord.c_str(), fragment);
+		replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), fragment);
+		replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), fragment);
+		replaceToken("<OFFSET_ARRAY_DEF>", s.offsetArrayDef.c_str(), fragment);
+		replaceToken("<FORMAT_DEF>", s.formatDef.c_str(), fragment);
+		replaceToken("<OFFSET_TYPE>", s.offsetType.c_str(), fragment);
+		replaceToken("<NOFFSET_TYPE>", s.nOffsetType.c_str(), fragment);
+		replaceToken("<OFFSET_DIM>", s.offsetDim.c_str(), fragment);
+
+		replaceToken("<TEX_WIDTH>", de::toString(width).c_str(), fragment);
+		replaceToken("<TEX_HEIGHT>", de::toString(height).c_str(), fragment);
+		replaceToken("<TEX_DEPTH>", de::toString(depth).c_str(), fragment);
+
+		ProgramSources sources = makeVtxFragSources(vertex.c_str(), fragment.c_str());
+
+		// Build and run shader
+		ShaderProgram program(m_context.getRenderContext(), sources);
+		if (program.isOk())
 		{
-			deMemset(out_data, 0, texSize);
-
-			Texture::Bind(gl, verifyTexture, verifyTarget);
-			Texture::SubImage(gl, verifyTarget, 0, 0, 0, 0, width, height, 0, GL_RED, GL_UNSIGNED_BYTE,
-							  (GLvoid*)out_data);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
-
-			std::string vertex   = stc_vertex_common;
-			std::string fragment = stc_fragment_lookupResidency;
-
-			// Make token copy to work on
-			FunctionToken f = funcToken;
-
-			// Adjust shader source to texture format
-			TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
-
-			replaceToken("<COORD_TYPE>", s.coordType.c_str(), vertex);
-
-			replaceToken("<FUNCTION>", f.name.c_str(), fragment);
-			replaceToken("<ARGUMENTS>", f.arguments.c_str(), fragment);
-
-			replaceToken("<OUTPUT_TYPE>", s.outputType.c_str(), fragment);
-			replaceToken("<INPUT_TYPE>", s.inputType.c_str(), fragment);
-			replaceToken("<SIZE_DEF>", s.sizeDef.c_str(), fragment);
-			replaceToken("<LOD>", s.lod.c_str(), fragment);
-			replaceToken("<LOD_DEF>", s.lodDef.c_str(), fragment);
-			replaceToken("<COORD_TYPE>", s.coordType.c_str(), fragment);
-			replaceToken("<ICOORD_TYPE>", s.iCoordType.c_str(), fragment);
-			replaceToken("<COORD_DEF>", s.coordDef.c_str(), fragment);
-			replaceToken("<POINT_TYPE>", s.pointType.c_str(), fragment);
-			replaceToken("<POINT_DEF>", s.pointDef.c_str(), fragment);
-			replaceToken("<RETURN_TYPE>", s.returnType.c_str(), fragment);
-			replaceToken("<RESULT_EXPECTED>", s.resultExpected.c_str(), fragment);
-			replaceToken("<EPSILON>", s.epsilon.c_str(), fragment);
-			replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), fragment);
-			replaceToken("<REFZ_DEF>", s.refZDef.c_str(), fragment);
-			replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), fragment);
-			replaceToken("<POINT_COORD>", s.pointCoord.c_str(), fragment);
-			replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), fragment);
-			replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), fragment);
-			replaceToken("<OFFSET_ARRAY_DEF>", s.offsetArrayDef.c_str(), fragment);
-			replaceToken("<FORMAT_DEF>", s.formatDef.c_str(), fragment);
-			replaceToken("<OFFSET_TYPE>", s.offsetType.c_str(), fragment);
-			replaceToken("<NOFFSET_TYPE>", s.nOffsetType.c_str(), fragment);
-			replaceToken("<OFFSET_DIM>", s.offsetDim.c_str(), fragment);
-
-			replaceToken("<TEX_WIDTH>", de::toString(width).c_str(), fragment);
-			replaceToken("<TEX_HEIGHT>", de::toString(height).c_str(), fragment);
-			replaceToken("<TEX_DEPTH>", de::toString(depth).c_str(), fragment);
-
-			ProgramSources sources = makeVtxFragSources(vertex.c_str(), fragment.c_str());
-
-			// Build and run shader
-			ShaderProgram program(m_context.getRenderContext(), sources);
-			if (program.isOk())
+			for (GLint z = 0; z < depth; ++z)
 			{
+				deMemset(out_data, 0, texSize);
+
+				Texture::Bind(gl, verifyTexture, verifyTarget);
+				Texture::SubImage(gl, verifyTarget, 0, 0, 0, 0, width, height, 0, GL_RED, GL_UNSIGNED_BYTE,
+								  (GLvoid*)out_data);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
+
+				// Use shader
 				gl.useProgram(program.getProgram());
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
 
@@ -428,16 +429,16 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 							result = false;
 					}
 			}
-			else
-			{
-				mLog << "Shader compilation failed (lookup residency) for target: " << target << ", format: " << format
-					 << ", vertexInfoLog: " << program.getShaderInfo(SHADERTYPE_VERTEX).infoLog
-					 << ", fragmentInfoLog: " << program.getShaderInfo(SHADERTYPE_FRAGMENT).infoLog
-					 << ", programInfoLog: " << program.getProgramInfo().infoLog
-					 << ", fragmentSource: " << fragment.c_str() << " - ";
+		}
+		else
+		{
+			mLog << "Shader compilation failed (lookup residency) for target: " << target << ", format: " << format
+				 << ", vertexInfoLog: " << program.getShaderInfo(SHADERTYPE_VERTEX).infoLog
+				 << ", fragmentInfoLog: " << program.getShaderInfo(SHADERTYPE_FRAGMENT).infoLog
+				 << ", programInfoLog: " << program.getProgramInfo().infoLog << ", fragmentSource: " << fragment.c_str()
+				 << " - ";
 
-				result = false;
-			}
+			result = false;
 		}
 	}
 
@@ -831,72 +832,74 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 
 	gl.viewport(0, 0, width, height);
 
-	for (GLint z = 0; z < depth; ++z)
+	for (int sample = 0; sample < mState.samples; ++sample)
 	{
-		for (int sample = 0; sample < mState.samples; ++sample)
+		std::string vertex   = stc_vertex_common;
+		std::string fragment = stc_fragment_lookupColor;
+
+		// Make token copy to work on
+		FunctionToken f = funcToken;
+
+		std::string functionDef = generateFunctionDef(f.name);
+
+		// Adjust shader source to texture format
+		TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
+
+		// Change expected result as it has to be adjusted to different levels
+		s.resultExpected = generateExpectedResult(s.returnType, level, format);
+
+		replaceToken("<COORD_TYPE>", s.coordType.c_str(), vertex);
+
+		replaceToken("<FUNCTION_DEF>", functionDef.c_str(), fragment);
+		replaceToken("<FUNCTION>", f.name.c_str(), fragment);
+		replaceToken("<ARGUMENTS>", f.arguments.c_str(), fragment);
+
+		replaceToken("<OUTPUT_TYPE>", s.outputType.c_str(), fragment);
+		replaceToken("<INPUT_TYPE>", s.inputType.c_str(), fragment);
+		replaceToken("<SIZE_DEF>", s.sizeDef.c_str(), fragment);
+		replaceToken("<LOD>", s.lod.c_str(), fragment);
+		replaceToken("<LOD_DEF>", s.lodDef.c_str(), fragment);
+		replaceToken("<COORD_TYPE>", s.coordType.c_str(), fragment);
+		replaceToken("<ICOORD_TYPE>", s.coordType.c_str(), fragment);
+		replaceToken("<COORD_DEF>", s.coordDef.c_str(), fragment);
+		replaceToken("<POINT_TYPE>", s.pointType.c_str(), fragment);
+		replaceToken("<POINT_DEF>", s.pointDef.c_str(), fragment);
+		replaceToken("<RETURN_TYPE>", s.returnType.c_str(), fragment);
+		replaceToken("<RESULT_EXPECTED>", s.resultExpected.c_str(), fragment);
+		replaceToken("<EPSILON>", s.epsilon.c_str(), fragment);
+		replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), fragment);
+		replaceToken("<REFZ_DEF>", s.refZDef.c_str(), fragment);
+		replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), fragment);
+		replaceToken("<POINT_COORD>", s.pointCoord.c_str(), fragment);
+		replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), fragment);
+		replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), fragment);
+		replaceToken("<OFFSET_ARRAY_DEF>", s.offsetArrayDef.c_str(), fragment);
+		replaceToken("<FORMAT_DEF>", s.formatDef.c_str(), fragment);
+		replaceToken("<OFFSET_TYPE>", s.offsetType.c_str(), fragment);
+		replaceToken("<NOFFSET_TYPE>", s.nOffsetType.c_str(), fragment);
+		replaceToken("<OFFSET_DIM>", s.offsetDim.c_str(), fragment);
+
+		replaceToken("<TEX_WIDTH>", de::toString(width).c_str(), fragment);
+		replaceToken("<TEX_HEIGHT>", de::toString(height).c_str(), fragment);
+		replaceToken("<TEX_DEPTH>", de::toString(depth).c_str(), fragment);
+
+		ProgramSources sources = makeVtxFragSources(vertex.c_str(), fragment.c_str());
+
+		// Build and run shader
+		ShaderProgram program(m_context.getRenderContext(), sources);
+
+		if (program.isOk())
 		{
-			deMemset(out_data, 0, texSize);
-
-			Texture::Bind(gl, verifyTexture, verifyTarget);
-			Texture::SubImage(gl, verifyTarget, 0, 0, 0, 0, width, height, 0, GL_RED, GL_UNSIGNED_BYTE,
-							  (GLvoid*)out_data);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
-
-			std::string vertex   = stc_vertex_common;
-			std::string fragment = stc_fragment_lookupColor;
-
-			// Make token copy to work on
-			FunctionToken f = funcToken;
-
-			std::string functionDef = generateFunctionDef(f.name);
-
-			// Adjust shader source to texture format
-			TokenStringsExt s = createLookupShaderTokens(target, format, level, sample, f);
-
-			// Change expected result as it has to be adjusted to different levels
-			s.resultExpected = generateExpectedResult(s.returnType, level, format);
-
-			replaceToken("<COORD_TYPE>", s.coordType.c_str(), vertex);
-
-			replaceToken("<FUNCTION_DEF>", functionDef.c_str(), fragment);
-			replaceToken("<FUNCTION>", f.name.c_str(), fragment);
-			replaceToken("<ARGUMENTS>", f.arguments.c_str(), fragment);
-
-			replaceToken("<OUTPUT_TYPE>", s.outputType.c_str(), fragment);
-			replaceToken("<INPUT_TYPE>", s.inputType.c_str(), fragment);
-			replaceToken("<SIZE_DEF>", s.sizeDef.c_str(), fragment);
-			replaceToken("<LOD>", s.lod.c_str(), fragment);
-			replaceToken("<LOD_DEF>", s.lodDef.c_str(), fragment);
-			replaceToken("<COORD_TYPE>", s.coordType.c_str(), fragment);
-			replaceToken("<ICOORD_TYPE>", s.coordType.c_str(), fragment);
-			replaceToken("<COORD_DEF>", s.coordDef.c_str(), fragment);
-			replaceToken("<POINT_TYPE>", s.pointType.c_str(), fragment);
-			replaceToken("<POINT_DEF>", s.pointDef.c_str(), fragment);
-			replaceToken("<RETURN_TYPE>", s.returnType.c_str(), fragment);
-			replaceToken("<RESULT_EXPECTED>", s.resultExpected.c_str(), fragment);
-			replaceToken("<EPSILON>", s.epsilon.c_str(), fragment);
-			replaceToken("<SAMPLE_DEF>", s.sampleDef.c_str(), fragment);
-			replaceToken("<REFZ_DEF>", s.refZDef.c_str(), fragment);
-			replaceToken("<CUBE_REFZ_DEF>", s.cubeMapArrayRefZDef.c_str(), fragment);
-			replaceToken("<POINT_COORD>", s.pointCoord.c_str(), fragment);
-			replaceToken("<COMPONENT_DEF>", s.componentDef.c_str(), fragment);
-			replaceToken("<CUBE_MAP_COORD_DEF>", s.cubeMapCoordDef.c_str(), fragment);
-			replaceToken("<OFFSET_ARRAY_DEF>", s.offsetArrayDef.c_str(), fragment);
-			replaceToken("<FORMAT_DEF>", s.formatDef.c_str(), fragment);
-			replaceToken("<OFFSET_TYPE>", s.offsetType.c_str(), fragment);
-			replaceToken("<NOFFSET_TYPE>", s.nOffsetType.c_str(), fragment);
-			replaceToken("<OFFSET_DIM>", s.offsetDim.c_str(), fragment);
-
-			replaceToken("<TEX_WIDTH>", de::toString(width).c_str(), fragment);
-			replaceToken("<TEX_HEIGHT>", de::toString(height).c_str(), fragment);
-			replaceToken("<TEX_DEPTH>", de::toString(depth).c_str(), fragment);
-
-			ProgramSources sources = makeVtxFragSources(vertex.c_str(), fragment.c_str());
-
-			// Build and run shader
-			ShaderProgram program(m_context.getRenderContext(), sources);
-			if (program.isOk())
+			for (GLint z = 0; z < depth; ++z)
 			{
+				deMemset(out_data, 0, texSize);
+
+				Texture::Bind(gl, verifyTexture, verifyTarget);
+				Texture::SubImage(gl, verifyTarget, 0, 0, 0, 0, width, height, 0, GL_RED, GL_UNSIGNED_BYTE,
+								  (GLvoid*)out_data);
+				GLU_EXPECT_NO_ERROR(gl.getError(), "Texture::SubImage");
+
+				// Use shader
 				gl.useProgram(program.getProgram());
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
 
@@ -926,16 +929,16 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 							result = false;
 					}
 			}
-			else
-			{
-				mLog << "Shader compilation failed (lookup color) for target: " << target << ", format: " << format
-					 << ", vertexInfoLog: " << program.getShaderInfo(SHADERTYPE_VERTEX).infoLog
-					 << ", fragmentInfoLog: " << program.getShaderInfo(SHADERTYPE_FRAGMENT).infoLog
-					 << ", programInfoLog: " << program.getProgramInfo().infoLog
-					 << ", fragmentSource: " << fragment.c_str() << " - ";
+		}
+		else
+		{
+			mLog << "Shader compilation failed (lookup color) for target: " << target << ", format: " << format
+				 << ", vertexInfoLog: " << program.getShaderInfo(SHADERTYPE_VERTEX).infoLog
+				 << ", fragmentInfoLog: " << program.getShaderInfo(SHADERTYPE_FRAGMENT).infoLog
+				 << ", programInfoLog: " << program.getProgramInfo().infoLog << ", fragmentSource: " << fragment.c_str()
+				 << " - ";
 
-				result = false;
-			}
+			result = false;
 		}
 	}
 

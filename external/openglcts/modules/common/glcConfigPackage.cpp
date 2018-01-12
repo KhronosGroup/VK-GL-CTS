@@ -99,6 +99,7 @@ void ConfigPackage::init(void)
 	addChild(new ConfigListCase(m_testCtx, "gl43", "OpenGL 4.3 Configurations", glu::ApiType::core(4, 3)));
 	addChild(new ConfigListCase(m_testCtx, "gl44", "OpenGL 4.4 Configurations", glu::ApiType::core(4, 4)));
 	addChild(new ConfigListCase(m_testCtx, "gl45", "OpenGL 4.5 Configurations", glu::ApiType::core(4, 5)));
+	addChild(new ConfigListCase(m_testCtx, "gl46", "OpenGL 4.6 Configurations", glu::ApiType::core(4, 6)));
 }
 
 } // glcts

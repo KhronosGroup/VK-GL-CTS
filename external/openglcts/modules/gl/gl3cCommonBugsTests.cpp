@@ -2233,20 +2233,22 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 	case TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_TC_TE_VS:
 	{
 		*out_min_context_type_ptr   = glu::ContextType(4, 1, glu::PROFILE_CORE);
-		*out_used_shader_stages_ptr = SHADER_STAGE_VERTEX;
+		int used_shader_stages = SHADER_STAGE_VERTEX;
 
 		if (iteration == TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_GS_TC_TE_VS ||
 			iteration == TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_GS_VS)
 		{
-			(int&)* out_used_shader_stages_ptr |= SHADER_STAGE_GEOMETRY;
+			used_shader_stages |= SHADER_STAGE_GEOMETRY;
 		}
 
 		if (iteration == TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_GS_TC_TE_VS ||
 			iteration == TEST_ITERATION_PERVERTEX_DECLARATION_MISMATCH_TC_TE_VS)
 		{
-			(int&)* out_used_shader_stages_ptr |=
-				(_shader_stage)(SHADER_STAGE_TESSELLATION_CONTROL | SHADER_STAGE_TESSELLATION_EVALUATION);
+			used_shader_stages |=
+				SHADER_STAGE_TESSELLATION_CONTROL | SHADER_STAGE_TESSELLATION_EVALUATION;
 		}
+
+		*out_used_shader_stages_ptr = (_shader_stage) used_shader_stages;
 
 		/* Shader bodies are predefined in this case. */
 		*out_gs_body_ptr = "#version 410\n"
@@ -2325,18 +2327,20 @@ void PerVertexValidationTest::getTestIterationProperties(glu::ContextType contex
 	case TEST_ITERATION_PERVERTEX_BLOCK_UNDEFINED:
 	{
 		*out_min_context_type_ptr   = glu::ContextType(4, 1, glu::PROFILE_CORE);
-		*out_used_shader_stages_ptr = SHADER_STAGE_VERTEX;
+		int used_shader_stages = SHADER_STAGE_VERTEX;
 
 		if (glu::contextSupports(context_type, glu::ApiType::core(3, 2)))
 		{
-			(int&)* out_used_shader_stages_ptr |= SHADER_STAGE_GEOMETRY;
+			used_shader_stages |= SHADER_STAGE_GEOMETRY;
 		}
 
 		if (glu::contextSupports(context_type, glu::ApiType::core(4, 0)))
 		{
-			(int&)* out_used_shader_stages_ptr |=
+			used_shader_stages |=
 				SHADER_STAGE_TESSELLATION_CONTROL | SHADER_STAGE_TESSELLATION_EVALUATION;
 		}
+
+		*out_used_shader_stages_ptr = (_shader_stage) used_shader_stages;
 
 		*out_gs_body_ptr = "#version 410\n"
 						   "\n"

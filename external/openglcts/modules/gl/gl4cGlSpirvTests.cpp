@@ -1029,7 +1029,7 @@ void SpirvModulesStateQueriesTest::init()
 			   "\n"
 			   "layout (location = 0) in vec4 position;\n"
 			   "layout (location = 20) uniform vec4 extPosition;\n"
-			   "layout (location = 40) uniform ComponentsBlock\n"
+			   "layout (binding = 5) uniform ComponentsBlock\n"
 			   "{\n"
 			   "    vec4 c1;\n"
 			   "    vec2 c2;\n"
@@ -1121,15 +1121,19 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 		return STOP;
 	}
 
-	// 3) Check if queries for ACTIVE_ATTRIBUTE_MAX_LENGTH, ACTIVE_UNIFORM_MAX_LENGTH, TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH,
-	//    ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH return value equal to 1.
+	// 3) Check if queries for ACTIVE_ATTRIBUTE_MAX_LENGTH, ACTIVE_UNIFORM_MAX_LENGTH,
+	//    ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH return value equal to 1, and
+	//    TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH value equals to 0
 	GLint programState[4];
+	GLint expectedValues[4] = {1, 1, 0, 1};
 	gl.getProgramiv(program.getProgram(), GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &programState[0]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 
 	gl.getProgramiv(program.getProgram(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &programState[1]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 
+	// We expect 0 for GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH because the current program
+	// doesn't activate transform feedback so there isn't any active varying.
 	gl.getProgramiv(program.getProgram(), GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH, &programState[2]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 
@@ -1139,11 +1143,12 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 	bool programStateResult = true;
 	for (int i = 0; i < 4; ++i)
 	{
-		if (programState[i] != 1)
+		if (programState[i] != expectedValues[i])
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "Check max name length [" << i << "] failed. "
-							   << "Expected: 1, Queried: " << programState[i] << "\n"
-							   << tcu::TestLog::EndMessage;
+                                                          << "Expected: " << expectedValues[i] <<", Queried: "
+                                                          << programState[i] << "\n"
+                                                          << tcu::TestLog::EndMessage;
 			programStateResult = false;
 		}
 	}
@@ -3375,6 +3380,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validMultiSamplingFunc(Valid
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "bindFramebuffer");
 
+	const int epsilon = 2;
 	bool result = true;
 	for (int o = 0; o < outputs.size(); ++o)
 	{
@@ -3382,11 +3388,32 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validMultiSamplingFunc(Valid
 		gl.readPixels(outputs[o].x, outputs[o].y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)&output);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels");
 
-		if (!commonUtils::compareUintColors(output, outputs[o].value, 2))
+		// The fragment shader for this case is rendering to a 2-sample FBO discarding
+		// sample 0 and rendering 100% green to sample 1, so we expect a green output.
+		// However, because sample locations may not be the same across implementations,
+		// and that can influence their weights during the multisample resolve,
+		// we can only check that there has to be some green in the output (since we know
+		// that we have a green sample being selected) and that the level of green is not
+		// 100% (since we know that pixel coverage is not 100% because we are
+		// discarding one of the samples).
+
+		int r1	= (output & 0xFF);
+		int g1	= ((output >> 8) & 0xFF);
+		int b1	= ((output >> 16) & 0xFF);
+		int a1	= ((output >> 24) & 0xFF);
+
+		int r2	= (outputs[o].value & 0xFF);
+		int b2	= ((outputs[o].value >> 16) & 0xFF);
+		int a2	= ((outputs[o].value >> 24) & 0xFF);
+
+		if (r1 < r2 - epsilon || r1 > r2 + epsilon ||
+		    g1 == 0x00 || g1 == 0xFF ||
+		    b1 < b2 - epsilon || b1 > b2 + epsilon ||
+		    a1 < a2 - epsilon || a1 > a2 + epsilon)
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "Invalid output color read at [" << (int)outputs[o].x << "/"
-							   << (int)outputs[o].y << "]. Expected: " << outputs[o].value << ", "
-							   << "Read: " << output << tcu::TestLog::EndMessage;
+							   << (int)outputs[o].y << "]. Expected 0xff00xx00, with xx anything but ff or 00. "
+							   << "Read: " << std::hex << output << tcu::TestLog::EndMessage;
 
 			result = false;
 		}
