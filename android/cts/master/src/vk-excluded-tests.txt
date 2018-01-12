@@ -336,9 +336,6 @@ dEQP-VK.glsl.builtin_var.fragcoord_msaa.*
 dEQP-VK.memory.requirements.dedicated_allocation.buffer.*
 dEQP-VK.memory.requirements.dedicated_allocation.image.*
 
-# Issue: b/65844886
-dEQP-VK.image.mutable.*
-
 # Issue: b/67013571
 dEQP-VK.ubo.random.all_out_of_order_offsets.11
 dEQP-VK.ubo.random.all_out_of_order_offsets.45
