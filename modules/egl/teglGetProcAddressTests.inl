@@ -749,6 +749,13 @@ static const char* s_GL_APPLE_sync[] =
 	"glWaitSyncAPPLE",
 };
 
+static const char* s_GL_EXT_debug_marker[] =
+{
+	"glInsertEventMarkerEXT",
+	"glPopGroupMarkerEXT",
+	"glPushGroupMarkerEXT",
+};
+
 static const char* s_GL_EXT_discard_framebuffer[] =
 {
 	"glDiscardFramebufferEXT",
@@ -1061,6 +1068,11 @@ static const char* s_GL_EXT_clear_texture[] =
 	"glClearTexSubImageEXT",
 };
 
+static const char* s_GL_EXT_clip_control[] =
+{
+	"glClipControlEXT",
+};
+
 static const char* s_GL_EXT_copy_image[] =
 {
 	"glCopyImageSubDataEXT",
@@ -1070,13 +1082,6 @@ static const char* s_GL_EXT_debug_label[] =
 {
 	"glGetObjectLabelEXT",
 	"glLabelObjectEXT",
-};
-
-static const char* s_GL_EXT_debug_marker[] =
-{
-	"glInsertEventMarkerEXT",
-	"glPopGroupMarkerEXT",
-	"glPushGroupMarkerEXT",
 };
 
 static const char* s_GL_EXT_disjoint_timer_query[] =
@@ -1440,6 +1445,11 @@ static const char* s_GL_NV_blend_equation_advanced[] =
 	"glBlendParameteriNV",
 };
 
+static const char* s_GL_NV_clip_space_w_scaling[] =
+{
+	"glViewportPositionWScaleNV",
+};
+
 static const char* s_GL_NV_conditional_render[] =
 {
 	"glBeginConditionalRenderNV",
@@ -1590,12 +1600,31 @@ static const char* s_GL_NV_path_rendering[] =
 	"glIsPathNV",
 	"glIsPointInFillPathNV",
 	"glIsPointInStrokePathNV",
+	"glMatrixFrustumEXT",
 	"glMatrixLoad3x2fNV",
 	"glMatrixLoad3x3fNV",
+	"glMatrixLoadIdentityEXT",
 	"glMatrixLoadTranspose3x3fNV",
+	"glMatrixLoadTransposedEXT",
+	"glMatrixLoadTransposefEXT",
+	"glMatrixLoaddEXT",
+	"glMatrixLoadfEXT",
 	"glMatrixMult3x2fNV",
 	"glMatrixMult3x3fNV",
 	"glMatrixMultTranspose3x3fNV",
+	"glMatrixMultTransposedEXT",
+	"glMatrixMultTransposefEXT",
+	"glMatrixMultdEXT",
+	"glMatrixMultfEXT",
+	"glMatrixOrthoEXT",
+	"glMatrixPopEXT",
+	"glMatrixPushEXT",
+	"glMatrixRotatedEXT",
+	"glMatrixRotatefEXT",
+	"glMatrixScaledEXT",
+	"glMatrixScalefEXT",
+	"glMatrixTranslatedEXT",
+	"glMatrixTranslatefEXT",
 	"glPathCommandsNV",
 	"glPathCoordsNV",
 	"glPathCoverDepthFuncNV",
@@ -1792,6 +1821,11 @@ static const char* s_GL_QCOM_framebuffer_foveated[] =
 	"glFramebufferFoveationParametersQCOM",
 };
 
+static const char* s_GL_QCOM_texture_foveated[] =
+{
+	"glTextureFoveationParametersQCOM",
+};
+
 static const char* s_GL_QCOM_shader_framebuffer_fetch_noncoherent[] =
 {
 	"glFramebufferFetchBarrierQCOM",
@@ -1852,6 +1886,7 @@ static const struct
 	{ "GL_APPLE_copy_texture_levels",						DE_LENGTH_OF_ARRAY(s_GL_APPLE_copy_texture_levels),						s_GL_APPLE_copy_texture_levels						},
 	{ "GL_APPLE_framebuffer_multisample",					DE_LENGTH_OF_ARRAY(s_GL_APPLE_framebuffer_multisample),					s_GL_APPLE_framebuffer_multisample					},
 	{ "GL_APPLE_sync",										DE_LENGTH_OF_ARRAY(s_GL_APPLE_sync),									s_GL_APPLE_sync										},
+	{ "GL_EXT_debug_marker",								DE_LENGTH_OF_ARRAY(s_GL_EXT_debug_marker),								s_GL_EXT_debug_marker								},
 	{ "GL_EXT_discard_framebuffer",							DE_LENGTH_OF_ARRAY(s_GL_EXT_discard_framebuffer),						s_GL_EXT_discard_framebuffer						},
 	{ "GL_EXT_map_buffer_range",							DE_LENGTH_OF_ARRAY(s_GL_EXT_map_buffer_range),							s_GL_EXT_map_buffer_range							},
 	{ "GL_EXT_multi_draw_arrays",							DE_LENGTH_OF_ARRAY(s_GL_EXT_multi_draw_arrays),							s_GL_EXT_multi_draw_arrays							},
@@ -1888,9 +1923,9 @@ static const struct
 	{ "GL_EXT_blend_func_extended",							DE_LENGTH_OF_ARRAY(s_GL_EXT_blend_func_extended),						s_GL_EXT_blend_func_extended						},
 	{ "GL_EXT_buffer_storage",								DE_LENGTH_OF_ARRAY(s_GL_EXT_buffer_storage),							s_GL_EXT_buffer_storage								},
 	{ "GL_EXT_clear_texture",								DE_LENGTH_OF_ARRAY(s_GL_EXT_clear_texture),								s_GL_EXT_clear_texture								},
+	{ "GL_EXT_clip_control",								DE_LENGTH_OF_ARRAY(s_GL_EXT_clip_control),								s_GL_EXT_clip_control								},
 	{ "GL_EXT_copy_image",									DE_LENGTH_OF_ARRAY(s_GL_EXT_copy_image),								s_GL_EXT_copy_image									},
 	{ "GL_EXT_debug_label",									DE_LENGTH_OF_ARRAY(s_GL_EXT_debug_label),								s_GL_EXT_debug_label								},
-	{ "GL_EXT_debug_marker",								DE_LENGTH_OF_ARRAY(s_GL_EXT_debug_marker),								s_GL_EXT_debug_marker								},
 	{ "GL_EXT_disjoint_timer_query",						DE_LENGTH_OF_ARRAY(s_GL_EXT_disjoint_timer_query),						s_GL_EXT_disjoint_timer_query						},
 	{ "GL_EXT_draw_buffers",								DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_buffers),								s_GL_EXT_draw_buffers								},
 	{ "GL_EXT_draw_buffers_indexed",						DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_buffers_indexed),						s_GL_EXT_draw_buffers_indexed						},
@@ -1932,6 +1967,7 @@ static const struct
 	{ "GL_KHR_parallel_shader_compile",						DE_LENGTH_OF_ARRAY(s_GL_KHR_parallel_shader_compile),					s_GL_KHR_parallel_shader_compile					},
 	{ "GL_NV_bindless_texture",								DE_LENGTH_OF_ARRAY(s_GL_NV_bindless_texture),							s_GL_NV_bindless_texture							},
 	{ "GL_NV_blend_equation_advanced",						DE_LENGTH_OF_ARRAY(s_GL_NV_blend_equation_advanced),					s_GL_NV_blend_equation_advanced						},
+	{ "GL_NV_clip_space_w_scaling",							DE_LENGTH_OF_ARRAY(s_GL_NV_clip_space_w_scaling),						s_GL_NV_clip_space_w_scaling						},
 	{ "GL_NV_conditional_render",							DE_LENGTH_OF_ARRAY(s_GL_NV_conditional_render),							s_GL_NV_conditional_render							},
 	{ "GL_NV_conservative_raster",							DE_LENGTH_OF_ARRAY(s_GL_NV_conservative_raster),						s_GL_NV_conservative_raster							},
 	{ "GL_NV_conservative_raster_pre_snap_triangles",		DE_LENGTH_OF_ARRAY(s_GL_NV_conservative_raster_pre_snap_triangles),		s_GL_NV_conservative_raster_pre_snap_triangles		},
@@ -1972,5 +2008,6 @@ static const struct
 	{ "GL_OVR_multiview_multisampled_render_to_texture",	DE_LENGTH_OF_ARRAY(s_GL_OVR_multiview_multisampled_render_to_texture),	s_GL_OVR_multiview_multisampled_render_to_texture	},
 	{ "GL_QCOM_alpha_test",									DE_LENGTH_OF_ARRAY(s_GL_QCOM_alpha_test),								s_GL_QCOM_alpha_test								},
 	{ "GL_QCOM_framebuffer_foveated",						DE_LENGTH_OF_ARRAY(s_GL_QCOM_framebuffer_foveated),						s_GL_QCOM_framebuffer_foveated						},
+	{ "GL_QCOM_texture_foveated",							DE_LENGTH_OF_ARRAY(s_GL_QCOM_texture_foveated),							s_GL_QCOM_texture_foveated							},
 	{ "GL_QCOM_shader_framebuffer_fetch_noncoherent",		DE_LENGTH_OF_ARRAY(s_GL_QCOM_shader_framebuffer_fetch_noncoherent),		s_GL_QCOM_shader_framebuffer_fetch_noncoherent		},
 };

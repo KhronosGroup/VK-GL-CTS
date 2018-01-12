@@ -2403,6 +2403,7 @@ dEQP-EGL.functional.get_proc_address.extension.egl_nv_system_time
 dEQP-EGL.functional.get_proc_address.extension.gl_apple_copy_texture_levels
 dEQP-EGL.functional.get_proc_address.extension.gl_apple_framebuffer_multisample
 dEQP-EGL.functional.get_proc_address.extension.gl_apple_sync
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_debug_marker
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_discard_framebuffer
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_map_buffer_range
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_multi_draw_arrays
@@ -2438,7 +2439,6 @@ dEQP-EGL.functional.get_proc_address.extension.gl_angle_translated_shader_source
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_base_instance
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_copy_image
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_debug_label
-dEQP-EGL.functional.get_proc_address.extension.gl_ext_debug_marker
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_disjoint_timer_query
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_buffers
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_buffers_indexed

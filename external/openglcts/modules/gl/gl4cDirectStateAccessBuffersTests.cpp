@@ -53,11 +53,6 @@
 #include <stack>
 #include <string>
 
-/* Scripts have not generated this enum (GL_NV_gpu_multicast / GL_NVX_linked_gpu_multicast is not in the registry gl.xml?). */
-#ifndef GL_PER_GPU_STORAGE_BIT_NV
-#define GL_PER_GPU_STORAGE_BIT_NV 0x0800
-#endif
-
 namespace gl4cts
 {
 namespace DirectStateAccess
@@ -4624,6 +4619,11 @@ bool ErrorsTest::TestErrorsOfNamedBufferStorage()
 				m_context.getContextInfo().isExtensionSupported("GL_NVX_linked_gpu_multicast"))
 			{
 				valid_bits |= GL_PER_GPU_STORAGE_BIT_NV;
+			}
+
+			if (m_context.getContextInfo().isExtensionSupported("GL_NVX_cross_process_interop"))
+			{
+				valid_bits |= GL_EXTERNAL_STORAGE_BIT_NVX;
 			}
 
 			glw::GLuint invalid_bits = ~valid_bits;

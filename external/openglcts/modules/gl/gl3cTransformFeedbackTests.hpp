@@ -223,10 +223,10 @@ private:
 	 */
 	bool testInstanced(void);
 
-	typedef void (*BindBufferOffsetEXT_ProcAddress)(glw::GLenum target, glw::GLuint index, glw::GLuint buffer,
-													glw::GLintptr offset);
-	typedef void (*GetIntegerIndexedvEXT_ProcAddress)(glw::GLenum param, glw::GLuint index, glw::GLint* values);
-	typedef void (*GetBooleanIndexedvEXT_ProcAddress)(glw::GLenum param, glw::GLuint index, glw::GLboolean* values);
+	typedef GLW_APICALL void (GLW_APIENTRY *BindBufferOffsetEXT_ProcAddress)(glw::GLenum target, glw::GLuint index, glw::GLuint buffer,
+																			 glw::GLintptr offset);
+	typedef GLW_APICALL void (GLW_APIENTRY *GetIntegerIndexedvEXT_ProcAddress)(glw::GLenum param, glw::GLuint index, glw::GLint* values);
+	typedef GLW_APICALL void (GLW_APIENTRY *GetBooleanIndexedvEXT_ProcAddress)(glw::GLenum param, glw::GLuint index, glw::GLboolean* values);
 
 	BindBufferOffsetEXT_ProcAddress   m_glBindBufferOffsetEXT;
 	GetIntegerIndexedvEXT_ProcAddress m_glGetIntegerIndexedvEXT;
@@ -388,8 +388,8 @@ protected:
 	glw::GLenum	m_attrib_type;
 	glw::GLuint	m_max_vertices_drawn;
 
-	typedef void (*BindBufferOffsetEXT_ProcAddress)(glw::GLenum target, glw::GLuint index, glw::GLuint buffer,
-													glw::GLintptr offset);
+	typedef GLW_APICALL void (GLW_APIENTRY *BindBufferOffsetEXT_ProcAddress)(glw::GLenum target, glw::GLuint index, glw::GLuint buffer,
+																			 glw::GLintptr offset);
 
 	BindBufferOffsetEXT_ProcAddress m_glBindBufferOffsetEXT;
 
@@ -1196,10 +1196,10 @@ private:
 	bool check();
 	void clean();
 
-	typedef glw::GLuint (*GetUniformBlockIndex_ProcAddress)(glw::GLuint program, const glw::GLchar* uniformBlockName);
-	typedef void        (*UniformBlockBinding_ProcAddress)(glw::GLuint program,
-														   glw::GLuint uniformIndex,
-														   glw::GLuint uniformBlockBinding);
+	typedef GLW_APICALL glw::GLuint (GLW_APIENTRY *GetUniformBlockIndex_ProcAddress)(glw::GLuint program, const glw::GLchar* uniformBlockName);
+	typedef GLW_APICALL void        (GLW_APIENTRY *UniformBlockBinding_ProcAddress)(glw::GLuint program,
+																					glw::GLuint uniformIndex,
+																					glw::GLuint uniformBlockBinding);
 
 	GetUniformBlockIndex_ProcAddress m_glGetUniformBlockIndex;
 	UniformBlockBinding_ProcAddress  m_glUniformBlockBinding;
@@ -1280,10 +1280,10 @@ private:
 	bool check();
 	void clean();
 
-	typedef glw::GLuint (*GetUniformBlockIndex_ProcAddress)(glw::GLuint program, const glw::GLchar* uniformBlockName);
-	typedef void        (*UniformBlockBinding_ProcAddress)(glw::GLuint program,
-														   glw::GLuint uniformIndex,
-														   glw::GLuint uniformBlockBinding);
+	typedef GLW_APICALL glw::GLuint (GLW_APIENTRY *GetUniformBlockIndex_ProcAddress)(glw::GLuint program, const glw::GLchar* uniformBlockName);
+	typedef GLW_APICALL void        (GLW_APIENTRY *UniformBlockBinding_ProcAddress)(glw::GLuint program,
+																					glw::GLuint uniformIndex,
+																					glw::GLuint uniformBlockBinding);
 
 	GetUniformBlockIndex_ProcAddress m_glGetUniformBlockIndex;
 	UniformBlockBinding_ProcAddress  m_glUniformBlockBinding;

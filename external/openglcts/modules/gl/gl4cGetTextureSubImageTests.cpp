@@ -505,7 +505,7 @@ bool gl4cts::GetTextureSubImage::Errors::testTwoDimmensionalTextureErrors()
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
 
 	/* Test. */
-	static const struct
+	const struct
 	{
 		glw::GLuint		   id;
 		const glw::GLchar* target_name;
@@ -520,7 +520,7 @@ bool gl4cts::GetTextureSubImage::Errors::testTwoDimmensionalTextureErrors()
 	for (glw::GLuint i = 0; i < test_textures_size; ++i)
 	{
 		m_gl_GetTextureSubImage(test_textures[i].id, 0, 0, 0, 1, s_texture_data_width,
-								(test_textures[i].id == GL_TEXTURE_1D) ? 1 : s_texture_data_height, 2, GL_RGBA,
+								(test_textures[i].id == m_texture_1D) ? 1 : s_texture_data_height, 2, GL_RGBA,
 								GL_UNSIGNED_BYTE, s_destination_buffer_size, m_destination_buffer);
 
 		glw::GLint error_value	 = gl.getError();
@@ -542,7 +542,7 @@ bool gl4cts::GetTextureSubImage::Errors::testTwoDimmensionalTextureErrors()
 	}
 
 	/* Test (compressed textures). */
-	static const struct
+	const struct
 	{
 		glw::GLuint		   id;
 		const glw::GLchar* target_name;

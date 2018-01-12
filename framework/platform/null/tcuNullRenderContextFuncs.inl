@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
+ * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -2308,6 +2308,12 @@ GLW_APICALL GLenum GLW_APIENTRY glGetGraphicsResetStatus (void)
 	return (GLenum)0;
 }
 
+GLW_APICALL GLenum GLW_APIENTRY glGetGraphicsResetStatusEXT (void)
+{
+
+	return (GLenum)0;
+}
+
 GLW_APICALL void GLW_APIENTRY glGetInteger64i_v (GLenum target, GLuint index, GLint64 *data)
 {
 	DE_UNREF(target);
@@ -4199,6 +4205,125 @@ GLW_APICALL void GLW_APIENTRY glMultiTexSubImage3DEXT (GLenum texunit, GLenum ta
 
 }
 
+GLW_APICALL void GLW_APIENTRY glMulticastBarrierNV (void)
+{
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastBlitFramebufferNV (GLuint srcGpu, GLuint dstGpu, GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter)
+{
+	DE_UNREF(srcGpu);
+	DE_UNREF(dstGpu);
+	DE_UNREF(srcX0);
+	DE_UNREF(srcY0);
+	DE_UNREF(srcX1);
+	DE_UNREF(srcY1);
+	DE_UNREF(dstX0);
+	DE_UNREF(dstY0);
+	DE_UNREF(dstX1);
+	DE_UNREF(dstY1);
+	DE_UNREF(mask);
+	DE_UNREF(filter);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastBufferSubDataNV (GLbitfield gpuMask, GLuint buffer, GLintptr offset, GLsizeiptr size, const void *data)
+{
+	DE_UNREF(gpuMask);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(size);
+	DE_UNREF(data);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastCopyBufferSubDataNV (GLuint readGpu, GLbitfield writeGpuMask, GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size)
+{
+	DE_UNREF(readGpu);
+	DE_UNREF(writeGpuMask);
+	DE_UNREF(readBuffer);
+	DE_UNREF(writeBuffer);
+	DE_UNREF(readOffset);
+	DE_UNREF(writeOffset);
+	DE_UNREF(size);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastCopyImageSubDataNV (GLuint srcGpu, GLbitfield dstGpuMask, GLuint srcName, GLenum srcTarget, GLint srcLevel, GLint srcX, GLint srcY, GLint srcZ, GLuint dstName, GLenum dstTarget, GLint dstLevel, GLint dstX, GLint dstY, GLint dstZ, GLsizei srcWidth, GLsizei srcHeight, GLsizei srcDepth)
+{
+	DE_UNREF(srcGpu);
+	DE_UNREF(dstGpuMask);
+	DE_UNREF(srcName);
+	DE_UNREF(srcTarget);
+	DE_UNREF(srcLevel);
+	DE_UNREF(srcX);
+	DE_UNREF(srcY);
+	DE_UNREF(srcZ);
+	DE_UNREF(dstName);
+	DE_UNREF(dstTarget);
+	DE_UNREF(dstLevel);
+	DE_UNREF(dstX);
+	DE_UNREF(dstY);
+	DE_UNREF(dstZ);
+	DE_UNREF(srcWidth);
+	DE_UNREF(srcHeight);
+	DE_UNREF(srcDepth);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastFramebufferSampleLocationsfvNV (GLuint gpu, GLuint framebuffer, GLuint start, GLsizei count, const GLfloat *v)
+{
+	DE_UNREF(gpu);
+	DE_UNREF(framebuffer);
+	DE_UNREF(start);
+	DE_UNREF(count);
+	DE_UNREF(v);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastGetQueryObjecti64vNV (GLuint gpu, GLuint id, GLenum pname, GLint64 *params)
+{
+	DE_UNREF(gpu);
+	DE_UNREF(id);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastGetQueryObjectivNV (GLuint gpu, GLuint id, GLenum pname, GLint *params)
+{
+	DE_UNREF(gpu);
+	DE_UNREF(id);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastGetQueryObjectui64vNV (GLuint gpu, GLuint id, GLenum pname, GLuint64 *params)
+{
+	DE_UNREF(gpu);
+	DE_UNREF(id);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastGetQueryObjectuivNV (GLuint gpu, GLuint id, GLenum pname, GLuint *params)
+{
+	DE_UNREF(gpu);
+	DE_UNREF(id);
+	DE_UNREF(pname);
+	DE_UNREF(params);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glMulticastWaitSyncNV (GLuint signalGpu, GLbitfield waitGpuMask)
+{
+	DE_UNREF(signalGpu);
+	DE_UNREF(waitGpuMask);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glNamedBufferData (GLuint buffer, GLsizeiptr size, const void *data, GLenum usage)
 {
 	DE_UNREF(buffer);
@@ -5419,6 +5544,12 @@ GLW_APICALL void GLW_APIENTRY glReadnPixels (GLint x, GLint y, GLsizei width, GL
 
 GLW_APICALL void GLW_APIENTRY glReleaseShaderCompiler (void)
 {
+
+}
+
+GLW_APICALL void GLW_APIENTRY glRenderGpuMaskNV (GLbitfield mask)
+{
+	DE_UNREF(mask);
 
 }
 

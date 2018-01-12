@@ -452,14 +452,53 @@ SparseTexture2AllocationTestCase::SparseTexture2AllocationTestCase(deqp::Context
 /** Initializes the test group contents. */
 void SparseTexture2AllocationTestCase::init()
 {
-	SparseTextureAllocationTestCase::init();
-
-	mSupportedTargets.clear();
 	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
 	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
 
-	mFullArrayTargets.clear();
 	mFullArrayTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
+
+	mSupportedInternalFormats.push_back(GL_R8);
+	mSupportedInternalFormats.push_back(GL_R8_SNORM);
+	mSupportedInternalFormats.push_back(GL_R16);
+	mSupportedInternalFormats.push_back(GL_R16_SNORM);
+	mSupportedInternalFormats.push_back(GL_RG8);
+	mSupportedInternalFormats.push_back(GL_RG8_SNORM);
+	mSupportedInternalFormats.push_back(GL_RG16);
+	mSupportedInternalFormats.push_back(GL_RG16_SNORM);
+	mSupportedInternalFormats.push_back(GL_RGB565);
+	mSupportedInternalFormats.push_back(GL_RGBA8);
+	mSupportedInternalFormats.push_back(GL_RGBA8_SNORM);
+	mSupportedInternalFormats.push_back(GL_RGB10_A2);
+	mSupportedInternalFormats.push_back(GL_RGB10_A2UI);
+	mSupportedInternalFormats.push_back(GL_RGBA16);
+	mSupportedInternalFormats.push_back(GL_RGBA16_SNORM);
+	mSupportedInternalFormats.push_back(GL_R16F);
+	mSupportedInternalFormats.push_back(GL_RG16F);
+	mSupportedInternalFormats.push_back(GL_RGBA16F);
+	mSupportedInternalFormats.push_back(GL_R32F);
+	mSupportedInternalFormats.push_back(GL_RG32F);
+	mSupportedInternalFormats.push_back(GL_RGBA32F);
+	mSupportedInternalFormats.push_back(GL_R11F_G11F_B10F);
+	// RGB9_E5 isn't color renderable, and thus isn't valid for multisample
+	// textures.
+	//mSupportedInternalFormats.push_back(GL_RGB9_E5);
+	mSupportedInternalFormats.push_back(GL_R8I);
+	mSupportedInternalFormats.push_back(GL_R8UI);
+	mSupportedInternalFormats.push_back(GL_R16I);
+	mSupportedInternalFormats.push_back(GL_R16UI);
+	mSupportedInternalFormats.push_back(GL_R32I);
+	mSupportedInternalFormats.push_back(GL_R32UI);
+	mSupportedInternalFormats.push_back(GL_RG8I);
+	mSupportedInternalFormats.push_back(GL_RG8UI);
+	mSupportedInternalFormats.push_back(GL_RG16I);
+	mSupportedInternalFormats.push_back(GL_RG16UI);
+	mSupportedInternalFormats.push_back(GL_RG32I);
+	mSupportedInternalFormats.push_back(GL_RG32UI);
+	mSupportedInternalFormats.push_back(GL_RGBA8I);
+	mSupportedInternalFormats.push_back(GL_RGBA8UI);
+	mSupportedInternalFormats.push_back(GL_RGBA16I);
+	mSupportedInternalFormats.push_back(GL_RGBA16UI);
+	mSupportedInternalFormats.push_back(GL_RGBA32I);
 }
 
 /** Executes test iteration.
