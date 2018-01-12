@@ -827,12 +827,40 @@ void DrawIndirectBase::ReadPixelsFloat<test_api::GL>(int x, int y, int width, in
 template <>
 void DrawIndirectBase::ReadPixelsFloat<test_api::ES3>(int x, int y, int width, int height, void* data)
 {
-	GLfloat*			 fData = reinterpret_cast<GLfloat*>(data);
-	std::vector<GLubyte> uData(width * height * 4);
-	glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &uData[0]);
-	for (size_t i = 0; i < uData.size(); i++)
+	// Use 1010102 pixel buffer for RGB10_A2 FBO to preserve precision during pixel transfer
+	std::vector<GLuint>     uData(width * height);
+	const tcu::PixelFormat& pixelFormat = m_context.getRenderContext().getRenderTarget().getPixelFormat();
+	GLfloat*                fData       = reinterpret_cast<GLfloat*>(data);
+	GLenum                  type        = ((pixelFormat.redBits   == 10) &&
+	                                       (pixelFormat.greenBits == 10) &&
+	                                       (pixelFormat.blueBits  == 10) &&
+	                                       (pixelFormat.alphaBits == 2)) ?
+	                                      GL_UNSIGNED_INT_2_10_10_10_REV :
+	                                      GL_UNSIGNED_BYTE;
+
+	glReadPixels(x, y, width, height, GL_RGBA, type, &uData[0]);
+
+	if (type == GL_UNSIGNED_BYTE)
 	{
-		fData[i] = float(uData[i]) / 255.0f;
+		for (size_t i = 0; i < uData.size(); i++)
+		{
+			GLubyte* uCompData = reinterpret_cast<GLubyte*>(&uData[i]);
+
+			for (size_t c = 0; c < 4; c++)
+			{
+				fData[i * 4 + c] = float(uCompData[c]) / 255.0f;
+			}
+		}
+	}
+	else
+	{
+		for (size_t i = 0; i < uData.size(); i++)
+		{
+			fData[i * 4]     = float(uData[i] & 0x3FF) / 1023.0f;
+			fData[i * 4 + 1] = float((uData[i] >> 10) & 0x3FF) / 1023.0f;
+			fData[i * 4 + 2] = float((uData[i] >> 20) & 0x3FF) / 1023.0f;
+			fData[i * 4 + 3] = float((uData[i] >> 30) & 0x3) / 3.0f;
+		}
 	}
 }
 
