@@ -193,6 +193,10 @@ void			qpTestLog_destroy				(qpTestLog* log);
 
 deBool			qpTestLog_startCase				(qpTestLog* log, const char* testCasePath, qpTestCaseType testCaseType);
 deBool			qpTestLog_endCase				(qpTestLog* log, qpTestResult result, const char* description);
+
+deBool			qpTestLog_startTestsCasesTime	(qpTestLog* log);
+deBool			qpTestLog_endTestsCasesTime		(qpTestLog* log);
+
 deBool			qpTestLog_terminateCase			(qpTestLog* log, qpTestResult result);
 
 deBool			qpTestLog_startSection			(qpTestLog* log, const char* name, const char* description);

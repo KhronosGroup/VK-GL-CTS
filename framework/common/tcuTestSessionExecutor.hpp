@@ -29,6 +29,7 @@
 #include "tcuTestPackage.hpp"
 #include "tcuTestHierarchyIterator.hpp"
 #include "deUniquePtr.hpp"
+#include <map>
 
 namespace tcu
 {
@@ -72,6 +73,9 @@ private:
 	void							enterTestPackage	(TestPackage* testPackage);
 	void							leaveTestPackage	(TestPackage* testPackage);
 
+	void							enterTestGroup		(const std::string& casePath);
+	void							leaveTestGroup		(const std::string& casePath);
+
 	bool							enterTestCase		(TestCase* testCase, const std::string& casePath);
 	TestCase::IterateResult			iterateTestCase		(TestCase* testCase);
 	void							leaveTestCase		(TestCase* testCase);
@@ -96,6 +100,8 @@ private:
 	bool							m_abortSession;
 	bool							m_isInTestCase;
 	deUint64						m_testStartTime;
+	deUint64						m_packageStartTime;
+	std::map<std::string, deUint64>	m_groupsDurationTime;
 };
 
 } // tcu

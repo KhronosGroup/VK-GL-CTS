@@ -161,6 +161,9 @@ public:
 	void				endCase					(qpTestResult result, const char* description);
 	void				terminateCase			(qpTestResult result);
 
+	void				startTestsCasesTime		(void);
+	void				endTestsCasesTime		(void);
+
 	void				startSampleList			(const std::string& name, const std::string& description);
 	void				startSampleInfo			(void);
 	void				writeValueInfo			(const std::string& name, const std::string& description, const std::string& unit, qpSampleValueTag tag);

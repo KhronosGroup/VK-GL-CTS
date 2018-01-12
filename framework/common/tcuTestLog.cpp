@@ -459,6 +459,18 @@ void TestLog::terminateCase (qpTestResult result)
 		throw LogWriteFailedError();
 }
 
+void TestLog::startTestsCasesTime (void)
+{
+	if (qpTestLog_startTestsCasesTime(m_log) == DE_FALSE)
+		throw LogWriteFailedError();
+}
+
+void TestLog::endTestsCasesTime (void)
+{
+	if (qpTestLog_endTestsCasesTime(m_log) == DE_FALSE)
+		throw LogWriteFailedError();
+}
+
 void TestLog::startSampleList (const std::string& name, const std::string& description)
 {
 	if (qpTestLog_startSampleList(m_log, name.c_str(), description.c_str()) == DE_FALSE)

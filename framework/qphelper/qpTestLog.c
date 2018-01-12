@@ -486,6 +486,54 @@ deBool qpTestLog_endCase (qpTestLog* log, qpTestResult result, const char* resul
 	return DE_TRUE;
 }
 
+deBool qpTestLog_startTestsCasesTime (qpTestLog* log)
+{
+	DE_ASSERT(log);
+	deMutex_lock(log->lock);
+
+	/* Flush XML and write out #beginTestCaseResult. */
+	qpXmlWriter_flush(log->writer);
+	fprintf(log->outputFile, "\n#beginTestsCasesTime\n");
+
+	log->isCaseOpen = DE_TRUE;
+
+	if (!qpXmlWriter_startDocument(log->writer) ||
+		!qpXmlWriter_startElement(log->writer, "TestsCasesTime", 0, (const qpXmlAttribute*)DE_NULL))
+	{
+		qpPrintf("qpTestLog_startTestsCasesTime(): Writing XML failed\n");
+		deMutex_unlock(log->lock);
+		return DE_FALSE;
+	}
+
+	deMutex_unlock(log->lock);
+	return DE_TRUE;
+}
+
+deBool qpTestLog_endTestsCasesTime (qpTestLog* log)
+{
+	DE_ASSERT(log);
+	deMutex_lock(log->lock);
+
+	DE_ASSERT(log->isCaseOpen);
+
+	if (!qpXmlWriter_endElement(log->writer, "TestsCasesTime"))
+	{
+		qpPrintf("qpTestLog_endTestsCasesTime(): Writing XML failed\n");
+		deMutex_unlock(log->lock);
+		return DE_FALSE;
+	}
+
+	qpXmlWriter_flush(log->writer);
+
+	fprintf(log->outputFile, "\n#endTestsCasesTime\n");
+
+	log->isCaseOpen = DE_FALSE;
+
+	deMutex_unlock(log->lock);
+	return DE_TRUE;
+}
+
+
 /*--------------------------------------------------------------------*//*!
  * \brief Abrupt termination of logging.
  * \param log		qpTestLog instance
