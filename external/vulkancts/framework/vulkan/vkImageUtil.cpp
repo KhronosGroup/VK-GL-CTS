@@ -2299,17 +2299,22 @@ tcu::Sampler mapVkSampler (const VkSamplerCreateInfo& samplerCreateInfo)
 
 	tcu::Sampler::ReductionMode reductionMode = tcu::Sampler::WEIGHTED_AVERAGE;
 
-	if (samplerCreateInfo.pNext != DE_NULL)
+	void const *pNext = samplerCreateInfo.pNext;
+	while (pNext != DE_NULL)
 	{
-		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(samplerCreateInfo.pNext);
+		const VkStructureType nextType = *reinterpret_cast<const VkStructureType*>(pNext);
 		switch (nextType)
 		{
 			case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:
 			{
-				const VkSamplerReductionModeCreateInfoEXT reductionModeCreateInfo = *reinterpret_cast<const VkSamplerReductionModeCreateInfoEXT*>(samplerCreateInfo.pNext);
+				const VkSamplerReductionModeCreateInfoEXT reductionModeCreateInfo = *reinterpret_cast<const VkSamplerReductionModeCreateInfoEXT*>(pNext);
 				reductionMode = mapVkSamplerReductionMode(reductionModeCreateInfo.reductionMode);
+				pNext = reinterpret_cast<const VkSamplerReductionModeCreateInfoEXT*>(pNext)->pNext;
 				break;
 			}
+			case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR:
+				pNext = reinterpret_cast<const VkSamplerYcbcrConversionInfoKHR*>(pNext)->pNext;
+				break;
 			default:
 				TCU_FAIL("Unrecognized sType in chained sampler create info");
 		}
