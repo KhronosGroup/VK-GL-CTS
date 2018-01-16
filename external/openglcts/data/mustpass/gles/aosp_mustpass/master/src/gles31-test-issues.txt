@@ -2,7 +2,6 @@
 dEQP-GLES31.functional.image_load_store.*.atomic.comp_swap_*_return_value
 
 # Bug 18323265
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.highp_compute.vec4
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.scalar
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec2
 dEQP-GLES31.functional.shaders.builtin_functions.precision.smoothstep.mediump_compute.vec3
@@ -23,10 +22,6 @@ dEQP-GLES31.functional.shaders.builtin_functions.precision.atan2.highp_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acosh.highp_*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atanh.highp_*
 
-# Bug 22859221
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.*mediump*.scalar
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.*highp*.scalar
-
 # Bug 28196756
 dEQP-GLES31.functional.shaders.builtin_functions.precision.acos.mediump_compute.*
 dEQP-GLES31.functional.shaders.builtin_functions.precision.atan.mediump_compute.*
@@ -36,16 +31,3 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexim
 
 # Bug 28813504
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.41
-
-# Bug 28767510
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.lowp_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.lowp_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.mediump_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.mediump_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.highp_compute.vec3
-
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute.vec3
