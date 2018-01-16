@@ -47,6 +47,7 @@
 #include "es3fBlendTests.hpp"
 #include "es3fRandomFragmentOpTests.hpp"
 #include "es3fMultisampleTests.hpp"
+#include "es3fMultiviewTests.hpp"
 #include "es3fImplementationLimitTests.hpp"
 #include "es3fDitheringTests.hpp"
 #include "es3fClippingTests.hpp"
@@ -272,6 +273,7 @@ public:
 		addChild(new FboStencilTests		(m_context));
 		addChild(new FramebufferBlitTests	(m_context));
 		addChild(new FboMultisampleTests	(m_context));
+		addChild(new MultiviewTests			(m_context));
 		addChild(new FboInvalidateTests		(m_context));
 	}
 };

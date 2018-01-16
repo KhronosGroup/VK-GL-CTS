@@ -176,6 +176,8 @@ void					glFramebufferTexture1D							(glw::GLenum target, glw::GLenum attachmen
 void					glFramebufferTexture2D							(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level);
 void					glFramebufferTexture3D							(glw::GLenum target, glw::GLenum attachment, glw::GLenum textarget, glw::GLuint texture, glw::GLint level, glw::GLint zoffset);
 void					glFramebufferTextureLayer						(glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint layer);
+void					glFramebufferTextureMultisampleMultiviewOVR		(glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLsizei samples, glw::GLint baseViewIndex, glw::GLsizei numViews);
+void					glFramebufferTextureMultiviewOVR				(glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint baseViewIndex, glw::GLsizei numViews);
 void					glFrontFace										(glw::GLenum mode);
 void					glGenBuffers									(glw::GLsizei n, glw::GLuint *buffers);
 void					glGenFramebuffers								(glw::GLsizei n, glw::GLuint *framebuffers);
