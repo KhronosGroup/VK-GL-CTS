@@ -497,6 +497,14 @@ bool compareUintColors(const GLuint inColor, const GLuint refColor, const int ep
 	return false;
 }
 
+bool checkGlSpirvSupported(deqp::Context& m_context)
+{
+	bool is_at_least_gl_46 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 6)));
+	bool is_arb_gl_spirv = m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv");
+
+	if ((!is_at_least_gl_46) && (!is_arb_gl_spirv))
+		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+}
 } // namespace commonUtils
 
 /** Constructor.
@@ -515,8 +523,7 @@ SpirvModulesPositiveTest::SpirvModulesPositiveTest(deqp::Context& context)
 /** Stub init method */
 void SpirvModulesPositiveTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	m_vertex = "#version 450\n"
 			   "\n"
@@ -796,6 +803,8 @@ SpirvShaderBinaryMultipleShaderObjectsTest::SpirvShaderBinaryMultipleShaderObjec
 /** Stub init method */
 void SpirvShaderBinaryMultipleShaderObjectsTest::init()
 {
+	commonUtils::checkGlSpirvSupported(m_context);
+
 	m_spirv = "OpCapability Shader\n"
 			  "%1 = OpExtInstImport \"GLSL.std.450\"\n"
 			  "OpMemoryModel Logical GLSL450\n"
@@ -1022,8 +1031,7 @@ SpirvModulesStateQueriesTest::SpirvModulesStateQueriesTest(deqp::Context& contex
 /** Stub init method */
 void SpirvModulesStateQueriesTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	m_vertex = "#version 450\n"
 			   "\n"
@@ -1196,8 +1204,7 @@ SpirvModulesErrorVerificationTest::SpirvModulesErrorVerificationTest(deqp::Conte
 /** Stub init method */
 void SpirvModulesErrorVerificationTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -1449,8 +1456,7 @@ SpirvGlslToSpirVEnableTest::SpirvGlslToSpirVEnableTest(deqp::Context& context)
 /** Stub init method */
 void SpirvGlslToSpirVEnableTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	m_vertex = "#version 450\n"
 			   "\n"
@@ -1564,8 +1570,7 @@ SpirvGlslToSpirVBuiltInFunctionsTest::SpirvGlslToSpirVBuiltInFunctionsTest(deqp:
 /** Stub init method */
 void SpirvGlslToSpirVBuiltInFunctionsTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	initMappings();
 
@@ -2332,8 +2337,7 @@ SpirvGlslToSpirVSpecializationConstantsTest::SpirvGlslToSpirVSpecializationConst
 /** Stub init method */
 void SpirvGlslToSpirVSpecializationConstantsTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -2507,8 +2511,7 @@ SpirvValidationBuiltInVariableDecorationsTest::SpirvValidationBuiltInVariableDec
 /** Stub init method */
 void SpirvValidationBuiltInVariableDecorationsTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	m_compute = "#version 450\n"
 				"\n"
