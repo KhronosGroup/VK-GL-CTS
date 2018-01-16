@@ -137,3 +137,13 @@ if (de::contains(extSet, "GL_OES_draw_elements_base_vertex"))
 	gl->drawRangeElementsBaseVertex		= (glDrawRangeElementsBaseVertexFunc)		loader->get("glDrawRangeElementsBaseVertexOES");
 	gl->multiDrawElementsBaseVertex		= (glMultiDrawElementsBaseVertexFunc)		loader->get("glMultiDrawElementsBaseVertexOES");
 }
+
+if (de::contains(extSet, "GL_OVR_multiview"))
+{
+	gl->framebufferTextureMultiviewOVR	= (glFramebufferTextureMultiviewOVRFunc)	loader->get("glFramebufferTextureMultiviewOVR");
+}
+
+if (de::contains(extSet, "GL_OVR_multiview_multisampled_render_to_texture"))
+{
+	gl->framebufferTextureMultisampleMultiviewOVR	= (glFramebufferTextureMultisampleMultiviewOVRFunc)	loader->get("glFramebufferTextureMultisampleMultiviewOVR");
+}
