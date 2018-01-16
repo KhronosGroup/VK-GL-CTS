@@ -72,6 +72,8 @@ EXTENSIONS			= [
 	'GL_KHR_robustness',
 	'GL_EXT_draw_elements_base_vertex',
 	'GL_OES_draw_elements_base_vertex',
+	'GL_OVR_multiview',
+	'GL_OVR_multiview_multisampled_render_to_texture',
 ]
 
 def getGLRegistry ():
