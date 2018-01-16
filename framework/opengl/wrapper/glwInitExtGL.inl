@@ -38,3 +38,8 @@ if (de::contains(extSet, "GL_KHR_robustness"))
 	gl->getnUniformuiv			= (glGetnUniformuivFunc)			loader->get("glGetnUniformuiv");
 	gl->readnPixels				= (glReadnPixelsFunc)				loader->get("glReadnPixels");
 }
+
+if (de::contains(extSet, "GL_OVR_multiview"))
+{
+	gl->framebufferTextureMultiviewOVR	= (glFramebufferTextureMultiviewOVRFunc)	loader->get("glFramebufferTextureMultiviewOVR");
+}
