@@ -259,7 +259,7 @@ void ShaderViewportLayerArrayUtils::renderQuad(const glu::RenderContext& context
 
 bool ShaderViewportLayerArrayUtils::validateColor(tcu::Vec4 renderedColor, tcu::Vec4 referenceColor)
 {
-	const float epsilon = 0.008f;
+	const float epsilon = 1.1f / 31.0f; // Accommodate framebuffers with 5-bit channels.
 	return de::abs(renderedColor.x() - referenceColor.x()) < epsilon &&
 		   de::abs(renderedColor.y() - referenceColor.y()) < epsilon &&
 		   de::abs(renderedColor.z() - referenceColor.z()) < epsilon &&
