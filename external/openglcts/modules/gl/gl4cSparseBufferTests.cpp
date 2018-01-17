@@ -1782,7 +1782,7 @@ bool ClearOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 				if (expected_value != found_value)
 				{
 					m_testCtx.getLog() << tcu::TestLog::Message
-									   << "Unmodified buffer object region has invalid contents. Expected byte "
+									   << "Modified buffer object region has invalid contents. Expected byte "
 									   << "[" << (int)expected_value << "]"
 																		", found byte:"
 																		"["
