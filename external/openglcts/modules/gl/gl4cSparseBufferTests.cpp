@@ -1775,8 +1775,9 @@ bool ClearOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 				 (n_current_byte < modified_region_start_offset + modified_region_size) && result_local;
 				 ++n_current_byte)
 			{
+				const unsigned char component_offset = n_current_byte % 4;
 				const unsigned char expected_value =
-					static_cast<unsigned char>((data_rgba8 & (0xFF << (n_current_byte * 8))) >> (n_current_byte * 8));
+					static_cast<unsigned char>((data_rgba8 & (0xFFu << (component_offset * 8))) >> (component_offset * 8));
 				const unsigned char found_value = result_data[n_current_byte];
 
 				if (expected_value != found_value)
