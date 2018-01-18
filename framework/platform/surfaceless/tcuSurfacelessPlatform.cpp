@@ -32,6 +32,7 @@
 #include "deSTLUtil.hpp"
 #include "egluUtil.hpp"
 #include "egluGLUtil.hpp"
+#include "egluPlatform.hpp"
 #include "eglwEnums.hpp"
 #include "eglwLibrary.hpp"
 #include "gluPlatform.hpp"
@@ -179,11 +180,12 @@ private:
 	de::DynamicLibrary*		m_library;
 };
 
-class Platform : public tcu::Platform, public glu::Platform
+class Platform : public tcu::Platform, public glu::Platform, public eglu::Platform
 {
 public:
 					Platform	(void);
 	const glu::Platform&		getGLPlatform	(void) const { return *this; }
+	const eglu::Platform&		getEGLPlatform	(void) const { return *this; }
 	const vk::Platform&			getVulkanPlatform	(void) const { return m_vkPlatform; }
 
 private:
