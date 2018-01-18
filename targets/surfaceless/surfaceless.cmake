@@ -35,13 +35,12 @@ pkg_check_modules(EGL REQUIRED egl)
 set(DEQP_EGL_LIBRARIES ${EGL_LIBRARIES})
 
 pkg_check_modules(GBM REQUIRED gbm)
-pkg_check_modules(KMS REQUIRED libkms)
 pkg_check_modules(DRM REQUIRED libdrm)
 
 include_directories(${GLES2_INCLUDE_PATH} ${GLES3_INCLUDE_PATH}
                     ${EGL_INCLUDE_DIRS} ${GBM_INCLUDE_DIRS}
-                    ${KMS_INCLUDE_DIRS} ${DRM_INCLUDE_DIRS})
+                    ${DRM_INCLUDE_DIRS})
 
 set(DEQP_PLATFORM_LIBRARIES ${DEQP_GLES2_LIBRARIES} ${DEQP_GLES3_LIBRARIES}
                             ${DEQP_EGL_LIBRARIES} ${GBM_LIBRARIES}
-                            ${KMS_LIBRARIES} ${DRM_LIBRARIES})
+                            ${DRM_LIBRARIES})
