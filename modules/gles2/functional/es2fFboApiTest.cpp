@@ -36,6 +36,7 @@
 #include "tcuRenderTarget.hpp"
 #include "deString.h"
 #include "glwFunctions.hpp"
+#include "glsFboUtil.hpp"
 #include "glwEnums.hpp"
 
 #include <iterator>
@@ -393,6 +394,33 @@ static void attachmentQueryEmptyFboTest (tcu::TestContext& testCtx, sglr::Contex
 	checkError(testCtx, ctx, GL_INVALID_ENUM);
 }
 
+static void es3AttachmentQueryEmptyFboTest (tcu::TestContext& testCtx, sglr::Context& ctx)
+{
+	// Error codes changed for ES3 so this version of test should be
+	// used when ES2 context is created on ES3 capable hardwere
+
+	static const GLenum attachmentPoints[] =
+	{
+		GL_COLOR_ATTACHMENT0,
+		GL_DEPTH_ATTACHMENT,
+		GL_STENCIL_ATTACHMENT
+	};
+
+	ctx.bindFramebuffer(GL_FRAMEBUFFER, 1);
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(attachmentPoints); ndx++)
+		checkFboAttachmentParam(testCtx, ctx, attachmentPoints[ndx], GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, GL_NONE);
+
+	checkFboAttachmentParam(testCtx, ctx, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, 0);
+
+	// Check that proper error codes are returned
+	GLint unused = -1;
+	ctx.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL, &unused);
+	checkError(testCtx, ctx, GL_INVALID_OPERATION);
+	ctx.getFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE, &unused);
+	checkError(testCtx, ctx, GL_INVALID_OPERATION);
+}
+
 static void attachmentQueryTex2DTest (tcu::TestContext& testCtx, sglr::Context& ctx)
 {
 	ctx.bindFramebuffer(GL_FRAMEBUFFER, 1);
@@ -608,8 +636,10 @@ void FboApiTestGroup::init (void)
 	std::set<std::string> extensions;
 	std::copy(m_context.getContextInfo().getExtensions().begin(), m_context.getContextInfo().getExtensions().end(), std::inserter(extensions, extensions.begin()));
 
-	bool	defaultFboIsZero	= m_context.getRenderContext().getDefaultFramebuffer() == 0;
-	bool	hasRenderToMipmap	= extensions.find("GL_OES_fbo_render_mipmap") != extensions.end();
+	const glu::RenderContext& renderContext = m_context.getRenderContext();
+	bool  defaultFboIsZero	= renderContext.getDefaultFramebuffer() == 0;
+	bool  hasRenderToMipmap	= extensions.find("GL_OES_fbo_render_mipmap") != extensions.end();
+	bool  isES3Compatible	= gls::FboUtil::checkExtensionSupport(renderContext, "DEQP_gles3_core_compatible");
 
 	// Valid attachments
 	addChild(new FboApiCase(m_context, "valid_tex2d_attachments",					"Valid 2D texture attachments",							validTex2DAttachmentsTest));
@@ -627,7 +657,7 @@ void FboApiTestGroup::init (void)
 
 	// Attachment queries
 	addChild(new FboApiCase(m_context, "attachment_query_default_fbo",				"Query attachments from default FBO",					defaultFboIsZero ? attachmentQueryDefaultFboTest : notSupportedTest));
-	addChild(new FboApiCase(m_context, "attachment_query_empty_fbo",				"Query attachments from empty FBO",						attachmentQueryEmptyFboTest));
+	addChild(new FboApiCase(m_context, "attachment_query_empty_fbo",				"Query attachments from empty FBO",						isES3Compatible ? es3AttachmentQueryEmptyFboTest : attachmentQueryEmptyFboTest));
 	addChild(new FboApiCase(m_context, "attachment_query_tex2d",					"Query 2d texture attachment properties",				attachmentQueryTex2DTest));
 	addChild(new FboApiCase(m_context, "attachment_query_texcube",					"Query cubemap attachment properties",					attachmentQueryTexCubeTest));
 	addChild(new FboApiCase(m_context, "attachment_query_rbo",						"Query renderbuffer attachment properties",				attachmentQueryRboTest));
