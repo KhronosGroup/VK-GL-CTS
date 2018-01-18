@@ -45,8 +45,6 @@
 #include "tcuRenderTarget.hpp"
 #include "vkPlatform.hpp"
 
-#include <EGL/egl.h>
-
 using std::string;
 using std::vector;
 
@@ -329,10 +327,10 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 
 	frame_buffer_attribs.push_back(EGL_NONE);
 
-	if (!eglChooseConfig(m_eglDisplay, &frame_buffer_attribs[0], NULL, 0, &num_configs))
+	if (!m_egl.chooseConfig(m_eglDisplay, &frame_buffer_attribs[0], NULL, 0, &num_configs))
 		throw tcu::ResourceError("surfaceless couldn't find any config");
 
-	if (!eglChooseConfig(m_eglDisplay, &frame_buffer_attribs[0], &egl_config, 1, &num_configs))
+	if (!m_egl.chooseConfig(m_eglDisplay, &frame_buffer_attribs[0], &egl_config, 1, &num_configs))
 		throw tcu::ResourceError("surfaceless couldn't find any config");
 
 	switch (config.surfaceType)
@@ -341,7 +339,7 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 			egl_surface = EGL_NO_SURFACE;
 			break;
 		case glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC:
-			egl_surface = eglCreatePbufferSurface(m_eglDisplay, egl_config, &surface_attribs[0]);
+			egl_surface = m_egl.createPbufferSurface(m_eglDisplay, egl_config, &surface_attribs[0]);
 			break;
 	}
 
