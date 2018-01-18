@@ -26,7 +26,7 @@ from common import getChangedFiles, getAllProjectFiles
 from check_include_guards import checkIncludeGuards
 from check_whitespace import checkWhitespace
 from check_license import checkLicense
-from check_invalid_types import checkInvalidTypes
+from check_invalid_literals import checkInvalidLiterals
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         checkWhitespace(files),
         checkIncludeGuards(files),
         checkLicense(files),
-        checkInvalidTypes(files),
+        checkInvalidLiterals(files),
         #todo checkRedundantIncludeGuards(files),
         ])
 
