@@ -32,6 +32,7 @@
 #include "deSTLUtil.hpp"
 #include "egluUtil.hpp"
 #include "egluGLUtil.hpp"
+#include "egluPlatform.hpp"
 #include "eglwEnums.hpp"
 #include "eglwLibrary.hpp"
 #include "gluPlatform.hpp"
@@ -44,8 +45,6 @@
 #include "tcuPlatform.hpp"
 #include "tcuRenderTarget.hpp"
 #include "vkPlatform.hpp"
-
-#include <EGL/egl.h>
 
 using std::string;
 using std::vector;
@@ -181,11 +180,12 @@ private:
 	de::DynamicLibrary*		m_library;
 };
 
-class Platform : public tcu::Platform, public glu::Platform
+class Platform : public tcu::Platform, public glu::Platform, public eglu::Platform
 {
 public:
 					Platform	(void);
 	const glu::Platform&		getGLPlatform	(void) const { return *this; }
+	const eglu::Platform&		getEGLPlatform	(void) const { return *this; }
 	const vk::Platform&			getVulkanPlatform	(void) const { return m_vkPlatform; }
 
 private:
@@ -196,13 +196,13 @@ class ContextFactory : public glu::ContextFactory
 {
 public:
 					ContextFactory	(void);
-	glu::RenderContext*		createContext	(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const;
+	glu::RenderContext*		createContext	(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext) const;
 };
 
 class EglRenderContext : public glu::RenderContext
 {
 public:
-					EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine);
+					EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext);
 					~EglRenderContext(void);
 
 	glu::ContextType		getType		(void) const	{ return m_contextType; }
@@ -229,12 +229,12 @@ ContextFactory::ContextFactory()
 	: glu::ContextFactory("default", "EGL surfaceless context")
 {}
 
-glu::RenderContext* ContextFactory::createContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const
+glu::RenderContext* ContextFactory::createContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext) const
 {
-	return new EglRenderContext(config, cmdLine);
+	return new EglRenderContext(config, cmdLine, sharedContext);
 }
 
-EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine)
+EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext)
 	: m_egl("libEGL.so")
 	, m_contextType(config.type)
 	, m_eglDisplay(EGL_NO_DISPLAY)
@@ -329,10 +329,10 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 
 	frame_buffer_attribs.push_back(EGL_NONE);
 
-	if (!eglChooseConfig(m_eglDisplay, &frame_buffer_attribs[0], NULL, 0, &num_configs))
+	if (!m_egl.chooseConfig(m_eglDisplay, &frame_buffer_attribs[0], NULL, 0, &num_configs))
 		throw tcu::ResourceError("surfaceless couldn't find any config");
 
-	if (!eglChooseConfig(m_eglDisplay, &frame_buffer_attribs[0], &egl_config, 1, &num_configs))
+	if (!m_egl.chooseConfig(m_eglDisplay, &frame_buffer_attribs[0], &egl_config, 1, &num_configs))
 		throw tcu::ResourceError("surfaceless couldn't find any config");
 
 	switch (config.surfaceType)
@@ -341,7 +341,7 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 			egl_surface = EGL_NO_SURFACE;
 			break;
 		case glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC:
-			egl_surface = eglCreatePbufferSurface(m_eglDisplay, egl_config, &surface_attribs[0]);
+			egl_surface = m_egl.createPbufferSurface(m_eglDisplay, egl_config, &surface_attribs[0]);
 			break;
 	}
 
@@ -383,7 +383,13 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 
 	context_attribs.push_back(EGL_NONE);
 
-	m_eglContext = m_egl.createContext(m_eglDisplay, egl_config, EGL_NO_CONTEXT, &context_attribs[0]);
+	eglw::EGLContext shared = NULL;
+	if (sharedContext != NULL) {
+		const EglRenderContext* context = dynamic_cast<const EglRenderContext*>(sharedContext);
+		shared = context->m_eglContext;
+	}
+
+	m_eglContext = m_egl.createContext(m_eglDisplay, egl_config, shared, &context_attribs[0]);
 	EGLU_CHECK_MSG(m_egl, "eglCreateContext()");
 	if (!m_eglContext)
 		throw tcu::ResourceError("eglCreateContext failed");
