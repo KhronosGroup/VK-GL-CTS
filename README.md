@@ -15,3 +15,9 @@ Khronos Vulkan Conformance Tests
 
 This repository includes Khronos Vulkan CTS under `external/vulkancts` directory.
 For more information see [Vulkan CTS README](external/vulkancts/README.md).
+
+Khronos OpenGL / OpenGL ES Conformance Tests
+--------------------------------
+
+This repository includes Khronos OpenGL / OpenGL ES CTS under `external/openglcts` directory.
+For more information see [OpenGL / OpenGL ES CTS README](external/openglcts/README.md).

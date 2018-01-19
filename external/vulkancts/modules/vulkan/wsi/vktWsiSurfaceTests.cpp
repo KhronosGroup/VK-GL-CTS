@@ -39,11 +39,13 @@
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -109,6 +111,12 @@ enum
 	SURFACE_EXTENT_DETERMINED_BY_SWAPCHAIN_MAGIC	= 0xffffffff
 };
 
+enum
+{
+	GUARD_SIZE										= 0x20,			//!< Number of bytes to check
+	GUARD_VALUE										= 0xcd,			//!< Data pattern
+};
+
 template<typename T>
 class CheckIncompleteResult
 {
@@ -161,31 +169,32 @@ struct CheckPhysicalDeviceSurfacePresentModesIncompleteResult : public CheckInco
 
 typedef vector<VkExtensionProperties> Extensions;
 
-void checkAllSupported (const Extensions& supportedExtensions, const vector<string>& requiredExtensions)
-{
-	for (vector<string>::const_iterator requiredExtName = requiredExtensions.begin();
-		 requiredExtName != requiredExtensions.end();
-		 ++requiredExtName)
-	{
-		if (!isExtensionSupported(supportedExtensions, RequiredExtension(*requiredExtName)))
-			TCU_THROW(NotSupportedError, (*requiredExtName + " is not supported").c_str());
-	}
-}
-
 Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
+										deUint32						version,
 										const Extensions&				supportedExtensions,
 										Type							wsiType,
 										const vector<string>			extraExtensions,
 										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
-	vector<string>	extensions	= extraExtensions;
+	vector<string>	extensions = extraExtensions;
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
 
-	checkAllSupported(supportedExtensions, extensions);
+	vector<string>	instanceExtensions;
 
-	return createDefaultInstance(vkp, vector<string>(), extensions, pAllocator);
+	for (vector<string>::const_iterator extensionName = extensions.begin();
+		 extensionName != extensions.end();
+		 ++extensionName)
+	{
+		if (!isInstanceExtensionSupported(version, supportedExtensions, RequiredExtension(*extensionName)))
+			TCU_THROW(NotSupportedError, (*extensionName + " is not supported").c_str());
+
+		if (!isCoreInstanceExtension(version, *extensionName))
+			instanceExtensions.push_back(*extensionName);
+	}
+
+	return vk::createDefaultInstance(vkp, version, vector<string>(), instanceExtensions, pAllocator);
 }
 
 struct InstanceHelper
@@ -198,6 +207,7 @@ struct InstanceHelper
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
+													   context.getUsedApiVersion(),
 													   supportedExtensions,
 													   wsiType,
 													   vector<string>(),
@@ -209,6 +219,7 @@ struct InstanceHelper
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
+													   context.getUsedApiVersion(),
 													   supportedExtensions,
 													   wsiType,
 													   extensions,
@@ -748,6 +759,257 @@ tcu::TestStatus querySurfacePresentModesTest (Context& context, Type wsiType)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus queryDevGroupSurfacePresentCapabilitiesTest (Context& context, Type wsiType)
+{
+	tcu::TestLog&									log						= context.getTestContext().getLog();
+	const InstanceHelper							instHelper				(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
+	const float										queuePriority			= 1.0f;
+	const tcu::CommandLine&							cmdLine					= context.getTestContext().getCommandLine();
+	const deUint32									devGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
+	const deUint32									deviceIdx				= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+	const VkDeviceGroupPresentModeFlagsKHR			requiredFlag			= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR;
+	const VkDeviceGroupPresentModeFlagsKHR			maxValidFlag			= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR |
+																				VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR;
+	deUint8											buffer					[sizeof(VkDeviceGroupPresentCapabilitiesKHR) + GUARD_SIZE];
+	deUint32										queueFamilyIndex		= 0;
+	VkDeviceGroupPresentCapabilitiesKHR*			presentCapabilities;
+	VkPhysicalDevice								physicalDevice			= chooseDevice(instHelper.vki, *instHelper.instance, cmdLine);
+	const Extensions&								supportedExtensions		= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
+	std::vector<const char*>						deviceExtensions;
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
+		deviceExtensions.push_back("VK_KHR_device_group");
+	deviceExtensions.push_back("VK_KHR_swapchain");
+
+	for (int ndx = 0; ndx < int(deviceExtensions.size()); ++ndx)
+	{
+		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
+	}
+
+	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps		= enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
+
+	const std::vector<VkQueueFamilyProperties>		queueProps				= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		if (queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			queueFamilyIndex = (deUint32)queueNdx;
+	}
+	const VkDeviceQueueCreateInfo					deviceQueueCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,				//type
+		DE_NULL,												//pNext
+		(VkDeviceQueueCreateFlags)0u,							//flags
+		queueFamilyIndex,										//queueFamilyIndex;
+		1u,														//queueCount;
+		&queuePriority,											//pQueuePriorities;
+	};
+	const VkDeviceGroupDeviceCreateInfo				deviceGroupInfo			=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
+		DE_NULL,												//pNext
+		deviceGroupProps[devGroupIdx].physicalDeviceCount,		//physicalDeviceCount
+		deviceGroupProps[devGroupIdx].physicalDevices			//physicalDevices
+	};
+	const VkDeviceCreateInfo						deviceCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+		&deviceGroupInfo,												//pNext;
+		(VkDeviceCreateFlags)0u,										//flags
+		1,																//queueRecordCount;
+		&deviceQueueCreateInfo,											//pRequestedQueues;
+		0,																//layerCount;
+		DE_NULL,														//ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),								//enabledExtensionCount;
+		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	//ppEnabledExtensionNames;
+		DE_NULL,														//pEnabledFeatures;
+	};
+	Move<VkDevice>		deviceGroup = createDevice(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+	const DeviceDriver	vk	(instHelper.vki, *deviceGroup);
+
+
+	presentCapabilities = reinterpret_cast<VkDeviceGroupPresentCapabilitiesKHR*>(buffer);
+	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
+	presentCapabilities->sType = VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_CAPABILITIES_KHR;
+	presentCapabilities->pNext = DE_NULL;
+	VK_CHECK(vk.getDeviceGroupPresentCapabilitiesKHR(deviceGroup.get(), presentCapabilities));
+
+	// Guard check
+	for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
+	{
+		if (buffer[ndx + sizeof(VkDeviceGroupPresentCapabilitiesKHR)] != GUARD_VALUE)
+		{
+			log << TestLog::Message << "deviceGroupPresentCapabilities - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceGroupPresentCapabilities buffer overflow");
+		}
+	}
+
+	// Check each physical device can present on itself
+	for (size_t physDevIdx = 0; physDevIdx < VK_MAX_DEVICE_GROUP_SIZE_KHR; physDevIdx++)
+	{
+		if (presentCapabilities->presentMask[physDevIdx])
+			if (!((1 << physDevIdx) & (presentCapabilities->presentMask[physDevIdx])))
+				return tcu::TestStatus::fail("deviceGroupPresentCapabilities, device can not present on itself, invalid present mask");
+	}
+
+	// Check if flags are valid
+	if ((!(presentCapabilities->modes & requiredFlag)) ||
+		presentCapabilities->modes > maxValidFlag)
+		return tcu::TestStatus::fail("deviceGroupPresentCapabilities flag not valid");
+
+	return tcu::TestStatus::pass("Querying deviceGroup present capabilities succeeded");
+}
+
+tcu::TestStatus queryDevGroupSurfacePresentModesTest (Context& context, Type wsiType)
+{
+	tcu::TestLog&							log					= context.getTestContext().getLog();
+	tcu::ResultCollector					results				(log);
+	const InstanceHelper					instHelper			(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
+	const NativeObjects						native				(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>				surface				(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+	const float								queuePriority		= 1.0f;
+	const tcu::CommandLine&					cmdLine				= context.getTestContext().getCommandLine();
+	const deUint32							devGroupIdx			= cmdLine.getVKDeviceGroupId() - 1;
+	const deUint32							deviceIdx			= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+	const VkDeviceGroupPresentModeFlagsKHR	requiredFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR;
+	const VkDeviceGroupPresentModeFlagsKHR	maxValidFlag		= VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_REMOTE_BIT_KHR |
+																	VK_DEVICE_GROUP_PRESENT_MODE_SUM_BIT_KHR|VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR;
+	VkResult								result				= VK_SUCCESS;
+	deUint8									buffer				[sizeof(VkDeviceGroupPresentModeFlagsKHR) + GUARD_SIZE];
+	deUint32								rectCount			= 0;
+	deUint32								incompleteRectCount	= 0;
+	deUint32								queueFamilyIndex	= 0;
+	VkRect2D*								presentRectangles;
+	VkDeviceGroupPresentModeFlagsKHR*		presentModeFlags;
+	vector<deUint8>							rectanglesBuffer;
+	VkPhysicalDevice						physicalDevice		= chooseDevice(instHelper.vki, *instHelper.instance, cmdLine);
+	const Extensions&						supportedExtensions	= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
+	std::vector<const char*>				deviceExtensions;
+
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
+		deviceExtensions.push_back("VK_KHR_device_group");
+	deviceExtensions.push_back("VK_KHR_swapchain");
+
+	for (int ndx = 0; ndx < int(deviceExtensions.size()); ++ndx)
+	{
+		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
+	}
+
+	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps = enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
+	const std::vector<VkQueueFamilyProperties>	queueProps		= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx]);
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		if (queueProps[queueNdx].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			queueFamilyIndex = (deUint32)queueNdx;
+	}
+	const VkDeviceQueueCreateInfo			deviceQueueCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,					//type
+		DE_NULL,													//pNext
+		(VkDeviceQueueCreateFlags)0u,								//flags
+		queueFamilyIndex,											//queueFamilyIndex;
+		1u,															//queueCount;
+		&queuePriority,												//pQueuePriorities;
+	};
+	const VkDeviceGroupDeviceCreateInfo			deviceGroupInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,	//stype
+		DE_NULL,												//pNext
+		deviceGroupProps[devGroupIdx].physicalDeviceCount,		//physicalDeviceCount
+		deviceGroupProps[devGroupIdx].physicalDevices			//physicalDevices
+	};
+	const VkDeviceCreateInfo						deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//sType;
+		&deviceGroupInfo,												//pNext;
+		(VkDeviceCreateFlags)0u,										//flags
+		1,																//queueRecordCount;
+		&deviceQueueCreateInfo,											//pRequestedQueues;
+		0,																//layerCount;
+		DE_NULL,														//ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),								//enabledExtensionCount;
+		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	//ppEnabledExtensionNames;
+		DE_NULL,														//pEnabledFeatures;
+	};
+
+	Move<VkDevice>		deviceGroup = createDevice(instHelper.vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+	const DeviceDriver	vk	(instHelper.vki, *deviceGroup);
+	presentModeFlags = reinterpret_cast<VkDeviceGroupPresentModeFlagsKHR*>(buffer);
+	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
+
+	VK_CHECK(vk.getDeviceGroupSurfacePresentModesKHR(deviceGroup.get(), *surface, presentModeFlags));
+
+	// Guard check
+	for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
+	{
+		if (buffer[ndx + sizeof(VkDeviceGroupPresentModeFlagsKHR)] != GUARD_VALUE)
+		{
+			log << TestLog::Message << "queryDevGroupSurfacePresentModesTest - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("queryDevGroupSurfacePresentModesTest buffer overflow");
+		}
+	}
+
+	// Check if flags are valid
+	if ((!(*presentModeFlags & requiredFlag)) ||
+		*presentModeFlags > maxValidFlag)
+		return tcu::TestStatus::fail("queryDevGroupSurfacePresentModesTest flag not valid");
+
+	// Check presentation rectangles
+	if (*presentModeFlags == VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_MULTI_DEVICE_BIT_KHR)
+	{
+		for (size_t physDevIdx = 0; physDevIdx < deviceGroupProps[devGroupIdx].physicalDeviceCount; physDevIdx++)
+		{
+			VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, DE_NULL));
+			rectanglesBuffer.resize(sizeof(VkRect2D) * rectCount + GUARD_SIZE);
+			presentRectangles = reinterpret_cast<VkRect2D*>(rectanglesBuffer.data());
+			deMemset(rectanglesBuffer.data(), GUARD_VALUE, rectanglesBuffer.size());
+
+			VK_CHECK(instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &rectCount, presentRectangles));
+
+			// Guard check
+			for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
+			{
+				if (rectanglesBuffer[ndx + sizeof(VkRect2D) * rectCount] != GUARD_VALUE)
+				{
+					log << TestLog::Message << "getPhysicalDevicePresentRectanglesKHR - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+					return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHR buffer overflow");
+				}
+			}
+
+			// Check rectangles do not overlap
+			for (size_t rectIdx1 = 0; rectIdx1 < rectCount; rectIdx1++)
+			{
+				for (size_t rectIdx2 = 0; rectIdx2 < rectCount; rectIdx2++)
+				{
+					if (rectIdx1 != rectIdx2)
+					{
+						deUint32 rectATop		= presentRectangles[rectIdx1].offset.y;
+						deUint32 rectALeft		= presentRectangles[rectIdx1].offset.x;
+						deUint32 rectABottom	= presentRectangles[rectIdx1].offset.y + presentRectangles[rectIdx1].extent.height;
+						deUint32 rectARight		= presentRectangles[rectIdx1].offset.x + presentRectangles[rectIdx1].extent.width;
+
+						deUint32 rectBTop		= presentRectangles[rectIdx2].offset.y;
+						deUint32 rectBLeft		= presentRectangles[rectIdx2].offset.x;
+						deUint32 rectBBottom	= presentRectangles[rectIdx2].offset.y + presentRectangles[rectIdx2].extent.height;
+						deUint32 rectBRight		= presentRectangles[rectIdx2].offset.x + presentRectangles[rectIdx2].extent.width;
+
+						if (rectALeft < rectBRight && rectARight > rectBLeft &&
+							rectATop < rectBBottom && rectABottom > rectBTop)
+							return tcu::TestStatus::fail("getPhysicalDevicePresentRectanglesKHR rectangles overlap");
+					}
+				}
+			}
+
+			// Check incomplete
+			incompleteRectCount = rectCount / 2;
+			result = instHelper.vki.getPhysicalDevicePresentRectanglesKHR(deviceGroupProps[devGroupIdx].physicalDevices[physDevIdx], *surface, &incompleteRectCount, presentRectangles);
+			results.check(result == VK_INCOMPLETE, "Expected VK_INCOMPLETE");
+		}
+	}
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 tcu::TestStatus createSurfaceInitialSizeTest (Context& context, Type wsiType)
 {
 	tcu::TestLog&					log				= context.getTestContext().getLog();
@@ -874,16 +1136,18 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 {
 	const PlatformProperties&	platformProperties	= getPlatformProperties(wsiType);
 
-	addFunctionCase(testGroup, "create",					"Create surface",						createSurfaceTest,					wsiType);
-	addFunctionCase(testGroup, "create_custom_allocator",	"Create surface with custom allocator",	createSurfaceCustomAllocatorTest,	wsiType);
-	addFunctionCase(testGroup, "create_simulate_oom",		"Create surface with simulating OOM",	createSurfaceSimulateOOMTest,		wsiType);
-	addFunctionCase(testGroup, "query_support",				"Query surface support",				querySurfaceSupportTest,			wsiType);
-	addFunctionCase(testGroup, "query_capabilities",		"Query surface capabilities",			querySurfaceCapabilitiesTest,		wsiType);
-	addFunctionCase(testGroup, "query_capabilities2",		"Query extended surface capabilities",	querySurfaceCapabilities2Test,		wsiType);
-	addFunctionCase(testGroup, "query_formats",				"Query surface formats",				querySurfaceFormatsTest,			wsiType);
-	addFunctionCase(testGroup, "query_formats2",			"Query extended surface formats",		querySurfaceFormats2Test,			wsiType);
-	addFunctionCase(testGroup, "query_present_modes",		"Query surface present modes",			querySurfacePresentModesTest,		wsiType);
-	addFunctionCase(testGroup, "destroy_null_handle",		"Destroy VK_NULL_HANDLE surface",		destroyNullHandleSurfaceTest,		wsiType);
+	addFunctionCase(testGroup, "create",								"Create surface",											createSurfaceTest,							wsiType);
+	addFunctionCase(testGroup, "create_custom_allocator",				"Create surface with custom allocator",						createSurfaceCustomAllocatorTest,			wsiType);
+	addFunctionCase(testGroup, "create_simulate_oom",					"Create surface with simulating OOM",						createSurfaceSimulateOOMTest,				wsiType);
+	addFunctionCase(testGroup, "query_support",							"Query surface support",									querySurfaceSupportTest,					wsiType);
+	addFunctionCase(testGroup, "query_capabilities",					"Query surface capabilities",								querySurfaceCapabilitiesTest,				wsiType);
+	addFunctionCase(testGroup, "query_capabilities2",					"Query extended surface capabilities",						querySurfaceCapabilities2Test,				wsiType);
+	addFunctionCase(testGroup, "query_formats",							"Query surface formats",									querySurfaceFormatsTest,					wsiType);
+	addFunctionCase(testGroup, "query_formats2",						"Query extended surface formats",							querySurfaceFormats2Test,					wsiType);
+	addFunctionCase(testGroup, "query_present_modes",					"Query surface present modes",								querySurfacePresentModesTest,				wsiType);
+	addFunctionCase(testGroup, "query_devgroup_present_capabilities",	"Query surface present modes capabilities in device groups",queryDevGroupSurfacePresentCapabilitiesTest,wsiType);
+	addFunctionCase(testGroup, "query_devgroup_present_modes",			"Query surface present modes for device groups",			queryDevGroupSurfacePresentModesTest,		wsiType);
+	addFunctionCase(testGroup, "destroy_null_handle",					"Destroy VK_NULL_HANDLE surface",							destroyNullHandleSurfaceTest,				wsiType);
 
 	if ((platformProperties.features & PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE) != 0)
 		addFunctionCase(testGroup, "initial_size",	"Create surface with initial window size set",	createSurfaceInitialSizeTest,	wsiType);

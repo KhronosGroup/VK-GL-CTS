@@ -367,6 +367,10 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 		VK_CHECK(m_vk.queueWaitIdle(queue));
 	}
 
+	// Validate the results
+	const vk::Allocation& bufAllocation = stagingResource->getBoundMemory();
+	invalidateMappedMemoryRange(m_vk, m_device, bufAllocation.getMemory(), bufAllocation.getOffset(), VK_WHOLE_SIZE);
+
 	deUint8* destPtr = reinterpret_cast<deUint8*>(stagingResource->getBoundMemory().getHostPtr());
 	deMemcpy(data, destPtr, static_cast<size_t>(bufferSize));
 }
@@ -466,6 +470,10 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 
 		// TODO: make this less intrusive
 		VK_CHECK(m_vk.queueWaitIdle(queue));
+
+		// Validate the results
+		const vk::Allocation& imgAllocation = stagingResource->getBoundMemory();
+		invalidateMappedMemoryRange(m_vk, m_device, imgAllocation.getMemory(), imgAllocation.getOffset(), VK_WHOLE_SIZE);
 	}
 	return stagingResource;
 }

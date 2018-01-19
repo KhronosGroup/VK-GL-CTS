@@ -123,6 +123,17 @@ static std::vector<deUint32> genSetNthBitSampleMask (int nthBit)
 	return mask;
 }
 
+std::string specializeShader (Context& context, const char* code)
+{
+	const glu::ContextType				contextType		= context.getRenderContext().getType();
+	const glu::GLSLVersion				glslVersion		= glu::getContextTypeGLSLVersion(contextType);
+	std::map<std::string, std::string> specializationMap;
+
+	specializationMap["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
+
+	return tcu::StringTemplate(code).specialize(specializationMap);
+}
+
 class SamplePosRasterizationTest : public TestCase
 {
 public:
@@ -327,13 +338,13 @@ SamplePosRasterizationTest::IterateResult SamplePosRasterizationTest::iterate (v
 
 void SamplePosRasterizationTest::genMultisampleTexture (void)
 {
-	const char* const vertexShaderSource	=	"#version 310 es\n"
+	const char* const vertexShaderSource	=	"${GLSL_VERSION_DECL}\n"
 												"in highp vec4 a_position;\n"
 												"void main (void)\n"
 												"{\n"
 												"	gl_Position = a_position;\n"
 												"}\n";
-	const char* const fragmentShaderSource	=	"#version 310 es\n"
+	const char* const fragmentShaderSource	=	"${GLSL_VERSION_DECL}\n"
 												"layout(location = 0) out highp vec4 fragColor;\n"
 												"void main (void)\n"
 												"{\n"
@@ -342,8 +353,8 @@ void SamplePosRasterizationTest::genMultisampleTexture (void)
 
 	const glw::Functions&		gl				= m_context.getRenderContext().getFunctions();
 	const glu::ShaderProgram	program			(m_context.getRenderContext(), glu::ProgramSources()
-																			<< glu::VertexSource(vertexShaderSource)
-																			<< glu::FragmentSource(fragmentShaderSource));
+																			<< glu::VertexSource(specializeShader(m_context, vertexShaderSource))
+																			<< glu::FragmentSource(specializeShader(m_context, fragmentShaderSource)));
 	const GLuint				posLoc			= gl.getAttribLocation(program.getProgram(), "a_position");
 	GLuint						fboID			= 0;
 
@@ -409,13 +420,13 @@ void SamplePosRasterizationTest::genMultisampleTexture (void)
 
 void SamplePosRasterizationTest::genSamplerProgram (void)
 {
-	const char* const	vertexShaderSource	=	"#version 310 es\n"
+	const char* const	vertexShaderSource	=	"${GLSL_VERSION_DECL}\n"
 												"in highp vec4 a_position;\n"
 												"void main (void)\n"
 												"{\n"
 												"	gl_Position = a_position;\n"
 												"}\n";
-	const char* const	fragShaderSource	=	"#version 310 es\n"
+	const char* const	fragShaderSource	=	"${GLSL_VERSION_DECL}\n"
 												"layout(location = 0) out highp vec4 fragColor;\n"
 												"uniform highp sampler2DMS u_sampler;\n"
 												"uniform highp int u_sample;\n"
@@ -426,7 +437,7 @@ void SamplePosRasterizationTest::genSamplerProgram (void)
 	const tcu::ScopedLogSection	section			(m_testCtx.getLog(), "Generate sampler shader", "Generate sampler shader");
 	const glw::Functions&		gl			=	m_context.getRenderContext().getFunctions();
 
-	m_samplerProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(vertexShaderSource) << glu::FragmentSource(fragShaderSource));
+	m_samplerProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(specializeShader(m_context, vertexShaderSource)) << glu::FragmentSource(specializeShader(m_context, fragShaderSource)));
 	m_testCtx.getLog() << *m_samplerProgram;
 
 	if (!m_samplerProgram->isOk())
@@ -754,39 +765,41 @@ SampleMaskCase::IterateResult SampleMaskCase::iterate (void)
 
 void SampleMaskCase::genSamplerProgram (void)
 {
-	const char* const	vertexShaderSource	=	"#version 310 es\n"
-												"in highp vec4 a_position;\n"
-												"void main (void)\n"
-												"{\n"
-												"	gl_Position = a_position;\n"
-												"}\n";
-	const char* const	fragShaderSource	=	"#version 310 es\n"
-												"layout(location = 0) out highp vec4 fragColor;\n"
-												"uniform highp sampler2DMS u_sampler;\n"
-												"uniform highp int u_sample;\n"
-												"void main (void)\n"
-												"{\n"
-												"	highp float correctCoverage = 0.0;\n"
-												"	highp float incorrectCoverage = 0.0;\n"
-												"	highp ivec2 texelPos = ivec2(int(floor(gl_FragCoord.x)), int(floor(gl_FragCoord.y)));\n"
-												"\n"
-												"	for (int sampleNdx = 0; sampleNdx < ${NUMSAMPLES}; ++sampleNdx)\n"
-												"	{\n"
-												"		highp float sampleColor = texelFetch(u_sampler, texelPos, sampleNdx).r;\n"
-												"		if (sampleNdx == u_sample)\n"
-												"			correctCoverage += sampleColor;\n"
-												"		else\n"
-												"			incorrectCoverage += sampleColor;\n"
-												"	}\n"
-												"	fragColor = vec4(correctCoverage, incorrectCoverage, 0.0, 1.0);\n"
-												"}\n";
-	const tcu::ScopedLogSection			section	(m_testCtx.getLog(), "GenerateSamplerShader", "Generate sampler shader");
-	const glw::Functions&				gl		=	m_context.getRenderContext().getFunctions();
+	const char* const	vertexShaderSource			= "${GLSL_VERSION_DECL}\n"
+													  "in highp vec4 a_position;\n"
+													  "void main (void)\n"
+													  "{\n"
+													  "	gl_Position = a_position;\n"
+													  "}\n";
+	const char* const	fragShaderSource			= "${GLSL_VERSION_DECL}\n"
+													  "layout(location = 0) out highp vec4 fragColor;\n"
+													  "uniform highp sampler2DMS u_sampler;\n"
+													  "uniform highp int u_sample;\n"
+													  "void main (void)\n"
+													  "{\n"
+													  "	highp float correctCoverage = 0.0;\n"
+													  "	highp float incorrectCoverage = 0.0;\n"
+													  "	highp ivec2 texelPos = ivec2(int(floor(gl_FragCoord.x)), int(floor(gl_FragCoord.y)));\n"
+													  "\n"
+													  "	for (int sampleNdx = 0; sampleNdx < ${NUMSAMPLES}; ++sampleNdx)\n"
+													  "	{\n"
+													  "		highp float sampleColor = texelFetch(u_sampler, texelPos, sampleNdx).r;\n"
+													  "		if (sampleNdx == u_sample)\n"
+													  "			correctCoverage += sampleColor;\n"
+													  "		else\n"
+													  "			incorrectCoverage += sampleColor;\n"
+													  "	}\n"
+													  "	fragColor = vec4(correctCoverage, incorrectCoverage, 0.0, 1.0);\n"
+													  "}\n";
+	const tcu::ScopedLogSection			section		(m_testCtx.getLog(), "GenerateSamplerShader", "Generate sampler shader");
+	const glw::Functions&				gl			= m_context.getRenderContext().getFunctions();
 	std::map<std::string, std::string>	args;
+	const glu::GLSLVersion				glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
 
+	args["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
 	args["NUMSAMPLES"] = de::toString(m_samples);
 
-	m_samplerProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(vertexShaderSource) << glu::FragmentSource(tcu::StringTemplate(fragShaderSource).specialize(args)));
+	m_samplerProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(specializeShader(m_context, vertexShaderSource)) << glu::FragmentSource(tcu::StringTemplate(fragShaderSource).specialize(args)));
 	m_testCtx.getLog() << *m_samplerProgram;
 
 	if (!m_samplerProgram->isOk())
@@ -799,7 +812,7 @@ void SampleMaskCase::genSamplerProgram (void)
 
 void SampleMaskCase::genAlphaProgram (void)
 {
-	const char* const	vertexShaderSource	=	"#version 310 es\n"
+	const char* const	vertexShaderSource	=	"${GLSL_VERSION_DECL}\n"
 												"in highp vec4 a_position;\n"
 												"out highp float v_alpha;\n"
 												"void main (void)\n"
@@ -807,7 +820,7 @@ void SampleMaskCase::genAlphaProgram (void)
 												"	gl_Position = a_position;\n"
 												"	v_alpha = (a_position.x * 0.5 + 0.5)*(a_position.y * 0.5 + 0.5);\n"
 												"}\n";
-	const char* const	fragShaderSource	=	"#version 310 es\n"
+	const char* const	fragShaderSource	=	"${GLSL_VERSION_DECL}\n"
 												"layout(location = 0) out highp vec4 fragColor;\n"
 												"in mediump float v_alpha;\n"
 												"void main (void)\n"
@@ -816,7 +829,7 @@ void SampleMaskCase::genAlphaProgram (void)
 												"}\n";
 	const glw::Functions&		gl			=	m_context.getRenderContext().getFunctions();
 
-	m_alphaProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(vertexShaderSource) << glu::FragmentSource(fragShaderSource));
+	m_alphaProgram = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(specializeShader(m_context, vertexShaderSource)) << glu::FragmentSource(specializeShader(m_context, fragShaderSource)));
 
 	if (!m_alphaProgram->isOk())
 	{
@@ -1110,12 +1123,13 @@ void MultisampleTextureUsageCase::init (void)
 	const glw::GLenum		internalFormat	= (m_isColorFormat) ? (GL_R8) : (m_isSignedFormat) ? (GL_R8I) : (m_isUnsignedFormat) ? (GL_R8UI) : (m_isDepthFormat) ? (GL_DEPTH_COMPONENT32F) : (0);
 	const glw::GLenum		textureTarget	= (m_isArrayType) ? (GL_TEXTURE_2D_MULTISAMPLE_ARRAY) : (GL_TEXTURE_2D_MULTISAMPLE);
 	const glw::GLenum		fboAttachment	= (m_isDepthFormat) ? (GL_DEPTH_ATTACHMENT) : (GL_COLOR_ATTACHMENT0);
+	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	DE_ASSERT(internalFormat);
 
 	// requirements
 
-	if (m_isArrayType && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (m_isArrayType && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		throw tcu::NotSupportedError("Test requires OES_texture_storage_multisample_2d_array extension");
 	if (m_context.getRenderTarget().getWidth() < s_textureSize || m_context.getRenderTarget().getHeight() < s_textureSize)
 		throw tcu::NotSupportedError("render target size must be at least " + de::toString(static_cast<int>(s_textureSize)) + "x" + de::toString(static_cast<int>(s_textureSize)));
@@ -1244,20 +1258,20 @@ void MultisampleTextureUsageCase::genDrawShader (void)
 {
 	const tcu::ScopedLogSection section(m_testCtx.getLog(), "RenderShader", "Generate render-to-texture shader");
 
-	static const char* const	vertexShaderSource =		"#version 310 es\n"
+	static const char* const	vertexShaderSource =		"${GLSL_VERSION_DECL}\n"
 															"in highp vec4 a_position;\n"
 															"void main (void)\n"
 															"{\n"
 															"	gl_Position = a_position;\n"
 															"}\n";
-	static const char* const	fragmentShaderSourceColor =	"#version 310 es\n"
+	static const char* const	fragmentShaderSourceColor =	"${GLSL_VERSION_DECL}\n"
 															"layout(location = 0) out highp ${OUTTYPE} fragColor;\n"
 															"uniform highp float u_writeValue;\n"
 															"void main (void)\n"
 															"{\n"
 															"	fragColor = ${OUTTYPE}(vec4(u_writeValue, 1.0, 1.0, 1.0));\n"
 															"}\n";
-	static const char* const	fragmentShaderSourceDepth =	"#version 310 es\n"
+	static const char* const	fragmentShaderSourceDepth =	"${GLSL_VERSION_DECL}\n"
 															"layout(location = 0) out highp vec4 fragColor;\n"
 															"uniform highp float u_writeValue;\n"
 															"void main (void)\n"
@@ -1269,6 +1283,9 @@ void MultisampleTextureUsageCase::genDrawShader (void)
 
 	std::map<std::string, std::string> fragmentArguments;
 
+	const glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+	fragmentArguments["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
+
 	if (m_isColorFormat || m_isDepthFormat)
 		fragmentArguments["OUTTYPE"] = "vec4";
 	else if (m_isSignedFormat)
@@ -1278,7 +1295,7 @@ void MultisampleTextureUsageCase::genDrawShader (void)
 	else
 		DE_ASSERT(DE_FALSE);
 
-	m_drawShader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(vertexShaderSource) << glu::FragmentSource(tcu::StringTemplate(fragmentSource).specialize(fragmentArguments)));
+	m_drawShader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(specializeShader(m_context, vertexShaderSource)) << glu::FragmentSource(tcu::StringTemplate(fragmentSource).specialize(fragmentArguments)));
 	m_testCtx.getLog() << *m_drawShader;
 
 	if (!m_drawShader->isOk())
@@ -1289,7 +1306,7 @@ void MultisampleTextureUsageCase::genSamplerShader (void)
 {
 	const tcu::ScopedLogSection section(m_testCtx.getLog(), "SamplerShader", "Generate texture sampler shader");
 
-	static const char* const vertexShaderSource =	"#version 310 es\n"
+	static const char* const vertexShaderSource =	"${GLSL_VERSION_DECL}\n"
 													"in highp vec4 a_position;\n"
 													"out highp float v_gradient;\n"
 													"void main (void)\n"
@@ -1297,7 +1314,7 @@ void MultisampleTextureUsageCase::genSamplerShader (void)
 													"	gl_Position = a_position;\n"
 													"	v_gradient = a_position.x * 0.5 + 0.5;\n"
 													"}\n";
-	static const char* const fragmentShaderSource =	"#version 310 es\n"
+	static const char* const fragmentShaderSource =	"${GLSL_VERSION_DECL}\n"
 													"${EXTENSION_STATEMENT}"
 													"layout(location = 0) out highp vec4 fragColor;\n"
 													"uniform highp ${SAMPLERTYPE} u_sampler;\n"
@@ -1318,6 +1335,9 @@ void MultisampleTextureUsageCase::genSamplerShader (void)
 
 	std::map<std::string, std::string> fragmentArguments;
 
+	const glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+	fragmentArguments["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
+
 	if (m_isArrayType)
 		fragmentArguments["FETCHPOS"] = "ivec3(floor(gl_FragCoord.xy), u_layer)";
 	else
@@ -1328,7 +1348,7 @@ void MultisampleTextureUsageCase::genSamplerShader (void)
 	else
 		fragmentArguments["EPSILON"] = "1.0";
 
-	if (m_isArrayType)
+	if (m_isArrayType && !glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
 		fragmentArguments["EXTENSION_STATEMENT"] = "#extension GL_OES_texture_storage_multisample_2d_array : require\n";
 	else
 		fragmentArguments["EXTENSION_STATEMENT"] = "";
@@ -1348,7 +1368,7 @@ void MultisampleTextureUsageCase::genSamplerShader (void)
 			DE_ASSERT(DE_FALSE);
 	}
 
-	m_samplerShader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(vertexShaderSource) << glu::FragmentSource(tcu::StringTemplate(fragmentShaderSource).specialize(fragmentArguments)));
+	m_samplerShader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(specializeShader(m_context, vertexShaderSource)) << glu::FragmentSource(tcu::StringTemplate(fragmentShaderSource).specialize(fragmentArguments)));
 	m_testCtx.getLog() << *m_samplerShader;
 
 	if (!m_samplerShader->isOk())
@@ -1852,8 +1872,9 @@ NegativeTexParameterCase::IterateResult NegativeTexParameterCase::iterate (void)
 	};
 
 	const tcu::ScopedLogSection scope(m_testCtx.getLog(), "Iteration", std::string() + "Testing parameter with " + types[m_iteration].name + " texture");
+	const bool					supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (types[m_iteration].isArrayType && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (types[m_iteration].isArrayType && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		m_testCtx.getLog() << tcu::TestLog::Message << "GL_OES_texture_storage_multisample_2d_array not supported, skipping target" << tcu::TestLog::EndMessage;
 	else
 	{

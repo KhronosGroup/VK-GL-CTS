@@ -105,6 +105,7 @@ const MemoryRequirement MemoryRequirement::Any				= MemoryRequirement(0x0u);
 const MemoryRequirement MemoryRequirement::HostVisible		= MemoryRequirement(MemoryRequirement::FLAG_HOST_VISIBLE);
 const MemoryRequirement MemoryRequirement::Coherent			= MemoryRequirement(MemoryRequirement::FLAG_COHERENT);
 const MemoryRequirement MemoryRequirement::LazilyAllocated	= MemoryRequirement(MemoryRequirement::FLAG_LAZY_ALLOCATION);
+const MemoryRequirement MemoryRequirement::Protected		= MemoryRequirement(MemoryRequirement::FLAG_PROTECTED);
 
 bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 {
@@ -113,6 +114,8 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 		DE_FATAL("Coherent memory must be host-visible");
 	if ((m_flags & FLAG_HOST_VISIBLE) && (m_flags & FLAG_LAZY_ALLOCATION))
 		DE_FATAL("Lazily allocated memory cannot be mappable");
+	if ((m_flags & FLAG_PROTECTED) && (m_flags & FLAG_HOST_VISIBLE))
+		DE_FATAL("Protected memory cannot be mappable");
 
 	// host-visible
 	if ((m_flags & FLAG_HOST_VISIBLE) && !(heapFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
@@ -124,6 +127,10 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 
 	// lazy
 	if ((m_flags & FLAG_LAZY_ALLOCATION) && !(heapFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT))
+		return false;
+
+	// protected
+	if ((m_flags & FLAG_PROTECTED) && !(heapFlags & VK_MEMORY_PROPERTY_PROTECTED_BIT))
 		return false;
 
 	return true;
@@ -237,8 +244,8 @@ de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
 										   const VkBuffer			buffer,
 										   MemoryRequirement		requirement)
 {
-	const VkMemoryRequirements					memoryRequirements		= getBufferMemoryRequirements(vkd, device, buffer);
-	const VkMemoryDedicatedAllocateInfoKHR		dedicatedAllocationInfo	=
+	const VkMemoryRequirements				memoryRequirements		= getBufferMemoryRequirements(vkd, device, buffer);
+	const VkMemoryDedicatedAllocateInfo		dedicatedAllocationInfo	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,				// VkStructureType		sType
 		DE_NULL,															// const void*			pNext
@@ -257,7 +264,7 @@ de::MovePtr<Allocation> allocateDedicated (const InstanceInterface&	vki,
 										   MemoryRequirement		requirement)
 {
 	const VkMemoryRequirements				memoryRequirements		= getImageMemoryRequirements(vkd, device, image);
-	const VkMemoryDedicatedAllocateInfoKHR	dedicatedAllocationInfo	=
+	const VkMemoryDedicatedAllocateInfo		dedicatedAllocationInfo	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,			// VkStructureType		sType
 		DE_NULL,														// const void*			pNext
@@ -324,13 +331,13 @@ void bindImagePlaneMemory (const DeviceInterface&	vkd,
 						   VkDeviceSize				memoryOffset,
 						   VkImageAspectFlagBits	planeAspect)
 {
-	const VkBindImagePlaneMemoryInfoKHR	planeInfo	=
+	const VkBindImagePlaneMemoryInfo	planeInfo	=
 	{
 		VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
 		DE_NULL,
 		planeAspect
 	};
-	const VkBindImageMemoryInfoKHR		coreInfo	=
+	const VkBindImageMemoryInfo			coreInfo	=
 	{
 		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
 		&planeInfo,
@@ -339,7 +346,7 @@ void bindImagePlaneMemory (const DeviceInterface&	vkd,
 		memoryOffset,
 	};
 
-	VK_CHECK(vkd.bindImageMemory2KHR(device, 1u, &coreInfo));
+	VK_CHECK(vkd.bindImageMemory2(device, 1u, &coreInfo));
 }
 
 } // vk

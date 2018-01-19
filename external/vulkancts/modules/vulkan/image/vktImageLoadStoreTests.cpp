@@ -311,7 +311,8 @@ class StoreTest : public TestCase
 public:
 	enum TestFlags
 	{
-		FLAG_SINGLE_LAYER_BIND = 0x1,	//!< Run the shader multiple times, each time binding a different layer.
+		FLAG_SINGLE_LAYER_BIND				= 0x1,	//!< Run the shader multiple times, each time binding a different layer.
+		FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER	= 0x2,	//!< Declare the format of the images in the shader code
 	};
 
 							StoreTest			(tcu::TestContext&	testCtx,
@@ -319,7 +320,7 @@ public:
 												 const std::string&	description,
 												 const Texture&		texture,
 												 const VkFormat		format,
-												 const TestFlags	flags = static_cast<TestFlags>(0));
+												 const deUint32		flags = FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER);
 
 	void					initPrograms		(SourceCollections& programCollection) const;
 
@@ -328,6 +329,7 @@ public:
 private:
 	const Texture			m_texture;
 	const VkFormat			m_format;
+	const bool				m_declareImageFormatInShader;
 	const bool				m_singleLayerBind;
 };
 
@@ -336,11 +338,12 @@ StoreTest::StoreTest (tcu::TestContext&		testCtx,
 					  const std::string&	description,
 					  const Texture&		texture,
 					  const VkFormat		format,
-					  const TestFlags		flags)
-	: TestCase			(testCtx, name, description)
-	, m_texture			(texture)
-	, m_format			(format)
-	, m_singleLayerBind	((flags & FLAG_SINGLE_LAYER_BIND) != 0)
+					  const deUint32		flags)
+	: TestCase						(testCtx, name, description)
+	, m_texture						(texture)
+	, m_format						(format)
+	, m_declareImageFormatInShader	((flags & FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER) != 0)
+	, m_singleLayerBind				((flags & FLAG_SINGLE_LAYER_BIND) != 0)
 {
 	if (m_singleLayerBind)
 		DE_ASSERT(m_texture.numLayers() > 1);
@@ -371,27 +374,33 @@ void StoreTest::initPrograms (SourceCollections& programCollection) const
 	const std::string formatQualifierStr = getShaderImageFormatQualifier(mapVkFormat(m_format));
 	const std::string imageTypeStr = getShaderImageType(mapVkFormat(m_format), usedImageType);
 
-	std::ostringstream src;
-	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
-		<< "\n"
-		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-		<< "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_image;\n";
+	for (deUint32 variant = 0; variant <= 1; variant++)
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+			<< "\n"
+			<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+		if (variant == 0)
+			src << "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " u_image;\n";
+		else
+			src << "layout (binding = 0) writeonly uniform " << imageTypeStr << " u_image;\n";
 
-	if (m_singleLayerBind)
-		src << "layout (binding = 1) readonly uniform Constants {\n"
-			<< "    int u_layerNdx;\n"
-			<< "};\n";
+		if (m_singleLayerBind)
+			src << "layout (binding = 1) readonly uniform Constants {\n"
+				<< "    int u_layerNdx;\n"
+				<< "};\n";
 
-	src << "\n"
-		<< "void main (void)\n"
-		<< "{\n"
-		<< "    int gx = int(gl_GlobalInvocationID.x);\n"
-		<< "    int gy = int(gl_GlobalInvocationID.y);\n"
-		<< "    int gz = " << (m_singleLayerBind ? "u_layerNdx" : "int(gl_GlobalInvocationID.z)") << ";\n"
-		<< "    imageStore(u_image, " << texelCoordStr << ", " << colorExpr << ");\n"
-		<< "}\n";
+		src << "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    int gx = int(gl_GlobalInvocationID.x);\n"
+			<< "    int gy = int(gl_GlobalInvocationID.y);\n"
+			<< "    int gz = " << (m_singleLayerBind ? "u_layerNdx" : "int(gl_GlobalInvocationID.z)") << ";\n"
+			<< "    imageStore(u_image, " << texelCoordStr << ", " << colorExpr << ");\n"
+			<< "}\n";
 
-	programCollection.glslSources.add("comp") << glu::ComputeSource(src.str());
+		programCollection.glslSources.add(variant == 0 ? "comp" : "comp_fmt_unknown") << glu::ComputeSource(src.str());
+	}
 }
 
 //! Generic test iteration algorithm for image tests
@@ -401,6 +410,7 @@ public:
 									BaseTestInstance						(Context&		context,
 																			 const Texture&	texture,
 																			 const VkFormat	format,
+																			 const bool		declareImageFormatInShader,
 																			 const bool		singleLayerBind);
 
 	tcu::TestStatus                 iterate									(void);
@@ -418,28 +428,33 @@ protected:
 	virtual void					commandBindDescriptorsForLayer			(const VkCommandBuffer	cmdBuffer,
 																			 const VkPipelineLayout pipelineLayout,
 																			 const int				layerNdx) = 0;
+	virtual void					checkRequirements						(void) {};
 
 	const Texture					m_texture;
 	const VkFormat					m_format;
+	const bool						m_declareImageFormatInShader;
 	const bool						m_singleLayerBind;
 };
 
-BaseTestInstance::BaseTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool singleLayerBind)
-	: TestInstance		(context)
-	, m_texture			(texture)
-	, m_format			(format)
-	, m_singleLayerBind	(singleLayerBind)
+BaseTestInstance::BaseTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool declareImageFormatInShader, const bool singleLayerBind)
+	: TestInstance					(context)
+	, m_texture						(texture)
+	, m_format						(format)
+	, m_declareImageFormatInShader	(declareImageFormatInShader)
+	, m_singleLayerBind				(singleLayerBind)
 {
 }
 
 tcu::TestStatus BaseTestInstance::iterate (void)
 {
-	const DeviceInterface&	vk					= m_context.getDeviceInterface();
-	const VkDevice			device				= m_context.getDevice();
-	const VkQueue			queue				= m_context.getUniversalQueue();
-	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	checkRequirements();
 
-	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+	const VkDevice					device				= m_context.getDevice();
+	const VkQueue					queue				= m_context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+
+	const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, m_context.getBinaryCollection().get(m_declareImageFormatInShader ? "comp" : "comp_fmt_unknown"), 0));
 
 	const VkDescriptorSetLayout descriptorSetLayout = prepareDescriptors();
 	const Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(vk, device, descriptorSetLayout));
@@ -481,6 +496,7 @@ public:
 									StoreTestInstance						(Context&		context,
 																			 const Texture&	texture,
 																			 const VkFormat	format,
+																			 const bool		declareImageFormatInShader,
 																			 const bool		singleLayerBind);
 
 protected:
@@ -490,13 +506,14 @@ protected:
 	void							commandBeforeCompute					(const VkCommandBuffer) {}
 	void							commandBetweenShaderInvocations			(const VkCommandBuffer) {}
 	void							commandAfterCompute						(const VkCommandBuffer) {}
+	void							checkRequirements						(void);
 
 	de::MovePtr<Buffer>				m_imageBuffer;
 	const VkDeviceSize				m_imageSizeBytes;
 };
 
-StoreTestInstance::StoreTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool singleLayerBind)
-	: BaseTestInstance		(context, texture, format, singleLayerBind)
+StoreTestInstance::StoreTestInstance (Context& context, const Texture& texture, const VkFormat format, const bool declareImageFormatInShader, const bool singleLayerBind)
+	: BaseTestInstance		(context, texture, format, declareImageFormatInShader, singleLayerBind)
 	, m_imageSizeBytes		(getImageSizeBytes(texture.size(), format))
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
@@ -529,6 +546,14 @@ tcu::TestStatus StoreTestInstance::verifyResult	(void)
 		return tcu::TestStatus::fail("Image comparison failed");
 }
 
+void StoreTestInstance::checkRequirements (void)
+{
+	const VkPhysicalDeviceFeatures	features	= m_context.getDeviceFeatures();
+
+	if (!m_declareImageFormatInShader && !features.shaderStorageImageWriteWithoutFormat)
+		throw tcu::NotSupportedError("shaderStorageImageWriteWithoutFormat feature not supported");
+}
+
 //! Store test for images
 class ImageStoreTestInstance : public StoreTestInstance
 {
@@ -536,6 +561,7 @@ public:
 										ImageStoreTestInstance					(Context&				context,
 																				 const Texture&			texture,
 																				 const VkFormat			format,
+																				 const bool				declareImageFormatInShader,
 																				 const bool				singleLayerBind);
 
 protected:
@@ -560,8 +586,9 @@ protected:
 ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 												const Texture&	texture,
 												const VkFormat	format,
+												const bool		declareImageFormatInShader,
 												const bool		singleLayerBind)
-	: StoreTestInstance					(context, texture, format, singleLayerBind)
+	: StoreTestInstance					(context, texture, format, declareImageFormatInShader, singleLayerBind)
 	, m_constantsBufferChunkSizeBytes	(getOptimalUniformBufferChunkSize(context.getInstanceInterface(), context.getPhysicalDevice(), sizeof(deUint32)))
 	, m_allDescriptorSets				(texture.numLayers())
 	, m_allImageViews					(texture.numLayers())
@@ -692,7 +719,8 @@ class BufferStoreTestInstance : public StoreTestInstance
 public:
 									BufferStoreTestInstance					(Context&				context,
 																			 const Texture&			texture,
-																			 const VkFormat			format);
+																			 const VkFormat			format,
+																			 const bool				declareImageFormatInShader);
 
 protected:
 	VkDescriptorSetLayout			prepareDescriptors						(void);
@@ -710,8 +738,9 @@ protected:
 
 BufferStoreTestInstance::BufferStoreTestInstance (Context&			context,
 												  const Texture&	texture,
-												  const VkFormat	format)
-	: StoreTestInstance(context, texture, format, false)
+												  const VkFormat	format,
+												  const bool		declareImageFormatInShader)
+	: StoreTestInstance(context, texture, format, declareImageFormatInShader, false)
 {
 }
 
@@ -758,8 +787,9 @@ class LoadStoreTest : public TestCase
 public:
 	enum TestFlags
 	{
-		FLAG_SINGLE_LAYER_BIND	= 1 << 0,	//!< Run the shader multiple times, each time binding a different layer.
-		FLAG_RESTRICT_IMAGES	= 1 << 1,	//!< If given, images in the shader will be qualified with "restrict".
+		FLAG_SINGLE_LAYER_BIND				= 1 << 0,	//!< Run the shader multiple times, each time binding a different layer.
+		FLAG_RESTRICT_IMAGES				= 1 << 1,	//!< If given, images in the shader will be qualified with "restrict".
+		FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER	= 1 << 2,	//!< Declare the format of the images in the shader code
 	};
 
 							LoadStoreTest			(tcu::TestContext&		testCtx,
@@ -768,15 +798,16 @@ public:
 													 const Texture&			texture,
 													 const VkFormat			format,
 													 const VkFormat			imageFormat,
-													 const TestFlags		flags = static_cast<TestFlags>(0));
+													 const deUint32			flags = FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER);
 
 	void					initPrograms			(SourceCollections&		programCollection) const;
 	TestInstance*			createInstance			(Context&				context) const;
 
 private:
 	const Texture			m_texture;
-	const VkFormat			m_format;				//!< Format as accessed in the shader
-	const VkFormat			m_imageFormat;			//!< Storage format
+	const VkFormat			m_format;						//!< Format as accessed in the shader
+	const VkFormat			m_imageFormat;					//!< Storage format
+	const bool				m_declareImageFormatInShader;	//!< Whether the shader will specify the format layout qualifier of the images
 	const bool				m_singleLayerBind;
 	const bool				m_restrictImages;
 };
@@ -787,13 +818,14 @@ LoadStoreTest::LoadStoreTest (tcu::TestContext&		testCtx,
 							  const Texture&		texture,
 							  const VkFormat		format,
 							  const VkFormat		imageFormat,
-							  const TestFlags		flags)
-	: TestCase			(testCtx, name, description)
-	, m_texture			(texture)
-	, m_format			(format)
-	, m_imageFormat		(imageFormat)
-	, m_singleLayerBind ((flags & FLAG_SINGLE_LAYER_BIND) != 0)
-	, m_restrictImages	((flags & FLAG_RESTRICT_IMAGES) != 0)
+							  const deUint32		flags)
+	: TestCase						(testCtx, name, description)
+	, m_texture						(texture)
+	, m_format						(format)
+	, m_imageFormat					(imageFormat)
+	, m_declareImageFormatInShader	((flags & FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER) != 0)
+	, m_singleLayerBind				((flags & FLAG_SINGLE_LAYER_BIND) != 0)
+	, m_restrictImages				((flags & FLAG_RESTRICT_IMAGES) != 0)
 {
 	if (m_singleLayerBind)
 		DE_ASSERT(m_texture.numLayers() > 1);
@@ -810,28 +842,38 @@ void LoadStoreTest::initPrograms (SourceCollections& programCollection) const
 	const std::string	maybeRestrictStr	= (m_restrictImages ? "restrict " : "");
 	const std::string	xMax				= de::toString(m_texture.size().x() - 1);
 
-	std::ostringstream src;
-	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
-		<< "\n"
-		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-		<< "layout (binding = 0, " << formatQualifierStr << ") " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n"
-		<< "layout (binding = 1, " << formatQualifierStr << ") " << maybeRestrictStr << "writeonly uniform " << imageTypeStr << " u_image1;\n"
-		<< "\n"
-		<< "void main (void)\n"
-		<< "{\n"
-		<< (dimension == 1 ?
-			"    int pos = int(gl_GlobalInvocationID.x);\n"
-			"    imageStore(u_image1, pos, imageLoad(u_image0, " + xMax + "-pos));\n"
-			: dimension == 2 ?
-			"    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
-			"    imageStore(u_image1, pos, imageLoad(u_image0, ivec2(" + xMax + "-pos.x, pos.y)));\n"
-			: dimension == 3 ?
-			"    ivec3 pos = ivec3(gl_GlobalInvocationID);\n"
-			"    imageStore(u_image1, pos, imageLoad(u_image0, ivec3(" + xMax + "-pos.x, pos.y, pos.z)));\n"
-			: "")
-		<< "}\n";
+	for (deUint32 variant = 0; variant <= 1; variant++)
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_440) << "\n"
+			<< "\n";
+		if (variant != 0)
+		{
+			src << "#extension GL_EXT_shader_image_load_formatted : require\n";
+		}
+		src << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+		if (variant == 0)
+			src << "layout (binding = 0, " << formatQualifierStr << ") " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n";
+		else
+			src << "layout (binding = 0) " << maybeRestrictStr << "readonly uniform " << imageTypeStr << " u_image0;\n";
+		src << "layout (binding = 1, " << formatQualifierStr << ") " << maybeRestrictStr << "writeonly uniform " << imageTypeStr << " u_image1;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< (dimension == 1 ?
+				"    int pos = int(gl_GlobalInvocationID.x);\n"
+				"    imageStore(u_image1, pos, imageLoad(u_image0, " + xMax + "-pos));\n"
+				: dimension == 2 ?
+				"    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
+				"    imageStore(u_image1, pos, imageLoad(u_image0, ivec2(" + xMax + "-pos.x, pos.y)));\n"
+				: dimension == 3 ?
+				"    ivec3 pos = ivec3(gl_GlobalInvocationID);\n"
+				"    imageStore(u_image1, pos, imageLoad(u_image0, ivec3(" + xMax + "-pos.x, pos.y, pos.z)));\n"
+				: "")
+			<< "}\n";
 
-	programCollection.glslSources.add("comp") << glu::ComputeSource(src.str());
+		programCollection.glslSources.add(variant == 0 ? "comp" : "comp_fmt_unknown") << glu::ComputeSource(src.str());
+	}
 }
 
 //! Load/store test base implementation
@@ -842,6 +884,7 @@ public:
 																		 const Texture&		texture,
 																		 const VkFormat		format,
 																		 const VkFormat		imageFormat,
+																		 const bool			declareImageFormatInShader,
 																		 const bool			singleLayerBind);
 
 protected:
@@ -853,6 +896,7 @@ protected:
 	void							commandBeforeCompute				(const VkCommandBuffer) {}
 	void							commandBetweenShaderInvocations		(const VkCommandBuffer) {}
 	void							commandAfterCompute					(const VkCommandBuffer) {}
+	void							checkRequirements					(void);
 
 	de::MovePtr<Buffer>				m_imageBuffer;		//!< Source data and helper buffer
 	const VkDeviceSize				m_imageSizeBytes;
@@ -864,8 +908,9 @@ LoadStoreTestInstance::LoadStoreTestInstance (Context&			context,
 											  const Texture&	texture,
 											  const VkFormat	format,
 											  const VkFormat	imageFormat,
+											  const bool		declareImageFormatInShader,
 											  const bool		singleLayerBind)
-	: BaseTestInstance		(context, texture, format, singleLayerBind)
+	: BaseTestInstance		(context, texture, format, declareImageFormatInShader, singleLayerBind)
 	, m_imageSizeBytes		(getImageSizeBytes(texture.size(), format))
 	, m_imageFormat			(imageFormat)
 	, m_referenceImage		(generateReferenceImage(texture.size(), imageFormat, format))
@@ -907,6 +952,15 @@ tcu::TestStatus LoadStoreTestInstance::verifyResult	(void)
 		return tcu::TestStatus::fail("Image comparison failed");
 }
 
+void LoadStoreTestInstance::checkRequirements (void)
+{
+	const VkPhysicalDeviceFeatures	features	= m_context.getDeviceFeatures();
+
+	if (!m_declareImageFormatInShader && !features.shaderStorageImageReadWithoutFormat)
+		throw tcu::NotSupportedError("shaderStorageImageReadWithoutFormat feature not supported");
+}
+
+
 //! Load/store test for images
 class ImageLoadStoreTestInstance : public LoadStoreTestInstance
 {
@@ -915,6 +969,7 @@ public:
 																			 const Texture&			texture,
 																			 const VkFormat			format,
 																			 const VkFormat			imageFormat,
+																			 const bool				declareImageFormatInShader,
 																			 const bool				singleLayerBind);
 
 protected:
@@ -942,8 +997,9 @@ ImageLoadStoreTestInstance::ImageLoadStoreTestInstance (Context&		context,
 														const Texture&	texture,
 														const VkFormat	format,
 														const VkFormat	imageFormat,
+														const bool		declareImageFormatInShader,
 														const bool		singleLayerBind)
-	: LoadStoreTestInstance	(context, texture, format, imageFormat, singleLayerBind)
+	: LoadStoreTestInstance	(context, texture, format, imageFormat, declareImageFormatInShader, singleLayerBind)
 	, m_allDescriptorSets	(texture.numLayers())
 	, m_allSrcImageViews	(texture.numLayers())
 	, m_allDstImageViews	(texture.numLayers())
@@ -1079,7 +1135,8 @@ public:
 									BufferLoadStoreTestInstance		(Context&				context,
 																	 const Texture&			texture,
 																	 const VkFormat			format,
-																	 const VkFormat			imageFormat);
+																	 const VkFormat			imageFormat,
+																	 const bool				declareImageFormatInShader);
 
 protected:
 	VkDescriptorSetLayout			prepareDescriptors				(void);
@@ -1102,8 +1159,9 @@ protected:
 BufferLoadStoreTestInstance::BufferLoadStoreTestInstance (Context&			context,
 														  const Texture&	texture,
 														  const VkFormat	format,
-														  const VkFormat	imageFormat)
-	: LoadStoreTestInstance(context, texture, format, imageFormat, false)
+														  const VkFormat	imageFormat,
+														  const bool		declareImageFormatInShader)
+	: LoadStoreTestInstance(context, texture, format, imageFormat, declareImageFormatInShader, false)
 {
 	const DeviceInterface&	vk			= m_context.getDeviceInterface();
 	const VkDevice			device		= m_context.getDevice();
@@ -1162,17 +1220,17 @@ void BufferLoadStoreTestInstance::commandAfterCompute (const VkCommandBuffer cmd
 TestInstance* StoreTest::createInstance (Context& context) const
 {
 	if (m_texture.type() == IMAGE_TYPE_BUFFER)
-		return new BufferStoreTestInstance(context, m_texture, m_format);
+		return new BufferStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader);
 	else
-		return new ImageStoreTestInstance(context, m_texture, m_format, m_singleLayerBind);
+		return new ImageStoreTestInstance(context, m_texture, m_format, m_declareImageFormatInShader, m_singleLayerBind);
 }
 
 TestInstance* LoadStoreTest::createInstance (Context& context) const
 {
 	if (m_texture.type() == IMAGE_TYPE_BUFFER)
-		return new BufferLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat);
+		return new BufferLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_declareImageFormatInShader);
 	else
-		return new ImageLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_singleLayerBind);
+		return new ImageLoadStoreTestInstance(context, m_texture, m_format, m_imageFormat, m_declareImageFormatInShader, m_singleLayerBind);
 }
 
 static const Texture s_textures[] =
@@ -1223,23 +1281,33 @@ static const VkFormat s_formats[] =
 tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "store", "Plain imageStore() cases"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupWithFormat(new tcu::TestCaseGroup(testCtx, "with_format", "Declare a format layout qualifier for write images"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupWithoutFormat(new tcu::TestCaseGroup(testCtx, "without_format", "Do not declare a format layout qualifier for write images"));
 
 	for (int textureNdx = 0; textureNdx < DE_LENGTH_OF_ARRAY(s_textures); ++textureNdx)
 	{
 		const Texture& texture = s_textures[textureNdx];
-		de::MovePtr<tcu::TestCaseGroup> groupByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
 		const bool isLayered = (texture.numLayers() > 1);
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
-			groupByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
+			groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx]));
+			groupWithoutFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], 0));
 
 			if (isLayered)
-				groupByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
-												texture, s_formats[formatNdx], StoreTest::FLAG_SINGLE_LAYER_BIND));
+				groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
+														texture, s_formats[formatNdx],
+														StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 		}
-		testGroup->addChild(groupByImageViewType.release());
+
+		testGroupWithFormat->addChild(groupWithFormatByImageViewType.release());
+		testGroupWithoutFormat->addChild(groupWithoutFormatByImageViewType.release());
 	}
+
+	testGroup->addChild(testGroupWithFormat.release());
+	testGroup->addChild(testGroupWithoutFormat.release());
 
 	return testGroup.release();
 }
@@ -1247,24 +1315,33 @@ tcu::TestCaseGroup* createImageStoreTests (tcu::TestContext& testCtx)
 tcu::TestCaseGroup* createImageLoadStoreTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "load_store", "Cases with imageLoad() followed by imageStore()"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupWithFormat(new tcu::TestCaseGroup(testCtx, "with_format", "Declare a format layout qualifier for read images"));
+	de::MovePtr<tcu::TestCaseGroup> testGroupWithoutFormat(new tcu::TestCaseGroup(testCtx, "without_format", "Do not declare a format layout qualifier for read images"));
 
 	for (int textureNdx = 0; textureNdx < DE_LENGTH_OF_ARRAY(s_textures); ++textureNdx)
 	{
 		const Texture& texture = s_textures[textureNdx];
-		de::MovePtr<tcu::TestCaseGroup> groupByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupWithFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup> groupWithoutFormatByImageViewType (new tcu::TestCaseGroup(testCtx, getImageTypeName(texture.type()).c_str(), ""));
 		const bool isLayered = (texture.numLayers() > 1);
 
 		for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(s_formats); ++formatNdx)
 		{
-			groupByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "",
-											texture, s_formats[formatNdx], s_formats[formatNdx]));
+			groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx]));
+			groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]), "", texture, s_formats[formatNdx], s_formats[formatNdx], 0));
 
 			if (isLayered)
-				groupByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
-												texture, s_formats[formatNdx], s_formats[formatNdx], LoadStoreTest::FLAG_SINGLE_LAYER_BIND));
+				groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, getFormatShortString(s_formats[formatNdx]) + "_single_layer", "",
+														texture, s_formats[formatNdx], s_formats[formatNdx],
+														LoadStoreTest::FLAG_SINGLE_LAYER_BIND | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 		}
-		testGroup->addChild(groupByImageViewType.release());
+
+		testGroupWithFormat->addChild(groupWithFormatByImageViewType.release());
+		testGroupWithoutFormat->addChild(groupWithoutFormatByImageViewType.release());
 	}
+
+	testGroup->addChild(testGroupWithFormat.release());
+	testGroup->addChild(testGroupWithoutFormat.release());
 
 	return testGroup.release();
 }
@@ -1295,7 +1372,7 @@ de::MovePtr<TestCase> createImageQualifierRestrictCase (tcu::TestContext& testCt
 {
 	const VkFormat format = VK_FORMAT_R32G32B32A32_UINT;
 	const Texture& texture = getTestTexture(imageType);
-	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, "", texture, format, format, LoadStoreTest::FLAG_RESTRICT_IMAGES));
+	return de::MovePtr<TestCase>(new LoadStoreTest(testCtx, name, "", texture, format, format, LoadStoreTest::FLAG_RESTRICT_IMAGES | LoadStoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 }
 
 } // image

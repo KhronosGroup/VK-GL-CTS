@@ -90,7 +90,7 @@ ShaderPackingFunctionCase::ShaderPackingFunctionCase (Context& context, const ch
 	, m_shaderType	(shaderType)
 	, m_executor	(DE_NULL)
 {
-	m_spec.version = glu::GLSL_VERSION_310_ES;
+	m_spec.version = glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
 }
 
 ShaderPackingFunctionCase::~ShaderPackingFunctionCase (void)

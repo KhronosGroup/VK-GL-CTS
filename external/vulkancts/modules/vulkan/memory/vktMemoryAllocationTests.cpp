@@ -29,6 +29,7 @@
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuPlatform.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
@@ -78,23 +79,151 @@ struct TestConfig
 	Maybe<float>		memoryPercentage;
 	deUint32			memoryAllocationCount;
 	Order				order;
+	bool				useDeviceGroups;
 
 	TestConfig (void)
 		: memoryAllocationCount	((deUint32)-1)
 		, order					(ORDER_LAST)
+		, useDeviceGroups		(false)
 	{
 	}
 };
 
-class AllocateFreeTestInstance : public TestInstance
+struct TestConfigRandom
+{
+	const deUint32		seed;
+	const bool			useDeviceGroups;
+
+	TestConfigRandom (const deUint32 _seed, const bool _useDeviceGroups)
+		: seed				(_seed)
+		, useDeviceGroups	(_useDeviceGroups)
+	{
+	}
+};
+
+vk::Move<VkInstance> createInstanceWithExtensions (const vk::PlatformInterface& vkp, deUint32 version, const std::vector<std::string>& enableExtensions)
+{
+	std::vector<std::string>					enableExtensionPtrs;
+	const std::vector<VkExtensionProperties>	availableExtensions	 = enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	for (size_t extensionID = 0; extensionID < enableExtensions.size(); extensionID++)
+	{
+		if (!isInstanceExtensionSupported(version, availableExtensions, RequiredExtension(enableExtensions[extensionID])))
+			TCU_THROW(NotSupportedError, (enableExtensions[extensionID] + " is not supported").c_str());
+
+		if (!isCoreInstanceExtension(version, enableExtensions[extensionID]))
+			enableExtensionPtrs.push_back(enableExtensions[extensionID]);
+	}
+
+	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, enableExtensionPtrs);
+}
+
+class BaseAllocateTestInstance : public TestInstance
+{
+public:
+						BaseAllocateTestInstance		(Context& context, bool useDeviceGroups)
+		: TestInstance				(context)
+		, m_useDeviceGroups			(useDeviceGroups)
+		, m_subsetAllocationAllowed	(false)
+		, m_numPhysDevices			(1)
+		, m_memoryProperties		(getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
+	{
+		if (m_useDeviceGroups)
+			createDeviceGroup();
+		m_allocFlagsInfo.sType		= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
+		m_allocFlagsInfo.pNext		= DE_NULL;
+		m_allocFlagsInfo.flags		= VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT;
+		m_allocFlagsInfo.deviceMask	= 0;
+	}
+
+	void						createDeviceGroup	(void);
+	const vk::DeviceInterface&	getDeviceInterface	(void) { return m_useDeviceGroups ? *m_deviceDriver : m_context.getDeviceInterface(); }
+	vk::VkDevice				getDevice			(void) { return m_useDeviceGroups ? m_logicalDevice.get() : m_context.getDevice(); }
+
+protected:
+	bool									m_useDeviceGroups;
+	bool									m_subsetAllocationAllowed;
+	VkMemoryAllocateFlagsInfo				m_allocFlagsInfo;
+	deUint32								m_numPhysDevices;
+	VkPhysicalDeviceMemoryProperties		m_memoryProperties;
+
+private:
+	vk::Move<vk::VkInstance>		m_deviceGroupInstance;
+	vk::Move<vk::VkDevice>			m_logicalDevice;
+	de::MovePtr<vk::DeviceDriver>	m_deviceDriver;
+};
+
+void BaseAllocateTestInstance::createDeviceGroup (void)
+{
+	const tcu::CommandLine&							cmdLine					= m_context.getTestContext().getCommandLine();
+	const deUint32									devGroupIdx				= cmdLine.getVKDeviceGroupId() - 1;
+	const deUint32									physDeviceIdx			= cmdLine.getVKDeviceId() - 1;
+	const float										queuePriority			= 1.0f;
+	deUint32										queueFamilyIndex		= 0;
+	const std::vector<std::string>					requiredExtensions		(1, "VK_KHR_device_group_creation");
+	m_deviceGroupInstance													= createInstanceWithExtensions(m_context.getPlatformInterface(), m_context.getUsedApiVersion(), requiredExtensions);
+	std::vector<VkPhysicalDeviceGroupProperties>	devGroupProperties		= enumeratePhysicalDeviceGroups(m_context.getInstanceInterface(), m_deviceGroupInstance.get());
+	m_numPhysDevices														= devGroupProperties[devGroupIdx].physicalDeviceCount;
+	m_subsetAllocationAllowed												= devGroupProperties[devGroupIdx].subsetAllocation;
+	if (m_numPhysDevices < 2)
+		TCU_THROW(NotSupportedError, "Device group allocation tests not supported with 1 physical device");
+	std::vector<const char*>						deviceExtensions;
+
+	if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
+		deviceExtensions.push_back("VK_KHR_device_group");
+
+	VkDeviceGroupDeviceCreateInfo					deviceGroupInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,								//stype
+		DE_NULL,																			//pNext
+		devGroupProperties[devGroupIdx].physicalDeviceCount,								//physicalDeviceCount
+		devGroupProperties[devGroupIdx].physicalDevices										//physicalDevices
+	};
+	InstanceDriver									instance				(m_context.getPlatformInterface(), m_useDeviceGroups ? m_deviceGroupInstance.get() : m_context.getInstance());
+	const VkPhysicalDeviceFeatures					deviceFeatures	=		getPhysicalDeviceFeatures(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
+
+	const std::vector<VkQueueFamilyProperties>		queueProps		=		getPhysicalDeviceQueueFamilyProperties(instance, devGroupProperties[devGroupIdx].physicalDevices[physDeviceIdx]);
+	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
+	{
+		if (queueProps[queueNdx].queueFlags & VK_QUEUE_COMPUTE_BIT)
+			queueFamilyIndex = (deUint32)queueNdx;
+	}
+
+	VkDeviceQueueCreateInfo							queueInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,					// VkStructureType					sType;
+		DE_NULL,													// const void*						pNext;
+		(VkDeviceQueueCreateFlags)0u,								// VkDeviceQueueCreateFlags			flags;
+		queueFamilyIndex,											// deUint32							queueFamilyIndex;
+		1u,															// deUint32							queueCount;
+		&queuePriority												// const float*						pQueuePriorities;
+	};
+
+	const VkDeviceCreateInfo						deviceInfo		=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,						// VkStructureType					sType;
+		m_useDeviceGroups ? &deviceGroupInfo : DE_NULL,				// const void*						pNext;
+		(VkDeviceCreateFlags)0,										// VkDeviceCreateFlags				flags;
+		1u	,														// uint32_t							queueCreateInfoCount;
+		&queueInfo,													// const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+		0u,															// uint32_t							enabledLayerCount;
+		DE_NULL,													// const char* const*				ppEnabledLayerNames;
+		deUint32(deviceExtensions.size()),							// uint32_t							enabledExtensionCount;
+		deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0],	// const char* const*	ppEnabledExtensionNames;
+		&deviceFeatures,											// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+	};
+	m_logicalDevice		= createDevice(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
+	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
+	m_memoryProperties	= getPhysicalDeviceMemoryProperties(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
+}
+
+class AllocateFreeTestInstance : public BaseAllocateTestInstance
 {
 public:
 						AllocateFreeTestInstance		(Context& context, const TestConfig config)
-		: TestInstance			(context)
+		: BaseAllocateTestInstance			(context, config.useDeviceGroups)
 		, m_config				(config)
 		, m_result				(m_context.getTestContext().getLog())
 		, m_memoryTypeIndex		(0)
-		, m_memoryProperties	(getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
 	{
 		DE_ASSERT(!!m_config.memorySize != !!m_config.memoryPercentage);
 	}
@@ -105,14 +234,14 @@ private:
 	const TestConfig						m_config;
 	tcu::ResultCollector					m_result;
 	deUint32								m_memoryTypeIndex;
-	const VkPhysicalDeviceMemoryProperties	m_memoryProperties;
 };
+
 
 tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 {
 	TestLog&								log					= m_context.getTestContext().getLog();
-	const VkDevice							device				= m_context.getDevice();
-	const DeviceInterface&					vkd					= m_context.getDeviceInterface();
+	const VkDevice							device				= getDevice();
+	const DeviceInterface&					vkd					= getDeviceInterface();
 
 	DE_ASSERT(m_config.memoryAllocationCount <= MAX_ALLOCATION_COUNT);
 
@@ -153,61 +282,70 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 
 			try
 			{
-				if (m_config.order == TestConfig::ALLOC_FREE || m_config.order == TestConfig::ALLOC_REVERSE_FREE)
+				const deUint32 totalDeviceMaskCombinations = m_subsetAllocationAllowed ? (1 << m_numPhysDevices) - 1 : 1;
+				for (deUint32 deviceMask = 1; deviceMask <= totalDeviceMaskCombinations; deviceMask++)
 				{
-					for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
-					{
-						const VkMemoryAllocateInfo alloc =
-						{
-							VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// sType
-							DE_NULL,								// pNext
-							allocationSize,							// allocationSize
-							m_memoryTypeIndex						// memoryTypeIndex;
-						};
+					// Allocate on all physical devices if subset allocation is not allowed, do only once.
+					if (!m_subsetAllocationAllowed)
+						deviceMask = (1 << m_numPhysDevices) - 1;
+					m_allocFlagsInfo.deviceMask = deviceMask;
 
-						VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
-
-						TCU_CHECK(!!memoryObjects[ndx]);
-					}
-
-					if (m_config.order == TestConfig::ALLOC_FREE)
+					if (m_config.order == TestConfig::ALLOC_FREE || m_config.order == TestConfig::ALLOC_REVERSE_FREE)
 					{
 						for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 						{
-							const VkDeviceMemory mem = memoryObjects[memoryObjects.size() - 1 - ndx];
+							VkMemoryAllocateInfo alloc =
+							{
+								VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// sType
+								m_useDeviceGroups ? &m_allocFlagsInfo : DE_NULL,	// pNext
+								allocationSize,										// allocationSize
+								m_memoryTypeIndex									// memoryTypeIndex;
+							};
 
-							vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
-							memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory)0;
+							VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
+
+							TCU_CHECK(!!memoryObjects[ndx]);
+						}
+
+						if (m_config.order == TestConfig::ALLOC_FREE)
+						{
+							for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
+							{
+								const VkDeviceMemory mem = memoryObjects[memoryObjects.size() - 1 - ndx];
+
+								vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+								memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory)0;
+							}
+						}
+						else
+						{
+							for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
+							{
+								const VkDeviceMemory mem = memoryObjects[ndx];
+
+								vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+								memoryObjects[ndx] = (VkDeviceMemory)0;
+							}
 						}
 					}
 					else
 					{
 						for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 						{
-							const VkDeviceMemory mem = memoryObjects[ndx];
+							const VkMemoryAllocateInfo alloc =
+							{
+								VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// sType
+								m_useDeviceGroups ? &m_allocFlagsInfo : DE_NULL,	// pNext
+								allocationSize,										// allocationSize
+								m_memoryTypeIndex									// memoryTypeIndex;
+							};
 
-							vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+							VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
+							TCU_CHECK(!!memoryObjects[ndx]);
+
+							vkd.freeMemory(device, memoryObjects[ndx], (const VkAllocationCallbacks*)DE_NULL);
 							memoryObjects[ndx] = (VkDeviceMemory)0;
 						}
-					}
-				}
-				else
-				{
-					for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
-					{
-						const VkMemoryAllocateInfo alloc =
-						{
-							VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// sType
-							DE_NULL,								// pNext
-							allocationSize,							// allocationSize
-							m_memoryTypeIndex						// memoryTypeIndex;
-						};
-
-						VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
-						TCU_CHECK(!!memoryObjects[ndx]);
-
-						vkd.freeMemory(device, memoryObjects[ndx], (const VkAllocationCallbacks*)DE_NULL);
-						memoryObjects[ndx] = (VkDeviceMemory)0;
 					}
 				}
 			}
@@ -287,10 +425,10 @@ struct Heap
 	vector<MemoryObject>	objects;
 };
 
-class RandomAllocFreeTestInstance : public TestInstance
+class RandomAllocFreeTestInstance : public BaseAllocateTestInstance
 {
 public:
-								RandomAllocFreeTestInstance		(Context& context, deUint32 seed);
+								RandomAllocFreeTestInstance		(Context& context, TestConfigRandom config);
 								~RandomAllocFreeTestInstance	(void);
 
 	tcu::TestStatus				iterate							(void);
@@ -299,8 +437,10 @@ private:
 	const size_t				m_opCount;
 	const size_t				m_allocSysMemSize;
 	const PlatformMemoryLimits	m_memoryLimits;
+	const deUint32				m_totalDeviceMaskCombinations;
 
 	deUint32					m_memoryObjectCount;
+	deUint32					m_currentDeviceMask;
 	size_t						m_opNdx;
 	de::Random					m_rng;
 	vector<Heap>				m_heaps;
@@ -308,45 +448,43 @@ private:
 	VkDeviceSize				m_totalDeviceMem;
 };
 
-RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, deUint32 seed)
-	: TestInstance			(context)
-	, m_opCount				(128)
-	, m_allocSysMemSize		(computeDeviceMemorySystemMemFootprint(context.getDeviceInterface(), context.getDevice())
-							 + sizeof(MemoryObject))
-	, m_memoryLimits		(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
-	, m_memoryObjectCount	(0)
-	, m_opNdx				(0)
-	, m_rng					(seed)
-	, m_totalSystemMem		(0)
-	, m_totalDeviceMem		(0)
+RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, TestConfigRandom config)
+	: BaseAllocateTestInstance	(context, config.useDeviceGroups)
+	, m_opCount						(128)
+	, m_allocSysMemSize				(computeDeviceMemorySystemMemFootprint(getDeviceInterface(), context.getDevice())
+									 + sizeof(MemoryObject))
+	, m_memoryLimits				(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
+	, m_totalDeviceMaskCombinations	(m_subsetAllocationAllowed ? (1 << m_numPhysDevices) - 1 : 1)
+	, m_memoryObjectCount			(0)
+	, m_currentDeviceMask			(m_subsetAllocationAllowed ? 1 : (1 << m_numPhysDevices) - 1)
+	, m_opNdx						(0)
+	, m_rng							(config.seed)
+	, m_totalSystemMem				(0)
+	, m_totalDeviceMem				(0)
 {
-	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
-	const InstanceInterface&				vki					= context.getInstanceInterface();
-	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
+	TCU_CHECK(m_memoryProperties.memoryHeapCount <= 32);
+	TCU_CHECK(m_memoryProperties.memoryTypeCount <= 32);
 
-	TCU_CHECK(memoryProperties.memoryHeapCount <= 32);
-	TCU_CHECK(memoryProperties.memoryTypeCount <= 32);
+	m_heaps.resize(m_memoryProperties.memoryHeapCount);
 
-	m_heaps.resize(memoryProperties.memoryHeapCount);
-
-	for (deUint32 heapNdx = 0; heapNdx < memoryProperties.memoryHeapCount; heapNdx++)
+	for (deUint32 heapNdx = 0; heapNdx < m_memoryProperties.memoryHeapCount; heapNdx++)
 	{
-		m_heaps[heapNdx].heap			= memoryProperties.memoryHeaps[heapNdx];
+		m_heaps[heapNdx].heap			= m_memoryProperties.memoryHeaps[heapNdx];
 		m_heaps[heapNdx].memoryUsage	= 0;
 		m_heaps[heapNdx].maxMemoryUsage	= m_heaps[heapNdx].heap.size / 2; /* Use at maximum 50% of heap */
 
 		m_heaps[heapNdx].objects.reserve(100);
 	}
 
-	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < memoryProperties.memoryTypeCount; memoryTypeNdx++)
+	for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < m_memoryProperties.memoryTypeCount; memoryTypeNdx++)
 	{
 		const MemoryType type =
 		{
 			memoryTypeNdx,
-			memoryProperties.memoryTypes[memoryTypeNdx]
+			m_memoryProperties.memoryTypes[memoryTypeNdx]
 		};
 
-		TCU_CHECK(type.type.heapIndex < memoryProperties.memoryHeapCount);
+		TCU_CHECK(type.type.heapIndex < m_memoryProperties.memoryHeapCount);
 
 		m_heaps[type.type.heapIndex].types.push_back(type);
 	}
@@ -354,8 +492,8 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, deUi
 
 RandomAllocFreeTestInstance::~RandomAllocFreeTestInstance (void)
 {
-	const VkDevice							device				= m_context.getDevice();
-	const DeviceInterface&					vkd					= m_context.getDeviceInterface();
+	const VkDevice							device				= getDevice();
+	const DeviceInterface&					vkd					= getDeviceInterface();
 
 	for (deUint32 heapNdx = 0; heapNdx < (deUint32)m_heaps.size(); heapNdx++)
 	{
@@ -371,8 +509,8 @@ RandomAllocFreeTestInstance::~RandomAllocFreeTestInstance (void)
 
 tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 {
-	const VkDevice			device			= m_context.getDevice();
-	const DeviceInterface&	vkd				= m_context.getDeviceInterface();
+	const VkDevice			device			= getDevice();
+	const DeviceInterface&	vkd				= getDeviceInterface();
 	TestLog&				log				= m_context.getTestContext().getLog();
 	const bool				isUMA			= m_memoryLimits.totalDeviceLocalMemory == 0;
 	const VkDeviceSize		usedSysMem		= isUMA ? (m_totalDeviceMem+m_totalSystemMem) : m_totalSystemMem;
@@ -407,7 +545,16 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 	if (m_opNdx >= m_opCount)
 	{
 		if (nonEmptyHeaps.empty())
-			return tcu::TestStatus::pass("Pass");
+		{
+			m_currentDeviceMask++;
+			if (m_currentDeviceMask > m_totalDeviceMaskCombinations)
+				return tcu::TestStatus::pass("Pass");
+			else
+			{
+				m_opNdx = 0;
+				return tcu::TestStatus::incomplete();
+			}
+		}
 		else
 			allocateMore = false;
 	}
@@ -452,12 +599,13 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 
 		heap.objects.push_back(object);
 
+		m_allocFlagsInfo.deviceMask = m_currentDeviceMask;
 		const VkMemoryAllocateInfo alloc =
 		{
-			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// sType
-			DE_NULL,								// pNext
-			object.size,							// allocationSize
-			memoryType.index						// memoryTypeIndex;
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// sType
+			m_useDeviceGroups ? &m_allocFlagsInfo : DE_NULL,	// pNext
+			object.size,										// allocationSize
+			memoryType.index									// memoryTypeIndex;
 		};
 
 		VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &heap.objects.back().memory));
@@ -498,9 +646,10 @@ tcu::TestStatus RandomAllocFreeTestInstance::iterate (void)
 
 } // anonymous
 
-tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createAllocationTestsCommon (tcu::TestContext& testCtx, bool useDeviceGroups)
 {
-	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "allocation", "Memory allocation tests."));
+	const char* name = useDeviceGroups ? "device_group_allocation" : "allocation";
+	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, name, "Memory allocation tests."));
 
 	const VkDeviceSize	KiB	= 1024;
 	const VkDeviceSize	MiB	= 1024 * KiB;
@@ -543,7 +692,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 	};
 
 	{
-		de::MovePtr<tcu::TestCaseGroup>	basicGroup	(new tcu::TestCaseGroup(testCtx, "basic", "Basic memory allocation and free tests"));
+		de::MovePtr<tcu::TestCaseGroup>	basicGroup(new tcu::TestCaseGroup(testCtx, "basic", "Basic memory allocation and free tests"));
 
 		for (size_t allocationSizeNdx = 0; allocationSizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); allocationSizeNdx++)
 		{
@@ -569,7 +718,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 
 					config.memorySize				= allocationSize;
 					config.order					= order;
-
+					config.useDeviceGroups			= useDeviceGroups;
 					if (allocationCount == -1)
 					{
 						if (allocationSize < 4096)
@@ -619,6 +768,7 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 
 					config.memoryPercentage			= (float)allocationPercent / 100.0f;
 					config.order					= order;
+					config.useDeviceGroups			= useDeviceGroups;
 
 					if (allocationCount == -1)
 					{
@@ -652,15 +802,25 @@ tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
 
 		for (deUint32 caseNdx = 0; caseNdx < caseCount; caseNdx++)
 		{
-			const deUint32 seed = deInt32Hash(caseNdx ^ 32480);
+			TestConfigRandom config(deInt32Hash(caseNdx ^ 32480), useDeviceGroups);
 
-			randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, deUint32>(testCtx, tcu::NODETYPE_SELF_VALIDATE, de::toString(caseNdx), "Random case", seed));
+			randomGroup->addChild(new InstanceFactory1<RandomAllocFreeTestInstance, TestConfigRandom>(testCtx, tcu::NODETYPE_SELF_VALIDATE, de::toString(caseNdx), "Random case", config));
 		}
 
 		group->addChild(randomGroup.release());
 	}
 
 	return group.release();
+}
+
+tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx)
+{
+	return createAllocationTestsCommon(testCtx, false);
+}
+
+tcu::TestCaseGroup* createDeviceGroupAllocationTests (tcu::TestContext& testCtx)
+{
+	return createAllocationTestsCommon(testCtx, true);
 }
 
 } // memory

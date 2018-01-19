@@ -24,6 +24,7 @@ set(DEQP_VK_YCBCR_SRCS
 
 set(DEQP_VK_YCBCR_LIBS
 	deqp-vk-shaderexecutor
+	deqp-vk-package
 	tcutil
 	vkutil
 	)

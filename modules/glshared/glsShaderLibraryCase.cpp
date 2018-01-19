@@ -728,6 +728,9 @@ void ShaderLibraryCase::init (void)
 {
 	DE_ASSERT(isValid(m_spec));
 
+	if (!isGLSLVersionSupported(m_renderCtx.getType(), m_spec.targetVersion))
+		TCU_THROW(NotSupportedError, (string(getGLSLVersionName(m_spec.targetVersion)) + " is not supported").c_str());
+
 	checkImplementationLimits(m_spec.requiredCaps, m_contextInfo);
 
 	// log the expected result

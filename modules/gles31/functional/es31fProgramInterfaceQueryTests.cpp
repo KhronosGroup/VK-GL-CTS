@@ -26,6 +26,7 @@
 #include "es31fProgramInterfaceDefinition.hpp"
 #include "es31fProgramInterfaceDefinitionUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuStringTemplate.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluVarTypeUtil.hpp"
 #include "gluStrUtil.hpp"
@@ -206,6 +207,16 @@ static glu::ShaderType getShaderMaskLastStage (deUint32 mask)
 
 	DE_ASSERT(false);
 	return glu::SHADERTYPE_LAST;
+}
+
+static std::string specializeShader(Context& context, const char* code)
+{
+	const glu::GLSLVersion				glslVersion			= glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
+	std::map<std::string, std::string>	specializationMap;
+
+	specializationMap["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
+
+	return tcu::StringTemplate(code).specialize(specializationMap);
 }
 
 namespace ResourceDefinition
@@ -910,20 +921,21 @@ ResourceListTestCase::~ResourceListTestCase (void)
 
 void ResourceListTestCase::init (void)
 {
-	m_programDefinition = generateProgramDefinitionFromResource(m_targetResource.get()).release();
+	m_programDefinition	= generateProgramDefinitionFromResource(m_targetResource.get()).release();
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	if ((m_programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_CONTROL) || m_programDefinition->hasStage(glu::SHADERTYPE_TESSELLATION_EVALUATION)) &&
-		!m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+		!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 	{
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
 	}
 	if (m_programDefinition->hasStage(glu::SHADERTYPE_GEOMETRY) &&
-		!m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+		!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 	{
 		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 	}
 	if (programContainsIOBlocks(m_programDefinition) &&
-		!m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks"))
+		!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_io_blocks"))
 	{
 		throw tcu::NotSupportedError("Test requires GL_EXT_shader_io_blocks extension");
 	}
@@ -1426,7 +1438,7 @@ ResourceNameBufferLimitCase::~ResourceNameBufferLimitCase (void)
 
 ResourceNameBufferLimitCase::IterateResult ResourceNameBufferLimitCase::iterate (void)
 {
-	static const char* const computeSource =	"#version 310 es\n"
+	static const char* const computeSource =	"${GLSL_VERSION_DECL}\n"
 												"layout(local_size_x = 1) in;\n"
 												"uniform highp int u_uniformWithALongName;\n"
 												"writeonly buffer OutputBufferBlock { highp int b_output_int; };\n"
@@ -1436,7 +1448,7 @@ ResourceNameBufferLimitCase::IterateResult ResourceNameBufferLimitCase::iterate 
 												"}\n";
 
 	const glw::Functions&		gl				= m_context.getRenderContext().getFunctions();
-	const glu::ShaderProgram	program			(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(computeSource));
+	const glu::ShaderProgram	program			(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(specializeShader(m_context, computeSource)));
 	glw::GLuint					uniformIndex;
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -1552,7 +1564,7 @@ ResourceQueryBufferLimitCase::~ResourceQueryBufferLimitCase (void)
 
 ResourceQueryBufferLimitCase::IterateResult ResourceQueryBufferLimitCase::iterate (void)
 {
-	static const char* const computeSource =	"#version 310 es\n"
+	static const char* const computeSource =	"${GLSL_VERSION_DECL}\n"
 												"layout(local_size_x = 1) in;\n"
 												"uniform highp int u_uniform;\n"
 												"writeonly buffer OutputBufferBlock { highp int b_output_int; };\n"
@@ -1562,7 +1574,7 @@ ResourceQueryBufferLimitCase::IterateResult ResourceQueryBufferLimitCase::iterat
 												"}\n";
 
 	const glw::Functions&		gl				= m_context.getRenderContext().getFunctions();
-	const glu::ShaderProgram	program			(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(computeSource));
+	const glu::ShaderProgram	program			(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(specializeShader(m_context, computeSource)));
 	glw::GLuint					uniformIndex;
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -1677,10 +1689,11 @@ InterfaceBlockBaseCase::~InterfaceBlockBaseCase (void)
 
 void InterfaceBlockBaseCase::init (void)
 {
-	ProgramInterfaceDefinition::Shader* shader;
+	const glu::GLSLVersion				glslVersion	= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+	ProgramInterfaceDefinition::Shader*	shader;
 
 	m_program = new ProgramInterfaceDefinition::Program();
-	shader = m_program->addShader(glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES);
+	shader = m_program->addShader(glu::SHADERTYPE_COMPUTE, glslVersion);
 
 	// PrecedingInterface
 	{
@@ -2157,9 +2170,10 @@ AtomicCounterCase::~AtomicCounterCase (void)
 void AtomicCounterCase::init (void)
 {
 	ProgramInterfaceDefinition::Shader* shader;
+	glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
 
 	m_program = new ProgramInterfaceDefinition::Program();
-	shader = m_program->addShader(glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES);
+	shader = m_program->addShader(glu::SHADERTYPE_COMPUTE, glslVersion);
 
 	{
 		glu::VariableDeclaration decl(glu::VarType(glu::TYPE_UINT_ATOMIC_COUNTER, glu::PRECISION_LAST), "binding1_counter1", glu::STORAGE_UNIFORM);
@@ -2700,10 +2714,12 @@ void AtomicCounterReferencedByCase::init (void)
 	const deUint32				geometryMask		= (1 << glu::SHADERTYPE_GEOMETRY);
 	const deUint32				tessellationMask	= (1 << glu::SHADERTYPE_TESSELLATION_CONTROL) | (1 << glu::SHADERTYPE_TESSELLATION_EVALUATION);
 	glu::VariableDeclaration	atomicVar			(glu::VarType(glu::TYPE_UINT_ATOMIC_COUNTER, glu::PRECISION_LAST), "targetCounter", glu::STORAGE_UNIFORM);
+	const glu::GLSLVersion		glslVersion			= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+	const bool					supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if ((m_presentStagesMask & tessellationMask) != 0 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if ((m_presentStagesMask & tessellationMask) != 0 && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
-	if ((m_presentStagesMask & geometryMask) != 0 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if ((m_presentStagesMask & geometryMask) != 0 && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 
 	atomicVar.layout.binding = 1;
@@ -2714,9 +2730,9 @@ void AtomicCounterReferencedByCase::init (void)
 	for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; ++shaderType)
 	{
 		if (m_activeStagesMask & (1 << shaderType))
-			m_program->addShader((glu::ShaderType)shaderType, glu::GLSL_VERSION_310_ES)->getDefaultBlock().variables.push_back(atomicVar);
+			m_program->addShader((glu::ShaderType)shaderType, glslVersion)->getDefaultBlock().variables.push_back(atomicVar);
 		else if (m_presentStagesMask & (1 << shaderType))
-			m_program->addShader((glu::ShaderType)shaderType, glu::GLSL_VERSION_310_ES);
+			m_program->addShader((glu::ShaderType)shaderType, glslVersion);
 	}
 
 	if (m_program->hasStage(glu::SHADERTYPE_GEOMETRY))
@@ -2735,19 +2751,21 @@ void AtomicCounterReferencedByCase::deinit (void)
 
 AtomicCounterReferencedByCase::IterateResult AtomicCounterReferencedByCase::iterate (void)
 {
-	static const struct
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+
+	const struct
 	{
 		glw::GLenum		propName;
 		glu::ShaderType	shaderType;
 		const char*		extension;
 	} targetProps[] =
 	{
-		{ GL_REFERENCED_BY_VERTEX_SHADER,			glu::SHADERTYPE_VERTEX,						DE_NULL							},
-		{ GL_REFERENCED_BY_FRAGMENT_SHADER,			glu::SHADERTYPE_FRAGMENT,					DE_NULL							},
-		{ GL_REFERENCED_BY_COMPUTE_SHADER,			glu::SHADERTYPE_COMPUTE,					DE_NULL							},
-		{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		glu::SHADERTYPE_TESSELLATION_CONTROL,		"GL_EXT_tessellation_shader"	},
-		{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	glu::SHADERTYPE_TESSELLATION_EVALUATION,	"GL_EXT_tessellation_shader"	},
-		{ GL_REFERENCED_BY_GEOMETRY_SHADER,			glu::SHADERTYPE_GEOMETRY,					"GL_EXT_geometry_shader"		},
+		{ GL_REFERENCED_BY_VERTEX_SHADER,			glu::SHADERTYPE_VERTEX,						DE_NULL												},
+		{ GL_REFERENCED_BY_FRAGMENT_SHADER,			glu::SHADERTYPE_FRAGMENT,					DE_NULL												},
+		{ GL_REFERENCED_BY_COMPUTE_SHADER,			glu::SHADERTYPE_COMPUTE,					DE_NULL												},
+		{ GL_REFERENCED_BY_TESS_CONTROL_SHADER,		glu::SHADERTYPE_TESSELLATION_CONTROL,		(supportsES32 ? DE_NULL : "GL_EXT_tessellation_shader")	},
+		{ GL_REFERENCED_BY_TESS_EVALUATION_SHADER,	glu::SHADERTYPE_TESSELLATION_EVALUATION,	(supportsES32 ? DE_NULL : "GL_EXT_tessellation_shader")	},
+		{ GL_REFERENCED_BY_GEOMETRY_SHADER,			glu::SHADERTYPE_GEOMETRY,					(supportsES32 ? DE_NULL : "GL_EXT_geometry_shader")		},
 	};
 
 	const glw::Functions&		gl			= m_context.getRenderContext().getFunctions();
@@ -2846,12 +2864,14 @@ void ProgramInputOutputReferencedByCase::init (void)
 	const bool hasGeometryShader =		(m_caseType == CASE_VERTEX_GEO_FRAGMENT)		||
 										(m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)	||
 										(m_caseType == CASE_SEPARABLE_GEOMETRY);
+	const bool supportsES32 =			glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (hasTessellationShader && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
+	if (hasTessellationShader && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_tessellation_shader extension");
-	if (hasGeometryShader && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
+	if (hasGeometryShader && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_geometry_shader"))
 		throw tcu::NotSupportedError("Test requires GL_EXT_geometry_shader extension");
 
+	glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
 	m_program = new ProgramInterfaceDefinition::Program();
 
 	if (m_caseType == CASE_SEPARABLE_VERTEX		||
@@ -2880,11 +2900,11 @@ void ProgramInputOutputReferencedByCase::init (void)
 		if (arrayedInterface && !perPatchStorage)
 		{
 			const glu::VariableDeclaration targetDeclArr(glu::VarType(targetDecl.varType, glu::VarType::UNSIZED_ARRAY), varName, m_targetStorage);
-			m_program->addShader(shaderType, glu::GLSL_VERSION_310_ES)->getDefaultBlock().variables.push_back(targetDeclArr);
+			m_program->addShader(shaderType, glslVersion)->getDefaultBlock().variables.push_back(targetDeclArr);
 		}
 		else
 		{
-			m_program->addShader(shaderType, glu::GLSL_VERSION_310_ES)->getDefaultBlock().variables.push_back(targetDecl);
+			m_program->addShader(shaderType, glslVersion)->getDefaultBlock().variables.push_back(targetDecl);
 		}
 	}
 	else if (m_caseType == CASE_VERTEX_FRAGMENT			||
@@ -2892,8 +2912,8 @@ void ProgramInputOutputReferencedByCase::init (void)
 			 m_caseType == CASE_VERTEX_TESS_FRAGMENT	||
 			 m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)
 	{
-		ProgramInterfaceDefinition::Shader*	vertex		= m_program->addShader(glu::SHADERTYPE_VERTEX, glu::GLSL_VERSION_310_ES);
-		ProgramInterfaceDefinition::Shader*	fragment	= m_program->addShader(glu::SHADERTYPE_FRAGMENT, glu::GLSL_VERSION_310_ES);
+		ProgramInterfaceDefinition::Shader*	vertex		= m_program->addShader(glu::SHADERTYPE_VERTEX, glslVersion);
+		ProgramInterfaceDefinition::Shader*	fragment	= m_program->addShader(glu::SHADERTYPE_FRAGMENT, glslVersion);
 
 		m_program->setSeparable(false);
 
@@ -2919,8 +2939,8 @@ void ProgramInputOutputReferencedByCase::init (void)
 
 		if (m_caseType == CASE_VERTEX_TESS_FRAGMENT || m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)
 		{
-			ProgramInterfaceDefinition::Shader* tessCtrl = m_program->addShader(glu::SHADERTYPE_TESSELLATION_CONTROL, glu::GLSL_VERSION_310_ES);
-			ProgramInterfaceDefinition::Shader* tessEval = m_program->addShader(glu::SHADERTYPE_TESSELLATION_EVALUATION, glu::GLSL_VERSION_310_ES);
+			ProgramInterfaceDefinition::Shader* tessCtrl = m_program->addShader(glu::SHADERTYPE_TESSELLATION_CONTROL, glslVersion);
+			ProgramInterfaceDefinition::Shader* tessEval = m_program->addShader(glu::SHADERTYPE_TESSELLATION_EVALUATION, glslVersion);
 
 			tessCtrl->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), glu::VarType::UNSIZED_ARRAY),
 																					 "shaderInput",
@@ -2947,7 +2967,7 @@ void ProgramInputOutputReferencedByCase::init (void)
 
 		if (m_caseType == CASE_VERTEX_GEO_FRAGMENT || m_caseType == CASE_VERTEX_TESS_GEO_FRAGMENT)
 		{
-			ProgramInterfaceDefinition::Shader* geometry = m_program->addShader(glu::SHADERTYPE_GEOMETRY, glu::GLSL_VERSION_310_ES);
+			ProgramInterfaceDefinition::Shader* geometry = m_program->addShader(glu::SHADERTYPE_GEOMETRY, glslVersion);
 
 			geometry->getDefaultBlock().variables.push_back(glu::VariableDeclaration(glu::VarType(glu::VarType(glu::TYPE_FLOAT_VEC4, glu::PRECISION_HIGHP), glu::VarType::UNSIZED_ARRAY),
 																					 "shaderInput",
@@ -3590,10 +3610,10 @@ static void generateUniformBlockLocationContents (Context& context, const Resour
 		generateVariableCases(context, parentStructure, targetGroup, queryTarget, 1, false);
 }
 
-static void generateUniformBlockBlockIndexContents (Context& context, tcu::TestCaseGroup* const targetGroup)
+static void generateUniformBlockBlockIndexContents (Context& context, tcu::TestCaseGroup* const targetGroup, glu::GLSLVersion glslVersion)
 {
 	const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program());
-	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
 	const ResourceDefinition::Node::SharedPtr	uniform			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_UNIFORM));
 	const ResourceDefinition::Node::SharedPtr	binding			(new ResourceDefinition::LayoutQualifier(uniform, glu::Layout(-1, 0)));
@@ -4197,7 +4217,7 @@ static void generateUniformReferencedByShaderSingleBlockContentCases (Context& c
 	}
 }
 
-static void generateReferencedByShaderCaseBlocks (Context& context, tcu::TestCaseGroup* const targetGroup, void (*generateBlockContent)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, int expandLevel))
+static void generateReferencedByShaderCaseBlocks (Context& context, tcu::TestCaseGroup* const targetGroup, glu::GLSLVersion glslVersion, void (*generateBlockContent)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, int expandLevel))
 {
 	static const struct
 	{
@@ -4252,7 +4272,7 @@ static void generateReferencedByShaderCaseBlocks (Context& context, tcu::TestCas
 		TestCaseGroup* const						blockGroup			= new TestCaseGroup(context, singleStageCases[ndx].name, "");
 		const bool									programSeparable	= (singleStageCases[ndx].stage != glu::SHADERTYPE_COMPUTE);
 		const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program(programSeparable));
-		const ResourceDefinition::Node::SharedPtr	stage				(new ResourceDefinition::Shader(program, singleStageCases[ndx].stage, glu::GLSL_VERSION_310_ES));
+		const ResourceDefinition::Node::SharedPtr	stage				(new ResourceDefinition::Shader(program, singleStageCases[ndx].stage, glslVersion));
 
 		targetGroup->addChild(blockGroup);
 
@@ -4266,7 +4286,7 @@ static void generateReferencedByShaderCaseBlocks (Context& context, tcu::TestCas
 			TestCaseGroup* const						blockGroup			= new TestCaseGroup(context, pipelines[pipelineNdx].name, "");
 			const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program());
 			ResourceDefinition::ShaderSet*				shaderSet			= new ResourceDefinition::ShaderSet(program,
-																												glu::GLSL_VERSION_310_ES,
+																												glslVersion,
 																												pipelines[pipelineNdx].flags,
 																												pipelines[pipelineNdx].flags);
 			targetGroup->addChild(blockGroup);
@@ -4284,7 +4304,7 @@ static void generateReferencedByShaderCaseBlocks (Context& context, tcu::TestCas
 			{
 				const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program());
 				ResourceDefinition::ShaderSet*				shaderSet	= new ResourceDefinition::ShaderSet(program,
-																											glu::GLSL_VERSION_310_ES,
+																											glslVersion,
 																											pipelines[pipelineNdx].flags,
 																											(1u << selectedStageBit));
 				const char*									stageName	= (selectedStageBit == glu::SHADERTYPE_VERTEX)					? ("vertex")
@@ -4403,19 +4423,19 @@ static ResourceDefinition::Node::SharedPtr generateRandomVariableDefinition (de:
 	return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Variable(currentStructure, baseType));
 }
 
-static ResourceDefinition::Node::SharedPtr generateRandomCoreShaderSet (de::Random& rnd)
+static ResourceDefinition::Node::SharedPtr generateRandomCoreShaderSet (de::Random& rnd, glu::GLSLVersion glslVersion)
 {
 	if (rnd.getFloat() < 0.5f)
 	{
 		// compute only
 		const ResourceDefinition::Node::SharedPtr program(new ResourceDefinition::Program());
-		return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+		return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 	}
 	else if (rnd.getFloat() < 0.5f)
 	{
 		// vertex and fragment
 		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program());
-		ResourceDefinition::ShaderSet*				shaderSet	= new ResourceDefinition::ShaderSet(program, glu::GLSL_VERSION_310_ES);
+		ResourceDefinition::ShaderSet*				shaderSet	= new ResourceDefinition::ShaderSet(program, glslVersion);
 
 		if (rnd.getBool())
 		{
@@ -4436,17 +4456,17 @@ static ResourceDefinition::Node::SharedPtr generateRandomCoreShaderSet (de::Rand
 		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program(true));
 		const glu::ShaderType						shaderType	= (rnd.getBool()) ? (glu::SHADERTYPE_VERTEX) : (glu::SHADERTYPE_FRAGMENT);
 
-		return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Shader(program, shaderType, glu::GLSL_VERSION_310_ES));
+		return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Shader(program, shaderType, glslVersion));
 	}
 }
 
-static ResourceDefinition::Node::SharedPtr generateRandomExtShaderSet (de::Random& rnd)
+static ResourceDefinition::Node::SharedPtr generateRandomExtShaderSet (de::Random& rnd, glu::GLSLVersion glslVersion)
 {
 	if (rnd.getFloat() < 0.5f)
 	{
 		// whole pipeline
 		const ResourceDefinition::Node::SharedPtr	program		(new ResourceDefinition::Program());
-		ResourceDefinition::ShaderSet*				shaderSet	= new ResourceDefinition::ShaderSet(program, glu::GLSL_VERSION_310_ES);
+		ResourceDefinition::ShaderSet*				shaderSet	= new ResourceDefinition::ShaderSet(program, glslVersion);
 
 		shaderSet->setStage(glu::SHADERTYPE_VERTEX, rnd.getBool());
 		shaderSet->setStage(glu::SHADERTYPE_FRAGMENT, rnd.getBool());
@@ -4491,16 +4511,16 @@ static ResourceDefinition::Node::SharedPtr generateRandomExtShaderSet (de::Rando
 																: (selector == 2) ? (glu::SHADERTYPE_TESSELLATION_EVALUATION)
 																:					(glu::SHADERTYPE_LAST);
 
-		return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Shader(program, shaderType, glu::GLSL_VERSION_310_ES));
+		return ResourceDefinition::Node::SharedPtr(new ResourceDefinition::Shader(program, shaderType, glslVersion));
 	}
 }
 
-static ResourceDefinition::Node::SharedPtr generateRandomShaderSet (de::Random& rnd, bool onlyExtensionStages)
+static ResourceDefinition::Node::SharedPtr generateRandomShaderSet (de::Random& rnd, glu::GLSLVersion glslVersion, bool onlyExtensionStages)
 {
 	if (!onlyExtensionStages)
-		return generateRandomCoreShaderSet(rnd);
+		return generateRandomCoreShaderSet(rnd, glslVersion);
 	else
-		return generateRandomExtShaderSet(rnd);
+		return generateRandomExtShaderSet(rnd, glslVersion);
 }
 
 static glu::Layout generateRandomUniformBlockLayout (de::Random& rnd)
@@ -4537,10 +4557,10 @@ static glu::Layout generateRandomVariableLayout (de::Random& rnd, glu::DataType 
 	return layout;
 }
 
-static void generateUniformRandomCase (Context& context, tcu::TestCaseGroup* const targetGroup, int index, bool onlyExtensionStages)
+static void generateUniformRandomCase (Context& context, tcu::TestCaseGroup* const targetGroup, glu::GLSLVersion glslVersion, int index, bool onlyExtensionStages)
 {
 	de::Random									rnd					(index * 0x12345);
-	const ResourceDefinition::Node::SharedPtr	shader				= generateRandomShaderSet(rnd, onlyExtensionStages);
+	const ResourceDefinition::Node::SharedPtr	shader				= generateRandomShaderSet(rnd, glslVersion, onlyExtensionStages);
 	const bool									interfaceBlock		= rnd.getBool();
 	const glu::DataType							type				= generateRandomDataType(rnd, interfaceBlock);
 	const glu::Layout							layout				= generateRandomVariableLayout(rnd, type, interfaceBlock);
@@ -4566,15 +4586,15 @@ static void generateUniformRandomCase (Context& context, tcu::TestCaseGroup* con
 	targetGroup->addChild(new ResourceTestCase(context, currentStructure, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_UNIFORM, PROGRAMRESOURCEPROP_UNIFORM_INTERFACE_MASK), de::toString(index).c_str()));
 }
 
-static void generateUniformCaseRandomCases (Context& context, tcu::TestCaseGroup* const targetGroup)
+static void generateUniformCaseRandomCases (Context& context, tcu::TestCaseGroup* const targetGroup, glu::GLSLVersion glslVersion)
 {
 	const int numBasicCases		= 40;
 	const int numTessGeoCases	= 40;
 
 	for (int ndx = 0; ndx < numBasicCases; ++ndx)
-		generateUniformRandomCase(context, targetGroup, ndx, false);
+		generateUniformRandomCase(context, targetGroup, glslVersion, ndx, false);
 	for (int ndx = 0; ndx < numTessGeoCases; ++ndx)
-		generateUniformRandomCase(context, targetGroup, numBasicCases + ndx, true);
+		generateUniformRandomCase(context, targetGroup, glslVersion, numBasicCases + ndx, true);
 }
 
 class UniformInterfaceTestGroup : public TestCaseGroup
@@ -4591,8 +4611,9 @@ UniformInterfaceTestGroup::UniformInterfaceTestGroup (Context& context)
 
 void UniformInterfaceTestGroup::init (void)
 {
+	glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
 	const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program());
-	const ResourceDefinition::Node::SharedPtr	computeShader	(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+	const ResourceDefinition::Node::SharedPtr	computeShader	(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 
 	// .resource_list
 	{
@@ -4626,7 +4647,7 @@ void UniformInterfaceTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "block_index", "Query block index");
 		addChild(blockGroup);
-		generateUniformBlockBlockIndexContents(m_context, blockGroup);
+		generateUniformBlockBlockIndexContents(m_context, blockGroup, glslVersion);
 	}
 
 	// .location
@@ -4668,7 +4689,7 @@ void UniformInterfaceTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "referenced_by_shader", "Query referenced by shader");
 		addChild(blockGroup);
-		generateReferencedByShaderCaseBlocks(m_context, blockGroup, generateUniformReferencedByShaderSingleBlockContentCases);
+		generateReferencedByShaderCaseBlocks(m_context, blockGroup, glslVersion, generateUniformReferencedByShaderSingleBlockContentCases);
 	}
 
 	// .type
@@ -4682,7 +4703,7 @@ void UniformInterfaceTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "random", "Random");
 		addChild(blockGroup);
-		generateUniformCaseRandomCases(m_context, blockGroup);
+		generateUniformCaseRandomCases(m_context, blockGroup, glslVersion);
 	}
 }
 
@@ -4696,10 +4717,10 @@ static void generateBufferBackedInterfaceNameLengthCase (Context& context, const
 	targetGroup->addChild(new ResourceTestCase(context, targetResource, ProgramResourceQueryTestTarget(interface, PROGRAMRESOURCEPROP_NAME_LENGTH), blockName));
 }
 
-static void generateBufferBackedInterfaceResourceBasicBlockTypes (Context& context, tcu::TestCaseGroup* targetGroup, glu::Storage storage, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup* const, ProgramInterface interface, const char* blockName))
+static void generateBufferBackedInterfaceResourceBasicBlockTypes (Context& context, tcu::TestCaseGroup* targetGroup, glu::GLSLVersion glslVersion, glu::Storage storage, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup* const, ProgramInterface interface, const char* blockName))
 {
 	const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program());
-	const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+	const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 	const ResourceDefinition::Node::SharedPtr	defaultBlock		(new ResourceDefinition::DefaultBlock(shader));
 	const ResourceDefinition::Node::SharedPtr	storageQualifier	(new ResourceDefinition::StorageQualifier(defaultBlock, storage));
 	const ResourceDefinition::Node::SharedPtr	binding				(new ResourceDefinition::LayoutQualifier(storageQualifier, glu::Layout(-1, 1)));
@@ -4740,10 +4761,10 @@ static void generateBufferBackedInterfaceResourceBasicBlockTypes (Context& conte
 	}
 }
 
-static void generateBufferBackedInterfaceResourceBufferBindingCases (Context& context, tcu::TestCaseGroup* targetGroup, glu::Storage storage)
+static void generateBufferBackedInterfaceResourceBufferBindingCases (Context& context, tcu::TestCaseGroup* targetGroup, glu::GLSLVersion glslVersion, glu::Storage storage)
 {
 	const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program());
-	const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+	const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 	const ResourceDefinition::Node::SharedPtr	defaultBlock		(new ResourceDefinition::DefaultBlock(shader));
 	const ResourceDefinition::Node::SharedPtr	storageQualifier	(new ResourceDefinition::StorageQualifier(defaultBlock, storage));
 
@@ -4857,11 +4878,13 @@ BufferBackedBlockInterfaceTestGroup::BufferBackedBlockInterfaceTestGroup(Context
 
 void BufferBackedBlockInterfaceTestGroup::init (void)
 {
+	const glu::GLSLVersion	glslVersion	= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+
 	// .resource_list
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "resource_list", "Resource list");
 		addChild(blockGroup);
-		generateBufferBackedInterfaceResourceBasicBlockTypes(m_context, blockGroup, m_storage, generateBufferBackedInterfaceResourceListCase);
+		generateBufferBackedInterfaceResourceBasicBlockTypes(m_context, blockGroup, glslVersion, m_storage, generateBufferBackedInterfaceResourceListCase);
 	}
 
 	// .active_variables
@@ -4875,7 +4898,7 @@ void BufferBackedBlockInterfaceTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "buffer_binding", "Buffer binding");
 		addChild(blockGroup);
-		generateBufferBackedInterfaceResourceBufferBindingCases(m_context, blockGroup, m_storage);
+		generateBufferBackedInterfaceResourceBufferBindingCases(m_context, blockGroup, glslVersion, m_storage);
 	}
 
 	// .buffer_data_size
@@ -4889,7 +4912,7 @@ void BufferBackedBlockInterfaceTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "name_length", "Name length");
 		addChild(blockGroup);
-		generateBufferBackedInterfaceResourceBasicBlockTypes(m_context, blockGroup, m_storage, generateBufferBackedInterfaceNameLengthCase);
+		generateBufferBackedInterfaceResourceBasicBlockTypes(m_context, blockGroup, glslVersion, m_storage, generateBufferBackedInterfaceNameLengthCase);
 	}
 
 	// .referenced_by
@@ -4898,9 +4921,9 @@ void BufferBackedBlockInterfaceTestGroup::init (void)
 		addChild(blockGroup);
 
 		if (m_storage == glu::STORAGE_UNIFORM)
-			generateReferencedByShaderCaseBlocks(m_context, blockGroup, generateBufferBlockReferencedByShaderSingleBlockContentCases<glu::STORAGE_UNIFORM>);
+			generateReferencedByShaderCaseBlocks(m_context, blockGroup, glslVersion, generateBufferBlockReferencedByShaderSingleBlockContentCases<glu::STORAGE_UNIFORM>);
 		else if (m_storage == glu::STORAGE_BUFFER)
-			generateReferencedByShaderCaseBlocks(m_context, blockGroup, generateBufferBlockReferencedByShaderSingleBlockContentCases<glu::STORAGE_BUFFER>);
+			generateReferencedByShaderCaseBlocks(m_context, blockGroup, glslVersion, generateBufferBlockReferencedByShaderSingleBlockContentCases<glu::STORAGE_BUFFER>);
 		else
 			DE_ASSERT(false);
 	}
@@ -5013,7 +5036,7 @@ void AtomicCounterTestGroup::init (void)
 	}
 }
 
-static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, bool withCompute, bool inputCase, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, deUint32))
+static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, glu::GLSLVersion glslVersion, bool withCompute, bool inputCase, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, deUint32))
 {
 	static const struct
 	{
@@ -5032,7 +5055,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 	{
 		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "vertex_fragment", "Vertex and fragment");
 		const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program(false));
-		ResourceDefinition::ShaderSet*				shaderSetPtr	= new ResourceDefinition::ShaderSet(program, glu::GLSL_VERSION_310_ES);
+		ResourceDefinition::ShaderSet*				shaderSetPtr	= new ResourceDefinition::ShaderSet(program, glslVersion);
 		const ResourceDefinition::Node::SharedPtr	shaderSet		(shaderSetPtr);
 		const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shaderSet));
 
@@ -5049,7 +5072,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 	{
 		TestCaseGroup* const						blockGroup			= new TestCaseGroup(context, singleStageCases[ndx].name, "");
 		const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program(true));
-		const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, singleStageCases[ndx].stage, glu::GLSL_VERSION_310_ES));
+		const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, singleStageCases[ndx].stage, glslVersion));
 		const ResourceDefinition::Node::SharedPtr	defaultBlock		(new ResourceDefinition::DefaultBlock(shader));
 
 		targetGroup->addChild(blockGroup);
@@ -5061,7 +5084,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 	{
 		tcu::TestCaseGroup* const					blockGroup		= new TestCaseGroup(context, "compute", "Compute");
 		const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program(true));
-		const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+		const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 		const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
 
 		targetGroup->addChild(blockGroup);
@@ -5112,7 +5135,7 @@ static void generateProgramInputOutputShaderCaseBlocks (Context& context, tcu::T
 			const glu::Storage							storageType		= (inputCase) ? (ioBlockTypes[ndx].inputStorage) : (ioBlockTypes[ndx].outputStorage);
 			tcu::TestCaseGroup* const					ioBlockGroup	= new TestCaseGroup(context, name, "");
 			const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program(true));
-			const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, shaderType, glu::GLSL_VERSION_310_ES));
+			const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, shaderType, glslVersion));
 			const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
 			const ResourceDefinition::Node::SharedPtr	storage			(new ResourceDefinition::StorageQualifier(defaultBlock, storageType));
 
@@ -5980,32 +6003,34 @@ ProgramInputTestGroup::ProgramInputTestGroup (Context& context)
 
 void ProgramInputTestGroup::init (void)
 {
+	const glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+
 	// .resource_list
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "resource_list", "Resource list");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, true, true, generateProgramInputResourceListBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, true, true, generateProgramInputResourceListBlockContents);
 	}
 
 	// .array_size
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "array_size", "Array size");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
 	}
 
 	// .location
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "location", "Location");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, true, generateProgramInputLocationBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputLocationBlockContents);
 	}
 
 	// .name_length
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "name_length", "Name length");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
 	}
 
 	// .referenced_by
@@ -6019,14 +6044,14 @@ void ProgramInputTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "type", "Type");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, true, generateProgramInputTypeBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputTypeBlockContents);
 	}
 
 	// .is_per_patch
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "is_per_patch", "Is per patch");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, true, generateProgramInputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
 	}
 }
 
@@ -6044,32 +6069,34 @@ ProgramOutputTestGroup::ProgramOutputTestGroup (Context& context)
 
 void ProgramOutputTestGroup::init (void)
 {
+	const glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+
 	// .resource_list
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "resource_list", "Resource list");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, true, false, generateProgramOutputResourceListBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, true, false, generateProgramOutputResourceListBlockContents);
 	}
 
 	// .array_size
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "array_size", "Array size");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
 	}
 
 	// .location
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "location", "Location");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, false, generateProgramOutputLocationBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputLocationBlockContents);
 	}
 
 	// .name_length
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "name_length", "Name length");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
 	}
 
 	// .referenced_by
@@ -6083,18 +6110,18 @@ void ProgramOutputTestGroup::init (void)
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "type", "Type");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, false, generateProgramOutputTypeBlockContents);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputTypeBlockContents);
 	}
 
 	// .is_per_patch
 	{
 		tcu::TestCaseGroup* const blockGroup = new tcu::TestCaseGroup(m_testCtx, "is_per_patch", "Is per patch");
 		addChild(blockGroup);
-		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
+		generateProgramInputOutputShaderCaseBlocks(m_context, blockGroup, glslVersion, false, false, generateProgramOutputBasicBlockContents<PROGRAMRESOURCEPROP_IS_PER_PATCH>);
 	}
 }
 
-static void generateTransformFeedbackShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, bool))
+static void generateTransformFeedbackShaderCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, glu::GLSLVersion glslVersion, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, bool))
 {
 	static const struct
 	{
@@ -6147,7 +6174,7 @@ static void generateTransformFeedbackShaderCaseBlocks (Context& context, tcu::Te
 		TestCaseGroup* const						blockGroup		= new TestCaseGroup(context, pipelines[pipelineNdx].name, "");
 		const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program());
 		const ResourceDefinition::Node::SharedPtr	shaderSet		(new ResourceDefinition::ShaderSet(program,
-																									   glu::GLSL_VERSION_310_ES,
+																									   glslVersion,
 																									   pipelines[pipelineNdx].stageBits,
 																									   pipelines[pipelineNdx].lastStageBit));
 
@@ -6160,7 +6187,7 @@ static void generateTransformFeedbackShaderCaseBlocks (Context& context, tcu::Te
 	{
 		TestCaseGroup* const						blockGroup			= new TestCaseGroup(context, singleStageCases[ndx].name, "");
 		const ResourceDefinition::Node::SharedPtr	program				(new ResourceDefinition::Program(true));
-		const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, singleStageCases[ndx].stage, glu::GLSL_VERSION_310_ES));
+		const ResourceDefinition::Node::SharedPtr	shader				(new ResourceDefinition::Shader(program, singleStageCases[ndx].stage, glslVersion));
 
 		targetGroup->addChild(blockGroup);
 		blockContentGenerator(context, shader, blockGroup, singleStageCases[ndx].reducedSet);
@@ -6356,39 +6383,41 @@ TransformFeedbackVaryingTestGroup::TransformFeedbackVaryingTestGroup (Context& c
 
 void TransformFeedbackVaryingTestGroup::init (void)
 {
+	const glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+
 	// .resource_list
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "resource_list", "Resource list");
 		addChild(blockGroup);
-		generateTransformFeedbackShaderCaseBlocks(m_context, blockGroup, generateTransformFeedbackResourceListBlockContents);
+		generateTransformFeedbackShaderCaseBlocks(m_context, blockGroup, glslVersion, generateTransformFeedbackResourceListBlockContents);
 	}
 
 	// .array_size
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "array_size", "Array size");
 		addChild(blockGroup);
-		generateTransformFeedbackShaderCaseBlocks(m_context, blockGroup, generateTransformFeedbackVariableBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
+		generateTransformFeedbackShaderCaseBlocks(m_context, blockGroup, glslVersion, generateTransformFeedbackVariableBlockContents<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
 	}
 
 	// .name_length
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "name_length", "Name length");
 		addChild(blockGroup);
-		generateTransformFeedbackShaderCaseBlocks(m_context, blockGroup, generateTransformFeedbackVariableBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
+		generateTransformFeedbackShaderCaseBlocks(m_context, blockGroup, glslVersion, generateTransformFeedbackVariableBlockContents<PROGRAMRESOURCEPROP_NAME_LENGTH>);
 	}
 
 	// .type
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "type", "Type");
 		addChild(blockGroup);
-		generateTransformFeedbackShaderCaseBlocks(m_context, blockGroup, generateTransformFeedbackVariableTypeBlockContents);
+		generateTransformFeedbackShaderCaseBlocks(m_context, blockGroup, glslVersion, generateTransformFeedbackVariableTypeBlockContents);
 	}
 }
 
-static void generateBufferVariableBufferCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*))
+static void generateBufferVariableBufferCaseBlocks (Context& context, tcu::TestCaseGroup* targetGroup, glu::GLSLVersion glslVersion, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*))
 {
 	const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program());
-	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
 	const ResourceDefinition::Node::SharedPtr	bufferStorage	(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_BUFFER));
 	const ResourceDefinition::Node::SharedPtr	binding			(new ResourceDefinition::LayoutQualifier(bufferStorage, glu::Layout(-1, 0)));
@@ -6503,10 +6532,10 @@ static void generateBufferVariableArrayCases (Context& context, const ResourceDe
 	}
 }
 
-static void generateBufferVariableBlockIndexCases (Context& context, tcu::TestCaseGroup* const targetGroup)
+static void generateBufferVariableBlockIndexCases (Context& context, glu::GLSLVersion glslVersion, tcu::TestCaseGroup* const targetGroup)
 {
 	const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program());
-	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
 	const ResourceDefinition::Node::SharedPtr	bufferStorage	(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_BUFFER));
 	const ResourceDefinition::Node::SharedPtr	binding			(new ResourceDefinition::LayoutQualifier(bufferStorage, glu::Layout(-1, 0)));
@@ -6537,7 +6566,7 @@ static void generateBufferVariableBlockIndexCases (Context& context, tcu::TestCa
 	}
 }
 
-static void generateBufferVariableMatrixCaseBlocks (Context& context, tcu::TestCaseGroup* const targetGroup, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, bool))
+static void generateBufferVariableMatrixCaseBlocks (Context& context, tcu::TestCaseGroup* const targetGroup, glu::GLSLVersion glslVersion, void (*blockContentGenerator)(Context&, const ResourceDefinition::Node::SharedPtr&, tcu::TestCaseGroup*, bool))
 {
 	static const struct
 	{
@@ -6557,7 +6586,7 @@ static void generateBufferVariableMatrixCaseBlocks (Context& context, tcu::TestC
 	};
 
 	const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program());
-	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
 	const ResourceDefinition::Node::SharedPtr	buffer			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_BUFFER));
 
@@ -6839,10 +6868,10 @@ static void generateBufferVariableTypeCases (Context& context, const ResourceDef
 	}
 }
 
-static void generateBufferVariableTypeBlock (Context& context, tcu::TestCaseGroup* targetGroup)
+static void generateBufferVariableTypeBlock (Context& context, tcu::TestCaseGroup* targetGroup, glu::GLSLVersion glslVersion)
 {
 	const ResourceDefinition::Node::SharedPtr	program			(new ResourceDefinition::Program());
-	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glu::GLSL_VERSION_310_ES));
+	const ResourceDefinition::Node::SharedPtr	shader			(new ResourceDefinition::Shader(program, glu::SHADERTYPE_COMPUTE, glslVersion));
 	const ResourceDefinition::Node::SharedPtr	defaultBlock	(new ResourceDefinition::DefaultBlock(shader));
 	const ResourceDefinition::Node::SharedPtr	buffer			(new ResourceDefinition::StorageQualifier(defaultBlock, glu::STORAGE_BUFFER));
 	const ResourceDefinition::Node::SharedPtr	block			(new ResourceDefinition::InterfaceBlock(buffer, true));
@@ -6850,10 +6879,10 @@ static void generateBufferVariableTypeBlock (Context& context, tcu::TestCaseGrou
 	generateBufferVariableTypeCases(context, block, targetGroup);
 }
 
-static void generateBufferVariableRandomCase (Context& context, tcu::TestCaseGroup* const targetGroup, int index, bool onlyExtensionStages)
+static void generateBufferVariableRandomCase (Context& context, tcu::TestCaseGroup* const targetGroup, glu::GLSLVersion glslVersion, int index, bool onlyExtensionStages)
 {
 	de::Random									rnd					(index * 0x12345);
-	const ResourceDefinition::Node::SharedPtr	shader				= generateRandomShaderSet(rnd, onlyExtensionStages);
+	const ResourceDefinition::Node::SharedPtr	shader				= generateRandomShaderSet(rnd, glslVersion, onlyExtensionStages);
 	const glu::DataType							type				= generateRandomDataType(rnd, true);
 	const glu::Layout							layout				= generateRandomVariableLayout(rnd, type, true);
 	const bool									namedBlock			= rnd.getBool();
@@ -6871,15 +6900,15 @@ static void generateBufferVariableRandomCase (Context& context, tcu::TestCaseGro
 	targetGroup->addChild(new ResourceTestCase(context, currentStructure, ProgramResourceQueryTestTarget(PROGRAMINTERFACE_BUFFER_VARIABLE, PROGRAMRESOURCEPROP_BUFFER_VARIABLE_MASK), de::toString(index).c_str()));
 }
 
-static void generateBufferVariableRandomCases (Context& context, tcu::TestCaseGroup* const targetGroup)
+static void generateBufferVariableRandomCases (Context& context, tcu::TestCaseGroup* const targetGroup, glu::GLSLVersion glslVersion)
 {
 	const int numBasicCases		= 40;
 	const int numTessGeoCases	= 40;
 
 	for (int ndx = 0; ndx < numBasicCases; ++ndx)
-		generateBufferVariableRandomCase(context, targetGroup, ndx, false);
+		generateBufferVariableRandomCase(context, targetGroup, glslVersion, ndx, false);
 	for (int ndx = 0; ndx < numTessGeoCases; ++ndx)
-		generateBufferVariableRandomCase(context, targetGroup, numBasicCases + ndx, true);
+		generateBufferVariableRandomCase(context, targetGroup, glslVersion, numBasicCases + ndx, true);
 }
 
 class BufferVariableTestGroup : public TestCaseGroup
@@ -6896,95 +6925,97 @@ BufferVariableTestGroup::BufferVariableTestGroup (Context& context)
 
 void BufferVariableTestGroup::init (void)
 {
+	const glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+
 	// .resource_list
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "resource_list", "Resource list");
 		addChild(blockGroup);
-		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, generateBufferVariableResourceListBlockContentsProxy);
+		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableResourceListBlockContentsProxy);
 	}
 
 	// .array_size
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "array_size", "Array size");
 		addChild(blockGroup);
-		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, generateBufferVariableArrayCases<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
+		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableArrayCases<PROGRAMRESOURCEPROP_ARRAY_SIZE>);
 	}
 
 	// .array_stride
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "array_stride", "Array stride");
 		addChild(blockGroup);
-		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, generateBufferVariableArrayCases<PROGRAMRESOURCEPROP_ARRAY_STRIDE>);
+		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableArrayCases<PROGRAMRESOURCEPROP_ARRAY_STRIDE>);
 	}
 
 	// .block_index
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "block_index", "Block index");
 		addChild(blockGroup);
-		generateBufferVariableBlockIndexCases(m_context, blockGroup);
+		generateBufferVariableBlockIndexCases(m_context, glslVersion, blockGroup);
 	}
 
 	// .is_row_major
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "is_row_major", "Is row major");
 		addChild(blockGroup);
-		generateBufferVariableMatrixCaseBlocks(m_context, blockGroup, generateBufferVariableMatrixCases<PROGRAMRESOURCEPROP_MATRIX_ROW_MAJOR>);
+		generateBufferVariableMatrixCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableMatrixCases<PROGRAMRESOURCEPROP_MATRIX_ROW_MAJOR>);
 	}
 
 	// .matrix_stride
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "matrix_stride", "Matrix stride");
 		addChild(blockGroup);
-		generateBufferVariableMatrixCaseBlocks(m_context, blockGroup, generateBufferVariableMatrixCases<PROGRAMRESOURCEPROP_MATRIX_STRIDE>);
+		generateBufferVariableMatrixCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableMatrixCases<PROGRAMRESOURCEPROP_MATRIX_STRIDE>);
 	}
 
 	// .name_length
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "name_length", "Name length");
 		addChild(blockGroup);
-		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, generateBufferVariableNameLengthCases);
+		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableNameLengthCases);
 	}
 
 	// .offset
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "offset", "Offset");
 		addChild(blockGroup);
-		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, generateBufferVariableOffsetCases);
+		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableOffsetCases);
 	}
 
 	// .referenced_by
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "referenced_by", "Referenced by");
 		addChild(blockGroup);
-		generateReferencedByShaderCaseBlocks(m_context, blockGroup, generateBufferVariableReferencedByBlockContents);
+		generateReferencedByShaderCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableReferencedByBlockContents);
 	}
 
 	// .top_level_array_size
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "top_level_array_size", "Top-level array size");
 		addChild(blockGroup);
-		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, generateBufferVariableTopLevelCases<PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_SIZE>);
+		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableTopLevelCases<PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_SIZE>);
 	}
 
 	// .top_level_array_stride
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "top_level_array_stride", "Top-level array stride");
 		addChild(blockGroup);
-		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, generateBufferVariableTopLevelCases<PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_STRIDE>);
+		generateBufferVariableBufferCaseBlocks(m_context, blockGroup, glslVersion, generateBufferVariableTopLevelCases<PROGRAMRESOURCEPROP_TOP_LEVEL_ARRAY_STRIDE>);
 	}
 
 	// .type
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "type", "Type");
 		addChild(blockGroup);
-		generateBufferVariableTypeBlock(m_context, blockGroup);
+		generateBufferVariableTypeBlock(m_context, blockGroup, glslVersion);
 	}
 
 	// .random
 	{
 		tcu::TestCaseGroup* const blockGroup = new TestCaseGroup(m_context, "random", "Random");
 		addChild(blockGroup);
-		generateBufferVariableRandomCases(m_context, blockGroup);
+		generateBufferVariableRandomCases(m_context, blockGroup, glslVersion);
 	}
 }
 

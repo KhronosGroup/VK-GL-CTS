@@ -29,8 +29,16 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineMultisampleTestsUtil.hpp
 	vktPipelineMultisampleTests.cpp
 	vktPipelineMultisampleTests.hpp
+	vktPipelineMultisampleBase.cpp
+	vktPipelineMultisampleBase.hpp
+	vktPipelineMultisampleBaseResolve.cpp
+	vktPipelineMultisampleBaseResolve.hpp
+	vktPipelineMultisampleBaseResolveAndPerSampleFetch.cpp
+	vktPipelineMultisampleBaseResolveAndPerSampleFetch.hpp
 	vktPipelineMultisampleInterpolationTests.cpp
 	vktPipelineMultisampleInterpolationTests.hpp
+	vktPipelineMultisampleShaderBuiltInTests.cpp
+	vktPipelineMultisampleShaderBuiltInTests.hpp
 	vktPipelineMultisampleImageTests.cpp
 	vktPipelineMultisampleImageTests.hpp
 	vktPipelineInputAssemblyTests.cpp
@@ -39,6 +47,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineReferenceRenderer.hpp
 	vktPipelineRenderToImageTests.cpp
 	vktPipelineRenderToImageTests.hpp
+	vktPipelineFramebufferAttachmentTests.cpp
+	vktPipelineFramebufferAttachmentTests.hpp
 	vktPipelineSamplerTests.cpp
 	vktPipelineSamplerTests.hpp
 	vktPipelineStencilTests.cpp
@@ -59,7 +69,6 @@ set(DEQP_VK_PIPELINE_SRCS
 	)
 
 set(DEQP_VK_PIPELINE_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	referencerenderer

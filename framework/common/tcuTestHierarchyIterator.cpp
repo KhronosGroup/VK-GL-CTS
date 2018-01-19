@@ -87,9 +87,9 @@ void DefaultHierarchyInflater::leaveGroupNode (TestCaseGroup* testGroup)
 
 TestHierarchyIterator::TestHierarchyIterator (TestPackageRoot&			rootNode,
 											  TestHierarchyInflater&	inflater,
-											  const CommandLine&		cmdLine)
-	: m_inflater	(inflater)
-	, m_cmdLine		(cmdLine)
+											  const CaseListFilter&		caseListFilter)
+	: m_inflater		(inflater)
+	, m_caseListFilter	(caseListFilter)
 {
 	// Init traverse state and "seek" to first reportable node.
 	NodeIter iter(&rootNode);
@@ -172,7 +172,7 @@ void TestHierarchyIterator::next (void)
 				const std::string nodePath = buildNodePath(m_sessionStack);
 
 				// Return to parent if name doesn't match filter.
-				if (!(isLeaf ? m_cmdLine.checkTestCaseName(nodePath.c_str()) : m_cmdLine.checkTestGroupName(nodePath.c_str())))
+				if (!(isLeaf ? m_caseListFilter.checkTestCaseName(nodePath.c_str()) : m_caseListFilter.checkTestGroupName(nodePath.c_str())))
 				{
 					m_sessionStack.pop_back();
 					break;

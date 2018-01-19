@@ -44,6 +44,8 @@ void	initGL41Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all 
 void	initGL42Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 4.2 core functions.
 void	initGL43Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 4.3 core functions.
 void	initGL44Core		(Functions* gl, const FunctionLoader* loader);	//!< Load all GL 4.4 core functions.
+void	initGL45Core		(Functions* gl, const FunctionLoader* loader);  //!< Load all GL 4.5 core functions.
+void	initGL46Core		(Functions* gl, const FunctionLoader* loader);  //!< Load all GL 4.6 core functions.
 
 void	initExtensionsGL	(Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions);	//!< Load all supported GL core extension functions.
 void	initExtensionsES	(Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions);	//!< Load all supported GLES extension functions.

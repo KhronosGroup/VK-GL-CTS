@@ -34,7 +34,6 @@ set(DEQP_VK_TESSELLATION_SRCS
 	)
 
 set(DEQP_VK_TESSELLATION_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

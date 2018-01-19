@@ -202,6 +202,11 @@ void FboRenderContext::postIterate (void)
 	m_context->getFunctions().finish();
 }
 
+void FboRenderContext::makeCurrent(void)
+{
+	m_context->makeCurrent();
+}
+
 void FboRenderContext::createFramebuffer (const RenderConfig& config)
 {
 	DE_ASSERT(m_framebuffer == 0 && m_colorBuffer == 0 && m_depthStencilBuffer == 0);

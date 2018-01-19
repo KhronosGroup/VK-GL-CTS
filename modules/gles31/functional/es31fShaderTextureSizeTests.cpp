@@ -45,12 +45,22 @@ namespace Functional
 namespace
 {
 
-static const char* const s_positionVertexShaderSource =	"#version 310 es\n"
+static const char* const s_positionVertexShaderSource =	"${GLSL_VERSION_DECL}\n"
 														"in highp vec4 a_position;\n"
 														"void main (void)\n"
 														"{\n"
 														"	gl_Position = a_position;\n"
 														"}\n";
+
+static std::string specializeShader(Context& context, const char* code)
+{
+	glu::GLSLVersion glslVersion = glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
+	std::map<std::string, std::string> specializationMap;
+
+	specializationMap["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
+
+	return tcu::StringTemplate(code).specialize(specializationMap);
+}
 
 class TextureSizeCase : public TestCase
 {
@@ -150,9 +160,10 @@ void TextureSizeCase::init (void)
 	};
 
 	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
+	const bool				supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	// requirements
-	if (m_isArrayType && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
+	if (m_isArrayType && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_texture_storage_multisample_2d_array"))
 		TCU_THROW(NotSupportedError, "Test requires OES_texture_storage_multisample_2d_array extension");
 
 	if (m_context.getRenderTarget().getWidth() < 1 || m_context.getRenderTarget().getHeight() < 1)
@@ -171,7 +182,7 @@ void TextureSizeCase::init (void)
 
 	// gen shade
 
-	m_shader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(s_positionVertexShaderSource) << glu::FragmentSource(genFragmentSource()));
+	m_shader = new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::VertexSource(specializeShader(m_context, s_positionVertexShaderSource)) << glu::FragmentSource(genFragmentSource()));
 	m_testCtx.getLog() << *m_shader;
 	if (!m_shader->isOk())
 		throw tcu::TestError("shader build failed");
@@ -304,7 +315,7 @@ TextureSizeCase::IterateResult TextureSizeCase::iterate (void)
 
 std::string TextureSizeCase::genFragmentSource (void)
 {
-	static const char* const templateSource =	"#version 310 es\n"
+	static const char* const templateSource =	"${GLSL_VERSION_DECL}\n"
 												"${EXTENSION_STATEMENT}"
 												"layout(location = 0) out highp vec4 fragColor;\n"
 												"uniform highp ${SAMPLERTYPE} u_sampler;\n"
@@ -335,10 +346,15 @@ std::string TextureSizeCase::genFragmentSource (void)
 	else
 		args["SIZETYPE"] = "ivec3";
 
-	if (m_isArrayType)
+	const glu::ContextType	contextType	= m_context.getRenderContext().getType();
+	const bool				supportsES32	= glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+
+	if (m_isArrayType && !supportsES32)
 		args["EXTENSION_STATEMENT"] = "#extension GL_OES_texture_storage_multisample_2d_array : require\n";
 	else
 		args["EXTENSION_STATEMENT"] = "";
+
+	args["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glu::getContextTypeGLSLVersion(contextType));
 
 	return tcu::StringTemplate(templateSource).specialize(args);
 }

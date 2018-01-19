@@ -31,9 +31,9 @@
 #include "rrRenderState.hpp"
 #include "rrPrimitiveTypes.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 #include "deArrayUtil.hpp"
 #include "vkBuilderUtil.hpp"
-#include "tcuTestLog.hpp"
 
 namespace vkt
 {
@@ -654,7 +654,7 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 			0u,						// write mask
 			0u);					// reference
 
-		if (m_drawState.depthBoundsTestEnable && context.getDeviceFeatures().depthBounds)
+		if (m_drawState.depthBoundsTestEnable && !context.getDeviceFeatures().depthBounds)
 			TCU_THROW(NotSupportedError, "depthBounds not supported");
 
 		const VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo =

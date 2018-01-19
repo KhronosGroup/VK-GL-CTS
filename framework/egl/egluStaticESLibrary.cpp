@@ -28,14 +28,14 @@
 #define STATIC_LIB_ES20	1
 #define STATIC_LIB_ES30	2
 
-#if !defined(DEQP_GLES3_RUNTIME_LOAD)
+#if defined(DEQP_GLES3_DIRECT_LINK)
 #	if (DE_OS == DE_OS_IOS)
 #		include <OpenGLES/ES3/gl.h>
 #	else
 #		include <GLES3/gl3.h>
 #	endif
 #	define STATIC_LIB STATIC_LIB_ES30
-#elif !defined(DEQP_GLES2_RUNTIME_LOAD)
+#elif defined(DEQP_GLES2_DIRECT_LINK)
 #	if (DE_OS == DE_OS_IOS)
 #		include <OpenGLES/ES2/gl.h>
 #	else

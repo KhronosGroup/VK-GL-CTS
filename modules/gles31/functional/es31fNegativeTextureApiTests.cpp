@@ -3672,16 +3672,16 @@ void texstorage2d (NegativeTestContext& ctx)
 
 void texstorage2d_invalid_binding (NegativeTestContext& ctx)
 {
-	deUint32	textures[]	= {0x1234, 0x1234};
-	deInt32		immutable	= 0x1234;
-	const bool	isES32		= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	deUint32	textures[]		= {0x1234, 0x1234};
+	deInt32		immutable		= 0x1234;
+	const bool	supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if the default texture object is curently bound to target.");
 	ctx.glBindTexture(GL_TEXTURE_2D, 0);
 	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (isES32)
+	if (supportsES32)
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 1, GL_RGBA8, 16, 16);
@@ -3702,7 +3702,7 @@ void texstorage2d_invalid_binding (NegativeTestContext& ctx)
 	ctx.glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 16, 16);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (isES32)
+	if (supportsES32)
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, textures[1]);
 		ctx.glGetTexParameteriv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_IMMUTABLE_FORMAT, &immutable);
@@ -3721,14 +3721,14 @@ void texstorage2d_invalid_binding (NegativeTestContext& ctx)
 
 void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 {
-	deUint32	textures[]	= {0x1234, 0x1234};
-	deUint32	log2MaxSize	= deLog2Floor32(deMax32(16, 16)) + 1 + 1;
-	const bool	isES32		= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	deUint32	textures[]		= {0x1234, 0x1234};
+	deUint32	log2MaxSize		= deLog2Floor32(deMax32(16, 16)) + 1 + 1;
+	const bool	supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	ctx.glGenTextures(2, textures);
 	ctx.glBindTexture(GL_TEXTURE_2D, textures[0]);
 
-	if (isES32)
+	if (supportsES32)
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP, textures[1]);
 
 	ctx.expectError(GL_NO_ERROR);
@@ -3739,7 +3739,7 @@ void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glTexStorage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (isES32)
+	if (supportsES32)
 	{
 		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, 0, GL_RGBA8, 16, 16);
 		ctx.expectError(GL_INVALID_VALUE);
@@ -3752,7 +3752,7 @@ void texstorage2d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glTexStorage2D(GL_TEXTURE_2D, log2MaxSize, GL_RGBA8, 16, 16);
 	ctx.expectError(GL_INVALID_OPERATION);
 
-	if (isES32)
+	if (supportsES32)
 	{
 		ctx.glTexStorage2D(GL_TEXTURE_CUBE_MAP, log2MaxSize, GL_RGBA8, 16, 16);
 		ctx.expectError(GL_INVALID_OPERATION);
@@ -3866,9 +3866,9 @@ void texstorage3d_invalid_binding (NegativeTestContext& ctx)
 
 void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 {
-	deUint32	textures[]	= {0x1234, 0x1234};
-	deUint32	log2MaxSize	= deLog2Floor32(8) + 1 + 1;
-	const bool	isES32		= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	deUint32	textures[]		= {0x1234, 0x1234};
+	deUint32	log2MaxSize		= deLog2Floor32(8) + 1 + 1;
+	const bool	supportsES32	= contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	ctx.glGenTextures(2, textures);
 	ctx.glBindTexture(GL_TEXTURE_3D, textures[0]);
 
@@ -3878,7 +3878,7 @@ void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glTexStorage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 0, 0, 0);
 	ctx.expectError(GL_INVALID_VALUE);
 
-	if (isES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, textures[1]);
 		ctx.glTexStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA8, 4, 4, 6);
@@ -3898,7 +3898,7 @@ void texstorage3d_invalid_levels (NegativeTestContext& ctx)
 	ctx.glTexStorage3D	(GL_TEXTURE_3D, log2MaxSize, GL_RGBA8, 8, 8, 8);
 	ctx.expectError		(GL_INVALID_OPERATION);
 
-	if (isES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
+	if (supportsES32 || ctx.getContextInfo().isExtensionSupported("GL_OES_texture_cube_map_array"))
 	{
 		ctx.glTexStorage3D	(GL_TEXTURE_CUBE_MAP_ARRAY, log2MaxSize, GL_RGBA8, 2, 2, 6);
 		ctx.expectError		(GL_INVALID_OPERATION);

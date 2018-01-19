@@ -575,32 +575,17 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 	flushMappedMemoryRange(vkd, device, alloc->getMemory(), alloc->getOffset(), VK_WHOLE_SIZE);
 
 	{
-		const VkCommandPoolCreateInfo		cmdPoolInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-			DE_NULL,
-			(VkCommandPoolCreateFlags)VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-			context.getUniversalQueueFamilyIndex(),
-		};
-		const Unique<VkCommandPool>			cmdPool			(createCommandPool(vkd, device, &cmdPoolInfo));
-		const VkCommandBufferAllocateInfo	allocInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-			DE_NULL,
-			*cmdPool,
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-			1u,
-		};
-		const Unique<VkCommandBuffer>		cmdBuf			(allocateCommandBuffer(vkd, device, &allocInfo));
-		const VkCommandBufferBeginInfo		beginInfo		=
+		const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
+		const Unique<VkCommandBuffer>	cmdBuf			(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+		const VkCommandBufferBeginInfo	beginInfo		=
 		{
 			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 			DE_NULL,
 			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
 			(const VkCommandBufferInheritanceInfo*)DE_NULL,
 		};
-		const VkImageAspectFlags			imageAspect		= (VkImageAspectFlags)(format.order == tcu::TextureFormat::D ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
-		const VkBufferImageCopy				copyInfo		=
+		const VkImageAspectFlags		imageAspect		= (VkImageAspectFlags)(format.order == tcu::TextureFormat::D ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
+		const VkBufferImageCopy			copyInfo		=
 		{
 			0u,
 			1u,
@@ -614,7 +599,7 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 			{ 0u, 0u, 0u },
 			{ 1u, 1u, 1u }
 		};
-		const VkImageMemoryBarrier			preCopyBarrier	=
+		const VkImageMemoryBarrier		preCopyBarrier	=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
@@ -633,7 +618,7 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 				numLayers
 			}
 		};
-		const VkImageMemoryBarrier			postCopyBarrier	=
+		const VkImageMemoryBarrier		postCopyBarrier	=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			DE_NULL,
@@ -678,14 +663,8 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 		VK_CHECK(vkd.endCommandBuffer(*cmdBuf));
 
 		{
-			const VkFenceCreateInfo		fenceInfo	=
-			{
-				VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-				DE_NULL,
-				(VkFenceCreateFlags)0,
-			};
-			const Unique<VkFence>		fence		(createFence(vkd, device, &fenceInfo));
-			const VkSubmitInfo			submitInfo	=
+			const Unique<VkFence>	fence		(createFence(vkd, device));
+			const VkSubmitInfo		submitInfo	=
 			{
 				VK_STRUCTURE_TYPE_SUBMIT_INFO,
 				DE_NULL,
@@ -1300,7 +1279,7 @@ tcu::TestStatus BlockArrayIndexingCaseInstance::iterate (void)
 
 	if ((m_flags & FLAG_USE_STORAGE_BUFFER) != 0)
 	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHR_storage_buffer_storage_class"))
+		if (!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_storage_buffer_storage_class"))
 			TCU_THROW(NotSupportedError, "VK_KHR_storage_buffer_storage_class is not supported");
 	}
 
@@ -1586,7 +1565,7 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 	m_shaderSpec.source				= code.str();
 
 	if ((m_flags & BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER) != 0)
-		m_shaderSpec.buildOptions.flags |= vk::GlslBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS;
+		m_shaderSpec.buildOptions.flags |= vk::ShaderBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS;
 }
 
 class AtomicCounterIndexingCaseInstance : public OpaqueTypeIndexingTestInstance

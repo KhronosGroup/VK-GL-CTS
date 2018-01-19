@@ -23,6 +23,7 @@
 
 #include "vktSparseResourcesTestsUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "tcuTextureUtil.hpp"
 
@@ -34,6 +35,22 @@ namespace vkt
 {
 namespace sparse
 {
+
+vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& vkp, const deUint32 version, const std::vector<std::string>   enableExtensions)
+{
+	std::vector<std::string>					enableExtensionPtrs;
+	const std::vector<VkExtensionProperties>	availableExtensions	 = enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	for (size_t extensionID = 0; extensionID < enableExtensions.size(); extensionID++)
+	{
+		if (!isInstanceExtensionSupported(version, availableExtensions, RequiredExtension(enableExtensions[extensionID])))
+			TCU_THROW(NotSupportedError, (enableExtensions[extensionID] + " is not supported").c_str());
+
+		if (!isCoreInstanceExtension(version, enableExtensions[extensionID]))
+			enableExtensionPtrs.push_back(enableExtensions[extensionID]);
+	}
+
+	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, enableExtensionPtrs, DE_NULL);
+}
 
 tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize, const deUint32 mipLevel)
 {
@@ -375,15 +392,15 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
 {
 	const VkFramebufferCreateInfo framebufferInfo =
 	{
-		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType                             sType;
-		DE_NULL,										// const void*                                 pNext;
-		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags                    flags;
-		renderPass,										// VkRenderPass                                renderPass;
-		attachmentCount,								// uint32_t                                    attachmentCount;
-		pAttachments,									// const VkImageView*                          pAttachments;
-		width,											// uint32_t                                    width;
-		height,											// uint32_t                                    height;
-		layers,											// uint32_t                                    layers;
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,		// VkStructureType				 sType;
+		DE_NULL,										// const void*					 pNext;
+		(VkFramebufferCreateFlags)0,					// VkFramebufferCreateFlags		flags;
+		renderPass,										// VkRenderPass					renderPass;
+		attachmentCount,								// uint32_t						attachmentCount;
+		pAttachments,									// const VkImageView*			  pAttachments;
+		width,											// uint32_t						width;
+		height,											// uint32_t						height;
+		layers,											// uint32_t						layers;
 	};
 
 	return createFramebuffer(vk, device, &framebufferInfo);
@@ -535,27 +552,42 @@ void submitCommandsAndWait (const DeviceInterface&		vk,
 							const VkSemaphore*			pWaitSemaphores,
 							const VkPipelineStageFlags*	pWaitDstStageMask,
 							const deUint32				signalSemaphoreCount,
-							const VkSemaphore*			pSignalSemaphores)
+							const VkSemaphore*			pSignalSemaphores,
+							const bool					useDeviceGroups,
+							const deUint32				physicalDeviceID)
 {
-	const VkFenceCreateInfo	fenceParams =
+	const VkFenceCreateInfo	fenceParams				=
 	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		0u,										// VkFenceCreateFlags	flags;
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,				// VkStructureType		sType;
+		DE_NULL,											// const void*			pNext;
+		0u,													// VkFenceCreateFlags	flags;
 	};
-	const Unique<VkFence> fence(createFence(vk, device, &fenceParams));
+	const Unique<VkFence>	fence(createFence		(vk, device, &fenceParams));
 
-	const VkSubmitInfo submitInfo =
+	const deUint32			deviceMask				= 1 << physicalDeviceID;
+	std::vector<deUint32>	deviceIndices			(waitSemaphoreCount, physicalDeviceID);
+	VkDeviceGroupSubmitInfo deviceGroupSubmitInfo	=
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType				sType;
-		DE_NULL,							// const void*					pNext;
-		waitSemaphoreCount,					// deUint32						waitSemaphoreCount;
-		pWaitSemaphores,					// const VkSemaphore*			pWaitSemaphores;
-		pWaitDstStageMask,					// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,									// deUint32						commandBufferCount;
-		&commandBuffer,						// const VkCommandBuffer*		pCommandBuffers;
-		signalSemaphoreCount,				// deUint32						signalSemaphoreCount;
-		pSignalSemaphores,					// const VkSemaphore*			pSignalSemaphores;
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,		//VkStructureType		sType
+		DE_NULL,											// const void*			pNext
+		waitSemaphoreCount,									// uint32_t				waitSemaphoreCount
+		deviceIndices.size() ? &deviceIndices[0] : DE_NULL,	// const uint32_t*		pWaitSemaphoreDeviceIndices
+		1u,													// uint32_t				commandBufferCount
+		&deviceMask,										// const uint32_t*		pCommandBufferDeviceMasks
+		0u,													// uint32_t				signalSemaphoreCount
+		DE_NULL,											// const uint32_t*		pSignalSemaphoreDeviceIndices
+	};
+	const VkSubmitInfo		submitInfo				=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
+		useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL,	// const void*					pNext;
+		waitSemaphoreCount,									// deUint32						waitSemaphoreCount;
+		pWaitSemaphores,									// const VkSemaphore*			pWaitSemaphores;
+		pWaitDstStageMask,									// const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,													// deUint32						commandBufferCount;
+		&commandBuffer,										// const VkCommandBuffer*		pCommandBuffers;
+		signalSemaphoreCount,								// deUint32						signalSemaphoreCount;
+		pSignalSemaphores,									// const VkSemaphore*			pSignalSemaphores;
 	};
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));

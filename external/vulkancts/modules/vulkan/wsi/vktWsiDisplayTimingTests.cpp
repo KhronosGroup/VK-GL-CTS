@@ -21,10 +21,6 @@
  * \brief Tests for VK_GOOGLE_display_timing
  *//*--------------------------------------------------------------------*/
 
-#include "vktWsiDisplayTimingTests.hpp"
-
-#include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
@@ -33,12 +29,16 @@
 #include "vkPlatform.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
-
 #include "vkWsiUtil.hpp"
+
+#include "vktWsiDisplayTimingTests.hpp"
+#include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
 
 #include "tcuPlatform.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
+
 #include "deClock.h"
 
 #include <vector>
@@ -74,6 +74,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 }
 
 vk::Move<vk::VkInstance> createInstanceWithWsi (const vk::PlatformInterface&		vkp,
+												deUint32							version,
 												const Extensions&					supportedExtensions,
 												vk::wsi::Type						wsiType)
 {
@@ -84,7 +85,7 @@ vk::Move<vk::VkInstance> createInstanceWithWsi (const vk::PlatformInterface&		vk
 
 	checkAllSupported(supportedExtensions, extensions);
 
-	return vk::createDefaultInstance(vkp, vector<string>(), extensions);
+	return vk::createDefaultInstance(vkp, version, vector<string>(), extensions);
 }
 
 vk::VkPhysicalDeviceFeatures getDeviceNullFeatures (void)
@@ -930,7 +931,7 @@ DisplayTimingTestInstance::DisplayTimingTestInstance (Context& context, const Te
 	, m_quadCount				(16u)
 	, m_vkp						(context.getPlatformInterface())
 	, m_instanceExtensions		(vk::enumerateInstanceExtensionProperties(m_vkp, DE_NULL))
-	, m_instance				(createInstanceWithWsi(m_vkp, m_instanceExtensions, testConfig.wsiType))
+	, m_instance				(createInstanceWithWsi(m_vkp, context.getUsedApiVersion(), m_instanceExtensions, testConfig.wsiType))
 	, m_vki						(m_vkp, *m_instance)
 	, m_physicalDevice			(vk::chooseDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
 	, m_nativeDisplay			(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions, testConfig.wsiType))
@@ -1095,7 +1096,7 @@ void DisplayTimingTestInstance::render (void)
 	deUint32			imageIndex;
 
 	// Acquire next image
-	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, fence, &imageIndex));
+	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0, &imageIndex));
 
 	// Create command buffer
 	m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_pipelineLayout, *m_renderPass, m_framebuffers[imageIndex], *m_pipeline, m_frameNdx, m_quadCount, width, height).disown();
@@ -1208,7 +1209,7 @@ void DisplayTimingTestInstance::render (void)
 			&currentRenderSemaphore
 		};
 
-		VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, (vk::VkFence)0));
+		VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, fence));
 	}
 
 	// Present frame

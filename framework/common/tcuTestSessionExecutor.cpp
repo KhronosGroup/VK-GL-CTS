@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuTestSessionExecutor.hpp"
+#include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 
 #include "deClock.h"
@@ -48,7 +49,8 @@ static qpTestCaseType nodeTypeToTestCaseType (TestNodeType nodeType)
 TestSessionExecutor::TestSessionExecutor (TestPackageRoot& root, TestContext& testCtx)
 	: m_testCtx			(testCtx)
 	, m_inflater		(testCtx)
-	, m_iterator		(root, m_inflater, testCtx.getCommandLine())
+	, m_caseListFilter	(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()))
+	, m_iterator		(root, m_inflater, *m_caseListFilter)
 	, m_state			(STATE_TRAVERSE_HIERARCHY)
 	, m_abortSession	(false)
 	, m_isInTestCase	(false)

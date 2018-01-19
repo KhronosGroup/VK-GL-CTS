@@ -42,6 +42,11 @@ PlatformDriver::~PlatformDriver (void)
 
 InstanceDriver::InstanceDriver (const PlatformInterface& platformInterface, VkInstance instance)
 {
+	loadFunctions(platformInterface, instance);
+}
+
+void InstanceDriver::loadFunctions (const PlatformInterface& platformInterface, VkInstance instance)
+{
 #define GET_PROC_ADDR(NAME) platformInterface.getInstanceProcAddr(instance, NAME)
 #include "vkInitInstanceFunctionPointers.inl"
 #undef GET_PROC_ADDR

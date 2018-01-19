@@ -23,7 +23,7 @@
 
 #include "deSemaphore.h"
 
-#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN)
+#if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || DE_OS == DE_OS_QNX)
 
 #include "deMemory.h"
 
