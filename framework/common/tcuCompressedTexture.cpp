@@ -1341,6 +1341,17 @@ inline deInt8 extractModeBc7 (deUint8 src)
 	return -1;
 }
 
+inline deUint64 get64BitBlockLE (const deUint8* src, int blockNdx)
+{
+	// Same as get64BitBlock, but little-endian.
+	deUint64 block = 0;
+
+	for (int i = 0; i < 8; i++)
+		block |= (deUint64)(src[blockNdx*8+i]) << (8ull*i);
+
+	return block;
+}
+
 inline deUint32 getBits128 (deUint64 low, deUint64 high, deUint32 first, deUint32 last)
 {
 	const deUint64	d[2]	= { low, high };
@@ -1614,7 +1625,7 @@ void decompressBc3 (const PixelBufferAccess& dst, const deUint8* src)
 	const deUint32			color0				= bgr16torgba32(color0_16);
 	const deUint32			color1				= bgr16torgba32(color1_16);
 	const deUint8* const	indices8			= &src[12];
-	const deUint64			alphaBits			= *((deUint64*)&src[2]);
+	const deUint64			alphaBits			= get64BitBlockLE(src, 0) >> 16;
 	deUint32				alphas[8];
 
 	const deInt32			indices[16]			=
@@ -1702,7 +1713,7 @@ void decompressBc4 (const PixelBufferAccess& dst, const deUint8* src, bool hasSi
 	const deUint8			red1			= src[1];
 	const deInt8			red0s			= ((deInt8*)src)[0];
 	const deInt8			red1s			= ((deInt8*)src)[1];
-	const deUint64			indexBits		= *((deUint64*)&src[2]);
+	const deUint64			indexBits		= get64BitBlockLE(src, 0) >> 16;
 	float					reds[8];
 
 	const deInt32			indices[16]		=
@@ -1768,7 +1779,7 @@ void decompressBc5 (const PixelBufferAccess& dst, const deUint8* src, bool hasSi
 		const deUint8			rg1				= src[offset + 1];
 		const deInt8			rg0s			= ((deInt8*)src)[offset];
 		const deInt8			rg1s			= ((deInt8*)src)[offset + 1];
-		const deUint64			indexBits		= *((deUint64*)&src[offset + 2]);
+		const deUint64			indexBits		= get64BitBlockLE(src, c) >> 16;
 
 		for (deUint32 i = 0; i < 16; i++)
 			indices[c][i] = (indexBits >> (i * 3)) & 0x7;
