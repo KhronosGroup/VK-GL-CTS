@@ -1504,6 +1504,22 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 			return false;
 		}
 
+		// Check for GL_NV_deep_texture3D support, if so we'll need to check
+		// against the depth limit instead of the generic 3D texture size limit
+		if (m_context.getContextInfo().isExtensionSupported("GL_NV_deep_texture3D"))
+		{
+
+			// Ensure that width and height are within the valid bounds for a
+			// deep texture
+			GLint maxTextureWidthHeight;
+			gl.getIntegerv(GL_MAX_DEEP_3D_TEXTURE_DEPTH_NV, &maxTextureWidthHeight);
+
+			if (width < maxTextureWidthHeight && height < maxTextureWidthHeight)
+			{
+				gl.getIntegerv(GL_MAX_DEEP_3D_TEXTURE_DEPTH_NV, &max3DTextureSize);
+			}
+		}
+
 		Texture::Storage(gl, target, 1, format, width, height, depth + max3DTextureSize);
 		if (!SparseTextureUtils::verifyError(mLog, "TexStorage [GL_TEXTURE_3D wrong depth]", gl.getError(),
 											 GL_INVALID_VALUE))
