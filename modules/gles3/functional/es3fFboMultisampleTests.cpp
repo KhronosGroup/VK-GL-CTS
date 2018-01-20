@@ -21,6 +21,7 @@
  * \brief FBO multisample tests.
  *//*--------------------------------------------------------------------*/
 
+#include "es3fApiCase.hpp"
 #include "es3fFboMultisampleTests.hpp"
 #include "es3fFboTestCase.hpp"
 #include "es3fFboTestUtil.hpp"
@@ -246,6 +247,98 @@ private:
 	int			m_numSamples;
 };
 
+// Ported from WebGL [1], originally written to test a Qualcomm driver bug [2].
+// [1] https://github.com/KhronosGroup/WebGL/blob/master/sdk/tests/conformance2/renderbuffers/multisampled-renderbuffer-initialization.html
+// [2] http://crbug.com/696126
+class RenderbufferResizeCase : public ApiCase
+{
+public:
+	RenderbufferResizeCase (Context& context, const char* name, const char* desc, bool multisampled1, bool multisampled2)
+		: ApiCase	(context, name, desc)
+		, m_multisampled1(multisampled1)
+		, m_multisampled2(multisampled2)
+	{
+	}
+
+protected:
+	void test ()
+	{
+		glDisable(GL_DEPTH_TEST);
+
+		int maxSamples = 0;
+		glGetInternalformativ(GL_RENDERBUFFER, GL_RGBA8, GL_SAMPLES, 1, &maxSamples);
+		deUint32 samp1 = m_multisampled1 ? maxSamples : 0;
+		deUint32 samp2 = m_multisampled2 ? maxSamples : 0;
+
+		static const deUint32 W1 = 10, H1 = 10;
+		static const deUint32 W2 = 40, H2 = 40;
+
+		// Set up non-multisampled buffer to blit to and read back from.
+		deUint32 fboResolve = 0;
+		deUint32 rboResolve = 0;
+		{
+			glGenFramebuffers(1, &fboResolve);
+			glBindFramebuffer(GL_FRAMEBUFFER, fboResolve);
+			glGenRenderbuffers(1, &rboResolve);
+			glBindRenderbuffer(GL_RENDERBUFFER, rboResolve);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, W2, H2);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rboResolve);
+			TCU_CHECK(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+			glClearBufferfv(GL_COLOR, 0, Vec4(1.0f, 0.0f, 0.0f, 1.0f).getPtr());
+		}
+		expectError(GL_NO_ERROR);
+
+		// Set up multisampled buffer to test.
+		deUint32 fboMultisampled = 0;
+		deUint32 rboMultisampled = 0;
+		{
+			glGenFramebuffers(1, &fboMultisampled);
+			glBindFramebuffer(GL_FRAMEBUFFER, fboMultisampled);
+			glGenRenderbuffers(1, &rboMultisampled);
+			glBindRenderbuffer(GL_RENDERBUFFER, rboMultisampled);
+			// Allocate,
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samp1, GL_RGBA8, W1, H1);
+			// attach,
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rboMultisampled);
+			TCU_CHECK(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+			glClearBufferfv(GL_COLOR, 0, Vec4(0.0f, 0.0f, 1.0f, 1.0f).getPtr());
+			// and allocate again with different parameters.
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, samp2, GL_RGBA8, W2, H2);
+			TCU_CHECK(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+			glClearBufferfv(GL_COLOR, 0, Vec4(0.0f, 1.0f, 0.0f, 1.0f).getPtr());
+		}
+		expectError(GL_NO_ERROR);
+
+		// This is a blit from the multisampled buffer to the non-multisampled buffer.
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, fboMultisampled);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboResolve);
+		// Blit color from fboMultisampled (should be green) to fboResolve (should currently be red).
+		glBlitFramebuffer(0, 0, W2, H2, 0, 0, W2, H2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		expectError(GL_NO_ERROR);
+
+		// fboResolve should now be green.
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, fboResolve);
+		deUint32 pixels[W2 * H2] = {};
+		glReadPixels(0, 0, W2, H2, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		expectError(GL_NO_ERROR);
+
+		const tcu::RGBA threshold (tcu::max(getFormatThreshold(GL_RGBA8), tcu::RGBA(12, 12, 12, 12)));
+		for (deUint32 y = 0; y < H2; ++y)
+		{
+			for (deUint32 x = 0; x < W2; ++x)
+			{
+				tcu::RGBA color(pixels[y * W2 + x]);
+				TCU_CHECK(compareThreshold(color, tcu::RGBA::green(), threshold));
+			}
+		}
+	}
+
+private:
+	bool m_multisampled1;
+	bool m_multisampled2;
+};
+
 FboMultisampleTests::FboMultisampleTests (Context& context)
 	: TestCaseGroup(context, "msaa", "Multisample FBO tests")
 {
@@ -311,6 +404,19 @@ void FboMultisampleTests::init (void)
 		// Depth/stencil formats.
 		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(depthStencilFormats); fmtNdx++)
 			sampleCountGroup->addChild(new BasicFboMultisampleCase(m_context, getFormatName(depthStencilFormats[fmtNdx]), "", GL_RGBA8, depthStencilFormats[fmtNdx], IVec2(119, 131), samples));
+	}
+
+	// .renderbuffer_resize
+	{
+		tcu::TestCaseGroup* group = new tcu::TestCaseGroup(m_testCtx, "renderbuffer_resize", "Multisample renderbuffer resize");
+		addChild(group);
+
+		{
+			group->addChild(new RenderbufferResizeCase(m_context, "nonms_to_nonms", "", false, false));
+			group->addChild(new RenderbufferResizeCase(m_context, "nonms_to_ms", "", false, true));
+			group->addChild(new RenderbufferResizeCase(m_context, "ms_to_nonms", "", true, false));
+			group->addChild(new RenderbufferResizeCase(m_context, "ms_to_ms", "", true, true));
+		}
 	}
 }
 
