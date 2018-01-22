@@ -2354,6 +2354,12 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		}
 	}
 
+	// 8bit storage features
+	{
+		if (!is8BitStorageFeaturesSupported(context.getUsedApiVersion(), vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext8BitStorage))
+			TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
+	}
+
 	// 16bit storage features
 	{
 		if (!is16BitStorageFeaturesSupported(context, instance.requestedFeatures.ext16BitStorage))

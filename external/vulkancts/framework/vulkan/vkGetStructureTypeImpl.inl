@@ -251,6 +251,11 @@ template<> VkStructureType getStructureType<VkBindImageMemoryInfo> (void)
 	return VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevice8BitStorageFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevice16BitStorageFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;

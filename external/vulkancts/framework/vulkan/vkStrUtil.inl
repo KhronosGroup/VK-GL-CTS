@@ -387,6 +387,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDrawIndirectCommand& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSubgroupProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindBufferMemoryInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindImageMemoryInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice8BitStorageFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevice16BitStorageFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedRequirements& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryDedicatedAllocateInfo& value);

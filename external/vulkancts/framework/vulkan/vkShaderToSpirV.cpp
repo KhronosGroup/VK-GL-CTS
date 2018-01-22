@@ -272,16 +272,16 @@ bool compileShaderToSpirV (const std::vector<std::string>* sources, const Shader
 			switch ( buildOptions.targetVersion )
 			{
 			case SPIRV_VERSION_1_0:
-				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10000);
+				shader.setEnvTarget(glslang::EshTargetSpv, 0x10000);
 				break;
 			case SPIRV_VERSION_1_1:
-				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10100);
+				shader.setEnvTarget(glslang::EshTargetSpv, 0x10100);
 				break;
 			case SPIRV_VERSION_1_2:
-				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10200);
+				shader.setEnvTarget(glslang::EshTargetSpv, 0x10200);
 				break;
 			case SPIRV_VERSION_1_3:
-				shader.setEnvTarget(glslang::EshTargetSpv, (glslang::EShTargetLanguageVersion)0x10300);
+				shader.setEnvTarget(glslang::EshTargetSpv, 0x10300);
 				break;
 			}
 

@@ -332,6 +332,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR";
 		default:																				return DE_NULL;
 	}
 }
@@ -3832,6 +3833,18 @@ std::ostream& operator<< (std::ostream& s, const VkBindImageMemoryInfo& value)
 	s << "\timage = " << value.image << '\n';
 	s << "\tmemory = " << value.memory << '\n';
 	s << "\tmemoryOffset = " << value.memoryOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevice8BitStorageFeaturesKHR& value)
+{
+	s << "VkPhysicalDevice8BitStorageFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tstorageBuffer8BitAccess = " << value.storageBuffer8BitAccess << '\n';
+	s << "\tuniformAndStorageBuffer8BitAccess = " << value.uniformAndStorageBuffer8BitAccess << '\n';
+	s << "\tstoragePushConstant8 = " << value.storagePushConstant8 << '\n';
 	s << '}';
 	return s;
 }
