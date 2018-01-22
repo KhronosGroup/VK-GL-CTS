@@ -517,6 +517,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		const InstanceInterface&			vki					= m_context.getInstanceInterface();
 		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
 
+		// 8bit storage features
+		{
+			if (!is8BitStorageFeaturesSupported(m_context.getUsedApiVersion(), vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.ext8BitStorage))
+				TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
+		}
+
 		// 16bit storage features
 		{
 			if (!is16BitStorageFeaturesSupported(m_context.getUsedApiVersion(), vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
@@ -864,7 +870,19 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			expectedOutput->getBytes(expectedBytes);
 
 			if (deMemCmp(&expectedBytes.front(), outputAllocs[outputNdx]->getHostPtr(), expectedBytes.size()))
+			{
+				const deUint8*	ptrHost		= static_cast<deUint8*>(outputAllocs[outputNdx]->getHostPtr());
+				const deUint8*	ptrExpected	= static_cast<deUint8*>(&expectedBytes.front());
+				unsigned int	ndx			= 0u;
+				for (; ndx < expectedBytes.size(); ++ndx)
+				{
+					if (ptrHost[ndx] != ptrExpected[ndx])
+						break;
+				}
+				m_context.getTestContext().getLog() << tcu::TestLog::Message << "OutputBuffer: " << outputNdx
+													<< " Got " << (deUint8)ptrHost[ndx] <<" expected " << (deUint8)ptrExpected[ndx] << " at byte" << ndx << tcu::TestLog::EndMessage;
 				return tcu::TestStatus(m_shaderSpec.failResult, m_shaderSpec.failMessage);
+			}
 		}
 	}
 

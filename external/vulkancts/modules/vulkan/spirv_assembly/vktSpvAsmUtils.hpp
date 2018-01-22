@@ -37,6 +37,14 @@ namespace vkt
 namespace SpirVAssembly
 {
 
+enum Extension8BitStorageFeatureBits
+{
+	EXT8BITSTORAGEFEATURES_STORAGE_BUFFER			= (1u << 1),
+	EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER	= (1u << 2),
+	EXT8BITSTORAGEFEATURES_PUSH_CONSTANT			= (1u << 3),
+};
+typedef deUint32 Extension8BitStorageFeatures;
+
 enum Extension16BitStorageFeatureBits
 {
 	EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK	= (1u << 1),
@@ -55,16 +63,25 @@ typedef deUint32 ExtensionVariablePointersFeatures;
 
 struct VulkanFeatures
 {
+	Extension8BitStorageFeatures		ext8BitStorage;
 	Extension16BitStorageFeatures		ext16BitStorage;
 	ExtensionVariablePointersFeatures	extVariablePointers;
 	vk::VkPhysicalDeviceFeatures		coreFeatures;
 
 	VulkanFeatures				(void)
-		: ext16BitStorage		(0)
+		: ext8BitStorage		(0)
+		, ext16BitStorage		(0)
 		, extVariablePointers	(0)
 		, coreFeatures			(vk::VkPhysicalDeviceFeatures())
 	{}
 };
+
+// Returns true if the given 8bit storage extension features in `toCheck` are all supported.
+bool is8BitStorageFeaturesSupported (const deUint32 apiVersion,
+									  const vk::InstanceInterface&		vkInstance,
+									  vk::VkPhysicalDevice				device,
+									  const std::vector<std::string>&	instanceExtensions,
+									  Extension8BitStorageFeatures		toCheck);
 
 // Returns true if the given 16bit storage extension features in `toCheck` are all supported.
 bool is16BitStorageFeaturesSupported (const deUint32 apiVersion,

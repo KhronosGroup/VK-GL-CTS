@@ -49,6 +49,7 @@
 #include "deMath.h"
 #include "tcuStringTemplate.hpp"
 
+#include "vktSpvAsm8bitStorageTests.hpp"
 #include "vktSpvAsm16bitStorageTests.hpp"
 #include "vktSpvAsmUboMatrixPaddingTests.hpp"
 #include "vktSpvAsmConditionalBranchTests.hpp"
@@ -6268,7 +6269,6 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"OpDecorate %sc_2  SpecId 2\n";
 
 	const char	typesAndConstants2[]	=
-		"%v3i32       = OpTypeVector %i32 3\n"
 		"%vec3_0      = OpConstantComposite %v3i32 %c_i32_0 %c_i32_0 %c_i32_0\n"
 		"%vec3_undef  = OpUndef %v3i32\n"
 
@@ -9002,6 +9002,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 		computeTests->addChild(computeAndroidTests.release());
 	}
 
+	computeTests->addChild(create8BitStorageComputeGroup(testCtx));
 	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
 	computeTests->addChild(createUboMatrixPaddingComputeGroup(testCtx));
 	computeTests->addChild(createConditionalBranchComputeGroup(testCtx));
@@ -9043,6 +9044,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 		graphicsTests->addChild(graphicsAndroidTests.release());
 	}
 
+	graphicsTests->addChild(create8BitStorageGraphicsGroup(testCtx));
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
 	graphicsTests->addChild(createUboMatrixPaddingGraphicsGroup(testCtx));
 	graphicsTests->addChild(createConditionalBranchGraphicsGroup(testCtx));

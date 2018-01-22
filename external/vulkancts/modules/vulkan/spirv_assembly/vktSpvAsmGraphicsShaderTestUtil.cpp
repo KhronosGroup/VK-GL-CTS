@@ -383,6 +383,8 @@ void createPipelineShaderStages (const DeviceInterface&						vk,
 	"%v2i32 = OpTypeVector %i32 2\n"															\
 	"%v2u32 = OpTypeVector %u32 2\n"															\
 	"%v2f32 = OpTypeVector %f32 2\n"															\
+	"%v3i32 = OpTypeVector %i32 3\n"															\
+	"%v3u32 = OpTypeVector %u32 3\n"															\
 	"%v3f32 = OpTypeVector %f32 3\n"															\
 	"%v4i32 = OpTypeVector %i32 4\n"															\
 	"%v4u32 = OpTypeVector %u32 4\n"															\
@@ -2442,6 +2444,12 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				TCU_THROW(InternalError, (std::string("Unimplemented physical device feature: ") + feature).c_str());
 			}
 		}
+	}
+
+	// 8bit storage features
+	{
+		if (!is8BitStorageFeaturesSupported(context.getUsedApiVersion(), vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext8BitStorage))
+			TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
 	}
 
 	// 16bit storage features

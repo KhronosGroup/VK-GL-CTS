@@ -1211,6 +1211,15 @@ struct VkBindImageMemoryInfo
 	VkDeviceSize	memoryOffset;
 };
 
+struct VkPhysicalDevice8BitStorageFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		storageBuffer8BitAccess;
+	VkBool32		uniformAndStorageBuffer8BitAccess;
+	VkBool32		storagePushConstant8;
+};
+
 struct VkPhysicalDevice16BitStorageFeatures
 {
 	VkStructureType	sType;

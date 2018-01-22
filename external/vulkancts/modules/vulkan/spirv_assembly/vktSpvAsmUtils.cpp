@@ -48,6 +48,31 @@ VkPhysicalDeviceFeatures filterDefaultDeviceFeatures (const VkPhysicalDeviceFeat
 	return enabledDeviceFeatures;
 }
 
+VkPhysicalDevice8BitStorageFeaturesKHR	querySupported8BitStorageFeatures (const deUint32 apiVersion, const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
+{
+	VkPhysicalDevice8BitStorageFeaturesKHR	extensionFeatures	=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR,	// VkStructureType	sType;
+		DE_NULL,														// void*			pNext;
+		false,															// VkBool32			storageBuffer8BitAccess;
+		false,															// VkBool32			uniformAndStorageBuffer8BitAccess;
+		false,															// VkBool32			storagePushConstant8;
+	};
+	VkPhysicalDeviceFeatures2			features;
+
+	deMemset(&features, 0, sizeof(features));
+	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	features.pNext	= &extensionFeatures;
+
+	// Call the getter only if supported. Otherwise above "zero" defaults are used
+	if(isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
+	{
+		vki.getPhysicalDeviceFeatures2(device, &features);
+	}
+
+	return extensionFeatures;
+}
+
 VkPhysicalDevice16BitStorageFeatures	querySupported16BitStorageFeatures (const deUint32 apiVersion, const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
 {
 	VkPhysicalDevice16BitStorageFeatures	extensionFeatures	=
@@ -99,6 +124,22 @@ VkPhysicalDeviceVariablePointerFeatures querySupportedVariablePointersFeatures (
 }
 
 } // anonymous
+
+bool is8BitStorageFeaturesSupported (const deUint32 apiVersion, const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, Extension8BitStorageFeatures toCheck)
+{
+	VkPhysicalDevice8BitStorageFeaturesKHR extensionFeatures	= querySupported8BitStorageFeatures(apiVersion, vki, device, instanceExtensions);
+
+	if ((toCheck & EXT8BITSTORAGEFEATURES_STORAGE_BUFFER) != 0 && extensionFeatures.storageBuffer8BitAccess == VK_FALSE)
+		TCU_FAIL("storageBuffer8BitAccess has to be supported");
+
+	if ((toCheck & EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER) != 0 && extensionFeatures.uniformAndStorageBuffer8BitAccess == VK_FALSE)
+		return false;
+
+	if ((toCheck & EXT8BITSTORAGEFEATURES_PUSH_CONSTANT) != 0 && extensionFeatures.storagePushConstant8 == VK_FALSE)
+		return false;
+
+	return true;
+}
 
 bool is16BitStorageFeaturesSupported (const deUint32 apiVersion, const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, Extension16BitStorageFeatures toCheck)
 {
