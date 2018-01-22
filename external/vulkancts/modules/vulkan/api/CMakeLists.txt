@@ -43,6 +43,8 @@ set(DEQP_VK_API_SRCS
 	vktApiExternalMemoryTests.hpp
 	vktApiBufferAndImageAllocationUtil.hpp
 	vktApiBufferAndImageAllocationUtil.cpp
+	vktApiDescriptorSetTests.hpp
+	vktApiDescriptorSetTests.cpp
 	)
 
 set(DEQP_VK_API_LIBS
