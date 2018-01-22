@@ -1732,7 +1732,7 @@ void NegativeTextureApiTests::init (void)
 			expectError(GL_INVALID_VALUE);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, -1, -GL_RGBA, GL_UNSIGNED_BYTE, 0);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, -1, -1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 			expectError(GL_INVALID_VALUE);
 			m_log << TestLog::EndSection;
 
