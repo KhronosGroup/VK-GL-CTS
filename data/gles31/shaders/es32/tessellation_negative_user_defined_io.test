@@ -147,7 +147,7 @@ case per_vertex_incorrect_control_explicit_output_array_size_1
 	tessellation_control ""
 		#version 320 es
 		${TESSELLATION_CONTROL_DECLARATIONS}
-		out highp float varyingArray[3]; // size is not equal to gl_MaxPatchVertices
+		out highp float varyingArray[2]; // size does not match layout declaration
 		void main()
 		{
 			varyingArray[gl_InvocationID] = gl_in[0].gl_Position[gl_InvocationID];
