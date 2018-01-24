@@ -189,10 +189,15 @@ SPECIAL_RECIPES		= [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "build_mustpass.py"),
 					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "vulkan-mustpass")]),
 		]),
+	('spirv-binaries', [
+			RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
+					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "spirv-binaries")]),
+		]),
 	('gen-inl-files', [
 			RunScript(os.path.join("scripts", "gen_egl.py")),
 			RunScript(os.path.join("scripts", "opengl", "gen_all.py")),
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py")),
+			RunScript(os.path.join("scripts", "gen_android_mk.py")),
 			RunScript(os.path.join("scripts", "src_util", "check_all.py")),
 		])
 ]

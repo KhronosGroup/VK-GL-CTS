@@ -236,12 +236,14 @@ TextureCubeArraySpecCase::~TextureCubeArraySpecCase (void)
 
 bool TextureCubeArraySpecCase::checkExtensionSupport (void)
 {
-	return m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array");
+	const bool supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	return supportsES32 || m_context.getContextInfo().isExtensionSupported("GL_EXT_texture_cube_map_array");
 }
 
 void TextureCubeArraySpecCase::verifyTexture (sglr::GLContext& gles3Context, sglr::ReferenceContext& refContext)
 {
-	TextureCubeArrayShader	shader			(glu::getSamplerCubeArrayType(m_texFormat), glu::TYPE_FLOAT_VEC4);
+	const glu::GLSLVersion	glslVersion		= glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType());
+	TextureCubeArrayShader	shader			(glu::getSamplerCubeArrayType(m_texFormat), glu::TYPE_FLOAT_VEC4, glslVersion);
 	deUint32				shaderIDgles	= gles3Context.createProgram(&shader);
 	deUint32				shaderIDRef		= refContext.createProgram(&shader);
 

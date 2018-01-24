@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 7ac9c857db1e3a6065485e4e2144151f48a4f1c4.
+ * Generated from Khronos GL API description (gl.xml) revision a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -146,6 +146,14 @@ void glwBindImageTextures (GLuint first, GLsizei count, const GLuint *textures)
 	if (!gl)
 		return;
 	gl->bindImageTextures(first, count, textures);
+}
+
+void glwBindMultiTextureEXT (GLenum texunit, GLenum target, GLuint texture)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->bindMultiTextureEXT(texunit, target, texture);
 }
 
 void glwBindProgramPipeline (GLuint pipeline)
@@ -340,6 +348,14 @@ void glwBufferData (GLenum target, GLsizeiptr size, const void *data, GLenum usa
 	gl->bufferData(target, size, data, usage);
 }
 
+void glwBufferPageCommitmentARB (GLenum target, GLintptr offset, GLsizeiptr size, GLboolean commit)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->bufferPageCommitmentARB(target, offset, size, commit);
+}
+
 void glwBufferStorage (GLenum target, GLsizeiptr size, const void *data, GLbitfield flags)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -370,6 +386,14 @@ GLenum glwCheckNamedFramebufferStatus (GLuint framebuffer, GLenum target)
 	if (!gl)
 		return (GLenum)0;
 	return gl->checkNamedFramebufferStatus(framebuffer, target);
+}
+
+GLenum glwCheckNamedFramebufferStatusEXT (GLuint framebuffer, GLenum target)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return (GLenum)0;
+	return gl->checkNamedFramebufferStatusEXT(framebuffer, target);
 }
 
 void glwClampColor (GLenum target, GLenum clamp)
@@ -468,12 +492,28 @@ void glwClearNamedBufferData (GLuint buffer, GLenum internalformat, GLenum forma
 	gl->clearNamedBufferData(buffer, internalformat, format, type, data);
 }
 
+void glwClearNamedBufferDataEXT (GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->clearNamedBufferDataEXT(buffer, internalformat, format, type, data);
+}
+
 void glwClearNamedBufferSubData (GLuint buffer, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->clearNamedBufferSubData(buffer, internalformat, offset, size, format, type, data);
+}
+
+void glwClearNamedBufferSubDataEXT (GLuint buffer, GLenum internalformat, GLsizeiptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->clearNamedBufferSubDataEXT(buffer, internalformat, offset, size, format, type, data);
 }
 
 void glwClearNamedFramebufferfi (GLuint framebuffer, GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil)
@@ -532,6 +572,14 @@ void glwClearTexSubImage (GLuint texture, GLint level, GLint xoffset, GLint yoff
 	gl->clearTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
 }
 
+void glwClientAttribDefaultEXT (GLbitfield mask)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->clientAttribDefaultEXT(mask);
+}
+
 GLenum glwClientWaitSync (GLsync sync, GLbitfield flags, GLuint64 timeout)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -572,6 +620,54 @@ void glwCompileShader (GLuint shader)
 	gl->compileShader(shader);
 }
 
+void glwCompressedMultiTexImage1DEXT (GLenum texunit, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedMultiTexImage1DEXT(texunit, target, level, internalformat, width, border, imageSize, bits);
+}
+
+void glwCompressedMultiTexImage2DEXT (GLenum texunit, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedMultiTexImage2DEXT(texunit, target, level, internalformat, width, height, border, imageSize, bits);
+}
+
+void glwCompressedMultiTexImage3DEXT (GLenum texunit, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedMultiTexImage3DEXT(texunit, target, level, internalformat, width, height, depth, border, imageSize, bits);
+}
+
+void glwCompressedMultiTexSubImage1DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedMultiTexSubImage1DEXT(texunit, target, level, xoffset, width, format, imageSize, bits);
+}
+
+void glwCompressedMultiTexSubImage2DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedMultiTexSubImage2DEXT(texunit, target, level, xoffset, yoffset, width, height, format, imageSize, bits);
+}
+
+void glwCompressedMultiTexSubImage3DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedMultiTexSubImage3DEXT(texunit, target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, bits);
+}
+
 void glwCompressedTexImage1D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -594,6 +690,14 @@ void glwCompressedTexImage3D (GLenum target, GLint level, GLenum internalformat,
 	if (!gl)
 		return;
 	gl->compressedTexImage3D(target, level, internalformat, width, height, depth, border, imageSize, data);
+}
+
+void glwCompressedTexImage3DOES (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedTexImage3DOES(target, level, internalformat, width, height, depth, border, imageSize, data);
 }
 
 void glwCompressedTexSubImage1D (GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *data)
@@ -620,12 +724,52 @@ void glwCompressedTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLin
 	gl->compressedTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
 }
 
+void glwCompressedTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedTexSubImage3DOES(target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+}
+
+void glwCompressedTextureImage1DEXT (GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedTextureImage1DEXT(texture, target, level, internalformat, width, border, imageSize, bits);
+}
+
+void glwCompressedTextureImage2DEXT (GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedTextureImage2DEXT(texture, target, level, internalformat, width, height, border, imageSize, bits);
+}
+
+void glwCompressedTextureImage3DEXT (GLuint texture, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedTextureImage3DEXT(texture, target, level, internalformat, width, height, depth, border, imageSize, bits);
+}
+
 void glwCompressedTextureSubImage1D (GLuint texture, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->compressedTextureSubImage1D(texture, level, xoffset, width, format, imageSize, data);
+}
+
+void glwCompressedTextureSubImage1DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedTextureSubImage1DEXT(texture, target, level, xoffset, width, format, imageSize, bits);
 }
 
 void glwCompressedTextureSubImage2D (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *data)
@@ -636,12 +780,28 @@ void glwCompressedTextureSubImage2D (GLuint texture, GLint level, GLint xoffset,
 	gl->compressedTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, imageSize, data);
 }
 
+void glwCompressedTextureSubImage2DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedTextureSubImage2DEXT(texture, target, level, xoffset, yoffset, width, height, format, imageSize, bits);
+}
+
 void glwCompressedTextureSubImage3D (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->compressedTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
+}
+
+void glwCompressedTextureSubImage3DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *bits)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->compressedTextureSubImage3DEXT(texture, target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, bits);
 }
 
 void glwCopyBufferSubData (GLenum readTarget, GLenum writeTarget, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size)
@@ -658,6 +818,46 @@ void glwCopyImageSubData (GLuint srcName, GLenum srcTarget, GLint srcLevel, GLin
 	if (!gl)
 		return;
 	gl->copyImageSubData(srcName, srcTarget, srcLevel, srcX, srcY, srcZ, dstName, dstTarget, dstLevel, dstX, dstY, dstZ, srcWidth, srcHeight, srcDepth);
+}
+
+void glwCopyMultiTexImage1DEXT (GLenum texunit, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyMultiTexImage1DEXT(texunit, target, level, internalformat, x, y, width, border);
+}
+
+void glwCopyMultiTexImage2DEXT (GLenum texunit, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyMultiTexImage2DEXT(texunit, target, level, internalformat, x, y, width, height, border);
+}
+
+void glwCopyMultiTexSubImage1DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyMultiTexSubImage1DEXT(texunit, target, level, xoffset, x, y, width);
+}
+
+void glwCopyMultiTexSubImage2DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyMultiTexSubImage2DEXT(texunit, target, level, xoffset, yoffset, x, y, width, height);
+}
+
+void glwCopyMultiTexSubImage3DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyMultiTexSubImage3DEXT(texunit, target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
 void glwCopyNamedBufferSubData (GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size)
@@ -708,12 +908,44 @@ void glwCopyTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoff
 	gl->copyTexSubImage3D(target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
+void glwCopyTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyTexSubImage3DOES(target, level, xoffset, yoffset, zoffset, x, y, width, height);
+}
+
+void glwCopyTextureImage1DEXT (GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyTextureImage1DEXT(texture, target, level, internalformat, x, y, width, border);
+}
+
+void glwCopyTextureImage2DEXT (GLuint texture, GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyTextureImage2DEXT(texture, target, level, internalformat, x, y, width, height, border);
+}
+
 void glwCopyTextureSubImage1D (GLuint texture, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->copyTextureSubImage1D(texture, level, xoffset, x, y, width);
+}
+
+void glwCopyTextureSubImage1DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyTextureSubImage1DEXT(texture, target, level, xoffset, x, y, width);
 }
 
 void glwCopyTextureSubImage2D (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height)
@@ -724,12 +956,28 @@ void glwCopyTextureSubImage2D (GLuint texture, GLint level, GLint xoffset, GLint
 	gl->copyTextureSubImage2D(texture, level, xoffset, yoffset, x, y, width, height);
 }
 
+void glwCopyTextureSubImage2DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyTextureSubImage2DEXT(texture, target, level, xoffset, yoffset, x, y, width, height);
+}
+
 void glwCopyTextureSubImage3D (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->copyTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, x, y, width, height);
+}
+
+void glwCopyTextureSubImage3DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->copyTextureSubImage3DEXT(texture, target, level, xoffset, yoffset, zoffset, x, y, width, height);
 }
 
 void glwCreateBuffers (GLsizei n, GLuint *buffers)
@@ -956,6 +1204,14 @@ void glwDeleteVertexArrays (GLsizei n, const GLuint *arrays)
 	gl->deleteVertexArrays(n, arrays);
 }
 
+void glwDepthBoundsEXT (GLclampd zmin, GLclampd zmax)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->depthBoundsEXT(zmin, zmax);
+}
+
 void glwDepthFunc (GLenum func)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -980,6 +1236,14 @@ void glwDepthRange (GLdouble near, GLdouble far)
 	gl->depthRange(near, far);
 }
 
+void glwDepthRangeArrayfvOES (GLuint first, GLsizei count, const GLfloat *v)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->depthRangeArrayfvOES(first, count, v);
+}
+
 void glwDepthRangeArrayv (GLuint first, GLsizei count, const GLdouble *v)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -994,6 +1258,14 @@ void glwDepthRangeIndexed (GLuint index, GLdouble n, GLdouble f)
 	if (!gl)
 		return;
 	gl->depthRangeIndexed(index, n, f);
+}
+
+void glwDepthRangeIndexedfOES (GLuint index, GLfloat n, GLfloat f)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->depthRangeIndexedfOES(index, n, f);
 }
 
 void glwDepthRangef (GLfloat n, GLfloat f)
@@ -1020,12 +1292,44 @@ void glwDisable (GLenum cap)
 	gl->disable(cap);
 }
 
+void glwDisableClientStateIndexedEXT (GLenum array, GLuint index)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->disableClientStateIndexedEXT(array, index);
+}
+
+void glwDisableClientStateiEXT (GLenum array, GLuint index)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->disableClientStateiEXT(array, index);
+}
+
 void glwDisableVertexArrayAttrib (GLuint vaobj, GLuint index)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->disableVertexArrayAttrib(vaobj, index);
+}
+
+void glwDisableVertexArrayAttribEXT (GLuint vaobj, GLuint index)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->disableVertexArrayAttribEXT(vaobj, index);
+}
+
+void glwDisableVertexArrayEXT (GLuint vaobj, GLenum array)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->disableVertexArrayEXT(vaobj, array);
 }
 
 void glwDisableVertexAttribArray (GLuint index)
@@ -1236,12 +1540,44 @@ void glwEnable (GLenum cap)
 	gl->enable(cap);
 }
 
+void glwEnableClientStateIndexedEXT (GLenum array, GLuint index)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->enableClientStateIndexedEXT(array, index);
+}
+
+void glwEnableClientStateiEXT (GLenum array, GLuint index)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->enableClientStateiEXT(array, index);
+}
+
 void glwEnableVertexArrayAttrib (GLuint vaobj, GLuint index)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->enableVertexArrayAttrib(vaobj, index);
+}
+
+void glwEnableVertexArrayAttribEXT (GLuint vaobj, GLuint index)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->enableVertexArrayAttribEXT(vaobj, index);
+}
+
+void glwEnableVertexArrayEXT (GLuint vaobj, GLenum array)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->enableVertexArrayEXT(vaobj, array);
 }
 
 void glwEnableVertexAttribArray (GLuint index)
@@ -1332,12 +1668,44 @@ void glwFlushMappedNamedBufferRange (GLuint buffer, GLintptr offset, GLsizeiptr 
 	gl->flushMappedNamedBufferRange(buffer, offset, length);
 }
 
+void glwFlushMappedNamedBufferRangeEXT (GLuint buffer, GLintptr offset, GLsizeiptr length)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->flushMappedNamedBufferRangeEXT(buffer, offset, length);
+}
+
+void glwFramebufferDrawBufferEXT (GLuint framebuffer, GLenum mode)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->framebufferDrawBufferEXT(framebuffer, mode);
+}
+
+void glwFramebufferDrawBuffersEXT (GLuint framebuffer, GLsizei n, const GLenum *bufs)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->framebufferDrawBuffersEXT(framebuffer, n, bufs);
+}
+
 void glwFramebufferParameteri (GLenum target, GLenum pname, GLint param)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->framebufferParameteri(target, pname, param);
+}
+
+void glwFramebufferReadBufferEXT (GLuint framebuffer, GLenum mode)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->framebufferReadBufferEXT(framebuffer, mode);
 }
 
 void glwFramebufferRenderbuffer (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
@@ -1378,6 +1746,14 @@ void glwFramebufferTexture3D (GLenum target, GLenum attachment, GLenum textarget
 	if (!gl)
 		return;
 	gl->framebufferTexture3D(target, attachment, textarget, texture, level, zoffset);
+}
+
+void glwFramebufferTexture3DOES (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->framebufferTexture3DOES(target, attachment, textarget, texture, level, zoffset);
 }
 
 void glwFramebufferTextureLayer (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer)
@@ -1492,12 +1868,28 @@ void glwGenerateMipmap (GLenum target)
 	gl->generateMipmap(target);
 }
 
+void glwGenerateMultiTexMipmapEXT (GLenum texunit, GLenum target)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->generateMultiTexMipmapEXT(texunit, target);
+}
+
 void glwGenerateTextureMipmap (GLuint texture)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->generateTextureMipmap(texture);
+}
+
+void glwGenerateTextureMipmapEXT (GLuint texture, GLenum target)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->generateTextureMipmapEXT(texture, target);
 }
 
 void glwGetActiveAtomicCounterBufferiv (GLuint program, GLuint bufferIndex, GLenum pname, GLint *params)
@@ -1644,6 +2036,14 @@ void glwGetBufferSubData (GLenum target, GLintptr offset, GLsizeiptr size, void 
 	gl->getBufferSubData(target, offset, size, data);
 }
 
+void glwGetCompressedMultiTexImageEXT (GLenum texunit, GLenum target, GLint lod, void *img)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getCompressedMultiTexImageEXT(texunit, target, lod, img);
+}
+
 void glwGetCompressedTexImage (GLenum target, GLint level, void *img)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -1658,6 +2058,14 @@ void glwGetCompressedTextureImage (GLuint texture, GLint level, GLsizei bufSize,
 	if (!gl)
 		return;
 	gl->getCompressedTextureImage(texture, level, bufSize, pixels);
+}
+
+void glwGetCompressedTextureImageEXT (GLuint texture, GLenum target, GLint lod, void *img)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getCompressedTextureImageEXT(texture, target, lod, img);
 }
 
 void glwGetCompressedTextureSubImage (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLsizei bufSize, void *pixels)
@@ -1748,6 +2156,14 @@ void glwGetFramebufferParameteriv (GLenum target, GLenum pname, GLint *params)
 	gl->getFramebufferParameteriv(target, pname, params);
 }
 
+void glwGetFramebufferParameterivEXT (GLuint framebuffer, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getFramebufferParameterivEXT(framebuffer, pname, params);
+}
+
 GLenum glwGetGraphicsResetStatus (void)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -1788,6 +2204,14 @@ void glwGetIntegerv (GLenum pname, GLint *data)
 	gl->getIntegerv(pname, data);
 }
 
+void glwGetInternalformatSampleivNV (GLenum target, GLenum internalformat, GLsizei samples, GLenum pname, GLsizei bufSize, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getInternalformatSampleivNV(target, internalformat, samples, pname, bufSize, params);
+}
+
 void glwGetInternalformati64v (GLenum target, GLenum internalformat, GLenum pname, GLsizei bufSize, GLint64 *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -1802,6 +2226,102 @@ void glwGetInternalformativ (GLenum target, GLenum internalformat, GLenum pname,
 	if (!gl)
 		return;
 	gl->getInternalformativ(target, internalformat, pname, bufSize, params);
+}
+
+void glwGetMultiTexEnvfvEXT (GLenum texunit, GLenum target, GLenum pname, GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexEnvfvEXT(texunit, target, pname, params);
+}
+
+void glwGetMultiTexEnvivEXT (GLenum texunit, GLenum target, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexEnvivEXT(texunit, target, pname, params);
+}
+
+void glwGetMultiTexGendvEXT (GLenum texunit, GLenum coord, GLenum pname, GLdouble *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexGendvEXT(texunit, coord, pname, params);
+}
+
+void glwGetMultiTexGenfvEXT (GLenum texunit, GLenum coord, GLenum pname, GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexGenfvEXT(texunit, coord, pname, params);
+}
+
+void glwGetMultiTexGenivEXT (GLenum texunit, GLenum coord, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexGenivEXT(texunit, coord, pname, params);
+}
+
+void glwGetMultiTexImageEXT (GLenum texunit, GLenum target, GLint level, GLenum format, GLenum type, void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexImageEXT(texunit, target, level, format, type, pixels);
+}
+
+void glwGetMultiTexLevelParameterfvEXT (GLenum texunit, GLenum target, GLint level, GLenum pname, GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexLevelParameterfvEXT(texunit, target, level, pname, params);
+}
+
+void glwGetMultiTexLevelParameterivEXT (GLenum texunit, GLenum target, GLint level, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexLevelParameterivEXT(texunit, target, level, pname, params);
+}
+
+void glwGetMultiTexParameterIivEXT (GLenum texunit, GLenum target, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexParameterIivEXT(texunit, target, pname, params);
+}
+
+void glwGetMultiTexParameterIuivEXT (GLenum texunit, GLenum target, GLenum pname, GLuint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexParameterIuivEXT(texunit, target, pname, params);
+}
+
+void glwGetMultiTexParameterfvEXT (GLenum texunit, GLenum target, GLenum pname, GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexParameterfvEXT(texunit, target, pname, params);
+}
+
+void glwGetMultiTexParameterivEXT (GLenum texunit, GLenum target, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getMultiTexParameterivEXT(texunit, target, pname, params);
 }
 
 void glwGetMultisamplefv (GLenum pname, GLuint index, GLfloat *val)
@@ -1828,12 +2348,28 @@ void glwGetNamedBufferParameteriv (GLuint buffer, GLenum pname, GLint *params)
 	gl->getNamedBufferParameteriv(buffer, pname, params);
 }
 
+void glwGetNamedBufferParameterivEXT (GLuint buffer, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedBufferParameterivEXT(buffer, pname, params);
+}
+
 void glwGetNamedBufferPointerv (GLuint buffer, GLenum pname, void **params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->getNamedBufferPointerv(buffer, pname, params);
+}
+
+void glwGetNamedBufferPointervEXT (GLuint buffer, GLenum pname, void **params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedBufferPointervEXT(buffer, pname, params);
 }
 
 void glwGetNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, void *data)
@@ -1844,12 +2380,28 @@ void glwGetNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, 
 	gl->getNamedBufferSubData(buffer, offset, size, data);
 }
 
+void glwGetNamedBufferSubDataEXT (GLuint buffer, GLintptr offset, GLsizeiptr size, void *data)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedBufferSubDataEXT(buffer, offset, size, data);
+}
+
 void glwGetNamedFramebufferAttachmentParameteriv (GLuint framebuffer, GLenum attachment, GLenum pname, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->getNamedFramebufferAttachmentParameteriv(framebuffer, attachment, pname, params);
+}
+
+void glwGetNamedFramebufferAttachmentParameterivEXT (GLuint framebuffer, GLenum attachment, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedFramebufferAttachmentParameterivEXT(framebuffer, attachment, pname, params);
 }
 
 void glwGetNamedFramebufferParameteriv (GLuint framebuffer, GLenum pname, GLint *param)
@@ -1860,12 +2412,76 @@ void glwGetNamedFramebufferParameteriv (GLuint framebuffer, GLenum pname, GLint 
 	gl->getNamedFramebufferParameteriv(framebuffer, pname, param);
 }
 
+void glwGetNamedFramebufferParameterivEXT (GLuint framebuffer, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedFramebufferParameterivEXT(framebuffer, pname, params);
+}
+
+void glwGetNamedProgramLocalParameterIivEXT (GLuint program, GLenum target, GLuint index, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedProgramLocalParameterIivEXT(program, target, index, params);
+}
+
+void glwGetNamedProgramLocalParameterIuivEXT (GLuint program, GLenum target, GLuint index, GLuint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedProgramLocalParameterIuivEXT(program, target, index, params);
+}
+
+void glwGetNamedProgramLocalParameterdvEXT (GLuint program, GLenum target, GLuint index, GLdouble *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedProgramLocalParameterdvEXT(program, target, index, params);
+}
+
+void glwGetNamedProgramLocalParameterfvEXT (GLuint program, GLenum target, GLuint index, GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedProgramLocalParameterfvEXT(program, target, index, params);
+}
+
+void glwGetNamedProgramStringEXT (GLuint program, GLenum target, GLenum pname, void *string)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedProgramStringEXT(program, target, pname, string);
+}
+
+void glwGetNamedProgramivEXT (GLuint program, GLenum target, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedProgramivEXT(program, target, pname, params);
+}
+
 void glwGetNamedRenderbufferParameteriv (GLuint renderbuffer, GLenum pname, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->getNamedRenderbufferParameteriv(renderbuffer, pname, params);
+}
+
+void glwGetNamedRenderbufferParameterivEXT (GLuint renderbuffer, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getNamedRenderbufferParameterivEXT(renderbuffer, pname, params);
 }
 
 void glwGetObjectLabel (GLenum identifier, GLuint name, GLsizei bufSize, GLsizei *length, GLchar *label)
@@ -1882,6 +2498,22 @@ void glwGetObjectPtrLabel (const void *ptr, GLsizei bufSize, GLsizei *length, GL
 	if (!gl)
 		return;
 	gl->getObjectPtrLabel(ptr, bufSize, length, label);
+}
+
+void glwGetPointerIndexedvEXT (GLenum target, GLuint index, void **data)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getPointerIndexedvEXT(target, index, data);
+}
+
+void glwGetPointeri_vEXT (GLenum pname, GLuint index, void **params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getPointeri_vEXT(pname, index, params);
 }
 
 void glwGetPointerv (GLenum pname, void **params)
@@ -2244,12 +2876,28 @@ void glwGetTextureImage (GLuint texture, GLint level, GLenum format, GLenum type
 	gl->getTextureImage(texture, level, format, type, bufSize, pixels);
 }
 
+void glwGetTextureImageEXT (GLuint texture, GLenum target, GLint level, GLenum format, GLenum type, void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getTextureImageEXT(texture, target, level, format, type, pixels);
+}
+
 void glwGetTextureLevelParameterfv (GLuint texture, GLint level, GLenum pname, GLfloat *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->getTextureLevelParameterfv(texture, level, pname, params);
+}
+
+void glwGetTextureLevelParameterfvEXT (GLuint texture, GLenum target, GLint level, GLenum pname, GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getTextureLevelParameterfvEXT(texture, target, level, pname, params);
 }
 
 void glwGetTextureLevelParameteriv (GLuint texture, GLint level, GLenum pname, GLint *params)
@@ -2260,12 +2908,28 @@ void glwGetTextureLevelParameteriv (GLuint texture, GLint level, GLenum pname, G
 	gl->getTextureLevelParameteriv(texture, level, pname, params);
 }
 
+void glwGetTextureLevelParameterivEXT (GLuint texture, GLenum target, GLint level, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getTextureLevelParameterivEXT(texture, target, level, pname, params);
+}
+
 void glwGetTextureParameterIiv (GLuint texture, GLenum pname, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->getTextureParameterIiv(texture, pname, params);
+}
+
+void glwGetTextureParameterIivEXT (GLuint texture, GLenum target, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getTextureParameterIivEXT(texture, target, pname, params);
 }
 
 void glwGetTextureParameterIuiv (GLuint texture, GLenum pname, GLuint *params)
@@ -2276,6 +2940,14 @@ void glwGetTextureParameterIuiv (GLuint texture, GLenum pname, GLuint *params)
 	gl->getTextureParameterIuiv(texture, pname, params);
 }
 
+void glwGetTextureParameterIuivEXT (GLuint texture, GLenum target, GLenum pname, GLuint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getTextureParameterIuivEXT(texture, target, pname, params);
+}
+
 void glwGetTextureParameterfv (GLuint texture, GLenum pname, GLfloat *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -2284,12 +2956,28 @@ void glwGetTextureParameterfv (GLuint texture, GLenum pname, GLfloat *params)
 	gl->getTextureParameterfv(texture, pname, params);
 }
 
+void glwGetTextureParameterfvEXT (GLuint texture, GLenum target, GLenum pname, GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getTextureParameterfvEXT(texture, target, pname, params);
+}
+
 void glwGetTextureParameteriv (GLuint texture, GLenum pname, GLint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->getTextureParameteriv(texture, pname, params);
+}
+
+void glwGetTextureParameterivEXT (GLuint texture, GLenum target, GLenum pname, GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getTextureParameterivEXT(texture, target, pname, params);
 }
 
 void glwGetTextureSubImage (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLsizei bufSize, void *pixels)
@@ -2410,6 +3098,38 @@ void glwGetVertexArrayIndexediv (GLuint vaobj, GLuint index, GLenum pname, GLint
 	if (!gl)
 		return;
 	gl->getVertexArrayIndexediv(vaobj, index, pname, param);
+}
+
+void glwGetVertexArrayIntegeri_vEXT (GLuint vaobj, GLuint index, GLenum pname, GLint *param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getVertexArrayIntegeri_vEXT(vaobj, index, pname, param);
+}
+
+void glwGetVertexArrayIntegervEXT (GLuint vaobj, GLenum pname, GLint *param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getVertexArrayIntegervEXT(vaobj, pname, param);
+}
+
+void glwGetVertexArrayPointeri_vEXT (GLuint vaobj, GLuint index, GLenum pname, void **param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getVertexArrayPointeri_vEXT(vaobj, index, pname, param);
+}
+
+void glwGetVertexArrayPointervEXT (GLuint vaobj, GLenum pname, void **param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->getVertexArrayPointervEXT(vaobj, pname, param);
 }
 
 void glwGetVertexArrayiv (GLuint vaobj, GLenum pname, GLint *param)
@@ -2764,12 +3484,188 @@ void * glwMapNamedBuffer (GLuint buffer, GLenum access)
 	return gl->mapNamedBuffer(buffer, access);
 }
 
+void * glwMapNamedBufferEXT (GLuint buffer, GLenum access)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return (void *)0;
+	return gl->mapNamedBufferEXT(buffer, access);
+}
+
 void * glwMapNamedBufferRange (GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return (void *)0;
 	return gl->mapNamedBufferRange(buffer, offset, length, access);
+}
+
+void * glwMapNamedBufferRangeEXT (GLuint buffer, GLintptr offset, GLsizeiptr length, GLbitfield access)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return (void *)0;
+	return gl->mapNamedBufferRangeEXT(buffer, offset, length, access);
+}
+
+void glwMatrixFrustumEXT (GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixFrustumEXT(mode, left, right, bottom, top, zNear, zFar);
+}
+
+void glwMatrixLoadIdentityEXT (GLenum mode)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixLoadIdentityEXT(mode);
+}
+
+void glwMatrixLoadTransposedEXT (GLenum mode, const GLdouble *m)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixLoadTransposedEXT(mode, m);
+}
+
+void glwMatrixLoadTransposefEXT (GLenum mode, const GLfloat *m)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixLoadTransposefEXT(mode, m);
+}
+
+void glwMatrixLoaddEXT (GLenum mode, const GLdouble *m)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixLoaddEXT(mode, m);
+}
+
+void glwMatrixLoadfEXT (GLenum mode, const GLfloat *m)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixLoadfEXT(mode, m);
+}
+
+void glwMatrixMultTransposedEXT (GLenum mode, const GLdouble *m)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixMultTransposedEXT(mode, m);
+}
+
+void glwMatrixMultTransposefEXT (GLenum mode, const GLfloat *m)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixMultTransposefEXT(mode, m);
+}
+
+void glwMatrixMultdEXT (GLenum mode, const GLdouble *m)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixMultdEXT(mode, m);
+}
+
+void glwMatrixMultfEXT (GLenum mode, const GLfloat *m)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixMultfEXT(mode, m);
+}
+
+void glwMatrixOrthoEXT (GLenum mode, GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixOrthoEXT(mode, left, right, bottom, top, zNear, zFar);
+}
+
+void glwMatrixPopEXT (GLenum mode)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixPopEXT(mode);
+}
+
+void glwMatrixPushEXT (GLenum mode)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixPushEXT(mode);
+}
+
+void glwMatrixRotatedEXT (GLenum mode, GLdouble angle, GLdouble x, GLdouble y, GLdouble z)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixRotatedEXT(mode, angle, x, y, z);
+}
+
+void glwMatrixRotatefEXT (GLenum mode, GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixRotatefEXT(mode, angle, x, y, z);
+}
+
+void glwMatrixScaledEXT (GLenum mode, GLdouble x, GLdouble y, GLdouble z)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixScaledEXT(mode, x, y, z);
+}
+
+void glwMatrixScalefEXT (GLenum mode, GLfloat x, GLfloat y, GLfloat z)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixScalefEXT(mode, x, y, z);
+}
+
+void glwMatrixTranslatedEXT (GLenum mode, GLdouble x, GLdouble y, GLdouble z)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixTranslatedEXT(mode, x, y, z);
+}
+
+void glwMatrixTranslatefEXT (GLenum mode, GLfloat x, GLfloat y, GLfloat z)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->matrixTranslatefEXT(mode, x, y, z);
+}
+
+void glwMaxShaderCompilerThreadsKHR (GLuint count)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->maxShaderCompilerThreadsKHR(count);
 }
 
 void glwMemoryBarrier (GLbitfield barriers)
@@ -2812,6 +3708,14 @@ void glwMultiDrawArraysIndirect (GLenum mode, const void *indirect, GLsizei draw
 	gl->multiDrawArraysIndirect(mode, indirect, drawcount, stride);
 }
 
+void glwMultiDrawArraysIndirectCount (GLenum mode, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiDrawArraysIndirectCount(mode, indirect, drawcount, maxdrawcount, stride);
+}
+
 void glwMultiDrawElements (GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -2836,12 +3740,244 @@ void glwMultiDrawElementsIndirect (GLenum mode, GLenum type, const void *indirec
 	gl->multiDrawElementsIndirect(mode, type, indirect, drawcount, stride);
 }
 
+void glwMultiDrawElementsIndirectCount (GLenum mode, GLenum type, const void *indirect, GLintptr drawcount, GLsizei maxdrawcount, GLsizei stride)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiDrawElementsIndirectCount(mode, type, indirect, drawcount, maxdrawcount, stride);
+}
+
+void glwMultiTexBufferEXT (GLenum texunit, GLenum target, GLenum internalformat, GLuint buffer)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexBufferEXT(texunit, target, internalformat, buffer);
+}
+
+void glwMultiTexCoordPointerEXT (GLenum texunit, GLint size, GLenum type, GLsizei stride, const void *pointer)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexCoordPointerEXT(texunit, size, type, stride, pointer);
+}
+
+void glwMultiTexEnvfEXT (GLenum texunit, GLenum target, GLenum pname, GLfloat param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexEnvfEXT(texunit, target, pname, param);
+}
+
+void glwMultiTexEnvfvEXT (GLenum texunit, GLenum target, GLenum pname, const GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexEnvfvEXT(texunit, target, pname, params);
+}
+
+void glwMultiTexEnviEXT (GLenum texunit, GLenum target, GLenum pname, GLint param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexEnviEXT(texunit, target, pname, param);
+}
+
+void glwMultiTexEnvivEXT (GLenum texunit, GLenum target, GLenum pname, const GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexEnvivEXT(texunit, target, pname, params);
+}
+
+void glwMultiTexGendEXT (GLenum texunit, GLenum coord, GLenum pname, GLdouble param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexGendEXT(texunit, coord, pname, param);
+}
+
+void glwMultiTexGendvEXT (GLenum texunit, GLenum coord, GLenum pname, const GLdouble *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexGendvEXT(texunit, coord, pname, params);
+}
+
+void glwMultiTexGenfEXT (GLenum texunit, GLenum coord, GLenum pname, GLfloat param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexGenfEXT(texunit, coord, pname, param);
+}
+
+void glwMultiTexGenfvEXT (GLenum texunit, GLenum coord, GLenum pname, const GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexGenfvEXT(texunit, coord, pname, params);
+}
+
+void glwMultiTexGeniEXT (GLenum texunit, GLenum coord, GLenum pname, GLint param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexGeniEXT(texunit, coord, pname, param);
+}
+
+void glwMultiTexGenivEXT (GLenum texunit, GLenum coord, GLenum pname, const GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexGenivEXT(texunit, coord, pname, params);
+}
+
+void glwMultiTexImage1DEXT (GLenum texunit, GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexImage1DEXT(texunit, target, level, internalformat, width, border, format, type, pixels);
+}
+
+void glwMultiTexImage2DEXT (GLenum texunit, GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexImage2DEXT(texunit, target, level, internalformat, width, height, border, format, type, pixels);
+}
+
+void glwMultiTexImage3DEXT (GLenum texunit, GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexImage3DEXT(texunit, target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+void glwMultiTexParameterIivEXT (GLenum texunit, GLenum target, GLenum pname, const GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexParameterIivEXT(texunit, target, pname, params);
+}
+
+void glwMultiTexParameterIuivEXT (GLenum texunit, GLenum target, GLenum pname, const GLuint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexParameterIuivEXT(texunit, target, pname, params);
+}
+
+void glwMultiTexParameterfEXT (GLenum texunit, GLenum target, GLenum pname, GLfloat param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexParameterfEXT(texunit, target, pname, param);
+}
+
+void glwMultiTexParameterfvEXT (GLenum texunit, GLenum target, GLenum pname, const GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexParameterfvEXT(texunit, target, pname, params);
+}
+
+void glwMultiTexParameteriEXT (GLenum texunit, GLenum target, GLenum pname, GLint param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexParameteriEXT(texunit, target, pname, param);
+}
+
+void glwMultiTexParameterivEXT (GLenum texunit, GLenum target, GLenum pname, const GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexParameterivEXT(texunit, target, pname, params);
+}
+
+void glwMultiTexRenderbufferEXT (GLenum texunit, GLenum target, GLuint renderbuffer)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexRenderbufferEXT(texunit, target, renderbuffer);
+}
+
+void glwMultiTexSubImage1DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexSubImage1DEXT(texunit, target, level, xoffset, width, format, type, pixels);
+}
+
+void glwMultiTexSubImage2DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexSubImage2DEXT(texunit, target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
+
+void glwMultiTexSubImage3DEXT (GLenum texunit, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->multiTexSubImage3DEXT(texunit, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
 void glwNamedBufferData (GLuint buffer, GLsizeiptr size, const void *data, GLenum usage)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->namedBufferData(buffer, size, data, usage);
+}
+
+void glwNamedBufferDataEXT (GLuint buffer, GLsizeiptr size, const void *data, GLenum usage)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedBufferDataEXT(buffer, size, data, usage);
+}
+
+void glwNamedBufferPageCommitmentARB (GLuint buffer, GLintptr offset, GLsizeiptr size, GLboolean commit)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedBufferPageCommitmentARB(buffer, offset, size, commit);
+}
+
+void glwNamedBufferPageCommitmentEXT (GLuint buffer, GLintptr offset, GLsizeiptr size, GLboolean commit)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedBufferPageCommitmentEXT(buffer, offset, size, commit);
 }
 
 void glwNamedBufferStorage (GLuint buffer, GLsizeiptr size, const void *data, GLbitfield flags)
@@ -2858,6 +3994,14 @@ void glwNamedBufferSubData (GLuint buffer, GLintptr offset, GLsizeiptr size, con
 	if (!gl)
 		return;
 	gl->namedBufferSubData(buffer, offset, size, data);
+}
+
+void glwNamedCopyBufferSubDataEXT (GLuint readBuffer, GLuint writeBuffer, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedCopyBufferSubDataEXT(readBuffer, writeBuffer, readOffset, writeOffset, size);
 }
 
 void glwNamedFramebufferDrawBuffer (GLuint framebuffer, GLenum buf)
@@ -2884,6 +4028,14 @@ void glwNamedFramebufferParameteri (GLuint framebuffer, GLenum pname, GLint para
 	gl->namedFramebufferParameteri(framebuffer, pname, param);
 }
 
+void glwNamedFramebufferParameteriEXT (GLuint framebuffer, GLenum pname, GLint param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedFramebufferParameteriEXT(framebuffer, pname, param);
+}
+
 void glwNamedFramebufferReadBuffer (GLuint framebuffer, GLenum src)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -2900,12 +4052,60 @@ void glwNamedFramebufferRenderbuffer (GLuint framebuffer, GLenum attachment, GLe
 	gl->namedFramebufferRenderbuffer(framebuffer, attachment, renderbuffertarget, renderbuffer);
 }
 
+void glwNamedFramebufferRenderbufferEXT (GLuint framebuffer, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedFramebufferRenderbufferEXT(framebuffer, attachment, renderbuffertarget, renderbuffer);
+}
+
 void glwNamedFramebufferTexture (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->namedFramebufferTexture(framebuffer, attachment, texture, level);
+}
+
+void glwNamedFramebufferTexture1DEXT (GLuint framebuffer, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedFramebufferTexture1DEXT(framebuffer, attachment, textarget, texture, level);
+}
+
+void glwNamedFramebufferTexture2DEXT (GLuint framebuffer, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedFramebufferTexture2DEXT(framebuffer, attachment, textarget, texture, level);
+}
+
+void glwNamedFramebufferTexture3DEXT (GLuint framebuffer, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedFramebufferTexture3DEXT(framebuffer, attachment, textarget, texture, level, zoffset);
+}
+
+void glwNamedFramebufferTextureEXT (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedFramebufferTextureEXT(framebuffer, attachment, texture, level);
+}
+
+void glwNamedFramebufferTextureFaceEXT (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLenum face)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedFramebufferTextureFaceEXT(framebuffer, attachment, texture, level, face);
 }
 
 void glwNamedFramebufferTextureLayer (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer)
@@ -2916,6 +4116,110 @@ void glwNamedFramebufferTextureLayer (GLuint framebuffer, GLenum attachment, GLu
 	gl->namedFramebufferTextureLayer(framebuffer, attachment, texture, level, layer);
 }
 
+void glwNamedFramebufferTextureLayerEXT (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedFramebufferTextureLayerEXT(framebuffer, attachment, texture, level, layer);
+}
+
+void glwNamedProgramLocalParameter4dEXT (GLuint program, GLenum target, GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameter4dEXT(program, target, index, x, y, z, w);
+}
+
+void glwNamedProgramLocalParameter4dvEXT (GLuint program, GLenum target, GLuint index, const GLdouble *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameter4dvEXT(program, target, index, params);
+}
+
+void glwNamedProgramLocalParameter4fEXT (GLuint program, GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameter4fEXT(program, target, index, x, y, z, w);
+}
+
+void glwNamedProgramLocalParameter4fvEXT (GLuint program, GLenum target, GLuint index, const GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameter4fvEXT(program, target, index, params);
+}
+
+void glwNamedProgramLocalParameterI4iEXT (GLuint program, GLenum target, GLuint index, GLint x, GLint y, GLint z, GLint w)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameterI4iEXT(program, target, index, x, y, z, w);
+}
+
+void glwNamedProgramLocalParameterI4ivEXT (GLuint program, GLenum target, GLuint index, const GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameterI4ivEXT(program, target, index, params);
+}
+
+void glwNamedProgramLocalParameterI4uiEXT (GLuint program, GLenum target, GLuint index, GLuint x, GLuint y, GLuint z, GLuint w)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameterI4uiEXT(program, target, index, x, y, z, w);
+}
+
+void glwNamedProgramLocalParameterI4uivEXT (GLuint program, GLenum target, GLuint index, const GLuint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameterI4uivEXT(program, target, index, params);
+}
+
+void glwNamedProgramLocalParameters4fvEXT (GLuint program, GLenum target, GLuint index, GLsizei count, const GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParameters4fvEXT(program, target, index, count, params);
+}
+
+void glwNamedProgramLocalParametersI4ivEXT (GLuint program, GLenum target, GLuint index, GLsizei count, const GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParametersI4ivEXT(program, target, index, count, params);
+}
+
+void glwNamedProgramLocalParametersI4uivEXT (GLuint program, GLenum target, GLuint index, GLsizei count, const GLuint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramLocalParametersI4uivEXT(program, target, index, count, params);
+}
+
+void glwNamedProgramStringEXT (GLuint program, GLenum target, GLenum format, GLsizei len, const void *string)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedProgramStringEXT(program, target, format, len, string);
+}
+
 void glwNamedRenderbufferStorage (GLuint renderbuffer, GLenum internalformat, GLsizei width, GLsizei height)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -2924,12 +4228,36 @@ void glwNamedRenderbufferStorage (GLuint renderbuffer, GLenum internalformat, GL
 	gl->namedRenderbufferStorage(renderbuffer, internalformat, width, height);
 }
 
+void glwNamedRenderbufferStorageEXT (GLuint renderbuffer, GLenum internalformat, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedRenderbufferStorageEXT(renderbuffer, internalformat, width, height);
+}
+
 void glwNamedRenderbufferStorageMultisample (GLuint renderbuffer, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->namedRenderbufferStorageMultisample(renderbuffer, samples, internalformat, width, height);
+}
+
+void glwNamedRenderbufferStorageMultisampleCoverageEXT (GLuint renderbuffer, GLsizei coverageSamples, GLsizei colorSamples, GLenum internalformat, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedRenderbufferStorageMultisampleCoverageEXT(renderbuffer, coverageSamples, colorSamples, internalformat, width, height);
+}
+
+void glwNamedRenderbufferStorageMultisampleEXT (GLuint renderbuffer, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->namedRenderbufferStorageMultisampleEXT(renderbuffer, samples, internalformat, width, height);
 }
 
 void glwObjectLabel (GLenum identifier, GLuint name, GLsizei length, const GLchar *label)
@@ -3044,6 +4372,14 @@ void glwPolygonOffset (GLfloat factor, GLfloat units)
 	gl->polygonOffset(factor, units);
 }
 
+void glwPolygonOffsetClamp (GLfloat factor, GLfloat units, GLfloat clamp)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->polygonOffsetClamp(factor, units, clamp);
+}
+
 void glwPopDebugGroup (void)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3100,12 +4436,28 @@ void glwProgramUniform1d (GLuint program, GLint location, GLdouble v0)
 	gl->programUniform1d(program, location, v0);
 }
 
+void glwProgramUniform1dEXT (GLuint program, GLint location, GLdouble x)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniform1dEXT(program, location, x);
+}
+
 void glwProgramUniform1dv (GLuint program, GLint location, GLsizei count, const GLdouble *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->programUniform1dv(program, location, count, value);
+}
+
+void glwProgramUniform1dvEXT (GLuint program, GLint location, GLsizei count, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniform1dvEXT(program, location, count, value);
 }
 
 void glwProgramUniform1f (GLuint program, GLint location, GLfloat v0)
@@ -3164,12 +4516,28 @@ void glwProgramUniform2d (GLuint program, GLint location, GLdouble v0, GLdouble 
 	gl->programUniform2d(program, location, v0, v1);
 }
 
+void glwProgramUniform2dEXT (GLuint program, GLint location, GLdouble x, GLdouble y)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniform2dEXT(program, location, x, y);
+}
+
 void glwProgramUniform2dv (GLuint program, GLint location, GLsizei count, const GLdouble *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->programUniform2dv(program, location, count, value);
+}
+
+void glwProgramUniform2dvEXT (GLuint program, GLint location, GLsizei count, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniform2dvEXT(program, location, count, value);
 }
 
 void glwProgramUniform2f (GLuint program, GLint location, GLfloat v0, GLfloat v1)
@@ -3228,12 +4596,28 @@ void glwProgramUniform3d (GLuint program, GLint location, GLdouble v0, GLdouble 
 	gl->programUniform3d(program, location, v0, v1, v2);
 }
 
+void glwProgramUniform3dEXT (GLuint program, GLint location, GLdouble x, GLdouble y, GLdouble z)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniform3dEXT(program, location, x, y, z);
+}
+
 void glwProgramUniform3dv (GLuint program, GLint location, GLsizei count, const GLdouble *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->programUniform3dv(program, location, count, value);
+}
+
+void glwProgramUniform3dvEXT (GLuint program, GLint location, GLsizei count, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniform3dvEXT(program, location, count, value);
 }
 
 void glwProgramUniform3f (GLuint program, GLint location, GLfloat v0, GLfloat v1, GLfloat v2)
@@ -3292,12 +4676,28 @@ void glwProgramUniform4d (GLuint program, GLint location, GLdouble v0, GLdouble 
 	gl->programUniform4d(program, location, v0, v1, v2, v3);
 }
 
+void glwProgramUniform4dEXT (GLuint program, GLint location, GLdouble x, GLdouble y, GLdouble z, GLdouble w)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniform4dEXT(program, location, x, y, z, w);
+}
+
 void glwProgramUniform4dv (GLuint program, GLint location, GLsizei count, const GLdouble *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->programUniform4dv(program, location, count, value);
+}
+
+void glwProgramUniform4dvEXT (GLuint program, GLint location, GLsizei count, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniform4dvEXT(program, location, count, value);
 }
 
 void glwProgramUniform4f (GLuint program, GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3)
@@ -3356,6 +4756,14 @@ void glwProgramUniformMatrix2dv (GLuint program, GLint location, GLsizei count, 
 	gl->programUniformMatrix2dv(program, location, count, transpose, value);
 }
 
+void glwProgramUniformMatrix2dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix2dvEXT(program, location, count, transpose, value);
+}
+
 void glwProgramUniformMatrix2fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3370,6 +4778,14 @@ void glwProgramUniformMatrix2x3dv (GLuint program, GLint location, GLsizei count
 	if (!gl)
 		return;
 	gl->programUniformMatrix2x3dv(program, location, count, transpose, value);
+}
+
+void glwProgramUniformMatrix2x3dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix2x3dvEXT(program, location, count, transpose, value);
 }
 
 void glwProgramUniformMatrix2x3fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
@@ -3388,6 +4804,14 @@ void glwProgramUniformMatrix2x4dv (GLuint program, GLint location, GLsizei count
 	gl->programUniformMatrix2x4dv(program, location, count, transpose, value);
 }
 
+void glwProgramUniformMatrix2x4dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix2x4dvEXT(program, location, count, transpose, value);
+}
+
 void glwProgramUniformMatrix2x4fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3402,6 +4826,14 @@ void glwProgramUniformMatrix3dv (GLuint program, GLint location, GLsizei count, 
 	if (!gl)
 		return;
 	gl->programUniformMatrix3dv(program, location, count, transpose, value);
+}
+
+void glwProgramUniformMatrix3dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix3dvEXT(program, location, count, transpose, value);
 }
 
 void glwProgramUniformMatrix3fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
@@ -3420,6 +4852,14 @@ void glwProgramUniformMatrix3x2dv (GLuint program, GLint location, GLsizei count
 	gl->programUniformMatrix3x2dv(program, location, count, transpose, value);
 }
 
+void glwProgramUniformMatrix3x2dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix3x2dvEXT(program, location, count, transpose, value);
+}
+
 void glwProgramUniformMatrix3x2fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3434,6 +4874,14 @@ void glwProgramUniformMatrix3x4dv (GLuint program, GLint location, GLsizei count
 	if (!gl)
 		return;
 	gl->programUniformMatrix3x4dv(program, location, count, transpose, value);
+}
+
+void glwProgramUniformMatrix3x4dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix3x4dvEXT(program, location, count, transpose, value);
 }
 
 void glwProgramUniformMatrix3x4fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
@@ -3452,6 +4900,14 @@ void glwProgramUniformMatrix4dv (GLuint program, GLint location, GLsizei count, 
 	gl->programUniformMatrix4dv(program, location, count, transpose, value);
 }
 
+void glwProgramUniformMatrix4dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix4dvEXT(program, location, count, transpose, value);
+}
+
 void glwProgramUniformMatrix4fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3466,6 +4922,14 @@ void glwProgramUniformMatrix4x2dv (GLuint program, GLint location, GLsizei count
 	if (!gl)
 		return;
 	gl->programUniformMatrix4x2dv(program, location, count, transpose, value);
+}
+
+void glwProgramUniformMatrix4x2dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix4x2dvEXT(program, location, count, transpose, value);
 }
 
 void glwProgramUniformMatrix4x2fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
@@ -3484,6 +4948,14 @@ void glwProgramUniformMatrix4x3dv (GLuint program, GLint location, GLsizei count
 	gl->programUniformMatrix4x3dv(program, location, count, transpose, value);
 }
 
+void glwProgramUniformMatrix4x3dvEXT (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLdouble *value)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->programUniformMatrix4x3dvEXT(program, location, count, transpose, value);
+}
+
 void glwProgramUniformMatrix4x3fv (GLuint program, GLint location, GLsizei count, GLboolean transpose, const GLfloat *value)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3498,6 +4970,14 @@ void glwProvokingVertex (GLenum mode)
 	if (!gl)
 		return;
 	gl->provokingVertex(mode);
+}
+
+void glwPushClientAttribDefaultEXT (GLbitfield mask)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->pushClientAttribDefaultEXT(mask);
 }
 
 void glwPushDebugGroup (GLenum source, GLuint id, GLsizei length, const GLchar *message)
@@ -3700,6 +5180,14 @@ void glwShaderStorageBlockBinding (GLuint program, GLuint storageBlockIndex, GLu
 	gl->shaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
 }
 
+void glwSpecializeShader (GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->specializeShader(shader, pEntryPoint, numSpecializationConstants, pConstantIndex, pConstantValue);
+}
+
 void glwStencilFunc (GLenum func, GLint ref, GLuint mask)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3802,6 +5290,22 @@ void glwTexImage3DMultisample (GLenum target, GLsizei samples, GLenum internalfo
 	if (!gl)
 		return;
 	gl->texImage3DMultisample(target, samples, internalformat, width, height, depth, fixedsamplelocations);
+}
+
+void glwTexImage3DOES (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->texImage3DOES(target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+void glwTexPageCommitmentARB (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->texPageCommitmentARB(target, level, xoffset, yoffset, zoffset, width, height, depth, commit);
 }
 
 void glwTexParameterIiv (GLenum target, GLenum pname, const GLint *params)
@@ -3916,6 +5420,14 @@ void glwTexSubImage3D (GLenum target, GLint level, GLint xoffset, GLint yoffset,
 	gl->texSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
+void glwTexSubImage3DOES (GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->texSubImage3DOES(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
 void glwTextureBarrier (void)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -3932,12 +5444,60 @@ void glwTextureBuffer (GLuint texture, GLenum internalformat, GLuint buffer)
 	gl->textureBuffer(texture, internalformat, buffer);
 }
 
+void glwTextureBufferEXT (GLuint texture, GLenum target, GLenum internalformat, GLuint buffer)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureBufferEXT(texture, target, internalformat, buffer);
+}
+
 void glwTextureBufferRange (GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->textureBufferRange(texture, internalformat, buffer, offset, size);
+}
+
+void glwTextureBufferRangeEXT (GLuint texture, GLenum target, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizeiptr size)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureBufferRangeEXT(texture, target, internalformat, buffer, offset, size);
+}
+
+void glwTextureImage1DEXT (GLuint texture, GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureImage1DEXT(texture, target, level, internalformat, width, border, format, type, pixels);
+}
+
+void glwTextureImage2DEXT (GLuint texture, GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureImage2DEXT(texture, target, level, internalformat, width, height, border, format, type, pixels);
+}
+
+void glwTextureImage3DEXT (GLuint texture, GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureImage3DEXT(texture, target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+void glwTexturePageCommitmentEXT (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLboolean commit)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->texturePageCommitmentEXT(texture, level, xoffset, yoffset, zoffset, width, height, depth, commit);
 }
 
 void glwTextureParameterIiv (GLuint texture, GLenum pname, const GLint *params)
@@ -3948,12 +5508,28 @@ void glwTextureParameterIiv (GLuint texture, GLenum pname, const GLint *params)
 	gl->textureParameterIiv(texture, pname, params);
 }
 
+void glwTextureParameterIivEXT (GLuint texture, GLenum target, GLenum pname, const GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureParameterIivEXT(texture, target, pname, params);
+}
+
 void glwTextureParameterIuiv (GLuint texture, GLenum pname, const GLuint *params)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->textureParameterIuiv(texture, pname, params);
+}
+
+void glwTextureParameterIuivEXT (GLuint texture, GLenum target, GLenum pname, const GLuint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureParameterIuivEXT(texture, target, pname, params);
 }
 
 void glwTextureParameterf (GLuint texture, GLenum pname, GLfloat param)
@@ -3964,12 +5540,28 @@ void glwTextureParameterf (GLuint texture, GLenum pname, GLfloat param)
 	gl->textureParameterf(texture, pname, param);
 }
 
+void glwTextureParameterfEXT (GLuint texture, GLenum target, GLenum pname, GLfloat param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureParameterfEXT(texture, target, pname, param);
+}
+
 void glwTextureParameterfv (GLuint texture, GLenum pname, const GLfloat *param)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->textureParameterfv(texture, pname, param);
+}
+
+void glwTextureParameterfvEXT (GLuint texture, GLenum target, GLenum pname, const GLfloat *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureParameterfvEXT(texture, target, pname, params);
 }
 
 void glwTextureParameteri (GLuint texture, GLenum pname, GLint param)
@@ -3980,12 +5572,36 @@ void glwTextureParameteri (GLuint texture, GLenum pname, GLint param)
 	gl->textureParameteri(texture, pname, param);
 }
 
+void glwTextureParameteriEXT (GLuint texture, GLenum target, GLenum pname, GLint param)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureParameteriEXT(texture, target, pname, param);
+}
+
 void glwTextureParameteriv (GLuint texture, GLenum pname, const GLint *param)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->textureParameteriv(texture, pname, param);
+}
+
+void glwTextureParameterivEXT (GLuint texture, GLenum target, GLenum pname, const GLint *params)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureParameterivEXT(texture, target, pname, params);
+}
+
+void glwTextureRenderbufferEXT (GLuint texture, GLenum target, GLuint renderbuffer)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureRenderbufferEXT(texture, target, renderbuffer);
 }
 
 void glwTextureStorage1D (GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width)
@@ -3996,12 +5612,28 @@ void glwTextureStorage1D (GLuint texture, GLsizei levels, GLenum internalformat,
 	gl->textureStorage1D(texture, levels, internalformat, width);
 }
 
+void glwTextureStorage1DEXT (GLuint texture, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureStorage1DEXT(texture, target, levels, internalformat, width);
+}
+
 void glwTextureStorage2D (GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->textureStorage2D(texture, levels, internalformat, width, height);
+}
+
+void glwTextureStorage2DEXT (GLuint texture, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureStorage2DEXT(texture, target, levels, internalformat, width, height);
 }
 
 void glwTextureStorage2DMultisample (GLuint texture, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations)
@@ -4012,12 +5644,28 @@ void glwTextureStorage2DMultisample (GLuint texture, GLsizei samples, GLenum int
 	gl->textureStorage2DMultisample(texture, samples, internalformat, width, height, fixedsamplelocations);
 }
 
+void glwTextureStorage2DMultisampleEXT (GLuint texture, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureStorage2DMultisampleEXT(texture, target, samples, internalformat, width, height, fixedsamplelocations);
+}
+
 void glwTextureStorage3D (GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->textureStorage3D(texture, levels, internalformat, width, height, depth);
+}
+
+void glwTextureStorage3DEXT (GLuint texture, GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureStorage3DEXT(texture, target, levels, internalformat, width, height, depth);
 }
 
 void glwTextureStorage3DMultisample (GLuint texture, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations)
@@ -4028,12 +5676,28 @@ void glwTextureStorage3DMultisample (GLuint texture, GLsizei samples, GLenum int
 	gl->textureStorage3DMultisample(texture, samples, internalformat, width, height, depth, fixedsamplelocations);
 }
 
+void glwTextureStorage3DMultisampleEXT (GLuint texture, GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLboolean fixedsamplelocations)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureStorage3DMultisampleEXT(texture, target, samples, internalformat, width, height, depth, fixedsamplelocations);
+}
+
 void glwTextureSubImage1D (GLuint texture, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const void *pixels)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->textureSubImage1D(texture, level, xoffset, width, format, type, pixels);
+}
+
+void glwTextureSubImage1DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureSubImage1DEXT(texture, target, level, xoffset, width, format, type, pixels);
 }
 
 void glwTextureSubImage2D (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels)
@@ -4044,12 +5708,28 @@ void glwTextureSubImage2D (GLuint texture, GLint level, GLint xoffset, GLint yof
 	gl->textureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 
+void glwTextureSubImage2DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureSubImage2DEXT(texture, target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
+
 void glwTextureSubImage3D (GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->textureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
+void glwTextureSubImage3DEXT (GLuint texture, GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->textureSubImage3DEXT(texture, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
 void glwTextureView (GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers)
@@ -4516,6 +6196,14 @@ GLboolean glwUnmapNamedBuffer (GLuint buffer)
 	return gl->unmapNamedBuffer(buffer);
 }
 
+GLboolean glwUnmapNamedBufferEXT (GLuint buffer)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return (GLboolean)0;
+	return gl->unmapNamedBufferEXT(buffer);
+}
+
 void glwUseProgram (GLuint program)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -4580,6 +6268,14 @@ void glwVertexArrayAttribLFormat (GLuint vaobj, GLuint attribindex, GLint size, 
 	gl->vertexArrayAttribLFormat(vaobj, attribindex, size, type, relativeoffset);
 }
 
+void glwVertexArrayBindVertexBufferEXT (GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayBindVertexBufferEXT(vaobj, bindingindex, buffer, offset, stride);
+}
+
 void glwVertexArrayBindingDivisor (GLuint vaobj, GLuint bindingindex, GLuint divisor)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
@@ -4588,12 +6284,148 @@ void glwVertexArrayBindingDivisor (GLuint vaobj, GLuint bindingindex, GLuint div
 	gl->vertexArrayBindingDivisor(vaobj, bindingindex, divisor);
 }
 
+void glwVertexArrayColorOffsetEXT (GLuint vaobj, GLuint buffer, GLint size, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayColorOffsetEXT(vaobj, buffer, size, type, stride, offset);
+}
+
+void glwVertexArrayEdgeFlagOffsetEXT (GLuint vaobj, GLuint buffer, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayEdgeFlagOffsetEXT(vaobj, buffer, stride, offset);
+}
+
 void glwVertexArrayElementBuffer (GLuint vaobj, GLuint buffer)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
 	gl->vertexArrayElementBuffer(vaobj, buffer);
+}
+
+void glwVertexArrayFogCoordOffsetEXT (GLuint vaobj, GLuint buffer, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayFogCoordOffsetEXT(vaobj, buffer, type, stride, offset);
+}
+
+void glwVertexArrayIndexOffsetEXT (GLuint vaobj, GLuint buffer, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayIndexOffsetEXT(vaobj, buffer, type, stride, offset);
+}
+
+void glwVertexArrayMultiTexCoordOffsetEXT (GLuint vaobj, GLuint buffer, GLenum texunit, GLint size, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayMultiTexCoordOffsetEXT(vaobj, buffer, texunit, size, type, stride, offset);
+}
+
+void glwVertexArrayNormalOffsetEXT (GLuint vaobj, GLuint buffer, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayNormalOffsetEXT(vaobj, buffer, type, stride, offset);
+}
+
+void glwVertexArraySecondaryColorOffsetEXT (GLuint vaobj, GLuint buffer, GLint size, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArraySecondaryColorOffsetEXT(vaobj, buffer, size, type, stride, offset);
+}
+
+void glwVertexArrayTexCoordOffsetEXT (GLuint vaobj, GLuint buffer, GLint size, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayTexCoordOffsetEXT(vaobj, buffer, size, type, stride, offset);
+}
+
+void glwVertexArrayVertexAttribBindingEXT (GLuint vaobj, GLuint attribindex, GLuint bindingindex)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexAttribBindingEXT(vaobj, attribindex, bindingindex);
+}
+
+void glwVertexArrayVertexAttribDivisorEXT (GLuint vaobj, GLuint index, GLuint divisor)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexAttribDivisorEXT(vaobj, index, divisor);
+}
+
+void glwVertexArrayVertexAttribFormatEXT (GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexAttribFormatEXT(vaobj, attribindex, size, type, normalized, relativeoffset);
+}
+
+void glwVertexArrayVertexAttribIFormatEXT (GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexAttribIFormatEXT(vaobj, attribindex, size, type, relativeoffset);
+}
+
+void glwVertexArrayVertexAttribIOffsetEXT (GLuint vaobj, GLuint buffer, GLuint index, GLint size, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexAttribIOffsetEXT(vaobj, buffer, index, size, type, stride, offset);
+}
+
+void glwVertexArrayVertexAttribLFormatEXT (GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexAttribLFormatEXT(vaobj, attribindex, size, type, relativeoffset);
+}
+
+void glwVertexArrayVertexAttribLOffsetEXT (GLuint vaobj, GLuint buffer, GLuint index, GLint size, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexAttribLOffsetEXT(vaobj, buffer, index, size, type, stride, offset);
+}
+
+void glwVertexArrayVertexAttribOffsetEXT (GLuint vaobj, GLuint buffer, GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexAttribOffsetEXT(vaobj, buffer, index, size, type, normalized, stride, offset);
+}
+
+void glwVertexArrayVertexBindingDivisorEXT (GLuint vaobj, GLuint bindingindex, GLuint divisor)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexBindingDivisorEXT(vaobj, bindingindex, divisor);
 }
 
 void glwVertexArrayVertexBuffer (GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride)
@@ -4610,6 +6442,14 @@ void glwVertexArrayVertexBuffers (GLuint vaobj, GLuint first, GLsizei count, con
 	if (!gl)
 		return;
 	gl->vertexArrayVertexBuffers(vaobj, first, count, buffers, offsets, strides);
+}
+
+void glwVertexArrayVertexOffsetEXT (GLuint vaobj, GLuint buffer, GLint size, GLenum type, GLsizei stride, GLintptr offset)
+{
+	const glw::Functions* gl = glw::getCurrentThreadFunctions();
+	if (!gl)
+		return;
+	gl->vertexArrayVertexOffsetEXT(vaobj, buffer, size, type, stride, offset);
 }
 
 void glwVertexAttrib1d (GLuint index, GLdouble x)

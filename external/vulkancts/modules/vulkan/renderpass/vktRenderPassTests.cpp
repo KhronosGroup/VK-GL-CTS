@@ -468,15 +468,15 @@ VkAccessFlags getMemoryFlagsForLayout (const VkImageLayout layout)
 {
 	switch (layout)
 	{
-		case VK_IMAGE_LAYOUT_GENERAL:											return getAllMemoryReadFlags() | getAllMemoryWriteFlags();
-		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:							return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:					return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:					return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:							return VK_ACCESS_SHADER_READ_BIT;
-		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:								return VK_ACCESS_TRANSFER_READ_BIT;
-		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:								return VK_ACCESS_TRANSFER_WRITE_BIT;
-		case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:	return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
-		case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR:	return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+		case VK_IMAGE_LAYOUT_GENERAL:										return getAllMemoryReadFlags() | getAllMemoryWriteFlags();
+		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:						return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:				return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:				return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:						return VK_ACCESS_SHADER_READ_BIT;
+		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:							return VK_ACCESS_TRANSFER_READ_BIT;
+		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:							return VK_ACCESS_TRANSFER_WRITE_BIT;
+		case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:	return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+		case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:	return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
 		default:
 			return (VkAccessFlags)0;
 	}
@@ -666,7 +666,7 @@ public:
 														RenderPass		(const vector<Attachment>&							attachments,
 																		 const vector<Subpass>&								subpasses,
 																		 const vector<SubpassDependency>&					dependencies,
-																		 const vector<VkInputAttachmentAspectReferenceKHR>	inputAspects = vector<VkInputAttachmentAspectReferenceKHR>())
+																		 const vector<VkInputAttachmentAspectReference>	inputAspects = vector<VkInputAttachmentAspectReference>())
 		: m_attachments		(attachments)
 		, m_subpasses		(subpasses)
 		, m_dependencies	(dependencies)
@@ -677,13 +677,13 @@ public:
 	const vector<Attachment>&							getAttachments	(void) const { return m_attachments;	}
 	const vector<Subpass>&								getSubpasses	(void) const { return m_subpasses;		}
 	const vector<SubpassDependency>&					getDependencies	(void) const { return m_dependencies;	}
-	const vector<VkInputAttachmentAspectReferenceKHR>	getInputAspects	(void) const { return m_inputAspects;	}
+	const vector<VkInputAttachmentAspectReference>		getInputAspects	(void) const { return m_inputAspects;	}
 
 private:
 	const vector<Attachment>							m_attachments;
 	const vector<Subpass>								m_subpasses;
 	const vector<SubpassDependency>						m_dependencies;
-	const vector<VkInputAttachmentAspectReferenceKHR>	m_inputAspects;
+	const vector<VkInputAttachmentAspectReference>		m_inputAspects;
 };
 
 struct TestConfig
@@ -788,7 +788,7 @@ void logRenderPassInfo (TestLog&			log,
 
 		for (size_t aspectNdx = 0; aspectNdx < renderPass.getInputAspects().size(); aspectNdx++)
 		{
-			const VkInputAttachmentAspectReferenceKHR&	inputAspect	(renderPass.getInputAspects()[aspectNdx]);
+			const VkInputAttachmentAspectReference&	inputAspect	(renderPass.getInputAspects()[aspectNdx]);
 
 			log << TestLog::Message << "Subpass: " << inputAspect.subpass << TestLog::EndMessage;
 			log << TestLog::Message << "InputAttachmentIndex: " << inputAspect.inputAttachmentIndex << TestLog::EndMessage;
@@ -1181,9 +1181,9 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 	}
 	else
 	{
-		const VkRenderPassInputAttachmentAspectCreateInfoKHR	inputAspectCreateInfo	=
+		const VkRenderPassInputAttachmentAspectCreateInfo	inputAspectCreateInfo	=
 		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO_KHR,
+			VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO,
 			DE_NULL,
 
 			(deUint32)renderPassInfo.getInputAspects().size(),
@@ -1824,12 +1824,12 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 	const size_t	stencilIndex	= renderInfo.getSubpassIndex();
 	const VkBool32	writeDepth		= renderInfo.getDepthStencilAttachmentLayout()
 										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR
+										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL
 									? VK_TRUE
 									: VK_FALSE;
 	const VkBool32	writeStencil	= renderInfo.getDepthStencilAttachmentLayout()
 										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR
+										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
 									? VK_TRUE
 									: VK_FALSE;
 	const VkPipelineDepthStencilStateCreateInfo depthStencilState =
@@ -1948,8 +1948,8 @@ public:
 					const tcu::TextureFormat	format			= mapVkFormat(attachmentInfo.getFormat());
 					const bool					isDepthFormat	= tcu::hasDepthComponent(format.order);
 					const bool					isStencilFormat	= tcu::hasStencilComponent(format.order);
-					const deUint32				bindingCount	= (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
-																	&& (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+					const deUint32				bindingCount	= (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+																	&& (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 																? 2u
 																: 1u;
 
@@ -2057,7 +2057,7 @@ public:
 
 						if (isDepthFormat && isStencilFormat)
 						{
-							if (inputAttachmentLayout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+							if (inputAttachmentLayout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 							{
 								const VkDescriptorImageInfo	imageInfo =
 								{
@@ -2088,7 +2088,7 @@ public:
 								}
 							}
 
-							if (inputAttachmentLayout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+							if (inputAttachmentLayout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 							{
 								const VkDescriptorImageInfo	imageInfo =
 								{
@@ -2215,8 +2215,8 @@ public:
 			const VkImageLayout			layout				= *m_renderInfo.getDepthStencilAttachmentLayout();
 			const VkClearAttachment		attachment			=
 			{
-				(VkImageAspectFlags)((hasDepthComponent(format.order) && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR ? VK_IMAGE_ASPECT_DEPTH_BIT : 0)
-					| (hasStencilComponent(format.order) && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR ? VK_IMAGE_ASPECT_STENCIL_BIT : 0)),
+				(VkImageAspectFlags)((hasDepthComponent(format.order) && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ? VK_IMAGE_ASPECT_DEPTH_BIT : 0)
+					| (hasStencilComponent(format.order) && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ? VK_IMAGE_ASPECT_STENCIL_BIT : 0)),
 				attachmentNdx,
 				makeClearValueDepthStencil(depthStencilClear.getDepth(), depthStencilClear.getStencil())
 			};
@@ -2230,8 +2230,8 @@ public:
 				1u,							// layerCount
 			};
 
-			if ((tcu::hasDepthComponent(format.order) && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
-				|| (tcu::hasStencilComponent(format.order) && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR))
+			if ((tcu::hasDepthComponent(format.order) && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+				|| (tcu::hasStencilComponent(format.order) && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL))
 			{
 				vk.cmdClearAttachments(commandBuffer, 1u, &attachment, 1u, &rect);
 			}
@@ -3038,9 +3038,9 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 			const Attachment&			attachment		= renderPassInfo.getAttachments()[attachmentIndex];
 			const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
 			const bool					hasStencil		= tcu::hasStencilComponent(format.order)
-														&& layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR;
+														&& layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
 			const bool					hasDepth		= tcu::hasDepthComponent(format.order)
-														&& layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR;
+														&& layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
 			vector<PixelValue>&			reference		= referenceAttachments[attachmentIndex];
 			VkClearValue				value;
 
@@ -3104,7 +3104,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 					{
 						if (tcu::hasDepthComponent(format.order)
 							&& layout != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-							&& layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+							&& layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 						{
 							const size_t	index	= subpassNdx + 1;
 							const BoolOp	op		= boolOpFromIndex(index);
@@ -3116,7 +3116,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 
 						if (tcu::hasStencilComponent(format.order)
 							&& layout != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-							&& layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+							&& layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 						{
 							const size_t	index	= subpassNdx;
 							reference[x + y * targetSize.x()].setValue(1, (index % 2) == 0);
@@ -3144,7 +3144,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 
 				if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED
 					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 				{
 					const Attachment&			attachment	(renderPassInfo.getAttachments()[subpass.getDepthStencilAttachment().getAttachment()]);
 					const tcu::TextureFormat	format		(mapVkFormat(attachment.getFormat()));
@@ -3168,8 +3168,8 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 
 							for (int compNdx = 0; compNdx < componentCount; compNdx++)
 							{
-								if ((compNdx != 0 || layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
-									&& (compNdx != 1 || layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR))
+								if ((compNdx != 0 || layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+									&& (compNdx != 1 || layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL))
 								{
 									inputs.push_back(referenceAttachments[attachmentIndex][x + y * targetSize.x()].getValue(compNdx));
 								}
@@ -3220,7 +3220,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 
 						if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED
 							&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-							&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+							&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 						{
 							const deUint32		attachmentIndex	= subpass.getDepthStencilAttachment().getAttachment();
 							vector<PixelValue>&	reference		= referenceAttachments[attachmentIndex];
@@ -3252,7 +3252,7 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 
 				if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED
 					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 				{
 					const deUint32				attachmentIndex	= subpass.getDepthStencilAttachment().getAttachment();
 					const Attachment&			attachment		= renderPassInfo.getAttachments()[attachmentIndex];
@@ -3740,13 +3740,13 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 
 				if (isDepthFormat || isStencilFormat)
 				{
-					if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+					if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 					{
 						fragmentShader << "layout(input_attachment_index = " << attachmentNdx << ", set=0, binding=" << inputAttachmentBinding << ") uniform highp subpassInput i_depth" << attachmentNdx << ";\n";
 						inputAttachmentBinding++;
 					}
 
-					if (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+					if (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 					{
 						fragmentShader << "layout(input_attachment_index = " << attachmentNdx << ", set=0, binding=" << inputAttachmentBinding << ") uniform highp usubpassInput i_stencil" << attachmentNdx << ";\n";
 						inputAttachmentBinding++;
@@ -3797,7 +3797,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 
 				if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED
 					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 				{
 					const size_t	index	= subpassNdx + 1;
 					const BoolOp	op		= boolOpFromIndex(index);
@@ -3821,9 +3821,9 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 					const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
 					const size_t				componentCount	= (size_t)tcu::getNumUsedChannels(format.order);
 
-					if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+					if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 						inputComponentCount += 1;
-					else if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+					else if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 						inputComponentCount += 1;
 					else
 						inputComponentCount += componentCount;
@@ -3841,7 +3841,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 
 				if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED
 					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+					&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 				{
 					outputComponentCount++;
 				}
@@ -3876,13 +3876,13 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 
 						if (isDepthFormat || isStencilFormat)
 						{
-							if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)
+							if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
 							{
 								fragmentShader << "\tinputs[" << inputValueNdx << "] = 1.0 == float(subpassLoad(i_depth" << attachmentNdx << ").x);\n";
 								inputValueNdx++;
 							}
 
-							if (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+							if (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 							{
 								fragmentShader << "\tinputs[" << inputValueNdx << "] = 255u == subpassLoad(i_stencil" << attachmentNdx << ").x;\n";
 								inputValueNdx++;
@@ -3943,7 +3943,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 
 					if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED
 						&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-						&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+						&& subpass.getDepthStencilAttachment().getImageLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 					{
 						const deUint32	attachmentIndex	= subpass.getDepthStencilAttachment().getAttachment();
 						const size_t	index			= subpassNdx + attachmentIndex;
@@ -4400,15 +4400,13 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 	if (config.allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 	}
 
 	if (!renderPassInfo.getInputAspects().empty())
 	{
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_maintenance2")))
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 			TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported.");
 	}
 
@@ -4417,10 +4415,10 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 		for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
 		{
-			if (renderPassInfo.getAttachments()[attachmentNdx].getInitialLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR
-				|| renderPassInfo.getAttachments()[attachmentNdx].getInitialLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR
-				|| renderPassInfo.getAttachments()[attachmentNdx].getFinalLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR
-				|| renderPassInfo.getAttachments()[attachmentNdx].getFinalLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+			if (renderPassInfo.getAttachments()[attachmentNdx].getInitialLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
+				|| renderPassInfo.getAttachments()[attachmentNdx].getInitialLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL
+				|| renderPassInfo.getAttachments()[attachmentNdx].getFinalLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
+				|| renderPassInfo.getAttachments()[attachmentNdx].getFinalLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 			{
 				requireDepthStencilLayout = true;
 				break;
@@ -4433,8 +4431,8 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 			for (size_t attachmentNdx = 0; attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
 			{
-				if (subpass.getColorAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR
-					|| subpass.getColorAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+				if (subpass.getColorAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
+					|| subpass.getColorAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 				{
 					requireDepthStencilLayout = true;
 					break;
@@ -4443,8 +4441,8 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 			for (size_t attachmentNdx = 0; !requireDepthStencilLayout && attachmentNdx < subpass.getInputAttachments().size(); attachmentNdx++)
 			{
-				if (subpass.getInputAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR
-					|| subpass.getInputAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+				if (subpass.getInputAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
+					|| subpass.getInputAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 				{
 					requireDepthStencilLayout = true;
 					break;
@@ -4453,23 +4451,23 @@ tcu::TestStatus renderPassTest (Context& context, TestConfig config)
 
 			for (size_t attachmentNdx = 0; !requireDepthStencilLayout && attachmentNdx < subpass.getResolveAttachments().size(); attachmentNdx++)
 			{
-				if (subpass.getResolveAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR
-					|| subpass.getResolveAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+				if (subpass.getResolveAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
+					|| subpass.getResolveAttachments()[attachmentNdx].getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 				{
 					requireDepthStencilLayout = true;
 					break;
 				}
 			}
 
-			if (subpass.getDepthStencilAttachment().getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR
-				|| subpass.getDepthStencilAttachment().getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)
+			if (subpass.getDepthStencilAttachment().getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
+				|| subpass.getDepthStencilAttachment().getImageLayout() == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
 			{
 				requireDepthStencilLayout = true;
 				break;
 			}
 		}
 
-		if (requireDepthStencilLayout && !de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_maintenance2")))
+		if (requireDepthStencilLayout && !isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 			TCU_THROW(NotSupportedError, "VK_KHR_maintenance2 is not supported");
 	}
 
@@ -5679,7 +5677,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 								vector<Attachment>							attachments;
 								vector<Subpass>								subpasses;
 								vector<SubpassDependency>					deps;
-								vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
+								vector<VkInputAttachmentAspectReference>	inputAspects;
 
 								attachments.push_back(Attachment(format,
 																 VK_SAMPLE_COUNT_1_BIT,
@@ -5725,7 +5723,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 								if (useInputAspect)
 								{
-									const VkInputAttachmentAspectReferenceKHR inputAspect =
+									const VkInputAttachmentAspectReference inputAspect =
 									{
 										0u,
 										0u,
@@ -5745,7 +5743,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 								vector<Attachment>							attachments;
 								vector<Subpass>								subpasses;
 								vector<SubpassDependency>					deps;
-								vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
+								vector<VkInputAttachmentAspectReference>	inputAspects;
 
 								attachments.push_back(Attachment(format,
 																 VK_SAMPLE_COUNT_1_BIT,
@@ -5781,7 +5779,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 								if (useInputAspect)
 								{
-									const VkInputAttachmentAspectReferenceKHR inputAspect =
+									const VkInputAttachmentAspectReference inputAspect =
 									{
 										0u,
 										0u,
@@ -5865,7 +5863,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 																									vector<AttachmentReference>(),
 																									vector<AttachmentReference>(),
 																									vector<AttachmentReference>(),
-																									AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR),
+																									AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL),
 																									vector<deUint32>())),
 																		 vector<SubpassDependency>());
 
@@ -5886,7 +5884,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 																									vector<AttachmentReference>(),
 																									vector<AttachmentReference>(),
 																									vector<AttachmentReference>(),
-																									AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR),
+																									AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL),
 																									vector<deUint32>())),
 																		 vector<SubpassDependency>());
 
@@ -5921,7 +5919,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 								vector<Attachment>							attachments;
 								vector<Subpass>								subpasses;
 								vector<SubpassDependency>					deps;
-								vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
+								vector<VkInputAttachmentAspectReference>	inputAspects;
 
 								attachments.push_back(Attachment(vkFormat,
 																 VK_SAMPLE_COUNT_1_BIT,
@@ -5974,7 +5972,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 								if (useInputAspect)
 								{
-									const VkInputAttachmentAspectReferenceKHR inputAspect =
+									const VkInputAttachmentAspectReference inputAspect =
 									{
 										0u,
 										0u,
@@ -5995,7 +5993,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 								vector<Attachment>							attachments;
 								vector<Subpass>								subpasses;
 								vector<SubpassDependency>					deps;
-								vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
+								vector<VkInputAttachmentAspectReference>	inputAspects;
 
 								attachments.push_back(Attachment(vkFormat,
 																 VK_SAMPLE_COUNT_1_BIT,
@@ -6032,7 +6030,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 								if (useInputAspect)
 								{
-									const VkInputAttachmentAspectReferenceKHR inputAspect =
+									const VkInputAttachmentAspectReference inputAspect =
 									{
 										0u,
 										0u,
@@ -6058,7 +6056,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 									vector<Attachment>							attachments;
 									vector<Subpass>								subpasses;
 									vector<SubpassDependency>					deps;
-									vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
+									vector<VkInputAttachmentAspectReference>	inputAspects;
 
 									attachments.push_back(Attachment(vkFormat,
 																	 VK_SAMPLE_COUNT_1_BIT,
@@ -6087,7 +6085,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 																vector<deUint32>()));
 									subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
 																0u,
-																vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)),
+																vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)),
 																vector<AttachmentReference>(1, AttachmentReference(1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
 																vector<AttachmentReference>(),
 																AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
@@ -6103,7 +6101,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 									if (useInputAspect)
 									{
-										const VkInputAttachmentAspectReferenceKHR inputAspect =
+										const VkInputAttachmentAspectReference inputAspect =
 										{
 											0u,
 											0u,
@@ -6125,7 +6123,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 									vector<Attachment>							attachments;
 									vector<Subpass>								subpasses;
 									vector<SubpassDependency>					deps;
-									vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
+									vector<VkInputAttachmentAspectReference>	inputAspects;
 
 									attachments.push_back(Attachment(vkFormat,
 																	 VK_SAMPLE_COUNT_1_BIT,
@@ -6145,10 +6143,10 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 																vector<deUint32>()));
 									subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
 																0u,
-																vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR)),
+																vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)),
 																vector<AttachmentReference>(),
 																vector<AttachmentReference>(),
-																AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR),
+																AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL),
 																vector<deUint32>()));
 
 									deps.push_back(SubpassDependency(0, 1,
@@ -6170,7 +6168,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 									if (useInputAspect)
 									{
-										const VkInputAttachmentAspectReferenceKHR inputAspect =
+										const VkInputAttachmentAspectReference inputAspect =
 										{
 											0u,
 											0u,
@@ -6193,7 +6191,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 									vector<Attachment>							attachments;
 									vector<Subpass>								subpasses;
 									vector<SubpassDependency>					deps;
-									vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
+									vector<VkInputAttachmentAspectReference>	inputAspects;
 
 									attachments.push_back(Attachment(vkFormat,
 																	 VK_SAMPLE_COUNT_1_BIT,
@@ -6222,7 +6220,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 																vector<deUint32>()));
 									subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
 																0u,
-																vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)),
+																vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)),
 																vector<AttachmentReference>(1, AttachmentReference(1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
 																vector<AttachmentReference>(),
 																AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
@@ -6238,7 +6236,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 									if (useInputAspect)
 									{
-										const VkInputAttachmentAspectReferenceKHR inputAspect =
+										const VkInputAttachmentAspectReference inputAspect =
 										{
 											0u,
 											0u,
@@ -6260,7 +6258,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 									vector<Attachment>							attachments;
 									vector<Subpass>								subpasses;
 									vector<SubpassDependency>					deps;
-									vector<VkInputAttachmentAspectReferenceKHR>	inputAspects;
+									vector<VkInputAttachmentAspectReference>	inputAspects;
 
 									attachments.push_back(Attachment(vkFormat,
 																	 VK_SAMPLE_COUNT_1_BIT,
@@ -6280,10 +6278,10 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 																vector<deUint32>()));
 									subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
 																0u,
-																vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR)),
+																vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)),
 																vector<AttachmentReference>(),
 																vector<AttachmentReference>(),
-																AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR),
+																AttachmentReference(0, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL),
 																vector<deUint32>()));
 
 									deps.push_back(SubpassDependency(0, 1,
@@ -6305,7 +6303,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 
 									if (useInputAspect)
 									{
-										const VkInputAttachmentAspectReferenceKHR inputAspect =
+										const VkInputAttachmentAspectReference inputAspect =
 										{
 											0u,
 											0u,

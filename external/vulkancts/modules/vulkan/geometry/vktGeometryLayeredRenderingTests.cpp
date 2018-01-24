@@ -894,7 +894,7 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 tcu::TestStatus test (Context& context, const TestParams params)
 {
 	if (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType &&
-		(!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1")))
+		(!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1")))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 
 	const DeviceInterface&			vk						= context.getDeviceInterface();

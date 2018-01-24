@@ -334,7 +334,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 
 	const VkStencilOpState stencilOpState = makeStencilOpState(
 		VK_STENCIL_OP_KEEP,									// stencil fail
-		VK_STENCIL_OP_ZERO,									// depth & stencil pass
+		VK_STENCIL_OP_KEEP,									// depth & stencil pass
 		VK_STENCIL_OP_KEEP,									// depth only fail
 		VK_COMPARE_OP_EQUAL,								// compare op
 		~0u,												// compare mask
@@ -694,18 +694,90 @@ void generateExpectedImage (const tcu::PixelBufferAccess& outputImage, const IVe
 	}
 }
 
-VkDeviceSize getMaxDeviceHeapSize (const InstanceInterface& vki, const VkPhysicalDevice physDevice)
+deUint32 selectMatchingMemoryType (const VkPhysicalDeviceMemoryProperties& deviceMemProps, deUint32 allowedMemTypeBits, MemoryRequirement requirement)
 {
-	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
-	VkDeviceSize							memorySize			= 0;
+	const deUint32	compatibleTypes	= getCompatibleMemoryTypes(deviceMemProps, requirement);
+	const deUint32	candidates		= allowedMemTypeBits & compatibleTypes;
 
-	for (deUint32 heapNdx = 0; heapNdx < memoryProperties.memoryHeapCount; ++heapNdx)
+	if (candidates == 0)
+		TCU_THROW(NotSupportedError, "No compatible memory type found");
+
+	return (deUint32)deCtz32(candidates);
+}
+
+IVec4 getMaxImageSize (const VkImageViewType viewType, const IVec4& sizeHint)
+{
+	//Limits have been taken from the vulkan specification
+	IVec4 size = IVec4(
+		sizeHint.x() != MAX_SIZE ? sizeHint.x() : 4096,
+		sizeHint.y() != MAX_SIZE ? sizeHint.y() : 4096,
+		sizeHint.z() != MAX_SIZE ? sizeHint.z() : 256,
+		sizeHint.w() != MAX_SIZE ? sizeHint.w() : 256);
+
+	switch (viewType)
 	{
-		if ((memoryProperties.memoryHeaps[heapNdx].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0)
-			memorySize = std::max(memorySize, memoryProperties.memoryHeaps[heapNdx].size);
+		case VK_IMAGE_VIEW_TYPE_1D:
+		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
+			size.x() = deMin32(4096, size.x());
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_2D:
+		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
+			size.x() = deMin32(4096, size.x());
+			size.y() = deMin32(4096, size.y());
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_3D:
+			size.x() = deMin32(256, size.x());
+			size.y() = deMin32(256, size.y());
+			break;
+
+		case VK_IMAGE_VIEW_TYPE_CUBE:
+		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
+			size.x() = deMin32(4096, size.x());
+			size.y() = deMin32(4096, size.y());
+			size.w() = deMin32(252, size.w());
+			size.w() = NUM_CUBE_FACES * (size.w() / NUM_CUBE_FACES);	// round down to 6 faces
+			break;
+
+		default:
+			DE_ASSERT(0);
+			return IVec4();
 	}
 
-	return memorySize;
+	return size;
+}
+
+deUint32 getMemoryTypeNdx (Context& context, const CaseDef& caseDef)
+{
+	const DeviceInterface&					vk					= context.getDeviceInterface();
+	const InstanceInterface&				vki					= context.getInstanceInterface();
+	const VkDevice							device				= context.getDevice();
+	const VkPhysicalDevice					physDevice			= context.getPhysicalDevice();
+
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
+	Move<VkImage>							colorImage;
+	VkMemoryRequirements					memReqs;
+
+	const VkImageUsageFlags					imageUsage	= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	const IVec4								imageSize	= getMaxImageSize(caseDef.viewType, caseDef.imageSizeHint);
+
+	//create image, don't bind any memory to it
+	colorImage	= makeImage(vk, device, getImageCreateFlags(caseDef.viewType), getImageType(caseDef.viewType), caseDef.colorFormat,
+								imageSize.swizzle(0, 1, 2), 1u, imageSize.w(), imageUsage);
+
+	vk.getImageMemoryRequirements(device, *colorImage, &memReqs);
+	return selectMatchingMemoryType(memoryProperties, memReqs.memoryTypeBits, MemoryRequirement::Any);
+}
+
+VkDeviceSize getMaxDeviceHeapSize (Context& context, const CaseDef& caseDef)
+{
+	const InstanceInterface&				vki					= context.getInstanceInterface();
+	const VkPhysicalDevice					physDevice			= context.getPhysicalDevice();
+	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physDevice);
+	const deUint32							memoryTypeNdx		= getMemoryTypeNdx (context, caseDef);
+
+	return memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size;
 }
 
 //! Get a smaller image size. Returns a vector of zeroes, if it can't reduce more.
@@ -741,51 +813,6 @@ bool isDepthStencilFormatSupported (const InstanceInterface& vki, const VkPhysic
 {
 	const VkFormatProperties properties = getPhysicalDeviceFormatProperties(vki, physDevice, format);
 	return (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0;
-}
-
-IVec4 getMaxImageSize (const VkPhysicalDeviceLimits& limits, const VkImageViewType viewType, const IVec4& sizeHint, const bool useDepthStencil)
-{
-	// If we use a layered D/S together with a 3D image, we have to use the smallest common limit
-	const int maxDepth = (useDepthStencil ? deMin32(static_cast<int>(limits.maxImageArrayLayers), static_cast<int>(limits.maxImageDimension3D))
-										  : static_cast<int>(limits.maxImageDimension3D));
-
-	// Images have to respect framebuffer limits and image limits (the framebuffer is not layered in this case)
-	IVec4 size = IVec4(
-		sizeHint.x() != MAX_SIZE ? sizeHint.x() : static_cast<int>(limits.maxFramebufferWidth),
-		sizeHint.y() != MAX_SIZE ? sizeHint.y() : static_cast<int>(limits.maxFramebufferHeight),
-		sizeHint.z() != MAX_SIZE ? sizeHint.z() : maxDepth,
-		sizeHint.w() != MAX_SIZE ? sizeHint.w() : static_cast<int>(limits.maxImageArrayLayers));
-
-	switch (viewType)
-	{
-		case VK_IMAGE_VIEW_TYPE_1D:
-		case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
-			size.x() = deMin32(size.x(), limits.maxImageDimension1D);
-			break;
-
-		case VK_IMAGE_VIEW_TYPE_2D:
-		case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
-			size.x() = deMin32(size.x(), limits.maxImageDimension2D);
-			size.y() = deMin32(size.y(), limits.maxImageDimension2D);
-			break;
-
-		case VK_IMAGE_VIEW_TYPE_3D:
-			size.x() = deMin32(size.x(), limits.maxImageDimension3D);
-			size.y() = deMin32(size.y(), limits.maxImageDimension3D);
-			break;
-
-		case VK_IMAGE_VIEW_TYPE_CUBE:
-		case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
-			size.x() = size.y() = deMin32(size.x(), limits.maxImageDimensionCube);
-			size.w() = NUM_CUBE_FACES * (size.w() / NUM_CUBE_FACES);	// round down to 6 faces
-			break;
-
-		default:
-			DE_ASSERT(0);
-			return IVec4();
-	}
-
-	return size;
 }
 
 VkImageAspectFlags getFormatAspectFlags (const VkFormat format)
@@ -860,7 +887,7 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 }
 
 //! See testAttachmentSize() description
-tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef, const int sizeReductionIndex)
+tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 {
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const InstanceInterface&		vki					= context.getInstanceInterface();
@@ -872,16 +899,67 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 
 	// The memory might be too small to allocate a largest possible attachment, so try to account for that.
 	const bool						useDepthStencil		= (caseDef.depthStencilFormat != VK_FORMAT_UNDEFINED);
-	const VkDeviceSize				deviceMemoryBudget	= getMaxDeviceHeapSize(vki, physDevice) >> 2;
-	IVec4							imageSize			= getMaxImageSize(context.getDeviceProperties().limits, caseDef.viewType, caseDef.imageSizeHint, useDepthStencil);
 
-	// Keep reducing the size, if needed
-	for (int i = 0; i < sizeReductionIndex; ++i)
+	IVec4							imageSize			= getMaxImageSize(caseDef.viewType, caseDef.imageSizeHint);
+	VkDeviceSize					colorSize			= product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
+	VkDeviceSize					depthStencilSize	= (useDepthStencil ? product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.depthStencilFormat)) : 0ull);
+
+	const VkDeviceSize				reserveForChecking	= 500ull * 1024ull;	//left 512KB
+	const float						additionalMemory	= 1.15f;			//left some free memory on device (15%)
+	VkDeviceSize					neededMemory		= static_cast<VkDeviceSize>(static_cast<float>(colorSize + depthStencilSize) * additionalMemory) + reserveForChecking;
+	VkDeviceSize					maxMemory			= getMaxDeviceHeapSize(context, caseDef) >> 2;
+
+	const VkDeviceSize				deviceMemoryBudget	= std::min(neededMemory, maxMemory);
+	bool							allocationPossible	= false;
+
+	// Keep reducing the size, if image size is too big
+	while (neededMemory > deviceMemoryBudget)
 	{
 		imageSize = getReducedImageSize(caseDef, imageSize);
 
 		if (imageSize == IVec4())
 			return tcu::TestStatus::fail("Couldn't create an image with required size");
+
+		colorSize			= product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
+		depthStencilSize	= (useDepthStencil ? product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.depthStencilFormat)) : 0ull);
+		neededMemory		= static_cast<VkDeviceSize>(static_cast<double>(colorSize + depthStencilSize) * additionalMemory);
+	}
+
+	// Keep reducing the size, if allocation return out of any memory
+	while (!allocationPossible)
+	{
+		VkDeviceMemory				object			= 0;
+		const VkMemoryAllocateInfo	allocateInfo	=
+		{
+			VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//VkStructureType	sType;
+			DE_NULL,								//const void*		pNext;
+			neededMemory,							//VkDeviceSize		allocationSize;
+			getMemoryTypeNdx(context, caseDef)		//deUint32			memoryTypeIndex;
+		};
+
+		const VkResult				result			= vk.allocateMemory(device, &allocateInfo, DE_NULL, &object);
+
+		if (VK_ERROR_OUT_OF_DEVICE_MEMORY == result || VK_ERROR_OUT_OF_HOST_MEMORY == result)
+		{
+			imageSize = getReducedImageSize(caseDef, imageSize);
+
+			if (imageSize == IVec4())
+				return tcu::TestStatus::fail("Couldn't create an image with required size");
+
+			colorSize			= product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
+			depthStencilSize	= (useDepthStencil ? product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.depthStencilFormat)) : 0ull);
+			neededMemory		= static_cast<VkDeviceSize>(static_cast<double>(colorSize + depthStencilSize) * additionalMemory) + reserveForChecking;
+		}
+		else if (VK_SUCCESS != result)
+		{
+			return tcu::TestStatus::fail("Couldn't allocate memory");
+		}
+		else
+		{
+			//free memory using Move pointer
+			Move<VkDeviceMemory> memoryAllocated (check<VkDeviceMemory>(object), Deleter<VkDeviceMemory>(vk, device, DE_NULL));
+			allocationPossible = true;
+		}
 	}
 
 	context.getTestContext().getLog()
@@ -889,14 +967,10 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 
 	// "Slices" is either the depth of a 3D image, or the number of layers of an arrayed image
 	const deInt32					numSlices			= maxLayersOrDepth(imageSize);
-	const VkDeviceSize				colorSize			= product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.colorFormat));
-	const VkDeviceSize				depthStencilSize	= (useDepthStencil ? product(imageSize) * tcu::getPixelSize(mapVkFormat(caseDef.depthStencilFormat)) : 0ull);
+
 
 	if (useDepthStencil && !isDepthStencilFormatSupported(vki, physDevice, caseDef.depthStencilFormat))
 		TCU_THROW(NotSupportedError, "Unsupported depth/stencil format");
-
-	if (colorSize + depthStencilSize > deviceMemoryBudget)
-		throw OutOfMemoryError(VK_ERROR_OUT_OF_DEVICE_MEMORY, "Image size exceeds test's image memory budget");
 
 	// Determine the verification bounds. The checked region will be in the center of the rendered image
 	const IVec4	checkSize	= tcu::min(imageSize, IVec4(MAX_VERIFICATION_REGION_SIZE,
@@ -1170,7 +1244,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef,
 void checkImageViewTypeRequirements (Context& context, const VkImageViewType viewType)
 {
 	if (viewType == VK_IMAGE_VIEW_TYPE_3D &&
-		!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
+		(!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1")))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 
 	if (viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY && !context.getDeviceFeatures().imageCubeArray)
@@ -1184,30 +1258,13 @@ tcu::TestStatus testAttachmentSize (Context& context, const CaseDef caseDef)
 {
 	checkImageViewTypeRequirements(context, caseDef.viewType);
 
-	int sizeReductionIndex = 0;
-
 	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 	}
 
-	for (;;)
-	{
-		try
-		{
-			return testWithSizeReduction(context, caseDef, sizeReductionIndex);
-		}
-		catch (OutOfMemoryError& ex)
-		{
-			context.getTestContext().getLog()
-				<< tcu::TestLog::Message << "-- OutOfMemoryError: " << ex.getMessage() << tcu::TestLog::EndMessage;
-
-			++sizeReductionIndex;
-		}
-	}
+	return testWithSizeReduction(context, caseDef);
 	// Never reached
 }
 
@@ -1371,10 +1428,8 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 
 	if (caseDef.allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 	}
 
 	if (useDepthStencil && !isDepthStencilFormatSupported(vki, physDevice, caseDef.depthStencilFormat))

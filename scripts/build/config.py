@@ -23,10 +23,9 @@
 import os
 import sys
 import copy
-import platform
 import multiprocessing
 
-from common import which, DEQP_DIR
+from common import which, HostInfo, DEQP_DIR
 
 try:
 	import _winreg
@@ -39,6 +38,7 @@ class BuildConfig:
 		self.buildDir		= buildDir
 		self.buildType		= buildType
 		self.args			= copy.copy(args)
+		self.cmakePath		= BuildConfig.findCMake()
 
 	def getSrcPath (self):
 		return self.srcPath
@@ -51,6 +51,22 @@ class BuildConfig:
 
 	def getArgs (self):
 		return self.args
+
+	def getCMakePath (self):
+		return self.cmakePath
+
+	@staticmethod
+	def findCMake ():
+		if which("cmake") == None:
+			possiblePaths = [
+				"/Applications/CMake.app/Contents/bin/cmake"
+			]
+			for path in possiblePaths:
+				if os.path.exists(path):
+					return path
+
+		# Fall back to PATH - may fail later
+		return "cmake"
 
 class CMakeGenerator:
 	def __init__ (self, name, isMultiConfig = False, extraBuildArgs = []):
@@ -90,7 +106,7 @@ class NMakeGenerator(CMakeGenerator):
 		CMakeGenerator.__init__(self, "NMake Makefiles")
 
 	def isAvailable (self):
-		return which('nmake.exe') != None
+		return which('nmake') != None
 
 class NinjaGenerator(CMakeGenerator):
 	def __init__(self):
@@ -117,14 +133,14 @@ class VSProjectGenerator(CMakeGenerator):
 
 	@staticmethod
 	def getNativeArch ():
-		arch = platform.machine().lower()
+		bits = HostInfo.getArchBits()
 
-		if arch == 'x86':
+		if bits == 32:
 			return VSProjectGenerator.ARCH_32BIT
-		elif arch == 'amd64':
+		elif bits == 64:
 			return VSProjectGenerator.ARCH_64BIT
 		else:
-			raise Exception("Unhandled arch '%s'" % arch)
+			raise Exception("Unhandled bits '%s'" % bits)
 
 	@staticmethod
 	def registryKeyAvailable (root, arch, name):
@@ -147,6 +163,7 @@ class VSProjectGenerator(CMakeGenerator):
 				11:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.11.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\11.0")],
 				12:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.12.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\12.0")],
 				14:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.14.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\14.0")],
+				15:		[(_winreg.HKEY_CLASSES_ROOT, "VisualStudio.DTE.15.0"), (_winreg.HKEY_LOCAL_MACHINE, "Software\\Microsoft\\VCExpress\\15.0")]
 			}
 
 			if not self.version in keyMap:
@@ -173,6 +190,8 @@ VS2013_X32_GENERATOR	= VSProjectGenerator(12, VSProjectGenerator.ARCH_32BIT)
 VS2013_X64_GENERATOR	= VSProjectGenerator(12, VSProjectGenerator.ARCH_64BIT)
 VS2015_X32_GENERATOR	= VSProjectGenerator(14, VSProjectGenerator.ARCH_32BIT)
 VS2015_X64_GENERATOR	= VSProjectGenerator(14, VSProjectGenerator.ARCH_64BIT)
+VS2017_X32_GENERATOR	= VSProjectGenerator(15, VSProjectGenerator.ARCH_32BIT)
+VS2017_X64_GENERATOR	= VSProjectGenerator(15, VSProjectGenerator.ARCH_64BIT)
 
 def selectFirstAvailableGenerator (generators):
 	for generator in generators:
@@ -181,12 +200,14 @@ def selectFirstAvailableGenerator (generators):
 	return None
 
 ANY_VS_X32_GENERATOR	= selectFirstAvailableGenerator([
+								VS2017_X32_GENERATOR,
 								VS2015_X32_GENERATOR,
 								VS2013_X32_GENERATOR,
 								VS2012_X32_GENERATOR,
 								VS2010_X32_GENERATOR,
 							])
 ANY_VS_X64_GENERATOR	= selectFirstAvailableGenerator([
+								VS2017_X64_GENERATOR,
 								VS2015_X64_GENERATOR,
 								VS2013_X64_GENERATOR,
 								VS2012_X64_GENERATOR,
@@ -198,6 +219,8 @@ ANY_UNIX_GENERATOR		= selectFirstAvailableGenerator([
 								NMAKE_GENERATOR,
 							])
 ANY_GENERATOR			= selectFirstAvailableGenerator([
+								VS2017_X64_GENERATOR,
+								VS2017_X32_GENERATOR,
 								VS2015_X64_GENERATOR,
 								VS2015_X32_GENERATOR,
 								VS2013_X64_GENERATOR,

@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief SPIR-V Assembly Tests for VK_KHX_16bit_storage
+ * \brief SPIR-V Assembly Tests for VK_KHR_16bit_storage
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"

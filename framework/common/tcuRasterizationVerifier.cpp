@@ -1291,6 +1291,9 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 				if (result)
 				{
 					bool multipleNearbyLines = false;
+					bool renderAtSurfaceEdge = false;
+
+					renderAtSurfaceEdge = (x == 1) || (x == referenceLineMap.getWidth() - 2);
 
 					for (int dy = -1; dy < 2; ++dy)
 					for (int dx = -1; dx < 2; ++dx)
@@ -1304,9 +1307,10 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 						}
 					}
 
-					if (multipleNearbyLines)
+					if (multipleNearbyLines || renderAtSurfaceEdge)
 					{
 						// Another line is too close, don't try to calculate width here
+						// Or the render result is outside of surface range
 						previousPixelUndefined = true;
 						continue;
 					}
@@ -1372,6 +1376,9 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 				if (result)
 				{
 					bool multipleNearbyLines = false;
+					bool renderAtSurfaceEdge = false;
+
+					renderAtSurfaceEdge = (y == 1) || (y == referenceLineMap.getWidth() - 2);
 
 					for (int dy = -1; dy < 2; ++dy)
 					for (int dx = -1; dx < 2; ++dx)
@@ -1385,9 +1392,10 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 						}
 					}
 
-					if (multipleNearbyLines)
+					if (multipleNearbyLines || renderAtSurfaceEdge)
 					{
 						// Another line is too close, don't try to calculate width here
+						// Or the render result is outside of surface range
 						previousPixelUndefined = true;
 						continue;
 					}

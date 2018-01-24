@@ -15,6 +15,15 @@ set(DETHREAD_SRCS
 	deThreadLocal.h
 	deThreadTest.c
 	deThreadTest.h
+	win32/deMutexWin32.c
+	win32/deSemaphoreWin32.c
+	win32/deThreadWin32.c
+	win32/deThreadLocalWin32.c
+	unix/deMutexUnix.c
+	unix/deNamedSemaphoreUnix.c
+	unix/deSemaphoreUnix.c
+	unix/deThreadUnix.c
+	unix/deThreadLocalUnix.c
 	)
 
 set(DETHREAD_LIBS
@@ -28,44 +37,13 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}
 	)
 
-if (DE_OS_IS_WIN32 OR DE_OS_IS_WINCE)
-	set(DETHREAD_SRCS
-		${DETHREAD_SRCS}
-		win32/deMutexWin32.c
-		win32/deSemaphoreWin32.c
-		win32/deThreadWin32.c
-		win32/deThreadLocalWin32.c
-		)
+if (DE_OS_IS_UNIX)
+	add_definitions(-D_GNU_SOURCE)
+	set(DETHREAD_LIBS ${DETHREAD_LIBS} pthread)
+endif ()
 
-elseif (DE_OS_IS_UNIX OR DE_OS_IS_ANDROID)
-	if (DE_OS_IS_UNIX)
-		add_definitions(-D_GNU_SOURCE)
-		set(DETHREAD_LIBS ${DETHREAD_LIBS} pthread)
-	else ()
-		add_definitions(-D_XOPEN_SOURCE=600)
-	endif ()
-
-	set(DETHREAD_SRCS
-		${DETHREAD_SRCS}
-		unix/deMutexUnix.c
-		unix/deSemaphoreUnix.c
-		unix/deThreadUnix.c
-		unix/deThreadLocalUnix.c
-		)
-
-elseif (DE_OS_IS_OSX OR DE_OS_IS_IOS)
+if (DE_OS_IS_ANDROID OR DE_OS_IS_OSX OR DE_OS_IS_IOS OR DE_OS_IS_QNX)
 	add_definitions(-D_XOPEN_SOURCE=600)
-	# \note OS X doesn't support unnamed semaphores.
-	set(DETHREAD_SRCS
-		${DETHREAD_SRCS}
-		unix/deMutexUnix.c
-		unix/deNamedSemaphoreUnix.c
-		unix/deThreadUnix.c
-		unix/deThreadLocalUnix.c
-		)
-
-else ()
-	message(FATAL_ERROR "Unsupported os for dethread")
 endif ()
 
 add_library(dethread STATIC ${DETHREAD_SRCS})

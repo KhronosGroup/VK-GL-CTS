@@ -22,7 +22,6 @@ set(DEQP_VK_GEOMETRY_SRCS
 	)
 
 set(DEQP_VK_GEOMETRY_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 	)

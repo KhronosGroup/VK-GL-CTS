@@ -437,13 +437,29 @@ public:
 		IMAGE_BACKING_MODE_SPARSE,
 	};
 
+	// Default wertex and fragment grid sizes are used by a large collection of tests
+	// to generate input sets. Some tests might change their behavior if the
+	// default grid size values are altered, so care should be taken to confirm that
+	// any changes to default values do not produce regressions.
+	// If a particular tests needs to use a different grid size value, rather than
+	// modifying the default grid size values for all tests, it is recommended that
+	// the test specifies the required grid size using the gridSize parameter in the
+	// ShaderRenderCaseInstance constuctor instead.
+	enum
+	{
+		GRID_SIZE_DEFAULTS			= 0,
+		GRID_SIZE_DEFAULT_VERTEX	= 90,
+		GRID_SIZE_DEFAULT_FRAGMENT	= 4,
+	};
+
 														ShaderRenderCaseInstance	(Context&					context);
 														ShaderRenderCaseInstance	(Context&					context,
 																					const bool					isVertexCase,
 																					const ShaderEvaluator&		evaluator,
 																					const UniformSetup&			uniformSetup,
 																					const AttributeSetupFunc	attribFunc,
-																					const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR);
+																					const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR,
+																					const deUint32				gridSize = static_cast<deUint32>(GRID_SIZE_DEFAULTS));
 
 	virtual												~ShaderRenderCaseInstance	(void);
 	virtual tcu::TestStatus								iterate						(void);
@@ -479,7 +495,8 @@ protected:
 																					 const ShaderEvaluator*		evaluator,
 																					 const UniformSetup*		uniformSetup,
 																					 const AttributeSetupFunc	attribFunc,
-																					 const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR);
+																					 const ImageBackingMode		imageBackingMode = IMAGE_BACKING_MODE_REGULAR,
+																					 const deUint32				gridSize = static_cast<deUint32>(GRID_SIZE_DEFAULTS));
 
 	virtual void										setup						(void);
 	virtual void										setupUniforms				(const tcu::Vec4& constCoords);
@@ -505,6 +522,8 @@ protected:
 	bool												isMultiSampling				(void) const;
 
 	ImageBackingMode									m_imageBackingMode;
+
+	deUint32											m_quadGridSize;
 private:
 
 	struct SparseContext
@@ -553,7 +572,7 @@ private:
 																					 deUint32						arrayLayers,
 																					 vk::VkImage					destImage);
 
-	void												checkSparseSupport			(const vk::VkImageType imageType) const;
+	void												checkSparseSupport			(const vk::VkImageCreateInfo&	imageInfo) const;
 
 	void												uploadSparseImage			(const tcu::TextureFormat&		texFormat,
 																					 const TextureData&				textureData,

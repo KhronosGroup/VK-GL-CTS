@@ -42,6 +42,7 @@ public:
 	virtual								~Library				(void) {}
 
 	virtual const PlatformInterface&	getPlatformInterface	(void) const = 0;
+	virtual const tcu::FunctionLibrary&	getFunctionLibrary		(void) const = 0;
 };
 
 class PlatformDriver : public PlatformInterface
@@ -70,6 +71,8 @@ public:
 #include "vkConcreteInstanceInterface.inl"
 
 protected:
+	void		loadFunctions	(const PlatformInterface& platformInterface, VkInstance instance);
+
 	struct Functions
 	{
 #include "vkInstanceFunctionPointers.inl"

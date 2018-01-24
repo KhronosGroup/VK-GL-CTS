@@ -58,7 +58,6 @@ using namespace vk;
 namespace
 {
 
-static const int		GRID_SIZE			= 64;
 static const deUint32	MAX_RENDER_WIDTH	= 128;
 static const deUint32	MAX_RENDER_HEIGHT	= 128;
 static const tcu::Vec4	DEFAULT_CLEAR_COLOR	= tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f);
@@ -535,13 +534,14 @@ TestInstance* ShaderRenderCase::createInstance (Context& context) const
 ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context& context)
 	: vkt::TestInstance		(context)
 	, m_imageBackingMode	(IMAGE_BACKING_MODE_REGULAR)
+	, m_quadGridSize		(static_cast<deUint32>(GRID_SIZE_DEFAULT_FRAGMENT))
 	, m_sparseContext		(createSparseContext())
 	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
 	, m_isVertexCase		(false)
 	, m_vertexShaderName	("vert")
 	, m_fragmentShaderName	("frag")
-	, m_renderSize			(128, 128)
+	, m_renderSize			(MAX_RENDER_WIDTH, MAX_RENDER_HEIGHT)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_evaluator			(DE_NULL)
 	, m_uniformSetup		(DE_NULL)
@@ -556,16 +556,22 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const ShaderEvaluator&		evaluator,
 													const UniformSetup&			uniformSetup,
 													const AttributeSetupFunc	attribFunc,
-													const ImageBackingMode		imageBackingMode)
+													const ImageBackingMode		imageBackingMode,
+													const deUint32				gridSize)
 	: vkt::TestInstance		(context)
 	, m_imageBackingMode	(imageBackingMode)
+	, m_quadGridSize		(gridSize == static_cast<deUint32>(GRID_SIZE_DEFAULTS)
+							 ? (isVertexCase
+								? static_cast<deUint32>(GRID_SIZE_DEFAULT_VERTEX)
+								: static_cast<deUint32>(GRID_SIZE_DEFAULT_FRAGMENT))
+							 : gridSize)
 	, m_sparseContext		(createSparseContext())
 	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
 	, m_isVertexCase		(isVertexCase)
 	, m_vertexShaderName	("vert")
 	, m_fragmentShaderName	("frag")
-	, m_renderSize			(128, 128)
+	, m_renderSize			(MAX_RENDER_WIDTH, MAX_RENDER_HEIGHT)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_evaluator			(&evaluator)
 	, m_uniformSetup		(&uniformSetup)
@@ -579,16 +585,22 @@ ShaderRenderCaseInstance::ShaderRenderCaseInstance (Context&					context,
 													const ShaderEvaluator*		evaluator,
 													const UniformSetup*			uniformSetup,
 													const AttributeSetupFunc	attribFunc,
-													const ImageBackingMode		imageBackingMode)
+													const ImageBackingMode		imageBackingMode,
+													const deUint32				gridSize)
 	: vkt::TestInstance		(context)
 	, m_imageBackingMode	(imageBackingMode)
+	, m_quadGridSize		(gridSize == static_cast<deUint32>(GRID_SIZE_DEFAULTS)
+							 ? (isVertexCase
+								? static_cast<deUint32>(GRID_SIZE_DEFAULT_VERTEX)
+								: static_cast<deUint32>(GRID_SIZE_DEFAULT_FRAGMENT))
+							 : gridSize)
 	, m_sparseContext		(createSparseContext())
 	, m_memAlloc			(getAllocator())
 	, m_clearColor			(DEFAULT_CLEAR_COLOR)
 	, m_isVertexCase		(isVertexCase)
 	, m_vertexShaderName	("vert")
 	, m_fragmentShaderName	("frag")
-	, m_renderSize			(128, 128)
+	, m_renderSize			(MAX_RENDER_WIDTH, MAX_RENDER_HEIGHT)
 	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_evaluator			(evaluator)
 	, m_uniformSetup		(uniformSetup)
@@ -737,7 +749,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 	const int			width			= viewportSize.x();
 	const int			height			= viewportSize.y();
 
-	m_quadGrid							= de::MovePtr<QuadGrid>(new QuadGrid(m_isVertexCase ? GRID_SIZE : 4, width, height, getDefaultConstCoords(), m_userAttribTransforms, m_textures));
+	m_quadGrid							= de::MovePtr<QuadGrid>(new QuadGrid(m_quadGridSize, width, height, getDefaultConstCoords(), m_userAttribTransforms, m_textures));
 
 	// Render result.
 	tcu::Surface		resImage		(width, height);
@@ -753,7 +765,7 @@ tcu::TestStatus ShaderRenderCaseInstance::iterate (void)
 		computeFragmentReference(refImage, *m_quadGrid);
 
 	// Compare.
-	const bool			compareOk		= compareImages(resImage, refImage, 0.1f);
+	const bool			compareOk		= compareImages(resImage, refImage, 0.2f);
 
 	if (compareOk)
 		return tcu::TestStatus::pass("Result image matches reference");
@@ -1374,11 +1386,14 @@ bool isImageSizeSupported (const VkImageType imageType, const tcu::UVec3& imageS
 	}
 }
 
-void ShaderRenderCaseInstance::checkSparseSupport (const VkImageType imageType) const
+void ShaderRenderCaseInstance::checkSparseSupport (const VkImageCreateInfo& imageInfo) const
 {
 	const InstanceInterface&		instance		= getInstanceInterface();
 	const VkPhysicalDevice			physicalDevice	= getPhysicalDevice();
 	const VkPhysicalDeviceFeatures	deviceFeatures	= getPhysicalDeviceFeatures(instance, physicalDevice);
+
+	const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec = getPhysicalDeviceSparseImageFormatProperties(
+		instance, physicalDevice, imageInfo.format, imageInfo.imageType, imageInfo.samples, imageInfo.usage, imageInfo.tiling);
 
 	if (!deviceFeatures.shaderResourceResidency)
 		TCU_THROW(NotSupportedError, "Required feature: shaderResourceResidency.");
@@ -1386,11 +1401,14 @@ void ShaderRenderCaseInstance::checkSparseSupport (const VkImageType imageType) 
 	if (!deviceFeatures.sparseBinding)
 		TCU_THROW(NotSupportedError, "Required feature: sparseBinding.");
 
-	if (imageType == VK_IMAGE_TYPE_2D && !deviceFeatures.sparseResidencyImage2D)
+	if (imageInfo.imageType == VK_IMAGE_TYPE_2D && !deviceFeatures.sparseResidencyImage2D)
 		TCU_THROW(NotSupportedError, "Required feature: sparseResidencyImage2D.");
 
-	if (imageType == VK_IMAGE_TYPE_3D && !deviceFeatures.sparseResidencyImage3D)
+	if (imageInfo.imageType == VK_IMAGE_TYPE_3D && !deviceFeatures.sparseResidencyImage3D)
 		TCU_THROW(NotSupportedError, "Required feature: sparseResidencyImage3D.");
+
+	if (sparseImageFormatPropVec.size() == 0)
+		TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
 }
 
 void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		texFormat,
@@ -2063,7 +2081,6 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 
 	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
 	{
-		checkSparseSupport(imageType);
 		imageCreateFlags |= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT;
 	}
 
@@ -2090,6 +2107,11 @@ void ShaderRenderCaseInstance::createSamplerUniform (deUint32						bindingLocati
 		&queueFamilyIndex,												// const deUint32*			pQueueFamilyIndices;
 		VK_IMAGE_LAYOUT_UNDEFINED										// VkImageLayout			initialLayout;
 	};
+
+	if (m_imageBackingMode == IMAGE_BACKING_MODE_SPARSE)
+	{
+		checkSparseSupport(imageParams);
+	}
 
 	vkTexture		= createImage(vk, vkDevice, &imageParams);
 	allocation		= m_memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *vkTexture), MemoryRequirement::Any);
@@ -3150,7 +3172,7 @@ void ShaderRenderCaseInstance::computeFragmentReference (tcu::Surface& result, c
 
 bool ShaderRenderCaseInstance::compareImages (const tcu::Surface& resImage, const tcu::Surface& refImage, float errorThreshold)
 {
-	return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_RESULT);
+	return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result", refImage, resImage, errorThreshold, tcu::COMPARE_LOG_EVERYTHING);
 }
 
 } // sr

@@ -123,7 +123,7 @@ void ShaderAtomicOpCase::init (void)
 	const deUint32		numValues	= product(m_workGroupSize)*product(m_numWorkGroups);
 	std::ostringstream	src;
 
-	src << "#version 310 es\n"
+	src << glu::getGLSLVersionDeclaration(getContextTypeGLSLVersion(m_context.getRenderContext().getType())) << "\n"
 		<< "layout(local_size_x = " << m_workGroupSize.x()
 		<< ", local_size_y = " << m_workGroupSize.y()
 		<< ", local_size_z = " << m_workGroupSize.z() << ") in;\n"

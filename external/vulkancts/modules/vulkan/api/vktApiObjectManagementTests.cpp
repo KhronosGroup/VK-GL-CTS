@@ -230,6 +230,7 @@ deUint32 getDefaultTestThreadCount (void)
 struct Environment
 {
 	const PlatformInterface&		vkp;
+	deUint32						apiVersion;
 	const DeviceInterface&			vkd;
 	VkDevice						device;
 	deUint32						queueFamilyIndex;
@@ -239,6 +240,7 @@ struct Environment
 
 	Environment (Context& context, deUint32 maxResourceConsumers_)
 		: vkp					(context.getPlatformInterface())
+		, apiVersion			(context.getUsedApiVersion())
 		, vkd					(context.getDeviceInterface())
 		, device				(context.getDevice())
 		, queueFamilyIndex		(context.getUniversalQueueFamilyIndex())
@@ -249,6 +251,7 @@ struct Environment
 	}
 
 	Environment (const PlatformInterface&		vkp_,
+				 deUint32						apiVersion_,
 				 const DeviceInterface&			vkd_,
 				 VkDevice						device_,
 				 deUint32						queueFamilyIndex_,
@@ -256,6 +259,7 @@ struct Environment
 				 const VkAllocationCallbacks*	allocationCallbacks_,
 				 deUint32						maxResourceConsumers_)
 		: vkp					(vkp_)
+		, apiVersion			(apiVersion_)
 		, vkd					(vkd_)
 		, device				(device_)
 		, queueFamilyIndex		(queueFamilyIndex_)
@@ -302,9 +306,9 @@ T alignToPowerOfTwo (T value, T align)
 	return (value + align - T(1)) & ~(align - T(1));
 }
 
-inline bool hasDeviceExtension (Context& context, const string& name)
+inline bool hasDeviceExtension (Context& context, const string name)
 {
-	return de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), name);
+	return isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), name);
 }
 
 VkDeviceSize getPageTableSize (const PlatformMemoryLimits& limits, VkDeviceSize allocationSize)
@@ -338,6 +342,7 @@ size_t computeSystemMemoryUsage (Context& context, const typename Object::Parame
 {
 	AllocationCallbackRecorder			allocRecorder		(getSystemAllocator());
 	const Environment					env					(context.getPlatformInterface(),
+															 context.getUsedApiVersion(),
 															 context.getDeviceInterface(),
 															 context.getDevice(),
 															 context.getUniversalQueueFamilyIndex(),
@@ -429,7 +434,13 @@ struct Instance
 
 	struct Parameters
 	{
+		const vector<string>	instanceExtensions;
+
 		Parameters (void) {}
+
+		Parameters (vector<string>& extensions)
+			: instanceExtensions	(extensions)
+		{}
 	};
 
 	struct Resources
@@ -442,8 +453,19 @@ struct Instance
 		return getSafeObjectCount<Instance>(context, params, MAX_CONCURRENT_INSTANCES);
 	}
 
-	static Move<VkInstance> create (const Environment& env, const Resources&, const Parameters&)
+	static Move<VkInstance> create (const Environment& env, const Resources&, const Parameters& params)
 	{
+		vector<const char*>					extensionNamePtrs;
+		const vector<VkExtensionProperties>	instanceExts = enumerateInstanceExtensionProperties(env.vkp, DE_NULL);
+		for (size_t extensionID = 0; extensionID < params.instanceExtensions.size(); extensionID++)
+		{
+			if (!isInstanceExtensionSupported(env.apiVersion, instanceExts, RequiredExtension(params.instanceExtensions[extensionID])))
+				TCU_THROW(NotSupportedError, (params.instanceExtensions[extensionID] + " is not supported").c_str());
+
+			if (!isCoreInstanceExtension(env.apiVersion, params.instanceExtensions[extensionID]))
+				extensionNamePtrs.push_back(params.instanceExtensions[extensionID].c_str());
+		}
+
 		const VkApplicationInfo		appInfo			=
 		{
 			VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -452,18 +474,19 @@ struct Instance
 			0u,									// applicationVersion
 			DE_NULL,							// pEngineName
 			0u,									// engineVersion
-			VK_MAKE_VERSION(1,0,0)
+			env.apiVersion
 		};
+
 		const VkInstanceCreateInfo	instanceInfo	=
 		{
 			VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
 			DE_NULL,
 			(VkInstanceCreateFlags)0,
 			&appInfo,
-			0u,									// enabledLayerNameCount
-			DE_NULL,							// ppEnabledLayerNames
-			0u,									// enabledExtensionNameCount
-			DE_NULL,							// ppEnabledExtensionNames
+			0u,																// enabledLayerNameCount
+			DE_NULL,														// ppEnabledLayerNames
+			(deUint32)extensionNamePtrs.size(),								// enabledExtensionNameCount
+			extensionNamePtrs.empty() ? DE_NULL : &extensionNamePtrs[0],	// ppEnabledExtensionNames
 		};
 
 		return createInstance(env.vkp, &instanceInfo, env.allocationCallbacks);
@@ -561,6 +584,119 @@ struct Device
 		};
 
 		return createDevice(res.vki, res.physicalDevice, &deviceInfo, env.allocationCallbacks);
+	}
+};
+
+
+struct DeviceGroup
+{
+	typedef VkDevice Type;
+
+	struct Parameters
+	{
+		deUint32		deviceGroupIndex;
+		deUint32		deviceIndex;
+		VkQueueFlags	queueFlags;
+
+		Parameters (deUint32 deviceGroupIndex_, deUint32 deviceIndex_, VkQueueFlags queueFlags_)
+			: deviceGroupIndex	(deviceGroupIndex_)
+			, deviceIndex		(deviceIndex_)
+			, queueFlags		(queueFlags_)
+		{}
+	};
+
+	struct Resources
+	{
+		vector<string>				extensions;
+		Dependency<Instance>		instance;
+		InstanceDriver				vki;
+		vector<VkPhysicalDevice>	physicalDevices;
+		deUint32					physicalDeviceCount;
+		deUint32					queueFamilyIndex;
+
+		Resources (const Environment& env, const Parameters& params)
+			: extensions			(1, "VK_KHR_device_group_creation")
+			, instance				(env, Instance::Parameters(extensions))
+			, vki					(env.vkp, *instance.object)
+			, physicalDeviceCount	(0)
+			, queueFamilyIndex		(~0u)
+		{
+			{
+				const vector<VkPhysicalDeviceGroupProperties> devGroupProperties = enumeratePhysicalDeviceGroups(vki, *instance.object);
+
+				if (devGroupProperties.size() <= (size_t)params.deviceGroupIndex)
+					TCU_THROW(NotSupportedError, "Device Group not found");
+
+				physicalDeviceCount	= devGroupProperties[params.deviceGroupIndex].physicalDeviceCount;
+				physicalDevices.resize(physicalDeviceCount);
+
+				for (deUint32 physicalDeviceIdx = 0; physicalDeviceIdx < physicalDeviceCount; physicalDeviceIdx++)
+					physicalDevices[physicalDeviceIdx] = devGroupProperties[params.deviceGroupIndex].physicalDevices[physicalDeviceIdx];
+			}
+
+			{
+				const vector<VkQueueFamilyProperties>	queueProps = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevices[params.deviceIndex]);
+				bool									foundMatching = false;
+
+				for (size_t curQueueNdx = 0; curQueueNdx < queueProps.size(); curQueueNdx++)
+				{
+					if ((queueProps[curQueueNdx].queueFlags & params.queueFlags) == params.queueFlags)
+					{
+						queueFamilyIndex = (deUint32)curQueueNdx;
+						foundMatching = true;
+					}
+				}
+
+				if (!foundMatching)
+					TCU_THROW(NotSupportedError, "Matching queue not found");
+			}
+		}
+	};
+
+	static deUint32 getMaxConcurrent (Context& context, const Parameters& params)
+	{
+		return getSafeObjectCount<DeviceGroup>(context, params, MAX_CONCURRENT_DEVICES);
+	}
+
+	static Move<VkDevice> create (const Environment& env, const Resources& res, const Parameters& params)
+	{
+		const float	queuePriority = 1.0;
+
+		const VkDeviceQueueCreateInfo	queues[] =
+		{
+			{
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+				DE_NULL,							// pNext
+				(VkDeviceQueueCreateFlags)0,		// flags
+				res.queueFamilyIndex,				// queueFamilyIndex
+				1u,									// queueCount
+				&queuePriority,						// pQueuePriorities
+			}
+		};
+
+		const VkDeviceGroupDeviceCreateInfo deviceGroupInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO,	//stype
+			DE_NULL,											//pNext
+			res.physicalDeviceCount,							//physicalDeviceCount
+			res.physicalDevices.data()							//physicalDevices
+		};
+
+		const VkDeviceCreateInfo			deviceGroupCreateInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+			&deviceGroupInfo,
+			(VkDeviceCreateFlags)0,
+			DE_LENGTH_OF_ARRAY(queues),
+			queues,
+			0u,													// enabledLayerNameCount
+			DE_NULL,											// ppEnabledLayerNames
+			0u,													// enabledExtensionNameCount
+			DE_NULL,											// ppEnabledExtensionNames
+			DE_NULL,											// pEnabledFeatures
+		};
+
+		return createDevice(res.vki, res.physicalDevices[params.deviceIndex], &deviceGroupCreateInfo, env.allocationCallbacks);
 	}
 };
 
@@ -2313,10 +2449,13 @@ private:
 template<typename Object>
 tcu::TestStatus multithreadedCreateSharedResourcesTest (Context& context, typename Object::Parameters params)
 {
+	TestLog&							log			= context.getTestContext().getLog();
 	const deUint32						numThreads	= getDefaultTestThreadCount();
 	const Environment					env			(context, numThreads);
 	const typename Object::Resources	res			(env, params);
 	ThreadGroup							threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 		threads.add(MovePtr<ThreadGroupThread>(new CreateThread<Object>(env, res, params)));
@@ -2329,10 +2468,13 @@ tcu::TestStatus multithreadedCreatePerThreadResourcesTest (Context& context, typ
 {
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
 
+	TestLog&			log			= context.getTestContext().getLog();
 	const deUint32		numThreads	= getDefaultTestThreadCount();
 	const Environment	env			(context, 1u);
 	vector<ResPtr>		resources	(numThreads);
 	ThreadGroup			threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 	{
@@ -2354,7 +2496,7 @@ struct EnvClone
 		: deviceRes	(parent, deviceParams)
 		, device	(Device::create(parent, deviceRes, deviceParams))
 		, vkd		(deviceRes.vki, *device)
-		, env		(parent.vkp, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers)
+		, env		(parent.vkp, parent.apiVersion, vkd, *device, deviceRes.queueFamilyIndex, parent.programBinaries, parent.allocationCallbacks, maxResourceConsumers)
 	{
 	}
 };
@@ -2371,12 +2513,15 @@ tcu::TestStatus multithreadedCreatePerThreadDeviceTest (Context& context, typena
 	typedef SharedPtr<EnvClone>						EnvPtr;
 	typedef SharedPtr<typename Object::Resources>	ResPtr;
 
+	TestLog&					log				= context.getTestContext().getLog();
 	const deUint32				numThreads		= getDefaultTestThreadCount();
 	const Device::Parameters	deviceParams	= getDefaulDeviceParameters(context);
 	const Environment			sharedEnv		(context, numThreads);			// For creating Device's
 	vector<EnvPtr>				perThreadEnv	(numThreads);
 	vector<ResPtr>				resources		(numThreads);
 	ThreadGroup					threads;
+
+	log << TestLog::Message << "numThreads = " << numThreads << TestLog::EndMessage;
 
 	for (deUint32 ndx = 0; ndx < numThreads; ndx++)
 	{
@@ -2402,6 +2547,7 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 
 	// Root environment still uses default instance and device, created without callbacks
 	const Environment					rootEnv			(context.getPlatformInterface(),
+														 context.getUsedApiVersion(),
 														 context.getDeviceInterface(),
 														 context.getDevice(),
 														 context.getUniversalQueueFamilyIndex(),
@@ -2417,6 +2563,7 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 		// Supply a separate callback recorder just for object construction
 		AllocationCallbackRecorder			objCallbacks(getSystemAllocator(), 128);
 		const Environment					objEnv		(resEnv.env.vkp,
+														 resEnv.env.apiVersion,
 														 resEnv.env.vkd,
 														 resEnv.env.device,
 														 resEnv.env.queueFamilyIndex,
@@ -2451,6 +2598,7 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 {
 	AllocationCallbackRecorder			resCallbacks		(getSystemAllocator(), 128);
 	const Environment					rootEnv				(context.getPlatformInterface(),
+															 context.getUsedApiVersion(),
 															 context.getDeviceInterface(),
 															 context.getDevice(),
 															 context.getUniversalQueueFamilyIndex(),
@@ -2473,6 +2621,7 @@ tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parame
 															 numPassingAllocs);
 			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
 			const Environment					objEnv		(resEnv.env.vkp,
+															 resEnv.env.apiVersion,
 															 resEnv.env.vkd,
 															 resEnv.env.device,
 															 resEnv.env.queueFamilyIndex,
@@ -2560,6 +2709,7 @@ tcu::TestStatus allocCallbackFailMultipleObjectsTest (Context& context, typename
 			DeterministicFailAllocator			objAllocator(getSystemAllocator(), DeterministicFailAllocator::MODE_DO_NOT_COUNT, 0);
 			AllocationCallbackRecorder			recorder	(objAllocator.getCallbacks(), 128);
 			const Environment					objEnv		(context.getPlatformInterface(),
+															 context.getUsedApiVersion(),
 															 context.getDeviceInterface(),
 															 context.getDevice(),
 															 context.getUniversalQueueFamilyIndex(),
@@ -2642,6 +2792,7 @@ struct CaseDescriptions
 {
 	CaseDescription<Instance>				instance;
 	CaseDescription<Device>					device;
+	CaseDescription<DeviceGroup>			deviceGroup;
 	CaseDescription<DeviceMemory>			deviceMemory;
 	CaseDescription<Buffer>					buffer;
 	CaseDescription<BufferView>				bufferView;
@@ -2686,6 +2837,7 @@ tcu::TestCaseGroup* createGroup (tcu::TestContext& testCtx, const char* name, co
 
 	addCases			(group, cases.instance);
 	addCases			(group, cases.device);
+	addCases			(group, cases.deviceGroup);
 	addCases			(group, cases.deviceMemory);
 	addCases			(group, cases.buffer);
 	addCases			(group, cases.bufferView);
@@ -2732,14 +2884,18 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 
 	const DescriptorSetLayout::Parameters	singleUboDescLayout	= DescriptorSetLayout::Parameters::single(0u, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u, VK_SHADER_STAGE_VERTEX_BIT);
 
-	static NamedParameters<Instance>				s_instanceCases[]			=
+	static const NamedParameters<Instance>				s_instanceCases[]				=
 	{
 		{ "instance",					Instance::Parameters() },
 	};
 	// \note Device index may change - must not be static
-	const NamedParameters<Device>					s_deviceCases[]				=
+	const NamedParameters<Device>						s_deviceCases[]					=
 	{
 		{ "device",						Device::Parameters(testCtx.getCommandLine().getVKDeviceId()-1u, VK_QUEUE_GRAPHICS_BIT)	},
+	};
+	const NamedParameters<DeviceGroup>					s_deviceGroupCases[]			=
+	{
+		{ "device_group",				DeviceGroup::Parameters(testCtx.getCommandLine().getVKDeviceGroupId() - 1u, testCtx.getCommandLine().getVKDeviceId() - 1u, VK_QUEUE_GRAPHICS_BIT) },
 	};
 	static const NamedParameters<DeviceMemory>			s_deviceMemCases[]				=
 	{
@@ -2848,10 +3004,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 		{ "command_buffer_secondary",	CommandBuffer::Parameters(CommandPool::Parameters((VkCommandPoolCreateFlags)0u), VK_COMMAND_BUFFER_LEVEL_SECONDARY)	}
 	};
 
-	static const CaseDescriptions	s_createSingleGroup	=
+	const CaseDescriptions	s_createSingleGroup	=
 	{
 		CASE_DESC(createSingleTest	<Instance>,					s_instanceCases),
 		CASE_DESC(createSingleTest	<Device>,					s_deviceCases),
+		CASE_DESC(createSingleTest	<DeviceGroup>,				s_deviceGroupCases),
 		CASE_DESC(createSingleTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(createSingleTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(createSingleTest	<BufferView>,				s_bufferViewCases),
@@ -2877,10 +3034,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "single", "Create single object", s_createSingleGroup));
 
-	static const CaseDescriptions	s_createMultipleUniqueResourcesGroup	=
+	const CaseDescriptions	s_createMultipleUniqueResourcesGroup	=
 	{
 		CASE_DESC(createMultipleUniqueResourcesTest	<Instance>,					s_instanceCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<Device>,					s_deviceCases),
+		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceGroup>,				s_deviceGroupCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(createMultipleUniqueResourcesTest	<BufferView>,				s_bufferViewCases),
@@ -2906,10 +3064,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multiple_unique_resources", "Multiple objects with per-object unique resources", s_createMultipleUniqueResourcesGroup));
 
-	static const CaseDescriptions	s_createMultipleSharedResourcesGroup	=
+	const CaseDescriptions	s_createMultipleSharedResourcesGroup	=
 	{
 		EMPTY_CASE_DESC(Instance), // No resources used
 		CASE_DESC(createMultipleSharedResourcesTest	<Device>,					s_deviceCases),
+		CASE_DESC(createMultipleSharedResourcesTest	<DeviceGroup>,				s_deviceGroupCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(createMultipleSharedResourcesTest	<BufferView>,				s_bufferViewCases),
@@ -2935,10 +3094,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multiple_shared_resources", "Multiple objects with shared resources", s_createMultipleSharedResourcesGroup));
 
-	static const CaseDescriptions	s_createMaxConcurrentGroup	=
+	const CaseDescriptions	s_createMaxConcurrentGroup	=
 	{
 		CASE_DESC(createMaxConcurrentTest	<Instance>,					s_instanceCases),
 		CASE_DESC(createMaxConcurrentTest	<Device>,					s_deviceCases),
+		CASE_DESC(createMaxConcurrentTest	<DeviceGroup>,				s_deviceGroupCases),
 		CASE_DESC(createMaxConcurrentTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(createMaxConcurrentTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(createMaxConcurrentTest	<BufferView>,				s_bufferViewCases),
@@ -2964,10 +3124,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "max_concurrent", "Maximum number of concurrently live objects", s_createMaxConcurrentGroup));
 
-	static const CaseDescriptions	s_multithreadedCreatePerThreadDeviceGroup	=
+	const CaseDescriptions	s_multithreadedCreatePerThreadDeviceGroup	=
 	{
-		EMPTY_CASE_DESC(Instance),	// Does not make sense
-		EMPTY_CASE_DESC(Device),	// Does not make sense
+		EMPTY_CASE_DESC(Instance),		// Does not make sense
+		EMPTY_CASE_DESC(Device),		// Does not make sense
+		EMPTY_CASE_DESC(DeviceGroup),	// Does not make sense
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(multithreadedCreatePerThreadDeviceTest	<BufferView>,				s_bufferViewCases),
@@ -2993,10 +3154,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_device", "Multithreaded object construction with per-thread device ", s_multithreadedCreatePerThreadDeviceGroup));
 
-	static const CaseDescriptions	s_multithreadedCreatePerThreadResourcesGroup	=
+	const CaseDescriptions	s_multithreadedCreatePerThreadResourcesGroup	=
 	{
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Instance>,					s_instanceCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Device>,					s_deviceCases),
+		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DeviceGroup>,				s_deviceGroupCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(multithreadedCreatePerThreadResourcesTest	<BufferView>,				s_bufferViewCases),
@@ -3022,10 +3184,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_per_thread_resources", "Multithreaded object construction with per-thread resources", s_multithreadedCreatePerThreadResourcesGroup));
 
-	static const CaseDescriptions	s_multithreadedCreateSharedResourcesGroup	=
+	const CaseDescriptions	s_multithreadedCreateSharedResourcesGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Device>,					s_deviceCases),
+		CASE_DESC(multithreadedCreateSharedResourcesTest	<DeviceGroup>,				s_deviceGroupCases),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(multithreadedCreateSharedResourcesTest	<BufferView>,				s_bufferViewCases),
@@ -3051,10 +3214,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	};
 	objectMgmtTests->addChild(createGroup(testCtx, "multithreaded_shared_resources", "Multithreaded object construction with shared resources", s_multithreadedCreateSharedResourcesGroup));
 
-	static const CaseDescriptions	s_createSingleAllocCallbacksGroup	=
+	const CaseDescriptions	s_createSingleAllocCallbacksGroup	=
 	{
 		CASE_DESC(createSingleAllocCallbacksTest	<Instance>,					s_instanceCases),
 		CASE_DESC(createSingleAllocCallbacksTest	<Device>,					s_deviceCases),
+		CASE_DESC(createSingleAllocCallbacksTest	<DeviceGroup>,				s_deviceGroupCases),
 		CASE_DESC(createSingleAllocCallbacksTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(createSingleAllocCallbacksTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(createSingleAllocCallbacksTest	<BufferView>,				s_bufferViewCases),
@@ -3081,10 +3245,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	objectMgmtTests->addChild(createGroup(testCtx, "single_alloc_callbacks", "Create single object", s_createSingleAllocCallbacksGroup));
 
 	// \note Skip pooled objects in this test group. They are properly handled by the "multiple" group farther down below.
-	static const CaseDescriptions	s_allocCallbackFailGroup	=
+	const CaseDescriptions	s_allocCallbackFailGroup	=
 	{
 		CASE_DESC(allocCallbackFailTest	<Instance>,					s_instanceCases),
 		CASE_DESC(allocCallbackFailTest	<Device>,					s_deviceCases),
+		CASE_DESC(allocCallbackFailTest	<DeviceGroup>,				s_deviceGroupCases),
 		CASE_DESC(allocCallbackFailTest	<DeviceMemory>,				s_deviceMemCases),
 		CASE_DESC(allocCallbackFailTest	<Buffer>,					s_bufferCases),
 		CASE_DESC(allocCallbackFailTest	<BufferView>,				s_bufferViewCases),
@@ -3111,10 +3276,11 @@ tcu::TestCaseGroup* createObjectManagementTests (tcu::TestContext& testCtx)
 	objectMgmtTests->addChild(createGroup(testCtx, "alloc_callback_fail", "Allocation callback failure", s_allocCallbackFailGroup));
 
 	// \note Test objects that can be created in bulk
-	static const CaseDescriptions	s_allocCallbackFailMultipleObjectsGroup	=
+	const CaseDescriptions	s_allocCallbackFailMultipleObjectsGroup	=
 	{
 		EMPTY_CASE_DESC(Instance),			// most objects can be created one at a time only
 		EMPTY_CASE_DESC(Device),
+		EMPTY_CASE_DESC(DeviceGroup),
 		EMPTY_CASE_DESC(DeviceMemory),
 		EMPTY_CASE_DESC(Buffer),
 		EMPTY_CASE_DESC(BufferView),

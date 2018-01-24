@@ -627,20 +627,6 @@ tcu::Matrix<T, Rows, Cols> matrixCompMult (const tcu::Matrix<T, Rows, Cols>& a, 
 	return retVal;
 }
 
-// transpose
-
-template <typename T, int Rows, int Cols>
-tcu::Matrix<T, Cols, Rows> transpose (const tcu::Matrix<T, Rows, Cols>& mat)
-{
-	tcu::Matrix<T, Cols, Rows> retVal;
-
-	for (int r = 0; r < Rows; ++r)
-		for (int c = 0; c < Cols; ++c)
-			retVal(c, r) = mat(r, c);
-
-	return retVal;
-}
-
 // outerProduct
 
 template <typename T, int Rows, int Cols>
@@ -1425,7 +1411,7 @@ ShaderMatrixInstance::ShaderMatrixInstance (Context&				context,
 											const ShaderInput		in0,
 											const ShaderInput		in1,
 											const MatrixOp			op)
-	: ShaderRenderCaseInstance	(context, isVertex, evaluator, DE_NULL, DE_NULL)
+	: ShaderRenderCaseInstance	(context, isVertex, evaluator, DE_NULL, DE_NULL, IMAGE_BACKING_MODE_REGULAR, isVertex && op == OP_INVERSE ? 64 : GRID_SIZE_DEFAULTS)
 	, m_in0						(in0)
 	, m_in1						(in1)
 	, m_op						(op)

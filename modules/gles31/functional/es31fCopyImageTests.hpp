@@ -30,8 +30,6 @@ namespace deqp
 {
 namespace gles31
 {
-class TestCaseGroup;
-class Context;
 
 namespace Functional
 {

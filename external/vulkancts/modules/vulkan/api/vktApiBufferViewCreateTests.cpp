@@ -1,4 +1,4 @@
-/*------------------------------------------------------------------------
+/*-------------------------------------------------------------------------
  *  Vulkan Conformance Tests
  * ------------------------
  *
@@ -23,7 +23,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktApiBufferViewCreateTests.hpp"
-
 #include "deStringUtil.hpp"
 #include "deSharedPtr.hpp"
 #include "gluVarType.hpp"
@@ -31,6 +30,7 @@
 #include "vkPrograms.hpp"
 #include "vkRefUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vkQueryUtil.hpp"
 
 namespace vkt
 {
@@ -45,9 +45,10 @@ namespace
 
 enum AllocationKind
 {
-	ALLOCATION_KIND_SUBALLOCATION										= 0,
-	ALLOCATION_KIND_DEDICATED											= 1,
-	ALLOCATION_KIND_LAST
+	ALLOCATION_KIND_SUBALLOCATED = 0,
+	ALLOCATION_KIND_DEDICATED,
+
+	ALLOCATION_KIND_LAST,
 };
 
 class IBufferAllocator;
@@ -196,7 +197,7 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 																		 Move<VkDeviceMemory>&		memory) const
 {
 	const std::vector<std::string>&		extensions						= context.getDeviceExtensions();
-	const deBool						isSupported						= std::find(extensions.begin(), extensions.end(), "VK_KHR_dedicated_allocation") != extensions.end();
+	const deBool						isSupported						= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
 	if (!isSupported)
 		TCU_THROW(NotSupportedError, "Not supported");
 
@@ -206,16 +207,16 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 	const DeviceInterface&				vk								= context.getDeviceInterface();
 	const deUint32						queueFamilyIndex				= context.getUniversalQueueFamilyIndex();
 	VkPhysicalDeviceMemoryProperties	memoryProperties;
-	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements			=
+	VkMemoryDedicatedRequirements		dedicatedRequirements			=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,			// VkStructureType		sType;
+		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,				// VkStructureType		sType;
 		DE_NULL,														// const void*			pNext;
 		false,															// VkBool32				prefersDedicatedAllocation
 		false															// VkBool32				requiresDedicatedAllocation
 	};
-	VkMemoryRequirements2KHR			memReqs							=
+	VkMemoryRequirements2				memReqs							=
 	{
-		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,					// VkStructureType		sType
+		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,						// VkStructureType		sType
 		&dedicatedRequirements,											// void*				pNext
 		{0, 0, 0}														// VkMemoryRequirements	memoryRequirements
 	};
@@ -241,14 +242,14 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 		return tcu::TestStatus::fail("Buffer creation failed! (Error code: " + de::toString(error.getMessage()) + ")");
 	}
 
-	VkBufferMemoryRequirementsInfo2KHR	info							=
+	VkBufferMemoryRequirementsInfo2	info								=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,		// VkStructureType		sType
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,			// VkStructureType		sType
 		DE_NULL,														// const void*			pNext
 		*testBuffer														// VkBuffer				buffer
 	};
 
-	vk.getBufferMemoryRequirements2KHR(vkDevice, &info, &memReqs);
+	vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);
 
 	if (dedicatedRequirements.requiresDedicatedAllocation == VK_TRUE)
 	{
@@ -268,10 +269,8 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 	vkInstance.getPhysicalDeviceMemoryProperties(vkPhysicalDevice, &memoryProperties);
 
 	const deUint32						heapTypeIndex					= static_cast<deUint32>(deCtz32(memReqs.memoryRequirements.memoryTypeBits));
-	//const VkMemoryType					memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
-	//const VkMemoryHeap					memoryHeap						= memoryProperties.memoryHeaps[memoryType.heapIndex];
 
-	vk.getBufferMemoryRequirements2KHR(vkDevice, &info, &memReqs); // get the proper size requirement
+	vk.getBufferMemoryRequirements2(vkDevice, &info, &memReqs);			// get the proper size requirement
 
 	if (size > memReqs.memoryRequirements.size)
 	{
@@ -284,10 +283,10 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 		VkResult						result							= VK_ERROR_OUT_OF_HOST_MEMORY;
 		VkDeviceMemory					rawMemory						= DE_NULL;
 
-		vk::VkMemoryDedicatedAllocateInfoKHR
+		vk::VkMemoryDedicatedAllocateInfo
 										dedicatedInfo					=
 		{
-			VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,		// VkStructureType			sType
+			VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,			// VkStructureType			sType
 			DE_NULL,													// const void*				pNext
 			DE_NULL,													// VkImage					image
 			*testBuffer													// VkBuffer					buffer
@@ -395,9 +394,9 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
  tcu::TestCaseGroup* createBufferViewCreateTests						(tcu::TestContext& testCtx)
 {
 	const VkDeviceSize					range							= VK_WHOLE_SIZE;
-	const vk::VkBufferUsageFlagBits		usage[]							= { vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT };
-	const vk::VkFormatFeatureFlagBits	feature[]						= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
-	const char* const					usageName[]						= { "_uniform", "_storage"};
+	const vk::VkBufferUsageFlags		usage[]							= { vk::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT };
+	const vk::VkFormatFeatureFlags		feature[]						= { vk::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT, vk::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT };
+	const char* const					usageName[]						= { "uniform", "storage"};
 
 	de::MovePtr<tcu::TestCaseGroup>		bufferViewTests					(new tcu::TestCaseGroup(testCtx, "create", "BufferView Construction Tests"));
 
@@ -412,25 +411,34 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	};
 
 	for (deUint32 allocationKind = 0; allocationKind < ALLOCATION_KIND_LAST; ++allocationKind)
-	for (deUint32 format = vk::VK_FORMAT_UNDEFINED + 1; format < VK_CORE_FORMAT_LAST; format++)
 	for (deUint32 usageNdx = 0; usageNdx < DE_LENGTH_OF_ARRAY(usage); ++usageNdx)
 	{
-		std::ostringstream				testName;
-		std::ostringstream				testDescription;
-		testName << "create_buffer_view_" << format << usageName[usageNdx];
-		testDescription << "vkBufferView test " << testName.str();
+		de::MovePtr<tcu::TestCaseGroup>	usageGroup		(new tcu::TestCaseGroup(testCtx, usageName[usageNdx], ""));
+
+		for (deUint32 format = vk::VK_FORMAT_UNDEFINED + 1; format < VK_CORE_FORMAT_LAST; format++)
 		{
-			BufferViewCaseParameters	testParams						=
+			const std::string			formatName						= de::toLower(getFormatName((VkFormat)format)).substr(10);
+			de::MovePtr<tcu::TestCaseGroup>	formatGroup		(new tcu::TestCaseGroup(testCtx, "suballocation", "BufferView Construction Tests for Suballocated Buffer"));
+
+			const std::string			testName						= de::toLower(getFormatName((VkFormat)format)).substr(10);
+			const std::string			testDescription					= "vkBufferView test " + testName;
+
 			{
-				static_cast<vk::VkFormat>(format),						// VkFormat					format;
-				0,														// VkDeviceSize				offset;
-				range,													// VkDeviceSize				range;
-				usage[usageNdx],										// VkBufferUsageFlags		usage;
-				feature[usageNdx],										// VkFormatFeatureFlags		flags;
-				static_cast<AllocationKind>(allocationKind)				// AllocationKind			bufferAllocationKind;
-			};
-			bufferViewAllocationGroupTests[allocationKind]->addChild(new BufferViewTestCase(testCtx, testName.str(), testDescription.str(), testParams));
+				const BufferViewCaseParameters
+										testParams						=
+				{
+					static_cast<vk::VkFormat>(format),					// VkFormat					format;
+					0,													// VkDeviceSize				offset;
+					range,												// VkDeviceSize				range;
+					usage[usageNdx],									// VkBufferUsageFlags		usage;
+					feature[usageNdx],									// VkFormatFeatureFlags		flags;
+					static_cast<AllocationKind>(allocationKind)			// AllocationKind			bufferAllocationKind;
+				};
+
+				usageGroup->addChild(new BufferViewTestCase(testCtx, testName.c_str(), testDescription.c_str(), testParams));
+			}
 		}
+		bufferViewAllocationGroupTests[allocationKind]->addChild(usageGroup.release());
 	}
 
 	for (deUint32 subgroupNdx = 0u; subgroupNdx < DE_LENGTH_OF_ARRAY(bufferViewAllocationGroupTests); ++subgroupNdx)

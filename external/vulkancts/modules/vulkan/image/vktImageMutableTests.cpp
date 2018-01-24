@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktImageMutableTests.hpp"
+#include "vktImageLoadStoreUtil.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktImageTexture.hpp"
 
@@ -108,7 +109,7 @@ static const deUint32 COLOR_TABLE_SIZE = 4;
 static const Vec4	COLOR_TABLE_FLOAT[COLOR_TABLE_SIZE]	=
 {
 	Vec4(0.00f, 0.40f, 0.80f, 0.10f),
-	Vec4(0.10f, 0.50f, 0.90f, 0.20f),
+	Vec4(0.50f, 0.10f, 0.90f, 0.20f),
 	Vec4(0.20f, 0.60f, 1.00f, 0.30f),
 	Vec4(0.30f, 0.70f, 0.00f, 0.40f),
 };
@@ -949,7 +950,7 @@ class UploadDownloadExecutor
 public:
 	UploadDownloadExecutor(Context &context, const CaseDef& caseSpec) :
 	m_caseDef(caseSpec),
-	m_haveMaintenance2(de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2")),
+	m_haveMaintenance2(isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2")),
 	m_vk(context.getDeviceInterface()),
 	m_device(context.getDevice()),
 	m_queue(context.getUniversalQueue()),
@@ -1161,7 +1162,8 @@ void UploadDownloadExecutor::uploadClear(Context& context)
 
 void UploadDownloadExecutor::uploadStore(Context& context)
 {
-	const vk::VkImageViewUsageCreateInfoKHR viewUsageCreateInfo = {
+	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo =
+	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_STORAGE_BIT,							// VkImageUsageFlags	usage;
@@ -1338,7 +1340,8 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 
 	for (deUint32 subpassNdx = 0; subpassNdx < m_caseDef.numLayers; ++subpassNdx)
 	{
-		const vk::VkImageViewUsageCreateInfoKHR viewUsageCreateInfo = {
+		const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo =
+		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
 			DE_NULL,											// const void*			pNext
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,				// VkImageUsageFlags	usage;
@@ -1416,7 +1419,8 @@ void UploadDownloadExecutor::downloadTexture(Context& context, VkBuffer buffer)
 	m_dTex.outImageAlloc				= bindImage(m_vk, m_device, m_allocator, *m_dTex.outImage, MemoryRequirement::Any);
 	m_dTex.outImageView					= makeImageView(m_vk, m_device, *m_dTex.outImage, getImageViewType(m_caseDef.imageType), m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers));
 
-	const vk::VkImageViewUsageCreateInfoKHR viewUsageCreateInfo = {
+	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo =
+	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_SAMPLED_BIT,							// VkImageUsageFlags	usage;
@@ -1497,7 +1501,8 @@ void UploadDownloadExecutor::downloadLoad(Context& context, VkBuffer buffer)
 	m_dLoad.outImageAlloc				= bindImage(m_vk, m_device, m_allocator, *m_dLoad.outImage, MemoryRequirement::Any);
 	m_dLoad.outImageView				= makeImageView(m_vk, m_device, *m_dLoad.outImage, getImageViewType(m_caseDef.imageType), m_caseDef.viewFormat, makeColorSubresourceRange(0, m_caseDef.numLayers));
 
-	const vk::VkImageViewUsageCreateInfoKHR viewUsageCreateInfo = {
+	const vk::VkImageViewUsageCreateInfo viewUsageCreateInfo =
+	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
 		VK_IMAGE_USAGE_STORAGE_BIT,							// VkImageUsageFlags	usage;
@@ -1631,40 +1636,6 @@ void UploadDownloadExecutor::copyImageToBuffer(VkImage				sourceImage,
 		0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 }
 
-bool isStorageImageExtendedFormat (const VkFormat format)
-{
-	switch (format)
-	{
-		case VK_FORMAT_R32G32_SFLOAT:
-		case VK_FORMAT_R32G32_SINT:
-		case VK_FORMAT_R32G32_UINT:
-		case VK_FORMAT_R16G16B16A16_UNORM:
-		case VK_FORMAT_R16G16B16A16_SNORM:
-		case VK_FORMAT_R16G16_SFLOAT:
-		case VK_FORMAT_R16G16_UNORM:
-		case VK_FORMAT_R16G16_SNORM:
-		case VK_FORMAT_R16G16_SINT:
-		case VK_FORMAT_R16G16_UINT:
-		case VK_FORMAT_R16_SFLOAT:
-		case VK_FORMAT_R16_UNORM:
-		case VK_FORMAT_R16_SNORM:
-		case VK_FORMAT_R16_SINT:
-		case VK_FORMAT_R16_UINT:
-		case VK_FORMAT_R8G8_UNORM:
-		case VK_FORMAT_R8G8_SNORM:
-		case VK_FORMAT_R8G8_SINT:
-		case VK_FORMAT_R8G8_UINT:
-		case VK_FORMAT_R8_UNORM:
-		case VK_FORMAT_R8_SNORM:
-		case VK_FORMAT_R8_SINT:
-		case VK_FORMAT_R8_UINT:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
 tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 {
 	const DeviceInterface&			vk			= context.getDeviceInterface();
@@ -1727,7 +1698,7 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	// is not supported by the main format.  With VK_KHR_maintenance2, we
 	// can do this via VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR.
 	if ((imageFormatProps.optimalTilingFeatures & viewFormatFeatureFlags) != viewFormatFeatureFlags &&
-	    !de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2"))
+		 !isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 	{
 		TCU_THROW(NotSupportedError, "Image format doesn't support upload/download method");
 	}

@@ -25,7 +25,6 @@
 #include "gluRenderContext.hpp"
 #include "gluRenderConfig.hpp"
 #include "gluFboRenderContext.hpp"
-#include "gluES3PlusWrapperContext.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDummyRenderContext.hpp"
 #include "tcuCommandLine.hpp"
@@ -43,7 +42,12 @@ Context::Context (tcu::TestContext& testCtx)
 	if (m_testCtx.getCommandLine().getRunMode() == tcu::RUNMODE_EXECUTE)
 		createRenderContext();
 	else
-		m_renderCtx = new glu::DummyRenderContext();
+	{
+		// \todo [2016-11-15 pyry] Many tests (erroneously) inspect context type
+		//						   during test hierarchy construction. We should fix that
+		//						   and revert dummy context to advertise unknown context type.
+		m_renderCtx = new glu::DummyRenderContext(glu::ContextType(glu::ApiType::es(3,1)));
+	}
 }
 
 Context::~Context (void)

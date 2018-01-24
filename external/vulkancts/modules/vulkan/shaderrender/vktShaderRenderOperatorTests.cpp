@@ -564,7 +564,8 @@ ShaderOperatorCaseInstance::ShaderOperatorCaseInstance (Context&				context,
 														const ShaderEvaluator&	evaluator,
 														const UniformSetup&		uniformSetup,
 														const ShaderDataSpec	spec)
-	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL)
+	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL, IMAGE_BACKING_MODE_REGULAR,
+								(isVertexCase ? 92 : GRID_SIZE_DEFAULT_FRAGMENT))
 	, m_spec					(spec)
 {
 	// Setup the user attributes.

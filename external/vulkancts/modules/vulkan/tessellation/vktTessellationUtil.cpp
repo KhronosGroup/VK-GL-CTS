@@ -591,11 +591,11 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		VK_FALSE,														// VkBool32                                    primitiveRestartEnable;
 	};
 
-	const VkPipelineTessellationDomainOriginStateCreateInfoKHR tessellationDomainOriginStateInfo =
+	const VkPipelineTessellationDomainOriginStateCreateInfo tessellationDomainOriginStateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO,
 		DE_NULL,
-		(!m_tessellationDomainOrigin ? VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR : *m_tessellationDomainOrigin)
+		(!m_tessellationDomainOrigin ? VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT : *m_tessellationDomainOrigin)
 	};
 	const VkPipelineTessellationStateCreateInfo pipelineTessellationStateInfo =
 	{
@@ -710,7 +710,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 	};
 
 	std::vector<VkDynamicState> dynamicStates;
-	if (!haveRenderSize)
+	if (!haveRenderSize && !isRasterizationDisabled)
 	{
 		dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
@@ -740,7 +740,7 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		(isRasterizationDisabled ? DE_NULL : &pipelineMultisampleStateInfo),	// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
 		(isRasterizationDisabled ? DE_NULL : &pipelineDepthStencilStateInfo),	// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
 		(isRasterizationDisabled ? DE_NULL : &pipelineColorBlendStateInfo),		// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		&pipelineDynamicStateInfo,												// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		(dynamicStates.empty() ? DE_NULL : &pipelineDynamicStateInfo),			// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
 		pipelineLayout,															// VkPipelineLayout									layout;
 		renderPass,																// VkRenderPass										renderPass;
 		0u,																		// deUint32											subpass;

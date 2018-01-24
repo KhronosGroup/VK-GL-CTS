@@ -12,7 +12,6 @@ set(DEQP_VK_UBO_SRCS
 )
 
 set(DEQP_VK_UBO_LIBS
-	deqp-vk-common
 	tcutil
 	vkutil
 )

@@ -29,7 +29,7 @@ set(DEBASE_SRCS
 add_library(debase STATIC ${DEBASE_SRCS})
 
 # link debase to libm on unix systems
-if (DE_OS_IS_UNIX)
+if (DE_OS_IS_UNIX OR DE_OS_IS_QNX)
 	target_link_libraries(debase m)
 
 	add_definitions(-D_XOPEN_SOURCE=600)

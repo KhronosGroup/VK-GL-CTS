@@ -6,10 +6,10 @@
 
 EGLint eglwClientWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags, EGLTimeKHR timeout)
 {
-									const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLint)0;
-		return egl->clientWaitSyncKHR(dpy, sync, flags, timeout);
+	return egl->clientWaitSyncKHR(dpy, sync, flags, timeout);
 }
 
 EGLImageKHR eglwCreateImageKHR (EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list)
@@ -38,7 +38,7 @@ EGLSurface eglwCreatePlatformWindowSurfaceEXT (EGLDisplay dpy, EGLConfig config,
 
 EGLSyncKHR eglwCreateSyncKHR (EGLDisplay dpy, EGLenum type, const EGLint *attrib_list)
 {
-												const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLSyncKHR)0;
 	return egl->createSyncKHR(dpy, type, attrib_list);
@@ -46,7 +46,7 @@ EGLSyncKHR eglwCreateSyncKHR (EGLDisplay dpy, EGLenum type, const EGLint *attrib
 
 EGLBoolean eglwDestroyImageKHR (EGLDisplay dpy, EGLImageKHR image)
 {
-																	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLBoolean)0;
 	return egl->destroyImageKHR(dpy, image);
@@ -54,7 +54,7 @@ EGLBoolean eglwDestroyImageKHR (EGLDisplay dpy, EGLImageKHR image)
 
 EGLBoolean eglwDestroySyncKHR (EGLDisplay dpy, EGLSyncKHR sync)
 {
-																		const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLBoolean)0;
 	return egl->destroySyncKHR(dpy, sync);
@@ -62,7 +62,7 @@ EGLBoolean eglwDestroySyncKHR (EGLDisplay dpy, EGLSyncKHR sync)
 
 EGLDisplay eglwGetPlatformDisplayEXT (EGLenum platform, void *native_display, const EGLint *attrib_list)
 {
-							const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLDisplay)0;
 	return egl->getPlatformDisplayEXT(platform, native_display, attrib_list);
@@ -70,7 +70,7 @@ EGLDisplay eglwGetPlatformDisplayEXT (EGLenum platform, void *native_display, co
 
 EGLBoolean eglwGetSyncAttribKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint attribute, EGLint *value)
 {
-									const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLBoolean)0;
 	return egl->getSyncAttribKHR(dpy, sync, attribute, value);
@@ -78,7 +78,7 @@ EGLBoolean eglwGetSyncAttribKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint attribu
 
 EGLBoolean eglwLockSurfaceKHR (EGLDisplay dpy, EGLSurface surface, const EGLint *attrib_list)
 {
-										const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLBoolean)0;
 	return egl->lockSurfaceKHR(dpy, surface, attrib_list);
@@ -86,7 +86,7 @@ EGLBoolean eglwLockSurfaceKHR (EGLDisplay dpy, EGLSurface surface, const EGLint 
 
 EGLBoolean eglwSetDamageRegionKHR (EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects)
 {
-								const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLBoolean)0;
 	return egl->setDamageRegionKHR(dpy, surface, rects, n_rects);
@@ -94,7 +94,7 @@ EGLBoolean eglwSetDamageRegionKHR (EGLDisplay dpy, EGLSurface surface, EGLint *r
 
 EGLBoolean eglwSignalSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLenum mode)
 {
-														const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLBoolean)0;
 	return egl->signalSyncKHR(dpy, sync, mode);
@@ -102,7 +102,7 @@ EGLBoolean eglwSignalSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLenum mode)
 
 EGLBoolean eglwSwapBuffersWithDamageKHR (EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects)
 {
-							const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLBoolean)0;
 	return egl->swapBuffersWithDamageKHR(dpy, surface, rects, n_rects);
@@ -110,7 +110,7 @@ EGLBoolean eglwSwapBuffersWithDamageKHR (EGLDisplay dpy, EGLSurface surface, EGL
 
 EGLBoolean eglwUnlockSurfaceKHR (EGLDisplay dpy, EGLSurface surface)
 {
-																const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLBoolean)0;
 	return egl->unlockSurfaceKHR(dpy, surface);
@@ -118,8 +118,8 @@ EGLBoolean eglwUnlockSurfaceKHR (EGLDisplay dpy, EGLSurface surface)
 
 EGLint eglwWaitSyncKHR (EGLDisplay dpy, EGLSyncKHR sync, EGLint flags)
 {
-																const eglw::Library* egl = eglw::getCurrentThreadLibrary();
+	const eglw::Library* egl = eglw::getCurrentThreadLibrary();
 	if (!egl)
 		return (EGLint)0;
-		return egl->waitSyncKHR(dpy, sync, flags);
+	return egl->waitSyncKHR(dpy, sync, flags);
 }

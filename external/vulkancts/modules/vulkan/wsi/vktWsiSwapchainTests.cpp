@@ -87,6 +87,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 }
 
 Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
+										deUint32						version,
 										const Extensions&				supportedExtensions,
 										Type							wsiType,
 										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
@@ -111,7 +112,7 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 
 	checkAllSupported(supportedExtensions, extensions);
 
-	return createDefaultInstance(vkp, vector<string>(), extensions, pAllocator);
+	return vk::createDefaultInstance(vkp, version, vector<string>(), extensions, pAllocator);
 }
 
 VkPhysicalDeviceFeatures getDeviceFeaturesForWsi (void)
@@ -207,6 +208,7 @@ struct InstanceHelper
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
+													   context.getUsedApiVersion(),
 													   supportedExtensions,
 													   wsiType,
 													   pAllocator))
@@ -1398,7 +1400,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 																		  *swapchain,
 																		  std::numeric_limits<deUint64>::max(),
 																		  imageReadySemaphore,
-																		  imageReadyFence,
+																		  (VkFence)0,
 																		  &imageNdx);
 
 				if (acquireResult == VK_SUBOPTIMAL_KHR)
@@ -1438,7 +1440,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 				};
 
 				renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
-				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, (VkFence)0));
+				VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, imageReadyFence));
 				VK_CHECK(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
 			}
 		}
