@@ -393,6 +393,8 @@ void NegativeBufferApiTests::init (void)
 			expectError(GL_INVALID_ENUM);
 			glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, 1, 1);
 			expectError(GL_INVALID_ENUM);
+			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1, 1);
+			expectError(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if width or height is less than zero.");
