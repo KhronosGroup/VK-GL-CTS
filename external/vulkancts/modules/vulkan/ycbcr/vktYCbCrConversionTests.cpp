@@ -61,7 +61,6 @@ using tcu::Vec2;
 using tcu::Vec4;
 
 using tcu::UVec2;
-using tcu::UVec3;
 using tcu::UVec4;
 
 using tcu::IVec2;
@@ -69,7 +68,6 @@ using tcu::IVec3;
 using tcu::IVec4;
 
 using tcu::TestLog;
-using tcu::Interval;
 using tcu::FloatFormat;
 
 using std::vector;
@@ -85,513 +83,6 @@ namespace
 {
 typedef de::SharedPtr<vk::Unique<vk::VkBuffer> > VkBufferSp;
 typedef de::SharedPtr<vk::Allocation> AllocationSp;
-
-// \note Used for range expansion
-UVec4 getBitDepth (vk::VkFormat format)
-{
-	switch (format)
-	{
-		case vk::VK_FORMAT_G8B8G8R8_422_UNORM_KHR:
-		case vk::VK_FORMAT_B8G8R8G8_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR:
-			return UVec4(8, 8, 8, 0);
-
-		case vk::VK_FORMAT_R10X6_UNORM_PACK16_KHR:
-			return UVec4(10, 0, 0, 0);
-
-		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR:
-			return UVec4(10, 10, 0, 0);
-
-		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR:
-			return UVec4(10, 10, 10, 10);
-
-		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR:
-			return UVec4(10, 10, 10, 0);
-
-		case vk::VK_FORMAT_R12X4_UNORM_PACK16_KHR:
-			return UVec4(12, 0, 0, 0);
-
-		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR:
-			return UVec4(12, 12, 0, 0);
-
-		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR:
-			return UVec4(12, 12, 12, 12);
-
-		case vk::VK_FORMAT_G16B16G16R16_422_UNORM_KHR:
-		case vk::VK_FORMAT_B16G16R16G16_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR:
-			return UVec4(16, 16, 16, 0);
-
-		default:
-			return tcu::getTextureFormatBitDepth(vk::mapVkFormat(format)).cast<deUint32>();
-	}
-}
-
-// \note Taken from explicit lod filtering tests
-FloatFormat getFilteringPrecision (vk::VkFormat format)
-{
-	const FloatFormat	reallyLow	(0, 0, 6, false, tcu::YES);
-	const FloatFormat	low			(0, 0, 7, false, tcu::YES);
-	const FloatFormat	fp16		(-14, 15, 10, false);
-	const FloatFormat	fp32		(-126, 127, 23, true);
-
-	switch (format)
-	{
-		case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G6R5_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
-			return reallyLow;
-
-		case vk::VK_FORMAT_R8G8B8_UNORM:
-		case vk::VK_FORMAT_B8G8R8_UNORM:
-		case vk::VK_FORMAT_R8G8B8A8_UNORM:
-		case vk::VK_FORMAT_B8G8R8A8_UNORM:
-		case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-		case vk::VK_FORMAT_G8B8G8R8_422_UNORM_KHR:
-		case vk::VK_FORMAT_B8G8R8G8_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR:
-			return low;
-
-		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
-		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
-		case vk::VK_FORMAT_R16G16B16_UNORM:
-		case vk::VK_FORMAT_R16G16B16A16_UNORM:
-		case vk::VK_FORMAT_R10X6_UNORM_PACK16_KHR:
-		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR:
-		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_R12X4_UNORM_PACK16_KHR:
-		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR:
-		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G16B16G16R16_422_UNORM_KHR:
-		case vk::VK_FORMAT_B16G16R16G16_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR:
-			return fp16;
-
-		default:
-			DE_FATAL("Precision not defined for format");
-			return fp32;
-	}
-}
-
-// \note Taken from explicit lod filtering tests
-FloatFormat getConversionPrecision (vk::VkFormat format)
-{
-	const FloatFormat	reallyLow	(0, 0, 8, false, tcu::YES);
-	const FloatFormat	fp16		(-14, 15, 10, false);
-	const FloatFormat	fp32		(-126, 127, 23, true);
-
-	switch (format)
-	{
-		case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G6R5_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
-			return reallyLow;
-
-		case vk::VK_FORMAT_R8G8B8_UNORM:
-		case vk::VK_FORMAT_B8G8R8_UNORM:
-		case vk::VK_FORMAT_R8G8B8A8_UNORM:
-		case vk::VK_FORMAT_B8G8R8A8_UNORM:
-		case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-		case vk::VK_FORMAT_G8B8G8R8_422_UNORM_KHR:
-		case vk::VK_FORMAT_B8G8R8G8_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR:
-			return reallyLow;
-
-		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
-		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
-		case vk::VK_FORMAT_R16G16B16_UNORM:
-		case vk::VK_FORMAT_R16G16B16A16_UNORM:
-		case vk::VK_FORMAT_R10X6_UNORM_PACK16_KHR:
-		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR:
-		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_R12X4_UNORM_PACK16_KHR:
-		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR:
-		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G16B16G16R16_422_UNORM_KHR:
-		case vk::VK_FORMAT_B16G16R16G16_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR:
-			return fp16;
-
-		default:
-			DE_FATAL("Precision not defined for format");
-			return fp32;
-	}
-}
-
-class ChannelAccess
-{
-public:
-					ChannelAccess	(tcu::TextureChannelClass	channelClass,
-									 deUint8					channelSize,
-									 const IVec3&				size,
-									 const IVec3&				bitPitch,
-									 void*						data,
-									 deUint32					bitOffset);
-
-	const IVec3&	getSize			(void) const { return m_size; }
-	const IVec3&	getBitPitch		(void) const { return m_bitPitch; }
-	void*			getDataPtr		(void) const { return m_data; }
-
-	Interval		getChannel		(const FloatFormat&	conversionFormat,
-									 const IVec3&		pos) const;
-	deUint32		getChannelUint	(const IVec3& pos) const;
-	float			getChannel		(const IVec3& pos) const;
-	void			setChannel		(const IVec3& pos, deUint32 x);
-	void			setChannel		(const IVec3& pos, float x);
-
-private:
-	const tcu::TextureChannelClass	m_channelClass;
-	const deUint8					m_channelSize;
-	const IVec3						m_size;
-	const IVec3						m_bitPitch;
-	void* const						m_data;
-	const deInt32					m_bitOffset;
-
-};
-
-ChannelAccess::ChannelAccess (tcu::TextureChannelClass	channelClass,
-							  deUint8					channelSize,
-							  const IVec3&				size,
-							  const IVec3&				bitPitch,
-							  void*						data,
-							  deUint32					bitOffset)
-	: m_channelClass	(channelClass)
-	, m_channelSize		(channelSize)
-	, m_size			(size)
-	, m_bitPitch		(bitPitch)
-
-	, m_data			((deUint8*)data + (bitOffset / 8))
-	, m_bitOffset		(bitOffset % 8)
-{
-}
-
-//! Extend < 32b signed integer to 32b
-inline deInt32 signExtend (deUint32 src, int bits)
-{
-	const deUint32 signBit = 1u << (bits-1);
-
-	src |= ~((src & signBit) - 1);
-
-	return (deInt32)src;
-}
-
-deUint32 divRoundUp (deUint32 a, deUint32 b)
-{
-	if (a % b == 0)
-		return a / b;
-	else
-		return (a / b) + 1;
-}
-
-deUint32 ChannelAccess::getChannelUint (const IVec3& pos) const
-{
-	DE_ASSERT(pos[0] < m_size[0]);
-	DE_ASSERT(pos[1] < m_size[1]);
-	DE_ASSERT(pos[2] < m_size[2]);
-
-	const deInt32			bitOffset	(m_bitOffset + tcu::dot(m_bitPitch, pos));
-	const deUint8* const	firstByte	= ((const deUint8*)m_data) + (bitOffset / 8);
-	const deUint32			byteCount	= divRoundUp((bitOffset + m_channelSize) - 8u * (bitOffset / 8u), 8u);
-	const deUint32			mask		(m_channelSize == 32u ? ~0x0u : (0x1u << m_channelSize) - 1u);
-	const deUint32			offset		= bitOffset % 8;
-	deUint32				bits		= 0u;
-
-	deMemcpy(&bits, firstByte, byteCount);
-
-	return (bits >> offset) & mask;
-}
-
-void ChannelAccess::setChannel (const IVec3& pos, deUint32 x)
-{
-	DE_ASSERT(pos[0] < m_size[0]);
-	DE_ASSERT(pos[1] < m_size[1]);
-	DE_ASSERT(pos[2] < m_size[2]);
-
-	const deInt32	bitOffset	(m_bitOffset + tcu::dot(m_bitPitch, pos));
-	deUint8* const	firstByte	= ((deUint8*)m_data) + (bitOffset / 8);
-	const deUint32	byteCount	= divRoundUp((bitOffset + m_channelSize) - 8u * (bitOffset / 8u), 8u);
-	const deUint32	mask		(m_channelSize == 32u ? ~0x0u : (0x1u << m_channelSize) - 1u);
-	const deUint32	offset		= bitOffset % 8;
-
-	const deUint32	bits		= (x & mask) << offset;
-	deUint32		oldBits		= 0;
-
-	deMemcpy(&oldBits, firstByte, byteCount);
-
-	{
-		const deUint32	newBits	= bits | (oldBits & (~(mask << offset)));
-
-		deMemcpy(firstByte, &newBits,  byteCount);
-	}
-}
-
-float ChannelAccess::getChannel (const IVec3& pos) const
-{
-	const deUint32	bits	(getChannelUint(pos));
-
-	switch (m_channelClass)
-	{
-		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-			return (float)bits / (float)(m_channelSize == 32 ? ~0x0u : ((0x1u << m_channelSize) - 1u));
-
-		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-			return (float)bits;
-
-		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-			return de::max(-1.0f, (float)signExtend(bits, m_channelSize) / (float)((0x1u << (m_channelSize - 1u)) - 1u));
-
-		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-			return (float)signExtend(bits, m_channelSize);
-
-		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
-			if (m_channelSize == 32)
-				return tcu::Float32(bits).asFloat();
-			else
-			{
-				DE_FATAL("Float type not supported");
-				return -1.0f;
-			}
-
-		default:
-			DE_FATAL("Unknown texture channel class");
-			return -1.0f;
-	}
-}
-
-Interval ChannelAccess::getChannel (const FloatFormat&	conversionFormat,
-									const IVec3&		pos) const
-{
-	const deUint32	bits	(getChannelUint(pos));
-
-	switch (m_channelClass)
-	{
-		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-			return conversionFormat.roundOut(conversionFormat.roundOut((double)bits, false)
-											/ conversionFormat.roundOut((double)(m_channelSize == 32 ? ~0x0u : ((0x1u << m_channelSize) - 1u)), false), false);
-
-		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-			return conversionFormat.roundOut((double)bits, false);
-
-		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-		{
-			const Interval result (conversionFormat.roundOut(conversionFormat.roundOut((double)signExtend(bits, m_channelSize), false)
-															/ conversionFormat.roundOut((double)((0x1u << (m_channelSize - 1u)) - 1u), false), false));
-
-			return Interval(de::max(-1.0, result.lo()), de::max(-1.0, result.hi()));
-		}
-
-		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-			return conversionFormat.roundOut((double)signExtend(bits, m_channelSize), false);
-
-		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
-			if (m_channelSize == 32)
-				return conversionFormat.roundOut(tcu::Float32(bits).asFloat(), false);
-			else
-			{
-				DE_FATAL("Float type not supported");
-				return Interval();
-			}
-
-		default:
-			DE_FATAL("Unknown texture channel class");
-			return Interval();
-	}
-}
-
-// \todo Taken from tcuTexture.cpp
-// \todo [2011-09-21 pyry] Move to tcutil?
-template <typename T>
-inline T convertSatRte (float f)
-{
-	// \note Doesn't work for 64-bit types
-	DE_STATIC_ASSERT(sizeof(T) < sizeof(deUint64));
-	DE_STATIC_ASSERT((-3 % 2 != 0) && (-4 % 2 == 0));
-
-	deInt64	minVal	= std::numeric_limits<T>::min();
-	deInt64 maxVal	= std::numeric_limits<T>::max();
-	float	q		= deFloatFrac(f);
-	deInt64 intVal	= (deInt64)(f-q);
-
-	// Rounding.
-	if (q == 0.5f)
-	{
-		if (intVal % 2 != 0)
-			intVal++;
-	}
-	else if (q > 0.5f)
-		intVal++;
-	// else Don't add anything
-
-	// Saturate.
-	intVal = de::max(minVal, de::min(maxVal, intVal));
-
-	return (T)intVal;
-}
-
-void ChannelAccess::setChannel (const IVec3& pos, float x)
-{
-	DE_ASSERT(pos[0] < m_size[0]);
-	DE_ASSERT(pos[1] < m_size[1]);
-	DE_ASSERT(pos[2] < m_size[2]);
-
-	const deUint32	mask	(m_channelSize == 32u ? ~0x0u : (0x1u << m_channelSize) - 1u);
-
-	switch (m_channelClass)
-	{
-		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-		{
-			const deUint32	maxValue	(mask);
-			const deUint32	value		(de::min(maxValue, (deUint32)convertSatRte<deUint32>(x * (float)maxValue)));
-			setChannel(pos, value);
-			break;
-		}
-
-		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-		{
-			const deInt32	range	((0x1u << (m_channelSize - 1u)) - 1u);
-			const deUint32	value	((deUint32)de::clamp<deInt32>(convertSatRte<deInt32>(x * (float)range), -range, range));
-			setChannel(pos, value);
-			break;
-		}
-
-		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-		{
-			const deUint32	maxValue	(mask);
-			const deUint32	value		(de::min(maxValue, (deUint32)x));
-			setChannel(pos, value);
-			break;
-		}
-
-		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-		{
-			const deInt32	minValue	(-(deInt32)(1u << (m_channelSize - 1u)));
-			const deInt32	maxValue	((deInt32)((1u << (m_channelSize - 1u)) - 1u));
-			const deUint32	value		((deUint32)de::clamp((deInt32)x, minValue, maxValue));
-			setChannel(pos, value);
-			break;
-		}
-
-		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
-		{
-			if (m_channelSize == 32)
-			{
-				const deUint32	value		= tcu::Float32(x).bits();
-				setChannel(pos, value);
-			}
-			else
-				DE_FATAL("Float type not supported");
-			break;
-		}
-
-		default:
-			DE_FATAL("Unknown texture channel class");
-	}
-}
-
-ChannelAccess getChannelAccess (MultiPlaneImageData&				data,
-								const vk::PlanarFormatDescription&	formatInfo,
-								const UVec2&						size,
-								int									channelNdx)
-{
-	DE_ASSERT(formatInfo.hasChannelNdx(channelNdx));
-
-	const deUint32	planeNdx			= formatInfo.channels[channelNdx].planeNdx;
-	const deUint32	valueOffsetBits		= formatInfo.channels[channelNdx].offsetBits;
-	const deUint32	pixelStrideBytes	= formatInfo.channels[channelNdx].strideBytes;
-	const deUint32	pixelStrideBits		= pixelStrideBytes * 8;
-	const deUint8	sizeBits			= formatInfo.channels[channelNdx].sizeBits;
-
-	DE_ASSERT(size.x() % formatInfo.planes[planeNdx].widthDivisor == 0);
-	DE_ASSERT(size.y() % formatInfo.planes[planeNdx].heightDivisor == 0);
-
-	deUint32		accessWidth			= size.x() / formatInfo.planes[planeNdx].widthDivisor;
-	const deUint32	accessHeight		= size.y() / formatInfo.planes[planeNdx].heightDivisor;
-	const deUint32	elementSizeBytes	= formatInfo.planes[planeNdx].elementSizeBytes;
-
-	const deUint32	rowPitch			= formatInfo.planes[planeNdx].elementSizeBytes * accessWidth;
-	const deUint32	rowPitchBits		= rowPitch * 8;
-
-	if (pixelStrideBytes != elementSizeBytes)
-	{
-		DE_ASSERT(elementSizeBytes % pixelStrideBytes == 0);
-		accessWidth *= elementSizeBytes/pixelStrideBytes;
-	}
-
-	return ChannelAccess((tcu::TextureChannelClass)formatInfo.channels[channelNdx].type, sizeBits, IVec3(accessWidth, accessHeight, 1u), IVec3((int)pixelStrideBits, (int)rowPitchBits, 0), data.getPlanePtr(planeNdx), (deUint32)valueOffsetBits);
-}
 
 ShaderSpec createShaderSpec (void)
 {
@@ -626,855 +117,6 @@ void genTexCoords (std::vector<Vec2>&	coords,
 	}
 }
 
-Interval rangeExpandChroma (vk::VkSamplerYcbcrRangeKHR	range,
-							const FloatFormat&			conversionFormat,
-							const deUint32				bits,
-							const Interval&				sample)
-{
-	const deUint32	values	(0x1u << bits);
-
-	switch (range)
-	{
-		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR:
-			return conversionFormat.roundOut(sample - conversionFormat.roundOut(Interval((double)(0x1u << (bits - 1u)) / (double)((0x1u << bits) - 1u)), false), false);
-
-		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW_KHR:
-		{
-			const Interval	a			(conversionFormat.roundOut(sample * Interval((double)(values - 1u)), false));
-			const Interval	dividend	(conversionFormat.roundOut(a - Interval((double)(128u * (0x1u << (bits - 8u)))), false));
-			const Interval	divisor		((double)(224u * (0x1u << (bits - 8u))));
-			const Interval	result		(conversionFormat.roundOut(dividend / divisor, false));
-
-			return result;
-		}
-
-		default:
-			DE_FATAL("Unknown YCbCrRange");
-			return Interval();
-	}
-}
-
-Interval rangeExpandLuma (vk::VkSamplerYcbcrRangeKHR	range,
-						  const FloatFormat&			conversionFormat,
-						  const deUint32				bits,
-						  const Interval&				sample)
-{
-	const deUint32	values	(0x1u << bits);
-
-	switch (range)
-	{
-		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR:
-			return conversionFormat.roundOut(sample, false);
-
-		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW_KHR:
-		{
-			const Interval	a			(conversionFormat.roundOut(sample * Interval((double)(values - 1u)), false));
-			const Interval	dividend	(conversionFormat.roundOut(a - Interval((double)(16u * (0x1u << (bits - 8u)))), false));
-			const Interval	divisor		((double)(219u * (0x1u << (bits - 8u))));
-			const Interval	result		(conversionFormat.roundOut(dividend / divisor, false));
-
-			return result;
-		}
-
-		default:
-			DE_FATAL("Unknown YCbCrRange");
-			return Interval();
-	}
-}
-
-Interval clampMaybe (const Interval&	x,
-					 double				min,
-					 double				max)
-{
-	Interval result = x;
-
-	DE_ASSERT(min <= max);
-
-	if (x.lo() < min)
-		result = result | Interval(min);
-
-	if (x.hi() > max)
-		result = result | Interval(max);
-
-	return result;
-}
-
-void convertColor (vk::VkSamplerYcbcrModelConversionKHR	colorModel,
-				   vk::VkSamplerYcbcrRangeKHR			range,
-				   const FloatFormat&					conversionFormat,
-				   const UVec4&							bitDepth,
-				   const Interval						input[4],
-				   Interval								output[4])
-{
-	switch (colorModel)
-	{
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR:
-		{
-			for (size_t ndx = 0; ndx < 4; ndx++)
-				output[ndx] = input[ndx];
-			break;
-		}
-
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY_KHR:
-		{
-			output[0] = clampMaybe(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]), -0.5, 0.5);
-			output[1] = clampMaybe(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]), 0.0, 1.0);
-			output[2] = clampMaybe(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]), -0.5, 0.5);
-			output[3] = input[3];
-			break;
-		}
-
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601_KHR:
-		{
-			const Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
-			const Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
-			const Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
-
-			const Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
-			const Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
-			const Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
-
-			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.402 * crClamped, false), false);
-			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut((0.202008 / 0.587) * cbClamped, false), false) - conversionFormat.roundOut((0.419198 / 0.587) * crClamped, false), false);
-			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.772 * cbClamped, false), false);
-			output[3] = input[3];
-			break;
-		}
-
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709_KHR:
-		{
-			const Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
-			const Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
-			const Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
-
-			const Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
-			const Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
-			const Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
-
-			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.5748 * crClamped, false), false);
-			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut((0.13397432 / 0.7152) * cbClamped, false), false) - conversionFormat.roundOut((0.33480248 / 0.7152) * crClamped, false), false);
-			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.8556 * cbClamped, false), false);
-			output[3] = input[3];
-			break;
-		}
-
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020_KHR:
-		{
-			const Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
-			const Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
-			const Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
-
-			const Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
-			const Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
-			const Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
-
-			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.4746 * crClamped, false), false);
-			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut(conversionFormat.roundOut(0.11156702 / 0.6780, false) * cbClamped, false), false) - conversionFormat.roundOut(conversionFormat.roundOut(0.38737742 / 0.6780, false) * crClamped, false), false);
-			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.8814 * cbClamped, false), false);
-			output[3] = input[3];
-			break;
-		}
-
-		default:
-			DE_FATAL("Unknown YCbCrModel");
-	}
-
-	if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY_KHR)
-	{
-		for (int ndx = 0; ndx < 3; ndx++)
-			output[ndx] = clampMaybe(output[ndx], 0.0, 1.0);
-	}
-}
-
-int mirror (int coord)
-{
-	return coord >= 0 ? coord : -(1 + coord);
-}
-
-int imod (int a, int b)
-{
-	int m = a % b;
-	return m < 0 ? m + b : m;
-}
-
-int wrap (vk::VkSamplerAddressMode	addressMode,
-		  int						coord,
-		  int						size)
-{
-	switch (addressMode)
-	{
-		case vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT:
-			return (size - 1) - mirror(imod(coord, 2 * size) - size);
-
-		case vk::VK_SAMPLER_ADDRESS_MODE_REPEAT:
-			return imod(coord, size);
-
-		case vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:
-			return de::clamp(coord, 0, size - 1);
-
-		case vk::VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:
-			return de::clamp(mirror(coord), 0, size - 1);
-
-		default:
-			DE_FATAL("Unknown wrap mode");
-			return ~0;
-	}
-}
-
-Interval frac (const Interval& x)
-{
-	if (x.hi() - x.lo() >= 1.0)
-		return Interval(0.0, 1.0);
-	else
-	{
-		const Interval ret (deFrac(x.lo()), deFrac(x.hi()));
-
-		return ret;
-	}
-}
-
-Interval calculateUV (const FloatFormat&	coordFormat,
-					  const Interval&		st,
-					  const int				size)
-{
-	return coordFormat.roundOut(coordFormat.roundOut(st, false) * Interval((double)size), false);
-}
-
-IVec2 calculateNearestIJRange (const FloatFormat&	coordFormat,
-							   const Interval&		uv)
-{
-	const Interval	ij	(coordFormat.roundOut(coordFormat.roundOut(uv, false) - Interval(0.5), false));
-
-	return IVec2(deRoundToInt32(ij.lo() - coordFormat.ulp(ij.lo(), 1)), deRoundToInt32(ij.hi() + coordFormat.ulp(ij.hi(), 1)));
-}
-
-// Calculate range of pixel coordinates that can be used as lower coordinate for linear sampling
-IVec2 calculateLinearIJRange (const FloatFormat&	coordFormat,
-							  const Interval&		uv)
-{
-	const Interval	ij	(coordFormat.roundOut(uv - Interval(0.5), false));
-
-	return IVec2(deFloorToInt32(ij.lo()), deFloorToInt32(ij.hi()));
-}
-
-Interval calculateAB (const deUint32	subTexelPrecisionBits,
-					  const Interval&	uv,
-					  int				ij)
-{
-	const deUint32	subdivisions	= 0x1u << subTexelPrecisionBits;
-	const Interval	ab				(frac((uv - 0.5) & Interval((double)ij, (double)(ij + 1))));
-	const Interval	gridAB			(ab * Interval(subdivisions));
-	const Interval	rounded			(de::max(deFloor(gridAB.lo()) / subdivisions, 0.0) , de::min(deCeil(gridAB.hi()) / subdivisions, 1.0));
-
-	return rounded;
-}
-
-Interval lookupWrapped (const ChannelAccess&		access,
-						const FloatFormat&			conversionFormat,
-						vk::VkSamplerAddressMode	addressModeU,
-						vk::VkSamplerAddressMode	addressModeV,
-						const IVec2&				coord)
-{
-	return access.getChannel(conversionFormat, IVec3(wrap(addressModeU, coord.x(), access.getSize().x()), wrap(addressModeV, coord.y(), access.getSize().y()), 0));
-}
-
-Interval linearInterpolate (const FloatFormat&	filteringFormat,
-							const Interval&		a,
-							const Interval&		b,
-							const Interval&		p00,
-							const Interval&		p10,
-							const Interval&		p01,
-							const Interval&		p11)
-{
-	const Interval p[4] =
-	{
-		p00,
-		p10,
-		p01,
-		p11
-	};
-	Interval	result	(0.0);
-
-	for (size_t ndx = 0; ndx < 4; ndx++)
-	{
-		const Interval	weightA	(filteringFormat.roundOut((ndx % 2) == 0 ? (1.0 - a) : a, false));
-		const Interval	weightB	(filteringFormat.roundOut((ndx / 2) == 0 ? (1.0 - b) : b, false));
-		const Interval	weight	(filteringFormat.roundOut(weightA * weightB, false));
-
-		result = filteringFormat.roundOut(result + filteringFormat.roundOut(p[ndx] * weight, false), false);
-	}
-
-	return result;
-}
-
-Interval calculateImplicitChromaUV (const FloatFormat&		coordFormat,
-									vk::VkChromaLocationKHR	offset,
-									const Interval&			uv)
-{
-	if (offset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR)
-		return coordFormat.roundOut(0.5 * coordFormat.roundOut(uv + 0.5, false), false);
-	else
-		return coordFormat.roundOut(0.5 * uv, false);
-}
-
-Interval linearSample (const ChannelAccess&		access,
-					   const FloatFormat&		conversionFormat,
-					   const FloatFormat&		filteringFormat,
-					   vk::VkSamplerAddressMode	addressModeU,
-					   vk::VkSamplerAddressMode	addressModeV,
-					   const IVec2&				coord,
-					   const Interval&			a,
-					   const Interval&			b)
-{
-	return linearInterpolate(filteringFormat, a, b,
-									lookupWrapped(access, conversionFormat, addressModeU, addressModeV, coord + IVec2(0, 0)),
-									lookupWrapped(access, conversionFormat, addressModeU, addressModeV, coord + IVec2(1, 0)),
-									lookupWrapped(access, conversionFormat, addressModeU, addressModeV, coord + IVec2(0, 1)),
-									lookupWrapped(access, conversionFormat, addressModeU, addressModeV, coord + IVec2(1, 1)));
-}
-
-int divFloor (int a, int b)
-{
-	if (a % b == 0)
-		return a / b;
-	else if (a > 0)
-		return a / b;
-	else
-		return (a / b) - 1;
-}
-
-Interval reconstructLinearXChromaSample (const FloatFormat&			filteringFormat,
-										 const FloatFormat&			conversionFormat,
-										 vk::VkChromaLocationKHR	offset,
-										 vk::VkSamplerAddressMode	addressModeU,
-										 vk::VkSamplerAddressMode	addressModeV,
-										 const ChannelAccess&		access,
-										 int						i,
-										 int						j)
-{
-	const int subI	= divFloor(i, 2);
-
-	if (offset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR)
-	{
-		if (i % 2 == 0)
-			return lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI, j));
-		else
-		{
-			const Interval	a	(filteringFormat.roundOut(0.5 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI, j)), false));
-			const Interval	b	(filteringFormat.roundOut(0.5 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI + 1, j)), false));
-
-			return filteringFormat.roundOut(a + b, false);
-		}
-	}
-	else if (offset == vk::VK_CHROMA_LOCATION_MIDPOINT_KHR)
-	{
-		if (i % 2 == 0)
-		{
-			const Interval	a	(filteringFormat.roundOut(0.25 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI - 1, j)), false));
-			const Interval	b	(filteringFormat.roundOut(0.75 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI, j)), false));
-
-			return filteringFormat.roundOut(a + b, false);
-		}
-		else
-		{
-			const Interval	a	(filteringFormat.roundOut(0.25 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI + 1, j)), false));
-			const Interval	b	(filteringFormat.roundOut(0.75 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI, j)), false));
-
-			return filteringFormat.roundOut(a + b, false);
-		}
-	}
-	else
-	{
-		DE_FATAL("Unknown sample location");
-		return Interval();
-	}
-}
-
-Interval reconstructLinearXYChromaSample (const FloatFormat&			filteringFormat,
-										  const FloatFormat&			conversionFormat,
-										  vk::VkChromaLocationKHR		xOffset,
-										  vk::VkChromaLocationKHR		yOffset,
-										  vk::VkSamplerAddressMode		addressModeU,
-										  vk::VkSamplerAddressMode		addressModeV,
-										  const ChannelAccess&			access,
-										  int							i,
-										  int							j)
-{
-	const int		subI	= xOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR
-							? divFloor(i, 2)
-							: (i % 2 == 0 ? divFloor(i, 2) - 1 : divFloor(i, 2));
-	const int		subJ	= yOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR
-							? divFloor(j, 2)
-							: (j % 2 == 0 ? divFloor(j, 2) - 1 : divFloor(j, 2));
-
-	const double	a		= xOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR
-							? (i % 2 == 0 ? 0.0 : 0.5)
-							: (i % 2 == 0 ? 0.25 : 0.75);
-	const double	b		= yOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR
-							? (j % 2 == 0 ? 0.0 : 0.5)
-							: (j % 2 == 0 ? 0.25 : 0.75);
-
-	return linearInterpolate(filteringFormat, a, b,
-								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI, subJ)),
-								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI + 1, subJ)),
-								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI, subJ + 1)),
-								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, IVec2(subI + 1, subJ + 1)));
-}
-
-const ChannelAccess& swizzle (vk::VkComponentSwizzle	swizzle,
-							  const ChannelAccess&		identityPlane,
-							  const ChannelAccess&		rPlane,
-							  const ChannelAccess&		gPlane,
-							  const ChannelAccess&		bPlane,
-							  const ChannelAccess&		aPlane)
-{
-	switch (swizzle)
-	{
-		case vk::VK_COMPONENT_SWIZZLE_IDENTITY:	return identityPlane;
-		case vk::VK_COMPONENT_SWIZZLE_R:		return rPlane;
-		case vk::VK_COMPONENT_SWIZZLE_G:		return gPlane;
-		case vk::VK_COMPONENT_SWIZZLE_B:		return bPlane;
-		case vk::VK_COMPONENT_SWIZZLE_A:		return aPlane;
-
-		default:
-			DE_FATAL("Unsupported swizzle");
-			return identityPlane;
-	}
-}
-
-void calculateBounds (const ChannelAccess&					rPlane,
-					  const ChannelAccess&					gPlane,
-					  const ChannelAccess&					bPlane,
-					  const ChannelAccess&					aPlane,
-					  const UVec4&							bitDepth,
-					  const vector<Vec2>&					sts,
-					  const FloatFormat&					filteringFormat,
-					  const FloatFormat&					conversionFormat,
-					  const deUint32						subTexelPrecisionBits,
-					  vk::VkFilter							filter,
-					  vk::VkSamplerYcbcrModelConversionKHR	colorModel,
-					  vk::VkSamplerYcbcrRangeKHR			range,
-					  vk::VkFilter							chromaFilter,
-					  vk::VkChromaLocationKHR				xChromaOffset,
-					  vk::VkChromaLocationKHR				yChromaOffset,
-					  const vk::VkComponentMapping&			componentMapping,
-					  bool									explicitReconstruction,
-					  vk::VkSamplerAddressMode				addressModeU,
-					  vk::VkSamplerAddressMode				addressModeV,
-					  std::vector<Vec4>&					minBounds,
-					  std::vector<Vec4>&					maxBounds,
-					  std::vector<Vec4>&					uvBounds,
-					  std::vector<IVec4>&					ijBounds)
-{
-	const FloatFormat		highp			(-126, 127, 23, true,
-											 tcu::MAYBE,	// subnormals
-											 tcu::YES,		// infinities
-											 tcu::MAYBE);	// NaN
-	const FloatFormat		coordFormat		(-32, 32, 16, true);
-	const ChannelAccess&	rAccess			(swizzle(componentMapping.r, rPlane, rPlane, gPlane, bPlane, aPlane));
-	const ChannelAccess&	gAccess			(swizzle(componentMapping.g, gPlane, rPlane, gPlane, bPlane, aPlane));
-	const ChannelAccess&	bAccess			(swizzle(componentMapping.b, bPlane, rPlane, gPlane, bPlane, aPlane));
-	const ChannelAccess&	aAccess			(swizzle(componentMapping.a, aPlane, rPlane, gPlane, bPlane, aPlane));
-
-	const bool				subsampledX		= gAccess.getSize().x() > rAccess.getSize().x();
-	const bool				subsampledY		= gAccess.getSize().y() > rAccess.getSize().y();
-
-	minBounds.resize(sts.size(), Vec4(TCU_INFINITY));
-	maxBounds.resize(sts.size(), Vec4(-TCU_INFINITY));
-
-	uvBounds.resize(sts.size(), Vec4(TCU_INFINITY, -TCU_INFINITY, TCU_INFINITY, -TCU_INFINITY));
-	ijBounds.resize(sts.size(), IVec4(0x7FFFFFFF, -1 -0x7FFFFFFF, 0x7FFFFFFF, -1 -0x7FFFFFFF));
-
-	// Chroma plane sizes must match
-	DE_ASSERT(rAccess.getSize() == bAccess.getSize());
-
-	// Luma plane sizes must match
-	DE_ASSERT(gAccess.getSize() == aAccess.getSize());
-
-	// Luma plane size must match chroma plane or be twice as big
-	DE_ASSERT(rAccess.getSize().x() == gAccess.getSize().x() || 2 * rAccess.getSize().x() == gAccess.getSize().x());
-	DE_ASSERT(rAccess.getSize().y() == gAccess.getSize().y() || 2 * rAccess.getSize().y() == gAccess.getSize().y());
-
-	for (size_t ndx = 0; ndx < sts.size(); ndx++)
-	{
-		const Vec2	st		(sts[ndx]);
-		Interval	bounds[4];
-
-		const Interval	u	(calculateUV(coordFormat, st[0], gAccess.getSize().x()));
-		const Interval	v	(calculateUV(coordFormat, st[1], gAccess.getSize().y()));
-
-		uvBounds[ndx][0] = (float)u.lo();
-		uvBounds[ndx][1] = (float)u.hi();
-
-		uvBounds[ndx][2] = (float)v.lo();
-		uvBounds[ndx][3] = (float)v.hi();
-
-		if (filter == vk::VK_FILTER_NEAREST)
-		{
-			const IVec2	iRange	(calculateNearestIJRange(coordFormat, u));
-			const IVec2	jRange	(calculateNearestIJRange(coordFormat, v));
-
-			ijBounds[ndx][0] = iRange[0];
-			ijBounds[ndx][1] = iRange[1];
-
-			ijBounds[ndx][2] = jRange[0];
-			ijBounds[ndx][3] = jRange[1];
-
-			for (int j = jRange.x(); j <= jRange.y(); j++)
-			for (int i = iRange.x(); i <= iRange.y(); i++)
-			{
-				const Interval	gValue	(lookupWrapped(gAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)));
-				const Interval	aValue	(lookupWrapped(aAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)));
-
-				if (subsampledX || subsampledY)
-				{
-					if (explicitReconstruction)
-					{
-						if (chromaFilter == vk::VK_FILTER_NEAREST)
-						{
-							// Nearest, Reconstructed chroma with explicit nearest filtering
-							const int		subI		= subsampledX ? i / 2 : i;
-							const int		subJ		= subsampledY ? j / 2 : j;
-							const Interval	srcColor[]	=
-							{
-								lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(subI, subJ)),
-								gValue,
-								lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(subI, subJ)),
-								aValue
-							};
-							Interval		dstColor[4];
-
-							convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-							for (size_t compNdx = 0; compNdx < 4; compNdx++)
-								bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-						}
-						else if (chromaFilter == vk::VK_FILTER_LINEAR)
-						{
-							if (subsampledX && subsampledY)
-							{
-								// Nearest, Reconstructed both chroma samples with explicit linear filtering
-								const Interval	rValue	(reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j));
-								const Interval	bValue	(reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j));
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-							else if (subsampledX)
-							{
-								// Nearest, Reconstructed x chroma samples with explicit linear filtering
-								const Interval	rValue	(reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i, j));
-								const Interval	bValue	(reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i, j));
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-							else
-								DE_FATAL("Unexpected chroma reconstruction");
-						}
-						else
-							DE_FATAL("Unknown filter");
-					}
-					else
-					{
-						const Interval	chromaU	(subsampledX ? calculateImplicitChromaUV(coordFormat, xChromaOffset, u) : u);
-						const Interval	chromaV	(subsampledY ? calculateImplicitChromaUV(coordFormat, yChromaOffset, v) : v);
-
-						if (chromaFilter == vk::VK_FILTER_NEAREST)
-						{
-							// Nearest, reconstructed chroma samples with implicit nearest filtering
-							const IVec2	chromaIRange	(subsampledX ? calculateNearestIJRange(coordFormat, chromaU) : IVec2(i, i));
-							const IVec2	chromaJRange	(subsampledY ? calculateNearestIJRange(coordFormat, chromaV) : IVec2(j, j));
-
-							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.x(); chromaI++)
-							{
-								const Interval	srcColor[]	=
-								{
-									lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
-									gValue,
-									lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-						}
-						else if (chromaFilter == vk::VK_FILTER_LINEAR)
-						{
-							// Nearest, reconstructed chroma samples with implicit linear filtering
-							const IVec2	chromaIRange	(subsampledX ? calculateLinearIJRange(coordFormat, chromaU) : IVec2(i, i));
-							const IVec2	chromaJRange	(subsampledY ? calculateLinearIJRange(coordFormat, chromaV) : IVec2(j, j));
-
-							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.x(); chromaI++)
-							{
-								const Interval	chromaA	(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
-								const Interval	chromaB	(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
-
-								const Interval	srcColor[]	=
-								{
-									linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
-									gValue,
-									linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-						}
-						else
-							DE_FATAL("Unknown filter");
-					}
-				}
-				else
-				{
-					// Linear, no chroma subsampling
-					const Interval	srcColor[]	=
-					{
-						lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)),
-						gValue,
-						lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)),
-						aValue
-					};
-					Interval dstColor[4];
-
-					convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-					for (size_t compNdx = 0; compNdx < 4; compNdx++)
-						bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-				}
-			}
-		}
-		else if (filter == vk::VK_FILTER_LINEAR)
-		{
-			const IVec2	iRange	(calculateLinearIJRange(coordFormat, u));
-			const IVec2	jRange	(calculateLinearIJRange(coordFormat, v));
-
-			ijBounds[ndx][0] = iRange[0];
-			ijBounds[ndx][1] = iRange[1];
-
-			ijBounds[ndx][2] = jRange[0];
-			ijBounds[ndx][3] = jRange[1];
-
-			for (int j = jRange.x(); j <= jRange.y(); j++)
-			for (int i = iRange.x(); i <= iRange.y(); i++)
-			{
-				const Interval	lumaA		(calculateAB(subTexelPrecisionBits, u, i));
-				const Interval	lumaB		(calculateAB(subTexelPrecisionBits, v, j));
-
-				const Interval	gValue		(linearSample(gAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
-				const Interval	aValue		(linearSample(aAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
-
-				if (subsampledX || subsampledY)
-				{
-					if (explicitReconstruction)
-					{
-						if (chromaFilter == vk::VK_FILTER_NEAREST)
-						{
-							const Interval	srcColor[]	=
-							{
-								linearInterpolate(filteringFormat, lumaA, lumaB,
-																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
-																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
-								gValue,
-								linearInterpolate(filteringFormat, lumaA, lumaB,
-																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
-																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
-								aValue
-							};
-							Interval		dstColor[4];
-
-							convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-							for (size_t compNdx = 0; compNdx < 4; compNdx++)
-								bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-						}
-						else if (chromaFilter == vk::VK_FILTER_LINEAR)
-						{
-							if (subsampledX && subsampledY)
-							{
-								// Linear, Reconstructed xx chroma samples with explicit linear filtering
-								const Interval	rValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
-								const Interval	bValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
-																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-
-							}
-							else if (subsampledX)
-							{
-								// Linear, Reconstructed x chroma samples with explicit linear filtering
-								const Interval	rValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i, j),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
-								const Interval	bValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i, j),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
-																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-							else
-								DE_FATAL("Unknown subsampling config");
-						}
-						else
-							DE_FATAL("Unknown chroma filter");
-					}
-					else
-					{
-						const Interval	chromaU	(subsampledX ? calculateImplicitChromaUV(coordFormat, xChromaOffset, u) : u);
-						const Interval	chromaV	(subsampledY ? calculateImplicitChromaUV(coordFormat, yChromaOffset, v) : v);
-
-						if (chromaFilter == vk::VK_FILTER_NEAREST)
-						{
-							const IVec2	chromaIRange	(calculateNearestIJRange(coordFormat, chromaU));
-							const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
-
-							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.x(); chromaI++)
-							{
-								const Interval	srcColor[]	=
-								{
-									lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
-									gValue,
-									lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
-									aValue
-								};
-								Interval	dstColor[4];
-
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-						}
-						else if (chromaFilter == vk::VK_FILTER_LINEAR)
-						{
-							const IVec2	chromaIRange	(calculateNearestIJRange(coordFormat, chromaU));
-							const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
-
-							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.x(); chromaI++)
-							{
-								const Interval	chromaA		(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
-								const Interval	chromaB		(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
-
-								const Interval	rValue		(linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
-								const Interval	bValue		(linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
-
-								const Interval	srcColor[]	=
-								{
-									rValue,
-									gValue,
-									bValue,
-									aValue
-								};
-								Interval		dstColor[4];
-								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-								for (size_t compNdx = 0; compNdx < 4; compNdx++)
-									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-							}
-						}
-						else
-							DE_FATAL("Unknown chroma filter");
-					}
-				}
-				else
-				{
-					const Interval	chromaA		(lumaA);
-					const Interval	chromaB		(lumaB);
-					const Interval	rValue		(linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
-					const Interval	bValue		(linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
-					const Interval	srcColor[]	=
-					{
-						rValue,
-						gValue,
-						bValue,
-						aValue
-					};
-					Interval dstColor[4];
-
-					convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
-
-					for (size_t compNdx = 0; compNdx < 4; compNdx++)
-						bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
-				}
-			}
-		}
-		else
-			DE_FATAL("Unknown filter");
-
-		minBounds[ndx] = Vec4((float)bounds[0].lo(), (float)bounds[1].lo(), (float)bounds[2].lo(), (float)bounds[3].lo());
-		maxBounds[ndx] = Vec4((float)bounds[0].hi(), (float)bounds[1].hi(), (float)bounds[2].hi(), (float)bounds[3].hi());
-	}
-}
-
 struct TestConfig
 {
 	TestConfig	(glu::ShaderType						shaderType_,
@@ -1485,13 +127,13 @@ struct TestConfig
 				 vk::VkSamplerAddressMode				addressModeV_,
 
 				 vk::VkFilter							chromaFilter_,
-				 vk::VkChromaLocationKHR				xChromaOffset_,
-				 vk::VkChromaLocationKHR				yChromaOffset_,
+				 vk::VkChromaLocation					xChromaOffset_,
+				 vk::VkChromaLocation					yChromaOffset_,
 				 bool									explicitReconstruction_,
 				 bool									disjoint_,
 
-				 vk::VkSamplerYcbcrRangeKHR				colorRange_,
-				 vk::VkSamplerYcbcrModelConversionKHR	colorModel_,
+				 vk::VkSamplerYcbcrRange				colorRange_,
+				 vk::VkSamplerYcbcrModelConversion		colorModel_,
 				 vk::VkComponentMapping					componentMapping_)
 		: shaderType				(shaderType_)
 		, format					(format_)
@@ -1520,13 +162,13 @@ struct TestConfig
 	vk::VkSamplerAddressMode				addressModeV;
 
 	vk::VkFilter							chromaFilter;
-	vk::VkChromaLocationKHR					xChromaOffset;
-	vk::VkChromaLocationKHR					yChromaOffset;
+	vk::VkChromaLocation					xChromaOffset;
+	vk::VkChromaLocation					yChromaOffset;
 	bool									explicitReconstruction;
 	bool									disjoint;
 
-	vk::VkSamplerYcbcrRangeKHR				colorRange;
-	vk::VkSamplerYcbcrModelConversionKHR	colorModel;
+	vk::VkSamplerYcbcrRange					colorRange;
+	vk::VkSamplerYcbcrModelConversion		colorModel;
 	vk::VkComponentMapping					componentMapping;
 };
 
@@ -1631,12 +273,12 @@ vk::Move<vk::VkSampler> createSampler (const vk::DeviceInterface&		vkd,
 									   vk::VkFilter						textureFilter,
 									   vk::VkSamplerAddressMode			addressModeU,
 									   vk::VkSamplerAddressMode			addressModeV,
-									   vk::VkSamplerYcbcrConversionKHR	conversion)
+									   vk::VkSamplerYcbcrConversion		conversion)
 {
 #if !defined(FAKE_COLOR_CONVERSION)
-	const vk::VkSamplerYcbcrConversionInfoKHR	samplerConversionInfo	=
+	const vk::VkSamplerYcbcrConversionInfo	samplerConversionInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		conversion
 	};
@@ -1684,7 +326,7 @@ vk::Move<vk::VkImage> createImage (const vk::DeviceInterface&	vkd,
 	{
 		vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		DE_NULL,
-		disjoint ? (vk::VkImageCreateFlags)vk::VK_IMAGE_CREATE_DISJOINT_BIT_KHR : (vk::VkImageCreateFlags)0u,
+		disjoint ? (vk::VkImageCreateFlags)vk::VK_IMAGE_CREATE_DISJOINT_BIT : (vk::VkImageCreateFlags)0u,
 
 		vk::VK_IMAGE_TYPE_2D,
 		format,
@@ -1707,12 +349,12 @@ vk::Move<vk::VkImageView> createImageView (const vk::DeviceInterface&		vkd,
 										   vk::VkDevice						device,
 										   vk::VkImage						image,
 										   vk::VkFormat						format,
-										   vk::VkSamplerYcbcrConversionKHR	conversion)
+										   vk::VkSamplerYcbcrConversion		conversion)
 {
 #if !defined(FAKE_COLOR_CONVERSION)
-	const vk::VkSamplerYcbcrConversionInfoKHR	conversionInfo	=
+	const vk::VkSamplerYcbcrConversionInfo	conversionInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		conversion
 	};
@@ -1744,20 +386,20 @@ vk::Move<vk::VkImageView> createImageView (const vk::DeviceInterface&		vkd,
 	return vk::createImageView(vkd, device, &viewInfo);
 }
 
-vk::Move<vk::VkSamplerYcbcrConversionKHR> createConversion (const vk::DeviceInterface&				vkd,
-															vk::VkDevice							device,
-															vk::VkFormat							format,
-															vk::VkSamplerYcbcrModelConversionKHR	colorModel,
-															vk::VkSamplerYcbcrRangeKHR				colorRange,
-															vk::VkChromaLocationKHR					xChromaOffset,
-															vk::VkChromaLocationKHR					yChromaOffset,
-															vk::VkFilter							chromaFilter,
-															const vk::VkComponentMapping&			componentMapping,
-															bool									explicitReconstruction)
+vk::Move<vk::VkSamplerYcbcrConversion> createConversion (const vk::DeviceInterface&				vkd,
+														 vk::VkDevice							device,
+														 vk::VkFormat							format,
+														 vk::VkSamplerYcbcrModelConversion		colorModel,
+														 vk::VkSamplerYcbcrRange				colorRange,
+														 vk::VkChromaLocation					xChromaOffset,
+														 vk::VkChromaLocation					yChromaOffset,
+														 vk::VkFilter							chromaFilter,
+														 const vk::VkComponentMapping&			componentMapping,
+														 bool									explicitReconstruction)
 {
-	const vk::VkSamplerYcbcrConversionCreateInfoKHR	conversionInfo	=
+	const vk::VkSamplerYcbcrConversionCreateInfo	conversionInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
 		DE_NULL,
 
 		format,
@@ -1770,7 +412,7 @@ vk::Move<vk::VkSamplerYcbcrConversionKHR> createConversion (const vk::DeviceInte
 		explicitReconstruction ? VK_TRUE : VK_FALSE
 	};
 
-	return vk::createSamplerYcbcrConversionKHR(vkd, device, &conversionInfo);
+	return vk::createSamplerYcbcrConversion(vkd, device, &conversionInfo);
 }
 
 void evalShader (Context&								context,
@@ -1783,10 +425,10 @@ void evalShader (Context&								context,
 				 vk::VkFilter							textureFilter,
 				 vk::VkSamplerAddressMode				addressModeU,
 				 vk::VkSamplerAddressMode				addressModeV,
-				 vk::VkSamplerYcbcrModelConversionKHR	colorModel,
-				 vk::VkSamplerYcbcrRangeKHR				colorRange,
-				 vk::VkChromaLocationKHR				xChromaOffset,
-				 vk::VkChromaLocationKHR				yChromaOffset,
+				 vk::VkSamplerYcbcrModelConversion		colorModel,
+				 vk::VkSamplerYcbcrRange				colorRange,
+				 vk::VkChromaLocation					xChromaOffset,
+				 vk::VkChromaLocation					yChromaOffset,
 				 vk::VkFilter							chromaFilter,
 				 const vk::VkComponentMapping&			componentMapping,
 				 bool									explicitReconstruction,
@@ -1796,7 +438,7 @@ void evalShader (Context&								context,
 	const vk::DeviceInterface&							vkd					(context.getDeviceInterface());
 	const vk::VkDevice									device				(context.getDevice());
 #if !defined(FAKE_COLOR_CONVERSION)
-	const vk::Unique<vk::VkSamplerYcbcrConversionKHR>	conversion			(createConversion(vkd, device, format, colorModel, colorRange, xChromaOffset, yChromaOffset, chromaFilter, componentMapping, explicitReconstruction));
+	const vk::Unique<vk::VkSamplerYcbcrConversion>		conversion			(createConversion(vkd, device, format, colorModel, colorRange, xChromaOffset, yChromaOffset, chromaFilter, componentMapping, explicitReconstruction));
 	const vk::Unique<vk::VkSampler>						sampler				(createSampler(vkd, device, textureFilter, addressModeU, addressModeV, *conversion));
 #else
 	DE_UNREF(colorModel);
@@ -1807,16 +449,16 @@ void evalShader (Context&								context,
 	DE_UNREF(explicitReconstruction);
 	DE_UNREF(componentMapping);
 	DE_UNREF(createConversion);
-	const vk::Unique<vk::VkSampler>						sampler				(createSampler(vkd, device, textureFilter, addressModeU, addressModeV, (vk::VkSamplerYcbcrConversionKHR)0u));
+	const vk::Unique<vk::VkSampler>						sampler				(createSampler(vkd, device, textureFilter, addressModeU, addressModeV, (vk::VkSamplerYcbcrConversion)0u));
 #endif
 	const vk::Unique<vk::VkImage>						image				(createImage(vkd, device, format, size, disjoint, imageTiling));
 	const vk::MemoryRequirement							memoryRequirement	(imageTiling == vk::VK_IMAGE_TILING_OPTIMAL
 																			? vk::MemoryRequirement::Any
 																			: vk::MemoryRequirement::HostVisible);
-	const vk::VkImageCreateFlags						createFlags			(disjoint ? vk::VK_IMAGE_CREATE_DISJOINT_BIT_KHR : (vk::VkImageCreateFlagBits)0u);
+	const vk::VkImageCreateFlags						createFlags			(disjoint ? vk::VK_IMAGE_CREATE_DISJOINT_BIT : (vk::VkImageCreateFlagBits)0u);
 	const vector<AllocationSp>							imageMemory			(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags, memoryRequirement));
 #if defined(FAKE_COLOR_CONVERSION)
-	const vk::Unique<vk::VkImageView>					imageView			(createImageView(vkd, device, *image, format, (vk::VkSamplerYcbcrConversionKHR)0));
+	const vk::Unique<vk::VkImageView>					imageView			(createImageView(vkd, device, *image, format, (vk::VkSamplerYcbcrConversion)0));
 #else
 	const vk::Unique<vk::VkImageView>					imageView			(createImageView(vkd, device, *image, format, *conversion));
 #endif
@@ -1849,60 +491,6 @@ void evalShader (Context&								context,
 	}
 }
 
-bool isXChromaSubsampled (vk::VkFormat format)
-{
-	switch (format)
-	{
-		case vk::VK_FORMAT_G8B8G8R8_422_UNORM_KHR:
-		case vk::VK_FORMAT_B8G8R8G8_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G16B16G16R16_422_UNORM_KHR:
-		case vk::VK_FORMAT_B16G16R16G16_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
-bool isYChromaSubsampled (vk::VkFormat format)
-{
-	switch (format)
-	{
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
 void logTestCaseInfo (TestLog& log, const TestConfig& config)
 {
 	log << TestLog::Message << "ShaderType: " << config.shaderType << TestLog::EndMessage;
@@ -1915,7 +503,7 @@ void logTestCaseInfo (TestLog& log, const TestConfig& config)
 	log << TestLog::Message << "XChromaOffset: " << config.xChromaOffset << TestLog::EndMessage;
 	log << TestLog::Message << "YChromaOffset: " << config.yChromaOffset << TestLog::EndMessage;
 	log << TestLog::Message << "ExplicitReconstruction: " << (config.explicitReconstruction ? "true" : "false") << TestLog::EndMessage;
-	log << TestLog::Message << "Disjoint: " << (config.explicitReconstruction ? "true" : "false") << TestLog::EndMessage;
+	log << TestLog::Message << "Disjoint: " << (config.disjoint ? "true" : "false") << TestLog::EndMessage;
 	log << TestLog::Message << "ColorRange: " << config.colorRange << TestLog::EndMessage;
 	log << TestLog::Message << "ColorModel: " << config.colorModel << TestLog::EndMessage;
 	log << TestLog::Message << "ComponentMapping: " << config.componentMapping << TestLog::EndMessage;
@@ -1924,10 +512,10 @@ void logTestCaseInfo (TestLog& log, const TestConfig& config)
 
 tcu::TestStatus textureConversionTest (Context& context, const TestConfig config)
 {
-	const FloatFormat	filteringPrecision		(getFilteringPrecision(config.format));
-	const FloatFormat	conversionPrecision		(getConversionPrecision(config.format));
+	const FloatFormat	filteringPrecision		(getYCbCrFilteringPrecision(config.format));
+	const FloatFormat	conversionPrecision		(getYCbCrConversionPrecision(config.format));
 	const deUint32		subTexelPrecisionBits	(vk::getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits.subTexelPrecisionBits);
-	const tcu::UVec4	bitDepth				(getBitDepth(config.format));
+	const tcu::UVec4	bitDepth				(getYCbCrBitDepth(config.format));
 	const UVec2			size					(isXChromaSubsampled(config.format) ? 12 : 7,
 												 isYChromaSubsampled(config.format) ?  8 : 13);
 	TestLog&			log						(context.getTestContext().getLog());
@@ -1937,7 +525,7 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 	logTestCaseInfo(log, config);
 
 #if !defined(FAKE_COLOR_CONVERSION)
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_sampler_ycbcr_conversion")))
+	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_ycbcr_conversion"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
 
 	try
@@ -1947,40 +535,40 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 													? properties.optimalTilingFeatures
 													: properties.linearTilingFeatures);
 
-		if ((features & (vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR | vk::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR)) == 0)
+		if ((features & (vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT | vk::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT)) == 0)
 			TCU_THROW(NotSupportedError, "Format doesn't support YCbCr conversions");
 
 		if ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) == 0)
 			TCU_THROW(NotSupportedError, "Format doesn't support sampling");
 
-		if (config.textureFilter == vk::VK_FILTER_LINEAR && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT_KHR) == 0))
+		if (config.textureFilter == vk::VK_FILTER_LINEAR && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support YCbCr linear chroma reconstruction");
 
-		if (config.chromaFilter == vk::VK_FILTER_LINEAR && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT_KHR) == 0))
+		if (config.chromaFilter == vk::VK_FILTER_LINEAR && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support YCbCr linear chroma reconstruction");
 
-		if (config.chromaFilter != config.textureFilter && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT_KHR) == 0))
+		if (config.chromaFilter != config.textureFilter && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support different chroma and texture filters");
 
-		if (config.explicitReconstruction && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT_KHR) == 0))
+		if (config.explicitReconstruction && ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support explicit chroma reconstruction");
 
-		if (config.disjoint && ((features & vk::VK_FORMAT_FEATURE_DISJOINT_BIT_KHR) == 0))
+		if (config.disjoint && ((features & vk::VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't disjoint planes");
 
-		if (isXChromaSubsampled(config.format) && (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR) && ((features & vk::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR) == 0))
+		if (isXChromaSubsampled(config.format) && (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN) && ((features & vk::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support cosited chroma samples");
 
-		if (isXChromaSubsampled(config.format) && (config.xChromaOffset == vk::VK_CHROMA_LOCATION_MIDPOINT_KHR) && ((features & vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR) == 0))
+		if (isXChromaSubsampled(config.format) && (config.xChromaOffset == vk::VK_CHROMA_LOCATION_MIDPOINT) && ((features & vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support midpoint chroma samples");
 
-		if (isYChromaSubsampled(config.format) && (config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR) && ((features & vk::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR) == 0))
+		if (isYChromaSubsampled(config.format) && (config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN) && ((features & vk::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support cosited chroma samples");
 
-		if (isYChromaSubsampled(config.format) && (config.yChromaOffset == vk::VK_CHROMA_LOCATION_MIDPOINT_KHR) && ((features & vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR) == 0))
+		if (isYChromaSubsampled(config.format) && (config.yChromaOffset == vk::VK_CHROMA_LOCATION_MIDPOINT) && ((features & vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Format doesn't support midpoint chroma samples");
 
-		if ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT_KHR) != 0)
+		if ((features & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT) != 0)
 			explicitReconstruction = true;
 
 		log << TestLog::Message << "FormatFeatures: " << vk::getFormatFeatureFlagsStr(features) << TestLog::EndMessage;
@@ -2298,13 +886,13 @@ void createTestShaders (vk::SourceCollections& dst, TestConfig config)
 
 	switch (config.colorRange)
 	{
-		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR:
+		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL:
 			source << "highp float cr = r - (float(" << (0x1u << (bits[0] - 0x1u)) << ") / float(" << ((0x1u << bits[0]) - 1u) << "));\n";
 			source << "highp float y  = g;\n";
 			source << "highp float cb = b - (float(" << (0x1u << (bits[2] - 0x1u)) << ") / float(" << ((0x1u << bits[2]) - 1u) << "));\n";
 			break;
 
-		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW_KHR:
+		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW:
 			source << "highp float cr = (r * float(" << ((0x1u << bits[0]) - 1u) << ") - float(" << (128u * (0x1u << (bits[0] - 8))) << ")) / float(" << (224u * (0x1u << (bits[0] - 8))) << ");\n";
 			source << "highp float y  = (g * float(" << ((0x1u << bits[1]) - 1u) << ") - float(" << (16u * (0x1u << (bits[1] - 8))) << ")) / float(" << (219u * (0x1u << (bits[1] - 8))) << ");\n";
 			source << "highp float cb = (b * float(" << ((0x1u << bits[2]) - 1u) << ") - float(" << (128u * (0x1u << (bits[2] - 8))) << ")) / float(" << (224u * (0x1u << (bits[2] - 8))) << ");\n";
@@ -2318,23 +906,23 @@ void createTestShaders (vk::SourceCollections& dst, TestConfig config)
 
 	switch (config.colorModel)
 	{
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR:
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY:
 			source << "color = vec4(r, g, b, a);\n";
 			break;
 
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY_KHR:
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY:
 			source << "color = vec4(cr, y, cb, a);\n";
 			break;
 
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601_KHR:
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601:
 			source << "color = vec4(y + 1.402 * cr, y - float(" << (0.202008 / 0.587) << ") * cb - float(" << (0.419198 / 0.587) << ") * cr, y + 1.772 * cb, a);\n";
 			break;
 
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709_KHR:
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709:
 			source << "color = vec4(y + 1.5748 * cr, y - float(" << (0.13397432 / 0.7152) << ") * cb - float(" << (0.33480248 / 0.7152) << ") * cr, y + 1.8556 * cb, a);\n";
 			break;
 
-		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020_KHR:
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020:
 			source << "color = vec4(y + 1.4746 * cr, (y - float(" << (0.11156702 / 0.6780) << ") * cb) - float(" << (0.38737742 / 0.6780) << ") * cr, y + 1.8814 * cb, a);\n";
 			break;
 
@@ -2349,85 +937,17 @@ void createTestShaders (vk::SourceCollections& dst, TestConfig config)
 #endif
 }
 
-deUint32 getFormatChannelCount (vk::VkFormat format)
-{
-	switch (format)
-	{
-		case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
-		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
-		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
-		case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-		case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_B8G8R8A8_UNORM:
-		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_R16G16B16A16_UNORM:
-		case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
-		case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
-		case vk::VK_FORMAT_R8G8B8A8_UNORM:
-			return 4;
-
-		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_B16G16R16G16_422_UNORM_KHR:
-		case vk::VK_FORMAT_B5G6R5_UNORM_PACK16:
-		case vk::VK_FORMAT_B8G8R8G8_422_UNORM_KHR:
-		case vk::VK_FORMAT_B8G8R8_UNORM:
-		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR:
-		case vk::VK_FORMAT_G16B16G16R16_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR:
-		case vk::VK_FORMAT_G8B8G8R8_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR:
-		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR:
-		case vk::VK_FORMAT_R16G16B16_UNORM:
-		case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
-		case vk::VK_FORMAT_R8G8B8_UNORM:
-			return 3;
-
-		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR:
-		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR:
-			return 2;
-
-		case vk::VK_FORMAT_R10X6_UNORM_PACK16_KHR:
-		case vk::VK_FORMAT_R12X4_UNORM_PACK16_KHR:
-			return 1;
-
-		default:
-			DE_FATAL("Unknown number of channels");
-			return -1;
-	}
-}
-
 struct RangeNamePair
 {
 	const char*					name;
-	vk::VkSamplerYcbcrRangeKHR	value;
+	vk::VkSamplerYcbcrRange		value;
 };
 
 
 struct ChromaLocationNamePair
 {
-	const char*				name;
-	vk::VkChromaLocationKHR	value;
+	const char*					name;
+	vk::VkChromaLocation		value;
 };
 
 void initTests (tcu::TestCaseGroup* testGroup)
@@ -2450,69 +970,69 @@ void initTests (tcu::TestCaseGroup* testGroup)
 		vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32,
 		vk::VK_FORMAT_R16G16B16_UNORM,
 		vk::VK_FORMAT_R16G16B16A16_UNORM,
-		vk::VK_FORMAT_R10X6_UNORM_PACK16_KHR,
-		vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR,
-		vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR,
-		vk::VK_FORMAT_R12X4_UNORM_PACK16_KHR,
-		vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR,
-		vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR,
-		vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR,
-		vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR
+		vk::VK_FORMAT_R10X6_UNORM_PACK16,
+		vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
+		vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
+		vk::VK_FORMAT_R12X4_UNORM_PACK16,
+		vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
+		vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16,
+		vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
+		vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16,
+		vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16,
+		vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM
 	};
 	const vk::VkFormat xChromaSubsampledFormats[] =
 	{
-		vk::VK_FORMAT_G8B8G8R8_422_UNORM_KHR,
-		vk::VK_FORMAT_B8G8R8G8_422_UNORM_KHR,
-		vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR,
-		vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR,
+		vk::VK_FORMAT_G8B8G8R8_422_UNORM,
+		vk::VK_FORMAT_B8G8R8G8_422_UNORM,
+		vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
+		vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
 
-		vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR,
-		vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR,
-		vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR,
-		vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR,
-		vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G16B16G16R16_422_UNORM_KHR,
-		vk::VK_FORMAT_B16G16R16G16_422_UNORM_KHR,
-		vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR,
-		vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR,
+		vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,
+		vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,
+		vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16,
+		vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
+		vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,
+		vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,
+		vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16,
+		vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16,
+		vk::VK_FORMAT_G16B16G16R16_422_UNORM,
+		vk::VK_FORMAT_B16G16R16G16_422_UNORM,
+		vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
+		vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
 	};
 	const vk::VkFormat xyChromaSubsampledFormats[] =
 	{
-		vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR,
-		vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR,
-		vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR,
-		vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR,
-		vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR,
+		vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
+		vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
+		vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
+		vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
+		vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
+		vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
+		vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
+		vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
 	};
 	const struct
 	{
 		const char* const							name;
-		const vk::VkSamplerYcbcrModelConversionKHR	value;
+		const vk::VkSamplerYcbcrModelConversion	value;
 	} colorModels[] =
 	{
-		{ "rgb_identity",	vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR		},
-		{ "ycbcr_identity",	vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY_KHR	},
-		{ "ycbcr_709",		vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709_KHR			},
-		{ "ycbcr_601",		vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601_KHR			},
-		{ "ycbcr_2020",		vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020_KHR		}
+		{ "rgb_identity",	vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY		},
+		{ "ycbcr_identity",	vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY	},
+		{ "ycbcr_709",		vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709			},
+		{ "ycbcr_601",		vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601			},
+		{ "ycbcr_2020",		vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020		}
 	};
 	const RangeNamePair colorRanges[]	=
 	{
-		{ "itu_full",		vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR		},
-		{ "itu_narrow",		vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW_KHR	}
+		{ "itu_full",		vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL		},
+		{ "itu_narrow",		vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW	}
 	};
 	const ChromaLocationNamePair chromaLocations[] =
 	{
-		{ "cosited",		vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR	},
-		{ "midpoint",		vk::VK_CHROMA_LOCATION_MIDPOINT_KHR		}
+		{ "cosited",		vk::VK_CHROMA_LOCATION_COSITED_EVEN	},
+		{ "midpoint",		vk::VK_CHROMA_LOCATION_MIDPOINT		}
 	};
 	const struct
 	{
@@ -2524,8 +1044,8 @@ void initTests (tcu::TestCaseGroup* testGroup)
 		{ "nearest",		vk::VK_FILTER_NEAREST	}
 	};
 	// Used by the chroma reconstruction tests
-	const vk::VkSamplerYcbcrModelConversionKHR	defaultColorModel		(vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR);
-	const vk::VkSamplerYcbcrRangeKHR			defaultColorRange		(vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR);
+	const vk::VkSamplerYcbcrModelConversion		defaultColorModel		(vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY);
+	const vk::VkSamplerYcbcrRange				defaultColorRange		(vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL);
 	const vk::VkComponentMapping				identitySwizzle			=
 	{
 		vk::VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -2561,21 +1081,21 @@ void initTests (tcu::TestCaseGroup* testGroup)
 	// Test formats without chroma reconstruction
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(noChromaSubsampledFormats); formatNdx++)
 	{
-		const vk::VkFormat				format		(noChromaSubsampledFormats[formatNdx]);
-		const std::string				formatName	(de::toLower(std::string(getFormatName(format)).substr(10)));
-		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+		const vk::VkFormat						format					(noChromaSubsampledFormats[formatNdx]);
+		const std::string						formatName				(de::toLower(std::string(getFormatName(format)).substr(10)));
+		de::MovePtr<tcu::TestCaseGroup>			formatGroup				(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
 
 		for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)
 		{
-			const char* const							colorModelName	(colorModels[modelNdx].name);
-			const vk::VkSamplerYcbcrModelConversionKHR	colorModel		(colorModels[modelNdx].value);
+			const char* const						colorModelName		(colorModels[modelNdx].name);
+			const vk::VkSamplerYcbcrModelConversion	colorModel			(colorModels[modelNdx].value);
 
-			if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR && getFormatChannelCount(format) < 3)
+			if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY && getYCbCrFormatChannelCount(format) < 3)
 				continue;
 
-			de::MovePtr<tcu::TestCaseGroup>				colorModelGroup	(new tcu::TestCaseGroup(testCtx, colorModelName, ("Tests for color model " + string(colorModelName)).c_str()));
+			de::MovePtr<tcu::TestCaseGroup>			colorModelGroup		(new tcu::TestCaseGroup(testCtx, colorModelName, ("Tests for color model " + string(colorModelName)).c_str()));
 
-			if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR)
+			if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY)
 			{
 				for (size_t textureFilterNdx = 0; textureFilterNdx < DE_LENGTH_OF_ARRAY(textureFilters); textureFilterNdx++)
 				{
@@ -2584,15 +1104,15 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 					for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 					{
-						const vk::VkImageTiling				tiling				(imageTilings[tilingNdx].value);
-						const char* const					tilingName			(imageTilings[tilingNdx].name);
-						const glu::ShaderType				shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-						const vk::VkSamplerYcbcrRangeKHR	colorRange			(rng.choose<RangeNamePair, const RangeNamePair*>(DE_ARRAY_BEGIN(colorRanges), DE_ARRAY_END(colorRanges)).value);
-						const vk::VkChromaLocationKHR		chromaLocation		(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+						const vk::VkImageTiling			tiling				(imageTilings[tilingNdx].value);
+						const char* const				tilingName			(imageTilings[tilingNdx].name);
+						const glu::ShaderType			shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+						const vk::VkSamplerYcbcrRange	colorRange			(rng.choose<RangeNamePair, const RangeNamePair*>(DE_ARRAY_BEGIN(colorRanges), DE_ARRAY_END(colorRanges)).value);
+						const vk::VkChromaLocation		chromaLocation		(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 
-						const TestConfig					config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																					textureFilter, chromaLocation, chromaLocation, false, false,
-																					colorRange, colorModel, identitySwizzle);
+						const TestConfig				config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																				textureFilter, chromaLocation, chromaLocation, false, false,
+																				colorRange, colorModel, identitySwizzle);
 
 						addFunctionCaseWithPrograms(colorModelGroup.get(), std::string(textureFilterName) + "_" + tilingName, "", createTestShaders, textureConversionTest, config);
 					}
@@ -2602,13 +1122,13 @@ void initTests (tcu::TestCaseGroup* testGroup)
 			{
 				for (size_t rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(colorRanges); rangeNdx++)
 				{
-					const char* const					colorRangeName	(colorRanges[rangeNdx].name);
-					const vk::VkSamplerYcbcrRangeKHR	colorRange		(colorRanges[rangeNdx].value);
+					const char* const				colorRangeName	(colorRanges[rangeNdx].name);
+					const vk::VkSamplerYcbcrRange	colorRange		(colorRanges[rangeNdx].value);
 
 					// Narrow range doesn't really work with formats that have less than 8 bits
-					if (colorRange == vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW_KHR)
+					if (colorRange == vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW)
 					{
-						const UVec4	bitDepth	(getBitDepth(format));
+						const UVec4					bitDepth		(getYCbCrBitDepth(format));
 
 						if (bitDepth[0] < 8 || bitDepth[1] < 8 || bitDepth[2] < 8)
 							continue;
@@ -2623,13 +1143,13 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 						for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 						{
-							const vk::VkImageTiling			tiling				(imageTilings[tilingNdx].value);
-							const char* const				tilingName			(imageTilings[tilingNdx].name);
-							const glu::ShaderType			shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-							const vk::VkChromaLocationKHR	chromaLocation		(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
-							const TestConfig				config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																					textureFilter, chromaLocation, chromaLocation, false, false,
-																					colorRange, colorModel, identitySwizzle);
+							const vk::VkImageTiling		tiling				(imageTilings[tilingNdx].value);
+							const char* const			tilingName			(imageTilings[tilingNdx].name);
+							const glu::ShaderType		shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+							const vk::VkChromaLocation	chromaLocation		(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+							const TestConfig			config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																				textureFilter, chromaLocation, chromaLocation, false, false,
+																				colorRange, colorModel, identitySwizzle);
 
 							addFunctionCaseWithPrograms(colorRangeGroup.get(), std::string(textureFilterName) + "_" + tilingName, "", createTestShaders, textureConversionTest, config);
 						}
@@ -2658,30 +1178,30 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 			for (size_t xChromaOffsetNdx = 0; xChromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); xChromaOffsetNdx++)
 			{
-				const char* const				xChromaOffsetName	(chromaLocations[xChromaOffsetNdx].name);
-				const vk::VkChromaLocationKHR	xChromaOffset		(chromaLocations[xChromaOffsetNdx].value);
+				const char* const			xChromaOffsetName	(chromaLocations[xChromaOffsetNdx].name);
+				const vk::VkChromaLocation	xChromaOffset		(chromaLocations[xChromaOffsetNdx].value);
 
 				for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)
 				{
-					const char* const							colorModelName	(colorModels[modelNdx].name);
-					const vk::VkSamplerYcbcrModelConversionKHR	colorModel		(colorModels[modelNdx].value);
+					const char* const						colorModelName	(colorModels[modelNdx].name);
+					const vk::VkSamplerYcbcrModelConversion	colorModel		(colorModels[modelNdx].value);
 
-					if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR && getFormatChannelCount(format) < 3)
+					if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY && getYCbCrFormatChannelCount(format) < 3)
 						continue;
 
 
-					if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR)
+					if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY)
 					{
 						for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 						{
-							const vk::VkImageTiling				tiling			(imageTilings[tilingNdx].value);
-							const char* const					tilingName		(imageTilings[tilingNdx].name);
-							const vk::VkSamplerYcbcrRangeKHR	colorRange		(rng.choose<RangeNamePair, const RangeNamePair*>(DE_ARRAY_BEGIN(colorRanges), DE_ARRAY_END(colorRanges)).value);
-							const glu::ShaderType				shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-							const vk::VkChromaLocationKHR		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
-							const TestConfig					config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																				 vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
-																				 colorRange, colorModel, identitySwizzle);
+							const vk::VkImageTiling			tiling			(imageTilings[tilingNdx].value);
+							const char* const				tilingName		(imageTilings[tilingNdx].name);
+							const vk::VkSamplerYcbcrRange	colorRange		(rng.choose<RangeNamePair, const RangeNamePair*>(DE_ARRAY_BEGIN(colorRanges), DE_ARRAY_END(colorRanges)).value);
+							const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+							const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+							const TestConfig				config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																			 vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
+																			 colorRange, colorModel, identitySwizzle);
 
 							addFunctionCaseWithPrograms(conversionGroup.get(), std::string(colorModelName) + "_" + tilingName + "_" + xChromaOffsetName, "", createTestShaders, textureConversionTest, config);
 						}
@@ -2690,13 +1210,13 @@ void initTests (tcu::TestCaseGroup* testGroup)
 					{
 						for (size_t rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(colorRanges); rangeNdx++)
 						{
-							const char* const					colorRangeName	(colorRanges[rangeNdx].name);
-							const vk::VkSamplerYcbcrRangeKHR	colorRange		(colorRanges[rangeNdx].value);
+							const char* const				colorRangeName	(colorRanges[rangeNdx].name);
+							const vk::VkSamplerYcbcrRange	colorRange		(colorRanges[rangeNdx].value);
 
 							// Narrow range doesn't really work with formats that have less than 8 bits
-							if (colorRange == vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW_KHR)
+							if (colorRange == vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW)
 							{
-								const UVec4	bitDepth	(getBitDepth(format));
+								const UVec4					bitDepth		(getYCbCrBitDepth(format));
 
 								if (bitDepth[0] < 8 || bitDepth[1] < 8 || bitDepth[2] < 8)
 									continue;
@@ -2704,13 +1224,13 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 							for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 							{
-								const vk::VkImageTiling			tiling			(imageTilings[tilingNdx].value);
-								const char* const				tilingName		(imageTilings[tilingNdx].name);
-								const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-								const vk::VkChromaLocationKHR	yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
-								const TestConfig				config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																				vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
-																				colorRange, colorModel, identitySwizzle);
+								const vk::VkImageTiling		tiling			(imageTilings[tilingNdx].value);
+								const char* const			tilingName		(imageTilings[tilingNdx].name);
+								const glu::ShaderType		shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+								const vk::VkChromaLocation	yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+								const TestConfig			config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																			vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
+																			colorRange, colorModel, identitySwizzle);
 
 								addFunctionCaseWithPrograms(conversionGroup.get(), (string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + xChromaOffsetName).c_str(), "", createTestShaders, textureConversionTest, config);
 							}
@@ -2742,17 +1262,17 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 						for (size_t xChromaOffsetNdx = 0; xChromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); xChromaOffsetNdx++)
 						{
-							const vk::VkChromaLocationKHR	xChromaOffset		(chromaLocations[xChromaOffsetNdx].value);
+							const vk::VkChromaLocation		xChromaOffset		(chromaLocations[xChromaOffsetNdx].value);
 							const char* const				xChromaOffsetName	(chromaLocations[xChromaOffsetNdx].name);
 
 							for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 							{
-								const vk::VkImageTiling	tiling		(imageTilings[tilingNdx].value);
-								const char* const		tilingName	(imageTilings[tilingNdx].name);
+								const vk::VkImageTiling		tiling				(imageTilings[tilingNdx].value);
+								const char* const			tilingName			(imageTilings[tilingNdx].name);
 
 								{
 									const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-									const vk::VkChromaLocationKHR	yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+									const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 																						defaultColorRange, defaultColorModel, identitySwizzle);
@@ -2762,7 +1282,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 								{
 									const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-									const vk::VkChromaLocationKHR	yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+									const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 																						defaultColorRange, defaultColorModel, swappedChromaSwizzle);
@@ -2774,7 +1294,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 								{
 									{
 										const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-										const vk::VkChromaLocationKHR	yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+										const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 										const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																							vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 																							defaultColorRange, defaultColorModel, identitySwizzle);
@@ -2784,7 +1304,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 									{
 										const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-										const vk::VkChromaLocationKHR	yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+										const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 										const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																							vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
 																							defaultColorRange, defaultColorModel, swappedChromaSwizzle);
@@ -2803,7 +1323,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 								const char* const		tilingName	(imageTilings[tilingNdx].name);
 								{
 									const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-									const vk::VkChromaLocationKHR	chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+									const vk::VkChromaLocation		chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
 																						defaultColorRange, defaultColorModel, identitySwizzle);
@@ -2813,7 +1333,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 								{
 									const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-									const vk::VkChromaLocationKHR	chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+									const vk::VkChromaLocation		chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
 																						defaultColorRange, defaultColorModel, swappedChromaSwizzle);
@@ -2847,24 +1367,24 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 			for (size_t chromaOffsetNdx = 0; chromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); chromaOffsetNdx++)
 			{
-				const char* const				chromaOffsetName	(chromaLocations[chromaOffsetNdx].name);
-				const vk::VkChromaLocationKHR	chromaOffset		(chromaLocations[chromaOffsetNdx].value);
+				const char* const			chromaOffsetName	(chromaLocations[chromaOffsetNdx].name);
+				const vk::VkChromaLocation	chromaOffset		(chromaLocations[chromaOffsetNdx].value);
 
 				for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)
 				{
 					const char* const							colorModelName	(colorModels[modelNdx].name);
-					const vk::VkSamplerYcbcrModelConversionKHR	colorModel		(colorModels[modelNdx].value);
+					const vk::VkSamplerYcbcrModelConversion		colorModel		(colorModels[modelNdx].value);
 
-					if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR && getFormatChannelCount(format) < 3)
+					if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY && getYCbCrFormatChannelCount(format) < 3)
 						continue;
 
-					if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR)
+					if (colorModel == vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY)
 					{
 						for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
 						{
 							const vk::VkImageTiling				tiling			(imageTilings[tilingNdx].value);
 							const char* const					tilingName		(imageTilings[tilingNdx].name);
-							const vk::VkSamplerYcbcrRangeKHR	colorRange		(rng.choose<RangeNamePair, const RangeNamePair*>(DE_ARRAY_BEGIN(colorRanges), DE_ARRAY_END(colorRanges)).value);
+							const vk::VkSamplerYcbcrRange		colorRange		(rng.choose<RangeNamePair, const RangeNamePair*>(DE_ARRAY_BEGIN(colorRanges), DE_ARRAY_END(colorRanges)).value);
 							const glu::ShaderType				shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 							const TestConfig					config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																				 vk::VK_FILTER_NEAREST, chromaOffset, chromaOffset, false, false,
@@ -2878,12 +1398,12 @@ void initTests (tcu::TestCaseGroup* testGroup)
 						for (size_t rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(colorRanges); rangeNdx++)
 						{
 							const char* const					colorRangeName	(colorRanges[rangeNdx].name);
-							const vk::VkSamplerYcbcrRangeKHR	colorRange		(colorRanges[rangeNdx].value);
+							const vk::VkSamplerYcbcrRange		colorRange		(colorRanges[rangeNdx].value);
 
 							// Narrow range doesn't really work with formats that have less than 8 bits
-							if (colorRange == vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW_KHR)
+							if (colorRange == vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW)
 							{
-								const UVec4	bitDepth	(getBitDepth(format));
+								const UVec4	bitDepth	(getYCbCrBitDepth(format));
 
 								if (bitDepth[0] < 8 || bitDepth[1] < 8 || bitDepth[2] < 8)
 									continue;
@@ -2929,10 +1449,10 @@ void initTests (tcu::TestCaseGroup* testGroup)
 						for (size_t xChromaOffsetNdx = 0; xChromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); xChromaOffsetNdx++)
 						for (size_t yChromaOffsetNdx = 0; yChromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); yChromaOffsetNdx++)
 						{
-							const vk::VkChromaLocationKHR	xChromaOffset		(chromaLocations[xChromaOffsetNdx].value);
+							const vk::VkChromaLocation		xChromaOffset		(chromaLocations[xChromaOffsetNdx].value);
 							const char* const				xChromaOffsetName	(chromaLocations[xChromaOffsetNdx].name);
 
-							const vk::VkChromaLocationKHR	yChromaOffset		(chromaLocations[yChromaOffsetNdx].value);
+							const vk::VkChromaLocation		yChromaOffset		(chromaLocations[yChromaOffsetNdx].value);
 							const char* const				yChromaOffsetName	(chromaLocations[yChromaOffsetNdx].name);
 
 							for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
@@ -2988,7 +1508,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 								const char* const		tilingName	(imageTilings[tilingNdx].name);
 								{
 									const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-									const vk::VkChromaLocationKHR	chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+									const vk::VkChromaLocation		chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
 																						defaultColorRange, defaultColorModel, identitySwizzle);
@@ -2998,7 +1518,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 								{
 									const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
-									const vk::VkChromaLocationKHR	chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
+									const vk::VkChromaLocation		chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
 																						defaultColorRange, defaultColorModel, swappedChromaSwizzle);

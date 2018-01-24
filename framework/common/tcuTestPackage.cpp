@@ -95,6 +95,7 @@ TestPackageRegistry* TestPackageRegistry::getOrDestroy (bool isCreate)
 
 void TestPackageRegistry::registerPackage (const char* name, TestPackageCreateFunc createFunc)
 {
+	DE_ASSERT(getPackageInfoByName(name) == DE_NULL);
 	m_packageInfos.push_back(new PackageInfo(name, createFunc));
 }
 

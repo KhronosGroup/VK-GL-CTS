@@ -97,6 +97,16 @@ void initGL44Core (Functions* gl, const FunctionLoader* loader)
 #include "glwInitGL44.inl"
 }
 
+void initGL45Core (Functions* gl, const FunctionLoader* loader)
+{
+#include "glwInitGL45.inl"
+}
+
+void initGL46Core (Functions* gl, const FunctionLoader* loader)
+{
+#include "glwInitGL46.inl"
+}
+
 void initExtensionsGL (Functions* gl, const FunctionLoader* loader, int numExtensions, const char* const* extensions)
 {
 	using std::string;

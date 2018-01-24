@@ -25,7 +25,7 @@
 
 #include <stdexcept>
 
-#if !defined(DEQP_GLES2_RUNTIME_LOAD)
+#if defined(DEQP_GLES2_DIRECT_LINK)
 #	if (DE_OS == DE_OS_IOS)
 #		include <OpenGLES/ES2/gl.h>
 #	else
@@ -38,7 +38,7 @@ namespace glw
 
 void initES20Direct (Functions* gl)
 {
-#if !defined(DEQP_GLES2_RUNTIME_LOAD)
+#if defined(DEQP_GLES2_DIRECT_LINK)
 #	include "glwInitES20Direct.inl"
 #else
 	DE_UNREF(gl);

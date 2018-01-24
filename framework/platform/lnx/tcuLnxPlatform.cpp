@@ -30,6 +30,10 @@
 #include "gluPlatform.hpp"
 #include "vkPlatform.hpp"
 
+#if defined (DEQP_SUPPORT_X11)
+#	include <X11/Xlib.h>
+#endif // DEQP_SUPPORT_X11
+
 #if defined (DEQP_SUPPORT_GLX)
 #	include "tcuLnxX11GlxPlatform.hpp"
 #endif // DEQP_SUPPORT_GLX
@@ -84,5 +88,15 @@ LinuxPlatform::LinuxPlatform (void)
 
 tcu::Platform* createPlatform (void)
 {
+#if defined (DEQP_SUPPORT_X11)
+	// From man:XinitThreads(3):
+	//
+	//     The XInitThreads function initializes Xlib support for concurrent
+	//     threads.  This function must be the first Xlib function
+	//     a multi-threaded program calls, and it must complete before any other
+	//     Xlib call is made.
+	DE_CHECK_RUNTIME_ERR(XInitThreads() != 0);
+#endif // DEQP_SUPPORT_X11
+
 	return new tcu::lnx::LinuxPlatform();
 }

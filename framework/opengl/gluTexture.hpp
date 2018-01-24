@@ -72,9 +72,9 @@ public:
 							Texture2D				(const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams = tcu::TexDecompressionParams());
 							Texture2D				(const RenderContext& context, deUint32 format, deUint32 dataType, int width, int height);
 							Texture2D				(const RenderContext& context, deUint32 internalFormat, int width, int height);
-							~Texture2D				(void);
+	virtual					~Texture2D				(void);
 
-	void					upload					(void); // Not supported on compressed textures.
+	virtual void			upload					(void); // Not supported on compressed textures.
 
 	tcu::Texture2D&			getRefTexture			(void)			{ return m_refTexture;	}
 	const tcu::Texture2D&	getRefTexture			(void) const	{ return m_refTexture;	}
@@ -84,20 +84,33 @@ public:
 	static Texture2D*		create					(const RenderContext& context, const ContextInfo& contextInfo, const tcu::Archive& archive, int numLevels, const char* const* filenames);
 	static Texture2D*		create					(const RenderContext& context, const ContextInfo& contextInfo, const tcu::Archive& archive, const char* filename) { return create(context, contextInfo, archive, 1, &filename); }
 
+protected:
+	const RenderContext&	m_context;
+
+	bool					m_isCompressed;
+	deUint32				m_format;               //!< Internal format.
+	tcu::Texture2D			m_refTexture;
+
+	deUint32				m_glTexture;
+
 private:
 							Texture2D				(const Texture2D& other); // Not allowed!
 	Texture2D&				operator=				(const Texture2D& other); // Not allowed!
 
 	void					loadCompressed			(int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams);
-
-	const RenderContext&	m_context;
-
-	bool					m_isCompressed;
-	deUint32				m_format;				//!< Internal format.
-
-	tcu::Texture2D			m_refTexture;
-	deUint32				m_glTexture;
 } DE_WARN_UNUSED_TYPE;
+
+class ImmutableTexture2D : public Texture2D
+{
+public:
+							ImmutableTexture2D		(const RenderContext& context, deUint32 internalFormat, int width, int height);
+
+	void					upload					(void); // Not supported on compressed textures.
+
+private:
+							ImmutableTexture2D		(const ImmutableTexture2D& other); // Not allowed!
+	ImmutableTexture2D&		operator=				(const ImmutableTexture2D& other); // Not allowed!
+};
 
 /*--------------------------------------------------------------------*//*!
  * \brief Cube Map Texture

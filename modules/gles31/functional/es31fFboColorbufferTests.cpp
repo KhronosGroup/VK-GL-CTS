@@ -138,7 +138,7 @@ protected:
 		tcu::TextureFormatInfo	fmtInfo				= tcu::getTextureFormatInfo(texFmt);
 
 		Texture2DShader			texToFboShader		(DataTypes() << glu::TYPE_SAMPLER_2D, getFragmentOutputType(texFmt), fmtInfo.valueMax-fmtInfo.valueMin, fmtInfo.valueMin);
-		TextureCubeArrayShader	arrayTexShader		(glu::getSamplerCubeArrayType(texFmt), glu::TYPE_FLOAT_VEC4);
+		TextureCubeArrayShader	arrayTexShader		(glu::getSamplerCubeArrayType(texFmt), glu::TYPE_FLOAT_VEC4, glu::getContextTypeGLSLVersion(m_context.getRenderContext().getType()));
 
 		deUint32				texToFboShaderID	= getCurrentContext()->createProgram(&texToFboShader);
 		deUint32				arrayTexShaderID	= getCurrentContext()->createProgram(&arrayTexShader);

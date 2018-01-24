@@ -70,11 +70,11 @@ static const char* uniformTestFragSource	=	"${GLSL_VERSION_DECL}\n"
 
 static std::string getVtxFragVersionSources (const std::string source, NegativeTestContext& ctx)
 {
-	const bool isES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	std::map<std::string, std::string> args;
 
-	args["GLSL_VERSION_DECL"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_300_ES);
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_300_ES);
 
 	return tcu::StringTemplate(source).specialize(args);
 }

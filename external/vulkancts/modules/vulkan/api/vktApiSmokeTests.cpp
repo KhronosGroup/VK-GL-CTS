@@ -102,7 +102,7 @@ void createShaderProgs (SourceCollections& dst)
 {
 	dst.glslSources.add("test") << glu::VertexSource(
 		"#version 310 es\n"
-		"in highp vec4 a_position;\n"
+		"layout(location = 0) in highp vec4 a_position;\n"
 		"void main (void) { gl_Position = a_position; }\n");
 }
 
@@ -595,7 +595,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// sType
 		DE_NULL,													// pNext
 		0u,															// flags
-		VK_TRUE,													// depthClampEnable
+		VK_FALSE,													// depthClampEnable
 		VK_FALSE,													// rasterizerDiscardEnable
 		VK_POLYGON_MODE_FILL,										// polygonMode
 		VK_CULL_MODE_NONE,											// cullMode

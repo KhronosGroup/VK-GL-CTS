@@ -31,7 +31,7 @@ namespace vkt
 namespace sparse
 {
 
-void addBufferSparseMemoryAliasingTests(tcu::TestCaseGroup* group);
+void addBufferSparseMemoryAliasingTests(tcu::TestCaseGroup* group, const bool useDeviceGroups);
 
 } // sparse
 } // vkt

@@ -32,11 +32,20 @@
 namespace vk
 {
 
+// API version introspection
+
+void											getCoreInstanceExtensions						(deUint32 apiVersion, std::vector<const char*>& dst);
+void											getCoreDeviceExtensions							(deUint32 apiVersion, std::vector<const char*>& dst);
+bool											isCoreInstanceExtension							(const deUint32 apiVersion, const std::string& extension);
+bool											isCoreDeviceExtension							(const deUint32 apiVersion, const std::string& extension);
+
 // API queries
 
 std::vector<VkPhysicalDevice>					enumeratePhysicalDevices						(const InstanceInterface& vk, VkInstance instance);
+std::vector<VkPhysicalDeviceGroupProperties>	enumeratePhysicalDeviceGroups					(const InstanceInterface& vk, VkInstance instance);
 std::vector<VkQueueFamilyProperties>			getPhysicalDeviceQueueFamilyProperties			(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceFeatures						getPhysicalDeviceFeatures						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
+VkPhysicalDeviceFeatures2						getPhysicalDeviceFeatures2						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceProperties						getPhysicalDeviceProperties						(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkPhysicalDeviceMemoryProperties				getPhysicalDeviceMemoryProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice);
 VkFormatProperties								getPhysicalDeviceFormatProperties				(const InstanceInterface& vk, VkPhysicalDevice physicalDevice, VkFormat format);
@@ -54,6 +63,7 @@ std::vector<VkLayerProperties>					enumerateDeviceLayerProperties					(const Ins
 std::vector<VkExtensionProperties>				enumerateDeviceExtensionProperties				(const InstanceInterface& vki, VkPhysicalDevice physicalDevice, const char* layerName);
 
 VkQueue											getDeviceQueue									(const DeviceInterface& vkd, VkDevice device, deUint32 queueFamilyIndex, deUint32 queueIndex);
+VkQueue											getDeviceQueue2									(const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2 *queueInfo);
 
 // Feature / extension support
 
@@ -101,6 +111,10 @@ bool										isCompatible							(const VkLayerProperties& layerProperties, cons
 template<typename ExtensionIterator>
 bool										isExtensionSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
 bool										isExtensionSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+bool										isDeviceExtensionSupported				(const deUint32 deviceVersion, const std::vector<std::string>& extensions, const std::string& required);
+bool										isInstanceExtensionSupported			(const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required);
+bool										isDeviceExtensionSupported				(const deUint32 deviceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+bool										isInstanceExtensionSupported			(const deUint32 instanceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
 
 template<typename LayerIterator>
 bool										isLayerSupported						(LayerIterator begin, LayerIterator end, const RequiredLayer& required);

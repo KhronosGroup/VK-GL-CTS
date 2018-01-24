@@ -63,6 +63,8 @@ public:
 
 	virtual void						postIterate				(void);
 
+	virtual void						makeCurrent				(void);
+
 private:
 	const glu::ContextType				m_ctxType;
 	const tcu::RenderTarget				m_renderTarget;

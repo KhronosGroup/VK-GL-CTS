@@ -101,7 +101,6 @@ protected:
 	float					m_pointSize;
 	float					m_lineWidth;
 
-private:
 	glu::ShaderProgram*		m_shader;
 };
 
@@ -540,6 +539,135 @@ void PointCase::generatePoints	(int iteration, std::vector<tcu::Vec4>& outData, 
 	for (int pointNdx = 0; pointNdx < (int)outPoints.size(); ++pointNdx)
 		m_testCtx.getLog() << tcu::TestLog::Message << "Point " << (pointNdx+1) << ":\t" << outPoints[pointNdx].position << tcu::TestLog::EndMessage;
 }
+
+class PointSizeClampedTest : public BaseRenderingCase
+{
+public:
+	PointSizeClampedTest (Context& context, const char* name, const char* desc)
+		: BaseRenderingCase	(context, name, desc)
+	{
+	}
+
+	IterateResult iterate ()
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+		const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
+		// Tests that point sizes (written to gl_PointSize) are clamped,
+		// before rasterization, to the ALIASED_POINT_SIZE_RANGE
+		// given by the implementation.
+		static const int fboHeight = 4;
+		static const int testAreaWidth = 4;
+		static const int testAreaWidthWithMargin = testAreaWidth + 4;
+		static const float pointRadiusOverage = 8;
+		int fboWidth = 0;
+		int maxPointDiameter = 0;
+		{
+			int maxRenderbufferSize = 0;
+			int maxViewportDims[2] = {};
+			gl.getIntegerv(GL_MAX_RENDERBUFFER_SIZE, &maxRenderbufferSize);
+			gl.getIntegerv(GL_MAX_VIEWPORT_DIMS, maxViewportDims);
+			int maxFboWidth = std::min(maxRenderbufferSize, maxViewportDims[0]);
+
+			float pointSizeRange[2] = {};
+			gl.getFloatv(GL_ALIASED_POINT_SIZE_RANGE, pointSizeRange);
+			m_testCtx.getLog() << tcu::TestLog::Message
+				<< "GL_ALIASED_POINT_SIZE_RANGE is [" << pointSizeRange[0] << ", " << pointSizeRange[1] << "]"
+				<< tcu::TestLog::EndMessage;
+			// Typically (in the correct case), maxPointDiameter is an odd integer.
+			maxPointDiameter = (int) pointSizeRange[1];
+			// maxPointRadius is inclusive of the center point.
+			int maxPointRadius = (maxPointDiameter + 1) / 2;
+			if (maxPointRadius > maxFboWidth - testAreaWidthWithMargin)
+			{
+				m_testCtx.setTestResult(QP_TEST_RESULT_COMPATIBILITY_WARNING, "max framebuffer size isn't large enough to test max point size");
+				return STOP;
+			}
+			fboWidth = maxPointRadius + testAreaWidthWithMargin;
+			// Round up to the nearest multiple of 2:
+			fboWidth = ((fboWidth + 1) / 2) * 2;
+		}
+		float pointSize = ((float) maxPointDiameter) + pointRadiusOverage * 2;
+		TCU_CHECK(gl.getError() == GL_NO_ERROR);
+
+		m_testCtx.getLog() << tcu::TestLog::Message
+			<< "Testing with pointSize = " << pointSize
+			<< ", fboWidth = " << fboWidth
+			<< tcu::TestLog::EndMessage;
+
+		// Create a framebuffer that is (fboWidth)x(fboHeight), cleared to green:
+		// +---------------------------+
+		// |ggggggggggggggggggggggggggg|
+		// +---------------------------+
+		gl.viewport(0, 0, fboWidth, fboHeight);
+		deUint32 fbo = 0;
+		gl.genFramebuffers(1, &fbo);
+		gl.bindFramebuffer(GL_FRAMEBUFFER, fbo);
+		deUint32 rbo = 0;
+		gl.genRenderbuffers(1, &rbo);
+		gl.bindRenderbuffer(GL_RENDERBUFFER, rbo);
+		gl.renderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, fboWidth, fboHeight);
+		gl.framebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
+		if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			m_testCtx.setTestResult(QP_TEST_RESULT_COMPATIBILITY_WARNING, "couldn't complete a framebuffer suitable to test max point size");
+			return STOP;
+		}
+		gl.clearColor(0.0f, 1.0f, 0.0f, 1.0f);
+		gl.clear(GL_COLOR_BUFFER_BIT);
+		TCU_CHECK(gl.getError() == GL_NO_ERROR);
+
+		// (Framebuffer is still bound.)
+
+		// Draw a red point, with size pointSize, at the far right:
+		// +---------------------------+
+		// |ggggggggRRRRRRRRRRRRRRRRRRR|
+		// +---------------------------+
+		//                            x                           point center
+		//  ^^^^^^^^^^^^^^^^^^^^^^^^^^^                           fboWidth
+		//  ^^^^                                                  testAreaWidth = 4 (this is the area that's tested)
+		//  ^^^^^^^^                                              testAreaWidthWithMargin = 8 (extra 4 pixels for tolerance)
+		//          ^^^^^^^^^^^^^^^^^^x^^^^^^^^^^^^^^^^^^         maxPointDiameter = 37
+		//  ^^^^^^^^                                     ^^^^^^^^ pointRadiusOverage = 8 * 2
+		//  ^^^^^^^^^^^^^^^^^^^^^^^^^^x^^^^^^^^^^^^^^^^^^^^^^^^^^ pointSize = 53
+		//          ^^^^^^^^^^^^^^^^^^^ area of resulting draw, if the size is clamped properly = 19
+		{
+			const glw::GLint		positionLoc		= gl.getAttribLocation(m_shader->getProgram(), "a_position");
+			const glw::GLint		colorLoc		= gl.getAttribLocation(m_shader->getProgram(), "a_color");
+			const glw::GLint		pointSizeLoc	= gl.getUniformLocation(m_shader->getProgram(), "u_pointSize");
+			static const float position[] = {1.0f, 0.0f, 0.0f, 1.0f};
+			static const float color[] = {1.0f, 0.0f, 0.0f, 1.0f};
+			gl.useProgram(m_shader->getProgram());
+			gl.enableVertexAttribArray(positionLoc);
+			gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 0, position);
+			gl.enableVertexAttribArray(colorLoc);
+			gl.vertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, 0, color);
+			gl.uniform1f(pointSizeLoc, pointSize);
+			gl.drawArrays(GL_POINTS, 0, 1);
+			gl.disableVertexAttribArray(colorLoc);
+			gl.disableVertexAttribArray(positionLoc);
+			gl.useProgram(0);
+			TCU_CHECK(gl.getError() == GL_NO_ERROR);
+		}
+
+		// And test the resulting draw (the test area should still be green).
+		deUint32 pixels[testAreaWidth * fboHeight] = {};
+		gl.readPixels(0, 0, testAreaWidth, fboHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		TCU_CHECK(gl.getError() == GL_NO_ERROR);
+
+		const tcu::RGBA threshold(12, 12, 12, 12);
+		for (deUint32 y = 0; y < fboHeight; ++y)
+		{
+			for (deUint32 x = 0; x < testAreaWidth; ++x)
+			{
+				tcu::RGBA color(pixels[y * testAreaWidth + x]);
+				TCU_CHECK(compareThreshold(color, tcu::RGBA::green(), threshold));
+			}
+		}
+
+		return STOP;
+	}
+};
 
 class TrianglesCase : public BaseTriangleCase
 {
@@ -1837,6 +1965,15 @@ void RasterizationTests::init (void)
 		primitives->addChild(new LineStripCase		(m_context, "line_strip_wide",	"Render primitives as GL_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE));
 		primitives->addChild(new LineLoopCase		(m_context, "line_loop_wide",	"Render primitives as GL_LINE_LOOP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE));
 		primitives->addChild(new PointCase			(m_context, "points",			"Render primitives as GL_POINTS, verify rasterization result",							PRIMITIVEWIDENESS_WIDE));
+	}
+
+	// .limits
+	{
+		tcu::TestCaseGroup* const limits = new tcu::TestCaseGroup(m_testCtx, "limits", "Primitive width limits");
+
+		addChild(limits);
+
+		limits->addChild(new PointSizeClampedTest(m_context, "points", "gl_PointSize is clamped to ALIASED_POINT_SIZE_RANGE"));
 	}
 
 	// .fill_rules

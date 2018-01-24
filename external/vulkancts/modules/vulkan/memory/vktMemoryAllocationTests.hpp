@@ -31,7 +31,8 @@ namespace vkt
 namespace memory
 {
 
-tcu::TestCaseGroup* createAllocationTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createAllocationTests				(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createDeviceGroupAllocationTests	(tcu::TestContext& testCtx);
 
 } // memory
 } // vkt

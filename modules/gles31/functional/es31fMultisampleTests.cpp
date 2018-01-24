@@ -225,9 +225,9 @@ DefaultFBOMultisampleCase::~DefaultFBOMultisampleCase (void)
 
 void DefaultFBOMultisampleCase::init (void)
 {
-	const bool					isES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool					supportsES32 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 	map<string, string>			args;
-	args["GLSL_VERSION_DECL"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
 
 	static const char* vertShaderSource =
 		"${GLSL_VERSION_DECL}\n"

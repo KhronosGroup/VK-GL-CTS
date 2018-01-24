@@ -154,7 +154,7 @@ void FboTestCase::checkError (void)
 
 static bool isRequiredFormat (deUint32 format, glu::RenderContext& renderContext)
 {
-	const bool isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
 	switch (format)
 	{
 		// Color-renderable formats
@@ -205,12 +205,13 @@ static bool isRequiredFormat (deUint32 format, glu::RenderContext& renderContext
 
 		// Float format
 		case GL_RGBA32F:
-		case GL_RGB32F:
 		case GL_R11F_G11F_B10F:
 		case GL_RG32F:
 		case GL_R32F:
-			return isES32;
-
+		case GL_RGBA16F:
+		case GL_RG16F:
+		case GL_R16F:
+			return supportsES32;
 
 		default:
 			return false;
@@ -219,7 +220,7 @@ static bool isRequiredFormat (deUint32 format, glu::RenderContext& renderContext
 
 static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::RenderContext& renderContext)
 {
-	const bool					isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool					supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
 	std::vector<std::string>	out;
 
 	DE_ASSERT(!isRequiredFormat(format, renderContext));
@@ -230,17 +231,22 @@ static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::Ren
 			out.push_back("GL_EXT_color_buffer_half_float");
 			break;
 
+		case GL_RGB32F:
+			out.push_back("GL_EXT_color_buffer_float");
+			break;
+
 		case GL_RGBA16F:
 		case GL_RG16F:
 		case GL_R16F:
-			out.push_back("GL_EXT_color_buffer_half_float");
+			if (!supportsES32)
+				out.push_back("GL_EXT_color_buffer_half_float");
+			break;
 
 		case GL_RGBA32F:
-		case GL_RGB32F:
 		case GL_R11F_G11F_B10F:
 		case GL_RG32F:
 		case GL_R32F:
-			if (!isES32)
+			if (!supportsES32)
 				out.push_back("GL_EXT_color_buffer_float");
 			break;
 

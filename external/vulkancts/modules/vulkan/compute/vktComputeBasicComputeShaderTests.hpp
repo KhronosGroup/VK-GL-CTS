@@ -32,6 +32,7 @@ namespace compute
 {
 
 tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createBasicDeviceGroupComputeShaderTests (tcu::TestContext& testCtx);
 
 } // compute
 } // vkt

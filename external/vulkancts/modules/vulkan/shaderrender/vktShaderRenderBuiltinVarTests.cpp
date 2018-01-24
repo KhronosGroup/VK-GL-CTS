@@ -33,11 +33,11 @@
 #include "tcuImageCompare.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuTestLog.hpp"
 #include "vktDrawUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkMemUtil.hpp"
-#include "tcuTestLog.hpp"
 
 #include "deMath.h"
 #include "deRandom.hpp"
@@ -314,6 +314,9 @@ BuiltinFragDepthCaseInstance::BuiltinFragDepthCaseInstance (Context& context, Vk
 
 		if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
 			throw tcu::NotSupportedError("MarkerImage format not supported as storage image");
+
+		if (m_largeDepthEnable && !de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_EXT_depth_range_unrestricted"))
+			throw tcu::NotSupportedError("large_depth test variants require the VK_EXT_depth_range_unrestricted extension");
 	}
 	catch (const vk::Error& e)
 	{
@@ -789,7 +792,6 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		drawState.compareOp					= rr::TESTFUNC_ALWAYS;
 		drawState.depthTestEnable			= true;
 		drawState.depthWriteEnable			= true;
-		drawState.depthBoundsTestEnable		= true;
 		drawState.sampleShadingEnable		= true;
 		vulkanProgram.depthImageView		= *depthImageView;
 		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
@@ -953,8 +955,8 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 
 		drawState.numSamples				= m_samples;
 		drawState.sampleShadingEnable		= true;
-		vulkanProgram.descriptorSetLayout	= descriptorSetLayout;
-		vulkanProgram.descriptorSet			= descriptorSet;
+		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
+		vulkanProgram.descriptorSet			= *descriptorSet;
 
 		VulkanDrawContext		vulkanDrawContext(m_context, drawState, drawCallData, vulkanProgram);
 		vulkanDrawContext.draw();
@@ -1184,12 +1186,6 @@ bool BuiltinFragDepthCaseInstance::validateDepthBuffer (const tcu::ConstPixelBuf
 
 			if (m_largeDepthEnable)
 				expectedValue += m_largeDepthBase;
-
-			if (expectedValue > 1.0f)
-				expectedValue = 1.0f;
-
-			if (expectedValue < 0.0f)
-				expectedValue = 0.0f;
 
 			for (deUint32 sampleNdx = 0; sampleNdx < (deUint32)m_samples; sampleNdx++)
 			{
@@ -1502,8 +1498,8 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 
 		drawState.numSamples				= m_sampleCount;
 		drawState.sampleShadingEnable		= true;
-		vulkanProgram.descriptorSetLayout	= descriptorSetLayout;
-		vulkanProgram.descriptorSet			= descriptorSet;
+		vulkanProgram.descriptorSetLayout	= *descriptorSetLayout;
+		vulkanProgram.descriptorSet			= *descriptorSet;
 
 		VulkanDrawContext	vulkanDrawContext(m_context, drawState, drawCallData, vulkanProgram);
 		vulkanDrawContext.draw();
@@ -1840,6 +1836,7 @@ void BuiltinFragDepthCase::initPrograms (SourceCollections& programCollection) c
 				<< "void main()\n"
 				<< "{\n"
 				<< "	gl_Position = position;\n"
+				<< "	gl_PointSize = 1.0;\n"
 				<< "}\n";
 			programCollection.glslSources.add("FragDepthVert") << glu::VertexSource(vertexSource.str());
 		}
@@ -1854,6 +1851,7 @@ void BuiltinFragDepthCase::initPrograms (SourceCollections& programCollection) c
 				<< "void main()\n"
 				<< "{\n"
 				<< "	gl_Position = position;\n"
+				<< "	gl_PointSize = 1.0;\n"
 				<< "	texCoord = position.xy/2 + vec2(0.5);\n"
 				<< "}\n";
 			programCollection.glslSources.add("FragDepthVertPass2") << glu::VertexSource(vertexSource.str());
@@ -1938,6 +1936,7 @@ public:
 BuiltinGlFragCoordXYZCaseInstance::BuiltinGlFragCoordXYZCaseInstance (Context& context)
 	: ShaderRenderCaseInstance	(context)
 {
+	m_colorFormat = VK_FORMAT_R16G16B16A16_UNORM;
 }
 
 TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
@@ -1946,10 +1945,7 @@ TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
 	const int		width			= viewportSize.x();
 	const int		height			= viewportSize.y();
 	const tcu::Vec3	scale			(1.f / float(width), 1.f / float(height), 1.0f);
-	const tcu::RGBA	threshold		(2, 2, 2, 2);
-	Surface			resImage		(width, height);
-	Surface			refImage		(width, height);
-	bool			compareOk		= false;
+	const float		precision		= 0.00001f;
 	const deUint16	indices[6]		=
 	{
 		2, 1, 3,
@@ -1960,30 +1956,28 @@ TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
 	addUniform(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, scale);
 
 	render(4, 2, indices);
-	copy(resImage.getAccess(), getResultImage().getAccess());
 
 	// Reference image
-	for (int y = 0; y < refImage.getHeight(); y++)
+	for (int y = 0; y < height; y++)
 	{
-		for (int x = 0; x < refImage.getWidth(); x++)
+		for (int x = 0; x < width; x++)
 		{
-			const float	xf			= (float(x)+.5f) / float(refImage.getWidth());
-			const float	yf			= (float(refImage.getHeight()-y-1)+.5f) / float(refImage.getHeight());
+			const float	xf			= (float(x) + .5f) / float(width);
+			const float	yf			= (float(height - y - 1) + .5f) / float(height);
 			const float	z			= (xf + yf) / 2.0f;
-			const Vec3	fragCoord	(float(x)+.5f, float(y)+.5f, z);
+			const Vec3	fragCoord	(float(x) + .5f, float(y) + .5f, z);
 			const Vec3	scaledFC	= fragCoord*scale;
 			const Vec4	color		(scaledFC.x(), scaledFC.y(), scaledFC.z(), 1.0f);
+			const Vec4	resultColor	= getResultImage().getAccess().getPixel(x, y);
 
-			refImage.setPixel(x, y, RGBA(color));
+			if (de::abs(color.x() - resultColor.x()) > precision ||
+				de::abs(color.y() - resultColor.y()) > precision ||
+				de::abs(color.z() - resultColor.z()) > precision)
+			return TestStatus::fail("Image mismatch");
 		}
 	}
 
-	compareOk = pixelThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", refImage, resImage, threshold, COMPARE_LOG_RESULT);
-
-	if (compareOk)
-		return TestStatus::pass("Result image matches reference");
-	else
-		return TestStatus::fail("Image mismatch");
+	return TestStatus::pass("Result image matches reference");
 }
 
 void BuiltinGlFragCoordXYZCaseInstance::setupDefaultInputs (void)
@@ -2070,6 +2064,7 @@ BuiltinGlFragCoordWCaseInstance::BuiltinGlFragCoordWCaseInstance (Context& conte
 	: ShaderRenderCaseInstance	(context)
 	, m_w						(1.7f, 2.0f, 1.2f, 1.0f)
 {
+	m_colorFormat = VK_FORMAT_R16G16B16A16_UNORM;
 }
 
 TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
@@ -2077,10 +2072,7 @@ TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
 	const UVec2		viewportSize	= getViewportSize();
 	const int		width			= viewportSize.x();
 	const int		height			= viewportSize.y();
-	const tcu::RGBA	threshold		(2, 2, 2, 2);
-	Surface			resImage		(width, height);
-	Surface			refImage		(width, height);
-	bool			compareOk		= false;
+	const float		precision		= 0.00001f;
 	const deUint16	indices[6]		=
 	{
 		2, 1, 3,
@@ -2089,30 +2081,28 @@ TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
 
 	setup();
 	render(4, 2, indices);
-	copy(resImage.getAccess(), getResultImage().getAccess());
 
 	// Reference image
-	for (int y = 0; y < refImage.getHeight(); y++)
+	for (int y = 0; y < height; y++)
 	{
-		for (int x = 0; x < refImage.getWidth(); x++)
+		for (int x = 0; x < width; x++)
 		{
-			const float	xf			= (float(x)+.5f) / float(refImage.getWidth());
-			const float	yf			= (float(refImage.getHeight()-y-1)+.5f) / float(refImage.getHeight());
+			const float	xf			= (float(x) + .5f) / float(width);
+			const float	yf			= (float(height - y - 1) +.5f) / float(height);
 			const float	oow			= ((xf + yf) < 1.0f)
 										? projectedTriInterpolate(Vec3(m_w[0], m_w[1], m_w[2]), Vec3(m_w[0], m_w[1], m_w[2]), xf, yf)
-										: projectedTriInterpolate(Vec3(m_w[3], m_w[2], m_w[1]), Vec3(m_w[3], m_w[2], m_w[1]), 1.0f-xf, 1.0f-yf);
+										: projectedTriInterpolate(Vec3(m_w[3], m_w[2], m_w[1]), Vec3(m_w[3], m_w[2], m_w[1]), 1.0f - xf, 1.0f - yf);
 			const Vec4	color		(0.0f, oow - 1.0f, 0.0f, 1.0f);
+			const Vec4	resultColor	= getResultImage().getAccess().getPixel(x, y);
 
-			refImage.setPixel(x, y, RGBA(color));
+			if (de::abs(color.x() - resultColor.x()) > precision ||
+				de::abs(color.y() - resultColor.y()) > precision ||
+				de::abs(color.z() - resultColor.z()) > precision)
+			return TestStatus::fail("Image mismatch");
 		}
 	}
 
-	compareOk = pixelThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", refImage, resImage, threshold, COMPARE_LOG_RESULT);
-
-	if (compareOk)
-		return TestStatus::pass("Result image matches reference");
-	else
-		return TestStatus::fail("Image mismatch");
+	return TestStatus::pass("Result image matches reference");
 }
 
 void BuiltinGlFragCoordWCaseInstance::setupDefaultInputs (void)

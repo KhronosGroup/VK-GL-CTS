@@ -152,7 +152,7 @@ void deTimer_disable (deTimer* timer)
 	}
 }
 
-#elif (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN)
+#elif (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || DE_OS == DE_OS_QNX)
 
 #include <signal.h>
 #include <time.h>

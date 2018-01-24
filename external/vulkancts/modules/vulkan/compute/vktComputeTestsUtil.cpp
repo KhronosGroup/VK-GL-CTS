@@ -105,7 +105,7 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
+		static_cast<VkPipelineLayoutCreateFlags>(0u),		// VkPipelineLayoutCreateFlags		flags;
 		0u,													// deUint32							setLayoutCount;
 		DE_NULL,											// const VkDescriptorSetLayout*		pSetLayouts;
 		0u,													// deUint32							pushConstantRangeCount;
@@ -122,7 +122,7 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineLayoutCreateFlags		flags;
+		static_cast<VkPipelineLayoutCreateFlags>(0u),		// VkPipelineLayoutCreateFlags		flags;
 		1u,													// deUint32							setLayoutCount;
 		&descriptorSetLayout,								// const VkDescriptorSetLayout*		pSetLayouts;
 		0u,													// deUint32							pushConstantRangeCount;
@@ -131,16 +131,18 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	return createPipelineLayout(vk, device, &pipelineLayoutParams);
 }
 
-Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
-									  const VkDevice			device,
-									  const VkPipelineLayout	pipelineLayout,
-									  const VkShaderModule		shaderModule)
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&					vk,
+									  const VkDevice							device,
+									  const VkPipelineLayout					pipelineLayout,
+									  const VkPipelineCreateFlags				pipelineFlags,
+									  const VkShaderModule						shaderModule,
+									  const VkPipelineShaderStageCreateFlags	shaderFlags)
 {
 	const VkPipelineShaderStageCreateInfo pipelineShaderStageParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
 		DE_NULL,												// const void*							pNext;
-		0u,														// VkPipelineShaderStageCreateFlags		flags;
+		shaderFlags,											// VkPipelineShaderStageCreateFlags		flags;
 		VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlagBits				stage;
 		shaderModule,											// VkShaderModule						module;
 		"main",													// const char*							pName;
@@ -150,13 +152,21 @@ Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
 	{
 		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,		// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
-		0u,													// VkPipelineCreateFlags			flags;
+		pipelineFlags,										// VkPipelineCreateFlags			flags;
 		pipelineShaderStageParams,							// VkPipelineShaderStageCreateInfo	stage;
 		pipelineLayout,										// VkPipelineLayout					layout;
 		DE_NULL,											// VkPipeline						basePipelineHandle;
 		0,													// deInt32							basePipelineIndex;
 	};
 	return createComputePipeline(vk, device, DE_NULL , &pipelineCreateInfo);
+}
+
+Move<VkPipeline> makeComputePipeline (const DeviceInterface&	vk,
+									  const VkDevice			device,
+									  const VkPipelineLayout	pipelineLayout,
+									  const VkShaderModule		shaderModule)
+{
+	return makeComputePipeline(vk, device, pipelineLayout, static_cast<VkPipelineCreateFlags>(0u), shaderModule, static_cast<VkPipelineShaderStageCreateFlags>(0u));
 }
 
 Move<VkBufferView> makeBufferView (const DeviceInterface&	vk,
@@ -280,21 +290,35 @@ void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandB
 void submitCommandsAndWait (const DeviceInterface&	vk,
 							const VkDevice			device,
 							const VkQueue			queue,
-							const VkCommandBuffer	commandBuffer)
+							const VkCommandBuffer	commandBuffer,
+							const bool				useDeviceGroups,
+							const deUint32			deviceMask)
 {
 	const Unique<VkFence> fence(createFence(vk, device));
 
+	VkDeviceGroupSubmitInfo deviceGroupSubmitInfo	=
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,	//	VkStructureType		sType;
+		DE_NULL,										//	const void*			pNext;
+		0u,												//	uint32_t			waitSemaphoreCount;
+		DE_NULL,										//	const uint32_t*		pWaitSemaphoreDeviceIndices;
+		1u,												//	uint32_t			commandBufferCount;
+		&deviceMask,									//	const uint32_t*		pCommandBufferDeviceMasks;
+		0u,												//	uint32_t			signalSemaphoreCount;
+		DE_NULL,										//	const uint32_t*		pSignalSemaphoreDeviceIndices;
+	};
+
 	const VkSubmitInfo submitInfo =
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType			sType;
-		DE_NULL,							// const void*				pNext;
-		0u,									// deUint32					waitSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,									// deUint32					commandBufferCount;
-		&commandBuffer,						// const VkCommandBuffer*	pCommandBuffers;
-		0u,									// deUint32					signalSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*		pSignalSemaphores;
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,						// VkStructureType				sType;
+		useDeviceGroups ? &deviceGroupSubmitInfo : DE_NULL,	// const void*					pNext;
+		0u,													// deUint32						waitSemaphoreCount;
+		DE_NULL,											// const VkSemaphore*			pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,				// const VkPipelineStageFlags*	pWaitDstStageMask;
+		1u,													// deUint32						commandBufferCount;
+		&commandBuffer,										// const VkCommandBuffer*		pCommandBuffers;
+		0u,													// deUint32						signalSemaphoreCount;
+		DE_NULL,											// const VkSemaphore*			pSignalSemaphores;
 	};
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));

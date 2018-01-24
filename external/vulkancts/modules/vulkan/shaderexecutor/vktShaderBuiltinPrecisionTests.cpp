@@ -2440,7 +2440,7 @@ protected:
 			if (xi.contains(0.0))
 				ret |= TCU_NAN;
 			if (xi.intersects(Interval(-TCU_INFINITY, 0.0)))
-				ret |= Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE);
+				ret |= ctx.format.roundOut(Interval(-DE_PI_DOUBLE, DE_PI_DOUBLE), true);
 		}
 
 		if (ctx.format.hasInf() != YES && (!yi.isFinite() || !xi.isFinite()))

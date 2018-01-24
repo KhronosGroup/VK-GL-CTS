@@ -47,10 +47,11 @@ using std::string;
  *  only. It's possible to use test selectors for limiting the export
  *  to one package in a multipackage binary.
  *//*--------------------------------------------------------------------*/
-static void writeCaselistsToStdout (TestPackageRoot& root, TestContext& testCtx, const CommandLine& cmdLine)
+static void writeCaselistsToStdout (TestPackageRoot& root, TestContext& testCtx)
 {
-	DefaultHierarchyInflater	inflater	(testCtx);
-	TestHierarchyIterator		iter		(root, inflater, cmdLine);
+	DefaultHierarchyInflater			inflater		(testCtx);
+	de::MovePtr<const CaseListFilter>	caseListFilter	(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()));
+	TestHierarchyIterator				iter			(root, inflater, *caseListFilter);
 
 	while (iter.getState() != TestHierarchyIterator::STATE_FINISHED)
 	{
@@ -114,7 +115,7 @@ App::App (Platform& platform, Archive& archive, TestLog& log, const CommandLine&
 		if (runMode == RUNMODE_EXECUTE)
 			m_testExecutor = new TestSessionExecutor(*m_testRoot, *m_testCtx);
 		else if (runMode == RUNMODE_DUMP_STDOUT_CASELIST)
-			writeCaselistsToStdout(*m_testRoot, *m_testCtx, cmdLine);
+			writeCaselistsToStdout(*m_testRoot, *m_testCtx);
 		else if (runMode == RUNMODE_DUMP_XML_CASELIST)
 			writeXmlCaselistsToFiles(*m_testRoot, *m_testCtx, cmdLine);
 		else if (runMode == RUNMODE_DUMP_TEXT_CASELIST)
@@ -201,6 +202,11 @@ bool App::iterate (void)
 	}
 
 	return platformOk && testExecOk;
+}
+
+const TestRunStatus& App::getResult (void) const
+{
+	return m_testExecutor->getStatus();
 }
 
 void App::onWatchdogTimeout (qpWatchDog* watchDog, void* userPtr, qpTimeoutReason reason)

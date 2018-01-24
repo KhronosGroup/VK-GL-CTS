@@ -89,6 +89,12 @@ Vector<T, Rows> operator* (const Matrix<T, Rows, Cols>& mtx, const Vector<T, Col
 template <typename T, int Rows, int Cols>
 Vector<T, Cols> operator* (const Vector<T, Rows>& vec, const Matrix<T, Rows, Cols>& mtx);
 
+template <typename T, int Rows, int Cols>
+bool operator== (const Matrix<T, Rows, Cols>& lhs, const Matrix<T, Rows, Cols>& rhs);
+
+template <typename T, int Rows, int Cols>
+bool operator!= (const Matrix<T, Rows, Cols>& lhs, const Matrix<T, Rows, Cols>& rhs);
+
 // Further operations
 
 template <typename T, int Size>
@@ -571,6 +577,22 @@ Matrix<T, Rows, Cols> operator/ (const Matrix<T, Rows, Cols>& a, const Matrix<T,
 		for (int row = 0; row < Rows; row++)
 			res(row, col) = a(row, col) / b(row, col);
 	return res;
+}
+
+template <typename T, int Rows, int Cols>
+bool operator== (const Matrix<T, Rows, Cols>& lhs, const Matrix<T, Rows, Cols>& rhs)
+{
+	for (int row = 0; row < Rows; row++)
+		for (int col = 0; col < Cols; col++)
+			if (lhs(row, col) != rhs(row, col))
+				return false;
+	return true;
+}
+
+template <typename T, int Rows, int Cols>
+bool operator!= (const Matrix<T, Rows, Cols>& lhs, const Matrix<T, Rows, Cols>& rhs)
+{
+	return !(lhs == rhs);
 }
 
 } // tcu

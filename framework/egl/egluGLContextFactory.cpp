@@ -42,6 +42,8 @@
 #include "glwInitFunctions.hpp"
 #include "glwInitES20Direct.hpp"
 #include "glwInitES30Direct.hpp"
+#include "glwInitES31Direct.hpp"
+#include "glwInitES32Direct.hpp"
 
 #include "deDynamicLibrary.hpp"
 #include "deSTLUtil.hpp"
@@ -130,13 +132,19 @@ public:
 										RenderContext			(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config);
 	virtual								~RenderContext			(void);
 
-	virtual glu::ContextType			getType					(void) const { return m_renderConfig.type;	}
-	virtual const glw::Functions&		getFunctions			(void) const { return m_glFunctions;		}
-	virtual const tcu::RenderTarget&	getRenderTarget			(void) const { return m_glRenderTarget;		}
+	virtual glu::ContextType			getType					(void) const { return m_renderConfig.type;		}
+	virtual const glw::Functions&		getFunctions			(void) const { return m_glFunctions;			}
+	virtual const tcu::RenderTarget&	getRenderTarget			(void) const { return m_glRenderTarget;			}
 	virtual void						postIterate				(void);
 
-	virtual EGLDisplay					getEGLDisplay			(void) const { return m_eglDisplay;			}
-	virtual EGLContext					getEGLContext			(void) const { return m_eglContext;			}
+	virtual EGLDisplay					getEGLDisplay			(void) const { return m_eglDisplay;				}
+	virtual EGLContext					getEGLContext			(void) const { return m_eglContext;				}
+	virtual EGLConfig					getEGLConfig			(void) const { return m_eglConfig;				}
+	virtual const eglw::Library&		getLibrary				(void) const { return m_display->getLibrary();	}
+
+	virtual eglw::GenericFuncType		getProcAddress			(const char* name) const;
+
+	virtual void						makeCurrent				(void);
 
 private:
 	void								create					(const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config);
@@ -285,6 +293,18 @@ EGLSurface createPBuffer (const Library& egl, EGLDisplay display, EGLConfig eglC
 	return surface;
 }
 
+void RenderContext::makeCurrent (void)
+{
+	const Library& egl = m_display->getLibrary();
+
+	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
+}
+
+glw::GenericFuncType RenderContext::getProcAddress (const char* name) const
+{
+	return (glw::GenericFuncType)m_display->getLibrary().getProcAddress(name);
+}
+
 void RenderContext::create (const NativeDisplayFactory* displayFactory, const NativeWindowFactory* windowFactory, const NativePixmapFactory* pixmapFactory, const glu::RenderConfig& config)
 {
 	glu::RenderConfig::SurfaceType	surfaceType	= config.surfaceType;
@@ -355,7 +375,7 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 			throw tcu::InternalError("Invalid surface type");
 	}
 
-	m_eglContext = createGLContext(egl, m_eglDisplay, m_eglConfig, config.type);
+	m_eglContext = createGLContext(egl, m_eglDisplay, m_eglConfig, config.type, config.resetNotificationStrategy);
 
 	EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
@@ -367,16 +387,28 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 		GetProcFuncLoader funcLoader(egl);
 		glu::initCoreFunctions(&m_glFunctions, &funcLoader, config.type.getAPI());
 	}
-#if !defined(DEQP_GLES2_RUNTIME_LOAD)
+#if defined(DEQP_GLES2_DIRECT_LINK)
 	else if (config.type.getAPI() == glu::ApiType::es(2,0))
 	{
 		glw::initES20Direct(&m_glFunctions);
 	}
 #endif
-#if !defined(DEQP_GLES3_RUNTIME_LOAD)
+#if defined(DEQP_GLES3_DIRECT_LINK)
 	else if (config.type.getAPI() == glu::ApiType::es(3,0))
 	{
 		glw::initES30Direct(&m_glFunctions);
+	}
+#endif
+#if defined(DEQP_GLES31_DIRECT_LINK)
+	else if (config.type.getAPI() == glu::ApiType::es(3,1))
+	{
+		glw::initES31Direct(&m_glFunctions);
+	}
+#endif
+#if defined(DEQP_GLES32_DIRECT_LINK)
+	else if (config.type.getAPI() == glu::ApiType::es(3,2))
+	{
+		glw::initES32Direct(&m_glFunctions);
 	}
 #endif
 	else
@@ -429,10 +461,10 @@ void RenderContext::create (const NativeDisplayFactory* displayFactory, const Na
 
 void RenderContext::destroy (void)
 {
-	const Library& egl = m_display->getLibrary();
-
 	if (m_eglDisplay != EGL_NO_DISPLAY)
 	{
+		const Library& egl = m_display->getLibrary();
+
 		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
 		if (m_eglSurface != EGL_NO_SURFACE)

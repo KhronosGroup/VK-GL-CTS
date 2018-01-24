@@ -209,7 +209,7 @@ const char* getBlendLayoutQualifier (rr::BlendEquationAdvanced equation)
 
 glu::ProgramSources getBlendProgramSrc (rr::BlendEquationAdvanced equation, glu::RenderContext& renderContext)
 {
-	const bool isES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32 = glu::contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
 
 	static const char*	s_vertSrc	= "${GLSL_VERSION_DECL}\n"
 									  "in highp vec4 a_position;\n"
@@ -231,8 +231,8 @@ glu::ProgramSources getBlendProgramSrc (rr::BlendEquationAdvanced equation, glu:
 									  "}\n";
 
 	map<string, string> args;
-	args["GLSL_VERSION_DECL"] = isES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
-	args["EXTENSION"] = isES32 ? "\n" : "#extension GL_KHR_blend_equation_advanced : require\n";
+	args["GLSL_VERSION_DECL"] = supportsES32 ? getGLSLVersionDeclaration(glu::GLSL_VERSION_320_ES) : getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES);
+	args["EXTENSION"] = supportsES32 ? "\n" : "#extension GL_KHR_blend_equation_advanced : require\n";
 	args["SUPPORT_QUALIFIER"] = getBlendLayoutQualifier(equation);
 
 	return glu::ProgramSources()

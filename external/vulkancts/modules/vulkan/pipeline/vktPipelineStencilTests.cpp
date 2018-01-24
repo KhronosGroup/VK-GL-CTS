@@ -70,20 +70,18 @@ class StencilOpStateUniqueRandomIterator : public UniqueRandomIterator<VkStencil
 public:
 								StencilOpStateUniqueRandomIterator	(int seed);
 	virtual						~StencilOpStateUniqueRandomIterator	(void) {}
-	virtual VkStencilOpState	getIndexedValue (deUint32 index);
+	virtual VkStencilOpState	getIndexedValue						(deUint32 index);
 
 private:
-	const static VkStencilOp	m_stencilOps[];
-	const static VkCompareOp	m_compareOps[];
 
 	// Pre-calculated constants
-	const static deUint32		m_stencilOpsLength;
-	const static deUint32		m_stencilOpsLength2;
-	const static deUint32		m_stencilOpsLength3;
-	const static deUint32		m_compareOpsLength;
+	const static deUint32		s_stencilOpsLength;
+	const static deUint32		s_stencilOpsLength2;
+	const static deUint32		s_stencilOpsLength3;
+	const static deUint32		s_compareOpsLength;
 
 	// Total number of cross-combinations of (stencilFailOp x stencilPassOp x stencilDepthFailOp x stencilCompareOp)
-	const static deUint32		m_totalStencilOpStates;
+	const static deUint32		s_totalStencilOpStates;
 };
 
 
@@ -172,10 +170,7 @@ private:
 	Move<VkFence>						m_fence;
 };
 
-
-// StencilOpStateUniqueRandomIterator
-
-const VkStencilOp StencilOpStateUniqueRandomIterator::m_stencilOps[] =
+const VkStencilOp stencilOps[] =
 {
 	VK_STENCIL_OP_KEEP,
 	VK_STENCIL_OP_ZERO,
@@ -187,7 +182,7 @@ const VkStencilOp StencilOpStateUniqueRandomIterator::m_stencilOps[] =
 	VK_STENCIL_OP_DECREMENT_AND_WRAP
 };
 
-const VkCompareOp StencilOpStateUniqueRandomIterator::m_compareOps[] =
+const VkCompareOp compareOps[] =
 {
 	VK_COMPARE_OP_NEVER,
 	VK_COMPARE_OP_LESS,
@@ -199,36 +194,38 @@ const VkCompareOp StencilOpStateUniqueRandomIterator::m_compareOps[] =
 	VK_COMPARE_OP_ALWAYS
 };
 
-const deUint32 StencilOpStateUniqueRandomIterator::m_stencilOpsLength		= DE_LENGTH_OF_ARRAY(m_stencilOps);
-const deUint32 StencilOpStateUniqueRandomIterator::m_stencilOpsLength2		= m_stencilOpsLength * m_stencilOpsLength;
-const deUint32 StencilOpStateUniqueRandomIterator::m_stencilOpsLength3		= m_stencilOpsLength2 * m_stencilOpsLength;
-const deUint32 StencilOpStateUniqueRandomIterator::m_compareOpsLength		= DE_LENGTH_OF_ARRAY(m_compareOps);
-const deUint32 StencilOpStateUniqueRandomIterator::m_totalStencilOpStates	= m_stencilOpsLength3 * m_compareOpsLength;
+// StencilOpStateUniqueRandomIterator
+
+const deUint32 StencilOpStateUniqueRandomIterator::s_stencilOpsLength		= DE_LENGTH_OF_ARRAY(stencilOps);
+const deUint32 StencilOpStateUniqueRandomIterator::s_stencilOpsLength2		= s_stencilOpsLength * s_stencilOpsLength;
+const deUint32 StencilOpStateUniqueRandomIterator::s_stencilOpsLength3		= s_stencilOpsLength2 * s_stencilOpsLength;
+const deUint32 StencilOpStateUniqueRandomIterator::s_compareOpsLength		= DE_LENGTH_OF_ARRAY(compareOps);
+const deUint32 StencilOpStateUniqueRandomIterator::s_totalStencilOpStates	= s_stencilOpsLength3 * s_compareOpsLength;
 
 StencilOpStateUniqueRandomIterator::StencilOpStateUniqueRandomIterator (int seed)
-	: UniqueRandomIterator<VkStencilOpState>(m_totalStencilOpStates, m_totalStencilOpStates, seed)
+	: UniqueRandomIterator<VkStencilOpState>(s_totalStencilOpStates, s_totalStencilOpStates, seed)
 {
 }
 
 VkStencilOpState StencilOpStateUniqueRandomIterator::getIndexedValue (deUint32 index)
 {
-	const deUint32 stencilCompareOpIndex = index / m_stencilOpsLength3;
-	const deUint32 stencilCompareOpSeqIndex = stencilCompareOpIndex * m_stencilOpsLength3;
+	const deUint32 stencilCompareOpIndex = index / s_stencilOpsLength3;
+	const deUint32 stencilCompareOpSeqIndex = stencilCompareOpIndex * s_stencilOpsLength3;
 
-	const deUint32 stencilDepthFailOpIndex = (index - stencilCompareOpSeqIndex) / m_stencilOpsLength2;
-	const deUint32 stencilDepthFailOpSeqIndex = stencilDepthFailOpIndex * m_stencilOpsLength2;
+	const deUint32 stencilDepthFailOpIndex = (index - stencilCompareOpSeqIndex) / s_stencilOpsLength2;
+	const deUint32 stencilDepthFailOpSeqIndex = stencilDepthFailOpIndex * s_stencilOpsLength2;
 
-	const deUint32 stencilPassOpIndex = (index - stencilCompareOpSeqIndex - stencilDepthFailOpSeqIndex) / m_stencilOpsLength;
-	const deUint32 stencilPassOpSeqIndex = stencilPassOpIndex * m_stencilOpsLength;
+	const deUint32 stencilPassOpIndex = (index - stencilCompareOpSeqIndex - stencilDepthFailOpSeqIndex) / s_stencilOpsLength;
+	const deUint32 stencilPassOpSeqIndex = stencilPassOpIndex * s_stencilOpsLength;
 
 	const deUint32 stencilFailOpIndex = index - stencilCompareOpSeqIndex - stencilDepthFailOpSeqIndex - stencilPassOpSeqIndex;
 
 	const VkStencilOpState stencilOpState =
 	{
-		m_stencilOps[stencilFailOpIndex],		// VkStencilOp	failOp;
-		m_stencilOps[stencilPassOpIndex],		// VkStencilOp	passOp;
-		m_stencilOps[stencilDepthFailOpIndex],	// VkStencilOp	depthFailOp;
-		m_compareOps[stencilCompareOpIndex],	// VkCompareOp	compareOp;
+		stencilOps[stencilFailOpIndex],			// VkStencilOp	failOp;
+		stencilOps[stencilPassOpIndex],			// VkStencilOp	passOp;
+		stencilOps[stencilDepthFailOpIndex],	// VkStencilOp	depthFailOp;
+		compareOps[stencilCompareOpIndex],		// VkCompareOp	compareOp;
 		0x0,									// deUint32		compareMask;
 		0x0,									// deUint32		writeMask;
 		0x0										// deUint32		reference;
@@ -927,8 +924,8 @@ tcu::TestStatus StencilTestInstance::verifyImage (void)
 		refStencilFront.func		= mapVkCompareOp(m_stencilOpStateFront.compareOp);
 
 		refStencilBack.sFail		= mapVkStencilOp(m_stencilOpStateBack.failOp);
-		refStencilBack.dpFail		= mapVkStencilOp(m_stencilOpStateBack.depthFailOp);
 		refStencilBack.dpPass		= mapVkStencilOp(m_stencilOpStateBack.passOp);
+		refStencilBack.dpFail		= mapVkStencilOp(m_stencilOpStateBack.depthFailOp);
 		refStencilBack.func			= mapVkCompareOp(m_stencilOpStateBack.compareOp);
 
 		// Reverse winding of vertices, as Vulkan screen coordinates start at upper left
@@ -1015,29 +1012,6 @@ const char* getShortName (VkStencilOp stencilOp)
 	return DE_NULL;
 }
 
-std::string getStencilName(const VkStencilOpState& stencilOpState)
-{
-	std::ostringstream name;
-
-	name << "fail_" << getShortName(stencilOpState.failOp)
-		 << "_pass_" << getShortName(stencilOpState.passOp)
-		 << "_dfail_" << getShortName(stencilOpState.depthFailOp)
-		 << "_comp_" << getShortName(stencilOpState.compareOp);
-
-	return name.str();
-}
-
-std::string getStencilStateSetName(const VkStencilOpState& stencilOpStateFront,
-								   const VkStencilOpState& stencilOpStateBack)
-{
-	std::ostringstream name;
-
-	name << "front_" << getStencilName(stencilOpStateFront)
-		 << "_back_" << getStencilName(stencilOpStateBack);
-
-	return name.str();
-}
-
 std::string getStencilStateSetDescription(const VkStencilOpState& stencilOpStateFront,
 										  const VkStencilOpState& stencilOpStateBack)
 {
@@ -1104,31 +1078,48 @@ tcu::TestCaseGroup* createStencilTests (tcu::TestContext& testCtx)
 
 		stencilOpItr.reset();
 
-		VkStencilOpState		prevStencilState	= stencilOpItr.next();
-		const VkStencilOpState	firstStencilState	= prevStencilState;
-
-		while (stencilOpItr.hasNext())
+		for (deUint32 failOpNdx = 0u; failOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); failOpNdx++)
 		{
-			const VkStencilOpState stencilState = stencilOpItr.next();
+			const std::string				failOpName	= std::string("fail_") + getShortName(stencilOps[failOpNdx]);
+			de::MovePtr<tcu::TestCaseGroup>	failOpTest	(new tcu::TestCaseGroup(testCtx, failOpName.c_str(), ""));
 
-			// Use current stencil state in front fraces and previous state in back faces
-			stencilStateTests->addChild(new StencilTest(testCtx,
-														getStencilStateSetName(stencilState, prevStencilState),
-														getStencilStateSetDescription(stencilState, prevStencilState),
-														stencilFormat,
-														stencilState,
-														prevStencilState));
+			for (deUint32 passOpNdx = 0u; passOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); passOpNdx++)
+			{
+				const std::string				passOpName	= std::string("pass_") + getShortName(stencilOps[passOpNdx]);
+				de::MovePtr<tcu::TestCaseGroup>	passOpTest	(new tcu::TestCaseGroup(testCtx, passOpName.c_str(), ""));
 
-			prevStencilState = stencilState;
+				for (deUint32 dFailOpNdx = 0u; dFailOpNdx < DE_LENGTH_OF_ARRAY(stencilOps); dFailOpNdx++)
+				{
+					const std::string				dFailOpName	= std::string("dfail_") + getShortName(stencilOps[dFailOpNdx]);
+					de::MovePtr<tcu::TestCaseGroup>	dFailOpTest	(new tcu::TestCaseGroup(testCtx, dFailOpName.c_str(), ""));
+
+					for (deUint32 compareOpNdx = 0u; compareOpNdx < DE_LENGTH_OF_ARRAY(compareOps); compareOpNdx++)
+					{
+						// Iterate front set of stencil state in ascending order
+						const VkStencilOpState	stencilStateFront	=
+						{
+							stencilOps[failOpNdx],		// failOp
+							stencilOps[passOpNdx],		// passOp
+							stencilOps[dFailOpNdx],		// depthFailOp
+							compareOps[compareOpNdx],	// compareOp
+							0x0,						// compareMask
+							0x0,						// writeMask
+							0x0							// reference
+						};
+
+						// Iterate back set of stencil state in random order
+						const VkStencilOpState	stencilStateBack	= stencilOpItr.next();
+						const std::string		caseName			= std::string("comp_") + getShortName(compareOps[compareOpNdx]);
+						const std::string		caseDesc			= getStencilStateSetDescription(stencilStateFront, stencilStateBack);
+
+						dFailOpTest->addChild(new StencilTest(testCtx, caseName, caseDesc, stencilFormat, stencilStateFront, stencilStateBack));
+					}
+					passOpTest->addChild(dFailOpTest.release());
+				}
+				failOpTest->addChild(passOpTest.release());
+			}
+			stencilStateTests->addChild(failOpTest.release());
 		}
-
-		// Use first stencil state with last stencil state. This would make the test suite cover all states in front and back faces.
-		stencilStateTests->addChild(new StencilTest(testCtx,
-													getStencilStateSetName(firstStencilState, prevStencilState),
-													getStencilStateSetDescription(firstStencilState, prevStencilState),
-													stencilFormat,
-													firstStencilState,
-													prevStencilState));
 
 		formatTest->addChild(stencilStateTests.release());
 		formatTests->addChild(formatTest.release());

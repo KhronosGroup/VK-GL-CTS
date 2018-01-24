@@ -31,6 +31,7 @@
 #include "gluStrUtil.hpp"
 #include "gluObjectWrapper.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuSurface.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
@@ -76,6 +77,21 @@ namespace Functional
 
 namespace
 {
+
+static std::string specializeShader(Context& context, const char* code)
+{
+	const glu::GLSLVersion				glslVersion			= glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
+	std::map<std::string, std::string>	specializationMap;
+
+	specializationMap["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
+
+	if (glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		specializationMap["GPU_SHADER5_REQUIRE"] = "";
+	else
+		specializationMap["GPU_SHADER5_REQUIRE"] = "#extension GL_EXT_gpu_shader5 : require";
+
+	return tcu::StringTemplate(code).specialize(specializationMap);
+}
 
 // Round-to-zero int division, because pre-c++11 it's somewhat implementation-defined for negative values.
 static inline int divRoundToZero (int a, int b)
@@ -999,10 +1015,10 @@ private:
 
 	static const IVec2					RENDER_SIZE;
 
-	static glu::VertexSource			genVertexShaderSource		(bool requireGpuShader5, int numTexCoordComponents, bool useNormalizedCoordInput);
-	static glu::FragmentSource			genFragmentShaderSource		(bool requireGpuShader5, int numTexCoordComponents, glu::DataType samplerType, const string& funcCall, bool useNormalizedCoordInput, bool usePixCoord);
-	static string						genGatherFuncCall			(GatherType, const tcu::TextureFormat&, const GatherArgs&, const string& refZExpr, const IVec2& offsetRange, int indentationDepth);
-	static glu::ProgramSources			genProgramSources			(GatherType, TextureType, const tcu::TextureFormat&, const GatherArgs&, const string& refZExpr, const IVec2& offsetRange);
+	glu::VertexSource					genVertexShaderSource		(bool requireGpuShader5, int numTexCoordComponents, bool useNormalizedCoordInput);
+	glu::FragmentSource					genFragmentShaderSource		(bool requireGpuShader5, int numTexCoordComponents, glu::DataType samplerType, const string& funcCall, bool useNormalizedCoordInput, bool usePixCoord);
+	string								genGatherFuncCall			(GatherType, const tcu::TextureFormat&, const GatherArgs&, const string& refZExpr, const IVec2& offsetRange, int indentationDepth);
+	glu::ProgramSources					genProgramSources			(GatherType, TextureType, const tcu::TextureFormat&, const GatherArgs&, const string& refZExpr, const IVec2& offsetRange);
 
 	const TextureType					m_textureType;
 
@@ -1091,8 +1107,8 @@ glu::VertexSource TextureGatherCase::genVertexShaderSource (bool requireGpuShade
 {
 	DE_ASSERT(numTexCoordComponents == 2 || numTexCoordComponents == 3);
 	const string texCoordType = "vec" + de::toString(numTexCoordComponents);
-	return glu::VertexSource("#version 310 es\n"
-							 + string(requireGpuShader5 ? "#extension GL_EXT_gpu_shader5 : require\n" : "") +
+	std::string vertexSource = "${GLSL_VERSION_DECL}\n"
+							   + string(requireGpuShader5 ? "${GPU_SHADER5_REQUIRE}\n" : "") +
 							 "\n"
 							 "in highp vec2 a_position;\n"
 							 "in highp " + texCoordType + " a_texCoord;\n"
@@ -1106,7 +1122,8 @@ glu::VertexSource TextureGatherCase::genVertexShaderSource (bool requireGpuShade
 							 "	gl_Position = vec4(a_position.x, a_position.y, 0.0, 1.0);\n"
 							 "	v_texCoord = a_texCoord;\n"
 							 + (useNormalizedCoordInput ? "\tv_normalizedCoord = a_normalizedCoord;\n" : "") +
-							 "}\n");
+							   "}\n";
+	return glu::VertexSource(specializeShader(m_context, vertexSource.c_str()));
 }
 
 glu::FragmentSource TextureGatherCase::genFragmentShaderSource (bool			requireGpuShader5,
@@ -1122,8 +1139,8 @@ glu::FragmentSource TextureGatherCase::genFragmentShaderSource (bool			requireGp
 
 	const string texCoordType = "vec" + de::toString(numTexCoordComponents);
 
-	return glu::FragmentSource("#version 310 es\n"
-							   + string(requireGpuShader5 ? "#extension GL_EXT_gpu_shader5 : require\n" : "") +
+	std::string fragmentSource = "${GLSL_VERSION_DECL}\n"
+								 + string(requireGpuShader5 ? "${GPU_SHADER5_REQUIRE}\n" : "") +
 							   "\n"
 							   "layout (location = 0) out mediump " + glu::getDataTypeName(getSamplerGatherResultType(samplerType)) + " o_color;\n"
 							   "\n"
@@ -1137,7 +1154,9 @@ glu::FragmentSource TextureGatherCase::genFragmentShaderSource (bool			requireGp
 							   "{\n"
 							   + (usePixCoord ? "\tivec2 pixCoord = ivec2(v_normalizedCoord*u_viewportSize);\n" : "") +
 							   "	o_color = " + funcCall + ";\n"
-							   "}\n");
+								 "}\n";
+
+	return glu::FragmentSource(specializeShader(m_context, fragmentSource.c_str()));
 }
 
 string TextureGatherCase::genGatherFuncCall (GatherType gatherType, const tcu::TextureFormat& textureFormat, const GatherArgs& gatherArgs, const string& refZExpr, const IVec2& offsetRange, int indentationDepth)
@@ -1230,13 +1249,14 @@ glu::ProgramSources TextureGatherCase::genProgramSources (GatherType					gatherT
 
 void TextureGatherCase::init (void)
 {
-	TestLog&					log			= m_testCtx.getLog();
-	const glu::RenderContext&	renderCtx	= m_context.getRenderContext();
-	const glw::Functions&		gl			= renderCtx.getFunctions();
-	const deUint32				texTypeGL	= getGLTextureType(m_textureType);
+	TestLog&					log				= m_testCtx.getLog();
+	const glu::RenderContext&	renderCtx		= m_context.getRenderContext();
+	const glw::Functions&		gl				= renderCtx.getFunctions();
+	const deUint32				texTypeGL		= getGLTextureType(m_textureType);
+	const bool					supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	// Check prerequisites.
-	if (requireGpuShader5(m_gatherType) && !m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"))
+	if (requireGpuShader5(m_gatherType) && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"))
 		throw tcu::NotSupportedError("GL_EXT_gpu_shader5 required");
 
 	// Log and check implementation offset limits, if appropriate.

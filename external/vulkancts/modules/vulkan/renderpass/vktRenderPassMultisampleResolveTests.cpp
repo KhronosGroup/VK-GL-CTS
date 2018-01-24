@@ -561,14 +561,14 @@ Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
-									   VkDevice											device,
-									   VkRenderPass										renderPass,
-									   VkPipelineLayout									pipelineLayout,
-									   const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-									   deUint32											width,
-									   deUint32											height,
-									   deUint32											sampleCount)
+Move<VkPipeline> createRenderPipeline (const DeviceInterface&		vkd,
+									   VkDevice						device,
+									   VkRenderPass					renderPass,
+									   VkPipelineLayout				pipelineLayout,
+									   const vk::BinaryCollection&	binaryCollection,
+									   deUint32						width,
+									   deUint32						height,
+									   deUint32						sampleCount)
 {
 	const Unique<VkShaderModule>	vertexShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
 	const Unique<VkShaderModule>	fragmentShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));
@@ -875,26 +875,6 @@ void MultisampleRenderPassTestInstance::submit (void)
 		VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &beginInfo));
 	}
 
-	{
-		const VkRenderPassBeginInfo beginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			DE_NULL,
-
-			*m_renderPass,
-			*m_framebuffer,
-
-			{
-				{ 0u, 0u },
-				{ m_width, m_height }
-			},
-
-			0u,
-			DE_NULL
-		};
-		vkd.cmdBeginRenderPass(*commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	}
-
 	// Memory barriers between previous copies and rendering
 	{
 		std::vector<VkImageMemoryBarrier> barriers;
@@ -929,6 +909,26 @@ void MultisampleRenderPassTestInstance::submit (void)
 		}
 
 		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0]);
+	}
+
+	{
+		const VkRenderPassBeginInfo beginInfo =
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+			DE_NULL,
+
+			*m_renderPass,
+			*m_framebuffer,
+
+			{
+				{ 0u, 0u },
+				{ m_width, m_height }
+			},
+
+			0u,
+			DE_NULL
+		};
+		vkd.cmdBeginRenderPass(*commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
 	// Clear everything to black

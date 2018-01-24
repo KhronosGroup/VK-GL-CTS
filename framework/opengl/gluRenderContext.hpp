@@ -25,6 +25,9 @@
 
 #include "tcuDefs.hpp"
 
+// glw::GenericFuncType
+#include "glwFunctionLoader.hpp"
+
 namespace tcu
 {
 class CommandLine;
@@ -43,6 +46,7 @@ namespace glu
 
 class ContextType;
 class ContextInfo;
+struct RenderConfig;
 
 enum Profile
 {
@@ -57,7 +61,8 @@ enum ContextFlags
 {
 	CONTEXT_ROBUST				= (1<<0),	//!< Robust context
 	CONTEXT_DEBUG				= (1<<1),	//!< Debug context
-	CONTEXT_FORWARD_COMPATIBLE	= (1<<2)	//!< Forward-compatible context
+	CONTEXT_FORWARD_COMPATIBLE	= (1<<2),	//!< Forward-compatible context
+	CONTEXT_NO_ERROR			= (1<<3)    //!< No error context
 };
 
 inline ContextFlags	operator| (ContextFlags a, ContextFlags b)	{ return ContextFlags((deUint32)a|(deUint32)b);	}
@@ -154,7 +159,7 @@ protected:
 
 	enum
 	{
-		FLAGS_BITS			= 3,
+		FLAGS_BITS			= 4,
 		TOTAL_CONTEXT_BITS	= TOTAL_API_BITS+FLAGS_BITS,
 		FLAGS_SHIFT			= TOTAL_API_BITS
 	};
@@ -176,7 +181,8 @@ inline deUint32 ContextType::pack (deUint32 apiBits, ContextFlags flags)
 {
 	deUint32 bits = apiBits;
 
-	DE_ASSERT((deUint32(flags) & ~((1<<FLAGS_BITS)-1)) == 0);
+	DE_ASSERT((deUint32(flags) & ~((1u<<FLAGS_BITS)-1u)) == 0);
+
 	bits |= deUint32(flags) << FLAGS_SHIFT;
 
 	return bits;
@@ -186,6 +192,8 @@ inline bool		isContextTypeES				(ContextType type)	{ return type.getAPI().getPro
 inline bool		isContextTypeGLCore			(ContextType type)	{ return type.getAPI().getProfile() == PROFILE_CORE;			}
 inline bool		isContextTypeGLCompatibility(ContextType type)	{ return type.getAPI().getProfile() == PROFILE_COMPATIBILITY;	}
 bool			contextSupports				(ContextType ctxType, ApiType requiredApiType);
+
+const char*		getApiTypeDescription		(ApiType type);
 
 /*--------------------------------------------------------------------*//*!
  * \brief Rendering context abstraction.
@@ -211,6 +219,12 @@ public:
 	//! Get default framebuffer.
 	virtual deUint32					getDefaultFramebuffer	(void) const { return 0; }
 
+	//! Get extension function address.
+	virtual glw::GenericFuncType		getProcAddress			(const char* name) const;
+
+	//! Make context current in thread. Optional to support.
+	virtual void						makeCurrent				(void);
+
 private:
 										RenderContext			(const RenderContext& other); // Not allowed!
 	RenderContext&						operator=				(const RenderContext& other); // Not allowed!
@@ -218,6 +232,7 @@ private:
 
 // Utilities
 
+RenderContext*		createRenderContext				(tcu::Platform& platform, const tcu::CommandLine& cmdLine, const RenderConfig& config);
 RenderContext*		createDefaultRenderContext		(tcu::Platform& platform, const tcu::CommandLine& cmdLine, ApiType apiType);
 
 void				initCoreFunctions				(glw::Functions* dst, const glw::FunctionLoader* loader, ApiType apiType);

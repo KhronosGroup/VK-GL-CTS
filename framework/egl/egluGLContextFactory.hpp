@@ -41,6 +41,8 @@ class GLRenderContext : public glu::RenderContext
 public:
 	virtual eglw::EGLDisplay				getEGLDisplay		(void) const = 0;
 	virtual eglw::EGLContext				getEGLContext		(void) const = 0;
+	virtual eglw::EGLConfig					getEGLConfig		(void) const = 0;
+	virtual const eglw::Library&			getLibrary			(void) const = 0;
 };
 
 class GLContextFactory : public glu::ContextFactory

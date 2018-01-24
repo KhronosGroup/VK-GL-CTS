@@ -32,6 +32,15 @@
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deString.h"
+#include "vktTestCaseUtil.hpp"
+#include "vktTestGroupUtil.hpp"
+#include "vkRef.hpp"
+#include "vkRefUtil.hpp"
+#include "vkBuilderUtil.hpp"
+#include "vkPrograms.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkMemUtil.hpp"
+#include "vkTypeUtil.hpp"
 
 namespace vkt
 {
@@ -44,6 +53,7 @@ using std::string;
 using std::vector;
 using glu::VarType;
 using glu::StructType;
+using namespace vk;
 
 enum FeatureBits
 {
@@ -708,6 +718,245 @@ private:
 	int			m_numInstances;
 };
 
+// unsized_array_length
+
+struct UnsizedArrayCaseParams
+{
+	int					elementSize;
+	vk::VkDeviceSize	bufferSize;
+	vk::VkDeviceSize	bufferBindOffset;
+	vk::VkDeviceSize	bufferBindLength;
+	const char*			name;
+};
+
+void createUnsizedArrayLengthProgs (SourceCollections& dst, UnsizedArrayCaseParams)
+{
+	dst.glslSources.add("comp") << glu::ComputeSource(
+		"#version 310 es\n"
+		"layout(set=0, binding=0, std430) readonly buffer x {\n"
+		"   int xs[];\n"
+		"};\n"
+		"layout(set=0, binding=1, std430) writeonly buffer y {\n"
+		"   int observed_size;\n"
+		"};\n"
+		"layout(local_size_x=1) in;\n"
+		"void main (void) {\n"
+		"   observed_size = xs.length();\n"
+		"}\n");
+}
+
+tcu::TestStatus ssboUnsizedArrayLengthTest (Context& context, UnsizedArrayCaseParams params)
+{
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
+	const VkQueue							queue					= context.getUniversalQueue();
+	Allocator&								allocator				= context.getDefaultAllocator();
+
+	DescriptorSetLayoutBuilder				builder;
+	builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);	// input buffer
+	builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);	// result buffer
+
+	const Unique<VkDescriptorSetLayout>		descriptorSetLayout		(builder.build(vk, device));
+	const Unique<VkDescriptorPool>			descriptorPool			(vk::DescriptorPoolBuilder()
+																	.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+																	.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1));
+
+	const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineLayoutCreateFlags)0,
+		1,															// setLayoutCount,
+		&descriptorSetLayout.get(),									// pSetLayouts
+		0,															// pushConstantRangeCount
+		DE_NULL,													// pPushConstantRanges
+	};
+	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
+
+	const Unique<VkShaderModule>			computeModule			(createShaderModule(vk, device, context.getBinaryCollection().get("comp"), (VkShaderModuleCreateFlags)0u));
+
+	const VkPipelineShaderStageCreateInfo	shaderCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		DE_NULL,
+		(VkPipelineShaderStageCreateFlags)0,
+		VK_SHADER_STAGE_COMPUTE_BIT,								// stage
+		*computeModule,												// shader
+		"main",
+		DE_NULL,													// pSpecializationInfo
+	};
+
+	const VkComputePipelineCreateInfo		pipelineCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+		DE_NULL,
+		0u,															// flags
+		shaderCreateInfo,											// cs
+		*pipelineLayout,											// layout
+		(vk::VkPipeline)0,											// basePipelineHandle
+		0u,															// basePipelineIndex
+	};
+
+	const Unique<VkPipeline>				pipeline				(createComputePipeline(vk, device, (VkPipelineCache)0u, &pipelineCreateInfo));
+
+	// Input buffer
+	const VkBufferCreateInfo inputBufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		DE_NULL,
+		0,															// flags
+		(VkDeviceSize) params.bufferSize,							// size
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,							// usage TODO: also test _DYNAMIC case.
+		VK_SHARING_MODE_EXCLUSIVE,
+		0u,															// queueFamilyCount
+		DE_NULL,													// pQueueFamilyIndices
+	};
+	const Unique<VkBuffer>					inputBuffer				(createBuffer(vk, device, &inputBufferCreateInfo));
+	const VkMemoryRequirements				inputBufferRequirements	= getBufferMemoryRequirements(vk, device, *inputBuffer);
+	const de::MovePtr<Allocation>			inputBufferMemory		= allocator.allocate(inputBufferRequirements, MemoryRequirement::HostVisible);
+
+	VK_CHECK(vk.bindBufferMemory(device, *inputBuffer, inputBufferMemory->getMemory(), inputBufferMemory->getOffset()));
+	// Note: don't care about the contents of the input buffer -- we only determine a size.
+
+	// Output buffer
+	const VkBufferCreateInfo outputBufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		DE_NULL,
+		0,
+		(VkDeviceSize) 4,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_SHARING_MODE_EXCLUSIVE,
+		0u,
+		DE_NULL,
+	};
+	const Unique<VkBuffer>					outputBuffer			(createBuffer(vk, device, &outputBufferCreateInfo));
+	const VkMemoryRequirements				outputBufferRequirements= getBufferMemoryRequirements(vk, device, *outputBuffer);
+	const de::MovePtr<Allocation>			outputBufferMemory		= allocator.allocate(outputBufferRequirements, MemoryRequirement::HostVisible);
+
+	VK_CHECK(vk.bindBufferMemory(device, *outputBuffer, outputBufferMemory->getMemory(), outputBufferMemory->getOffset()));
+
+	// Initialize output buffer contents
+	const VkMappedMemoryRange	range			=
+	{
+		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
+		DE_NULL,								// pNext
+		outputBufferMemory->getMemory(),		// memory
+		0,										// offset
+		VK_WHOLE_SIZE,							// size
+	};
+	int *							outputBufferPtr			= (int *)outputBufferMemory->getHostPtr();
+	*outputBufferPtr = -1;
+	VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+
+	// Build descriptor set
+	const VkDescriptorBufferInfo			inputBufferDesc			= makeDescriptorBufferInfo(*inputBuffer, params.bufferBindOffset, params.bufferBindLength);
+	const VkDescriptorBufferInfo			outputBufferDesc		= makeDescriptorBufferInfo(*outputBuffer, 0u, VK_WHOLE_SIZE);
+
+	const VkDescriptorSetAllocateInfo		descAllocInfo			=
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		DE_NULL,
+		*descriptorPool,											// pool
+		1u,															// setLayoutCount
+		&descriptorSetLayout.get(),									// pSetLayouts
+	};
+	const Unique<VkDescriptorSet>			descSet					(allocateDescriptorSet(vk, device, &descAllocInfo));
+
+	DescriptorSetUpdateBuilder()
+		.writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inputBufferDesc)
+		.writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputBufferDesc)
+		.update(vk, device);
+
+	const VkCommandPoolCreateInfo			cmdPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// sType
+		DE_NULL,													// pNext
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// flags
+		context.getUniversalQueueFamilyIndex(),						// queueFamilyIndex
+	};
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, &cmdPoolParams));
+
+	// Command buffer
+	const VkCommandBufferAllocateInfo		cmdBufParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,			// sType
+		DE_NULL,												// pNext
+		*cmdPool,												// pool
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,						// level
+		1u,														// bufferCount
+	};
+	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, device, &cmdBufParams));
+
+	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// sType
+		DE_NULL,												// pNext
+		0u,														// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,
+	};
+
+	// Record commands
+	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
+
+	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+	vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, DE_NULL);
+	vk.cmdDispatch(*cmdBuf, 1, 1, 1);
+
+	const VkMemoryBarrier					barrier					=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_BARRIER,	// sType
+		DE_NULL,							// pNext
+		VK_ACCESS_SHADER_WRITE_BIT,			// srcAccessMask
+		VK_ACCESS_HOST_READ_BIT,			// dstAccessMask
+	};
+	vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 1, &barrier, 0, DE_NULL, 0, DE_NULL);
+
+	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
+
+	const VkSubmitInfo						submitInfo				=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		DE_NULL,
+		0,														// waitSemaphoreCount
+		DE_NULL,												// pWaitSemaphores
+		DE_NULL,												// pWaitDstStageMask
+		1,														// commandBufferCount
+		&cmdBuf.get(),											// pCommandBuffers
+		0,														// signalSemaphoreCount
+		DE_NULL,												// pSignalSemaphores
+	};
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, (vk::VkFence)0));
+
+	// Force all work to have completed
+	VK_CHECK(vk.deviceWaitIdle(device));
+
+	// Read back output buffer contents
+	VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1, &range));
+
+	// Expected number of elements in array at end of storage buffer
+	const VkDeviceSize						boundLength				= params.bufferBindLength == VK_WHOLE_SIZE
+																	? params.bufferSize - params.bufferBindOffset
+																	: params.bufferBindLength;
+	const int								expectedResult			= (int)(boundLength / params.elementSize);
+	const int								actualResult			= *outputBufferPtr;
+
+	context.getTestContext().getLog()
+	<< tcu::TestLog::Message
+	<< "Buffer size " << params.bufferSize
+	<< " offset " << params.bufferBindOffset
+	<< " length " << params.bufferBindLength
+	<< " element size " << params.elementSize
+	<< " expected array size: " << expectedResult
+	<< " actual array size: " << actualResult
+	<< tcu::TestLog::EndMessage;
+
+	if (expectedResult == actualResult)
+		return tcu::TestStatus::pass("Got expected array size");
+	else
+		return tcu::TestStatus::fail("Mismatch array size");
+}
+
 class SSBOLayoutTests : public tcu::TestCaseGroup
 {
 public:
@@ -1369,6 +1618,23 @@ void SSBOLayoutTests::init (void)
 	}
 }
 
+void createUnsizedArrayTests (tcu::TestCaseGroup* testGroup)
+{
+	const UnsizedArrayCaseParams subcases[] =
+	{
+		{ 4, 256, 0, 256,			  "float_no_offset_explicit_size" },
+		{ 4, 256, 0, VK_WHOLE_SIZE,	  "float_no_offset_whole_size" },
+		{ 4, 256, 128, 32,			  "float_offset_explicit_size" },
+		{ 4, 256, 128, VK_WHOLE_SIZE, "float_offset_whole_size" },
+	};
+
+	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(subcases); ndx++)
+	{
+		const UnsizedArrayCaseParams& params = subcases[ndx];
+		addFunctionCaseWithPrograms<UnsizedArrayCaseParams>(testGroup, params.name, "", createUnsizedArrayLengthProgs, ssboUnsizedArrayLengthTest, params);
+	}
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
@@ -1376,6 +1642,7 @@ tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> ssboTestGroup (new tcu::TestCaseGroup(testCtx, "ssbo", "Shader Storage Buffer Object Tests"));
 
 	ssboTestGroup->addChild(new SSBOLayoutTests(testCtx));
+	addTestGroup(ssboTestGroup.get(), "unsized_array_length", "SSBO unsized array length tests", createUnsizedArrayTests);
 
 	return ssboTestGroup.release();
 }

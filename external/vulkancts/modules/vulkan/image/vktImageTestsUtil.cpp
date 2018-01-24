@@ -699,12 +699,12 @@ Move<VkImageView> makeImageView (const DeviceInterface&					vk,
 								 const VkImageViewType					imageViewType,
 								 const VkFormat							format,
 								 const VkImageSubresourceRange			subresourceRange,
-								 const VkImageViewUsageCreateInfoKHR*	ImageUsageCreateInfoKHR)
+								 const VkImageViewUsageCreateInfo*		ImageUsageCreateInfo)
 {
 	const VkImageViewCreateInfo imageViewParams =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
-		ImageUsageCreateInfoKHR,						// const void*				pNext;
+		ImageUsageCreateInfo,							// const void*				pNext;
 		0u,												// VkImageViewCreateFlags	flags;
 		image,											// VkImage					image;
 		imageViewType,									// VkImageViewType			viewType;
@@ -775,16 +775,16 @@ VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask
 	return barrier;
 }
 
-VkImageViewUsageCreateInfoKHR makeImageViewUsageCreateInfo (const VkImageUsageFlags imageUsageFlags)
+VkImageViewUsageCreateInfo makeImageViewUsageCreateInfo (const VkImageUsageFlags imageUsageFlags)
 {
-	VkImageViewUsageCreateInfoKHR imageViewUsageCreateInfoKHR =
+	VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType		sType;
 		DE_NULL,											//const void*			pNext;
 		imageUsageFlags,									//VkImageUsageFlags		usage;
 	};
 
-	return imageViewUsageCreateInfoKHR;
+	return imageViewUsageCreateInfo;
 }
 
 VkSamplerCreateInfo makeSamplerCreateInfo ()

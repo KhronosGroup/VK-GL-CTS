@@ -110,5 +110,39 @@ VkDeviceSize getOptimalUniformBufferChunkSize (const InstanceInterface& vki, con
 		return alignment;
 }
 
+bool isStorageImageExtendedFormat (const vk::VkFormat format)
+{
+	switch (format)
+	{
+		case VK_FORMAT_R32G32_SFLOAT:
+		case VK_FORMAT_R32G32_SINT:
+		case VK_FORMAT_R32G32_UINT:
+		case VK_FORMAT_R16G16B16A16_UNORM:
+		case VK_FORMAT_R16G16B16A16_SNORM:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R16G16_UNORM:
+		case VK_FORMAT_R16G16_SNORM:
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16_UNORM:
+		case VK_FORMAT_R16_SNORM:
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R8G8_UNORM:
+		case VK_FORMAT_R8G8_SNORM:
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8G8_UINT:
+		case VK_FORMAT_R8_UNORM:
+		case VK_FORMAT_R8_SNORM:
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R8_UINT:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 } // image
 } // vkt

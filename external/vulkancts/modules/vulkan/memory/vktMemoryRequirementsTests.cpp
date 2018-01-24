@@ -76,20 +76,20 @@ VkMemoryRequirements getBufferMemoryRequirements (const DeviceInterface& vk, con
 VkMemoryRequirements getBufferMemoryRequirements2 (const DeviceInterface& vk, const VkDevice device, const VkDeviceSize size, const VkBufferCreateFlags flags, const VkBufferUsageFlags usage, void* next = DE_NULL)
 {
 	const Unique<VkBuffer>				buffer		(makeBuffer(vk, device, size, flags, usage));
-	VkBufferMemoryRequirementsInfo2KHR	info	=
+	VkBufferMemoryRequirementsInfo2		info	=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR,	// VkStructureType	sType
 		DE_NULL,													// const void*		pNext
 		*buffer														// VkBuffer			buffer
 	};
-	VkMemoryRequirements2KHR			req2	=
+	VkMemoryRequirements2				req2	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,				// VkStructureType		sType
 		next,														// void*				pNext
 		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
 	};
 
-	vk.getBufferMemoryRequirements2KHR(device, &info, &req2);
+	vk.getBufferMemoryRequirements2(device, &info, &req2);
 
 	return req2.memoryRequirements;
 }
@@ -98,20 +98,20 @@ VkMemoryRequirements getImageMemoryRequirements2 (const DeviceInterface& vk, con
 {
 	const Unique<VkImage> image(createImage(vk, device, &createInfo));
 
-	VkImageMemoryRequirementsInfo2KHR	info	=
+	VkImageMemoryRequirementsInfo2		info	=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,		// VkStructureType	sType
 		DE_NULL,													// const void*		pNext
 		*image														// VkImage			image
 	};
-	VkMemoryRequirements2KHR			req2	=
+	VkMemoryRequirements2				req2	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,				// VkStructureType		sType
 		next,														// void*				pNext
 		{0, 0, 0}													// VkMemoryRequirements	memoryRequirements
 	};
 
-	vk.getImageMemoryRequirements2KHR(device, &info, &req2);
+	vk.getImageMemoryRequirements2(device, &info, &req2);
 
 	return req2.memoryRequirements;
 }
@@ -486,7 +486,7 @@ void BufferMemoryRequirementsExtended::preTestChecks (Context&					context,
 {
 	const std::string extensionName("VK_KHR_get_memory_requirements2");
 
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extensionName))
 		TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
 
 	BufferMemoryRequirementsOriginal::preTestChecks(context, vki, physDevice, flags);
@@ -568,10 +568,8 @@ void BufferMemoryRequirementsDedicatedAllocation::preTestChecks (Context&					co
 																 const VkPhysicalDevice		physDevice,
 																 const VkBufferCreateFlags	flags)
 {
-	const std::string extensionName("VK_KHR_dedicated_allocation");
-
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-		TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+		TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 
 	BufferMemoryRequirementsExtended::preTestChecks(context, vki, physDevice, flags);
 }
@@ -585,7 +583,7 @@ void BufferMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (cons
 {
 	const deUint32						invalidVkBool32			= static_cast<deUint32>(~0);
 
-	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements	=
+	VkMemoryDedicatedRequirements	dedicatedRequirements	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,	// VkStructureType	sType
 		DE_NULL,												// void*			pNext
@@ -705,7 +703,8 @@ protected:
 											 const VkPhysicalDeviceMemoryProperties&	deviceMemoryProperties);
 
 private:
-	virtual bool isImageSupported			(const InstanceInterface&					vki,
+	virtual bool isImageSupported			(const deUint32								apiVersion,
+											 const InstanceInterface&					vki,
 											 const VkPhysicalDevice						physDevice,
 											 const std::vector<std::string>&			deviceExtensions,
 											 const VkImageCreateInfo&					info);
@@ -867,7 +866,7 @@ bool isUsageMatchesFeatures (const VkImageUsageFlags usage, const VkFormatFeatur
 }
 
 //! This catches both invalid as well as legal but unsupported combinations of image parameters
-bool ImageMemoryRequirementsOriginal::isImageSupported (const InstanceInterface& vki, const VkPhysicalDevice physDevice, const std::vector<std::string>& deviceExtensions, const VkImageCreateInfo& info)
+bool ImageMemoryRequirementsOriginal::isImageSupported (const deUint32 apiVersion, const InstanceInterface& vki, const VkPhysicalDevice physDevice, const std::vector<std::string>& deviceExtensions, const VkImageCreateInfo& info)
 {
 	DE_ASSERT(info.extent.width >= 1u && info.extent.height >= 1u && info.extent.depth >= 1u);
 
@@ -876,7 +875,7 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const InstanceInterface&
 			|| info.mipLevels != 1
 			|| info.arrayLayers != 1
 			|| info.samples != VK_SAMPLE_COUNT_1_BIT))
-			|| !de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_sampler_ycbcr_conversion"))
+			|| !isDeviceExtensionSupported(apiVersion, deviceExtensions, "VK_KHR_sampler_ycbcr_conversion"))
 	{
 		return false;
 	}
@@ -1365,7 +1364,7 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 
 					m_currentTestImageInfo = imageInfo;
 
-					if (!isImageSupported(vki, physDevice, context.getDeviceExtensions(), m_currentTestImageInfo))
+					if (!isImageSupported(context.getUsedApiVersion(), vki, physDevice, context.getDeviceExtensions(), m_currentTestImageInfo))
 						continue;
 
 					log << tcu::TestLog::Message << "- " << getImageInfoString(m_currentTestImageInfo) << tcu::TestLog::EndMessage;
@@ -1441,7 +1440,7 @@ void ImageMemoryRequirementsExtended::preTestChecks (Context&					context,
 {
 	const std::string extensionName("VK_KHR_get_memory_requirements2");
 
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extensionName))
 		TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
 
 	ImageMemoryRequirementsOriginal::preTestChecks (context, vki, physDevice, createFlags);
@@ -1503,10 +1502,8 @@ void ImageMemoryRequirementsDedicatedAllocation::preTestChecks (Context&					con
 																const VkPhysicalDevice		physDevice,
 																const VkImageCreateFlags	createFlags)
 {
-	const std::string extensionName("VK_KHR_dedicated_allocation");
-
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-		TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+		TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 
 	ImageMemoryRequirementsExtended::preTestChecks (context, vki, physDevice, createFlags);
 }
@@ -1517,7 +1514,7 @@ void ImageMemoryRequirementsDedicatedAllocation::updateMemoryRequirements (const
 {
 	const deUint32						invalidVkBool32			= static_cast<deUint32>(~0);
 
-	VkMemoryDedicatedRequirementsKHR	dedicatedRequirements	=
+	VkMemoryDedicatedRequirements	dedicatedRequirements	=
 	{
 		VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,	// VkStructureType	sType
 		DE_NULL,												// void*			pNext
@@ -1644,13 +1641,13 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 	{
 		const std::string extensionName("VK_KHR_get_memory_requirements2");
 
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extensionName))
 			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
 	}
 	{
 		const std::string extensionName("VK_KHR_sampler_ycbcr_conversion");
 
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), extensionName))
 			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
 	}
 
@@ -1703,26 +1700,26 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 				for (deUint32 planeNdx = 0; planeNdx < (deUint32)getPlaneCount(format); planeNdx++)
 				{
 					const VkImageAspectFlagBits					aspect		= getPlaneAspect(planeNdx);
-					const VkImagePlaneMemoryRequirementsInfoKHR	aspectInfo	=
+					const VkImagePlaneMemoryRequirementsInfo	aspectInfo	=
 					{
 						VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO_KHR,
 						DE_NULL,
 						aspect
 					};
-					const VkImageMemoryRequirementsInfo2KHR		info		=
+					const VkImageMemoryRequirementsInfo2		info		=
 					{
 						VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR,
 						(actualCreateFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) == 0 ? DE_NULL : &aspectInfo,
 						*image
 					};
-					VkMemoryRequirements2KHR					requirements	=
+					VkMemoryRequirements2						requirements	=
 					{
 						VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR,
 						DE_NULL,
 						{ 0u, 0u, 0u }
 					};
 
-					vk.getImageMemoryRequirements2KHR(device, &info, &requirements);
+					vk.getImageMemoryRequirements2(device, &info, &requirements);
 
 					log << TestLog::Message << "Aspect: " << getImageAspectFlagsStr(aspect) << ", Requirements: " << requirements << TestLog::EndMessage;
 

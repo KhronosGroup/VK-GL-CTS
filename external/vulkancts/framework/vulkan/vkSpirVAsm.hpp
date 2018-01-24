@@ -32,13 +32,13 @@ namespace vk
 {
 
 //! Assemble SPIR-V program. Will fail with NotSupportedError if compiler is not available.
-bool	assembleSpirV		(const SpirVAsmSource* program, std::vector<deUint32>* dst, SpirVProgramInfo* buildInfo);
+bool	assembleSpirV		(const SpirVAsmSource* program, std::vector<deUint32>* dst, SpirVProgramInfo* buildInfo, SpirvVersion spirvVersion);
 
 //! Disassemble SPIR-V binary. Throws tcu::NotSupportedError if disassembler is not available
-void	disassembleSpirV	(size_t binarySizeInWords, const deUint32* binary, std::ostream* dst);
+void	disassembleSpirV	(size_t binarySizeInWords, const deUint32* binary, std::ostream* dst, SpirvVersion spirvVersion);
 
 //! Validate SPIR-V binary, returning true if validation succeeds. Will fail with NotSupportedError if compiler is not available.
-bool	validateSpirV		(size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog);
+bool	validateSpirV		(size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog, SpirvVersion spirvVersion);
 
 } // vk
 

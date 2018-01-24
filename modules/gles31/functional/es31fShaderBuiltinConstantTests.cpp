@@ -158,11 +158,11 @@ ShaderBuiltinConstantCase<DataType>::~ShaderBuiltinConstantCase (void)
 template<typename DataType>
 void ShaderBuiltinConstantCase<DataType>::init (void)
 {
-	const bool isES32 = contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	const bool supportsES32 = contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	if (m_requiredExt == "GL_OES_sample_variables" || m_requiredExt == "GL_EXT_geometry_shader" || m_requiredExt == "GL_EXT_tessellation_shader")
 	{
-		if(!isES32)
+		if(!supportsES32)
 		{
 			const std::string message = "The test requires a 3.2 context or support for the extension " + m_requiredExt + ".";
 			TCU_CHECK_AND_THROW(NotSupportedError, m_context.getContextInfo().isExtensionSupported(m_requiredExt.c_str()), message.c_str());
@@ -171,7 +171,7 @@ void ShaderBuiltinConstantCase<DataType>::init (void)
 	else if (!m_requiredExt.empty() && !m_context.getContextInfo().isExtensionSupported(m_requiredExt.c_str()))
 			throw tcu::NotSupportedError(m_requiredExt + " not supported");
 
-	if (!isES32 && (m_varName == "gl_MaxTessControlImageUniforms"	||
+	if (!supportsES32 && (m_varName == "gl_MaxTessControlImageUniforms"	||
 		m_varName == "gl_MaxTessEvaluationImageUniforms"			||
 		m_varName == "gl_MaxTessControlAtomicCounters"				||
 		m_varName == "gl_MaxTessEvaluationAtomicCounters"			||
@@ -191,15 +191,15 @@ static gls::ShaderExecUtil::ShaderExecutor* createGetConstantExecutor (const glu
 {
 	using namespace gls::ShaderExecUtil;
 
-	const bool	isES32		= contextSupports(renderCtx.getType(), glu::ApiType::es(3, 2));
+	const bool	supportsES32	= contextSupports(renderCtx.getType(), glu::ApiType::es(3, 2));
 	ShaderSpec	shaderSpec;
 
-	shaderSpec.version	= isES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
+	shaderSpec.version	= supportsES32 ? glu::GLSL_VERSION_320_ES : glu::GLSL_VERSION_310_ES;
 	shaderSpec.source	= string("result = ") + varName + ";\n";
 
 	shaderSpec.outputs.push_back(Symbol("result", glu::VarType(dataType, glu::PRECISION_HIGHP)));
 
-	if (!extName.empty() && !(isES32 && (extName == "GL_OES_sample_variables" || extName == "GL_EXT_geometry_shader" || extName == "GL_EXT_tessellation_shader")))
+	if (!extName.empty() && !(supportsES32 && (extName == "GL_OES_sample_variables" || extName == "GL_EXT_geometry_shader" || extName == "GL_EXT_tessellation_shader")))
 		shaderSpec.globalDeclarations = "#extension " + extName + " : require\n";
 
 	return createExecutor(renderCtx, shaderType, shaderSpec);
