@@ -28,6 +28,7 @@
 #include "glcFragDepthTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
+#include "glcPackedDepthStencilTests.hpp"
 #include "glcPackedPixelsTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
 #include "glcShaderConstExprTests.hpp"
@@ -175,6 +176,7 @@ void ES30TestPackage::init(void)
 		addChild(coreGroup);
 		addChild(new glcts::ParallelShaderCompileTests(getContext()));
 		addChild(new glcts::PackedPixelsTests(getContext()));
+		addChild(new glcts::PackedDepthStencilTests(getContext()));
 	}
 	catch (...)
 	{

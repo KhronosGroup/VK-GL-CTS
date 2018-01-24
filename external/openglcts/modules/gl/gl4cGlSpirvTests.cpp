@@ -260,34 +260,46 @@ bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType t
 
 #if defined DEQP_HAVE_SPIRV_TOOLS
 
+void consumer(spv_message_level_t, const char*, const spv_position_t&, const char* m)
+{
+	std::cerr << "error: " << m << std::endl;
+}
+
 void spirvAssemble(ShaderBinaryDataType& dst, const std::string& src)
 {
 	spvtools::SpirvTools core(SPV_ENV_OPENGL_4_5);
 
-	auto print_msg_to_stderr = [](spv_message_level_t, const char*, const spv_position_t&, const char* m) {
-		std::cerr << "error: " << m << std::endl;
-	};
-
-	core.SetMessageConsumer(print_msg_to_stderr);
+	core.SetMessageConsumer(consumer);
 
 	if (!core.Assemble(src, &dst))
 		TCU_THROW(InternalError, "Failed to assemble Spir-V source.");
-	if (!core.Validate(dst))
-		TCU_THROW(InternalError, "Failed to validate Spir-V module.");
 }
 
 void spirvDisassemble(std::string& dst, const ShaderBinaryDataType& src)
 {
 	spvtools::SpirvTools core(SPV_ENV_OPENGL_4_5);
 
-	auto print_msg_to_stderr = [](spv_message_level_t, const char*, const spv_position_t&, const char* m) {
-		std::cerr << "error: " << m << std::endl;
-	};
-
-	core.SetMessageConsumer(print_msg_to_stderr);
+	core.SetMessageConsumer(consumer);
 
 	if (!core.Disassemble(src, &dst))
 		TCU_THROW(InternalError, "Failed to disassemble Spir-V module.");
+}
+
+bool spirvValidate(ShaderBinaryDataType& dst, bool throwOnError)
+{
+	spvtools::SpirvTools core(SPV_ENV_OPENGL_4_5);
+
+	if (throwOnError)
+		core.SetMessageConsumer(consumer);
+
+	if (!core.Validate(dst))
+	{
+		if (throwOnError)
+			TCU_THROW(InternalError, "Failed to validate Spir-V module.");
+		return false;
+	}
+
+	return true;
 }
 
 #else //DEQP_HAVE_SPIRV_TOOLS
@@ -305,7 +317,15 @@ void spirvDisassemble(std::string& dst, ShaderBinaryDataType& src)
 	DE_UNREF(dst);
 	DE_UNREF(src);
 
-	TCU_THROW(InternalError, "Glslang not available.");
+	TCU_THROW(InternalError, "Spirv-tools not available.");
+}
+
+bool spirvValidate(ShaderBinaryDataType& dst, bool throwOnError)
+{
+	DE_UNREF(dst);
+	DE_UNREF(throwOnError);
+
+	TCU_THROW(InternalError, "Spirv-tools not available.");
 }
 
 #endif // DEQP_HAVE_SPIRV_TOOLS
@@ -497,6 +517,14 @@ bool compareUintColors(const GLuint inColor, const GLuint refColor, const int ep
 	return false;
 }
 
+bool checkGlSpirvSupported(deqp::Context& m_context)
+{
+	bool is_at_least_gl_46 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 6)));
+	bool is_arb_gl_spirv = m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv");
+
+	if ((!is_at_least_gl_46) && (!is_arb_gl_spirv))
+		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+}
 } // namespace commonUtils
 
 /** Constructor.
@@ -515,8 +543,7 @@ SpirvModulesPositiveTest::SpirvModulesPositiveTest(deqp::Context& context)
 /** Stub init method */
 void SpirvModulesPositiveTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	m_vertex = "#version 450\n"
 			   "\n"
@@ -796,6 +823,8 @@ SpirvShaderBinaryMultipleShaderObjectsTest::SpirvShaderBinaryMultipleShaderObjec
 /** Stub init method */
 void SpirvShaderBinaryMultipleShaderObjectsTest::init()
 {
+	commonUtils::checkGlSpirvSupported(m_context);
+
 	m_spirv = "OpCapability Shader\n"
 			  "%1 = OpExtInstImport \"GLSL.std.450\"\n"
 			  "OpMemoryModel Logical GLSL450\n"
@@ -917,6 +946,7 @@ tcu::TestNode::IterateResult SpirvShaderBinaryMultipleShaderObjectsTest::iterate
 	binary << SHADERTYPE_FRAGMENT << "mainf";
 
 	glslangUtils::spirvAssemble(binary.binary, m_spirv);
+	glslangUtils::spirvValidate(binary.binary, true);
 #else  // DEQP_HAVE_SPIRV_TOOLS
 	tcu::Archive& archive = m_testCtx.getArchive();
 	ShaderBinary  binary  = commonUtils::readSpirV(
@@ -1022,8 +1052,7 @@ SpirvModulesStateQueriesTest::SpirvModulesStateQueriesTest(deqp::Context& contex
 /** Stub init method */
 void SpirvModulesStateQueriesTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	m_vertex = "#version 450\n"
 			   "\n"
@@ -1085,6 +1114,7 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 		// Assemble Spir-V module
 		vertexBinary.binary.clear();
 		glslangUtils::spirvAssemble(vertexBinary.binary, input);
+		glslangUtils::spirvValidate(vertexBinary.binary, true);
 	}
 #else  // DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
 	tcu::Archive& archive = m_testCtx.getArchive();
@@ -1196,8 +1226,7 @@ SpirvModulesErrorVerificationTest::SpirvModulesErrorVerificationTest(deqp::Conte
 /** Stub init method */
 void SpirvModulesErrorVerificationTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -1449,8 +1478,7 @@ SpirvGlslToSpirVEnableTest::SpirvGlslToSpirVEnableTest(deqp::Context& context)
 /** Stub init method */
 void SpirvGlslToSpirVEnableTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	m_vertex = "#version 450\n"
 			   "\n"
@@ -1564,8 +1592,7 @@ SpirvGlslToSpirVBuiltInFunctionsTest::SpirvGlslToSpirVBuiltInFunctionsTest(deqp:
 /** Stub init method */
 void SpirvGlslToSpirVBuiltInFunctionsTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	initMappings();
 
@@ -2332,8 +2359,7 @@ SpirvGlslToSpirVSpecializationConstantsTest::SpirvGlslToSpirVSpecializationConst
 /** Stub init method */
 void SpirvGlslToSpirVSpecializationConstantsTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
@@ -2507,8 +2533,7 @@ SpirvValidationBuiltInVariableDecorationsTest::SpirvValidationBuiltInVariableDec
 /** Stub init method */
 void SpirvValidationBuiltInVariableDecorationsTest::init()
 {
-	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv"))
-		TCU_THROW(NotSupportedError, "GL_ARB_gl_spirv is not supported");
+	commonUtils::checkGlSpirvSupported(m_context);
 
 	m_compute = "#version 450\n"
 				"\n"
@@ -3448,6 +3473,503 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validMultiSamplingFunc(Valid
 
 /** Constructor.
  *
+ *  @param context     Rendering context
+ *  @param name        Test name
+ *  @param description Test description
+ */
+SpirvValidationCapabilitiesTest::SpirvValidationCapabilitiesTest(deqp::Context& context)
+	: TestCase(context, "spirv_validation_capabilities_test", "Test verifies if Spir-V capabilities works as expected.")
+{
+	/* Left blank intentionally */
+}
+
+/** Stub init method */
+void SpirvValidationCapabilitiesTest::init()
+{
+	ShaderStage computeStage;
+	computeStage.source = ComputeSource("#version 450\n"
+										"\n"
+										"layout (local_size_x = 1, local_size_y = 2, local_size_z = 1) in;\n"
+										"\n"
+										"layout (location = 0, rgba8) uniform image2DMS img0;\n"
+										"layout (location = 1, rgba8) uniform image2DMSArray img1;\n"
+										"layout (location = 2, rgba8) uniform image2DRect img2;\n"
+										"layout (location = 3, rgba8) uniform imageCube img3;\n"
+										"layout (location = 4, rgba8) uniform imageCubeArray img4;\n"
+										"layout (location = 5, rgba8) uniform imageBuffer img5;\n"
+										"layout (location = 6, rgba8) uniform image2D img6;\n"
+										"layout (location = 7, rgba8) uniform image1D img7;\n"
+										"layout (location = 8) uniform writeonly image1D img8;\n"
+										"layout (location = 9, rg32f) uniform image1D img9;\n"
+										"layout (location = 10) uniform sampler2DRect img10;\n"
+										"layout (location = 11) uniform samplerCubeArray img11;\n"
+										"layout (location = 12) uniform samplerBuffer img12;\n"
+										"layout (location = 13) uniform sampler1D img13;\n"
+										"layout (location = 14) uniform sampler2D img14;\n"
+										"\n"
+										"layout (binding = 0) uniform atomic_uint atCounter;\n"
+										"\n"
+										"void main()\n"
+										"{\n"
+										"    ivec2 size = imageSize(img6);\n"
+										"    ivec3 point = ivec3(gl_GlobalInvocationID);\n"
+										"    imageStore(img0, point.xy, 0, vec4(0));\n"
+										"    imageStore(img1, point, 0, vec4(0));\n"
+										"    imageStore(img2, point.xy, vec4(0));\n"
+										"    imageStore(img3, point, vec4(0));\n"
+										"    imageStore(img4, point, vec4(0));\n"
+										"    imageStore(img5, point.x, vec4(0));\n"
+										"    imageStore(img6, point.xy, vec4(0));\n"
+										"    imageStore(img7, point.x, vec4(0));\n"
+										"    imageStore(img8, point.x, vec4(0));\n"
+										"\n"
+										"    vec3 coord = vec3(0);\n"
+										"    ivec2 offset = ivec2(gl_GlobalInvocationID.xy);\n"
+										"    vec4 color;\n"
+										"    color = textureGather(img10, coord.xy);\n"
+										"    color = textureGather(img11, vec4(0));\n"
+										"    color = texelFetch(img12, point.x);\n"
+										"    color = textureGatherOffset(img14, coord.xy, offset);\n"
+										"    memoryBarrier();\n"
+										"}\n");
+
+	computeStage.caps.push_back("Shader");
+	computeStage.caps.push_back("SampledRect Shader");
+	computeStage.caps.push_back("SampledCubeArray Shader");
+	computeStage.caps.push_back("SampledBuffer Shader");
+	computeStage.caps.push_back("Sampled1D");
+	computeStage.caps.push_back("ImageRect SampledRect Shader");
+	computeStage.caps.push_back("Image1D Sampled1D");
+	computeStage.caps.push_back("ImageCubeArray SampledCubeArray Shader");
+	computeStage.caps.push_back("ImageBuffer SampledBuffer");
+	computeStage.caps.push_back("ImageMSArray Shader");
+	computeStage.caps.push_back("ImageQuery Shader");
+	computeStage.caps.push_back("ImageGatherExtended Shader");
+	computeStage.caps.push_back("StorageImageExtendedFormats Shader");
+	computeStage.caps.push_back("StorageImageWriteWithoutFormat Shader");
+	computeStage.caps.push_back("AtomicStorage Shader");
+
+	ShaderStage vertexStage;
+	vertexStage.source = VertexSource("#version 450\n"
+									  "\n"
+									  "layout (location = 0) in vec3 position;\n"
+									  "layout (location = 1) in mat4 projMatrix;\n"
+									  "\n"
+									  "layout (location = 2, xfb_buffer = 0) out float xfbVal;\n"
+									  "layout (location = 3) out vec2 texCoord;\n"
+									  "\n"
+									  "void main()\n"
+									  "{\n"
+									  "    double dval = double(position.x);\n"
+									  "    gl_Position = vec4(position, 1.0) * projMatrix;\n"
+									  "    gl_ClipDistance[0] = 0.0;\n"
+									  "    gl_CullDistance[0] = 0.0;\n"
+									  "\n"
+									  "    xfbVal = 1.0;\n"
+									  "    texCoord = vec2(0, 0);\n"
+									  "}\n");
+
+	vertexStage.caps.push_back("Matrix");
+	vertexStage.caps.push_back("Shader Matrix");
+	vertexStage.caps.push_back("Float64");
+	vertexStage.caps.push_back("ClipDistance Shader");
+	vertexStage.caps.push_back("CullDistance Shader");
+	vertexStage.caps.push_back("TransformFeedback Shader");
+
+	ShaderStage tessCtrlStage;
+	tessCtrlStage.source =
+		TessellationControlSource("#version 450\n"
+								  "\n"
+								  "layout (vertices = 3) out;\n"
+								  "\n"
+								  "void main()\n"
+								  "{\n"
+								  "    if (gl_InvocationID == 0) {\n"
+								  "        gl_TessLevelOuter[0] = 1.0;\n"
+								  "        gl_TessLevelOuter[1] = 1.0;\n"
+								  "        gl_TessLevelOuter[2] = 1.0;\n"
+								  "        gl_TessLevelInner[0] = 1.0;\n"
+								  "    }\n"
+								  "\n"
+								  "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+								  "    gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
+								  "}\n");
+
+	tessCtrlStage.caps.push_back("Tessellation Shader");
+	tessCtrlStage.caps.push_back("TessellationPointSize Tessellation");
+
+	ShaderStage tessEvalStage;
+	tessEvalStage.source = TessellationEvaluationSource("#version 450\n"
+														"\n"
+														"layout (triangles) in;\n"
+														"\n"
+														"void main()\n"
+														"{\n"
+														"    gl_Position = gl_TessCoord.x * gl_in[0].gl_Position +\n"
+														"                  gl_TessCoord.y * gl_in[1].gl_Position +\n"
+														"                  gl_TessCoord.z * gl_in[2].gl_Position;\n"
+														"}\n");
+
+	ShaderStage geometryStage;
+	geometryStage.source = GeometrySource("#version 450\n"
+										  "\n"
+										  "layout (triangles) in;\n"
+										  "layout (triangle_strip, max_vertices = 3) out;\n"
+										  "\n"
+										  "void main()\n"
+										  "{\n"
+										  "    gl_ViewportIndex = 0;\n"
+										  "    for (int i = 0; i < 3; ++i) {\n"
+										  "        gl_Position = gl_in[i].gl_Position;\n"
+										  "        gl_PointSize = gl_in[i].gl_PointSize;\n"
+										  "        EmitStreamVertex(0);\n"
+										  "    }\n"
+										  "    EndStreamPrimitive(0);\n"
+										  "}\n");
+
+	geometryStage.caps.push_back("Geometry Shader");
+	geometryStage.caps.push_back("GeometryPointSize Geometry");
+	geometryStage.caps.push_back("GeometryStreams Geometry");
+	geometryStage.caps.push_back("MultiViewport Geometry");
+
+	ShaderStage fragmentStage;
+	fragmentStage.source = FragmentSource("#version 450\n"
+										  "\n"
+										  "layout (location = 3) in vec2 texCoord;\n"
+										  "\n"
+										  "layout (location = 0) out vec4 fColor;\n"
+										  "\n"
+										  "layout (location = 1) uniform sampler2D tex;\n"
+										  "\n"
+										  "void main()\n"
+										  "{\n"
+										  "    vec2 p = vec2(gl_SampleID);\n"
+										  "    vec2 dx = dFdxFine(p);\n"
+										  "\n"
+										  "    interpolateAtCentroid(texCoord);"
+										  "\n"
+										  "    fColor = vec4(1.0);\n"
+										  "}\n");
+
+	fragmentStage.caps.push_back("Shader");
+	fragmentStage.caps.push_back("DerivativeControl Shader");
+	fragmentStage.caps.push_back("SampleRateShading");
+	fragmentStage.caps.push_back("InterpolationFunction");
+
+	ShaderStage dynamicIndexingStage;
+	dynamicIndexingStage.source = ComputeSource("#version 450\n"
+												"\n"
+												"layout (location = 0) uniform sampler2D uniSamp[10];\n"
+												"layout (location = 10, rgba8) uniform image2D uniImg[10];\n"
+												"layout (binding = 5) uniform UniData\n"
+												"{\n"
+												"   int a[10];\n"
+												"} uniBuff[10];\n"
+												"layout (binding = 5) buffer StorageData\n"
+												"{\n"
+												"   int a[10];\n"
+												"} storageBuff[10];\n"
+												"\n"
+												"void main()\n"
+												"{\n"
+												"    vec2 coord = vec2(0.0);\n"
+												"    ivec2 point = ivec2(0);\n"
+												"\n"
+												"    int ret = 0;\n"
+												"    for (int i = 0; i < 10; ++i)"
+												"    {\n"
+												"        ret = ret + uniBuff[i].a[i] + storageBuff[i].a[i];\n"
+												"        textureGather(uniSamp[i], coord);\n"
+												"        imageLoad(uniImg[i], point);\n"
+												"    }\n"
+												"    memoryBarrier();\n"
+												"}\n");
+
+	dynamicIndexingStage.caps.push_back("UniformBufferArrayDynamicIndexing");
+	dynamicIndexingStage.caps.push_back("SampledImageArrayDynamicIndexing");
+	dynamicIndexingStage.caps.push_back("StorageBufferArrayDynamicIndexing");
+	dynamicIndexingStage.caps.push_back("StorageImageArrayDynamicIndexing");
+
+	Pipeline computePipeline;
+	computePipeline.push_back(computeStage);
+
+	Pipeline standardPipeline;
+	standardPipeline.push_back(vertexStage);
+	standardPipeline.push_back(tessCtrlStage);
+	standardPipeline.push_back(tessEvalStage);
+	standardPipeline.push_back(geometryStage);
+	standardPipeline.push_back(fragmentStage);
+
+	Pipeline dynamicIndexingPipeline;
+	dynamicIndexingPipeline.push_back(dynamicIndexingStage);
+
+	m_pipelines.push_back(computePipeline);
+	m_pipelines.push_back(standardPipeline);
+	m_pipelines.push_back(dynamicIndexingPipeline);
+
+	if (m_context.getContextInfo().isExtensionSupported("GL_ARB_gpu_shader_int64"))
+	{
+		ShaderStage computeStageExt("GL_ARB_gpu_shader_int64");
+		computeStageExt.source = ComputeSource("#version 450\n"
+											   "\n"
+											   "#extension GL_ARB_gpu_shader_int64 : require\n"
+											   "\n"
+											   "void main()\n"
+											   "{\n"
+											   "    int64_t ival = int64_t(gl_GlobalInvocationID.x);\n"
+											   "}\n");
+		computeStageExt.caps.push_back("Int64");
+
+		Pipeline extPipeline;
+		extPipeline.push_back(computeStageExt);
+
+		m_pipelines.push_back(extPipeline);
+	}
+
+	if (m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
+	{
+		ShaderStage computeStageExt("GL_ARB_sparse_texture2");
+		computeStageExt.source = ComputeSource("#version 450\n"
+											   "\n"
+											   "#extension GL_ARB_sparse_texture2 : require\n"
+											   "\n"
+											   "layout (location = 0) uniform sampler2D tex;\n"
+											   "\n"
+											   "void main()\n"
+											   "{\n"
+											   "    vec2 p = vec2(0.0);\n"
+											   "\n"
+											   "    vec4 spCol;\n"
+											   "    sparseTextureARB(tex, p, spCol);\n"
+											   "}\n");
+
+		computeStageExt.caps.push_back("SparseResidency");
+
+		Pipeline extPipeline;
+		extPipeline.push_back(computeStageExt);
+
+		m_pipelines.push_back(extPipeline);
+
+		if (m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture_clamp"))
+		{
+			ShaderStage vertexStageExt("GL_ARB_sparse_texture_clamp_vert");
+			vertexStageExt.source = VertexSource("#version 450\n"
+												 "\n"
+												 "layout (location = 0) in vec4 pos;\n"
+												 "\n"
+												 "void main()\n"
+												 "{\n"
+												 "    gl_Position = pos;\n"
+												 "}\n");
+
+			ShaderStage fragmentStageExt("GL_ARB_sparse_texture_clamp_frag");
+			fragmentStageExt.source = FragmentSource("#version 450\n"
+													 "\n"
+													 "#extension GL_ARB_sparse_texture2 : require\n"
+													 "#extension GL_ARB_sparse_texture_clamp : require\n"
+													 "\n"
+													 "uniform sampler2D tex;\n"
+													 "\n"
+													 "layout (location = 0) out vec4 spCol;\n"
+													 "\n"
+													 "void main()\n"
+													 "{\n"
+													 "    vec2 p = vec2(0.0);\n"
+													 "\n"
+													 "    sparseTextureClampARB(tex, p, 0.5, spCol);\n"
+													 "}\n");
+
+			fragmentStageExt.caps.push_back("MinLod");
+
+			Pipeline extPipeline;
+			extPipeline.push_back(vertexStageExt);
+			extPipeline.push_back(fragmentStageExt);
+
+			m_pipelines.push_back(extPipeline);
+		}
+	}
+
+	if (m_context.getContextInfo().isExtensionSupported("GL_EXT_shader_image_load_formatted"))
+	{
+		ShaderStage computeStageExt("GL_EXT_shader_image_load_formatted");
+		computeStageExt.source = ComputeSource("#version 450\n"
+											   "\n"
+											   "#extension GL_EXT_shader_image_load_formatted : require\n"
+											   "\n"
+											   "layout (location = 0) uniform image2D img;\n"
+											   "\n"
+											   "void main()\n"
+											   "{\n"
+											   "    ivec3 point = ivec3(gl_GlobalInvocationID);\n"
+											   "    vec4 color = imageLoad(img, point.xy);\n"
+											   "}\n");
+
+		computeStageExt.caps.push_back("StorageImageReadWithoutFormat");
+
+		Pipeline extPipeline;
+		extPipeline.push_back(computeStageExt);
+
+		m_pipelines.push_back(extPipeline);
+	}
+}
+
+/** Stub de-init method */
+void SpirvValidationCapabilitiesTest::deinit()
+{
+}
+
+/** Executes test iteration.
+ *
+ *  @return Returns STOP when test has finished executing, CONTINUE if more iterations are needed.
+ */
+tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
+{
+	const Functions& gl = m_context.getRenderContext().getFunctions();
+
+	bool result = true;
+
+	for (int p = 0; p < m_pipelines.size(); ++p)
+	{
+		ProgramBinaries programBinaries;
+
+		Pipeline& pipeline = m_pipelines[p];
+		for (int s = 0; s < pipeline.size(); ++s)
+		{
+			ShaderStage& stage = pipeline[s];
+#if defined				 DEQP_HAVE_GLSLANG
+			stage.binary = glslangUtils::makeSpirV(m_context.getTestContext().getLog(), stage.source);
+			std::stringstream ssw;
+			if (stage.name.empty())
+				ssw << "gl_cts/data/spirv/spirv_validation_capabilities/binary_p" << p << "s" << s << ".nspv";
+			else
+				ssw << "gl_cts/data/spirv/spirv_validation_capabilities/" << stage.name << ".nspv";
+			commonUtils::writeSpirV(ssw.str().c_str(), stage.binary);
+#else  // DEQP_HAVE_GLSLANG
+			tcu::Archive&	 archive = m_testCtx.getArchive();
+			std::stringstream ss;
+			if (stage.name.empty())
+				ss << "spirv/spirv_validation_capabilities/binary_p" << p << "s" << s << ".nspv";
+			else
+				ss << "spirv/spirv_validation_capabilities/" << stage.name << ".nspv";
+			stage.binary = commonUtils::readSpirV(archive.getResource(ss.str().c_str()));
+#endif // DEQP_HAVE_GLSLANG
+			programBinaries << stage.binary;
+		}
+
+		ShaderProgram program(gl, programBinaries);
+		if (!program.isOk())
+		{
+			std::stringstream ssLog;
+
+			ssLog << "Program build failed [" << p << "].\n";
+			if (program.hasShader(SHADERTYPE_COMPUTE))
+				ssLog << "Compute: " << program.getShaderInfo(SHADERTYPE_COMPUTE).infoLog << "\n";
+			if (program.hasShader(SHADERTYPE_VERTEX))
+				ssLog << "Vertex: " << program.getShaderInfo(SHADERTYPE_VERTEX).infoLog << "\n";
+			if (program.hasShader(SHADERTYPE_TESSELLATION_CONTROL))
+				ssLog << "TessellationCtrl: " << program.getShaderInfo(SHADERTYPE_TESSELLATION_CONTROL).infoLog << "\n";
+			if (program.hasShader(SHADERTYPE_TESSELLATION_EVALUATION))
+				ssLog << "TessellationEval: " << program.getShaderInfo(SHADERTYPE_TESSELLATION_EVALUATION).infoLog
+					  << "\n";
+			if (program.hasShader(SHADERTYPE_GEOMETRY))
+				ssLog << "Geometry: " << program.getShaderInfo(SHADERTYPE_GEOMETRY).infoLog << "\n";
+			if (program.hasShader(SHADERTYPE_FRAGMENT))
+				ssLog << "Fragment: " << program.getShaderInfo(SHADERTYPE_FRAGMENT).infoLog << "\n";
+			ssLog << "Program: " << program.getProgramInfo().infoLog;
+
+			m_testCtx.getLog() << tcu::TestLog::Message << ssLog.str() << tcu::TestLog::EndMessage;
+
+			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
+			return STOP;
+		}
+
+#if defined DEQP_HAVE_SPIRV_TOOLS
+		for (int s = 0; s < pipeline.size(); ++s)
+		{
+			ShaderStage  stage  = pipeline[s];
+			ShaderBinary binary = stage.binary;
+
+			std::string spirVSource;
+			glslangUtils::spirvDisassemble(spirVSource, binary.binary);
+
+			for (int c = 0; c < stage.caps.size(); ++c)
+			{
+				std::string spirVSourceCut;
+				int			foundCount = spirVCapabilityCutOff(spirVSource, spirVSourceCut, stage.caps, c);
+
+				if (foundCount == 0)
+				{
+					m_testCtx.getLog()
+						<< tcu::TestLog::Message << "OpCapability (" << stage.caps[c] << ") [" << p << "/" << s
+						<< "].\n"
+						<< "Neither capability nor capabilities that depends on this capability has been found."
+						<< tcu::TestLog::EndMessage;
+				}
+				else
+				{
+					// Assemble and validate cut off SpirV source
+					glslangUtils::spirvAssemble(binary.binary, spirVSourceCut);
+					if (glslangUtils::spirvValidate(binary.binary, false))
+					{
+						m_testCtx.getLog() << tcu::TestLog::Message << "OpCapability (" << stage.caps[c] << ") [" << p
+										   << "/" << s << "].\n"
+										   << "Validation passed without corresponding OpCapability declared."
+										   << tcu::TestLog::EndMessage;
+					}
+				}
+			}
+		}
+#endif // DEQP_HAVE_SPIRV_TOOLS
+	}
+
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	return STOP;
+}
+
+int SpirvValidationCapabilitiesTest::spirVCapabilityCutOff(std::string spirVSrcInput, std::string& spirVSrcOutput,
+														   CapabilitiesVec& capabilities, int& currentCapability)
+{
+	std::vector<std::string> current = de::splitString(capabilities[currentCapability], ' ');
+
+	CapabilitiesVec toDisable;
+	toDisable.push_back(current[0]);
+
+	// Search for capabilities that depends on current one as it should be removed either
+	for (int cr = 0; cr < capabilities.size(); ++cr)
+	{
+		std::vector<std::string> split = de::splitString(capabilities[cr], ' ');
+
+		if (split[0] == current[0])
+			continue;
+
+		for (int s = 1; s < split.size(); ++s)
+		{
+			if (split[s] == current[0])
+				toDisable.push_back(split[0]);
+		}
+	}
+
+	// Disable current capability and capabilities that depends on it
+	int foundCount = 0;
+	spirVSrcOutput = spirVSrcInput;
+	for (int d = 0; d < toDisable.size(); ++d)
+	{
+		std::string searchString = std::string("OpCapability ") + toDisable[d];
+
+		size_t pos = spirVSrcOutput.find(searchString);
+
+		if (pos != std::string::npos)
+		{
+			foundCount++;
+			spirVSrcOutput.erase(pos, searchString.length());
+		}
+	}
+
+	return foundCount;
+}
+
+/** Constructor.
+ *
  *  @param context Rendering context.
  */
 GlSpirvTests::GlSpirvTests(deqp::Context& context)
@@ -3466,6 +3988,7 @@ void GlSpirvTests::init()
 	addChild(new SpirvGlslToSpirVBuiltInFunctionsTest(m_context));
 	addChild(new SpirvGlslToSpirVSpecializationConstantsTest(m_context));
 	addChild(new SpirvValidationBuiltInVariableDecorationsTest(m_context));
+	addChild(new SpirvValidationCapabilitiesTest(m_context));
 }
 
 } /* gl4cts namespace */

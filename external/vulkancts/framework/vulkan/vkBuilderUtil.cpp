@@ -107,8 +107,17 @@ Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build (const DeviceInter
 	for (size_t samplerInfoNdx = 0; samplerInfoNdx < m_immutableSamplerInfos.size(); samplerInfoNdx++)
 	{
 		const ImmutableSamplerInfo&	samplerInfo	= m_immutableSamplerInfos[samplerInfoNdx];
+		deUint32					bindingNdx	= 0;
 
-		bindings[samplerInfo.bindingIndex].pImmutableSamplers	= &m_immutableSamplers[samplerInfo.samplerBaseIndex];
+		while (bindings[bindingNdx].binding != samplerInfo.bindingIndex)
+		{
+			bindingNdx++;
+
+			if (bindingNdx >= (deUint32)bindings.size())
+				DE_FATAL("Immutable sampler not found");
+		}
+
+		bindings[bindingNdx].pImmutableSamplers = &m_immutableSamplers[samplerInfo.samplerBaseIndex];
 	}
 
 	const VkDescriptorSetLayoutCreateInfo		createInfo	=
@@ -117,7 +126,7 @@ Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build (const DeviceInter
 		DE_NULL,
 		(VkDescriptorSetLayoutCreateFlags)extraFlags,			// flags
 		(deUint32)bindings.size(),								// bindingCount
-		(bindings.empty()) ? (DE_NULL) : (bindings.data()),		// pBinding
+		(bindings.empty()) ? (DE_NULL) : (&bindings.front()),	// pBinding
 	};
 
 	return createDescriptorSetLayout(vk, device, &createInfo);

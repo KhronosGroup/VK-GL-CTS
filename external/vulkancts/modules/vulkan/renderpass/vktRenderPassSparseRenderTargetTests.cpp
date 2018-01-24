@@ -61,53 +61,6 @@ namespace vkt
 namespace
 {
 
-deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, VkQueueFlags requiredCaps)
-{
-	const std::vector<VkQueueFamilyProperties>	queueProps	= getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
-
-	for (size_t queueNdx = 0; queueNdx < queueProps.size(); queueNdx++)
-	{
-		if ((queueProps[queueNdx].queueFlags & requiredCaps) == requiredCaps)
-			return (deUint32)queueNdx;
-	}
-
-	TCU_THROW(NotSupportedError, "No matching queue found");
-}
-
-Move<VkDevice> createDevice(const InstanceInterface& vkInstance, VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex)
-{
-	const VkPhysicalDeviceFeatures          deviceFeatures      = getPhysicalDeviceFeatures(vkInstance, physicalDevice);
-
-	VkDeviceQueueCreateInfo                 queueInfo;
-	VkDeviceCreateInfo                      deviceInfo;
-	const float                             queuePriority       = 1.0f;
-
-	deMemset(&queueInfo,    0, sizeof(queueInfo));
-	deMemset(&deviceInfo,   0, sizeof(deviceInfo));
-
-	queueInfo.sType                         = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo.pNext                         = DE_NULL;
-	queueInfo.flags                         = (VkDeviceQueueCreateFlags)0u;
-	queueInfo.queueFamilyIndex              = queueFamilyIndex;
-	queueInfo.queueCount                    = 1u;
-	queueInfo.pQueuePriorities              = &queuePriority;
-
-	deviceInfo.sType                        = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceInfo.pNext                        = DE_NULL;
-	deviceInfo.queueCreateInfoCount         = 1u;
-	deviceInfo.pQueueCreateInfos            = &queueInfo;
-	deviceInfo.enabledExtensionCount        = 0u;
-	deviceInfo.ppEnabledExtensionNames      = DE_NULL;
-	deviceInfo.enabledLayerCount            = 0u;
-	deviceInfo.ppEnabledLayerNames          = DE_NULL;
-	deviceInfo.pEnabledFeatures             = &deviceFeatures;
-
-	if (!deviceFeatures.sparseBinding)
-		TCU_THROW(NotSupportedError, "Sparse binding not supported");
-
-	return createDevice(vkInstance, physicalDevice, &deviceInfo);
-}
-
 de::MovePtr<Allocation> createBufferMemory (const DeviceInterface&	vk,
 											VkDevice				device,
 											Allocator&				allocator,
@@ -124,21 +77,25 @@ Move<VkImage> createSparseImageAndMemory (const DeviceInterface&				vk,
 										  const InstanceInterface&				instance,
 										  Allocator&							allocator,
 										  vector<de::SharedPtr<Allocation> >&	allocations,
-										  deUint32								queueFamilyIndex,
-										  VkQueue&								queue,
+										  deUint32								universalQueueFamilyIndex,
+										  VkQueue								sparseQueue,
+										  deUint32								sparseQueueFamilyIndex,
 										  const VkSemaphore&					bindSemaphore,
 										  VkFormat								format,
 										  deUint32								width,
 										  deUint32								height)
 {
-	const VkExtent3D		imageExtent			=
+	deUint32				queueFamilyIndices[]	= {universalQueueFamilyIndex, sparseQueueFamilyIndex};
+	const VkSharingMode		sharingMode             = universalQueueFamilyIndex != sparseQueueFamilyIndex ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+
+	const VkExtent3D		imageExtent				=
 	{
 		width,
 		height,
 		1u
 	};
 
-	const VkImageCreateInfo	imageCreateInfo		=
+	const VkImageCreateInfo	imageCreateInfo			=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		DE_NULL,
@@ -151,15 +108,15 @@ Move<VkImage> createSparseImageAndMemory (const DeviceInterface&				vk,
 		VK_SAMPLE_COUNT_1_BIT,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		VK_SHARING_MODE_EXCLUSIVE,
-		1u,
-		&queueFamilyIndex,
+		sharingMode,
+		sharingMode == VK_SHARING_MODE_CONCURRENT ? 2u : 1u,
+		queueFamilyIndices,
 		VK_IMAGE_LAYOUT_UNDEFINED
 	};
 
 	Move<VkImage>			destImage			= createImage(vk, device, &imageCreateInfo);
 
-	vkt::pipeline::allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, queue, allocator, allocations, mapVkFormat(format), *destImage);
+	vkt::pipeline::allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue, allocator, allocations, mapVkFormat(format), *destImage);
 
 	return destImage;
 }
@@ -516,11 +473,6 @@ private:
 	const deUint32							m_height;
 	const VkFormat							m_format;
 
-	deUint32								m_queueFamilyIndex;
-	const Unique<VkDevice>					m_device;
-	VkQueue									m_queue;
-
-	SimpleAllocator							m_allocator;
 	vector<de::SharedPtr<Allocation> >		m_allocations;
 
 	const Unique<VkSemaphore>				m_bindSemaphore;
@@ -546,20 +498,16 @@ SparseRenderTargetTestInstance::SparseRenderTargetTestInstance (Context& context
 	, m_width					(32u)
 	, m_height					(32u)
 	, m_format					(format)
-	, m_queueFamilyIndex		(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_SPARSE_BINDING_BIT))
-	, m_device					(createDevice(context.getInstanceInterface(), context.getPhysicalDevice(), m_queueFamilyIndex))
-	, m_queue					(getDeviceQueue(context.getDeviceInterface(), *m_device, m_queueFamilyIndex, 0))
-	, m_allocator				(context.getDeviceInterface(), *m_device, getPhysicalDeviceMemoryProperties(context.getInstanceInterface(), context.getPhysicalDevice()))
-	, m_bindSemaphore			(createSemaphore(context.getDeviceInterface(), *m_device))
-	, m_dstImage				(createSparseImageAndMemory(context.getDeviceInterface(), *m_device, context.getPhysicalDevice(), context.getInstanceInterface(), m_allocator, m_allocations, m_queueFamilyIndex, m_queue, *m_bindSemaphore, m_format, m_width, m_height))
-	, m_dstImageView			(createImageView(context.getDeviceInterface(), *m_device, *m_dstImage, m_format, VK_IMAGE_ASPECT_COLOR_BIT))
-	, m_dstBuffer				(createBuffer(context.getDeviceInterface(), *m_device, m_format, m_width, m_height))
-	, m_dstBufferMemory			(createBufferMemory(context.getDeviceInterface(), *m_device, m_allocator, *m_dstBuffer))
-	, m_renderPass				(createRenderPass(context.getDeviceInterface(), *m_device, m_format))
-	, m_framebuffer				(createFramebuffer(context.getDeviceInterface(), *m_device, *m_renderPass, *m_dstImageView, m_width, m_height))
-	, m_renderPipelineLayout	(createRenderPipelineLayout(context.getDeviceInterface(), *m_device))
-	, m_renderPipeline			(createRenderPipeline(context.getDeviceInterface(), *m_device, *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height))
-	, m_commandPool				(createCommandPool(context.getDeviceInterface(), *m_device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, m_queueFamilyIndex))
+	, m_bindSemaphore			(createSemaphore(context.getDeviceInterface(), context.getDevice()))
+	, m_dstImage				(createSparseImageAndMemory(context.getDeviceInterface(), context.getDevice(), context.getPhysicalDevice(), context.getInstanceInterface(), context.getDefaultAllocator(), m_allocations, context.getUniversalQueueFamilyIndex(), context.getSparseQueue(), context.getSparseQueueFamilyIndex(), *m_bindSemaphore, m_format, m_width, m_height))
+	, m_dstImageView			(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstImage, m_format, VK_IMAGE_ASPECT_COLOR_BIT))
+	, m_dstBuffer				(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
+	, m_dstBufferMemory			(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
+	, m_renderPass				(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format))
+	, m_framebuffer				(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_dstImageView, m_width, m_height))
+	, m_renderPipelineLayout	(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
+	, m_renderPipeline			(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height))
+	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
 }
 
@@ -570,7 +518,7 @@ SparseRenderTargetTestInstance::~SparseRenderTargetTestInstance (void)
 tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 {
 	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
-	const Unique<VkCommandBuffer>	commandBuffer	(allocateCommandBuffer(vkd, *m_device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>	commandBuffer	(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	{
 		const VkCommandBufferBeginInfo beginInfo =
@@ -698,8 +646,8 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 			DE_NULL
 		};
 
-		VK_CHECK(vkd.queueSubmit(m_queue, 1u, &submitInfo, (VkFence)0u));
-		VK_CHECK(vkd.queueWaitIdle(m_queue));
+		VK_CHECK(vkd.queueSubmit(m_context.getUniversalQueue(), 1u, &submitInfo, (VkFence)0u));
+		VK_CHECK(vkd.queueWaitIdle(m_context.getUniversalQueue()));
 	}
 
 	{

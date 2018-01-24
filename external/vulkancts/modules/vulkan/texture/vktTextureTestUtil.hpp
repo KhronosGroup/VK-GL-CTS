@@ -155,20 +155,14 @@ private:
 	TextureBinding&									operator=					(const TextureBinding&);	// not allowed!
 
 	void											updateTextureData			(const TestTextureSp& textureData, const Type type);
-	vk::Allocator*									createAllocator				(void) const;
-	vk::Move<vk::VkDevice>							createDevice				(void) const;
 
 	Context&										m_context;
-	const deUint32									m_queueFamilyIndex;
 	Type											m_type;
 	ImageBackingMode								m_backingMode;
 	TestTextureSp									m_textureData;
 	vk::Move<vk::VkImage>							m_textureImage;
 	de::MovePtr<vk::Allocation>						m_textureImageMemory;
 	vk::Move<vk::VkImageView>						m_textureImageView;
-	vk::Unique<vk::VkDevice>						m_device;
-	vk::DeviceDriver								m_deviceInterface;
-	const de::UniquePtr<vk::Allocator>				m_allocator;
 	std::vector<de::SharedPtr<vk::Allocation> >		m_allocations;
 };
 

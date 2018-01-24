@@ -78,7 +78,8 @@ public:
 	deUint32									getUniversalQueueFamilyIndex	(void) const;
 	vk::VkQueue									getUniversalQueue				(void) const;
 	deUint32									getUsedApiVersion				(void) const;
-
+	deUint32									getSparseQueueFamilyIndex		(void) const;
+	vk::VkQueue									getSparseQueue					(void) const;
 	vk::Allocator&								getDefaultAllocator				(void) const;
 	bool										contextSupports					(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
 	bool										contextSupports					(const vk::ApiVersion version) const;

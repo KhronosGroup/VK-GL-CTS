@@ -48,6 +48,8 @@ set(GLCTS_COMMON_SRCS
 	glcPackedPixelsTests.hpp
 	glcPolygonOffsetClampTests.cpp
 	glcPolygonOffsetClampTests.hpp
+	glcPackedDepthStencilTests.cpp
+	glcPackedDepthStencilTests.hpp
 	glcParallelShaderCompileTests.cpp
 	glcParallelShaderCompileTests.hpp
 	glcRobustBufferAccessBehaviorTests.cpp
