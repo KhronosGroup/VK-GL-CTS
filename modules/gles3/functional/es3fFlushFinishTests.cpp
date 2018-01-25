@@ -33,6 +33,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuRenderTarget.hpp"
 #include "tcuCPUWarmup.hpp"
+#include "tcuApp.hpp"
 
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -66,6 +67,7 @@ enum
 {
 	MAX_VIEWPORT_SIZE			= 256,
 	MAX_SAMPLE_DURATION_US		= 150*1000,
+	MAX_CALIBRATE_DURATION_US	= tcu::WATCHDOG_INTERVAL_TIME_LIMIT_SECS/3*1000*1000,	// Abort when the watch dog gets nervous
 	WAIT_TIME_MS				= 200,
 	MIN_DRAW_CALL_COUNT			= 10,
 	MAX_DRAW_CALL_COUNT			= 1<<20,
@@ -291,6 +293,8 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 	tcu::ScopedLogSection		section				(m_testCtx.getLog(), "CalibrationInfo", "Calibration info");
 	CalibrationParams			params;
 
+	const deUint64 calibrateStartTime = deGetMicroseconds();
+
 	// Step 1: find iteration count that results in rougly 1/10th of target maximum sample duration.
 	{
 		const deUint64		targetDurationUs		= MAX_SAMPLE_DURATION_US/100;
@@ -302,6 +306,7 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 
 		for (;;)
 		{
+			deUint64 endTime;
 			deUint64 curDuration;
 
 			setShaderIterCount(curIterCount);
@@ -310,7 +315,8 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 			{
 				const deUint64 startTime = deGetMicroseconds();
 				readPixels();
-				curDuration = deGetMicroseconds()-startTime;
+				endTime = deGetMicroseconds();
+				curDuration = endTime-startTime;
 			}
 
 			m_testCtx.getLog() << TestLog::Message << "Duration with " << curIterCount << " iterations = " << curDuration << " us" << TestLog::EndMessage;
@@ -332,6 +338,11 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 			}
 			else if (curIterCount >= MAX_SHADER_ITER_COUNT)
 				break; // Settle on maximum.
+			else if (endTime - calibrateStartTime > MAX_CALIBRATE_DURATION_US)
+			{
+				// Calibration is taking longer than expected. This can be due to eager draw call execution.
+				throw CalibrationFailedException("Calibration failed, target duration not reached within expected time");
+			}
 			else
 			{
 				prevIterCount	= curIterCount;
@@ -357,6 +368,7 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 
 		for (;;)
 		{
+			deUint64 endTime;
 			deUint64 curDuration;
 
 			render(curDrawCount); // \note Submit time is ignored
@@ -364,7 +376,8 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 			{
 				const deUint64 startTime = deGetMicroseconds();
 				readPixels();
-				curDuration = deGetMicroseconds()-startTime;
+				endTime = deGetMicroseconds();
+				curDuration = endTime-startTime;
 			}
 
 			m_testCtx.getLog() << TestLog::Message << "Duration with " << curDrawCount << " draw calls = " << curDuration << " us" << TestLog::EndMessage;
@@ -386,6 +399,11 @@ FlushFinishCase::CalibrationParams FlushFinishCase::calibrate (void)
 			}
 			else if (curDrawCount >= MAX_DRAW_CALL_COUNT)
 				break; // Settle on maximum.
+			else if (endTime - calibrateStartTime > MAX_CALIBRATE_DURATION_US)
+			{
+				// Calibration is taking longer than expected. This can be due to eager draw call execution.
+				throw CalibrationFailedException("Calibration failed, target duration not reached within expected time");
+			}
 			else
 			{
 				prevDrawCount	= curDrawCount;
@@ -522,7 +540,7 @@ void FlushFinishCase::analyzeResults (const std::vector<Sample>& samples, const 
 		}
 	}
 
-	m_testCtx.setTestResult(allOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
+	m_testCtx.setTestResult(allOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_COMPATIBILITY_WARNING,
 							allOk ? "Pass"				: "Suspicious performance behavior");
 }
 
