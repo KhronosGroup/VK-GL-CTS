@@ -24,6 +24,7 @@
 #include "vktSpvAsmTests.hpp"
 
 #include "vktSpvAsmInstructionTests.hpp"
+#include "vktSpvAsmTypeTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -39,6 +40,7 @@ void createChildren (tcu::TestCaseGroup* spirVAssemblyTests)
 	tcu::TestContext&	testCtx		= spirVAssemblyTests->getTestContext();
 
 	spirVAssemblyTests->addChild(createInstructionTests(testCtx));
+	spirVAssemblyTests->addChild(createTypeTests(testCtx));
 	// \todo [2015-09-28 antiagainst] control flow
 	// \todo [2015-09-28 antiagainst] multiple entry points for the same shader stage
 	// \todo [2015-09-28 antiagainst] multiple shaders in the same module

@@ -383,6 +383,8 @@ void createPipelineShaderStages (const DeviceInterface&						vk,
 	"%v2i32 = OpTypeVector %i32 2\n"															\
 	"%v2u32 = OpTypeVector %u32 2\n"															\
 	"%v2f32 = OpTypeVector %f32 2\n"															\
+	"%v3i32 = OpTypeVector %i32 3\n"															\
+	"%v3u32 = OpTypeVector %u32 3\n"															\
 	"%v3f32 = OpTypeVector %f32 3\n"															\
 	"%v4i32 = OpTypeVector %i32 4\n"															\
 	"%v4u32 = OpTypeVector %u32 4\n"															\
@@ -2379,29 +2381,29 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 	}
 
+	// fragment stores and atomics feature
+	{
+		if (features.fragmentStoresAndAtomics == DE_FALSE &&
+			instance.requestedFeatures.coreFeatures.fragmentStoresAndAtomics == DE_TRUE &&
+			instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT)
+			TCU_THROW(NotSupportedError, "Requested fragmentStoresAndAtomics feature not supported");
+	}
+
+	// vertex pipeline stores and atomics feature
+	{
+		if (features.vertexPipelineStoresAndAtomics == DE_FALSE &&
+			instance.requestedFeatures.coreFeatures.vertexPipelineStoresAndAtomics == DE_TRUE &&
+			(instance.customizedStages & vk::VK_SHADER_STAGE_VERTEX_BIT ||
+			 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ||
+			 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
+			 instance.customizedStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT))
+			TCU_THROW(NotSupportedError, "Requested vertexPipelineStoresAndAtomics feature not supported");
+	}
+
 	// Variable Pointers features
 	{
 		if (!isVariablePointersFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.extVariablePointers))
 			TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
-
-		if (instance.requestedFeatures.extVariablePointers)
-		{
-			// The device doesn't have the vertexPipelineStoresAndAtomics feature, but the test requires the feature for
-			// vertex, tesselation, and geometry stages.
-			if (features.vertexPipelineStoresAndAtomics == DE_FALSE &&
-				instance.requestedFeatures.coreFeatures.vertexPipelineStoresAndAtomics == DE_TRUE &&
-			    (instance.customizedStages & vk::VK_SHADER_STAGE_VERTEX_BIT ||
-				 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ||
-				 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
-				 instance.customizedStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT))
-				TCU_THROW(NotSupportedError, "This VK_KHR_variable_pointers extension test requires vertexPipelineStoresAndAtomics device feature.");
-
-			// The device doesn't have the fragmentStoresAndAtomics feature, but the test requires this feature for the fragment stage.
-			if (features.fragmentStoresAndAtomics == DE_FALSE &&
-			    instance.requestedFeatures.coreFeatures.fragmentStoresAndAtomics == DE_TRUE &&
-				instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT)
-				TCU_THROW(NotSupportedError, "This VK_KHR_variable_pointers extension test requires fragmentStoresAndAtomics device feature.");
-		}
 	}
 
 	// defer device and other resource creation until after feature checks
