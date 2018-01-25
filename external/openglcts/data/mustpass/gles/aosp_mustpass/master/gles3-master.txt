@@ -43945,6 +43945,7 @@ dEQP-GLES3.functional.draw.random.209
 dEQP-GLES3.functional.draw.random.210
 dEQP-GLES3.functional.flush_finish.wait
 dEQP-GLES3.functional.flush_finish.flush
+dEQP-GLES3.functional.flush_finish.flush_wait
 dEQP-GLES3.functional.flush_finish.finish
 dEQP-GLES3.functional.flush_finish.finish_wait
 dEQP-GLES3.functional.default_vertex_attrib.float.vertex_attrib_1f
