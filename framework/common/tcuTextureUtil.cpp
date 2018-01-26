@@ -381,11 +381,11 @@ static Vec2 getFloatChannelValueRange (TextureFormat::ChannelType channelType)
 		// Misc formats.
 		case TextureFormat::SIGNED_INT8:					cMin = -128.0f;			cMax = 127.0f;			break;
 		case TextureFormat::SIGNED_INT16:					cMin = -32768.0f;		cMax = 32767.0f;		break;
-		case TextureFormat::SIGNED_INT32:					cMin = -2147483648.0f;	cMax = 2147483647.0f;	break;
+		case TextureFormat::SIGNED_INT32:					cMin = -2147483520.0f;	cMax = 2147483520.0f;	break; // Maximum exactly representable 31-bit integer: (2^24 - 1) * 2^7
 		case TextureFormat::UNSIGNED_INT8:					cMin = 0.0f;			cMax = 255.0f;			break;
 		case TextureFormat::UNSIGNED_INT16:					cMin = 0.0f;			cMax = 65535.0f;		break;
 		case TextureFormat::UNSIGNED_INT24:					cMin = 0.0f;			cMax = 16777215.0f;		break;
-		case TextureFormat::UNSIGNED_INT32:					cMin = 0.0f;			cMax = 4294967295.f;	break;
+		case TextureFormat::UNSIGNED_INT32:					cMin = 0.0f;			cMax = 4294967040.f;	break; // Maximum exactly representable 32-bit integer: (2^24 - 1) * 2^8
 		case TextureFormat::HALF_FLOAT:						cMin = -1e3f;			cMax = 1e3f;			break;
 		case TextureFormat::FLOAT:							cMin = -1e5f;			cMax = 1e5f;			break;
 		case TextureFormat::FLOAT64:						cMin = -1e5f;			cMax = 1e5f;			break;
