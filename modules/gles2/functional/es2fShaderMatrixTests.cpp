@@ -1221,3 +1221,9 @@ void ShaderMatrixTests::init (void)
 } // Functional
 } // gles2
 } // deqp
+
+#if defined(_MSC_VER) && _MSC_FULL_VER == 191125507
+// Work around crbug.com/759402 which is a code-gen bug in VC++ 2017, version
+// 15.3.2.
+#pragma optimize("", off)
+#endif
