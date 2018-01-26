@@ -413,7 +413,7 @@ void FlushFinishCase::analyzeResults (const std::vector<Sample>& samples, const 
 		}
 	}
 
-	m_testCtx.setTestResult(allOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
+	m_testCtx.setTestResult(allOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_COMPATIBILITY_WARNING,
 							allOk ? "Pass"				: "Suspicious performance behavior");
 }
 
