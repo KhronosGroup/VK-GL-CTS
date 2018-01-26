@@ -59,6 +59,9 @@ bool isDepthStencilFormat (VkFormat format)
 	if (isCompressedFormat(format))
 		return false;
 
+	if (isYCbCrFormat(format))
+		return false;
+
 	const tcu::TextureFormat tcuFormat = mapVkFormat(format);
 	return tcuFormat.order == tcu::TextureFormat::D || tcuFormat.order == tcu::TextureFormat::S || tcuFormat.order == tcu::TextureFormat::DS;
 }
