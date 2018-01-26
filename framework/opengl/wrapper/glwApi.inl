@@ -223,6 +223,8 @@
 #define			glFramebufferTexture3D								glwFramebufferTexture3D
 #define			glFramebufferTexture3DOES							glwFramebufferTexture3DOES
 #define			glFramebufferTextureLayer							glwFramebufferTextureLayer
+#define			glFramebufferTextureMultisampleMultiviewOVR			glwFramebufferTextureMultisampleMultiviewOVR
+#define			glFramebufferTextureMultiviewOVR					glwFramebufferTextureMultiviewOVR
 #define			glFrontFace											glwFrontFace
 #define			glGenBuffers										glwGenBuffers
 #define			glGenFramebuffers									glwGenFramebuffers
@@ -1126,6 +1128,8 @@ void			glwFramebufferTexture2D								(GLenum target, GLenum attachment, GLenum 
 void			glwFramebufferTexture3D								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 void			glwFramebufferTexture3DOES							(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 void			glwFramebufferTextureLayer							(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
+void			glwFramebufferTextureMultisampleMultiviewOVR		(GLenum target, GLenum attachment, GLuint texture, GLint level, GLsizei samples, GLint baseViewIndex, GLsizei numViews);
+void			glwFramebufferTextureMultiviewOVR					(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews);
 void			glwFrontFace										(GLenum mode);
 void			glwGenBuffers										(GLsizei n, GLuint *buffers);
 void			glwGenFramebuffers									(GLsizei n, GLuint *framebuffers);

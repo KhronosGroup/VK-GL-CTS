@@ -1988,6 +1988,29 @@ GLW_APICALL void GLW_APIENTRY glFramebufferTextureLayer (GLenum target, GLenum a
 
 }
 
+GLW_APICALL void GLW_APIENTRY glFramebufferTextureMultisampleMultiviewOVR (GLenum target, GLenum attachment, GLuint texture, GLint level, GLsizei samples, GLint baseViewIndex, GLsizei numViews)
+{
+	DE_UNREF(target);
+	DE_UNREF(attachment);
+	DE_UNREF(texture);
+	DE_UNREF(level);
+	DE_UNREF(samples);
+	DE_UNREF(baseViewIndex);
+	DE_UNREF(numViews);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glFramebufferTextureMultiviewOVR (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews)
+{
+	DE_UNREF(target);
+	DE_UNREF(attachment);
+	DE_UNREF(texture);
+	DE_UNREF(level);
+	DE_UNREF(baseViewIndex);
+	DE_UNREF(numViews);
+
+}
+
 GLW_APICALL void GLW_APIENTRY glFrontFace (GLenum mode)
 {
 	DE_UNREF(mode);
