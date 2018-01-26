@@ -107,6 +107,7 @@ class FloatLiteral : public Expression
 {
 public:
 								FloatLiteral		(GeneratorState& state, ConstValueRangeAccess valueRange);
+								FloatLiteral		(float customValue);
 	virtual						~FloatLiteral		(void) {}
 
 	Expression*					createNextChild		(GeneratorState& state) { DE_UNREF(state); return DE_NULL; }
@@ -143,6 +144,7 @@ class BoolLiteral : public Expression
 {
 public:
 								BoolLiteral			(GeneratorState& state, ConstValueRangeAccess valueRange);
+								BoolLiteral			(bool customValue);
 	virtual						~BoolLiteral		(void) {}
 
 	Expression*					createNextChild		(GeneratorState& state) { DE_UNREF(state); return DE_NULL; }
@@ -213,6 +215,7 @@ public:
 	Expression*					createNextChild		(GeneratorState& state);
 	void						tokenize			(GeneratorState& state, TokenStream& str) const;
 
+	void						setChild			(Expression* expression);
 	static float				getWeight			(const GeneratorState& state, ConstValueRangeAccess valueRange);
 
 	void						evaluate			(ExecutionContext& execCtx)		{ m_child->evaluate(execCtx);	}

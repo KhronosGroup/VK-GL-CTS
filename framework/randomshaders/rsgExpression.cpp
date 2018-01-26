@@ -384,6 +384,18 @@ FloatLiteral::FloatLiteral (GeneratorState& state, ConstValueRangeAccess valueRa
 		access.asFloat(ndx) = value;
 }
 
+FloatLiteral::FloatLiteral (float customValue)
+	: m_value(VariableType::getScalarType(VariableType::TYPE_FLOAT))
+{
+	// This constructor is required to handle corner case in which comparision
+	// of two same floats produced different results - this was resolved by
+	// adding FloatLiteral containing epsilon to one of values
+	ExecValueAccess	access	= m_value.getValue(VariableType::getScalarType(VariableType::TYPE_FLOAT));
+
+	for (int ndx = 0; ndx < EXEC_VEC_WIDTH; ndx++)
+		access.asFloat(ndx) = customValue;
+}
+
 float FloatLiteral::getWeight (const GeneratorState& state, ConstValueRangeAccess valueRange)
 {
 	DE_UNREF(state);
@@ -486,6 +498,19 @@ BoolLiteral::BoolLiteral (GeneratorState& state, ConstValueRangeAccess valueRang
 	for (int ndx = 0; ndx < EXEC_VEC_WIDTH; ndx++)
 		access.asBool(ndx) = value;
 }
+
+BoolLiteral::BoolLiteral (bool customValue)
+	: m_value(VariableType::getScalarType(VariableType::TYPE_BOOL))
+{
+	// This constructor is required to handle corner case in which comparision
+	// of two same floats produced different results - this was resolved by
+	// adding FloatLiteral containing epsilon to one of values
+	ExecValueAccess	access	= m_value.getValue(VariableType::getScalarType(VariableType::TYPE_BOOL));
+
+	for (int ndx = 0; ndx < EXEC_VEC_WIDTH; ndx++)
+		access.asBool(ndx) = customValue;
+}
+
 
 float BoolLiteral::getWeight (const GeneratorState& state, ConstValueRangeAccess valueRange)
 {
@@ -1248,6 +1273,11 @@ void ParenOp::tokenize (GeneratorState& state, TokenStream& str) const
 	str << Token::LEFT_PAREN;
 	m_child->tokenize(state, str);
 	str << Token::RIGHT_PAREN;
+}
+
+void ParenOp::setChild(Expression* expression)
+{
+	m_child = expression;
 }
 
 float ParenOp::getWeight (const GeneratorState& state, ConstValueRangeAccess valueRange)
