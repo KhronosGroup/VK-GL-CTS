@@ -15473,6 +15473,8 @@ dEQP-GLES3.functional.shaders.struct.local.dynamic_loop_struct_array_vertex
 dEQP-GLES3.functional.shaders.struct.local.dynamic_loop_struct_array_fragment
 dEQP-GLES3.functional.shaders.struct.local.dynamic_loop_nested_struct_array_vertex
 dEQP-GLES3.functional.shaders.struct.local.dynamic_loop_nested_struct_array_fragment
+dEQP-GLES3.functional.shaders.struct.local.array_member_equality_vertex
+dEQP-GLES3.functional.shaders.struct.local.array_member_equality_fragment
 dEQP-GLES3.functional.shaders.struct.uniform.basic_vertex
 dEQP-GLES3.functional.shaders.struct.uniform.basic_fragment
 dEQP-GLES3.functional.shaders.struct.uniform.nested_vertex
