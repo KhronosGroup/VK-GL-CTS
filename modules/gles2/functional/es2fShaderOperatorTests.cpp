@@ -1523,6 +1523,90 @@ void ShaderOperatorTests::init (void)
 			}
 		}
 	}
+
+	// Regression tests for sequence operator.
+	// http://khronos.org/registry/webgl/sdk/tests/conformance/glsl/bugs/sequence-operator-evaluation-order.html
+	{
+		class Case : public ShaderRenderCase
+		{
+			static void evalFunc(ShaderEvalContext& c) {
+				c.color = tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f); // green
+			}
+
+		public:
+			Case(Context& context, const char* name, const char* description, const char* fragShaderSource)
+				: ShaderRenderCase(context.getTestContext(), context.getRenderContext(), context.getContextInfo(), name, description, false, &evalFunc)
+			{
+				m_vertShaderSource =
+					"attribute vec4 a_position;\n"
+					"void main()\n"
+					"{\n"
+					"	gl_Position = a_position;\n"
+					"}\n";
+				m_fragShaderSource = fragShaderSource;
+			}
+		};
+
+		// ESSL 1.00 section 5.9, about sequence operator:
+		// "All expressions are evaluated, in order, from left to right"
+		// Also use a ternary operator where the third operand has side effects to make sure
+		// only the second operand is evaluated.
+		sequenceSideEffGroup->addChild(new Case(m_context, "affect_ternary",
+			"Expression where first operand of a sequence operator has side effects which affect the second operand that is a ternary operator", (
+				"precision mediump float;\n"
+				"bool correct = true;\n"
+				"uniform float u_zero;\n"
+				"float wrong() {\n"
+				"	correct = false;\n"
+				"	return 0.0;\n"
+				"}\n"
+				"void main() {\n"
+				"	float a = u_zero - 0.5; // Result should be -0.5.\n"
+				"	float green = (a++, a > 0.0 ? 1.0 : wrong());\n"
+				"	gl_FragColor = vec4(0.0, correct ? green : 0.0, 0.0, 1.0);\n"
+				"}\n"
+			)));
+
+		sequenceSideEffGroup->addChild(new Case(m_context, "affect_and",
+			"Expression where first operand of a sequence operator has side effects which affect the second operand that is an and operator", (
+				"precision mediump float;\n"
+				"uniform bool u_false;\n"
+				"bool sideEffectA = false;\n"
+				"bool funcA() {\n"
+				"	sideEffectA = true;\n"
+				"	return true;\n"
+				"}\n"
+				"bool sideEffectB = false;\n"
+				"bool funcB() {\n"
+				"	sideEffectB = true;\n"
+				"	return true;\n"
+				"}\n"
+				"void main() {\n"
+				"	bool b = (funcA(), u_false == sideEffectA && funcB());\n"
+				"	gl_FragColor = (!b && sideEffectA && !sideEffectB) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);\n"
+				"}\n"
+			)));
+
+		sequenceSideEffGroup->addChild(new Case(m_context, "affect_or",
+			"Expression where first operand of a sequence operator has side effects which affect the second operand that is an or operator", (
+				"precision mediump float;\n"
+				"uniform bool u_false;\n"
+				"bool sideEffectA = false;\n"
+				"bool funcA() {\n"
+				"	sideEffectA = true;\n"
+				"	return false;\n"
+				"}\n"
+				"bool sideEffectB = false;\n"
+				"bool funcB() {\n"
+				"	sideEffectB = true;\n"
+				"	return false;\n"
+				"}\n"
+				"void main() {\n"
+				"	bool b = (funcA(), (u_false == !sideEffectA) || funcB());\n"
+				"	gl_FragColor = (b && sideEffectA && !sideEffectB) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);\n"
+				"}\n"
+			)));
+	}
 }
 
 } // Functional

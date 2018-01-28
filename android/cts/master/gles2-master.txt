@@ -6033,6 +6033,9 @@ dEQP-GLES2.functional.shaders.operator.sequence.side_effects.highp_bool_vec2_fra
 dEQP-GLES2.functional.shaders.operator.sequence.side_effects.lowp_vec4_ivec4_bvec4_fragment
 dEQP-GLES2.functional.shaders.operator.sequence.side_effects.mediump_vec4_ivec4_bvec4_fragment
 dEQP-GLES2.functional.shaders.operator.sequence.side_effects.highp_vec4_ivec4_bvec4_fragment
+dEQP-GLES2.functional.shaders.operator.sequence.side_effects.affect_ternary
+dEQP-GLES2.functional.shaders.operator.sequence.side_effects.affect_and
+dEQP-GLES2.functional.shaders.operator.sequence.side_effects.affect_or
 dEQP-GLES2.functional.shaders.matrix.add.const_lowp_mat2_float_vertex
 dEQP-GLES2.functional.shaders.matrix.add.const_lowp_mat2_float_fragment
 dEQP-GLES2.functional.shaders.matrix.add.const_lowp_mat2_mat2_vertex
