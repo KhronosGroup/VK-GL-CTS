@@ -109,10 +109,23 @@ tcu::TestStatus Compressed2DTestInstance::iterate (void)
 	sampleParams.sampler			= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
 	sampleParams.samplerType		= SAMPLERTYPE_FLOAT;
 	sampleParams.lodMode			= LODMODE_EXACT;
-	if (isAstcFormat(m_compressedFormat))
+
+	if (isAstcFormat(m_compressedFormat)
+		|| m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC4_UNORM_BLOCK
+		|| m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC5_UNORM_BLOCK)
 	{
 		sampleParams.colorBias			= tcu::Vec4(0.0f);
 		sampleParams.colorScale			= tcu::Vec4(1.0f);
+	}
+	else if (m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC4_SNORM_BLOCK)
+	{
+		sampleParams.colorBias			= tcu::Vec4(0.5f, 0.0f, 0.0f, 0.0f);
+		sampleParams.colorScale			= tcu::Vec4(0.5f, 1.0f, 1.0f, 1.0f);
+	}
+	else if (m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC5_SNORM_BLOCK)
+	{
+		sampleParams.colorBias			= tcu::Vec4(0.5f, 0.5f, 0.0f, 0.0f);
+		sampleParams.colorScale			= tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f);
 	}
 	else
 	{
