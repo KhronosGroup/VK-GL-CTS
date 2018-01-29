@@ -111,7 +111,7 @@ void ShaderStructCase::init (void)
 				throw tcu::NotSupportedError("Dynamic loops not supported");
 		}
 
-		if ((m_flags && FLAG_USES_TEXTURES) && m_isVertexCase)
+		if ((m_flags & FLAG_USES_TEXTURES) && m_isVertexCase)
 		{
 			int numTextures = 0;
 			m_renderCtx.getFunctions().getIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &numTextures);
