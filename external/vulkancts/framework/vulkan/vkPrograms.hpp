@@ -207,9 +207,9 @@ struct SourceCollections
 
 typedef ProgramCollection<ProgramBinary, BinaryBuildOptions>	BinaryCollection;
 
-ProgramBinary*			buildProgram		(const GlslSource& program, glu::ShaderProgramInfo* buildInfo);
-ProgramBinary*			buildProgram		(const HlslSource& program, glu::ShaderProgramInfo* buildInfo);
-ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo);
+ProgramBinary*			buildProgram		(const GlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine);
+ProgramBinary*			buildProgram		(const HlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine);
+ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo, const tcu::CommandLine& commandLine);
 void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion);
 bool					validateProgram		(const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion);
 

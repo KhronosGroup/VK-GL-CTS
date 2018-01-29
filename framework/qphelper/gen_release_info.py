@@ -41,16 +41,23 @@ def getHead (gitDir):
 									  "rev-parse", "HEAD"])
 	return commit.decode().strip()
 
-def makeReleaseInfo (name, id):
+def makeReleaseInfo (name, id, glslname, spirvtoolsname, spirvheadersname):
 	return """
 /* WARNING: auto-generated file, use {genFileName} to modify */
 
-#define DEQP_RELEASE_NAME	"{releaseName}"
-#define DEQP_RELEASE_ID		{releaseId}
+#define DEQP_RELEASE_NAME				"{releaseName}"
+#define DEQP_RELEASE_ID					{releaseId}
+#define DEQP_RELEASE_GLSL_NAME			"{glslReleaseName}"
+#define DEQP_RELEASE_SPIRV_TOOLS_NAME	"{spirvToolsReleaseName}"
+#define DEQP_RELEASE_SPIRV_HEADERS_NAME	"{spirvHeadersReleaseName}"
+
 """[1:].format(
-		genFileName	= os.path.basename(__file__),
-		releaseName	= name,
-		releaseId	= id)
+		genFileName				= os.path.basename(__file__),
+		releaseName				= name,
+		releaseId				= id,
+		glslReleaseName			= glslname,
+		spirvToolsReleaseName	= spirvtoolsname,
+		spirvHeadersReleaseName	= spirvheadersname)
 
 def parseArgs ():
 	parser = argparse.ArgumentParser(description="Generate release info for build")
@@ -58,6 +65,9 @@ def parseArgs ():
 	parser.add_argument('--id', dest='releaseId', default=None, help="Release ID (must be C integer literal)")
 	parser.add_argument('--git', dest='git', action='store_true', default=False, help="Development build, use git HEAD to identify")
 	parser.add_argument('--git-dir', dest='gitDir', default=None, help="Use specific git dir for extracting info")
+	parser.add_argument('--glsl-git-dir', dest='glslGitDir', default=None, help="Use specific git dir for extracting glsl version info")
+	parser.add_argument('--glsl-spirvtools-dir', dest='spirvToolsGitDir', default=None, help="Use specific git dir for extracting spirv tools version info")
+	parser.add_argument('--glsl-spirvheaders-dir', dest='spirvHeadersGitDir', default=None, help="Use specific git dir for extracting spirv headers version info")
 	parser.add_argument('--out', dest='out', default=None, help="Output file")
 
 	args = parser.parse_args()
@@ -75,22 +85,37 @@ def parseArgs ():
 	return args
 
 if __name__ == "__main__":
-	curDir			= os.path.dirname(__file__)
-	defaultGitDir	= os.path.normpath(os.path.join(curDir, "..", "..", ".git"))
-	defaultDstFile	= os.path.join(curDir, "qpReleaseInfo.inl")
+	curDir						= os.path.dirname(__file__)
+	defaultGitDir				= os.path.normpath(os.path.join(curDir, "..", "..", ".git"))
+	defaultGlslGitDir			= os.path.normpath(os.path.join(curDir, "..", "..", "external", "glslang", "src", ".git"))
+	defaultSpirvToolsGitDir		= os.path.normpath(os.path.join(curDir, "..", "..", "external", "spirv-tools", "src", ".git"))
+	defaultSpirvHeadersGitDir	= os.path.normpath(os.path.join(curDir, "..", "..", "external", "spirv-headers", "src", ".git"))
+	defaultDstFile				= os.path.join(curDir, "qpReleaseInfo.inl")
 
 	args = parseArgs()
 
 	if args.git:
-		gitDir		= args.gitDir if args.gitDir != None else defaultGitDir
-		head		= getHead(gitDir)
-		releaseName	= "git-%s" % head
-		releaseId	= "0x%s" % head[0:8]
+		gitDir				= args.gitDir				if args.gitDir				!= None else defaultGitDir
+		glslGitDir			= args.glslGitDir			if args.glslGitDir			!= None else defaultGlslGitDir
+		spirvToolsGitDir	= args.spirvToolsGitDir		if args.spirvToolsGitDir	!= None else defaultSpirvToolsGitDir
+		spirvHeadersGitDir	= args.spirvHeadersGitDir	if args.spirvHeadersGitDir	!= None else defaultSpirvHeadersGitDir
+		head				= getHead(gitDir)
+		glslHead			= getHead(glslGitDir)
+		spirvToolsHead		= getHead(spirvToolsGitDir)
+		spirvHeadersHead	= getHead(spirvHeadersGitDir)
+		releaseName			= "git-%s" % head
+		releaseId			= "0x%s" % head[0:8]
+		glslName			= "git-%s" % glslHead
+		spirvToolsName		= "git-%s" % spirvToolsHead
+		spirvHeadersName	= "git-%s" % spirvHeadersHead
 	else:
-		releaseName	= args.releaseName
-		releaseId	= args.releaseId
+		releaseName			= args.releaseName
+		releaseId			= args.releaseId
+		glslName			= args.releaseName
+		spirvToolsName		= args.releaseName
+		spirvHeadersName	= args.releaseName
 
-	releaseInfo	= makeReleaseInfo(releaseName, releaseId)
+	releaseInfo	= makeReleaseInfo(releaseName, releaseId, glslName, spirvToolsName, spirvHeadersName)
 	dstFile		= args.out if args.out != None else defaultDstFile
 
 	writeFile(dstFile, releaseInfo)

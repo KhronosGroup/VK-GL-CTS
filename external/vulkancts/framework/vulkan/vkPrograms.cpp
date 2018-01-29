@@ -21,20 +21,29 @@
  * \brief Program utilities.
  *//*--------------------------------------------------------------------*/
 
+#include "qpInfo.h"
+
 #include "vkPrograms.hpp"
 #include "vkShaderToSpirV.hpp"
 #include "vkSpirVAsm.hpp"
 #include "vkRefUtil.hpp"
 
+#include "deMutex.hpp"
+#include "deFilePath.hpp"
 #include "deArrayUtil.hpp"
 #include "deMemory.h"
 #include "deInt32.h"
+
+#include "tcuCommandLine.hpp"
+
+#include <map>
 
 namespace vk
 {
 
 using std::string;
 using std::vector;
+using std::map;
 
 #if defined(DE_DEBUG) && defined(DEQP_HAVE_SPIRV_TOOLS)
 #	define VALIDATE_BINARIES	true
@@ -112,78 +121,330 @@ void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramIn
 	}
 }
 
-ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* buildInfo)
+
+#if defined(DEQP_HAVE_SPIRV_TOOLS)
+
+de::Mutex							cacheFileMutex;
+map<deUint32, vector<deUint32> >	cacheFileIndex;
+
+std::string intToString (deUint32 integer)
+{
+	std::stringstream temp_sstream;
+
+	temp_sstream << integer;
+
+	return temp_sstream.str();
+}
+
+// Parse chunked shader cache file for hashes and offsets
+void shaderCacheParse (const char* shaderCacheFile)
+{
+	FILE* file = fopen(shaderCacheFile, "rb");
+	int count = 0;
+	if (file)
+	{
+		deUint32 chunksize	= 0;
+		deUint32 hash		= 0;
+		deUint32 offset		= 0;
+		bool ok				= true;
+		while (ok)
+		{
+			offset = (deUint32)ftell(file);
+			if (ok) ok = fread(&chunksize, 1, 4, file)				== 4;
+			if (ok) ok = fread(&hash, 1, 4, file)					== 4;
+			if (ok) cacheFileIndex[hash].push_back(offset);
+			if (ok) ok = fseek(file, offset + chunksize, SEEK_SET)	== 0;
+			count++;
+		}
+		fclose(file);
+	}
+}
+
+vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char* shaderCacheFilename)
+{
+	deUint32		hash		= deStringHash(shaderstring.c_str());
+	deInt32			format;
+	deInt32			length;
+	deInt32			sourcelength;
+	deUint32		i;
+	deUint32		temp;
+	deUint8*		bin			= 0;
+	char*			source		= 0;
+	bool			ok			= true;
+	cacheFileMutex.lock();
+	if (cacheFileIndex.empty())
+		shaderCacheParse(shaderCacheFilename);
+
+	if (cacheFileIndex.count(hash) == 0)
+	{
+		cacheFileMutex.unlock();
+		return 0;
+	}
+	FILE*			file		= fopen(shaderCacheFilename, "rb");
+	ok				= file											!= 0;
+
+	for (i = 0; i < cacheFileIndex[hash].size(); i++)
+	{
+		if (ok) ok = fseek(file, cacheFileIndex[hash][i], SEEK_SET)	== 0;
+		if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Chunk size (skip)
+		if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Stored hash
+		if (ok) ok = temp											== hash; // Double check
+		if (ok) ok = fread(&format, 1, 4, file)						== 4;
+		if (ok) ok = fread(&length, 1, 4, file)						== 4;
+		if (ok) ok = length											> 0; // sanity check
+		if (ok) bin = new deUint8[length];
+		if (ok) ok = fread(bin, 1, length, file)					== (size_t)length;
+		if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
+		if (ok && sourcelength > 0)
+		{
+			source = new char[sourcelength + 1];
+			ok = fread(source, 1, sourcelength, file)				== (size_t)sourcelength;
+			source[sourcelength] = 0;
+		}
+		if (!ok || shaderstring != std::string(source))
+		{
+			// Mismatch, but may still exist in cache if there were hash collisions
+			delete[] source;
+			delete[] bin;
+		}
+		else
+		{
+			delete[] source;
+			if (file) fclose(file);
+			cacheFileMutex.unlock();
+			return new vk::ProgramBinary((vk::ProgramFormat)format, length, bin);
+		}
+	}
+	if (file) fclose(file);
+	cacheFileMutex.unlock();
+	return 0;
+}
+
+void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shaderstring, const char* shaderCacheFilename)
+{
+	if (binary == 0)
+		return;
+	deUint32			hash		= deStringHash(shaderstring.c_str());
+	deInt32				format		= binary->getFormat();
+	deUint32			length		= (deUint32)binary->getSize();
+	deUint32			chunksize;
+	deUint32			offset;
+	const deUint8*		bin			= binary->getBinary();
+	const de::FilePath	filePath	(shaderCacheFilename);
+
+	cacheFileMutex.lock();
+
+	if (!de::FilePath(filePath.getDirName()).exists())
+		de::createDirectoryAndParents(filePath.getDirName().c_str());
+
+	FILE*				file		= fopen(shaderCacheFilename, "ab");
+	if (!file)
+	{
+		cacheFileMutex.unlock();
+		return;
+	}
+	// Append mode starts writing from the end of the file,
+	// but unless we do a seek, ftell returns 0.
+	fseek(file, 0, SEEK_END);
+	offset		= (deUint32)ftell(file);
+	chunksize	= 4 + 4 + 4 + 4 + length + 4 + (deUint32)shaderstring.length();
+	fwrite(&chunksize, 1, 4, file);
+	fwrite(&hash, 1, 4, file);
+	fwrite(&format, 1, 4, file);
+	fwrite(&length, 1, 4, file);
+	fwrite(bin, 1, length, file);
+	length = (deUint32)shaderstring.length();
+	fwrite(&length, 1, 4, file);
+	fwrite(shaderstring.c_str(), 1, length, file);
+	fclose(file);
+	cacheFileIndex[hash].push_back(offset);
+
+	cacheFileMutex.unlock();
+}
+
+// Insert any information that may affect compilation into the shader string.
+void getCompileEnvironment (std::string& shaderstring)
+{
+	shaderstring += "GLSL:";
+	shaderstring += qpGetReleaseGlslName();
+	shaderstring += "\nSpir-v Tools:";
+	shaderstring += qpGetReleaseSpirvToolsName();
+	shaderstring += "\nSpir-v Headers:";
+	shaderstring += qpGetReleaseSpirvHeadersName();
+	shaderstring += "\n";
+}
+
+// Insert compilation options into the shader string.
+void getBuildOptions (std::string& shaderstring, const ShaderBuildOptions& buildOptions)
+{
+	shaderstring += "Target Spir-V ";
+	shaderstring += getSpirvVersionName(buildOptions.targetVersion);
+	shaderstring += "\n";
+	if (buildOptions.flags & ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS)
+		shaderstring += "Flag:Allow relaxed offsets\n";
+	if (buildOptions.flags & ShaderBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS)
+		shaderstring += "Flag:Use storage buffer storage class\n";
+}
+
+ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine)
 {
 	const SpirvVersion	spirvVersion	= program.buildOptions.targetVersion;
 	const bool			validateBinary	= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
+	std::string			shaderstring;
+	vk::ProgramBinary*	res				= 0;
 
+	if (commandLine.isShadercacheEnabled())
 	{
-		vector<deUint32> nonStrippedBinary;
+		getCompileEnvironment(shaderstring);
+		getBuildOptions(shaderstring, program.buildOptions);
 
-		if (!compileGlslToSpirV(program, &nonStrippedBinary, buildInfo))
-			TCU_THROW(InternalError, "Compiling GLSL to SPIR-V failed");
+		for (int i = 0; i < glu::SHADERTYPE_LAST; i++)
+			for (std::vector<std::string>::const_iterator it = program.sources[i].begin(); it != program.sources[i].end(); ++it)
+				if (it->length() > 0)
+				{
+					shaderstring += glu::getShaderTypeName((glu::ShaderType)i);
+					shaderstring += *it;
+				}
 
-		TCU_CHECK_INTERNAL(!nonStrippedBinary.empty());
-		stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary);
-		TCU_CHECK_INTERNAL(!binary.empty());
+		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
 	}
 
-	if (validateBinary)
-		validateCompiledBinary(binary, buildInfo, spirvVersion);
+	if (!res)
+	{
+		{
+			vector<deUint32> nonStrippedBinary;
 
-	return createProgramBinaryFromSpirV(binary);
+			if (!compileGlslToSpirV(program, &nonStrippedBinary, buildInfo))
+				TCU_THROW(InternalError, "Compiling GLSL to SPIR-V failed");
+
+			TCU_CHECK_INTERNAL(!nonStrippedBinary.empty());
+			stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary);
+			TCU_CHECK_INTERNAL(!binary.empty());
+		}
+
+		if (validateBinary)
+			validateCompiledBinary(binary, buildInfo, spirvVersion);
+
+		res = createProgramBinaryFromSpirV(binary);
+		if (commandLine.isShadercacheEnabled())
+			shadercacheSave(res, shaderstring, commandLine.getShaderCacheFilename());
+	}
+	return res;
 }
 
-ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* buildInfo)
+ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine)
 {
 	const SpirvVersion	spirvVersion	= program.buildOptions.targetVersion;
 	const bool			validateBinary	= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
+	std::string			shaderstring;
+	vk::ProgramBinary*	res				= 0;
 
+	if (commandLine.isShadercacheEnabled())
 	{
-		vector<deUint32> nonStrippedBinary;
+		getCompileEnvironment(shaderstring);
+		getBuildOptions(shaderstring, program.buildOptions);
 
-		if (!compileHlslToSpirV(program, &nonStrippedBinary, buildInfo))
-			TCU_THROW(InternalError, "Compiling HLSL to SPIR-V failed");
+		for (int i = 0; i < glu::SHADERTYPE_LAST; i++)
+			for (std::vector<std::string>::const_iterator it = program.sources[i].begin(); it != program.sources[i].end(); ++it)
+				if (it->length() > 0)
+				{
+					shaderstring += glu::getShaderTypeName((glu::ShaderType)i);
+					shaderstring += *it;
+				}
 
-		TCU_CHECK_INTERNAL(!nonStrippedBinary.empty());
-		stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary);
-		TCU_CHECK_INTERNAL(!binary.empty());
+		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
 	}
 
-	if (validateBinary)
-		validateCompiledBinary(binary, buildInfo, spirvVersion);
+	if (!res)
+	{
+		{
+			vector<deUint32> nonStrippedBinary;
 
-	return createProgramBinaryFromSpirV(binary);
+			if (!compileHlslToSpirV(program, &nonStrippedBinary, buildInfo))
+				TCU_THROW(InternalError, "Compiling HLSL to SPIR-V failed");
+
+			TCU_CHECK_INTERNAL(!nonStrippedBinary.empty());
+			stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary);
+			TCU_CHECK_INTERNAL(!binary.empty());
+		}
+
+		if (validateBinary)
+			validateCompiledBinary(binary, buildInfo, spirvVersion);
+
+		res = createProgramBinaryFromSpirV(binary);
+		if (commandLine.isShadercacheEnabled())
+			shadercacheSave(res, shaderstring, commandLine.getShaderCacheFilename());
+	}
+	return res;
 }
 
-ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo* buildInfo)
+ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo* buildInfo, const tcu::CommandLine& commandLine)
 {
 	const SpirvVersion	spirvVersion		= program.buildOptions.targetVersion;
 	const bool			validateBinary		= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
+	vk::ProgramBinary*	res					= 0;
+	std::string			shaderstring;
 
-	if (!assembleSpirV(&program, &binary, buildInfo, spirvVersion))
-		TCU_THROW(InternalError, "Failed to assemble SPIR-V");
-
-	if (validateBinary)
+	if (commandLine.isShadercacheEnabled())
 	{
-		std::ostringstream	validationLog;
+		getCompileEnvironment(shaderstring);
+		shaderstring += "Target Spir-V ";
+		shaderstring += getSpirvVersionName(spirvVersion);
+		shaderstring += "\n";
 
-		if (!validateSpirV(binary.size(), &binary[0], &validationLog, spirvVersion))
-		{
-			buildInfo->compileOk	 = false;
-			buildInfo->infoLog		+= "\n" + validationLog.str();
+		shaderstring += program.source;
 
-			TCU_THROW(InternalError, "Validation failed for assembled SPIR-V binary");
-		}
+		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
 	}
 
-	return createProgramBinaryFromSpirV(binary);
+	if (!res)
+	{
+
+		if (!assembleSpirV(&program, &binary, buildInfo, spirvVersion))
+			TCU_THROW(InternalError, "Failed to assemble SPIR-V");
+
+		if (validateBinary)
+		{
+			std::ostringstream	validationLog;
+
+			if (!validateSpirV(binary.size(), &binary[0], &validationLog, spirvVersion))
+			{
+				buildInfo->compileOk = false;
+				buildInfo->infoLog += "\n" + validationLog.str();
+
+				TCU_THROW(InternalError, "Validation failed for assembled SPIR-V binary");
+			}
+		}
+
+		res = createProgramBinaryFromSpirV(binary);
+		if (commandLine.isShadercacheEnabled())
+			shadercacheSave(res, shaderstring, commandLine.getShaderCacheFilename());
+	}
+	return res;
 }
 
-void disassembleProgram (const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion)
+#else // !DEQP_HAVE_SPIRV_TOOLS
+
+ProgramBinary* buildProgram (const GlslSource&, glu::ShaderProgramInfo*, const tcu::CommandLine&)
+{
+	TCU_THROW(NotSupportedError, "GLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
+}
+
+ProgramBinary* buildProgram (const HlslSource&, glu::ShaderProgramInfo*, const tcu::CommandLine&)
+{
+	TCU_THROW(NotSupportedError, "HLSL to SPIR-V compilation not supported (DEQP_HAVE_GLSLANG not defined)");
+}
+
+ProgramBinary* assembleProgram (const SpirVAsmSource&, SpirVProgramInfo*, const tcu::CommandLine&)
+{
+	TCU_THROW(NotSupportedError, "SPIR-V assembly not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
+}
+#endif
+
+ void disassembleProgram (const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion)
 {
 	if (program.getFormat() == PROGRAM_FORMAT_SPIRV)
 	{
