@@ -2753,7 +2753,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 	const Unique<VkRenderPass> renderPass(makeRenderPass(context, format));
 	const Unique<VkPipeline> pipeline(makeGraphicsPipeline(context, *pipelineLayout,
 									  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-									  *vertexShaderModule, *fragmentShaderModule, DE_NULL, DE_NULL, DE_NULL, *renderPass, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+									  *vertexShaderModule, *fragmentShaderModule, DE_NULL, DE_NULL, DE_NULL, *renderPass, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
 									  DE_NULL, DE_NULL, true));
 
 	DescriptorPoolBuilder poolBuilder;
@@ -2877,7 +2877,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 						&descriptorSet.get(), 0u, DE_NULL);
 			}
 
-			context.getDeviceInterface().cmdDraw(*cmdBuffer, 3, 1, 0, 0);
+			context.getDeviceInterface().cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
 			context.getDeviceInterface().cmdEndRenderPass(*cmdBuffer);
 

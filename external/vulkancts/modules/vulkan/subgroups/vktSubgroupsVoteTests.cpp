@@ -52,12 +52,39 @@ static bool checkVertexPipelineStages(std::vector<const void*> datas,
 	{
 		deUint32 val = data[x];
 
-		if (0x7 != val)
+		if (0x1F != val)
 		{
 			return false;
 		}
 	}
 
+	return true;
+}
+
+static bool checkFragmentPipelineStages(std::vector<const void*> datas,
+									  deUint32 width, deUint32 height, deUint32)
+{
+	const deUint32* data =
+		reinterpret_cast<const deUint32*>(datas[0]);
+	for (deUint32 x = 0u; x < width; ++x)
+	{
+		for (deUint32 y = 0u; y < height; ++y)
+		{
+			const deUint32 ndx = (x * height + y);
+			deUint32 val = data[ndx] & 0x1F;
+
+			if (data[ndx] & 0x40) //Helper fragment shader invocation was executed
+			{
+				if(val != 0x1F)
+					return false;
+			}
+			else //Helper fragment shader invocation was not executed yet
+			{
+				if (val != 0x1E)
+					return false;
+			}
+		}
+	}
 	return true;
 }
 
@@ -100,7 +127,7 @@ static bool checkCompute(std::vector<const void*> datas,
 								globalInvocationX;
 
 							// The data should look (in binary) 0b111
-							if (0x7 != data[offset])
+							if (0x1F != data[offset])
 							{
 								return false;
 							}
@@ -152,8 +179,8 @@ static bool checkComputeAllEqual(std::vector<const void*> datas,
 								 globalInvocationY) +
 								globalInvocationX;
 
-							// The data should look (in binary) 0b111
-							if (0x7 != data[offset])
+							// The data should look (in binary) 0b11111
+							if (0x1F != data[offset])
 							{
 								return false;
 							}
@@ -192,17 +219,59 @@ struct CaseDefinition
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
 	const vk::ShaderBuildOptions buildOptions	(vk::SPIRV_VERSION_1_3, 0u);
-	subgroups::setFragmentShaderFrameBuffer(programCollection);
 
-	if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
+	if (VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage)
+		subgroups::setFragmentShaderFrameBuffer(programCollection);
+
+	if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+	{
+		const string vertex	= "#version 450\n"
+			"void main (void)\n"
+			"{\n"
+			"  vec2 uv = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+			"  gl_Position = vec4(uv * 4.0f -2.0f, 0.0f, 1.0f);\n"
+			"  gl_PointSize = 1.0f;\n"
+			"}\n";
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+	}
+	else if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
 		subgroups::setVertexShaderFrameBuffer(programCollection);
+
+	const string source =
+		(OPTYPE_ALL == caseDef.opType) ?
+			"  result = " + getOpTypeName(caseDef.opType) +
+			"(true) ? 0x1 : 0;\n"
+			"  result |= " + getOpTypeName(caseDef.opType) +
+			"(false) ? 0 : 0x1A;\n"
+			"  result |= 0x4;\n"
+		: (OPTYPE_ANY == caseDef.opType) ?
+				"  result = " + getOpTypeName(caseDef.opType) +
+				"(true) ? 0x1 : 0;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(false) ? 0 : 0x1A;\n"
+				"  result |= 0x4;\n"
+		: (OPTYPE_ALLEQUAL == caseDef.opType) ?
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(12.0 * float(data[gl_SubgroupInvocationID]) + ((gl_SubgroupInvocationID % 5)%2));\n"
+				"  result = " + getOpTypeName(caseDef.opType) + "("
+				+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(data[0]) ? 0x4 : 0;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(valueEqual) ? 0x8 : 0x0;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(valueNoEqual) ? 0x0 : 0x10;\n"
+				"  if (subgroupElect()) result |= 0x2 | 0x10;\n"
+		: "";
 
 	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream vertexSrc;
 		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
-			<< "layout(location = 0) out float out_color;\n"
+			<< "layout(location = 0) out vec4 out_color;\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
 			<< "{\n"
@@ -211,38 +280,14 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "\n"
 			<< "void main (void)\n"
 			<< "{\n"
-			<< "  uint result;\n";
-		if (OPTYPE_ALL == caseDef.opType)
-		{
-			vertexSrc << " result = " << getOpTypeName(caseDef.opType)
-				<< "(true) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
-				<< "  result |= 0x4;\n";
-		}
-		else if (OPTYPE_ANY == caseDef.opType)
-		{
-			vertexSrc << "  result = " << getOpTypeName(caseDef.opType)
-				<< "(true) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
-				<< "  result |= 0x4;\n";
-		}
-		else if (OPTYPE_ALLEQUAL == caseDef.opType)
-		{
-			vertexSrc << "  result = " << getOpTypeName(caseDef.opType) << "("
-				<< subgroups::getFormatNameForGLSL(caseDef.format) << "(1)) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
-				<< "  if (subgroupElect()) result |= 0x2;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(data[0]) ? 0x4 : 0;\n";
-		}
-		vertexSrc << "  out_color = float(result);\n"
+			<< "  uint result;\n"
+			<< source
+			<< "  out_color.r = float(result);\n"
 			<< "  gl_Position = in_position;\n"
 			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
-		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str()) << buildOptions;
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 	{
@@ -260,34 +305,9 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "\n"
 			<< "void main (void)\n"
 			<< "{\n"
-			<< "  uint result;\n";
-		if (OPTYPE_ALL == caseDef.opType)
-		{
-			geometry << "  result = " << getOpTypeName(caseDef.opType)
-				<< "(true) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
-				<< "  result |= 0x4;\n";
-		}
-		else if (OPTYPE_ANY == caseDef.opType)
-		{
-			geometry << "  result = " << getOpTypeName(caseDef.opType)
-				<< "(true) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
-				<< "  result |= 0x4;\n";
-		}
-		else if (OPTYPE_ALLEQUAL == caseDef.opType)
-		{
-			geometry << "  result= " << getOpTypeName(caseDef.opType) << "("
-				<< subgroups::getFormatNameForGLSL(caseDef.format) << "(1)) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
-				<< "  if (subgroupElect()) result |= 0x2;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(data[0]) ? 0x4 : 0;\n";
-		}
-		geometry << "  out_color = float(result);\n"
+			<< "  uint result;\n"
+			<< source
+			<< "  out_color = float(result);\n"
 			<< "  gl_Position = gl_in[0].gl_Position;\n"
 			<< "  EmitVertex();\n"
 			<< "  EndPrimitive();\n"
@@ -315,34 +335,9 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<<"  {\n"
 			<< "    gl_TessLevelOuter[0] = 1.0f;\n"
 			<< "    gl_TessLevelOuter[1] = 1.0f;\n"
-			<< "  }\n";
-		if (OPTYPE_ALL == caseDef.opType)
-		{
-			controlSource << "  result = " << getOpTypeName(caseDef.opType)
-				<< "(true) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
-				<< "  result|= 0x4;\n";
-		}
-		else if (OPTYPE_ANY == caseDef.opType)
-		{
-			controlSource << "  result = " << getOpTypeName(caseDef.opType)
-				<< "(true) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
-				<< "  result |= 0x4;\n";
-		}
-		else if (OPTYPE_ALLEQUAL == caseDef.opType)
-		{
-			controlSource << "  result= " << getOpTypeName(caseDef.opType) << "("
-				<< subgroups::getFormatNameForGLSL(caseDef.format) << "(1)) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
-				<< "  if (subgroupElect()) result |= 0x2;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(data[0]) ? 0x4 : 0;\n";
-		}
-		controlSource << "  out_color[gl_InvocationID] = float(result);"
+			<< "  }\n"
+			<< source
+			<< "  out_color[gl_InvocationID] = float(result);"
 			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 			<< "}\n";
 
@@ -366,34 +361,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "  uint result;\n"
-			<< "  highp uint offset = gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5);\n";
-		if (OPTYPE_ALL == caseDef.opType)
-		{
-			evaluationSource << "  result = " << getOpTypeName(caseDef.opType)
-				<< "(true) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
-				<< "  result |= 0x4;\n";
-		}
-		else if (OPTYPE_ANY == caseDef.opType)
-		{
-			evaluationSource << "  result = " << getOpTypeName(caseDef.opType)
-				<< "(true) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
-				<< "  result |= 0x4;\n";
-		}
-		else if (OPTYPE_ALLEQUAL == caseDef.opType)
-		{
-			evaluationSource << "  result = " << getOpTypeName(caseDef.opType) << "("
-				<< subgroups::getFormatNameForGLSL(caseDef.format) << "(1)) ? 0x1 : 0;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
-				<< "  if (subgroupElect()) result |= 0x2;\n"
-				<< "  result |= " << getOpTypeName(caseDef.opType)
-				<< "(data[0]) ? 0x4 : 0;\n";
-		}
-		evaluationSource
+			<< "  highp uint offset = gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5);\n"
+			<< source
 			<< "  out_color = float(result);\n"
 			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
 			<< "}\n";
@@ -401,6 +370,65 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		subgroups::setTesCtrlShaderFrameBuffer(programCollection);
 		programCollection.glslSources.add("tese")
 				<< glu::TessellationEvaluationSource(evaluationSource.str()) << buildOptions;
+	}
+	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+	{
+		const string sourceFragment =
+		(OPTYPE_ALL == caseDef.opType) ?
+			"  result |= " + getOpTypeName(caseDef.opType) +
+			"(!gl_HelperInvocation) ? 0x0 : 0x1;\n"
+			"  result |= " + getOpTypeName(caseDef.opType) +
+			"(false) ? 0 : 0x1A;\n"
+			"  result |= 0x4;\n"
+		: (OPTYPE_ANY == caseDef.opType) ?
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(gl_HelperInvocation) ? 0x1 : 0x0;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(false) ? 0 : 0x1A;\n"
+				"  result |= 0x4;\n"
+		: (OPTYPE_ALLEQUAL == caseDef.opType) ?
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(12.0 * float(data[gl_SubgroupInvocationID]) + ((int(gl_FragCoord.x*gl_SubgroupInvocationID) % 5)%2));\n"
+				"  result |= " + getOpTypeName(caseDef.opType) + "("
+				+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x10 : 0;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(data[0]) ? 0x4 : 0;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(valueEqual) ? 0x8 : 0x0;\n"
+				"  result |= " + getOpTypeName(caseDef.opType) +
+				"(gl_HelperInvocation) ? 0x0 : 0x1;\n"
+				"  if (subgroupElect()) result |= 0x2 | 0x10;\n"
+		: "";
+
+		std::ostringstream fragmentSource;
+		fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+		<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
+		<< "layout(location = 0) out uint out_color;\n"
+		<< "layout(set = 0, binding = 0) uniform Buffer1\n"
+		<< "{\n"
+		<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data[" << subgroups::maxSupportedSubgroupSize() << "];\n"
+		<< "};\n"
+		<< ""
+		<< "void main()\n"
+		<< "{\n"
+		<< "  uint result = 0u;\n"
+		<< "  if (dFdx(gl_SubgroupInvocationID * gl_FragCoord.x * gl_FragCoord.y) - dFdy(gl_SubgroupInvocationID * gl_FragCoord.x * gl_FragCoord.y) > 0.0f)\n"
+		<< "  {\n"
+		<< "    result |= 0x20;\n" // to be sure that compiler doesn't remove dFdx and dFdy executions
+		<< "  }\n"
+		<< "  bool helper = subgroupAny(gl_HelperInvocation);\n"
+		<< "  if (helper)\n"
+		<< "  {\n"
+		<< "    result |= 0x40;\n"
+		<< "  }\n"
+		<< sourceFragment
+		<< "  out_color = result;\n"
+		<< "}\n";
+
+		programCollection.glslSources.add("fragment")
+			<< glu::FragmentSource(fragmentSource.str())<< vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else
 	{
@@ -438,7 +466,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			src << "  result[offset] = " << getOpTypeName(caseDef.opType)
 				<< "(true) ? 0x1 : 0;\n"
 				<< "  result[offset] |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
+				<< "(false) ? 0 : 0x1A;\n"
 				<< "  result[offset] |= " << getOpTypeName(caseDef.opType)
 				<< "(data[gl_SubgroupInvocationID] > 0) ? 0x4 : 0;\n";
 		}
@@ -447,19 +475,26 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			src << "  result[offset] = " << getOpTypeName(caseDef.opType)
 				<< "(true) ? 0x1 : 0;\n"
 				<< "  result[offset] |= " << getOpTypeName(caseDef.opType)
-				<< "(false) ? 0 : 0x2;\n"
+				<< "(false) ? 0 : 0x1A;\n"
 				<< "  result[offset] |= " << getOpTypeName(caseDef.opType)
 				<< "(data[gl_SubgroupInvocationID] == data[0]) ? 0x4 : 0;\n";
 		}
+
 		else if (OPTYPE_ALLEQUAL == caseDef.opType)
 		{
-			src << "  result[offset] = " << getOpTypeName(caseDef.opType) << "("
-				<< subgroups::getFormatNameForGLSL(caseDef.format) << "(1)) ? 0x1 : 0;\n"
+			src << "  " << subgroups::getFormatNameForGLSL(caseDef.format) <<" valueEqual = " << subgroups::getFormatNameForGLSL(caseDef.format) << "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n"
+				<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) <<" valueNoEqual = " << subgroups::getFormatNameForGLSL(caseDef.format) << "(12.0 * float(data[gl_SubgroupInvocationID]) + ((offset % 5)%2));\n"
+				<<"  result[offset] = " << getOpTypeName(caseDef.opType) << "("
+				<< subgroups::getFormatNameForGLSL(caseDef.format) << "(1)) ? 0x1 : 0x0;\n"
 				<< "  result[offset] |= " << getOpTypeName(caseDef.opType)
-				<< "(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
-				<< "  if (subgroupElect()) result[offset] |= 0x2;\n"
+				<< "(gl_SubgroupInvocationID) ? 0x0 : 0x2;\n"
 				<< "  result[offset] |= " << getOpTypeName(caseDef.opType)
-				<< "(data[0]) ? 0x4 : 0;\n";
+				<< "(data[0]) ? 0x4 : 0x0;\n"
+				<< "  result[offset] |= "<< getOpTypeName(caseDef.opType)
+				<< "(valueEqual) ? 0x8 : 0x0;\n"
+				<< "  result[offset] |= "<< getOpTypeName(caseDef.opType)
+				<< "(valueNoEqual) ? 0x0 : 0x10;\n"
+				<< "  if (subgroupElect()) result[offset] |= 0x2 | 0x10;\n";
 		}
 
 		src << "}\n";
@@ -474,22 +509,28 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"  result[offset] = " + getOpTypeName(caseDef.opType) +
 			"(true) ? 0x1 : 0;\n"
 			"  result[offset] |= " + getOpTypeName(caseDef.opType) +
-			"(false) ? 0 : 0x2;\n"
+			"(false) ? 0 : 0x1A;\n"
 			"  result[offset] |= 0x4;\n"
 		: (OPTYPE_ANY == caseDef.opType) ?
 				"  result[offset] = " + getOpTypeName(caseDef.opType) +
 				"(true) ? 0x1 : 0;\n"
 				"  result[offset] |= " + getOpTypeName(caseDef.opType) +
-				"(false) ? 0 : 0x2;\n"
+				"(false) ? 0 : 0x1A;\n"
 				"  result[offset] |= 0x4;\n"
 		: (OPTYPE_ALLEQUAL == caseDef.opType) ?
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(12.0 * float(data[gl_SubgroupInvocationID]) + ((gl_SubgroupInvocationID % 5)%2));\n"
 				"  result[offset] = " + getOpTypeName(caseDef.opType) + "("
 				+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
 				"  result[offset] |= " + getOpTypeName(caseDef.opType) +
 				"(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
-				"  if (subgroupElect()) result[offset] |= 0x2;\n"
 				"  result[offset] |= " + getOpTypeName(caseDef.opType) +
 				"(data[0]) ? 0x4 : 0;\n"
+				"  result[offset] |= " + getOpTypeName(caseDef.opType) +
+				"(valueEqual) ? 0x8 : 0x0;\n"
+				"  result[offset] |= " + getOpTypeName(caseDef.opType) +
+				"(valueNoEqual) ? 0x0 : 0x10;\n"
+				"  if (subgroupElect()) result[offset] |= 0x2 | 0x10;\n"
 		: "";
 
 		const string formatString = subgroups::getFormatNameForGLSL(caseDef.format);
@@ -610,22 +651,28 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  result = " + getOpTypeName(caseDef.opType) +
 				"(true) ? 0x1 : 0;\n"
 				"  result |= " + getOpTypeName(caseDef.opType) +
-				"(false) ? 0 : 0x2;\n"
+				"(false) ? 0 : 0x1A;\n"
 				"  result |= 0x4;\n"
 			: (OPTYPE_ANY == caseDef.opType) ?
 					"  result = " + getOpTypeName(caseDef.opType) +
 					"(true) ? 0x1 : 0;\n"
 					"  result |= " + getOpTypeName(caseDef.opType) +
-					"(false) ? 0 : 0x2;\n"
+					"(false) ? 0 : 0x1A;\n"
 					"  result |= 0x4;\n"
 			: (OPTYPE_ALLEQUAL == caseDef.opType) ?
+					"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
+					"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(12.0 * float(data[gl_SubgroupInvocationID]) + ((int(gl_FragCoord.x*gl_SubgroupInvocationID) % 5)%2));\n"
 					"  result = " + getOpTypeName(caseDef.opType) + "("
 					+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
 					"  result |= " + getOpTypeName(caseDef.opType) +
 					"(gl_SubgroupInvocationID) ? 0 : 0x2;\n"
-					"  if (subgroupElect()) result |= 0x2;\n"
 					"  result |= " + getOpTypeName(caseDef.opType) +
 					"(data[0]) ? 0x4 : 0;\n"
+					"  result |= " + getOpTypeName(caseDef.opType) +
+					"(valueEqual) ? 0x8 : 0x0;\n"
+					"  result |= " + getOpTypeName(caseDef.opType) +
+					"(valueNoEqual) ? 0x0 : 0x10;\n"
+					"  if (subgroupElect()) result |= 0x2 | 0x10;\n"
 			: "";
 			const string fragment =
 				"#version 450\n"
@@ -689,7 +736,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	subgroups::SSBOData inputData;
 	inputData.format = caseDef.format;
 	inputData.numElements = subgroups::maxSupportedSubgroupSize();
-	inputData.initializeType = subgroups::SSBOData::InitializeNonZero;
+	inputData.initializeType = OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 
 	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 		return subgroups::makeVertexFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, checkVertexPipelineStages);
@@ -698,7 +745,9 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 	else if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT == caseDef.shaderStage)
 		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, checkVertexPipelineStages, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
-		return subgroups::makeTessellationEvaluationFrameBufferTest(context,  VK_FORMAT_R32_UINT, &inputData, 1, checkVertexPipelineStages, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+		return subgroups::makeTessellationEvaluationFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, checkVertexPipelineStages, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+	else if (VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage)
+		return subgroups::makeFragmentFrameBufferTest(context, VK_FORMAT_R32_UINT, &inputData, 1, checkFragmentPipelineStages);
 	else
 		TCU_THROW(InternalError, "Unhandled shader stage");
 }
@@ -732,7 +781,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		subgroups::SSBOData inputData;
 		inputData.format = caseDef.format;
 		inputData.numElements = subgroups::maxSupportedSubgroupSize();
-		inputData.initializeType = subgroups::SSBOData::InitializeNonZero;
+		inputData.initializeType = OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 
 		return subgroups::makeComputeTest(context, VK_FORMAT_R32_UINT, &inputData,
 										  1, (OPTYPE_ALLEQUAL == caseDef.opType) ? checkComputeAllEqual : checkCompute);
@@ -765,7 +814,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 		subgroups::SSBOData inputData;
 		inputData.format			= caseDef.format;
 		inputData.numElements		= subgroups::maxSupportedSubgroupSize();
-		inputData.initializeType	= subgroups::SSBOData::InitializeNonZero;
+		inputData.initializeType	= OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 		inputData.binding			= 4u;
 		inputData.stages			= stages;
 
@@ -841,6 +890,13 @@ tcu::TestCaseGroup* createSubgroupsVoteTests(tcu::TestContext& testCtx)
 							+ "_" + getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
 							initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
+
+			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_FRAGMENT_BIT, format};
+			addFunctionCaseWithPrograms(group.get(),
+						op + "_" +
+						subgroups::getFormatNameForGLSL(format)
+						+ "_" + getShaderStageName(caseDef.shaderStage)+"_frag_helper", "",
+						initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
 
