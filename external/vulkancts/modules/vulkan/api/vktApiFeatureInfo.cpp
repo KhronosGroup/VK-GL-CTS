@@ -1379,8 +1379,8 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		DE_NULL,														//pEnabledFeatures;
 	};
 
-	Move<VkDevice>		deviceGroup = createDevice(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver	vk	(vki, *deviceGroup);
+	Move<VkDevice>		deviceGroup = createDevice(vkp, *instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+	const DeviceDriver	vk	(vkp, *instance, *deviceGroup);
 	context.getInstanceInterface().getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
 	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlags*>(buffer);

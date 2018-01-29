@@ -9,7 +9,6 @@ m_vk.getPhysicalDeviceImageFormatProperties					= (GetPhysicalDeviceImageFormatP
 m_vk.getPhysicalDeviceProperties							= (GetPhysicalDevicePropertiesFunc)							GET_PROC_ADDR("vkGetPhysicalDeviceProperties");
 m_vk.getPhysicalDeviceQueueFamilyProperties					= (GetPhysicalDeviceQueueFamilyPropertiesFunc)				GET_PROC_ADDR("vkGetPhysicalDeviceQueueFamilyProperties");
 m_vk.getPhysicalDeviceMemoryProperties						= (GetPhysicalDeviceMemoryPropertiesFunc)					GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties");
-m_vk.getDeviceProcAddr										= (GetDeviceProcAddrFunc)									GET_PROC_ADDR("vkGetDeviceProcAddr");
 m_vk.createDevice											= (CreateDeviceFunc)										GET_PROC_ADDR("vkCreateDevice");
 m_vk.enumerateDeviceExtensionProperties						= (EnumerateDeviceExtensionPropertiesFunc)					GET_PROC_ADDR("vkEnumerateDeviceExtensionProperties");
 m_vk.enumerateDeviceLayerProperties							= (EnumerateDeviceLayerPropertiesFunc)						GET_PROC_ADDR("vkEnumerateDeviceLayerProperties");

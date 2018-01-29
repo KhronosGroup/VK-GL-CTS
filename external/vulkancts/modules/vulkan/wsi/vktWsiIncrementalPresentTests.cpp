@@ -132,7 +132,9 @@ deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface& vki, vk::VkPhysica
 	return supportedFamilyIndices[0];
 }
 
-vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::InstanceInterface&		vki,
+vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&		vkp,
+											vk::VkInstance						instance,
+											const vk::InstanceInterface&		vki,
 											vk::VkPhysicalDevice				physicalDevice,
 											const Extensions&					supportedExtensions,
 											const deUint32						queueFamilyIndex,
@@ -178,7 +180,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::InstanceInterface&		vki,
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
-	return createDevice(vki, physicalDevice, &deviceParams, pAllocator);
+	return createDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
@@ -1055,8 +1057,8 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 
 	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device					(createDeviceWithWsi(m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useIncrementalPresent))
-	, m_vkd						(m_vki, *m_device)
+	, m_device					(createDeviceWithWsi(m_vkp, *m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useIncrementalPresent))
+	, m_vkd						(m_vkp, *m_instance, *m_device)
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))

@@ -86,7 +86,7 @@ void buildShaders (SourceCollections& shaderCollection)
 				"}\n");
 }
 
-Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, deUint32 *outQueueFamilyIndex)
+Move<VkDevice> createTestDevice (const PlatformInterface& vkp, VkInstance instance, const InstanceInterface& vki, VkPhysicalDevice physicalDevice, deUint32 *outQueueFamilyIndex)
 {
 	VkDeviceQueueCreateInfo		queueInfo;
 	VkDeviceCreateInfo			deviceInfo;
@@ -137,7 +137,7 @@ Move<VkDevice> createTestDevice (const InstanceInterface& vki, VkPhysicalDevice 
 
 	*outQueueFamilyIndex					= queueInfo.queueFamilyIndex;
 
-	return createDevice(vki, physicalDevice, &deviceInfo);
+	return createDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
 };
 
 struct BufferParameters
@@ -1104,11 +1104,12 @@ tcu::TestStatus testFences (Context& context)
 tcu::TestStatus testSemaphores (Context& context)
 {
 	TestLog&					log					= context.getTestContext().getLog();
+	const PlatformInterface&	platformInterface	= context.getPlatformInterface();
 	const InstanceInterface&	instanceInterface	= context.getInstanceInterface();
 	const VkPhysicalDevice		physicalDevice		= context.getPhysicalDevice();
 	deUint32					queueFamilyIdx;
-	vk::Move<VkDevice>			device				= createTestDevice(instanceInterface, physicalDevice, &queueFamilyIdx);
-	const DeviceDriver			deviceInterface		(instanceInterface, *device);
+	vk::Move<VkDevice>			device				= createTestDevice(platformInterface, context.getInstance(), instanceInterface, physicalDevice, &queueFamilyIdx);
+	const DeviceDriver			deviceInterface		(platformInterface, context.getInstance(), *device);
 	SimpleAllocator				allocator			(deviceInterface,
 													 *device,
 													 getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice));

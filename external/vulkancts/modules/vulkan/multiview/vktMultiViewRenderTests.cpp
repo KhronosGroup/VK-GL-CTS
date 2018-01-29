@@ -601,8 +601,8 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 			DE_NULL															//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 		};
 
-		m_logicalDevice					= createDevice(instance, physicalDevice, &deviceInfo);
-		m_device						= MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
+		m_logicalDevice					= createDevice(m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+		m_device						= MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_logicalDevice));
 		m_allocator						= MovePtr<Allocator>(new SimpleAllocator(*m_device, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 		m_device->getDeviceQueue		(*m_logicalDevice, m_queueFamilyIndex, 0u, &m_queue);
 	}

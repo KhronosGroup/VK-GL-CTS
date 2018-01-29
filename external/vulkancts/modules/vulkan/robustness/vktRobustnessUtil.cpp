@@ -73,7 +73,8 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context)
 		&enabledFeatures						// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	return createDevice(context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
+	return createDevice(context.getPlatformInterface(), context.getInstance(),
+						context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
 }
 
 bool areEqual (float a, float b)

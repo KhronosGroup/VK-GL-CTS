@@ -37,9 +37,9 @@ ProtectedContext::ProtectedContext	(Context&						ctx,
 	, m_vki					(m_interface, *m_instance)
 	, m_phyDevice			(vk::chooseDevice(m_vki, *m_instance, m_context.getTestContext().getCommandLine()))
 	, m_queueFamilyIndex	(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice))
-	, m_device				(makeProtectedMemDevice(m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion(), deviceExtensions))
+	, m_device				(makeProtectedMemDevice(m_interface, *m_instance, m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion(), deviceExtensions))
 	, m_allocator			(createAllocator())
-	, m_deviceDriver		(m_vki, *m_device)
+	, m_deviceDriver		(m_context.getPlatformInterface(), *m_instance, *m_device)
 	, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
 {
 }
@@ -57,9 +57,9 @@ ProtectedContext::ProtectedContext	(Context&						ctx,
 	, m_phyDevice			(vk::chooseDevice(m_vki, *m_instance, m_context.getTestContext().getCommandLine()))
 	, m_surface				(vk::wsi::createSurface(m_vki, *m_instance, wsiType, display, window))
 	, m_queueFamilyIndex	(chooseProtectedMemQueueFamilyIndex(m_vki, m_phyDevice, *m_surface))
-	, m_device				(makeProtectedMemDevice(m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion(), deviceExtensions))
+	, m_device				(makeProtectedMemDevice(m_interface, *m_instance, m_vki, m_phyDevice, m_queueFamilyIndex, ctx.getUsedApiVersion(), deviceExtensions))
 	, m_allocator			(createAllocator())
-	, m_deviceDriver		(m_vki, *m_device)
+	, m_deviceDriver		(m_interface, *m_instance, *m_device)
 	, m_queue				(getProtectedQueue(m_deviceDriver, *m_device, m_queueFamilyIndex, 0))
 {
 }

@@ -60,7 +60,9 @@ deUint32							chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&			v
 																		 vk::VkPhysicalDevice				physicalDevice,
 																		 vk::VkSurfaceKHR					surface = DE_NULL);
 
-vk::Move<vk::VkDevice>				makeProtectedMemDevice				(const vk::InstanceDriver&			vkd,
+vk::Move<vk::VkDevice>				makeProtectedMemDevice				(const vk::PlatformInterface&		vkp,
+																		 vk::VkInstance						instance,
+																		 const vk::InstanceDriver&			vkd,
 																		 vk::VkPhysicalDevice				physicalDevice,
 																		 const deUint32						queueFamilyIndex,
 																		 const deUint32						apiVersion,

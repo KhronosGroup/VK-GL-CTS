@@ -200,7 +200,7 @@ bool DeviceGroupTestInstance::isPeerFetchAllowed (deUint32 memoryTypeIndex, deUi
 {
 	VkPeerMemoryFeatureFlags				peerMemFeatures1;
 	VkPeerMemoryFeatureFlags				peerMemFeatures2;
-	const DeviceDriver						vk						(m_context.getInstanceInterface(), *m_deviceGroup);
+	const DeviceDriver						vk						(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup);
 	const VkPhysicalDeviceMemoryProperties	deviceMemProps1			= getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_physicalDevices[firstdeviceID]);
 	const VkPhysicalDeviceMemoryProperties	deviceMemProps2			= getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_physicalDevices[seconddeviceID]);
 	vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps2.memoryTypes[memoryTypeIndex].heapIndex, firstdeviceID, seconddeviceID, &peerMemFeatures1);
@@ -345,10 +345,10 @@ void DeviceGroupTestInstance::init (void)
 			(extensionPtrs.empty() ? DE_NULL : &extensionPtrs[0]),	//ppEnabledExtensionNames;
 			&enabledDeviceFeatures,									//pEnabledFeatures;
 		};
-		m_deviceGroup = createDevice(instanceInterface, physicalDevice, &deviceCreateInfo);
+		m_deviceGroup = createDevice(m_context.getPlatformInterface(), m_context.getInstance(), instanceInterface, physicalDevice, &deviceCreateInfo);
 	}
 
-	deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(instanceInterface, *m_deviceGroup));
+	deviceDriver = de::MovePtr<vk::DeviceDriver>(new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup));
 	m_deviceGroupQueue = getDeviceQueue(*deviceDriver, *m_deviceGroup, queueFamilyIndex, queueIndex);
 }
 
@@ -361,7 +361,7 @@ void DeviceGroupTestInstance::SubmitBufferAndWaitForIdle(const DeviceDriver& vk,
 tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 {
 	const InstanceInterface&	vki						(m_context.getInstanceInterface());
-	const DeviceDriver			vk						(vki, *m_deviceGroup);
+	const DeviceDriver			vk						(m_context.getPlatformInterface(), m_context.getInstance(), *m_deviceGroup);
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	const tcu::UVec2			renderSize				(256, 256);
 	const VkFormat				colorFormat				= VK_FORMAT_R8G8B8A8_UNORM;

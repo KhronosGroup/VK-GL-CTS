@@ -1831,7 +1831,6 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,							getPhysicalDeviceProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,				getPhysicalDeviceQueueFamilyProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,						getPhysicalDeviceMemoryProperties),
-	VK_NULL_FUNC_ENTRY(vkGetDeviceProcAddr,										getDeviceProcAddr),
 	VK_NULL_FUNC_ENTRY(vkCreateDevice,											createDevice),
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,					enumerateDeviceExtensionProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,						enumerateDeviceLayerProperties),
@@ -1906,6 +1905,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 {
+	VK_NULL_FUNC_ENTRY(vkGetDeviceProcAddr,									getDeviceProcAddr),
 	VK_NULL_FUNC_ENTRY(vkDestroyDevice,										destroyDevice),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceQueue,									getDeviceQueue),
 	VK_NULL_FUNC_ENTRY(vkQueueSubmit,										queueSubmit),

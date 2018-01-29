@@ -170,6 +170,8 @@ vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface&	vki,
 }
 
 vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
+									 const vk::PlatformInterface&					vkp,
+									 vk::VkInstance									instance,
 									 const vk::InstanceInterface&					vki,
 									 vk::VkPhysicalDevice							physicalDevice)
 {
@@ -225,7 +227,7 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 			0u
 		};
 
-		return vk::createDevice(vki, physicalDevice, &createInfo);
+		return vk::createDevice(vkp, instance, vki, physicalDevice, &createInfo);
 	}
 	catch (const vk::Error& error)
 	{
@@ -1443,8 +1445,8 @@ Win32KeyedMutexTestInstance::Win32KeyedMutexTestInstance	(Context&		context,
 	, m_physicalDevice			(getPhysicalDevice(m_vki, *m_instance, context.getTestContext().getCommandLine()))
 	, m_queueFamilies			(vk::getPhysicalDeviceQueueFamilyProperties(m_vki, m_physicalDevice))
 	, m_queueFamilyIndices		(getFamilyIndices(m_queueFamilies))
-	, m_device					(createDevice(context.getUsedApiVersion(), m_vki, m_physicalDevice))
-	, m_vkd						(m_vki, *m_device)
+	, m_device					(createDevice(context.getUsedApiVersion(), context.getPlatformInterface(), *m_instance, m_vki, m_physicalDevice))
+	, m_vkd						(context.getPlatformInterface(), *m_instance, *m_device)
 
 	, m_supportDX11				(new DX11OperationSupport(m_vki, m_physicalDevice, config.resource))
 

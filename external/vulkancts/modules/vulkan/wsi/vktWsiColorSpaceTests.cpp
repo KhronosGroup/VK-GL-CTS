@@ -123,7 +123,9 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi (void)
 	return features;
 }
 
-Move<VkDevice> createDeviceWithWsi (const InstanceInterface&		vki,
+Move<VkDevice> createDeviceWithWsi (const vk::PlatformInterface&	vkp,
+									vk::VkInstance					instance,
+									const InstanceInterface&		vki,
 									VkPhysicalDevice				physicalDevice,
 									const Extensions&				supportedExtensions,
 									const deUint32					queueFamilyIndex,
@@ -165,7 +167,7 @@ Move<VkDevice> createDeviceWithWsi (const InstanceInterface&		vki,
 		&features
 	};
 
-	return createDevice(vki, physicalDevice, &deviceParams, pAllocator);
+	return createDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 deUint32 getNumQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
@@ -234,12 +236,14 @@ struct DeviceHelper
 				  const VkAllocationCallbacks*	pAllocator = DE_NULL)
 		: physicalDevice	(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
 		, queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, surface))
-		, device			(createDeviceWithWsi(vki,
+		, device			(createDeviceWithWsi(context.getPlatformInterface(),
+												 instance,
+												 vki,
 												 physicalDevice,
 												 enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL),
 												 queueFamilyIndex,
 												 pAllocator))
-		, vkd				(vki, *device)
+		, vkd				(context.getPlatformInterface(), instance, *device)
 		, queue				(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
 	{
 	}

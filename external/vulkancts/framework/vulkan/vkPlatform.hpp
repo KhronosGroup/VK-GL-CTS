@@ -84,7 +84,7 @@ protected:
 class DeviceDriver : public DeviceInterface
 {
 public:
-				DeviceDriver	(const InstanceInterface& instanceInterface, VkDevice device);
+				DeviceDriver	(const PlatformInterface& platformInterface, VkInstance instance, VkDevice device);
 				~DeviceDriver	(void);
 
 #include "vkConcreteDeviceInterface.inl"
