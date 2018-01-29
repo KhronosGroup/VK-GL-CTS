@@ -6869,6 +6869,10 @@ dEQP-GLES2.functional.shaders.struct.uniform.sampler_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_nested_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_nested_fragment
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_function_arg_vertex
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_function_arg_fragment
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_array_function_arg_vertex
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_array_function_arg_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.equal_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.equal_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.not_equal_vertex
