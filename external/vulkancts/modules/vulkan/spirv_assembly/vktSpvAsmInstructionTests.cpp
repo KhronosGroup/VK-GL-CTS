@@ -8848,6 +8848,33 @@ tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+tcu::TestCaseGroup* createOpNameTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "opname","Test OpName"));
+	RGBA							defaultColors[4];
+	map<string, string>				opNameFragments;
+
+	getDefaultColors(defaultColors);
+
+	opNameFragments["debug"]		=
+		"OpName %BP_main \"not_main\"";
+
+	opNameFragments["testfun"]		=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_func = OpLabel\n"
+		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b = OpFAdd %f32 %a %a\n"
+		"%c = OpFSub %f32 %b %a\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+
+	createTestsForAllStages("opname", defaultColors, defaultColors, opNameFragments, testGroup.get());
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> instructionTests	(new tcu::TestCaseGroup(testCtx, "instruction", "Instructions with special opcodes/operands"));
@@ -8942,6 +8969,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 		graphicsTests->addChild(graphicsAndroidTests.release());
 	}
+	graphicsTests->addChild(createOpNameTests(testCtx));
 
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
 	graphicsTests->addChild(createUboMatrixPaddingGraphicsGroup(testCtx));
