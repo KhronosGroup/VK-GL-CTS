@@ -86,19 +86,43 @@ struct ValueBlock
 	std::vector<Value>		uniforms;
 };
 
+enum CapabilityType
+{
+	CAPABILITY_LIMIT = 0,
+	CAPABILITY_FLAG,
+
+	CAPABILITY_LAST
+};
+
+enum CapabilityFlag
+{
+	CAPABILITY_FULL_GLSL_ES_100_SUPPORT,
+	CAPABILITY_ONLY_GLSL_ES_100_SUPPORT, // only ES2, no ES3 capability
+	CAPABILITY_EXACTLY_ONE_DRAW_BUFFER	 // gl_MaxDrawBuffers is exactly 1
+};
+
 struct RequiredCapability
 {
-	deUint32				enumName;
+	CapabilityType			type;
+
+	union
+	{
+		CapabilityFlag		flagName;
+		deUint32			enumName;
+	};
+
 	int						referenceValue;
 
-	RequiredCapability (void)
-		: enumName			(0u)
-		, referenceValue	(0)
+	RequiredCapability (CapabilityFlag flagName_)
+		: type				(CAPABILITY_FLAG)
+		, flagName			(flagName_)
+		, referenceValue	(0) // not used
 	{
 	}
 
 	RequiredCapability (deUint32 enumName_, int referenceValue_)
-		: enumName			(enumName_)
+		: type				(CAPABILITY_LIMIT)
+		, enumName			(enumName_)
 		, referenceValue	(referenceValue_)
 	{
 	}
@@ -149,9 +173,7 @@ struct ShaderCaseSpecification
 	DataType							outputFormat;
 	glu::GLSLVersion					targetVersion;
 
-	// \todo [pyry] Clean this up
 	std::vector<RequiredCapability>		requiredCaps;
-	bool								fullGLSLES100Required;
 
 	ValueBlock							values;
 	std::vector<ProgramSpecification>	programs;
@@ -162,13 +184,14 @@ struct ShaderCaseSpecification
 		, outputType			(OUTPUT_RESULT)
 		, outputFormat			(TYPE_LAST)
 		, targetVersion			(glu::GLSL_VERSION_LAST)
-		, fullGLSLES100Required	(false)
 	{
 	}
 };
 
 bool	isValid		(const ValueBlock& block);
 bool	isValid		(const ShaderCaseSpecification& spec);
+
+bool	isCapabilityRequired(CapabilityFlag capabilityFlag, const ShaderCaseSpecification& spec);
 
 class ShaderCaseFactory
 {
