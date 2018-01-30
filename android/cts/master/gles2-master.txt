@@ -6869,6 +6869,10 @@ dEQP-GLES2.functional.shaders.struct.uniform.sampler_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_nested_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_nested_fragment
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_function_arg_vertex
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_function_arg_fragment
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_array_function_arg_vertex
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_array_function_arg_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.equal_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.equal_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.not_equal_vertex
@@ -11955,7 +11959,6 @@ dEQP-GLES2.functional.rasterization.primitives.lines
 dEQP-GLES2.functional.rasterization.primitives.line_strip
 dEQP-GLES2.functional.rasterization.primitives.line_loop
 dEQP-GLES2.functional.rasterization.primitives.points
-dEQP-GLES2.functional.rasterization.limits.points
 dEQP-GLES2.functional.rasterization.fill_rules.basic_quad
 dEQP-GLES2.functional.rasterization.fill_rules.basic_quad_reverse
 dEQP-GLES2.functional.rasterization.fill_rules.clipped_full

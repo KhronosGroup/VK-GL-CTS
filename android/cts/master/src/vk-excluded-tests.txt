@@ -711,3 +711,6 @@ dEQP-VK.ssbo.unsized_array_length.float_no_offset_explicit_size
 dEQP-VK.ssbo.unsized_array_length.float_no_offset_whole_size
 dEQP-VK.ssbo.unsized_array_length.float_offset_explicit_size
 dEQP-VK.ssbo.unsized_array_length.float_offset_whole_size
+
+# Temporarily excluded for b/72324588
+dEQP-VK.image.mutable.2d*
