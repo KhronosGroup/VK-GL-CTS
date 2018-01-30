@@ -273,7 +273,6 @@ const std::string TransferTimestampTestParam::generateTestName(void) const
 	result += "with_" + getTransferMethodStr(m_method, false);
 
 	return result;
-
 }
 
 const std::string TransferTimestampTestParam::generateTestDescription(void) const
@@ -291,7 +290,27 @@ const std::string TransferTimestampTestParam::generateTestDescription(void) cons
 	result += "with " + getTransferMethodStr(m_method, true);
 
 	return result;
+}
 
+class TwoCmdBuffersTestParam : public TimestampTestParam
+{
+public:
+							TwoCmdBuffersTestParam	(const VkPipelineStageFlagBits*	stages,
+													 const deUint32					stageCount,
+													 const bool						inRenderPass,
+													 const VkCommandBufferLevel		cmdBufferLevel);
+							~TwoCmdBuffersTestParam	(void) { }
+	VkCommandBufferLevel	getCmdBufferLevel		(void) const { return m_cmdBufferLevel; }
+protected:
+	VkCommandBufferLevel	m_cmdBufferLevel;
+};
+
+TwoCmdBuffersTestParam::TwoCmdBuffersTestParam	(const VkPipelineStageFlagBits*	stages,
+												 const deUint32					stageCount,
+												 const bool						inRenderPass,
+												 const VkCommandBufferLevel		cmdBufferLevel)
+: TimestampTestParam(stages, stageCount, inRenderPass), m_cmdBufferLevel(cmdBufferLevel)
+{
 }
 
 class SimpleGraphicsPipelineBuilder
@@ -2122,6 +2141,146 @@ void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, Vk
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageMemBarrier);
 }
 
+class TwoCmdBuffersTest : public TimestampTest
+{
+public:
+							TwoCmdBuffersTest	(tcu::TestContext&				testContext,
+												 const std::string&				name,
+												 const std::string&				description,
+												 const TwoCmdBuffersTestParam*	param)
+: TimestampTest (testContext, name, description, param), m_cmdBufferLevel(param->getCmdBufferLevel()) { }
+	virtual					~TwoCmdBuffersTest	(void) { }
+	virtual TestInstance*	createInstance		(Context&						context) const;
+
+protected:
+	VkCommandBufferLevel	m_cmdBufferLevel;
+};
+
+class TwoCmdBuffersTestInstance : public TimestampTestInstance
+{
+public:
+							TwoCmdBuffersTestInstance	(Context&				context,
+														 const StageFlagVector	stages,
+														 const bool				inRenderPass,
+														 VkCommandBufferLevel	cmdBufferLevel);
+	virtual					~TwoCmdBuffersTestInstance	(void);
+	virtual tcu::TestStatus	iterate						(void);
+protected:
+	virtual void			configCommandBuffer			(void);
+
+protected:
+	Move<VkCommandBuffer>	m_secondCmdBuffer;
+	Move<VkBuffer>			m_dstBuffer;
+	de::MovePtr<Allocation> m_dstBufferAlloc;
+	VkCommandBufferLevel	m_cmdBufferLevel;
+};
+
+TestInstance* TwoCmdBuffersTest::createInstance (Context& context) const
+{
+	return new TwoCmdBuffersTestInstance(context, m_stages, m_inRenderPass, m_cmdBufferLevel);
+}
+
+TwoCmdBuffersTestInstance::TwoCmdBuffersTestInstance (Context&					context,
+													  const StageFlagVector		stages,
+													  const bool				inRenderPass,
+													  VkCommandBufferLevel		cmdBufferLevel)
+: TimestampTestInstance (context, stages, inRenderPass), m_cmdBufferLevel(cmdBufferLevel)
+{
+	const DeviceInterface&	vk			= context.getDeviceInterface();
+	const VkDevice			vkDevice	= context.getDevice();
+
+	m_secondCmdBuffer	= allocateCommandBuffer(vk, vkDevice, *m_cmdPool, cmdBufferLevel);
+	m_dstBuffer			= createBufferAndBindMemory(1024, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, &m_dstBufferAlloc);
+}
+
+TwoCmdBuffersTestInstance::~TwoCmdBuffersTestInstance (void)
+{
+}
+
+void TwoCmdBuffersTestInstance::configCommandBuffer (void)
+{
+	const DeviceInterface&			vk					= m_context.getDeviceInterface();
+
+	const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
+		DE_NULL,										// const void*                              pNext;
+		0u,												// VkCommandBufferUsageFlags                flags;
+		(const VkCommandBufferInheritanceInfo*)DE_NULL	// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+	};
+
+	if (m_cmdBufferLevel == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+	{
+		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+		vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+		vk.cmdWriteTimestamp(*m_cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, *m_queryPool, 0);
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+		VK_CHECK(vk.beginCommandBuffer(*m_secondCmdBuffer, &cmdBufferBeginInfo));
+		vk.cmdCopyQueryPoolResults(*m_secondCmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, 0u);
+		VK_CHECK(vk.endCommandBuffer(*m_secondCmdBuffer));
+	}
+	else
+	{
+		const VkCommandBufferInheritanceInfo inheritanceInfo		=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,	// VkStructureType                  sType;
+			DE_NULL,											// const void*                      pNext;
+			DE_NULL,											// VkRenderPass                     renderPass;
+			0u,													// deUint32                         subpass;
+			DE_NULL,											// VkFramebuffer                    framebuffer;
+			VK_FALSE,											// VkBool32                         occlusionQueryEnable;
+			0u,													// VkQueryControlFlags              queryFlags;
+			0u													// VkQueryPipelineStatisticFlags    pipelineStatistics;
+		};
+
+		const VkCommandBufferBeginInfo cmdBufferBeginInfoSecondary	=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
+			DE_NULL,										// const void*                              pNext;
+			0u,												// VkCommandBufferUsageFlags                flags;
+			&inheritanceInfo								// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+		};
+
+		VK_CHECK(vk.beginCommandBuffer(*m_secondCmdBuffer, &cmdBufferBeginInfoSecondary));
+		vk.cmdResetQueryPool(*m_secondCmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
+		vk.cmdWriteTimestamp(*m_secondCmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, *m_queryPool, 0);
+		VK_CHECK(vk.endCommandBuffer(*m_secondCmdBuffer));
+		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+		vk.cmdExecuteCommands(m_cmdBuffer.get(), 1u, &m_secondCmdBuffer.get());
+		vk.cmdCopyQueryPoolResults(*m_cmdBuffer, *m_queryPool, 0u, 1u, *m_dstBuffer, 0u, 0u, 0u);
+		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+	}
+}
+
+tcu::TestStatus TwoCmdBuffersTestInstance::iterate (void)
+{
+	const DeviceInterface&		vk				= m_context.getDeviceInterface();
+	const VkQueue				queue			= m_context.getUniversalQueue();
+
+	configCommandBuffer();
+
+	const VkCommandBuffer		cmdBuffers[]	= { m_cmdBuffer.get(), m_secondCmdBuffer.get() };
+
+	const VkSubmitInfo			submitInfo		=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,									// VkStructureType                sType;
+		DE_NULL,														// const void*                    pNext;
+		0u,																// deUint32                       waitSemaphoreCount;
+		DE_NULL,														// const VkSemaphore*             pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,							// const VkPipelineStageFlags*    pWaitDstStageMask;
+		m_cmdBufferLevel == VK_COMMAND_BUFFER_LEVEL_PRIMARY ? 2u : 1u,	// deUint32                       commandBufferCount;
+		cmdBuffers,														// const VkCommandBuffer*         pCommandBuffers;
+		0u,																// deUint32                       signalSemaphoreCount;
+		DE_NULL,														// const VkSemaphore*             pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, DE_NULL));
+	VK_CHECK(vk.queueWaitIdle(queue));
+
+	// Always pass in case no crash occurred.
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
@@ -2191,7 +2350,7 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 
 	// Basic Compute Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> basicComputeTests (new tcu::TestCaseGroup(testCtx, "basic_compute_tests", "Record timestamp for computer stages"));
+		de::MovePtr<tcu::TestCaseGroup> basicComputeTests (new tcu::TestCaseGroup(testCtx, "basic_compute_tests", "Record timestamp for compute stages"));
 
 		const VkPipelineStageFlagBits basicComputeStages[][2] =
 		{
@@ -2238,6 +2397,18 @@ tcu::TestCaseGroup* createTimestampTests (tcu::TestContext& testCtx)
 											  "timestamp_only",
 											  "Only write timestamp command in the commmand buffer",
 											  &param));
+
+		TwoCmdBuffersTestParam twoCmdBuffersParamPrimary(miscStages, 1u, false, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
+												  "two_cmd_buffers_primary",
+												  "Issue query in a command buffer and copy it on another primary command buffer",
+												  &twoCmdBuffersParamPrimary));
+
+		TwoCmdBuffersTestParam twoCmdBuffersParamSecondary(miscStages, 1u, false, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		miscTests->addChild(new TwoCmdBuffersTest(testCtx,
+												  "two_cmd_buffers_secondary",
+												  "Issue query in a secondary command buffer and copy it on a primary command buffer",
+												  &twoCmdBuffersParamSecondary));
 
 		timestampTests->addChild(miscTests.release());
 	}
