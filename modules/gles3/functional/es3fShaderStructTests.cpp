@@ -1120,6 +1120,39 @@ void LocalStructTests::init (void)
 				c.color.y() = 1.0f;
 			c.color.z() = 1.0f;
 		});
+
+	LOCAL_STRUCT_CASE(array_member_equality, "Struct with array members equality",
+		LineStream()
+		<< "${HEADER}"
+		<< ""
+		<< "struct S {"
+		<< "	bool	m[2];"
+		<< "};"
+		<< ""
+		<< "void main (void)"
+		<< "{"
+		<< "	S a;"
+		<< "	a.m[0] = true;"
+		<< "	a.m[1] = false;"
+		<< ""
+		<< "	S b;"
+		<< "	b.m[0] = true;"
+		<< "	b.m[1] = false;"
+		<< ""
+		<< "	S c;"
+		<< "	c.m[0] = true;"
+		<< "	c.m[1] = true;"
+		<< ""
+		<< "	${DST} = vec4(0.0, 0.0, 1.0, 1.0);"
+		<< "	if (a == b) ${DST}.x = 1.0;"
+		<< "	if (a != c) ${DST}.y = 1.0;"
+		<< "	${ASSIGN_POS}"
+		<< "}",
+		{
+			c.color.x() = 1.0f;
+			c.color.y() = 1.0f;
+			c.color.z() = 1.0f;
+		});
 }
 
 class UniformStructTests : public TestCaseGroup
