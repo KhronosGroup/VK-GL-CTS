@@ -2951,3 +2951,6 @@ dEQP-GLES2.functional.uniform_api.value.initial.render.struct_in_array.bool_bvec
 dEQP-GLES2.functional.uniform_api.value.initial.render.struct_in_array.mat4_mat2_both
 dEQP-GLES2.functional.uniform_api.value.initial.render.struct_in_array.mat4_mat2_fragment
 dEQP-GLES2.functional.uniform_api.value.initial.render.struct_in_array.mat4_mat2_vertex
+
+# Temporarily excluded for b/72496590
+dEQP-GLES2.functional.rasterization.limits.points

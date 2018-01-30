@@ -11955,7 +11955,6 @@ dEQP-GLES2.functional.rasterization.primitives.lines
 dEQP-GLES2.functional.rasterization.primitives.line_strip
 dEQP-GLES2.functional.rasterization.primitives.line_loop
 dEQP-GLES2.functional.rasterization.primitives.points
-dEQP-GLES2.functional.rasterization.limits.points
 dEQP-GLES2.functional.rasterization.fill_rules.basic_quad
 dEQP-GLES2.functional.rasterization.fill_rules.basic_quad_reverse
 dEQP-GLES2.functional.rasterization.fill_rules.clipped_full
