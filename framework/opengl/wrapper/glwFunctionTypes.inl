@@ -223,6 +223,8 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture2DFunc)								(GL
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture3DFunc)								(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTexture3DOESFunc)							(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureLayerFunc)							(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
+typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureMultisampleMultiviewOVRFunc)			(GLenum target, GLenum attachment, GLuint texture, GLint level, GLsizei samples, GLint baseViewIndex, GLsizei numViews);
+typedef GLW_APICALL void			(GLW_APIENTRY* glFramebufferTextureMultiviewOVRFunc)					(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews);
 typedef GLW_APICALL void			(GLW_APIENTRY* glFrontFaceFunc)											(GLenum mode);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGenBuffersFunc)										(GLsizei n, GLuint *buffers);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGenFramebuffersFunc)									(GLsizei n, GLuint *framebuffers);
