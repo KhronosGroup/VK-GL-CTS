@@ -1996,3 +1996,134 @@ group invalid "Invalid Functions"
 	end
 
 end # invalid
+
+# https://github.com/KhronosGroup/WebGL/blob/master/sdk/tests/conformance2/glsl3/array-in-complex-expression.html
+group complex_expression "Arrays in complex expressions"
+
+	case and_short_circuits
+		version 300 es
+		values
+		{
+			output int g = -1;
+		}
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			int[2] plus() {
+				++g;
+				return int[2](g, g);
+			}
+
+			bool minus() {
+				--g;
+				return false;
+			}
+
+			void main() {
+				${SETUP}
+				g = 0;
+				int a[2] = int[2](0, 0);
+				// The plus() call must not be evaluated, since && short-circuits
+				minus() && (a == plus());
+				${OUTPUT}
+			}
+		""
+	end
+
+	case or_short_circuits
+		version 300 es
+		values
+		{
+			output int g = -1;
+		}
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			int[2] plus() {
+				++g;
+				return int[2](g, g);
+			}
+
+			bool minus() {
+				--g;
+				return false;
+			}
+
+			void main() {
+				${SETUP}
+				g = 0;
+				int a[2] = int[2](0, 0);
+				// The function call must not be evaluated, since && short-circuits
+				minus() && (a == plus());
+				${OUTPUT}
+			}
+		""
+	end
+
+	case ternary_only_evaluates_one_operand
+		version 300 es
+		values
+		{
+			output int g = 0;
+		}
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			int[2] plus() {
+				++g;
+				return int[2](g, g);
+			}
+
+			void main() {
+				${SETUP}
+				g = 0;
+				int a[2] = int[2](0, 0);
+				// The function call must not be evaluated, since the condition is true.
+				(g == 0) ? true : (a == plus());
+				${OUTPUT}
+			}
+		""
+	end
+
+	case sequence_side_effects_affecting_compared_array_content
+		version 300 es
+		values
+		{
+			output bool success = true;
+		}
+
+		both ""
+			#version 300 es
+			precision mediump float;
+			${DECLARATIONS}
+
+			int[2] func(int param) {
+				return int[2](param, param);
+			}
+
+			void main() {
+				${SETUP}
+				int a[2];
+				for (int i = 0; i < 2; ++i) {
+					a[i] = 1;
+				}
+				int j = 0;
+				// Sequence operator evaluates operands from left to right (ESSL 3.00 section 5.9).
+				// The function call that returns the array needs to be evaluated after ++j
+				// for the expression to return the correct value (true).
+				success = ((++j), (a == func(j)));
+				${OUTPUT}
+			}
+		""
+	end
+
+end # complex_expression
