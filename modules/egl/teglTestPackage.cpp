@@ -144,6 +144,7 @@ public:
 		addChild(createGetFrameTimestampsTests	(m_eglTestCtx));
 		addChild(createRobustnessTests			(m_eglTestCtx));
 		addChild(createWideColorTests			(m_eglTestCtx));
+		addChild(createHdrColorTests			(m_eglTestCtx));
 	}
 };
 
