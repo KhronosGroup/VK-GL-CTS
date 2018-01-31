@@ -107,6 +107,10 @@ public:
 	void				checkFP16Support			(void);
 	void				checkSCRGBSupport			(void);
 	void				checkSCRGBLinearSupport		(void);
+	void				checkbt2020linear			(void);
+	void				checkbt2020pq				(void);
+	void				checkSMPTE2086				(void);
+	void				checkCTA861_3				(void);
 
 protected:
 	void				initEGLSurface				(EGLConfig config);
@@ -326,10 +330,42 @@ void WideColorTest::checkSCRGBSupport (void)
 
 void WideColorTest::checkSCRGBLinearSupport (void)
 {
+    const Library&	egl	= m_eglTestCtx.getLibrary();
+
+    if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_scrgb_linear"))
+        TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_scrgb_linear is not supported");
+}
+
+void WideColorTest::checkbt2020linear (void)
+{
+    const Library&	egl	= m_eglTestCtx.getLibrary();
+
+    if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_bt2020_linear"))
+        TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_bt2020_linear is not supported");
+}
+
+void WideColorTest::checkbt2020pq (void)
+{
+    const Library&	egl	= m_eglTestCtx.getLibrary();
+
+    if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_bt2020_pq"))
+        TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_bt2020_pq is not supported");
+}
+
+void WideColorTest::checkSMPTE2086 (void)
+{
+    const Library&	egl	= m_eglTestCtx.getLibrary();
+
+    if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_surface_SMPTE2086_metadata"))
+        TCU_THROW(NotSupportedError, "EGL_EXT_surface_SMPTE2086_metadata is not supported");
+}
+
+void WideColorTest::checkCTA861_3 (void)
+{
 	const Library&	egl	= m_eglTestCtx.getLibrary();
 
-	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_scrgb_linear"))
-		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_scrgb_linear is not supported");
+	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_surface_CTA861_3_metadata"))
+		TCU_THROW(NotSupportedError, "EGL_EXT_surface_CTA861_3_metadata is not supported");
 }
 
 void WideColorTest::check1010102Support (void)
@@ -541,6 +577,8 @@ public:
 	void				init					(void);
 	void				executeTest				(void);
 	IterateResult		iterate					(void);
+	void				addWindowAttributes		(const EGLint* attributes);
+	void				addTestAttributes		(const EGLint* attributes);
 
 protected:
 	void				readPixels				(const glw::Functions& gl, float* dataPtr);
@@ -559,6 +597,8 @@ protected:
 
 private:
 	std::vector<EGLint>					m_attribList;
+	std::vector<EGLint>					m_winAttribList;
+	std::vector<EGLint>					m_testAttribList;
 	EGLConfig							m_eglConfig;
 	EGLint								m_surfaceType;
 	EGLint								m_componentType;
@@ -592,6 +632,30 @@ WideColorSurfaceTest::WideColorSurfaceTest (EglTestContext& eglTestCtx, const ch
 		m_attribList.push_back(attribList[idx++]);
 	}
 	m_attribList.push_back(EGL_NONE);
+}
+
+void WideColorSurfaceTest::addWindowAttributes(const EGLint* attributes)
+{
+	deUint32 idx = 0;
+	if (attributes == DE_NULL) return;
+
+	while (attributes[idx] != EGL_NONE)
+	{
+		m_winAttribList.push_back(attributes[idx++]);
+		m_winAttribList.push_back(attributes[idx++]);
+	}
+}
+
+void WideColorSurfaceTest::addTestAttributes(const EGLint *attributes)
+{
+	deUint32 idx = 0;
+	if (attributes == DE_NULL) return;
+
+	while (attributes[idx] != EGL_NONE)
+	{
+		m_testAttribList.push_back(attributes[idx++]);
+		m_testAttribList.push_back(attributes[idx++]);
+	}
 }
 
 void WideColorSurfaceTest::init (void)
@@ -629,6 +693,12 @@ void WideColorSurfaceTest::init (void)
 			break;
 		case EGL_GL_COLORSPACE_SCRGB_LINEAR_EXT:
 			checkSCRGBLinearSupport();
+			break;
+		case EGL_GL_COLORSPACE_BT2020_LINEAR_EXT:
+			checkbt2020linear();
+			break;
+		case EGL_GL_COLORSPACE_BT2020_PQ_EXT:
+			checkbt2020pq();
 			break;
 		default:
 			break;
@@ -1130,6 +1200,10 @@ void WideColorSurfaceTest::executeTest (void)
 			attribs.push_back(EGL_GL_COLORSPACE_KHR);
 			attribs.push_back(m_colorSpace);
 		}
+		for (deUint32 i = 0; i < m_winAttribList.size(); i++)
+		{
+			attribs.push_back(m_winAttribList[i]);
+		}
 		attribs.push_back(EGL_NONE);
 		attribs.push_back(EGL_NONE);
 		const EGLSurface surface = egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribs.data());
@@ -1158,6 +1232,10 @@ void WideColorSurfaceTest::executeTest (void)
 			attribs.push_back(EGL_GL_COLORSPACE_KHR);
 			attribs.push_back(m_colorSpace);
 		}
+		for (deUint32 i = 0; i < m_winAttribList.size(); i++)
+		{
+			attribs.push_back(m_winAttribList[i]);
+		}
 		attribs.push_back(EGL_NONE);
 		attribs.push_back(EGL_NONE);
 
@@ -1177,6 +1255,30 @@ void WideColorSurfaceTest::executeTest (void)
 		EGLU_CHECK_MSG(egl, "eglCreateWindowSurface()");
 
 		doClearTest(surface);
+
+		// If we have any window attributes, check that the values are correct
+		for (deUint32 i = 0; i < m_winAttribList.size(); i +=2)
+		{
+			EGLint value;
+			egl.querySurface(m_eglDisplay, surface, m_winAttribList[i], &value);
+			TCU_CHECK(value == m_winAttribList[i+1]);
+		}
+
+		if (m_testAttribList.size() > 0)
+		{
+			for (deUint32 i = 0; i < m_testAttribList.size(); i +=2)
+			{
+				if (!egl.surfaceAttrib(m_eglDisplay, surface, m_testAttribList[i], m_testAttribList[i+1])) {
+					TCU_FAIL("Unable to set HDR metadata on surface");
+				}
+			}
+			for (deUint32 i = 0; i < m_testAttribList.size(); i +=2)
+			{
+				EGLint value;
+				egl.querySurface(m_eglDisplay, surface, m_testAttribList[i], &value);
+				TCU_CHECK(value == m_testAttribList[i+1]);
+			}
+		}
 
 		egl.destroySurface(m_eglDisplay, surface);
 		EGLU_CHECK_MSG(egl, "eglDestroySurface()");
@@ -1347,6 +1449,136 @@ void WideColorTests::init (void)
 TestCaseGroup* createWideColorTests (EglTestContext& eglTestCtx)
 {
 	return new WideColorTests(eglTestCtx);
+}
+
+class HdrColorTest : public WideColorTest
+{
+public:
+	HdrColorTest		(EglTestContext&	eglTestCtx,
+							 const char*		name,
+							 const char*		description);
+
+	void				executeTest				(void);
+	IterateResult		iterate					(void);
+};
+
+HdrColorTest::HdrColorTest (EglTestContext& eglTestCtx, const char* name, const char* description)
+		: WideColorTest(eglTestCtx, name, description)
+{
+}
+
+#define METADATA_SCALE(x) (static_cast<EGLint>(x * EGL_METADATA_SCALING_EXT))
+
+void HdrColorTest::executeTest (void)
+{
+	tcu::TestLog&						log				= m_testCtx.getLog();
+	const Library&						egl				= m_eglTestCtx.getLibrary();
+	egl.bindAPI(EGL_OPENGL_ES_API);
+
+	log << tcu::TestLog::Message << "Test HDR Metadata on Window" << tcu::TestLog::EndMessage;
+
+	checkSMPTE2086();
+	checkCTA861_3();
+
+	// This is an increment FP16 can do between -1.0 to 1.0
+	const float fp16Increment1 = deFloatPow(2.0, -11.0);
+	// This is an increment FP16 can do between 1.0 to 2.0
+	const float fp16Increment2 = deFloatPow(2.0, -10.0);
+
+	std::vector<Iteration> int8888Iterations;
+	// -0.333251953125f ~ -1/3 as seen in fp16
+	// Negative values will be 0 on read with fixed point pixel formats
+	int8888Iterations.push_back(Iteration(-0.333251953125f, fp16Increment1, 10));
+	// test crossing 0
+	int8888Iterations.push_back(Iteration(-fp16Increment1 * 5.0f, fp16Increment1, 10));
+	// test crossing 1.0
+	// Values > 1.0 will be truncated to 1.0 with fixed point pixel formats
+	int8888Iterations.push_back(Iteration(1.0f - fp16Increment2 * 5.0f, fp16Increment2, 10));
+
+	const EGLint windowAttribList8888[] =
+	{
+		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
+		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
+		EGL_RED_SIZE,					8,
+		EGL_GREEN_SIZE,					8,
+		EGL_BLUE_SIZE,					8,
+		EGL_ALPHA_SIZE,					8,
+		EGL_NONE,						EGL_NONE
+	};
+
+	WideColorSurfaceTest testObj(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", windowAttribList8888, EGL_NONE, int8888Iterations);
+	const EGLint attrs[] =
+	{
+		EGL_SMPTE2086_DISPLAY_PRIMARY_RX_EXT, METADATA_SCALE(0.640),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_RY_EXT, METADATA_SCALE(0.330),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_GX_EXT, METADATA_SCALE(0.290),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_GY_EXT, METADATA_SCALE(0.600),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_BX_EXT, METADATA_SCALE(0.150),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_BY_EXT, METADATA_SCALE(0.060),
+		EGL_SMPTE2086_WHITE_POINT_X_EXT, METADATA_SCALE(0.3127),
+		EGL_SMPTE2086_WHITE_POINT_Y_EXT, METADATA_SCALE(0.3290),
+		EGL_SMPTE2086_MAX_LUMINANCE_EXT, METADATA_SCALE(300.0),
+		EGL_SMPTE2086_MIN_LUMINANCE_EXT, METADATA_SCALE(0.7),
+		EGL_CTA861_3_MAX_CONTENT_LIGHT_LEVEL_EXT, METADATA_SCALE(300),
+		EGL_CTA861_3_MAX_FRAME_AVERAGE_LEVEL_EXT, METADATA_SCALE(75),
+		EGL_NONE
+	};
+
+	testObj.addWindowAttributes(attrs);
+
+	const EGLint testAttrs[] =
+	{
+		EGL_SMPTE2086_DISPLAY_PRIMARY_RX_EXT, METADATA_SCALE(0.680),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_RY_EXT, METADATA_SCALE(0.320),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_GX_EXT, METADATA_SCALE(0.265),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_GY_EXT, METADATA_SCALE(0.690),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_BX_EXT, METADATA_SCALE(0.440),
+		EGL_SMPTE2086_DISPLAY_PRIMARY_BY_EXT, METADATA_SCALE(0.320),
+		EGL_SMPTE2086_WHITE_POINT_X_EXT, METADATA_SCALE(0.2200),
+		EGL_SMPTE2086_WHITE_POINT_Y_EXT, METADATA_SCALE(0.2578),
+		EGL_SMPTE2086_MAX_LUMINANCE_EXT, METADATA_SCALE(123.0),
+		EGL_SMPTE2086_MIN_LUMINANCE_EXT, METADATA_SCALE(0.123),
+		EGL_CTA861_3_MAX_CONTENT_LIGHT_LEVEL_EXT, METADATA_SCALE(234),
+		EGL_CTA861_3_MAX_FRAME_AVERAGE_LEVEL_EXT, METADATA_SCALE(67),
+		EGL_NONE
+	};
+	testObj.addTestAttributes(testAttrs);
+
+	testObj.init();
+	testObj.executeTest();
+}
+
+TestCase::IterateResult HdrColorTest::iterate (void)
+{
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	executeTest();
+	return STOP;
+}
+
+class HdrColorTests : public TestCaseGroup
+{
+public:
+	HdrColorTests		(EglTestContext& eglTestCtx);
+	void				init				(void);
+
+private:
+	HdrColorTests		(const HdrColorTests&);
+	HdrColorTests&		operator=			(const HdrColorTests&);
+};
+
+HdrColorTests::HdrColorTests (EglTestContext& eglTestCtx)
+		: TestCaseGroup(eglTestCtx, "hdr_color", "HDR Color tests")
+{
+}
+
+void HdrColorTests::init (void)
+{
+	addChild(new HdrColorTest(m_eglTestCtx, "8888", "Verify that SMPTE 2086 extension exists"));
+}
+
+TestCaseGroup* createHdrColorTests (EglTestContext& eglTestCtx)
+{
+	return new HdrColorTests(eglTestCtx);
 }
 
 } // egl
