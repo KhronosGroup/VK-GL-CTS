@@ -123,7 +123,10 @@ Texture2DSizeCase::IterateResult Texture2DSizeCase::iterate (void)
 	RandomViewport			viewport		(m_renderCtx.getRenderTarget(), 128, 128, deStringHash(getName()));
 	tcu::Surface			renderedFrame	(viewport.width, viewport.height);
 	tcu::Surface			referenceFrame	(viewport.width, viewport.height);
-	tcu::RGBA				threshold		= m_renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(7,7,7,7);
+	const tcu::IVec4		texBits			= tcu::getTextureFormatBitDepth(glu::mapGLTransferFormat(m_format, m_dataType));
+	const tcu::PixelFormat&	rtFmt			= m_renderCtx.getRenderTarget().getPixelFormat();
+	const tcu::PixelFormat	thresholdFormat(std::min(texBits[0], rtFmt.redBits), std::min(texBits[1], rtFmt.greenBits), std::min(texBits[2], rtFmt.blueBits), std::min(texBits[3], rtFmt.alphaBits));
+	tcu::RGBA				threshold		= thresholdFormat.getColorThreshold() + tcu::RGBA(7,7,7,7);
 	deUint32				wrapS			= GL_CLAMP_TO_EDGE;
 	deUint32				wrapT			= GL_CLAMP_TO_EDGE;
 	// Do not minify with GL_NEAREST. A large POT texture with a small POT render target will produce
@@ -268,7 +271,10 @@ bool TextureCubeSizeCase::testFace (tcu::CubeFace face)
 	RandomViewport			viewport		(m_renderCtx.getRenderTarget(), 128, 128, deStringHash(getName())+(deUint32)face);
 	tcu::Surface			renderedFrame	(viewport.width, viewport.height);
 	tcu::Surface			referenceFrame	(viewport.width, viewport.height);
-	tcu::RGBA				threshold		= m_renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(7,7,7,7);
+	const tcu::IVec4		texBits			= tcu::getTextureFormatBitDepth(glu::mapGLTransferFormat(m_format, m_dataType));
+	const tcu::PixelFormat&	rtFmt			= m_renderCtx.getRenderTarget().getPixelFormat();
+	const tcu::PixelFormat	thresholdFormat(std::min(texBits[0], rtFmt.redBits), std::min(texBits[1], rtFmt.greenBits), std::min(texBits[2], rtFmt.blueBits), std::min(texBits[3], rtFmt.alphaBits));
+	tcu::RGBA				threshold		= thresholdFormat.getColorThreshold() + tcu::RGBA(7,7,7,7);
 	deUint32				wrapS			= GL_CLAMP_TO_EDGE;
 	deUint32				wrapT			= GL_CLAMP_TO_EDGE;
 	// Do not minify with GL_NEAREST. A large POT texture with a small POT render target will produce
