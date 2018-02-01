@@ -75,7 +75,11 @@ EXTENSIONS			= [
 	"EGL_EXT_gl_colorspace_display_p3",
 	"EGL_EXT_gl_colorspace_display_p3_linear",
 	"EGL_EXT_gl_colorspace_scrgb",
-	"EGL_EXT_gl_colorspace_scrgb_linear"
+	"EGL_EXT_gl_colorspace_scrgb_linear",
+	"EGL_EXT_surface_SMPTE2086_metadata",
+	"EGL_EXT_surface_CTA861_3_metadata",
+	"EGL_EXT_gl_colorspace_bt2020_linear",
+	"EGL_EXT_gl_colorspace_bt2020_pq"
 ]
 PROTECTS			= [
 	"KHRONOS_SUPPORT_INT64"
