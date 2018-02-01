@@ -12,6 +12,8 @@ Requirements
 
 ### Common
 
+The following tools must be installed and present in the PATH variable:
+
  * Git (for checking out sources)
  * Python 2.7.x (all recent versions in 2.x should work, 3.x is not supported)
  * CMake 2.8 or newer
