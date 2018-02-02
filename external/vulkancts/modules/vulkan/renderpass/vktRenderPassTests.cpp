@@ -27,7 +27,6 @@
 #include "vktRenderPassMultisampleResolveTests.hpp"
 #include "vktRenderPassSampleReadTests.hpp"
 #include "vktRenderPassSparseRenderTargetTests.hpp"
-#include "vktRenderPassIncompatibleTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -6400,7 +6399,6 @@ tcu::TestCaseGroup* createRenderPassTests (tcu::TestContext& testCtx)
 	renderpassTests->addChild(createRenderPassMultisampleResolveTests(testCtx));
 	renderpassTests->addChild(createRenderPassSampleReadTests(testCtx));
 	renderpassTests->addChild(createRenderPassSparseRenderTargetTests(testCtx));
-	renderpassTests->addChild(createRenderPassIncompatibleTests(testCtx));
 
 	return renderpassTests.release();
 }

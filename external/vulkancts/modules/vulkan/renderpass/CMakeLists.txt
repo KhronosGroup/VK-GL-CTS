@@ -13,8 +13,6 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassSampleReadTests.hpp
 	vktRenderPassSparseRenderTargetTests.cpp
 	vktRenderPassSparseRenderTargetTests.hpp
-	vktRenderPassIncompatibleTests.cpp
-	vktRenderPassIncompatibleTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_LIBS
