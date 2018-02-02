@@ -82,6 +82,7 @@ int			CandidateConfig::samples			(void) const { return get(EGL_SAMPLES);								
 deUint32	CandidateConfig::renderableType		(void) const { return (deUint32)get(EGL_RENDERABLE_TYPE);			}
 deUint32	CandidateConfig::surfaceType		(void) const { return (deUint32)get(EGL_SURFACE_TYPE);				}
 deUint32	CandidateConfig::colorComponentType	(void) const { return (deUint32)get(EGL_COLOR_COMPONENT_TYPE_EXT);	}
+deUint32	CandidateConfig::colorBufferType	(void) const { return (deUint32)get(EGL_COLOR_BUFFER_TYPE);         }
 
 FilterList& FilterList::operator<< (ConfigFilter filter)
 {

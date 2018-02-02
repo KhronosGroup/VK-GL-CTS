@@ -60,7 +60,7 @@ public:
 	deUint32		renderableType		(void) const;
 	deUint32		surfaceType			(void) const;
 	deUint32		colorComponentType	(void) const;
-
+	deUint32		colorBufferType		(void) const;
 	tcu::RGBA		colorBits			(void) const { return tcu::RGBA(redSize(), greenSize(), blueSize(), alphaSize());	}
 
 private:
