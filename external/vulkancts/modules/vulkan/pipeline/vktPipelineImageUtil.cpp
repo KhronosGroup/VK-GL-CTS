@@ -730,7 +730,10 @@ void allocateAndBindSparseImage (const DeviceInterface&						vk,
 			}
 		}
 
-		// Metadata
+		// Handle Metadata. Similarly to MIP tail in aspectRequirements, there are two cases to consider here:
+		//
+		// 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
+		// 2) otherwise:
 		if (metadataAspectIndex != noMatchFound)
 		{
 			const VkSparseImageMemoryRequirements	metadataAspectRequirements = sparseImageMemoryRequirements[metadataAspectIndex];
