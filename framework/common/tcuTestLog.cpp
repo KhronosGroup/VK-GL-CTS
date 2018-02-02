@@ -513,6 +513,11 @@ void TestLog::endSampleList (void)
 		throw LogWriteFailedError();
 }
 
+bool TestLog::isShaderLoggingEnabled (void)
+{
+	return (qpTestLog_getLogFlags(m_log) & QP_TEST_LOG_EXCLUDE_SHADER_SOURCES) == 0;
+}
+
 const TestLog::BeginMessageToken		TestLog::Message			= TestLog::BeginMessageToken();
 const TestLog::EndMessageToken			TestLog::EndMessage			= TestLog::EndMessageToken();
 const TestLog::EndImageSetToken			TestLog::EndImageSet		= TestLog::EndImageSetToken();
