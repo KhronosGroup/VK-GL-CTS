@@ -58,42 +58,60 @@ class Interval
 {
 public:
 				// Empty interval.
-				Interval		(void)
-					: m_hasNaN	(false)
-					, m_lo		(TCU_INFINITY)
-					, m_hi		(-TCU_INFINITY) {}
+				Interval			(void)
+					: m_hasNaN		(false)
+					, m_lo			(TCU_INFINITY)
+					, m_hi			(-TCU_INFINITY)
+					, m_warningLo	(-TCU_INFINITY)
+					, m_warningHi	(TCU_INFINITY) {}
 
 				// Intentionally not explicit. Conversion from double to Interval is common
 				// and reasonable.
-				Interval		(double val)
-					: m_hasNaN	(!!deIsNaN(val))
-					, m_lo		(m_hasNaN ? TCU_INFINITY : val)
-					, m_hi		(m_hasNaN ? -TCU_INFINITY : val) {}
+				Interval			(double val)
+					: m_hasNaN		(!!deIsNaN(val))
+					, m_lo			(m_hasNaN ? TCU_INFINITY : val)
+					, m_hi			(m_hasNaN ? -TCU_INFINITY : val)
+					, m_warningLo	(-TCU_INFINITY)
+					, m_warningHi	(TCU_INFINITY) {}
 
-				Interval		(bool hasNaN_, double lo_, double hi_)
-					: m_hasNaN(hasNaN_), m_lo(lo_), m_hi(hi_) {}
+
+				Interval(bool hasNaN_, double lo_, double hi_)
+					: m_hasNaN(hasNaN_), m_lo(lo_), m_hi(hi_), m_warningLo(-TCU_INFINITY), m_warningHi(TCU_INFINITY) {}
+
+				Interval(bool hasNaN_, double lo_, double hi_, double wlo_, double whi_)
+					: m_hasNaN(hasNaN_), m_lo(lo_), m_hi(hi_), m_warningLo(wlo_), m_warningHi(whi_) {}
 
 				Interval		(const Interval& a, const Interval& b)
-					: m_hasNaN	(a.m_hasNaN || b.m_hasNaN)
-					, m_lo		(de::min(a.lo(), b.lo()))
-					, m_hi		(de::max(a.hi(), b.hi())) {}
+					: m_hasNaN		(a.m_hasNaN || b.m_hasNaN)
+					, m_lo			(de::min(a.lo(), b.lo()))
+					, m_hi			(de::max(a.hi(), b.hi()))
+					, m_warningLo	(de::min(a.warningLo(), b.warningLo()))
+					, m_warningHi	(de::max(a.warningHi(), b.warningHi())) {}
 
 	double		length			(void) const { return m_hi - m_lo; }
 	double		lo				(void) const { return m_lo; }
 	double		hi				(void) const { return m_hi; }
+	double		warningLo		(void) const { return m_warningLo; }
+	double		warningHi		(void) const { return m_warningHi; }
 	bool		hasNaN			(void) const { return m_hasNaN; }
 	Interval	nan				(void) const { return m_hasNaN ? TCU_NAN : Interval(); }
 	bool		empty			(void) const { return m_lo > m_hi; }
 	bool		isFinite		(void) const { return m_lo > -TCU_INFINITY && m_hi < TCU_INFINITY; }
 	bool		isOrdinary		(void) const { return !hasNaN() && !empty() && isFinite(); }
 
+	void		warning			(double lo, double hi)
+	{
+		m_warningLo = lo;
+		m_warningHi = hi;
+	}
 
 	Interval	operator|		(const Interval& other) const
 	{
 		return Interval(m_hasNaN || other.m_hasNaN,
 						de::min(m_lo, other.m_lo),
-						de::max(m_hi, other.m_hi));
-
+						de::max(m_hi, other.m_hi),
+						de::min(m_warningLo, other.m_warningLo),
+						de::max(m_warningHi, other.m_warningHi));
 	}
 
 	Interval&	operator|=		(const Interval& other)
@@ -105,7 +123,9 @@ public:
 	{
 		return Interval(m_hasNaN && other.m_hasNaN,
 						de::max(m_lo, other.m_lo),
-						de::min(m_hi, other.m_hi));
+						de::min(m_hi, other.m_hi),
+						de::max(m_warningLo, other.m_warningLo),
+						de::min(m_warningHi, other.m_warningHi));
 	}
 
 	Interval&	operator&=		(const Interval& other)
@@ -119,6 +139,12 @@ public:
 				(!other.hasNaN() || hasNaN()));
 	}
 
+	bool		containsWarning(const Interval& other) const
+	{
+		return (other.lo() >= warningLo() && other.hi() <= warningHi() &&
+			(!other.hasNaN() || hasNaN()));
+	}
+
 	bool		intersects		(const Interval& other) const
 	{
 		return ((other.hi() >= lo() && other.lo() <= hi()) ||
@@ -127,7 +153,7 @@ public:
 
 	Interval	operator-		(void) const
 	{
-		return Interval(hasNaN(), -hi(), -lo());
+		return Interval(hasNaN(), -hi(), -lo(), -warningHi(), -warningLo());
 	}
 
 	static Interval	unbounded	(bool nan = false)
@@ -151,6 +177,8 @@ private:
 	bool		m_hasNaN;
 	double		m_lo;
 	double		m_hi;
+	double		m_warningLo;
+	double		m_warningHi;
 } DE_WARN_UNUSED_TYPE;
 
 inline Interval	operator+	(const Interval& x) { return x; }
