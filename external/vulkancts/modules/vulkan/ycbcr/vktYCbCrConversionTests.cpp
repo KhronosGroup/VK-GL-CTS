@@ -1995,22 +1995,26 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 #endif
 
 	{
-		const vk::PlanarFormatDescription	planeInfo			(vk::getPlanarFormatDescription(config.format));
-		MultiPlaneImageData					src					(config.format, size);
+		const vk::PlanarFormatDescription	planeInfo					(vk::getPlanarFormatDescription(config.format));
+		MultiPlaneImageData					src							(config.format, size);
 
-		deUint32							nullAccessData		(0u);
-		ChannelAccess						nullAccess			(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, IVec3(size.x(), size.y(), 1), IVec3(0, 0, 0), &nullAccessData, 0u);
-		deUint32							nullAccessAlphaData	(~0u);
-		ChannelAccess						nullAccessAlpha		(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, IVec3(size.x(), size.y(), 1), IVec3(0, 0, 0), &nullAccessAlphaData, 0u);
-		ChannelAccess						rChannelAccess		(planeInfo.hasChannelNdx(0) ? getChannelAccess(src, planeInfo, size, 0) : nullAccess);
-		ChannelAccess						gChannelAccess		(planeInfo.hasChannelNdx(1) ? getChannelAccess(src, planeInfo, size, 1) : nullAccess);
-		ChannelAccess						bChannelAccess		(planeInfo.hasChannelNdx(2) ? getChannelAccess(src, planeInfo, size, 2) : nullAccess);
-		ChannelAccess						aChannelAccess		(planeInfo.hasChannelNdx(3) ? getChannelAccess(src, planeInfo, size, 3) : nullAccessAlpha);
+		deUint32							nullAccessData				(0u);
+		ChannelAccess						nullAccess					(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, IVec3(size.x(), size.y(), 1), IVec3(0, 0, 0), &nullAccessData, 0u);
+		deUint32							nullAccessAlphaData			(~0u);
+		ChannelAccess						nullAccessAlpha				(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, IVec3(size.x(), size.y(), 1), IVec3(0, 0, 0), &nullAccessAlphaData, 0u);
+		ChannelAccess						rChannelAccess				(planeInfo.hasChannelNdx(0) ? getChannelAccess(src, planeInfo, size, 0) : nullAccess);
+		ChannelAccess						gChannelAccess				(planeInfo.hasChannelNdx(1) ? getChannelAccess(src, planeInfo, size, 1) : nullAccess);
+		ChannelAccess						bChannelAccess				(planeInfo.hasChannelNdx(2) ? getChannelAccess(src, planeInfo, size, 2) : nullAccess);
+		ChannelAccess						aChannelAccess				(planeInfo.hasChannelNdx(3) ? getChannelAccess(src, planeInfo, size, 3) : nullAccessAlpha);
+		const bool							implicitNearestCosited		((config.chromaFilter == vk::VK_FILTER_NEAREST && !config.explicitReconstruction) &&
+																		 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR));
 
 		vector<Vec2>						sts;
 		vector<Vec4>						results;
 		vector<Vec4>						minBounds;
+		vector<Vec4>						minMidpointBounds;
 		vector<Vec4>						maxBounds;
+		vector<Vec4>						maxMidpointBounds;
 		vector<Vec4>						uvBounds;
 		vector<IVec4>						ijBounds;
 
@@ -2049,6 +2053,12 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 		genTexCoords(sts, size);
 
 		calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, sts, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, config.xChromaOffset, config.yChromaOffset, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, minBounds, maxBounds, uvBounds, ijBounds);
+
+		// Handle case: If implicit reconstruction and chromaFilter == NEAREST, an implementation may behave as if both chroma offsets are MIDPOINT.
+		if (implicitNearestCosited)
+		{
+			calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, sts, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, minMidpointBounds, maxMidpointBounds, uvBounds, ijBounds);
+		}
 
 		if (vk::isYCbCrFormat(config.format))
 		{
@@ -2100,9 +2110,11 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 		evalShader(context, config.shaderType, src, size, config.format, config.imageTiling, config.disjoint, config.textureFilter, config.addressModeU, config.addressModeV, config.colorModel, config.colorRange, config.xChromaOffset, config.yChromaOffset, config.chromaFilter, config.componentMapping, config.explicitReconstruction, sts, results);
 
 		{
-			tcu::TextureLevel	minImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
-			tcu::TextureLevel	maxImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
-			tcu::TextureLevel	resImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
+			tcu::TextureLevel	minImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
+			tcu::TextureLevel	maxImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
+			tcu::TextureLevel	minMidpointImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
+			tcu::TextureLevel	maxMidpointImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
+			tcu::TextureLevel	resImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
 
 			for (int y = 0; y < (int)(size.y() + (size.y() / 2)); y++)
 			for (int x = 0; x < (int)(size.x() + (size.x() / 2)); x++)
@@ -2119,12 +2131,30 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 				resImage.getAccess().setPixel(results[ndx], x, y);
 			}
 
+			if (implicitNearestCosited)
+			{
+				for (int y = 0; y < (int)(size.y() + (size.y() / 2)); y++)
+				for (int x = 0; x < (int)(size.x() + (size.x() / 2)); x++)
+				{
+					const int ndx = x + y * (int)(size.x() + (size.x() / 2));
+					minMidpointImage.getAccess().setPixel(minMidpointBounds[ndx], x, y);
+					maxMidpointImage.getAccess().setPixel(maxMidpointBounds[ndx], x, y);
+				}
+			}
+
 			{
 				const Vec4	scale	(1.0f);
 				const Vec4	bias	(0.0f);
 
 				log << TestLog::Image("MinBoundImage", "MinBoundImage", minImage.getAccess(), scale, bias);
 				log << TestLog::Image("MaxBoundImage", "MaxBoundImage", maxImage.getAccess(), scale, bias);
+
+				if (implicitNearestCosited)
+				{
+					log << TestLog::Image("MinMidpointBoundImage", "MinMidpointBoundImage", minMidpointImage.getAccess(), scale, bias);
+					log << TestLog::Image("MaxMidpointBoundImage", "MaxMidpointBoundImage", maxMidpointImage.getAccess(), scale, bias);
+				}
+
 				log << TestLog::Image("ResultImage", "ResultImage", resImage.getAccess(), scale, bias);
 			}
 		}
@@ -2133,7 +2163,18 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 
 		for (size_t ndx = 0; ndx < sts.size(); ndx++)
 		{
-			if (tcu::boolAny(tcu::lessThan(results[ndx], minBounds[ndx])) || tcu::boolAny(tcu::greaterThan(results[ndx], maxBounds[ndx])))
+			bool fail;
+			if (implicitNearestCosited)
+			{
+				fail = (tcu::boolAny(tcu::lessThan(results[ndx], minMidpointBounds[ndx])) || tcu::boolAny(tcu::greaterThan(results[ndx], maxMidpointBounds[ndx]))) &&
+						(tcu::boolAny(tcu::lessThan(results[ndx], minBounds[ndx])) || tcu::boolAny(tcu::greaterThan(results[ndx], maxBounds[ndx])));
+			}
+			else
+			{
+				fail = tcu::boolAny(tcu::lessThan(results[ndx], minBounds[ndx])) || tcu::boolAny(tcu::greaterThan(results[ndx], maxBounds[ndx]));
+			}
+
+			if (fail)
 			{
 				log << TestLog::Message << "Fail: " << sts[ndx] << " " << results[ndx] << TestLog::EndMessage;
 				log << TestLog::Message << "  Min : " << minBounds[ndx] << TestLog::EndMessage;
