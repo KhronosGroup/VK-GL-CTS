@@ -1055,11 +1055,12 @@ void SharedPresentableImageTestInstance::initSwapchainResources (void)
 
 	VK_CHECK(m_vkd.endCommandBuffer(*commandBuffer));
 
+	const vk::VkPipelineStageFlags waitDstStages[] = { vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	const vk::VkSubmitInfo submitInfo =
 	{
 		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		DE_NULL,
-		1, &*semaphore, DE_NULL,
+		1, &*semaphore, waitDstStages,
 		1, &*commandBuffer,
 		0, DE_NULL,
 	};
