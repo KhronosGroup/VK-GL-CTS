@@ -244,6 +244,13 @@ bool contains (const typename Traits<T>::IVal& ival, const T& value)
 	return Traits<T>::doContains(ival, value);
 }
 
+//! Returns true iff every element of `ival` contains corresponding element of `value` within the warning interval
+template <typename T>
+bool containsWarning(const typename Traits<T>::IVal& ival, const T& value)
+{
+	return Traits<T>::doContainsWarning(ival, value);
+}
+
 //! Print out an interval with the precision of `fmt`.
 template <typename T>
 void printIVal (const FloatFormat& fmt, const typename Traits<T>::IVal& ival, ostream& os)
@@ -311,6 +318,11 @@ struct ScalarTraits
 	static bool			doContains		(const Interval& a, T value)
 	{
 		return a.contains(double(value));
+	}
+
+	static bool			doContainsWarning(const Interval& a, T value)
+	{
+		return a.containsWarning(double(value));
 	}
 
 	static Interval		doConvert		(const FloatFormat& fmt, const IVal& ival)
@@ -422,6 +434,15 @@ struct ContainerTraits
 		return true;
 	}
 
+	static bool			doContainsWarning(const IVal& ival, const T& value)
+	{
+		for (int ndx = 0; ndx < T::SIZE; ++ndx)
+			if (!containsWarning(ival[ndx], value[ndx]))
+				return false;
+
+		return true;
+	}
+
 	static void			doPrintIVal		(const FloatFormat& fmt, const IVal ival, ostream& os)
 	{
 		os << "(";
@@ -492,11 +513,12 @@ struct Traits<Void>
 {
 	typedef		Void			IVal;
 
-	static Void	doMakeIVal		(const Void& value)						{ return value; }
-	static Void	doUnion			(const Void&, const Void&)				{ return Void(); }
-	static bool	doContains		(const Void&, Void)						{ return true; }
-	static Void	doRound			(const FloatFormat&, const Void& value)	{ return value; }
-	static Void	doConvert		(const FloatFormat&, const Void& value)	{ return value; }
+	static Void	doMakeIVal			(const Void& value)						{ return value; }
+	static Void	doUnion				(const Void&, const Void&)				{ return Void(); }
+	static bool	doContains			(const Void&, Void)						{ return true; }
+	static bool	doContainsWarning	(const Void&, Void)						{ return true; }
+	static Void	doRound				(const FloatFormat&, const Void& value)	{ return value; }
+	static Void	doConvert			(const FloatFormat&, const Void& value)	{ return value; }
 
 	static void	doPrintValue	(const FloatFormat&, const Void&, ostream& os)
 	{
@@ -1702,8 +1724,10 @@ protected:
 	{
 		const double	exact	= this->applyExact(arg0);
 		const double	prec	= this->precision(ctx, exact, arg0);
-
-		return exact + Interval(-prec, prec);
+		const double	wprec	= this->warningPrecision(ctx, exact, arg0);
+		Interval		ioutput	= exact + Interval(-prec, prec);
+		ioutput.warning(exact - wprec, exact + wprec);
+		return ioutput;
 	}
 
 	virtual double		applyExact		(double) const
@@ -1717,6 +1741,12 @@ protected:
 	}
 
 	virtual double		precision		(const EvalContext& ctx, double, double) const = 0;
+
+	virtual double	warningPrecision		(const EvalContext& ctx, double exact, double arg0) const
+	{
+		return precision(ctx, exact, arg0);
+	}
+
 };
 
 class CFloatFunc1 : public FloatFunc1
@@ -2142,6 +2172,21 @@ protected:
 
 		return 0;
 	}
+
+	// OpenGL API Issue #57 "Clarifying the required ULP precision for GLSL built-in log()". Agreed that
+	// implementations will be allowed 4 ULPs for HIGHP Log/Log2, but CTS should generate a quality warning.
+	double		warningPrecision(const EvalContext& ctx, double ret, double x) const
+	{
+		if (ctx.floatPrecision == glu::PRECISION_HIGHP && x > 0)
+		{
+			return (0.5 <= x && x <= 2.0) ? deLdExp(1.0, -21) : ctx.format.ulp(ret, 4.0);
+		}
+		else
+		{
+			return precision(ctx, ret, x);
+		}
+	}
+
 };
 
 class Log2	: public LogFunc		{ public: Log2	(void) : LogFunc("log2", deLog2) {} };
@@ -4608,7 +4653,10 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 	// shader output to the reference.
 	for (size_t valueNdx = 0; valueNdx < numValues; valueNdx++)
 	{
-		bool						result		= true;
+		bool						result = true;
+		bool						inExpectedRange;
+		bool						inWarningRange;
+		const char*					failStr = "Fail";
 		typename Traits<Out0>::IVal	reference0;
 		typename Traits<Out1>::IVal	reference1;
 
@@ -4628,15 +4676,39 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 		switch (outCount)
 		{
 			case 2:
-				reference1 = convert<Out1>(highpFmt, env.lookup(*variables.out1));
-				if (!m_status.check(contains(reference1, outputs.out1[valueNdx]),
-									"Shader output 1 is outside acceptable range"))
+				reference1      = convert<Out1>(highpFmt, env.lookup(*variables.out1));
+				inExpectedRange = contains(reference1, outputs.out1[valueNdx]);
+				inWarningRange  = containsWarning(reference1, outputs.out1[valueNdx]);
+				if (!inExpectedRange && inWarningRange)
+				{
+					m_status.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Shader output 1 has low-quality shader precision");
+					failStr = "QualityWarning";
 					result = false;
+				}
+				else if (!inExpectedRange)
+				{
+					m_status.addResult(QP_TEST_RESULT_FAIL, "Shader output 1 is outside acceptable range");
+					failStr = "Fail";
+					result = false;
+				}
+
 			case 1:
-				reference0 = convert<Out0>(highpFmt, env.lookup(*variables.out0));
-				if (!m_status.check(contains(reference0, outputs.out0[valueNdx]),
-									"Shader output 0 is outside acceptable range"))
+				reference0      = convert<Out0>(highpFmt, env.lookup(*variables.out0));
+				inExpectedRange = contains(reference0, outputs.out0[valueNdx]);
+				inWarningRange  = containsWarning(reference0, outputs.out0[valueNdx]);
+				if (!inExpectedRange && inWarningRange)
+				{
+					m_status.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Shader output 0 has low-quality shader precision");
+					failStr = "QualityWarning";
 					result = false;
+				}
+				else if (!inExpectedRange)
+				{
+					m_status.addResult(QP_TEST_RESULT_FAIL, "Shader output 0 is outside acceptable range");
+					failStr = "Fail";
+					result = false;
+				}
+
 			default: break;
 		}
 
@@ -4647,7 +4719,7 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 		{
 			MessageBuilder	builder	= log().message();
 
-			builder << (result ? "Passed" : "Failed") << " sample:\n";
+			builder << (result ? "Passed" : failStr) << " sample:\n";
 
 			if (inCount > 0)
 			{
@@ -4706,7 +4778,7 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 	}
 	else
 	{
-		log() << TestLog::Message << numErrors << "/" << numValues << " inputs failed."
+		log() << TestLog::Message << numErrors << "/" << numValues << " inputs failed or had quality warnings."
 			  << TestLog::EndMessage;
 	}
 }

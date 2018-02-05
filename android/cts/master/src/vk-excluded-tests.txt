@@ -714,3 +714,9 @@ dEQP-VK.ssbo.unsized_array_length.float_offset_whole_size
 
 # Temporarily excluded for b/72324588
 dEQP-VK.image.mutable.2d*
+
+# Temporarily excluded for b/72828206
+dEQP-VK.binding_model.shader_access.primary_cmd_buf.with_template.storage_buffer_dynamic.no_access.multiple_arbitrary_descriptors.offset_view_zero_dynamic_nonzero
+
+# Temporarily excluded for b/72834612
+dEQP-VK.binding_model.shader_access.primary_cmd_buf.uniform_buffer.fragment.multiple_arbitrary_descriptors.offset_view_nonzero
