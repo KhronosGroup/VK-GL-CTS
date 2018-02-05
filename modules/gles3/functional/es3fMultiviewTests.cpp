@@ -188,7 +188,7 @@ void MultiviewCase::init()
 
 	m_multiviewProgram = new glu::ShaderProgram(
 		m_context.getRenderContext(), glu::makeVtxFragSources(multiviewVertexShader, multiviewFragmentShader));
-	DE_ASSERT(!m_multiviewProgram);
+	DE_ASSERT(m_multiviewProgram);
 	if (!m_multiviewProgram->isOk())
 	{
 		m_testCtx.getLog() << *m_multiviewProgram;
@@ -219,7 +219,7 @@ void MultiviewCase::init()
 
 	m_finalProgram = new glu::ShaderProgram(m_context.getRenderContext(),
 											glu::makeVtxFragSources(finalVertexShader, finalFragmentShader));
-	DE_ASSERT(!m_finalProgram);
+	DE_ASSERT(m_finalProgram);
 	if (!m_finalProgram->isOk())
 	{
 		m_testCtx.getLog() << *m_finalProgram;
@@ -266,6 +266,8 @@ MultiviewCase::IterateResult MultiviewCase::iterate()
 		m_testCtx.setTestResult(QP_TEST_RESULT_INTERNAL_ERROR, "Error");
 		return STOP;
 	}
+
+	log << TestLog::EndSection;
 
 	// Draw full screen quad into the multiview framebuffer.
 	// The quad should be instanced into both layers of the array texture.
