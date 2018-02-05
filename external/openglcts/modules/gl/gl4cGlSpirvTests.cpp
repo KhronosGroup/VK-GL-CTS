@@ -517,7 +517,7 @@ bool compareUintColors(const GLuint inColor, const GLuint refColor, const int ep
 	return false;
 }
 
-bool checkGlSpirvSupported(deqp::Context& m_context)
+void checkGlSpirvSupported(deqp::Context& m_context)
 {
 	bool is_at_least_gl_46 = (glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::core(4, 6)));
 	bool is_arb_gl_spirv = m_context.getContextInfo().isExtensionSupported("GL_ARB_gl_spirv");

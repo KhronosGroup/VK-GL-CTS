@@ -54,7 +54,14 @@ using tcu::TestLog;
 
 struct Compressed2DTestParameters : public Texture2DTestCaseParameters
 {
+										Compressed2DTestParameters	(void);
+	TextureBinding::ImageBackingMode	backingMode;
 };
+
+Compressed2DTestParameters::Compressed2DTestParameters (void)
+	: backingMode(TextureBinding::IMAGE_BACKING_MODE_REGULAR)
+{
+}
 
 class Compressed2DTestInstance : public TestInstance
 {
@@ -83,7 +90,7 @@ Compressed2DTestInstance::Compressed2DTestInstance (Context&				context,
 	, m_texture				(TestTexture2DSp(new pipeline::TestTexture2D(m_compressedFormat, testParameters.width, testParameters.height)))
 	, m_renderer			(context, testParameters.sampleCount, testParameters.width, testParameters.height)
 {
-	m_renderer.add2DTexture(m_texture);
+	m_renderer.add2DTexture(m_texture, testParameters.backingMode);
 }
 
 tcu::TestStatus Compressed2DTestInstance::iterate (void)
@@ -128,7 +135,7 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 	tcu::TestContext&	testCtx	= compressedTextureTests->getTestContext();
 
 	// ETC2 and EAC compressed formats.
-	const struct {
+	static const struct {
 		const VkFormat	format;
 	} etc2Formats[] =
 	{
@@ -145,7 +152,7 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		{ VK_FORMAT_EAC_R11G11_SNORM_BLOCK		},
 	};
 
-	const struct {
+	static const struct {
 		const int	width;
 		const int	height;
 		const char*	name;
@@ -155,21 +162,32 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		{ 51,  65, "npot" },
 	};
 
+	static const struct {
+		const char*								name;
+		const TextureBinding::ImageBackingMode	backingMode;
+	} backingModes[] =
+	{
+		{ "",			TextureBinding::IMAGE_BACKING_MODE_REGULAR	},
+		{ "_sparse",	TextureBinding::IMAGE_BACKING_MODE_SPARSE	}
+	};
+
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
 	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(etc2Formats); formatNdx++)
+	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
 	{
 		const string	formatStr	= de::toString(getFormatStr(etc2Formats[formatNdx].format));
 		const string	nameBase	= de::toLower(formatStr.substr(10));
 
 		Compressed2DTestParameters	testParameters;
 		testParameters.format		= etc2Formats[formatNdx].format;
+		testParameters.backingMode	= backingModes[backingNdx].backingMode;
 		testParameters.width		= sizes[sizeNdx].width;
 		testParameters.height		= sizes[sizeNdx].height;
 		testParameters.minFilter	= tcu::Sampler::NEAREST;
 		testParameters.magFilter	= tcu::Sampler::NEAREST;
 		testParameters.programs.push_back(PROGRAM_2D_FLOAT);
 
-		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name).c_str(), (formatStr + ", TEXTURETYPE_2D").c_str(), testParameters));
+		compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(), (formatStr + ", TEXTURETYPE_2D").c_str(), testParameters));
 	}
 }
 

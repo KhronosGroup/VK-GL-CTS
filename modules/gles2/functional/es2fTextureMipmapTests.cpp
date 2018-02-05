@@ -600,6 +600,14 @@ TextureCubeMipmapCase::IterateResult TextureCubeMipmapCase::iterate (void)
 	if (viewport.width < defViewportWidth/2 || viewport.height < defViewportHeight/2)
 		throw tcu::NotSupportedError("Too small viewport", "", __FILE__, __LINE__);
 
+	// Detect compatible GLES context by querying GL_MAJOR_VERSION.
+	// This query does not exist on GLES2 so succeeding query implies GLES3+ context.
+	bool isES3Compatible = false;
+	glw::GLint majorVersion = 0;
+	gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+	if (gl.getError() == GL_NO_ERROR)
+		isES3Compatible = true;
+
 	// Upload texture data.
 	m_texture->upload();
 
@@ -674,7 +682,7 @@ TextureCubeMipmapCase::IterateResult TextureCubeMipmapCase::iterate (void)
 
 		// Params for rendering reference
 		params.sampler					= glu::mapGLSampler(m_wrapS, m_wrapT, m_minFilter, magFilter);
-		params.sampler.seamlessCubeMap	= false;
+		params.sampler.seamlessCubeMap	= isES3Compatible;
 		params.lodMode					= LODMODE_EXACT;
 
 		// Comparison parameters
@@ -683,7 +691,8 @@ TextureCubeMipmapCase::IterateResult TextureCubeMipmapCase::iterate (void)
 		lookupPrec.coordBits			= isProjected ? tcu::IVec3(8) : tcu::IVec3(10);
 		lookupPrec.uvwBits				= tcu::IVec3(5,5,0);
 		lodPrec.derivateBits			= 10;
-		lodPrec.lodBits					= isProjected ? 4 : 6;
+		lodPrec.lodBits					= isES3Compatible ? 3 : 4;
+		lodPrec.lodBits					= isProjected ? lodPrec.lodBits : 6;
 
 		for (int cellNdx = 0; cellNdx < (int)gridLayout.size(); cellNdx++)
 		{
