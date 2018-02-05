@@ -115,7 +115,6 @@ std::string getFormatNameForGLSL(vk::VkFormat format);
 void addGeometryShadersFromTemplate (const std::string& glslTemplate, const vk::ShaderBuildOptions& options, vk::GlslSourceCollection& collection);
 void addGeometryShadersFromTemplate (const std::string& spirvTemplate, const vk::SpirVAsmBuildOptions& options, vk::SpirVAsmCollection& collection);
 
-
 void setVertexShaderFrameBuffer (vk::SourceCollections& programCollection);
 
 void setFragmentShaderFrameBuffer (vk::SourceCollections& programCollection);
