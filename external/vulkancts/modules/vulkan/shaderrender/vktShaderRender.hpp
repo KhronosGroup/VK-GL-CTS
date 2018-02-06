@@ -524,25 +524,7 @@ protected:
 	ImageBackingMode									m_imageBackingMode;
 
 	deUint32											m_quadGridSize;
-private:
 
-	struct SparseContext
-	{
-											SparseContext	(vkt::Context& context);
-
-		vkt::Context&						m_context;
-		const deUint32						m_queueFamilyIndex;
-		vk::Unique<vk::VkDevice>			m_device;
-		vk::DeviceDriver					m_deviceInterface;
-		const vk::VkQueue					m_queue;
-		const de::UniquePtr<vk::Allocator>	m_allocator;
-	private:
-		vk::Move<vk::VkDevice>				createDevice	(void) const;
-		vk::Allocator*						createAllocator	(void) const;
-
-	};
-
-	de::UniquePtr<SparseContext>						m_sparseContext;
 protected:
 	vk::Allocator&										m_memAlloc;
 	const tcu::Vec4										m_clearColor;
@@ -674,14 +656,14 @@ private:
 	vk::VkSampleCountFlagBits							m_sampleCount;
 	std::vector<vk::VkPushConstantRange>				m_pushConstantRanges;
 
-	// Wrapper functions around m_context calls to support sparse cases.
 	vk::VkDevice										getDevice						(void) const;
 	deUint32											getUniversalQueueFamilyIndex	(void) const;
+	deUint32											getSparseQueueFamilyIndex		(void) const;
 	const vk::DeviceInterface&							getDeviceInterface				(void) const;
 	vk::VkQueue											getUniversalQueue				(void) const;
+	vk::VkQueue											getSparseQueue					(void) const;
 	vk::VkPhysicalDevice								getPhysicalDevice				(void) const;
 	const vk::InstanceInterface&						getInstanceInterface			(void) const;
-	SparseContext*										createSparseContext				(void) const;
 	vk::Allocator&										getAllocator					(void) const;
 };
 

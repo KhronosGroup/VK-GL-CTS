@@ -920,3 +920,8 @@ if (de::contains(extSet, "GL_NV_internalformat_sample_query"))
 {
 	gl->getInternalformatSampleivNV	= (glGetInternalformatSampleivNVFunc)	loader->get("glGetInternalformatSampleivNV");
 }
+
+if (de::contains(extSet, "GL_OVR_multiview"))
+{
+	gl->framebufferTextureMultiviewOVR	= (glFramebufferTextureMultiviewOVRFunc)	loader->get("glFramebufferTextureMultiviewOVR");
+}

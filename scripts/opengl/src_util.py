@@ -134,6 +134,8 @@ EXTENSIONS			= [
 	'GL_NV_internalformat_sample_query',
 	'GL_NVX_cross_process_interop',
 	'GL_OES_draw_elements_base_vertex',
+	'GL_OVR_multiview',
+	'GL_OVR_multiview_multisampled_render_to_texture',
 ]
 
 def getGLRegistry ():

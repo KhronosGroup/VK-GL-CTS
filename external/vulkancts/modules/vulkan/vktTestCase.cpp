@@ -237,7 +237,7 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 	vector<const char*>			layerPtrs;
 	vector<const char*>			extensionPtrs;
 	const float					queuePriority	= 1.0f;
-	const deUint32				numQueues = enabledFeatures.features.sparseBinding ? 2 : 1;
+	const deUint32				numQueues = (enabledFeatures.features.sparseBinding && (queueIndex != sparseQueueIndex)) ? 2 : 1;
 
 	deMemset(&queueInfo,	0, sizeof(queueInfo));
 	deMemset(&deviceInfo,	0, sizeof(deviceInfo));
@@ -272,12 +272,15 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 	queueInfo[0].queueCount					= 1u;
 	queueInfo[0].pQueuePriorities			= &queuePriority;
 
-	queueInfo[1].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo[1].pNext						= DE_NULL;
-	queueInfo[1].flags						= (VkDeviceQueueCreateFlags)0u;
-	queueInfo[1].queueFamilyIndex			= sparseQueueIndex;
-	queueInfo[1].queueCount					= 1u;
-	queueInfo[1].pQueuePriorities			= &queuePriority;
+	if (numQueues > 1)
+	{
+		queueInfo[1].sType						= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueInfo[1].pNext						= DE_NULL;
+		queueInfo[1].flags						= (VkDeviceQueueCreateFlags)0u;
+		queueInfo[1].queueFamilyIndex			= sparseQueueIndex;
+		queueInfo[1].queueCount					= 1u;
+		queueInfo[1].pQueuePriorities			= &queuePriority;
+	}
 
 	// VK_KHR_get_physical_device_properties2 is used if enabledFeatures.pNext != 0
 	deviceInfo.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

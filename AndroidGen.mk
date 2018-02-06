@@ -771,6 +771,7 @@ LOCAL_SRC_FILES := \
 	modules/gles3/functional/es3fInternalFormatQueryTests.cpp \
 	modules/gles3/functional/es3fLifetimeTests.cpp \
 	modules/gles3/functional/es3fMultisampleTests.cpp \
+	modules/gles3/functional/es3fMultiviewTests.cpp \
 	modules/gles3/functional/es3fNegativeBufferApiTests.cpp \
 	modules/gles3/functional/es3fNegativeFragmentApiTests.cpp \
 	modules/gles3/functional/es3fNegativeShaderApiTests.cpp \

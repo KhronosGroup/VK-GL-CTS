@@ -714,6 +714,16 @@ void ColorClearsTest::render (sglr::Context& context, Surface& dst)
 	}
 	else
 	{
+		// clear alpha channel for GL_RGB5_A1 format because test
+		// thresholds for the alpha channel do not account for dithering
+		if(getConfig().colorbufferFormat == GL_RGB5_A1)
+		{
+			context.colorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+			context.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			context.clear(GL_COLOR_BUFFER_BIT);
+			context.colorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		}
+
 		// Read from fbo
 		context.readPixels(dst, 0, 0, width, height);
 	}
@@ -1058,7 +1068,19 @@ void StencilClearsTest::render (sglr::Context& context, Surface& dst)
 		context.readPixels(dst, 0, 0, context.getWidth(), context.getHeight());
 	}
 	else
+	{
+		// clear alpha channel for GL_RGB5_A1 format because test
+		// thresholds for the alpha channel do not account for dithering
+		if(getConfig().colorbufferFormat == GL_RGB5_A1)
+		{
+			context.colorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+			context.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			context.clear(GL_COLOR_BUFFER_BIT);
+			context.colorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		}
+
 		context.readPixels(dst, 0, 0, width, height);
+	}
 }
 
 bool StencilClearsTest::isConfigSupported (const FboConfig& config)

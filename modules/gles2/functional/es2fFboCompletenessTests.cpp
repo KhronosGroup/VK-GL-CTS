@@ -119,6 +119,12 @@ static const FormatKey s_es3NoExtTextureColorRenderableFormats[] =
 {
 	GL_R8,
 	GL_RG8,
+	GL_RGB8,
+	GL_RGBA4,
+	GL_RGB5_A1,
+	GL_RGBA8,
+	GL_RGB10_A2,
+	GL_RGB565,
 };
 
 // with ES3 core and GL_EXT_color_buffer_float
@@ -132,6 +138,19 @@ static const FormatKey s_es3NoExtExtColorBufferFloatFormats[] =
 static const FormatKey s_es3NoExtOesTextureStencil8Formats[] =
 {
 	GL_STENCIL_INDEX8,
+};
+
+// DEQP_gles3_core_changed_features
+static const FormatKey s_es3NoExtDepthRenderable[] =
+{
+	GL_DEPTH_COMPONENT16,
+	GL_DEPTH_COMPONENT24,
+	GL_DEPTH24_STENCIL8,
+};
+
+static const FormatKey s_es3NoExtStencilRenderable[] =
+{
+	GL_DEPTH24_STENCIL8,
 };
 
 static const FormatExtEntry s_es2ExtFormats[] =
@@ -188,6 +207,21 @@ static const FormatExtEntry s_es2ExtFormats[] =
 		"DEQP_gles3_core_compatible GL_OES_texture_stencil8",
 		(deUint32)(REQUIRED_RENDERABLE | STENCIL_RENDERABLE | TEXTURE_VALID),
 		GLS_ARRAY_RANGE(s_es3NoExtOesTextureStencil8Formats)
+	},
+	{
+		"DEQP_gles3_core_compatible GL_OES_texture_half_float GL_EXT_color_buffer_half_float",
+		(deUint32)(REQUIRED_RENDERABLE | COLOR_RENDERABLE),
+		GLS_ARRAY_RANGE(s_oesTextureHalfFloatFormats)
+	},
+	{
+		"DEQP_gles3_core_compatible",
+		(deUint32)(REQUIRED_RENDERABLE | DEPTH_RENDERABLE | RENDERBUFFER_VALID | TEXTURE_VALID),
+		GLS_ARRAY_RANGE(s_es3NoExtDepthRenderable)
+	},
+	{
+		"DEQP_gles3_core_compatible",
+		(deUint32)(REQUIRED_RENDERABLE | STENCIL_RENDERABLE | RENDERBUFFER_VALID | TEXTURE_VALID),
+		GLS_ARRAY_RANGE(s_es3NoExtStencilRenderable)
 	},
 };
 

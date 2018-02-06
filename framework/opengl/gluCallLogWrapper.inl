@@ -1568,6 +1568,20 @@ void CallLogWrapper::glFramebufferTextureLayer (glw::GLenum target, glw::GLenum 
 	m_gl.framebufferTextureLayer(target, attachment, texture, level, layer);
 }
 
+void CallLogWrapper::glFramebufferTextureMultisampleMultiviewOVR (glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLsizei samples, glw::GLint baseViewIndex, glw::GLsizei numViews)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferTextureMultisampleMultiviewOVR(" << toHex(target) << ", " << toHex(attachment) << ", " << texture << ", " << level << ", " << samples << ", " << baseViewIndex << ", " << numViews << ");" << TestLog::EndMessage;
+	m_gl.framebufferTextureMultisampleMultiviewOVR(target, attachment, texture, level, samples, baseViewIndex, numViews);
+}
+
+void CallLogWrapper::glFramebufferTextureMultiviewOVR (glw::GLenum target, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint baseViewIndex, glw::GLsizei numViews)
+{
+	if (m_enableLog)
+		m_log << TestLog::Message << "glFramebufferTextureMultiviewOVR(" << toHex(target) << ", " << toHex(attachment) << ", " << texture << ", " << level << ", " << baseViewIndex << ", " << numViews << ");" << TestLog::EndMessage;
+	m_gl.framebufferTextureMultiviewOVR(target, attachment, texture, level, baseViewIndex, numViews);
+}
+
 void CallLogWrapper::glFrontFace (glw::GLenum mode)
 {
 	if (m_enableLog)

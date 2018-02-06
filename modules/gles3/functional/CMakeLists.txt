@@ -53,6 +53,8 @@ set(DEQP_GLES3_FUNCTIONAL_SRCS
 	es3fFunctionalTests.hpp
 	es3fLifetimeTests.cpp
 	es3fLifetimeTests.hpp
+	es3fMultiviewTests.cpp
+	es3fMultiviewTests.hpp
 	es3fPrerequisiteTests.cpp
 	es3fPrerequisiteTests.hpp
 	es3fRasterizationTests.cpp

@@ -178,9 +178,6 @@ void Texture3DBase::getSupportedCompressedFormats(std::set<int>& formatsSet) con
 		if (contextInfo.isCompressedTextureFormatSupported(glFormat))
 			formatsSet.insert(glFormat);
 	}
-
-	if (formatsSet.empty())
-		TCU_FAIL("No supported compressed texture formats.");
 }
 
 int Texture3DBase::calculateDataSize(deUint32 formats, int width, int height, int depth) const
@@ -1600,6 +1597,13 @@ NegativeCompressedTexImage3DCase::IterateResult NegativeCompressedTexImage3DCase
 
 	std::set<int> supportedFormats;
 	getSupportedCompressedFormats(supportedFormats);
+
+	if (supportedFormats.empty())
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "No supported compressed texture formats.");
+		return STOP;
+	}
+
 	GLenum supportedCompressedFormat = static_cast<GLenum>(*(supportedFormats.begin()));
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -1724,6 +1728,13 @@ NegativeCompressedTexSubImage3DCase::IterateResult NegativeCompressedTexSubImage
 
 	std::set<int> supportedFormats;
 	getSupportedCompressedFormats(supportedFormats);
+
+	if (supportedFormats.empty())
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "No supported compressed texture formats.");
+		return STOP;
+	}
+
 	GLenum supportedCompressedFormat = static_cast<GLenum>(*(supportedFormats.begin()));
 	int	textureSize				 = 16;
 	int	dataSize					 = calculateDataSize(supportedCompressedFormat, textureSize, textureSize, 1);
