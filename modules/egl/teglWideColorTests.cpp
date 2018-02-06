@@ -564,7 +564,6 @@ public:
 	void				init					(void);
 	void				executeTest				(void);
 	IterateResult		iterate					(void);
-	void				addWindowAttributes		(const EGLint* attributes);
 	void				addTestAttributes		(const EGLint* attributes);
 
 protected:
@@ -584,7 +583,6 @@ protected:
 
 private:
 	std::vector<EGLint>					m_attribList;
-	std::vector<EGLint>					m_winAttribList;
 	std::vector<EGLint>					m_testAttribList;
 	EGLConfig							m_eglConfig;
 	EGLint								m_surfaceType;
@@ -619,18 +617,6 @@ WideColorSurfaceTest::WideColorSurfaceTest (EglTestContext& eglTestCtx, const ch
 		m_attribList.push_back(attribList[idx++]);
 	}
 	m_attribList.push_back(EGL_NONE);
-}
-
-void WideColorSurfaceTest::addWindowAttributes(const EGLint* attributes)
-{
-	deUint32 idx = 0;
-	if (attributes == DE_NULL) return;
-
-	while (attributes[idx] != EGL_NONE)
-	{
-		m_winAttribList.push_back(attributes[idx++]);
-		m_winAttribList.push_back(attributes[idx++]);
-	}
 }
 
 void WideColorSurfaceTest::addTestAttributes(const EGLint *attributes)
@@ -1187,10 +1173,6 @@ void WideColorSurfaceTest::executeTest (void)
 			attribs.push_back(EGL_GL_COLORSPACE_KHR);
 			attribs.push_back(m_colorSpace);
 		}
-		for (deUint32 i = 0; i < m_winAttribList.size(); i++)
-		{
-			attribs.push_back(m_winAttribList[i]);
-		}
 		attribs.push_back(EGL_NONE);
 		attribs.push_back(EGL_NONE);
 		const EGLSurface surface = egl.createPbufferSurface(m_eglDisplay, m_eglConfig, attribs.data());
@@ -1219,10 +1201,6 @@ void WideColorSurfaceTest::executeTest (void)
 			attribs.push_back(EGL_GL_COLORSPACE_KHR);
 			attribs.push_back(m_colorSpace);
 		}
-		for (deUint32 i = 0; i < m_winAttribList.size(); i++)
-		{
-			attribs.push_back(m_winAttribList[i]);
-		}
 		attribs.push_back(EGL_NONE);
 		attribs.push_back(EGL_NONE);
 
@@ -1242,14 +1220,6 @@ void WideColorSurfaceTest::executeTest (void)
 		EGLU_CHECK_MSG(egl, "eglCreateWindowSurface()");
 
 		doClearTest(surface);
-
-		// If we have any window attributes, check that the values are correct
-		for (deUint32 i = 0; i < m_winAttribList.size(); i +=2)
-		{
-			EGLint value;
-			egl.querySurface(m_eglDisplay, surface, m_winAttribList[i], &value);
-			TCU_CHECK(value == m_winAttribList[i+1]);
-		}
 
 		if (m_testAttribList.size() > 0)
 		{
@@ -1494,24 +1464,6 @@ void HdrColorTest::executeTest (void)
 	};
 
 	WideColorSurfaceTest testObj(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", windowAttribList8888, EGL_NONE, int8888Iterations);
-	const EGLint attrs[] =
-	{
-		EGL_SMPTE2086_DISPLAY_PRIMARY_RX_EXT, METADATA_SCALE(0.640),
-		EGL_SMPTE2086_DISPLAY_PRIMARY_RY_EXT, METADATA_SCALE(0.330),
-		EGL_SMPTE2086_DISPLAY_PRIMARY_GX_EXT, METADATA_SCALE(0.290),
-		EGL_SMPTE2086_DISPLAY_PRIMARY_GY_EXT, METADATA_SCALE(0.600),
-		EGL_SMPTE2086_DISPLAY_PRIMARY_BX_EXT, METADATA_SCALE(0.150),
-		EGL_SMPTE2086_DISPLAY_PRIMARY_BY_EXT, METADATA_SCALE(0.060),
-		EGL_SMPTE2086_WHITE_POINT_X_EXT, METADATA_SCALE(0.3127),
-		EGL_SMPTE2086_WHITE_POINT_Y_EXT, METADATA_SCALE(0.3290),
-		EGL_SMPTE2086_MAX_LUMINANCE_EXT, METADATA_SCALE(300.0),
-		EGL_SMPTE2086_MIN_LUMINANCE_EXT, METADATA_SCALE(0.7),
-		EGL_CTA861_3_MAX_CONTENT_LIGHT_LEVEL_EXT, METADATA_SCALE(300),
-		EGL_CTA861_3_MAX_FRAME_AVERAGE_LEVEL_EXT, METADATA_SCALE(75),
-		EGL_NONE
-	};
-
-	testObj.addWindowAttributes(attrs);
 
 	const EGLint testAttrs[] =
 	{
