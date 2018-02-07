@@ -26,6 +26,7 @@
 #include "vktPipelineStencilTests.hpp"
 #include "vktPipelineBlendTests.hpp"
 #include "vktPipelineDepthTests.hpp"
+#include "vktPipelineEarlyDestroyTests.hpp"
 #include "vktPipelineImageTests.hpp"
 #include "vktPipelineInputAssemblyTests.hpp"
 #include "vktPipelineSamplerTests.hpp"
@@ -57,6 +58,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createStencilTests					(testCtx));
 	pipelineTests->addChild(createBlendTests					(testCtx));
 	pipelineTests->addChild(createDepthTests					(testCtx));
+	pipelineTests->addChild(createEarlyDestroyTests				(testCtx));
 	pipelineTests->addChild(createImageTests					(testCtx));
 	pipelineTests->addChild(createSamplerTests					(testCtx));
 	pipelineTests->addChild(createImageViewTests				(testCtx));

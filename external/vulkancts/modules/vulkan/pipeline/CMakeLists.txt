@@ -11,6 +11,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineCombinationsIterator.hpp
 	vktPipelineDepthTests.cpp
 	vktPipelineDepthTests.hpp
+	vktPipelineEarlyDestroyTests.cpp
+	vktPipelineEarlyDestroyTests.hpp
 	vktPipelineImageSamplingInstance.cpp
 	vktPipelineImageSamplingInstance.hpp
 	vktPipelineImageTests.cpp
