@@ -27,6 +27,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineImageUtil.hpp
 	vktPipelineImageViewTests.cpp
 	vktPipelineImageViewTests.hpp
+	vktPipelineMatchedAttachmentsTests.cpp
+	vktPipelineMatchedAttachmentsTests.hpp
 	vktPipelineMultisampleTestsUtil.cpp
 	vktPipelineMultisampleTestsUtil.hpp
 	vktPipelineMultisampleTests.cpp

@@ -33,6 +33,7 @@
 #include "vktPipelineImageViewTests.hpp"
 #include "vktPipelinePushConstantTests.hpp"
 #include "vktPipelineSpecConstantTests.hpp"
+#include "vktPipelineMatchedAttachmentsTests.hpp"
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineMultisampleInterpolationTests.hpp"
 #include "vktPipelineMultisampleShaderBuiltInTests.hpp"
@@ -64,6 +65,7 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createImageViewTests				(testCtx));
 	pipelineTests->addChild(createPushConstantTests				(testCtx));
 	pipelineTests->addChild(createSpecConstantTests				(testCtx));
+	pipelineTests->addChild(createMatchedAttachmentsTests		(testCtx));
 	pipelineTests->addChild(createMultisampleTests				(testCtx));
 	pipelineTests->addChild(createMultisampleInterpolationTests	(testCtx));
 	pipelineTests->addChild(createMultisampleShaderBuiltInTests	(testCtx));
