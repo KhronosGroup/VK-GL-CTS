@@ -7950,78 +7950,172 @@ tcu::TestCaseGroup* createOpSModGraphicsTests(tcu::TestContext& testCtx, qpTestR
 	return testGroup.release();
 }
 
-enum IntegerType
+enum ConversionDataType
 {
-	INTEGER_TYPE_SIGNED_16,
-	INTEGER_TYPE_SIGNED_32,
-	INTEGER_TYPE_SIGNED_64,
-
-	INTEGER_TYPE_UNSIGNED_16,
-	INTEGER_TYPE_UNSIGNED_32,
-	INTEGER_TYPE_UNSIGNED_64,
+	DATA_TYPE_SIGNED_16,
+	DATA_TYPE_SIGNED_32,
+	DATA_TYPE_SIGNED_64,
+	DATA_TYPE_UNSIGNED_16,
+	DATA_TYPE_UNSIGNED_32,
+	DATA_TYPE_UNSIGNED_64,
+	DATA_TYPE_FLOAT_32,
+	DATA_TYPE_FLOAT_64,
+	DATA_TYPE_VEC2_SIGNED_16,
+	DATA_TYPE_VEC2_SIGNED_32
 };
 
-const string getBitWidthStr (IntegerType type)
+const string getBitWidthStr (ConversionDataType type)
 {
 	switch (type)
 	{
-		case INTEGER_TYPE_SIGNED_16:
-		case INTEGER_TYPE_UNSIGNED_16:	return "16";
+		case DATA_TYPE_SIGNED_16:
+		case DATA_TYPE_UNSIGNED_16:
+			return "16";
 
-		case INTEGER_TYPE_SIGNED_32:
-		case INTEGER_TYPE_UNSIGNED_32:	return "32";
+		case DATA_TYPE_SIGNED_32:
+		case DATA_TYPE_UNSIGNED_32:
+		case DATA_TYPE_FLOAT_32:
+		case DATA_TYPE_VEC2_SIGNED_16:
+			return "32";
 
-		case INTEGER_TYPE_SIGNED_64:
-		case INTEGER_TYPE_UNSIGNED_64:	return "64";
+		case DATA_TYPE_SIGNED_64:
+		case DATA_TYPE_UNSIGNED_64:
+		case DATA_TYPE_FLOAT_64:
+		case DATA_TYPE_VEC2_SIGNED_32:
+			return "64";
 
-		default:						DE_ASSERT(false);
-										return "";
+		default:
+			DE_ASSERT(false);
 	}
+	return "";
 }
 
-const string getByteWidthStr (IntegerType type)
+const string getByteWidthStr (ConversionDataType type)
 {
 	switch (type)
 	{
-		case INTEGER_TYPE_SIGNED_16:
-		case INTEGER_TYPE_UNSIGNED_16:	return "2";
+		case DATA_TYPE_SIGNED_16:
+		case DATA_TYPE_UNSIGNED_16:
+			return "2";
 
-		case INTEGER_TYPE_SIGNED_32:
-		case INTEGER_TYPE_UNSIGNED_32:	return "4";
+		case DATA_TYPE_SIGNED_32:
+		case DATA_TYPE_UNSIGNED_32:
+		case DATA_TYPE_FLOAT_32:
+		case DATA_TYPE_VEC2_SIGNED_16:
+			return "4";
 
-		case INTEGER_TYPE_SIGNED_64:
-		case INTEGER_TYPE_UNSIGNED_64:	return "8";
+		case DATA_TYPE_SIGNED_64:
+		case DATA_TYPE_UNSIGNED_64:
+		case DATA_TYPE_FLOAT_64:
+		case DATA_TYPE_VEC2_SIGNED_32:
+			return "8";
 
-		default:						DE_ASSERT(false);
-										return "";
+		default:
+			DE_ASSERT(false);
 	}
+	return "";
 }
 
-bool isSigned (IntegerType type)
+bool isSigned (ConversionDataType type)
 {
-	return (type <= INTEGER_TYPE_SIGNED_64);
+	switch (type)
+	{
+		case DATA_TYPE_SIGNED_16:
+		case DATA_TYPE_SIGNED_32:
+		case DATA_TYPE_SIGNED_64:
+		case DATA_TYPE_FLOAT_32:
+		case DATA_TYPE_FLOAT_64:
+		case DATA_TYPE_VEC2_SIGNED_16:
+		case DATA_TYPE_VEC2_SIGNED_32:
+			return true;
+
+		case DATA_TYPE_UNSIGNED_16:
+		case DATA_TYPE_UNSIGNED_32:
+		case DATA_TYPE_UNSIGNED_64:
+			return false;
+
+		default:
+			DE_ASSERT(false);
+	}
+	return false;
 }
 
-const string getTypeName (IntegerType type)
+bool isInt (ConversionDataType type)
+{
+	switch (type)
+	{
+		case DATA_TYPE_SIGNED_16:
+		case DATA_TYPE_SIGNED_32:
+		case DATA_TYPE_SIGNED_64:
+		case DATA_TYPE_UNSIGNED_16:
+		case DATA_TYPE_UNSIGNED_32:
+		case DATA_TYPE_UNSIGNED_64:
+			return true;
+
+		case DATA_TYPE_FLOAT_32:
+		case DATA_TYPE_FLOAT_64:
+		case DATA_TYPE_VEC2_SIGNED_16:
+		case DATA_TYPE_VEC2_SIGNED_32:
+			return false;
+
+		default:
+			DE_ASSERT(false);
+	}
+	return false;
+}
+
+bool isFloat (ConversionDataType type)
+{
+	switch (type)
+	{
+		case DATA_TYPE_SIGNED_16:
+		case DATA_TYPE_SIGNED_32:
+		case DATA_TYPE_SIGNED_64:
+		case DATA_TYPE_UNSIGNED_16:
+		case DATA_TYPE_UNSIGNED_32:
+		case DATA_TYPE_UNSIGNED_64:
+		case DATA_TYPE_VEC2_SIGNED_16:
+		case DATA_TYPE_VEC2_SIGNED_32:
+			return false;
+
+		case DATA_TYPE_FLOAT_32:
+		case DATA_TYPE_FLOAT_64:
+			return true;
+
+		default:
+			DE_ASSERT(false);
+	}
+	return false;
+}
+
+const string getTypeName (ConversionDataType type)
 {
 	string prefix = isSigned(type) ? "" : "u";
-	return prefix + "int" + getBitWidthStr(type);
+
+	if		(isInt(type))						return prefix + "int"	+ getBitWidthStr(type);
+	else if (isFloat(type))						return prefix + "float"	+ getBitWidthStr(type);
+	else if (type == DATA_TYPE_VEC2_SIGNED_16)	return "i16vec2";
+	else if (type == DATA_TYPE_VEC2_SIGNED_32)	return "i32vec2";
+	else										DE_ASSERT(false);
+
+	return "";
 }
 
-const string getTestName (IntegerType from, IntegerType to)
+const string getTestName (ConversionDataType from, ConversionDataType to)
 {
 	return getTypeName(from) + "_to_" + getTypeName(to);
 }
 
-const string getAsmTypeDeclaration (IntegerType type)
+const string getAsmTypeName (ConversionDataType type)
 {
-	string sign = isSigned(type) ? " 1" : " 0";
-	return "OpTypeInt " + getBitWidthStr(type) + sign;
-}
+	string prefix;
 
-const string getAsmTypeName (IntegerType type)
-{
-	const string prefix = isSigned(type) ? "%i" : "%u";
+	if		(isInt(type))						prefix = isSigned(type) ? "i" : "u";
+	else if (isFloat(type))						prefix = "f";
+	else if (type == DATA_TYPE_VEC2_SIGNED_16)	return "i16vec2";
+	else if (type == DATA_TYPE_VEC2_SIGNED_32)	return "v2i32";
+	else										DE_ASSERT(false);
+
 	return prefix + getBitWidthStr(type);
 }
 
@@ -8031,92 +8125,138 @@ BufferSp getSpecializedBuffer (deInt64 number)
 	return BufferSp(new Buffer<T>(vector<T>(1, (T)number)));
 }
 
-BufferSp getBuffer (IntegerType type, deInt64 number)
+BufferSp getBuffer (ConversionDataType type, deInt64 number)
 {
 	switch (type)
 	{
-		case INTEGER_TYPE_SIGNED_16:	return getSpecializedBuffer<deInt16>(number);
-		case INTEGER_TYPE_SIGNED_32:	return getSpecializedBuffer<deInt32>(number);
-		case INTEGER_TYPE_SIGNED_64:	return getSpecializedBuffer<deInt64>(number);
-
-		case INTEGER_TYPE_UNSIGNED_16:	return getSpecializedBuffer<deUint16>(number);
-		case INTEGER_TYPE_UNSIGNED_32:	return getSpecializedBuffer<deUint32>(number);
-		case INTEGER_TYPE_UNSIGNED_64:	return getSpecializedBuffer<deUint64>(number);
+		case DATA_TYPE_SIGNED_16:		return getSpecializedBuffer<deInt16>(number);
+		case DATA_TYPE_SIGNED_32:		return getSpecializedBuffer<deInt32>(number);
+		case DATA_TYPE_SIGNED_64:		return getSpecializedBuffer<deInt64>(number);
+		case DATA_TYPE_UNSIGNED_16:		return getSpecializedBuffer<deUint16>(number);
+		case DATA_TYPE_UNSIGNED_32:		return getSpecializedBuffer<deUint32>(number);
+		case DATA_TYPE_UNSIGNED_64:		return getSpecializedBuffer<deUint64>(number);
+		case DATA_TYPE_FLOAT_32:		return getSpecializedBuffer<deUint32>(number);
+		case DATA_TYPE_FLOAT_64:		return getSpecializedBuffer<deUint64>(number);
+		case DATA_TYPE_VEC2_SIGNED_16:	return getSpecializedBuffer<deUint32>(number);
+		case DATA_TYPE_VEC2_SIGNED_32:	return getSpecializedBuffer<deUint64>(number);
 
 		default:						DE_ASSERT(false);
 										return BufferSp(new Buffer<deInt32>(vector<deInt32>(1, 0)));
 	}
 }
 
-bool usesInt16 (IntegerType from, IntegerType to)
+bool usesInt16 (ConversionDataType from, ConversionDataType to)
 {
-	return (from == INTEGER_TYPE_SIGNED_16 || from == INTEGER_TYPE_UNSIGNED_16
-			|| to == INTEGER_TYPE_SIGNED_16 || to == INTEGER_TYPE_UNSIGNED_16);
+	return (from == DATA_TYPE_SIGNED_16 || from == DATA_TYPE_UNSIGNED_16
+			|| to == DATA_TYPE_SIGNED_16 || to == DATA_TYPE_UNSIGNED_16
+			|| from == DATA_TYPE_VEC2_SIGNED_16 || to == DATA_TYPE_VEC2_SIGNED_16);
 }
 
-bool usesInt64 (IntegerType from, IntegerType to)
+bool usesInt32 (ConversionDataType from, ConversionDataType to)
 {
-	return (from == INTEGER_TYPE_SIGNED_64 || from == INTEGER_TYPE_UNSIGNED_64
-			|| to == INTEGER_TYPE_SIGNED_64 || to == INTEGER_TYPE_UNSIGNED_64);
+	return (from == DATA_TYPE_SIGNED_32 || from == DATA_TYPE_UNSIGNED_32
+		|| to == DATA_TYPE_SIGNED_32 || to == DATA_TYPE_UNSIGNED_32
+		|| from == DATA_TYPE_VEC2_SIGNED_32 || to == DATA_TYPE_VEC2_SIGNED_32);
 }
 
-ComputeTestFeatures getConversionUsedFeatures (IntegerType from, IntegerType to)
+bool usesInt64 (ConversionDataType from, ConversionDataType to)
 {
-	if (usesInt16(from, to))
+	return (from == DATA_TYPE_SIGNED_64 || from == DATA_TYPE_UNSIGNED_64
+			|| to == DATA_TYPE_SIGNED_64 || to == DATA_TYPE_UNSIGNED_64);
+}
+
+bool usesFloat64 (ConversionDataType from, ConversionDataType to)
+{
+	return (from == DATA_TYPE_FLOAT_64 || to == DATA_TYPE_FLOAT_64);
+}
+
+
+ComputeTestFeatures getConversionUsedFeatures (ConversionDataType from, ConversionDataType to)
+{
+	if (usesInt16(from, to) && usesInt64(from, to))			return COMPUTE_TEST_USES_INT16_INT64;
+	else if (usesInt16(from, to) && usesInt32(from, to))	return COMPUTE_TEST_USES_NONE;
+	else if (usesInt16(from, to))							return COMPUTE_TEST_USES_INT16;			// This is not set for int16<-->int32 only conversions
+	else if (usesInt64(from, to))							return COMPUTE_TEST_USES_INT64;
+	else if (usesFloat64(from, to))							return COMPUTE_TEST_USES_FLOAT64;
+	else													return COMPUTE_TEST_USES_NONE;
+}
+
+vector<string> getFeatureStringVector (ComputeTestFeatures computeTestFeatures)
+{
+	vector<string> features;
+	if (computeTestFeatures == COMPUTE_TEST_USES_INT16_INT64)
 	{
-		if (usesInt64(from, to))
-		{
-			return COMPUTE_TEST_USES_INT16_INT64;
-		}
-		else
-		{
-			return COMPUTE_TEST_USES_INT16;
-		}
+		features.push_back("shaderInt16");
+		features.push_back("shaderInt64");
 	}
-	else
-	{
-		return COMPUTE_TEST_USES_INT64;
-	}
+	else if	(computeTestFeatures == COMPUTE_TEST_USES_INT16)		features.push_back("shaderInt16");
+	else if	(computeTestFeatures == COMPUTE_TEST_USES_INT64)		features.push_back("shaderInt64");
+	else if	(computeTestFeatures == COMPUTE_TEST_USES_FLOAT64)		features.push_back("shaderFloat64");
+	else if (computeTestFeatures == COMPUTE_TEST_USES_NONE)			{}
+	else															DE_ASSERT(false);
+
+	return features;
 }
 
 struct ConvertCase
 {
-	ConvertCase (IntegerType from, IntegerType to, deInt64 number)
+	ConvertCase (ConversionDataType from, ConversionDataType to, deInt64 number, bool separateOutput = false, deInt64 outputNumber = 0)
 	: m_fromType		(from)
 	, m_toType			(to)
 	, m_features		(getConversionUsedFeatures(from, to))
 	, m_name			(getTestName(from, to))
 	, m_inputBuffer		(getBuffer(from, number))
-	, m_outputBuffer	(getBuffer(to, number))
 	{
 		m_asmTypes["inputType"]		= getAsmTypeName(from);
 		m_asmTypes["outputType"]	= getAsmTypeName(to);
 
+		if (separateOutput)
+			m_outputBuffer = getBuffer(to, outputNumber);
+		else
+			m_outputBuffer = getBuffer(to, number);
+
 		if (m_features == COMPUTE_TEST_USES_INT16)
 		{
-			m_asmTypes["int_capabilities"]	  = "OpCapability Int16\n"
-												"OpCapability StorageUniformBufferBlock16\n";
-			m_asmTypes["int_additional_decl"] = "%i16        = OpTypeInt 16 1\n"
-												"%u16        = OpTypeInt 16 0\n";
-			m_asmTypes["int_extensions"]	  = "OpExtension \"SPV_KHR_16bit_storage\"\n";
+			m_asmTypes["datatype_capabilities"]	  =		"OpCapability Int16\n"
+														"OpCapability StorageUniformBufferBlock16\n"
+														"OpCapability StorageUniform16\n";
+			m_asmTypes["datatype_additional_decl"] =	"%i16        = OpTypeInt 16 1\n"
+														"%u16        = OpTypeInt 16 0\n"
+														"%i16vec2    = OpTypeVector %i16 2\n";
+			m_asmTypes["datatype_extensions"]	  =		"OpExtension \"SPV_KHR_16bit_storage\"\n";
 		}
 		else if (m_features == COMPUTE_TEST_USES_INT64)
 		{
-			m_asmTypes["int_capabilities"]	  = "OpCapability Int64\n";
-			m_asmTypes["int_additional_decl"] = "%i64        = OpTypeInt 64 1\n"
-												"%u64        = OpTypeInt 64 0\n";
-			m_asmTypes["int_extensions"]	  = "";
+			m_asmTypes["datatype_capabilities"]	  =		"OpCapability Int64\n";
+			m_asmTypes["datatype_additional_decl"] =	"%i64        = OpTypeInt 64 1\n"
+														"%u64        = OpTypeInt 64 0\n";
+			m_asmTypes["datatype_extensions"]	  =		"";
 		}
 		else if (m_features == COMPUTE_TEST_USES_INT16_INT64)
 		{
-			m_asmTypes["int_capabilities"]	  = "OpCapability Int16\n"
-												"OpCapability StorageUniformBufferBlock16\n"
-												"OpCapability Int64\n";
-			m_asmTypes["int_additional_decl"] = "%i16        = OpTypeInt 16 1\n"
-												"%u16        = OpTypeInt 16 0\n"
-												"%i64        = OpTypeInt 64 1\n"
-												"%u64        = OpTypeInt 64 0\n";
-			m_asmTypes["int_extensions"]	  = "OpExtension \"SPV_KHR_16bit_storage\"\n";
+			m_asmTypes["datatype_capabilities"]	  =		"OpCapability Int16\n"
+														"OpCapability StorageUniformBufferBlock16\n"
+														"OpCapability StorageUniform16\n"
+														"OpCapability Int64\n";
+			m_asmTypes["datatype_additional_decl"] =	"%i16        = OpTypeInt 16 1\n"
+														"%u16        = OpTypeInt 16 0\n"
+														"%i64        = OpTypeInt 64 1\n"
+														"%u64        = OpTypeInt 64 0\n";
+			m_asmTypes["datatype_extensions"]	  =		"OpExtension \"SPV_KHR_16bit_storage\"\n";
+		}
+		else if (m_features == COMPUTE_TEST_USES_FLOAT64)
+		{
+			m_asmTypes["datatype_capabilities"]		=	"OpCapability Float64\n";
+			m_asmTypes["datatype_additional_decl"]	=	"%f64        = OpTypeFloat 64\n";
+		}
+		else if (usesInt16(from, to) && usesInt32(from, to))
+		{
+			m_asmTypes["datatype_capabilities"]	  =		"OpCapability StorageUniformBufferBlock16\n"
+														"OpCapability StorageUniform16\n";
+			m_asmTypes["datatype_additional_decl"] =	"%i16        = OpTypeInt 16 1\n"
+														"%u16        = OpTypeInt 16 0\n"
+														"%i16vec2    = OpTypeVector %i16 2\n";
+			m_asmTypes["datatype_extensions"]	  =		"OpExtension \"SPV_KHR_16bit_storage\"\n";
 		}
 		else
 		{
@@ -8124,8 +8264,8 @@ struct ConvertCase
 		}
 	}
 
-	IntegerType				m_fromType;
-	IntegerType				m_toType;
+	ConversionDataType		m_fromType;
+	ConversionDataType		m_toType;
 	ComputeTestFeatures		m_features;
 	string					m_name;
 	map<string, string>		m_asmTypes;
@@ -8137,29 +8277,24 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 {
 	map<string, string> params = convertCase.m_asmTypes;
 
-	params["instruction"] = instruction;
-
-	params["inDecorator"] = getByteWidthStr(convertCase.m_fromType);
-	params["outDecorator"] = getByteWidthStr(convertCase.m_toType);
+	params["instruction"]	= instruction;
+	params["inDecorator"]	= getByteWidthStr(convertCase.m_fromType);
+	params["outDecorator"]	= getByteWidthStr(convertCase.m_toType);
 
 	const StringTemplate shader (
 		"OpCapability Shader\n"
-		"${int_capabilities}"
-		"${int_extensions}"
+		"${datatype_capabilities}"
+		"${datatype_extensions:opt}"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpEntryPoint GLCompute %main \"main\"\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n"
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
-		"OpName %id             \"gl_GlobalInvocationID\"\n"
 		// Decorators
-		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 		"OpDecorate %indata DescriptorSet 0\n"
 		"OpDecorate %indata Binding 0\n"
 		"OpDecorate %outdata DescriptorSet 0\n"
 		"OpDecorate %outdata Binding 1\n"
-		"OpDecorate %in_arr ArrayStride ${inDecorator}\n"
-		"OpDecorate %out_arr ArrayStride ${outDecorator}\n"
 		"OpDecorate %in_buf BufferBlock\n"
 		"OpDecorate %out_buf BufferBlock\n"
 		"OpMemberDecorate %in_buf 0 Offset 0\n"
@@ -8169,33 +8304,28 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 		"%voidf      = OpTypeFunction %void\n"
 		"%u32        = OpTypeInt 32 0\n"
 		"%i32        = OpTypeInt 32 1\n"
-		"${int_additional_decl}"
+		"%f32        = OpTypeFloat 32\n"
+		"%v2i32      = OpTypeVector %i32 2\n"
+		"${datatype_additional_decl}"
 		"%uvec3      = OpTypeVector %u32 3\n"
-		"%uvec3ptr   = OpTypePointer Input %uvec3\n"
 		// Derived types
-		"%in_ptr     = OpTypePointer Uniform ${inputType}\n"
-		"%out_ptr    = OpTypePointer Uniform ${outputType}\n"
-		"%in_arr     = OpTypeRuntimeArray ${inputType}\n"
-		"%out_arr    = OpTypeRuntimeArray ${outputType}\n"
-		"%in_buf     = OpTypeStruct %in_arr\n"
-		"%out_buf    = OpTypeStruct %out_arr\n"
+		"%in_ptr     = OpTypePointer Uniform %${inputType}\n"
+		"%out_ptr    = OpTypePointer Uniform %${outputType}\n"
+		"%in_buf     = OpTypeStruct %${inputType}\n"
+		"%out_buf    = OpTypeStruct %${outputType}\n"
 		"%in_bufptr  = OpTypePointer Uniform %in_buf\n"
 		"%out_bufptr = OpTypePointer Uniform %out_buf\n"
 		"%indata     = OpVariable %in_bufptr Uniform\n"
 		"%outdata    = OpVariable %out_bufptr Uniform\n"
-		"%inputptr   = OpTypePointer Input ${inputType}\n"
-		"%id         = OpVariable %uvec3ptr Input\n"
 		// Constants
 		"%zero       = OpConstant %i32 0\n"
 		// Main function
 		"%main       = OpFunction %void None %voidf\n"
 		"%label      = OpLabel\n"
-		"%idval      = OpLoad %uvec3 %id\n"
-		"%x          = OpCompositeExtract %u32 %idval 0\n"
-		"%inloc      = OpAccessChain %in_ptr %indata %zero %x\n"
-		"%outloc     = OpAccessChain %out_ptr %outdata %zero %x\n"
-		"%inval      = OpLoad ${inputType} %inloc\n"
-		"%conv       = ${instruction} ${outputType} %inval\n"
+		"%inloc      = OpAccessChain %in_ptr %indata %zero\n"
+		"%outloc     = OpAccessChain %out_ptr %outdata %zero\n"
+		"%inval      = OpLoad %${inputType} %inloc\n"
+		"%conv       = ${instruction} %${outputType} %inval\n"
 		"              OpStore %outloc %conv\n"
 		"              OpReturn\n"
 		"              OpFunctionEnd\n"
@@ -8204,81 +8334,172 @@ const string getConvertCaseShaderStr (const string& instruction, const ConvertCa
 	return shader.specialize(params);
 }
 
-void createSConvertCases (vector<ConvertCase>& testCases)
+void createConvertCases (vector<ConvertCase>& testCases, const string& instruction)
 {
-	// Convert int to int
-	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_16,	INTEGER_TYPE_SIGNED_32,		14669));
-	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_16,	INTEGER_TYPE_SIGNED_64,		3341));
+	if (instruction == "OpUConvert")
+	{
+		// Convert unsigned int to unsigned int
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_16,		DATA_TYPE_UNSIGNED_32,		60653));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_16,		DATA_TYPE_UNSIGNED_64,		17991));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_32,		DATA_TYPE_UNSIGNED_64,		904256275));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_32,		DATA_TYPE_UNSIGNED_16,		6275));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_64,		DATA_TYPE_UNSIGNED_32,		701256243));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_64,		DATA_TYPE_UNSIGNED_16,		4741));
+	}
+	else if (instruction == "OpSConvert")
+	{
+		// Sign extension int->int
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_16,		DATA_TYPE_SIGNED_32,		14669));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_16,		DATA_TYPE_SIGNED_64,		-3341));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_32,		DATA_TYPE_SIGNED_64,		973610259));
 
-	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_32,	INTEGER_TYPE_SIGNED_64,		973610259));
+		// Truncate for int->int
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_32,		DATA_TYPE_SIGNED_16,		12382));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_64,		DATA_TYPE_SIGNED_32,		-972812359));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_64,		DATA_TYPE_SIGNED_16,		-1067742499291926803ll,				true,	-4371));
 
-	// Convert int to unsigned int
-	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_16,	INTEGER_TYPE_UNSIGNED_32,	9288));
-	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_16,	INTEGER_TYPE_UNSIGNED_64,	15460));
+		// Sign extension for int->uint
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_32,		14669));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_16,		DATA_TYPE_UNSIGNED_64,		-3341,								true,	18446744073709548275ull));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_64,		973610259));
 
-	testCases.push_back(ConvertCase(INTEGER_TYPE_SIGNED_32,	INTEGER_TYPE_UNSIGNED_64,	346213461));
+		// Truncate for int->uint
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_32,		DATA_TYPE_UNSIGNED_16,		12382));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_32,		-972812359,							true,	3322154937u));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_64,		DATA_TYPE_UNSIGNED_16,		-1067742499291926803ll,				true,	61165));
+
+		// Sign extension for uint->int
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_16,		DATA_TYPE_SIGNED_32,		14669));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_16,		DATA_TYPE_SIGNED_64,		62195,								true,	-3341));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_32,		DATA_TYPE_SIGNED_64,		973610259));
+
+		// Truncate for uint->int
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_32,		DATA_TYPE_SIGNED_16,		12382));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_64,		DATA_TYPE_SIGNED_32,		18446744072736739257ull,			true,	-972812359));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_64,		DATA_TYPE_SIGNED_16,		17379001574417624813ull,			true,	-4371));
+
+		// Convert i16vec2 to i32vec2 and vice versa
+		// Unsigned values are used here to represent negative signed values and to allow defined shifting behaviour.
+		// The actual signed value -32123 is used here as uint16 value 33413 and uint32 value 4294935173
+		testCases.push_back(ConvertCase(DATA_TYPE_VEC2_SIGNED_16,	DATA_TYPE_VEC2_SIGNED_32,	(33413u << 16)			| 27593,	true,	(4294935173ull << 32)	| 27593));
+		testCases.push_back(ConvertCase(DATA_TYPE_VEC2_SIGNED_32,	DATA_TYPE_VEC2_SIGNED_16,	(4294935173ull << 32)	| 27593,	true,	(33413u << 16)			| 27593));
+	}
+	else if (instruction == "OpFConvert")
+	{
+		// All hexadecimal values below represent 1024.0 as 32/64-bit IEEE 754 float
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_FLOAT_64,			0x449a4000,							true,	0x4093480000000000));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_FLOAT_32,			0x4093480000000000,					true,	0x449a4000));
+	}
+	else
+		DE_FATAL("Unknown instruction");
 }
 
-//  Test for the OpSConvert instruction.
-tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
+const map<string, string> getConvertCaseFragments (string instruction, const ConvertCase& convertCase)
 {
-	const string instruction				("OpSConvert");
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "sconvert", "OpSConvert"));
-	vector<ConvertCase>				testCases;
-	createSConvertCases(testCases);
+	map<string, string> params = convertCase.m_asmTypes;
+	map<string, string> fragments;
+
+	params["instruction"] = instruction;
+	params["inDecorator"] = getByteWidthStr(convertCase.m_fromType);
+
+	const StringTemplate decoration (
+		"      OpDecorate %SSBOi DescriptorSet 0\n"
+		"      OpDecorate %SSBOo DescriptorSet 0\n"
+		"      OpDecorate %SSBOi Binding 0\n"
+		"      OpDecorate %SSBOo Binding 1\n"
+		"      OpDecorate %s_SSBOi Block\n"
+		"      OpDecorate %s_SSBOo Block\n"
+		"OpMemberDecorate %s_SSBOi 0 Offset 0\n"
+		"OpMemberDecorate %s_SSBOo 0 Offset 0\n");
+
+	const StringTemplate pre_main (
+		"${datatype_additional_decl:opt}"
+		"    %ptr_in = OpTypePointer StorageBuffer %${inputType}\n"
+		"   %ptr_out = OpTypePointer StorageBuffer %${outputType}\n"
+		"   %s_SSBOi = OpTypeStruct %${inputType}\n"
+		"   %s_SSBOo = OpTypeStruct %${outputType}\n"
+		" %ptr_SSBOi = OpTypePointer StorageBuffer %s_SSBOi\n"
+		" %ptr_SSBOo = OpTypePointer StorageBuffer %s_SSBOo\n"
+		"     %SSBOi = OpVariable %ptr_SSBOi StorageBuffer\n"
+		"     %SSBOo = OpVariable %ptr_SSBOo StorageBuffer\n");
+
+	const StringTemplate testfun (
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%label     = OpLabel\n"
+		"%iLoc      = OpAccessChain %ptr_in %SSBOi %c_u32_0\n"
+		"%oLoc      = OpAccessChain %ptr_out %SSBOo %c_u32_0\n"
+		"%valIn     = OpLoad %${inputType} %iLoc\n"
+		"%valOut    = ${instruction} %${outputType} %valIn\n"
+		"             OpStore %oLoc %valOut\n"
+		"             OpReturnValue %param\n"
+		"             OpFunctionEnd\n");
+
+	params["datatype_extensions"] =
+		params["datatype_extensions"] +
+		"OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n";
+
+	fragments["capability"]	= params["datatype_capabilities"];
+	fragments["extension"]	= params["datatype_extensions"];
+	fragments["decoration"]	= decoration.specialize(params);
+	fragments["pre_main"]	= pre_main.specialize(params);
+	fragments["testfun"]	= testfun.specialize(params);
+
+	return fragments;
+}
+
+// Test for OpSConvert, OpUConvert and OpFConvert in compute shaders
+tcu::TestCaseGroup* createConvertComputeTests (tcu::TestContext& testCtx, const string& instruction, const string& name)
+{
+	de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, name.c_str(), instruction.c_str()));
+	vector<ConvertCase>					testCases;
+	createConvertCases(testCases, instruction);
 
 	for (vector<ConvertCase>::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
 	{
-		ComputeShaderSpec	spec;
+		ComputeShaderSpec spec;
+		spec.assembly			= getConvertCaseShaderStr(instruction, *test);
+		spec.numWorkGroups		= IVec3(1, 1, 1);
+		spec.inputs.push_back	(test->m_inputBuffer);
+		spec.outputs.push_back	(test->m_outputBuffer);
 
-		spec.assembly = getConvertCaseShaderStr(instruction, *test);
-		spec.inputs.push_back(test->m_inputBuffer);
-		spec.outputs.push_back(test->m_outputBuffer);
-		spec.numWorkGroups = IVec3(1, 1, 1);
-
-		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64)
-		{
+		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType))
 			spec.extensions.push_back("VK_KHR_16bit_storage");
-		}
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "", spec, test->m_features));
 	}
-
 	return group.release();
 }
 
-void createUConvertCases (vector<ConvertCase>& testCases)
+// Test for OpSConvert, OpUConvert and OpFConvert in graphics shaders
+tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const string& instruction, const string& name)
 {
-	// Convert unsigned int to unsigned int
-	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_UNSIGNED_32,	60653));
-	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_16,	INTEGER_TYPE_UNSIGNED_64,	17991));
-
-	testCases.push_back(ConvertCase(INTEGER_TYPE_UNSIGNED_32,	INTEGER_TYPE_UNSIGNED_64,	904256275));
-}
-
-//  Test for the OpUConvert instruction.
-tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
-{
-	const string instruction				("OpUConvert");
-	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "uconvert", "OpUConvert"));
-	vector<ConvertCase>				testCases;
-	createUConvertCases(testCases);
+	de::MovePtr<tcu::TestCaseGroup>		group(new tcu::TestCaseGroup(testCtx, name.c_str(), instruction.c_str()));
+	vector<ConvertCase>					testCases;
+	createConvertCases(testCases, instruction);
 
 	for (vector<ConvertCase>::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
 	{
-		ComputeShaderSpec	spec;
+		map<string, string>	fragments		= getConvertCaseFragments(instruction, *test);
+		vector<string>		features		= getFeatureStringVector(test->m_features);
+		GraphicsResources	resources;
+		vector<string>		extensions;
+		vector<deInt32>		noSpecConstants;
+		PushConstants		noPushConstants;
+		GraphicsInterfaces	noInterfaces;
+		tcu::RGBA			defaultColors[4];
 
-		spec.assembly = getConvertCaseShaderStr(instruction, *test);
-		spec.inputs.push_back(test->m_inputBuffer);
-		spec.outputs.push_back(test->m_outputBuffer);
-		spec.numWorkGroups = IVec3(1, 1, 1);
+		getDefaultColors			(defaultColors);
+		resources.inputs.push_back	(std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, test->m_inputBuffer));
+		resources.outputs.push_back	(std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, test->m_outputBuffer));
+		extensions.push_back		("VK_KHR_storage_buffer_storage_class");
 
-		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64)
-		{
-			spec.extensions.push_back("VK_KHR_16bit_storage");
-		}
+		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType))
+			extensions.push_back("VK_KHR_16bit_storage");
 
-		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
+		createTestsForAllStages(
+			test->m_name, defaultColors, defaultColors, fragments, noSpecConstants,
+			noPushConstants, resources, noInterfaces, extensions, features, VulkanFeatures(), group.get());
 	}
 	return group.release();
 }
@@ -9121,8 +9342,9 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpSRemComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
-	computeTests->addChild(createSConvertTests(testCtx));
-	computeTests->addChild(createUConvertTests(testCtx));
+	computeTests->addChild(createConvertComputeTests(testCtx, "OpSConvert", "sconvert"));
+	computeTests->addChild(createConvertComputeTests(testCtx, "OpUConvert", "uconvert"));
+	computeTests->addChild(createConvertComputeTests(testCtx, "OpFConvert", "fconvert"));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
@@ -9189,6 +9411,9 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createIndexingGraphicsGroup(testCtx));
 	graphicsTests->addChild(createVariablePointersGraphicsGroup(testCtx));
 	graphicsTests->addChild(createImageSamplerGraphicsGroup(testCtx));
+	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpSConvert", "sconvert"));
+	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpUConvert", "uconvert"));
+	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpFConvert", "fconvert"));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
