@@ -3671,4 +3671,5 @@ dEQP-EGL.functional.wide_color.window_8888_colorspace_p3
 dEQP-EGL.functional.wide_color.pbuffer_8888_colorspace_default
 dEQP-EGL.functional.wide_color.pbuffer_8888_colorspace_srgb
 dEQP-EGL.functional.wide_color.pbuffer_8888_colorspace_p3
-dEQP-EGL.functional.hdr_color.8888
+dEQP-EGL.functional.hdr_metadata.smpte2086
+dEQP-EGL.functional.hdr_metadata.cta861_3
