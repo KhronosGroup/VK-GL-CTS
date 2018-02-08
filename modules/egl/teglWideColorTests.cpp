@@ -1408,10 +1408,10 @@ TestCaseGroup* createWideColorTests (EglTestContext& eglTestCtx)
 	return new WideColorTests(eglTestCtx);
 }
 
-class HdrColorTest : public WideColorTest
+class Smpte2086ColorTest : public WideColorTest
 {
 public:
-	HdrColorTest		(EglTestContext&	eglTestCtx,
+	Smpte2086ColorTest		(EglTestContext&	eglTestCtx,
 							 const char*		name,
 							 const char*		description);
 
@@ -1419,23 +1419,22 @@ public:
 	IterateResult		iterate					(void);
 };
 
-HdrColorTest::HdrColorTest (EglTestContext& eglTestCtx, const char* name, const char* description)
+Smpte2086ColorTest::Smpte2086ColorTest (EglTestContext& eglTestCtx, const char* name, const char* description)
 		: WideColorTest(eglTestCtx, name, description)
 {
 }
 
 #define METADATA_SCALE(x) (static_cast<EGLint>(x * EGL_METADATA_SCALING_EXT))
 
-void HdrColorTest::executeTest (void)
+void Smpte2086ColorTest::executeTest (void)
 {
 	tcu::TestLog&						log				= m_testCtx.getLog();
 	const Library&						egl				= m_eglTestCtx.getLibrary();
 	egl.bindAPI(EGL_OPENGL_ES_API);
 
-	log << tcu::TestLog::Message << "Test HDR Metadata on Window" << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Test SMPTE 2086 Metadata on Window" << tcu::TestLog::EndMessage;
 
 	checkSMPTE2086();
-	checkCTA861_3();
 
 	// This is an increment FP16 can do between -1.0 to 1.0
 	const float fp16Increment1 = deFloatPow(2.0, -11.0);
@@ -1477,6 +1476,79 @@ void HdrColorTest::executeTest (void)
 		EGL_SMPTE2086_WHITE_POINT_Y_EXT, METADATA_SCALE(0.2578),
 		EGL_SMPTE2086_MAX_LUMINANCE_EXT, METADATA_SCALE(123.0),
 		EGL_SMPTE2086_MIN_LUMINANCE_EXT, METADATA_SCALE(0.123),
+		EGL_NONE
+	};
+	testObj.addTestAttributes(testAttrs);
+
+	testObj.init();
+	testObj.executeTest();
+}
+
+TestCase::IterateResult Smpte2086ColorTest::iterate (void)
+{
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	executeTest();
+	return STOP;
+}
+
+class Cta8613ColorTest : public WideColorTest
+{
+public:
+	Cta8613ColorTest		(EglTestContext&	eglTestCtx,
+							 const char*		name,
+							 const char*		description);
+
+	void				executeTest				(void);
+	IterateResult		iterate					(void);
+};
+
+Cta8613ColorTest::Cta8613ColorTest (EglTestContext& eglTestCtx, const char* name, const char* description)
+		: WideColorTest(eglTestCtx, name, description)
+{
+}
+
+#define METADATA_SCALE(x) (static_cast<EGLint>(x * EGL_METADATA_SCALING_EXT))
+
+void Cta8613ColorTest::executeTest (void)
+{
+	tcu::TestLog&						log				= m_testCtx.getLog();
+	const Library&						egl				= m_eglTestCtx.getLibrary();
+	egl.bindAPI(EGL_OPENGL_ES_API);
+
+	log << tcu::TestLog::Message << "Test CTA 861.3 Metadata on Window" << tcu::TestLog::EndMessage;
+
+	checkCTA861_3();
+
+	// This is an increment FP16 can do between -1.0 to 1.0
+	const float fp16Increment1 = deFloatPow(2.0, -11.0);
+	// This is an increment FP16 can do between 1.0 to 2.0
+	const float fp16Increment2 = deFloatPow(2.0, -10.0);
+
+	std::vector<Iteration> int8888Iterations;
+	// -0.333251953125f ~ -1/3 as seen in fp16
+	// Negative values will be 0 on read with fixed point pixel formats
+	int8888Iterations.push_back(Iteration(-0.333251953125f, fp16Increment1, 10));
+	// test crossing 0
+	int8888Iterations.push_back(Iteration(-fp16Increment1 * 5.0f, fp16Increment1, 10));
+	// test crossing 1.0
+	// Values > 1.0 will be truncated to 1.0 with fixed point pixel formats
+	int8888Iterations.push_back(Iteration(1.0f - fp16Increment2 * 5.0f, fp16Increment2, 10));
+
+	const EGLint windowAttribList8888[] =
+	{
+		EGL_SURFACE_TYPE,				EGL_WINDOW_BIT,
+		EGL_RENDERABLE_TYPE,			EGL_OPENGL_ES2_BIT,
+		EGL_RED_SIZE,					8,
+		EGL_GREEN_SIZE,					8,
+		EGL_BLUE_SIZE,					8,
+		EGL_ALPHA_SIZE,					8,
+		EGL_NONE,						EGL_NONE
+	};
+
+	WideColorSurfaceTest testObj(m_eglTestCtx, "window_8888_colorspace_default", "8888 window surface, default (sRGB) colorspace", windowAttribList8888, EGL_NONE, int8888Iterations);
+
+	const EGLint testAttrs[] =
+	{
 		EGL_CTA861_3_MAX_CONTENT_LIGHT_LEVEL_EXT, METADATA_SCALE(234),
 		EGL_CTA861_3_MAX_FRAME_AVERAGE_LEVEL_EXT, METADATA_SCALE(67),
 		EGL_NONE
@@ -1487,7 +1559,7 @@ void HdrColorTest::executeTest (void)
 	testObj.executeTest();
 }
 
-TestCase::IterateResult HdrColorTest::iterate (void)
+TestCase::IterateResult Cta8613ColorTest::iterate (void)
 {
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 	executeTest();
@@ -1506,13 +1578,14 @@ private:
 };
 
 HdrColorTests::HdrColorTests (EglTestContext& eglTestCtx)
-		: TestCaseGroup(eglTestCtx, "hdr_color", "HDR Color tests")
+		: TestCaseGroup(eglTestCtx, "hdr_metadata", "HDR Metadata tests")
 {
 }
 
 void HdrColorTests::init (void)
 {
-	addChild(new HdrColorTest(m_eglTestCtx, "8888", "Verify that SMPTE 2086 extension exists"));
+	addChild(new Smpte2086ColorTest(m_eglTestCtx, "smpte2086", "Verify that SMPTE 2086 extension exists"));
+	addChild(new Cta8613ColorTest(m_eglTestCtx, "cta861_3", "Verify that CTA 861.3 extension exists"));
 }
 
 TestCaseGroup* createHdrColorTests (EglTestContext& eglTestCtx)
