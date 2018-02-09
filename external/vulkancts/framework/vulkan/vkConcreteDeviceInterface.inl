@@ -168,6 +168,8 @@ virtual void		cmdDebugMarkerEndEXT							(VkCommandBuffer commandBuffer) const;
 virtual void		cmdDebugMarkerInsertEXT							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;
 virtual void		cmdDrawIndirectCountAMD							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
 virtual void		cmdDrawIndexedIndirectCountAMD					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
+virtual void		cmdDrawIndirectCountKHR							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
+virtual void		cmdDrawIndexedIndirectCountKHR					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
 virtual VkResult	getMemoryWin32HandleNV							(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle) const;
 virtual void		cmdProcessCommandsNVX							(VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) const;
 virtual void		cmdReserveSpaceForCommandsNVX					(VkCommandBuffer commandBuffer, const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo) const;
