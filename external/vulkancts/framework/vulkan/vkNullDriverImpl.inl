@@ -1188,6 +1188,28 @@ VKAPI_ATTR VkResult VKAPI_CALL getSwapchainStatusKHR (VkDevice device, VkSwapcha
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceCapabilities2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities)
 {
 	DE_UNREF(physicalDevice);
@@ -1571,6 +1593,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkUpdateDescriptorSetWithTemplateKHR,	updateDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdPushDescriptorSetWithTemplateKHR,	cmdPushDescriptorSetWithTemplateKHR),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,					getSwapchainStatusKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountKHR,				cmdDrawIndirectCountKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountKHR,		cmdDrawIndexedIndirectCountKHR),
 	VK_NULL_FUNC_ENTRY(vkImportFenceWin32HandleKHR,				importFenceWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkGetFenceWin32HandleKHR,				getFenceWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,						importFenceFdKHR),

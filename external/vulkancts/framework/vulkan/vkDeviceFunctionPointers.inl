@@ -134,6 +134,8 @@ DestroyDescriptorUpdateTemplateKHRFunc		destroyDescriptorUpdateTemplateKHR;
 UpdateDescriptorSetWithTemplateKHRFunc		updateDescriptorSetWithTemplateKHR;
 CmdPushDescriptorSetWithTemplateKHRFunc		cmdPushDescriptorSetWithTemplateKHR;
 GetSwapchainStatusKHRFunc					getSwapchainStatusKHR;
+CmdDrawIndirectCountKHRFunc					cmdDrawIndirectCountKHR;
+CmdDrawIndexedIndirectCountKHRFunc			cmdDrawIndexedIndirectCountKHR;
 ImportFenceWin32HandleKHRFunc				importFenceWin32HandleKHR;
 GetFenceWin32HandleKHRFunc					getFenceWin32HandleKHR;
 ImportFenceFdKHRFunc						importFenceFdKHR;

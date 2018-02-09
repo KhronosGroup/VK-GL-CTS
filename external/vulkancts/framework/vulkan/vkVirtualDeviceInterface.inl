@@ -134,6 +134,8 @@ virtual void		destroyDescriptorUpdateTemplateKHR		(VkDevice device, VkDescriptor
 virtual void		updateDescriptorSetWithTemplateKHR		(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, const void* pData) const = 0;
 virtual void		cmdPushDescriptorSetWithTemplateKHR		(VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplateKHR descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData) const = 0;
 virtual VkResult	getSwapchainStatusKHR					(VkDevice device, VkSwapchainKHR swapchain) const = 0;
+virtual void		cmdDrawIndirectCountKHR					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
+virtual void		cmdDrawIndexedIndirectCountKHR			(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const = 0;
 virtual VkResult	importFenceWin32HandleKHR				(VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo) const = 0;
 virtual VkResult	getFenceWin32HandleKHR					(VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;
 virtual VkResult	importFenceFdKHR						(VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo) const = 0;
