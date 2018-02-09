@@ -300,3 +300,8 @@ dEQP-VK.wsi.android.shared_presentable_image.scale_down.*
 # Issue: b/67022169
 dEQP-VK.wsi.android.incremental_present.scale_down.*
 
+# Issue: b/111786155 Backport of tests for KHR_draw_indirect_count, but change
+# includes some unrelated test refactoring. Exclude the tests that would affect
+# previously-passing implementations.
+dEQP-VK.draw.indirect_draw.sequential.indirect_draw_first_instance.*
+dEQP-VK.draw.indirect_draw.indexed.indirect_draw_first_instance.*
