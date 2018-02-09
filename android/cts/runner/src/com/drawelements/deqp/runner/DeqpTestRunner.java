@@ -21,7 +21,6 @@ import com.android.ddmlib.IShellOutputReceiver;
 import com.android.ddmlib.MultiLineReceiver;
 import com.android.ddmlib.ShellCommandUnresponsiveException;
 import com.android.ddmlib.TimeoutException;
-import com.android.ddmlib.testrunner.TestIdentifier;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.config.OptionClass;
@@ -31,6 +30,7 @@ import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.result.ByteArrayInputStreamSource;
 import com.android.tradefed.result.ITestInvocationListener;
 import com.android.tradefed.result.LogDataType;
+import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.testtype.IAbi;
 import com.android.tradefed.testtype.IAbiReceiver;
 import com.android.tradefed.testtype.IBuildReceiver;
@@ -141,10 +141,10 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             description="The estimated config runtime. Defaults to 200ms x num tests.")
     private long mRuntimeHint = -1;
 
-    private Collection<TestIdentifier> mRemainingTests = null;
-    private Map<TestIdentifier, Set<BatchRunConfiguration>> mTestInstances = null;
+    private Collection<TestDescription> mRemainingTests = null;
+    private Map<TestDescription, Set<BatchRunConfiguration>> mTestInstances = null;
     private final TestInstanceResultListener mInstanceListerner = new TestInstanceResultListener();
-    private final Map<TestIdentifier, Integer> mTestInstabilityRatings = new HashMap<>();
+    private final Map<TestDescription, Integer> mTestInstabilityRatings = new HashMap<>();
     private IAbi mAbi;
     private CompatibilityBuildHelper mBuildHelper;
     private boolean mLogData = false;
@@ -163,7 +163,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     private DeqpTestRunner(DeqpTestRunner optionTemplate,
-                Map<TestIdentifier, Set<BatchRunConfiguration>> tests) {
+                Map<TestDescription, Set<BatchRunConfiguration>> tests) {
         copyOptions(this, optionTemplate);
         mTestInstances = tests;
     }
@@ -262,7 +262,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         private ITestInvocationListener mSink;
         private BatchRunConfiguration mRunConfig;
 
-        private TestIdentifier mCurrentTestId;
+        private TestDescription mCurrentTestId;
         private boolean mGotTestResult;
         private String mCurrentTestLog;
 
@@ -273,7 +273,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             Set<BatchRunConfiguration> remainingConfigs;
         }
 
-        private final Map<TestIdentifier, PendingResult> mPendingResults = new HashMap<>();
+        private final Map<TestDescription, PendingResult> mPendingResults = new HashMap<>();
 
         public void setSink(ITestInvocationListener sink) {
             mSink = sink;
@@ -286,14 +286,14 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Get currently processed test id, or null if not currently processing a test case
          */
-        public TestIdentifier getCurrentTestId() {
+        public TestDescription getCurrentTestId() {
             return mCurrentTestId;
         }
 
         /**
          * Forward result to sink
          */
-        private void forwardFinalizedPendingResult(TestIdentifier testId) {
+        private void forwardFinalizedPendingResult(TestDescription testId) {
             if (mRemainingTests.contains(testId)) {
                 final PendingResult result = mPendingResults.get(testId);
 
@@ -342,7 +342,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Declare existence of a test and instances
          */
-        public void setTestInstances(TestIdentifier testId, Set<BatchRunConfiguration> configs) {
+        public void setTestInstances(TestDescription testId, Set<BatchRunConfiguration> configs) {
             // Test instances cannot change at runtime, ignore if we have already set this
             if (!mPendingResults.containsKey(testId)) {
                 final PendingResult pendingResult = new PendingResult();
@@ -357,7 +357,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Query if test instance has not yet been executed
          */
-        public boolean isPendingTestInstance(TestIdentifier testId,
+        public boolean isPendingTestInstance(TestDescription testId,
                 BatchRunConfiguration config) {
             final PendingResult result = mPendingResults.get(testId);
             if (result == null) {
@@ -379,7 +379,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Fake execution of an instance with current config
          */
-        public void skipTest(TestIdentifier testId) {
+        public void skipTest(TestDescription testId) {
             final PendingResult result = mPendingResults.get(testId);
 
             result.errorMessages.put(mRunConfig, SKIPPED_INSTANCE_LOG_MESSAGE);
@@ -394,7 +394,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         /**
          * Fake failure of an instance with current config
          */
-        public void abortTest(TestIdentifier testId, String errorMessage) {
+        public void abortTest(TestDescription testId, String errorMessage) {
             final PendingResult result = mPendingResults.get(testId);
 
             // Mark as executed
@@ -1020,12 +1020,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
     }
 
-    private static Map<TestIdentifier, Set<BatchRunConfiguration>> generateTestInstances(
+    private static Map<TestDescription, Set<BatchRunConfiguration>> generateTestInstances(
             Reader testlist, String configName, String screenRotation, String surfaceType,
             boolean required) {
         // Note: This is specifically a LinkedHashMap to guarantee that tests are iterated
         // in the insertion order.
-        final Map<TestIdentifier, Set<BatchRunConfiguration>> instances = new LinkedHashMap<>();
+        final Map<TestDescription, Set<BatchRunConfiguration>> instances = new LinkedHashMap<>();
         try {
             BufferedReader testlistReader = new BufferedReader(testlist);
             String testName;
@@ -1034,7 +1034,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 final Set<BatchRunConfiguration> testInstanceSet = new LinkedHashSet<>();
                 BatchRunConfiguration config = new BatchRunConfiguration(configName, screenRotation, surfaceType, required);
                 testInstanceSet.add(config);
-                TestIdentifier test = pathToIdentifier(testName);
+                TestDescription test = pathToIdentifier(testName);
                 instances.put(test, testInstanceSet);
             }
             testlistReader.close();
@@ -1047,26 +1047,26 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         return instances;
     }
 
-    private Set<BatchRunConfiguration> getTestRunConfigs(TestIdentifier testId) {
+    private Set<BatchRunConfiguration> getTestRunConfigs(TestDescription testId) {
         return mTestInstances.get(testId);
     }
 
     /**
      * Get the test instance of the runner. Exposed for testing.
      */
-    Map<TestIdentifier, Set<BatchRunConfiguration>> getTestInstance() {
+    Map<TestDescription, Set<BatchRunConfiguration>> getTestInstance() {
         return mTestInstances;
     }
 
     /**
-     * Converts dEQP testcase path to TestIdentifier.
+     * Converts dEQP testcase path to TestDescription.
      */
-    private static TestIdentifier pathToIdentifier(String testPath) {
+    private static TestDescription pathToIdentifier(String testPath) {
         int indexOfLastDot = testPath.lastIndexOf('.');
         String className = testPath.substring(0, indexOfLastDot);
         String testName = testPath.substring(indexOfLastDot+1);
 
-        return new TestIdentifier(className, testName);
+        return new TestDescription(className, testName);
     }
 
     // \todo [2015-10-16 kalle] How unique should this be?
@@ -1128,12 +1128,12 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     }
 
     /**
-     * Generates testcase trie from TestIdentifiers.
+     * Generates testcase trie from TestDescriptions.
      */
-    private static String generateTestCaseTrie(Collection<TestIdentifier> tests) {
+    private static String generateTestCaseTrie(Collection<TestDescription> tests) {
         ArrayList<String> testPaths = new ArrayList<String>();
 
-        for (TestIdentifier test : tests) {
+        for (TestDescription test : tests) {
             testPaths.add(test.getClassName() + "." + test.getTestName());
         }
 
@@ -1142,7 +1142,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
     private static class TestBatch {
         public BatchRunConfiguration config;
-        public List<TestIdentifier> tests;
+        public List<TestDescription> tests;
     }
 
     /**
@@ -1152,13 +1152,13 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      *  @param requiredConfig Select only instances with pending requiredConfig, or null to select
      *         any run configuration.
      */
-    private TestBatch selectRunBatch(Collection<TestIdentifier> pool,
+    private TestBatch selectRunBatch(Collection<TestDescription> pool,
             BatchRunConfiguration requiredConfig) {
         // select one test (leading test) that is going to be executed and then pack along as many
         // other compatible instances as possible.
 
-        TestIdentifier leadingTest = null;
-        for (TestIdentifier test : pool) {
+        TestDescription leadingTest = null;
+        for (TestDescription test : pool) {
             if (!mRemainingTests.contains(test)) {
                 continue;
             }
@@ -1199,7 +1199,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         runBatch.tests = new ArrayList<>();
         runBatch.tests.add(leadingTest);
 
-        for (TestIdentifier test : pool) {
+        for (TestDescription test : pool) {
             if (test == leadingTest) {
                 // do not re-select the leading tests
                 continue;
@@ -1226,7 +1226,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
     private int getBatchNumPendingCases(TestBatch batch) {
         int numPending = 0;
-        for (TestIdentifier test : batch.tests) {
+        for (TestDescription test : batch.tests) {
             if (mInstanceListerner.isPendingTestInstance(test, batch.config)) {
                 ++numPending;
             }
@@ -1239,7 +1239,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         return Math.max(1, TESTCASE_BATCH_LIMIT / (1 << batchInstabilityRating));
     }
 
-    private int getTestInstabilityRating(TestIdentifier testId) {
+    private int getTestInstabilityRating(TestDescription testId) {
         if (mTestInstabilityRatings.containsKey(testId)) {
             return mTestInstabilityRatings.get(testId);
         } else {
@@ -1247,11 +1247,11 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
     }
 
-    private void recordTestInstability(TestIdentifier testId) {
+    private void recordTestInstability(TestDescription testId) {
         mTestInstabilityRatings.put(testId, getTestInstabilityRating(testId) + 1);
     }
 
-    private void clearTestInstability(TestIdentifier testId) {
+    private void clearTestInstability(TestDescription testId) {
         mTestInstabilityRatings.put(testId, 0);
     }
 
@@ -1277,7 +1277,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             CapabilityQueryFailureException {
         // prepare instance listener
         mInstanceListerner.setCurrentConfig(batch.config);
-        for (TestIdentifier test : batch.tests) {
+        for (TestDescription test : batch.tests) {
             mInstanceListerner.setTestInstances(test, getTestRunConfigs(test));
         }
 
@@ -1365,17 +1365,17 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
         // split remaining tests to two sub batches and execute both. This will terminate
         // since executeTestRunBatchRun will always progress for a batch of size 1.
-        final ArrayList<TestIdentifier> pendingTests = new ArrayList<>();
+        final ArrayList<TestDescription> pendingTests = new ArrayList<>();
 
-        for (TestIdentifier test : batch.tests) {
+        for (TestDescription test : batch.tests) {
             if (mInstanceListerner.isPendingTestInstance(test, batch.config)) {
                 pendingTests.add(test);
             }
         }
 
         final int divisorNdx = pendingTests.size() / 2;
-        final List<TestIdentifier> headList = pendingTests.subList(0, divisorNdx);
-        final List<TestIdentifier> tailList = pendingTests.subList(divisorNdx, pendingTests.size());
+        final List<TestDescription> headList = pendingTests.subList(0, divisorNdx);
+        final List<TestDescription> tailList = pendingTests.subList(divisorNdx, pendingTests.size());
 
         // head
         for (;;) {
@@ -1486,7 +1486,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
         // Progress guarantees.
         if (batch.tests.size() == 1) {
-            final TestIdentifier onlyTest = batch.tests.iterator().next();
+            final TestDescription onlyTest = batch.tests.iterator().next();
             final boolean wasTestExecuted =
                     !mInstanceListerner.isPendingTestInstance(onlyTest, batch.config) &&
                     mInstanceListerner.getCurrentTestId() == null;
@@ -1518,7 +1518,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             //
             // A successful run of tests clears instability rating.
             if (mInstanceListerner.getCurrentTestId() == null) {
-                for (TestIdentifier test : batch.tests) {
+                for (TestDescription test : batch.tests) {
                     if (mInstanceListerner.isPendingTestInstance(test, batch.config)) {
                         recordTestInstability(test);
                     } else {
@@ -1527,7 +1527,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                 }
             } else {
                 recordTestInstability(mInstanceListerner.getCurrentTestId());
-                for (TestIdentifier test : batch.tests) {
+                for (TestDescription test : batch.tests) {
                     // \note: isPendingTestInstance is false for getCurrentTestId. Current ID is
                     // considered 'running' and will be restored to 'pending' in endBatch().
                     if (!test.equals(mInstanceListerner.getCurrentTestId()) &&
@@ -1566,7 +1566,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
     private int getNumRemainingInstances() {
         int retVal = 0;
-        for (TestIdentifier testId : mRemainingTests) {
+        for (TestDescription testId : mRemainingTests) {
             // If case is in current working set, sum only not yet executed instances.
             // If case is not in current working set, sum all instances (since they are not yet
             // executed).
@@ -1592,7 +1592,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * Pass given batch tests without running it
      */
     private void fakePassTestRunBatch(TestBatch batch) {
-        for (TestIdentifier test : batch.tests) {
+        for (TestDescription test : batch.tests) {
             CLog.d("Marking '%s' invocation in config '%s' as passed without running", test.toString(),
                     batch.config.getId());
             mInstanceListerner.skipTest(test);
@@ -1603,7 +1603,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * Fail given batch tests without running it
      */
     private void fakeFailTestRunBatch(TestBatch batch) {
-        for (TestIdentifier test : batch.tests) {
+        for (TestDescription test : batch.tests) {
             CLog.d("Marking '%s' invocation in config '%s' as failed without running", test.toString(),
                     batch.config.getId());
             mInstanceListerner.abortTest(test, "Required config not supported");
@@ -1615,7 +1615,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      */
     private void fakePassTests(ITestInvocationListener listener) {
         Map <String, String> emptyMap = Collections.emptyMap();
-        for (TestIdentifier test : mRemainingTests) {
+        for (TestDescription test : mRemainingTests) {
             CLog.d("Skipping test '%s', Opengl ES version not supported", test.toString());
             listener.testStarted(test);
             listener.testEnded(test, emptyMap);
@@ -1883,7 +1883,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         return nonPatternFilters;
     }
 
-    private static boolean matchesAny(TestIdentifier test, List<Pattern> patterns) {
+    private static boolean matchesAny(TestDescription test, List<Pattern> patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(test.toString()).matches()) {
                 return true;
@@ -1898,7 +1898,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * '*' is 0 or more characters.
      * '.' is interpreted verbatim.
      */
-    private static void filterTests(Map<TestIdentifier, Set<BatchRunConfiguration>> tests,
+    private static void filterTests(Map<TestDescription, Set<BatchRunConfiguration>> tests,
                                     List<String> includeFilters,
                                     List<String> excludeFilters) {
         // We could filter faster by building the test case tree.
@@ -1908,8 +1908,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         List<Pattern> includePatterns = getPatternFilters(includeFilters);
         List<Pattern> excludePatterns = getPatternFilters(excludeFilters);
 
-        List<TestIdentifier> testList = new ArrayList<>(tests.keySet());
-        for (TestIdentifier test : testList) {
+        List<TestDescription> testList = new ArrayList<>(tests.keySet());
+        for (TestDescription test : testList) {
             if (excludeStrings.contains(test.toString())) {
                 tests.remove(test); // remove test if explicitly excluded
                 continue;
@@ -2165,8 +2165,8 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
         Collection<IRemoteTest> runners = new ArrayList<>();
         // NOTE: Use linked hash map to keep the insertion order in iteration
-        Map<TestIdentifier, Set<BatchRunConfiguration>> currentSet = new LinkedHashMap<>();
-        Map<TestIdentifier, Set<BatchRunConfiguration>> iterationSet = this.mTestInstances;
+        Map<TestDescription, Set<BatchRunConfiguration>> currentSet = new LinkedHashMap<>();
+        Map<TestDescription, Set<BatchRunConfiguration>> iterationSet = this.mTestInstances;
 
         if (iterationSet.keySet().isEmpty()) {
             CLog.i("Cannot split deqp tests, no tests to run");
@@ -2174,7 +2174,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         }
 
         // Go through tests, split
-        for (TestIdentifier test: iterationSet.keySet()) {
+        for (TestDescription test: iterationSet.keySet()) {
             currentSet.put(test, iterationSet.get(test));
             if (currentSet.size() >= TESTCASE_BATCH_LIMIT) {
                 runners.add(new DeqpTestRunner(this, currentSet));
@@ -2203,13 +2203,13 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
 
         List<IRemoteTest> runners = new ArrayList<>();
         // NOTE: Use linked hash map to keep the insertion order in iteration
-        Map<TestIdentifier, Set<BatchRunConfiguration>> currentSet = new LinkedHashMap<>();
-        Map<TestIdentifier, Set<BatchRunConfiguration>> iterationSet = this.mTestInstances;
+        Map<TestDescription, Set<BatchRunConfiguration>> currentSet = new LinkedHashMap<>();
+        Map<TestDescription, Set<BatchRunConfiguration>> iterationSet = this.mTestInstances;
 
         int batchLimit = iterationSet.keySet().size() / shardCount;
         int i = 1;
         // Go through tests, split
-        for (TestIdentifier test: iterationSet.keySet()) {
+        for (TestDescription test: iterationSet.keySet()) {
             currentSet.put(test, iterationSet.get(test));
             if (currentSet.size() >= batchLimit && i < shardCount) {
                 runners.add(new DeqpTestRunner(this, currentSet));
@@ -2227,7 +2227,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         if (runners.size() < shardCount) {
             for (int j = runners.size(); j < shardCount; j++) {
                 runners.add(new DeqpTestRunner(this,
-                        new LinkedHashMap<TestIdentifier, Set<BatchRunConfiguration>>()));
+                        new LinkedHashMap<TestDescription, Set<BatchRunConfiguration>>()));
             }
         }
 
