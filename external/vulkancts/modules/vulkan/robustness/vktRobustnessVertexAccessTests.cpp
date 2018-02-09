@@ -758,7 +758,7 @@ bool VertexAccessInstance::verifyResult (void)
 	std::ostringstream			logMsg;
 	const DeviceInterface&		vk						= m_context.getDeviceInterface();
 	tcu::TestLog&				log						= m_context.getTestContext().getLog();
-	const int					numChannels				= getNumUsedChannels(mapVkFormat(m_inputFormat).order);
+	const deUint32				numChannels				= getNumUsedChannels(mapVkFormat(m_inputFormat).order);
 	const deUint32				numScalarsPerVertex		= numChannels * 3; // Use 3 identical attributes
 	void*						outDataPtr				= m_outBufferAlloc->getHostPtr();
 	const deUint32				outValueSize			= sizeof(deUint32);
@@ -782,11 +782,12 @@ bool VertexAccessInstance::verifyResult (void)
 		VkDeviceSize		inBufferAllocSize;
 		deUint32			inBufferValueIndex;
 		bool				isOutOfBoundsAccess		= false;
-		const bool			isInstanceRateValue		= ((valueNdx / numChannels) % 3 == 2);
+		const deUint32		attributeIndex			= (valueNdx / numChannels) % 3;
 		const deUint32*		outValuePtr				= (deUint32*)outDataPtr + valueNdx;
 
-		if (isInstanceRateValue)
+		if (attributeIndex == 2)
 		{
+			// Instance rate
 			const deUint32	elementIndex	= valueNdx / (numScalarsPerVertex * m_numVertices); // instance id
 
 			numInBufferValues	= m_numInstanceValues;
@@ -796,6 +797,7 @@ bool VertexAccessInstance::verifyResult (void)
 		}
 		else
 		{
+			// Vertex rate
 			const deUint32	vertexNdx		= valueNdx / numScalarsPerVertex;
 			const deUint32	instanceNdx		= vertexNdx / m_numVertices;
 			const deUint32	elementIndex	= valueNdx / numScalarsPerVertex; // vertex id
@@ -804,6 +806,10 @@ bool VertexAccessInstance::verifyResult (void)
 			inBufferPtr			= m_vertexRateBufferAlloc->getHostPtr();
 			inBufferAllocSize	= m_vertexRateBufferAllocSize;
 			inBufferValueIndex	= (getIndex(elementIndex) * (numChannels * 2)) + (valueNdx % numScalarsPerVertex) - instanceNdx * (m_numVertices * numChannels * 2);
+
+			// Binding 0 contains two attributes, so bounds checking for attribute 0 must also consider attribute 1 to determine if the binding is out of bounds.
+			if ((attributeIndex == 0) && (numInBufferValues >= numChannels))
+				numInBufferValues -= numChannels;
 		}
 
 		isOutOfBoundsAccess	= (inBufferValueIndex >= numInBufferValues);
@@ -815,8 +821,6 @@ bool VertexAccessInstance::verifyResult (void)
 
 		// Log value information
 		{
-			const deUint32	attributeIndex	= (valueNdx % numScalarsPerVertex) / numChannels;
-
 			// Vertex separator
 			if (valueNdx && valueNdx % numScalarsPerVertex == 0)
 				logMsg << "\n";
@@ -858,7 +862,7 @@ bool VertexAccessInstance::verifyResult (void)
 				if (canMatchVec4Pattern)
 				{
 					if (m_inputFormat == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
-						matchesVec4Pattern	=  verifyOutOfBoundsVec4(outValuePtr - 3, VK_FORMAT_R32G32B32_SFLOAT);
+						matchesVec4Pattern	=  verifyOutOfBoundsVec4(outValuePtr, m_inputFormat);
 					else
 						matchesVec4Pattern	=  verifyOutOfBoundsVec4(outValuePtr - 3, m_inputFormat);
 				}

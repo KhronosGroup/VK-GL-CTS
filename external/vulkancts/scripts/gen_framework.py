@@ -873,16 +873,30 @@ def writeFunctionPtrTypes (api, filename):
 	writeInlFile(filename, INL_HEADER, indentLines(genTypes()))
 
 def writeFunctionPointers (api, filename, functionTypes):
-	writeInlFile(filename, INL_HEADER, indentLines(["%s\t%s;" % (getFunctionTypeName(function), getInterfaceName(function)) for function in api.functions if (function.getType() in functionTypes and not function.isAlias)]))
+	def FunctionsYielder ():
+		for function in api.functions:
+			if function.getType() in functionTypes:
+				if function.isAlias:
+					if function.getType() == Function.TYPE_INSTANCE and function.arguments[0].getType() == "VkPhysicalDevice":
+						yield "%s\t%s;" % (getFunctionTypeName(function), getInterfaceName(function))
+				else:
+					yield "%s\t%s;" % (getFunctionTypeName(function), getInterfaceName(function))
+
+	writeInlFile(filename, INL_HEADER, indentLines(FunctionsYielder()))
 
 def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
 	def makeInitFunctionPointers ():
 		for function in api.functions:
-			if function.getType() in functionTypes and not function.isAlias and (cond == None or cond(function)):
-				yield "m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.name)
-				if function.alias != None:
-					yield "if (!m_vk.%s)" % (getInterfaceName(function))
-					yield "    m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.alias.name)
+			if function.getType() in functionTypes and (cond == None or cond(function)):
+				interfaceName = getInterfaceName(function)
+				if function.isAlias:
+					if function.getType() == Function.TYPE_INSTANCE and function.arguments[0].getType() == "VkPhysicalDevice":
+						yield "m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.name)
+				else:
+					yield "m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.name)
+					if function.alias != None:
+						yield "if (!m_vk.%s)" % (getInterfaceName(function))
+						yield "    m_vk.%s\t= (%s)\tGET_PROC_ADDR(\"%s\");" % (getInterfaceName(function), getFunctionTypeName(function), function.alias.name)
 	lines = [line.replace('    ', '\t') for line in indentLines(makeInitFunctionPointers())]
 	writeInlFile(filename, INL_HEADER, lines)
 
@@ -899,6 +913,13 @@ def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
 					yield ""
 					yield "	*pApiVersion = VK_API_VERSION_1_0;"
 					yield "	return VK_SUCCESS;"
+				elif function.getType() == Function.TYPE_INSTANCE and function.arguments[0].getType() == "VkPhysicalDevice" and function.alias != None:
+					yield "	vk::VkPhysicalDeviceProperties props;"
+					yield "	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);"
+					yield "	if (props.apiVersion >= VK_API_VERSION_1_1)"
+					yield "		%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function), ", ".join(a.name for a in function.arguments))
+					yield "	else"
+					yield "		%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function.alias), ", ".join(a.name for a in function.arguments))
 				else:
 					yield "	%sm_vk.%s(%s);" % ("return " if function.returnType != "void" else "", getInterfaceName(function), ", ".join(a.name for a in function.arguments))
 				yield "}"

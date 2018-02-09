@@ -1280,7 +1280,7 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR(vo
 																						VK_STRUCTURE_TYPE_DISPLAY_SURFACE_CREATE_INFO_KHR,	// VkStructureType					sType
 																						DE_NULL,											// const void*						pNext
 																						0,													// VkDisplaySurfaceCreateFlagsKHR	flags
-																						modeIndex,											// VkDisplayModeKHR					displayMode
+																						displayMode,										// VkDisplayModeKHR					displayMode
 																						planeIndex,											// uint32_t							planeIndex
 																						planeProperties[planeIndex].currentStackIndex,		// uint32_t							planeStackIndex
 																						VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,				// VkSurfaceTransformFlagBitsKHR	transform

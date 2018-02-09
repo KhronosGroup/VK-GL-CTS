@@ -280,89 +280,103 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 			if (allocationSize * m_config.memoryAllocationCount * 8 > memoryHeap.size)
 				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory.");
 
-			try
+#if (DE_PTR_SIZE == 4)
+			// For 32-bit binaries we cap the total host visible allocations to 1.5GB to
+			// avoid exhausting CPU virtual address space and throwing a false negative result.
+			if ((memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) &&
+				allocationSize * m_config.memoryAllocationCount >= 1610612736)
+
+				log << TestLog::Message << "    Skipping: Not enough CPU virtual address space for all host visible allocations." << TestLog::EndMessage;
+			else
 			{
-				const deUint32 totalDeviceMaskCombinations = m_subsetAllocationAllowed ? (1 << m_numPhysDevices) - 1 : 1;
-				for (deUint32 deviceMask = 1; deviceMask <= totalDeviceMaskCombinations; deviceMask++)
+#else
+			{
+#endif
+
+				try
 				{
-					// Allocate on all physical devices if subset allocation is not allowed, do only once.
-					if (!m_subsetAllocationAllowed)
-						deviceMask = (1 << m_numPhysDevices) - 1;
-					m_allocFlagsInfo.deviceMask = deviceMask;
-
-					if (m_config.order == TestConfig::ALLOC_FREE || m_config.order == TestConfig::ALLOC_REVERSE_FREE)
+					const deUint32 totalDeviceMaskCombinations = m_subsetAllocationAllowed ? (1 << m_numPhysDevices) - 1 : 1;
+					for (deUint32 deviceMask = 1; deviceMask <= totalDeviceMaskCombinations; deviceMask++)
 					{
-						for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
-						{
-							VkMemoryAllocateInfo alloc =
-							{
-								VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// sType
-								m_useDeviceGroups ? &m_allocFlagsInfo : DE_NULL,	// pNext
-								allocationSize,										// allocationSize
-								m_memoryTypeIndex									// memoryTypeIndex;
-							};
+						// Allocate on all physical devices if subset allocation is not allowed, do only once.
+						if (!m_subsetAllocationAllowed)
+							deviceMask = (1 << m_numPhysDevices) - 1;
+						m_allocFlagsInfo.deviceMask = deviceMask;
 
-							VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
-
-							TCU_CHECK(!!memoryObjects[ndx]);
-						}
-
-						if (m_config.order == TestConfig::ALLOC_FREE)
+						if (m_config.order == TestConfig::ALLOC_FREE || m_config.order == TestConfig::ALLOC_REVERSE_FREE)
 						{
 							for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 							{
-								const VkDeviceMemory mem = memoryObjects[memoryObjects.size() - 1 - ndx];
+								VkMemoryAllocateInfo alloc =
+								{
+									VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// sType
+									m_useDeviceGroups ? &m_allocFlagsInfo : DE_NULL,	// pNext
+									allocationSize,										// allocationSize
+									m_memoryTypeIndex									// memoryTypeIndex;
+								};
 
-								vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
-								memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory)0;
+								VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
+
+								TCU_CHECK(!!memoryObjects[ndx]);
+							}
+
+							if (m_config.order == TestConfig::ALLOC_FREE)
+							{
+								for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
+								{
+									const VkDeviceMemory mem = memoryObjects[memoryObjects.size() - 1 - ndx];
+
+									vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+									memoryObjects[memoryObjects.size() - 1 - ndx] = (VkDeviceMemory)0;
+								}
+							}
+							else
+							{
+								for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
+								{
+									const VkDeviceMemory mem = memoryObjects[ndx];
+
+									vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+									memoryObjects[ndx] = (VkDeviceMemory)0;
+								}
 							}
 						}
 						else
 						{
 							for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 							{
-								const VkDeviceMemory mem = memoryObjects[ndx];
+								const VkMemoryAllocateInfo alloc =
+								{
+									VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// sType
+									m_useDeviceGroups ? &m_allocFlagsInfo : DE_NULL,	// pNext
+									allocationSize,										// allocationSize
+									m_memoryTypeIndex									// memoryTypeIndex;
+								};
 
-								vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
+								VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
+								TCU_CHECK(!!memoryObjects[ndx]);
+
+								vkd.freeMemory(device, memoryObjects[ndx], (const VkAllocationCallbacks*)DE_NULL);
 								memoryObjects[ndx] = (VkDeviceMemory)0;
 							}
 						}
 					}
-					else
+				}
+				catch (...)
+				{
+					for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
 					{
-						for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
+						const VkDeviceMemory mem = memoryObjects[ndx];
+
+						if (!!mem)
 						{
-							const VkMemoryAllocateInfo alloc =
-							{
-								VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,				// sType
-								m_useDeviceGroups ? &m_allocFlagsInfo : DE_NULL,	// pNext
-								allocationSize,										// allocationSize
-								m_memoryTypeIndex									// memoryTypeIndex;
-							};
-
-							VK_CHECK(vkd.allocateMemory(device, &alloc, (const VkAllocationCallbacks*)DE_NULL, &memoryObjects[ndx]));
-							TCU_CHECK(!!memoryObjects[ndx]);
-
-							vkd.freeMemory(device, memoryObjects[ndx], (const VkAllocationCallbacks*)DE_NULL);
+							vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
 							memoryObjects[ndx] = (VkDeviceMemory)0;
 						}
 					}
-				}
-			}
-			catch (...)
-			{
-				for (size_t ndx = 0; ndx < m_config.memoryAllocationCount; ndx++)
-				{
-					const VkDeviceMemory mem = memoryObjects[ndx];
 
-					if (!!mem)
-					{
-						vkd.freeMemory(device, mem, (const VkAllocationCallbacks*)DE_NULL);
-						memoryObjects[ndx] = (VkDeviceMemory)0;
-					}
+					throw;
 				}
-
-				throw;
 			}
 		}
 	}
