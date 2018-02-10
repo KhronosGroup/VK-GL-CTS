@@ -183,6 +183,7 @@ public:
 	void								clearCurrent		(void);
 	virtual const glw::Functions&		getFunctions		(void) const;
 	virtual const tcu::RenderTarget&	getRenderTarget		(void) const;
+	virtual glw::GenericFuncType		getProcAddress		(const char* name) const;
 	const GLXContext&					getGLXContext		(void) const;
 
 private:
@@ -732,6 +733,11 @@ void GlxRenderContext::clearCurrent (void)
 {
 	TCU_CHECK_GLX(glXMakeContextCurrent(m_glxDisplay.getXDisplay(),
 										None, None, DE_NULL));
+}
+
+glw::GenericFuncType GlxRenderContext::getProcAddress(const char *name) const
+{
+	return glXGetProcAddress(reinterpret_cast<const GLubyte*>(name));
 }
 
 ContextType GlxRenderContext::getType (void) const
