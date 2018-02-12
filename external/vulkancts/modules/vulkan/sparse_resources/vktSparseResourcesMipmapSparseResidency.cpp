@@ -52,17 +52,6 @@ namespace sparse
 namespace
 {
 
-tcu::UVec3 alignedDivide (const VkExtent3D& extent, const VkExtent3D& divisor)
-{
-	tcu::UVec3 result;
-
-	result.x() = extent.width  / divisor.width  + ((extent.width  % divisor.width)  ? 1u : 0u);
-	result.y() = extent.height / divisor.height + ((extent.height % divisor.height) ? 1u : 0u);
-	result.z() = extent.depth  / divisor.depth  + ((extent.depth  % divisor.depth)  ? 1u : 0u);
-
-	return result;
-}
-
 class MipmapSparseResidencyCase : public TestCase
 {
 public:

@@ -26,8 +26,10 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkMemUtil.hpp"
 #include "tcuTexture.hpp"
 #include "tcuCompressedTexture.hpp"
+#include "deSharedPtr.hpp"
 
 namespace vk
 {
@@ -128,6 +130,50 @@ tcu::ConstPixelBufferAccess		getChannelAccess				(const PlanarFormatDescription&
 																 const deUint32*				planeRowPitches,
 																 const void* const*				planePtrs,
 																 deUint32						channelNdx);
+VkImageAspectFlags				getImageAspectFlags				(const tcu::TextureFormat		textureFormat);
+VkExtent3D						mipLevelExtents					(const VkExtent3D&				baseExtents,
+																 const deUint32					mipLevel);
+tcu::UVec3						alignedDivide					(const VkExtent3D&				extent,
+																 const VkExtent3D&				divisor);
+
+/*--------------------------------------------------------------------*//*!
+ * Copies buffer data into an image.
+*//*--------------------------------------------------------------------*/
+void							copyBufferToImage				(const DeviceInterface&						vk,
+																 vk::VkDevice								device,
+																 vk::VkQueue								queue,
+																 deUint32									queueFamilyIndex,
+																 const vk::VkBuffer&						buffer,
+																 deUint32									bufferSize,
+																 const std::vector<vk::VkBufferImageCopy>&	copyRegions,
+																 const vk::VkSemaphore*						waitSemaphore,
+																 vk::VkImageAspectFlags						imageAspectFlags,
+																 deUint32									mipLevels,
+																 deUint32									arrayLayers,
+																 vk::VkImage								destImage);
+
+/*--------------------------------------------------------------------*//*!
+ * Checks if the physical device supports creation of the specified
+ * image format.
+ *//*--------------------------------------------------------------------*/
+bool							checkSparseImageFormatSupport	(const vk::VkPhysicalDevice		physicalDevice,
+																 const vk::InstanceInterface&	instance,
+																 const vk::VkImageCreateInfo&	imageCreateInfo);
+
+/*--------------------------------------------------------------------*//*!
+ * Allocates memory for a sparse image and handles the memory binding.
+ *//*--------------------------------------------------------------------*/
+void							allocateAndBindSparseImage		(const vk::DeviceInterface&						vk,
+																 vk::VkDevice									device,
+																 const vk::VkPhysicalDevice						physicalDevice,
+																 const vk::InstanceInterface&					instance,
+																 const vk::VkImageCreateInfo&					imageCreateInfo,
+																 const vk::VkSemaphore&							signalSemaphore,
+																 vk::VkQueue									queue,
+																 vk::Allocator&									allocator,
+																 std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
+																 tcu::TextureFormat								format,
+																 vk::VkImage									destImage);
 
 } // vk
 

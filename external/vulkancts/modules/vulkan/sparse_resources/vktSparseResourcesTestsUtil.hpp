@@ -122,12 +122,6 @@ bool							isImageSizeSupported				(const vk::InstanceInterface&		instance,
 																	 const ImageType					imageType,
 																	 const tcu::UVec3&					imageSize);
 
-vk::VkExtent3D					mipLevelExtents						(const vk::VkExtent3D&				baseExtents,
-																	 const deUint32						mipLevel);
-
-tcu::UVec3						mipLevelExtents						(const tcu::UVec3&					baseExtents,
-																	 const deUint32						mipLevel);
-
 deUint32						getImageMaxMipLevels				(const vk::VkImageFormatProperties& imageFormatProperties,
 																	 const vk::VkExtent3D&				extent);
 
