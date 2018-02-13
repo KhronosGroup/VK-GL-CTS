@@ -654,7 +654,7 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 			0u,						// write mask
 			0u);					// reference
 
-		if (m_drawState.depthBoundsTestEnable && context.getDeviceFeatures().depthBounds)
+		if (m_drawState.depthBoundsTestEnable && !context.getDeviceFeatures().depthBounds)
 			TCU_THROW(NotSupportedError, "depthBounds not supported");
 
 		const VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo =
