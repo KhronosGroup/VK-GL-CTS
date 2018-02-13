@@ -3185,7 +3185,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 				0u,									// deUint32				baseMipLevel;
 				1u,									// deUint32				mipLevels;
 				0u,									// deUint32				baseArraySlice;
-				getArraySize(m_params.dst.image)	// deUint32				arraySize;
+				getArraySize(m_params.src.image)	// deUint32				arraySize;
 			}
 		},
 		// destination image
