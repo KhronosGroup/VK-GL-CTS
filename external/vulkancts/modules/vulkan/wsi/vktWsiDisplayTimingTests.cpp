@@ -1095,7 +1095,7 @@ void DisplayTimingTestInstance::render (void)
 	deUint32			imageIndex;
 
 	// Acquire next image
-	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, fence, &imageIndex));
+	VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, (vk::VkFence)0, &imageIndex));
 
 	// Create command buffer
 	m_commandBuffers[m_frameNdx % m_commandBuffers.size()] = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_pipelineLayout, *m_renderPass, m_framebuffers[imageIndex], *m_pipeline, m_frameNdx, m_quadCount, width, height).disown();
@@ -1208,7 +1208,7 @@ void DisplayTimingTestInstance::render (void)
 			&currentRenderSemaphore
 		};
 
-		VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, (vk::VkFence)0));
+		VK_CHECK(m_vkd.queueSubmit(m_queue, 1u, &submitInfo, fence));
 	}
 
 	// Present frame
