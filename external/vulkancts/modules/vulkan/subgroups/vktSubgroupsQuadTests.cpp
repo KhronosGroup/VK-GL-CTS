@@ -212,6 +212,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "    result = 1.0f; // Invocation we read from was inactive, so we can't verify results!\n"
 			<< "  }\n"
 			<< "  gl_Position = in_position;\n"
+			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);

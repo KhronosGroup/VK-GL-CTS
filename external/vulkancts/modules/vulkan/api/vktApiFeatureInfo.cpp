@@ -101,6 +101,18 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 {
 	bool						limitsOk	= true;
 	VkPhysicalDeviceLimits*		limits		= &properties->limits;
+	deUint32					shaderStages = 3;
+
+	if (features->tessellationShader)
+	{
+		shaderStages += 2;
+	}
+
+	if (features->geometryShader)
+	{
+		shaderStages++;
+	}
+
 	struct FeatureLimitTable
 	{
 		deUint32		offset;
@@ -136,13 +148,13 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 		{ LIMIT(maxPerStageDescriptorStorageImages),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxPerStageDescriptorInputAttachments),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
 		{ LIMIT(maxPerStageResources),								0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE , -1 },
-		{ LIMIT(maxDescriptorSetSamplers),							96, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
-		{ LIMIT(maxDescriptorSetUniformBuffers),					72, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxDescriptorSetSamplers),							shaderStages * 16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxDescriptorSetUniformBuffers),					shaderStages * 12, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxDescriptorSetUniformBuffersDynamic),				8, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
-		{ LIMIT(maxDescriptorSetStorageBuffers),					24, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN , -1 },
+		{ LIMIT(maxDescriptorSetStorageBuffers),					shaderStages * 4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxDescriptorSetStorageBuffersDynamic),				4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
-		{ LIMIT(maxDescriptorSetSampledImages),						96, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
-		{ LIMIT(maxDescriptorSetStorageImages),						24, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
+		{ LIMIT(maxDescriptorSetSampledImages),						shaderStages * 16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
+		{ LIMIT(maxDescriptorSetStorageImages),						shaderStages * 4, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN, -1 },
 		{ LIMIT(maxDescriptorSetInputAttachments),					0, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_NONE  , -1 },
 		{ LIMIT(maxVertexInputAttributes),							16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
 		{ LIMIT(maxVertexInputBindings),							16, 0, 0, 0.0f, LIMIT_FORMAT_UNSIGNED_INT, LIMIT_TYPE_MIN  , -1 },
@@ -597,10 +609,13 @@ Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, deUi
 	const vector<VkExtensionProperties>	instanceExts = enumerateInstanceExtensionProperties(vkp, DE_NULL);
 	vector<string>						enabledExts;
 
-	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
-		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
-
-	enabledExts.push_back(extensionName);
+	if (!isCoreInstanceExtension(version, extensionName))
+	{
+		if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
+			TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+		else
+			enabledExts.push_back(extensionName);
+	}
 
 	return createDefaultInstance(vkp, version, vector<string>() /* layers */, enabledExts, DE_NULL);
 }

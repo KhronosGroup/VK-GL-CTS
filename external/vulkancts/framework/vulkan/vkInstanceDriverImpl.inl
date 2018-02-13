@@ -74,52 +74,102 @@ VkResult InstanceDriver::enumeratePhysicalDeviceGroups (VkInstance instance, deU
 
 void InstanceDriver::getPhysicalDeviceFeatures2 (VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures) const
 {
-	m_vk.getPhysicalDeviceFeatures2(physicalDevice, pFeatures);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceFeatures2(physicalDevice, pFeatures);
+	else
+		m_vk.getPhysicalDeviceFeatures2KHR(physicalDevice, pFeatures);
 }
 
 void InstanceDriver::getPhysicalDeviceProperties2 (VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2* pProperties) const
 {
-	m_vk.getPhysicalDeviceProperties2(physicalDevice, pProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceProperties2(physicalDevice, pProperties);
+	else
+		m_vk.getPhysicalDeviceProperties2KHR(physicalDevice, pProperties);
 }
 
 void InstanceDriver::getPhysicalDeviceFormatProperties2 (VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2* pFormatProperties) const
 {
-	m_vk.getPhysicalDeviceFormatProperties2(physicalDevice, format, pFormatProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceFormatProperties2(physicalDevice, format, pFormatProperties);
+	else
+		m_vk.getPhysicalDeviceFormatProperties2KHR(physicalDevice, format, pFormatProperties);
 }
 
 VkResult InstanceDriver::getPhysicalDeviceImageFormatProperties2 (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo, VkImageFormatProperties2* pImageFormatProperties) const
 {
-	return m_vk.getPhysicalDeviceImageFormatProperties2(physicalDevice, pImageFormatInfo, pImageFormatProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		return m_vk.getPhysicalDeviceImageFormatProperties2(physicalDevice, pImageFormatInfo, pImageFormatProperties);
+	else
+		return m_vk.getPhysicalDeviceImageFormatProperties2KHR(physicalDevice, pImageFormatInfo, pImageFormatProperties);
 }
 
 void InstanceDriver::getPhysicalDeviceQueueFamilyProperties2 (VkPhysicalDevice physicalDevice, deUint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2* pQueueFamilyProperties) const
 {
-	m_vk.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
+	else
+		m_vk.getPhysicalDeviceQueueFamilyProperties2KHR(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
 }
 
 void InstanceDriver::getPhysicalDeviceMemoryProperties2 (VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2* pMemoryProperties) const
 {
-	m_vk.getPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceMemoryProperties2(physicalDevice, pMemoryProperties);
+	else
+		m_vk.getPhysicalDeviceMemoryProperties2KHR(physicalDevice, pMemoryProperties);
 }
 
 void InstanceDriver::getPhysicalDeviceSparseImageFormatProperties2 (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSparseImageFormatInfo2* pFormatInfo, deUint32* pPropertyCount, VkSparseImageFormatProperties2* pProperties) const
 {
-	m_vk.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
+	else
+		m_vk.getPhysicalDeviceSparseImageFormatProperties2KHR(physicalDevice, pFormatInfo, pPropertyCount, pProperties);
 }
 
 void InstanceDriver::getPhysicalDeviceExternalBufferProperties (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfo* pExternalBufferInfo, VkExternalBufferProperties* pExternalBufferProperties) const
 {
-	m_vk.getPhysicalDeviceExternalBufferProperties(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceExternalBufferProperties(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
+	else
+		m_vk.getPhysicalDeviceExternalBufferPropertiesKHR(physicalDevice, pExternalBufferInfo, pExternalBufferProperties);
 }
 
 void InstanceDriver::getPhysicalDeviceExternalFenceProperties (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo, VkExternalFenceProperties* pExternalFenceProperties) const
 {
-	m_vk.getPhysicalDeviceExternalFenceProperties(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceExternalFenceProperties(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
+	else
+		m_vk.getPhysicalDeviceExternalFencePropertiesKHR(physicalDevice, pExternalFenceInfo, pExternalFenceProperties);
 }
 
 void InstanceDriver::getPhysicalDeviceExternalSemaphoreProperties (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo, VkExternalSemaphoreProperties* pExternalSemaphoreProperties) const
 {
-	m_vk.getPhysicalDeviceExternalSemaphoreProperties(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
+	vk::VkPhysicalDeviceProperties props;
+	m_vk.getPhysicalDeviceProperties(physicalDevice, &props);
+	if (props.apiVersion >= VK_API_VERSION_1_1)
+		m_vk.getPhysicalDeviceExternalSemaphoreProperties(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
+	else
+		m_vk.getPhysicalDeviceExternalSemaphorePropertiesKHR(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties);
 }
 
 void InstanceDriver::destroySurfaceKHR (VkInstance instance, VkSurfaceKHR surface, const VkAllocationCallbacks* pAllocator) const

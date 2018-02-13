@@ -415,6 +415,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "    out_color.g = 0.0f;\n"
 				<< "  }\n"
 				<< "  gl_Position = in_position;\n"
+				<< "  gl_PointSize = 1.0f;\n"
 				<< "}\n";
 			programCollection.glslSources.add("vert")
 					<< glu::VertexSource(vertexSrc.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
@@ -535,6 +536,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 				<< "  out_color.g = float(value);\n"
 				<< "  out_color.a = float(tempResult2);\n"
 				<< "  gl_Position = in_position;\n"
+				<< "  gl_PointSize = 1.0f;\n"
 				<< "}\n";
 
 			programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);

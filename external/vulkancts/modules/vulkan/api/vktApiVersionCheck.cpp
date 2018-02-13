@@ -66,11 +66,11 @@ public:
 	virtual tcu::TestStatus		iterate					(void)
 	{
 		tcu::TestLog&			log				= m_context.getTestContext().getLog();
-		const vk::ApiVersion	instanceVersion	= vk::unpackVersion(m_context.getInstanceVersion());
+		const vk::ApiVersion	instanceVersion	= vk::unpackVersion(m_context.getAvailableInstanceVersion());
 		const vk::ApiVersion	deviceVersion	= vk::unpackVersion(m_context.getDeviceVersion());
 		const vk::ApiVersion	usedApiVersion	= vk::unpackVersion(m_context.getUsedApiVersion());
 
-		log << tcu::TestLog::Message << "instanceVersion: " << instanceVersion << tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message << "availableInstanceVersion: " << instanceVersion << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "deviceVersion: " << deviceVersion << tcu::TestLog::EndMessage;
 		log << tcu::TestLog::Message << "usedApiVersion: " << usedApiVersion << tcu::TestLog::EndMessage;
 		const ::std::string		result			= de::toString(usedApiVersion.majorNum) + ::std::string(".") + de::toString(usedApiVersion.minorNum) + ::std::string(".") + de::toString(usedApiVersion.patchNum);
