@@ -92,6 +92,7 @@
 #include "es31fSRGBDecodeTests.hpp"
 #include "es31fDrawElementsBaseVertexTests.hpp"
 #include "es31fShaderFramebufferFetchTests.hpp"
+#include "es31fShaderUniformIntegerFunctionTests.hpp"
 
 namespace deqp
 {
@@ -153,11 +154,12 @@ public:
 
 	void init (void)
 	{
-		addChild(new ShaderCommonFunctionTests	(m_context));
-		addChild(new ShaderPackingFunctionTests	(m_context));
-		addChild(new ShaderIntegerFunctionTests	(m_context));
-		addChild(new ShaderTextureSizeTests		(m_context));
-		addChild(createBuiltinPrecisionTests	(m_context));
+		addChild(new ShaderCommonFunctionTests			(m_context));
+		addChild(new ShaderPackingFunctionTests			(m_context));
+		addChild(new ShaderIntegerFunctionTests			(m_context));
+		addChild(new ShaderUniformIntegerFunctionTests	(m_context));
+		addChild(new ShaderTextureSizeTests				(m_context));
+		addChild(createBuiltinPrecisionTests			(m_context));
 	}
 };
 
