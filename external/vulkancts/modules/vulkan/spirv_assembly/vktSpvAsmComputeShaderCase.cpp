@@ -41,10 +41,6 @@ using std::vector;
 
 typedef vkt::SpirVAssembly::AllocationMp			AllocationMp;
 typedef vkt::SpirVAssembly::AllocationSp			AllocationSp;
-
-//typedef Unique<VkBuffer>							BufferHandleUp;
-//typedef de::SharedPtr<BufferHandleUp>				BufferHandleSp;
-
 typedef vk::Unique<VkBuffer>						BufferHandleUp;
 typedef vk::Unique<VkImage>							ImageHandleUp;
 typedef vk::Unique<VkImageView>						ImageViewHandleUp;
@@ -496,7 +492,30 @@ VkImageUsageFlags getMatchingComputeImageUsageFlags (VkDescriptorType dType)
 
 tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 {
+	const deUint32						queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	const VkDevice&						device				= m_context.getDevice();
+	const DeviceInterface&				vkdi				= m_context.getDeviceInterface();
+	Allocator&							allocator			= m_context.getDefaultAllocator();
+	const VkQueue						queue				= m_context.getUniversalQueue();
 	const VkPhysicalDeviceFeatures&		features			= m_context.getDeviceFeatures();
+
+	vector<AllocationSp>				inputAllocs;
+	vector<AllocationSp>				outputAllocs;
+	vector<BufferHandleSp>				inputBuffers;
+	vector<ImageHandleSp>				inputImages;
+	vector<ImageViewHandleSp>			inputImageViews;
+	vector<SamplerHandleSp>				inputSamplers;
+	vector<BufferHandleSp>				outputBuffers;
+	vector<VkDescriptorBufferInfo>		descriptorInfos;
+	vector<VkDescriptorImageInfo>		descriptorImageInfos;
+	vector<VkDescriptorType>			descriptorTypes;
+
+	// Check all required extensions are supported
+	for (std::vector<std::string>::const_iterator i = m_shaderSpec.extensions.begin(); i != m_shaderSpec.extensions.end(); ++i)
+	{
+		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), *i))
+			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
+	}
 
 	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt16)
 	{
@@ -514,42 +533,18 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	}
 
 	{
-		const InstanceInterface&			vki					= m_context.getInstanceInterface();
-		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
-
 		// 16bit storage features
 		{
-			if (!is16BitStorageFeaturesSupported(m_context.getUsedApiVersion(), vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
+			if (!is16BitStorageFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.ext16BitStorage))
 				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 		}
 
 		// VariablePointers features
 		{
-			if (!isVariablePointersFeaturesSupported(m_context.getUsedApiVersion(), vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
+			if (!isVariablePointersFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
 				TCU_THROW(NotSupportedError, "Request Variable Pointer feature not supported");
 		}
 	}
-
-	// defer device and resource creation until after feature checks
-	const deUint32						queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const Unique<VkDevice>				vkDevice			(createDeviceWithExtensions(m_context, queueFamilyIndex, m_context.getDeviceExtensions(), m_shaderSpec.extensions));
-	const VkDevice&						device				= *vkDevice;
-	const DeviceDriver					vkDeviceInterface	(m_context.getInstanceInterface(), device);
-	const DeviceInterface&				vkdi				= vkDeviceInterface;
-	const de::UniquePtr<vk::Allocator>	vkAllocator			(createAllocator(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), vkDeviceInterface, device));
-	Allocator&							allocator			= *vkAllocator;
-	const VkQueue						queue				(getDeviceQueue(vkDeviceInterface, device, queueFamilyIndex, 0));
-
-	vector<AllocationSp>				inputAllocs;
-	vector<AllocationSp>				outputAllocs;
-	vector<BufferHandleSp>				inputBuffers;
-	vector<ImageHandleSp>				inputImages;
-	vector<ImageViewHandleSp>			inputImageViews;
-	vector<SamplerHandleSp>				inputSamplers;
-	vector<BufferHandleSp>				outputBuffers;
-	vector<VkDescriptorBufferInfo>		descriptorInfos;
-	vector<VkDescriptorImageInfo>		descriptorImageInfos;
-	vector<VkDescriptorType>			descriptorTypes;
 
 	DE_ASSERT(!m_shaderSpec.outputs.empty());
 
@@ -665,7 +660,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					},											//	VkImageSubresourceRange	subresourceRange;
 				};
 
-				Move<VkImageView>			imgView			(createImageView(vkdi, *vkDevice, &imgViewParams));
+				Move<VkImageView>			imgView			(createImageView(vkdi, device, &imgViewParams));
 				inputImageViews.push_back(ImageViewHandleSp(new ImageViewHandleUp(imgView)));
 			}
 
@@ -693,7 +688,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 					VK_FALSE									// VkBool32					unnormalizedCoordinates;
 				};
 
-				Move<VkSampler>				sampler			(createSampler(vkdi, *vkDevice, &samplerParams));
+				Move<VkSampler>				sampler			(createSampler(vkdi, device, &samplerParams));
 				inputSamplers.push_back(SamplerHandleSp(new SamplerHandleUp(sampler)));
 			}
 		}

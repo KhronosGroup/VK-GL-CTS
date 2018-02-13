@@ -35,74 +35,9 @@ namespace SpirVAssembly
 
 using namespace vk;
 
-namespace
+bool is16BitStorageFeaturesSupported (const Context& context, Extension16BitStorageFeatures toCheck)
 {
-
-VkPhysicalDeviceFeatures filterDefaultDeviceFeatures (const VkPhysicalDeviceFeatures& deviceFeatures)
-{
-	VkPhysicalDeviceFeatures enabledDeviceFeatures = deviceFeatures;
-
-	// Disable robustness by default, as it has an impact on performance on some HW.
-	enabledDeviceFeatures.robustBufferAccess = false;
-
-	return enabledDeviceFeatures;
-}
-
-VkPhysicalDevice16BitStorageFeatures	querySupported16BitStorageFeatures (const deUint32 apiVersion, const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
-{
-	VkPhysicalDevice16BitStorageFeatures	extensionFeatures	=
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR,	// sType
-		DE_NULL,														// pNext
-		false,															// storageUniformBufferBlock16
-		false,															// storageUniform16
-		false,															// storagePushConstant16
-		false,															// storageInputOutput16
-	};
-	VkPhysicalDeviceFeatures2			features;
-
-	deMemset(&features, 0, sizeof(features));
-	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	features.pNext	= &extensionFeatures;
-
-	// Call the getter only if supported. Otherwise above "zero" defaults are used
-	if(isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
-	{
-		vki.getPhysicalDeviceFeatures2(device, &features);
-	}
-
-	return extensionFeatures;
-}
-
-VkPhysicalDeviceVariablePointerFeatures querySupportedVariablePointersFeatures (const deUint32 apiVersion, const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions)
-{
-	VkPhysicalDeviceVariablePointerFeatures extensionFeatures	=
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR,	// sType
-		DE_NULL,															// pNext
-		false,																// variablePointersStorageBuffer
-		false,																// variablePointers
-	};
-
-	VkPhysicalDeviceFeatures2	features;
-	deMemset(&features, 0, sizeof(features));
-	features.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-	features.pNext	= &extensionFeatures;
-
-	// Call the getter only if supported. Otherwise above "zero" defaults are used
-	if(isInstanceExtensionSupported(apiVersion, instanceExtensions, "VK_KHR_get_physical_device_properties2"))
-	{
-		vki.getPhysicalDeviceFeatures2(device, &features);
-	}
-
-	return extensionFeatures;
-}
-
-} // anonymous
-
-bool is16BitStorageFeaturesSupported (const deUint32 apiVersion, const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, Extension16BitStorageFeatures toCheck)
-{
-	VkPhysicalDevice16BitStorageFeatures extensionFeatures	= querySupported16BitStorageFeatures(apiVersion, vki, device, instanceExtensions);
+	const VkPhysicalDevice16BitStorageFeatures& extensionFeatures = context.get16BitStorageFeatures();
 
 	if ((toCheck & EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK) != 0 && extensionFeatures.storageBuffer16BitAccess == VK_FALSE)
 		return false;
@@ -119,9 +54,9 @@ bool is16BitStorageFeaturesSupported (const deUint32 apiVersion, const InstanceI
 	return true;
 }
 
-bool isVariablePointersFeaturesSupported (const deUint32 apiVersion, const InstanceInterface& vki, VkPhysicalDevice device, const std::vector<std::string>& instanceExtensions, ExtensionVariablePointersFeatures toCheck)
+bool isVariablePointersFeaturesSupported (const Context& context, ExtensionVariablePointersFeatures toCheck)
 {
-	VkPhysicalDeviceVariablePointerFeatures extensionFeatures = querySupportedVariablePointersFeatures(apiVersion, vki, device, instanceExtensions);
+	const VkPhysicalDeviceVariablePointerFeatures& extensionFeatures = context.getVariablePointerFeatures();
 
 	if ((toCheck & EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER) != 0 && extensionFeatures.variablePointersStorageBuffer == VK_FALSE)
 		return false;
@@ -130,87 +65,6 @@ bool isVariablePointersFeaturesSupported (const deUint32 apiVersion, const Insta
 		return false;
 
 	return true;
-}
-
-Move<VkDevice> createDeviceWithExtensions (Context&							context,
-										   const deUint32					queueFamilyIndex,
-										   const std::vector<std::string>&	supportedExtensions,
-										   const std::vector<std::string>&	requiredExtensions)
-{
-	const InstanceInterface&					vki							= context.getInstanceInterface();
-	const VkPhysicalDevice						physicalDevice				= context.getPhysicalDevice();
-	std::vector<const char*>					extensions;
-	void*										pExtension					= DE_NULL;
-	const VkPhysicalDeviceFeatures				deviceFeatures				= getPhysicalDeviceFeatures(vki, physicalDevice);
-	VkPhysicalDevice16BitStorageFeatures		ext16BitStorageFeatures;
-	VkPhysicalDeviceVariablePointerFeatures		extVariablePointerFeatures;
-
-	for (deUint32 extNdx = 0; extNdx < requiredExtensions.size(); ++extNdx)
-	{
-		const std::string&	ext = requiredExtensions[extNdx];
-
-		// Check that all required extensions are supported first.
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), supportedExtensions, ext))
-		{
-			TCU_THROW(NotSupportedError, (std::string("Device extension not supported: ") + ext).c_str());
-		}
-
-		// Currently don't support enabling multiple extensions at the same time.
-		if (ext == "VK_KHR_16bit_storage")
-		{
-			// For the 16bit storage extension, we have four features to test. Requesting all features supported.
-			// Note that we don't throw NotImplemented errors here if a specific feature is not supported;
-			// that should be done when actually trying to use that specific feature.
-			ext16BitStorageFeatures	= querySupported16BitStorageFeatures(context.getUsedApiVersion(), vki, physicalDevice, context.getInstanceExtensions());
-			pExtension = &ext16BitStorageFeatures;
-		}
-		else if (ext == "VK_KHR_variable_pointers")
-		{
-			// For the VariablePointers extension, we have two features to test. Requesting all features supported.
-			extVariablePointerFeatures	= querySupportedVariablePointersFeatures(context.getUsedApiVersion(), vki, physicalDevice, context.getInstanceExtensions());
-			pExtension = &extVariablePointerFeatures;
-		}
-
-		if (!isCoreDeviceExtension(context.getUsedApiVersion(), ext))
-			extensions.push_back(ext.c_str());
-	}
-
-	const float						queuePriorities[]	= { 1.0f };
-	const VkDeviceQueueCreateInfo	queueInfos[]		=
-	{
-		{
-			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			DE_NULL,
-			(VkDeviceQueueCreateFlags)0,
-			queueFamilyIndex,
-			DE_LENGTH_OF_ARRAY(queuePriorities),
-			&queuePriorities[0]
-		}
-	};
-	const VkPhysicalDeviceFeatures	features			= filterDefaultDeviceFeatures(deviceFeatures);
-	const VkDeviceCreateInfo		deviceParams		=
-	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		pExtension,
-		(VkDeviceCreateFlags)0,
-		DE_LENGTH_OF_ARRAY(queueInfos),
-		&queueInfos[0],
-		0u,
-		DE_NULL,
-		(deUint32)extensions.size(),
-		extensions.empty() ? DE_NULL : &extensions[0],
-		&features
-	};
-
-	return vk::createDevice(vki, physicalDevice, &deviceParams);
-}
-
-Allocator* createAllocator (const InstanceInterface& instanceInterface, const VkPhysicalDevice physicalDevice, const DeviceInterface& deviceInterface, const VkDevice device)
-{
-	const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(instanceInterface, physicalDevice);
-
-	// \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
-	return new SimpleAllocator(deviceInterface, device, memoryProperties);
 }
 
 deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)

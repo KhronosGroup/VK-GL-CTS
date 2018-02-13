@@ -306,6 +306,8 @@ class DeviceFeatures
 public:
 	VkPhysicalDeviceFeatures2						coreFeatures;
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures	samplerYCbCrConversionFeatures;
+	VkPhysicalDevice16BitStorageFeatures			sixteenBitStorageFeatures;
+	VkPhysicalDeviceVariablePointerFeatures			variablePointerFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -315,14 +317,33 @@ public:
 	{
 		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
 		deMemset(&samplerYCbCrConversionFeatures, 0, sizeof(samplerYCbCrConversionFeatures));
+		deMemset(&sixteenBitStorageFeatures, 0, sizeof(sixteenBitStorageFeatures));
+		deMemset(&variablePointerFeatures, 0, sizeof(variablePointerFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
+		sixteenBitStorageFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR;
+		variablePointerFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR;
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
+			void** nextPtr = &coreFeatures.pNext;
+
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_sampler_ycbcr_conversion"))
-				coreFeatures.pNext = &samplerYCbCrConversionFeatures;
+			{
+				*nextPtr	= &samplerYCbCrConversionFeatures;
+				nextPtr		= &samplerYCbCrConversionFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_16bit_storage"))
+			{
+				*nextPtr	= &sixteenBitStorageFeatures;
+				nextPtr		= &sixteenBitStorageFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_variable_pointers"))
+			{
+				*nextPtr	= &variablePointerFeatures;
+				nextPtr		= &variablePointerFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -352,6 +373,8 @@ public:
 	const VkPhysicalDeviceFeatures&							getDeviceFeatures					(void) const	{ return m_deviceFeatures.coreFeatures.features;			}
 	const VkPhysicalDeviceFeatures2&						getDeviceFeatures2					(void) const	{ return m_deviceFeatures.coreFeatures; }
 	const VkPhysicalDeviceSamplerYcbcrConversionFeatures&	getSamplerYCbCrConversionFeatures	(void) const	{ return m_deviceFeatures.samplerYCbCrConversionFeatures;	}
+	const VkPhysicalDevice16BitStorageFeatures&				get16BitStorageFeatures				(void) const	{ return m_deviceFeatures.sixteenBitStorageFeatures;		}
+	const VkPhysicalDeviceVariablePointerFeatures&			getVariablePointerFeatures			(void) const	{ return m_deviceFeatures.variablePointerFeatures;			}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -472,6 +495,10 @@ const vk::VkPhysicalDeviceFeatures2&	Context::getDeviceFeatures2				(void) const
 const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&
 										Context::getSamplerYCbCrConversionFeatures
 																				(void) const { return m_device->getSamplerYCbCrConversionFeatures();	}
+const vk::VkPhysicalDevice16BitStorageFeatures&
+										Context::get16BitStorageFeatures		(void) const { return m_device->get16BitStorageFeatures();		}
+const vk::VkPhysicalDeviceVariablePointerFeatures&
+										Context::getVariablePointerFeatures		(void) const { return m_device->getVariablePointerFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

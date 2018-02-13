@@ -67,32 +67,12 @@ struct VulkanFeatures
 };
 
 // Returns true if the given 16bit storage extension features in `toCheck` are all supported.
-bool is16BitStorageFeaturesSupported (const deUint32 apiVersion,
-									  const vk::InstanceInterface&		vkInstance,
-									  vk::VkPhysicalDevice				device,
-									  const std::vector<std::string>&	instanceExtensions,
-									  Extension16BitStorageFeatures		toCheck);
+bool is16BitStorageFeaturesSupported (const Context&				context,
+									  Extension16BitStorageFeatures	toCheck);
 
 // Returns true if the given variable pointers extension features in `toCheck` are all supported.
-bool isVariablePointersFeaturesSupported (const deUint32 apiVersion,
-										  const vk::InstanceInterface&		vkInstance,
-										  vk::VkPhysicalDevice				device,
-										  const std::vector<std::string>&	instanceExtensions,
+bool isVariablePointersFeaturesSupported (const Context&					context,
 										  ExtensionVariablePointersFeatures	toCheck);
-
-// Creates a Vulkan logical device with the requiredExtensions enabled and all other extensions disabled.
-// The logical device will be created from the instance and physical device in the given context.
-// A single queue will be created from the given queue family.
-vk::Move<vk::VkDevice> createDeviceWithExtensions (Context&							context,
-												   deUint32							queueFamilyIndex,
-												   const std::vector<std::string>&	supportedExtensions,
-												   const std::vector<std::string>&	requiredExtensions);
-
-// Creates a SimpleAllocator on the given device.
-vk::Allocator* createAllocator (const vk::InstanceInterface& instanceInterface,
-								const vk::VkPhysicalDevice physicalDevice,
-								const vk::DeviceInterface& deviceInterface,
-								const vk::VkDevice device);
 
 deUint32 getMinRequiredVulkanVersion (const vk::SpirvVersion version);
 
