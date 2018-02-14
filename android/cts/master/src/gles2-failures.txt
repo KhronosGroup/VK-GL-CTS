@@ -1239,7 +1239,6 @@ dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_unifor
 dEQP-GLES2.functional.shaders.discard.dynamic_loop_texture
 dEQP-GLES2.functional.shaders.discard.function_static_loop_texture
 dEQP-GLES2.functional.shaders.discard.static_loop_texture
-dEQP-GLES2.functional.shaders.fragdata.invalid_assign_to_1
 dEQP-GLES2.functional.shaders.fragdata.valid_dynamic_index
 dEQP-GLES2.functional.shaders.fragdata.valid_uniform_index
 dEQP-GLES2.functional.shaders.fragdata.write_fragcolor_and_fragdata_static_if

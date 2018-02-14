@@ -23,7 +23,9 @@
 
 #include "es2fRandomShaderTests.hpp"
 #include "glsRandomShaderCase.hpp"
+#include "glwFunctions.hpp"
 #include "deStringUtil.hpp"
+#include "glwEnums.hpp"
 
 namespace deqp
 {
@@ -42,6 +44,14 @@ gls::RandomShaderCase* createRandomShaderCase (Context& context, const char* des
 	params.seed							= seed;
 	params.vertexParameters.randomize	= vertex;
 	params.fragmentParameters.randomize	= fragment;
+
+	// GL_MAJOR_VERSION query does not exist on GLES2
+	// so succeeding query implies GLES3+ hardware.
+	glw::GLint majorVersion = 0;
+	const glw::Functions& gl = context.getRenderContext().getFunctions();
+	gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+	if (gl.getError() == GL_NO_ERROR)
+		params.version = rsg::VERSION_300;
 
 	return new gls::RandomShaderCase(context.getTestContext(), context.getRenderContext(), de::toString(seed).c_str(), description, params);
 }

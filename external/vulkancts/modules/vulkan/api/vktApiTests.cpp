@@ -40,6 +40,7 @@
 #include "vktApiGranularityTests.hpp"
 #include "vktApiGetMemoryCommitment.hpp"
 #include "vktApiExternalMemoryTests.hpp"
+#include "vktApiDescriptorSetTests.hpp"
 
 namespace vkt
 {
@@ -76,6 +77,7 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createGranularityQueryTests		(testCtx));
 	apiTests->addChild(createMemoryCommitmentTests		(testCtx));
 	apiTests->addChild(createExternalMemoryTests		(testCtx));
+	apiTests->addChild(createDescriptorSetTests			(testCtx));
 }
 
 } // anonymous

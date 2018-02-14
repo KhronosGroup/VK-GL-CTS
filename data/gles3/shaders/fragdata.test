@@ -2,6 +2,8 @@
 case invalid_assign_to_1
 	version 100 es
 	expect compile_fail
+	require only_glsl_es_100_support
+	require exactly_one_draw_buffer
 	vertex ""
 		void main (void)
 		{

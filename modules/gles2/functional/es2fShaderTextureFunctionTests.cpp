@@ -568,11 +568,19 @@ static void createCaseGroup (TestCaseGroup* parent, const char* groupName, const
 
 void ShaderTextureFunctionTests::init (void)
 {
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+
 	// Samplers
 	static const tcu::Sampler	samplerLinearNoMipmap	(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 														 tcu::Sampler::LINEAR, tcu::Sampler::LINEAR);
-	static const tcu::Sampler	samplerLinearMipmap		(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
+	static tcu::Sampler			samplerLinearMipmap		(tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL,
 														 tcu::Sampler::LINEAR_MIPMAP_NEAREST, tcu::Sampler::LINEAR);
+
+	// GL_MAJOR_VERSION query does not exist on GLES2
+	// so succeeding query implies GLES3+ hardware.
+	glw::GLint majorVersion = 0;
+	gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+	samplerLinearMipmap.seamlessCubeMap = (gl.getError() == GL_NO_ERROR);
 
 	// Default textures.
 	//												Type			Format		DataType			W		H		L	Sampler

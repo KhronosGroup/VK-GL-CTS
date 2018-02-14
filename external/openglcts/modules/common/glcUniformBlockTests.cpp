@@ -735,7 +735,7 @@ public:
 						"  color = b.v;\n"
 						"}");
 
-		// check if linking succeeds when both matched blocks are lacking an instance name
+		// check if linking succeeds when both blocks have a different instance name
 		if (!Test(vs3, fs3, GL_TRUE))
 			return STOP;
 
@@ -751,8 +751,43 @@ public:
 						"  color = vec4(f);\n"
 						"}\n");
 
-		// check if link error is generated when the same name is used for block and non-block uniform
+		// check if link error is generated when the same name is used for block
+		// with no intance name and non-block uniform
 		if (!Test(vs4, fs4, GL_FALSE))
+			return STOP;
+
+		std::string vs5("precision highp float;\n"
+						"layout (std140) uniform Data { float f; } a;\n"
+						"void main() {\n"
+						"  gl_Position = vec4(a.f);\n"
+						"}\n");
+		std::string fs5("precision highp float;\n"
+						"uniform float f;\n"
+						"out vec4 color;\n"
+						"void main() {\n"
+						"  color = vec4(f);\n"
+						"}\n");
+
+		// check if link succeeds when the same name is used for block with
+		// instance name and non-block uniform
+		if (!Test(vs5, fs5, GL_TRUE))
+			return STOP;
+
+
+		std::string vs6("precision highp float;\n"
+						"uniform Data1 { float u; vec4 v; };\n"
+						"void main() {\n"
+						"  gl_Position = v;\n"
+						"}");
+		std::string fs6("precision highp float;\n"
+						"out vec4 color;\n"
+						"uniform Data2 { vec4 v; };\n"
+						"void main() {\n"
+						"  color = v;\n"
+						"}");
+
+		// check if link error is generated when same name is used in two different blocks
+		if (!Test(vs6, fs6, GL_FALSE))
 			return STOP;
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");

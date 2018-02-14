@@ -60,6 +60,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiComputeInstanceResultBuffer.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiCopiesAndBlittingTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiDescriptorPoolTests.cpp \
+	external/vulkancts/modules/vulkan/api/vktApiDescriptorSetTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiDeviceInitializationTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiExternalMemoryTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiFeatureInfo.cpp \
@@ -71,6 +72,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiObjectManagementTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiSmokeTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiTests.cpp \
+	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorUpdateTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingModelTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingShaderAccessTests.cpp \
 	external/vulkancts/modules/vulkan/clipping/vktClippingTests.cpp \
@@ -222,6 +224,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmInstructionTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTests.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmTypeTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmUboMatrixPaddingTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmUtils.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmVariablePointersTests.cpp \

@@ -105,7 +105,7 @@ bool isValid (const ShaderCaseSpecification& spec)
 		return false;
 	}
 
-	if (spec.fullGLSLES100Required)
+	if (isCapabilityRequired(CAPABILITY_FULL_GLSL_ES_100_SUPPORT, spec))
 	{
 		if (spec.targetVersion != GLSL_VERSION_100_ES)
 		{
@@ -233,6 +233,19 @@ bool isValid (const ShaderCaseSpecification& spec)
 	return true;
 }
 
+bool isCapabilityRequired(CapabilityFlag capabilityFlag, const ShaderCaseSpecification& spec)
+{
+	std::vector<RequiredCapability>::const_iterator currRequirement = spec.requiredCaps.begin();
+	while (currRequirement != spec.requiredCaps.end())
+	{
+		if ((currRequirement->type == CAPABILITY_FLAG) && (currRequirement->flagName == capabilityFlag))
+			return true;
+		++currRequirement;
+	}
+
+	return false;
+}
+
 // Parser
 
 static const glu::GLSLVersion DEFAULT_GLSL_VERSION = glu::GLSL_VERSION_100_ES;
@@ -261,51 +274,6 @@ DE_INLINE deBool isCaseNameChar (char c)
 {
 	return deInRange32(c, 'a', 'z') || deInRange32(c, 'A', 'Z') || deInRange32(c, '0', '9') || (c == '_') || (c == '-') || (c == '.');
 }
-
-struct CaseRequirement
-{
-	enum Type
-	{
-		TYPE_EXTENSION = 0,
-		TYPE_FULL_GLSL_ES_100_SUPPORT,
-		TYPE_IMPLEMENTATION_LIMIT,
-
-		TYPE_LAST
-	};
-
-	Type					type;
-
-	// TYPE_EXTENSION:
-	RequiredExtension		extension;
-
-	// TYPE_IMPLEMENTATION_LIMIT
-	RequiredCapability		requiredCap;
-
-	CaseRequirement (void) : type(TYPE_LAST) {}
-
-	static CaseRequirement createFullGLSLES100SpecificationRequirement (void)
-	{
-		CaseRequirement req;
-		req.type		= TYPE_FULL_GLSL_ES_100_SUPPORT;
-		return req;
-	}
-
-	static CaseRequirement createAnyExtensionRequirement (const vector<string>& alternatives, deUint32 effectiveStages)
-	{
-		CaseRequirement req;
-		req.type		= TYPE_EXTENSION;
-		req.extension	= RequiredExtension(alternatives, effectiveStages);
-		return req;
-	}
-
-	static CaseRequirement createLimitRequirement (deUint32 enumName, int referenceValue)
-	{
-		CaseRequirement req;
-		req.type		= TYPE_IMPLEMENTATION_LIMIT;
-		req.requiredCap	= RequiredCapability(enumName, referenceValue);
-		return req;
-	}
-};
 
 class ShaderParser
 {
@@ -414,7 +382,7 @@ private:
 	void						parseValue					(ValueBlock& valueBlock);
 	void						parseValueBlock				(ValueBlock& valueBlock);
 	deUint32					parseShaderStageList		(void);
-	void						parseRequirement			(CaseRequirement& valueBlock);
+	void						parseRequirement			(vector<RequiredCapability> &requiredCaps, vector<RequiredExtension> &requiredExts);
 	void						parseExpectResult			(ExpectResult& expectResult);
 	void						parseFormat					(DataType& format);
 	void						parseGLSLVersion			(glu::GLSLVersion& version);
@@ -1152,7 +1120,7 @@ deUint32 ShaderParser::parseShaderStageList (void)
 	return mask;
 }
 
-void ShaderParser::parseRequirement (CaseRequirement& valueBlock)
+void ShaderParser::parseRequirement (vector<RequiredCapability>& requiredCaps, vector<RequiredExtension>& requiredExts)
 {
 	PARSE_DBG(("    parseRequirement()\n"));
 
@@ -1196,7 +1164,7 @@ void ShaderParser::parseRequirement (CaseRequirement& valueBlock)
 			affectedCasesFlags = parseShaderStageList();
 		}
 
-		valueBlock = CaseRequirement::createAnyExtensionRequirement(anyExtensionStringList, affectedCasesFlags);
+		requiredExts.push_back(RequiredExtension(anyExtensionStringList, affectedCasesFlags));
 	}
 	else if (m_curTokenStr == "limit")
 	{
@@ -1216,13 +1184,25 @@ void ShaderParser::parseRequirement (CaseRequirement& valueBlock)
 		limitValue = parseIntLiteral(m_curTokenStr.c_str());
 		advanceToken();
 
-		valueBlock = CaseRequirement::createLimitRequirement(limitEnum, limitValue);
+		requiredCaps.push_back(RequiredCapability(limitEnum, limitValue));
 	}
 	else if (m_curTokenStr == "full_glsl_es_100_support")
 	{
 		advanceToken();
 
-		valueBlock = CaseRequirement::createFullGLSLES100SpecificationRequirement();
+		requiredCaps.push_back(RequiredCapability(CAPABILITY_FULL_GLSL_ES_100_SUPPORT));
+	}
+	else if (m_curTokenStr == "only_glsl_es_100_support")
+	{
+		advanceToken();
+
+		requiredCaps.push_back(RequiredCapability(CAPABILITY_ONLY_GLSL_ES_100_SUPPORT));
+	}
+	else if (m_curTokenStr == "exactly_one_draw_buffer")
+	{
+		advanceToken();
+
+		requiredCaps.push_back(RequiredCapability(CAPABILITY_EXACTLY_ONE_DRAW_BUFFER));
 	}
 	else
 		parseError(string("invalid requirement value: " + m_curTokenStr));
@@ -1307,12 +1287,11 @@ void ShaderParser::parsePipelineProgram (ProgramSpecification& program)
 		}
 		else if (m_curToken == TOKEN_REQUIRE)
 		{
-			CaseRequirement requirement;
-			parseRequirement(requirement);
+			vector<RequiredCapability> dummyCaps;
+			size_t size = program.requiredExtensions.size();
+			parseRequirement(dummyCaps, program.requiredExtensions);
 
-			if (requirement.type == CaseRequirement::TYPE_EXTENSION)
-				program.requiredExtensions.push_back(requirement.extension);
-			else
+			if (size == program.requiredExtensions.size())
 				parseError("only extension requirements are allowed inside pipeline program");
 		}
 		else if (m_curToken == TOKEN_VERTEX						||
@@ -1375,7 +1354,8 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 	vector<string>					geometrySources;
 	ValueBlock						valueBlock;
 	bool							valueBlockSeen	= false;
-	vector<CaseRequirement>			requirements;
+	vector<RequiredCapability>		requiredCaps;
+	vector<RequiredExtension>		requiredExts;
 	vector<ProgramSpecification>	pipelinePrograms;
 
 	for (;;)
@@ -1448,9 +1428,7 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 		}
 		else if (m_curToken == TOKEN_REQUIRE)
 		{
-			CaseRequirement requirement;
-			parseRequirement(requirement);
-			requirements.push_back(requirement);
+			parseRequirement(requiredCaps, requiredExts);
 		}
 		else if (m_curToken == TOKEN_PIPELINE_PROGRAM)
 		{
@@ -1464,25 +1442,6 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 	}
 
 	advanceToken(TOKEN_END); // case end
-
-	// \todo [pyry] Clean up
-	vector<RequiredCapability>	requiredCaps;
-	vector<RequiredExtension>	requiredExts;
-	bool						fullGLSLES100Required	= false;
-
-	for (size_t reqNdx = 0; reqNdx < requirements.size(); ++reqNdx)
-	{
-		const CaseRequirement&	requirement	= requirements[reqNdx];
-
-		if (requirement.type == CaseRequirement::TYPE_EXTENSION)
-			requiredExts.push_back(requirement.extension);
-		else if (requirement.type == CaseRequirement::TYPE_IMPLEMENTATION_LIMIT)
-			requiredCaps.push_back(requirement.requiredCap);
-		else if (requirement.type == CaseRequirement::TYPE_FULL_GLSL_ES_100_SUPPORT)
-			fullGLSLES100Required = true;
-		else
-			DE_ASSERT(false);
-	}
 
 	if (!bothSource.empty())
 	{
@@ -1502,7 +1461,6 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 			spec.caseType				= CASETYPE_VERTEX_ONLY;
 			spec.expectResult			= expectResult;
 			spec.targetVersion			= version;
-			spec.fullGLSLES100Required	= fullGLSLES100Required;
 			spec.requiredCaps			= requiredCaps;
 			spec.values					= valueBlock;
 
@@ -1519,7 +1477,6 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 			spec.caseType				= CASETYPE_FRAGMENT_ONLY;
 			spec.expectResult			= expectResult;
 			spec.targetVersion			= version;
-			spec.fullGLSLES100Required	= fullGLSLES100Required;
 			spec.requiredCaps			= requiredCaps;
 			spec.values					= valueBlock;
 
@@ -1538,7 +1495,6 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 		spec.outputType				= outputType;
 		spec.outputFormat			= format;
 		spec.targetVersion			= version;
-		spec.fullGLSLES100Required	= fullGLSLES100Required;
 		spec.requiredCaps			= requiredCaps;
 		spec.values					= valueBlock;
 
@@ -1572,7 +1528,6 @@ void ShaderParser::parseShaderCase (vector<tcu::TestNode*>& shaderNodeList)
 			spec.caseType				= CASETYPE_COMPLETE;
 			spec.expectResult			= expectResult;
 			spec.targetVersion			= version;
-			spec.fullGLSLES100Required	= fullGLSLES100Required;
 			spec.requiredCaps			= requiredCaps;
 			spec.values					= valueBlock;
 
