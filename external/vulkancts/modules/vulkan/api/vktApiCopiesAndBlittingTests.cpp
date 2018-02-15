@@ -189,16 +189,28 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
 				switch (mode)
 				{
 					case FILL_MODE_SEQUENTIAL:
-						buffer.setPixel(tcu::UVec4(x, y, z, 255), x, y, z);
+						if (tcu::hasDepthComponent(buffer.getFormat().order))
+							buffer.setPixDepth((float)x/255.0f, x, y, z);
+						else
+							buffer.setPixel(tcu::UVec4(x, y, z, 255), x, y, z);
 						break;
 					case FILL_MODE_WHITE:
-						buffer.setPixel(tcu::UVec4(255, 255, 255, 255), x, y, z);
+						if (tcu::hasDepthComponent(buffer.getFormat().order))
+							buffer.setPixDepth(1.0f, x, y, z);
+						else
+							buffer.setPixel(tcu::UVec4(255, 255, 255, 255), x, y, z);
 						break;
 					case FILL_MODE_RED:
-						buffer.setPixel(tcu::UVec4(255, 0, 0, 255), x, y, z);
+						if (tcu::hasDepthComponent(buffer.getFormat().order))
+							buffer.setPixDepth(1.0f, x, y, z);
+						else
+							buffer.setPixel(tcu::UVec4(255, 0, 0, 255), x, y, z);
 						break;
 					case FILL_MODE_RANDOM:
-						buffer.setPixel(tcu::UVec4(rnd.getUint8(), rnd.getUint8(), rnd.getUint8(), 255), x, y, z);
+						if (tcu::hasDepthComponent(buffer.getFormat().order))
+							buffer.setPixDepth(rnd.getUint8()/255.0f, x, y, z);
+						else
+							buffer.setPixel(tcu::UVec4(rnd.getUint8(), rnd.getUint8(), rnd.getUint8(), 255), x, y, z);
 					default:
 						break;
 				}
