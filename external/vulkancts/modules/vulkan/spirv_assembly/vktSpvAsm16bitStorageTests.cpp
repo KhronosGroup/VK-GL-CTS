@@ -90,6 +90,7 @@ using namespace vk;
 using std::map;
 using std::string;
 using std::vector;
+using tcu::Float16;
 using tcu::IVec3;
 using tcu::IVec4;
 using tcu::RGBA;
@@ -169,7 +170,22 @@ bool computeCheckBuffersFloats (const std::vector<BufferSp>&	originalFloats,
 {
 	std::vector<deUint8> result;
 	originalFloats.front()->getBytes(result);
-	return deMemCmp(&result[0], outputAllocs.front()->getHostPtr(), result.size()) == 0;
+
+	const deUint16 * results = reinterpret_cast<const deUint16 *>(&result[0]);
+	const deUint16 * expected = reinterpret_cast<const deUint16 *>(outputAllocs.front()->getHostPtr());
+
+	for (size_t i = 0; i < result.size() / sizeof (deUint16); ++i)
+	{
+		if (results[i] == expected[i])
+			continue;
+
+		if (Float16(results[i]).isNaN() && Float16(expected[i]).isNaN())
+			continue;
+
+		return false;
+	}
+
+	return true;
 }
 
 template<RoundingModeFlags RoundingMode>
