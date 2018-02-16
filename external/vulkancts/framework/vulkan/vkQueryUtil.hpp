@@ -28,6 +28,7 @@
 #include "deMemory.h"
 
 #include <vector>
+#include <string>
 
 namespace vk
 {
@@ -101,6 +102,7 @@ bool										isCompatible							(const VkLayerProperties& layerProperties, cons
 template<typename ExtensionIterator>
 bool										isExtensionSupported					(ExtensionIterator begin, ExtensionIterator end, const RequiredExtension& required);
 bool										isExtensionSupported					(const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required);
+bool										isExtensionSupported					(const std::vector<std::string>& extensionStrings, const std::string& extensionName);
 
 template<typename LayerIterator>
 bool										isLayerSupported						(LayerIterator begin, LayerIterator end, const RequiredLayer& required);

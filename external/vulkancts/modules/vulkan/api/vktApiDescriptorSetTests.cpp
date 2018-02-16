@@ -24,6 +24,7 @@
 #include "vktApiDescriptorSetTests.hpp"
 #include "vktTestCaseUtil.hpp"
 
+#include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
 
@@ -218,6 +219,30 @@ tcu::TestStatus descriptorSetLayoutLifetimeComputeTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+tcu::TestStatus emptyDescriptorSetLayoutTest (Context& context, VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags)
+{
+	const DeviceInterface&					vk								= context.getDeviceInterface();
+	const VkDevice							device							= context.getDevice();
+
+	if (descriptorSetLayoutCreateFlags == VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR)
+		if (!isExtensionSupported(context.getDeviceExtensions(), "VK_KHR_push_descriptor"))
+			TCU_THROW(NotSupportedError, "VK_KHR_push_descriptor extension not supported");
+
+	const VkDescriptorSetLayoutCreateInfo	descriptorSetLayoutCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType                        sType;
+		DE_NULL,												// const void*                            pNext;
+		descriptorSetLayoutCreateFlags,							// VkDescriptorSetLayoutCreateFlags       flags;
+		0u,														// deUint32                               bindingCount;
+		DE_NULL													// const VkDescriptorSetLayoutBinding*    pBindings;
+	};
+
+	Unique<VkDescriptorSetLayout>			descriptorSetLayout				(createDescriptorSetLayout(vk, device, &descriptorSetLayoutCreateInfo));
+
+	// Test should always pass
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 void createDescriptorSetLayoutLifetimeGraphicsSource (SourceCollections& dst)
@@ -250,11 +275,31 @@ tcu::TestCaseGroup* createDescriptorSetLayoutLifetimeTests (tcu::TestContext& te
 	return descriptorSetLayoutLifetimeTests.release();
 }
 
+tcu::TestCaseGroup* createEmptyDescriptorSetLayoutTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> emptyDescriptorSetLayoutTests(new tcu::TestCaseGroup(testCtx, "empty_set", "Create empty descriptor set layout tests"));
+
+	addFunctionCase(emptyDescriptorSetLayoutTests.get(), "normal", "Create empty desciptor set layout", emptyDescriptorSetLayoutTest, (VkDescriptorSetLayoutCreateFlags)0u);
+	addFunctionCase(emptyDescriptorSetLayoutTests.get(), "push_descriptor", "Create empty push descriptor set layout", emptyDescriptorSetLayoutTest, (VkDescriptorSetLayoutCreateFlags)VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR);
+
+	return emptyDescriptorSetLayoutTests.release();
+}
+
+tcu::TestCaseGroup* createDescriptorSetLayoutTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> descriptorSetLayoutTests(new tcu::TestCaseGroup(testCtx, "descriptor_set_layout", "Descriptor set layout tests"));
+
+	descriptorSetLayoutTests->addChild(createEmptyDescriptorSetLayoutTests(testCtx));
+
+	return descriptorSetLayoutTests.release();
+}
+
 tcu::TestCaseGroup* createDescriptorSetTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> descriptorSetTests(new tcu::TestCaseGroup(testCtx, "descriptor_set", "Descriptor set tests"));
 
 	descriptorSetTests->addChild(createDescriptorSetLayoutLifetimeTests(testCtx));
+	descriptorSetTests->addChild(createDescriptorSetLayoutTests(testCtx));
 
 	return descriptorSetTests.release();
 }
