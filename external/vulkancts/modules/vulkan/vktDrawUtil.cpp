@@ -850,7 +850,7 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 				vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
 						0u, DE_NULL, 0u, DE_NULL, 1u, &resolveBarrier);
 
-				vk.cmdResolveImage(*m_cmdBuffer, **m_colorImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				vk.cmdResolveImage(*m_cmdBuffer, **m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 						**m_resolveImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &imageResolve);
 
 				const VkImageMemoryBarrier barrier = makeImageMemoryBarrier(
