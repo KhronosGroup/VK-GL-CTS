@@ -209,10 +209,10 @@ void MultiviewCase::init()
 
 	const char* finalFragmentShader = "#version 300 es\n"
 									  "layout(location = 0) out mediump vec4 dEQP_FragColor;\n"
-									  "uniform sampler2DArray uArrayTexture;\n"
+									  "uniform lowp sampler2DArray uArrayTexture;\n"
 									  "in highp vec3 vTexCoord;\n"
 									  "void main() {\n"
-									  "  vec3 uvw = vTexCoord;\n"
+									  "  highp vec3 uvw = vTexCoord;\n"
 									  "  uvw.z = floor(vTexCoord.z + 1.0);\n"
 									  "  dEQP_FragColor = texture(uArrayTexture, uvw);\n"
 									  "}\n";
