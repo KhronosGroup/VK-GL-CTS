@@ -38,6 +38,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuCommandLine.hpp"
 

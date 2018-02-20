@@ -44,6 +44,7 @@
 #include "vkRefUtil.hpp"
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include <vector>
 #include <string>
@@ -965,7 +966,6 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	de::MovePtr<Allocation>			bufferAlloc;
 	Move<VkCommandPool>				cmdPool;
 	Move<VkCommandBuffer>			cmdBuffer;
-	Move<VkFence>					fence;
 	std::vector<VkBufferImageCopy>	copyRegions;
 	std::vector<deUint32>			offsetMultiples;
 
@@ -1006,9 +1006,6 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	// Create command pool and buffer
 	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Create fence
-	fence = createFence(vk, vkDevice);
 
 	// Barriers for copying buffer to image
 	const VkBufferMemoryBarrier preBufferBarrier =
@@ -1124,21 +1121,7 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-		DE_NULL,						// const void*					pNext;
-		0u,								// deUint32						waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-		DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,								// deUint32						commandBufferCount;
-		&cmdBuffer.get(),				// const VkCommandBuffer*		pCommandBuffers;
-		0u,								// deUint32						signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*			pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
 }
 
 void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
@@ -1155,7 +1138,6 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	const VkImageAspectFlags		aspectMask				= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 	Move<VkCommandPool>				cmdPool;
 	Move<VkCommandBuffer>			cmdBuffer;
-	Move<VkFence>					fence;
 
 	VkClearValue					clearValue;
 	deMemset(&clearValue, 0, sizeof(clearValue));
@@ -1164,9 +1146,6 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	// Create command pool and buffer
 	cmdPool		= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	cmdBuffer	= allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Create fence
-	fence = createFence(vk, vkDevice);
 
 	const VkImageMemoryBarrier preImageBarrier =
 	{
@@ -1240,21 +1219,7 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-		DE_NULL,						// const void*					pNext;
-		0u,								// deUint32						waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-		DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,								// deUint32						commandBufferCount;
-		&cmdBuffer.get(),				// const VkCommandBuffer*		pCommandBuffers;
-		0u,								// deUint32						signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*			pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
 }
 
 VkExtent3D mipLevelExtents (const VkExtent3D& baseExtents, const deUint32 mipLevel)
@@ -2233,7 +2198,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 	vk::Move<vk::VkDescriptorSet>						descriptorSet;
 	vk::Move<vk::VkCommandPool>							cmdPool;
 	vk::Move<vk::VkCommandBuffer>						cmdBuffer;
-	vk::Move<vk::VkFence>								fence;
 
 	// Create color image
 	{
@@ -2845,27 +2809,8 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 	}
 
-	// Create fence
-	fence = createFence(vk, vkDevice);
-
 	// Execute Draw
-	{
-		const VkSubmitInfo	submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmdBuffer.get(),
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity*/));
-	}
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
 
 	// Read back the result
 	{
@@ -2912,18 +2857,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			{ 0u, 0u, 0u },								// VkOffset3D			imageOffset;
 			{ m_renderSize.x(), m_renderSize.y(), 1u }	// VkExtent3D			imageExtent;
 		};
-		const VkSubmitInfo								submitInfo					=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&resultCmdBuffer.get(),
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
 
 		VK_CHECK(vk.beginCommandBuffer(*resultCmdBuffer, &cmdBufferBeginInfo));
 
@@ -2966,9 +2899,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		VK_CHECK(vk.endCommandBuffer(*resultCmdBuffer));
 
-		VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
-		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
+		submitCommandsAndWait(vk, vkDevice, queue, resultCmdBuffer.get());
 
 		invalidateMappedMemoryRange(vk, vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes);
 

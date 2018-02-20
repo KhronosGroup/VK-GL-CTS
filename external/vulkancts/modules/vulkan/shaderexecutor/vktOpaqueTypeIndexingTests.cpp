@@ -30,6 +30,7 @@
 #include "vkMemUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTexture.hpp"
 #include "tcuTestLog.hpp"
@@ -662,24 +663,7 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 							   &postCopyBarrier);
 		VK_CHECK(vkd.endCommandBuffer(*cmdBuf));
 
-		{
-			const Unique<VkFence>	fence		(createFence(vkd, device));
-			const VkSubmitInfo		submitInfo	=
-			{
-				VK_STRUCTURE_TYPE_SUBMIT_INFO,
-				DE_NULL,
-				0u,
-				(const VkSemaphore*)DE_NULL,
-				(const VkPipelineStageFlags*)DE_NULL,
-				1u,
-				&cmdBuf.get(),
-				0u,
-				(const VkSemaphore*)DE_NULL,
-			};
-
-			VK_CHECK(vkd.queueSubmit(context.getUniversalQueue(), 1u, &submitInfo, *fence));
-			VK_CHECK(vkd.waitForFences(device, 1u, &fence.get(), VK_TRUE, ~0ull));
-		}
+		submitCommandsAndWait(vkd, device, context.getUniversalQueue(), cmdBuf.get());
 	}
 }
 

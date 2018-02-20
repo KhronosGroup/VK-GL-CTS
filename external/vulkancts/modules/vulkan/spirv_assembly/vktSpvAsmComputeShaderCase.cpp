@@ -32,6 +32,7 @@
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 namespace
 {
@@ -219,31 +220,7 @@ void copyBufferToImage (const DeviceInterface& vkdi, const VkDevice& device, con
 
 	VK_CHECK(vkdi.endCommandBuffer(cmdBuffer));
 
-	{
-		const VkFenceCreateInfo	fenceParams	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
-			DE_NULL,								//	const void*			pNext;
-			0u,										//	VkFenceCreateFlags	flags;
-		};
-
-		const Unique<VkFence>	fence		(createFence(vkdi, device, &fenceParams));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-			DE_NULL,								// const void*					pNext;
-			0u,										// deUint32						waitSemaphoreCount;
-			DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
-			DE_NULL,								// const VkPipelineStageFlags*	pWaitDstStageMask;
-			1u,										// deUint32						commandBufferCount;
-			&cmdBuffer,								// const VkCommandBuffer*		pCommandBuffers;
-			0u,										// deUint32						signalSemaphoreCount;
-			DE_NULL									// const VkSemaphore*			pSignalSemaphores;
-		};
-
-		VK_CHECK(vkdi.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkdi.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkdi, device, queue, cmdBuffer);
 }
 
 void setMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, const void* data, bool coherent = false)
@@ -817,25 +794,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	vkdi.cmdDispatch(*cmdBuffer, numWorkGroups.x(), numWorkGroups.y(), numWorkGroups.z());
 	VK_CHECK(vkdi.endCommandBuffer(*cmdBuffer));
 
-	// Create fence and run.
-
-	const Unique<VkFence>			cmdCompleteFence	(createFence(vkdi, device));
-	const deUint64					infiniteTimeout		= ~(deUint64)0u;
-	const VkSubmitInfo				submitInfo			=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		DE_NULL,
-		0u,
-		(const VkSemaphore*)DE_NULL,
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,
-		&cmdBuffer.get(),
-		0u,
-		(const VkSemaphore*)DE_NULL,
-	};
-
-	VK_CHECK(vkdi.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
-	VK_CHECK(vkdi.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(vkdi, device, queue, *cmdBuffer);
 
 	// Invalidate output memory ranges before checking on host.
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)

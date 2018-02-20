@@ -44,6 +44,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include <set>
 
@@ -301,10 +302,6 @@ protected:
 	de::MovePtr<tcu::TextureLevel>		readImage							(vk::VkImage				image,
 																			 const ImageParms&			imageParms,
 																			 const deUint32				mipLevel = 0u);
-	void								submitCommandsAndWait				(const DeviceInterface&		vk,
-																			const VkDevice				device,
-																			const VkQueue				queue,
-																			const VkCommandBuffer&		cmdBuffer);
 
 private:
 	void								uploadImageAspect					(const tcu::ConstPixelBufferAccess&	src,
@@ -778,26 +775,6 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	// Read buffer data
 	invalidateMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
 	tcu::copy(dst, tcu::ConstPixelBufferAccess(dst.getFormat(), dst.getSize(), bufferAlloc->getHostPtr()));
-}
-
-void CopiesAndBlittingTestInstance::submitCommandsAndWait (const DeviceInterface& vk, const VkDevice device, const VkQueue queue, const VkCommandBuffer& cmdBuffer)
-{
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,						// const void*				pNext;
-		0u,								// deUint32					waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,								// deUint32					commandBufferCount;
-		&cmdBuffer,						// const VkCommandBuffer*	pCommandBuffers;
-		0u,								// deUint32					signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.resetFences(device, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(device, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
 }
 
 de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage	(vk::VkImage		image,

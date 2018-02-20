@@ -36,11 +36,12 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 #include "deMemory.h"
-#include "vkTypeUtil.hpp"
 
 #include <sstream>
 #include <vector>
@@ -670,7 +671,6 @@ protected:
 
 	Move<VkCommandPool>     m_cmdPool;
 	Move<VkCommandBuffer>   m_cmdBuffer;
-	Move<VkFence>           m_fence;
 	Move<VkQueryPool>       m_queryPool;
 	deUint64*               m_timestampValues;
 };
@@ -727,18 +727,6 @@ TimestampTestInstance::TimestampTestInstance(Context&                context,
 	// Create command buffer
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,        // VkStructureType      sType;
-			DE_NULL,                                    // const void*          pNext;
-			0u,                                         // VkFenceCreateFlags   flags;
-		};
-
-		m_fence = createFence(vk, vkDevice, &fenceParams);
-	}
-
 	// alloc timestamp values
 	m_timestampValues = new deUint64[m_stages.size()];
 }
@@ -785,23 +773,7 @@ tcu::TestStatus TimestampTestInstance::iterate(void)
 
 	configCommandBuffer();
 
-	VK_CHECK(vk.resetFences(vkDevice, 1u, &m_fence.get()));
-
-	const VkSubmitInfo          submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,                      // VkStructureType         sType;
-		DE_NULL,                                            // const void*             pNext;
-		0u,                                                 // deUint32                waitSemaphoreCount;
-		DE_NULL,                                            // const VkSemaphore*      pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,                                                 // deUint32                commandBufferCount;
-		&m_cmdBuffer.get(),                                 // const VkCommandBuffer*  pCommandBuffers;
-		0u,                                                 // deUint32                signalSemaphoreCount;
-		DE_NULL,                                            // const VkSemaphore*      pSignalSemaphores;
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *m_fence));
-
-	VK_CHECK(vk.waitForFences(vkDevice, 1u, &m_fence.get(), true, ~(0ull) /* infinity*/));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Generate the timestamp mask
 	deUint64                    timestampMask;

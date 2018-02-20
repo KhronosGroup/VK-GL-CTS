@@ -5,6 +5,8 @@ set(VKUTIL_SRCS
 	vkApiVersion.hpp
 	vkBuilderUtil.cpp
 	vkBuilderUtil.hpp
+	vkCmdUtil.cpp
+	vkCmdUtil.hpp
 	vkDefs.cpp
 	vkDefs.hpp
 	vkRef.cpp

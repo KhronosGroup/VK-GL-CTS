@@ -39,6 +39,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
@@ -855,24 +856,7 @@ void ImageClearingTestInstance::endCommandBuffer (void) const
 
 void ImageClearingTestInstance::submitCommandBuffer (void) const
 {
-	const Unique<VkFence>					fence					(createFence(m_vkd, m_device));
-
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,							// VkStructureType                sType;
-		DE_NULL,												// const void*                    pNext;
-		0u,														// deUint32                       waitSemaphoreCount;
-		DE_NULL,												// const VkSemaphore*             pWaitSemaphores;
-		DE_NULL,												// const VkPipelineStageFlags*    pWaitDstStageMask;
-		1u,														// deUint32                       commandBufferCount;
-		&(*m_commandBuffer),									// const VkCommandBuffer*         pCommandBuffers;
-		0u,														// deUint32                       signalSemaphoreCount;
-		DE_NULL													// const VkSemaphore*             pSignalSemaphores;
-	};
-
-	VK_CHECK(m_vkd.queueSubmit(m_queue, 1, &submitInfo, *fence));
-
-	VK_CHECK(m_vkd.waitForFences(m_device, 1, &fence.get(), VK_TRUE, ~0ull));
+	submitCommandsAndWait(m_vkd, m_device, m_queue, m_commandBuffer.get());
 }
 
 void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const

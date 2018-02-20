@@ -30,6 +30,7 @@
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 
@@ -350,22 +351,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 		m_vk.cmdCopyImageToBuffer(*copyCmdBuffer, object(), layout, stagingResource->object(), 1, &region);
 		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
 
-		vk::VkSubmitInfo submitInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-			DE_NULL,							// const void*				pNext;
-			0,									// deUint32					waitSemaphoreCount;
-			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1,									// deUint32					commandBufferCount;
-			&copyCmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-			0,									// deUint32					signalSemaphoreCount;
-			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-		};
-		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
-
-		// TODO: make this less intrusive
-		VK_CHECK(m_vk.queueWaitIdle(queue));
+		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
 	}
 
 	// Validate the results
@@ -455,22 +441,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		m_vk.cmdCopyImage(*copyCmdBuffer, object(), layout, stagingResource->object(), vk::VK_IMAGE_LAYOUT_GENERAL, 1, &region);
 		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
 
-		vk::VkSubmitInfo submitInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-			DE_NULL,							// const void*				pNext;
-			0,									// deUint32					waitSemaphoreCount;
-			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1,									// deUint32					commandBufferCount;
-			&copyCmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-			0,									// deUint32					signalSemaphoreCount;
-			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-		};
-		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
-
-		// TODO: make this less intrusive
-		VK_CHECK(m_vk.queueWaitIdle(queue));
+		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
 
 		// Validate the results
 		const vk::Allocation& imgAllocation = stagingResource->getBoundMemory();
@@ -632,22 +603,7 @@ void Image::upload (vk::VkQueue					queue,
 								vk::VK_IMAGE_LAYOUT_GENERAL, object(), layout, 1, &region);
 		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
 
-		vk::VkSubmitInfo submitInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-			DE_NULL,							// const void*				pNext;
-			0,									// deUint32					waitSemaphoreCount;
-			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1,									// deUint32					commandBufferCount;
-			&copyCmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-			0,									// deUint32					signalSemaphoreCount;
-			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-		};
-		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
-
-		// TODO: make this less intrusive
-		VK_CHECK(m_vk.queueWaitIdle(queue));
+		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
 	}
 }
 
@@ -742,22 +698,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 			object(), layout, 1, &region);
 		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
 
-		vk::VkSubmitInfo submitInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-			DE_NULL,							// const void*				pNext;
-			0,									// deUint32					waitSemaphoreCount;
-			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1,									// deUint32					commandBufferCount;
-			&copyCmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-			0,									// deUint32					signalSemaphoreCount;
-			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-		};
-		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
-
-		// TODO: make this less intrusive
-		VK_CHECK(m_vk.queueWaitIdle(queue));
+		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
 	}
 }
 

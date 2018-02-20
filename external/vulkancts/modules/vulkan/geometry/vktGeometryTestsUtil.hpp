@@ -184,7 +184,6 @@ void							beginRenderPass				(const vk::DeviceInterface& vk, const vk::VkComman
 void							endRenderPass				(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void							beginCommandBuffer			(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void							endCommandBuffer			(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
-void							submitCommandsAndWait		(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkQueue queue, const vk::VkCommandBuffer commandBuffer);
 
 bool							compareWithFileImage		(Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string name);
 

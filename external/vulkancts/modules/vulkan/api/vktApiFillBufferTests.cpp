@@ -29,6 +29,7 @@
 #include "deUniquePtr.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -75,7 +76,6 @@ protected:
 
 	Move<VkCommandPool>				m_cmdPool;
 	Move<VkCommandBuffer>			m_cmdBuffer;
-	Move<VkFence>					m_fence;
 	de::MovePtr<tcu::TextureLevel>	m_destinationTextureLevel;
 	de::MovePtr<tcu::TextureLevel>	m_expectedTextureLevel;
 
@@ -117,9 +117,6 @@ protected:
 
 	// Create command buffer
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Create fence
-	m_fence = createFence(vk, vkDevice);
 
 	testParams.bufferAllocator->createTestBuffer(m_params.dstSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, context, memAlloc, m_destination, MemoryRequirement::HostVisible, m_destinationBufferAlloc);
 }
@@ -165,22 +162,7 @@ tcu::TestStatus						FillBufferTestInstance::iterate		(void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
-	const VkSubmitInfo				submitInfo							=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,									// VkStructureType			sType;
-		DE_NULL,														// const void*				pNext;
-		0u,																// deUint32					waitSemaphoreCount;
-		DE_NULL,														// const VkSemaphore*		pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,																// deUint32					commandBufferCount;
-		&m_cmdBuffer.get(),												// const VkCommandBuffer*	pCommandBuffers;
-		0u,																// deUint32					signalSemaphoreCount;
-		DE_NULL															// const VkSemaphore*		pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel	(new tcu::TextureLevel(m_destinationTextureLevel->getAccess().getFormat(), dstLevelWidth, 1));
@@ -330,22 +312,7 @@ tcu::TestStatus						UpdateBufferTestInstance::iterate	(void)
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
-	const VkSubmitInfo				submitInfo							=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,									// VkStructureType			sType;
-		DE_NULL,														// const void*				pNext;
-		0u,																// deUint32					waitSemaphoreCount;
-		DE_NULL,														// const VkSemaphore*		pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,																// deUint32					commandBufferCount;
-		&m_cmdBuffer.get(),												// const VkCommandBuffer*	pCommandBuffers;
-		0u,																// deUint32					signalSemaphoreCount;
-		DE_NULL															// const VkSemaphore*		pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel	(new tcu::TextureLevel(m_destinationTextureLevel->getAccess().getFormat(), dstLevelWidth, 1));

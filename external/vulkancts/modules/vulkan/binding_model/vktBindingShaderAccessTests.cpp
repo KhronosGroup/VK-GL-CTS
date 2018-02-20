@@ -35,6 +35,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
@@ -751,8 +752,6 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 	const de::MovePtr<vk::Allocation>		bufferMemory				= allocateAndBindObjectMemory(m_vki, m_device, m_allocator, *buffer, vk::MemoryRequirement::HostVisible);
 
 	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(m_vki, m_device));
-	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 
 	// copy content to buffer
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
@@ -767,24 +766,7 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
-	// wait for transfer to complete
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-
-		VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, *cmdCompleteFence));
-	}
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(m_vki, m_device, m_queue, cmd.get());
 
 	dst.setStorage(m_targetFormat, m_targetSize.x(), m_targetSize.y());
 
@@ -837,8 +819,6 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 		};
 
 		const vk::Unique<vk::VkCommandBuffer>	cmd					(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-		const vk::Unique<vk::VkFence>			fence				(vk::createFence(m_vki, m_device));
-		const deUint64							infiniteTimeout		= ~(deUint64)0u;
 
 		VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0,
@@ -847,25 +827,8 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 								 1, &imageBarrier);
 		VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
-		{
-			const vk::VkSubmitInfo	submitInfo	=
-			{
-				vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-				DE_NULL,
-				0u,
-				(const vk::VkSemaphore*)0,
-				(const vk::VkPipelineStageFlags*)DE_NULL,
-				1u,
-				&cmd.get(),
-				0u,
-				(const vk::VkSemaphore*)0,
-			};
+		submitCommandsAndWait(m_vki, m_device, m_queue, cmd.get());
 
-			VK_CHECK(m_vki.queueSubmit(m_queue, 1u, &submitInfo, *fence));
-		}
-		VK_CHECK(m_vki.waitForFences(m_device, 1u, &fence.get(), VK_TRUE, infiniteTimeout));
-
-		// and then render to
 		renderToTarget();
 	}
 
@@ -1184,7 +1147,6 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	const vk::Unique<vk::VkCommandBuffer>				mainCmd						(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const vk::Unique<vk::VkCommandBuffer>				passCmd						((m_isPrimaryCmdBuf) ? (vk::Move<vk::VkCommandBuffer>()) : (vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY)));
 	const vk::Unique<vk::VkFence>						fence						(vk::createFence(m_vki, m_device));
-	const deUint64										infiniteTimeout				= ~(deUint64)0u;
 	const vk::VkSubpassContents							passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_SUBPASS_CONTENTS_INLINE) : (vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	VK_CHECK(m_vki.beginCommandBuffer(*mainCmd, &mainCmdBufBeginInfo));
@@ -1209,22 +1171,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	VK_CHECK(m_vki.endCommandBuffer(*mainCmd));
 
 	// submit and wait for them to finish before exiting scope. (Killing in-flight objects is a no-no).
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&mainCmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-		VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, *fence));
-	}
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &fence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(m_vki, m_device, m_queue, mainCmd.get());
 }
 
 enum DescriptorSetCount
@@ -2409,13 +2356,6 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	};
 	const vk::Unique<vk::VkCommandPool>				cmdPool				(vk::createCommandPool(m_vki, m_device, &cmdPoolCreateInfo));
 
-	const vk::VkFenceCreateInfo						fenceCreateInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u,			// flags
-	};
-
 	const vk::VkCommandBufferAllocateInfo			cmdBufCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -2432,9 +2372,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const vk::Unique<vk::VkFence>					cmdCompleteFence	(vk::createFence(m_vki, m_device, &fenceCreateInfo));
 	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufCreateInfo));
-	const deUint64									infiniteTimeout		= ~(deUint64)0u;
 
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 
@@ -2492,23 +2430,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
-	// run
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-		VK_CHECK(m_vki.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
-	}
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
 }
 
 //cmdPushDescriptorSet variant
@@ -2530,9 +2452,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const vk::Unique<vk::VkFence>					cmdCompleteFence	(vk::createFence(m_vki, m_device));
 	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const deUint64									infiniteTimeout		= ~(deUint64)0u;
 
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 
@@ -2561,23 +2481,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
-	// run
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-		VK_CHECK(m_vki.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
-	}
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
 }
 
 class BufferComputeInstance : public vkt::TestInstance
@@ -4228,8 +4132,6 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	};
 
 	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(vki, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(vki, device));
-	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 	std::vector<vk::VkBufferImageCopy>		copySlices;
 
 	// copy data to buffer
@@ -4250,22 +4152,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	VK_CHECK(vki.endCommandBuffer(*cmd));
 
 	// submit and wait for command buffer to complete before killing it
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-		VK_CHECK(vki.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
-	}
-	VK_CHECK(vki.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(vki, device, queue, cmd.get());
 }
 
 class ImageFetchInstanceImages : private ImageInstanceImages

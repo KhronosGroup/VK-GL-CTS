@@ -36,6 +36,7 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -873,30 +874,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	}
 
 	// Submit & wait for completion
-	{
-		const VkFenceCreateInfo	fenceParams	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// sType
-			DE_NULL,								// pNext
-			0u,										// flags
-		};
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
-			DE_NULL,								// pNext
-			0u,										// waitSemaphoreCount
-			DE_NULL,								// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,										// commandBufferCount
-			&cmdBuf.get(),							// pCommandBuffers
-			0u,										// signalSemaphoreCount
-			DE_NULL,								// pSignalSemaphores
-		};
-		const Unique<VkFence>	fence		(createFence(vk, vkDevice, &fenceParams));
-
-		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuf.get());
 
 	// Read results, render reference, compare
 	{
@@ -1490,30 +1468,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest (Context& context)
 	}
 
 	// Submit & wait for completion
-	{
-		const VkFenceCreateInfo	fenceParams	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// sType
-			DE_NULL,								// pNext
-			0u,										// flags
-		};
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
-			DE_NULL,								// pNext
-			0u,										// waitSemaphoreCount
-			DE_NULL,								// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,										// commandBufferCount
-			&cmdBuf.get(),							// pCommandBuffers
-			0u,										// signalSemaphoreCount
-			DE_NULL,								// pSignalSemaphores
-		};
-		const Unique<VkFence>	fence		(createFence(vk, vkDevice, &fenceParams));
-
-		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuf.get());
 
 	// Read results, render reference, compare
 	{

@@ -31,6 +31,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPlatform.hpp"
+#include "vkCmdUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuTestLog.hpp"
 #include "vktSynchronizationUtil.hpp"

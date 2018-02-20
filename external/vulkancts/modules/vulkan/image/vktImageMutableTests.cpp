@@ -29,6 +29,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"

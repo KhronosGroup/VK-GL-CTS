@@ -830,30 +830,6 @@ void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandB
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));
 }
 
-void submitCommandsAndWait (const DeviceInterface&	vk,
-							const VkDevice			device,
-							const VkQueue			queue,
-							const VkCommandBuffer	commandBuffer)
-{
-	const Unique<VkFence> fence(createFence(vk, device));
-
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-		DE_NULL,								// const void*					pNext;
-		0u,										// deUint32						waitSemaphoreCount;
-		DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,	// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,										// deUint32						commandBufferCount;
-		&commandBuffer,							// const VkCommandBuffer*		pCommandBuffers;
-		0u,										// deUint32						signalSemaphoreCount;
-		DE_NULL,								// const VkSemaphore*			pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-}
-
 tcu::UVec3 getCompressedImageResolutionInBlocks (const vk::VkFormat format, const tcu::UVec3& size)
 {
 	deUint32	blockWidth	= getBlockWidth(format);

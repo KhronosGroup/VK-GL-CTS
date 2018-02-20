@@ -36,6 +36,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
@@ -1093,27 +1094,7 @@ void MultisampleRenderPassTestInstance::submit (void)
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 
-	{
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-
-			0u,
-			DE_NULL,
-			DE_NULL,
-
-			1u,
-			&*commandBuffer,
-
-			0u,
-			DE_NULL
-		};
-
-		VK_CHECK(vkd.queueSubmit(m_context.getUniversalQueue(), 1u, &submitInfo, (VkFence)0u));
-
-		VK_CHECK(vkd.queueWaitIdle(m_context.getUniversalQueue()));
-	}
+	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *commandBuffer);
 }
 
 void MultisampleRenderPassTestInstance::verify (void)

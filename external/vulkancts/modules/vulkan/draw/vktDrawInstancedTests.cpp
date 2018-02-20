@@ -31,6 +31,7 @@
 #include "tcuTextureUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkCmdUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
 #include "vktDrawImageObjectUtil.hpp"
@@ -434,6 +435,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 tcu::TestStatus InstancedDrawInstance::iterate()
 {
 	const vk::VkQueue		queue					= m_context.getUniversalQueue();
+	const vk::VkDevice		device					= m_context.getDevice();
 	static const deUint32	instanceCounts[]		= { 0, 1, 2, 4, 20 };
 	static const deUint32	firstInstanceIndices[]	= { 0, 1, 3, 4, 20 };
 
@@ -562,21 +564,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			m_vk.cmdEndRenderPass(*m_cmdBuffer);
 			m_vk.endCommandBuffer(*m_cmdBuffer);
 
-			vk::VkSubmitInfo submitInfo =
-			{
-				vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-				DE_NULL,									// const void*					pNext;
-				0,											// deUint32						waitSemaphoreCount;
-				DE_NULL,									// const VkSemaphore*			pWaitSemaphores;
-				(const vk::VkPipelineStageFlags*)DE_NULL,	// const VkPipelineStageFlags*	pWaitDstStageMask;
-				1,											// deUint32						commandBufferCount;
-				&m_cmdBuffer.get(),							// const VkCommandBuffer*		pCommandBuffers;
-				0,											// deUint32						signalSemaphoreCount;
-				DE_NULL										// const VkSemaphore*			pSignalSemaphores;
-			};
-			VK_CHECK(m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
-
-			VK_CHECK(m_vk.queueWaitIdle(queue));
+			submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
 			// Reference rendering
 			std::vector<tcu::Vec4>	vetrices;

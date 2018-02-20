@@ -26,6 +26,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "deMath.h"
@@ -424,24 +425,7 @@ void uploadImage (const DeviceInterface&		vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
 
 void fillImageMemory (const vk::DeviceInterface&							vkd,
@@ -531,24 +515,7 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
 
 void downloadImage (const DeviceInterface&	vkd,
@@ -667,24 +634,7 @@ void downloadImage (const DeviceInterface&	vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
 	readStagingBuffers(imageData, vkd, device, stagingMemory);
 }
@@ -744,24 +694,7 @@ void readImageMemory (const vk::DeviceInterface&							vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
 	for (deUint32 planeNdx = 0; planeNdx < formatDesc.numPlanes; ++planeNdx)
 	{

@@ -47,7 +47,6 @@ vk::Move<vk::VkRenderPass>			makeRenderPassWithDepth			(const vk::DeviceInterfac
 void								beginCommandBuffer				(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void								beginSecondaryCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const deUint32 subpass, const vk::VkFramebuffer framebuffer);
 void								imageBarrier					(const vk::DeviceInterface& vk, const vk::VkCommandBuffer cmdBuffer, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkPipelineStageFlags srcStageMask = vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, const vk::VkPipelineStageFlags dstStageMask = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-void								submitCommandsAndWait			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkQueue queue, const vk::VkCommandBuffer commandBuffer);
 
 } // MultiView
 } // vkt

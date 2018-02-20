@@ -145,13 +145,6 @@ void							beginCommandBuffer				(const vk::DeviceInterface&					vk,
 void							endCommandBuffer				(const vk::DeviceInterface&					vk,
 																 const vk::VkCommandBuffer					cmdBuffer);
 
-void							submitCommandsAndWait			(const vk::DeviceInterface&					vk,
-																 const vk::VkDevice							device,
-																 const vk::VkQueue							queue,
-																 const vk::VkCommandBuffer					cmdBuffer,
-																 const bool									useDeviceGroups = false,
-																 const deUint32								deviceMask = 1);
-
 inline vk::VkExtent3D makeExtent3D (const tcu::IVec3& vec)
 {
 	return vk::makeExtent3D(vec.x(), vec.y(), vec.z());

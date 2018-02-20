@@ -35,10 +35,11 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deUniquePtr.hpp"
 #include "deMemory.h"
-#include "vkTypeUtil.hpp"
 
 #include <sstream>
 #include <vector>
@@ -536,7 +537,6 @@ protected:
 
 	Move<VkCommandPool>     m_cmdPool;
 	Move<VkCommandBuffer>   m_cmdBuffer;
-	Move<VkFence>           m_fence;
 	Move<VkPipelineCache>   m_cache;
 };
 
@@ -554,9 +554,6 @@ CacheTestInstance::CacheTestInstance (Context&                 context,
 
 	// Create command buffer
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Create fence
-	m_fence = createFence(vk, vkDevice);
 
 	// Create the Pipeline Cache
 	{
@@ -585,23 +582,7 @@ tcu::TestStatus CacheTestInstance::iterate (void)
 
 	prepareCommandBuffer();
 
-	VK_CHECK(vk.resetFences(vkDevice, 1u, &m_fence.get()));
-
-	const VkSubmitInfo          submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,                      // VkStructureType             sType;
-		DE_NULL,                                            // const void*                 pNext;
-		0u,                                                 // deUint32                    waitSemaphoreCount;
-		DE_NULL,                                            // const VkSemaphore*          pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,               // const VkPipelineStageFlags* pWaitDstStageMask;
-		1u,                                                 // deUint32                    commandBufferCount;
-		&m_cmdBuffer.get(),                                 // const VkCommandBuffer*      pCommandBuffers;
-		0u,                                                 // deUint32                    signalSemaphoreCount;
-		DE_NULL,                                            // const VkSemaphore*          pSignalSemaphores;
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *m_fence));
-
-	VK_CHECK(vk.waitForFences(vkDevice, 1u, &m_fence.get(), true, ~(0ull) /* infinity*/));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	return verifyTestResult();
 }

@@ -35,6 +35,7 @@
 #include "vkRefUtil.hpp"
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -151,7 +152,7 @@ private:
 			deUint32					getMemoryIndex				(deUint32 memoryTypeBits, deUint32 memoryPropertyFlag);
 			void						getDeviceLayers				(vector<string>& enabledLayers);
 			bool						isPeerFetchAllowed			(deUint32 memoryTypeIndex, deUint32 firstdeviceID, deUint32 seconddeviceID);
-			void						SubmitBufferAndWaitForIdle	(const DeviceDriver& vk, VkCommandBuffer cmdBuf, VkDeviceGroupSubmitInfo);
+			void						SubmitBufferAndWaitForIdle	(const DeviceDriver& vk, VkCommandBuffer cmdBuf, deUint32 deviceMask);
 	virtual	tcu::TestStatus				iterate						(void);
 
 			Move<VkDevice>				m_deviceGroup;
@@ -351,30 +352,9 @@ void DeviceGroupTestInstance::init (void)
 	m_deviceGroupQueue = getDeviceQueue(*deviceDriver, *m_deviceGroup, queueFamilyIndex, queueIndex);
 }
 
-void DeviceGroupTestInstance::SubmitBufferAndWaitForIdle(const DeviceDriver& vk, VkCommandBuffer cmdBuf, VkDeviceGroupSubmitInfo deviceGroupSubmitInfo)
+void DeviceGroupTestInstance::SubmitBufferAndWaitForIdle(const DeviceDriver& vk, VkCommandBuffer cmdBuf, deUint32 deviceMask)
 {
-	const VkFenceCreateInfo	fenceParams =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// sType
-		DE_NULL,								// pNext
-		0u,										// flags
-	};
-	const VkSubmitInfo		submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
-		&deviceGroupSubmitInfo,					// pNext
-		0u,										// waitSemaphoreCount
-		DE_NULL,								// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,	// pWaitDstStageMask
-		1u,										// commandBufferCount
-		&cmdBuf,								// pCommandBuffers
-		0u,										// signalSemaphoreCount
-		DE_NULL,								// pSignalSemaphores
-	};
-	const Unique<VkFence>	fence(createFence(vk, *m_deviceGroup, &fenceParams));
-
-	VK_CHECK(vk.queueSubmit(m_deviceGroupQueue, 1u, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(*m_deviceGroup, 1u, &fence.get(), DE_TRUE, ~0ull));
+	submitCommandsAndWait(vk, *m_deviceGroup, m_deviceGroupQueue, cmdBuf, true, deviceMask);
 	VK_CHECK(vk.deviceWaitIdle(*m_deviceGroup));
 }
 
@@ -494,18 +474,6 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			&allocDeviceMaskInfo,							// pNext
 			0u,												// allocationSize
 			0u,												// memoryTypeIndex
-		};
-
-		VkDeviceGroupSubmitInfo		deviceGroupSubmitInfo =
-		{
-			VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO,		// sType
-			DE_NULL,										// pNext
-			0u,												// waitSemaphoreCount
-			DE_NULL,										// pWaitSemaphoreDeviceIndices
-			0u,												// commandBufferCount
-			DE_NULL,										// pCommandBufferDeviceMasks
-			0u,												// signalSemaphoreCount
-			DE_NULL,										// pSignalSemaphoreDeviceIndices
 		};
 
 		// create vertex buffers
@@ -1716,9 +1684,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 		// Submit & wait for completion
 		{
 			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
-			deviceGroupSubmitInfo.commandBufferCount = 1;
-			deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
-			SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
+			SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 		}
 
 		// Copy image from secondDeviceID in case of AFR and SFR(only if Peer memory as copy source is not allowed)
@@ -1799,8 +1765,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
-					deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
-					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
+					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 				}
 
 				// Copy Image from secondDeviceID to firstDeviceID
@@ -1840,8 +1805,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 					const deUint32 deviceMask = 1 << secondDeviceID;
-					deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
-					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
+					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 				}
 
 				// Change layout back on firstDeviceID
@@ -1872,8 +1836,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
-					deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
-					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
+					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 				}
 			}
 		}
@@ -1941,8 +1904,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			// Submit & wait for completion
 			{
 				const deUint32 deviceMask = 1 << firstDeviceID;
-				deviceGroupSubmitInfo.pCommandBufferDeviceMasks = &deviceMask;
-				SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceGroupSubmitInfo);
+				SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 			}
 
 			// Read results and check against reference image

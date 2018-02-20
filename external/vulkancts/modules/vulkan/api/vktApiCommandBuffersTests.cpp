@@ -28,6 +28,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
@@ -367,24 +368,7 @@ void CommandBufferRenderPassTestEnvironment::beginSecondaryCommandBuffer(VkComma
 
 void CommandBufferRenderPassTestEnvironment::submitPrimaryCommandBuffer(void)
 {
-	const Unique<VkFence>					fence					(createFence(m_vkd, m_device));
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,							// VkStructureType                sType;
-		DE_NULL,												// const void*                    pNext;
-		0u,														// deUint32                       waitSemaphoreCount;
-		DE_NULL,												// const VkSemaphore*             pWaitSemaphores;
-		DE_NULL,												// const VkPipelineStageFlags*    pWaitDstStageMask;
-		1u,														// deUint32                       commandBufferCount;
-		m_primaryCommandBuffers,								// const VkCommandBuffer*         pCommandBuffers;
-		0u,														// deUint32                       signalSemaphoreCount;
-		DE_NULL													// const VkSemaphore*             pSignalSemaphores;
-	};
-
-	VK_CHECK(m_vkd.queueSubmit(m_queue, 1, &submitInfo, *fence));
-
-	VK_CHECK(m_vkd.waitForFences(m_device, 1, &fence.get(), VK_TRUE, ~0ull));
-
+	submitCommandsAndWait(m_vkd, m_device, m_queue, *m_primaryCommandBuffers);
 }
 
 de::MovePtr<tcu::TextureLevel> CommandBufferRenderPassTestEnvironment::readColorAttachment ()
@@ -614,26 +598,8 @@ bool executeCommandBuffer (const VkDevice			device,
 	}
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));
 
-	{
-		const Unique<VkFence>					fence			(createFence(vk, device));
-		const VkSubmitInfo						submitInfo		=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
-			DE_NULL,								// pNext
-			0u,										// waitSemaphoreCount
-			DE_NULL,								// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,	// pWaitDstStageMask
-			1u,										// commandBufferCount
-			&commandBuffer,							// pCommandBuffers
-			0u,										// signalSemaphoreCount
-			DE_NULL									// pSignalSemaphores
-		};
+	submitCommandsAndWait(vk, device, queue, commandBuffer);
 
-		// Submit the command buffer to the queue
-		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		// wait for end of execution of queue
-		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), 0u, INFINITE_TIMEOUT));
-	}
 	// check if buffer has been executed
 	const VkResult result = vk.getEventStatus(device, *event);
 	return result == VK_EVENT_SET;
@@ -889,27 +855,7 @@ tcu::TestStatus executePrimaryBufferTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// Submit the command buffer to the queue
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	// check if buffer has been executed
 	VkResult result = vk.getEventStatus(vkDevice,*event);
@@ -969,27 +915,7 @@ tcu::TestStatus executeLargePrimaryBufferTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// Submit the command buffer to the queue
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	// check if the buffer was executed correctly - all events had their status
 	// changed
@@ -1055,29 +981,7 @@ tcu::TestStatus resetBufferImplicitlyTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
 
-	// We'll use a fence to wait for the execution of the queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1u,															// commandBufferCount
-		&cmdBuf.get(),												// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// Submitting the command buffer that sets the event to the queue
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence.get()));
-
-	// Waiting for the queue to finish executing
-	VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), 0u, INFINITE_TIMEOUT));
-	// Reset the fence so that we can reuse it
-	VK_CHECK(vk.resetFences(vkDevice, 1u, &fence.get()));
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuf.get());
 
 	// Check if the buffer was executed
 	if (vk.getEventStatus(vkDevice, *event) != VK_EVENT_SET)
@@ -1095,9 +999,7 @@ tcu::TestStatus resetBufferImplicitlyTest(Context& context)
 
 	// Submit the command buffer after resetting. It should have no commands
 	// recorded, so the event should remain unsignaled.
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence.get()));
-	// Waiting for the queue to finish executing
-	VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuf.get());
 
 	// Check if the event remained unset.
 	if(vk.getEventStatus(vkDevice, *event) == VK_EVENT_RESET)
@@ -1417,27 +1319,7 @@ tcu::TestStatus recordLargePrimaryBufferTest(Context &context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// Submit the command buffer to the queue
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	return tcu::TestStatus::pass("hugeTest succeeded");
 }
@@ -1564,27 +1446,7 @@ tcu::TestStatus recordLargeSecondaryBufferTest(Context &context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// Submit the command buffer to the queue
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	return tcu::TestStatus::pass("hugeTest succeeded");
 }
@@ -1641,28 +1503,8 @@ tcu::TestStatus submitPrimaryBufferTwiceTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// submit primary buffer
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
-	VK_CHECK(vk.resetFences(vkDevice, 1u, &fence.get()));
 	// check if buffer has been executed
 	VkResult result = vk.getEventStatus(vkDevice,*event);
 	if (result != VK_EVENT_SET)
@@ -1671,10 +1513,7 @@ tcu::TestStatus submitPrimaryBufferTwiceTest(Context& context)
 	// reset event
 	VK_CHECK(vk.resetEvent(vkDevice, *event));
 
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	// check if buffer has been executed
 	result = vk.getEventStatus(vkDevice,*event);
@@ -1780,27 +1619,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf1));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo1				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf1.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo1, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
-	VK_CHECK(vk.resetFences(vkDevice, 1u, &fence.get()));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf1.get());
 
 	// check if secondary buffer has been executed
 	VkResult result = vk.getEventStatus(vkDevice,*event);
@@ -1822,23 +1641,7 @@ tcu::TestStatus submitSecondaryBufferTwiceTest(Context& context)
 	// end recording
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf2));
 
-	// submit second primary buffer, the secondary should be executed too
-	const VkSubmitInfo						submitInfo2				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf2.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo2, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf2.get());
 
 	// check if secondary buffer has been executed
 	result = vk.getEventStatus(vkDevice,*event);
@@ -1900,28 +1703,7 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// submit primary buffer
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
-	VK_CHECK(vk.resetFences(vkDevice, 1u, &fence.get()));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	// check if buffer has been executed
 	VkResult result = vk.getEventStatus(vkDevice,*event);
@@ -1939,13 +1721,7 @@ tcu::TestStatus oneTimeSubmitFlagPrimaryBufferTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// reset event
-	VK_CHECK(vk.resetEvent(vkDevice, *event));
-
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	// check if buffer has been executed
 	result = vk.getEventStatus(vkDevice,*event);
@@ -2051,27 +1827,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf1));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo1				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf1.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo1, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
-	VK_CHECK(vk.resetFences(vkDevice, 1u, &fence.get()));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf1.get());
 
 	// check if secondary buffer has been executed
 	VkResult result = vk.getEventStatus(vkDevice,*event);
@@ -2105,23 +1861,7 @@ tcu::TestStatus oneTimeSubmitFlagSecondaryBufferTest(Context& context)
 	// end recording
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf2));
 
-	// submit second primary buffer, the secondary should be executed too
-	const VkSubmitInfo						submitInfo2				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf2.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo2, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf2.get());
 
 	// check if secondary buffer has been executed
 	result = vk.getEventStatus(vkDevice,*event);
@@ -2556,27 +2296,7 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context& cont
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence(createFence(vk, vkDevice));
-
-	const VkSubmitInfo						submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&primCmdBuf.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// submit primary buffer, the secondary should be executed too
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	deUint32 resultCount;
 	result.readResultContentsTo(&resultCount);
@@ -3733,26 +3453,7 @@ tcu::TestStatus executeSecondaryBufferTest(Context& context)
 	}
 	VK_CHECK(vk.endCommandBuffer(*primCmdBuf));
 
-	// create fence to wait for execution of queue
-	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1u,															// commandBufferCount
-		&primCmdBuf.get(),											// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-
-	// submit primary buffer, the secondary should be executed too
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence.get()));
-
-	// wait for end of execution of queue
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), 0u, INFINITE_TIMEOUT));
+	submitCommandsAndWait(vk, vkDevice, queue, primCmdBuf.get());
 
 	// check if secondary buffer has been executed
 	VkResult result = vk.getEventStatus(vkDevice, *event);
@@ -4097,7 +3798,6 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const Unique<VkFence>					cmdCompleteFence		(createFence(vk, device));
 	const Unique<VkCommandBuffer>			cmd						(allocateCommandBuffer(vk, device, &cmdBufCreateInfo));
 
 	VK_CHECK(vk.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
@@ -4121,22 +3821,7 @@ tcu::TestStatus orderBindPipelineTest(Context& context)
 
 	// run
 	// submit second primary buffer, the secondary should be executed too
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,								// sType
-		DE_NULL,													// pNext
-		0u,															// waitSemaphoreCount
-		DE_NULL,													// pWaitSemaphores
-		(const VkPipelineStageFlags*)DE_NULL,						// pWaitDstStageMask
-		1,															// commandBufferCount
-		&cmd.get(),													// pCommandBuffers
-		0u,															// signalSemaphoreCount
-		DE_NULL,													// pSignalSemaphores
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *cmdCompleteFence));
-
-	VK_CHECK(vk.waitForFences(device, 1u, &cmdCompleteFence.get(), 0u, INFINITE_TIMEOUT)); // \note: timeout is failure
-	VK_CHECK(vk.resetFences(device, 1u, &cmdCompleteFence.get()));
+	submitCommandsAndWait(vk, device, queue, cmd.get());
 
 	// submit and wait end
 	result.readResultContentsTo(&results);

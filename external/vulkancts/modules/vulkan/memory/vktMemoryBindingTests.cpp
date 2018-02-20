@@ -35,6 +35,7 @@
 #include "deSharedPtr.hpp"
 #include "vktTestCase.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include <algorithm>
 
@@ -393,23 +394,6 @@ const VkCommandBufferBeginInfo			makeCommandBufferInfo				()
 	return cmdBufferBeginInfo;
 }
 
-const VkSubmitInfo						makeSubmitInfo						(const VkCommandBuffer&	commandBuffer)
-{
-	const VkSubmitInfo					submitInfo							=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,										// VkStructureType		sType;
-		DE_NULL,															// const void*			pNext;
-		0u,																	// deUint32				waitSemaphoreCount;
-		DE_NULL,															// const VkSemaphore*	pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,								// const VkPipelineStageFlags* flags;
-		1u,																	// deUint32				commandBufferCount;
-		&commandBuffer,														// const VkCommandBuffer* pCommandBuffers;
-		0u,																	// deUint32				signalSemaphoreCount;
-		DE_NULL																// const VkSemaphore*	pSignalSemaphores;
-	};
-	return submitInfo;
-}
-
 Move<VkCommandBuffer>					createCommandBuffer					(const DeviceInterface&	vk,
 																			 VkDevice				device,
 																			 VkCommandPool			commandPool)
@@ -654,11 +638,7 @@ void									fillUpResource<VkBuffer>			(Move<VkBuffer>&		source,
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo					submitInfo							= makeSubmitInfo(*cmdBuffer);
-	Move<VkFence>						fence								= createFence(vk, vkDevice);
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &*fence, DE_TRUE, ~(0ull)));
+	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
 
 template <>
@@ -700,11 +680,7 @@ void									fillUpResource<VkImage>				(Move<VkBuffer>&		source,
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &dstImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo					submitInfo							= makeSubmitInfo(*cmdBuffer);
-	Move<VkFence>						fence								= createFence(vk, vkDevice);
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &*fence, DE_TRUE, ~(0ull)));
+	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
 
 template <typename TTarget>
@@ -761,11 +737,7 @@ void									readUpResource						(Move<VkImage>&			source,
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo					submitInfo							= makeSubmitInfo(*cmdBuffer);
-	Move<VkFence>						fence								= createFence(vk, vkDevice);
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &*fence, DE_TRUE, ~(0ull)));
+	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
 
 void									createBuffer						(Move<VkBuffer>&		buffer,

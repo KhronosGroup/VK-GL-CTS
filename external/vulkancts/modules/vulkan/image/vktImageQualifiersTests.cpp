@@ -38,6 +38,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deDefs.hpp"
 #include "deStringUtil.hpp"

@@ -34,6 +34,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuImageCompare.hpp"
 #include "tcuResultCollector.hpp"
@@ -1125,27 +1126,7 @@ tcu::TestStatus SampleReadTestInstance::iterate (void)
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 
-	{
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-
-			0u,
-			DE_NULL,
-			DE_NULL,
-
-			1u,
-			&*commandBuffer,
-
-			0u,
-			DE_NULL
-		};
-
-		VK_CHECK(vkd.queueSubmit(m_context.getUniversalQueue(), 1u, &submitInfo, (VkFence)0u));
-
-		VK_CHECK(vkd.queueWaitIdle(m_context.getUniversalQueue()));
-	}
+	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *commandBuffer);
 
 	{
 		const tcu::TextureFormat			format		(mapVkFormat(VK_FORMAT_R32_UINT));

@@ -35,6 +35,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTexture.hpp"
@@ -117,8 +118,6 @@ private:
 
 	Move<VkBuffer>						m_resultBuffer;
 	de::MovePtr<Allocation>				m_resultBufferAlloc;
-
-	Move<VkFence>						m_fence;
 };
 
 static void generateBuffer												(std::vector<deUint32>&		uniformData,
@@ -716,9 +715,6 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}
-
-	// Create fence
-	m_fence = createFence(vk, vkDevice);
 }
 
 tcu::TestStatus BufferViewTestInstance::checkResult						(deInt8						factor)
@@ -753,22 +749,8 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	const DeviceInterface&				vk								= m_context.getDeviceInterface();
 	const VkDevice						vkDevice						= m_context.getDevice();
 	const VkQueue						queue							= m_context.getUniversalQueue();
-	const VkSubmitInfo					submitInfo						=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		DE_NULL,
-		0u,
-		(const VkSemaphore*)DE_NULL,
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,
-		&m_cmdBuffer.get(),
-		0u,
-		(const VkSemaphore*)DE_NULL,
-	};
 
-	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	tcu::TestStatus						testStatus						= checkResult(1);
 	if (testStatus.getCode() != QP_TEST_RESULT_PASS)
@@ -783,9 +765,7 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
 	flushMappedMemoryRange(vk, vkDevice, m_uniformBufferAlloc->getMemory(), m_uniformBufferAlloc->getOffset(), uniformSize);
 
-	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	return checkResult(factor);
 }

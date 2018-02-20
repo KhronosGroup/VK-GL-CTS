@@ -34,6 +34,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
@@ -351,24 +352,7 @@ void executeImageBarrier (const DeviceInterface&		vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
 
 struct TestParameters

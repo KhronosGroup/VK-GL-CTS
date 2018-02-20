@@ -31,6 +31,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkBinaryRegistry.cpp \
 	external/vulkancts/framework/vulkan/vkBufferWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
+	external/vulkancts/framework/vulkan/vkCmdUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDebugReportUtil.cpp \
 	external/vulkancts/framework/vulkan/vkDefs.cpp \
 	external/vulkancts/framework/vulkan/vkDeviceUtil.cpp \

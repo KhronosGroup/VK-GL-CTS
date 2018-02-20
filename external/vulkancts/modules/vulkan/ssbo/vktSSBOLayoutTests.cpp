@@ -41,6 +41,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 namespace vkt
 {
@@ -914,22 +915,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest (Context& context, UnsizedArrayCasePa
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
 
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		DE_NULL,
-		0,														// waitSemaphoreCount
-		DE_NULL,												// pWaitSemaphores
-		DE_NULL,												// pWaitDstStageMask
-		1,														// commandBufferCount
-		&cmdBuf.get(),											// pCommandBuffers
-		0,														// signalSemaphoreCount
-		DE_NULL,												// pSignalSemaphores
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, (vk::VkFence)0));
-
-	// Force all work to have completed
-	VK_CHECK(vk.deviceWaitIdle(device));
+	submitCommandsAndWait(vk, device, queue, cmdBuf.get());
 
 	// Read back output buffer contents
 	VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1, &range));

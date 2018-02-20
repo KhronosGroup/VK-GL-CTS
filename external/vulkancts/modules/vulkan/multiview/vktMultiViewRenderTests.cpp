@@ -33,6 +33,7 @@
 #include "vkPlatform.hpp"
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"

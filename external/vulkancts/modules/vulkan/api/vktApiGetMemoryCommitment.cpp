@@ -30,6 +30,7 @@
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkCmdUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vkTypeUtil.cpp"
 
@@ -58,10 +59,6 @@ public:
 	deUint32						getMemoryTypeIndex				(VkMemoryPropertyFlags propertyFlag, VkPhysicalDeviceMemoryProperties pMemoryProperties);
 	Move<VkCommandPool>				createCommandPool				() const;
 	Move<VkCommandBuffer>			allocatePrimaryCommandBuffer	(VkCommandPool commandPool) const;
-	void							submitCommandsAndWait			(const DeviceInterface& vkd,
-																	 const VkDevice			device,
-																	 const VkQueue			queue,
-																	 const VkCommandBuffer& cmdBuffer);
 	bool							isDeviceMemoryCommitmentOk		(const VkMemoryRequirements memoryRequirements);
 
 private:
@@ -644,27 +641,6 @@ tcu::TestStatus MemoryCommitmentAllocateOnlyTestInstance::iterate(void)
 		}
 	}
 	return tcu::TestStatus::pass("Pass");
-}
-
-void MemoryCommitmentTestInstance::submitCommandsAndWait (const DeviceInterface& vkd, const VkDevice device, const VkQueue queue, const VkCommandBuffer& cmdBuffer)
-{
-	Move<VkFence> fence = createFence(vkd, device);
-
-	const VkSubmitInfo	submitInfo	=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType			sType;
-		DE_NULL,								// const void*				pNext;
-		0u,										// deUint32					waitSemaphoreCount;
-		DE_NULL,								// const VkSemaphore*		pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,										// deUint32					commandBufferCount;
-		&cmdBuffer,								// const VkCommandBuffer*	pCommandBuffers;
-		0u,										// deUint32					signalSemaphoreCount;
-		DE_NULL									// const VkSemaphore*		pSignalSemaphores;
-	};
-
-	VK_CHECK(vkd.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vkd.waitForFences(device, 1, &fence.get(), true, ~(0ull) /* infinity */));
 }
 
 deUint32 MemoryCommitmentTestInstance::getMemoryTypeIndex(VkMemoryPropertyFlags propertyFlag, VkPhysicalDeviceMemoryProperties pMemoryProperties)

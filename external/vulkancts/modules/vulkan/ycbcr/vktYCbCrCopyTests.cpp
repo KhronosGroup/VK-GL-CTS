@@ -30,6 +30,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuSeedBuilder.hpp"
 #include "tcuTestLog.hpp"
@@ -841,24 +842,7 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 
 				VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-				{
-					const vk::Unique<vk::VkFence>	fence		(createFence(vkd, device));
-					const vk::VkSubmitInfo			submitInfo	=
-					{
-						vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-						DE_NULL,
-						0u,
-						(const vk::VkSemaphore*)DE_NULL,
-						(const vk::VkPipelineStageFlags*)DE_NULL,
-						1u,
-						&*cmdBuffer,
-						0u,
-						(const vk::VkSemaphore*)DE_NULL,
-					};
-
-					VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-					VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-				}
+				submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 			}
 
 			if (config.dst.tiling == vk::VK_IMAGE_TILING_OPTIMAL)

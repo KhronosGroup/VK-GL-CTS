@@ -32,6 +32,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deRandom.hpp"
 
@@ -2348,31 +2349,7 @@ void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const
 
 	VK_CHECK(vk.endCommandBuffer(cmdBuffer));
 
-	{
-		const VkFenceCreateInfo	fenceParams	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
-			DE_NULL,								//	const void*			pNext;
-			0u,										//	VkFenceCreateFlags	flags;
-		};
-
-		const Unique<VkFence>	fence		(createFence(vk, device, &fenceParams));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-			DE_NULL,								// const void*					pNext;
-			0u,										// deUint32						waitSemaphoreCount;
-			DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
-			DE_NULL,								// const VkPipelineStageFlags*	pWaitDstStageMask;
-			1u,										// deUint32						commandBufferCount;
-			&cmdBuffer,								// const VkCommandBuffer*		pCommandBuffers;
-			0u,										// deUint32						signalSemaphoreCount;
-			DE_NULL									// const VkSemaphore*			pSignalSemaphores;
-		};
-
-		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, device, queue, cmdBuffer);
 }
 
 TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
@@ -3783,30 +3760,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	}
 
 	// Submit & wait for completion
-	{
-		const VkFenceCreateInfo	fenceParams	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
-			DE_NULL,								//	const void*			pNext;
-			0u,										//	VkFenceCreateFlags	flags;
-		};
-		const Unique<VkFence>	fence		(createFence(vk, device, &fenceParams));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmdBuf.get(),
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, device, queue, cmdBuf.get());
 
 	const void* imagePtr	= readImageBufferMemory->getHostPtr();
 	const tcu::ConstPixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
