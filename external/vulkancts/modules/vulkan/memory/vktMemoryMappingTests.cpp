@@ -528,10 +528,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 	const InstanceInterface&				vki							= context.getInstanceInterface();
 	const DeviceInterface&					vkd							= context.getDeviceInterface();
 	const VkPhysicalDeviceMemoryProperties	memoryProperties			= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-	// \todo [2016-05-27 misojarvi] Remove once drivers start reporting correctly nonCoherentAtomSize that is at least 1.
-	const VkDeviceSize						nonCoherentAtomSize			= context.getDeviceProperties().limits.nonCoherentAtomSize != 0
-																		? context.getDeviceProperties().limits.nonCoherentAtomSize
-																		: 1;
+	const VkDeviceSize						nonCoherentAtomSize			= context.getDeviceProperties().limits.nonCoherentAtomSize;
 	const deUint32							queueFamilyIndex			= context.getUniversalQueueFamilyIndex();
 
 	if (config.allocationKind == ALLOCATION_KIND_DEDICATED_IMAGE
@@ -1306,10 +1303,7 @@ public:
 		const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
 		const InstanceInterface&				vki					= context.getInstanceInterface();
 		const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
-		// \todo [2016-05-26 misojarvi] Remove zero check once drivers report correctly 1 instead of 0
-		const VkDeviceSize						nonCoherentAtomSize	= context.getDeviceProperties().limits.nonCoherentAtomSize != 0
-																	? context.getDeviceProperties().limits.nonCoherentAtomSize
-																	: 1;
+		const VkDeviceSize						nonCoherentAtomSize	= context.getDeviceProperties().limits.nonCoherentAtomSize;
 
 		// Initialize heaps
 		{
