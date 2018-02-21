@@ -113,9 +113,10 @@ public:
 		glLinkProgram(shaderProg);
 		expectError(GL_NO_ERROR);
 
-		GLuint transformFeedbackId = 0;
-		glGenTransformFeedbacks(1, &transformFeedbackId);
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbackId);
+		glGenTransformFeedbacks(2, transformFeedbacks);
+		// Also store the default transform feedback in the array.
+		transformFeedbacks[2] = 0;
+		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[0]);
 		expectError(GL_NO_ERROR);
 
 		testTransformFeedback();
@@ -124,12 +125,14 @@ public:
 
 		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
-		glDeleteTransformFeedbacks(1, &transformFeedbackId);
+		glDeleteTransformFeedbacks(2, transformFeedbacks);
 		glDeleteShader(shaderVert);
 		glDeleteShader(shaderFrag);
 		glDeleteProgram(shaderProg);
 		expectError(GL_NO_ERROR);
 	}
+protected:
+	GLuint transformFeedbacks[3];
 };
 
 class TransformFeedbackBufferBindingCase : public TransformFeedbackCase
@@ -236,6 +239,82 @@ public:
 		// cleanup
 
 		glDeleteBuffers(2, feedbackBuffers);
+	}
+};
+
+class TransformFeedbackSwitchingBufferCase : public TransformFeedbackCase
+{
+public:
+	TransformFeedbackSwitchingBufferCase (Context& context, const char* name, const char* description)
+		: TransformFeedbackCase(context, name, description)
+	{
+	}
+
+	void testTransformFeedback (void)
+	{
+		GLuint feedbackBuffers[3];
+		glGenBuffers(3, feedbackBuffers);
+		expectError(GL_NO_ERROR);
+
+		for (int i = 0; i < 3; ++i)
+		{
+			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
+			expectError(GL_NO_ERROR);
+			GLint value;
+			glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
+			expectError(GL_NO_ERROR);
+			checkIntEquals(m_testCtx, value, 0);
+			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedbackBuffers[i]);
+			expectError(GL_NO_ERROR);
+			// glBindBufferBase should also set the generic binding point.
+			glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
+			expectError(GL_NO_ERROR);
+			checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
+		}
+
+		for (int i = 0; i < 3; ++i)
+		{
+			// glBindTransformFeedback should change the indexed binding points, but
+			// not the generic one.
+			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
+			expectError(GL_NO_ERROR);
+			GLint value;
+			glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
+			expectError(GL_NO_ERROR);
+			checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
+			glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
+			expectError(GL_NO_ERROR);
+			// Should be unchanged.
+			checkIntEquals(m_testCtx, value, feedbackBuffers[2]);
+		}
+
+		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[0]);
+		expectError(GL_NO_ERROR);
+		glDeleteBuffers(3, feedbackBuffers);
+		expectError(GL_NO_ERROR);
+
+		// After deleting buffers the bound state should be changed but unbound
+		// state should be unchanged.
+
+		GLint value;
+		glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
+		expectError(GL_NO_ERROR);
+		checkIntEquals(m_testCtx, value, 0);
+		glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
+		expectError(GL_NO_ERROR);
+		checkIntEquals(m_testCtx, value, 0);
+
+		for (int i = 1; i < 3; ++i)
+		{
+			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, transformFeedbacks[i]);
+			expectError(GL_NO_ERROR);
+			glGetIntegeri_v(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, 0, &value);
+			expectError(GL_NO_ERROR);
+			checkIntEquals(m_testCtx, value, feedbackBuffers[i]);
+			glGetIntegerv(GL_TRANSFORM_FEEDBACK_BUFFER_BINDING, &value);
+			expectError(GL_NO_ERROR);
+			checkIntEquals(m_testCtx, value, 0);
+		}
 	}
 };
 
@@ -438,6 +517,7 @@ void IndexedStateQueryTests::init (void)
 	// transform feedback
 	addChild(new TransformFeedbackBufferBindingCase(m_context, "transform_feedback_buffer_binding", "TRANSFORM_FEEDBACK_BUFFER_BINDING"));
 	addChild(new TransformFeedbackBufferBufferCase(m_context, "transform_feedback_buffer_start_size", "TRANSFORM_FEEDBACK_BUFFER_START and TRANSFORM_FEEDBACK_BUFFER_SIZE"));
+	addChild(new TransformFeedbackSwitchingBufferCase(m_context, "transform_feedback_switching_buffer", "TRANSFORM_FEEDBACK_BUFFER_BINDING while switching transform feedback objects"));
 
 	// uniform buffers
 	addChild(new UniformBufferBindingCase(m_context, "uniform_buffer_binding", "UNIFORM_BUFFER_BINDING"));
