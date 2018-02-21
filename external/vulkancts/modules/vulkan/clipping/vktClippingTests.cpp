@@ -29,7 +29,9 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuVectorUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
 #include "deRandom.hpp"
@@ -642,9 +644,51 @@ tcu::TestStatus testLargePoints (Context& context)
 	return (result ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Rendered image(s) are incorrect"));
 }
 
+class WideLineVertexShader : public rr::VertexShader
+{
+public:
+	WideLineVertexShader (void)
+		: rr::VertexShader(1, 1)
+	{
+		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
+		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			const tcu::Vec4 position = rr::readVertexAttribFloat(inputs[0], packets[packetNdx]->instanceNdx, packets[packetNdx]->vertexNdx);
+
+			packets[packetNdx]->position = position;
+			packets[packetNdx]->outputs[0] = position;
+		}
+	}
+};
+
+class WideLineFragmentShader : public rr::FragmentShader
+{
+public:
+	WideLineFragmentShader (void)
+		: rr::FragmentShader(1, 1)
+	{
+		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
+		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeFragments (rr::FragmentPacket* packets, const int numPackets, const rr::FragmentShadingContext& context) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			for (int fragNdx = 0; fragNdx < rr::NUM_FRAGMENTS_PER_PACKET; ++fragNdx)
+			{
+				const float depth = rr::readVarying<float>(packets[packetNdx], context, 0, fragNdx).z();
+				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, tcu::Vec4(1.0f, depth, 0.0f, 1.0f));
+			}
+		}
+	}
+};
 //! Wide line clipping
-//! Spec: If the primitive is a line segment, then clipping does nothing to it if it lies entirely within the clip volume, and discards it
-//!       if it lies entirely outside the volume.
 tcu::TestStatus testWideLines (Context& context, const LineOrientation lineOrientation)
 {
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_WIDE_LINES);
@@ -691,10 +735,12 @@ tcu::TestStatus testWideLines (Context& context, const LineOrientation lineOrien
 	const VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
 
 	const float		lineWidth	= std::min(static_cast<float>(RENDER_SIZE), limits.lineWidthRange[1]);
+	const bool		strictLines	= limits.strictLines;
 	tcu::TestLog&	log			= context.getTestContext().getLog();
 
-	log << tcu::TestLog::Message << "Drawing several wide lines just outside the clip volume. Expecting an empty image." << tcu::TestLog::EndMessage
-		<< tcu::TestLog::Message << "Line width is " << lineWidth << "." << tcu::TestLog::EndMessage;
+	log << tcu::TestLog::Message << "Drawing several wide lines just outside the clip volume. Expecting an empty image or all lines rendered." << tcu::TestLog::EndMessage
+		<< tcu::TestLog::Message << "Line width is " << lineWidth << "." << tcu::TestLog::EndMessage
+		<< tcu::TestLog::Message << "strictLines is " << (strictLines ? "VK_TRUE." : "VK_FALSE.") << tcu::TestLog::EndMessage;
 
 	DrawState					drawState		(VK_PRIMITIVE_TOPOLOGY_LINE_LIST, RENDER_SIZE, RENDER_SIZE);
 	DrawCallData				drawCallData	(vertices);
@@ -704,10 +750,62 @@ tcu::TestStatus testWideLines (Context& context, const LineOrientation lineOrien
 	VulkanDrawContext			drawContext(context, drawState, drawCallData, vulkanProgram);
 	drawContext.draw();
 
-	// All pixels must be black -- nothing is drawn.
-	const int numBlackPixels = countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
+	// Popful case: All pixels must be black -- nothing is drawn.
+	if (countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4()) == NUM_RENDER_PIXELS)
+	{
+		return tcu::TestStatus::pass("OK");
+	}
+	// Pop-free case: All lines must be rendered.
+	else
+	{
+		const float					halfWidth		= lineWidth / float(RENDER_SIZE);
+		std::vector<Vec4>			refVertices;
 
-	return (numBlackPixels == NUM_RENDER_PIXELS ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Rendered image(s) are incorrect"));
+		// Create reference primitives
+		for (deUint32 lineNdx = 0u; lineNdx < (deUint32)vertices.size() / 2u; lineNdx++)
+		{
+			const deUint32	vertexNdx0			= 2 * lineNdx;
+			const deUint32	vertexNdx1			= 2 * lineNdx + 1;
+
+			const bool		xMajorAxis			= deFloatAbs(vertices[vertexNdx1].x() - vertices[vertexNdx0].x()) >= deFloatAbs(vertices[vertexNdx1].y() - vertices[vertexNdx0].y());
+			const tcu::Vec2	lineDir				= tcu::normalize(tcu::Vec2(vertices[vertexNdx1].x() - vertices[vertexNdx0].x(), vertices[vertexNdx1].y() - vertices[vertexNdx0].y()));
+			const tcu::Vec4	lineNormalDir		= (strictLines)	? tcu::Vec4(lineDir.y(), -lineDir.x(), 0.0f, 0.0f)							// Line caps are perpendicular to the direction of the line segment.
+												: (xMajorAxis)	? tcu::Vec4(0.0f, 1.0f, 0.0f, 0.0f) : tcu::Vec4(1.0f, 0.0f, 0.0f, 0.0f);	// Line caps are aligned to the minor axis
+
+			const tcu::Vec4	wideLineVertices[]	=
+			{
+				tcu::Vec4(vertices[vertexNdx0] + lineNormalDir * halfWidth),
+				tcu::Vec4(vertices[vertexNdx0] - lineNormalDir * halfWidth),
+				tcu::Vec4(vertices[vertexNdx1] - lineNormalDir * halfWidth),
+				tcu::Vec4(vertices[vertexNdx1] + lineNormalDir * halfWidth)
+			};
+
+			// 1st triangle
+			refVertices.push_back(wideLineVertices[0]);
+			refVertices.push_back(wideLineVertices[1]);
+			refVertices.push_back(wideLineVertices[2]);
+
+			// 2nd triangle
+			refVertices.push_back(wideLineVertices[0]);
+			refVertices.push_back(wideLineVertices[2]);
+			refVertices.push_back(wideLineVertices[3]);
+		}
+
+		WideLineVertexShader		vertexShader;
+		WideLineFragmentShader		fragmentShader;
+
+		// Draw wide line was two triangles
+		DrawState					refDrawState	(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, RENDER_SIZE, RENDER_SIZE);
+		DrawCallData				refCallData		(refVertices);
+		ReferenceDrawContext		refDrawContext	(refDrawState, refCallData, vertexShader, fragmentShader);
+
+		refDrawContext.draw();
+
+		if (tcu::intThresholdCompare(log, "Compare", "Result comparsion", refDrawContext.getColorPixels(), drawContext.getColorPixels(), tcu::UVec4(1), tcu::COMPARE_LOG_ON_ERROR))
+			return tcu::TestStatus::pass("OK");
+	}
+
+	return tcu::TestStatus::fail("Rendered image(s) are incorrect");
 }
 
 } // ClipVolume ns
