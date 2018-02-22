@@ -572,11 +572,20 @@ tcu::TestStatus							DedicatedAllocationBufferTestInstance::bufferCreateAndAllo
 	const deUint32						heapTypeIndex					= static_cast<deUint32>(deCtz32(memReqs.memoryRequirements.memoryTypeBits));
 	const VkMemoryType					memoryType						= memoryProperties.memoryTypes[heapTypeIndex];
 	const VkMemoryHeap					memoryHeap						= memoryProperties.memoryHeaps[memoryType.heapIndex];
-	const VkDeviceSize					maxBufferSize					= deAlign64(memoryHeap.size >> 1u, memReqs.memoryRequirements.alignment);
 	const deUint32						shrinkBits						= 4u;	// number of bits to shift when reducing the size with each iteration
 
+	// Buffer size - Choose half of the reported heap size for the maximum buffer size, we
+	// should attempt to test as large a portion as possible.
+	//
+	// However on a system where device memory is shared with the system, the maximum size
+	// should be tested against the platform memory limits as a significant portion of the heap
+	// may already be in use by the operating system and other running processes.
+	const VkDeviceSize maxBufferSize = getMaxBufferSize(memoryHeap.size,
+													   memReqs.memoryRequirements.alignment,
+													   getPlatformMemoryLimits(m_context));
+
 	Move<VkDeviceMemory>				memory;
-	size = std::min(size, maxBufferSize);
+	size = deAlign64(std::min(size, maxBufferSize >> 1), memReqs.memoryRequirements.alignment);
 	while (*memory == DE_NULL)
 	{
 		// Create the buffer
