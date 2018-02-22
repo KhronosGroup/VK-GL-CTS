@@ -257,12 +257,12 @@ PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/GLSL/glslang.git",
 		"git@gitlab.khronos.org:GLSL/glslang.git",
-		"vulkan-1.1-rc7",
+		"vulkan-1.1-rc8",
 		"glslang"),
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
 		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-		"vulkan-1.1-rc1",
+		"vulkan-1.1-rc2",
 		"spirv-headers"),
 ]
 
