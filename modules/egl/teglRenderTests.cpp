@@ -141,7 +141,7 @@ static bool isANarrowScreenSpaceTriangle (const tcu::Vec4& p0, const tcu::Vec4& 
 	return visibleArea < minimumVisibleArea;
 }
 
-void randomizeDrawOp (de::Random& rnd, DrawPrimitiveOp& drawOp)
+void randomizeDrawOp (de::Random& rnd, DrawPrimitiveOp& drawOp, const bool alphaZeroOrOne)
 {
 	const int	minStencilRef	= 0;
 	const int	maxStencilRef	= 8;
@@ -173,6 +173,7 @@ void randomizeDrawOp (de::Random& rnd, DrawPrimitiveOp& drawOp)
 		{
 			const float		cx		= rnd.getFloat(-1.0f, 1.0f);
 			const float		cy		= rnd.getFloat(-1.0f, 1.0f);
+			const float		flatAlpha = (rnd.getFloat(minAlpha, maxAlpha) > 0.5f) ? 1.0f : 0.0f;
 
 			for (int coordNdx = 0; coordNdx < 3; coordNdx++)
 			{
@@ -188,6 +189,11 @@ void randomizeDrawOp (de::Random& rnd, DrawPrimitiveOp& drawOp)
 				color.y()		= rnd.getFloat(minRGB, maxRGB);
 				color.z()		= rnd.getFloat(minRGB, maxRGB);
 				color.w()		= rnd.getFloat(minAlpha, maxAlpha);
+
+				if (alphaZeroOrOne)
+				{
+					color.w()	= flatAlpha;
+				}
 			}
 
 			// avoid generating narrow triangles
@@ -758,7 +764,7 @@ void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface 
 	// Generate draw ops.
 	drawOps.resize(numContexts*drawsPerCtx*numIters);
 	for (vector<DrawPrimitiveOp>::iterator drawOp = drawOps.begin(); drawOp != drawOps.end(); ++drawOp)
-		randomizeDrawOp(rnd, *drawOp);
+		randomizeDrawOp(rnd, *drawOp, (pixelFmt.alphaBits == 1));
 
 	// Create and setup programs per context
 	for (int ctxNdx = 0; ctxNdx < numContexts; ctxNdx++)
@@ -970,7 +976,7 @@ void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface s
 
 	// Create draw ops.
 	for (vector<DrawPrimitiveOp>::iterator drawOp = drawOps.begin(); drawOp != drawOps.end(); ++drawOp)
-		randomizeDrawOp(rnd, *drawOp);
+		randomizeDrawOp(rnd, *drawOp, (pixelFmt.alphaBits == 1));
 
 	// Create packets.
 	for (int threadNdx = 0; threadNdx < numThreads; threadNdx++)
