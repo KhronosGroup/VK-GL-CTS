@@ -1276,7 +1276,7 @@ public:
 				{
 				    for (deUint32 derivNdx = 0; derivNdx < DE_LENGTH_OF_ARRAY(derivativePairs); ++derivNdx)
 					{
-						SampleArguments cur;
+						SampleArguments cur = SampleArguments();
 						cur.coord = Vec4((float)i / (float)(2 * m_testCase->m_dimensions[0]),
 										 (float)j / (float)(2 * m_testCase->m_dimensions[1]),
 										 0.0f, 0.0f);
@@ -1298,7 +1298,7 @@ public:
 				{
 					for (deUint32 lodNdx = 0; lodNdx < DE_LENGTH_OF_ARRAY(lodList); ++lodNdx)
 					{
-						SampleArguments cur;
+						SampleArguments cur = SampleArguments();
 						cur.coord = Vec4((float)i / (float)(2 * m_testCase->m_dimensions[0]),
 										 (float)j / (float)(2 * m_testCase->m_dimensions[1]),
 										 0.0f, 0.0f);
