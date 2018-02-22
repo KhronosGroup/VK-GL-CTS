@@ -1762,7 +1762,7 @@ void BufferIoExecutor::initBuffers (int numValues)
 	const deUint32				inputStride			= getLayoutStride(m_inputLayout);
 	const deUint32				outputStride		= getLayoutStride(m_outputLayout);
 	// Avoid creating zero-sized buffer/memory
-	const size_t				inputBufferSize		= numValues * inputStride ? (numValues * inputStride) : 1;
+	const size_t				inputBufferSize		= de::max(numValues * inputStride, 1u);
 	const size_t				outputBufferSize	= numValues * outputStride;
 
 	// Upload data to buffer
