@@ -502,6 +502,14 @@ void NegativeStateApiTests::init (void)
 		});
 	ES2F_ADD_API_CASE(get_framebuffer_attachment_parameteriv, "Invalid glGetFramebufferAttachmentParameteriv() usage",
 		{
+			// GL_MAJOR_VERSION query does not exist on GLES2
+			// so succeeding query implies GLES3+ hardware.
+			bool isES3Compatible = false;
+			glw::GLint majorVersion = 0;
+			glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
+			if (glGetError() == GL_NO_ERROR)
+				isES3Compatible = true;
+
 			GLint params[1] = { -1 };
 			GLuint fbo;
 			glGenFramebuffers(1, &fbo);
@@ -513,31 +521,47 @@ void NegativeStateApiTests::init (void)
 			m_log << TestLog::EndSection;
 
 			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if there is no attached object at the named attachment point and pname is not GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE.");
-			glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &params[0]);
-			expectError(GL_INVALID_ENUM);
-			m_log << TestLog::EndSection;
-
-			m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if the attached object at the named attachment point is incompatible with pname.");
-			GLint attachmentObjectType = -1;
-			glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attachmentObjectType);
-			expectError(GL_NO_ERROR);
-
-			if (attachmentObjectType == GL_RENDERBUFFER)
-				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL, &params[0]);
-			else if (attachmentObjectType == GL_TEXTURE)
-				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, -1, &params[0]);
-			else if (attachmentObjectType == GL_NONE)
-				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &params[0]);
+			if (isES3Compatible)
+			{
+				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &params[0]);		// TYPE is GL_NONE
+				expectError(GL_NO_ERROR);
+				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_COMPONENT_TYPE, &params[0]);	// TYPE is GL_NONE
+				expectError(GL_INVALID_OPERATION);
+			}
 			else
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid return value from glGetFramebufferAttachmentParameteriv()");
-
-			expectError(GL_INVALID_ENUM);
+			{
+				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &params[0]);
+				expectError(GL_INVALID_ENUM);
+			}
 			m_log << TestLog::EndSection;
+
+			if (!isES3Compatible)
+			{
+				m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if the attached object at the named attachment point is incompatible with pname.");
+				GLint attachmentObjectType = -1;
+				glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &attachmentObjectType);
+				expectError(GL_NO_ERROR);
+
+				if (attachmentObjectType == GL_RENDERBUFFER)
+					glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL, &params[0]);
+				else if (attachmentObjectType == GL_TEXTURE)
+					glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, -1, &params[0]);
+				else if (attachmentObjectType == GL_NONE)
+					glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &params[0]);
+				else
+					m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Invalid return value from glGetFramebufferAttachmentParameteriv()");
+
+				expectError(GL_INVALID_ENUM);
+				m_log << TestLog::EndSection;
+			}
 
 			m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the default framebuffer object name 0 is bound.");
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &params[0]);
-			expectError(GL_INVALID_OPERATION);
+			if (isES3Compatible)
+				expectError(GL_INVALID_OPERATION, GL_INVALID_ENUM);
+			else
+				expectError(GL_INVALID_OPERATION);
 			m_log << TestLog::EndSection;
 
 			glDeleteFramebuffers(1, &fbo);

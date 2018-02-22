@@ -31,6 +31,168 @@ using std::vector;
 namespace rsg
 {
 
+// CustomAbsOp and CustomBinaryOp are used to resolve float comparision corner case.
+// This error happened when two floats with the same value were compared
+// without using epsilon. If result of this comparisment influenced the
+// output color then result and reference images could differ.
+class CustomAbsOp : public Expression
+{
+public:
+								CustomAbsOp		(void);
+	virtual						~CustomAbsOp	(void);
+
+	void						setChild				(Expression* expression);
+	Expression*					createNextChild			(GeneratorState& state);
+	void						tokenize				(GeneratorState& state, TokenStream& str) const;
+
+	void						evaluate				(ExecutionContext& execCtx);
+	ExecConstValueAccess		getValue				(void) const { return m_value.getValue(m_type); }
+
+private:
+	std::string					m_function;
+	VariableType				m_type;
+	ExecValueStorage			m_value;
+	Expression*					m_child;
+};
+
+CustomAbsOp::CustomAbsOp (void)
+	: m_function		("abs")
+	, m_type			(VariableType::TYPE_FLOAT, 1)
+	, m_child			(DE_NULL)
+{
+	m_value.setStorage(m_type);
+}
+
+CustomAbsOp::~CustomAbsOp (void)
+{
+	delete m_child;
+}
+
+void CustomAbsOp::setChild(Expression* expression)
+{
+	m_child = expression;
+}
+
+Expression* CustomAbsOp::createNextChild (GeneratorState&)
+{
+	DE_ASSERT(0);
+	return DE_NULL;
+}
+
+void CustomAbsOp::tokenize (GeneratorState& state, TokenStream& str) const
+{
+	str << Token(m_function.c_str()) << Token::LEFT_PAREN;
+	m_child->tokenize(state, str);
+	str << Token::RIGHT_PAREN;
+}
+
+void CustomAbsOp::evaluate (ExecutionContext& execCtx)
+{
+	m_child->evaluate(execCtx);
+
+	ExecConstValueAccess	srcValue	= m_child->getValue();
+	ExecValueAccess			dstValue	= m_value.getValue(m_type);
+
+	for (int elemNdx = 0; elemNdx < m_type.getNumElements(); elemNdx++)
+	{
+		ExecConstValueAccess	srcComp		= srcValue.component(elemNdx);
+		ExecValueAccess			dstComp		= dstValue.component(elemNdx);
+
+		for (int compNdx = 0; compNdx < EXEC_VEC_WIDTH; compNdx++)
+			dstComp.asFloat(compNdx) = deFloatAbs(srcComp.asFloat(compNdx));
+	}
+}
+
+typedef BinaryOp<5, ASSOCIATIVITY_LEFT> CustomBinaryBase;
+
+// CustomBinaryOp and CustomAbsOp are used to resolve float comparision corner case.
+// CustomBinaryOp supports addition and substraction as only those functionalities
+// were needed.
+template <typename ComputeValue>
+class CustomBinaryOp: public CustomBinaryBase
+{
+public:
+								CustomBinaryOp		();
+	virtual						~CustomBinaryOp		(void) {}
+
+	void						setLeftValue		(Expression* expression);
+	void						setRightValue		(Expression* expression);
+
+	void						evaluate			(ExecValueAccess dst, ExecConstValueAccess a, ExecConstValueAccess b);
+};
+
+template <typename ComputeValue>
+CustomBinaryOp<ComputeValue>::CustomBinaryOp ()
+	: CustomBinaryBase(Token::PLUS)
+{
+	// By default add operation is assumed, for every other operation
+	// separate constructor specialization should be implemented
+	m_type = VariableType(VariableType::TYPE_FLOAT, 1);
+	m_value.setStorage(m_type);
+}
+
+template <>
+CustomBinaryOp<EvaluateSub>::CustomBinaryOp ()
+	: CustomBinaryBase(Token::MINUS)
+{
+	// Specialization for substraction
+	m_type = VariableType(VariableType::TYPE_FLOAT, 1);
+	m_leftValueRange =	ValueRange(m_type);
+	m_rightValueRange = ValueRange(m_type);
+	m_value.setStorage(m_type);
+}
+
+template <>
+CustomBinaryOp<EvaluateLessThan>::CustomBinaryOp ()
+	: CustomBinaryBase(Token::CMP_LT)
+{
+	// Specialization for less_then comparision
+	m_type = VariableType(VariableType::TYPE_BOOL, 1);
+	VariableType floatType = VariableType(VariableType::TYPE_FLOAT, 1);
+	m_leftValueRange =	ValueRange(floatType);
+	m_rightValueRange = ValueRange(floatType);
+	m_value.setStorage(m_type);
+}
+
+template <typename ComputeValue>
+void CustomBinaryOp<ComputeValue>::setLeftValue(Expression* expression)
+{
+	m_leftValueExpr = expression;
+}
+
+template <typename ComputeValue>
+void CustomBinaryOp<ComputeValue>::setRightValue(Expression* expression)
+{
+	m_rightValueExpr = expression;
+}
+
+template <typename ComputeValue>
+void CustomBinaryOp<ComputeValue>::evaluate(ExecValueAccess dst, ExecConstValueAccess a, ExecConstValueAccess b)
+{
+	DE_ASSERT(dst.getType() == a.getType());
+	DE_ASSERT(dst.getType() == b.getType());
+	DE_ASSERT(dst.getType().getBaseType() == VariableType::TYPE_FLOAT);
+
+	for (int elemNdx = 0; elemNdx < dst.getType().getNumElements(); elemNdx++)
+	{
+		for (int compNdx = 0; compNdx < EXEC_VEC_WIDTH; compNdx++)
+			dst.component(elemNdx).asFloat(compNdx) = ComputeValue()(a.component(elemNdx).asFloat(compNdx),b.component(elemNdx).asFloat(compNdx));
+	}
+}
+
+template <>
+void CustomBinaryOp<EvaluateLessThan>::evaluate(ExecValueAccess dst, ExecConstValueAccess a, ExecConstValueAccess b)
+{
+	DE_ASSERT(a.getType() == b.getType());
+	DE_ASSERT(dst.getType().getBaseType() == VariableType::TYPE_BOOL);
+
+	for (int elemNdx = 0; elemNdx < dst.getType().getNumElements(); elemNdx++)
+	{
+		for (int compNdx = 0; compNdx < EXEC_VEC_WIDTH; compNdx++)
+			dst.component(elemNdx).asBool(compNdx) = EvaluateLessThan()(a.component(elemNdx).asFloat(compNdx),b.component(elemNdx).asFloat(compNdx));
+	}
+}
+
 template <int Precedence, Associativity Assoc>
 BinaryOp<Precedence, Assoc>::BinaryOp (Token::Type operatorToken)
 	: m_operator		(operatorToken)
@@ -69,7 +231,91 @@ Expression* BinaryOp<Precedence, Assoc>::createNextChild (GeneratorState& state)
 		return m_leftValueExpr;
 	}
 	else
+	{
+		// Check for corrner cases
+		switch (m_operator)
+		{
+		case Token::CMP_LE:
+		{
+			// When comparing two floats epsilon should be included
+			// to eliminate the risk that we get different results
+			// because of precission error
+			VariableType floatType(VariableType::TYPE_FLOAT, 1);
+			if (m_rightValueRange.getType() == floatType)
+			{
+				FloatLiteral* epsilonLiteral = new FloatLiteral(0.001f);
+
+				typedef CustomBinaryOp<EvaluateAdd> CustomAddOp;
+				CustomAddOp* addOperation = new CustomAddOp();
+				addOperation->setLeftValue(m_rightValueExpr);
+				addOperation->setRightValue(epsilonLiteral);
+
+				// add epsilon to right-hand side
+				m_rightValueExpr = addOperation;
+			}
+			break;
+		}
+		case Token::CMP_GE:
+		{
+			// When comparing two floats epsilon should be included
+			// to eliminate the risk that we get different results
+			// because of precission error
+			VariableType floatType(VariableType::TYPE_FLOAT, 1);
+			if (m_leftValueRange.getType() == floatType)
+			{
+				FloatLiteral* epsilonLiteral = new FloatLiteral(0.001f);
+
+				typedef CustomBinaryOp<EvaluateAdd> CustomAddOp;
+				CustomAddOp* addOperation = new CustomAddOp();
+				addOperation->setLeftValue(m_leftValueExpr);
+				addOperation->setRightValue(epsilonLiteral);
+
+				// add epsilon to left-hand side
+				m_leftValueExpr = addOperation;
+			}
+			break;
+		}
+		case Token::CMP_EQ:
+		{
+			// When comparing two floats epsilon should be included
+			// to eliminate the risk that we get different results
+			// because of precission error
+			VariableType floatType(VariableType::TYPE_FLOAT, 1);
+			if (m_leftValueRange.getType() == floatType)
+			{
+				typedef CustomBinaryOp<EvaluateSub> CustomSubOp;
+				CustomSubOp* subOperation = new CustomSubOp();
+				subOperation->setLeftValue(m_leftValueExpr);
+				subOperation->setRightValue(m_rightValueExpr);
+
+				CustomAbsOp* absOperation = new CustomAbsOp();
+				absOperation->setChild(subOperation);
+				FloatLiteral* epsilonLiteral = new FloatLiteral(0.001f);
+
+				typedef CustomBinaryOp<EvaluateLessThan> CustomLessThanOp;
+				CustomLessThanOp* lessOperation = new CustomLessThanOp();
+				lessOperation->setLeftValue(absOperation);
+				lessOperation->setRightValue(epsilonLiteral);
+
+				VariableType boolType(VariableType::TYPE_BOOL, 1);
+				const ValueRange boolRange(boolType);
+				ParenOp* parenOperation = new ParenOp(state, boolRange);
+				parenOperation->setChild(lessOperation);
+				BoolLiteral* trueLiteral = new BoolLiteral(true);
+
+				// EQ operation cant be removed so it is replaced with:
+				// ((abs(lhs-rhs) < epsilon) == true).
+				m_leftValueExpr = parenOperation;
+				m_rightValueExpr = trueLiteral;
+			}
+			break;
+		}
+		default:
+			break;
+		}
+
 		return DE_NULL;
+	}
 }
 
 template <int Precedence, Associativity Assoc>

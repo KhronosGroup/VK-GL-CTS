@@ -23,6 +23,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "es3cTestPackage.hpp"
+#include "es3cCopyTexImageConversionsTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "glcExposedExtensionsTests.hpp"
 #include "glcFragDepthTests.hpp"
@@ -177,6 +178,7 @@ void ES30TestPackage::init(void)
 		addChild(new glcts::ParallelShaderCompileTests(getContext()));
 		addChild(new glcts::PackedPixelsTests(getContext()));
 		addChild(new glcts::PackedDepthStencilTests(getContext()));
+		addChild(new es3cts::CopyTexImageConversionsTests(getContext()));
 	}
 	catch (...)
 	{

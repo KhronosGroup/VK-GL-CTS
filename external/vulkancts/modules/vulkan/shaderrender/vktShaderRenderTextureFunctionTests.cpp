@@ -52,7 +52,7 @@ using std::vector;
 
 enum Function
 {
-	FUNCTION_TEXTURE = 0,		//!< texture(), textureOffset()
+	FUNCTION_TEXTURE = 0,		//!< texture(), textureOffset(), textureClampARB, textureOffsetClampARB
 	FUNCTION_TEXTUREPROJ,		//!< textureProj(), textureProjOffset()
 	FUNCTION_TEXTUREPROJ2,		//!< textureProj(sampler1D, vec2)
 	FUNCTION_TEXTUREPROJ3,		//!< textureProj(sampler2D, vec3)
@@ -60,7 +60,7 @@ enum Function
 	FUNCTION_TEXTUREPROJLOD,
 	FUNCTION_TEXTUREPROJLOD2,	//!< textureProjLod(sampler1D, vec2)
 	FUNCTION_TEXTUREPROJLOD3,	//!< textureProjLod(sampler2D, vec3)
-	FUNCTION_TEXTUREGRAD,
+	FUNCTION_TEXTUREGRAD,		//!< textureGrad, textureGradOffset, textureGradClampARB, textureGradOffsetClampARB
 	FUNCTION_TEXTUREPROJGRAD,
 	FUNCTION_TEXTUREPROJGRAD2,	//!< textureProjGrad(sampler1D, vec2)
 	FUNCTION_TEXTUREPROJGRAD3,	//!< textureProjGrad(sampler2D, vec3)
@@ -131,6 +131,10 @@ struct TextureLookupSpec
 	bool			useOffset;
 	tcu::IVec3		offset;
 
+	// Lod clamp
+	bool			useClamp;
+	float			lodClamp;
+
 	TextureLookupSpec (void)
 		: function		(FUNCTION_LAST)
 		, minCoord		(0.0f)
@@ -144,6 +148,8 @@ struct TextureLookupSpec
 		, maxDY			(0.0f)
 		, useOffset		(false)
 		, offset		(0)
+		, useClamp		(false)
+		, lodClamp		(0.0f)
 	{
 	}
 
@@ -158,7 +164,9 @@ struct TextureLookupSpec
 					   const tcu::Vec3&		minDY_,
 					   const tcu::Vec3&		maxDY_,
 					   bool					useOffset_,
-					   const tcu::IVec3&	offset_)
+					   const tcu::IVec3&	offset_,
+					   bool					useClamp_,
+					   float				lodClamp_)
 		: function		(function_)
 		, minCoord		(minCoord_)
 		, maxCoord		(maxCoord_)
@@ -171,6 +179,8 @@ struct TextureLookupSpec
 		, maxDY			(maxDY_)
 		, useOffset		(useOffset_)
 		, offset		(offset_)
+		, useClamp		(useClamp_)
+		, lodClamp		(lodClamp_)
 	{
 	}
 };
@@ -229,12 +239,14 @@ struct TextureSpec
 struct TexLookupParams
 {
 	float				lod;
+	float				lodClamp;
 	tcu::IVec3			offset;
 	tcu::Vec4			scale;
 	tcu::Vec4			bias;
 
 	TexLookupParams (void)
 		: lod		(0.0f)
+		, lodClamp	(0.0f)
 		, offset	(0)
 		, scale		(1.0f)
 		, bias		(0.0f)
@@ -422,46 +434,54 @@ inline float texture1DShadowOffset		(const ShaderEvalContext& c, float ref, floa
 inline float texture1DArrayShadowOffset	(const ShaderEvalContext& c, float ref, float s, float t, float lod, deInt32 offset)		{ return c.textures[0].tex1DArray->sampleCompareOffset(c.textures[0].sampler, ref, s, t, lod, offset);		}
 
 // Eval functions.
-static void		evalTexture2D			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), p.lod)*p.scale + p.bias; }
-static void		evalTextureCube			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCube(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod)*p.scale + p.bias; }
-static void		evalTexture2DArray		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod)*p.scale + p.bias; }
-static void		evalTexture3D			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod)*p.scale + p.bias; }
-static void		evalTexture1D			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x(), p.lod)*p.scale + p.bias; }
-static void		evalTexture1DArray		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArray(c, c.in[0].x(), c.in[0].y(), p.lod)*p.scale + p.bias; }
-static void		evalTextureCubeArray	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCubeArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[0].w(), p.lod)*p.scale + p.bias; }
+static void		evalTexture2D					(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), p.lod)*p.scale + p.bias; }
+static void		evalTextureCube					(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCube(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod)*p.scale + p.bias; }
+static void		evalTexture2DArray				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod)*p.scale + p.bias; }
+static void		evalTexture3D					(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod)*p.scale + p.bias; }
+static void		evalTexture1D					(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x(), p.lod)*p.scale + p.bias; }
+static void		evalTexture1DArray				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArray(c, c.in[0].x(), c.in[0].y(), p.lod)*p.scale + p.bias; }
+static void		evalTextureCubeArray			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCubeArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[0].w(), p.lod)*p.scale + p.bias; }
 
-static void		evalTexture2DBias		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTextureCubeBias		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCube(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture2DArrayBias	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture3DBias		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture1DBias		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture1DArrayBias	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArray(c, c.in[0].x(), c.in[0].y(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTextureCubeArrayBias(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCubeArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[0].w(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture2DBias				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTextureCubeBias				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCube(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture2DArrayBias			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture3DBias				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture1DBias				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture1DArrayBias			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArray(c, c.in[0].x(), c.in[0].y(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTextureCubeArrayBias		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCubeArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[0].w(), p.lod+c.in[1].x())*p.scale + p.bias; }
 
-static void		evalTexture2DProj3		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].z(), c.in[0].y()/c.in[0].z(), p.lod)*p.scale + p.bias; }
-static void		evalTexture2DProj3Bias	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].z(), c.in[0].y()/c.in[0].z(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture2DProj		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), p.lod)*p.scale + p.bias; }
-static void		evalTexture2DProjBias	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture3DProj		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[0].z()/c.in[0].w(), p.lod)*p.scale + p.bias; }
-static void		evalTexture3DProjBias	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[0].z()/c.in[0].w(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture1DProj2		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].y(), p.lod)*p.scale + p.bias; }
-static void		evalTexture1DProj2Bias	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].y(), p.lod+c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture1DProj		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].w(), p.lod)*p.scale + p.bias; }
-static void		evalTexture1DProjBias	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].w(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture2DProj3				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].z(), c.in[0].y()/c.in[0].z(), p.lod)*p.scale + p.bias; }
+static void		evalTexture2DProj3Bias			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].z(), c.in[0].y()/c.in[0].z(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture2DProj				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), p.lod)*p.scale + p.bias; }
+static void		evalTexture2DProjBias			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture3DProj				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[0].z()/c.in[0].w(), p.lod)*p.scale + p.bias; }
+static void		evalTexture3DProjBias			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[0].z()/c.in[0].w(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture1DProj2				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].y(), p.lod)*p.scale + p.bias; }
+static void		evalTexture1DProj2Bias			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].y(), p.lod+c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture1DProj				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].w(), p.lod)*p.scale + p.bias; }
+static void		evalTexture1DProjBias			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].w(), p.lod+c.in[1].x())*p.scale + p.bias; }
 
-static void		evalTexture2DLod		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTextureCubeLod		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCube(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture2DArrayLod	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture3DLod		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture1DLod		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture1DArrayLod	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArray(c, c.in[0].x(), c.in[0].y(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTextureCubeArrayLod	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCubeArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[0].w(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture2DLod				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTextureCubeLod				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCube(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture2DArrayLod			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture3DLod				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture1DLod				(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture1DArrayLod			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArray(c, c.in[0].x(), c.in[0].y(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTextureCubeArrayLod			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCubeArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[0].w(), c.in[1].x())*p.scale + p.bias; }
 
-static void		evalTexture2DProjLod3	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].z(), c.in[0].y()/c.in[0].z(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture2DProjLod	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture3DProjLod	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[0].z()/c.in[0].w(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture1DProjLod2	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].y(), c.in[1].x())*p.scale + p.bias; }
-static void		evalTexture1DProjLod	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].w(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture2DProjLod3			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].z(), c.in[0].y()/c.in[0].z(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture2DProjLod			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture3DProjLod			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[0].z()/c.in[0].w(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture1DProjLod2			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].y(), c.in[1].x())*p.scale + p.bias; }
+static void		evalTexture1DProjLod			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x()/c.in[0].w(), c.in[1].x())*p.scale + p.bias; }
+
+static void		evalTexture2DBiasClamp			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), de::max(p.lod+c.in[1].x(), p.lodClamp))*p.scale + p.bias; }
+static void		evalTextureCubeBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCube(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(p.lod+c.in[1].x(), p.lodClamp))*p.scale + p.bias; }
+static void		evalTexture2DArrayBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(p.lod+c.in[1].x(), p.lodClamp))*p.scale + p.bias; }
+static void		evalTexture3DBiasClamp			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(p.lod+c.in[1].x(), p.lodClamp))*p.scale + p.bias; }
+static void		evalTexture1DBiasClamp			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x(), de::max(p.lod+c.in[1].x(), p.lodClamp))*p.scale + p.bias; }
+static void		evalTexture1DArrayBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArray(c, c.in[0].x(), c.in[0].y(), de::max(p.lod+c.in[1].x(), p.lodClamp))*p.scale + p.bias; }
+static void		evalTextureCubeArrayBiasClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCubeArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[0].w(), de::max(p.lod+c.in[1].x(), p.lodClamp))*p.scale + p.bias; }
 
 // Offset variants
 
@@ -499,6 +519,12 @@ static void		evalTexture2DProjLodOffset		(ShaderEvalContext& c, const TexLookupP
 static void		evalTexture3DProjLodOffset		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3DOffset(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[0].z()/c.in[0].w(), c.in[1].x(), p.offset)*p.scale + p.bias; }
 static void		evalTexture1DProjLod2Offset		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DOffset(c, c.in[0].x()/c.in[0].y(), c.in[1].x(), p.offset.x())*p.scale + p.bias; }
 static void		evalTexture1DProjLodOffset		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DOffset(c, c.in[0].x()/c.in[0].w(), c.in[1].x(), p.offset.x())*p.scale + p.bias; }
+
+static void		evalTexture2DOffsetBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DOffset(c, c.in[0].x(), c.in[0].y(), de::max(p.lod+c.in[1].x(), p.lodClamp), p.offset.swizzle(0,1))*p.scale + p.bias; }
+static void		evalTexture2DArrayOffsetBiasClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArrayOffset(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(p.lod+c.in[1].x(), p.lodClamp), p.offset.swizzle(0,1))*p.scale + p.bias; }
+static void		evalTexture3DOffsetBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3DOffset(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(p.lod+c.in[1].x(), p.lodClamp), p.offset)*p.scale + p.bias; }
+static void		evalTexture1DOffsetBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DOffset(c, c.in[0].x(), de::max(p.lod+c.in[1].x(), p.lodClamp), p.offset.x())*p.scale + p.bias; }
+static void		evalTexture1DArrayOffsetBiasClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArrayOffset(c, c.in[0].x(), c.in[0].y(), de::max(p.lod+c.in[1].x(), p.lodClamp), p.offset.x())*p.scale + p.bias; }
 
 // Shadow variants
 
@@ -545,6 +571,14 @@ static void		evalTexture2DShadowProjOffsetBias	(ShaderEvalContext& c, const TexL
 static void		evalTexture1DShadowProjOffset		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture1DShadowOffset(c, c.in[0].z()/c.in[0].w(), c.in[0].x()/c.in[0].w(), p.lod, p.offset.x()); }
 static void		evalTexture1DShadowProjOffsetBias	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture1DShadowOffset(c, c.in[0].z()/c.in[0].w(), c.in[0].x()/c.in[0].w(), p.lod+c.in[1].x(), p.offset.x()); }
 
+static void		evalTexture2DShadowBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture2DShadow(c, c.in[0].z(), c.in[0].x(), c.in[0].y(), de::max(p.lod+c.in[1].x(), p.lodClamp)); }
+static void		evalTextureCubeShadowBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = textureCubeShadow(c, c.in[0].w(), c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(p.lod+c.in[1].x(), p.lodClamp)); }
+static void		evalTexture1DShadowBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture1DShadow(c, c.in[0].z(), c.in[0].x(), de::max(p.lod+c.in[1].x(), p.lodClamp)); }
+static void		evalTexture1DArrayShadowBiasClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture1DArrayShadow(c, c.in[0].z(), c.in[0].x(), c.in[0].y(), de::max(p.lod+c.in[1].x(), p.lodClamp)); }
+static void		evalTexture2DShadowOffsetBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture2DShadowOffset(c, c.in[0].z(), c.in[0].x(), c.in[0].y(), de::max(p.lod+c.in[1].x(), p.lodClamp), p.offset.swizzle(0,1)); }
+static void		evalTexture1DShadowOffsetBiasClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture1DShadowOffset(c, c.in[0].z(), c.in[0].x(), de::max(p.lod+c.in[1].x(), p.lodClamp), p.offset.x()); }
+static void		evalTexture1DArrayShadowOffsetBiasClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture1DArrayShadowOffset(c, c.in[0].z(), c.in[0].x(), c.in[0].y(), de::max(p.lod+c.in[1].x(), p.lodClamp), p.offset.x()); }
+
 // Gradient variarts
 
 static void		evalTexture2DGrad			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), computeLodFromGrad2D(c))*p.scale + p.bias; }
@@ -588,6 +622,31 @@ static void		evalTexture2DProjGradOffset		(ShaderEvalContext& c, const TexLookup
 static void		evalTexture3DProjGradOffset		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3DOffset(c, c.in[0].x()/c.in[0].w(), c.in[0].y()/c.in[0].w(), c.in[0].z()/c.in[0].w(), computeLodFromGrad3D(c), p.offset)*p.scale + p.bias; }
 static void		evalTexture1DProjGrad2Offset	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DOffset(c, c.in[0].x()/c.in[0].y(), computeLodFromGrad1D(c), p.offset.x())*p.scale + p.bias; }
 static void		evalTexture1DProjGradOffset		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DOffset(c, c.in[0].x()/c.in[0].w(), computeLodFromGrad1D(c), p.offset.x())*p.scale + p.bias; }
+
+static void		evalTexture2DGradClamp			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2D(c, c.in[0].x(), c.in[0].y(), de::max(computeLodFromGrad2D(c), p.lodClamp))*p.scale + p.bias; }
+static void		evalTextureCubeGradClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCube(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(computeLodFromGradCube(c), p.lodClamp))*p.scale + p.bias; }
+static void		evalTexture2DArrayGradClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(computeLodFromGrad2DArray(c), p.lodClamp))*p.scale + p.bias; }
+static void		evalTexture3DGradClamp			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3D(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(computeLodFromGrad3D(c), p.lodClamp))*p.scale + p.bias; }
+static void		evalTexture1DGradClamp			(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1D(c, c.in[0].x(), de::max(computeLodFromGrad1D(c), p.lodClamp))*p.scale + p.bias; }
+static void		evalTexture1DArrayGradClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArray(c, c.in[0].x(), c.in[0].y(), de::max(computeLodFromGrad1DArray(c), p.lodClamp))*p.scale + p.bias; }
+static void		evalTextureCubeArrayGradClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = textureCubeArray(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), c.in[0].w(), de::max(computeLodFromGradCubeArray(c), p.lodClamp))*p.scale + p.bias; }
+
+static void		evalTexture2DShadowGradClamp		(ShaderEvalContext& c, const TexLookupParams& p)		{ c.color.x() = texture2DShadow(c, c.in[0].z(), c.in[0].x(), c.in[0].y(), de::max(computeLodFromGrad2D(c), p.lodClamp)); }
+static void		evalTextureCubeShadowGradClamp		(ShaderEvalContext& c, const TexLookupParams& p)		{ c.color.x() = textureCubeShadow(c, c.in[0].w(), c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(computeLodFromGradCube(c), p.lodClamp)); }
+static void		evalTexture2DArrayShadowGradClamp	(ShaderEvalContext& c, const TexLookupParams& p)		{ c.color.x() = texture2DArrayShadow(c, c.in[0].w(), c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(computeLodFromGrad2DArray(c), p.lodClamp)); }
+static void		evalTexture1DShadowGradClamp		(ShaderEvalContext& c, const TexLookupParams& p)		{ c.color.x() = texture1DShadow(c, c.in[0].z(), c.in[0].x(), de::max(computeLodFromGrad1D(c), p.lodClamp)); }
+static void		evalTexture1DArrayShadowGradClamp	(ShaderEvalContext& c, const TexLookupParams& p)		{ c.color.x() = texture1DArrayShadow(c, c.in[0].z(), c.in[0].x(), c.in[0].y(), de::max(computeLodFromGrad1DArray(c), p.lodClamp)); }
+
+static void		evalTexture2DGradOffsetClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DOffset(c, c.in[0].x(), c.in[0].y(), de::max(computeLodFromGrad2D(c), p.lodClamp), p.offset.swizzle(0,1))*p.scale + p.bias; }
+static void		evalTexture2DArrayGradOffsetClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture2DArrayOffset(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(computeLodFromGrad2DArray(c), p.lodClamp), p.offset.swizzle(0,1))*p.scale + p.bias; }
+static void		evalTexture3DGradOffsetClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture3DOffset(c, c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(computeLodFromGrad3D(c), p.lodClamp), p.offset)*p.scale + p.bias; }
+static void		evalTexture1DGradOffsetClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DOffset(c, c.in[0].x(), de::max(computeLodFromGrad1D(c), p.lodClamp), p.offset.x())*p.scale + p.bias; }
+static void		evalTexture1DArrayGradOffsetClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color = texture1DArrayOffset(c, c.in[0].x(), c.in[0].y(), de::max(computeLodFromGrad1DArray(c), p.lodClamp), p.offset.x())*p.scale + p.bias; }
+
+static void		evalTexture2DShadowGradOffsetClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture2DShadowOffset(c, c.in[0].z(), c.in[0].x(), c.in[0].y(), de::max(computeLodFromGrad2D(c), p.lodClamp), p.offset.swizzle(0,1)); }
+static void		evalTexture2DArrayShadowGradOffsetClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture2DArrayShadowOffset(c, c.in[0].w(), c.in[0].x(), c.in[0].y(), c.in[0].z(), de::max(computeLodFromGrad2DArray(c), p.lodClamp), p.offset.swizzle(0,1)); }
+static void		evalTexture1DShadowGradOffsetClamp		(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture1DShadowOffset(c, c.in[0].z(), c.in[0].x(), de::max(computeLodFromGrad1D(c), p.lodClamp), p.offset.x()); }
+static void		evalTexture1DArrayShadowGradOffsetClamp	(ShaderEvalContext& c, const TexLookupParams& p)	{ c.color.x() = texture1DArrayShadowOffset(c, c.in[0].z(), c.in[0].x(), c.in[0].y(), de::max(computeLodFromGrad1DArray(c), p.lodClamp), p.offset.x()); }
 
 // Texel fetch variants
 
@@ -692,6 +751,14 @@ ShaderTextureFunctionInstance::ShaderTextureFunctionInstance (Context&						cont
 	, m_lookupParams			(lookupParams)
 {
 	checkDeviceFeatures(m_context, m_textureSpec.type);
+
+	if (lookupSpec.useClamp)
+	{
+		const vk::VkPhysicalDeviceFeatures&	deviceFeatures	= context.getDeviceFeatures();
+
+		if (!deviceFeatures.shaderResourceMinLod)
+			TCU_THROW(NotSupportedError, "ShaderResourceMinLod feature not supported.");
+	}
 
 	{
 		// Base coord scale & bias
@@ -1097,6 +1164,7 @@ void ShaderTextureFunctionInstance::initTexture (void)
 	lookupParams.scale		= fmtInfo.lookupScale;
 	lookupParams.bias		= fmtInfo.lookupBias;
 	lookupParams.offset		= m_lookupSpec.offset;
+	lookupParams.lodClamp	= m_lookupSpec.lodClamp;
 
 	// \todo [dirnerakos] Avoid const cast somehow
 	const_cast<TexLookupParams&>(m_lookupParams) = lookupParams;
@@ -1237,6 +1305,9 @@ void ShaderTextureFunctionCase::initShaderSources (void)
 			break;
 	}
 
+	if (m_lookupSpec.useClamp)
+		version = glu::GLSL_VERSION_450;
+
 	vert << glu::getGLSLVersionDeclaration(version) << "\n"
 		 << "layout(location = 0) in highp vec4 a_position;\n"
 		 << "layout(location = 4) in " << coordPrecName << " " << coordTypeName << " a_in0;\n";
@@ -1249,8 +1320,12 @@ void ShaderTextureFunctionCase::initShaderSources (void)
 	else if (hasLodBias)
 		vert << "layout(location = 5) in " << coordPrecName << " float a_in1;\n";
 
-	frag << glu::getGLSLVersionDeclaration(version) << "\n"
-		 << "layout(location = 0) out mediump vec4 o_color;\n";
+	frag << glu::getGLSLVersionDeclaration(version) << "\n";
+
+	if (m_lookupSpec.useClamp)
+		frag << "#extension GL_ARB_sparse_texture_clamp : require\n";
+
+	frag  << "layout(location = 0) out mediump vec4 o_color;\n";
 
 	if (isVtxCase)
 	{
@@ -1305,6 +1380,8 @@ void ShaderTextureFunctionCase::initShaderSources (void)
 		op << "vec4(" << baseFuncName;
 		if (m_lookupSpec.useOffset)
 			op << "Offset";
+		if (m_lookupSpec.useClamp)
+			op << "ClampARB";
 		op << "(u_sampler, ";
 
 		if (isIntCoord)
@@ -1340,6 +1417,9 @@ void ShaderTextureFunctionCase::initShaderSources (void)
 			}
 			op << ")";
 		}
+
+		if (m_lookupSpec.useClamp)
+			op << ", float(" << m_lookupSpec.lodClamp << ")";
 
 		if (isCubeArrayShadow && m_lookupSpec.function == FUNCTION_TEXTURE)
 			op << ", " << texCoord << ".w";
@@ -2803,9 +2883,13 @@ struct TexFuncCaseSpec
 };
 
 #define CASE_SPEC(NAME, FUNC, MINCOORD, MAXCOORD, USEBIAS, MINLOD, MAXLOD, USEOFFSET, OFFSET, TEXSPEC, EVALFUNC, FLAGS) \
-	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, USEBIAS, MINLOD, MAXLOD, tcu::Vec3(0.0f), tcu::Vec3(0.0f), tcu::Vec3(0.0f), tcu::Vec3(0.0f), USEOFFSET, OFFSET), TEXSPEC, EVALFUNC, FLAGS }
+	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, USEBIAS, MINLOD, MAXLOD, tcu::Vec3(0.0f), tcu::Vec3(0.0f), tcu::Vec3(0.0f), tcu::Vec3(0.0f), USEOFFSET, OFFSET, false, 0.0f), TEXSPEC, EVALFUNC, FLAGS }
 #define GRAD_CASE_SPEC(NAME, FUNC, MINCOORD, MAXCOORD, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET, TEXSPEC, EVALFUNC, FLAGS) \
-	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, false, 0.0f, 0.0f, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET), TEXSPEC, EVALFUNC, FLAGS }
+	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, false, 0.0f, 0.0f, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET, false, 0.0f), TEXSPEC, EVALFUNC, FLAGS }
+#define CLAMP_CASE_SPEC(NAME, FUNC, MINCOORD, MAXCOORD, USEBIAS, MINLOD, MAXLOD, USEOFFSET, OFFSET, LODCLAMP, TEXSPEC, EVALFUNC, FLAGS) \
+	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, USEBIAS, MINLOD, MAXLOD, tcu::Vec3(0.0f), tcu::Vec3(0.0f), tcu::Vec3(0.0f), tcu::Vec3(0.0f), USEOFFSET, OFFSET, true, LODCLAMP), TEXSPEC, EVALFUNC, FLAGS }
+#define GRADCLAMP_CASE_SPEC(NAME, FUNC, MINCOORD, MAXCOORD, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET, LODCLAMP, TEXSPEC, EVALFUNC, FLAGS) \
+	{ #NAME, TextureLookupSpec(FUNC, MINCOORD, MAXCOORD, false, 0.0f, 0.0f, MINDX, MAXDX, MINDY, MAXDY, USEOFFSET, OFFSET, true, LODCLAMP), TEXSPEC, EVALFUNC, FLAGS }
 
 class SparseShaderTextureFunctionInstance : public ShaderTextureFunctionInstance
 {
@@ -2831,6 +2915,13 @@ SparseShaderTextureFunctionInstance::SparseShaderTextureFunctionInstance (Contex
 																		 const ImageBackingMode		imageBackingMode)
 	: ShaderTextureFunctionInstance (context, isVertexCase, evaluator, uniformSetup, lookupSpec, textureSpec, lookupParams, imageBackingMode)
 {
+	if (lookupSpec.useClamp)
+	{
+		const vk::VkPhysicalDeviceFeatures&	deviceFeatures	= context.getDeviceFeatures();
+
+		if (!deviceFeatures.shaderResourceMinLod)
+			TCU_THROW(NotSupportedError, "ShaderResourceMinLod feature not supported.");
+	}
 }
 
 SparseShaderTextureFunctionInstance::~SparseShaderTextureFunctionInstance (void)
@@ -2930,8 +3021,12 @@ void SparseShaderTextureFunctionCase::initShaderSources (void)
 		vert << "layout(location = 5) in " << coordPrecName << " float a_in1;\n";
 
 	frag << "#version 450\n"
-		 << "#extension GL_ARB_sparse_texture2 : require\n"
-		 << "layout(location = 0) out mediump vec4 o_color;\n";
+		 << "#extension GL_ARB_sparse_texture2 : require\n";
+
+	if (m_lookupSpec.useClamp)
+		frag << "#extension GL_ARB_sparse_texture_clamp : require\n";
+
+	frag << "layout(location = 0) out mediump vec4 o_color;\n";
 
 	if (isVtxCase)
 	{
@@ -2987,6 +3082,9 @@ void SparseShaderTextureFunctionCase::initShaderSources (void)
 		if (m_lookupSpec.useOffset)
 			op << "Offset";
 
+		if (m_lookupSpec.useClamp)
+			op << "Clamp";
+
 		op << "ARB(u_sampler, ";
 
 		if (isIntCoord)
@@ -3021,6 +3119,9 @@ void SparseShaderTextureFunctionCase::initShaderSources (void)
 			}
 			op << ")";
 		}
+
+		if (m_lookupSpec.useClamp)
+			op << ", float(" << m_lookupSpec.lodClamp << ")";
 
 		op << ", texel";
 
@@ -3383,6 +3484,52 @@ void ShaderTextureFunctionTests::init (void)
 	};
 	createCaseGroup(this, "texture", "texture() Tests", textureCases, DE_LENGTH_OF_ARRAY(textureCases));
 
+	// textureClampARB() cases
+	static const TexFuncCaseSpec textureClampARBCases[] =
+	{
+		//			    Name							Function			MinCoord						MaxCoord							Bias?	MinLod	MaxLod	Offset?	Offset		LodClamp	Format					EvalFunc							Flags
+		CLAMP_CASE_SPEC(sampler2d_bias_fixed,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4(1.0f, 1.0f, 0.0f, 0.0f),		true,	0.0f,	5.0f,	false,	IVec3(0),	5.0f,	tex2DMipmapFixed,			evalTexture2DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(sampler2d_bias_float,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4(1.0f, 1.0f, 0.0f, 0.0f),		true,	0.0f,	5.0f,	false,	IVec3(0),	5.0f,	tex2DMipmapFloat,			evalTexture2DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(isampler2d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4(6.0f, 6.0f, 0.0f, 0.0f),		true,	2.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex2DMipmapInt,				evalTexture2DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(usampler2d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4(6.0f, 6.0f, 0.0f, 0.0f),		true,	2.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex2DMipmapUint,			evalTexture2DBiasClamp,				FRAGMENT),
+
+		CLAMP_CASE_SPEC(samplercube_bias_fixed,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 1.01f, 0.0f),	Vec4(1.0f, 1.0f, 1.01f, 0.0f),		true,	0.0f,	5.0f,	false,	IVec3(0),	4.0f,	texCubeMipmapFixed,			evalTextureCubeBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(samplercube_bias_float,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 1.01f, 0.0f),	Vec4(1.0f, 1.0f, 1.01f, 0.0f),		true,	0.0f,	5.0f,	false,	IVec3(0),	4.0f,	texCubeMipmapFloat,			evalTextureCubeBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(isamplercube_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 6.01f, 0.0f),	Vec4(6.0f, 6.0f, 6.01f, 0.0f),		true,	2.0f,	5.0f,	false,	IVec3(0),	6.0f,	texCubeMipmapInt,			evalTextureCubeBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(usamplercube_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 6.01f, 0.0f),	Vec4(6.0f, 6.0f, 6.01f, 0.0f),		true,	2.0f,	5.0f,	false,	IVec3(0),	6.0f,	texCubeMipmapUint,			evalTextureCubeBiasClamp,			FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler2darray_bias_fixed,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 1.0f, 4.0f,  0.0f),		true,	0.0f,	5.0f,	false,	IVec3(0),	5.0f,	tex2DArrayMipmapFixed,		evalTexture2DArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(sampler2darray_bias_float,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 1.0f, 4.0f,  0.0f),		true,	0.0f,	5.0f,	false,	IVec3(0),	5.0f,	tex2DArrayMipmapFloat,		evalTexture2DArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(isampler2darray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 6.0f, 4.0f,  0.0f),		true,	2.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex2DArrayMipmapInt,		evalTexture2DArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(usampler2darray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 6.0f, 4.0f,  0.0f),		true,	2.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex2DArrayMipmapUint,		evalTexture2DArrayBiasClamp,		FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler3d_bias_fixed,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 1.0f, 4.0f,  0.0f),		true,	-10.0f,	10.0f,	false,	IVec3(0),	0.0f,	tex3DMipmapFixed,			evalTexture3DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(sampler3d_bias_float,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 1.0f, 4.0f,  0.0f),		true,	-10.0f,	10.0f,	false,	IVec3(0),	0.0f,	tex3DMipmapFloat,			evalTexture3DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(isampler3d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 6.0f, 4.0f,  0.0f),		true,	0.0f,	8.0f,	false,	IVec3(0),	5.0f,	tex3DMipmapInt,				evalTexture3DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(usampler3d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 6.0f, 4.0f,  0.0f),		true,	0.0f,	8.0f,	false,	IVec3(0),	5.0f,	tex3DMipmapUint,			evalTexture3DBiasClamp,				FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler1d_bias_fixed,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 0.0f, 0.0f,  0.0f),		true,	0.0f,	5.0f,	false,	IVec3(0),	4.0f,	tex1DMipmapFixed,			evalTexture1DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(sampler1d_bias_float,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 0.0f, 0.0f,  0.0f),		true,	0.0f,	5.0f,	false,	IVec3(0),	4.0f,	tex1DMipmapFloat,			evalTexture1DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(isampler1d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 0.0f, 0.0f,  0.0f),		true,	2.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex1DMipmapInt,				evalTexture1DBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(usampler1d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 0.0f, 0.0f,  0.0f),		true,	2.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex1DMipmapUint,			evalTexture1DBiasClamp,				FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler1darray_bias_fixed,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f,  4.0f,  0.0f,  0.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	5.0f,	tex1DArrayMipmapFixed,		evalTexture1DArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(sampler1darray_bias_float,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f,  4.0f,  0.0f,  0.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	5.0f,	tex1DArrayMipmapFloat,		evalTexture1DArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(isampler1darray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f,  4.0f,  0.0f,  0.0f),	true,	2.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex1DArrayMipmapInt,		evalTexture1DArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(usampler1darray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f,  4.0f,  0.0f,  0.0f),	true,	2.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex1DArrayMipmapUint,		evalTexture1DArrayBiasClamp,		FRAGMENT),
+
+		CLAMP_CASE_SPEC(samplercubearray_bias_fixed,	FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 1.01f, 0.0f),	Vec4(1.0f,  1.0f, 1.01f,  2.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	3.0f,	texCubeArrayMipmapFixed,	evalTextureCubeArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(samplercubearray_bias_float,	FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 1.01f, 0.0f),	Vec4(1.0f,  1.0f, 1.01f,  2.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	3.0f,	texCubeArrayMipmapFloat,	evalTextureCubeArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(isamplercubearray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 6.01f, 0.0f),	Vec4(6.0f,  6.0f, 6.01f,  2.0f),	true,	2.0f,	5.0f,	false,	IVec3(0),	4.0f,	texCubeArrayMipmapInt,		evalTextureCubeArrayBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(usamplercubearray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 6.01f, 0.0f),	Vec4(6.0f,  6.0f, 6.01f,  2.0f),	true,	2.0f,	5.0f,	false,	IVec3(0),	4.0f,	texCubeArrayMipmapUint,		evalTextureCubeArrayBiasClamp,		FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler2dshadow_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  1.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex2DMipmapShadow,			evalTexture2DShadowBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(samplercubeshadow_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 1.01f,  0.0f),	Vec4( 1.0f,  1.0f,  1.01f, 0.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	7.0f,	texCubeMipmapShadow,		evalTextureCubeShadowBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(sampler1dshadow_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  0.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex1DMipmapShadow,			evalTexture1DShadowBiasClamp,		FRAGMENT),
+		CLAMP_CASE_SPEC(sampler1darrayshadow_bias,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  4.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	false,	IVec3(0),	7.0f,	tex1DArrayMipmapShadow,		evalTexture1DArrayShadowBiasClamp,	FRAGMENT),
+	};
+	createCaseGroup(this, "textureclamp", "textureClampARB() Tests", textureClampARBCases, DE_LENGTH_OF_ARRAY(textureClampARBCases));
+
 	// textureOffset() cases
 	// \note _bias variants are not using mipmap thanks to wide allowed range for LOD computation
 	static const TexFuncCaseSpec textureOffsetCases[] =
@@ -3471,6 +3618,41 @@ void ShaderTextureFunctionTests::init (void)
 		CASE_SPEC(sampler1darrayshadow_bias,	FUNCTION_TEXTURE,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	true,	-2.0f,	2.0f,	true,	IVec3(-8, 0, 0),	tex1DArrayShadow,		evalTexture1DArrayShadowOffsetBias,	FRAGMENT),
 	};
 	createCaseGroup(this, "textureoffset", "textureOffset() Tests", textureOffsetCases, DE_LENGTH_OF_ARRAY(textureOffsetCases));
+
+	// textureOffsetClampARB() cases
+	static const TexFuncCaseSpec textureOffsetClampARBCases[] =
+	{
+		//			    Name							Function			MinCoord						MaxCoord							Bias?	MinLod	MaxLod	Offset?	Offset				LodClamp	Format					EvalFunc									Flags
+		CLAMP_CASE_SPEC(sampler2d_bias_fixed,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4(1.0f, 1.0f, 0.0f, 0.0f),		true,	0.0f,	5.0f,	true,	IVec3(7, -8, 0),	5.0f,	tex2DMipmapFixed,			evalTexture2DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(sampler2d_bias_float,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4(1.0f, 1.0f, 0.0f, 0.0f),		true,	0.0f,	5.0f,	true,	IVec3(7, -8, 0),	5.0f,	tex2DMipmapFloat,			evalTexture2DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(isampler2d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4(6.0f, 6.0f, 0.0f, 0.0f),		true,	2.0f,	5.0f,	true,	IVec3(7, -8, 0),	7.0f,	tex2DMipmapInt,				evalTexture2DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(usampler2d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f, 0.0f),	Vec4(6.0f, 6.0f, 0.0f, 0.0f),		true,	2.0f,	5.0f,	true,	IVec3(7, -8, 0),	7.0f,	tex2DMipmapUint,			evalTexture2DOffsetBiasClamp,				FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler2darray_bias_fixed,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 1.0f, 4.0f,  0.0f),		true,	0.0f,	5.0f,	true,	IVec3(7, -8, 0),	5.0f,	tex2DArrayMipmapFixed,		evalTexture2DArrayOffsetBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(sampler2darray_bias_float,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 1.0f, 4.0f,  0.0f),		true,	0.0f,	5.0f,	true,	IVec3(7, -8, 0),	5.0f,	tex2DArrayMipmapFloat,		evalTexture2DArrayOffsetBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(isampler2darray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 6.0f, 4.0f,  0.0f),		true,	2.0f,	5.0f,	true,	IVec3(7, -8, 0),	7.0f,	tex2DArrayMipmapInt,		evalTexture2DArrayOffsetBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(usampler2darray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 6.0f, 4.0f,  0.0f),		true,	2.0f,	5.0f,	true,	IVec3(7, -8, 0),	7.0f,	tex2DArrayMipmapUint,		evalTexture2DArrayOffsetBiasClamp,			FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler3d_bias_fixed,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 1.0f, 4.0f,  0.0f),		true,	-12.0f,	12.0f,	true,	IVec3(-8, 7, 3),	2.0f,	tex3DMipmapFixed,			evalTexture3DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(sampler3d_bias_float,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 1.0f, 4.0f,  0.0f),		true,	-12.0f,	12.0f,	true,	IVec3(-8, 7, 3),	2.0f,	tex3DMipmapFloat,			evalTexture3DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(isampler3d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 6.0f, 4.0f,  0.0f),		true,	-5.0f,	5.0f,	true,	IVec3(-8, 7, 3),	1.0f,	tex3DMipmapInt,				evalTexture3DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(usampler3d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 6.0f, 4.0f,  0.0f),		true,	-5.0f,	5.0f,	true,	IVec3(-8, 7, 3),	1.0f,	tex3DMipmapUint,			evalTexture3DOffsetBiasClamp,				FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler1d_bias_fixed,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 0.0f, 0.0f,  0.0f),		true,	0.0f,	5.0f,	true,	IVec3(-8, 0, 0),	4.0f,	tex1DMipmapFixed,			evalTexture1DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(sampler1d_bias_float,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f, 0.0f, 0.0f,  0.0f),		true,	0.0f,	5.0f,	true,	IVec3( 7, 0, 0),	4.0f,	tex1DMipmapFloat,			evalTexture1DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(isampler1d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 0.0f, 0.0f,  0.0f),		true,	2.0f,	5.0f,	true,	IVec3(-8, 0, 0),	7.0f,	tex1DMipmapInt,				evalTexture1DOffsetBiasClamp,				FRAGMENT),
+		CLAMP_CASE_SPEC(usampler1d_bias,				FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f, 0.0f, 0.0f,  0.0f),		true,	2.0f,	5.0f,	true,	IVec3( 7, 0, 0),	7.0f,	tex1DMipmapUint,			evalTexture1DOffsetBiasClamp,				FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler1darray_bias_fixed,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f,  4.0f,  0.0f,  0.0f),	true,	0.0f,	5.0f,	true,	IVec3(-8, 0, 0),	5.0f,	tex1DArrayMipmapFixed,		evalTexture1DArrayOffsetBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(sampler1darray_bias_float,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(1.0f,  4.0f,  0.0f,  0.0f),	true,	0.0f,	5.0f,	true,	IVec3( 7, 0, 0),	5.0f,	tex1DArrayMipmapFloat,		evalTexture1DArrayOffsetBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(isampler1darray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f,  4.0f,  0.0f,  0.0f),	true,	2.0f,	5.0f,	true,	IVec3(-8, 0, 0),	7.0f,	tex1DArrayMipmapInt,		evalTexture1DArrayOffsetBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(usampler1darray_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4(6.0f,  4.0f,  0.0f,  0.0f),	true,	2.0f,	5.0f,	true,	IVec3( 7, 0, 0),	7.0f,	tex1DArrayMipmapUint,		evalTexture1DArrayOffsetBiasClamp,			FRAGMENT),
+
+		CLAMP_CASE_SPEC(sampler2dshadow_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  1.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	true,	IVec3(-8, 7, 0),	7.0f,	tex2DMipmapShadow,			evalTexture2DShadowOffsetBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(sampler1dshadow_bias,			FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  0.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	true,	IVec3(-8, 0, 0),	7.0f,	tex1DMipmapShadow,			evalTexture1DShadowOffsetBiasClamp,			FRAGMENT),
+		CLAMP_CASE_SPEC(sampler1darrayshadow_bias,		FUNCTION_TEXTURE,	Vec4(0.0f, 0.0f, 0.0f,  0.0f),	Vec4( 1.0f,  4.0f,  1.0f,  0.0f),	true,	0.0f,	5.0f,	true,	IVec3(-8, 0, 0),	7.0f,	tex1DArrayMipmapShadow,		evalTexture1DArrayShadowOffsetBiasClamp,	FRAGMENT),
+	};
+	createCaseGroup(this, "textureoffsetclamp", "textureOffsetClampARB() Tests", textureOffsetClampARBCases, DE_LENGTH_OF_ARRAY(textureOffsetClampARBCases));
 
 	// textureProj() cases
 	// \note Currently uses constant divider!
@@ -3840,6 +4022,53 @@ void ShaderTextureFunctionTests::init (void)
 	};
 	createCaseGroup(this, "texturegrad", "textureGrad() Tests", textureGradCases, DE_LENGTH_OF_ARRAY(textureGradCases));
 
+	// textureGradClampARB() cases
+	static const TexFuncCaseSpec textureGradClampCases[] =
+	{
+		//		  Name									Function				MinCoord							MaxCoord							MinDx						MaxDx						MinDy						MaxDy						Offset?	Offset		LodClamp	Format					EvalFunc						Flags
+		GRADCLAMP_CASE_SPEC(sampler2d_fixed,			FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DMipmapFixed,			evalTexture2DGradClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler2d_float,			FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f, -0.2f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DMipmapFloat,			evalTexture2DGradClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler2d,					FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DMipmapInt,				evalTexture2DGradClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler2d,					FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.2f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DMipmapUint,			evalTexture2DGradClamp,				FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(samplercube_fixed,			FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f,  1.01f,  0.0f),	Vec4( 1.0f,  1.0f,  1.01f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	texCubeMipmapFixed,			evalTextureCubeGradClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(samplercube_float,			FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f, -1.01f,  0.0f),	Vec4( 1.0f,  1.0f, -1.01f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f, -0.2f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	texCubeMipmapFloat,			evalTextureCubeGradClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isamplercube,				FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f,  1.01f,  0.0f),	Vec4( 1.0f,  1.0f,  1.01f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	texCubeMipmapInt,			evalTextureCubeGradClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usamplercube,				FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f, -1.01f,  0.0f),	Vec4( 1.0f,  1.0f, -1.01f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.2f,  0.0f),	false,	IVec3(0),	5.0f,	texCubeMipmapUint,			evalTextureCubeGradClamp,			FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler2darray_fixed,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DArrayMipmapFixed,		evalTexture2DArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler2darray_float,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f, -0.2f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DArrayMipmapFloat,		evalTexture2DArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler2darray,			FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DArrayMipmapInt,		evalTexture2DArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler2darray,			FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.2f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DArrayMipmapUint,		evalTexture2DArrayGradClamp,		FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler3d_fixed,			FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex3DMipmapFixed,			evalTexture3DGradClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler3d_float,			FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.2f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex3DMipmapFloat,			evalTexture3DGradClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler3d,					FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex3DMipmapInt,				evalTexture3DGradClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler3d,					FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f, -0.2f),	false,	IVec3(0),	5.0f,	tex3DMipmapUint,			evalTexture3DGradClamp,				FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler1d_fixed,			FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DMipmapFixed,			evalTexture1DGradClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler1d_float,			FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DMipmapFloat,			evalTexture1DGradClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler1d,					FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DMipmapInt,				evalTexture1DGradClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler1d,					FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DMipmapUint,			evalTexture1DGradClamp,				FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler1darray_fixed,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,   0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DArrayMipmapFixed,		evalTexture1DArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler1darray_float,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,   0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DArrayMipmapFloat,		evalTexture1DArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler1darray,			FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,   0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DArrayMipmapInt,		evalTexture1DArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler1darray,			FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,   0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DArrayMipmapUint,		evalTexture1DArrayGradClamp,		FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(samplercubearray_fixed,		FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f,  1.01f, -0.5f),	Vec4( 1.0f,  1.0f,  1.01f,  1.5f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	4.0f,	texCubeArrayMipmapFixed,	evalTextureCubeArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(samplercubearray_float,		FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f, -1.01f, -0.5f),	Vec4( 1.0f,  1.0f, -1.01f,  1.5f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f, -0.2f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	4.0f,	texCubeArrayMipmapFloat,	evalTextureCubeArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isamplercubearray,			FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f,  1.01f, -0.5f),	Vec4( 1.0f,  1.0f,  1.01f,  1.5f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	4.0f,	texCubeArrayMipmapInt,		evalTextureCubeArrayGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usamplercubearray,			FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f, -1.01f, -0.5f),	Vec4( 1.0f,  1.0f, -1.01f,  1.5f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.2f,  0.0f),	false,	IVec3(0),	4.0f,	texCubeArrayMipmapUint,		evalTextureCubeArrayGradClamp,		FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler2dshadow,			FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DMipmapShadow,			evalTexture2DShadowGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(samplercubeshadow,			FUNCTION_TEXTUREGRAD,	Vec4(-1.0f, -1.0f,  1.01f,  0.0f),	Vec4( 1.0f,  1.0f,  1.01f,  1.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.2f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	texCubeMipmapShadow,		evalTextureCubeShadowGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler2darrayshadow,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  1.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f, -0.2f,  0.0f),	false,	IVec3(0),	5.0f,	tex2DArrayMipmapShadow,		evalTexture2DArrayShadowGradClamp,	FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler1dshadow,			FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DMipmapShadow,			evalTexture1DShadowGradClamp,		FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler1darrayshadow,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	false,	IVec3(0),	5.0f,	tex1DArrayMipmapShadow,		evalTexture1DArrayShadowGradClamp,	FRAGMENT),
+	};
+	createCaseGroup(this, "texturegradclamp", "textureGradClampARB() Tests", textureGradClampCases, DE_LENGTH_OF_ARRAY(textureGradClampCases));
+
 	// textureGradOffset() cases
 	static const TexFuncCaseSpec textureGradOffsetCases[] =
 	{
@@ -3881,6 +4110,43 @@ void ShaderTextureFunctionTests::init (void)
 		GRAD_CASE_SPEC(sampler1darrayshadow,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowGradOffset,	FRAGMENT),
 	};
 	createCaseGroup(this, "texturegradoffset", "textureGradOffset() Tests", textureGradOffsetCases, DE_LENGTH_OF_ARRAY(textureGradOffsetCases));
+
+	// textureGradOffsetClampARB() cases
+	static const TexFuncCaseSpec textureGradOffsetClampCases[] =
+	{
+		//		  Name								Function				MinCoord							MaxCoord							MinDx						MaxDx						MinDy						MaxDy						Offset?	Offset				LodClamp	Format				EvalFunc									Flags
+		GRADCLAMP_CASE_SPEC(sampler2d_fixed,		FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(-8, 7, 0),	5.0f,	tex2DMipmapFixed,		evalTexture2DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler2d_float,		FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f, -0.2f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(7, -8, 0),	5.0f,	tex2DMipmapFloat,		evalTexture2DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler2d,				FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(-8, 7, 0),	5.0f,	tex2DMipmapInt,			evalTexture2DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler2d,				FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.2f,  0.0f),	true,	IVec3(7, -8, 0),	5.0f,	tex2DMipmapUint,		evalTexture2DGradOffsetClamp,				FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler2darray_fixed,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(-8, 7, 0),	5.0f,	tex2DArrayMipmapFixed,	evalTexture2DArrayGradOffsetClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler2darray_float,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f, -0.2f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(7, -8, 0),	5.0f,	tex2DArrayMipmapFloat,	evalTexture2DArrayGradOffsetClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler2darray,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(-8, 7, 0),	5.0f,	tex2DArrayMipmapInt,	evalTexture2DArrayGradOffsetClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler2darray,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.2f,  0.0f),	true,	IVec3(7, -8, 0),	5.0f,	tex2DArrayMipmapUint,	evalTexture2DArrayGradOffsetClamp,			FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler3d_fixed,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(-8, 7, 3),	5.0f,	tex3DMipmapFixed,		evalTexture3DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler3d_float,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.2f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(3, -8, 7),	5.0f,	tex3DMipmapFloat,		evalTexture3DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler3d,				FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(-8, 7, 3),	5.0f,	tex3DMipmapInt,			evalTexture3DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler3d,				FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -1.4f,  0.1f,  0.0f),	Vec4( 1.5f,  2.3f,  2.3f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f, -0.2f),	true,	IVec3(3, -8, 7),	5.0f,	tex3DMipmapUint,		evalTexture3DGradOffsetClamp,				FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler1d_fixed,		FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(-8, 0, 0),	5.0f,	tex1DMipmapFixed,		evalTexture1DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler1d_float,		FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	5.0f,	tex1DMipmapFloat,		evalTexture1DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler1d,				FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(-8, 0, 0),	5.0f,	tex1DMipmapInt,			evalTexture1DGradOffsetClamp,				FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler1d,				FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	5.0f,	tex1DMipmapUint,		evalTexture1DGradOffsetClamp,				FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler1darray_fixed,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,   0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(-8, 0, 0),	5.0f,	tex1DArrayMipmapFixed,	evalTexture1DArrayGradOffsetClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler1darray_float,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,   0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	5.0f,	tex1DArrayMipmapFloat,	evalTexture1DArrayGradOffsetClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(isampler1darray,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,   0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(-8, 0, 0),	5.0f,	tex1DArrayMipmapInt,	evalTexture1DArrayGradOffsetClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(usampler1darray,		FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,   0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	5.0f,	tex1DArrayMipmapUint,	evalTexture1DArrayGradOffsetClamp,			FRAGMENT),
+
+		GRADCLAMP_CASE_SPEC(sampler2dshadow,		FUNCTION_TEXTUREGRAD,	Vec4(-0.2f, -0.4f,  0.0f,  0.0f),	Vec4( 1.5f,  2.3f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.2f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(7, -8, 0),	5.0f,	tex2DMipmapShadow,		evalTexture2DShadowGradOffsetClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler2darrayshadow,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.4f,  -0.5f,  0.0f),	Vec4( 1.5f,  2.3f,  3.5f,  1.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f, -0.2f,  0.0f),	true,	IVec3(7, -8, 0),	5.0f,	tex2DArrayMipmapShadow,	evalTexture2DArrayShadowGradOffsetClamp,	FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler1dshadow,		FUNCTION_TEXTUREGRAD,	Vec4(-0.2f,  0.0f,  0.0f,  0.0f),	Vec4( 1.5f,  0.0f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.2f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	5.0f,	tex1DMipmapShadow,		evalTexture1DShadowGradOffsetClamp,			FRAGMENT),
+		GRADCLAMP_CASE_SPEC(sampler1darrayshadow,	FUNCTION_TEXTUREGRAD,	Vec4(-1.2f, -0.5f,  0.0f,  0.0f),	Vec4( 1.5f,  3.5f,  1.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3( 0.0f,  0.0f,  0.0f),	Vec3(-0.2f,  0.0f,  0.0f),	true,	IVec3(7,  0, 0),	5.0f,	tex1DArrayMipmapShadow,	evalTexture1DArrayShadowGradOffsetClamp,	FRAGMENT),
+	};
+	createCaseGroup(this, "texturegradoffsetclamp", "textureGradOffsetClampARB() Tests", textureGradOffsetClampCases, DE_LENGTH_OF_ARRAY(textureGradOffsetClampCases));
+
 
 	// textureProjGrad() cases
 	static const TexFuncCaseSpec textureProjGradCases[] =
