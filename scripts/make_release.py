@@ -41,6 +41,8 @@ from build.common import *
 from build.config import *
 from build.build import *
 
+pythonExecutable = sys.executable or "python"
+
 def die (msg):
 	print msg
 	sys.exit(-1)
@@ -125,7 +127,7 @@ class GenReleaseInfoFileTarget (DstFile):
 
 		scriptPath = os.path.normpath(os.path.join(packageBuildInfo.srcBasePath, "framework", "qphelper", "gen_release_info.py"))
 		execute([
-				"python",
+				pythonExecutable,
 				"-B", # no .py[co]
 				scriptPath,
 				"--name=%s" % packageBuildInfo.getReleaseVersion(),
@@ -232,7 +234,7 @@ class BuildAndroidTarget:
 		# Execute build script
 		scriptPath = os.path.normpath(os.path.join(packageBuildInfo.dstBasePath, "src", "android", "scripts", "build.py"))
 		execute([
-				"python",
+				pythonExecutable,
 				"-B", # no .py[co]
 				scriptPath,
 				"--build-root=%s" % buildRoot,
@@ -250,7 +252,7 @@ class FetchExternalSourcesTarget:
 	def make (self, packageBuildInfo):
 		scriptPath = os.path.normpath(os.path.join(packageBuildInfo.dstBasePath, "src", "external", "fetch_sources.py"))
 		execute([
-				"python",
+				pythonExecutable,
 				"-B", # no .py[co]
 				scriptPath,
 			])

@@ -23,9 +23,12 @@
 import os
 import argparse
 import tempfile
+import sys
 
 from build.common import *
 from build.build import *
+
+pythonExecutable = sys.executable or "python"
 
 class Environment:
 	def __init__ (self, srcDir, tmpDir):
@@ -51,7 +54,7 @@ class RunScript(BuildTestStep):
 		return self.scriptPath
 
 	def run (self, env):
-		args = ["python", os.path.join(env.srcDir, self.scriptPath)]
+		args = [pythonExecutable, os.path.join(env.srcDir, self.scriptPath)]
 
 		if self.getExtraArgs != None:
 			args += self.getExtraArgs(env)
