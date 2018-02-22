@@ -398,6 +398,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
 				"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
+				"  gl_PointSize = 1.0f;\n"
 				"}\n";
 			*/
 			const string vertex =
@@ -458,6 +459,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"%41 = OpVariable %40 Output\n"
 				"%48 = OpConstant %26 0\n"
 				"%50 = OpTypePointer Output %36\n"
+				"%52 = OpConstant %12 1\n"
+				"%53 = OpTypePointer Output %26\n"
 				"%4 = OpFunction %2 None %3\n"
 				"%5 = OpLabel\n"
 				"%28 = OpVariable %27 Function\n"
@@ -482,10 +485,11 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"%49 = OpCompositeConstruct %36 %47 %48 %48 %34\n"
 				"%51 = OpAccessChain %50 %41 %13\n"
 				"OpStore %51 %49\n"
+				"%54 = OpAccessChain %53 %41 %52\n"
+				"OpStore %54 %34\n"
 				"OpReturn\n"
 				"OpFunctionEnd\n";
 				programCollection.spirvAsmSources.add("vert") << vertex << SpirVAsmBuildOptions(SPIRV_VERSION_1_3);
-
 		}
 
 		{
