@@ -489,6 +489,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "  result[gl_VertexIndex] = uvec4(gl_SubgroupSize, gl_SubgroupInvocationID, 0, 0);\n"
+			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert")
