@@ -65,11 +65,11 @@ Move<VkCommandBuffer> createCommandBuffer (const DeviceInterface& vkd, VkDevice 
 {
 	const VkCommandBufferAllocateInfo allocateInfo =
 	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,		// VkStructureType         sType;
-		DE_NULL,											// const void*             pNext;
-		commandPool,										// VkCommandPool           commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,					// VkCommandBufferLevel    level;
-		1u													// deUint32                commandBufferCount;
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType         sType;
+		DE_NULL,										// const void*             pNext;
+		commandPool,									// VkCommandPool           commandPool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel    level;
+		1u												// deUint32                commandBufferCount;
 	};
 
 	return allocateCommandBuffer(vkd, device, &allocateInfo);
@@ -495,11 +495,250 @@ void createDestroyPipelineRenderPassSource (SourceCollections& dst)
 		"}\n");
 }
 
+void changeColorAttachmentImageLayout (const DeviceInterface& vk, VkCommandBuffer commandBuffer, VkImage image)
+{
+	const VkImageMemoryBarrier		imageMemoryBarrier		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType            sType;
+		DE_NULL,									// const void*                pNext;
+		(VkAccessFlags)0u,							// VkAccessFlags              srcAccessMask;
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags              dstAccessMask;
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout              oldLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout              newLayout;
+		0u,											// deUint32                   srcQueueFamilyIndex;
+		0u,											// deUint32                   dstQueueFamilyIndex;
+		image,										// VkImage                    image;
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags    aspectMask;
+			0u,							// deUint32              baseMipLevel;
+			1u,							// deUint32              levelCount;
+			0u,							// deUint32              baseArrayLayer;(
+			1u							// deUint32              layerCount;
+		}											// VkImageSubresourceRange    subresourceRange;
+	};
+
+	vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlagBits)0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageMemoryBarrier);
+}
+
+Move<VkRenderPass> createSimpleRenderPass (const DeviceInterface& vk, const VkDevice& device, VkFormat format, VkAttachmentLoadOp loadOp, VkAttachmentLoadOp stencilLoadOp, VkAttachmentStoreOp stencilStoreOp, VkImageLayout layout)
+{
+	const VkAttachmentDescription	attachmentDescription	=
+	{
+		(VkAttachmentDescriptionFlags)0u,	// VkAttachmentDescriptionFlags    flags;
+		format,								// VkFormat                        format;
+		VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits           samples;
+		loadOp,								// VkAttachmentLoadOp              loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,		// VkAttachmentStoreOp             storeOp;
+		stencilLoadOp,						// VkAttachmentLoadOp              stencilLoadOp;
+		stencilStoreOp,						// VkAttachmentStoreOp             stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout                   initialLayout;
+		layout								// VkImageLayout                   finalLayout;
+	};
+
+	const VkAttachmentReference		attachmentReference		=
+	{
+		0u,		// deUint32			attachment;
+		layout	// VkImageLayout	layout;
+	};
+
+	const VkSubpassDescription		subpassDescription		=
+	{
+		(VkSubpassDescriptionFlags)0u,		// VkSubpassDescriptionFlags       flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint             pipelineBindPoint
+		0u,									// deUint32                        inputAttachmentCount
+		DE_NULL,							// const VkAttachmentReference*    pInputAttachments
+		1u,									// deUint32                        colorAttachmentCount
+		&attachmentReference,				// const VkAttachmentReference*    pColorAttachments
+		DE_NULL,							// const VkAttachmentReference*    pResolveAttachments
+		DE_NULL,							// const VkAttachmentReference*    pDepthStencilAttachment
+		0u,									// deUint32                        preserveAttachmentCount
+		DE_NULL								// const deUint32*                 pPreserveAttachments
+	};
+
+	const VkRenderPassCreateInfo	renderPassCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType;
+		DE_NULL,									// const void*                       pNext;
+		(VkRenderPassCreateFlags)0u,				// VkRenderPassCreateFlags           flags;
+		1u,											// deUint32                          attachmentCount
+		&attachmentDescription,						// const VkAttachmentDescription*    pAttachments
+		1u,											// deUint32                          subpassCount
+		&subpassDescription,						// const VkSubpassDescription*       pSubpasses
+		0u,											// deUint32                          dependencyCount
+		DE_NULL										// const VkSubpassDependency*        pDependencies
+	};
+
+	return createRenderPass(vk, device, &renderPassCreateInfo);
+}
+
+// This test has the same functionality as VkLayerTest.RenderPassInUseDestroyedSignaled
+tcu::TestStatus framebufferCompatibleRenderPassTest (Context& context)
+{
+	const DeviceInterface&			vk						= context.getDeviceInterface();
+	const InstanceInterface&		vki						= context.getInstanceInterface();
+	const VkDevice					device					= context.getDevice();
+	const VkPhysicalDevice			physicalDevice			= context.getPhysicalDevice();
+	const VkQueue					queue					= context.getUniversalQueue();
+	const deUint32					queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+
+	const VkCommandPoolCreateInfo	commandPoolParams		=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// VkStructureType             sType;
+		DE_NULL,									// const void*                 pNext;
+		(VkCommandPoolCreateFlags)0u,				// VkCommandPoolCreateFlags    flags;
+		queueFamilyIndex							// deUint32                    queueFamilyIndex;
+	};
+
+	const Unique<VkCommandPool>		commandPool				(createCommandPool(vk, device, &commandPoolParams, DE_NULL));
+	const Unique<VkCommandBuffer>	commandBuffer			(createCommandBuffer(vk, device, commandPool.get()));
+
+	const VkCommandBufferBeginInfo	commandBufferBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
+		DE_NULL,										// const void*                              pNext;
+		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags                flags;
+		DE_NULL											// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(commandBuffer.get(), &commandBufferBeginInfo));
+
+	const VkFormat					format					= getRenderTargetFormat(vki, physicalDevice);
+	const VkFormatProperties		formatProperties		(getPhysicalDeviceFormatProperties(vki, physicalDevice, format));
+	const VkImageTiling				imageTiling				= (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) ? VK_IMAGE_TILING_LINEAR
+															: (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) ? VK_IMAGE_TILING_OPTIMAL
+															: VK_IMAGE_TILING_LAST;
+
+	const VkImageCreateInfo			imageCreateInfo			=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType          sType;
+		DE_NULL,								// const void*              pNext;
+		(VkImageCreateFlags)0u,					// VkImageCreateFlags       flags;
+		VK_IMAGE_TYPE_2D,						// VkImageType              imageType;
+		format,									// VkFormat                 format;
+		{
+			256u,	// deUint32    width;
+			256u,	// deUint32    height;
+			1u		// deUint32    depth;
+		},										// VkExtent3D               extent;
+		1u,										// deUint32                 mipLevels;
+		1u,										// deUint32                 arrayLayers;
+		VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits    samples;
+		imageTiling,							// VkImageTiling            tiling;
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+		| VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+		| VK_IMAGE_USAGE_TRANSFER_DST_BIT,		// VkImageUsageFlags        usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode            sharingMode;
+		0u,										// deUint32                 queueFamilyIndexCount;
+		DE_NULL,								// const deUint32*          pQueueFamilyIndices;
+		VK_IMAGE_LAYOUT_UNDEFINED				// VkImageLayout            initialLayout;
+	};
+
+	const Unique<VkImage>			attachmentImage			(createImage(vk, device, &imageCreateInfo));
+	de::MovePtr<Allocation>			attachmentImageMemory	= context.getDefaultAllocator().allocate(getImageMemoryRequirements(vk, device, *attachmentImage), MemoryRequirement::Any);
+
+	VK_CHECK(vk.bindImageMemory(device, *attachmentImage, attachmentImageMemory->getMemory(), attachmentImageMemory->getOffset()));
+
+	changeColorAttachmentImageLayout(vk, commandBuffer.get(), attachmentImage.get());
+
+	const VkImageViewCreateInfo		imageViewCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType            sType;
+		DE_NULL,									// const void*                pNext;
+		(VkImageViewCreateFlags)0u,					// VkImageViewCreateFlags     flags;
+		attachmentImage.get(),						// VkImage                    image;
+		VK_IMAGE_VIEW_TYPE_2D,						// VkImageViewType            viewType;
+		format,										// VkFormat                   format;
+		{
+			VK_COMPONENT_SWIZZLE_R,	// VkComponentSwizzle    r;
+			VK_COMPONENT_SWIZZLE_G,	// VkComponentSwizzle    g;
+			VK_COMPONENT_SWIZZLE_B,	// VkComponentSwizzle    b;
+			VK_COMPONENT_SWIZZLE_A	// VkComponentSwizzle    a;
+		},											// VkComponentMapping         components;
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags    aspectMask;
+			0u,							// deUint32              baseMipLevel;
+			1u,							// deUint32              levelCount;
+			0u,							// deUint32              baseArrayLayer;
+			1u							// deUint32              layerCount;
+		}											// VkImageSubresourceRange    subresourceRange;
+	};
+
+	const Unique<VkImageView>		attachmentImageView		(createImageView(vk, device, &imageViewCreateInfo));
+
+	Unique<VkRenderPass>			renderPassA				(createSimpleRenderPass(vk, device, format,
+																					VK_ATTACHMENT_LOAD_OP_CLEAR,
+																					VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																					VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+	// Create framebuffer using the first render pass
+	const VkFramebufferCreateInfo	framebufferCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType             sType;
+		DE_NULL,									// const void*                 pNext;
+		(VkFramebufferCreateFlags)0u,				// VkFramebufferCreateFlags    flags;
+		renderPassA.get(),							// VkRenderPass                renderPass;
+		1u,											// deUint32                    attachmentCount;
+		&attachmentImageView.get(),					// const VkImageView*          pAttachments;
+		256u,										// deUint32                    width;
+		256u,										// deUint32                    height;
+		1u											// deUint32                    layers;
+	};
+
+	const Unique<VkFramebuffer>		frameBuffer				(createFramebuffer(vk, device, &framebufferCreateInfo));
+
+	const Unique<VkRenderPass>		renderPassB				(createSimpleRenderPass(vk, device, format,
+																					VK_ATTACHMENT_LOAD_OP_LOAD,
+																					VK_ATTACHMENT_LOAD_OP_LOAD,
+																					VK_ATTACHMENT_STORE_OP_STORE,
+																					VK_IMAGE_LAYOUT_GENERAL));
+
+	// Use framebuffer in a compatible render pass
+	const VkRenderPassBeginInfo		renderPassBeginInfo		=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
+		DE_NULL,									// const void*            pNext;
+		renderPassB.get(),							// VkRenderPass           renderPass;
+		frameBuffer.get(),							// VkFramebuffer          framebuffer;
+		{
+			{ 0,	0	},	// VkOffset2D    offset;
+			{ 0u,	0u	}	// VkExtent2D    extent;
+		},											// VkRect2D               renderArea;
+		0,											// deUint32               clearValueCount;
+		DE_NULL										// const VkClearValue*    pClearValues;
+	};
+
+	vk.cmdBeginRenderPass(commandBuffer.get(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vk.cmdEndRenderPass(commandBuffer.get());
+
+	VK_CHECK(vk.endCommandBuffer(commandBuffer.get()));
+
+	const VkSubmitInfo				submitInfo				=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType                sType;
+		DE_NULL,						// const void*                    pNext;
+		0u,								// deUint32                       waitSemaphoreCount;
+		DE_NULL,						// const VkSemaphore*             pWaitSemaphores;
+		DE_NULL,						// const VkPipelineStageFlags*    pWaitDstStageMask;
+		1u,								// deUint32                       commandBufferCount;
+		&commandBuffer.get(),			// const VkCommandBuffer*         pCommandBuffers;
+		0u,								// deUint32                       signalSemaphoreCount;
+		DE_NULL							// const VkSemaphore*             pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
+	VK_CHECK(vk.queueWaitIdle(queue));
+
+	// Test should always pass
+	return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestCaseGroup* createrenderpassTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> renderPassTests(new tcu::TestCaseGroup(testCtx, "renderpass", "Renderpass tests"));
 
 	addFunctionCaseWithPrograms(renderPassTests.get(), "destroy_pipeline_renderpass", "Draw after destroying the renderpass used to create a pipeline", createDestroyPipelineRenderPassSource, renderpassLifetimeTest);
+	addFunctionCase(renderPassTests.get(), "framebuffer_compatible_renderpass", "Use a render pass with a framebuffer that was created using another compatible render pass", framebufferCompatibleRenderPassTest);
 
 	return renderPassTests.release();
 }
@@ -508,11 +747,11 @@ tcu::TestCaseGroup* createrenderpassTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createPipelineTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> descriptorSetTests(new tcu::TestCaseGroup(testCtx, "pipeline", "Descriptor set tests"));
+	de::MovePtr<tcu::TestCaseGroup> pipelineTests(new tcu::TestCaseGroup(testCtx, "pipeline", "Descriptor set tests"));
 
-	descriptorSetTests->addChild(createrenderpassTests(testCtx));
+	pipelineTests->addChild(createrenderpassTests(testCtx));
 
-	return descriptorSetTests.release();
+	return pipelineTests.release();
 }
 
 } // api
