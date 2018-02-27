@@ -99,10 +99,10 @@ public:
 	bool		isFinite		(void) const { return m_lo > -TCU_INFINITY && m_hi < TCU_INFINITY; }
 	bool		isOrdinary		(void) const { return !hasNaN() && !empty() && isFinite(); }
 
-	void		warning			(double lo, double hi)
+	void		warning			(double lo_, double hi_)
 	{
-		m_warningLo = lo;
-		m_warningHi = hi;
+		m_warningLo = lo_;
+		m_warningHi = hi_;
 	}
 
 	Interval	operator|		(const Interval& other) const
