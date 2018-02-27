@@ -362,7 +362,8 @@ MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 MASTER_GLES2_COMMON_FILTERS		= [
 		include("gles2-master.txt"),
 		exclude("gles2-test-issues.txt"),
-		exclude("gles2-failures.txt")
+		exclude("gles2-failures.txt"),
+		exclude("gles2-temp-excluded.txt"),
 	]
 MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 		# Master
@@ -380,7 +381,8 @@ MASTER_GLES3_COMMON_FILTERS		= [
 		exclude("gles3-hw-issues.txt"),
 		exclude("gles3-driver-issues.txt"),
 		exclude("gles3-test-issues.txt"),
-		exclude("gles3-spec-issues.txt")
+		exclude("gles3-spec-issues.txt"),
+		exclude("gles3-temp-excluded.txt"),
 	]
 MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 		# Master
@@ -442,6 +444,7 @@ MASTER_GLES31_COMMON_FILTERS	= [
 		exclude("gles31-driver-issues.txt"),
 		exclude("gles31-test-issues.txt"),
 		exclude("gles31-spec-issues.txt"),
+		exclude("gles31-temp-excluded.txt"),
 	]
 MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 		# Master
@@ -502,6 +505,7 @@ MASTER_VULKAN_FILTERS			= [
 		exclude("vk-excluded-tests.txt"),
 		exclude("vk-test-issues.txt"),
 		exclude("vk-waivers.txt"),
+		exclude("vk-temp-excluded.txt"),
 	]
 MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name			= "master",
