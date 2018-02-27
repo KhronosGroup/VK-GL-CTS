@@ -787,44 +787,38 @@ tcu::TestNode::IterateResult CopyTexImageCase::iterate(void)
 
 	GLuint copyFboId				  = 0;
 	GLuint copyFboColorTextureId	  = 0;
-	bool   internalFormatIsRenderable = (textureInternalFormat != GL_RGB9_E5) && (textureInternalFormat != GL_ALPHA) &&
-									  (textureInternalFormat != GL_LUMINANCE) &&
-									  (textureInternalFormat != GL_LUMINANCE_ALPHA);
 
-	// When possible use separate FBO for copy operation
-	if (internalFormatIsRenderable)
+	// When possible use separate FBO for copy operation; create copy FBO and
+	// attach reference texture to color or depth attachment
+	gl.genFramebuffers(1, &copyFboId);
+	gl.bindFramebuffer(GL_FRAMEBUFFER, copyFboId);
+
+	if (textureFormat == GL_DEPTH_COMPONENT)
 	{
-		// Create copy FBO and attach reference texture to color or depth attachment
-		gl.genFramebuffers(1, &copyFboId);
-		gl.bindFramebuffer(GL_FRAMEBUFFER, copyFboId);
-
-		if (textureFormat == GL_DEPTH_COMPONENT)
-		{
-			copyFboColorTextureId = createTexture(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, false);
-			gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, copyFboColorTextureId, 0);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
-			gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, referenceTextureId, 0);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
-		}
-		else
-		{
-			gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, referenceTextureId, 0);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
-		}
-
-		// Check if FBO is compleate
-		GLenum bufferStatus = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
-		if (bufferStatus != GL_FRAMEBUFFER_COMPLETE)
-		{
-			if (bufferStatus == GL_FRAMEBUFFER_UNSUPPORTED)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unsuported framebuffer");
-			else
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Framebuffer not complete");
-			return STOP;
-		}
+		copyFboColorTextureId = createTexture(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, false);
+		gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, copyFboColorTextureId, 0);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
+		gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, referenceTextureId, 0);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
+	}
+	else
+	{
+		gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, referenceTextureId, 0);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
 	}
 
-	// Copy attachment from copy FBO to tested texture (if copy FBO culdn't be created
+	// If FBO is complete, then go back to use default FBO
+	GLenum bufferStatus = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+	if (bufferStatus != GL_FRAMEBUFFER_COMPLETE)
+	{
+		// Bind back to main FBO
+		gl.bindFramebuffer(GL_FRAMEBUFFER, mainFboId);
+		gl.deleteFramebuffers(1, &copyFboId);
+		if (copyFboColorTextureId)
+			gl.deleteTextures(1, &copyFboColorTextureId);
+	}
+
+	// Copy attachment from copy FBO to tested texture (if copy FBO couldn't be created
 	// then copying will be done from main FBO color attachment)
 	gl.bindTexture(GL_TEXTURE_2D, copiedTextureId);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture");
@@ -852,12 +846,6 @@ tcu::TestNode::IterateResult CopyTexImageCase::iterate(void)
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	gl.deleteFramebuffers(1, &mainFboId);
 	gl.deleteTextures(1, &mainFboColorTextureId);
-	if (copyFboId)
-	{
-		gl.deleteFramebuffers(1, &copyFboId);
-		if (copyFboColorTextureId)
-			gl.deleteTextures(1, &copyFboColorTextureId);
-	}
 	gl.deleteTextures(1, &copiedTextureId);
 	gl.deleteTextures(1, &referenceTextureId);
 
