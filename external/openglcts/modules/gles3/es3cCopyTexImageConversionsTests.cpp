@@ -29,6 +29,7 @@
 #include "gluStrUtil.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuTestLog.hpp"
 #include <cstring>
 #include <limits>
@@ -2705,12 +2706,12 @@ PixelData ConversionDatabase::getRGB32FPixelData(int is_source_pixel, GLenum typ
 
 	if (is_source_pixel)
 	{
-		result.red.signed_short_data = red;
-		result.red.data_type		 = CHANNEL_DATA_TYPE_FLOAT;
-		result.green.float_data		 = green;
-		result.green.data_type		 = CHANNEL_DATA_TYPE_FLOAT;
-		result.blue.float_data		 = blue;
-		result.blue.data_type		 = CHANNEL_DATA_TYPE_FLOAT;
+		result.red.float_data   = red;
+		result.red.data_type	= CHANNEL_DATA_TYPE_FLOAT;
+		result.green.float_data = green;
+		result.green.data_type  = CHANNEL_DATA_TYPE_FLOAT;
+		result.blue.float_data  = blue;
+		result.blue.data_type   = CHANNEL_DATA_TYPE_FLOAT;
 	}
 	else
 	{
@@ -4808,7 +4809,6 @@ bool TestBase::getFormatAndTypeCompatibleWithInternalformat(GLenum internalforma
 	bool is_ext_texture_storage_supported = contextInfo.isExtensionSupported("GL_EXT_texture_storage");
 	bool is_ext_texture_type_2_10_10_10_rev_supported =
 		contextInfo.isExtensionSupported("GL_EXT_texture_type_2_10_10_10_REV");
-	int result = true;
 
 	DE_ASSERT(out_format != NULL);
 	DE_ASSERT(out_type != NULL);
@@ -5316,7 +5316,7 @@ bool TestBase::getFormatAndTypeCompatibleWithInternalformat(GLenum internalforma
 	}
 	} // switch (internalformat)
 
-	return result;
+	return true;
 }
 
 /** Retrieves GLES format compatible for user-specified GLES internal format.
@@ -6332,8 +6332,8 @@ protected:
 											   GLenum read_type, GLenum result_internalformat);
 	unsigned int getSizeOfPixel(GLenum format, GLenum type);
 	bool getPixelDataFromRawData(void* raw_data, GLenum raw_data_format, GLenum raw_data_type, PixelData* out_result);
-	int comparePixelData(PixelData downloaded_pixel, PixelData reference_pixel, PixelData source_pixel,
-						 GLenum result_internalformat, int has_test_failed_already);
+	bool comparePixelData(PixelData downloaded_pixel, PixelData reference_pixel, PixelData source_pixel,
+						  GLenum result_internalformat, bool has_test_failed_already);
 	bool getNumberOfBitsForInternalFormat(GLenum internalformat, int* out_rgba_bits);
 
 	bool getRawDataFromPixelData(std::vector<char>& result, PixelData topleft, PixelData topright, PixelData bottomleft,
@@ -7725,14 +7725,14 @@ bool RequiredCase::getPixelDataFromRawData(void* raw_data, GLenum raw_data_forma
  *
  *  @return 1 if the pixels match, 0 otherwise.
  **/
-int RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData reference_pixel, PixelData source_pixel,
-								   GLenum result_internalformat, int has_test_failed_already)
+bool RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData reference_pixel, PixelData source_pixel,
+									GLenum result_internalformat, bool has_test_failed_already)
 {
 	ChannelData* channel_data[12]	= { 0 };
 	int			 max_epsilon[4]		 = { 0 };
 	int			 has_pixel_failed	= 0;
 	int			 n_channel			 = 0;
-	int			 result				 = 1;
+	bool		 result				 = true;
 	int			 result_rgba_bits[4] = { 0 };
 	int			 source_rgba_bits[4] = { 0 };
 
@@ -7802,7 +7802,7 @@ int RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData referen
 			DE_ASSERT(min_n_bits != std::numeric_limits<int>::max());
 
 			// Allow rounding in either direction
-			max_epsilon[n_channel] = ceil(((1 << max_n_bits) - 1.0) / ((1 << min_n_bits) - 1));
+			max_epsilon[n_channel] = deCeilFloatToInt32(((1 << max_n_bits) - 1.0f) / ((1 << min_n_bits) - 1));
 		}
 		else
 		{
@@ -7819,10 +7819,10 @@ int RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData referen
 
 			if (abs(delta) > max_epsilon[n_channel])
 			{
-				if (result != 0)
+				if (result)
 				{
 					has_pixel_failed = 1;
-					result			 = 0;
+					result			 = false;
 				}
 			}
 
@@ -7836,10 +7836,10 @@ int RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData referen
 
 			if (abs(delta) > max_epsilon[n_channel])
 			{
-				if (result != 0)
+				if (result)
 				{
 					has_pixel_failed = 1;
-					result			 = 0;
+					result			 = false;
 				}
 			}
 
@@ -7848,14 +7848,15 @@ int RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData referen
 
 		case CHANNEL_DATA_TYPE_UNSIGNED_INTEGER_32BITS:
 		{
-			int delta = (downloaded_channel_ptr->unsigned_integer_data - reference_channel_ptr->unsigned_integer_data);
+			int delta = static_cast<int>(downloaded_channel_ptr->unsigned_integer_data -
+										 reference_channel_ptr->unsigned_integer_data);
 
 			if (abs(delta) > max_epsilon[n_channel])
 			{
-				if (result != 0)
+				if (result)
 				{
 					has_pixel_failed = 1;
-					result			 = 0;
+					result			 = false;
 				}
 			}
 
@@ -7868,10 +7869,10 @@ int RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData referen
 
 			if (abs(delta) > max_epsilon[n_channel])
 			{
-				if (result != 0)
+				if (result)
 				{
 					has_pixel_failed = 1;
-					result			 = 0;
+					result			 = false;
 				}
 			}
 
@@ -7880,14 +7881,14 @@ int RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData referen
 
 		case CHANNEL_DATA_TYPE_FLOAT:
 		{
-			int delta = (downloaded_channel_ptr->float_data - reference_channel_ptr->float_data);
+			int delta = deChopFloatToInt32(downloaded_channel_ptr->float_data - reference_channel_ptr->float_data);
 
 			if (abs(delta) > max_epsilon[n_channel])
 			{
-				if (result != 0)
+				if (result)
 				{
 					has_pixel_failed = 1;
-					result			 = 0;
+					result			 = false;
 				}
 			}
 
@@ -7904,11 +7905,11 @@ int RequiredCase::comparePixelData(PixelData downloaded_pixel, PixelData referen
 		if (has_pixel_failed && !has_test_failed_already)
 		{
 			m_testCtx.getLog() << tcu::TestLog::Message << "Erroneous test case starts-->" << tcu::TestLog::EndMessage;
-			has_test_failed_already = 1;
+			has_test_failed_already = true;
 		}
 	} // for (all channels)
 
-	if (result == 0)
+	if (!result)
 	{
 		displayPixelComparisonFailureMessage(
 			channel_data[2] != NULL ? channel_data[2]->unsigned_integer_data : 0,
@@ -9192,34 +9193,34 @@ bool RequiredCase::setSourceForShaderObjectsUsedForNonRenderableTextureSupport(G
 	glu::RenderContext& renderContext = m_context.getRenderContext();
 	const Functions&	gl			  = renderContext.getFunctions();
 
-#define STRING_SIZE 2560
+	std::map<std::string, std::string> specializationMap;
+
 	const GLchar* fragment_shader_source = { "#version 300 es\n"
 											 "void main()\n"
 											 "{}\n" };
-	static GLchar shader_source[3][STRING_SIZE];
+	static std::string shader_source[3];
 	const GLchar* vertex_shader_source = NULL;
-	int			  res;
-	const GLchar* source = "#version 300 es\n"
+	const GLchar*	  source				= "#version 300 es\n"
 						   "\n"
-						   "	 uniform highp %ssampler2D	  dst_texture2D;\n"
-						   "	 uniform highp %ssamplerCube	dst_textureCube;\n"
-						   "	 uniform highp %ssampler2D	  src_texture2D;\n"
-						   "	 uniform highp %ssampler3D	  src_texture3D;\n"
-						   "	 uniform highp %ssampler2DArray src_texture2DArray;\n"
-						   "	 uniform highp %ssamplerCube	src_textureCube;\n"
+						   "	 uniform highp ${SAMPLER_PREFIX}sampler2D	  dst_texture2D;\n"
+						   "	 uniform highp ${SAMPLER_PREFIX}samplerCube	dst_textureCube;\n"
+						   "	 uniform highp ${SAMPLER_PREFIX}sampler2D	  src_texture2D;\n"
+						   "	 uniform highp ${SAMPLER_PREFIX}sampler3D	  src_texture3D;\n"
+						   "	 uniform highp ${SAMPLER_PREFIX}sampler2DArray src_texture2DArray;\n"
+						   "	 uniform highp ${SAMPLER_PREFIX}samplerCube	src_textureCube;\n"
 						   "	 uniform int			  channels_to_compare;\n"
 						   "	 uniform int			  samplers_to_use;\n"
 						   "layout(location = 0) in vec4  dst_texture_coord;\n"
 						   "layout(location = 1) in vec4  src_texture_coord;\n"
-						   "%s   out	 %svec4		   dst_texture_pixel_values;\n"
-						   "%s   out	 %svec4		   src_texture_pixel_values;\n"
+						   "${OUT_QUALIFIER}   out	 ${OUT_TYPE}		   dst_texture_pixel_values;\n"
+						   "${OUT_QUALIFIER}   out	 ${OUT_TYPE}		   src_texture_pixel_values;\n"
 						   "flat out	 int			  compare_result;\n"
 						   "\n"
 						   "void main()\n"
 						   "{\n"
-						   "	%svec4	  src_texture_data;\n"
-						   "	%svec4	  dst_texture_data;\n"
-						   "	const %s	epsilon		  = %s;\n"
+						   "	${OUT_TYPE}	  src_texture_data;\n"
+						   "	${OUT_TYPE}	  dst_texture_data;\n"
+						   "	const ${EPSILON_TYPE}	epsilon		  = ${EPSILON_VALUE};\n"
 						   "	int		 result		   = 1;\n"
 						   "	bool		compare_red	  = (channels_to_compare & 0x1) != 0;\n"
 						   "	bool		compare_green	= (channels_to_compare & 0x2) != 0;\n"
@@ -9254,19 +9255,19 @@ bool RequiredCase::setSourceForShaderObjectsUsedForNonRenderableTextureSupport(G
 						   "		dst_texture_data = texture(dst_textureCube, dst_texture_coord.xyz);\n"
 						   "	}\n"
 						   "\n"
-						   "	if (compare_red && %s(src_texture_data.x - dst_texture_data.x) > epsilon)\n"
+						   "	if (compare_red && ${FN}(src_texture_data.x - dst_texture_data.x) > epsilon)\n"
 						   "	{\n"
 						   "		result = 0;\n"
 						   "	}\n"
-						   "	if (compare_green && %s(src_texture_data.y - dst_texture_data.y) > epsilon)\n"
+						   "	if (compare_green && ${FN}(src_texture_data.y - dst_texture_data.y) > epsilon)\n"
 						   "	{\n"
 						   "		result = 0;\n"
 						   "	}\n"
-						   "	if (compare_blue && %s(src_texture_data.z - dst_texture_data.z) > epsilon)\n"
+						   "	if (compare_blue && ${FN}(src_texture_data.z - dst_texture_data.z) > epsilon)\n"
 						   "	{\n"
 						   "		result = 0;\n"
 						   "	}\n"
-						   "	if (compare_alpha && %s(src_texture_data.w - dst_texture_data.w) > epsilon)\n"
+						   "	if (compare_alpha && ${FN}(src_texture_data.w - dst_texture_data.w) > epsilon)\n"
 						   "	{\n"
 						   "		result = 0;\n"
 						   "	}\n"
@@ -9284,13 +9285,15 @@ bool RequiredCase::setSourceForShaderObjectsUsedForNonRenderableTextureSupport(G
 		{
 		case DATA_SAMPLER_FLOAT:
 		{
-			res = snprintf(shader_source[0], STRING_SIZE, source, "  ", "  ", "  ", "  ", "  ", "  ", // sampler type
-						   "  ", "  ", "  ", "  ",		// TF dst and src values (qualifier and type)
-						   "  ", "  ",					// sampled dst and src src values types
-						   "float", "(1.0/255.0)",		// epsilon type and value
-						   "abs", "abs", "abs", "abs"); // use abs for float and int types
+			specializationMap["SAMPLER_PREFIX"] = "  ";
+			specializationMap["OUT_QUALIFIER"]  = "  ";
+			specializationMap["OUT_TYPE"]		= "  vec4";
+			specializationMap["EPSILON_TYPE"]   = "float";
+			specializationMap["EPSILON_VALUE"]  = "(1.0/255.0)";
+			specializationMap["FN"]				= "abs";
+			shader_source[0]					= tcu::StringTemplate(source).specialize(specializationMap);
 
-			vertex_shader_source = shader_source[0];
+			vertex_shader_source = shader_source[0].c_str();
 			break;
 		}
 
@@ -9311,13 +9314,15 @@ bool RequiredCase::setSourceForShaderObjectsUsedForNonRenderableTextureSupport(G
 		{
 		case DATA_SAMPLER_INTEGER:
 		{
-			res = snprintf(shader_source[1], STRING_SIZE, source, " i", " i", " i", " i", " i", " i", // sampler type
-						   "flat", " i", "flat", " i",  // TF dst and src values (qualifier and type)
-						   " i", " i",					// sampled dst and src values types
-						   "int", "0",					// epsilon type and value
-						   "abs", "abs", "abs", "abs"); // use abs for float and int types
+			specializationMap["SAMPLER_PREFIX"] = "i";
+			specializationMap["OUT_QUALIFIER"]  = "flat";
+			specializationMap["OUT_TYPE"]		= "ivec4";
+			specializationMap["EPSILON_TYPE"]   = "int";
+			specializationMap["EPSILON_VALUE"]  = "0";
+			specializationMap["FN"]				= "abs";
 
-			vertex_shader_source = shader_source[1];
+			shader_source[1]	 = tcu::StringTemplate(source).specialize(specializationMap);
+			vertex_shader_source = shader_source[1].c_str();
 			break;
 		}
 
@@ -9339,14 +9344,15 @@ bool RequiredCase::setSourceForShaderObjectsUsedForNonRenderableTextureSupport(G
 		{
 		case DATA_SAMPLER_UNSIGNED_INTEGER:
 		{
-			res = snprintf(shader_source[2], STRING_SIZE, source, " u", " u", " u", " u", " u", " u", // sampler type
-						   "flat", " u", "flat", " u", // TF dst and src values (qualifier and type)
-						   " u", " u",				   // sampled dst and src values types
-						   "uint", "0u",			   // epsilon type and value
-						   "", "", "", "");			   // use abs for float and int types
+			specializationMap["SAMPLER_PREFIX"] = "u";
+			specializationMap["OUT_QUALIFIER"]  = "flat";
+			specializationMap["OUT_TYPE"]		= "uvec4";
+			specializationMap["EPSILON_TYPE"]   = "uint";
+			specializationMap["EPSILON_VALUE"]  = "0u";
+			specializationMap["FN"]				= "";
 
-			vertex_shader_source = shader_source[2];
-
+			shader_source[2]	 = tcu::StringTemplate(source).specialize(specializationMap);
+			vertex_shader_source = shader_source[2].c_str();
 			break;
 		}
 
@@ -9368,13 +9374,6 @@ bool RequiredCase::setSourceForShaderObjectsUsedForNonRenderableTextureSupport(G
 						   << tcu::TestLog::EndMessage;
 		return false;
 	}
-	}
-
-	if (res > STRING_SIZE)
-	{
-		m_testCtx.getLog() << tcu::TestLog::Message << "Not enough space for shader source."
-						   << tcu::TestLog::EndMessage;
-		return false;
 	}
 
 	// Set shader source for fragment shader object.
