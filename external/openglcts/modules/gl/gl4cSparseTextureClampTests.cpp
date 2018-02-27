@@ -469,6 +469,15 @@ void SparseTextureClampLookupResidencyTestCase::draw(GLint target, GLint layer, 
 		{ 0.0f, 0.0f, 0.83f, 1.0f, 0.0f, 0.83f, 0.0f, 1.0f, 0.83f, 1.0f, 1.0f, 0.83f }
 	};
 
+	// The fragment shader uses (z * 6) % 6 to calculate a cube face index.
+	GLfloat cubeMapArrayZCoord = GLfloat(layer) / 6.0f + 0.01f;
+	// The fragment shader does not modify w for layer selection.
+	GLfloat cubeMapArrayWCoord = layer / 6;
+	const GLfloat texCoordCubeMapArray[16] = { 0.0f, 0.0f, cubeMapArrayZCoord, cubeMapArrayWCoord,
+											   1.0f, 0.0f, cubeMapArrayZCoord, cubeMapArrayWCoord,
+											   0.0f, 1.0f, cubeMapArrayZCoord, cubeMapArrayWCoord,
+											   1.0f, 1.0f, cubeMapArrayZCoord, cubeMapArrayWCoord };
+
 	const GLfloat vertices[] = {
 		-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
 	};
@@ -484,14 +493,7 @@ void SparseTextureClampLookupResidencyTestCase::draw(GLint target, GLint layer, 
 	else if (target == GL_TEXTURE_CUBE_MAP)
 		floatCoord = glu::va::Float("inCoord", 3, 4, 0, texCoordCubeMap[layer]);
 	else if (target == GL_TEXTURE_CUBE_MAP_ARRAY)
-	{
-		GLfloat		  layerCoord			   = GLfloat(layer) / 6.0f + 0.01f;
-		const GLfloat texCoordCubeMapArray[16] = { 0.0f, 0.0f, layerCoord, GLfloat(layer),
-												   1.0f, 0.0f, layerCoord, GLfloat(layer),
-												   0.0f, 1.0f, layerCoord, GLfloat(layer),
-												   1.0f, 1.0f, layerCoord, GLfloat(layer) };
 		floatCoord = glu::va::Float("inCoord", 4, 4, 0, texCoordCubeMapArray);
-	}
 	else
 		floatCoord = glu::va::Float("inCoord", 2, 4, 0, texCoord2D);
 
@@ -747,7 +749,7 @@ bool SparseTextureClampLookupColorTestCase::writeDataToTexture(const Functions& 
 			{
 				gl.useProgram(program.getProgram());
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
-				gl.bindImageTexture(0 /* unit */, texture, level /* level */, GL_FALSE /* layered */, 0 /* layer */,
+				gl.bindImageTexture(0 /* unit */, texture, level /* level */, GL_TRUE /* layered */, 0 /* layer */,
 									GL_WRITE_ONLY, convFormat);
 				GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
 				gl.uniform1i(1, 0 /* image_unit */);
