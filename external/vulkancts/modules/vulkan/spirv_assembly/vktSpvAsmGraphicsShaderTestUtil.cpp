@@ -383,6 +383,8 @@ void createPipelineShaderStages (const DeviceInterface&						vk,
 	"%v2i32 = OpTypeVector %i32 2\n"															\
 	"%v2u32 = OpTypeVector %u32 2\n"															\
 	"%v2f32 = OpTypeVector %f32 2\n"															\
+	"%v3i32 = OpTypeVector %i32 3\n"															\
+	"%v3u32 = OpTypeVector %u32 3\n"															\
 	"%v3f32 = OpTypeVector %f32 3\n"															\
 	"%v4i32 = OpTypeVector %i32 4\n"															\
 	"%v4u32 = OpTypeVector %u32 4\n"															\
@@ -474,9 +476,8 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint Vertex %main \"main\" %BP_stream %BP_position %BP_vtx_color %BP_color %BP_gl_VertexIndex %BP_gl_InstanceIndex ${IF_entrypoint:opt} \n"
+		"OpEntryPoint Vertex %BP_main \"main\" %BP_stream %BP_position %BP_vtx_color %BP_color %BP_gl_VertexIndex %BP_gl_InstanceIndex ${IF_entrypoint:opt} \n"
 		"${debug:opt}\n"
-		"OpName %main \"main\"\n"
 		"OpName %BP_gl_PerVertex \"gl_PerVertex\"\n"
 		"OpMemberName %BP_gl_PerVertex 0 \"gl_Position\"\n"
 		"OpMemberName %BP_gl_PerVertex 1 \"gl_PointSize\"\n"
@@ -515,7 +516,7 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"%BP_gl_InstanceIndex = OpVariable %ip_i32 Input\n"
 		"${pre_main:opt}\n"
 		"${IF_variable:opt}\n"
-		"%main = OpFunction %void None %fun\n"
+		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
 		"${IF_carryforward:opt}\n"
 		"%BP_pos = OpLoad %v4f32 %BP_position\n"
@@ -573,7 +574,6 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_gl_PrimitiveID %BP_in_color %BP_gl_out %BP_gl_in %BP_gl_TessLevelOuter %BP_gl_TessLevelInner ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
-		"OpName %BP_main \"main\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_gl_InvocationID \"gl_InvocationID\"\n"
@@ -718,7 +718,6 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpExecutionMode %BP_main SpacingEqual\n"
 		"OpExecutionMode %BP_main VertexOrderCcw\n"
 		"${debug:opt}\n"
-		"OpName %BP_main \"main\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
 		"OpName %BP_gl_PerVertexOut \"gl_PerVertex\"\n"
 		"OpMemberName %BP_gl_PerVertexOut 0 \"gl_Position\"\n"
@@ -885,7 +884,6 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
-		"OpName %BP_main \"main\"\n"
 		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
 		"OpName %BP_per_vertex_in \"gl_PerVertex\"\n"
 		"OpMemberName %BP_per_vertex_in 0 \"gl_Position\"\n"
@@ -1014,7 +1012,6 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor %BP_gl_FragCoord ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OriginUpperLeft\n"
 		"${debug:opt}\n"
-		"OpName %BP_main \"main\"\n"
 		"OpName %BP_gl_FragCoord \"fragCoord\"\n"
 		"OpName %BP_fragColor \"fragColor\"\n"
 		"OpName %BP_vtxColor \"vtxColor\"\n"
@@ -2466,29 +2463,29 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 	}
 
+	// fragment stores and atomics feature
+	{
+		if (features.fragmentStoresAndAtomics == DE_FALSE &&
+			instance.requestedFeatures.coreFeatures.fragmentStoresAndAtomics == DE_TRUE &&
+			instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT)
+			TCU_THROW(NotSupportedError, "Requested fragmentStoresAndAtomics feature not supported");
+	}
+
+	// vertex pipeline stores and atomics feature
+	{
+		if (features.vertexPipelineStoresAndAtomics == DE_FALSE &&
+			instance.requestedFeatures.coreFeatures.vertexPipelineStoresAndAtomics == DE_TRUE &&
+			(instance.customizedStages & vk::VK_SHADER_STAGE_VERTEX_BIT ||
+			 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ||
+			 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
+			 instance.customizedStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT))
+			TCU_THROW(NotSupportedError, "Requested vertexPipelineStoresAndAtomics feature not supported");
+	}
+
 	// Variable Pointers features
 	{
 		if (!isVariablePointersFeaturesSupported(context, instance.requestedFeatures.extVariablePointers))
 			TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
-
-		if (instance.requestedFeatures.extVariablePointers)
-		{
-			// The device doesn't have the vertexPipelineStoresAndAtomics feature, but the test requires the feature for
-			// vertex, tesselation, and geometry stages.
-			if (features.vertexPipelineStoresAndAtomics == DE_FALSE &&
-				instance.requestedFeatures.coreFeatures.vertexPipelineStoresAndAtomics == DE_TRUE &&
-			    (instance.customizedStages & vk::VK_SHADER_STAGE_VERTEX_BIT ||
-				 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ||
-				 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
-				 instance.customizedStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT))
-				TCU_THROW(NotSupportedError, "This VK_KHR_variable_pointers extension test requires vertexPipelineStoresAndAtomics device feature.");
-
-			// The device doesn't have the fragmentStoresAndAtomics feature, but the test requires this feature for the fragment stage.
-			if (features.fragmentStoresAndAtomics == DE_FALSE &&
-			    instance.requestedFeatures.coreFeatures.fragmentStoresAndAtomics == DE_TRUE &&
-				instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT)
-				TCU_THROW(NotSupportedError, "This VK_KHR_variable_pointers extension test requires fragmentStoresAndAtomics device feature.");
-		}
 	}
 
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);

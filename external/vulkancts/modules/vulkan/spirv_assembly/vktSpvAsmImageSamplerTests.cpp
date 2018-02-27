@@ -62,9 +62,11 @@ enum ReadOp
 
 enum DescriptorType
 {
-	DESCRIPTOR_TYPE_STORAGE_IMAGE = 0,
-	DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-	DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+	DESCRIPTOR_TYPE_STORAGE_IMAGE = 0,								// Storage image
+	DESCRIPTOR_TYPE_SAMPLED_IMAGE,									// Sampled image
+	DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,							// Combined image sampler
+	DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES,		// Combined image sampler with separate shader variables
+	DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS,	// Combined image sampler where image and sampler variables are taken from two different desciptors
 
 	DESCRIPTOR_TYPE_LAST
 };
@@ -75,18 +77,24 @@ bool isValidTestCase (TestType testType, DescriptorType descriptorType, ReadOp r
 	switch (testType)
 	{
 		case TESTTYPE_PASS_IMAGE_TO_FUNCTION:
-			if (descriptorType != DESCRIPTOR_TYPE_STORAGE_IMAGE				&&
-				descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE				)
+			if (descriptorType != DESCRIPTOR_TYPE_STORAGE_IMAGE									&&
+				descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE									&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES		&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
 					return false;
 			break;
 
 		case TESTTYPE_PASS_SAMPLER_TO_FUNCTION:
-			if (descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+			if (descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE									&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES		&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
 				return false;
 			break;
 
 		case TESTTYPE_PASS_IMAGE_AND_SAMPLER_TO_FUNCTION:
-			if (descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+			if (descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE									&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES		&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
 				return false;
 			break;
 
@@ -103,14 +111,18 @@ bool isValidTestCase (TestType testType, DescriptorType descriptorType, ReadOp r
 			break;
 
 		case READOP_IMAGEFETCH:
-			if (descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE				&&
-				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER	)
+			if (descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE									&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER						&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES		&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
 				return false;
 			break;
 
 		case READOP_IMAGESAMPLE:
-			if (descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE				&&
-				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER	)
+			if (descriptorType != DESCRIPTOR_TYPE_SAMPLED_IMAGE									&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER						&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES		&&
+				descriptorType != DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
 				return false;
 			break;
 
@@ -175,6 +187,12 @@ const char* getDescriptorName (DescriptorType descType)
 		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 			return "combined_image_sampler";
 
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES:
+			return "combined_image_sampler_separate_variables";
+
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS:
+			return "combined_image_sampler_separate_descriptors";
+
 		default:
 			DE_FATAL("Unknown descriptor type");
 			return "";
@@ -192,6 +210,8 @@ VkDescriptorType getVkDescriptorType (DescriptorType descType)
 			return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 
 		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES:
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS:
 			return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
 		default:
@@ -227,6 +247,7 @@ std::string getFunctionDstVariableStr (ReadOp readOp, DescriptorType descType, T
 			break;
 		}
 		case DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES:
 		{
 			switch (readOp)
 			{
@@ -289,6 +310,48 @@ std::string getFunctionDstVariableStr (ReadOp readOp, DescriptorType descType, T
 			break;
 		}
 
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS:
+		{
+			switch (readOp)
+			{
+				case READOP_IMAGEFETCH:
+					if (passNdx)
+						return	"           %func_img = OpLoad %Image %InputData2\n";
+
+					if (passSmp && !passImg)
+						return	"           %func_tmp = OpLoad %Image %InputData2\n"
+								"           %func_smi = OpSampledImage %SampledImage %func_tmp %func_smp\n"
+								"           %func_img = OpImage %Image %func_smi\n";
+
+					if (passSmp && passImg)
+						return	"           %func_smi = OpSampledImage %SampledImage %func_tmp %func_smp\n"
+								"           %func_img = OpImage %Image %func_smi\n";
+					break;
+
+				case READOP_IMAGESAMPLE:
+					if (passNdx)
+						return	"           %func_img = OpLoad %Image %InputData2\n"
+								"           %func_smp = OpLoad %Sampler %SamplerData\n"
+								"           %func_smi = OpSampledImage %SampledImage %func_img %func_smp\n";
+
+					if (passImg && !passSmp)
+						return	"           %func_smp = OpLoad %Sampler %SamplerData\n"
+								"           %func_smi = OpSampledImage %SampledImage %func_img %func_smp\n";
+
+					if (passSmp && !passImg)
+						return	"           %func_img = OpLoad %Image %InputData2\n"
+								"           %func_smi = OpSampledImage %SampledImage %func_img %func_smp\n";
+
+					if (passSmp && passImg)
+						return	"           %func_smi = OpSampledImage %SampledImage %func_img %func_smp\n";
+					break;
+
+				default:
+					DE_FATAL("Not possible");
+			}
+			break;
+		}
+
 		default:
 			DE_FATAL("Unknown descriptor type");
 	}
@@ -321,6 +384,7 @@ std::string getFunctionSrcVariableStr (ReadOp readOp, DescriptorType descType, T
 			break;
 		}
 		case DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES:
 		{
 			switch (readOp)
 			{
@@ -340,6 +404,24 @@ std::string getFunctionSrcVariableStr (ReadOp readOp, DescriptorType descType, T
 		}
 		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
 		{
+			break;
+		}
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS:
+		{
+			switch (readOp)
+			{
+				case READOP_IMAGEFETCH:
+				case READOP_IMAGESAMPLE:
+					if (passImg)
+						result +=	"           %call_img = OpLoad %Image %InputData2\n";
+
+					if (passSmp)
+						result +=	"           %call_smp = OpLoad %Sampler %SamplerData\n";
+					break;
+
+				default:
+					DE_FATAL("Not possible");
+			}
 			break;
 		}
 		default:
@@ -461,8 +543,58 @@ std::string getImageSamplerTypeStr (DescriptorType descType)
 					"         %SamplerPtr = OpTypePointer UniformConstant %SampledImage\n"
 					"          %InputData = OpVariable %SamplerPtr UniformConstant\n";
 
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES:
+			return	"              %Image = OpTypeImage %f32 2D 0 0 0 1 Rgba32f\n"
+					"           %ImagePtr = OpTypePointer UniformConstant %Image\n"
+					"          %InputData = OpVariable %ImagePtr UniformConstant\n"
+
+					"            %Sampler = OpTypeSampler\n"
+					"         %SamplerPtr = OpTypePointer UniformConstant %Sampler\n"
+					"        %SamplerData = OpVariable %SamplerPtr UniformConstant\n"
+					"       %SampledImage = OpTypeSampledImage %Image\n";
+
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS:
+			return	"              %Image = OpTypeImage %f32 2D 0 0 0 1 Rgba32f\n"
+					"           %ImagePtr = OpTypePointer UniformConstant %Image\n"
+					"          %InputData = OpVariable %ImagePtr UniformConstant\n"
+					"         %InputData2 = OpVariable %ImagePtr UniformConstant\n"
+
+					"            %Sampler = OpTypeSampler\n"
+					"         %SamplerPtr = OpTypePointer UniformConstant %Sampler\n"
+					"        %SamplerData = OpVariable %SamplerPtr UniformConstant\n"
+					"       %SamplerData2 = OpVariable %SamplerPtr UniformConstant\n"
+					"       %SampledImage = OpTypeSampledImage %Image\n";
+
 		default:
 			DE_FATAL("Unknown descriptor type");
+			return "";
+	}
+}
+
+std::string getSamplerDecoration (DescriptorType descType)
+{
+	switch (descType)
+	{
+		// Separate image and sampler
+		case DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			return	"                       OpDecorate %SamplerData DescriptorSet 0\n"
+					"                       OpDecorate %SamplerData Binding 1\n";
+
+		// Combined image sampler with separate variables
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_VARIABLES:
+			return	"                       OpDecorate %SamplerData DescriptorSet 0\n"
+					"                       OpDecorate %SamplerData Binding 0\n";
+
+		// Two combined image samplers with separate variables
+		case DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS:
+			return	"                       OpDecorate %SamplerData DescriptorSet 0\n"
+					"                       OpDecorate %SamplerData Binding 0\n"
+					"                       OpDecorate %InputData2 DescriptorSet 0\n"
+					"                       OpDecorate %InputData2 Binding 1\n"
+					"                       OpDecorate %SamplerData2 DescriptorSet 0\n"
+					"                       OpDecorate %SamplerData2 Binding 1\n";
+
+		default:
 			return "";
 	}
 }
@@ -475,16 +607,11 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 	const deUint32			numDataPoints		= 64;
 	RGBA					defaultColors[4];
 	vector<tcu::Vec4>		inputData;
-	vector<tcu::Vec4>		outputData;
 
 	inputData.reserve(numDataPoints);
-	outputData.reserve(numDataPoints);
 
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 		inputData.push_back(tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat()));
-
-	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		outputData.push_back(inputData.at(numIdx));
 
 	for (deUint32 opNdx = 0u; opNdx < READOP_LAST; opNdx++)
 	{
@@ -527,13 +654,20 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 					spec.inputs.push_back(BufferSp(new Vec4Buffer(dummyData)));
 				}
 
+				// Second combined image sampler with different image data
+				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
+				{
+					for (size_t i = 0; i < inputData.size(); i++)
+						inputData[i] = tcu::Vec4(1.0f) - inputData[i];
+
+					spec.inputTypes[1] = getVkDescriptorType((DescriptorType)descNdx);
+					spec.inputs.push_back(BufferSp(new Vec4Buffer(inputData)));
+				}
+
 				// Shader is expected to pass the input image data to the output buffer
 				spec.outputs.push_back(BufferSp(new Vec4Buffer(inputData)));
 
-				const std::string	samplerDecoration		= spec.inputs.size() > 1?
-					"                       OpDecorate %SamplerData DescriptorSet 0\n"
-					"                       OpDecorate %SamplerData Binding 1\n"
-					: "";
+				const std::string	samplerDecoration		= getSamplerDecoration((DescriptorType)descNdx);
 
 				const string		shaderSource	=
 					"                       OpCapability Shader\n"
@@ -637,16 +771,11 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 	const deUint32			numDataPoints		= 64;
 	RGBA					defaultColors[4];
 	vector<tcu::Vec4>		inputData;
-	vector<tcu::Vec4>		outputData;
 
 	inputData.reserve(numDataPoints);
-	outputData.reserve(numDataPoints);
 
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 		inputData.push_back(tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat()));
-
-	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		outputData.push_back(inputData.at(numIdx));
 
 	for (deUint32 opNdx = 0u; opNdx < READOP_LAST; opNdx++)
 	{
@@ -686,13 +815,19 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 					resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_SAMPLER, BufferSp(new Vec4Buffer(dummyData))));
 				}
 
-				// Shader is expected to pass the input image data to output buffer
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			BufferSp(new Vec4Buffer(outputData))));
+				// Second combined image sampler with different image data
+				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
+				{
+					for (size_t i = 0; i < inputData.size(); i++)
+						inputData[i] = tcu::Vec4(1.0f) - inputData[i];
 
-				const std::string				samplerDecoration		= resources.inputs.size() > 1?
-					"                       OpDecorate %SamplerData DescriptorSet 0\n"
-					"                       OpDecorate %SamplerData Binding 1\n"
-					: "";
+					resources.inputs.push_back(std::make_pair(getVkDescriptorType((DescriptorType)descNdx), BufferSp(new Vec4Buffer(inputData))));
+				}
+
+				// Shader is expected to pass the input image data to output buffer
+				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			BufferSp(new Vec4Buffer(inputData))));
+
+				const std::string				samplerDecoration		= getSamplerDecoration((DescriptorType)descNdx);
 
 				getDefaultColors(defaultColors);
 

@@ -494,6 +494,28 @@ inline void createTestsForAllStages (const std::string&							name,
 			tests, failResult, failMessageTemplate);
 }
 
+inline void createTestsForAllStages (const std::string&							name,
+									 const tcu::RGBA							(&inputColors)[4],
+									 const tcu::RGBA							(&outputColors)[4],
+									 const std::map<std::string, std::string>&	testCodeFragments,
+									 const GraphicsResources&					resources,
+									 const std::vector<std::string>&			extensions,
+									 const std::vector<std::string>&			features,
+									 tcu::TestCaseGroup*						tests,
+									 VulkanFeatures								vulkanFeatures		= VulkanFeatures(),
+									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
+									 const std::string&							failMessageTemplate	= std::string())
+{
+	std::vector<deInt32>		noSpecConstants;
+	PushConstants				noPushConstants;
+	GraphicsInterfaces			noInterfaces;
+
+	createTestsForAllStages(
+			name, inputColors, outputColors, testCodeFragments, noSpecConstants, noPushConstants,
+			resources, noInterfaces, extensions, features, vulkanFeatures,
+			tests, failResult, failMessageTemplate);
+}
+
 inline void createTestsForAllStages (const std::string& name,
 									 const tcu::RGBA							(&inputColors)[4],
 									 const tcu::RGBA							(&outputColors)[4],

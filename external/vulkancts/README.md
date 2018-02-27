@@ -173,7 +173,7 @@ Test log will be written into TestResults.qpa
 
 ### Android
 
-	adb push <vulkancts>/external/vulkancts/mustpass/1.1.0/vk-default.txt /sdcard/vk-default.txt
+	adb push <vulkancts>/external/vulkancts/mustpass/1.0.3/vk-default.txt /sdcard/vk-default.txt
 	adb shell
 
 In device shell:

@@ -150,11 +150,13 @@ struct TestParams
 	AllocationKind	allocationKind;
 	deUint32		mipLevels;
 	deBool			singleCommand;
+	deUint32		barrierCount;
 
 	TestParams (void)
 	{
 		mipLevels		= 1u;
 		singleCommand	= DE_TRUE;
+		barrierCount	= 1u;
 	}
 };
 
@@ -2880,27 +2882,41 @@ tcu::TestStatus BlittingMipmaps::iterate (void)
 	{
 		// Prepare all mip levels for reading
 		{
-			const VkImageMemoryBarrier		preImageBarrier		=
+			for (deUint32 barrierno = 0; barrierno < m_params.barrierCount; barrierno++)
 			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-				DE_NULL,									// const void*				pNext;
-				VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-				VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			dstAccessMask;
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-				m_params.src.image.operationLayout,			// VkImageLayout			newLayout;
-				VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-				VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-				m_destination.get(),						// VkImage					image;
-				{											// VkImageSubresourceRange	subresourceRange;
-					getAspectFlags(dstTcuFormat),		// VkImageAspectFlags	aspectMask;
-					0u,									// deUint32				baseMipLevel;
-					VK_REMAINING_MIP_LEVELS,			// deUint32				mipLevels;
-					0u,									// deUint32				baseArraySlice;
-					getArraySize(m_params.src.image)	// deUint32				arraySize;
-				}
-			};
+				VkImageMemoryBarrier preImageBarrier =
+				{
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,									// VkStructureType	sType;
+					DE_NULL,																// const void*		pNext;
+					VK_ACCESS_TRANSFER_WRITE_BIT,											// VkAccessFlags	srcAccessMask;
+					VK_ACCESS_TRANSFER_READ_BIT,											// VkAccessFlags	dstAccessMask;
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,									// VkImageLayout	oldLayout;
+					m_params.src.image.operationLayout,										// VkImageLayout	newLayout;
+					VK_QUEUE_FAMILY_IGNORED,												// deUint32			srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,												// deUint32			dstQueueFamilyIndex;
+					m_destination.get(),													// VkImage			image;
+					{																		// VkImageSubresourceRange	subresourceRange;
+						getAspectFlags(dstTcuFormat),										// VkImageAspectFlags	aspectMask;
+							0u,																// deUint32				baseMipLevel;
+							VK_REMAINING_MIP_LEVELS,										// deUint32				mipLevels;
+							0u,																// deUint32				baseArraySlice;
+							getArraySize(m_params.src.image)								// deUint32				arraySize;
+					}
+				};
 
-			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
+				if (getArraySize(m_params.src.image) == 1)
+				{
+					DE_ASSERT(barrierno < m_params.mipLevels);
+					preImageBarrier.subresourceRange.baseMipLevel	= barrierno;
+					preImageBarrier.subresourceRange.levelCount		= (barrierno + 1 < m_params.barrierCount) ? 1 : VK_REMAINING_MIP_LEVELS;
+				}
+				else
+				{
+					preImageBarrier.subresourceRange.baseArrayLayer	= barrierno;
+					preImageBarrier.subresourceRange.layerCount		= (barrierno + 1 < m_params.barrierCount) ? 1 : VK_REMAINING_ARRAY_LAYERS;
+				}
+				vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
+			}
 		}
 
 		for (deUint32 regionNdx = 0u; regionNdx < (deUint32)regions.size(); regionNdx++)
@@ -6836,21 +6852,21 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 
 			for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
 			{
-				params.src.image.format	= compatibleFormats[srcFormatIndex];
-				params.dst.image.format	= compatibleFormats[srcFormatIndex];
+				params.src.image.format						= compatibleFormats[srcFormatIndex];
+				params.dst.image.format						= compatibleFormats[srcFormatIndex];
 
 				if (!isSupportedByFramework(params.src.image.format))
 					continue;
 
-				const std::string description	= "Blit source format " + getFormatCaseName(params.src.image.format);
+				const std::string	description				= "Blit source format " + getFormatCaseName(params.src.image.format);
 
-				BlitColorTestParams testParams;
-				testParams.params				= params;
-				testParams.compatibleFormats	= compatibleFormats;
-				testParams.onlyNearest			= onlyNearest;
+				BlitColorTestParams	testParams;
+				testParams.params							= params;
+				testParams.compatibleFormats				= compatibleFormats;
+				testParams.onlyNearest						= onlyNearest;
 
-				testParams.params.src.image.extent.depth = layerCount;
-				testParams.params.dst.image.extent.depth = layerCount;
+				testParams.params.src.image.extent.depth	= layerCount;
+				testParams.params.dst.image.extent.depth	= layerCount;
 
 				for (size_t regionNdx = 0; regionNdx < testParams.params.regions.size(); regionNdx++)
 				{
@@ -6862,6 +6878,53 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 			}
 		}
 		group->addChild(layerCountGroup.release());
+	}
+
+	for (int multiLayer = 0; multiLayer < 2; multiLayer++)
+	{
+		const int layerCount = multiLayer ? 6 : 1;
+
+		for (int barrierCount = 1; barrierCount < 4; barrierCount++)
+		{
+			if (layerCount != 1 || barrierCount != 1)
+			{
+				const std::string				barrierGroupName = (multiLayer ? "layerbarriercount_" : "mipbarriercount_") + de::toString(barrierCount);
+				const std::string				barrierGroupDesc = "Use " + de::toString(barrierCount) + " image barriers";
+
+				de::MovePtr<tcu::TestCaseGroup>	barrierCountGroup(new tcu::TestCaseGroup(group->getTestContext(), barrierGroupName.c_str(), barrierGroupDesc.c_str()));
+
+				params.barrierCount = barrierCount;
+
+				// Only go through a few common formats
+				for (int srcFormatIndex = 2; srcFormatIndex < 6; ++srcFormatIndex)
+				{
+					params.src.image.format						= compatibleFormatsUInts[srcFormatIndex];
+					params.dst.image.format						= compatibleFormatsUInts[srcFormatIndex];
+
+					if (!isSupportedByFramework(params.src.image.format))
+						continue;
+
+					const std::string description				= "Blit source format " + getFormatCaseName(params.src.image.format);
+
+					BlitColorTestParams testParams;
+					testParams.params							= params;
+					testParams.compatibleFormats				= compatibleFormatsUInts;
+					testParams.onlyNearest						= true;
+
+					testParams.params.src.image.extent.depth	= layerCount;
+					testParams.params.dst.image.extent.depth	= layerCount;
+
+					for (size_t regionNdx = 0; regionNdx < testParams.params.regions.size(); regionNdx++)
+					{
+						testParams.params.regions[regionNdx].imageBlit.srcSubresource.layerCount = layerCount;
+						testParams.params.regions[regionNdx].imageBlit.dstSubresource.layerCount = layerCount;
+					}
+
+					addTestGroup(barrierCountGroup.get(), getFormatCaseName(params.src.image.format), description, addBlittingImageAllFormatsMipmapFormatTests, testParams);
+				}
+				group->addChild(barrierCountGroup.release());
+			}
+		}
 	}
 }
 

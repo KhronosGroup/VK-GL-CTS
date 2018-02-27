@@ -722,6 +722,17 @@ public:
 
 class UnpackHalf2x16CaseInstance : public ShaderPackingFunctionTestInstance
 {
+	enum Sign
+	{
+		POSITIVE								= 0,
+		NEGATIVE
+	};
+	enum SubnormalizedConversionType
+	{
+		UNKNOWN									= 0,
+		CONVERTED,
+		ZERO_FLUSHED,
+	};
 public:
 	UnpackHalf2x16CaseInstance (Context& context, glu::ShaderType shaderType, const ShaderSpec& spec, const char* name)
 	: ShaderPackingFunctionTestInstance (context, shaderType, spec, name)
@@ -730,7 +741,12 @@ public:
 
 	tcu::TestStatus iterate (void)
 	{
-		const int					maxDiff		= 0; // All bits must be accurate.
+		const int					minExp		= -14;
+		const int					maxExp		= 15;
+		const int					mantBits	= 10;
+		const deUint32				mantBitMask = (1u << mantBits) - 1u;
+		tcu::TestLog&				log			= m_testCtx.getLog();
+
 		de::Random					rnd			(deStringHash(m_name) ^ 0x776002);
 		std::vector<deUint32>		inputs;
 		std::vector<tcu::Vec2>		outputs;
@@ -740,32 +756,48 @@ public:
 		inputs.push_back((tcu::Float16( 1.0f).bits() << 16) | tcu::Float16( 0.0f).bits());
 		inputs.push_back((tcu::Float16(-1.0f).bits() << 16) | tcu::Float16( 0.5f).bits());
 		inputs.push_back((tcu::Float16( 0.5f).bits() << 16) | tcu::Float16(-0.5f).bits());
+		// Special subnormal value: single lowest bit set
+		inputs.push_back((tcu::Float16(composeHalfFloat(POSITIVE, 0u, 1u)).bits() << 16)
+						| tcu::Float16(composeHalfFloat(NEGATIVE, 0u, 1u)).bits());
+		// Special subnormal value: single highest fraction bit set
+		inputs.push_back((tcu::Float16(composeHalfFloat(NEGATIVE, 0u, 1u << (mantBits - 1u))).bits() << 16)
+						| tcu::Float16(composeHalfFloat(POSITIVE, 0u, 1u << (mantBits - 1u))).bits());
+		// Special subnormal value: all fraction bits set
+		inputs.push_back((tcu::Float16(composeHalfFloat(POSITIVE, 0u, mantBitMask)).bits() << 16)
+						| tcu::Float16(composeHalfFloat(NEGATIVE, 0u, mantBitMask)).bits());
 
 		// Construct random values.
+		for (int ndx = 0; ndx < 90; ndx++)
 		{
-			const int	minExp		= -14;
-			const int	maxExp		= 15;
-			const int	mantBits	= 10;
-
-			for (int ndx = 0; ndx < 96; ndx++)
+			deUint32 inVal = 0;
+			for (int c = 0; c < 2; c++)
 			{
-				deUint32 inVal = 0;
-				for (int c = 0; c < 2; c++)
-				{
-					const int		s			= rnd.getBool() ? 1 : -1;
-					const int		exp			= rnd.getInt(minExp, maxExp);
-					const deUint32	mantissa	= rnd.getUint32() & ((1<<mantBits)-1);
-					const deUint16	value		= tcu::Float16::construct(s, exp ? exp : 1 /* avoid denorm */, (deUint16)((1u<<10) | mantissa)).bits();
+				const int		s			= rnd.getBool() ? 1 : -1;
+				const int		exp			= rnd.getInt(minExp, maxExp);
+				const deUint32	mantissa	= rnd.getUint32() & mantBitMask;
+				const deUint16	value		= tcu::Float16::construct(s, exp != 0 ? exp : 1 /* avoid denorm */, static_cast<deUint16>((1u<<10) | mantissa)).bits();
 
-					inVal |= value << (16*c);
-				}
-				inputs.push_back(inVal);
+				inVal |= value << (16u * c);
 			}
+			inputs.push_back(inVal);
+		}
+		for (int ndx = 0; ndx < 15; ndx++)
+		{
+			deUint32 inVal = 0;
+			for (int c = 0; c < 2; c++)
+			{
+				const Sign		sign		= rnd.getBool()? POSITIVE : NEGATIVE;
+				const deUint32	mantissa	= rnd.getUint32() & mantBitMask;
+				const deUint16	value		= tcu::Float16(composeHalfFloat(sign, 0u /* force denorm */, mantissa)).bits();
+
+				inVal |= value << (16u * c);
+			}
+			inputs.push_back(inVal);
 		}
 
 		outputs.resize(inputs.size());
 
-		m_testCtx.getLog() << TestLog::Message << "Executing shader for " << inputs.size() << " input values" << tcu::TestLog::EndMessage;
+		log << TestLog::Message << "Executing shader for " << inputs.size() << " input values" << tcu::TestLog::EndMessage;
 
 		{
 			const void*	in	= &inputs[0];
@@ -776,53 +808,97 @@ public:
 
 		// Verify
 		{
-			const int	numValues	= (int)inputs.size();
-			const int	maxPrints	= 10;
-			int			numFailed	= 0;
+			const int					numValues	= (int)inputs.size();
+			const int					maxPrints	= 10;
+			int							numFailed	= 0;
+			SubnormalizedConversionType conversion	= UNKNOWN;
 
 			for (int valNdx = 0; valNdx < (int)inputs.size(); valNdx++)
 			{
-				const deUint16	in0			= (deUint16)(inputs[valNdx] & 0xffff);
-				const deUint16	in1			= (deUint16)(inputs[valNdx] >> 16);
-				const float		ref0		= tcu::Float16(in0).asFloat();
-				const float		ref1		= tcu::Float16(in1).asFloat();
-				const float		res0		= outputs[valNdx].x();
-				const float		res1		= outputs[valNdx].y();
+				const deUint16			in0			= (deUint16)(inputs[valNdx] & 0xffff);
+				const deUint16			in1			= (deUint16)(inputs[valNdx] >> 16);
+				const float				res0		= outputs[valNdx].x();
+				const float				res1		= outputs[valNdx].y();
 
-				const deUint32	refBits0	= tcu::Float32(ref0).bits();
-				const deUint32	refBits1	= tcu::Float32(ref1).bits();
-				const deUint32	resBits0	= tcu::Float32(res0).bits();
-				const deUint32	resBits1	= tcu::Float32(res1).bits();
+				const deBool			value0		= checkValue(in0, res0, conversion);
+				// note: do not avoid calling checkValue for in1 if it failed for in0 by using && laziness
+				// checkValue may potentially change 'conversion' parameter if it was set to UNKNOWN so far
+				const deBool			value1		= checkValue(in1, res1, conversion);
+				const deBool			valuesOK	= value0 && value1;
 
-				const int		diff0	= de::abs((int)refBits0 - (int)resBits0);
-				const int		diff1	= de::abs((int)refBits1 - (int)resBits1);
-
-				if (diff0 > maxDiff || diff1 > maxDiff)
+				if (!valuesOK)
 				{
 					if (numFailed < maxPrints)
-					{
-						m_testCtx.getLog() << TestLog::Message << "ERROR: Mismatch in value " << valNdx << ",\n"
-															   << "  expected unpackHalf2x16(" << tcu::toHex(inputs[valNdx]) << ") = "
-															   << "vec2(" << ref0 << " / " << tcu::toHex(refBits0) << ", " << ref1 << " / " << tcu::toHex(refBits1) << ")"
-															   << ", got vec2(" << res0 << " / " << tcu::toHex(resBits0) << ", " << res1 << " / " << tcu::toHex(resBits1) << ")"
-															   << "\n  ULP diffs = (" << diff0 << ", " << diff1 << "), max diff = " << maxDiff
-										   << TestLog::EndMessage;
-					}
+						printErrorMessage(log, valNdx, in0, in1, res0, res1);
 					else if (numFailed == maxPrints)
-						m_testCtx.getLog() << TestLog::Message << "..." << TestLog::EndMessage;
-
-					numFailed += 1;
+						log << TestLog::Message << "..." << TestLog::EndMessage;
+					++numFailed;
 				}
 			}
 
-			m_testCtx.getLog() << TestLog::Message << (numValues - numFailed) << " / " << numValues << " values passed" << TestLog::EndMessage;
+			log << TestLog::Message << (numValues - numFailed) << " / " << numValues << " values passed" << TestLog::EndMessage;
 
 			if (numFailed == 0)
 				return tcu::TestStatus::pass("Pass");
 			else
 				return tcu::TestStatus::fail("Result comparison failed");
-
 		}
+	}
+private:
+	deBool checkValue (deUint16 inValue, float outValue, SubnormalizedConversionType& conversion)
+	{
+		const tcu::Float16		temp			= tcu::Float16(inValue);
+		const float				ref				= temp.asFloat();
+		const deUint32			refBits			= tcu::Float32(ref).bits();
+		const deUint32			resBits			= tcu::Float32(outValue).bits();
+		const deBool			bitMatch		= (refBits ^ resBits) == 0u;
+		const deBool			denorm			= temp.isDenorm();
+
+		if (conversion != CONVERTED && denorm)
+		{
+			if (resBits == 0)
+			{
+				conversion = ZERO_FLUSHED;
+				return DE_TRUE;
+			}
+			if (conversion != ZERO_FLUSHED && bitMatch)
+			{
+				conversion = CONVERTED;
+				return DE_TRUE;
+			}
+			return DE_FALSE;
+		}
+		else if (bitMatch)
+			return DE_TRUE;
+		return DE_FALSE;
+	}
+	void printErrorMessage (tcu::TestLog& log, deUint32 valNdx, deUint16 in0, deUint16 in1, float out0, float out1)
+	{
+		const float			ref0		= tcu::Float16(in0).asFloat();
+		const deUint32		refBits0	= tcu::Float32(ref0).bits();
+		const deUint32		resBits0	= tcu::Float32(out0).bits();
+		const float			ref1		= tcu::Float16(in1).asFloat();
+		const deUint32		refBits1	= tcu::Float32(ref1).bits();
+		const deUint32		resBits1	= tcu::Float32(out1).bits();
+		log << TestLog::Message << "ERROR: Mismatch in value " << valNdx << ",\n"
+			<< "  expected unpackHalf2x16(" << tcu::toHex((in1 << 16u) | in0) << ") = "
+			<< "vec2(" << ref0 << " / " << tcu::toHex(refBits0) << ", " << ref1 << " / " << tcu::toHex(refBits1) << ")"
+			<< ", got vec2(" << out0 << " / " << tcu::toHex(resBits0) << ", " << out1 << " / " << tcu::toHex(resBits1) << ")"
+			<< TestLog::EndMessage;
+	}
+	deUint16 composeHalfFloat (Sign sign, deUint32 exponent, deUint32 significand)
+	{
+		const deUint32		BitMask_05	= (1u << 5u)  - 1u;
+		const deUint32		BitMask_10	= (1u << 10u) - 1u;
+		const deUint32		BitMask_16	= (1u << 16u) - 1u;
+		DE_UNREF(BitMask_05);
+		DE_UNREF(BitMask_10);
+		DE_UNREF(BitMask_16);
+		DE_ASSERT((exponent & ~BitMask_05) == 0u);
+		DE_ASSERT((significand & ~BitMask_10) == 0u);
+		const deUint32		value		= (((sign == NEGATIVE ? 1u : 0u) << 5u | exponent) << 10u) | significand;
+		DE_ASSERT((value & ~BitMask_16) == 0u);
+		return static_cast<deUint16>(value);
 	}
 };
 

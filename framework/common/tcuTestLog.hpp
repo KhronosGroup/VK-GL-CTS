@@ -171,6 +171,7 @@ public:
 	void				endSample				(void);
 	void				endSampleList			(void);
 
+	bool				isShaderLoggingEnabled	(void);
 private:
 						TestLog					(const TestLog& other); // Not allowed!
 	TestLog&			operator=				(const TestLog& other); // Not allowed!

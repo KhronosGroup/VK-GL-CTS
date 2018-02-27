@@ -42,6 +42,8 @@
 #include "vktApiExternalMemoryTests.hpp"
 #include "vktApiVersionCheck.hpp"
 #include "vktApiMaintenance3Check.hpp"
+#include "vktApiDescriptorSetTests.hpp"
+#include "vktApiPipelineTests.hpp"
 
 namespace vkt
 {
@@ -80,6 +82,8 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 	apiTests->addChild(createMemoryCommitmentTests		(testCtx));
 	apiTests->addChild(createExternalMemoryTests		(testCtx));
 	apiTests->addChild(createMaintenance3Tests			(testCtx));
+	apiTests->addChild(createDescriptorSetTests			(testCtx));
+	apiTests->addChild(createPipelineTests				(testCtx));
 }
 
 } // anonymous

@@ -3834,6 +3834,7 @@ PackedPixelsTests::PackedPixelsTests(deqp::Context& context) : TestCaseGroup(con
 
 PackedPixelsTests::~PackedPixelsTests(void)
 {
+#ifdef LOG_PACKED_PIXELS_STATISTICS
 	m_testCtx.getLog() << tcu::TestLog::Message << "PackedPixelsTests statistics:"
 					   << "\n  countReadPixels: " << RectangleTest::m_countReadPixels
 					   << "\n  countReadPixelsOK: " << RectangleTest::m_countReadPixelsOK
@@ -3841,6 +3842,7 @@ PackedPixelsTests::~PackedPixelsTests(void)
 					   << "\n  countGetTexImageOK: " << RectangleTest::m_countGetTexImageOK
 					   << "\n  countCompare: " << RectangleTest::m_countCompare
 					   << "\n  countCompareOK: " << RectangleTest::m_countCompareOK << tcu::TestLog::EndMessage;
+#endif
 }
 
 void PackedPixelsTests::init(void)

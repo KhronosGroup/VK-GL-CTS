@@ -2263,7 +2263,7 @@ bool isValidImageUsageFlagCombination (VkImageUsageFlags usage)
 	return usage != 0;
 }
 
-VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& deviceFeatures, VkFormat, VkFormatFeatureFlags, VkImageType type, VkImageUsageFlags usage)
+VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& deviceFeatures, VkFormat format, VkFormatFeatureFlags formatFeatures, VkImageType type, VkImageUsageFlags usage)
 {
 	VkImageCreateFlags	flags	= (VkImageCreateFlags)0;
 
@@ -2273,6 +2273,12 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 
 		if (type == VK_IMAGE_TYPE_2D)
 			flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	}
+
+	if (isYCbCrFormat(format) && getPlaneCount(format) > 1)
+	{
+		if (formatFeatures & VK_FORMAT_FEATURE_DISJOINT_BIT_KHR)
+			flags |= VK_IMAGE_CREATE_DISJOINT_BIT_KHR;
 	}
 
 	if ((usage & (VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_STORAGE_BIT)) != 0 &&
@@ -2324,6 +2330,9 @@ bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	device
 
 	DE_ASSERT(deviceFeatures.sparseBinding || (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)) == 0);
 	DE_ASSERT(deviceFeatures.sparseResidencyAliased || (createFlags & VK_IMAGE_CREATE_SPARSE_ALIASED_BIT) == 0);
+
+	if (isYCbCrFormat(format) && (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)))
+		return false;
 
 	if (createFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
 	{
@@ -2434,44 +2443,11 @@ struct ImageFormatPropertyCase
 	{}
 };
 
-tcu::TestStatus execImageFormatTest (Context& context, ImageFormatPropertyCase testCase)
-{
-	return testCase.testFunction(context, testCase.format, testCase.imageType, testCase.tiling);
-}
-
-void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)
-{
-	DE_ASSERT(params.format == VK_FORMAT_UNDEFINED);
-
-	for (deUint32 formatNdx = VK_FORMAT_UNDEFINED+1; formatNdx < VK_CORE_FORMAT_LAST; ++formatNdx)
-	{
-		const VkFormat		format			= (VkFormat)formatNdx;
-		const char* const	enumName		= getFormatName(format);
-		const string		caseName		= de::toLower(string(enumName).substr(10));
-
-		params.format = format;
-
-		addFunctionCase(testGroup, caseName, enumName, execImageFormatTest, params);
-	}
-}
-
-void createImageFormatTypeTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)
-{
-	DE_ASSERT(params.tiling == VK_IMAGE_TILING_LAST);
-
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "optimal",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "linear",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_LINEAR)));
-}
-
-void createImageFormatTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase::Function testFunction)
-{
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_IMAGE_TILING_LAST)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LAST)));
-	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_LAST)));
-}
-
 tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, const VkImageType imageType, const VkImageTiling tiling)
 {
+	if (isYCbCrFormat(format))
+		checkYcbcrConversionSupport(context);
+
 	TestLog&						log					= context.getTestContext().getLog();
 	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
 	const VkPhysicalDeviceLimits&	deviceLimits		= context.getDeviceProperties().limits;
@@ -2487,6 +2463,14 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 	{
 		results.check((supportedFeatures & (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT|VK_FORMAT_FEATURE_TRANSFER_DST_BIT)) != 0,
 					  "A sampled image format must have VK_FORMAT_FEATURE_TRANSFER_SRC_BIT and VK_FORMAT_FEATURE_TRANSFER_DST_BIT format feature flags set");
+	}
+
+	if (format == VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR || format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR)
+	{
+		const VkFormatFeatureFlags requiredFeatures = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR | VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
+
+		results.check((supportedFeatures & requiredFeatures) == requiredFeatures,
+					  getFormatName(format) + string(" must support ") + de::toString(getFormatFeatureFlagsStr(requiredFeatures)));
 	}
 
 	for (VkImageUsageFlags curUsageFlags = 0; curUsageFlags <= usageFlagSet; curUsageFlags++)
@@ -3142,6 +3126,9 @@ tcu::TestStatus deviceMemoryProperties2 (Context& context)
 
 tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format, const VkImageType imageType, const VkImageTiling tiling)
 {
+	if (isYCbCrFormat(format))
+		checkYcbcrConversionSupport(context);
+
 	TestLog&						log				= context.getTestContext().getLog();
 
 	const PlatformInterface&		vkp				= context.getPlatformInterface();
@@ -3149,6 +3136,7 @@ tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format,
 	const Unique<VkInstance>		instance		(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver			vki				(vkp, *instance);
 
+	const VkImageUsageFlags			ycbcrFlags		= isYCbCrFormat(format) ? (VkImageUsageFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR : (VkImageUsageFlags)0u;
 	const VkImageUsageFlags			allUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 													| VK_IMAGE_USAGE_TRANSFER_DST_BIT
 													| VK_IMAGE_USAGE_SAMPLED_BIT
@@ -3161,7 +3149,8 @@ tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format,
 													| VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT
 													| VK_IMAGE_CREATE_SPARSE_ALIASED_BIT
 													| VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
-													| VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+													| VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
+													| ycbcrFlags;
 
 	for (VkImageUsageFlags curUsageFlags = (VkImageUsageFlags)1; curUsageFlags <= allUsageFlags; curUsageFlags++)
 	{
@@ -3294,6 +3283,71 @@ tcu::TestStatus sparseImageFormatProperties2 (Context& context, const VkFormat f
 
 	return tcu::TestStatus::pass("Querying sparse image format properties succeeded");
 }
+
+tcu::TestStatus execImageFormatTest (Context& context, ImageFormatPropertyCase testCase)
+{
+	return testCase.testFunction(context, testCase.format, testCase.imageType, testCase.tiling);
+}
+
+void createImageFormatTypeTilingTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)
+{
+	DE_ASSERT(params.format == VK_FORMAT_UNDEFINED);
+
+	static const struct
+	{
+		VkFormat								begin;
+		VkFormat								end;
+		ImageFormatPropertyCase					params;
+	} s_formatRanges[] =
+	{
+		// core formats
+		{ (VkFormat)(VK_FORMAT_UNDEFINED + 1),	VK_CORE_FORMAT_LAST,										params },
+
+		// YCbCr formats
+		{ VK_FORMAT_G8B8G8R8_422_UNORM_KHR,		(VkFormat)(VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR + 1),	params }
+	};
+
+	for (int rangeNdx = 0; rangeNdx < DE_LENGTH_OF_ARRAY(s_formatRanges); ++rangeNdx)
+	{
+		const VkFormat								rangeBegin		= s_formatRanges[rangeNdx].begin;
+		const VkFormat								rangeEnd		= s_formatRanges[rangeNdx].end;
+
+		for (VkFormat format = rangeBegin; format != rangeEnd; format = (VkFormat)(format+1))
+		{
+			const bool			isYCbCr		= isYCbCrFormat(format);
+			const bool			isSparse	= (params.testFunction == sparseImageFormatProperties2);
+
+			if (isYCbCr && isSparse)
+				continue;
+
+			if (isYCbCr && params.imageType != VK_IMAGE_TYPE_2D)
+				continue;
+
+			const char* const	enumName	= getFormatName(format);
+			const string		caseName	= de::toLower(string(enumName).substr(10));
+
+			params.format = format;
+
+			addFunctionCase(testGroup, caseName, enumName, execImageFormatTest, params);
+		}
+	}
+}
+
+void createImageFormatTypeTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase params)
+{
+	DE_ASSERT(params.tiling == VK_IMAGE_TILING_LAST);
+
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "optimal",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "linear",	"",	createImageFormatTypeTilingTests, ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_LINEAR)));
+}
+
+void createImageFormatTests (tcu::TestCaseGroup* testGroup, ImageFormatPropertyCase::Function testFunction)
+{
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_LAST)));
+	testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", "", createImageFormatTypeTests, ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_LAST)));
+}
+
 
 // Android CTS -specific tests
 

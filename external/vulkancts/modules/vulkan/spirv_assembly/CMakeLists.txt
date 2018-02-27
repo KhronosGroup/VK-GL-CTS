@@ -23,6 +23,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmGraphicsShaderTestUtil.hpp
 	vktSpvAsmInstructionTests.cpp
 	vktSpvAsmInstructionTests.hpp
+	vktSpvAsmTypeTests.cpp
+	vktSpvAsmTypeTests.hpp
 	vktSpvAsmTests.cpp
 	vktSpvAsmTests.hpp
 	vktSpvAsmUtils.cpp

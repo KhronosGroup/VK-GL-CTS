@@ -3,6 +3,8 @@
 set(GLCTS_ES3_SRCS
 	es3cTestPackage.cpp
 	es3cTestPackage.hpp
+	es3cCopyTexImageConversionsTests.cpp
+	es3cCopyTexImageConversionsTests.hpp
 	)
 
 set(GLCTS_ES3_LIBS

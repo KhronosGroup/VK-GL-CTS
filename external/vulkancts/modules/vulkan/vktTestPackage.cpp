@@ -232,6 +232,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	vk::ShaderBuildOptions		defaultHlslBuildOptions		(spirvVersionForGlsl, 0u);
 	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(spirvVersionForAsm);
 	vk::SourceCollections		sourceProgs					(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
+	const bool					doShaderLog					= log.isShaderLoggingEnabled();
 
 	DE_UNREF(casePath); // \todo [2015-03-13 pyry] Use this to identify ProgramCollection storage path
 
@@ -248,17 +249,20 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
 
-		try
+		if (doShaderLog)
 		{
-			std::ostringstream disasm;
+			try
+			{
+				std::ostringstream disasm;
 
-			vk::disassembleProgram(*binProg, &disasm, spirvVersionForGlsl);
+				vk::disassembleProgram(*binProg, &disasm, spirvVersionForGlsl);
 
-			log << vk::SpirVAsmSource(disasm.str());
-		}
-		catch (const tcu::NotSupportedError& err)
-		{
-			log << err;
+				log << vk::SpirVAsmSource(disasm.str());
+			}
+			catch (const tcu::NotSupportedError& err)
+			{
+				log << err;
+			}
 		}
 	}
 
@@ -269,17 +273,20 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::HlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
 
-		try
+		if (doShaderLog)
 		{
-			std::ostringstream disasm;
+			try
+			{
+				std::ostringstream disasm;
 
-			vk::disassembleProgram(*binProg, &disasm, spirvVersionForGlsl);
+				vk::disassembleProgram(*binProg, &disasm, spirvVersionForGlsl);
 
-			log << vk::SpirVAsmSource(disasm.str());
-		}
-		catch (const tcu::NotSupportedError& err)
-		{
-			log << err;
+				log << vk::SpirVAsmSource(disasm.str());
+			}
+			catch (const tcu::NotSupportedError& err)
+			{
+				log << err;
+			}
 		}
 	}
 

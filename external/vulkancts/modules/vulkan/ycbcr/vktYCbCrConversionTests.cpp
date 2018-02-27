@@ -99,19 +99,33 @@ ShaderSpec createShaderSpec (void)
 }
 
 void genTexCoords (std::vector<Vec2>&	coords,
-				   const UVec2&			size)
+				   const UVec2&			srcSize,
+				   const UVec2&			dstSize)
 {
-	for (deUint32 y = 0; y < size.y() + (size.y() / 2); y++)
-	for (deUint32 x = 0; x < size.x() + (size.x() / 2); x++)
+	for (deUint32 y = 0; y < dstSize.y(); y++)
+	for (deUint32 x = 0; x < dstSize.x(); x++)
 	{
 		const float	fx	= (float)x;
 		const float	fy	= (float)y;
 
-		const float	fw	= (float)size.x();
-		const float	fh	= (float)size.y();
+		const float	fw	= (float)srcSize.x();
+		const float	fh	= (float)srcSize.y();
 
 		const float	s	= 1.5f * ((fx * 1.5f * fw + fx) / (1.5f * fw * 1.5f * fw)) - 0.25f;
 		const float	t	= 1.5f * ((fy * 1.5f * fh + fy) / (1.5f * fh * 1.5f * fh)) - 0.25f;
+
+		coords.push_back(Vec2(s, t));
+	}
+}
+
+void genOneToOneTexCoords (std::vector<Vec2>&	coords,
+						   const UVec2&			size)
+{
+	for (deUint32 y = 0; y < size.y(); y++)
+	for (deUint32 x = 0; x < size.x(); x++)
+	{
+		const float s = ((float)x + 0.5f) / (float)size.x();
+		const float t = ((float)y + 0.5f) / (float)size.y();
 
 		coords.push_back(Vec2(s, t));
 	}
@@ -134,7 +148,9 @@ struct TestConfig
 
 				 vk::VkSamplerYcbcrRange				colorRange_,
 				 vk::VkSamplerYcbcrModelConversion		colorModel_,
-				 vk::VkComponentMapping					componentMapping_)
+				 vk::VkComponentMapping					componentMapping_,
+				 const UVec2							srcSize_,
+				 const UVec2							dstSize_)
 		: shaderType				(shaderType_)
 		, format					(format_)
 		, imageTiling				(imageTiling_)
@@ -151,6 +167,8 @@ struct TestConfig
 		, colorRange				(colorRange_)
 		, colorModel				(colorModel_)
 		, componentMapping			(componentMapping_)
+		, srcSize					(srcSize_)
+		, dstSize					(dstSize_)
 	{
 	}
 
@@ -170,6 +188,8 @@ struct TestConfig
 	vk::VkSamplerYcbcrRange					colorRange;
 	vk::VkSamplerYcbcrModelConversion		colorModel;
 	vk::VkComponentMapping					componentMapping;
+	const UVec2								srcSize;
+	const UVec2								dstSize;
 };
 
 vk::Move<vk::VkDescriptorSetLayout> createDescriptorSetLayout (const vk::DeviceInterface&	vkd,
@@ -516,10 +536,10 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 	const FloatFormat	conversionPrecision		(getYCbCrConversionPrecision(config.format));
 	const deUint32		subTexelPrecisionBits	(vk::getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits.subTexelPrecisionBits);
 	const tcu::UVec4	bitDepth				(getYCbCrBitDepth(config.format));
-	const UVec2			size					(isXChromaSubsampled(config.format) ? 12 : 7,
-												 isYChromaSubsampled(config.format) ?  8 : 13);
 	TestLog&			log						(context.getTestContext().getLog());
 	bool				explicitReconstruction	= config.explicitReconstruction;
+	const UVec2			srcSize					= config.srcSize;
+	const UVec2			dstSize					= config.dstSize;
 	bool				isOk					= true;
 
 	logTestCaseInfo(log, config);
@@ -583,19 +603,19 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 #endif
 
 	{
-		const vk::PlanarFormatDescription	planeInfo					(vk::getPlanarFormatDescription(config.format));
-		MultiPlaneImageData					src							(config.format, size);
+		const vk::PlanarFormatDescription	planeInfo				(vk::getPlanarFormatDescription(config.format));
+		MultiPlaneImageData					src						(config.format, srcSize);
 
-		deUint32							nullAccessData				(0u);
-		ChannelAccess						nullAccess					(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, IVec3(size.x(), size.y(), 1), IVec3(0, 0, 0), &nullAccessData, 0u);
-		deUint32							nullAccessAlphaData			(~0u);
-		ChannelAccess						nullAccessAlpha				(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, IVec3(size.x(), size.y(), 1), IVec3(0, 0, 0), &nullAccessAlphaData, 0u);
-		ChannelAccess						rChannelAccess				(planeInfo.hasChannelNdx(0) ? getChannelAccess(src, planeInfo, size, 0) : nullAccess);
-		ChannelAccess						gChannelAccess				(planeInfo.hasChannelNdx(1) ? getChannelAccess(src, planeInfo, size, 1) : nullAccess);
-		ChannelAccess						bChannelAccess				(planeInfo.hasChannelNdx(2) ? getChannelAccess(src, planeInfo, size, 2) : nullAccess);
-		ChannelAccess						aChannelAccess				(planeInfo.hasChannelNdx(3) ? getChannelAccess(src, planeInfo, size, 3) : nullAccessAlpha);
-		const bool							implicitNearestCosited		((config.chromaFilter == vk::VK_FILTER_NEAREST && !config.explicitReconstruction) &&
-																		 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR));
+		deUint32							nullAccessData			(0u);
+		ChannelAccess						nullAccess				(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, IVec3(srcSize.x(), srcSize.y(), 1), IVec3(0, 0, 0), &nullAccessData, 0u);
+		deUint32							nullAccessAlphaData		(~0u);
+		ChannelAccess						nullAccessAlpha			(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, IVec3(srcSize.x(), srcSize.y(), 1), IVec3(0, 0, 0), &nullAccessAlphaData, 0u);
+		ChannelAccess						rChannelAccess			(planeInfo.hasChannelNdx(0) ? getChannelAccess(src, planeInfo, srcSize, 0) : nullAccess);
+		ChannelAccess						gChannelAccess			(planeInfo.hasChannelNdx(1) ? getChannelAccess(src, planeInfo, srcSize, 1) : nullAccess);
+		ChannelAccess						bChannelAccess			(planeInfo.hasChannelNdx(2) ? getChannelAccess(src, planeInfo, srcSize, 2) : nullAccess);
+		ChannelAccess						aChannelAccess			(planeInfo.hasChannelNdx(3) ? getChannelAccess(src, planeInfo, srcSize, 3) : nullAccessAlpha);
+		const bool							implicitNearestCosited	((config.chromaFilter == vk::VK_FILTER_NEAREST && !config.explicitReconstruction) &&
+																	 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR));
 
 		vector<Vec2>						sts;
 		vector<Vec4>						results;
@@ -638,7 +658,10 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 				aChannelAccess.setChannel(IVec3(x, y, 0), (float)(x * y) / (float)(aChannelAccess.getSize().x() * aChannelAccess.getSize().y()));
 		}
 
-		genTexCoords(sts, size);
+		if (dstSize.x() > srcSize.x() && dstSize.y() > srcSize.y())
+			genTexCoords(sts, srcSize, dstSize);
+		else
+			genOneToOneTexCoords(sts, dstSize);
 
 		calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, sts, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, config.xChromaOffset, config.yChromaOffset, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, minBounds, maxBounds, uvBounds, ijBounds);
 
@@ -683,10 +706,10 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 		}
 		else
 		{
-			tcu::TextureLevel	srcImage	(vk::mapVkFormat(config.format), size.x(), size.y());
+			tcu::TextureLevel	srcImage	(vk::mapVkFormat(config.format), srcSize.x(), srcSize.y());
 
-			for (int y = 0; y < (int)size.y(); y++)
-			for (int x = 0; x < (int)size.x(); x++)
+			for (int y = 0; y < (int)srcSize.y(); y++)
+			for (int x = 0; x < (int)srcSize.x(); x++)
 			{
 				const IVec3 pos (x, y, 0);
 				srcImage.getAccess().setPixel(Vec4(rChannelAccess.getChannel(pos), gChannelAccess.getChannel(pos), bChannelAccess.getChannel(pos), aChannelAccess.getChannel(pos)), x, y);
@@ -695,36 +718,36 @@ tcu::TestStatus textureConversionTest (Context& context, const TestConfig config
 			log << TestLog::Image("SourceImage", "SourceImage", srcImage.getAccess());
 		}
 
-		evalShader(context, config.shaderType, src, size, config.format, config.imageTiling, config.disjoint, config.textureFilter, config.addressModeU, config.addressModeV, config.colorModel, config.colorRange, config.xChromaOffset, config.yChromaOffset, config.chromaFilter, config.componentMapping, config.explicitReconstruction, sts, results);
+		evalShader(context, config.shaderType, src, srcSize, config.format, config.imageTiling, config.disjoint, config.textureFilter, config.addressModeU, config.addressModeV, config.colorModel, config.colorRange, config.xChromaOffset, config.yChromaOffset, config.chromaFilter, config.componentMapping, config.explicitReconstruction, sts, results);
 
 		{
-			tcu::TextureLevel	minImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
-			tcu::TextureLevel	maxImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
-			tcu::TextureLevel	minMidpointImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
-			tcu::TextureLevel	maxMidpointImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
-			tcu::TextureLevel	resImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), size.x() + (size.x() / 2), size.y() + (size.y() / 2));
+			tcu::TextureLevel	minImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), dstSize.x(), dstSize.y());
+			tcu::TextureLevel	maxImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), dstSize.x(), dstSize.y());
+			tcu::TextureLevel	minMidpointImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), dstSize.x(), dstSize.y());
+			tcu::TextureLevel	maxMidpointImage	(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), dstSize.x(), dstSize.y());
+			tcu::TextureLevel	resImage			(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), dstSize.x(), dstSize.y());
 
-			for (int y = 0; y < (int)(size.y() + (size.y() / 2)); y++)
-			for (int x = 0; x < (int)(size.x() + (size.x() / 2)); x++)
+			for (int y = 0; y < (int)(dstSize.y()); y++)
+			for (int x = 0; x < (int)(dstSize.x()); x++)
 			{
-				const int ndx = x + y * (int)(size.x() + (size.x() / 2));
+				const int ndx = x + y * (int)(dstSize.x());
 				minImage.getAccess().setPixel(minBounds[ndx], x, y);
 				maxImage.getAccess().setPixel(maxBounds[ndx], x, y);
 			}
 
-			for (int y = 0; y < (int)(size.y() + (size.y() / 2)); y++)
-			for (int x = 0; x < (int)(size.x() + (size.x() / 2)); x++)
+			for (int y = 0; y < (int)(dstSize.y()); y++)
+			for (int x = 0; x < (int)(dstSize.x()); x++)
 			{
-				const int ndx = x + y * (int)(size.x() + (size.x() / 2));
+				const int ndx = x + y * (int)(dstSize.x());
 				resImage.getAccess().setPixel(results[ndx], x, y);
 			}
 
 			if (implicitNearestCosited)
 			{
-				for (int y = 0; y < (int)(size.y() + (size.y() / 2)); y++)
-				for (int x = 0; x < (int)(size.x() + (size.x() / 2)); x++)
+				for (int y = 0; y < (int)(dstSize.y()); y++)
+				for (int x = 0; x < (int)(dstSize.x()); x++)
 				{
-					const int ndx = x + y * (int)(size.x() + (size.x() / 2));
+					const int ndx = x + y * (int)(dstSize.x());
 					minMidpointImage.getAccess().setPixel(minMidpointBounds[ndx], x, y);
 					maxMidpointImage.getAccess().setPixel(maxMidpointBounds[ndx], x, y);
 				}
@@ -1125,6 +1148,10 @@ void initTests (tcu::TestCaseGroup* testGroup)
 		const vk::VkFormat						format					(noChromaSubsampledFormats[formatNdx]);
 		const std::string						formatName				(de::toLower(std::string(getFormatName(format)).substr(10)));
 		de::MovePtr<tcu::TestCaseGroup>			formatGroup				(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+		const UVec2								srcSize					(isXChromaSubsampled(format) ? 12 : 7,
+																		 isYChromaSubsampled(format) ?  8 : 13);
+		const UVec2								dstSize					(srcSize.x() + srcSize.x() / 2,
+																		 srcSize.y() + srcSize.y() / 2);
 
 		for (size_t modelNdx = 0; modelNdx < DE_LENGTH_OF_ARRAY(colorModels); modelNdx++)
 		{
@@ -1153,7 +1180,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 
 						const TestConfig				config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																				textureFilter, chromaLocation, chromaLocation, false, false,
-																				colorRange, colorModel, identitySwizzle);
+																				colorRange, colorModel, identitySwizzle, srcSize, dstSize);
 
 						addFunctionCaseWithPrograms(colorModelGroup.get(), std::string(textureFilterName) + "_" + tilingName, "", createTestShaders, textureConversionTest, config);
 					}
@@ -1190,7 +1217,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 							const vk::VkChromaLocation	chromaLocation		(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 							const TestConfig			config				(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																				textureFilter, chromaLocation, chromaLocation, false, false,
-																				colorRange, colorModel, identitySwizzle);
+																				colorRange, colorModel, identitySwizzle, srcSize, dstSize);
 
 							addFunctionCaseWithPrograms(colorRangeGroup.get(), std::string(textureFilterName) + "_" + tilingName, "", createTestShaders, textureConversionTest, config);
 						}
@@ -1212,6 +1239,10 @@ void initTests (tcu::TestCaseGroup* testGroup)
 		const vk::VkFormat				format		(xChromaSubsampledFormats[formatNdx]);
 		const std::string				formatName	(de::toLower(std::string(getFormatName(format)).substr(10)));
 		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+		const UVec2						srcSize		(isXChromaSubsampled(format) ? 12 : 7,
+													 isYChromaSubsampled(format) ?  8 : 13);
+		const UVec2						dstSize		(srcSize.x() + srcSize.x() / 2,
+													 srcSize.y() + srcSize.y() / 2);
 
 		// Color conversion tests
 		{
@@ -1242,7 +1273,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 							const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 							const TestConfig				config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																			 vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
-																			 colorRange, colorModel, identitySwizzle);
+																			 colorRange, colorModel, identitySwizzle, srcSize, dstSize);
 
 							addFunctionCaseWithPrograms(conversionGroup.get(), std::string(colorModelName) + "_" + tilingName + "_" + xChromaOffsetName, "", createTestShaders, textureConversionTest, config);
 						}
@@ -1270,8 +1301,8 @@ void initTests (tcu::TestCaseGroup* testGroup)
 								const glu::ShaderType		shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 								const vk::VkChromaLocation	yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 								const TestConfig			config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-																			vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
-																			colorRange, colorModel, identitySwizzle);
+																			 vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, false, false,
+																			 colorRange, colorModel, identitySwizzle, srcSize, dstSize);
 
 								addFunctionCaseWithPrograms(conversionGroup.get(), (string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + xChromaOffsetName).c_str(), "", createTestShaders, textureConversionTest, config);
 							}
@@ -1316,7 +1347,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 									const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-																						defaultColorRange, defaultColorModel, identitySwizzle);
+																						defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize);
 
 									addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", createTestShaders, textureConversionTest, config);
 								}
@@ -1326,7 +1357,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 									const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-																						defaultColorRange, defaultColorModel, swappedChromaSwizzle);
+																						defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize);
 
 									addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", createTestShaders, textureConversionTest, config);
 								}
@@ -1338,7 +1369,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 										const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 										const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																							vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-																							defaultColorRange, defaultColorModel, identitySwizzle);
+																							defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize);
 
 										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", createTestShaders, textureConversionTest, config);
 									}
@@ -1348,7 +1379,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 										const vk::VkChromaLocation		yChromaOffset	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 										const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																							vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-																							defaultColorRange, defaultColorModel, swappedChromaSwizzle);
+																							defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize);
 
 										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", createTestShaders, textureConversionTest, config);
 									}
@@ -1367,7 +1398,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 									const vk::VkChromaLocation		chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
-																						defaultColorRange, defaultColorModel, identitySwizzle);
+																						defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize);
 
 									addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", createTestShaders, textureConversionTest, config);
 								}
@@ -1377,7 +1408,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 									const vk::VkChromaLocation		chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
-																						defaultColorRange, defaultColorModel, swappedChromaSwizzle);
+																						defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize);
 
 									addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", createTestShaders, textureConversionTest, config);
 								}
@@ -1401,6 +1432,10 @@ void initTests (tcu::TestCaseGroup* testGroup)
 		const vk::VkFormat				format		(xyChromaSubsampledFormats[formatNdx]);
 		const std::string				formatName	(de::toLower(std::string(getFormatName(format)).substr(10)));
 		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, formatName.c_str(), ("Tests for color conversion using format " + formatName).c_str()));
+		const UVec2						srcSize		(isXChromaSubsampled(format) ? 12 : 7,
+													 isYChromaSubsampled(format) ?  8 : 13);
+		const UVec2						dstSize		(srcSize.x() + srcSize.x() / 2,
+													 srcSize.y() + srcSize.y() / 2);
 
 		// Color conversion tests
 		{
@@ -1429,7 +1464,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 							const glu::ShaderType				shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 							const TestConfig					config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																				 vk::VK_FILTER_NEAREST, chromaOffset, chromaOffset, false, false,
-																				 colorRange, colorModel, identitySwizzle);
+																				 colorRange, colorModel, identitySwizzle, srcSize, dstSize);
 
 							addFunctionCaseWithPrograms(conversionGroup.get(), std::string(colorModelName) + "_" + tilingName + "_" + chromaOffsetName, "", createTestShaders, textureConversionTest, config);
 						}
@@ -1457,7 +1492,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 								const glu::ShaderType			shaderType		(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 								const TestConfig				config			(shaderType, format, tiling, vk::VK_FILTER_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																					vk::VK_FILTER_NEAREST, chromaOffset, chromaOffset, false, false,
-																					colorRange, colorModel, identitySwizzle);
+																					colorRange, colorModel, identitySwizzle, srcSize, dstSize);
 
 								addFunctionCaseWithPrograms(conversionGroup.get(), (string(colorModelName) + "_" + colorRangeName + "_" + tilingName + "_" + chromaOffsetName).c_str(), "", createTestShaders, textureConversionTest, config);
 							}
@@ -1504,7 +1539,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 									const glu::ShaderType	shaderType	(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 									const TestConfig		config		(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																			vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-																			defaultColorRange, defaultColorModel, identitySwizzle);
+																			defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize);
 
 									addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", createTestShaders, textureConversionTest, config);
 								}
@@ -1513,7 +1548,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 									const glu::ShaderType	shaderType	(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 									const TestConfig		config		(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																			vk::VK_FILTER_LINEAR, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-																			defaultColorRange, defaultColorModel, swappedChromaSwizzle);
+																			defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize);
 
 									addFunctionCaseWithPrograms(textureFilterGroup.get(), string(explicitReconstruction ? "explicit_linear_" : "default_linear_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", createTestShaders, textureConversionTest, config);
 								}
@@ -1524,7 +1559,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 										const glu::ShaderType	shaderType	(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 										const TestConfig		config		(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																				vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-																				defaultColorRange, defaultColorModel, identitySwizzle);
+																				defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize);
 
 										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", createTestShaders, textureConversionTest, config);
 									}
@@ -1533,7 +1568,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 										const glu::ShaderType	shaderType	(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
 										const TestConfig		config		(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																				vk::VK_FILTER_NEAREST, xChromaOffset, yChromaOffset, explicitReconstruction, disjoint,
-																				defaultColorRange, defaultColorModel, swappedChromaSwizzle);
+																				defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize);
 
 										addFunctionCaseWithPrograms(textureFilterGroup.get(), string("default_nearest_") + xChromaOffsetName + "_" + yChromaOffsetName + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", createTestShaders, textureConversionTest, config);
 									}
@@ -1552,7 +1587,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 									const vk::VkChromaLocation		chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
-																						defaultColorRange, defaultColorModel, identitySwizzle);
+																						defaultColorRange, defaultColorModel, identitySwizzle, srcSize, dstSize);
 
 									addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : ""), "", createTestShaders, textureConversionTest, config);
 								}
@@ -1562,7 +1597,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 									const vk::VkChromaLocation		chromaLocation	(rng.choose<ChromaLocationNamePair, const ChromaLocationNamePair*>(DE_ARRAY_BEGIN(chromaLocations), DE_ARRAY_END(chromaLocations)).value);
 									const TestConfig				config			(shaderType, format, tiling, textureFilter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 																						vk::VK_FILTER_NEAREST, chromaLocation, chromaLocation, explicitReconstruction, disjoint,
-																						defaultColorRange, defaultColorModel, swappedChromaSwizzle);
+																						defaultColorRange, defaultColorModel, swappedChromaSwizzle, srcSize, dstSize);
 
 									addFunctionCaseWithPrograms(textureFilterGroup.get(), string("explicit_nearest") + "_" + tilingName + (disjoint ? "_disjoint" : "") + "_swapped_chroma", "", createTestShaders, textureConversionTest, config);
 								}
@@ -1578,6 +1613,54 @@ void initTests (tcu::TestCaseGroup* testGroup)
 		}
 
 		testGroup->addChild(formatGroup.release());
+	}
+
+	{
+		const UVec2 imageSizes[] =
+		{
+			UVec2(16, 16),
+			UVec2(20, 12)
+		};
+
+		de::MovePtr<tcu::TestCaseGroup>				oneToOneGroup		(new tcu::TestCaseGroup(testCtx, "one_to_one", "Ycbcr images sampled to a frame buffer of the same dimentions."));
+
+		const vk::VkFormat							format				(vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR);
+		const vk::VkFilter							filter				(vk::VK_FILTER_NEAREST);
+
+		for (size_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(imageSizes); sizeNdx++)
+		{
+			const UVec2								srcSize				(imageSizes[sizeNdx]);
+
+			for (size_t xChromaOffsetNdx = 0; xChromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); xChromaOffsetNdx++)
+			{
+				const vk::VkChromaLocation			xChromaOffset		(chromaLocations[xChromaOffsetNdx].value);
+				const char* const					xChromaOffsetName	(chromaLocations[xChromaOffsetNdx].name);
+
+				for (size_t yChromaOffsetNdx = 0; yChromaOffsetNdx < DE_LENGTH_OF_ARRAY(chromaLocations); yChromaOffsetNdx++)
+				{
+					const vk::VkChromaLocation		yChromaOffset		(chromaLocations[yChromaOffsetNdx].value);
+					const char* const				yChromaOffsetName	(chromaLocations[yChromaOffsetNdx].name);
+
+					for (size_t tilingNdx = 0; tilingNdx < DE_LENGTH_OF_ARRAY(imageTilings); tilingNdx++)
+					{
+						const vk::VkImageTiling		tiling				(imageTilings[tilingNdx].value);
+						const char* const			tilingName			(imageTilings[tilingNdx].name);
+
+						const glu::ShaderType		shaderType			(rng.choose<glu::ShaderType>(DE_ARRAY_BEGIN(shaderTypes), DE_ARRAY_END(shaderTypes)));
+
+						const TestConfig			config				(shaderType, format, tiling, filter, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+																		filter, xChromaOffset, yChromaOffset, false, false,
+																		defaultColorRange, defaultColorModel, identitySwizzle, srcSize, srcSize);
+						std::ostringstream			testName;
+						testName << string("implicit_nearest_") << srcSize.x() << "x" << srcSize.y() << "_" << tilingName << "_" << xChromaOffsetName << "_" << yChromaOffsetName;
+
+						addFunctionCaseWithPrograms(oneToOneGroup.get(), testName.str(), "", createTestShaders, textureConversionTest, config);
+					}
+				}
+			}
+		}
+
+		testGroup->addChild(oneToOneGroup.release());
 	}
 }
 

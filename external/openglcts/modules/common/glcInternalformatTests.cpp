@@ -979,8 +979,8 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 	testSurface[0].setSize(m_renderWidth, m_renderHeight);
 	testSurface[1].setSize(m_renderWidth, m_renderHeight);
 
-	GLint defaultFramebufferDepthBits   = 16;
-	GLint defaultFramebufferStencilBits = 8;
+	GLint defaultFramebufferDepthBits   = 0;
+	GLint defaultFramebufferStencilBits = 0;
 	if (glu::isContextTypeES(m_context.getRenderContext().getType()))
 	{
 		gl.getIntegerv(GL_DEPTH_BITS, &defaultFramebufferDepthBits);
@@ -988,10 +988,21 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 	}
 	else
 	{
-		gl.getNamedFramebufferAttachmentParameteriv(0, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
-													&defaultFramebufferDepthBits);
-		gl.getNamedFramebufferAttachmentParameteriv(0, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
-													&defaultFramebufferStencilBits);
+		GLint hasDepthBuffer	= 0;
+		GLint hasStencilBuffer	= 0;
+
+		gl.getNamedFramebufferAttachmentParameteriv(0, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
+													&hasDepthBuffer);
+		gl.getNamedFramebufferAttachmentParameteriv(0, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
+													&hasStencilBuffer);
+
+		if (hasDepthBuffer != GL_NONE)
+			gl.getNamedFramebufferAttachmentParameteriv(0, GL_DEPTH, GL_FRAMEBUFFER_ATTACHMENT_DEPTH_SIZE,
+														&defaultFramebufferDepthBits);
+
+		if (hasStencilBuffer != GL_NONE)
+			gl.getNamedFramebufferAttachmentParameteriv(0, GL_STENCIL, GL_FRAMEBUFFER_ATTACHMENT_STENCIL_SIZE,
+														&defaultFramebufferStencilBits);
 	}
 
 	// Create program that will render texture to screen

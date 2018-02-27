@@ -413,8 +413,8 @@ struct OpFUnordCase
 
 #define ADD_OPFUNORD_CASE(NAME, OPCODE, OPERATOR) \
 do { \
-    struct compare_##NAME { static VkBool32 compare(float x, float y) { return (x OPERATOR y) ? VK_TRUE : VK_FALSE; } }; \
-    cases.push_back(OpFUnordCase(#NAME, OPCODE, compare_##NAME::compare)); \
+	struct compare_##NAME { static VkBool32 compare(float x, float y) { return (x OPERATOR y) ? VK_TRUE : VK_FALSE; } }; \
+	cases.push_back(OpFUnordCase(#NAME, OPCODE, compare_##NAME::compare)); \
 } while (deGetFalse())
 
 tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
@@ -3773,12 +3773,12 @@ tcu::TestCaseGroup* createBlockOrderGroup (tcu::TestContext& testCtx)
 		"            OpSwitch %mod %default 0 %case0 1 %case1 2 %case2\n"
 
 		// Merge block for switch-statement: placed before the case
-                // bodies.  But it must follow OpSwitch which dominates it.
+		// bodies.  But it must follow OpSwitch which dominates it.
 		"%switch_merge = OpLabel\n"
 		"                OpBranch %if_merge\n"
 
 		// Case 1 for switch-statement: placed before case 0.
-                // It must follow the OpSwitch that dominates it.
+		// It must follow the OpSwitch that dominates it.
 		"%case1    = OpLabel\n"
 		"%x_1      = OpLoad %u32 %xvar\n"
 		"%inloc_1  = OpAccessChain %f32ptr %indata %zero %x_1\n"
@@ -5052,6 +5052,117 @@ tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createOpNameGroup(tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opname", "Tests OpName cases"));
+	de::MovePtr<tcu::TestCaseGroup>	entryMainGroup	(new tcu::TestCaseGroup(testCtx, "entry_main", "OpName tests with entry main"));
+	de::MovePtr<tcu::TestCaseGroup>	entryNotGroup	(new tcu::TestCaseGroup(testCtx, "entry_rdc", "OpName tests with entry rdc"));
+	vector<CaseParameter>			cases;
+	vector<string>					testFunc;
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int						numElements		= 100;
+	vector<float>					inputFloats		(numElements, 0);
+	vector<float>					outputFloats	(numElements, 0);
+
+	fillRandomScalars(rnd, -100.0f, 100.0f, &inputFloats[0], numElements);
+
+	for(size_t ndx = 0; ndx < numElements; ++ndx)
+		outputFloats[ndx] = -inputFloats[ndx];
+
+	const StringTemplate shaderTemplate (
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"${ENTRY}\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+
+		"OpName %${FUNC_ID} \"${NAME}\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits())
+
+		+ string(getComputeAsmCommonTypes())
+
+		+ string(getComputeAsmInputOutputBuffer()) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%func      = OpFunction %void None %voidf\n"
+		"%5         = OpLabel\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%entry     = OpLabel\n"
+		"%7         = OpFunctionCall %void %func\n"
+
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+
+		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %f32 %inloc\n"
+		"%neg       = OpFNegate %f32 %inval\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %neg\n"
+
+
+		"             OpReturn\n"
+		"             OpFunctionEnd\n");
+
+	cases.push_back(CaseParameter("_is_main", "main"));
+	cases.push_back(CaseParameter("_is_not_main", "not_main"));
+
+	testFunc.push_back("main");
+	testFunc.push_back("func");
+
+	for(size_t fNdx = 0; fNdx < testFunc.size(); ++fNdx)
+	{
+		for(size_t ndx = 0; ndx < cases.size(); ++ndx)
+		{
+			map<string, string>     specializations;
+			ComputeShaderSpec       spec;
+
+			specializations["ENTRY"] = "main";
+			specializations["FUNC_ID"] = testFunc[fNdx];
+			specializations["NAME"] = cases[ndx].param;
+			spec.assembly = shaderTemplate.specialize(specializations);
+			spec.numWorkGroups = IVec3(numElements, 1, 1);
+			spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+			spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+			entryMainGroup->addChild(new SpvAsmComputeShaderCase(testCtx, (testFunc[fNdx] + cases[ndx].name).c_str(), cases[ndx].name, spec));
+		}
+	}
+
+	cases.push_back(CaseParameter("_is_entry", "rdc"));
+
+	for(size_t fNdx = 0; fNdx < testFunc.size(); ++fNdx)
+	{
+		for(size_t ndx = 0; ndx < cases.size(); ++ndx)
+		{
+			map<string, string>     specializations;
+			ComputeShaderSpec       spec;
+
+			specializations["ENTRY"] = "rdc";
+			specializations["FUNC_ID"] = testFunc[fNdx];
+			specializations["NAME"] = cases[ndx].param;
+			spec.assembly = shaderTemplate.specialize(specializations);
+			spec.numWorkGroups = IVec3(numElements, 1, 1);
+			spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+			spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+			spec.entryPoint = "rdc";
+
+			entryNotGroup->addChild(new SpvAsmComputeShaderCase(testCtx, (testFunc[fNdx] + cases[ndx].name).c_str(), cases[ndx].name, spec));
+		}
+	}
+
+	group->addChild(entryMainGroup.release());
+	group->addChild(entryNotGroup.release());
+
+	return group.release();
+}
+
 // Assembly code used for testing function control is based on GLSL source code:
 //
 // #version 430
@@ -5697,10 +5808,10 @@ tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
 			"matrix",
 
 			"%mat4x4_f32          = OpTypeMatrix %v4f32 4\n"
-		    "%v4f32_1_0_0_0       = OpConstantComposite %v4f32 %c_f32_1 %c_f32_0 %c_f32_0 %c_f32_0\n"
-		    "%v4f32_0_1_0_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_1 %c_f32_0 %c_f32_0\n"
-		    "%v4f32_0_0_1_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_1 %c_f32_0\n"
-		    "%v4f32_0_5_0_5_0_5_1 = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_1\n"
+			"%v4f32_1_0_0_0       = OpConstantComposite %v4f32 %c_f32_1 %c_f32_0 %c_f32_0 %c_f32_0\n"
+			"%v4f32_0_1_0_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_1 %c_f32_0 %c_f32_0\n"
+			"%v4f32_0_0_1_0       = OpConstantComposite %v4f32 %c_f32_0 %c_f32_0 %c_f32_1 %c_f32_0\n"
+			"%v4f32_0_5_0_5_0_5_1 = OpConstantComposite %v4f32 %c_f32_0_5 %c_f32_0_5 %c_f32_0_5 %c_f32_1\n"
 			"%cval                = OpConstantComposite %mat4x4_f32 %v4f32_1_0_0_0 %v4f32_0_1_0_0 %v4f32_0_0_1_0 %v4f32_0_5_0_5_0_5_1\n",
 
 			"%transformed_param   = OpMatrixTimesVector %v4f32 %cval %param1\n"
@@ -6270,7 +6381,6 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"OpDecorate %sc_2  SpecId 2\n";
 
 	const char	typesAndConstants2[]	=
-		"%v3i32       = OpTypeVector %i32 3\n"
 		"%vec3_0      = OpConstantComposite %v3i32 %c_i32_0 %c_i32_0 %c_i32_0\n"
 		"%vec3_undef  = OpUndef %v3i32\n"
 
@@ -7493,12 +7603,12 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 	// A barrier inside a function body.
 	fragments["pre_main"] =
 		"%Workgroup = OpConstant %i32 2\n"
-		"%SequentiallyConsistent = OpConstant %i32 0x10\n";
+		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n";
 	fragments["testfun"] =
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
-		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"OpReturnValue %param1\n"
 		"OpFunctionEnd\n";
 	addTessCtrlTest(testGroup.get(), "in_function", fragments);
@@ -7506,7 +7616,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 	// Common setup code for the following tests.
 	fragments["pre_main"] =
 		"%Workgroup = OpConstant %i32 2\n"
-		"%SequentiallyConsistent = OpConstant %i32 0x10\n"
+		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n"
 		"%c_f32_5 = OpConstant %f32 5.\n";
 	const string setupPercentZero =	 // Begins %test_code function with code that sets %zero to 0u but cannot be optimized away.
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -7525,18 +7635,18 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 
 		"%case1 = OpLabel\n"
 		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
-		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"%wrong_branch_alert1 = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
 		"OpBranch %switch_exit\n"
 
 		"%switch_default = OpLabel\n"
 		"%wrong_branch_alert2 = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
 		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
-		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"OpBranch %switch_exit\n"
 
 		"%case0 = OpLabel\n"
-		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"OpBranch %switch_exit\n"
 
 		"%switch_exit = OpLabel\n"
@@ -7554,12 +7664,12 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 
 		"%else = OpLabel\n"
 		";This barrier should never be executed, but its presence makes test failure more likely when there's a bug.\n"
-		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"%wrong_branch_alert = OpVectorInsertDynamic %v4f32 %param1 %c_f32_0_5 %c_i32_0\n"
 		"OpBranch %exit\n"
 
 		"%then = OpLabel\n"
-		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"OpBranch %exit\n"
 
 		"%exit = OpLabel\n"
@@ -7587,7 +7697,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 
 		"%exit = OpLabel\n"
 		"%val = OpPhi %f32 %val0 %else %val1 %then\n"
-		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"%ret = OpVectorInsertDynamic %v4f32 %param1 %val %zero\n"
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n";
@@ -7596,7 +7706,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 	// A barrier inside a loop.
 	fragments["pre_main"] =
 		"%Workgroup = OpConstant %i32 2\n"
-		"%SequentiallyConsistent = OpConstant %i32 0x10\n"
+		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n"
 		"%c_f32_10 = OpConstant %f32 10.\n";
 	fragments["testfun"] =
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -7609,7 +7719,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%loop = OpLabel\n"
 		"%count = OpPhi %i32 %c_i32_4 %entry %count__ %loop\n"
 		"%val1 = OpPhi %f32 %val0 %entry %val %loop\n"
-		"OpControlBarrier %Workgroup %Workgroup %SequentiallyConsistent\n"
+		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"%fcount = OpConvertSToF %f32 %count\n"
 		"%val = OpFAdd %f32 %val1 %fcount\n"
 		"%count__ = OpISub %i32 %count %c_i32_1\n"
@@ -8942,6 +9052,33 @@ tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+tcu::TestCaseGroup* createOpNameTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "opname","Test OpName"));
+	RGBA							defaultColors[4];
+	map<string, string>				opNameFragments;
+
+	getDefaultColors(defaultColors);
+
+	opNameFragments["debug"]		=
+		"OpName %BP_main \"not_main\"";
+
+	opNameFragments["testfun"]		=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param1 = OpFunctionParameter %v4f32\n"
+		"%label_func = OpLabel\n"
+		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b = OpFAdd %f32 %a %a\n"
+		"%c = OpFSub %f32 %b %a\n"
+		"%ret = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+
+	createTestsForAllStages("opname", defaultColors, defaultColors, opNameFragments, testGroup.get());
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 {
 	const bool testComputePipeline = true;
@@ -9007,6 +9144,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createIndexingComputeGroup(testCtx));
 	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	computeTests->addChild(createImageSamplerComputeGroup(testCtx));
+	computeTests->addChild(createOpNameGroup(testCtx));
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
 	graphicsTests->addChild(createOpNopTests(testCtx));
@@ -9042,6 +9180,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 		graphicsTests->addChild(graphicsAndroidTests.release());
 	}
+	graphicsTests->addChild(createOpNameTests(testCtx));
 
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
 	graphicsTests->addChild(createUboMatrixPaddingGraphicsGroup(testCtx));

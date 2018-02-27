@@ -119,8 +119,12 @@ static void checkImplementationLimits (const vector<RequiredCapability>&	require
 {
 	for (size_t capNdx = 0; capNdx < requiredCaps.size(); ++capNdx)
 	{
-		const deUint32	pname			= requiredCaps[capNdx].enumName;
-		const int		requiredValue	= requiredCaps[capNdx].referenceValue;
+		const RequiredCapability& capability = requiredCaps[capNdx];
+		if (capability.type != CAPABILITY_LIMIT)
+			continue;
+
+		const deUint32	pname			= capability.enumName;
+		const int		requiredValue	= capability.referenceValue;
 		const int		supportedValue	= ctxInfo.getInt((int)pname);
 
 		if (supportedValue <= requiredValue)
@@ -941,6 +945,26 @@ bool ShaderLibraryCase::execute (void)
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "ShaderCase::execute(): start");
 
+	if(isCapabilityRequired(CAPABILITY_ONLY_GLSL_ES_100_SUPPORT, m_spec))
+	{
+		// GL_MAJOR_VERSION query does not exist on GLES2
+		// so succeeding query implies GLES3+ hardware.
+		glw::GLint majorVersion = 0;
+		gl.getIntegerv(GL_MAJOR_VERSION, &majorVersion);
+		if (gl.getError() == GL_NO_ERROR)
+			return true;
+	}
+
+	if(isCapabilityRequired(CAPABILITY_EXACTLY_ONE_DRAW_BUFFER, m_spec))
+	{
+		// on unextended ES2 there is only one draw buffer
+		// and there is no GL_MAX_DRAW_BUFFERS query
+		glw::GLint maxDrawBuffers = 0;
+		gl.getIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+		if ((gl.getError() == GL_NO_ERROR) && (maxDrawBuffers > 1))
+			throw tcu::NotSupportedError("Test requires exactly one draw buffer");
+	}
+
 	// Specialize shaders
 	if (m_spec.caseType == CASETYPE_VERTEX_ONLY)
 	{
@@ -1080,7 +1104,7 @@ bool ShaderLibraryCase::execute (void)
 		// \todo [2010-06-07 petri] These should be handled in the test case?
 		log << TestLog::Message << "ERROR: " << failReason << TestLog::EndMessage;
 
-		if (m_spec.fullGLSLES100Required)
+		if (isCapabilityRequired(CAPABILITY_FULL_GLSL_ES_100_SUPPORT, m_spec))
 		{
 			log	<< TestLog::Message
 				<< "Assuming build failure is caused by implementation not supporting full GLSL ES 100 specification, which is not required."

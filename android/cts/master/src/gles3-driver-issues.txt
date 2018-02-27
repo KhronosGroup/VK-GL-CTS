@@ -7,7 +7,6 @@ dEQP-GLES3.functional.shaders.preprocessor.predefined_macros.line_2_fragment
 
 # Bug 22488431
 dEQP-GLES3.functional.shaders.fragdata.draw_buffers
-dEQP-GLES3.functional.shaders.fragdata.invalid_assign_to_1
 
 # Bug 22632106
 dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.usampler2darray_vertex

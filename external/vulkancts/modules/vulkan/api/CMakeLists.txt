@@ -47,6 +47,10 @@ set(DEQP_VK_API_SRCS
 	vktApiBufferAndImageAllocationUtil.cpp
 	vktApiMaintenance3Check.hpp
 	vktApiMaintenance3Check.cpp
+	vktApiDescriptorSetTests.hpp
+	vktApiDescriptorSetTests.cpp
+	vktApiPipelineTests.hpp
+	vktApiPipelineTests.cpp
 	)
 
 set(DEQP_VK_API_LIBS

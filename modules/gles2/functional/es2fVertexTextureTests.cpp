@@ -716,6 +716,8 @@ private:
 
 	const glu::ShaderProgram*	m_program;
 	glu::TextureCube*			m_textures[2];	// 2 textures, a gradient texture and a grid texture.
+
+	bool						m_isES3Capable;
 };
 
 VertexCubeTextureCase::VertexCubeTextureCase (Context& testCtx, const char* name, const char* desc, deUint32 minFilter, deUint32 magFilter, deUint32 wrapS, deUint32 wrapT)
@@ -725,6 +727,7 @@ VertexCubeTextureCase::VertexCubeTextureCase (Context& testCtx, const char* name
 	, m_wrapS				(wrapS)
 	, m_wrapT				(wrapT)
 	, m_program				(DE_NULL)
+	, m_isES3Capable		(false)
 {
 	m_textures[0] = DE_NULL;
 	m_textures[1] = DE_NULL;
@@ -757,6 +760,12 @@ void VertexCubeTextureCase::init (void)
 		"{\n"
 		"	gl_FragColor = v_color;\n"
 		"}\n";
+
+	// GL_MAJOR_VERSION query does not exist on GLES2
+	// so succeeding query implies GLES3+ hardware.
+	glw::GLint majorVersion = 0;
+	glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
+	m_isES3Capable = (glGetError() == GL_NO_ERROR);
 
 	if (m_context.getRenderTarget().getNumSamples() != 0)
 		throw tcu::NotSupportedError("MSAA config not supported by this test");
@@ -1019,6 +1028,7 @@ void VertexCubeTextureCase::renderCell (int textureNdx, float lod, const Grid& g
 void VertexCubeTextureCase::computeReferenceCell (int textureNdx, float lod, const Grid& grid, tcu::Surface& dst, const Rect& dstRegion) const
 {
 	tcu::Sampler sampler = glu::mapGLSampler(m_wrapS, m_wrapT, m_minFilter, m_magFilter);
+	sampler.seamlessCubeMap = m_isES3Capable;
 	computeReference(m_textures[textureNdx]->getRefTexture(), lod, sampler, grid, dst, dstRegion);
 }
 

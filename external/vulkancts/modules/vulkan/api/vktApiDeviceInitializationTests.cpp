@@ -36,6 +36,7 @@
 
 #include "tcuTestLog.hpp"
 #include "tcuResultCollector.hpp"
+#include "tcuCommandLine.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -864,22 +865,350 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 		return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
 
+// Allocation tracking utilities
+struct	AllocTrack
+{
+	bool						active;
+	bool						wasAllocated;
+	void*						alignedStartAddress;
+	char*						actualStartAddress;
+	size_t						requestedSizeBytes;
+	size_t						actualSizeBytes;
+	VkSystemAllocationScope		allocScope;
+	deUint64					userData;
+
+	AllocTrack()
+		: active				(false)
+		, wasAllocated			(false)
+		, alignedStartAddress	(DE_NULL)
+		, actualStartAddress	(DE_NULL)
+		, requestedSizeBytes	(0)
+		, actualSizeBytes		(0)
+		, allocScope			(VK_SYSTEM_ALLOCATION_SCOPE_COMMAND)
+		, userData(0)			{}
+};
+
+// Global vector to track allocations. This will be resized before each test and emptied after
+// However, we have to globally define it so the allocation callback functions work properly
+std::vector<AllocTrack>	g_allocatedVector;
+bool					g_intentionalFailEnabled	= false;
+deUint32				g_intenionalFailIndex		= 0;
+deUint32				g_intenionalFailCount		= 0;
+
+void freeAllocTracker (void)
+{
+	g_allocatedVector.clear();
+}
+
+void initAllocTracker (size_t size, deUint32 intentionalFailIndex = (deUint32)~0)
+{
+	if (g_allocatedVector.size() > 0)
+		freeAllocTracker();
+
+	g_allocatedVector.resize(size);
+
+	if (intentionalFailIndex != (deUint32)~0)
+	{
+		g_intentionalFailEnabled	= true;
+		g_intenionalFailIndex		= intentionalFailIndex;
+		g_intenionalFailCount		= 0;
+	}
+	else
+	{
+		g_intentionalFailEnabled	= false;
+		g_intenionalFailIndex		= 0;
+		g_intenionalFailCount		= 0;
+	}
+}
+
+bool isAllocTrackerEmpty ()
+{
+	bool success		= true;
+	bool wasAllocated	= false;
+
+	for (deUint32 vectorIdx	= 0; vectorIdx < g_allocatedVector.size(); vectorIdx++)
+	{
+		if (g_allocatedVector[vectorIdx].active)
+			success = false;
+		else if (!wasAllocated && g_allocatedVector[vectorIdx].wasAllocated)
+			wasAllocated = true;
+	}
+
+	if (!g_intentionalFailEnabled && !wasAllocated)
+		success = false;
+
+	return success;
+}
+
+VKAPI_ATTR void *VKAPI_CALL allocCallbackFunc (void *pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope)
+{
+	if (g_intentionalFailEnabled)
+		if (++g_intenionalFailCount >= g_intenionalFailIndex)
+			return DE_NULL;
+
+	for (deUint32 vectorIdx = 0; vectorIdx < g_allocatedVector.size(); vectorIdx++)
+	{
+		if (!g_allocatedVector[vectorIdx].active)
+		{
+			g_allocatedVector[vectorIdx].requestedSizeBytes		= size;
+			g_allocatedVector[vectorIdx].actualSizeBytes		= size + (alignment - 1);
+			g_allocatedVector[vectorIdx].alignedStartAddress	= DE_NULL;
+			g_allocatedVector[vectorIdx].actualStartAddress		= new char[g_allocatedVector[vectorIdx].actualSizeBytes];
+
+			if (g_allocatedVector[vectorIdx].actualStartAddress != DE_NULL)
+			{
+				deUint64 addr	=	(deUint64)g_allocatedVector[vectorIdx].actualStartAddress;
+				addr			+=	(alignment - 1);
+				addr			&=	~(alignment - 1);
+				g_allocatedVector[vectorIdx].alignedStartAddress	= (void *)addr;
+				g_allocatedVector[vectorIdx].allocScope				= allocationScope;
+				g_allocatedVector[vectorIdx].userData				= (deUint64)pUserData;
+				g_allocatedVector[vectorIdx].active					= true;
+				g_allocatedVector[vectorIdx].wasAllocated			= true;
+			}
+
+			return g_allocatedVector[vectorIdx].alignedStartAddress;
+		}
+	}
+	return DE_NULL;
+}
+
+VKAPI_ATTR void VKAPI_CALL freeCallbackFunc (void *pUserData, void *pMemory)
+{
+	DE_UNREF(pUserData);
+
+	for (deUint32 vectorIdx = 0; vectorIdx < g_allocatedVector.size(); vectorIdx++)
+	{
+		if (g_allocatedVector[vectorIdx].active && g_allocatedVector[vectorIdx].alignedStartAddress == pMemory)
+		{
+			delete[] g_allocatedVector[vectorIdx].actualStartAddress;
+			g_allocatedVector[vectorIdx].active = false;
+			break;
+		}
+	}
+}
+
+VKAPI_ATTR void *VKAPI_CALL reallocCallbackFunc (void *pUserData, void *pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope)
+{
+	if (pOriginal != DE_NULL)
+	{
+		for (deUint32 vectorIdx = 0; vectorIdx < g_allocatedVector.size(); vectorIdx++)
+		{
+			if (g_allocatedVector[vectorIdx].active && g_allocatedVector[vectorIdx].alignedStartAddress == pOriginal)
+			{
+				if (size == 0)
+				{
+					freeCallbackFunc(pUserData, pOriginal);
+					return DE_NULL;
+				}
+				else if (size < g_allocatedVector[vectorIdx].requestedSizeBytes)
+					return pOriginal;
+				else
+				{
+					void *pNew = allocCallbackFunc(pUserData, size, alignment, allocationScope);
+
+					if (pNew != DE_NULL)
+					{
+						size_t copySize = size;
+
+						if (g_allocatedVector[vectorIdx].requestedSizeBytes < size)
+							copySize = g_allocatedVector[vectorIdx].requestedSizeBytes;
+
+						memcpy(pNew, pOriginal, copySize);
+						freeCallbackFunc(pUserData, pOriginal);
+					}
+					return pNew;
+				}
+			}
+		}
+		return DE_NULL;
+	}
+	else
+		return allocCallbackFunc(pUserData, size, alignment, allocationScope);
+}
+
+tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
+{
+	const PlatformInterface&	vkp					= context.getPlatformInterface();
+	const deUint32				chosenDevice		= context.getTestContext().getCommandLine().getVKDeviceId() - 1;
+	VkInstance					instance			= DE_NULL;
+	VkDevice					device				= DE_NULL;
+	deUint32					physicalDeviceCount	= 0;
+	deUint32					queueFamilyCount	= 0;
+	deUint32					queueFamilyIndex	= 0;
+	const float					queuePriority		= 0.0f;
+	const VkAllocationCallbacks	allocationCallbacks	=
+	{
+		DE_NULL,								// userData
+		allocCallbackFunc,						// pfnAllocation
+		reallocCallbackFunc,					// pfnReallocation
+		freeCallbackFunc,						// pfnFree
+		DE_NULL,								// pfnInternalAllocation
+		DE_NULL									// pfnInternalFree
+	};
+	const VkApplicationInfo		appInfo				=
+	{
+		VK_STRUCTURE_TYPE_APPLICATION_INFO,		// sType
+		DE_NULL,								// pNext
+		"appName",								// pApplicationName
+		0u,										// applicationVersion
+		"engineName",							// pEngineName
+		0u,										// engineVersion
+		VK_API_VERSION_1_0						// apiVersion
+	};
+	const VkInstanceCreateInfo	instanceCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	// sType
+		DE_NULL,								// pNext
+		(VkInstanceCreateFlags)0u,				// flags
+		&appInfo,								// pApplicationInfo
+		0u,										// enabledLayerCount
+		DE_NULL,								// ppEnabledLayerNames
+		0u,										// enabledExtensionCount
+		DE_NULL									// ppEnabledExtensionNames
+	};
+	deUint32					failIndex			= 0;
+	VkResult					result				= VK_ERROR_OUT_OF_HOST_MEMORY;
+
+	while (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+	{
+		initAllocTracker(9999, failIndex++);
+
+		if (failIndex >= 9999u)
+			return tcu::TestStatus::fail("Out of retries, could not create instance and device");
+
+		result = vkp.createInstance(&instanceCreateInfo, &allocationCallbacks, &instance);
+
+		if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+		{
+			if (!isAllocTrackerEmpty())
+				return tcu::TestStatus::fail("Allocations still remain, failed on index " + de::toString(failIndex));
+
+			freeAllocTracker();
+			continue;
+		}
+		else if (result != VK_SUCCESS)
+			return tcu::TestStatus::fail("createInstance returned " + de::toString(result));
+
+		const InstanceDriver		instanceDriver	(vkp, instance);
+		const InstanceInterface&	vki				(instanceDriver);
+
+		result = vki.enumeratePhysicalDevices(instance, &physicalDeviceCount, DE_NULL);
+
+		if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+		{
+			vki.destroyInstance(instance, &allocationCallbacks);
+
+			if (!isAllocTrackerEmpty())
+				return tcu::TestStatus::fail("Allocations still remain, failed on index " + de::toString(failIndex));
+
+			freeAllocTracker();
+			continue;
+		}
+		else if (result != VK_SUCCESS)
+			return tcu::TestStatus::fail("enumeratePhysicalDevices returned " + de::toString(result));
+
+		vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+
+		result = vki.enumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
+
+		if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+		{
+			vki.destroyInstance(instance, &allocationCallbacks);
+
+			if (!isAllocTrackerEmpty())
+				return tcu::TestStatus::fail("Allocations still remain, failed on index " + de::toString(failIndex));
+
+			freeAllocTracker();
+			continue;
+		}
+		else if (result != VK_SUCCESS)
+			return tcu::TestStatus::fail("enumeratePhysicalDevices returned " + de::toString(result));
+
+		vki.getPhysicalDeviceQueueFamilyProperties(physicalDevices[chosenDevice], &queueFamilyCount, DE_NULL);
+
+		if (queueFamilyCount == 0u)
+			return tcu::TestStatus::fail("getPhysicalDeviceQueueFamilyProperties returned zero queue families");
+
+		vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+
+		vki.getPhysicalDeviceQueueFamilyProperties(physicalDevices[chosenDevice], &queueFamilyCount, queueFamilies.data());
+
+		if (queueFamilyCount == 0u)
+			return tcu::TestStatus::fail("getPhysicalDeviceQueueFamilyProperties returned zero queue families");
+
+		for (deUint32 i = 0; i < queueFamilyCount; i++)
+		{
+			if (queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
+				queueFamilyIndex = i;
+				break;
+			}
+		}
+
+		const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,	// sType
+			DE_NULL,									// pNext
+			(VkDeviceQueueCreateFlags)0u,				// flags
+			queueFamilyIndex,							// queueFamilyIndex
+			1u,											// queueCount
+			&queuePriority								// pQueuePriorities
+		};
+		const VkDeviceCreateInfo		deviceCreateInfo		=
+		{
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		// sType
+			DE_NULL,									// pNext
+			(VkDeviceCreateFlags)0u,					// flags
+			1u,											// queueCreateInfoCount
+			&deviceQueueCreateInfo,						// pQueueCreateInfos
+			0u,											// enabledLayerCount
+			DE_NULL,									// ppEnabledLayerNames
+			0u,											// enabledExtensionCount
+			DE_NULL,									// ppEnabledExtensionNames
+			DE_NULL										// pEnabledFeatures
+		};
+
+		result = vki.createDevice(physicalDevices[chosenDevice], &deviceCreateInfo, &allocationCallbacks, &device);
+
+		if (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+		{
+			vki.destroyInstance(instance, &allocationCallbacks);
+
+			if (!isAllocTrackerEmpty())
+				return tcu::TestStatus::fail("Allocations still remain, failed on index " + de::toString(failIndex));
+
+			freeAllocTracker();
+			continue;
+		}
+		else if (result != VK_SUCCESS)
+			return tcu::TestStatus::fail("VkCreateDevice returned " + de::toString(result));
+
+		DeviceDriver(vki, device).destroyDevice(device, &allocationCallbacks);
+		vki.destroyInstance(instance, &allocationCallbacks);
+		freeAllocTracker();
+	}
+
+	return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createDeviceInitializationTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	deviceInitializationTests (new tcu::TestCaseGroup(testCtx, "device_init", "Device Initialization Tests"));
 
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_name_version",			"", createInstanceTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_invalid_api_version",		"", createInstanceWithInvalidApiVersionTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_null_appinfo",		    "", createInstanceWithNullApplicationInfoTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions",	"", createInstanceWithUnsupportedExtensionsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device",							"", createDeviceTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",					"", createMultipleDevicesTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",	"", createDeviceWithUnsupportedExtensionsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",		"", createDeviceWithVariousQueueCountsTest);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",					"", createDeviceFeatures2Test);
-	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",		"", createDeviceWithUnsupportedFeaturesTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_name_version",					"", createInstanceTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_invalid_api_version",				"", createInstanceWithInvalidApiVersionTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_null_appinfo",					"", createInstanceWithNullApplicationInfoTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_unsupported_extensions",			"", createInstanceWithUnsupportedExtensionsTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device",									"", createDeviceTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_multiple_devices",							"", createMultipleDevicesTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_extensions",			"", createDeviceWithUnsupportedExtensionsTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_various_queue_counts",				"", createDeviceWithVariousQueueCountsTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_features2",							"", createDeviceFeatures2Test);
+	addFunctionCase(deviceInitializationTests.get(), "create_device_unsupported_features",				"", createDeviceWithUnsupportedFeaturesTest);
+	addFunctionCase(deviceInitializationTests.get(), "create_instance_device_intentional_alloc_fail",	"", createInstanceDeviceIntentionalAllocFail);
 
 	return deviceInitializationTests.release();
 }
