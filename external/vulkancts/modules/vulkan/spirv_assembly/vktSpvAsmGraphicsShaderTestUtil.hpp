@@ -599,6 +599,7 @@ void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const std::map
 // * Different bit patterns of NaNs are allowed.
 // * For the rest, require exactly the same bit pattern.
 bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags flags, tcu::TestLog& log);
+bool compare16BitFloat (deFloat16 returned, float original, RoundingModeFlags flags, tcu::TestLog& log);
 
 // Compare the returned 32-bit float against its expected value.
 //

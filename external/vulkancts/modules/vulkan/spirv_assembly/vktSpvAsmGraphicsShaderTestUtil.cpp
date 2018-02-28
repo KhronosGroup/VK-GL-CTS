@@ -2050,6 +2050,11 @@ bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags fla
 	return false;
 }
 
+bool compare16BitFloat (deFloat16 returned, float original, RoundingModeFlags flags, tcu::TestLog& log)
+{
+	return compare16BitFloat (original, (deUint16)returned, flags, log);
+}
+
 bool compare32BitFloat (float expected, float returned, tcu::TestLog& log)
 {
 	const Float32	expectedFloat	(expected);
