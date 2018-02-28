@@ -1,0 +1,9 @@
+# Temporarily excluded for b/72495913
+dEQP-GLES3.functional.shaders.metamorphic.synthetic.variant_2
+
+# Temporarily excluded for b/72385186
+dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_ms
+dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_nonms
+
+# Temporarily excluded: b/73070970
+dEQP-GLES3.functional.shaders.declarations.unspecified_precision.*
