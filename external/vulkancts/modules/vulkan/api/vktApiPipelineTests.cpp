@@ -321,8 +321,8 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 	{
 		0.0f,	// float    x;
 		0.0f,	// float    y;
-		0.0f,	// float    width;
-		0.0f,	// float    height;
+		64.0f,	// float    width;
+		64.0f,	// float    height;
 		0.0f,	// float    minDepth;
 		0.0f,	// float    maxDepth;
 	};
@@ -330,7 +330,7 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 	const VkRect2D									scissor							=
 	{
 		{ 0,	0	},	// VkOffset2D    offset;
-		{ 0u,	0u	}	// VkExtent2D    extent;
+		{ 64u,	64u	}	// VkExtent2D    extent;
 	};
 
 	const VkPipelineViewportStateCreateInfo			viewPortStateCreateInfo			=
