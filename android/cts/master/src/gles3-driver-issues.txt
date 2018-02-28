@@ -554,10 +554,3 @@ dEQP-GLES3.functional.transform_feedback.random.interleaved.triangles.8
 dEQP-GLES3.functional.transform_feedback.random.interleaved.triangles.10
 dEQP-GLES3.functional.ubo.random.all_per_block_buffers.35
 dEQP-GLES3.functional.ubo.random.nested_structs_arrays.9
-
-# Temporarily excluded for b/72495913
-dEQP-GLES3.functional.shaders.metamorphic.synthetic.variant_2
-
-# Temporarily excluded for b/72385186
-dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_ms
-dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_nonms
