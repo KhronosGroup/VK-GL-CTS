@@ -216,7 +216,15 @@ public:
 				DE_NULL,
 				config.semaphoreHandleType
 			};
-			vk::VkExternalSemaphoreProperties				properties;
+
+			vk::VkExternalSemaphoreProperties				properties	=
+			{
+				vk::VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES,
+				DE_NULL,
+				0u,
+				0u,
+				0u
+			};
 
 			vki.getPhysicalDeviceExternalSemaphoreProperties(physicalDevice, &info, &properties);
 

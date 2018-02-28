@@ -394,7 +394,7 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				**colorAttachmentImage, colorImageSubresourceRange);
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 				0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentLayoutBarrier);
 		}
 
