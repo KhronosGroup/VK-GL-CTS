@@ -202,14 +202,13 @@ std::vector<std::string> getInstanceExtensions (const deUint32 instanceVersion,
 }
 
 vk::Move<vk::VkInstance> createInstance (const vk::PlatformInterface&					vkp,
+										 const deUint32									version,
 										 const vk::VkExternalSemaphoreHandleTypeFlags	externalSemaphoreTypes,
 										 const vk::VkExternalMemoryHandleTypeFlags		externalMemoryTypes,
 										 const vk::VkExternalFenceHandleTypeFlags		externalFenceTypes)
 {
 	try
 	{
-		deUint32 version = 0u;
-		vkp.enumerateInstanceVersion(&version);
 		return vk::createDefaultInstance(vkp, version, std::vector<std::string>(), getInstanceExtensions(version, externalSemaphoreTypes, externalMemoryTypes, externalFenceTypes));
 	}
 	catch (const vk::Error& error)
@@ -691,7 +690,7 @@ void submitDummySignalAndGetFenceNative (	const vk::DeviceInterface&					vk,
 tcu::TestStatus testSemaphoreQueries (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBits externalType)
 {
 	const vk::PlatformInterface&		vkp				(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance		(createInstance(vkp, externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance		(createInstance(vkp, context.getUsedApiVersion(), externalType, 0u, 0u));
 	const vk::InstanceDriver			vki				(vkp, *instance);
 	const vk::VkPhysicalDevice			device			(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 
@@ -740,7 +739,7 @@ tcu::TestStatus testSemaphoreWin32Create (Context&					context,
 #if (DE_OS == DE_OS_WIN32)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -811,7 +810,7 @@ tcu::TestStatus testSemaphoreImportTwice (Context&					context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -858,7 +857,7 @@ tcu::TestStatus testSemaphoreImportReimport (Context&					context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -904,7 +903,7 @@ tcu::TestStatus testSemaphoreSignalExportImportWait (Context&					context,
 													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -938,7 +937,7 @@ tcu::TestStatus testSemaphoreExportSignalImportWait (Context&					context,
 													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -975,7 +974,7 @@ tcu::TestStatus testSemaphoreExportImportSignalWait (Context&					context,
 													 const SemaphoreTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1010,7 +1009,7 @@ tcu::TestStatus testSemaphoreSignalImport (Context&						context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1058,7 +1057,7 @@ tcu::TestStatus testSemaphoreSignalWaitImport (Context&						context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1109,7 +1108,7 @@ tcu::TestStatus testSemaphoreMultipleExports (Context&					context,
 	const size_t						exportCount			= 4 * 1024;
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1147,7 +1146,7 @@ tcu::TestStatus testSemaphoreMultipleImports (Context&					context,
 	const size_t						importCount			= 4 * 1024;
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1197,7 +1196,7 @@ tcu::TestStatus testSemaphoreTransference (Context&						context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1290,7 +1289,7 @@ tcu::TestStatus testSemaphoreFdDup (Context&					context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1353,7 +1352,7 @@ tcu::TestStatus testSemaphoreFdDup2 (Context&					context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1423,7 +1422,7 @@ tcu::TestStatus testSemaphoreFdDup3 (Context&					context,
 #if (DE_OS == DE_OS_UNIX) && defined(_GNU_SOURCE)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1493,7 +1492,7 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context&						context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, config.externalType, 0u, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), config.externalType, 0u, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1630,7 +1629,7 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context&						context,
 tcu::TestStatus testFenceQueries (Context& context, vk::VkExternalFenceHandleTypeFlagBits externalType)
 {
 	const vk::PlatformInterface&					vkp			(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>				instance	(createInstance(vkp, 0u, 0u, externalType));
+	const vk::Unique<vk::VkInstance>				instance	(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, externalType));
 	const vk::InstanceDriver						vki			(vkp, *instance);
 	const vk::VkPhysicalDevice						device		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 
@@ -1680,7 +1679,7 @@ tcu::TestStatus testFenceWin32Create (Context&				context,
 #if (DE_OS == DE_OS_WIN32)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1751,7 +1750,7 @@ tcu::TestStatus testFenceImportTwice (Context&				context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1798,7 +1797,7 @@ tcu::TestStatus testFenceImportReimport (Context&				context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1844,7 +1843,7 @@ tcu::TestStatus testFenceSignalExportImportWait (Context&				context,
 												 const FenceTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1879,7 +1878,7 @@ tcu::TestStatus testFenceExportSignalImportWait (Context&				context,
 												 const FenceTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1916,7 +1915,7 @@ tcu::TestStatus testFenceExportImportSignalWait (Context&				context,
 												 const FenceTestConfig	config)
 {
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1951,7 +1950,7 @@ tcu::TestStatus testFenceSignalImport (Context&					context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -1999,7 +1998,7 @@ tcu::TestStatus testFenceReset (Context&				context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2066,7 +2065,7 @@ tcu::TestStatus testFenceSignalWaitImport (Context&					context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2117,7 +2116,7 @@ tcu::TestStatus testFenceMultipleExports (Context&				context,
 	const size_t						exportCount			= 4 * 1024;
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2155,7 +2154,7 @@ tcu::TestStatus testFenceMultipleImports (Context&				context,
 	const size_t						importCount			= 4 * 1024;
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2205,7 +2204,7 @@ tcu::TestStatus testFenceTransference (Context&					context,
 {
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2304,7 +2303,7 @@ tcu::TestStatus testFenceFdDup (Context&				context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2367,7 +2366,7 @@ tcu::TestStatus testFenceFdDup2 (Context&				context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2437,7 +2436,7 @@ tcu::TestStatus testFenceFdDup3 (Context&				context,
 #if (DE_OS == DE_OS_UNIX) && defined(_GNU_SOURCE)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2507,7 +2506,7 @@ tcu::TestStatus testFenceFdSendOverSocket (Context&					context,
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const Transference					transference		(getHandelTypeTransferences(config.externalType));
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, 0u, config.externalType));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, 0u, config.externalType));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2663,7 +2662,7 @@ tcu::TestStatus testBufferQueries (Context& context, vk::VkExternalMemoryHandleT
 		vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
 	};
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const vk::VkPhysicalDeviceFeatures	deviceFeatures		(vk::getPhysicalDeviceFeatures(vki, physicalDevice));
@@ -2796,7 +2795,7 @@ tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config
 {
 #if (DE_OS == DE_OS_WIN32)
 	const vk::PlatformInterface&				vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver					vki					(vkp, *instance);
 	const vk::VkPhysicalDevice					physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32								queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2878,7 +2877,7 @@ tcu::TestStatus testMemoryWin32Create (Context& context, MemoryTestConfig config
 tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2931,7 +2930,7 @@ tcu::TestStatus testMemoryMultimpleImports (Context& context, MemoryTestConfig c
 {
 	const size_t							count				= 4 * 1024;
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2964,7 +2963,7 @@ tcu::TestStatus testMemoryMultimpleExports (Context& context, MemoryTestConfig c
 {
 	const size_t							count				= 4 * 1024;
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -2994,7 +2993,7 @@ tcu::TestStatus testMemoryFdDup (Context& context, MemoryTestConfig config)
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3055,7 +3054,7 @@ tcu::TestStatus testMemoryFdDup2 (Context& context, MemoryTestConfig config)
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3117,7 +3116,7 @@ tcu::TestStatus testMemoryFdDup3 (Context& context, MemoryTestConfig config)
 {
 #if (DE_OS == DE_OS_UNIX) && defined(_GNU_SOURCE)
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32						queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3179,7 +3178,7 @@ tcu::TestStatus testMemoryFdSendOverSocket (Context& context, MemoryTestConfig c
 {
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 	const vk::PlatformInterface&				vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>			instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver					vki					(vkp, *instance);
 	const vk::VkPhysicalDevice					physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32								queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3334,7 +3333,7 @@ tcu::TestStatus testBufferBindExportImportBind (Context&				context,
 												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3370,7 +3369,7 @@ tcu::TestStatus testBufferExportBindImportBind (Context&				context,
 												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3405,7 +3404,7 @@ tcu::TestStatus testBufferExportImportBindBind (Context&				context,
 												const BufferTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3460,7 +3459,7 @@ tcu::TestStatus testImageQueries (Context& context, vk::VkExternalMemoryHandleTy
 		vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 	};
 	const vk::PlatformInterface&		vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, 0u, externalType, 0u));
+	const vk::Unique<vk::VkInstance>	instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, externalType, 0u));
 	const vk::InstanceDriver			vki					(vkp, *instance);
 	const vk::VkPhysicalDevice			physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const vk::VkPhysicalDeviceFeatures	deviceFeatures		(vk::getPhysicalDeviceFeatures(vki, physicalDevice));
@@ -3603,7 +3602,7 @@ tcu::TestStatus testImageBindExportImportBind (Context&					context,
 											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3643,7 +3642,7 @@ tcu::TestStatus testImageExportBindImportBind (Context&					context,
 											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
@@ -3682,7 +3681,7 @@ tcu::TestStatus testImageExportImportBindBind (Context&					context,
 											   const ImageTestConfig	config)
 {
 	const vk::PlatformInterface&			vkp					(context.getPlatformInterface());
-	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, 0u, config.externalType, 0u));
+	const vk::Unique<vk::VkInstance>		instance			(createInstance(vkp, context.getUsedApiVersion(), 0u, config.externalType, 0u));
 	const vk::InstanceDriver				vki					(vkp, *instance);
 	const vk::VkPhysicalDevice				physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
 	const deUint32							queueFamilyIndex	(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
