@@ -111,7 +111,7 @@ void ShaderStructCase::init (void)
 				throw tcu::NotSupportedError("Dynamic loops not supported");
 		}
 
-		if ((m_flags && FLAG_USES_TEXTURES) && m_isVertexCase)
+		if ((m_flags & FLAG_USES_TEXTURES) && m_isVertexCase)
 		{
 			int numTextures = 0;
 			m_renderCtx.getFunctions().getIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &numTextures);
@@ -1857,6 +1857,58 @@ void UniformStructTests::init (void)
 		},
 		{
 			c.color.xyz() = c.texture2D(TEXTURE_BRICK, c.coords.swizzle(0,1) * 0.25f + 0.5f).swizzle(0,1,2);
+		});
+
+	UNIFORM_STRUCT_CASE(sampler_in_function_arg, "Sampler in struct as function arg", FLAG_USES_TEXTURES,
+		LineStream()
+		<< "${DECLARATIONS}"
+		<< ""
+		<< "struct S {"
+		<< "	sampler2D		source;"
+		<< "};"
+		<< ""
+		<< "mediump vec4 fun(S s) {"
+		<< "	return texture2D(s.source, vec2(0.5));"
+		<< "}"
+		<< ""
+		<< "uniform S s;"
+		<< "void main (void)"
+		<< "{"
+		<< "	${DST} = fun(s);"
+		<< "	${ASSIGN_POS}"
+		<< "}",
+		{
+			DE_UNREF(constCoords);
+			setUniform(gl, programID, "s.source", 0);
+		},
+		{
+			c.color.xyz() = c.texture2D(TEXTURE_BRICK, tcu::Vec2(0.5f, 0.5f)).swizzle(0,1,2);
+		});
+
+	UNIFORM_STRUCT_CASE(sampler_in_array_function_arg, "Sampler in struct as function arg", FLAG_USES_TEXTURES,
+		LineStream()
+		<< "${DECLARATIONS}"
+		<< ""
+		<< "struct S {"
+		<< "	sampler2D		source;"
+		<< "};"
+		<< ""
+		<< "mediump vec4 fun(S s[2]) {"
+		<< "	return texture2D(s[0].source, vec2(0.5));"
+		<< "}"
+		<< ""
+		<< "uniform S s[2];"
+		<< "void main (void)"
+		<< "{"
+		<< "	${DST} = fun(s);"
+		<< "	${ASSIGN_POS}"
+		<< "}",
+		{
+			DE_UNREF(constCoords);
+			setUniform(gl, programID, "s[0].source", 0);
+		},
+		{
+			c.color.xyz() = c.texture2D(TEXTURE_BRICK, tcu::Vec2(0.5f, 0.5f)).swizzle(0,1,2);
 		});
 
 	UNIFORM_STRUCT_CASE(equal, "Struct equality", 0,

@@ -225,6 +225,15 @@ void ShaderConstExprTests::init (void)
 		addChild(children[i]);
 
 	addChild(new ShaderConstExprBuiltinTests(m_context));
+
+	// Negative cases.
+	{
+		gls::ShaderLibrary library(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+		std::vector<tcu::TestNode*> negativeCases = library.loadShaderFile("shaders/invalid_constant_expressions.test");
+
+		tcu::TestCaseGroup* group = new tcu::TestCaseGroup(m_testCtx, "invalid", "Invalid constant expressions", negativeCases);
+		addChild(group);
+	}
 }
 
 } // Functional
