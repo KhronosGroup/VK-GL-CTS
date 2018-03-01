@@ -1115,6 +1115,7 @@ public:
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "   sb_out.result[gl_VertexIndex] = int(gl_VertexIndex);\n"
+				<< "   gl_PointSize = 1.0f;\n"
 				<< "}\n";
 			programCollection.glslSources.add("vert_0") << glu::VertexSource(src.str());
 		}
@@ -1131,6 +1132,7 @@ public:
 				<< "	{\n"
 				<< "		sb_out.result[ndx] = int(ndx);\n"
 				<< "	}\n"
+				<< "	gl_PointSize = 1.0f;\n"
 				<< "}\n";
 			programCollection.glslSources.add("vert_1") << glu::VertexSource(src.str());
 		}
@@ -1147,6 +1149,7 @@ public:
 				<< "	{\n"
 				<< "		sb_out.result[uint(ndx)] = ndx;\n"
 				<< "	}\n"
+				<< "	gl_PointSize = 1.0f;\n"
 				<< "}\n";
 			programCollection.glslSources.add("vert_2") << glu::VertexSource(src.str());
 		}
