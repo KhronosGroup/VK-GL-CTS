@@ -4914,6 +4914,102 @@ class AdvancedResourcesMax : public ComputeShaderBase
 	}
 };
 
+class WorkGroupSizeUsage : public ComputeShaderBase
+{
+	virtual std::string Title()
+	{
+		return NL "gl_WorkGroupSize usage";
+	}
+	virtual std::string Purpose()
+	{
+		return NL "Verify gl_WorkGroupSize usage rules.";
+	}
+	virtual std::string Method()
+	{
+		return NL "";
+	}
+	virtual std::string PassCriteria()
+	{
+		return NL "";
+	}
+
+	virtual long Run()
+	{
+		// local group size declared with some dimensions omitted - omitted dimensions should have size of 1
+		if (!CheckOmittedDimensions('x') || !CheckOmittedDimensions('y') || !CheckOmittedDimensions('z'))
+			return ERROR;
+
+		// check if compilation error is generated when shader doesn't declare
+		// fixed local group size and tries to use gl_WorkGroupSize
+		if (!CheckCompilationError("#version 310 es" NL "layout(std430) buffer Output {" NL "  uint g_output;" NL
+								   "};" NL "void main() {" NL "  g_output = gl_WorkGroupSize.x;" NL "}"))
+			return ERROR;
+
+		// check if compilation error is generated when shader tries using
+		// gl_WorkGroupSize in a function before declaring local group size
+		if (!CheckCompilationError("#version 310 es" NL "layout(std430) buffer Output {" NL "  uint g_output;" NL
+								   "};" NL "void main() {" NL "  g_output = gl_WorkGroupSize.x;" NL "}" NL
+								   "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;"))
+			return ERROR;
+
+		return NO_ERROR;
+	}
+
+	bool CheckOmittedDimensions(GLchar defined_component)
+	{
+		std::stringstream ss;
+		ss << "layout(std430) buffer Output {" NL "  uint g_output;" NL "};" NL "layout(local_size_"
+		   << defined_component
+		   << " = 1) in;" NL "void main() {" NL "  g_output = gl_WorkGroupSize.x + gl_WorkGroupSize.z;" NL "}";
+
+		std::string glsl_cs = ss.str();
+		GLuint		program = CreateComputeProgram(glsl_cs);
+		glLinkProgram(program);
+		if (!CheckProgram(program))
+			return false;
+
+		GLint v[3];
+		glGetProgramiv(program, GL_COMPUTE_WORK_GROUP_SIZE, v);
+		if (v[0] != 1 || v[1] != 1 || v[2] != 1)
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Got " << v[0] << ", " << v[1] << ", " << v[2]
+				<< ", expected: 1, 1, 1 in GL_COMPUTE_WORK_GROUP_SIZE check" << tcu::TestLog::EndMessage;
+			return false;
+		}
+
+		glDeleteProgram(program);
+		return true;
+	}
+
+	bool CheckCompilationError(const std::string& source)
+	{
+		const GLuint sh = glCreateShader(GL_COMPUTE_SHADER);
+
+		const char* const src = source.c_str();
+		glShaderSource(sh, 1, &src, NULL);
+		glCompileShader(sh);
+
+		GLchar log[1024];
+		glGetShaderInfoLog(sh, sizeof(log), NULL, log);
+		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Shader Info Log:\n"
+											<< log << tcu::TestLog::EndMessage;
+
+		GLint status;
+		glGetShaderiv(sh, GL_COMPILE_STATUS, &status);
+		glDeleteShader(sh);
+
+		if (status == GL_TRUE)
+		{
+			m_context.getTestContext().getLog()
+				<< tcu::TestLog::Message << "Compilation should fail." << tcu::TestLog::EndMessage;
+			return false;
+		}
+
+		return true;
+	}
+};
+
 class NegativeAPINoActiveProgram : public ComputeShaderBase
 {
 	virtual std::string Title()
@@ -5629,6 +5725,7 @@ void ComputeShaderTests::init()
 	addChild(new TestSubcase(m_context, "shared-indexing", TestSubcase::Create<AdvancedSharedIndexing>));
 	addChild(new TestSubcase(m_context, "shared-max", TestSubcase::Create<AdvancedSharedMax>));
 	addChild(new TestSubcase(m_context, "resources-max", TestSubcase::Create<AdvancedResourcesMax>));
+	addChild(new TestSubcase(m_context, "work-group-size-usage", TestSubcase::Create<WorkGroupSizeUsage>));
 	addChild(new TestSubcase(m_context, "api-no-active-program", TestSubcase::Create<NegativeAPINoActiveProgram>));
 	addChild(new TestSubcase(m_context, "api-work-group-count", TestSubcase::Create<NegativeAPIWorkGroupCount>));
 	addChild(new TestSubcase(m_context, "api-indirect", TestSubcase::Create<NegativeAPIIndirect>));

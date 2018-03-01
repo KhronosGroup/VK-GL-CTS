@@ -978,7 +978,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 						 VK_PIPELINE_STAGE_TRANSFER_BIT,
-						 0u,
+						 VK_ACCESS_TRANSFER_WRITE_BIT,
 						 VK_ACCESS_TRANSFER_READ_BIT,
 						 VK_IMAGE_LAYOUT_GENERAL,
 						 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -989,7 +989,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
 						 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 						 VK_ACCESS_TRANSFER_READ_BIT,
-						 0u,
+						 VK_ACCESS_TRANSFER_READ_BIT,
 						 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 						 VK_IMAGE_LAYOUT_GENERAL);
 

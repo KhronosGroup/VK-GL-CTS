@@ -67,6 +67,7 @@ namespace KHRDebug
 				<< ". Got wrong error: " << glu::getErrorStr(generated_error)                           \
 				<< ", expected: " << glu::getErrorStr(expected_error) << ", message: " << error_message \
 				<< tcu::TestLog::EndMessage;                                                            \
+			TestBase::done();                                                                           \
 			TCU_FAIL("Invalid error generated");                                                        \
 		}                                                                                               \
 	}

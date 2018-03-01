@@ -1988,6 +1988,7 @@ KHR-GLES31.core.compute_shader.pipeline-post-xfb
 KHR-GLES31.core.compute_shader.shared-indexing
 KHR-GLES31.core.compute_shader.shared-max
 KHR-GLES31.core.compute_shader.resources-max
+KHR-GLES31.core.compute_shader.work-group-size-usage
 KHR-GLES31.core.compute_shader.api-no-active-program
 KHR-GLES31.core.compute_shader.api-work-group-count
 KHR-GLES31.core.compute_shader.api-indirect
