@@ -392,6 +392,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "  {\n"
 			<< "    result[gl_VertexIndex] = 1; // Invocation we read from was inactive, so we can't verify results!\n"
 			<< "  }\n"
+			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert")

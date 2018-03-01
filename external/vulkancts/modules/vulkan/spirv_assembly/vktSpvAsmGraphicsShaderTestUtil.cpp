@@ -2993,7 +2993,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType	sType;
 		DE_NULL,													//	const void*		pNext;
 		(VkPipelineRasterizationStateCreateFlags)0,
-		DE_TRUE,													//	deUint32		depthClipEnable;
+		DE_FALSE,													//	deUint32		depthClampEnable;
 		DE_FALSE,													//	deUint32		rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,										//	VkFillMode		fillMode;
 		VK_CULL_MODE_NONE,											//	VkCullMode		cullMode;

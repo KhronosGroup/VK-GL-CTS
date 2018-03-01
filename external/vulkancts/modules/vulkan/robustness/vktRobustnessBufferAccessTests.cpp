@@ -1146,12 +1146,14 @@ bool BufferAccessInstance::verifyResult (void)
 			logValue(logMsg, outValuePtr, m_bufferFormat, outValueSize);
 
 			if (m_accessOutOfBackingMemory)
-				isOutOfBoundsAccess = true;
-
-			// Check if the shader operation accessed an operand located less than 16 bytes away
-			// from the out of bounds address.
-			if (!isOutOfBoundsAccess && distanceToOutOfBounds < 16)
 			{
+				isOutOfBoundsAccess = true;
+			}
+			else
+			{
+				// Check if the shader operation accessed an operand located less than 16 bytes away
+				// from the out of bounds address.
+
 				deUint32 operandSize = 0;
 
 				switch (m_shaderType)
@@ -1176,7 +1178,8 @@ bool BufferAccessInstance::verifyResult (void)
 						DE_ASSERT(false);
 				}
 
-				isOutOfBoundsAccess = (((offsetInBytes / operandSize) + 1) * operandSize > maxAccessRange);
+				isOutOfBoundsAccess = (maxAccessRange < 16)
+									|| (((offsetInBytes / operandSize + 1) * operandSize) > (maxAccessRange - 16));
 			}
 
 			if (isOutOfBoundsAccess)

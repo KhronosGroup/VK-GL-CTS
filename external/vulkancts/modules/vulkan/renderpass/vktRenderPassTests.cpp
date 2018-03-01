@@ -677,7 +677,7 @@ public:
 	const vector<Attachment>&							getAttachments	(void) const { return m_attachments;	}
 	const vector<Subpass>&								getSubpasses	(void) const { return m_subpasses;		}
 	const vector<SubpassDependency>&					getDependencies	(void) const { return m_dependencies;	}
-	const vector<VkInputAttachmentAspectReference>		getInputAspects	(void) const { return m_inputAspects;	}
+	const vector<VkInputAttachmentAspectReference>&		getInputAspects	(void) const { return m_inputAspects;	}
 
 private:
 	const vector<Attachment>							m_attachments;

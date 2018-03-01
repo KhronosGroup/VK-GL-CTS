@@ -641,6 +641,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				<< "  {\n"
 				<< "    result[gl_VertexIndex] = " << UNELECTED_VALUE << ";\n"
 				<< "  }\n"
+				<< "  gl_PointSize = 1.0f;\n"
 				<< "}\n";
 
 			programCollection.glslSources.add("vert")
@@ -918,6 +919,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				<< "  uint tempResult = 0;\n"
 				<< bdy.str()
 				<< "  result[gl_VertexIndex] = tempResult;\n"
+				<< "  gl_PointSize = 1.0f;\n"
 				<< "}\n";
 
 			programCollection.glslSources.add("vert")

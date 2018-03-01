@@ -452,6 +452,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				<< "(data[0]) ? 0x4 : 0;\n";
 		}
 
+		src << "  gl_PointSize = 1.0f;\n";
 		src << "}\n";
 
 		programCollection.glslSources.add("vert")
