@@ -180,7 +180,7 @@ public:
 	{
 	}
 
-	glu::RenderContext*	createContext (const glu::RenderConfig& config, const tcu::CommandLine&) const
+	glu::RenderContext*	createContext (const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext*) const
 	{
 		return new CGLRenderContext(config);
 	}
