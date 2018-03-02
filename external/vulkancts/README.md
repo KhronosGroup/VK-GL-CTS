@@ -309,6 +309,9 @@ and path to current mustpass list. For example:
 
 	python external/vulkancts/scripts/verify_submission.py VK_11_Khronos_1/ external/vulkancts/mustpass/1.1.0/vk-default.txt
 
+Please note that the script reports a warning even for a correctly generated git-log.txt
+If your git-log.txt contains only head commit of the release tag then
+the warning can be ignored.
 
 Vulkan platform port
 --------------------

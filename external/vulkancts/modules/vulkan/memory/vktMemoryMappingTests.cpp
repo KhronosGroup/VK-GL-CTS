@@ -546,15 +546,15 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 		const tcu::ScopedLogSection	section	(log, "TestCaseInfo", "TestCaseInfo");
 
 		log << TestLog::Message << "Seed: " << config.seed << TestLog::EndMessage;
-		log << TestLog::Message << "Allocation size: " << config.allocationSize << " * atom" <<  TestLog::EndMessage;
-		log << TestLog::Message << "Mapping, offset: " << config.mapping.offset << " * atom, size: " << config.mapping.size << " * atom" << TestLog::EndMessage;
+		log << TestLog::Message << "Allocation size: " << config.allocationSize  <<  TestLog::EndMessage;
+		log << TestLog::Message << "Mapping, offset: " << config.mapping.offset << ", size: " << config.mapping.size << TestLog::EndMessage;
 
 		if (!config.flushMappings.empty())
 		{
 			log << TestLog::Message << "Invalidating following ranges:" << TestLog::EndMessage;
 
 			for (size_t ndx = 0; ndx < config.flushMappings.size(); ndx++)
-				log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset << " * atom, Size: " << config.flushMappings[ndx].size << " * atom" << TestLog::EndMessage;
+				log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset << ", Size: " << config.flushMappings[ndx].size << TestLog::EndMessage;
 		}
 
 		if (config.remap)
@@ -565,7 +565,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 			log << TestLog::Message << "Flushing following ranges:" << TestLog::EndMessage;
 
 			for (size_t ndx = 0; ndx < config.invalidateMappings.size(); ndx++)
-				log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset << " * atom, Size: " << config.invalidateMappings[ndx].size << " * atom" << TestLog::EndMessage;
+				log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset << ", Size: " << config.invalidateMappings[ndx].size << TestLog::EndMessage;
 		}
 	}
 
@@ -580,7 +580,7 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 														? 1
 														: nonCoherentAtomSize;
 
-			VkDeviceSize					allocationSize				= config.allocationSize * atomSize;
+			VkDeviceSize					allocationSize				= (config.allocationSize % atomSize == 0) ? config.allocationSize : config.allocationSize + (atomSize - (config.allocationSize % atomSize));
 			vk::VkMemoryRequirements		req							=
 			{
 				(VkDeviceSize)allocationSize,
@@ -601,8 +601,8 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 				req = getBufferMemoryRequirements(vkd, device, buffer);
 			}
 			allocationSize = req.size;
-			VkDeviceSize					mappingSize					= config.mapping.size * atomSize;
-			VkDeviceSize					mappingOffset				= config.mapping.offset * atomSize;
+			VkDeviceSize					mappingSize					=  (config.mapping.size % atomSize == 0) ? config.mapping.size : config.mapping.size + (atomSize - (config.mapping.size % atomSize));
+			VkDeviceSize					mappingOffset				=  (config.mapping.offset % atomSize == 0) ? config.mapping.offset : config.mapping.offset + (atomSize - (config.mapping.offset % atomSize));
 			if (config.mapping.size == config.allocationSize && config.mapping.offset == 0u)
 			{
 				mappingSize = allocationSize;
@@ -631,7 +631,11 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 				log << TestLog::Message << "Invalidating following ranges:" << TestLog::EndMessage;
 
 				for (size_t ndx = 0; ndx < config.flushMappings.size(); ndx++)
-					log << TestLog::Message << "\tOffset: " << config.flushMappings[ndx].offset * atomSize << ", Size: " << config.flushMappings[ndx].size * atomSize << TestLog::EndMessage;
+				{
+					const VkDeviceSize	offset	= (config.flushMappings[ndx].offset % atomSize == 0) ? config.flushMappings[ndx].offset : config.flushMappings[ndx].offset + (atomSize - (config.flushMappings[ndx].offset % atomSize));
+					const VkDeviceSize	size	= (config.flushMappings[ndx].size % atomSize == 0) ? config.flushMappings[ndx].size : config.flushMappings[ndx].size + (atomSize - (config.flushMappings[ndx].size % atomSize));
+					log << TestLog::Message << "\tOffset: " << offset << ", Size: " << size << TestLog::EndMessage;
+				}
 			}
 
 			if (!config.invalidateMappings.empty())
@@ -639,7 +643,11 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 				log << TestLog::Message << "Flushing following ranges:" << TestLog::EndMessage;
 
 				for (size_t ndx = 0; ndx < config.invalidateMappings.size(); ndx++)
-					log << TestLog::Message << "\tOffset: " << config.invalidateMappings[ndx].offset * atomSize << ", Size: " << config.invalidateMappings[ndx].size * atomSize << TestLog::EndMessage;
+				{
+					const VkDeviceSize	offset = (config.invalidateMappings[ndx].offset % atomSize == 0) ? config.invalidateMappings[ndx].offset : config.invalidateMappings[ndx].offset + (atomSize - (config.invalidateMappings[ndx].offset % atomSize));
+					const VkDeviceSize	size = (config.invalidateMappings[ndx].size % atomSize == 0) ? config.invalidateMappings[ndx].size : config.invalidateMappings[ndx].size + (atomSize - (config.invalidateMappings[ndx].size % atomSize));
+					log << TestLog::Message << "\tOffset: " << offset << ", Size: " << size << TestLog::EndMessage;
+				}
 			}
 
 			if ((memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0)
@@ -686,8 +694,8 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 							DE_NULL,
 
 							*memory,
-							config.flushMappings[ndx].offset * atomSize,
-							config.flushMappings[ndx].size * atomSize
+							(config.flushMappings[ndx].offset % atomSize == 0) ? config.flushMappings[ndx].offset : config.flushMappings[ndx].offset + (atomSize - (config.flushMappings[ndx].offset % atomSize)),
+							(config.flushMappings[ndx].size % atomSize == 0) ? config.flushMappings[ndx].size : config.flushMappings[ndx].size + (atomSize - (config.flushMappings[ndx].size % atomSize)),
 						};
 
 						ranges.push_back(range);
@@ -718,8 +726,8 @@ tcu::TestStatus testMemoryMapping (Context& context, const TestConfig config)
 							DE_NULL,
 
 							*memory,
-							config.invalidateMappings[ndx].offset * atomSize,
-							config.invalidateMappings[ndx].size * atomSize
+							(config.invalidateMappings[ndx].offset % atomSize == 0) ? config.invalidateMappings[ndx].offset : config.invalidateMappings[ndx].offset + (atomSize - (config.invalidateMappings[ndx].offset % atomSize)),
+							(config.invalidateMappings[ndx].size % atomSize == 0) ? config.invalidateMappings[ndx].size : config.invalidateMappings[ndx].size + (atomSize - (config.invalidateMappings[ndx].size % atomSize)),
 						};
 
 						ranges.push_back(range);
