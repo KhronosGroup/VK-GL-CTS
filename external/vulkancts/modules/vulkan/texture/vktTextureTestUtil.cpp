@@ -342,6 +342,15 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 	else
 		VK_CHECK(imageFormatQueryResult);
 
+	if (sparse)
+	{
+		deUint32 numSparseImageProperties;
+		vk::VkSparseImageFormatProperties					sparseImageFormatProperties;
+		m_context.getInstanceInterface().getPhysicalDeviceSparseImageFormatProperties(m_context.getPhysicalDevice(), format, imageType, VK_SAMPLE_COUNT_1_BIT, imageUsageFlags, imageTiling, &numSparseImageProperties, &sparseImageFormatProperties);
+		if (numSparseImageProperties == 0)
+			TCU_THROW(NotSupportedError, (std::string("Sparse format not supported: ") + vk::getFormatName(format)).c_str());
+	}
+
 	if (imageFormatProperties.maxArrayLayers < arraySize)
 		TCU_THROW(NotSupportedError, ("Maximum array layers number for this format is not enough for this test."));
 

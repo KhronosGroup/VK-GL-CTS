@@ -32,6 +32,7 @@ namespace egl
 {
 
 TestCaseGroup* createWideColorTests (EglTestContext& eglTestCtx);
+TestCaseGroup* createHdrColorTests (EglTestContext& eglTestCtx);
 
 } // egl
 } // deqp

@@ -1115,6 +1115,11 @@ dEQP-GLES2.functional.shaders.declarations.invalid_declarations.uniform_in_verte
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.uniform_in_fragment_main
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_vertex_main
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_fragment_main
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.float_partially_specified_fragment
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.float_fragment
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec2_fragment
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec3_fragment
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec4_fragment
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_x_vertex
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_x_fragment
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_xx_vertex
@@ -6033,6 +6038,9 @@ dEQP-GLES2.functional.shaders.operator.sequence.side_effects.highp_bool_vec2_fra
 dEQP-GLES2.functional.shaders.operator.sequence.side_effects.lowp_vec4_ivec4_bvec4_fragment
 dEQP-GLES2.functional.shaders.operator.sequence.side_effects.mediump_vec4_ivec4_bvec4_fragment
 dEQP-GLES2.functional.shaders.operator.sequence.side_effects.highp_vec4_ivec4_bvec4_fragment
+dEQP-GLES2.functional.shaders.operator.sequence.side_effects.affect_ternary
+dEQP-GLES2.functional.shaders.operator.sequence.side_effects.affect_and
+dEQP-GLES2.functional.shaders.operator.sequence.side_effects.affect_or
 dEQP-GLES2.functional.shaders.matrix.add.const_lowp_mat2_float_vertex
 dEQP-GLES2.functional.shaders.matrix.add.const_lowp_mat2_float_fragment
 dEQP-GLES2.functional.shaders.matrix.add.const_lowp_mat2_mat2_vertex
@@ -6866,6 +6874,10 @@ dEQP-GLES2.functional.shaders.struct.uniform.sampler_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_nested_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.sampler_nested_fragment
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_function_arg_vertex
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_function_arg_fragment
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_array_function_arg_vertex
+dEQP-GLES2.functional.shaders.struct.uniform.sampler_in_array_function_arg_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.equal_vertex
 dEQP-GLES2.functional.shaders.struct.uniform.equal_fragment
 dEQP-GLES2.functional.shaders.struct.uniform.not_equal_vertex
@@ -7140,6 +7152,7 @@ dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.geometric.n
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.geometric.normalize_vec3_fragment
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.geometric.normalize_vec4_vertex
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.geometric.normalize_vec4_fragment
+dEQP-GLES2.functional.shaders.constant_expressions.invalid.precision_specifier
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.0
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.1
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.2
