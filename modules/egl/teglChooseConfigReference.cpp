@@ -390,6 +390,7 @@ public:
 
 	bool isMatch (const SurfaceConfig& config) const
 	{
+		bool match = true;
 		for (std::map<EGLenum, AttribRule>::const_iterator iter = m_rules.begin(); iter != m_rules.end(); iter++)
 		{
 			const AttribRule rule = iter->second;
@@ -404,21 +405,24 @@ public:
 			{
 				const EGLint cfgValue = config.getAttribute(rule.name);
 
+				if (rule.name == EGL_CONFIG_ID)
+					return (rule.value == cfgValue);
+
 				switch (rule.criteria)
 				{
 					case CRITERIA_EXACT:
 						if (rule.value != cfgValue)
-							return false;
+							match = false;
 						break;
 
 					case CRITERIA_AT_LEAST:
 						if (rule.value > cfgValue)
-							return false;
+							match = false;
 						break;
 
 					case CRITERIA_MASK:
 						if ((rule.value & cfgValue) != rule.value)
-							return false;
+							match = false;
 						break;
 
 					default:
@@ -427,7 +431,7 @@ public:
 			}
 		}
 
-		return true;
+		return match;
 	}
 
 	tcu::BVec4 getSpecifiedRGBColors (void) const
