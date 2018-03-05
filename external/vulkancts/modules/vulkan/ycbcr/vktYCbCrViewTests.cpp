@@ -327,17 +327,7 @@ void executeImageBarrier (const DeviceInterface&		vkd,
 	const Unique<VkCommandPool>		cmdPool		(createCommandPool(vkd, device, (VkCommandPoolCreateFlags)0, queueFamilyNdx));
 	const Unique<VkCommandBuffer>	cmdBuffer	(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-	{
-		const VkCommandBufferBeginInfo	beginInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			DE_NULL,
-			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-			(const VkCommandBufferInheritanceInfo*)DE_NULL
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
-	}
+	beginCommandBuffer(vkd, *cmdBuffer);
 
 	vkd.cmdPipelineBarrier(*cmdBuffer,
 						   srcStage,
@@ -350,7 +340,7 @@ void executeImageBarrier (const DeviceInterface&		vkd,
 						   1u,
 						   &barrier);
 
-	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vkd, *cmdBuffer);
 
 	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }

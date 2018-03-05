@@ -30,6 +30,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkDeviceUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -972,7 +973,7 @@ void generateWork (TestContext& testContext)
 	bufferBarriers.resize(0);
 	imageBarriers.resize(0);
 
-	VK_CHECK(deviceInterface.endCommandBuffer(transferInfo.commandBuffer));
+	endCommandBuffer(deviceInterface, transferInfo.commandBuffer);
 }
 
 static void initSubmitInfo (VkSubmitInfo* submitInfo, deUint32 submitInfoCount)

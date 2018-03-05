@@ -30,6 +30,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkWsiUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vktWsiDisplayTimingTests.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -293,16 +294,9 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 		1
 	};
-	const vk::VkCommandBufferBeginInfo	beginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		0u,
-		DE_NULL
-	};
 
 	vk::Move<vk::VkCommandBuffer>	commandBuffer	(vk::allocateCommandBuffer(vkd, device, &allocateInfo));
-	VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &beginInfo));
+	beginCommandBuffer(vkd, *commandBuffer, 0u);
 
 	{
 		const vk::VkClearValue			clearValue			= vk::makeClearValueColorF32(0.25f, 0.50f, 0.75f, 1.00f);
@@ -328,7 +322,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 
 	vkd.cmdEndRenderPass(*commandBuffer);
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 	return commandBuffer;
 }
 

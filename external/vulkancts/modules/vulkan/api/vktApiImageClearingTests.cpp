@@ -838,20 +838,12 @@ Move<VkFramebuffer> ImageClearingTestInstance::createFrameBuffer (VkImageView im
 
 void ImageClearingTestInstance::beginCommandBuffer (VkCommandBufferUsageFlags usageFlags) const
 {
-	const VkCommandBufferBeginInfo			commandBufferBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType                          sType;
-		DE_NULL,												// const void*                              pNext;
-		usageFlags,												// VkCommandBufferUsageFlags                flags;
-		DE_NULL													// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
-	};
-
-	VK_CHECK(m_vkd.beginCommandBuffer(*m_commandBuffer, &commandBufferBeginInfo));
+	vk::beginCommandBuffer(m_vkd, *m_commandBuffer, usageFlags);
 }
 
 void ImageClearingTestInstance::endCommandBuffer (void) const
 {
-	VK_CHECK(m_vkd.endCommandBuffer(*m_commandBuffer));
+	vk::endCommandBuffer(m_vkd, *m_commandBuffer);
 }
 
 void ImageClearingTestInstance::submitCommandBuffer (void) const

@@ -1085,15 +1085,7 @@ void GraphicsCacheTestInstance::prepareCommandBuffer (void)
 {
 	const DeviceInterface&  vk               = m_context.getDeviceInterface();
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                  sType;
-		DE_NULL,                                        // const void*                      pNext;
-		0u,                                             // VkCommandBufferUsageFlags        flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
@@ -1104,7 +1096,7 @@ void GraphicsCacheTestInstance::prepareCommandBuffer (void)
 
 	prepareRenderPass(*m_framebuffer[PIPELINE_CACHE_NDX_CACHED], *m_pipeline[PIPELINE_CACHE_NDX_CACHED]);
 
-	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 tcu::TestStatus GraphicsCacheTestInstance::verifyTestResult (void)
@@ -1374,15 +1366,7 @@ void ComputeCacheTestInstance::prepareCommandBuffer (void)
 {
 	const DeviceInterface&  vk               = m_context.getDeviceInterface();
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                  sType;
-		DE_NULL,                                        // const void*                      pNext;
-		0u,                                             // VkCommandBufferUsageFlags        flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	for (deUint32 ndx = 0; ndx < PIPELINE_CACHE_NDX_COUNT; ndx++)
 	{
@@ -1391,7 +1375,7 @@ void ComputeCacheTestInstance::prepareCommandBuffer (void)
 		vk.cmdDispatch(*m_cmdBuffer, 128u, 1u, 1u);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)

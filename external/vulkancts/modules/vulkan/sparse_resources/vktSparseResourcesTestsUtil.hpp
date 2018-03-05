@@ -239,12 +239,6 @@ vk::VkSparseMemoryBind			makeSparseMemoryBind				(const vk::DeviceInterface&			v
 																	 const vk::VkDeviceSize				resourceOffset,
 																	 const vk::VkSparseMemoryBindFlags	flags			= 0u);
 
-void							beginCommandBuffer					(const vk::DeviceInterface&			vk,
-																	 const vk::VkCommandBuffer			cmdBuffer);
-
-void							endCommandBuffer					(const vk::DeviceInterface&			vk,
-																	 const vk::VkCommandBuffer			cmdBuffer);
-
 void							submitCommands						(const vk::DeviceInterface&			vk,
 																	 const vk::VkQueue					queue,
 																	 const vk::VkCommandBuffer			cmdBuffer,

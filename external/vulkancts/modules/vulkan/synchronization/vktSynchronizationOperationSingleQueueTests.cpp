@@ -30,6 +30,7 @@
 #include "vkRefUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "deUniquePtr.hpp"

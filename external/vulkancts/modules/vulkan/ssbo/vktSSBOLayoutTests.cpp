@@ -889,16 +889,8 @@ tcu::TestStatus ssboUnsizedArrayLengthTest (Context& context, UnsizedArrayCasePa
 	};
 	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, device, &cmdBufParams));
 
-	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// sType
-		DE_NULL,												// pNext
-		0u,														// flags
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	// Record commands
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
+	beginCommandBuffer(vk, *cmdBuf);
 
 	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 	vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, DE_NULL);
@@ -913,7 +905,7 @@ tcu::TestStatus ssboUnsizedArrayLengthTest (Context& context, UnsizedArrayCasePa
 	};
 	vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 1, &barrier, 0, DE_NULL, 0, DE_NULL);
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
+	endCommandBuffer(vk, *cmdBuf);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuf.get());
 

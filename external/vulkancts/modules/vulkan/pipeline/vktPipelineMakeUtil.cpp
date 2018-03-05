@@ -220,18 +220,6 @@ Move<VkImageView> makeImageView (const DeviceInterface&			vk,
 	return createImageView(vk, vkDevice, &imageViewParams);
 }
 
-void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	const VkCommandBufferBeginInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
-		DE_NULL,										// const void*                              pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags                flags;
-		DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
-	};
-	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &info));
-}
-
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
 									 const VkDevice				device,
 									 const VkRenderPass			renderPass,

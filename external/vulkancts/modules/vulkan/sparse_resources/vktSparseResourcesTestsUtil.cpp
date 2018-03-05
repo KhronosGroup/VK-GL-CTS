@@ -502,23 +502,6 @@ de::MovePtr<Allocation> bindBuffer (const DeviceInterface& vk, const VkDevice de
 	return alloc;
 }
 
-void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	const VkCommandBufferBeginInfo commandBufBeginParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		0u,												// VkCommandBufferUsageFlags		flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufBeginParams));
-}
-
-void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	VK_CHECK(vk.endCommandBuffer(commandBuffer));
-}
-
 void submitCommands (const DeviceInterface&			vk,
 					 const VkQueue					queue,
 					 const VkCommandBuffer			commandBuffer,

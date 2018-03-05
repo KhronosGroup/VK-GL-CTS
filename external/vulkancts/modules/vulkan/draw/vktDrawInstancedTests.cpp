@@ -442,7 +442,6 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 	qpTestResult			res						= QP_TEST_RESULT_PASS;
 
 	const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	const CmdBufferBeginInfo beginInfo;
 	int firstInstanceIndicesCount = 1;
 
 	// Require 'drawIndirectFirstInstance' feature to run non-zero firstInstance indirect draw tests.
@@ -463,7 +462,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			const de::SharedPtr<Buffer>	instancedVertexBuffer	= createAndUploadBuffer(m_instancedColor, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 			de::SharedPtr<Buffer>		indexBuffer;
 			de::SharedPtr<Buffer>		indirectBuffer;
-			m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+			beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
 			initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
 										  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -562,7 +561,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			}
 
 			m_vk.cmdEndRenderPass(*m_cmdBuffer);
-			m_vk.endCommandBuffer(*m_cmdBuffer);
+			endCommandBuffer(m_vk, *m_cmdBuffer);
 
 			submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 

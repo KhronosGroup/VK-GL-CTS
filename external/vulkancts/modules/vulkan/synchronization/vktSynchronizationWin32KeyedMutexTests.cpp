@@ -25,6 +25,7 @@
 
 #include "vkDeviceUtil.hpp"
 #include "vkPlatform.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vktTestCaseUtil.hpp"
 

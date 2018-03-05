@@ -310,8 +310,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
 		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-		CmdBufferBeginInfo beginInfo;
-		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
+		beginCommandBuffer(m_vk, *copyCmdBuffer);
 
 		if (layout == vk::VK_IMAGE_LAYOUT_UNDEFINED)
 		{
@@ -349,7 +348,7 @@ void Image::readUsingBuffer (vk::VkQueue				queue,
 		};
 
 		m_vk.cmdCopyImageToBuffer(*copyCmdBuffer, object(), layout, stagingResource->object(), 1, &region);
-		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
+		endCommandBuffer(m_vk, *copyCmdBuffer);
 
 		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
 	}
@@ -429,8 +428,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
 		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-		CmdBufferBeginInfo beginInfo;
-		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
+		beginCommandBuffer(m_vk, *copyCmdBuffer);
 
 		transition2DImage(m_vk, *copyCmdBuffer, stagingResource->object(), aspect, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL,
 						  0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -439,7 +437,7 @@ de::SharedPtr<Image> Image::copyToLinearImage (vk::VkQueue					queue,
 		vk::VkImageCopy region = { { (vk::VkImageAspectFlags)aspect, mipLevel, arrayElement, 1}, offset, { (vk::VkImageAspectFlags)aspect, 0, 0, 1}, zeroOffset, {(deUint32)width, (deUint32)height, (deUint32)depth} };
 
 		m_vk.cmdCopyImage(*copyCmdBuffer, object(), layout, stagingResource->object(), vk::VK_IMAGE_LAYOUT_GENERAL, 1, &region);
-		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
+		endCommandBuffer(m_vk, *copyCmdBuffer);
 
 		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
 
@@ -560,8 +558,7 @@ void Image::upload (vk::VkQueue					queue,
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
 		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-		CmdBufferBeginInfo beginInfo;
-		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
+		beginCommandBuffer(m_vk, *copyCmdBuffer);
 
 		if (layout == vk::VK_IMAGE_LAYOUT_UNDEFINED)
 		{
@@ -601,7 +598,7 @@ void Image::upload (vk::VkQueue					queue,
 
 		m_vk.cmdCopyImage(*copyCmdBuffer, stagingResource->object(),
 								vk::VK_IMAGE_LAYOUT_GENERAL, object(), layout, 1, &region);
-		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
+		endCommandBuffer(m_vk, *copyCmdBuffer);
 
 		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
 	}
@@ -657,8 +654,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
 		vk::Unique<vk::VkCommandBuffer> copyCmdBuffer(vk::allocateCommandBuffer(m_vk, m_device, *copyCmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-		CmdBufferBeginInfo beginInfo;
-		VK_CHECK(m_vk.beginCommandBuffer(*copyCmdBuffer, &beginInfo));
+		beginCommandBuffer(m_vk, *copyCmdBuffer);
 
 		if (layout == vk::VK_IMAGE_LAYOUT_UNDEFINED)
 		{
@@ -696,7 +692,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 
 		m_vk.cmdCopyBufferToImage(*copyCmdBuffer, stagingResource->object(),
 			object(), layout, 1, &region);
-		VK_CHECK(m_vk.endCommandBuffer(*copyCmdBuffer));
+		endCommandBuffer(m_vk, *copyCmdBuffer);
 
 		submitCommandsAndWait(m_vk, m_device, queue, copyCmdBuffer.get());
 	}

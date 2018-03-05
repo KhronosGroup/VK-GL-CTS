@@ -34,6 +34,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"
@@ -601,7 +602,7 @@ void ImageAccessTestInstance::uploadImage (vk::VkImage image, const tcu::Texture
 						  0u, (const vk::VkMemoryBarrier*)DE_NULL,
 						  0u, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 						  1u, &postCopyBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	{
 		const vk::Unique<vk::VkFence>	fence		(createFence(vk, device));
@@ -706,7 +707,7 @@ void ImageAccessTestInstance::copyToProtectedImage (vk::VkImage srcImage, vk::Vk
 						  0, (const vk::VkMemoryBarrier*)DE_NULL,
 						  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 						  1, &postImgBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	{
 		const vk::Unique<vk::VkFence>	fence		(createFence(vk, device));
@@ -780,7 +781,7 @@ void ImageAccessTestInstance::clearImage (vk::VkImage image)
 						  0, (const vk::VkMemoryBarrier*)DE_NULL,
 						  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 						  1, &postImageBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	{
 		const vk::Unique<vk::VkFence>	fence		(createFence(vk, device));
@@ -970,7 +971,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest (void)
 		vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 		vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 		vk.cmdDispatch(*cmdBuffer, (deUint32)IMAGE_WIDTH, (deUint32)IMAGE_HEIGHT, 1u);
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		VK_CHECK(queueSubmit(ctx, PROTECTION_ENABLED, queue, *cmdBuffer, *fence, ~0ull));
 	}
@@ -1355,7 +1356,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 							  1, &endImgBarrier);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit command buffer
 	{

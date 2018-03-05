@@ -109,8 +109,6 @@ void								beginSecondaryCommandBuffer			(const vk::DeviceInterface&			vk,
 																		 const vk::VkCommandBuffer			secondaryCmdBuffer,
 																		 const CmdBuffInheritance			secCmdBufInheritInfo);
 
-void								beginCommandBuffer					(const vk::DeviceInterface&			vk,
-																		 const vk::VkCommandBuffer			commandBuffer);
 vk::VkResult						queueSubmit							(ProtectedContext&					context,
 																		 ProtectionMode						protectionMode,
 																		 vk::VkQueue						queue,

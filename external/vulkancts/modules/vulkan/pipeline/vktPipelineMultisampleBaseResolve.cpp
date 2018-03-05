@@ -521,7 +521,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 	}
 
 	// End recording commands
-	VK_CHECK(deviceInterface.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(deviceInterface, *commandBuffer);
 
 	// Submit commands for execution and wait for completion
 	submitCommandsAndWait(deviceInterface, device, queue, *commandBuffer);

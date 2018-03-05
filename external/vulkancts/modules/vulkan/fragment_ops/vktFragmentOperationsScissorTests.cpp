@@ -664,7 +664,7 @@ public:
 				0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers, DE_NULL, 0u);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+		endCommandBuffer(vk, *m_cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
 	}
 

@@ -1072,7 +1072,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
 								0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 
@@ -1215,7 +1215,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 								  0u, DE_NULL, DE_LENGTH_OF_ARRAY(bufferBarriers), bufferBarriers, 0u, DE_NULL);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 
@@ -1402,7 +1402,7 @@ void drawToMipLevel (const Context&				context,
 
 		vk.cmdEndRenderPass(*cmdBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 }
@@ -1540,7 +1540,7 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0u,
 								0u, DE_NULL, 0u, DE_NULL, numImageBarriers, imageBarriers);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 
@@ -1633,7 +1633,7 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 									0u, DE_NULL, DE_LENGTH_OF_ARRAY(bufferBarriers), bufferBarriers, 0u, DE_NULL);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 

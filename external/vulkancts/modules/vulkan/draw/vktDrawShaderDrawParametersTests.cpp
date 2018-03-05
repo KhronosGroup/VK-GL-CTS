@@ -321,7 +321,7 @@ tcu::TestStatus DrawTest::iterate (void)
 		}
 
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
-		m_vk.endCommandBuffer(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 	}
 
 	// Submit

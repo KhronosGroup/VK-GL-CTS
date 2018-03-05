@@ -786,7 +786,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		}
 	} // beginCommandBuffer
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results
@@ -1092,7 +1092,7 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 		}
 	} // beginCommandBuffer
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results
@@ -1461,7 +1461,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 			0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results
@@ -1574,7 +1574,7 @@ tcu::TestStatus testUnusedAtt (Context& context)
 	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vk.cmdEndRenderPass(*cmdBuffer);
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	return tcu::TestStatus::pass("Pass");
 }

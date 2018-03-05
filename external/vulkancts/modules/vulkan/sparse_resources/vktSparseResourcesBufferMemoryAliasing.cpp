@@ -36,6 +36,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"

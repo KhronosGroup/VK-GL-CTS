@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDrawBaseClass.hpp"
+#include "vkCmdUtil.hpp"
 
 namespace vkt
 {
@@ -185,9 +186,8 @@ void DrawTestsBaseClass::initPipeline (const vk::VkDevice device)
 void DrawTestsBaseClass::beginRenderPass (void)
 {
 	const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	const CmdBufferBeginInfo beginInfo;
 
-	m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
 	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
 								  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);

@@ -1114,15 +1114,6 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 		}
 	};
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-
 	const VkImageSubresourceRange clearRange		=
 	{
 		aspectMask,										// VkImageAspectFlags	aspectMask;
@@ -1133,7 +1124,7 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	};
 
 	// Copy buffer to image
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
 	if (aspectMask == VK_IMAGE_ASPECT_COLOR_BIT)
 	{
@@ -1144,7 +1135,7 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 		vk.cmdClearDepthStencilImage(*cmdBuffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.depthStencil, 1, &clearRange);
 	}
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
 }
@@ -2305,14 +2296,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 	// Create command buffer
 	{
-		const VkCommandBufferBeginInfo					cmdBufferBeginInfo			=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			0u,												// VkCmdBufferOptimizeFlags	flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const VkClearValue								clearValues					= makeClearValueColorF32(m_clearColor.x(),
 																											 m_clearColor.y(),
 																											 m_clearColor.z(),
@@ -2331,7 +2314,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *cmdBuffer);
 
 		{
 			const VkImageMemoryBarrier					imageBarrier				=
@@ -2407,7 +2390,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			vk.cmdDraw(*cmdBuffer, numVertices,  1, 0, 1);
 
 		vk.cmdEndRenderPass(*cmdBuffer);
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 	}
 
 	// Execute Draw
@@ -2434,14 +2417,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 		// Copy image to buffer
-		const VkCommandBufferBeginInfo					cmdBufferBeginInfo			=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			0u,												// VkCmdBufferOptimizeFlags	flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const Move<VkCommandBuffer>						resultCmdBuffer				= allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		const VkBufferImageCopy							copyParams					=
@@ -2459,7 +2434,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			{ m_renderSize.x(), m_renderSize.y(), 1u }	// VkExtent3D			imageExtent;
 		};
 
-		VK_CHECK(vk.beginCommandBuffer(*resultCmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *resultCmdBuffer);
 
 		const VkImageMemoryBarrier						imageBarrier				=
 		{
@@ -2498,7 +2473,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		vk.cmdCopyImageToBuffer(*resultCmdBuffer, isMultiSampling() ? *resolvedImage : *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 		vk.cmdPipelineBarrier(*resultCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
-		VK_CHECK(vk.endCommandBuffer(*resultCmdBuffer));
+		endCommandBuffer(vk, *resultCmdBuffer);
 
 		submitCommandsAndWait(vk, vkDevice, queue, resultCmdBuffer.get());
 

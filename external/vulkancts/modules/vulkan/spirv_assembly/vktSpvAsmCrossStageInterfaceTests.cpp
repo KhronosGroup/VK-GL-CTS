@@ -232,18 +232,6 @@ Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 	return createPipelineLayout(vk, device, &pipelineLayoutParams);
 }
 
-void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	const VkCommandBufferBeginInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		// VkStructureType							sType;
-		DE_NULL,											// const void*								pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,		// VkCommandBufferUsageFlags				flags;
-		DE_NULL,											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-	};
-	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &info));
-}
-
 void imageBarrier (const DeviceInterface&			vk,
 				   const VkCommandBuffer			cmdBuffer,
 				   const VkImage					image,
@@ -478,7 +466,7 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 
 		vk.cmdEndRenderPass(*cmdBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		submitCommandsAndWait(vk, vkDevice, m_context.getUniversalQueue(), *cmdBuffer);
 
@@ -871,7 +859,7 @@ bool CrossStageTestInstance::checkImage (VkImage image, VkCommandBuffer cmdBuffe
 		vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1u, &copyRegion);
 		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0u, DE_NULL);
 	}
-	VK_CHECK(vk.endCommandBuffer(cmdBuffer));
+	endCommandBuffer(vk, cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, m_context.getUniversalQueue(), cmdBuffer);
 
 	// Read buffer data

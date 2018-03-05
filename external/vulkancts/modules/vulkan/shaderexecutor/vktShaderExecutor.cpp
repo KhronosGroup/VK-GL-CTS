@@ -1192,14 +1192,6 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 	// Create command buffer
 	{
-		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType				sType;
-			DE_NULL,										// const void*					pNext;
-			0u,												// VkCmdBufferOptimizeFlags		flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const VkRenderPassBeginInfo renderPassBeginInfo =
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
@@ -1213,7 +1205,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *cmdBuffer);
 
 		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 							  0, (const VkMemoryBarrier*)DE_NULL,
@@ -1251,7 +1243,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 							  0, (const VkBufferMemoryBarrier*)DE_NULL,
 							  (deUint32)colorImagePostRenderBarriers.size(), colorImagePostRenderBarriers.empty() ? DE_NULL : &colorImagePostRenderBarriers[0]);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 	}
 
 	// Execute Draw
@@ -1274,14 +1266,6 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 		// constants for image copy
 		Move<VkCommandPool>	copyCmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-
-		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-			DE_NULL,										// const void*						pNext;
-			0u,												// VkCmdBufferOptimizeFlags			flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
 
 		const VkBufferImageCopy copyParams =
 		{
@@ -1323,9 +1307,9 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 					Move<VkCommandBuffer> copyCmdBuffer = allocateCommandBuffer(vk, vkDevice, *copyCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-					VK_CHECK(vk.beginCommandBuffer(*copyCmdBuffer, &cmdBufferBeginInfo));
+					beginCommandBuffer(vk, *copyCmdBuffer);
 					vk.cmdCopyImageToBuffer(*copyCmdBuffer, colorImages[outLocation + locNdx].get()->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
-					VK_CHECK(vk.endCommandBuffer(*copyCmdBuffer));
+					endCommandBuffer(vk, *copyCmdBuffer);
 
 					submitCommandsAndWait(vk, vkDevice, queue, copyCmdBuffer.get());
 				}
@@ -1895,13 +1879,6 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		0u,												// VkCmdBufferOptimizeFlags			flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
 
 	descriptorSetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT);
 	descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
@@ -2016,7 +1993,7 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 		}
 
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *cmdBuffer);
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 
 		{
@@ -2026,7 +2003,7 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 
 		vk.cmdDispatch(*cmdBuffer, numToExec, 1, 1);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		curOffset += numToExec;
 
@@ -2516,14 +2493,6 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 
 	// Create command buffer
 	{
-		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-			DE_NULL,										// const void*						pNext;
-			0u,												// VkCmdBufferOptimizeFlags			flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const VkClearValue clearValues[1] =
 		{
 			getDefaultClearColor()
@@ -2542,7 +2511,7 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *cmdBuffer);
 
 		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -2556,7 +2525,7 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 		vk.cmdDraw(*cmdBuffer, vertexCount, 1, 0, 0);
 
 		vk.cmdEndRenderPass(*cmdBuffer);
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 	}
 
 	// Execute Draw

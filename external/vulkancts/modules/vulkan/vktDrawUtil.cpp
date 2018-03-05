@@ -35,6 +35,7 @@
 #include "tcuTestLog.hpp"
 #include "deArrayUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 namespace vkt
 {
@@ -251,23 +252,6 @@ VkBufferImageCopy makeBufferImageCopy (const VkImageSubresourceLayers	subresourc
 		extent,										//	VkExtent3D					imageExtent;
 	};
 	return copyParams;
-}
-
-void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	const VkCommandBufferBeginInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
-		DE_NULL,										// const void*								pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags				flags;
-		DE_NULL,										// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-	};
-	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &info));
-}
-
-void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	VK_CHECK(vk.endCommandBuffer(commandBuffer));
 }
 
 std::string getPrimitiveTopologyShortName (const VkPrimitiveTopology topology)

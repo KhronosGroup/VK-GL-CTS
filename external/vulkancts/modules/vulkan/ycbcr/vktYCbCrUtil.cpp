@@ -333,17 +333,7 @@ void uploadImage (const DeviceInterface&		vkd,
 
 	allocateAndWriteStagingBuffers(vkd, device, allocator, imageData, &stagingBuffers, &stagingMemory);
 
-	{
-		const VkCommandBufferBeginInfo	beginInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			DE_NULL,
-			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-			(const VkCommandBufferInheritanceInfo*)DE_NULL
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
-	}
+	beginCommandBuffer(vkd, *cmdBuffer);
 
 	{
 		const VkImageMemoryBarrier		preCopyBarrier	=
@@ -423,7 +413,7 @@ void uploadImage (const DeviceInterface&		vkd,
 								&postCopyBarrier);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vkd, *cmdBuffer);
 
 	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
@@ -473,18 +463,7 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 		flushMappedMemoryRange(vkd, device, allocation->getMemory(), 0u, VK_WHOLE_SIZE);
 	}
 
-	{
-		const VkCommandBufferBeginInfo	beginInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			DE_NULL,
-			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-			(const VkCommandBufferInheritanceInfo*)DE_NULL
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
-	}
-
+	beginCommandBuffer(vkd, *cmdBuffer);
 
 	{
 		const VkImageMemoryBarrier		postCopyBarrier	=
@@ -513,7 +492,7 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 								&postCopyBarrier);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vkd, *cmdBuffer);
 
 	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
@@ -537,17 +516,7 @@ void downloadImage (const DeviceInterface&	vkd,
 
 	allocateStagingBuffers(vkd, device, allocator, *imageData, &stagingBuffers, &stagingMemory);
 
-	{
-		const VkCommandBufferBeginInfo	beginInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			DE_NULL,
-			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-			(const VkCommandBufferInheritanceInfo*)DE_NULL
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
-	}
+	beginCommandBuffer(vkd, *cmdBuffer);
 
 	for (deUint32 planeNdx = 0; planeNdx < imageData->getDescription().numPlanes; ++planeNdx)
 	{
@@ -632,7 +601,7 @@ void downloadImage (const DeviceInterface&	vkd,
 		}
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vkd, *cmdBuffer);
 
 	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
@@ -653,17 +622,7 @@ void readImageMemory (const vk::DeviceInterface&							vkd,
 	const Unique<VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const PlanarFormatDescription&	formatDesc		= imageData->getDescription();
 
-	{
-		const VkCommandBufferBeginInfo	beginInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			DE_NULL,
-			(VkCommandBufferUsageFlags)VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-			(const VkCommandBufferInheritanceInfo*)DE_NULL
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
-	}
+	beginCommandBuffer(vkd, *cmdBuffer);
 
 	{
 		const VkImageMemoryBarrier		preCopyBarrier	=
@@ -692,7 +651,7 @@ void readImageMemory (const vk::DeviceInterface&							vkd,
 								&preCopyBarrier);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vkd, *cmdBuffer);
 
 	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
