@@ -19,7 +19,8 @@
  *
  *//*!
  * \file
- * \brief Use of gl_ViewportIndex in Vertex Shader (part of VK_EXT_ShaderViewportIndexLayer)
+ * \brief Use of gl_ViewportIndex in Vertex and Tessellation Shaders
+ *        (part of VK_EXT_ShaderViewportIndexLayer)
  *//*--------------------------------------------------------------------*/
 
 #include "vktDrawShaderViewportIndexTests.hpp"
@@ -246,6 +247,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									   const VkPipelineLayout		pipelineLayout,
 									   const VkRenderPass			renderPass,
 									   const VkShaderModule			vertexModule,
+									   const VkShaderModule			tessellationControlModule,
+									   const VkShaderModule			tessellationEvaluationModule,
 									   const VkShaderModule			fragmentModule,
 									   const UVec2					renderSize,
 									   const int					numViewports,
@@ -285,13 +288,15 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		vertexInputAttributeDescriptions,								// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
 	};
 
+	const bool useTessellationShaders = (tessellationControlModule != DE_NULL) && (tessellationEvaluationModule != DE_NULL);
+
 	const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo =
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                             sType;
-		DE_NULL,														// const void*                                 pNext;
-		(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags     flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology                         topology;
-		VK_FALSE,														// VkBool32                                    primitiveRestartEnable;
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,										// VkStructureType                             sType;
+		DE_NULL,																							// const void*                                 pNext;
+		(VkPipelineInputAssemblyStateCreateFlags)0,															// VkPipelineInputAssemblyStateCreateFlags     flags;
+		useTessellationShaders ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// VkPrimitiveTopology                         topology;
+		VK_FALSE,																							// VkBool32                                    primitiveRestartEnable;
 	};
 
 	DE_ASSERT(numViewports == static_cast<int>(cells.size()));
@@ -420,29 +425,55 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 			"main",														// const char*							pName;
 			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
 		},
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,					// VkShaderStageFlagBits				stage;
+			tessellationControlModule,									// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
+		},
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType						sType;
+			DE_NULL,													// const void*							pNext;
+			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags		flags;
+			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,				// VkShaderStageFlagBits				stage;
+			tessellationEvaluationModule,								// VkShaderModule						module;
+			"main",														// const char*							pName;
+			DE_NULL,													// const VkSpecializationInfo*			pSpecializationInfo;
+		},
+	};
+
+	const VkPipelineTessellationStateCreateInfo pipelineTessellationStateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,		// VkStructureType							sType;
+		DE_NULL,														// const void*								pNext;
+		(VkPipelineTessellationStateCreateFlags)0,						// VkPipelineTessellationStateCreateFlags	flags;
+		3,																// uint32_t									patchControlPoints;
 	};
 
 	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
 	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-		DE_NULL,											// const void*										pNext;
-		(VkPipelineCreateFlags)0,							// VkPipelineCreateFlags							flags;
-		DE_LENGTH_OF_ARRAY(pShaderStages),					// deUint32											stageCount;
-		pShaderStages,										// const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateInfo,								// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&pipelineInputAssemblyStateInfo,					// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		&pipelineViewportStateInfo,							// const VkPipelineViewportStateCreateInfo*			pViewportState;
-		&pipelineRasterizationStateInfo,					// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&pipelineMultisampleStateInfo,						// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&pipelineDepthStencilStateInfo,						// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-		&pipelineColorBlendStateInfo,						// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout,										// VkPipelineLayout									layout;
-		renderPass,											// VkRenderPass										renderPass;
-		0u,													// deUint32											subpass;
-		DE_NULL,											// VkPipeline										basePipelineHandle;
-		0,													// deInt32											basePipelineIndex;
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,					// VkStructureType									sType;
+		DE_NULL,															// const void*										pNext;
+		(VkPipelineCreateFlags)0,											// VkPipelineCreateFlags							flags;
+		useTessellationShaders ? deUint32(4) : deUint32(2),					// deUint32											stageCount;
+		pShaderStages,														// const VkPipelineShaderStageCreateInfo*			pStages;
+		&vertexInputStateInfo,												// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
+		&pipelineInputAssemblyStateInfo,									// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
+		useTessellationShaders ? &pipelineTessellationStateInfo : DE_NULL,	// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
+		&pipelineViewportStateInfo,											// const VkPipelineViewportStateCreateInfo*			pViewportState;
+		&pipelineRasterizationStateInfo,									// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
+		&pipelineMultisampleStateInfo,										// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
+		&pipelineDepthStencilStateInfo,										// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
+		&pipelineColorBlendStateInfo,										// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
+		DE_NULL,															// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
+		pipelineLayout,														// VkPipelineLayout									layout;
+		renderPass,															// VkRenderPass										renderPass;
+		0u,																	// deUint32											subpass;
+		DE_NULL,															// VkPipeline										basePipelineHandle;
+		0,																	// deInt32											basePipelineIndex;
 	};
 
 	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
@@ -528,7 +559,7 @@ tcu::TextureLevel generateReferenceImage (const tcu::TextureFormat	format,
 	return image;
 }
 
-void initPrograms (SourceCollections& programCollection, const int numViewports)
+void initVertexTestPrograms (SourceCollections& programCollection, const int numViewports)
 {
 	DE_UNREF(numViewports);
 
@@ -550,6 +581,98 @@ void initPrograms (SourceCollections& programCollection, const int numViewports)
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+	}
+
+	// Fragment shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_color;\n"
+			<< "layout(location = 0) out vec4 out_color;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    out_color = in_color;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+	}
+}
+
+void initTessellationTestPrograms (SourceCollections& programCollection, const int numViewports)
+{
+	DE_UNREF(numViewports);
+
+	// Vertex shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_position;\n"
+			<< "layout(location = 1) in  vec4 in_color;\n"
+			<< "layout(location = 0) out vec4 out_color;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    gl_Position = in_position;\n"
+			<< "    out_color = in_color;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+	}
+
+	// Tessellation control shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "\n"
+			<< "layout(vertices = 3) out;\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_color[];\n"
+			<< "layout(location = 0) out vec4 out_color[];\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    if (gl_InvocationID == 0) {\n"
+			<< "        gl_TessLevelInner[0] = 1.0;\n"
+			<< "        gl_TessLevelInner[1] = 1.0;\n"
+			<< "        gl_TessLevelOuter[0] = 1.0;\n"
+			<< "        gl_TessLevelOuter[1] = 1.0;\n"
+			<< "        gl_TessLevelOuter[2] = 1.0;\n"
+			<< "        gl_TessLevelOuter[3] = 1.0;\n"
+			<< "    }\n"
+			<< "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+			<< "    out_color[gl_InvocationID] = in_color[gl_InvocationID];\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+	}
+
+	// Tessellation evaluation shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+			<< "#extension GL_ARB_shader_viewport_layer_array : require\n"
+			<< "\n"
+			<< "layout(triangles, equal_spacing, cw) in;\n"
+			<< "\n"
+			<< "layout(location = 0) in  vec4 in_color[];\n"
+			<< "layout(location = 0) out vec4 out_color;\n"
+			<< "\n"
+			<< "void main(void)\n"
+			<< "{\n"
+			<< "    gl_ViewportIndex = gl_PrimitiveID / 2;\n"
+			<< "    gl_Position = gl_in[0].gl_Position * gl_TessCoord.x +\n"
+			<< "                  gl_in[1].gl_Position * gl_TessCoord.y +\n"
+			<< "                  gl_in[2].gl_Position * gl_TessCoord.z;\n"
+			<< "\n"
+			<< "    out_color = in_color[0] * gl_TessCoord.x +\n"
+			<< "                in_color[1] * gl_TessCoord.y +\n"
+			<< "                in_color[2] * gl_TessCoord.z;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
 	}
 
 	// Fragment shader
@@ -603,13 +726,19 @@ std::vector<PositionColorVertex> generateVertices (const std::vector<Vec4>& colo
 class Renderer
 {
 public:
+	enum Shader {
+		VERTEX,
+		TESSELLATION,
+	};
+
 	Renderer (Context&						context,
 			  const UVec2&					renderSize,
 			  const int						numViewports,
 			  const std::vector<UVec4>&		cells,
 			  const VkFormat				colorFormat,
 			  const Vec4&					clearColor,
-			  const std::vector<Vec4>&		colors)
+			  const std::vector<Vec4>&		colors,
+			  const Shader					shader)
 		: m_renderSize				(renderSize)
 		, m_colorFormat				(colorFormat)
 		, m_colorSubresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u))
@@ -637,14 +766,20 @@ public:
 								   vertexBufferSize);
 		}
 
+		if (shader == TESSELLATION)
+		{
+			m_tessellationControlModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("tesc"), 0u);
+			m_tessellationEvaluationModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("tese"), 0u);
+		}
+
 		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
 		m_fragmentModule	= createShaderModule	(vk, device, context.getBinaryCollection().get("frag"), 0u);
 		m_renderPass		= makeRenderPass		(vk, device, m_colorFormat);
 		m_framebuffer		= makeFramebuffer		(vk, device, *m_renderPass, 1u, &m_colorAttachment.get(),
 													 static_cast<deUint32>(m_renderSize.x()),  static_cast<deUint32>(m_renderSize.y()));
 		m_pipelineLayout	= makePipelineLayout	(vk, device);
-		m_pipeline			= makeGraphicsPipeline	(vk, device, *m_pipelineLayout, *m_renderPass, *m_vertexModule, *m_fragmentModule,
-													 m_renderSize, m_numViewports, cells);
+		m_pipeline			= makeGraphicsPipeline	(vk, device, *m_pipelineLayout, *m_renderPass, *m_vertexModule, *m_tessellationControlModule,
+													 *m_tessellationEvaluationModule, *m_fragmentModule, m_renderSize, m_numViewports, cells);
 		m_cmdPool			= createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 		m_cmdBuffer			= allocateCommandBuffer	(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	}
@@ -741,6 +876,8 @@ private:
 	Move<VkImageView>						m_colorAttachment;
 	SharedPtr<Buffer>						m_vertexBuffer;
 	Move<VkShaderModule>					m_vertexModule;
+	Move<VkShaderModule>					m_tessellationControlModule;
+	Move<VkShaderModule>					m_tessellationEvaluationModule;
 	Move<VkShaderModule>					m_fragmentModule;
 	Move<VkRenderPass>						m_renderPass;
 	Move<VkFramebuffer>						m_framebuffer;
@@ -754,19 +891,26 @@ private:
 	Renderer&	operator=	(const Renderer&);
 };
 
-tcu::TestStatus test (Context& context, const int numViewports)
+void requireShaderViewportIndexLayer (const Context& context)
 {
-	const VkPhysicalDeviceFeatures&		features	= context.getDeviceFeatures();
+	const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+	const VkPhysicalDeviceLimits	limits		= getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
+
 	if (!features.multiViewport)
 		TCU_THROW(NotSupportedError, "Required feature is not supported: multiViewport");
 
-	const VkPhysicalDeviceLimits&		limits		= getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
 	if (limits.maxViewports < MIN_MAX_VIEWPORTS)
-		return tcu::TestStatus::fail("multiViewport supported but maxViewports is less than the minimum required");
+		TCU_FAIL("multiViewport supported but maxViewports is less than the minimum required");
 
 	const std::vector<std::string>&		extensions	= context.getDeviceExtensions();
-	if (!de::contains(extensions.begin(), extensions.end(), "VK_EXT_shader_viewport_index_layer"))
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_EXT_shader_viewport_index_layer"))
 		TCU_THROW(NotSupportedError, "Extension VK_EXT_shader_viewport_index_layer not supported");
+
+}
+
+tcu::TestStatus testVertexShader (Context& context, const int numViewports)
+{
+	requireShaderViewportIndexLayer(context);
 
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
@@ -797,7 +941,7 @@ tcu::TestStatus test (Context& context, const int numViewports)
 
 	// Draw
 	{
-		const Renderer renderer (context, renderSize, numViewports, cells, colorFormat, clearColor, colors);
+		const Renderer renderer (context, renderSize, numViewports, cells, colorFormat, clearColor, colors, Renderer::VERTEX);
 		renderer.draw(context, colorBuffer->object());
 	}
 
@@ -811,11 +955,69 @@ tcu::TestStatus test (Context& context, const int numViewports)
 
 		// Images should now match.
 		if (!tcu::floatThresholdCompare(context.getTestContext().getLog(), "color", "Image compare", referenceImage.getAccess(), resultImage, Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
-			return tcu::TestStatus::fail("Rendered image is not correct");
+			TCU_FAIL("Rendered image is not correct");
 	}
 
 	return tcu::TestStatus::pass("OK");
 }
+
+tcu::TestStatus testTessellationShader (Context& context, const int numViewports)
+{
+	requireShaderViewportIndexLayer(context);
+
+	const VkPhysicalDeviceFeatures&		features	= context.getDeviceFeatures();
+	if (!features.tessellationShader)
+		TCU_THROW(NotSupportedError, "Required feature is not supported: tessellationShader");
+
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					device				= context.getDevice();
+	Allocator&						allocator			= context.getDefaultAllocator();
+
+	const UVec2						renderSize			(128, 128);
+	const VkFormat					colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
+	const Vec4						clearColor			(0.5f, 0.5f, 0.5f, 1.0f);
+	const std::vector<Vec4>			colors				= generateColors(numViewports);
+	const std::vector<UVec4>		cells				= generateGrid(numViewports, renderSize);
+
+	const VkDeviceSize				colorBufferSize		= renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
+
+	const SharedPtr<Buffer>			colorBuffer			= Buffer::createAndAlloc(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), allocator, MemoryRequirement::HostVisible);
+
+	// Zero buffer.
+	{
+		const Allocation alloc = colorBuffer->getBoundMemory();
+		deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
+		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), colorBufferSize);
+	}
+
+	{
+		context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Rendering a colorful grid of " << numViewports << " rectangle(s)." << tcu::TestLog::EndMessage
+			<< tcu::TestLog::Message << "Not covered area will be filled with a gray color." << tcu::TestLog::EndMessage;
+	}
+
+	// Draw
+	{
+		const Renderer renderer (context, renderSize, numViewports, cells, colorFormat, clearColor, colors, Renderer::TESSELLATION);
+		renderer.draw(context, colorBuffer->object());
+	}
+
+	// Log image
+	{
+		const Allocation alloc = colorBuffer->getBoundMemory();
+		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), 0ull, colorBufferSize);
+
+		const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, alloc.getHostPtr());
+		const tcu::TextureLevel				referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, clearColor, cells, colors);
+
+		// Images should now match.
+		if (!tcu::floatThresholdCompare(context.getTestContext().getLog(), "color", "Image compare", referenceImage.getAccess(), resultImage, Vec4(0.02f), tcu::COMPARE_LOG_RESULT))
+			TCU_FAIL("Rendered image is not correct");
+	}
+
+	return tcu::TestStatus::pass("OK");
+}
+
 
 } // anonymous
 
@@ -824,7 +1026,10 @@ tcu::TestCaseGroup* createShaderViewportIndexTests	(tcu::TestContext& testCtx)
 	MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "shader_viewport_index", ""));
 
 	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
-		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numViewports), "", initPrograms, test, numViewports);
+		addFunctionCaseWithPrograms(group.get(), "vertex_shader_" + de::toString(numViewports), "", initVertexTestPrograms, testVertexShader, numViewports);
+
+	for (int numViewports = 1; numViewports <= MIN_MAX_VIEWPORTS; ++numViewports)
+		addFunctionCaseWithPrograms(group.get(), "tessellation_shader_" + de::toString(numViewports), "", initTessellationTestPrograms, testTessellationShader, numViewports);
 
 	return group.release();
 }

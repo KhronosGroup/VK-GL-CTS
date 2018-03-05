@@ -20,7 +20,8 @@
  *
  *//*!
  * \file
- * \brief Use of gl_ViewportIndex in Vertex Shader (part of VK_EXT_ShaderViewportIndexLayer)
+ * \brief Use of gl_ViewportIndex in Vertex and Tessellation Shaders
+ *        (part of VK_EXT_ShaderViewportIndexLayer)
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
