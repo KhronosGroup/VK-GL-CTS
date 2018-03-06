@@ -296,44 +296,43 @@ public:
 			gl.drawBuffers(DE_LENGTH_OF_ARRAY(drawBuffers), &drawBuffers[0]);
 		}
 
-		gl.clearBufferfv(GL_COLOR, 0, tcu::RGBA::red().toVec().getPtr());
-		gl.clearBufferfv(GL_COLOR, 1, tcu::RGBA::red().toVec().getPtr());
-
 		gl.viewport		(0, 0, width, height);
 		gl.useProgram	(program.getProgram());
 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Setup failed");
 
-		m_testCtx.getLog() << TestLog::Message << "Drawing to attachments 0 and 1, expecting only attachment 0 to change." << TestLog::EndMessage;
+		bool			allOk		= true;
+		const tcu::RGBA threshold	= renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
 
 		for (int ndx = 0; ndx < 2; ndx++)
 		{
+			gl.clearBufferfv(GL_COLOR, 0, tcu::RGBA::red().toVec().getPtr());
+			gl.clearBufferfv(GL_COLOR, 1, tcu::RGBA::red().toVec().getPtr());
+
+			m_testCtx.getLog() << TestLog::Message << "Drawing to attachments " << ndx << TestLog::EndMessage;
+
 			gl.uniform1i(indexLoc, ndx);
 			glu::draw(renderCtx, program.getProgram(), DE_LENGTH_OF_ARRAY(vertexArrays), &vertexArrays[0],
 					  glu::pr::Triangles(DE_LENGTH_OF_ARRAY(indices), &indices[0]));
-		}
-		GLU_EXPECT_NO_ERROR(gl.getError(), "Rendering failed");
 
-		{
-			tcu::Surface		result		(width, height);
-			const tcu::RGBA		threshold	= renderCtx.getRenderTarget().getPixelFormat().getColorThreshold() + tcu::RGBA(1,1,1,1);
-			bool				allOk		= true;
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Rendering failed");
 
-			for (int ndx = 0; ndx < 2; ndx++)
 			{
+				tcu::Surface result(width, height);
+
 				m_testCtx.getLog() << TestLog::Message << "Verifying attachment " << ndx << "..." << TestLog::EndMessage;
 
 				gl.readBuffer(GL_COLOR_ATTACHMENT0+ndx);
 				glu::readPixels(renderCtx, 0, 0, result.getAccess());
 				GLU_EXPECT_NO_ERROR(gl.getError(), "Reading pixels failed");
 
-				if (!compareSingleColor(m_testCtx.getLog(), result, ndx == 0 ? tcu::RGBA::green() : tcu::RGBA::red(), threshold))
+				if (!compareSingleColor(m_testCtx.getLog(), result, tcu::RGBA::green(), threshold))
 					allOk = false;
 			}
-
-			m_testCtx.setTestResult(allOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
-									allOk ? "Pass"				: "Image comparison failed");
 		}
+
+		m_testCtx.setTestResult(allOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
+								allOk ? "Pass"				: "Image comparison failed");
 
 		return STOP;
 	}

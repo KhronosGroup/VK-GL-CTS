@@ -12958,6 +12958,10 @@ private:
 
 	void testInit();
 
+	bool isResultEdgeCase(const functionObject& function_object, glw::GLuint vertex,
+						  const Utils::_variable_type result_type, const glw::GLvoid* expected_result_src,
+						  const glw::GLvoid* result_src);
+
 	bool verifyResults(const functionObject& function_object, glw::GLuint vertex);
 
 	/* Private constants */
@@ -15438,6 +15442,64 @@ void BuiltinFunctionTest::testInit()
 	gl.enable(GL_RASTERIZER_DISCARD);
 }
 
+/** Checks if function result is an acceptable edge case
+ *
+ * @param function_object Function object
+ * @param vertex          Vertex index
+ *
+ * @return true if all results are as expected, false otherwise
+ **/
+bool BuiltinFunctionTest::isResultEdgeCase(const functionObject& function_object, glw::GLuint vertex,
+										   const Utils::_variable_type result_type,
+										   const glw::GLvoid* expected_result_src, const glw::GLvoid* result_src)
+{
+	FunctionEnum function_type = function_object.getFunctionEnum();
+	switch (function_type)
+	{
+	// mod(a, b) is defined as a - b * floor(a/b) and mod(a,a) should be 0. However OpenGL
+	// allows for some error in division, so a/a could actually end up being 1.0 - 1ULP.
+	// In such a case, floor(a/a) would end up as 0, with mod(a,a) becoming a.
+	case FUNCTION_MOD:
+	case FUNCTION_MOD_AGAINST_SCALAR:
+	{
+		const glw::GLuint	arguments_stride  = function_object.getArgumentStride();
+		const glw::GLuint	vertex_offset	 = arguments_stride * vertex;
+		const glw::GLuint	argument_1_offset = function_object.getArgumentOffset(0);
+		const glw::GLuint	argument_2_offset = function_object.getArgumentOffset(1);
+		const glw::GLuint	argument_1_index  = argument_1_offset + vertex_offset;
+		const glw::GLuint	argument_2_index  = argument_2_offset + vertex_offset;
+		const glw::GLubyte*  argument_1_bytes  = &m_argument_data[argument_1_index];
+		const glw::GLubyte*  argument_2_bytes  = &m_argument_data[argument_2_index];
+		const glw::GLdouble* argument_1		   = reinterpret_cast<const glw::GLdouble*>(argument_1_bytes);
+		const glw::GLdouble* argument_2		   = reinterpret_cast<const glw::GLdouble*>(argument_2_bytes);
+		const glw::GLdouble* expected_result   = reinterpret_cast<const glw::GLdouble*>(expected_result_src);
+		bool				 edge_case_present = false;
+
+		// verify if there is a mod(a, a) case and prepare new expected result
+		const glw::GLuint		   n_components = Utils::getNumberOfComponentsForVariableType(result_type);
+		std::vector<glw::GLdouble> corrected_expected_result(n_components, 0.0);
+		for (glw::GLuint component = 0; component < n_components; ++component)
+		{
+			glw::GLdouble expected_result_component = expected_result[component];
+			glw::GLdouble argument_1_component		= argument_1[component];
+			glw::GLdouble argument_2_component		= argument_2[(function_type == FUNCTION_MOD) ? component : 0];
+
+			// if coresponding components of arguments are equal and if component of first argument
+			// and component of result are equal then expected result must be corrected
+			edge_case_present = (m_epsilon > de::abs(argument_1_component - argument_2_component)) &&
+								(m_epsilon > de::abs(argument_1_component - expected_result_component));
+
+			corrected_expected_result[component] = edge_case_present ? argument_1_component : expected_result_component;
+		}
+
+		// recheck test result with corrected expected result
+		return (edge_case_present && compare(result_type, &(corrected_expected_result[0]), result_src));
+	}
+	default:
+		return false;
+	}
+}
+
 /** Compare contents of transform feedback buffer with expected results
  *
  * @param function_object Function object
@@ -15469,7 +15531,10 @@ bool BuiltinFunctionTest::verifyResults(const functionObject& function_object, g
 		const glw::GLvoid* expected_result_src = expected_results + result_offset;
 		const glw::GLvoid* result_src		   = feedback_data + result_offset;
 
-		if (false == compare(result_type, expected_result_src, result_src))
+		if (compare(result_type, expected_result_src, result_src))
+			continue;
+
+		if (!isResultEdgeCase(function_object, vertex, result_type, expected_result_src, result_src))
 		{
 			test_result = false;
 			break;

@@ -79,17 +79,6 @@ VULKAN_1_0_3_PKG	= Package(module = VULKAN_MODULE, configurations = [
 		  # Master
 		  Configuration(name		= "default",
 						filters		= [include("master.txt"),
-									   exclude("waivers.txt")]),
-		  Configuration(name		= "default-no-waivers",
-						filters		= [include("master.txt")]),
-	 ])
-
-# 1.0.4
-
-VULKAN_1_0_4_PKG	= Package(module = VULKAN_MODULE, configurations = [
-		  # Master
-		  Configuration(name		= "default",
-						filters		= [include("master.txt"),
 									   exclude("test-issues.txt"),
 									   exclude("excluded-tests.txt"),
 									   exclude("android-tests.txt"),
@@ -107,7 +96,6 @@ MUSTPASS_LISTS		= [
 		  Mustpass(project = PROJECT,	version = "1.0.1",	packages = [VULKAN_1_0_1_PKG]),
 		  Mustpass(project = PROJECT,	version = "1.0.2",	packages = [VULKAN_1_0_2_PKG]),
 		  Mustpass(project = PROJECT,	version = "1.0.3",	packages = [VULKAN_1_0_3_PKG]),
-		  Mustpass(project = PROJECT,	version = "1.0.4",	packages = [VULKAN_1_0_4_PKG]),
 	]
 
 if __name__ == "__main__":
