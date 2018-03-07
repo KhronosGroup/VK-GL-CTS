@@ -2118,6 +2118,89 @@ struct VkPresentRegionsKHR
 	const VkPresentRegionKHR*	pRegions;
 };
 
+struct VkAttachmentDescription2KHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkAttachmentDescriptionFlags	flags;
+	VkFormat						format;
+	VkSampleCountFlagBits			samples;
+	VkAttachmentLoadOp				loadOp;
+	VkAttachmentStoreOp				storeOp;
+	VkAttachmentLoadOp				stencilLoadOp;
+	VkAttachmentStoreOp				stencilStoreOp;
+	VkImageLayout					initialLayout;
+	VkImageLayout					finalLayout;
+};
+
+struct VkAttachmentReference2KHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	deUint32			attachment;
+	VkImageLayout		layout;
+	VkImageAspectFlags	aspectMask;
+};
+
+struct VkSubpassDescription2KHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkSubpassDescriptionFlags			flags;
+	VkPipelineBindPoint					pipelineBindPoint;
+	deUint32							viewMask;
+	deUint32							inputAttachmentCount;
+	const VkAttachmentReference2KHR*	pInputAttachments;
+	deUint32							colorAttachmentCount;
+	const VkAttachmentReference2KHR*	pColorAttachments;
+	const VkAttachmentReference2KHR*	pResolveAttachments;
+	const VkAttachmentReference2KHR*	pDepthStencilAttachment;
+	deUint32							preserveAttachmentCount;
+	const deUint32*						pPreserveAttachments;
+};
+
+struct VkSubpassDependency2KHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	deUint32				srcSubpass;
+	deUint32				dstSubpass;
+	VkPipelineStageFlags	srcStageMask;
+	VkPipelineStageFlags	dstStageMask;
+	VkAccessFlags			srcAccessMask;
+	VkAccessFlags			dstAccessMask;
+	VkDependencyFlags		dependencyFlags;
+	deInt32					viewOffset;
+};
+
+struct VkRenderPassCreateInfo2KHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkRenderPassCreateFlags				flags;
+	deUint32							attachmentCount;
+	const VkAttachmentDescription2KHR*	pAttachments;
+	deUint32							subpassCount;
+	const VkSubpassDescription2KHR*		pSubpasses;
+	deUint32							dependencyCount;
+	const VkSubpassDependency2KHR*		pDependencies;
+	deUint32							correlatedViewMaskCount;
+	const deUint32*						pCorrelatedViewMasks;
+};
+
+struct VkSubpassBeginInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkSubpassContents	contents;
+};
+
+struct VkSubpassEndInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+};
+
 struct VkSharedPresentSurfaceCapabilitiesKHR
 {
 	VkStructureType		sType;

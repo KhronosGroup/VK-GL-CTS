@@ -448,6 +448,7 @@ void TestPackage::init (void)
 	addChild(SpirVAssembly::createTests		(m_testCtx));
 	addChild(createTestGroup				(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
 	addChild(createRenderPassTests			(m_testCtx));
+	addChild(createRenderPass2Tests			(m_testCtx));
 	addChild(ubo::createTests				(m_testCtx));
 	addChild(DynamicState::createTests		(m_testCtx));
 	addChild(ssbo::createTests				(m_testCtx));

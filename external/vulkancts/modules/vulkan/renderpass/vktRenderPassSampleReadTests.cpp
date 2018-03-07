@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRenderPassSampleReadTests.hpp"
+#include "vktRenderPassTestsUtil.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -57,6 +58,13 @@ namespace vkt
 {
 namespace
 {
+using namespace renderpass;
+
+enum RenderPassType
+{
+	RENDERPASS_TYPE_LEGACY = 0,
+	RENDERPASS_TYPE_RENDERPASS2,
+};
 
 de::MovePtr<Allocation> createBufferMemory (const DeviceInterface&	vk,
 											VkDevice				device,
@@ -245,149 +253,178 @@ VkSampleCountFlagBits sampleCountBitFromSampleCount (deUint32 count)
 	}
 }
 
+template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
 Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkDevice				device,
 									 VkFormat				srcFormat,
 									 VkFormat				dstFormat,
 									 deUint32				sampleCount)
 {
-	const VkSampleCountFlagBits			samples						(sampleCountBitFromSampleCount(sampleCount));
-	const VkAttachmentReference			srcAttachmentRef			=
-	{
-		0u,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-	};
-	const VkAttachmentReference			srcAttachmentInputRef		=
-	{
-		0u,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-	};
-	const VkAttachmentReference			dstAttachmentRef			=
-	{
-		1u,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-	};
-	const VkAttachmentReference			dstResolveAttachmentRef		=
-	{
-		2u,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-	};
-	const VkSubpassDependency			dependency					=
-	{
-		0u,
-		1u,
-		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-		VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
-
-		VK_DEPENDENCY_BY_REGION_BIT
-	};
-	const VkAttachmentDescription		srcAttachment				=
-	{
-		0u,
-
-		srcFormat,
-		samples,
-
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,
-
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,
-
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_GENERAL
-	};
-	const VkAttachmentDescription		dstMultisampleAttachment	=
-	{
-		0u,
-
-		dstFormat,
-		samples,
-
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,
-
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,
-
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-	};
-	const VkAttachmentDescription		dstResolveAttachment		=
-	{
-		0u,
-
-		dstFormat,
-		VK_SAMPLE_COUNT_1_BIT,
-
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_STORE,
-
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_STORE,
-
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-	};
-	const VkAttachmentDescription		attachments[]				=
+	const VkSampleCountFlagBits			samples							(sampleCountBitFromSampleCount(sampleCount));
+	const AttachmentRef					srcAttachmentRef		//  VkAttachmentReference										||  VkAttachmentReference2KHR
+	(
+																//																||  VkStructureType						sType;
+		DE_NULL,												//																||  const void*							pNext;
+		0u,														//  deUint32						attachment;					||  deUint32							attachment;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				//  VkImageLayout					layout;						||  VkImageLayout						layout;
+		0u														//																||  VkImageAspectFlags					aspectMask;
+	);
+	const AttachmentRef					srcAttachmentInputRef	//  VkAttachmentReference										||  VkAttachmentReference2KHR
+	(
+																//																||  VkStructureType						sType;
+		DE_NULL,												//																||  const void*							pNext;
+		0u,														//  deUint32						attachment;					||  deUint32							attachment;
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,				//  VkImageLayout					layout;						||  VkImageLayout						layout;
+		0u														//																||  VkImageAspectFlags					aspectMask;
+	);
+	const AttachmentRef					dstAttachmentRef		//  VkAttachmentReference										||  VkAttachmentReference2KHR
+	(
+																//																||  VkStructureType						sType;
+		DE_NULL,												//																||  const void*							pNext;
+		1u,														//  deUint32						attachment;					||  deUint32							attachment;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				//  VkImageLayout					layout;						||  VkImageLayout						layout;
+		0u														//																||  VkImageAspectFlags					aspectMask;
+	);
+	const AttachmentRef					dstResolveAttachmentRef	//  VkAttachmentReference										||  VkAttachmentReference2KHR
+	(
+																//																||  VkStructureType						sType;
+		DE_NULL,												//																||  const void*							pNext;
+		2u,														//  deUint32						attachment;					||  deUint32							attachment;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				//  VkImageLayout					layout;						||  VkImageLayout						layout;
+		0u														//																||  VkImageAspectFlags					aspectMask;
+	);
+	const SubpassDep					dependency				//  VkSubpassDependency											||  VkSubpassDependency2KHR
+	(
+																//																||	VkStructureType						sType;
+		DE_NULL,												//																||	const void*							pNext;
+		0u,														//  deUint32						srcSubpass;					||	deUint32							srcSubpass;
+		1u,														//  deUint32						dstSubpass;					||	deUint32							dstSubpass;
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,			//  VkPipelineStageFlags			srcStageMask;				||	VkPipelineStageFlags				srcStageMask;
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,					//  VkPipelineStageFlags			dstStageMask;				||	VkPipelineStageFlags				dstStageMask;
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					//  VkAccessFlags					srcAccessMask;				||	VkAccessFlags						srcAccessMask;
+		VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,					//  VkAccessFlags					dstAccessMask;				||	VkAccessFlags						dstAccessMask;
+		VK_DEPENDENCY_BY_REGION_BIT,							//  VkDependencyFlags				dependencyFlags;			||	VkDependencyFlags					dependencyFlags;
+		0u														//																||	deInt32								viewOffset;
+	);
+	const AttachmentDesc				srcAttachment				//  VkAttachmentDescription										||  VkAttachmentDescription2KHR
+	(
+																	//																||  VkStructureType						sType;
+		DE_NULL,													//																||  const void*							pNext;
+		0u,															//  VkAttachmentDescriptionFlags	flags;						||  VkAttachmentDescriptionFlags		flags;
+		srcFormat,													//  VkFormat						format;						||  VkFormat							format;
+		samples,													//  VkSampleCountFlagBits			samples;					||  VkSampleCountFlagBits				samples;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,							//  VkAttachmentLoadOp				loadOp;						||  VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,							//  VkAttachmentStoreOp				storeOp;					||  VkAttachmentStoreOp					storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,							//  VkAttachmentLoadOp				stencilLoadOp;				||  VkAttachmentLoadOp					stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,							//  VkAttachmentStoreOp				stencilStoreOp;				||  VkAttachmentStoreOp					stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,									//  VkImageLayout					initialLayout;				||  VkImageLayout						initialLayout;
+		VK_IMAGE_LAYOUT_GENERAL										//  VkImageLayout					finalLayout;				||  VkImageLayout						finalLayout;
+	);
+	const AttachmentDesc				dstMultisampleAttachment	//  VkAttachmentDescription										||  VkAttachmentDescription2KHR
+	(
+																	//																||  VkStructureType						sType;
+		DE_NULL,													//																||  const void*							pNext;
+		0u,															//  VkAttachmentDescriptionFlags	flags;						||  VkAttachmentDescriptionFlags		flags;
+		dstFormat,													//  VkFormat						format;						||  VkFormat							format;
+		samples,													//  VkSampleCountFlagBits			samples;					||  VkSampleCountFlagBits				samples;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,							//  VkAttachmentLoadOp				loadOp;						||  VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,							//  VkAttachmentStoreOp				storeOp;					||  VkAttachmentStoreOp					storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,							//  VkAttachmentLoadOp				stencilLoadOp;				||  VkAttachmentLoadOp					stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,							//  VkAttachmentStoreOp				stencilStoreOp;				||  VkAttachmentStoreOp					stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,									//  VkImageLayout					initialLayout;				||  VkImageLayout						initialLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL					//  VkImageLayout					finalLayout;				||  VkImageLayout						finalLayout;
+	);
+	const AttachmentDesc				dstResolveAttachment		//  VkAttachmentDescription										||  VkAttachmentDescription2KHR
+	(
+																	//																||  VkStructureType						sType;
+		DE_NULL,													//																||  const void*							pNext;
+		0u,															//  VkAttachmentDescriptionFlags	flags;						||  VkAttachmentDescriptionFlags		flags;
+		dstFormat,													//  VkFormat						format;						||  VkFormat							format;
+		VK_SAMPLE_COUNT_1_BIT,										//  VkSampleCountFlagBits			samples;					||  VkSampleCountFlagBits				samples;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,							//  VkAttachmentLoadOp				loadOp;						||  VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,								//  VkAttachmentStoreOp				storeOp;					||  VkAttachmentStoreOp					storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,							//  VkAttachmentLoadOp				stencilLoadOp;				||  VkAttachmentLoadOp					stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,								//  VkAttachmentStoreOp				stencilStoreOp;				||  VkAttachmentStoreOp					stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,									//  VkImageLayout					initialLayout;				||  VkImageLayout						initialLayout;
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL						//  VkImageLayout					finalLayout;				||  VkImageLayout						finalLayout;
+	);
+	const AttachmentDesc				attachments[]				=
 	{
 		srcAttachment,
 		dstMultisampleAttachment,
 		dstResolveAttachment
 	};
-	const VkSubpassDescription			subpasses[]					=
+	const SubpassDesc					subpass1					//  VkSubpassDescription										||  VkSubpassDescription2KHR
+	(
+																	//																||  VkStructureType						sType;
+		DE_NULL,													//																||  const void*							pNext;
+		(VkSubpassDescriptionFlags)0,								//  VkSubpassDescriptionFlags		flags;						||  VkSubpassDescriptionFlags			flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,							//  VkPipelineBindPoint				pipelineBindPoint;			||  VkPipelineBindPoint					pipelineBindPoint;
+		0u,															//																||  deUint32							viewMask;
+		0u,															//  deUint32						inputAttachmentCount;		||  deUint32							inputAttachmentCount;
+		DE_NULL,													//  const VkAttachmentReference*	pInputAttachments;			||  const VkAttachmentReference2KHR*	pInputAttachments;
+		1u,															//  deUint32						colorAttachmentCount;		||  deUint32							colorAttachmentCount;
+		&srcAttachmentRef,											//  const VkAttachmentReference*	pColorAttachments;			||  const VkAttachmentReference2KHR*	pColorAttachments;
+		DE_NULL,													//  const VkAttachmentReference*	pResolveAttachments;		||  const VkAttachmentReference2KHR*	pResolveAttachments;
+		DE_NULL,													//  const VkAttachmentReference*	pDepthStencilAttachment;	||  const VkAttachmentReference2KHR*	pDepthStencilAttachment;
+		0u,															//  deUint32						preserveAttachmentCount;	||  deUint32							preserveAttachmentCount;
+		DE_NULL														//  const deUint32*					pPreserveAttachments;		||  const deUint32*						pPreserveAttachments;
+	);
+	const SubpassDesc					subpass2					//  VkSubpassDescription										||  VkSubpassDescription2KHR
+	(
+																	//																||  VkStructureType						sType;
+		DE_NULL,													//																||  const void*							pNext;
+		(VkSubpassDescriptionFlags)0,								//  VkSubpassDescriptionFlags		flags;						||  VkSubpassDescriptionFlags			flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,							//  VkPipelineBindPoint				pipelineBindPoint;			||  VkPipelineBindPoint					pipelineBindPoint;
+		0u,															//																||  deUint32							viewMask;
+		1u,															//  deUint32						inputAttachmentCount;		||  deUint32							inputAttachmentCount;
+		&srcAttachmentInputRef,										//  const VkAttachmentReference*	pInputAttachments;			||  const VkAttachmentReference2KHR*	pInputAttachments;
+		1u,															//  deUint32						colorAttachmentCount;		||  deUint32							colorAttachmentCount;
+		&dstAttachmentRef,											//  const VkAttachmentReference*	pColorAttachments;			||  const VkAttachmentReference2KHR*	pColorAttachments;
+		&dstResolveAttachmentRef,									//  const VkAttachmentReference*	pResolveAttachments;		||  const VkAttachmentReference2KHR*	pResolveAttachments;
+		DE_NULL,													//  const VkAttachmentReference*	pDepthStencilAttachment;	||  const VkAttachmentReference2KHR*	pDepthStencilAttachment;
+		0u,															//  deUint32						preserveAttachmentCount;	||  deUint32							preserveAttachmentCount;
+		DE_NULL														//  const deUint32*					pPreserveAttachments;		||  const deUint32*						pPreserveAttachments;
+	);
+	const SubpassDesc					subpasses[]					=
 	{
-		{
-			(VkSubpassDescriptionFlags)0,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-
-			0u,
-			DE_NULL,
-
-			1u,
-			&srcAttachmentRef,
-			DE_NULL,
-
-			DE_NULL,
-			0u,
-			DE_NULL
-		},
-		{
-			(VkSubpassDescriptionFlags)0,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-
-			1u,
-			&srcAttachmentInputRef,
-
-			1u,
-			&dstAttachmentRef,
-			&dstResolveAttachmentRef,
-
-			DE_NULL,
-			0u,
-			DE_NULL
-		}
+		subpass1,
+		subpass2
 	};
-	const VkRenderPassCreateInfo	createInfo						=
+	const RenderPassCreateInfo			renderPassCreator			//  VkRenderPassCreateInfo										||  VkRenderPassCreateInfo2KHR
+	(
+																	//  VkStructureType					sType;						||  VkStructureType						sType;
+		DE_NULL,													//  const void*						pNext;						||  const void*							pNext;
+		(VkRenderPassCreateFlags)0u,								//  VkRenderPassCreateFlags			flags;						||  VkRenderPassCreateFlags				flags;
+		3u,															//  deUint32						attachmentCount;			||  deUint32							attachmentCount;
+		attachments,												//  const VkAttachmentDescription*	pAttachments;				||  const VkAttachmentDescription2KHR*	pAttachments;
+		2u,															//  deUint32						subpassCount;				||  deUint32							subpassCount;
+		subpasses,													//  const VkSubpassDescription*		pSubpasses;					||  const VkSubpassDescription2KHR*		pSubpasses;
+		1u,															//  deUint32						dependencyCount;			||  deUint32							dependencyCount;
+		&dependency,												//  const VkSubpassDependency*		pDependencies;				||  const VkSubpassDependency2KHR*		pDependencies;
+		0u,															//																||  deUint32							correlatedViewMaskCount;
+		DE_NULL														//																||  const deUint32*						pCorrelatedViewMasks;
+	);
+
+	return renderPassCreator.createRenderPass(vkd, device);
+}
+
+Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
+									 VkDevice				device,
+									 VkFormat				srcFormat,
+									 VkFormat				dstFormat,
+									 deUint32				sampleCount,
+									 RenderPassType			renderPassType)
+{
+	switch (renderPassType)
 	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		DE_NULL,
-		(VkRenderPassCreateFlags)0u,
-
-		3u,
-		attachments,
-
-		2u,
-		subpasses,
-
-		1u,
-		&dependency
-	};
-
-	return createRenderPass(vkd, device, &createInfo);
+		case RENDERPASS_TYPE_LEGACY:
+			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount);
+		case RENDERPASS_TYPE_RENDERPASS2:
+			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount);
+		default:
+			TCU_THROW(InternalError, "Impossible");
+	}
 }
 
 Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vkd,
@@ -907,16 +944,18 @@ enum TestMode
 
 struct TestConfig
 {
-	TestConfig (deUint32 sampleCount_, TestMode testMode_, deUint32 selectedSample_)
+	TestConfig (deUint32 sampleCount_, TestMode testMode_, deUint32 selectedSample_, RenderPassType	renderPassType_)
 	: sampleCount		(sampleCount_)
 	, testMode			(testMode_)
 	, selectedSample	(selectedSample_)
+	, renderPassType	(renderPassType_)
 	{
 	}
 
-	deUint32	sampleCount;
-	TestMode	testMode;
-	deUint32	selectedSample;
+	deUint32		sampleCount;
+	TestMode		testMode;
+	deUint32		selectedSample;
+	RenderPassType	renderPassType;
 };
 
 class SampleReadTestInstance : public TestInstance
@@ -925,9 +964,15 @@ public:
 											SampleReadTestInstance	(Context& context, TestConfig config);
 											~SampleReadTestInstance	(void);
 
-											tcu::TestStatus	iterate	(void);
+	tcu::TestStatus							iterate					(void);
+
+	template<typename RenderpassSubpass>
+	tcu::TestStatus							iterateInternal			(void);
 
 private:
+	const bool								m_extensionSupported;
+	const RenderPassType					m_renderPassType;
+
 	const deUint32							m_sampleCount;
 	const deUint32							m_width;
 	const deUint32							m_height;
@@ -968,6 +1013,8 @@ private:
 
 SampleReadTestInstance::SampleReadTestInstance (Context& context, TestConfig config)
 	: TestInstance					(context)
+	, m_extensionSupported			((config.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_renderPassType				(config.renderPassType)
 	, m_sampleCount					(config.sampleCount)
 	, m_width						(32u)
 	, m_height						(32u)
@@ -985,7 +1032,7 @@ SampleReadTestInstance::SampleReadTestInstance (Context& context, TestConfig con
 	, m_dstSinglesampleImageView	(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstSinglesampleImage, VK_FORMAT_R32_UINT, VK_IMAGE_ASPECT_COLOR_BIT))
 	, m_dstBuffer					(createBuffer(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, m_width, m_height))
 	, m_dstBufferMemory				(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
-	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT, m_sampleCount))
+	, m_renderPass					(createRenderPass(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT, VK_FORMAT_R32_UINT, m_sampleCount, config.renderPassType))
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, *m_dstMultisampleImageView, *m_dstSinglesampleImageView, m_width, m_height))
 	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
 	, m_renderPipeline				(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
@@ -1004,9 +1051,25 @@ SampleReadTestInstance::~SampleReadTestInstance (void)
 
 tcu::TestStatus SampleReadTestInstance::iterate (void)
 {
-	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
-	const VkDevice					device			(m_context.getDevice());
-	const Unique<VkCommandBuffer>	commandBuffer	(allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	switch (m_renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:
+			return iterateInternal<RenderpassSubpass1>();
+		case RENDERPASS_TYPE_RENDERPASS2:
+			return iterateInternal<RenderpassSubpass2>();
+		default:
+			TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+template<typename RenderpassSubpass>
+tcu::TestStatus SampleReadTestInstance::iterateInternal (void)
+{
+	const DeviceInterface&								vkd					(m_context.getDeviceInterface());
+	const VkDevice										device				(m_context.getDevice());
+	const Unique<VkCommandBuffer>						commandBuffer		(allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo		(DE_NULL);
 
 	{
 		const VkCommandBufferBeginInfo beginInfo =
@@ -1038,20 +1101,20 @@ tcu::TestStatus SampleReadTestInstance::iterate (void)
 			0u,
 			DE_NULL
 		};
-		vkd.cmdBeginRenderPass(*commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		RenderpassSubpass::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
 	}
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
 
 	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 
-	vkd.cmdNextSubpass(*commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+	RenderpassSubpass::cmdNextSubpass(vkd, *commandBuffer, &subpassBeginInfo, &subpassEndInfo);
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipeline);
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_subpassPipelineLayout, 0u, 1u,  &*m_subpassDescriptorSet, 0u, DE_NULL);
 	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 
-	vkd.cmdEndRenderPass(*commandBuffer);
+	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
 	// Memory barrier between rendering and copy
 	{
@@ -1230,7 +1293,7 @@ struct Programs
 	}
 };
 
-void initTests (tcu::TestCaseGroup* group)
+void initTests (tcu::TestCaseGroup* group, RenderPassType renderPassType)
 {
 	const deUint32			sampleCounts[]	= { 2u, 4u, 8u, 16u, 32u };
 	tcu::TestContext&		testCtx			(group->getTestContext());
@@ -1239,15 +1302,18 @@ void initTests (tcu::TestCaseGroup* group)
 	{
 		const deUint32		sampleCount	(sampleCounts[sampleCountNdx]);
 		{
+			const TestConfig	testConfig	(sampleCount, TESTMODE_ADD, 0, renderPassType);
 			const std::string	testName	("numsamples_" + de::toString(sampleCount) + "_add");
 
-			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), TestConfig(sampleCount, TESTMODE_ADD, 0)));
+			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
 		}
 
 		for (deUint32 sample = 0; sample < sampleCount; sample++)
 		{
+			const TestConfig	testConfig	(sampleCount, TESTMODE_SELECT, sample, renderPassType);
 			const std::string	testName	("numsamples_" + de::toString(sampleCount) + "_selected_sample_" + de::toString(sample));
-			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), TestConfig(sampleCount, TESTMODE_SELECT, sample)));
+
+			group->addChild(new InstanceFactory1<SampleReadTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
 		}
 	}
 }
@@ -1256,7 +1322,12 @@ void initTests (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createRenderPassSampleReadTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "sampleread", "Sample reading tests", initTests);
+	return createTestGroup(testCtx, "sampleread", "Sample reading tests", initTests, RENDERPASS_TYPE_LEGACY);
+}
+
+tcu::TestCaseGroup* createRenderPass2SampleReadTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "sampleread", "Sample reading tests", initTests, RENDERPASS_TYPE_RENDERPASS2);
 }
 
 } // vkt

@@ -30,6 +30,7 @@ namespace vkt
 {
 
 tcu::TestCaseGroup*	createRenderPassMultisampleResolveTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createRenderPass2MultisampleResolveTests (tcu::TestContext& testCtx);
 
 } // vkt
 

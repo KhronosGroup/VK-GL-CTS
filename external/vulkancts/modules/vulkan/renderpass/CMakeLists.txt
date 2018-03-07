@@ -5,6 +5,8 @@ include_directories(..)
 set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassTests.cpp
 	vktRenderPassTests.hpp
+	vktRenderPassTestsUtil.cpp
+	vktRenderPassTestsUtil.hpp
 	vktRenderPassMultisampleTests.cpp
 	vktRenderPassMultisampleTests.hpp
 	vktRenderPassMultisampleResolveTests.cpp
