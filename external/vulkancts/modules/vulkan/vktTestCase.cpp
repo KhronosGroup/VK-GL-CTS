@@ -518,6 +518,22 @@ bool									Context::contextSupports				(const ApiVersion version) const
 bool									Context::contextSupports				(const deUint32 requiredApiVersionBits) const
 																							{ return m_device->getUsedApiVersion() >= requiredApiVersionBits; }
 
+bool Context::requireDeviceExtension (const std::string& required)
+{
+	if (!isDeviceExtensionSupported(getUsedApiVersion(), getDeviceExtensions(), required))
+		TCU_THROW(NotSupportedError, required + " is not supported");
+
+	return true;
+}
+
+bool Context::requireInstanceExtension (const std::string& required)
+{
+	if (!isInstanceExtensionSupported(getUsedApiVersion(), getInstanceExtensions(), required))
+		TCU_THROW(NotSupportedError, required + " is not supported");
+
+	return true;
+}
+
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const

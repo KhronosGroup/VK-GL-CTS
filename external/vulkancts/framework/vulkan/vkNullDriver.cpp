@@ -177,7 +177,6 @@ VK_NULL_DEFINE_DEVICE_OBJ(ImageView);
 VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
 VK_NULL_DEFINE_DEVICE_OBJ(PipelineCache);
 VK_NULL_DEFINE_DEVICE_OBJ(PipelineLayout);
-VK_NULL_DEFINE_DEVICE_OBJ(RenderPass);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorSetLayout);
 VK_NULL_DEFINE_DEVICE_OBJ(Sampler);
 VK_NULL_DEFINE_DEVICE_OBJ(Framebuffer);
@@ -241,6 +240,13 @@ class Pipeline
 public:
 	Pipeline (VkDevice, const VkGraphicsPipelineCreateInfo*) {}
 	Pipeline (VkDevice, const VkComputePipelineCreateInfo*) {}
+};
+
+class RenderPass
+{
+public:
+	RenderPass (VkDevice, const VkRenderPassCreateInfo*)		{}
+	RenderPass (VkDevice, const VkRenderPassCreateInfo2KHR*)	{}
 };
 
 class SwapchainKHR

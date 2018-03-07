@@ -157,6 +157,10 @@ virtual VkResult			importSemaphoreFdKHR							(VkDevice device, const VkImportSe
 virtual VkResult			getSemaphoreFdKHR								(VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd) const;
 virtual void				cmdPushDescriptorSetKHR							(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, deUint32 set, deUint32 descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) const;
 virtual void				cmdPushDescriptorSetWithTemplateKHR				(VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, deUint32 set, const void* pData) const;
+virtual VkResult			createRenderPass2KHR							(VkDevice device, const VkRenderPassCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const;
+virtual void				cmdBeginRenderPass2KHR							(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfoKHR* pSubpassBeginInfo) const;
+virtual void				cmdNextSubpass2KHR								(VkCommandBuffer commandBuffer, const VkSubpassBeginInfoKHR* pSubpassBeginInfo, const VkSubpassEndInfoKHR* pSubpassEndInfo) const;
+virtual void				cmdEndRenderPass2KHR							(VkCommandBuffer commandBuffer, const VkSubpassEndInfoKHR* pSubpassEndInfo) const;
 virtual VkResult			getSwapchainStatusKHR							(VkDevice device, VkSwapchainKHR swapchain) const;
 virtual VkResult			importFenceWin32HandleKHR						(VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo) const;
 virtual VkResult			getFenceWin32HandleKHR							(VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const;
