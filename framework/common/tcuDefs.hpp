@@ -108,6 +108,7 @@ class NotSupportedError : public TestException
 {
 public:
 					NotSupportedError	(const char* message, const char* expr, const char* file, int line);
+					NotSupportedError	(const std::string& message, const char* expr, const char* file, int line);
 					NotSupportedError	(const std::string& message);
 	virtual			~NotSupportedError	(void) throw() {}
 };

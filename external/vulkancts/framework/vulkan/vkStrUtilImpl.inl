@@ -287,6 +287,13 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_HDR_METADATA_EXT:												return "VK_STRUCTURE_TYPE_HDR_METADATA_EXT";
+		case VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR:									return "VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR";
+		case VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR:										return "VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR";
+		case VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR:										return "VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR";
+		case VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2_KHR:										return "VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2_KHR";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR:									return "VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR";
+		case VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR:											return "VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR:											return "VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR";
 		case VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR:							return "VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR:								return "VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR:								return "VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR";
@@ -5052,6 +5059,110 @@ std::ostream& operator<< (std::ostream& s, const VkPresentRegionsKHR& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainCount = " << value.swapchainCount << '\n';
 	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAttachmentDescription2KHR& value)
+{
+	s << "VkAttachmentDescription2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getAttachmentDescriptionFlagsStr(value.flags) << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\tsamples = " << value.samples << '\n';
+	s << "\tloadOp = " << value.loadOp << '\n';
+	s << "\tstoreOp = " << value.storeOp << '\n';
+	s << "\tstencilLoadOp = " << value.stencilLoadOp << '\n';
+	s << "\tstencilStoreOp = " << value.stencilStoreOp << '\n';
+	s << "\tinitialLayout = " << value.initialLayout << '\n';
+	s << "\tfinalLayout = " << value.finalLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAttachmentReference2KHR& value)
+{
+	s << "VkAttachmentReference2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tattachment = " << value.attachment << '\n';
+	s << "\tlayout = " << value.layout << '\n';
+	s << "\taspectMask = " << getImageAspectFlagsStr(value.aspectMask) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubpassDescription2KHR& value)
+{
+	s << "VkSubpassDescription2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getSubpassDescriptionFlagsStr(value.flags) << '\n';
+	s << "\tpipelineBindPoint = " << value.pipelineBindPoint << '\n';
+	s << "\tviewMask = " << value.viewMask << '\n';
+	s << "\tinputAttachmentCount = " << value.inputAttachmentCount << '\n';
+	s << "\tpInputAttachments = " << value.pInputAttachments << '\n';
+	s << "\tcolorAttachmentCount = " << value.colorAttachmentCount << '\n';
+	s << "\tpColorAttachments = " << value.pColorAttachments << '\n';
+	s << "\tpResolveAttachments = " << value.pResolveAttachments << '\n';
+	s << "\tpDepthStencilAttachment = " << value.pDepthStencilAttachment << '\n';
+	s << "\tpreserveAttachmentCount = " << value.preserveAttachmentCount << '\n';
+	s << "\tpPreserveAttachments = " << value.pPreserveAttachments << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubpassDependency2KHR& value)
+{
+	s << "VkSubpassDependency2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcSubpass = " << value.srcSubpass << '\n';
+	s << "\tdstSubpass = " << value.dstSubpass << '\n';
+	s << "\tsrcStageMask = " << getPipelineStageFlagsStr(value.srcStageMask) << '\n';
+	s << "\tdstStageMask = " << getPipelineStageFlagsStr(value.dstStageMask) << '\n';
+	s << "\tsrcAccessMask = " << getAccessFlagsStr(value.srcAccessMask) << '\n';
+	s << "\tdstAccessMask = " << getAccessFlagsStr(value.dstAccessMask) << '\n';
+	s << "\tdependencyFlags = " << getDependencyFlagsStr(value.dependencyFlags) << '\n';
+	s << "\tviewOffset = " << value.viewOffset << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassCreateInfo2KHR& value)
+{
+	s << "VkRenderPassCreateInfo2KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getRenderPassCreateFlagsStr(value.flags) << '\n';
+	s << "\tattachmentCount = " << value.attachmentCount << '\n';
+	s << "\tpAttachments = " << value.pAttachments << '\n';
+	s << "\tsubpassCount = " << value.subpassCount << '\n';
+	s << "\tpSubpasses = " << value.pSubpasses << '\n';
+	s << "\tdependencyCount = " << value.dependencyCount << '\n';
+	s << "\tpDependencies = " << value.pDependencies << '\n';
+	s << "\tcorrelatedViewMaskCount = " << value.correlatedViewMaskCount << '\n';
+	s << "\tpCorrelatedViewMasks = " << value.pCorrelatedViewMasks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubpassBeginInfoKHR& value)
+{
+	s << "VkSubpassBeginInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcontents = " << value.contents << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubpassEndInfoKHR& value)
+{
+	s << "VkSubpassEndInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
 	s << '}';
 	return s;
 }
