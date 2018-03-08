@@ -415,6 +415,22 @@ void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext& co
 void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
 void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
 
+void createTestForStage(vk::VkShaderStageFlagBits					stage,
+						const std::string&							name,
+						const tcu::RGBA								(&inputColors)[4],
+						const tcu::RGBA								(&outputColors)[4],
+						const std::map<std::string, std::string>&	testCodeFragments,
+						const std::vector<deInt32>&					specConstants,
+						const PushConstants&						pushConstants,
+						const GraphicsResources&					resources,
+						const GraphicsInterfaces&					interfaces,
+						const std::vector<std::string>&				extensions,
+						const std::vector<std::string>&				features,
+						VulkanFeatures								vulkanFeatures,
+						tcu::TestCaseGroup*							tests,
+						const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
+						const std::string&							failMessageTemplate = std::string());
+
 void createTestsForAllStages (const std::string&						name,
 							  const tcu::RGBA							(&inputColors)[4],
 							  const tcu::RGBA							(&outputColors)[4],

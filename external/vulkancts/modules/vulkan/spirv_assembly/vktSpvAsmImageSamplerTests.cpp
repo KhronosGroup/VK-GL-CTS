@@ -770,12 +770,17 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 	de::Random				rnd					(deStringHash(group->getName()));
 	const deUint32			numDataPoints		= 64;
 	RGBA					defaultColors[4];
-	vector<tcu::Vec4>		inputData;
 
-	inputData.reserve(numDataPoints);
+	std::vector<deInt32>		noSpecConstants;
+	PushConstants				noPushConstants;
+	GraphicsInterfaces			noInterfaces;
+	std::vector<std::string>	noFeatures;
+	std::vector<std::string>	noExtensions;
+	VulkanFeatures				vulkanFeatures = VulkanFeatures();
 
+	vector<tcu::Vec4> inputData(numDataPoints);
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		inputData.push_back(tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat()));
+		inputData[numIdx] = tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat());
 
 	for (deUint32 opNdx = 0u; opNdx < READOP_LAST; opNdx++)
 	{
@@ -919,7 +924,24 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 					"";
 
-				createTestsForAllStages("shader", defaultColors, defaultColors, fragments, resources, vector<string>(), typeGroup.get());
+				vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
+				vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
+				createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "shader_vert", defaultColors, defaultColors, fragments, noSpecConstants,
+								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+				createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "shader_tessc", defaultColors, defaultColors, fragments, noSpecConstants,
+								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+				createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "shader_tesse", defaultColors, defaultColors, fragments, noSpecConstants,
+								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+				createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, "shader_geom", defaultColors, defaultColors, fragments, noSpecConstants,
+								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+				vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
+				vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
+				createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "shader_frag", defaultColors, defaultColors, fragments, noSpecConstants,
+								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
 
 				descGroup->addChild(typeGroup.release());
 			}
