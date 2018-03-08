@@ -38,7 +38,6 @@
 #include "gl4cGlSpirvTests.hpp"
 #include "gl4cIncompleteTextureAccessTests.hpp"
 #include "gl4cIndirectParametersTests.hpp"
-#include "gl4cKHRDebugTests.hpp"
 #include "gl4cLimitsTests.hpp"
 #include "gl4cMapBufferAlignmentTests.hpp"
 #include "gl4cMultiBindTests.hpp"
@@ -230,7 +229,6 @@ void GL43TestPackage::init(void)
 		addChild(new glcts::ArrayOfArraysTestGroupGL(getContext()));
 		addChild(new gl4cts::CopyImageTests(getContext()));
 		addChild(new glcts::DrawIndirectTestsGL43(getContext()));
-		addChild(new gl4cts::KHRDebugTests(getContext()));
 		addChild(new gl4cts::ProgramInterfaceQueryTests(getContext()));
 		addChild(new gl4cts::ComputeShaderTests(getContext()));
 		addChild(new deqp::RobustBufferAccessBehaviorTests(getContext()));

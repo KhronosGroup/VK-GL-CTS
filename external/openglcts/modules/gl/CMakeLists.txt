@@ -48,8 +48,6 @@ set(GLCTS_GL_SRCS
 	gl4cES31CompatibilityShaderStorageBufferObjectTests.cpp
 	gl4cES31CompatibilityTests.cpp
 	gl4cES31CompatibilityTests.hpp
-	gl4cKHRDebugTests.cpp
-	gl4cKHRDebugTests.hpp
 	gl4cMapBufferAlignmentTests.cpp
 	gl4cMapBufferAlignmentTests.hpp
 	gl4cMultiBindTests.cpp

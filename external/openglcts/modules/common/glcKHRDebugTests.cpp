@@ -2,7 +2,7 @@
  * OpenGL Conformance Test Suite
  * -----------------------------
  *
- * Copyright (c) 2015-2016 The Khronos Group Inc.
+ * Copyright (c) 2015-2018 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@
  */ /*-------------------------------------------------------------------*/
 
 /**
- * \file  gl4cKHRDebugTests.cpp
+ * \file  glcKHRDebugTests.cpp
  * \brief Implements conformance tests for "KHR Debug" functionality.
  */ /*-------------------------------------------------------------------*/
 
-#include "gl4cKHRDebugTests.hpp"
+#include "glcKHRDebugTests.hpp"
 
 #include "gluPlatform.hpp"
 #include "gluRenderConfig.hpp"
@@ -47,7 +47,7 @@
 
 using namespace glw;
 
-namespace gl4cts
+namespace glcts
 {
 namespace KHRDebug
 {
@@ -62,7 +62,7 @@ namespace KHRDebug
                                                                                                         \
 		if (expected_error != generated_error)                                                          \
 		{                                                                                               \
-			m_context.getTestContext().getLog()                                                         \
+			m_testCtx.getLog()                                                                          \
 				<< tcu::TestLog::Message << "File: " << __FILE__ << ", line: " << __LINE__              \
 				<< ". Got wrong error: " << glu::getErrorStr(generated_error)                           \
 				<< ", expected: " << glu::getErrorStr(expected_error) << ", message: " << error_message \
@@ -142,11 +142,11 @@ void fillGroupStack(const Functions* gl)
 /** Constructor
  * Creates and set as current new context that should be used by test.
  *
- * @param context  Test context
+ * @param testCtx  Test context
  * @param is_debug Selects if debug or non-debug context should be created
  **/
-TestBase::TestBase(deqp::Context& context, bool is_debug)
-	: m_gl(0), m_is_debug(is_debug), m_rc(0), m_test_base_context(context), m_orig_rc(0)
+TestBase::TestBase(tcu::TestContext& testContext, glu::ApiType apiType, bool is_debug)
+	: m_gl(0), m_is_debug(is_debug), m_rc(0), m_testContext(testContext), m_apiType(apiType)
 {
 	/* Nothing to be done here */
 }
@@ -175,9 +175,6 @@ void TestBase::init()
 		initNonDebug();
 	}
 
-	m_orig_rc = &m_test_base_context.getRenderContext();
-	m_test_base_context.setRenderContext(m_rc);
-
 	/* Get functions */
 	m_gl = &m_rc->getFunctions();
 }
@@ -186,11 +183,10 @@ void TestBase::init()
  **/
 void TestBase::initDebug()
 {
-	tcu::Platform&	platform = m_test_base_context.getTestContext().getPlatform();
-	glu::RenderConfig renderCfg(
-		glu::ContextType(m_test_base_context.getRenderContext().getType().getAPI(), glu::CONTEXT_DEBUG));
+	tcu::Platform&	platform = m_testContext.getPlatform();
+	glu::RenderConfig renderCfg(glu::ContextType(m_apiType, glu::CONTEXT_DEBUG));
 
-	const tcu::CommandLine& commandLine = m_test_base_context.getTestContext().getCommandLine();
+	const tcu::CommandLine& commandLine = m_testContext.getCommandLine();
 	parseRenderConfig(&renderCfg, commandLine);
 
 	if (commandLine.getSurfaceType() != tcu::SURFACETYPE_WINDOW)
@@ -204,11 +200,10 @@ void TestBase::initDebug()
  **/
 void TestBase::initNonDebug()
 {
-	tcu::Platform&	platform = m_test_base_context.getTestContext().getPlatform();
-	glu::RenderConfig renderCfg(
-		glu::ContextType(m_test_base_context.getRenderContext().getType().getAPI(), glu::ContextFlags(0)));
+	tcu::Platform&	platform = m_testContext.getPlatform();
+	glu::RenderConfig renderCfg(glu::ContextType(m_apiType, glu::ContextFlags(0)));
 
-	const tcu::CommandLine& commandLine = m_test_base_context.getTestContext().getCommandLine();
+	const tcu::CommandLine& commandLine = m_testContext.getCommandLine();
 	parseRenderConfig(&renderCfg, commandLine);
 
 	if (commandLine.getSurfaceType() != tcu::SURFACETYPE_WINDOW)
@@ -222,13 +217,8 @@ void TestBase::initNonDebug()
  **/
 void TestBase::done()
 {
-	/* Delete context used by test */
-	m_test_base_context.setRenderContext(m_orig_rc);
-
+	/* Delete context used by test and make no context current */
 	delete m_rc;
-
-	/* Switch back to original context */
-	m_test_base_context.getRenderContext().makeCurrent();
 
 	m_rc = 0;
 	m_gl = 0;
@@ -236,12 +226,12 @@ void TestBase::done()
 
 /** Constructor
  *
- * @param context  Test context
+ * @param testCtx  Test context
  * @param is_debug Selects if debug or non-debug context should be used
  * @param name     Name of test
  **/
-APIErrorsTest::APIErrorsTest(deqp::Context& context, bool is_debug, const GLchar* name)
-	: TestCase(context, name, "Verifies that errors are generated as expected"), TestBase(context, is_debug)
+APIErrorsTest::APIErrorsTest(tcu::TestContext& testCtx, glu::ApiType apiType, bool is_debug, const GLchar* name)
+	: TestBase(testCtx, apiType, is_debug), TestCase(testCtx, name, "Verifies that errors are generated as expected")
 {
 	/* Nothing to be done */
 }
@@ -655,7 +645,7 @@ tcu::TestNode::IterateResult APIErrorsTest::iterate()
 	}
 
 	/* Set result */
-	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
 	TestBase::done();
@@ -665,12 +655,12 @@ tcu::TestNode::IterateResult APIErrorsTest::iterate()
 
 /** Constructor
  *
- * @param context  Test context
+ * @param testCtx  Test context
  * @param is_debug Selects if debug or non-debug context should be used
  * @param name     Name of test
  **/
-LabelsTest::LabelsTest(deqp::Context& context, bool is_debug, const GLchar* name)
-	: TestCase(context, name, "Verifies that labels can be assigned and queried"), TestBase(context, is_debug)
+LabelsTest::LabelsTest(tcu::TestContext& testCtx, glu::ApiType apiType, bool is_debug, const GLchar* name)
+	: TestCase(testCtx, name, "Verifies that labels can be assigned and queried"), TestBase(testCtx, apiType, is_debug)
 {
 	/* Nothing to be done */
 }
@@ -864,7 +854,7 @@ tcu::TestNode::IterateResult LabelsTest::iterate()
 		{
 			test_case.m_destroy(m_gl, id);
 
-			m_context.getTestContext().getLog()
+			m_testCtx.getLog()
 				<< tcu::TestLog::Message << "Error during test case: " << test_case.m_name << tcu::TestLog::EndMessage;
 
 			TCU_FAIL(exc.what());
@@ -874,7 +864,7 @@ tcu::TestNode::IterateResult LabelsTest::iterate()
 	}
 
 	/* Set result */
-	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
 	TestBase::done();
@@ -1261,13 +1251,13 @@ GLvoid LabelsTest::deleteVertexArray(const Functions* gl, GLuint id)
 
 /** Constructor
  *
- * @param context  Test context
+ * @param testCtx  Test context
  * @param is_debug Selects if debug or non-debug context should be used
  * @param name     Name of test
  **/
-ReceiveingMessagesTest::ReceiveingMessagesTest(deqp::Context& context)
-	: TestCase(context, "receiveing_messages", "Verifies that messages can be received")
-	, TestBase(context, true /* is_debug */)
+ReceivingMessagesTest::ReceivingMessagesTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCase(testCtx, "receiving_messages", "Verifies that messages can be received")
+	, TestBase(testCtx, apiType, true /* is_debug */)
 {
 	/* Nothing to be done */
 }
@@ -1276,7 +1266,7 @@ ReceiveingMessagesTest::ReceiveingMessagesTest(deqp::Context& context)
  *
  * @return tcu::TestNode::STOP
  **/
-tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
+tcu::TestNode::IterateResult ReceivingMessagesTest::iterate()
 {
 	static const size_t bufSize		  = 32;
 	static const GLchar label[]		  = "foo";
@@ -1335,7 +1325,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 
 		if (1 != ret)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message
+			m_testCtx.getLog() << tcu::TestLog::Message
 												<< "GetDebugMessageLog returned invalid number of messages: " << ret
 												<< ", expected 1" << tcu::TestLog::EndMessage;
 
@@ -1549,7 +1539,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 
 		if (n_debug_messages != max_debug_messages)
 		{
-			m_context.getTestContext().getLog()
+			m_testCtx.getLog()
 				<< tcu::TestLog::Message << "State of DEBUG_LOGGED_MESSAGES: " << n_debug_messages << ", expected "
 				<< max_debug_messages << tcu::TestLog::EndMessage;
 
@@ -1601,7 +1591,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 
 		if (ret != (GLuint)half_count)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message
+			m_testCtx.getLog() << tcu::TestLog::Message
 												<< "GetDebugMessageLog returned unexpected number of messages: " << ret
 												<< ", expected " << half_count << tcu::TestLog::EndMessage;
 
@@ -1613,7 +1603,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 
 		if (n_debug_messages != rest_count)
 		{
-			m_context.getTestContext().getLog()
+			m_testCtx.getLog()
 				<< tcu::TestLog::Message << "State of DEBUG_LOGGED_MESSAGES: " << n_debug_messages << ", expected "
 				<< rest_count << tcu::TestLog::EndMessage;
 
@@ -1667,7 +1657,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 
 		if (ret != (GLuint)(rest_count - 1))
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message
+			m_testCtx.getLog() << tcu::TestLog::Message
 												<< "GetDebugMessageLog returned unexpected number of messages: " << ret
 												<< ", expected " << (rest_count - 1) << tcu::TestLog::EndMessage;
 
@@ -1679,7 +1669,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 
 		if (n_debug_messages != 1)
 		{
-			m_context.getTestContext().getLog()
+			m_testCtx.getLog()
 				<< tcu::TestLog::Message << "State of DEBUG_LOGGED_MESSAGES: " << n_debug_messages << ", expected "
 				<< (rest_count - 1) << tcu::TestLog::EndMessage;
 
@@ -1732,7 +1722,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 
 		if (ret != 1)
 		{
-			m_context.getTestContext().getLog() << tcu::TestLog::Message
+			m_testCtx.getLog() << tcu::TestLog::Message
 												<< "GetDebugMessageLog returned unexpected number of messages: " << ret
 												<< ", expected 1" << tcu::TestLog::EndMessage;
 
@@ -1744,7 +1734,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 
 		if (n_debug_messages != 0)
 		{
-			m_context.getTestContext().getLog()
+			m_testCtx.getLog()
 				<< tcu::TestLog::Message << "State of DEBUG_LOGGED_MESSAGES: " << n_debug_messages << ", expected 1"
 				<< tcu::TestLog::EndMessage;
 
@@ -1786,7 +1776,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
 	}
 
 	/* Set result */
-	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
 	TestBase::done();
@@ -1804,7 +1794,7 @@ tcu::TestNode::IterateResult ReceiveingMessagesTest::iterate()
  * @param ignored
  * @param info    Pointer to uint counter
  **/
-void ReceiveingMessagesTest::debug_proc(glw::GLenum /* source */, glw::GLenum /* type */, glw::GLuint /* id */,
+void ReceivingMessagesTest::debug_proc(glw::GLenum /* source */, glw::GLenum /* type */, glw::GLuint /* id */,
 										glw::GLenum /* severity */, glw::GLsizei /* length */,
 										const glw::GLchar* /* message */, const void* info)
 {
@@ -1819,7 +1809,7 @@ void ReceiveingMessagesTest::debug_proc(glw::GLenum /* source */, glw::GLenum /*
  * @param expected_callback  Expected state of DEBUG_CALLBACK_FUNCTION
  * @param expected_user_info Expected state of DEBUG_CALLBACK_USER_PARAM
  **/
-void ReceiveingMessagesTest::inspectDebugState(GLboolean expected_state, GLDEBUGPROC expected_callback,
+void ReceivingMessagesTest::inspectDebugState(GLboolean expected_state, GLDEBUGPROC expected_callback,
 											   GLvoid* expected_user_info) const
 {
 	GLboolean debug_state = -1;
@@ -1828,7 +1818,7 @@ void ReceiveingMessagesTest::inspectDebugState(GLboolean expected_state, GLDEBUG
 
 	if (expected_state != debug_state)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "State of DEBUG_OUTPUT: " << debug_state
+		m_testCtx.getLog() << tcu::TestLog::Message << "State of DEBUG_OUTPUT: " << debug_state
 											<< ", expected " << expected_state << tcu::TestLog::EndMessage;
 
 		TCU_FAIL("Invalid state of DEBUG_OUTPUT");
@@ -1858,14 +1848,14 @@ void ReceiveingMessagesTest::inspectDebugState(GLboolean expected_state, GLDEBUG
  * @param callback_counter            Reference to counter
  * @param expected_number_of_messages Expected value of counter
  **/
-void ReceiveingMessagesTest::inspectCallbackCounter(GLuint& callback_counter, GLuint expected_number_of_messages) const
+void ReceivingMessagesTest::inspectCallbackCounter(GLuint& callback_counter, GLuint expected_number_of_messages) const
 {
 	m_gl->finish();
 	GLU_EXPECT_NO_ERROR(m_gl->getError(), "Finish");
 
 	if (expected_number_of_messages != callback_counter)
 	{
-		m_context.getTestContext().getLog()
+		m_testCtx.getLog()
 			<< tcu::TestLog::Message << "Debug callback was executed invalid number of times: " << callback_counter
 			<< ", expected " << expected_number_of_messages << tcu::TestLog::EndMessage;
 
@@ -1877,7 +1867,7 @@ void ReceiveingMessagesTest::inspectCallbackCounter(GLuint& callback_counter, GL
  *
  * @param expected_number_of_messages Expected number of messages
  **/
-void ReceiveingMessagesTest::inspectMessageLog(GLuint expected_number_of_messages) const
+void ReceivingMessagesTest::inspectMessageLog(GLuint expected_number_of_messages) const
 {
 	static const size_t bufSize		  = 32;
 	static const size_t read_messages = 4;
@@ -1896,7 +1886,7 @@ void ReceiveingMessagesTest::inspectMessageLog(GLuint expected_number_of_message
 
 	if (expected_number_of_messages != ret)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message
+		m_testCtx.getLog() << tcu::TestLog::Message
 											<< "GetDebugMessageLog returned invalid number of messages: " << ret
 											<< ", expected " << expected_number_of_messages << tcu::TestLog::EndMessage;
 
@@ -1906,13 +1896,13 @@ void ReceiveingMessagesTest::inspectMessageLog(GLuint expected_number_of_message
 
 /** Constructor
  *
- * @param context  Test context
+ * @param testCtx  Test context
  * @param is_debug Selects if debug or non-debug context should be used
  * @param name     Name of test
  **/
-GroupsTest::GroupsTest(deqp::Context& context)
-	: TestCase(context, "groups", "Verifies that groups can be used to control generated messages")
-	, TestBase(context, true /* is_debug */)
+GroupsTest::GroupsTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCase(testCtx, "groups", "Verifies that groups can be used to control generated messages")
+	, TestBase(testCtx, apiType, true /* is_debug */)
 {
 	/* Nothing to be done */
 }
@@ -2111,7 +2101,7 @@ tcu::TestNode::IterateResult GroupsTest::iterate()
 	inspectGroupStack(1);
 
 	/* Set result */
-	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
 	TestBase::done();
@@ -2132,7 +2122,7 @@ void GroupsTest::inspectGroupStack(GLuint expected_depth) const
 
 	if (expected_depth != (GLuint)stack_depth)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message
+		m_testCtx.getLog() << tcu::TestLog::Message
 											<< "State of DEBUG_GROUP_STACK_DEPTH: " << stack_depth << ", expected "
 											<< expected_depth << tcu::TestLog::EndMessage;
 
@@ -2175,7 +2165,7 @@ void GroupsTest::inspectMessageLog(glw::GLenum expected_source, glw::GLenum expe
 
 	if (expected_source != source)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Got message with invalid source: " << source
+		m_testCtx.getLog() << tcu::TestLog::Message << "Got message with invalid source: " << source
 											<< ", expected " << expected_source << tcu::TestLog::EndMessage;
 
 		TCU_FAIL("Invalid source of message");
@@ -2183,7 +2173,7 @@ void GroupsTest::inspectMessageLog(glw::GLenum expected_source, glw::GLenum expe
 
 	if (expected_type != type)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Got message with invalid type: " << type
+		m_testCtx.getLog() << tcu::TestLog::Message << "Got message with invalid type: " << type
 											<< ", expected " << expected_type << tcu::TestLog::EndMessage;
 
 		TCU_FAIL("Invalid type of message");
@@ -2191,7 +2181,7 @@ void GroupsTest::inspectMessageLog(glw::GLenum expected_source, glw::GLenum expe
 
 	if (expected_id != id)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Got message with invalid id: " << id
+		m_testCtx.getLog() << tcu::TestLog::Message << "Got message with invalid id: " << id
 											<< ", expected " << expected_id << tcu::TestLog::EndMessage;
 
 		TCU_FAIL("Invalid id of message");
@@ -2199,7 +2189,7 @@ void GroupsTest::inspectMessageLog(glw::GLenum expected_source, glw::GLenum expe
 
 	if (expected_severity != severity)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message
+		m_testCtx.getLog() << tcu::TestLog::Message
 											<< "Got message with invalid severity: " << severity << ", expected "
 											<< expected_severity << tcu::TestLog::EndMessage;
 
@@ -2211,7 +2201,7 @@ void GroupsTest::inspectMessageLog(glw::GLenum expected_source, glw::GLenum expe
 	// OpenGL 4.5 Core Spec, Page 530 and Page 535
 	if (expected_length + 1 != length)
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Got message with invalid length: " << length
+		m_testCtx.getLog() << tcu::TestLog::Message << "Got message with invalid length: " << length
 											<< ", expected " << expected_length << tcu::TestLog::EndMessage;
 
 		TCU_FAIL("Invalid length of message");
@@ -2219,7 +2209,7 @@ void GroupsTest::inspectMessageLog(glw::GLenum expected_source, glw::GLenum expe
 
 	if (0 != strcmp(expected_label, messageLog))
 	{
-		m_context.getTestContext().getLog() << tcu::TestLog::Message
+		m_testCtx.getLog() << tcu::TestLog::Message
 											<< "Got message with invalid message: " << messageLog << ", expected "
 											<< expected_label << tcu::TestLog::EndMessage;
 
@@ -2255,13 +2245,13 @@ void GroupsTest::verifyEmptyLog() const
 
 /** Constructor
  *
- * @param context  Test context
+ * @param testCtx  Test context
  * @param is_debug Selects if debug or non-debug context should be used
  * @param name     Name of test
  **/
-SynchronousCallsTest::SynchronousCallsTest(deqp::Context& context)
-	: TestCase(context, "synchronous_calls", "Verifies that messages can be received")
-	, TestBase(context, true /* is_debug */)
+SynchronousCallsTest::SynchronousCallsTest(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCase(testCtx, "synchronous_calls", "Verifies that messages can be received")
+	, TestBase(testCtx, apiType, true /* is_debug */)
 {
 	/* Create pthread_key_t visible to all threads
 	 * The key has value NULL associated with it in all existing
@@ -2387,7 +2377,7 @@ tcu::TestNode::IterateResult SynchronousCallsTest::iterate()
 	}
 
 	/* Set result */
-	m_context.getTestContext().setTestResult(QP_TEST_RESULT_PASS, "Pass");
+	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 
 	/* Done */
 	TestBase::done();
@@ -2424,8 +2414,10 @@ void SynchronousCallsTest::debug_proc(glw::GLenum /* source */, glw::GLenum /* t
  *
  *  @param context Rendering context.
  **/
-KHRDebugTests::KHRDebugTests(deqp::Context& context)
-	: TestCaseGroup(context, "khr_debug", "Verifies \"khr debug\" functionality")
+KHRDebugTests::KHRDebugTests(tcu::TestContext& testCtx, glu::ApiType apiType)
+	: TestCaseGroup(testCtx, "khr_debug", "Verifies \"khr debug\" functionality")
+	, m_apiType(apiType)
+
 {
 	/* Left blank on purpose */
 }
@@ -2435,13 +2427,13 @@ KHRDebugTests::KHRDebugTests(deqp::Context& context)
  **/
 void KHRDebugTests::init(void)
 {
-	addChild(new KHRDebug::APIErrorsTest(m_context, false, "api_errors_non_debug"));
-	addChild(new KHRDebug::LabelsTest(m_context, false, "labels_non_debug"));
-	addChild(new KHRDebug::ReceiveingMessagesTest(m_context));
-	addChild(new KHRDebug::GroupsTest(m_context));
-	addChild(new KHRDebug::APIErrorsTest(m_context, true, "api_errors_debug"));
-	addChild(new KHRDebug::LabelsTest(m_context, true, "labels_debug"));
-	addChild(new KHRDebug::SynchronousCallsTest(m_context));
+	addChild(new KHRDebug::APIErrorsTest(m_testCtx, m_apiType, false, "api_errors_non_debug"));
+	addChild(new KHRDebug::LabelsTest(m_testCtx, m_apiType, false, "labels_non_debug"));
+	addChild(new KHRDebug::ReceivingMessagesTest(m_testCtx, m_apiType));
+	addChild(new KHRDebug::GroupsTest(m_testCtx, m_apiType));
+	addChild(new KHRDebug::APIErrorsTest(m_testCtx, m_apiType, true, "api_errors_debug"));
+	addChild(new KHRDebug::LabelsTest(m_testCtx, m_apiType, true, "labels_debug"));
+	addChild(new KHRDebug::SynchronousCallsTest(m_testCtx, m_apiType));
 }
 
-} /* gl4cts namespace */
+} /* glcts namespace */

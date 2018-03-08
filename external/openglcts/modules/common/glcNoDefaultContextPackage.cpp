@@ -23,6 +23,7 @@
 
 #include "glcNoDefaultContextPackage.hpp"
 #include "glcContextFlagsTests.hpp"
+#include "glcKHRDebugTests.hpp"
 #include "glcMultipleContextsTests.hpp"
 #include "glcNoErrorTests.hpp"
 #include "glcRobustnessTests.hpp"
@@ -92,6 +93,10 @@ void NoDefaultContextPackage::init(void)
 	tcu::TestCaseGroup* gl40Group = new tcu::TestCaseGroup(getTestContext(), "gl40", "");
 	gl40Group->addChild(new glcts::MultipleContextsTests(getTestContext(), glu::ApiType::core(4, 0)));
 	addChild(gl40Group);
+
+	tcu::TestCaseGroup* gl43Group = new tcu::TestCaseGroup(getTestContext(), "gl43", "");
+	gl43Group->addChild(new glcts::KHRDebugTests(getTestContext(), glu::ApiType::core(4, 3)));
+	addChild(gl43Group);
 
 	tcu::TestCaseGroup* gl45Group = new tcu::TestCaseGroup(getTestContext(), "gl45", "");
 	gl45Group->addChild(new glcts::RobustnessTests(getTestContext(), glu::ApiType::core(4, 5)));
