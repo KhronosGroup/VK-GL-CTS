@@ -32,6 +32,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
@@ -414,22 +415,7 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 
 	vk.endCommandBuffer(*cmdBuffer);
 
-	// Submit command buffer
-	const vk::VkSubmitInfo submitInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,							// const void*				pNext;
-		0,									// deUint32					waitSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-		(const vk::VkPipelineStageFlags*)DE_NULL,
-		1,									// deUint32					commandBufferCount;
-		&cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0,									// deUint32					signalSemaphoreCount;
-		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-	};
-	vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
-
-	VK_CHECK(vk.queueWaitIdle(queue));
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	deUint64 queryResults[NUM_QUERIES_IN_POOL] = { 0 };
 	size_t queryResultsSize		= sizeof(queryResults);

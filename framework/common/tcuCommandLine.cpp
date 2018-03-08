@@ -86,6 +86,7 @@ DE_DECLARE_COMMAND_LINE_OPT(LogImages,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(TestOOM,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID,					int);
+DE_DECLARE_COMMAND_LINE_OPT(VKDeviceGroupID,			int);
 DE_DECLARE_COMMAND_LINE_OPT(LogFlush,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(Validation,					bool);
 
@@ -171,6 +172,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<EGLWindowType>		(DE_NULL,	"deqp-egl-window-type",			"EGL native window type")
 		<< Option<EGLPixmapType>		(DE_NULL,	"deqp-egl-pixmap-type",			"EGL native pixmap type")
 		<< Option<VKDeviceID>			(DE_NULL,	"deqp-vk-device-id",			"Vulkan device ID (IDs start from 1)",									"1")
+		<< Option<VKDeviceGroupID>		(DE_NULL,	"deqp-vk-device-group-id",		"Vulkan device Group ID (IDs start from 1)",							"1")
 		<< Option<LogImages>			(DE_NULL,	"deqp-log-images",				"Enable or disable logging of result images",		s_enableNames,		"enable")
 		<< Option<LogShaderSources>		(DE_NULL,	"deqp-log-shader-sources",		"Enable or disable logging of shader sources",		s_enableNames,		"enable")
 		<< Option<TestOOM>				(DE_NULL,	"deqp-test-oom",				"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
@@ -786,6 +788,7 @@ int						CommandLine::getGLConfigId				(void) const	{ return m_cmdLine.getOption
 int						CommandLine::getCLPlatformId			(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();					}
 const std::vector<int>&	CommandLine::getCLDeviceIds				(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();					}
 int						CommandLine::getVKDeviceId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceID>();					}
+int						CommandLine::getVKDeviceGroupId			(void) const	{ return m_cmdLine.getOption<opt::VKDeviceGroupID>();				}
 bool					CommandLine::isValidationEnabled		(void) const	{ return m_cmdLine.getOption<opt::Validation>();					}
 bool					CommandLine::isOutOfMemoryTestEnabled	(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();						}
 

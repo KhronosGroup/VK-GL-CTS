@@ -90,6 +90,7 @@ using namespace vk;
 using std::map;
 using std::string;
 using std::vector;
+using tcu::Float16;
 using tcu::IVec3;
 using tcu::IVec4;
 using tcu::RGBA;
@@ -157,6 +158,31 @@ bool graphicsCheck16BitFloats (const std::vector<Resource>&	originalFloats,
 		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
 			if (!compare16BitFloat(original[numNdx], returned[numNdx], RoundingMode, log))
 				return false;
+	}
+
+	return true;
+}
+
+bool computeCheckBuffersFloats (const std::vector<BufferSp>&	originalFloats,
+								const vector<AllocationSp>&		outputAllocs,
+								const std::vector<BufferSp>&	/*expectedOutputs*/,
+								tcu::TestLog&					/*log*/)
+{
+	std::vector<deUint8> result;
+	originalFloats.front()->getBytes(result);
+
+	const deUint16 * results = reinterpret_cast<const deUint16 *>(&result[0]);
+	const deUint16 * expected = reinterpret_cast<const deUint16 *>(outputAllocs.front()->getHostPtr());
+
+	for (size_t i = 0; i < result.size() / sizeof (deUint16); ++i)
+	{
+		if (results[i] == expected[i])
+			continue;
+
+		if (Float16(results[i]).isNaN() && Float16(expected[i]).isNaN())
+			continue;
+
+		return false;
 	}
 
 	return true;
@@ -491,9 +517,8 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 		"%u32       = OpTypeInt 32 0\n"
 		"%i32       = OpTypeInt 32 1\n"
 		"%f32       = OpTypeFloat 32\n"
-		"%uvec3     = OpTypeVector %u32 3\n"
-		"%fvec3     = OpTypeVector %f32 3\n"
-		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
+		"%v3u32     = OpTypeVector %u32 3\n"
+		"%uvec3ptr  = OpTypePointer Input %v3u32\n"
 		"%i32ptr    = OpTypePointer Uniform %i32\n"
 		"%f32ptr    = OpTypePointer Uniform %f32\n"
 
@@ -505,6 +530,7 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 		"%c_i32_32  = OpConstant %i32 32\n"
 		"%c_i32_64  = OpConstant %i32 64\n"
 		"%c_i32_128 = OpConstant %i32 128\n"
+		"%c_i32_ci  = OpConstant %i32 ${constarrayidx}\n"
 
 		"%i32arr    = OpTypeArray %i32 %c_i32_128\n"
 		"%f32arr    = OpTypeArray %f32 %c_i32_128\n"
@@ -523,9 +549,9 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
-		"%idval     = OpLoad %uvec3 %id\n"
+		"%idval     = OpLoad %v3u32 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
-		"%inloc     = OpAccessChain %${base16}ptr %ssbo16 %zero %x ${index0:opt}\n"
+		"%inloc     = OpAccessChain %${base16}ptr %ssbo16 %zero %${arrayindex} ${index0:opt}\n"
 		"%val16     = OpLoad %${base16} %inloc\n"
 		"%val32     = ${convert} %${base32} %val16\n"
 		"%outloc    = OpAccessChain %${base32}ptr %ssbo32 %zero %x ${index0:opt}\n"
@@ -552,14 +578,18 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 			const char*	base32;
 			const char*	base16;
 			const char*	stride;
+			bool		useConstantIndex;
+			unsigned	constantIndex;
 			unsigned	count;
 		};
 
 		const CompositeType	cTypes[]	=
 		{
-			{"scalar",	"f32",		"f16",		"OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 2\n",				numElements},
-			{"vector",	"v2f32",	"v2f16",	"OpDecorate %v2f32arr ArrayStride 8\nOpDecorate %v2f16arr ArrayStride 4\n",			numElements / 2},
-			{"matrix",	"v2f32",	"v2f16",	"OpDecorate %m4v2f32arr ArrayStride 32\nOpDecorate %m4v2f16arr ArrayStride 16\n",	numElements / 8},
+			{"scalar",				"f32",		"f16",		"OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 2\n",				false,	0,	numElements},
+			{"scalar_const_idx_5",	"f32",		"f16",		"OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 2\n",				true,	5,	numElements},
+			{"scalar_const_idx_8",	"f32",		"f16",		"OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 2\n",				true,	8,	numElements},
+			{"vector",				"v2f32",	"v2f16",	"OpDecorate %v2f32arr ArrayStride 8\nOpDecorate %v2f16arr ArrayStride 4\n",			false,	0,	numElements / 2},
+			{"matrix",				"v2f32",	"v2f16",	"OpDecorate %m4v2f32arr ArrayStride 32\nOpDecorate %m4v2f16arr ArrayStride 16\n",	false,	0,	numElements / 8},
 		};
 
 		vector<deFloat16>	float16Data			= getFloat16s(rnd, numElements);
@@ -583,6 +613,19 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				specs["base16"]			= cTypes[tyIdx].base16;
 				specs["types"]			= floatTypes;
 				specs["convert"]		= "OpFConvert";
+				specs["constarrayidx"]	= de::toString(cTypes[tyIdx].constantIndex);
+				if (cTypes[tyIdx].useConstantIndex)
+					specs["arrayindex"] = "c_i32_ci";
+				else
+					specs["arrayindex"] = "x";
+
+				vector<float>			float32DataConstIdx;
+				if (cTypes[tyIdx].useConstantIndex)
+				{
+					const deUint32 numFloats = numElements / cTypes[tyIdx].count;
+					for (deUint32 numIdx = 0; numIdx < numElements; ++numIdx)
+						float32DataConstIdx.push_back(float32Data[cTypes[tyIdx].constantIndex * numFloats + numIdx % numFloats]);
+				}
 
 				if (strcmp(cTypes[tyIdx].name, "matrix") == 0)
 				{
@@ -624,7 +667,7 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
 
 				spec.inputs.push_back(BufferSp(new Float16Buffer(float16Data)));
-				spec.outputs.push_back(BufferSp(new Float32Buffer(float32Data)));
+				spec.outputs.push_back(BufferSp(new Float32Buffer(cTypes[tyIdx].useConstantIndex ? float32DataConstIdx : float32Data)));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -666,15 +709,21 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 			const char*	base16;
 			const char* opcode;
 			const char*	stride;
+			bool		useConstantIndex;
+			unsigned	constantIndex;
 			unsigned	count;
 		};
 
 		const CompositeType	cTypes[]	=
 		{
-			{"scalar_sint",	true,	sintTypes,	"i32",		"i16",		"OpSConvert",	"OpDecorate %i32arr ArrayStride 4\nOpDecorate %i16arr ArrayStride 2\n",			numElements},
-			{"scalar_uint",	false,	uintTypes,	"u32",		"u16",		"OpUConvert",	"OpDecorate %u32arr ArrayStride 4\nOpDecorate %u16arr ArrayStride 2\n",			numElements},
-			{"vector_sint",	true,	sintTypes,	"v4i32",	"v4i16",	"OpSConvert",	"OpDecorate %v4i32arr ArrayStride 16\nOpDecorate %v4i16arr ArrayStride 8\n",	numElements / 4},
-			{"vector_uint",	false,	uintTypes,	"v4u32",	"v4u16",	"OpUConvert",	"OpDecorate %v4u32arr ArrayStride 16\nOpDecorate %v4u16arr ArrayStride 8\n",	numElements / 4},
+			{"scalar_sint",				true,	sintTypes,	"i32",		"i16",		"OpSConvert",	"OpDecorate %i32arr ArrayStride 4\nOpDecorate %i16arr ArrayStride 2\n",			false,	0,	numElements},
+			{"scalar_sint_const_idx_5",	true,	sintTypes,	"i32",		"i16",		"OpSConvert",	"OpDecorate %i32arr ArrayStride 4\nOpDecorate %i16arr ArrayStride 2\n",			true,	5,	numElements},
+			{"scalar_sint_const_idx_8",	true,	sintTypes,	"i32",		"i16",		"OpSConvert",	"OpDecorate %i32arr ArrayStride 4\nOpDecorate %i16arr ArrayStride 2\n",			true,	8,	numElements},
+			{"scalar_uint",				false,	uintTypes,	"u32",		"u16",		"OpUConvert",	"OpDecorate %u32arr ArrayStride 4\nOpDecorate %u16arr ArrayStride 2\n",			false,	0,	numElements},
+			{"scalar_uint_const_idx_5",	false,	uintTypes,	"u32",		"u16",		"OpUConvert",	"OpDecorate %u32arr ArrayStride 4\nOpDecorate %u16arr ArrayStride 2\n",			true,	5,	numElements},
+			{"scalar_uint_const_idx_8",	false,	uintTypes,	"u32",		"u16",		"OpUConvert",	"OpDecorate %u32arr ArrayStride 4\nOpDecorate %u16arr ArrayStride 2\n",			true,	8,	numElements},
+			{"vector_sint",				true,	sintTypes,	"v4i32",	"v4i16",	"OpSConvert",	"OpDecorate %v4i32arr ArrayStride 16\nOpDecorate %v4i16arr ArrayStride 8\n",	false,	0,	numElements / 4},
+			{"vector_uint",				false,	uintTypes,	"v4u32",	"v4u16",	"OpUConvert",	"OpDecorate %v4u32arr ArrayStride 16\nOpDecorate %v4u16arr ArrayStride 8\n",		false,	0,	numElements / 4}
 		};
 
 		vector<deInt16>	inputs			= getInt16s(rnd, numElements);
@@ -698,9 +747,25 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
 			for (deUint32 tyIdx = 0; tyIdx < DE_LENGTH_OF_ARRAY(cTypes); ++tyIdx)
 			{
-				ComputeShaderSpec		spec;
-				map<string, string>		specs;
-				string					testName	= string(CAPABILITIES[capIdx].name) + "_" + cTypes[tyIdx].name;
+				ComputeShaderSpec	spec;
+				map<string, string>	specs;
+				string				testName	= string(CAPABILITIES[capIdx].name) + "_" + cTypes[tyIdx].name;
+				vector<deInt32>		intDataConstIdx;
+
+				if (cTypes[tyIdx].useConstantIndex)
+				{
+					const deUint32 numInts = numElements / cTypes[tyIdx].count;
+
+					for (deUint32 numIdx = 0; numIdx < numElements; ++numIdx)
+					{
+						const deInt32 idx = cTypes[tyIdx].constantIndex * numInts + numIdx % numInts;
+
+						if (cTypes[tyIdx].isSigned)
+							intDataConstIdx.push_back(sOutputs[idx]);
+						else
+							intDataConstIdx.push_back(uOutputs[idx]);
+					}
+				}
 
 				specs["capability"]		= CAPABILITIES[capIdx].cap;
 				specs["storage"]		= CAPABILITIES[capIdx].decor;
@@ -709,13 +774,20 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				specs["base16"]			= cTypes[tyIdx].base16;
 				specs["types"]			= cTypes[tyIdx].types;
 				specs["convert"]		= cTypes[tyIdx].opcode;
+				specs["constarrayidx"]	= de::toString(cTypes[tyIdx].constantIndex);
+				if (cTypes[tyIdx].useConstantIndex)
+					specs["arrayindex"] = "c_i32_ci";
+				else
+					specs["arrayindex"] = "x";
 
 				spec.assembly			= shaderTemplate.specialize(specs);
 				spec.numWorkGroups		= IVec3(cTypes[tyIdx].count, 1, 1);
 				spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
 
 				spec.inputs.push_back(BufferSp(new Int16Buffer(inputs)));
-				if (cTypes[tyIdx].isSigned)
+				if (cTypes[tyIdx].useConstantIndex)
+					spec.outputs.push_back(BufferSp(new Int32Buffer(intDataConstIdx)));
+				else if (cTypes[tyIdx].isSigned)
 					spec.outputs.push_back(BufferSp(new Int32Buffer(sOutputs)));
 				else
 					spec.outputs.push_back(BufferSp(new Int32Buffer(uOutputs)));
@@ -753,15 +825,13 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 
 		"${matrix_decor:opt}\n"
 
-		"%bool      = OpTypeBool\n"
 		"%void      = OpTypeVoid\n"
 		"%voidf     = OpTypeFunction %void\n"
 		"%u32       = OpTypeInt 32 0\n"
 		"%i32       = OpTypeInt 32 1\n"
 		"%f32       = OpTypeFloat 32\n"
-		"%uvec3     = OpTypeVector %u32 3\n"
-		"%fvec3     = OpTypeVector %f32 3\n"
-		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
+		"%v3u32     = OpTypeVector %u32 3\n"
+		"%uvec3ptr  = OpTypePointer Input %v3u32\n"
 		"%i32ptr    = OpTypePointer Uniform %i32\n"
 		"%f32ptr    = OpTypePointer Uniform %f32\n"
 
@@ -771,6 +841,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 		"%c_i32_16  = OpConstant %i32 16\n"
 		"%c_i32_32  = OpConstant %i32 32\n"
 		"%c_i32_64  = OpConstant %i32 64\n"
+		"%c_i32_ci  = OpConstant %i32 ${constarrayidx}\n"
 
 		"%i32arr    = OpTypeArray %i32 %c_i32_64\n"
 		"%f32arr    = OpTypeArray %f32 %c_i32_64\n"
@@ -789,9 +860,9 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
-		"%idval     = OpLoad %uvec3 %id\n"
+		"%idval     = OpLoad %v3u32 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
-		"%inloc     = OpAccessChain %${base16}ptr %pc16 %zero %x ${index0:opt}\n"
+		"%inloc     = OpAccessChain %${base16}ptr %pc16 %zero %${arrayindex} ${index0:opt}\n"
 		"%val16     = OpLoad %${base16} %inloc\n"
 		"%val32     = ${convert} %${base32} %val16\n"
 		"%outloc    = OpAccessChain %${base32}ptr %ssbo32 %zero %x ${index0:opt}\n"
@@ -818,14 +889,18 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			const char*	base32;
 			const char*	base16;
 			const char*	stride;
+			bool		useConstantIndex;
+			unsigned	constantIndex;
 			unsigned	count;
 		};
 
 		const CompositeType	cTypes[]	=
 		{
-			{"scalar",	"f32",		"f16",		"OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 2\n",				numElements},
-			{"vector",	"v4f32",	"v4f16",	"OpDecorate %v4f32arr ArrayStride 16\nOpDecorate %v4f16arr ArrayStride 8\n",		numElements / 4},
-			{"matrix",	"v4f32",	"v4f16",	"OpDecorate %m2v4f32arr ArrayStride 32\nOpDecorate %m2v4f16arr ArrayStride 16\n",	numElements / 8},
+			{"scalar",				"f32",		"f16",		"OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 2\n",				false,	0,	numElements},
+			{"scalar_const_idx_5",	"f32",		"f16",		"OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 2\n",				true,	5,	numElements},
+			{"scalar_const_idx_8",	"f32",		"f16",		"OpDecorate %f32arr ArrayStride 4\nOpDecorate %f16arr ArrayStride 2\n",				true,	8,	numElements},
+			{"vector",				"v4f32",	"v4f16",	"OpDecorate %v4f32arr ArrayStride 16\nOpDecorate %v4f16arr ArrayStride 8\n",		false,	0,	numElements / 4},
+			{"matrix",				"v4f32",	"v4f16",	"OpDecorate %m2v4f32arr ArrayStride 32\nOpDecorate %m2v4f16arr ArrayStride 16\n",	false,	0,	numElements / 8},
 		};
 
 		vector<deFloat16>	float16Data			= getFloat16s(rnd, numElements);
@@ -841,11 +916,24 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			map<string, string>		specs;
 			string					testName	= string(cTypes[tyIdx].name) + "_float";
 
+			vector<float>			float32DataConstIdx;
+			if (cTypes[tyIdx].useConstantIndex)
+			{
+				const deUint32 numFloats = numElements / cTypes[tyIdx].count;
+				for (deUint32 numIdx = 0; numIdx < numElements; ++numIdx)
+					float32DataConstIdx.push_back(float32Data[cTypes[tyIdx].constantIndex * numFloats + numIdx % numFloats]);
+			}
+
 			specs["stride"]			= cTypes[tyIdx].stride;
 			specs["base32"]			= cTypes[tyIdx].base32;
 			specs["base16"]			= cTypes[tyIdx].base16;
 			specs["types"]			= floatTypes;
 			specs["convert"]		= "OpFConvert";
+			specs["constarrayidx"]	= de::toString(cTypes[tyIdx].constantIndex);
+			if (cTypes[tyIdx].useConstantIndex)
+				specs["arrayindex"] = "c_i32_ci";
+			else
+				specs["arrayindex"] = "x";
 
 			if (strcmp(cTypes[tyIdx].name, "matrix") == 0)
 			{
@@ -874,7 +962,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			spec.verifyIO			= check32BitFloats;
 			spec.pushConstants		= BufferSp(new Float16Buffer(float16Data));
 
-			spec.outputs.push_back(BufferSp(new Float32Buffer(float32Data)));
+			spec.outputs.push_back(BufferSp(new Float32Buffer(cTypes[tyIdx].useConstantIndex ? float32DataConstIdx : float32Data)));
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
@@ -915,15 +1003,21 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			const char*	base16;
 			const char* opcode;
 			const char*	stride;
+			bool		useConstantIndex;
+			unsigned	constantIndex;
 			unsigned	count;
 		};
 
 		const CompositeType	cTypes[]	=
 		{
-			{"scalar_sint",	true,	sintTypes,	"i32",		"i16",		"OpSConvert",	"OpDecorate %i32arr ArrayStride 4\nOpDecorate %i16arr ArrayStride 2\n",		numElements},
-			{"scalar_uint",	false,	uintTypes,	"u32",		"u16",		"OpUConvert",	"OpDecorate %u32arr ArrayStride 4\nOpDecorate %u16arr ArrayStride 2\n",		numElements},
-			{"vector_sint",	true,	sintTypes,	"v2i32",	"v2i16",	"OpSConvert",	"OpDecorate %v2i32arr ArrayStride 8\nOpDecorate %v2i16arr ArrayStride 4\n",	numElements / 2},
-			{"vector_uint",	false,	uintTypes,	"v2u32",	"v2u16",	"OpUConvert",	"OpDecorate %v2u32arr ArrayStride 8\nOpDecorate %v2u16arr ArrayStride 4\n",	numElements / 2},
+			{"scalar_sint",				true,	sintTypes,	"i32",		"i16",		"OpSConvert",	"OpDecorate %i32arr ArrayStride 4\nOpDecorate %i16arr ArrayStride 2\n",			false,	0,	numElements},
+			{"scalar_sint_const_idx_5",	true,	sintTypes,	"i32",		"i16",		"OpSConvert",	"OpDecorate %i32arr ArrayStride 4\nOpDecorate %i16arr ArrayStride 2\n",			true,	5,	numElements},
+			{"scalar_sint_const_idx_8",	true,	sintTypes,	"i32",		"i16",		"OpSConvert",	"OpDecorate %i32arr ArrayStride 4\nOpDecorate %i16arr ArrayStride 2\n",			true,	8,	numElements},
+			{"scalar_uint",				false,	uintTypes,	"u32",		"u16",		"OpUConvert",	"OpDecorate %u32arr ArrayStride 4\nOpDecorate %u16arr ArrayStride 2\n",			false,	0,	numElements},
+			{"scalar_uint_const_idx_5",	false,	uintTypes,	"u32",		"u16",		"OpUConvert",	"OpDecorate %u32arr ArrayStride 4\nOpDecorate %u16arr ArrayStride 2\n",			true,	5,	numElements},
+			{"scalar_uint_const_idx_8",	false,	uintTypes,	"u32",		"u16",		"OpUConvert",	"OpDecorate %u32arr ArrayStride 4\nOpDecorate %u16arr ArrayStride 2\n",			true,	8,	numElements},
+			{"vector_sint",				true,	sintTypes,	"v2i32",	"v2i16",	"OpSConvert",	"OpDecorate %v2i32arr ArrayStride 8\nOpDecorate %v2i16arr ArrayStride 4\n",		false,	0,	numElements / 2},
+			{"vector_uint",				false,	uintTypes,	"v2u32",	"v2u16",	"OpUConvert",	"OpDecorate %v2u32arr ArrayStride 8\nOpDecorate %v2u16arr ArrayStride 4\n",		false,	0,	numElements / 2},
 		};
 
 		vector<deInt16>	inputs			= getInt16s(rnd, numElements);
@@ -949,18 +1043,41 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			ComputeShaderSpec		spec;
 			map<string, string>		specs;
 			const char*				testName	= cTypes[tyIdx].name;
+			vector<deInt32>			intDataConstIdx;
+
+			if (cTypes[tyIdx].useConstantIndex)
+			{
+				const deUint32 numInts = numElements / cTypes[tyIdx].count;
+
+				for (deUint32 numIdx = 0; numIdx < numElements; ++numIdx)
+				{
+					const deInt32 idx = cTypes[tyIdx].constantIndex * numInts + numIdx % numInts;
+
+					if (cTypes[tyIdx].isSigned)
+						intDataConstIdx.push_back(sOutputs[idx]);
+					else
+						intDataConstIdx.push_back(uOutputs[idx]);
+				}
+			}
 
 			specs["stride"]			= cTypes[tyIdx].stride;
 			specs["base32"]			= cTypes[tyIdx].base32;
 			specs["base16"]			= cTypes[tyIdx].base16;
 			specs["types"]			= cTypes[tyIdx].types;
 			specs["convert"]		= cTypes[tyIdx].opcode;
+			specs["constarrayidx"]	= de::toString(cTypes[tyIdx].constantIndex);
+			if (cTypes[tyIdx].useConstantIndex)
+				specs["arrayindex"] = "c_i32_ci";
+			else
+				specs["arrayindex"] = "x";
 
 			spec.assembly			= shaderTemplate.specialize(specs);
 			spec.numWorkGroups		= IVec3(cTypes[tyIdx].count, 1, 1);
 			spec.pushConstants		= BufferSp(new Int16Buffer(inputs));
 
-			if (cTypes[tyIdx].isSigned)
+			if (cTypes[tyIdx].useConstantIndex)
+				spec.outputs.push_back(BufferSp(new Int32Buffer(intDataConstIdx)));
+			else if (cTypes[tyIdx].isSigned)
 				spec.outputs.push_back(BufferSp(new Int32Buffer(sOutputs)));
 			else
 				spec.outputs.push_back(BufferSp(new Int32Buffer(uOutputs)));
@@ -1178,6 +1295,87 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 			}
 }
 
+void addCompute16bitStorageUniform16To16Group (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&		testCtx				= group->getTestContext();
+	de::Random				rnd					(deStringHash(group->getName()));
+	const int				numElements			= 128;
+	const vector<deFloat16>	float16Data			= getFloat16s(rnd, numElements);
+	const vector<deFloat16>	float16DummyData	(numElements, 0);
+	ComputeShaderSpec		spec;
+
+	std::ostringstream		shaderTemplate;
+		shaderTemplate<<"OpCapability Shader\n"
+			<< "OpCapability StorageUniformBufferBlock16\n"
+			<< "OpExtension \"SPV_KHR_16bit_storage\"\n"
+			<< "OpMemoryModel Logical GLSL450\n"
+			<< "OpEntryPoint GLCompute %main \"main\" %id\n"
+			<< "OpExecutionMode %main LocalSize 1 1 1\n"
+			<< "OpDecorate %id BuiltIn GlobalInvocationId\n"
+			<< "OpDecorate %f16arr ArrayStride 2\n"
+			<< "OpMemberDecorate %SSBO_IN 0 Coherent\n"
+			<< "OpMemberDecorate %SSBO_OUT 0 Coherent\n"
+			<< "OpMemberDecorate %SSBO_IN 0 Offset 0\n"
+			<< "OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
+			<< "OpDecorate %SSBO_IN BufferBlock\n"
+			<< "OpDecorate %SSBO_OUT BufferBlock\n"
+			<< "OpDecorate %ssboIN DescriptorSet 0\n"
+			<< "OpDecorate %ssboOUT DescriptorSet 0\n"
+			<< "OpDecorate %ssboIN Binding 0\n"
+			<< "OpDecorate %ssboOUT Binding 1\n"
+			<< "\n"
+			<< "%bool      = OpTypeBool\n"
+			<< "%void      = OpTypeVoid\n"
+			<< "%voidf     = OpTypeFunction %void\n"
+			<< "%u32       = OpTypeInt 32 0\n"
+			<< "%i32       = OpTypeInt 32 1\n"
+			<< "%uvec3     = OpTypeVector %u32 3\n"
+			<< "%uvec3ptr  = OpTypePointer Input %uvec3\n"
+			<< "%f16       = OpTypeFloat 16\n"
+			<< "%f16ptr    = OpTypePointer Uniform %f16\n"
+			<< "\n"
+			<< "%zero      = OpConstant %i32 0\n"
+			<< "%c_size    = OpConstant %i32 " << numElements << "\n"
+			<< "\n"
+			<< "%f16arr    = OpTypeArray %f16 %c_size\n"
+			<< "%SSBO_IN   = OpTypeStruct %f16arr\n"
+			<< "%SSBO_OUT  = OpTypeStruct %f16arr\n"
+			<< "%up_SSBOIN = OpTypePointer Uniform %SSBO_IN\n"
+			<< "%up_SSBOOUT = OpTypePointer Uniform %SSBO_OUT\n"
+			<< "%ssboIN    = OpVariable %up_SSBOIN Uniform\n"
+			<< "%ssboOUT   = OpVariable %up_SSBOOUT Uniform\n"
+			<< "\n"
+			<< "%id        = OpVariable %uvec3ptr Input\n"
+			<< "%main      = OpFunction %void None %voidf\n"
+			<< "%label     = OpLabel\n"
+			<< "%idval     = OpLoad %uvec3 %id\n"
+			<< "%x         = OpCompositeExtract %u32 %idval 0\n"
+			<< "%y         = OpCompositeExtract %u32 %idval 1\n"
+			<< "\n"
+			<< "%inlocx     = OpAccessChain %f16ptr %ssboIN %zero %x \n"
+			<< "%valx       = OpLoad %f16 %inlocx\n"
+			<< "%outlocx    = OpAccessChain %f16ptr %ssboOUT %zero %x \n"
+			<< "             OpStore %outlocx %valx\n"
+
+			<< "%inlocy    = OpAccessChain %f16ptr %ssboIN %zero %y \n"
+			<< "%valy      = OpLoad %f16 %inlocy\n"
+			<< "%outlocy   = OpAccessChain %f16ptr %ssboOUT %zero %y \n"
+			<< "             OpStore %outlocy %valy\n"
+			<< "\n"
+			<< "             OpReturn\n"
+			<< "             OpFunctionEnd\n";
+
+	spec.assembly			= shaderTemplate.str();
+	spec.numWorkGroups		= IVec3(numElements, numElements, 1);
+	spec.verifyIO			= computeCheckBuffersFloats;
+	spec.coherentMemory		= true;
+	spec.inputs.push_back(BufferSp(new Float16Buffer(float16Data)));
+	spec.outputs.push_back(BufferSp(new Float16Buffer(float16DummyData)));
+	spec.extensions.push_back("VK_KHR_16bit_storage");
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "stress_test", "Granularity stress test", spec));
+}
+
 void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext&				testCtx			= group->getTestContext();
@@ -1215,7 +1413,6 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 		"%i32       = OpTypeInt 32 1\n"
 		"%f32       = OpTypeFloat 32\n"
 		"%uvec3     = OpTypeVector %u32 3\n"
-		"%fvec3     = OpTypeVector %f32 3\n"
 		"%uvec3ptr  = OpTypePointer Input %uvec3\n"
 		"%i32ptr    = OpTypePointer Uniform %i32\n"
 		"%f32ptr    = OpTypePointer Uniform %f32\n"
@@ -1256,7 +1453,7 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 		"             OpFunctionEnd\n");
 
 	{  // Floats
-		const char						floatTypes[]	=
+		const char					floatTypes[]	=
 			"%f16       = OpTypeFloat 16\n"
 			"%f16ptr    = OpTypePointer Uniform %f16\n"
 			"%f16arr    = OpTypeArray %f16 %c_i32_128\n"
@@ -2296,6 +2493,20 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 	vector<float>						float32Data;
 	VulkanFeatures						requiredFeatures;
 
+	struct ConstantIndex
+	{
+		bool		useConstantIndex;
+		deUint32	constantIndex;
+	};
+
+	ConstantIndex	constantIndices[] =
+	{
+		{ false,	0 },
+		{ true,		4 },
+		{ true,		5 },
+		{ true,		6 }
+	};
+
 	float32Data.reserve(numDataPoints);
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 		float32Data.push_back(deFloat16To32(float16Data[numIdx]));
@@ -2307,7 +2518,6 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
 
 	pcs.setPushConstant(BufferSp(new Float16Buffer(float16Data)));
-	resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
 	resources.verifyIO = check32BitFloats;
 
 	getDefaultColors(defaultColors);
@@ -2329,7 +2539,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 
 		"%write = OpLabel\n"
 		"   %30 = OpLoad %i32 %i\n"
-		"  %src = OpAccessChain ${pp_type16} %pc16 %c_i32_0 %30 ${index0:opt}\n"
+		"  %src = OpAccessChain ${pp_type16} %pc16 %c_i32_0 %${arrayindex} ${index0:opt}\n"
 		"%val16 = OpLoad ${f_type16} %src\n"
 		"%val32 = OpFConvert ${f_type32} %val16\n"
 		"  %dst = OpAccessChain ${up_type32} %ssbo32 %c_i32_0 %30 ${index0:opt}\n"
@@ -2351,11 +2561,12 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 		"OpFunctionEnd\n");
 
 	{  // Scalar cases
-		fragments["pre_main"]				=
+		const StringTemplate	preMain		(
 			"      %f16 = OpTypeFloat 16\n"
-			" %c_i32_64 = OpConstant %i32 64\n"					// Should be the same as numDataPoints
-			"   %a64f16 = OpTypeArray %f16 %c_i32_64\n"
-			"   %a64f32 = OpTypeArray %f32 %c_i32_64\n"
+			" %c_i32_64 = OpConstant %i32 64\n"
+			" %c_i32_ci = OpConstant %i32 ${constarrayidx}\n"
+			"  %a64f16 = OpTypeArray %f16 %c_i32_64\n"
+			"  %a64f32 = OpTypeArray %f32 %c_i32_64\n"
 			"   %pp_f16 = OpTypePointer PushConstant %f16\n"
 			"   %up_f32 = OpTypePointer Uniform %f32\n"
 			"   %SSBO32 = OpTypeStruct %a64f32\n"
@@ -2363,7 +2574,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 			"   %ssbo32 = OpVariable %up_SSBO32 Uniform\n"
 			"     %PC16 = OpTypeStruct %a64f16\n"
 			"  %pp_PC16 = OpTypePointer PushConstant %PC16\n"
-			"     %pc16 = OpVariable %pp_PC16 PushConstant\n";
+			"     %pc16 = OpVariable %pp_PC16 PushConstant\n");
 
 		fragments["decoration"]				=
 			"OpDecorate %a64f16 ArrayStride 2\n"
@@ -2383,16 +2594,46 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 		specs["f_type32"]		= "%f32";
 		specs["up_type32"]		= "%up_f32";
 
-		fragments["testfun"]	= testFun.specialize(specs);
+		for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
+		{
+			bool			useConstIdx		= constantIndices[constIndexIdx].useConstantIndex;
+			deUint32		constIdx		= constantIndices[constIndexIdx].constantIndex;
+			string			testName		= "scalar";
+			vector<float>	float32ConstIdxData;
 
-		createTestsForAllStages("scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+			if (useConstIdx)
+			{
+				float32ConstIdxData.reserve(numDataPoints);
+
+				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+					float32ConstIdxData.push_back(float32Data[constIdx]);
+			}
+
+			specs["constarrayidx"]	= de::toString(constIdx);
+			if (useConstIdx)
+				specs["arrayindex"] = "c_i32_ci";
+			else
+				specs["arrayindex"] = "30";
+
+			resources.outputs.clear();
+			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data))));
+
+			fragments["pre_main"]		= preMain.specialize(specs);
+			fragments["testfun"]		= testFun.specialize(specs);
+
+			if (useConstIdx)
+				testName += string("_const_idx_") + de::toString(constIdx);
+
+			createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+		}
 	}
 
 	{  // Vector cases
-		fragments["pre_main"]				=
+		const StringTemplate	preMain		(
 			"      %f16 = OpTypeFloat 16\n"
 			"    %v4f16 = OpTypeVector %f16 4\n"
 			" %c_i32_16 = OpConstant %i32 16\n"
+			" %c_i32_ci = OpConstant %i32 ${constarrayidx}\n"
 			" %a16v4f16 = OpTypeArray %v4f16 %c_i32_16\n"
 			" %a16v4f32 = OpTypeArray %v4f32 %c_i32_16\n"
 			" %pp_v4f16 = OpTypePointer PushConstant %v4f16\n"
@@ -2402,7 +2643,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 			"   %ssbo32 = OpVariable %up_SSBO32 Uniform\n"
 			"     %PC16 = OpTypeStruct %a16v4f16\n"
 			"  %pp_PC16 = OpTypePointer PushConstant %PC16\n"
-			"     %pc16 = OpVariable %pp_PC16 PushConstant\n";
+			"     %pc16 = OpVariable %pp_PC16 PushConstant\n");
 
 		fragments["decoration"]				=
 			"OpDecorate %a16v4f16 ArrayStride 8\n"
@@ -2422,28 +2663,58 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 		specs["f_type32"]		= "%v4f32";
 		specs["up_type32"]		= "%up_v4f32";
 
-		fragments["testfun"]	= testFun.specialize(specs);
+		for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
+		{
+			bool			useConstIdx			= constantIndices[constIndexIdx].useConstantIndex;
+			deUint32		constIdx			= constantIndices[constIndexIdx].constantIndex;
+			string			testName			= "vector";
+			vector<float>	float32ConstIdxData;
 
-		createTestsForAllStages("vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+			if (useConstIdx)
+			{
+				float32ConstIdxData.reserve(numDataPoints);
+
+				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+					float32ConstIdxData.push_back(float32Data[constIdx * 4 + numIdx % 4]);
+			}
+
+			specs["constarrayidx"]	= de::toString(constIdx);
+			if (useConstIdx)
+				specs["arrayindex"] = "c_i32_ci";
+			else
+				specs["arrayindex"] = "30";
+
+			resources.outputs.clear();
+			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data))));
+
+			fragments["pre_main"]	= preMain.specialize(specs);
+			fragments["testfun"]	= testFun.specialize(specs);
+
+			if (useConstIdx)
+				testName += string("_const_idx_") + de::toString(constIdx);
+
+			createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+		}
 	}
 
 	{  // Matrix cases
-		fragments["pre_main"]				=
-			"  %c_i32_8 = OpConstant %i32 8\n"
-			"      %f16 = OpTypeFloat 16\n"
-			"    %v4f16 = OpTypeVector %f16 4\n"
-			"  %m2v4f16 = OpTypeMatrix %v4f16 2\n"
-			"  %m2v4f32 = OpTypeMatrix %v4f32 2\n"
-			"%a8m2v4f16 = OpTypeArray %m2v4f16 %c_i32_8\n"
-			"%a8m2v4f32 = OpTypeArray %m2v4f32 %c_i32_8\n"
-			" %pp_v4f16 = OpTypePointer PushConstant %v4f16\n"
-			" %up_v4f32 = OpTypePointer Uniform %v4f32\n"
-			"   %SSBO32 = OpTypeStruct %a8m2v4f32\n"
-			"%up_SSBO32 = OpTypePointer Uniform %SSBO32\n"
-			"   %ssbo32 = OpVariable %up_SSBO32 Uniform\n"
-			"     %PC16 = OpTypeStruct %a8m2v4f16\n"
-			"  %pp_PC16 = OpTypePointer PushConstant %PC16\n"
-			"     %pc16 = OpVariable %pp_PC16 PushConstant\n";
+		const StringTemplate	preMain		(
+			"   %c_i32_8 = OpConstant %i32 8\n"
+			"  %c_i32_ci = OpConstant %i32 ${constarrayidx}\n"
+			"      %f16  = OpTypeFloat 16\n"
+			"    %v4f16  = OpTypeVector %f16 4\n"
+			"  %m2v4f16  = OpTypeMatrix %v4f16 2\n"
+			"  %m2v4f32  = OpTypeMatrix %v4f32 2\n"
+			" %a8m2v4f16 = OpTypeArray %m2v4f16 %c_i32_8\n"
+			" %a8m2v4f32 = OpTypeArray %m2v4f32 %c_i32_8\n"
+			" %pp_v4f16  = OpTypePointer PushConstant %v4f16\n"
+			" %up_v4f32  = OpTypePointer Uniform %v4f32\n"
+			"   %SSBO32  = OpTypeStruct %a8m2v4f32\n"
+			"%up_SSBO32  = OpTypePointer Uniform %SSBO32\n"
+			"   %ssbo32  = OpVariable %up_SSBO32 Uniform\n"
+			"     %PC16  = OpTypeStruct %a8m2v4f16\n"
+			"  %pp_PC16  = OpTypePointer PushConstant %PC16\n"
+			"     %pc16  = OpVariable %pp_PC16 PushConstant\n");
 
 		fragments["decoration"]				=
 			"OpDecorate %a8m2v4f16 ArrayStride 16\n"
@@ -2467,16 +2738,47 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 		specs["f_type16"]		= "%v4f16";
 		specs["f_type32"]		= "%v4f32";
 		specs["index0"]			= "%c_i32_0";
-		specs["store"]			=
-			"  %src_1 = OpAccessChain %pp_v4f16 %pc16 %c_i32_0 %30 %c_i32_1\n"
-			"%val16_1 = OpLoad %v4f16 %src_1\n"
-			"%val32_1 = OpFConvert %v4f32 %val16_1\n"
-			"  %dst_1 = OpAccessChain %up_v4f32 %ssbo32 %c_i32_0 %30 %c_i32_1\n"
-			"           OpStore %dst_1 %val32_1\n";
 
-		fragments["testfun"]	= testFun.specialize(specs);
+		for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
+		{
+			bool					useConstIdx			= constantIndices[constIndexIdx].useConstantIndex;
+			deUint32				constIdx			= constantIndices[constIndexIdx].constantIndex;
+			string					testName			= "matrix";
+			vector<float>			float32ConstIdxData;
+			const StringTemplate	store				(
+				"  %src_1 = OpAccessChain %pp_v4f16 %pc16 %c_i32_0 %${arrayindex} %c_i32_1\n"
+				"%val16_1 = OpLoad %v4f16 %src_1\n"
+				"%val32_1 = OpFConvert %v4f32 %val16_1\n"
+				"  %dst_1 = OpAccessChain %up_v4f32 %ssbo32 %c_i32_0 %30 %c_i32_1\n"
+				"           OpStore %dst_1 %val32_1\n");
 
-		createTestsForAllStages("matrix", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+			if (useConstIdx)
+			{
+				float32ConstIdxData.reserve(numDataPoints);
+
+				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+					float32ConstIdxData.push_back(float32Data[constIdx * 8 + numIdx % 8]);
+			}
+
+			specs["constarrayidx"]	= de::toString(constIdx);
+			if (useConstIdx)
+				specs["arrayindex"] = "c_i32_ci";
+			else
+				specs["arrayindex"] = "30";
+
+			specs["store"] = store.specialize(specs);
+
+			resources.outputs.clear();
+			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data))));
+
+			fragments["pre_main"]		= preMain.specialize(specs);
+			fragments["testfun"]		= testFun.specialize(specs);
+
+			if (useConstIdx)
+				testName += string("_const_idx_") + de::toString(constIdx);
+
+			createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+		}
 	}
 }
 
@@ -2495,6 +2797,20 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 	const deUint16						signBitMask			= 0x8000;
 	const deUint32						signExtendMask		= 0xffff0000;
 	VulkanFeatures						requiredFeatures;
+
+	struct ConstantIndex
+	{
+		bool		useConstantIndex;
+		deUint32	constantIndex;
+	};
+
+	ConstantIndex	constantIndices[] =
+	{
+		{ false,	0 },
+		{ true,		4 },
+		{ true,		5 },
+		{ true,		6 }
+	};
 
 	sOutputs.reserve(inputs.size());
 	uOutputs.reserve(inputs.size());
@@ -2535,7 +2851,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 
 		"%write = OpLabel\n"
 		"   %30 = OpLoad %i32 %i\n"
-		"  %src = OpAccessChain %pp_${type16} %pc16 %c_i32_0 %30\n"
+		"  %src = OpAccessChain %pp_${type16} %pc16 %c_i32_0 %${arrayindex}\n"
 		"%val16 = OpLoad %${type16} %src\n"
 		"%val32 = ${convert} %${type32} %val16\n"
 		"  %dst = OpAccessChain %up_${type32} %ssbo32 %c_i32_0 %30\n"
@@ -2557,6 +2873,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 		const StringTemplate	preMain		(
 			"         %${type16} = OpTypeInt 16 ${signed}\n"
 			"    %c_i32_${count} = OpConstant %i32 ${count}\n"					// Should be the same as numDataPoints
+			"          %c_i32_ci = OpConstant %i32 ${constarrayidx}\n"
 			"%a${count}${type16} = OpTypeArray %${type16} %c_i32_${count}\n"
 			"%a${count}${type32} = OpTypeArray %${type32} %c_i32_${count}\n"
 			"      %pp_${type16} = OpTypePointer PushConstant %${type16}\n"
@@ -2587,15 +2904,41 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 			specs["count"]			= "64";
 			specs["convert"]		= "OpSConvert";
 
-			fragments["testfun"]	= testFun.specialize(specs);
-			fragments["pre_main"]	= preMain.specialize(specs);
-			fragments["decoration"]	= decoration.specialize(specs);
+			for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
+			{
+				bool			useConstIdx		= constantIndices[constIndexIdx].useConstantIndex;
+				deUint32		constIdx		= constantIndices[constIndexIdx].constantIndex;
+				string			testName		= "sint_scalar";
+				vector<deInt32>	constIdxData;
 
-			resources.outputs.clear();
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(sOutputs))));
-			createTestsForAllStages("sint_scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+				if (useConstIdx)
+				{
+					constIdxData.reserve(numDataPoints);
+
+					for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+						constIdxData.push_back(sOutputs[constIdx]);
+				}
+
+				specs["constarrayidx"]	= de::toString(constIdx);
+				if (useConstIdx)
+					specs["arrayindex"] = "c_i32_ci";
+				else
+					specs["arrayindex"] = "30";
+
+				if (useConstIdx)
+					testName += string("_const_idx_") + de::toString(constIdx);
+
+				resources.outputs.clear();
+				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs))));
+
+				fragments["testfun"]	= testFun.specialize(specs);
+				fragments["pre_main"]	= preMain.specialize(specs);
+				fragments["decoration"]	= decoration.specialize(specs);
+
+				createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+			}
 		}
-		{  // signed int
+		{  // unsigned int
 			map<string, string>		specs;
 
 			specs["type16"]			= "u16";
@@ -2604,13 +2947,39 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 			specs["count"]			= "64";
 			specs["convert"]		= "OpUConvert";
 
-			fragments["testfun"]	= testFun.specialize(specs);
-			fragments["pre_main"]	= preMain.specialize(specs);
-			fragments["decoration"]	= decoration.specialize(specs);
+			for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
+			{
+				bool			useConstIdx		= constantIndices[constIndexIdx].useConstantIndex;
+				deUint32		constIdx		= constantIndices[constIndexIdx].constantIndex;
+				string			testName		= "uint_scalar";
+				vector<deInt32>	constIdxData;
 
-			resources.outputs.clear();
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(uOutputs))));
-			createTestsForAllStages("uint_scalar", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+				if (useConstIdx)
+				{
+					constIdxData.reserve(numDataPoints);
+
+					for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+						constIdxData.push_back(uOutputs[constIdx]);
+				}
+
+				specs["constarrayidx"]	= de::toString(constIdx);
+				if (useConstIdx)
+					specs["arrayindex"] = "c_i32_ci";
+				else
+					specs["arrayindex"] = "30";
+
+				if (useConstIdx)
+					testName += string("_const_idx_") + de::toString(constIdx);
+
+				resources.outputs.clear();
+				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs))));
+
+				fragments["testfun"]	= testFun.specialize(specs);
+				fragments["pre_main"]	= preMain.specialize(specs);
+				fragments["decoration"]	= decoration.specialize(specs);
+
+				createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+			}
 		}
 	}
 
@@ -2619,6 +2988,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 			"    %${base_type16} = OpTypeInt 16 ${signed}\n"
 			"         %${type16} = OpTypeVector %${base_type16} 2\n"
 			"    %c_i32_${count} = OpConstant %i32 ${count}\n"
+			"          %c_i32_ci = OpConstant %i32 ${constarrayidx}\n"
 			"%a${count}${type16} = OpTypeArray %${type16} %c_i32_${count}\n"
 			"%a${count}${type32} = OpTypeArray %${type32} %c_i32_${count}\n"
 			"      %pp_${type16} = OpTypePointer PushConstant %${type16}\n"
@@ -2647,18 +3017,44 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 			specs["type16"]			= "v2i16";
 			specs["type32"]			= "v2i32";
 			specs["signed"]			= "1";
-			specs["count"]			= "32";				// 64 / 2
+			specs["count"]			= "32";
 			specs["convert"]		= "OpSConvert";
 
-			fragments["testfun"]	= testFun.specialize(specs);
-			fragments["pre_main"]	= preMain.specialize(specs);
-			fragments["decoration"]	= decoration.specialize(specs);
+			for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
+			{
+				bool			useConstIdx		= constantIndices[constIndexIdx].useConstantIndex;
+				deUint32		constIdx		= constantIndices[constIndexIdx].constantIndex;
+				string			testName		= "sint_vector";
+				vector<deInt32>	constIdxData;
 
-			resources.outputs.clear();
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(sOutputs))));
-			createTestsForAllStages("sint_vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+				if (useConstIdx)
+				{
+					constIdxData.reserve(numDataPoints);
+
+					for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+						constIdxData.push_back(sOutputs[constIdx * 2 + numIdx % 2]);
+				}
+
+				specs["constarrayidx"]	= de::toString(constIdx);
+				if (useConstIdx)
+					specs["arrayindex"] = "c_i32_ci";
+				else
+					specs["arrayindex"] = "30";
+
+				if (useConstIdx)
+					testName += string("_const_idx_") + de::toString(constIdx);
+
+				resources.outputs.clear();
+				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs))));
+
+				fragments["testfun"]	= testFun.specialize(specs);
+				fragments["pre_main"]	= preMain.specialize(specs);
+				fragments["decoration"]	= decoration.specialize(specs);
+
+				createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+			}
 		}
-		{  // signed int
+		{  // unsigned int
 			map<string, string>		specs;
 
 			specs["base_type16"]	= "u16";
@@ -2668,13 +3064,39 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 			specs["count"]			= "32";
 			specs["convert"]		= "OpUConvert";
 
-			fragments["testfun"]	= testFun.specialize(specs);
-			fragments["pre_main"]	= preMain.specialize(specs);
-			fragments["decoration"]	= decoration.specialize(specs);
+			for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
+			{
+				bool			useConstIdx		= constantIndices[constIndexIdx].useConstantIndex;
+				deUint32		constIdx		= constantIndices[constIndexIdx].constantIndex;
+				string			testName		= "uint_vector";
+				vector<deInt32>	constIdxData;
 
-			resources.outputs.clear();
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(uOutputs))));
-			createTestsForAllStages("uint_vector", defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+				if (useConstIdx)
+				{
+					constIdxData.reserve(numDataPoints);
+
+					for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+						constIdxData.push_back(uOutputs[constIdx * 2 + numIdx % 2]);
+				}
+
+				specs["constarrayidx"]	= de::toString(constIdx);
+				if (useConstIdx)
+					specs["arrayindex"] = "c_i32_ci";
+				else
+					specs["arrayindex"] = "30";
+
+				if (useConstIdx)
+					testName += string("_const_idx_") + de::toString(constIdx);
+
+				resources.outputs.clear();
+				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs))));
+
+				fragments["testfun"]	= testFun.specialize(specs);
+				fragments["pre_main"]	= preMain.specialize(specs);
+				fragments["decoration"]	= decoration.specialize(specs);
+
+				createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, pcs, resources, extensions, testGroup, requiredFeatures);
+			}
 		}
 	}
 }
@@ -2728,9 +3150,24 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 		{"uint",	"%u32",		"%u16",		"OpUConvert",	false},
 	};
 
+	struct ConstantIndex
+	{
+		bool		useConstantIndex;
+		deUint32	constantIndex;
+	};
+
+	ConstantIndex	constantIndices[] =
+	{
+		{ false,	0 },
+		{ true,		4 },
+		{ true,		5 },
+		{ true,		6 }
+	};
+
 	const StringTemplate scalarPreMain		(
 			"${itype16} = OpTypeInt 16 ${signed}\n"
-			" %c_i32_256 = OpConstant %i32 256\n"
+			"%c_i32_256 = OpConstant %i32 256\n"
+			"%c_i32_ci  = OpConstant %i32 ${constarrayidx}\n"
 			"   %up_i32 = OpTypePointer Uniform ${itype32}\n"
 			"   %up_i16 = OpTypePointer Uniform ${itype16}\n"
 			"   %ra_i32 = OpTypeArray ${itype32} %c_i32_256\n"
@@ -2771,7 +3208,7 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 
 			"%write = OpLabel\n"
 			"   %30 = OpLoad %i32 %i\n"
-			"  %src = OpAccessChain %up_i16 %ssbo16 %c_i32_0 %30\n"
+			"  %src = OpAccessChain %up_i16 %ssbo16 %c_i32_0 %${arrayindex}\n"
 			"%val16 = OpLoad ${itype16} %src\n"
 			"%val32 = ${convert} ${itype32} %val16\n"
 			"  %dst = OpAccessChain %up_i32 %ssbo32 %c_i32_0 %30\n"
@@ -2791,6 +3228,7 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 	const StringTemplate vecPreMain		(
 			"${itype16} = OpTypeInt 16 ${signed}\n"
 			"%c_i32_128 = OpConstant %i32 128\n"
+			"%c_i32_ci  = OpConstant %i32 ${constarrayidx}\n"
 			"%v2itype16 = OpTypeVector ${itype16} 2\n"
 			" %up_v2i32 = OpTypePointer Uniform ${v2itype32}\n"
 			" %up_v2i16 = OpTypePointer Uniform %v2itype16\n"
@@ -2832,7 +3270,7 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 
 			"%write = OpLabel\n"
 			"   %30 = OpLoad %i32 %i\n"
-			"  %src = OpAccessChain %up_v2i16 %ssbo16 %c_i32_0 %30\n"
+			"  %src = OpAccessChain %up_v2i16 %ssbo16 %c_i32_0 %${arrayindex}\n"
 			"%val16 = OpLoad %v2itype16 %src\n"
 			"%val32 = ${convert} ${v2itype32} %val16\n"
 			"  %dst = OpAccessChain %up_v2i32 %ssbo32 %c_i32_0 %30\n"
@@ -2855,67 +3293,95 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 		const StringTemplate&	preMain;
 		const StringTemplate&	decoration;
 		const StringTemplate&	testFunction;
+		const deUint32			numElements;
 	};
 
 	const Category		categories[]	=
 	{
-		{"scalar", scalarPreMain, scalarDecoration, scalarTestFunc},
-		{"vector", vecPreMain, vecDecoration, vecTestFunc},
+		{"scalar",	scalarPreMain,	scalarDecoration,	scalarTestFunc,	1},
+		{"vector",	vecPreMain,		vecDecoration,		vecTestFunc,	2},
 	};
 
 	for (deUint32 catIdx = 0; catIdx < DE_LENGTH_OF_ARRAY(categories); ++catIdx)
 		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
 			for (deUint32 factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
-			{
-				map<string, string>	specs;
-				string				name		= string(CAPABILITIES[capIdx].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
+				for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
+				{
+					bool				useConstIdx		= constantIndices[constIndexIdx].useConstantIndex;
+					deUint32			constIdx		= constantIndices[constIndexIdx].constantIndex;
+					map<string, string>	specs;
+					string				name			= string(CAPABILITIES[capIdx].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
-				specs["cap"]					= CAPABILITIES[capIdx].cap;
-				specs["indecor"]				= CAPABILITIES[capIdx].decor;
-				specs["itype32"]				= intFacts[factIdx].type32;
-				specs["v2itype32"]				= "%v2" + string(intFacts[factIdx].type32).substr(1);
-				specs["itype16"]				= intFacts[factIdx].type16;
-				if (intFacts[factIdx].isSigned)
-					specs["signed"]				= "1";
-				else
-					specs["signed"]				= "0";
-				specs["convert"]				= intFacts[factIdx].opcode;
+					specs["cap"]						= CAPABILITIES[capIdx].cap;
+					specs["indecor"]					= CAPABILITIES[capIdx].decor;
+					specs["itype32"]					= intFacts[factIdx].type32;
+					specs["v2itype32"]					= "%v2" + string(intFacts[factIdx].type32).substr(1);
+					specs["v3itype32"]					= "%v3" + string(intFacts[factIdx].type32).substr(1);
+					specs["itype16"]					= intFacts[factIdx].type16;
+					if (intFacts[factIdx].isSigned)
+						specs["signed"]					= "1";
+					else
+						specs["signed"]					= "0";
+					specs["convert"]					= intFacts[factIdx].opcode;
+					specs["constarrayidx"]				= de::toString(constIdx);
+					if (useConstIdx)
+						specs["arrayindex"] = "c_i32_ci";
+					else
+						specs["arrayindex"] = "30";
 
-				fragments["pre_main"]			= categories[catIdx].preMain.specialize(specs);
-				fragments["testfun"]			= categories[catIdx].testFunction.specialize(specs);
-				fragments["capability"]			= capabilities.specialize(specs);
-				fragments["decoration"]			= categories[catIdx].decoration.specialize(specs);
+					fragments["pre_main"]				= categories[catIdx].preMain.specialize(specs);
+					fragments["testfun"]				= categories[catIdx].testFunction.specialize(specs);
+					fragments["capability"]				= capabilities.specialize(specs);
+					fragments["decoration"]				= categories[catIdx].decoration.specialize(specs);
 
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
-				resources.outputs.clear();
-				if (intFacts[factIdx].isSigned)
-					resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(sOutputs))));
-				else
-					resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(uOutputs))));
+					vector<deInt32>		constIdxOutputs;
+					if (useConstIdx)
+					{
+						const deUint32 numElements = categories[catIdx].numElements;
+						name += string("_const_idx_") + de::toString(constIdx);
+						for (deUint32 i = 0; i < numDataPoints; i++)
+						{
+							deUint32 idx = constIdx * numElements + i % numElements;
+							constIdxOutputs.push_back(intFacts[factIdx].isSigned ? sOutputs[idx] : uOutputs[idx]);
+						}
+					}
 
-				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
-			}
+					resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+					resources.outputs.clear();
+					if (useConstIdx)
+						resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(constIdxOutputs))));
+					else if (intFacts[factIdx].isSigned)
+						resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(sOutputs))));
+					else
+						resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(uOutputs))));
+
+					createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				}
 }
 
 void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGroup)
 {
 	de::Random							rnd					(deStringHash(testGroup->getName()));
 	map<string, string>					fragments;
-	GraphicsResources					resources;
 	vector<string>						extensions;
 	const deUint32						numDataPoints		= 256;
 	RGBA								defaultColors[4];
 	const StringTemplate				capabilities		("OpCapability ${cap}\n");
 	vector<deFloat16>					float16Data			= getFloat16s(rnd, numDataPoints);
-	vector<float>						float32Data;
 
-	float32Data.reserve(numDataPoints);
-	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		float32Data.push_back(deFloat16To32(float16Data[numIdx]));
+	struct ConstantIndex
+	{
+		bool		useConstantIndex;
+		deUint32	constantIndex;
+	};
 
-	resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16Data))));
-	resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
-	resources.verifyIO = check32BitFloats;
+	ConstantIndex	constantIndices[] =
+	{
+		{ false,	0 },
+		{ true,		4 },
+		{ true,		5 },
+		{ true,		6 }
+	};
 
 	extensions.push_back("VK_KHR_16bit_storage");
 	fragments["extension"]	= "OpExtension \"SPV_KHR_16bit_storage\"";
@@ -2923,9 +3389,10 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 	getDefaultColors(defaultColors);
 
 	{ // scalar cases
-		fragments["pre_main"]				=
+		const StringTemplate preMain		(
 			"      %f16 = OpTypeFloat 16\n"
 			"%c_i32_256 = OpConstant %i32 256\n"
+			" %c_i32_ci = OpConstant %i32 ${constarrayidx}\n"
 			"   %up_f32 = OpTypePointer Uniform %f32\n"
 			"   %up_f16 = OpTypePointer Uniform %f16\n"
 			"   %ra_f32 = OpTypeArray %f32 %c_i32_256\n"
@@ -2935,7 +3402,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			"%up_SSBO32 = OpTypePointer Uniform %SSBO32\n"
 			"%up_SSBO16 = OpTypePointer Uniform %SSBO16\n"
 			"   %ssbo32 = OpVariable %up_SSBO32 Uniform\n"
-			"   %ssbo16 = OpVariable %up_SSBO16 Uniform\n";
+			"   %ssbo16 = OpVariable %up_SSBO16 Uniform\n");
 
 		const StringTemplate decoration		(
 			"OpDecorate %ra_f32 ArrayStride 4\n"
@@ -2950,7 +3417,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			"OpDecorate %ssbo16 Binding 0\n");
 
 		// ssbo32[] <- convert ssbo16[] to 32bit float
-		fragments["testfun"]				=
+		const StringTemplate testFun		(
 			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
@@ -2967,7 +3434,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 
 			"%write = OpLabel\n"
 			"   %30 = OpLoad %i32 %i\n"
-			"  %src = OpAccessChain %up_f16 %ssbo16 %c_i32_0 %30\n"
+			"  %src = OpAccessChain %up_f16 %ssbo16 %c_i32_0 %${arrayindex}\n"
 			"%val16 = OpLoad %f16 %src\n"
 			"%val32 = OpFConvert %f32 %val16\n"
 			"  %dst = OpAccessChain %up_f32 %ssbo32 %c_i32_0 %30\n"
@@ -2983,29 +3450,54 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			"%merge = OpLabel\n"
 			"         OpReturnValue %param\n"
 
-			"OpFunctionEnd\n";
+			"OpFunctionEnd\n");
 
-		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+		for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
 		{
-			map<string, string>	specs;
-			string				testName	= string(CAPABILITIES[capIdx].name) + "_scalar_float";
+			for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+			{
+				GraphicsResources	resources;
+				map<string, string>	specs;
+				string				testName	= string(CAPABILITIES[capIdx].name) + "_scalar_float";
+				bool				useConstIdx	= constantIndices[constIndexIdx].useConstantIndex;
+				deUint32			constIdx	= constantIndices[constIndexIdx].constantIndex;
 
-			specs["cap"]					= CAPABILITIES[capIdx].cap;
-			specs["indecor"]				= CAPABILITIES[capIdx].decor;
+				specs["cap"]					= CAPABILITIES[capIdx].cap;
+				specs["indecor"]				= CAPABILITIES[capIdx].decor;
+				specs["constarrayidx"]			= de::toString(constIdx);
+				if (useConstIdx)
+					specs["arrayindex"] = "c_i32_ci";
+				else
+					specs["arrayindex"] = "30";
 
-			fragments["capability"]			= capabilities.specialize(specs);
-			fragments["decoration"]			= decoration.specialize(specs);
+				fragments["capability"]			= capabilities.specialize(specs);
+				fragments["decoration"]			= decoration.specialize(specs);
+				fragments["pre_main"]			= preMain.specialize(specs);
+				fragments["testfun"]			= testFun.specialize(specs);
 
-			resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				vector<float>		float32Data;
+				float32Data.reserve(numDataPoints);
+				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+					float32Data.push_back(deFloat16To32(float16Data[useConstIdx ? constIdx : numIdx]));
 
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16Data))));
+				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+				resources.verifyIO = check32BitFloats;
+				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+
+				if (useConstIdx)
+					testName += string("_const_idx_") + de::toString(constIdx);
+
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+			}
 		}
 	}
 
 	{ // vector cases
-		fragments["pre_main"]				=
+		const StringTemplate preMain		(
 			"      %f16 = OpTypeFloat 16\n"
 			"%c_i32_128 = OpConstant %i32 128\n"
+			"%c_i32_ci  = OpConstant %i32 ${constarrayidx}\n"
 			"	 %v2f16 = OpTypeVector %f16 2\n"
 			" %up_v2f32 = OpTypePointer Uniform %v2f32\n"
 			" %up_v2f16 = OpTypePointer Uniform %v2f16\n"
@@ -3016,7 +3508,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			"%up_SSBO32 = OpTypePointer Uniform %SSBO32\n"
 			"%up_SSBO16 = OpTypePointer Uniform %SSBO16\n"
 			"   %ssbo32 = OpVariable %up_SSBO32 Uniform\n"
-			"   %ssbo16 = OpVariable %up_SSBO16 Uniform\n";
+			"   %ssbo16 = OpVariable %up_SSBO16 Uniform\n");
 
 		const StringTemplate decoration		(
 			"OpDecorate %ra_v2f32 ArrayStride 8\n"
@@ -3031,7 +3523,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			"OpDecorate %ssbo16 Binding 0\n");
 
 		// ssbo32[] <- convert ssbo16[] to 32bit float
-		fragments["testfun"]				=
+		const StringTemplate testFun		(
 			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
@@ -3048,7 +3540,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 
 			"%write = OpLabel\n"
 			"   %30 = OpLoad %i32 %i\n"
-			"  %src = OpAccessChain %up_v2f16 %ssbo16 %c_i32_0 %30\n"
+			"  %src = OpAccessChain %up_v2f16 %ssbo16 %c_i32_0 %${arrayindex}\n"
 			"%val16 = OpLoad %v2f16 %src\n"
 			"%val32 = OpFConvert %v2f32 %val16\n"
 			"  %dst = OpAccessChain %up_v2f32 %ssbo32 %c_i32_0 %30\n"
@@ -3064,22 +3556,46 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			"%merge = OpLabel\n"
 			"         OpReturnValue %param\n"
 
-			"OpFunctionEnd\n";
+			"OpFunctionEnd\n");
 
-		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+		for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
 		{
-			map<string, string>	specs;
-			string				testName	= string(CAPABILITIES[capIdx].name) + "_vector_float";
+			for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+			{
+				GraphicsResources	resources;
+				map<string, string>	specs;
+				string				testName	= string(CAPABILITIES[capIdx].name) + "_vector_float";
+				bool				useConstIdx	= constantIndices[constIndexIdx].useConstantIndex;
+				deUint32			constIdx	= constantIndices[constIndexIdx].constantIndex;
 
-			specs["cap"]					= CAPABILITIES[capIdx].cap;
-			specs["indecor"]				= CAPABILITIES[capIdx].decor;
+				specs["cap"]					= CAPABILITIES[capIdx].cap;
+				specs["indecor"]				= CAPABILITIES[capIdx].decor;
+				specs["constarrayidx"]			= de::toString(constIdx);
+				if (useConstIdx)
+					specs["arrayindex"] = "c_i32_ci";
+				else
+					specs["arrayindex"] = "30";
 
-			fragments["capability"]			= capabilities.specialize(specs);
-			fragments["decoration"]			= decoration.specialize(specs);
+				fragments["capability"]			= capabilities.specialize(specs);
+				fragments["decoration"]			= decoration.specialize(specs);
+				fragments["pre_main"]			= preMain.specialize(specs);
+				fragments["testfun"]			= testFun.specialize(specs);
 
-			resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				vector<float>		float32Data;
+				float32Data.reserve(numDataPoints);
+				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+					float32Data.push_back(deFloat16To32(float16Data[constantIndices[constIndexIdx].useConstantIndex ? (constantIndices[constIndexIdx].constantIndex * 2 + numIdx % 2) : numIdx]));
 
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16Data))));
+				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+				resources.verifyIO = check32BitFloats;
+				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+
+				if (constantIndices[constIndexIdx].useConstantIndex)
+					testName += string("_const_idx_") + de::toString(constantIndices[constIndexIdx].constantIndex);
+
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+			}
 		}
 	}
 
@@ -3167,20 +3683,29 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 
 			"OpFunctionEnd\n";
 
-		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
-		{
-			map<string, string>	specs;
-			string				testName	= string(CAPABILITIES[capIdx].name) + "_matrix_float";
+			for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+			{
+				GraphicsResources	resources;
+				map<string, string>	specs;
+				string				testName	= string(CAPABILITIES[capIdx].name) + "_matrix_float";
 
-			specs["cap"]					= CAPABILITIES[capIdx].cap;
-			specs["indecor"]				= CAPABILITIES[capIdx].decor;
+				specs["cap"]					= CAPABILITIES[capIdx].cap;
+				specs["indecor"]				= CAPABILITIES[capIdx].decor;
 
-			fragments["capability"]			= capabilities.specialize(specs);
-			fragments["decoration"]			= decoration.specialize(specs);
+				fragments["capability"]			= capabilities.specialize(specs);
+				fragments["decoration"]			= decoration.specialize(specs);
 
-			resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				vector<float>		float32Data;
+				float32Data.reserve(numDataPoints);
+				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
+					float32Data.push_back(deFloat16To32(float16Data[numIdx]));
 
-			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16Data))));
+				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+				resources.verifyIO = check32BitFloats;
+				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+
+				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 		}
 	}
 }
@@ -3193,6 +3718,8 @@ tcu::TestCaseGroup* create16BitStorageComputeGroup (tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "uniform_32_to_16", "32bit floats/ints to 16bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform32To16Group);
 	addTestGroup(group.get(), "uniform_16_to_32", "16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16To32Group);
 	addTestGroup(group.get(), "push_constant_16_to_32", "16bit floats/ints to 32bit tests under capability StoragePushConstant16", addCompute16bitStoragePushConstant16To32Group);
+
+	addTestGroup(group.get(), "uniform_16_to_16", "16bit floats/ints to 16bit tests under capability StoragePushConstant16", addCompute16bitStorageUniform16To16Group);
 
 	return group.release();
 }

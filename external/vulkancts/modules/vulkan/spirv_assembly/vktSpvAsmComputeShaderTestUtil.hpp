@@ -206,6 +206,8 @@ typedef bool (*ComputeVerifyIOFunc) (const std::vector<BufferSp>&		inputs,
 									 const std::vector<BufferSp>&		expectedOutputs,
 									 tcu::TestLog&						log);
 
+typedef bool (*ComputeVerifyBinaryFunc) (const ProgramBinary&	binary);
+
 /*--------------------------------------------------------------------*//*!
  * \brief Specification for a compute shader.
  *
@@ -232,6 +234,9 @@ struct ComputeShaderSpec
 	// If true is returned, then the test case is assumed to have passed, if false is returned, then the test
 	// case is assumed to have failed. Exact meaning of failure can be customized with failResult.
 	ComputeVerifyIOFunc						verifyIO;
+	ComputeVerifyBinaryFunc					verifyBinary;
+	SpirvVersion							spirvVersion;
+	bool									coherentMemory;
 
 											ComputeShaderSpec (void)
 												: entryPoint					("main")
@@ -240,6 +245,9 @@ struct ComputeShaderSpec
 												, failResult					(QP_TEST_RESULT_FAIL)
 												, failMessage					("Output doesn't match with expected")
 												, verifyIO						(DE_NULL)
+												, verifyBinary					(DE_NULL)
+												, spirvVersion					(SPIRV_VERSION_1_0)
+												, coherentMemory				(false)
 											{}
 };
 
@@ -263,6 +271,11 @@ const char* getComputeAsmInputOutputBuffer			(void);
  * indata is at binding point 0, while outdata is at 1.
  *//*--------------------------------------------------------------------*/
 const char* getComputeAsmInputOutputBufferTraits	(void);
+
+bool verifyOutput									(const std::vector<BufferSp>&,
+													const std::vector<AllocationSp>& outputAllocs,
+													const std::vector<BufferSp>&		expectedOutputs,
+													tcu::TestLog&						log);
 
 } // SpirVAssembly
 } // vkt

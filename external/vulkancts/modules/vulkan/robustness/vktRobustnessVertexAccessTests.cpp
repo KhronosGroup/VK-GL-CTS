@@ -862,7 +862,7 @@ bool VertexAccessInstance::verifyResult (void)
 				if (canMatchVec4Pattern)
 				{
 					if (m_inputFormat == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
-						matchesVec4Pattern	=  verifyOutOfBoundsVec4(outValuePtr - 3, VK_FORMAT_R32G32B32_SFLOAT);
+						matchesVec4Pattern	=  verifyOutOfBoundsVec4(outValuePtr, m_inputFormat);
 					else
 						matchesVec4Pattern	=  verifyOutOfBoundsVec4(outValuePtr - 3, m_inputFormat);
 				}

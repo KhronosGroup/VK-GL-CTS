@@ -28,6 +28,7 @@
 #include "vktDrawBaseClass.hpp"
 
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
@@ -110,8 +111,34 @@ DrawTest::DrawTest (Context &context, TestSpec testSpec)
 
 	// Requirements
 	{
-		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), std::string("VK_KHR_shader_draw_parameters")))
+		if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_draw_parameters"))
 			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_draw_parameters");
+
+		// Shader draw parameters is part of Vulkan 1.1 but is optional
+		if ( context.contextSupports(vk::ApiVersion(1, 1, 0)) )
+		{
+			// Check if shader draw parameters is supported on the physical device.
+			vk::VkPhysicalDeviceShaderDrawParameterFeatures	drawParameters =
+			{
+				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES,	// sType
+				DE_NULL,																// pNext
+				VK_FALSE																// shaderDrawParameters
+			};
+			vk::VkPhysicalDeviceFeatures					features;
+			deMemset(&features, 0, sizeof(vk::VkPhysicalDeviceFeatures));
+
+			vk::VkPhysicalDeviceFeatures2					featuresExt		=
+			{
+				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,					// sType
+				&drawParameters,													// pNext
+				features
+			};
+
+			context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &featuresExt);
+
+			if (drawParameters.shaderDrawParameters == VK_FALSE)
+				TCU_THROW(NotSupportedError, "shaderDrawParameters feature not supported by the device");
+		}
 
 		if (isMultiDraw() && !m_context.getDeviceFeatures().multiDrawIndirect)
 			TCU_THROW(NotSupportedError, "Missing feature: multiDrawIndirect");
@@ -300,20 +327,9 @@ tcu::TestStatus DrawTest::iterate (void)
 	// Submit
 	{
 		const vk::VkQueue		queue		= m_context.getUniversalQueue();
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			0,											// deUint32					waitSemaphoreCount;
-			DE_NULL,									// const VkSemaphore*		pWaitSemaphores;
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1,											// deUint32					commandBufferCount;
-			&m_cmdBuffer.get(),							// const VkCommandBuffer*	pCommandBuffers;
-			0,											// deUint32					signalSemaphoreCount;
-			DE_NULL										// const VkSemaphore*		pSignalSemaphores;
-		};
-		VK_CHECK(m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL));
-		VK_CHECK(m_vk.queueWaitIdle(queue));
+		const vk::VkDevice		device		= m_context.getDevice();
+
+		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 	}
 
 	// Validate

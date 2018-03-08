@@ -44,6 +44,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include <set>
 
@@ -301,10 +302,6 @@ protected:
 	de::MovePtr<tcu::TextureLevel>		readImage							(vk::VkImage				image,
 																			 const ImageParms&			imageParms,
 																			 const deUint32				mipLevel = 0u);
-	void								submitCommandsAndWait				(const DeviceInterface&		vk,
-																			const VkDevice				device,
-																			const VkQueue				queue,
-																			const VkCommandBuffer&		cmdBuffer);
 
 private:
 	void								uploadImageAspect					(const tcu::ConstPixelBufferAccess&	src,
@@ -327,10 +324,8 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance (Context& context, 
 
 	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 	}
 
 	// Create command pool
@@ -782,26 +777,6 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	tcu::copy(dst, tcu::ConstPixelBufferAccess(dst.getFormat(), dst.getSize(), bufferAlloc->getHostPtr()));
 }
 
-void CopiesAndBlittingTestInstance::submitCommandsAndWait (const DeviceInterface& vk, const VkDevice device, const VkQueue queue, const VkCommandBuffer& cmdBuffer)
-{
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,						// const void*				pNext;
-		0u,								// deUint32					waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,								// deUint32					commandBufferCount;
-		&cmdBuffer,						// const VkCommandBuffer*	pCommandBuffers;
-		0u,								// deUint32					signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.resetFences(device, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(device, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
-}
-
 de::MovePtr<tcu::TextureLevel> CopiesAndBlittingTestInstance::readImage	(vk::VkImage		image,
 																		 const ImageParms&	parms,
 																		 const deUint32		mipLevel)
@@ -865,7 +840,7 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 	if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
 		(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
 	{
-		if (std::find(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1") == context.getDeviceExtensions().end())
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
 			TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 	}
 
@@ -947,6 +922,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 {
 	const tcu::TextureFormat	srcTcuFormat		= mapVkFormat(m_params.src.image.format);
 	const tcu::TextureFormat	dstTcuFormat		= mapVkFormat(m_params.dst.image.format);
+
 	m_sourceTextureLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(srcTcuFormat,
 																				(int)m_params.src.image.extent.width,
 																				(int)m_params.src.image.extent.height,
@@ -968,7 +944,10 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 
 	std::vector<VkImageCopy>	imageCopies;
 	for (deUint32 i = 0; i < m_params.regions.size(); i++)
-		imageCopies.push_back(m_params.regions[i].imageCopy);
+	{
+		const VkImageCopy& ic = m_params.regions[i].imageCopy;
+		imageCopies.push_back(ic);
+	}
 
 	const VkImageMemoryBarrier	imageBarriers[]		=
 	{
@@ -1022,7 +1001,7 @@ tcu::TestStatus CopyImageToImage::iterate (void)
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
-	vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)m_params.regions.size(), imageCopies.data());
+	vk.cmdCopyImage(*m_cmdBuffer, m_source.get(), m_params.src.image.operationLayout, m_destination.get(), m_params.dst.image.operationLayout, (deUint32)imageCopies.size(), imageCopies.data());
 	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
@@ -1126,7 +1105,10 @@ void CopyImageToImage::copyRegionToTextureLevel (tcu::ConstPixelBufferAccess src
 	VkExtent3D	extent		= region.imageCopy.extent;
 
 	if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D && m_params.dst.image.imageType == VK_IMAGE_TYPE_2D)
+	{
 		dstOffset.z = srcOffset.z;
+		extent.depth = std::max(region.imageCopy.extent.depth, region.imageCopy.dstSubresource.layerCount);
+	}
 	if (m_params.src.image.imageType == VK_IMAGE_TYPE_2D && m_params.dst.image.imageType == VK_IMAGE_TYPE_3D)
 	{
 		srcOffset.z = dstOffset.z;
@@ -4948,7 +4930,6 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params3DTo2D.allocationKind				= allocationKind;
 
-		for (deUint32 slicesLayersNdx = 0; slicesLayersNdx < slicesLayers; ++slicesLayersNdx)
 		{
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
@@ -5021,7 +5002,7 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 				{0, 0, 0},						// VkOffset3D				srcOffset;
 				destinationLayer,				// VkImageSubresourceLayers	dstSubresource;
 				{0, 0, 0},						// VkOffset3D				dstOffset;
-				params2DTo3D.dst.image.extent,	// VkExtent3D				extent;
+				params2DTo3D.src.image.extent,	// VkExtent3D				extent;
 			};
 
 			CopyRegion	imageCopy;
@@ -6316,8 +6297,8 @@ const VkFormat	compatibleFormatsFloats[]	=
 	VK_FORMAT_R64G64_SFLOAT,
 	VK_FORMAT_R64G64B64_SFLOAT,
 	VK_FORMAT_R64G64B64A64_SFLOAT,
-//	VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-//	VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+	VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+	VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 //	VK_FORMAT_BC1_RGB_UNORM_BLOCK,
 //	VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
 //	VK_FORMAT_BC2_UNORM_BLOCK,

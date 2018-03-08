@@ -37,6 +37,7 @@
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkStrUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -75,12 +76,12 @@ inline VkFrontFace mapFrontFace (const Winding winding)
 bool verifyResultImage (tcu::TestLog&						log,
 						const tcu::ConstPixelBufferAccess	image,
 						const TessPrimitiveType				primitiveType,
-						const VkTessellationDomainOriginKHR	domainOrigin,
+						const VkTessellationDomainOrigin	domainOrigin,
 						const Winding						winding,
 						bool								yFlip,
 						const Winding						frontFaceWinding)
 {
-	const bool			expectVisiblePrimitive	= ((frontFaceWinding == winding) == (domainOrigin == VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR)) != yFlip;
+	const bool			expectVisiblePrimitive	= ((frontFaceWinding == winding) == (domainOrigin == VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT)) != yFlip;
 
 	const int			totalNumPixels			= image.getWidth()*image.getHeight();
 
@@ -183,7 +184,7 @@ bool verifyResultImage (tcu::TestLog&						log,
 	return true;
 }
 
-typedef tcu::Maybe<VkTessellationDomainOriginKHR> MaybeDomainOrigin;
+typedef tcu::Maybe<VkTessellationDomainOrigin> MaybeDomainOrigin;
 
 class WindingTest : public TestCase
 {
@@ -401,15 +402,12 @@ WindingTestInstance::WindingTestInstance (Context&					context,
 
 void WindingTestInstance::requireExtension (const char* name) const
 {
-	if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), name))
+	if(!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), name))
 		TCU_THROW(NotSupportedError, (std::string(name) + " is not supported").c_str());
 }
 
 tcu::TestStatus WindingTestInstance::iterate (void)
 {
-	if (m_yFlip && !de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
-		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
-
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 	const VkDevice			device				= m_context.getDevice();
 	const VkQueue			queue				= m_context.getUniversalQueue();
@@ -577,7 +575,7 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 			success = verifyResultImage(log,
 										imagePixelAccess,
 										m_primitiveType,
-										!m_domainOrigin ? VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR : *m_domainOrigin,
+										!m_domainOrigin ? VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT : *m_domainOrigin,
 										m_winding,
 										m_yFlip,
 										frontFaceWinding) && success;
@@ -594,7 +592,7 @@ TestInstance* WindingTest::createInstance (Context& context) const
 	return new WindingTestInstance(context, m_primitiveType, m_domainOrigin, m_winding, m_yFlip);
 }
 
-void populateWindingGroup (tcu::TestCaseGroup* group, tcu::Maybe<VkTessellationDomainOriginKHR> domainOrigin)
+void populateWindingGroup (tcu::TestCaseGroup* group, tcu::Maybe<VkTessellationDomainOrigin> domainOrigin)
 {
 	static const TessPrimitiveType primitivesNoIsolines[] =
 	{
@@ -624,9 +622,9 @@ tcu::TestCaseGroup* createWindingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "winding", "Test the cw and ccw input layout qualifiers"));
 
-	addTestGroup(group.get(), "default_domain",		"No tessellation domain specified",	populateWindingGroup,	tcu::nothing<VkTessellationDomainOriginKHR>());
-	addTestGroup(group.get(), "lower_left_domain",	"Lower left tessellation domain",	populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR));
-	addTestGroup(group.get(), "upper_left_domain",	"Upper left tessellation domain",	populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR));
+	addTestGroup(group.get(), "default_domain",		"No tessellation domain specified",	populateWindingGroup,	tcu::nothing<VkTessellationDomainOrigin>());
+	addTestGroup(group.get(), "lower_left_domain",	"Lower left tessellation domain",	populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT));
+	addTestGroup(group.get(), "upper_left_domain",	"Upper left tessellation domain",	populateWindingGroup,	tcu::just(VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT));
 
 	return group.release();
 }

@@ -32,6 +32,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "gluShaderUtil.hpp"
 
@@ -766,8 +767,6 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 	Move<VkCommandPool>									cmdPool;
 	Move<VkCommandBuffer>								cmdBuffer;
 
-	Move<VkFence>										fence;
-
 	Unique<VkDescriptorSetLayout>						emptyDescriptorSetLayout	(createEmptyDescriptorSetLayout(vk, vkDevice));
 	Unique<VkDescriptorPool>							dummyDescriptorPool			(createDummyDescriptorPool(vk, vkDevice));
 	Unique<VkDescriptorSet>								emptyDescriptorSet			(allocateSingleDescriptorSet(vk, vkDevice, *dummyDescriptorPool, *emptyDescriptorSetLayout));
@@ -1255,29 +1254,8 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 	}
 
-	// Create fence
-	fence = createFence(vk, vkDevice);
-
 	// Execute Draw
-	{
-
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
-			DE_NULL,								// pNext
-			0u,										// waitSemaphoreCount
-			DE_NULL,								// pWaitSemaphores
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,										// commandBufferCount
-			&cmdBuffer.get(),						// pCommandBuffers
-			0u,										// signalSemaphoreCount
-			DE_NULL									// pSignalSemaphores
-		};
-
-		VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
-		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), DE_TRUE, ~(0ull) /* infinity*/));
-	}
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
 
 	// Read back result and output
 	{
@@ -1345,26 +1323,11 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 					Move<VkCommandBuffer> copyCmdBuffer = allocateCommandBuffer(vk, vkDevice, *copyCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-					const VkSubmitInfo submitInfo =
-					{
-						VK_STRUCTURE_TYPE_SUBMIT_INFO,
-						DE_NULL,
-						0u,
-						(const VkSemaphore*)DE_NULL,
-						(const VkPipelineStageFlags*)DE_NULL,
-						1u,
-						&copyCmdBuffer.get(),
-						0u,
-						(const VkSemaphore*)DE_NULL,
-					};
-
 					VK_CHECK(vk.beginCommandBuffer(*copyCmdBuffer, &cmdBufferBeginInfo));
 					vk.cmdCopyImageToBuffer(*copyCmdBuffer, colorImages[outLocation + locNdx].get()->get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 					VK_CHECK(vk.endCommandBuffer(*copyCmdBuffer));
 
-					VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
-					VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-					VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
+					submitCommandsAndWait(vk, vkDevice, queue, copyCmdBuffer.get());
 				}
 
 				const VkMappedMemoryRange range =
@@ -1920,7 +1883,6 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 	Move<VkDescriptorSetLayout>		descriptorSetLayout;
 	Move<VkDescriptorSet>			descriptorSet;
 	const deUint32					numDescriptorSets		= (m_extraResourcesLayout != 0) ? 2u : 1u;
-	Move<VkFence>					fence;
 
 	DE_ASSERT((m_extraResourcesLayout != 0) == (extraResources != 0));
 
@@ -2015,9 +1977,6 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 		computePipeline = createComputePipeline(vk, vkDevice, DE_NULL, &computePipelineParams);
 	}
 
-	// Create fence
-	fence = createFence(vk, vkDevice);
-
 	const int			maxValuesPerInvocation	= m_context.getDeviceProperties().limits.maxComputeWorkGroupSize[0];
 	int					curOffset				= 0;
 	const deUint32		inputStride				= getInputStride();
@@ -2072,25 +2031,7 @@ void ComputeShaderExecutor::execute (int numValues, const void* const* inputs, v
 		curOffset += numToExec;
 
 		// Execute
-		{
-			VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
-
-			const VkSubmitInfo submitInfo =
-			{
-				VK_STRUCTURE_TYPE_SUBMIT_INFO,
-				DE_NULL,
-				0u,
-				(const VkSemaphore*)DE_NULL,
-				(const VkPipelineStageFlags*)DE_NULL,
-				1u,
-				&cmdBuffer.get(),
-				0u,
-				(const VkSemaphore*)DE_NULL,
-			};
-
-			VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-			VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity*/));
-		}
+		submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
 	}
 
 	// Read back data
@@ -2164,8 +2105,6 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 
 	Move<VkCommandPool>					cmdPool;
 	Move<VkCommandBuffer>				cmdBuffer;
-
-	Move<VkFence>						fence;
 
 	Move<VkDescriptorPool>				descriptorPool;
 	Move<VkDescriptorSetLayout>			descriptorSetLayout;
@@ -2620,27 +2559,8 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 	}
 
-	// Create fence
-	fence = createFence(vk, vkDevice);
-
 	// Execute Draw
-	{
-		VK_CHECK(vk.resetFences(vkDevice, 1, &fence.get()));
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)0,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmdBuffer.get(),
-			0u,
-			(const VkSemaphore*)0,
-		};
-		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity*/));
-	}
+	submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
 }
 
 // TessControlExecutor

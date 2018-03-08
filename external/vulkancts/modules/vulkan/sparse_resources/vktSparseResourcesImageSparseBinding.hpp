@@ -32,6 +32,7 @@ namespace sparse
 {
 
 tcu::TestCaseGroup* createImageSparseBindingTests(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createDeviceGroupImageSparseBindingTests(tcu::TestContext& testCtx);
 
 } // sparse
 } // vkt

@@ -32,6 +32,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "gluShaderLibrary.hpp"
 #include "gluShaderUtil.hpp"
@@ -1752,24 +1753,7 @@ TestStatus ShaderCaseInstance::iterate (void)
 	if (!m_spec.values.uniforms.empty())
 		writeValuesToMem(m_context, *m_uniformMem, m_uniformLayout, m_spec.values.uniforms, m_subCaseNdx);
 
-	{
-		const vk::VkSubmitInfo		submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,											// waitSemaphoreCount
-			(const vk::VkSemaphore*)0,					// pWaitSemaphores
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&m_cmdBuffer.get(),
-			0u,											// signalSemaphoreCount
-			(const vk::VkSemaphore*)0,					// pSignalSemaphores
-		};
-		const Unique<vk::VkFence>	fence		(vk::createFence(vkd, device));
-
-		VK_CHECK(vkd.queueSubmit	(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences	(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, m_cmdBuffer.get());
 
 	// Result was checked in fragment shader
 	if (m_spec.outputType == glu::sl::OUTPUT_RESULT)

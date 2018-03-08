@@ -26,8 +26,13 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
+#include "deMath.h"
+#include "deFloat16.h"
+#include "tcuVector.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include "deSTLUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -40,7 +45,14 @@ namespace ycbcr
 using namespace vk;
 
 using de::MovePtr;
+using tcu::FloatFormat;
+using tcu::Interval;
+using tcu::IVec2;
+using tcu::IVec4;
 using tcu::UVec2;
+using tcu::UVec4;
+using tcu::Vec2;
+using tcu::Vec4;
 using std::vector;
 using std::string;
 
@@ -185,26 +197,31 @@ void readStagingBuffers (MultiPlaneImageData*			imageData,
 
 void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags createFlags, VkImageTiling tiling)
 {
-	const bool													disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0;
-	const VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR*	features	= findStructure<VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR>(context.getDeviceFeatures2().pNext);
+	const bool													disjoint	= (createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0;
+	const VkPhysicalDeviceSamplerYcbcrConversionFeatures		features	= context.getSamplerYCbCrConversionFeatures();
 	vector<string>												reqExts;
 
-	reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
+		reqExts.push_back("VK_KHR_sampler_ycbcr_conversion");
 
 	if (disjoint)
 	{
-		reqExts.push_back("VK_KHR_bind_memory2");
-		reqExts.push_back("VK_KHR_get_memory_requirements2");
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_bind_memory2"))
+			reqExts.push_back("VK_KHR_bind_memory2");
+		if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_get_memory_requirements2"))
+			reqExts.push_back("VK_KHR_get_memory_requirements2");
 	}
 
 	for (vector<string>::const_iterator extIter = reqExts.begin(); extIter != reqExts.end(); ++extIter)
 	{
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), *extIter))
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), *extIter))
 			TCU_THROW(NotSupportedError, (*extIter + " is not supported").c_str());
 	}
 
-	if (!features || features->samplerYcbcrConversion == VK_FALSE)
+	if (features.samplerYcbcrConversion == VK_FALSE)
+	{
 		TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
+	}
 
 	{
 		const VkFormatProperties	formatProperties	= getPhysicalDeviceFormatProperties(context.getInstanceInterface(),
@@ -214,10 +231,10 @@ void checkImageSupport (Context& context, VkFormat format, VkImageCreateFlags cr
 														? formatProperties.optimalTilingFeatures
 														: formatProperties.linearTilingFeatures;
 
-		if ((featureFlags & (VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR)) == 0)
+		if ((featureFlags & (VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT)) == 0)
 			TCU_THROW(NotSupportedError, "YCbCr conversion is not supported for format");
 
-		if (disjoint && ((featureFlags & VK_FORMAT_FEATURE_DISJOINT_BIT_KHR) == 0))
+		if (disjoint && ((featureFlags & VK_FORMAT_FEATURE_DISJOINT_BIT) == 0))
 			TCU_THROW(NotSupportedError, "Disjoint planes are not supported for format");
 	}
 }
@@ -271,7 +288,7 @@ vector<AllocationSp> allocateAndBindImageMemory (const DeviceInterface&	vkd,
 {
 	vector<AllocationSp> allocations;
 
-	if ((createFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0)
+	if ((createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0)
 	{
 		const deUint32	numPlanes	= getPlaneCount(format);
 
@@ -408,24 +425,7 @@ void uploadImage (const DeviceInterface&		vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
 
 void fillImageMemory (const vk::DeviceInterface&							vkd,
@@ -454,7 +454,7 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 		const deUint32						planeH		= imageData.getSize().y() / formatDesc.planes[planeNdx].heightDivisor;
 		const VkImageSubresource			subresource	=
 		{
-			aspect,
+			static_cast<vk::VkImageAspectFlags>(aspect),
 			0u,
 			0u,
 		};
@@ -515,24 +515,7 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
 
 void downloadImage (const DeviceInterface&	vkd,
@@ -584,7 +567,7 @@ void downloadImage (const DeviceInterface&	vkd,
 				VK_QUEUE_FAMILY_IGNORED,
 				image,
 				{
-					aspect,
+					static_cast<vk::VkImageAspectFlags>(aspect),
 					0u,
 					1u,
 					0u,
@@ -651,24 +634,7 @@ void downloadImage (const DeviceInterface&	vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
 	readStagingBuffers(imageData, vkd, device, stagingMemory);
 }
@@ -728,24 +694,7 @@ void readImageMemory (const vk::DeviceInterface&							vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 
 	for (deUint32 planeNdx = 0; planeNdx < formatDesc.numPlanes; ++planeNdx)
 	{
@@ -759,7 +708,7 @@ void readImageMemory (const vk::DeviceInterface&							vkd,
 		const deUint32						planeH		= imageData->getSize().y() / formatDesc.planes[planeNdx].heightDivisor;
 		const VkImageSubresource			subresource	=
 		{
-			aspect,
+			static_cast<vk::VkImageAspectFlags>(aspect),
 			0u,
 			0u,
 		};
@@ -779,6 +728,1467 @@ void readImageMemory (const vk::DeviceInterface&							vkd,
 		}
 	}
 }
+
+// ChannelAccess utilities
+namespace
+{
+
+//! Extend < 32b signed integer to 32b
+inline deInt32 signExtend (deUint32 src, int bits)
+{
+	const deUint32 signBit = 1u << (bits-1);
+
+	src |= ~((src & signBit) - 1);
+
+	return (deInt32)src;
+}
+
+deUint32 divRoundUp (deUint32 a, deUint32 b)
+{
+	if (a % b == 0)
+		return a / b;
+	else
+		return (a / b) + 1;
+}
+
+// \todo Taken from tcuTexture.cpp
+// \todo [2011-09-21 pyry] Move to tcutil?
+template <typename T>
+inline T convertSatRte (float f)
+{
+	// \note Doesn't work for 64-bit types
+	DE_STATIC_ASSERT(sizeof(T) < sizeof(deUint64));
+	DE_STATIC_ASSERT((-3 % 2 != 0) && (-4 % 2 == 0));
+
+	deInt64	minVal	= std::numeric_limits<T>::min();
+	deInt64 maxVal	= std::numeric_limits<T>::max();
+	float	q		= deFloatFrac(f);
+	deInt64 intVal	= (deInt64)(f-q);
+
+	// Rounding.
+	if (q == 0.5f)
+	{
+		if (intVal % 2 != 0)
+			intVal++;
+	}
+	else if (q > 0.5f)
+		intVal++;
+	// else Don't add anything
+
+	// Saturate.
+	intVal = de::max(minVal, de::min(maxVal, intVal));
+
+	return (T)intVal;
+}
+
+} // anonymous
+
+ChannelAccess::ChannelAccess (tcu::TextureChannelClass	channelClass,
+							  deUint8					channelSize,
+							  const tcu::IVec3&			size,
+							  const tcu::IVec3&			bitPitch,
+							  void*						data,
+							  deUint32					bitOffset)
+	: m_channelClass	(channelClass)
+	, m_channelSize		(channelSize)
+	, m_size			(size)
+	, m_bitPitch		(bitPitch)
+
+	, m_data			((deUint8*)data + (bitOffset / 8))
+	, m_bitOffset		(bitOffset % 8)
+{
+}
+
+deUint32 ChannelAccess::getChannelUint (const tcu::IVec3& pos) const
+{
+	DE_ASSERT(pos[0] < m_size[0]);
+	DE_ASSERT(pos[1] < m_size[1]);
+	DE_ASSERT(pos[2] < m_size[2]);
+
+	const deInt32			bitOffset	(m_bitOffset + tcu::dot(m_bitPitch, pos));
+	const deUint8* const	firstByte	= ((const deUint8*)m_data) + (bitOffset / 8);
+	const deUint32			byteCount	= divRoundUp((bitOffset + m_channelSize) - 8u * (bitOffset / 8u), 8u);
+	const deUint32			mask		(m_channelSize == 32u ? ~0x0u : (0x1u << m_channelSize) - 1u);
+	const deUint32			offset		= bitOffset % 8;
+	deUint32				bits		= 0u;
+
+	deMemcpy(&bits, firstByte, byteCount);
+
+	return (bits >> offset) & mask;
+}
+
+void ChannelAccess::setChannel (const tcu::IVec3& pos, deUint32 x)
+{
+	DE_ASSERT(pos[0] < m_size[0]);
+	DE_ASSERT(pos[1] < m_size[1]);
+	DE_ASSERT(pos[2] < m_size[2]);
+
+	const deInt32	bitOffset	(m_bitOffset + tcu::dot(m_bitPitch, pos));
+	deUint8* const	firstByte	= ((deUint8*)m_data) + (bitOffset / 8);
+	const deUint32	byteCount	= divRoundUp((bitOffset + m_channelSize) - 8u * (bitOffset / 8u), 8u);
+	const deUint32	mask		(m_channelSize == 32u ? ~0x0u : (0x1u << m_channelSize) - 1u);
+	const deUint32	offset		= bitOffset % 8;
+
+	const deUint32	bits		= (x & mask) << offset;
+	deUint32		oldBits		= 0;
+
+	deMemcpy(&oldBits, firstByte, byteCount);
+
+	{
+		const deUint32	newBits	= bits | (oldBits & (~(mask << offset)));
+
+		deMemcpy(firstByte, &newBits,  byteCount);
+	}
+}
+
+float ChannelAccess::getChannel (const tcu::IVec3& pos) const
+{
+	const deUint32	bits	(getChannelUint(pos));
+
+	switch (m_channelClass)
+	{
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+			return (float)bits / (float)(m_channelSize == 32 ? ~0x0u : ((0x1u << m_channelSize) - 1u));
+
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return (float)bits;
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+			return de::max(-1.0f, (float)signExtend(bits, m_channelSize) / (float)((0x1u << (m_channelSize - 1u)) - 1u));
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return (float)signExtend(bits, m_channelSize);
+
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			if (m_channelSize == 32)
+				return tcu::Float32(bits).asFloat();
+			else
+			{
+				DE_FATAL("Float type not supported");
+				return -1.0f;
+			}
+
+		default:
+			DE_FATAL("Unknown texture channel class");
+			return -1.0f;
+	}
+}
+
+tcu::Interval ChannelAccess::getChannel (const tcu::FloatFormat&	conversionFormat,
+										 const tcu::IVec3&			pos) const
+{
+	const deUint32	bits	(getChannelUint(pos));
+
+	switch (m_channelClass)
+	{
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+			return conversionFormat.roundOut(conversionFormat.roundOut((double)bits, false)
+											/ conversionFormat.roundOut((double)(m_channelSize == 32 ? ~0x0u : ((0x1u << m_channelSize) - 1u)), false), false);
+
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+			return conversionFormat.roundOut((double)bits, false);
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+		{
+			const tcu::Interval result (conversionFormat.roundOut(conversionFormat.roundOut((double)signExtend(bits, m_channelSize), false)
+																/ conversionFormat.roundOut((double)((0x1u << (m_channelSize - 1u)) - 1u), false), false));
+
+			return tcu::Interval(de::max(-1.0, result.lo()), de::max(-1.0, result.hi()));
+		}
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+			return conversionFormat.roundOut((double)signExtend(bits, m_channelSize), false);
+
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+			if (m_channelSize == 32)
+				return conversionFormat.roundOut(tcu::Float32(bits).asFloat(), false);
+			else
+			{
+				DE_FATAL("Float type not supported");
+				return tcu::Interval();
+			}
+
+		default:
+			DE_FATAL("Unknown texture channel class");
+			return tcu::Interval();
+	}
+}
+
+void ChannelAccess::setChannel (const tcu::IVec3& pos, float x)
+{
+	DE_ASSERT(pos[0] < m_size[0]);
+	DE_ASSERT(pos[1] < m_size[1]);
+	DE_ASSERT(pos[2] < m_size[2]);
+
+	const deUint32	mask	(m_channelSize == 32u ? ~0x0u : (0x1u << m_channelSize) - 1u);
+
+	switch (m_channelClass)
+	{
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+		{
+			const deUint32	maxValue	(mask);
+			const deUint32	value		(de::min(maxValue, (deUint32)convertSatRte<deUint32>(x * (float)maxValue)));
+			setChannel(pos, value);
+			break;
+		}
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+		{
+			const deInt32	range	((0x1u << (m_channelSize - 1u)) - 1u);
+			const deUint32	value	((deUint32)de::clamp<deInt32>(convertSatRte<deInt32>(x * (float)range), -range, range));
+			setChannel(pos, value);
+			break;
+		}
+
+		case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+		{
+			const deUint32	maxValue	(mask);
+			const deUint32	value		(de::min(maxValue, (deUint32)x));
+			setChannel(pos, value);
+			break;
+		}
+
+		case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+		{
+			const deInt32	minValue	(-(deInt32)(1u << (m_channelSize - 1u)));
+			const deInt32	maxValue	((deInt32)((1u << (m_channelSize - 1u)) - 1u));
+			const deUint32	value		((deUint32)de::clamp((deInt32)x, minValue, maxValue));
+			setChannel(pos, value);
+			break;
+		}
+
+		case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+		{
+			if (m_channelSize == 32)
+			{
+				const deUint32	value		= tcu::Float32(x).bits();
+				setChannel(pos, value);
+			}
+			else
+				DE_FATAL("Float type not supported");
+			break;
+		}
+
+		default:
+			DE_FATAL("Unknown texture channel class");
+	}
+}
+
+ChannelAccess getChannelAccess (MultiPlaneImageData&				data,
+								const vk::PlanarFormatDescription&	formatInfo,
+								const UVec2&						size,
+								int									channelNdx)
+{
+	DE_ASSERT(formatInfo.hasChannelNdx(channelNdx));
+
+	const deUint32	planeNdx			= formatInfo.channels[channelNdx].planeNdx;
+	const deUint32	valueOffsetBits		= formatInfo.channels[channelNdx].offsetBits;
+	const deUint32	pixelStrideBytes	= formatInfo.channels[channelNdx].strideBytes;
+	const deUint32	pixelStrideBits		= pixelStrideBytes * 8;
+	const deUint8	sizeBits			= formatInfo.channels[channelNdx].sizeBits;
+
+	DE_ASSERT(size.x() % formatInfo.planes[planeNdx].widthDivisor == 0);
+	DE_ASSERT(size.y() % formatInfo.planes[planeNdx].heightDivisor == 0);
+
+	deUint32		accessWidth			= size.x() / formatInfo.planes[planeNdx].widthDivisor;
+	const deUint32	accessHeight		= size.y() / formatInfo.planes[planeNdx].heightDivisor;
+	const deUint32	elementSizeBytes	= formatInfo.planes[planeNdx].elementSizeBytes;
+
+	const deUint32	rowPitch			= formatInfo.planes[planeNdx].elementSizeBytes * accessWidth;
+	const deUint32	rowPitchBits		= rowPitch * 8;
+
+	if (pixelStrideBytes != elementSizeBytes)
+	{
+		DE_ASSERT(elementSizeBytes % pixelStrideBytes == 0);
+		accessWidth *= elementSizeBytes/pixelStrideBytes;
+	}
+
+	return ChannelAccess((tcu::TextureChannelClass)formatInfo.channels[channelNdx].type, sizeBits, tcu::IVec3(accessWidth, accessHeight, 1u), tcu::IVec3((int)pixelStrideBits, (int)rowPitchBits, 0), data.getPlanePtr(planeNdx), (deUint32)valueOffsetBits);
+}
+
+bool isXChromaSubsampled (vk::VkFormat format)
+{
+	switch (format)
+	{
+		case vk::VK_FORMAT_G8B8G8R8_422_UNORM:
+		case vk::VK_FORMAT_B8G8R8G8_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G16B16G16R16_422_UNORM:
+		case vk::VK_FORMAT_B16G16R16G16_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+bool isYChromaSubsampled (vk::VkFormat format)
+{
+	switch (format)
+	{
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+// \note Used for range expansion
+tcu::UVec4 getYCbCrBitDepth (vk::VkFormat format)
+{
+	switch (format)
+	{
+		case vk::VK_FORMAT_G8B8G8R8_422_UNORM:
+		case vk::VK_FORMAT_B8G8R8G8_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
+			return tcu::UVec4(8, 8, 8, 0);
+
+		case vk::VK_FORMAT_R10X6_UNORM_PACK16:
+			return tcu::UVec4(10, 0, 0, 0);
+
+		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+			return tcu::UVec4(10, 10, 0, 0);
+
+		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+			return tcu::UVec4(10, 10, 10, 10);
+
+		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+			return tcu::UVec4(10, 10, 10, 0);
+
+		case vk::VK_FORMAT_R12X4_UNORM_PACK16:
+			return tcu::UVec4(12, 0, 0, 0);
+
+		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+			return tcu::UVec4(12, 12, 0, 0);
+
+		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+			return tcu::UVec4(12, 12, 12, 12);
+
+		case vk::VK_FORMAT_G16B16G16R16_422_UNORM:
+		case vk::VK_FORMAT_B16G16R16G16_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
+			return tcu::UVec4(16, 16, 16, 0);
+
+		default:
+			return tcu::getTextureFormatBitDepth(vk::mapVkFormat(format)).cast<deUint32>();
+	}
+}
+
+// \note Taken from explicit lod filtering tests
+tcu::FloatFormat getYCbCrFilteringPrecision (vk::VkFormat format)
+{
+	const tcu::FloatFormat	reallyLow	(0, 0, 6, false, tcu::YES);
+	const tcu::FloatFormat	low			(0, 0, 7, false, tcu::YES);
+	const tcu::FloatFormat	fp16		(-14, 15, 10, false);
+	const tcu::FloatFormat	fp32		(-126, 127, 23, true);
+
+	switch (format)
+	{
+		case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+		case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+		case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
+		case vk::VK_FORMAT_B5G6R5_UNORM_PACK16:
+		case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
+		case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
+		case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+			return reallyLow;
+
+		case vk::VK_FORMAT_R8G8B8_UNORM:
+		case vk::VK_FORMAT_B8G8R8_UNORM:
+		case vk::VK_FORMAT_R8G8B8A8_UNORM:
+		case vk::VK_FORMAT_B8G8R8A8_UNORM:
+		case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+		case vk::VK_FORMAT_G8B8G8R8_422_UNORM:
+		case vk::VK_FORMAT_B8G8R8G8_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
+			return low;
+
+		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+		case vk::VK_FORMAT_R16G16B16_UNORM:
+		case vk::VK_FORMAT_R16G16B16A16_UNORM:
+		case vk::VK_FORMAT_R10X6_UNORM_PACK16:
+		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+		case vk::VK_FORMAT_R12X4_UNORM_PACK16:
+		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+		case vk::VK_FORMAT_G16B16G16R16_422_UNORM:
+		case vk::VK_FORMAT_B16G16R16G16_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
+			return fp16;
+
+		default:
+			DE_FATAL("Precision not defined for format");
+			return fp32;
+	}
+}
+
+// \note Taken from explicit lod filtering tests
+tcu::FloatFormat getYCbCrConversionPrecision (vk::VkFormat format)
+{
+	const tcu::FloatFormat	reallyLow	(0, 0, 8, false, tcu::YES);
+	const tcu::FloatFormat	fp16		(-14, 15, 10, false);
+	const tcu::FloatFormat	fp32		(-126, 127, 23, true);
+
+	switch (format)
+	{
+		case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+		case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+		case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
+		case vk::VK_FORMAT_B5G6R5_UNORM_PACK16:
+		case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
+		case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
+		case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+			return reallyLow;
+
+		case vk::VK_FORMAT_R8G8B8_UNORM:
+		case vk::VK_FORMAT_B8G8R8_UNORM:
+		case vk::VK_FORMAT_R8G8B8A8_UNORM:
+		case vk::VK_FORMAT_B8G8R8A8_UNORM:
+		case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+		case vk::VK_FORMAT_G8B8G8R8_422_UNORM:
+		case vk::VK_FORMAT_B8G8R8G8_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
+			return reallyLow;
+
+		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+		case vk::VK_FORMAT_R16G16B16_UNORM:
+		case vk::VK_FORMAT_R16G16B16A16_UNORM:
+		case vk::VK_FORMAT_R10X6_UNORM_PACK16:
+		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+		case vk::VK_FORMAT_R12X4_UNORM_PACK16:
+		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+		case vk::VK_FORMAT_G16B16G16R16_422_UNORM:
+		case vk::VK_FORMAT_B16G16R16G16_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
+			return fp16;
+
+		default:
+			DE_FATAL("Precision not defined for format");
+			return fp32;
+	}
+}
+
+deUint32 getYCbCrFormatChannelCount (vk::VkFormat format)
+{
+	switch (format)
+	{
+		case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+		case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+		case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+		case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+		case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+		case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
+		case vk::VK_FORMAT_B8G8R8A8_UNORM:
+		case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+		case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+		case vk::VK_FORMAT_R16G16B16A16_UNORM:
+		case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
+		case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
+		case vk::VK_FORMAT_R8G8B8A8_UNORM:
+			return 4;
+
+		case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_B16G16R16G16_422_UNORM:
+		case vk::VK_FORMAT_B5G6R5_UNORM_PACK16:
+		case vk::VK_FORMAT_B8G8R8G8_422_UNORM:
+		case vk::VK_FORMAT_B8G8R8_UNORM:
+		case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+		case vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+		case vk::VK_FORMAT_G16B16G16R16_422_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
+		case vk::VK_FORMAT_G8B8G8R8_422_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
+		case vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
+		case vk::VK_FORMAT_R16G16B16_UNORM:
+		case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
+		case vk::VK_FORMAT_R8G8B8_UNORM:
+			return 3;
+
+		case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+		case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+			return 2;
+
+		case vk::VK_FORMAT_R10X6_UNORM_PACK16:
+		case vk::VK_FORMAT_R12X4_UNORM_PACK16:
+			return 1;
+
+		default:
+			DE_FATAL("Unknown number of channels");
+			return -1;
+	}
+}
+
+// YCbCr color conversion utilities
+namespace
+{
+
+tcu::Interval rangeExpandChroma (vk::VkSamplerYcbcrRange		range,
+								 const tcu::FloatFormat&		conversionFormat,
+								 const deUint32					bits,
+								 const tcu::Interval&			sample)
+{
+	const deUint32	values	(0x1u << bits);
+
+	switch (range)
+	{
+		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL:
+			return conversionFormat.roundOut(sample - conversionFormat.roundOut(tcu::Interval((double)(0x1u << (bits - 1u)) / (double)((0x1u << bits) - 1u)), false), false);
+
+		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW:
+		{
+			const tcu::Interval	a			(conversionFormat.roundOut(sample * tcu::Interval((double)(values - 1u)), false));
+			const tcu::Interval	dividend	(conversionFormat.roundOut(a - tcu::Interval((double)(128u * (0x1u << (bits - 8u)))), false));
+			const tcu::Interval	divisor		((double)(224u * (0x1u << (bits - 8u))));
+			const tcu::Interval	result		(conversionFormat.roundOut(dividend / divisor, false));
+
+			return result;
+		}
+
+		default:
+			DE_FATAL("Unknown YCbCrRange");
+			return tcu::Interval();
+	}
+}
+
+tcu::Interval rangeExpandLuma (vk::VkSamplerYcbcrRange		range,
+							   const tcu::FloatFormat&		conversionFormat,
+							   const deUint32				bits,
+							   const tcu::Interval&			sample)
+{
+	const deUint32	values	(0x1u << bits);
+
+	switch (range)
+	{
+		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL:
+			return conversionFormat.roundOut(sample, false);
+
+		case vk::VK_SAMPLER_YCBCR_RANGE_ITU_NARROW:
+		{
+			const tcu::Interval	a			(conversionFormat.roundOut(sample * tcu::Interval((double)(values - 1u)), false));
+			const tcu::Interval	dividend	(conversionFormat.roundOut(a - tcu::Interval((double)(16u * (0x1u << (bits - 8u)))), false));
+			const tcu::Interval	divisor		((double)(219u * (0x1u << (bits - 8u))));
+			const tcu::Interval	result		(conversionFormat.roundOut(dividend / divisor, false));
+
+			return result;
+		}
+
+		default:
+			DE_FATAL("Unknown YCbCrRange");
+			return tcu::Interval();
+	}
+}
+
+tcu::Interval clampMaybe (const tcu::Interval&	x,
+						  double				min,
+						  double				max)
+{
+	tcu::Interval result = x;
+
+	DE_ASSERT(min <= max);
+
+	if (x.lo() < min)
+		result = result | tcu::Interval(min);
+
+	if (x.hi() > max)
+		result = result | tcu::Interval(max);
+
+	return result;
+}
+
+void convertColor (vk::VkSamplerYcbcrModelConversion	colorModel,
+				   vk::VkSamplerYcbcrRange				range,
+				   const tcu::FloatFormat&				conversionFormat,
+				   const tcu::UVec4&					bitDepth,
+				   const tcu::Interval					input[4],
+				   tcu::Interval						output[4])
+{
+	switch (colorModel)
+	{
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY:
+		{
+			for (size_t ndx = 0; ndx < 4; ndx++)
+				output[ndx] = input[ndx];
+			break;
+		}
+
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY:
+		{
+			output[0] = clampMaybe(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]), -0.5, 0.5);
+			output[1] = clampMaybe(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]), 0.0, 1.0);
+			output[2] = clampMaybe(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]), -0.5, 0.5);
+			output[3] = input[3];
+			break;
+		}
+
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601:
+		{
+			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
+			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
+			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
+
+			const tcu::Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
+			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
+			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
+
+			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.402 * crClamped, false), false);
+			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut((0.202008 / 0.587) * cbClamped, false), false) - conversionFormat.roundOut((0.419198 / 0.587) * crClamped, false), false);
+			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.772 * cbClamped, false), false);
+			output[3] = input[3];
+			break;
+		}
+
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709:
+		{
+			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
+			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
+			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
+
+			const tcu::Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
+			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
+			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
+
+			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.5748 * crClamped, false), false);
+			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut((0.13397432 / 0.7152) * cbClamped, false), false) - conversionFormat.roundOut((0.33480248 / 0.7152) * crClamped, false), false);
+			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.8556 * cbClamped, false), false);
+			output[3] = input[3];
+			break;
+		}
+
+		case vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020:
+		{
+			const tcu::Interval	y			(rangeExpandLuma(range, conversionFormat, bitDepth[1], input[1]));
+			const tcu::Interval	cr			(rangeExpandChroma(range, conversionFormat, bitDepth[0], input[0]));
+			const tcu::Interval	cb			(rangeExpandChroma(range, conversionFormat, bitDepth[2], input[2]));
+
+			const tcu::Interval	yClamped	(clampMaybe(y,   0.0, 1.0));
+			const tcu::Interval	crClamped	(clampMaybe(cr, -0.5, 0.5));
+			const tcu::Interval	cbClamped	(clampMaybe(cb, -0.5, 0.5));
+
+			output[0] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.4746 * crClamped, false), false);
+			output[1] = conversionFormat.roundOut(conversionFormat.roundOut(yClamped - conversionFormat.roundOut(conversionFormat.roundOut(0.11156702 / 0.6780, false) * cbClamped, false), false) - conversionFormat.roundOut(conversionFormat.roundOut(0.38737742 / 0.6780, false) * crClamped, false), false);
+			output[2] = conversionFormat.roundOut(yClamped + conversionFormat.roundOut(1.8814 * cbClamped, false), false);
+			output[3] = input[3];
+			break;
+		}
+
+		default:
+			DE_FATAL("Unknown YCbCrModel");
+	}
+
+	if (colorModel != vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY)
+	{
+		for (int ndx = 0; ndx < 3; ndx++)
+			output[ndx] = clampMaybe(output[ndx], 0.0, 1.0);
+	}
+}
+
+int mirror (int coord)
+{
+	return coord >= 0 ? coord : -(1 + coord);
+}
+
+int imod (int a, int b)
+{
+	int m = a % b;
+	return m < 0 ? m + b : m;
+}
+
+tcu::Interval frac (const tcu::Interval& x)
+{
+	if (x.hi() - x.lo() >= 1.0)
+		return tcu::Interval(0.0, 1.0);
+	else
+	{
+		const tcu::Interval ret (deFrac(x.lo()), deFrac(x.hi()));
+
+		return ret;
+	}
+}
+
+tcu::Interval calculateUV (const tcu::FloatFormat&	coordFormat,
+						   const tcu::Interval&		st,
+						   const int				size)
+{
+	return coordFormat.roundOut(coordFormat.roundOut(st, false) * tcu::Interval((double)size), false);
+}
+
+tcu::IVec2 calculateNearestIJRange (const tcu::FloatFormat&	coordFormat,
+								    const tcu::Interval&	uv)
+{
+	const tcu::Interval	ij	(coordFormat.roundOut(coordFormat.roundOut(uv, false) - tcu::Interval(0.5), false));
+
+	return tcu::IVec2(deRoundToInt32(ij.lo() - coordFormat.ulp(ij.lo(), 1)), deRoundToInt32(ij.hi() + coordFormat.ulp(ij.hi(), 1)));
+}
+
+// Calculate range of pixel coordinates that can be used as lower coordinate for linear sampling
+tcu::IVec2 calculateLinearIJRange (const tcu::FloatFormat&	coordFormat,
+								   const tcu::Interval&		uv)
+{
+	const tcu::Interval	ij	(coordFormat.roundOut(uv - tcu::Interval(0.5), false));
+
+	return tcu::IVec2(deFloorToInt32(ij.lo()), deFloorToInt32(ij.hi()));
+}
+
+tcu::Interval calculateAB (const deUint32		subTexelPrecisionBits,
+						   const tcu::Interval&	uv,
+						   int					ij)
+{
+	const deUint32		subdivisions	= 0x1u << subTexelPrecisionBits;
+	const tcu::Interval	ab				(frac((uv - 0.5) & tcu::Interval((double)ij, (double)(ij + 1))));
+	const tcu::Interval	gridAB			(ab * tcu::Interval(subdivisions));
+	const tcu::Interval	rounded			(de::max(deFloor(gridAB.lo()) / subdivisions, 0.0) , de::min(deCeil(gridAB.hi()) / subdivisions, 1.0));
+
+	return rounded;
+}
+
+tcu::Interval lookupWrapped (const ChannelAccess&		access,
+							 const tcu::FloatFormat&	conversionFormat,
+							 vk::VkSamplerAddressMode	addressModeU,
+							 vk::VkSamplerAddressMode	addressModeV,
+							 const tcu::IVec2&			coord)
+{
+	return access.getChannel(conversionFormat,
+							 tcu::IVec3(wrap(addressModeU, coord.x(), access.getSize().x()), wrap(addressModeV, coord.y(), access.getSize().y()), 0));
+}
+
+tcu::Interval linearInterpolate (const tcu::FloatFormat&	filteringFormat,
+								 const tcu::Interval&		a,
+								 const tcu::Interval&		b,
+								 const tcu::Interval&		p00,
+								 const tcu::Interval&		p10,
+								 const tcu::Interval&		p01,
+								 const tcu::Interval&		p11)
+{
+	const tcu::Interval	p[4] =
+	{
+		p00,
+		p10,
+		p01,
+		p11
+	};
+	tcu::Interval		result	(0.0);
+
+	for (size_t ndx = 0; ndx < 4; ndx++)
+	{
+		const tcu::Interval	weightA	(filteringFormat.roundOut((ndx % 2) == 0 ? (1.0 - a) : a, false));
+		const tcu::Interval	weightB	(filteringFormat.roundOut((ndx / 2) == 0 ? (1.0 - b) : b, false));
+		const tcu::Interval	weight	(filteringFormat.roundOut(weightA * weightB, false));
+
+		result = filteringFormat.roundOut(result + filteringFormat.roundOut(p[ndx] * weight, false), false);
+	}
+
+	return result;
+}
+
+tcu::Interval calculateImplicitChromaUV (const tcu::FloatFormat&	coordFormat,
+										 vk::VkChromaLocation		offset,
+										 const tcu::Interval&		uv)
+{
+	if (offset == vk::VK_CHROMA_LOCATION_COSITED_EVEN)
+		return coordFormat.roundOut(0.5 * coordFormat.roundOut(uv + 0.5, false), false);
+	else
+		return coordFormat.roundOut(0.5 * uv, false);
+}
+
+tcu::Interval linearSample (const ChannelAccess&		access,
+						    const tcu::FloatFormat&		conversionFormat,
+						    const tcu::FloatFormat&		filteringFormat,
+						    vk::VkSamplerAddressMode	addressModeU,
+						    vk::VkSamplerAddressMode	addressModeV,
+						    const tcu::IVec2&			coord,
+						    const tcu::Interval&		a,
+						    const tcu::Interval&		b)
+{
+	return linearInterpolate(filteringFormat, a, b,
+									lookupWrapped(access, conversionFormat, addressModeU, addressModeV, coord + tcu::IVec2(0, 0)),
+									lookupWrapped(access, conversionFormat, addressModeU, addressModeV, coord + tcu::IVec2(1, 0)),
+									lookupWrapped(access, conversionFormat, addressModeU, addressModeV, coord + tcu::IVec2(0, 1)),
+									lookupWrapped(access, conversionFormat, addressModeU, addressModeV, coord + tcu::IVec2(1, 1)));
+}
+
+tcu::Interval reconstructLinearXChromaSample (const tcu::FloatFormat&	filteringFormat,
+											  const tcu::FloatFormat&	conversionFormat,
+											  vk::VkChromaLocation		offset,
+											  vk::VkSamplerAddressMode	addressModeU,
+											  vk::VkSamplerAddressMode	addressModeV,
+											  const ChannelAccess&		access,
+											  int						i,
+											  int						j)
+{
+	const int subI	= divFloor(i, 2);
+
+	if (offset == vk::VK_CHROMA_LOCATION_COSITED_EVEN)
+	{
+		if (i % 2 == 0)
+			return lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j));
+		else
+		{
+			const tcu::Interval	a	(filteringFormat.roundOut(0.5 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j)), false));
+			const tcu::Interval	b	(filteringFormat.roundOut(0.5 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, j)), false));
+
+			return filteringFormat.roundOut(a + b, false);
+		}
+	}
+	else if (offset == vk::VK_CHROMA_LOCATION_MIDPOINT)
+	{
+		if (i % 2 == 0)
+		{
+			const tcu::Interval	a	(filteringFormat.roundOut(0.25 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI - 1, j)), false));
+			const tcu::Interval	b	(filteringFormat.roundOut(0.75 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j)), false));
+
+			return filteringFormat.roundOut(a + b, false);
+		}
+		else
+		{
+			const tcu::Interval	a	(filteringFormat.roundOut(0.25 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, j)), false));
+			const tcu::Interval	b	(filteringFormat.roundOut(0.75 * lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, j)), false));
+
+			return filteringFormat.roundOut(a + b, false);
+		}
+	}
+	else
+	{
+		DE_FATAL("Unknown sample location");
+		return tcu::Interval();
+	}
+}
+
+tcu::Interval reconstructLinearXYChromaSample (const tcu::FloatFormat&	filteringFormat,
+										  const tcu::FloatFormat&		conversionFormat,
+										  vk::VkChromaLocation			xOffset,
+										  vk::VkChromaLocation			yOffset,
+										  vk::VkSamplerAddressMode		addressModeU,
+										  vk::VkSamplerAddressMode		addressModeV,
+										  const ChannelAccess&			access,
+										  int							i,
+										  int							j)
+{
+	const int		subI	= xOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN
+							? divFloor(i, 2)
+							: (i % 2 == 0 ? divFloor(i, 2) - 1 : divFloor(i, 2));
+	const int		subJ	= yOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN
+							? divFloor(j, 2)
+							: (j % 2 == 0 ? divFloor(j, 2) - 1 : divFloor(j, 2));
+
+	const double	a		= xOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN
+							? (i % 2 == 0 ? 0.0 : 0.5)
+							: (i % 2 == 0 ? 0.25 : 0.75);
+	const double	b		= yOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN
+							? (j % 2 == 0 ? 0.0 : 0.5)
+							: (j % 2 == 0 ? 0.25 : 0.75);
+
+	return linearInterpolate(filteringFormat, a, b,
+								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, subJ)),
+								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, subJ)),
+								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI, subJ + 1)),
+								lookupWrapped(access, conversionFormat, addressModeU, addressModeV, tcu::IVec2(subI + 1, subJ + 1)));
+}
+
+const ChannelAccess& swizzle (vk::VkComponentSwizzle	swizzle,
+							  const ChannelAccess&		identityPlane,
+							  const ChannelAccess&		rPlane,
+							  const ChannelAccess&		gPlane,
+							  const ChannelAccess&		bPlane,
+							  const ChannelAccess&		aPlane)
+{
+	switch (swizzle)
+	{
+		case vk::VK_COMPONENT_SWIZZLE_IDENTITY:	return identityPlane;
+		case vk::VK_COMPONENT_SWIZZLE_R:		return rPlane;
+		case vk::VK_COMPONENT_SWIZZLE_G:		return gPlane;
+		case vk::VK_COMPONENT_SWIZZLE_B:		return bPlane;
+		case vk::VK_COMPONENT_SWIZZLE_A:		return aPlane;
+
+		default:
+			DE_FATAL("Unsupported swizzle");
+			return identityPlane;
+	}
+}
+
+} // anonymous
+
+int wrap (vk::VkSamplerAddressMode	addressMode,
+		  int						coord,
+		  int						size)
+{
+	switch (addressMode)
+	{
+		case vk::VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT:
+			return (size - 1) - mirror(imod(coord, 2 * size) - size);
+
+		case vk::VK_SAMPLER_ADDRESS_MODE_REPEAT:
+			return imod(coord, size);
+
+		case vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:
+			return de::clamp(coord, 0, size - 1);
+
+		case vk::VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE:
+			return de::clamp(mirror(coord), 0, size - 1);
+
+		default:
+			DE_FATAL("Unknown wrap mode");
+			return ~0;
+	}
+}
+
+int divFloor (int a, int b)
+{
+	if (a % b == 0)
+		return a / b;
+	else if (a > 0)
+		return a / b;
+	else
+		return (a / b) - 1;
+}
+
+void calculateBounds (const ChannelAccess&					rPlane,
+					  const ChannelAccess&					gPlane,
+					  const ChannelAccess&					bPlane,
+					  const ChannelAccess&					aPlane,
+					  const UVec4&							bitDepth,
+					  const vector<Vec2>&					sts,
+					  const FloatFormat&					filteringFormat,
+					  const FloatFormat&					conversionFormat,
+					  const deUint32						subTexelPrecisionBits,
+					  vk::VkFilter							filter,
+					  vk::VkSamplerYcbcrModelConversion		colorModel,
+					  vk::VkSamplerYcbcrRange				range,
+					  vk::VkFilter							chromaFilter,
+					  vk::VkChromaLocation					xChromaOffset,
+					  vk::VkChromaLocation					yChromaOffset,
+					  const vk::VkComponentMapping&			componentMapping,
+					  bool									explicitReconstruction,
+					  vk::VkSamplerAddressMode				addressModeU,
+					  vk::VkSamplerAddressMode				addressModeV,
+					  std::vector<Vec4>&					minBounds,
+					  std::vector<Vec4>&					maxBounds,
+					  std::vector<Vec4>&					uvBounds,
+					  std::vector<IVec4>&					ijBounds)
+{
+	const FloatFormat		highp			(-126, 127, 23, true,
+											 tcu::MAYBE,	// subnormals
+											 tcu::YES,		// infinities
+											 tcu::MAYBE);	// NaN
+	const FloatFormat		coordFormat		(-32, 32, 16, true);
+	const ChannelAccess&	rAccess			(swizzle(componentMapping.r, rPlane, rPlane, gPlane, bPlane, aPlane));
+	const ChannelAccess&	gAccess			(swizzle(componentMapping.g, gPlane, rPlane, gPlane, bPlane, aPlane));
+	const ChannelAccess&	bAccess			(swizzle(componentMapping.b, bPlane, rPlane, gPlane, bPlane, aPlane));
+	const ChannelAccess&	aAccess			(swizzle(componentMapping.a, aPlane, rPlane, gPlane, bPlane, aPlane));
+
+	const bool				subsampledX		= gAccess.getSize().x() > rAccess.getSize().x();
+	const bool				subsampledY		= gAccess.getSize().y() > rAccess.getSize().y();
+
+	minBounds.resize(sts.size(), Vec4(TCU_INFINITY));
+	maxBounds.resize(sts.size(), Vec4(-TCU_INFINITY));
+
+	uvBounds.resize(sts.size(), Vec4(TCU_INFINITY, -TCU_INFINITY, TCU_INFINITY, -TCU_INFINITY));
+	ijBounds.resize(sts.size(), IVec4(0x7FFFFFFF, -1 -0x7FFFFFFF, 0x7FFFFFFF, -1 -0x7FFFFFFF));
+
+	// Chroma plane sizes must match
+	DE_ASSERT(rAccess.getSize() == bAccess.getSize());
+
+	// Luma plane sizes must match
+	DE_ASSERT(gAccess.getSize() == aAccess.getSize());
+
+	// Luma plane size must match chroma plane or be twice as big
+	DE_ASSERT(rAccess.getSize().x() == gAccess.getSize().x() || 2 * rAccess.getSize().x() == gAccess.getSize().x());
+	DE_ASSERT(rAccess.getSize().y() == gAccess.getSize().y() || 2 * rAccess.getSize().y() == gAccess.getSize().y());
+
+	for (size_t ndx = 0; ndx < sts.size(); ndx++)
+	{
+		const Vec2	st		(sts[ndx]);
+		Interval	bounds[4];
+
+		const Interval	u	(calculateUV(coordFormat, st[0], gAccess.getSize().x()));
+		const Interval	v	(calculateUV(coordFormat, st[1], gAccess.getSize().y()));
+
+		uvBounds[ndx][0] = (float)u.lo();
+		uvBounds[ndx][1] = (float)u.hi();
+
+		uvBounds[ndx][2] = (float)v.lo();
+		uvBounds[ndx][3] = (float)v.hi();
+
+		if (filter == vk::VK_FILTER_NEAREST)
+		{
+			const IVec2	iRange	(calculateNearestIJRange(coordFormat, u));
+			const IVec2	jRange	(calculateNearestIJRange(coordFormat, v));
+
+			ijBounds[ndx][0] = iRange[0];
+			ijBounds[ndx][1] = iRange[1];
+
+			ijBounds[ndx][2] = jRange[0];
+			ijBounds[ndx][3] = jRange[1];
+
+			for (int j = jRange.x(); j <= jRange.y(); j++)
+			for (int i = iRange.x(); i <= iRange.y(); i++)
+			{
+				const Interval	gValue	(lookupWrapped(gAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)));
+				const Interval	aValue	(lookupWrapped(aAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)));
+
+				if (subsampledX || subsampledY)
+				{
+					if (explicitReconstruction)
+					{
+						if (chromaFilter == vk::VK_FILTER_NEAREST)
+						{
+							// Nearest, Reconstructed chroma with explicit nearest filtering
+							const int		subI		= subsampledX ? i / 2 : i;
+							const int		subJ		= subsampledY ? j / 2 : j;
+							const Interval	srcColor[]	=
+							{
+								lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(subI, subJ)),
+								gValue,
+								lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(subI, subJ)),
+								aValue
+							};
+							Interval		dstColor[4];
+
+							convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+							for (size_t compNdx = 0; compNdx < 4; compNdx++)
+								bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+						}
+						else if (chromaFilter == vk::VK_FILTER_LINEAR)
+						{
+							if (subsampledX && subsampledY)
+							{
+								// Nearest, Reconstructed both chroma samples with explicit linear filtering
+								const Interval	rValue	(reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j));
+								const Interval	bValue	(reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j));
+								const Interval	srcColor[]	=
+								{
+									rValue,
+									gValue,
+									bValue,
+									aValue
+								};
+								Interval		dstColor[4];
+
+								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+								for (size_t compNdx = 0; compNdx < 4; compNdx++)
+									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+							}
+							else if (subsampledX)
+							{
+								// Nearest, Reconstructed x chroma samples with explicit linear filtering
+								const Interval	rValue	(reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i, j));
+								const Interval	bValue	(reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i, j));
+								const Interval	srcColor[]	=
+								{
+									rValue,
+									gValue,
+									bValue,
+									aValue
+								};
+								Interval		dstColor[4];
+
+								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+								for (size_t compNdx = 0; compNdx < 4; compNdx++)
+									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+							}
+							else
+								DE_FATAL("Unexpected chroma reconstruction");
+						}
+						else
+							DE_FATAL("Unknown filter");
+					}
+					else
+					{
+						const Interval	chromaU	(subsampledX ? calculateImplicitChromaUV(coordFormat, xChromaOffset, u) : u);
+						const Interval	chromaV	(subsampledY ? calculateImplicitChromaUV(coordFormat, yChromaOffset, v) : v);
+
+						if (chromaFilter == vk::VK_FILTER_NEAREST)
+						{
+							// Nearest, reconstructed chroma samples with implicit nearest filtering
+							const IVec2	chromaIRange	(subsampledX ? calculateNearestIJRange(coordFormat, chromaU) : IVec2(i, i));
+							const IVec2	chromaJRange	(subsampledY ? calculateNearestIJRange(coordFormat, chromaV) : IVec2(j, j));
+
+							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
+							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
+							{
+								const Interval	srcColor[]	=
+								{
+									lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
+									gValue,
+									lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
+									aValue
+								};
+								Interval		dstColor[4];
+
+								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+								for (size_t compNdx = 0; compNdx < 4; compNdx++)
+									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+							}
+						}
+						else if (chromaFilter == vk::VK_FILTER_LINEAR)
+						{
+							// Nearest, reconstructed chroma samples with implicit linear filtering
+							const IVec2	chromaIRange	(subsampledX ? calculateLinearIJRange(coordFormat, chromaU) : IVec2(i, i));
+							const IVec2	chromaJRange	(subsampledY ? calculateLinearIJRange(coordFormat, chromaV) : IVec2(j, j));
+
+							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
+							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
+							{
+								const Interval	chromaA	(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
+								const Interval	chromaB	(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
+
+								const Interval	srcColor[]	=
+								{
+									linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
+									gValue,
+									linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB),
+									aValue
+								};
+								Interval		dstColor[4];
+
+								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+								for (size_t compNdx = 0; compNdx < 4; compNdx++)
+									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+							}
+						}
+						else
+							DE_FATAL("Unknown filter");
+					}
+				}
+				else
+				{
+					// Linear, no chroma subsampling
+					const Interval	srcColor[]	=
+					{
+						lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)),
+						gValue,
+						lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i, j)),
+						aValue
+					};
+					Interval dstColor[4];
+
+					convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+					for (size_t compNdx = 0; compNdx < 4; compNdx++)
+						bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+				}
+			}
+		}
+		else if (filter == vk::VK_FILTER_LINEAR)
+		{
+			const IVec2	iRange	(calculateLinearIJRange(coordFormat, u));
+			const IVec2	jRange	(calculateLinearIJRange(coordFormat, v));
+
+			ijBounds[ndx][0] = iRange[0];
+			ijBounds[ndx][1] = iRange[1];
+
+			ijBounds[ndx][2] = jRange[0];
+			ijBounds[ndx][3] = jRange[1];
+
+			for (int j = jRange.x(); j <= jRange.y(); j++)
+			for (int i = iRange.x(); i <= iRange.y(); i++)
+			{
+				const Interval	lumaA		(calculateAB(subTexelPrecisionBits, u, i));
+				const Interval	lumaB		(calculateAB(subTexelPrecisionBits, v, j));
+
+				const Interval	gValue		(linearSample(gAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
+				const Interval	aValue		(linearSample(aAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), lumaA, lumaB));
+
+				if (subsampledX || subsampledY)
+				{
+					if (explicitReconstruction)
+					{
+						if (chromaFilter == vk::VK_FILTER_NEAREST)
+						{
+							const Interval	srcColor[]	=
+							{
+								linearInterpolate(filteringFormat, lumaA, lumaB,
+																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
+																lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
+								gValue,
+								linearInterpolate(filteringFormat, lumaA, lumaB,
+																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), j       / (subsampledY ? 2 : 1))),
+																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(i       / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1))),
+																lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2((i + 1) / (subsampledX ? 2 : 1), (j + 1) / (subsampledY ? 2 : 1)))),
+								aValue
+							};
+							Interval		dstColor[4];
+
+							convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+							for (size_t compNdx = 0; compNdx < 4; compNdx++)
+								bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+						}
+						else if (chromaFilter == vk::VK_FILTER_LINEAR)
+						{
+							if (subsampledX && subsampledY)
+							{
+								// Linear, Reconstructed xx chroma samples with explicit linear filtering
+								const Interval	rValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
+																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i, j),
+																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
+																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
+																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
+								const Interval	bValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
+																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i, j),
+																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
+																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
+																			reconstructLinearXYChromaSample(filteringFormat, conversionFormat, xChromaOffset, yChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
+								const Interval	srcColor[]	=
+								{
+									rValue,
+									gValue,
+									bValue,
+									aValue
+								};
+								Interval		dstColor[4];
+
+								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+								for (size_t compNdx = 0; compNdx < 4; compNdx++)
+									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+
+							}
+							else if (subsampledX)
+							{
+								// Linear, Reconstructed x chroma samples with explicit linear filtering
+								const Interval	rValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
+																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i, j),
+																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j),
+																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i , j + 1),
+																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, rAccess, i + 1, j + 1)));
+								const Interval	bValue	(linearInterpolate(filteringFormat, lumaA, lumaB,
+																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i, j),
+																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j),
+																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i , j + 1),
+																			reconstructLinearXChromaSample(filteringFormat, conversionFormat, xChromaOffset, addressModeU, addressModeV, bAccess, i + 1, j + 1)));
+								const Interval	srcColor[]	=
+								{
+									rValue,
+									gValue,
+									bValue,
+									aValue
+								};
+								Interval		dstColor[4];
+
+								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+								for (size_t compNdx = 0; compNdx < 4; compNdx++)
+									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+							}
+							else
+								DE_FATAL("Unknown subsampling config");
+						}
+						else
+							DE_FATAL("Unknown chroma filter");
+					}
+					else
+					{
+						const Interval	chromaU	(subsampledX ? calculateImplicitChromaUV(coordFormat, xChromaOffset, u) : u);
+						const Interval	chromaV	(subsampledY ? calculateImplicitChromaUV(coordFormat, yChromaOffset, v) : v);
+
+						if (chromaFilter == vk::VK_FILTER_NEAREST)
+						{
+							const IVec2	chromaIRange	(calculateNearestIJRange(coordFormat, chromaU));
+							const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
+
+							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
+							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
+							{
+								const Interval	srcColor[]	=
+								{
+									lookupWrapped(rAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
+									gValue,
+									lookupWrapped(bAccess, conversionFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ)),
+									aValue
+								};
+								Interval	dstColor[4];
+
+								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+								for (size_t compNdx = 0; compNdx < 4; compNdx++)
+									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+							}
+						}
+						else if (chromaFilter == vk::VK_FILTER_LINEAR)
+						{
+							const IVec2	chromaIRange	(calculateNearestIJRange(coordFormat, chromaU));
+							const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
+
+							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
+							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
+							{
+								const Interval	chromaA		(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
+								const Interval	chromaB		(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
+
+								const Interval	rValue		(linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
+								const Interval	bValue		(linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(chromaI, chromaJ), chromaA, chromaB));
+
+								const Interval	srcColor[]	=
+								{
+									rValue,
+									gValue,
+									bValue,
+									aValue
+								};
+								Interval		dstColor[4];
+								convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+								for (size_t compNdx = 0; compNdx < 4; compNdx++)
+									bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+							}
+						}
+						else
+							DE_FATAL("Unknown chroma filter");
+					}
+				}
+				else
+				{
+					const Interval	chromaA		(lumaA);
+					const Interval	chromaB		(lumaB);
+					const Interval	rValue		(linearSample(rAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
+					const Interval	bValue		(linearSample(bAccess, conversionFormat, filteringFormat, addressModeU, addressModeV, IVec2(i, j), chromaA, chromaB));
+					const Interval	srcColor[]	=
+					{
+						rValue,
+						gValue,
+						bValue,
+						aValue
+					};
+					Interval dstColor[4];
+
+					convertColor(colorModel, range, conversionFormat, bitDepth, srcColor, dstColor);
+
+					for (size_t compNdx = 0; compNdx < 4; compNdx++)
+						bounds[compNdx] |= highp.roundOut(dstColor[compNdx], false);
+				}
+			}
+		}
+		else
+			DE_FATAL("Unknown filter");
+
+		minBounds[ndx] = Vec4((float)bounds[0].lo(), (float)bounds[1].lo(), (float)bounds[2].lo(), (float)bounds[3].lo());
+		maxBounds[ndx] = Vec4((float)bounds[0].hi(), (float)bounds[1].hi(), (float)bounds[2].hi(), (float)bounds[3].hi());
+	}
+}
+
 
 } // ycbcr
 } // vkt

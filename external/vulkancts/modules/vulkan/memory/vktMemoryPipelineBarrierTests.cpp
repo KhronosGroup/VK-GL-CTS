@@ -32,6 +32,7 @@
 #include "vkMemUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuMaybe.hpp"
 #include "tcuTextureUtil.hpp"
@@ -658,30 +659,6 @@ vk::Move<vk::VkDeviceMemory> bindImageMemory (const vk::InstanceInterface&	vki,
 	TCU_FAIL("Failed to allocate memory for image");
 }
 
-void queueRun (const vk::DeviceInterface&	vkd,
-			   vk::VkQueue					queue,
-			   vk::VkCommandBuffer			commandBuffer)
-{
-	const vk::VkSubmitInfo	submitInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		DE_NULL,
-
-		0,
-		DE_NULL,
-		(const vk::VkPipelineStageFlags*)DE_NULL,
-
-		1,
-		&commandBuffer,
-
-		0,
-		DE_NULL
-	};
-
-	VK_CHECK(vkd.queueSubmit(queue, 1, &submitInfo, 0));
-	VK_CHECK(vkd.queueWaitIdle(queue));
-}
-
 void* mapMemory (const vk::DeviceInterface&	vkd,
 				 vk::VkDevice				device,
 				 vk::VkDeviceMemory			memory,
@@ -986,14 +963,14 @@ Memory::Memory (const vk::InstanceInterface&	vki,
 class Context
 {
 public:
-													Context					(const vk::InstanceInterface&						vki,
-																			 const vk::DeviceInterface&							vkd,
-																			 vk::VkPhysicalDevice								physicalDevice,
-																			 vk::VkDevice										device,
-																			 vk::VkQueue										queue,
-																			 deUint32											queueFamilyIndex,
-																			 const vector<pair<deUint32, vk::VkQueue> >&		queues,
-																			 const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection)
+													Context					(const vk::InstanceInterface&					vki,
+																			 const vk::DeviceInterface&						vkd,
+																			 vk::VkPhysicalDevice							physicalDevice,
+																			 vk::VkDevice									device,
+																			 vk::VkQueue									queue,
+																			 deUint32										queueFamilyIndex,
+																			 const vector<pair<deUint32, vk::VkQueue> >&	queues,
+																			 const vk::BinaryCollection&					binaryCollection)
 		: m_vki					(vki)
 		, m_vkd					(vkd)
 		, m_physicalDevice		(physicalDevice)
@@ -1017,7 +994,7 @@ public:
 	const vector<pair<deUint32, vk::VkQueue> >&		getQueues				(void) const { return m_queues; }
 	const vector<deUint32>							getQueueFamilies		(void) const { return m_queueFamilies; }
 	vk::VkCommandPool								getCommandPool			(void) const { return *m_commandPool; }
-	const vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_binaryCollection; }
+	const vk::BinaryCollection&						getBinaryCollection		(void) const { return m_binaryCollection; }
 
 private:
 	const vk::InstanceInterface&					m_vki;
@@ -1028,7 +1005,7 @@ private:
 	const deUint32									m_queueFamilyIndex;
 	const vector<pair<deUint32, vk::VkQueue> >		m_queues;
 	const vk::Unique<vk::VkCommandPool>				m_commandPool;
-	const vk::ProgramCollection<vk::ProgramBinary>&	m_binaryCollection;
+	const vk::BinaryCollection&						m_binaryCollection;
 	vector<deUint32>								m_queueFamilies;
 };
 
@@ -1044,7 +1021,7 @@ public:
 
 	const Memory&									getMemory				(void) const { return m_memory; }
 	const Context&									getContext				(void) const { return m_context; }
-	const vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_context.getBinaryCollection(); }
+	const vk::BinaryCollection&						getBinaryCollection		(void) const { return m_context.getBinaryCollection(); }
 
 	void				setBuffer		(vk::Move<vk::VkBuffer>	buffer,
 										 vk::VkDeviceSize		size)
@@ -2350,7 +2327,7 @@ void BufferCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-	queueRun(vkd, queue, *commandBuffer);
+	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	{
 		void* const	ptr		= mapMemory(vkd, device, *m_memory, m_bufferSize);
@@ -2567,7 +2544,7 @@ void BufferCopyToImage::prepare (PrepareContext& context)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-		queueRun(vkd, queue, *commandBuffer);
+		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
 
@@ -2678,7 +2655,7 @@ void BufferCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 	}
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-	queueRun(vkd, queue, *commandBuffer);
+	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	{
 		void* const	ptr		= mapMemory(vkd, device, *memory, 4 * m_imageWidth * m_imageHeight);
@@ -2871,7 +2848,7 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-		queueRun(vkd, queue, *commandBuffer);
+		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
 
@@ -3015,7 +2992,7 @@ void ImageCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-	queueRun(vkd, queue, *commandBuffer);
+	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	reference.setUndefined(0, (size_t)m_imageMemorySize);
 	{
@@ -3306,7 +3283,7 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-		queueRun(vkd, queue, *commandBuffer);
+		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
 
@@ -3470,7 +3447,7 @@ void ImageCopyToImage::prepare (PrepareContext& context)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-		queueRun(vkd, queue, *commandBuffer);
+		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
 
@@ -3585,7 +3562,7 @@ void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 	}
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-	queueRun(vkd, queue, *commandBuffer);
+	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	{
 		void* const	ptr		= mapMemory(vkd, device, *memory, 4 * m_imageWidth * m_imageHeight);
@@ -3788,7 +3765,7 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-		queueRun(vkd, queue, *commandBuffer);
+		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
 
@@ -4004,7 +3981,7 @@ void ImageBlitToImage::prepare (PrepareContext& context)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-		queueRun(vkd, queue, *commandBuffer);
+		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
 
@@ -4129,7 +4106,7 @@ void ImageBlitToImage::verify (VerifyContext& context, size_t commandIndex)
 	}
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-	queueRun(vkd, queue, *commandBuffer);
+	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	{
 		void* const	ptr		= mapMemory(vkd, device, *memory, 4 * m_dstImageWidth * m_dstImageHeight);
@@ -4187,9 +4164,9 @@ public:
 	{
 	}
 
-	const Memory&									getMemory					(void) const { return m_context.getMemory(); }
-	const Context&									getContext					(void) const { return m_context.getContext(); }
-	const vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection			(void) const { return m_context.getBinaryCollection(); }
+	const Memory&				getMemory					(void) const { return m_context.getMemory(); }
+	const Context&				getContext					(void) const { return m_context.getContext(); }
+	const vk::BinaryCollection&	getBinaryCollection			(void) const { return m_context.getBinaryCollection(); }
 
 	vk::VkBuffer				getBuffer					(void) const { return m_context.getBuffer(); }
 	vk::VkDeviceSize			getBufferSize				(void) const { return m_context.getBufferSize(); }
@@ -4590,7 +4567,7 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 		}
 
 		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
-		queueRun(vkd, queue, *commandBuffer);
+		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 		{
 			void* const	ptr		= mapMemory(vkd, device, *memory, 4 * m_targetWidth * m_targetHeight);

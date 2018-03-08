@@ -123,8 +123,6 @@ private:
 
 	vk::Move<vk::VkCommandPool>					m_cmdPool;
 	vk::Move<vk::VkCommandBuffer>				m_cmdBuffer;
-
-	vk::Move<vk::VkFence>						m_fence;
 };
 
 } // pipeline

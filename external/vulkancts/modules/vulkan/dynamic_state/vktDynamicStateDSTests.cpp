@@ -38,6 +38,7 @@
 #include "vkRefUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vktDrawCreateInfoUtil.hpp"
 #include "vktDrawImageObjectUtil.hpp"
@@ -445,8 +446,9 @@ public:
 
 	virtual tcu::TestStatus iterate (void)
 	{
-		tcu::TestLog &log = m_context.getTestContext().getLog();
-		const vk::VkQueue queue = m_context.getUniversalQueue();
+		tcu::TestLog&		log		= m_context.getTestContext().getLog();
+		const vk::VkQueue	queue	= m_context.getUniversalQueue();
+		const vk::VkDevice	device	= m_context.getDevice();
 
 		beginRenderPass();
 
@@ -470,24 +472,10 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		vk::VkSubmitInfo submitInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-			DE_NULL,							// const void*				pNext;
-			0,									// deUint32					waitSemaphoreCount;
-			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1,									// deUint32					commandBufferCount;
-			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0,									// deUint32					signalSemaphoreCount;
-			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-		};
-		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
+		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
 		// validation
 		{
-			VK_CHECK(m_vk.queueWaitIdle(queue));
-
 			tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
 			referenceFrame.allocLevel(0);
 
@@ -741,20 +729,7 @@ tcu::TestStatus DepthBoundsTestInstance::iterate (void)
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
 	m_vk.endCommandBuffer(*m_cmdBuffer);
 
-	vk::VkSubmitInfo submitInfo =
-	{
-		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,							// const void*				pNext;
-		0,									// deUint32					waitSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-		(const vk::VkPipelineStageFlags*)DE_NULL,
-		1,									// deUint32					commandBufferCount;
-		&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-		0,									// deUint32					signalSemaphoreCount;
-		DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-	};
-	m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
-	VK_CHECK(m_vk.queueWaitIdle(queue));
+	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
 	// Validation
 	{
@@ -857,8 +832,9 @@ public:
 
 	virtual tcu::TestStatus iterate (void)
 	{
-		tcu::TestLog &log = m_context.getTestContext().getLog();
-		const vk::VkQueue queue = m_context.getUniversalQueue();
+		tcu::TestLog&		log		= m_context.getTestContext().getLog();
+		const vk::VkQueue	queue	= m_context.getUniversalQueue();
+		const vk::VkDevice	device	= m_context.getDevice();
 
 		beginRenderPass();
 
@@ -882,24 +858,10 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		vk::VkSubmitInfo submitInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-			DE_NULL,							// const void*				pNext;
-			0,									// deUint32					waitSemaphoreCount;
-			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1,									// deUint32					commandBufferCount;
-			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0,									// deUint32					signalSemaphoreCount;
-			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-		};
-		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
+		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
 		// validation
 		{
-			VK_CHECK(m_vk.queueWaitIdle(queue));
-
 			tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
 			referenceFrame.allocLevel(0);
 
@@ -1027,8 +989,9 @@ public:
 
 	virtual tcu::TestStatus iterate (void)
 	{
-		tcu::TestLog &log = m_context.getTestContext().getLog();
-		const vk::VkQueue queue = m_context.getUniversalQueue();
+		tcu::TestLog&		log		= m_context.getTestContext().getLog();
+		const vk::VkQueue	queue	= m_context.getUniversalQueue();
+		const vk::VkDevice	device	= m_context.getDevice();
 
 		beginRenderPass();
 
@@ -1052,24 +1015,10 @@ public:
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
 		m_vk.endCommandBuffer(*m_cmdBuffer);
 
-		vk::VkSubmitInfo submitInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-			DE_NULL,							// const void*				pNext;
-			0,									// deUint32					waitSemaphoreCount;
-			DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1,									// deUint32					commandBufferCount;
-			&m_cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-			0,									// deUint32					signalSemaphoreCount;
-			DE_NULL								// const VkSemaphore*		pSignalSemaphores;
-		};
-		m_vk.queueSubmit(queue, 1, &submitInfo, DE_NULL);
+		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
 		// validation
 		{
-			VK_CHECK(m_vk.queueWaitIdle(queue));
-
 			tcu::Texture2D referenceFrame(vk::mapVkFormat(m_colorAttachmentFormat), (int)(0.5 + WIDTH), (int)(0.5 + HEIGHT));
 			referenceFrame.allocLevel(0);
 

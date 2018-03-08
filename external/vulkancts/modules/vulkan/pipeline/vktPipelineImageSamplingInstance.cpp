@@ -30,6 +30,7 @@
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
@@ -254,11 +255,11 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 					DE_FALSE,
 					DE_FALSE
 				};
-				VkPhysicalDeviceProperties2KHR						physicalDeviceProperties;
-				physicalDeviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+				VkPhysicalDeviceProperties2						physicalDeviceProperties;
+				physicalDeviceProperties.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 				physicalDeviceProperties.pNext	= &physicalDeviceSamplerMinMaxProperties;
 
-				vki.getPhysicalDeviceProperties2KHR(context.getPhysicalDevice(), &physicalDeviceProperties);
+				vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &physicalDeviceProperties);
 
 				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxImageComponentMapping != VK_TRUE)
 				{
@@ -317,10 +318,8 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 
 	if (m_allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, std::string("VK_KHR_dedicated_allocation  is not supported").c_str());
 	}
 
 	// Create texture images, views and samplers
@@ -882,9 +881,6 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		vk.cmdEndRenderPass(*m_cmdBuffer);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}
-
-	// Create fence
-	m_fence = createFence(vk, vkDevice);
 }
 
 ImageSamplingInstance::~ImageSamplingInstance (void)
@@ -896,22 +892,8 @@ tcu::TestStatus ImageSamplingInstance::iterate (void)
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
-	const VkSubmitInfo			submitInfo	=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,						// const void*				pNext;
-		0u,								// deUint32					waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
-		DE_NULL,
-		1u,								// deUint32					commandBufferCount;
-		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-		0u,								// deUint32					signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
-	};
 
-	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	return verifyImage();
 }

@@ -31,6 +31,8 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuTextureUtil.hpp"
@@ -298,24 +300,7 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 	vk.endCommandBuffer(*cmdBuffer);
 
 	// Submit
-	{
-		const Unique<VkFence>	fence		(createFence(vk, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,				// VkStructureType                sType;
-			DE_NULL,									// const void*                    pNext;
-			0,											// uint32_t                       waitSemaphoreCount;
-			DE_NULL,									// const VkSemaphore*             pWaitSemaphores;
-			(const VkPipelineStageFlags*)DE_NULL,		// const VkPipelineStageFlags*    pWaitDstStageMask;
-			1,											// uint32_t                       commandBufferCount;
-			&cmdBuffer.get(),							// const VkCommandBuffer*         pCommandBuffers;
-			0,											// uint32_t                       signalSemaphoreCount;
-			DE_NULL										// const VkSemaphore*             pSignalSemaphores;
-		};
-
-		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	// Get result
 	{
@@ -397,7 +382,7 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 {
 	// Check requirements
 
-	if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), std::string("VK_KHR_maintenance1")))
+	if(!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_maintenance1"))
 		TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_maintenance1");
 
 	// Set up the viewport and draw

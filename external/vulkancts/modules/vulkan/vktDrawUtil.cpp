@@ -27,6 +27,7 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "rrRenderer.hpp"
 #include "rrRenderState.hpp"
 #include "rrPrimitiveTypes.hpp"
@@ -267,35 +268,6 @@ void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer comman
 void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
 {
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));
-}
-
-void submitCommandsAndWait (const DeviceInterface&	vk,
-							const VkDevice			device,
-							const VkQueue			queue,
-							const VkCommandBuffer	commandBuffer)
-{
-	const VkFenceCreateInfo fenceInfo =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkFenceCreateFlags)0,					// VkFenceCreateFlags	flags;
-	};
-	const Unique<VkFence> fence(createFence(vk, device, &fenceInfo));
-
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType					sType;
-		DE_NULL,							// const void*						pNext;
-		0u,									// uint32_t							waitSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*				pWaitSemaphores;
-		DE_NULL,							// const VkPipelineStageFlags*		pWaitDstStageMask;
-		1u,									// uint32_t							commandBufferCount;
-		&commandBuffer,						// const VkCommandBuffer*			pCommandBuffers;
-		0u,									// uint32_t							signalSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*				pSignalSemaphores;
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
 }
 
 std::string getPrimitiveTopologyShortName (const VkPrimitiveTopology topology)

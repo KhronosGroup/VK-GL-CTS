@@ -26,12 +26,14 @@
 #include "vktPipelineStencilTests.hpp"
 #include "vktPipelineBlendTests.hpp"
 #include "vktPipelineDepthTests.hpp"
+#include "vktPipelineEarlyDestroyTests.hpp"
 #include "vktPipelineImageTests.hpp"
 #include "vktPipelineInputAssemblyTests.hpp"
 #include "vktPipelineSamplerTests.hpp"
 #include "vktPipelineImageViewTests.hpp"
 #include "vktPipelinePushConstantTests.hpp"
 #include "vktPipelineSpecConstantTests.hpp"
+#include "vktPipelineMatchedAttachmentsTests.hpp"
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineMultisampleInterpolationTests.hpp"
 #include "vktPipelineMultisampleShaderBuiltInTests.hpp"
@@ -57,11 +59,13 @@ void createChildren (tcu::TestCaseGroup* pipelineTests)
 	pipelineTests->addChild(createStencilTests					(testCtx));
 	pipelineTests->addChild(createBlendTests					(testCtx));
 	pipelineTests->addChild(createDepthTests					(testCtx));
+	pipelineTests->addChild(createEarlyDestroyTests				(testCtx));
 	pipelineTests->addChild(createImageTests					(testCtx));
 	pipelineTests->addChild(createSamplerTests					(testCtx));
 	pipelineTests->addChild(createImageViewTests				(testCtx));
 	pipelineTests->addChild(createPushConstantTests				(testCtx));
 	pipelineTests->addChild(createSpecConstantTests				(testCtx));
+	pipelineTests->addChild(createMatchedAttachmentsTests		(testCtx));
 	pipelineTests->addChild(createMultisampleTests				(testCtx));
 	pipelineTests->addChild(createMultisampleInterpolationTests	(testCtx));
 	pipelineTests->addChild(createMultisampleShaderBuiltInTests	(testCtx));

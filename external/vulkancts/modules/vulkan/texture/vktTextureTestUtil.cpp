@@ -37,6 +37,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -762,9 +763,6 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 		m_descriptorPool = descriptorPoolBuilder.build(vkd, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
 	}
 
-	// Fence
-	m_fence = createFence(vkd, vkDevice);
-
 	// Result Buffer
 	{
 		const VkBufferCreateInfo				bufferCreateInfo		=
@@ -843,22 +841,7 @@ void TextureRenderer::clearImage(VkImage image)
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 
-	const VkSubmitInfo					submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-		DE_NULL,								// const void*					pNext;
-		0u,										// deUint32						waitSemaphoreCount;
-		DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
-		DE_NULL,								// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,										// deUint32						commandBufferCount;
-		&commandBuffer.get(),					// const VkCommandBuffer*		pCommandBuffers;
-		0u,										// deUint32						signalSemaphoreCount;
-		DE_NULL,								// const VkSemaphore*			pSignalSemaphores;
-	};
-
-	VK_CHECK(vkd.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vkd.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vkd.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 }
 
 void TextureRenderer::add2DTexture (const TestTexture2DSp& texture, TextureBinding::ImageBackingMode backingMode)
@@ -1614,24 +1597,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 	}
 
 	// Submit
-	{
-		const VkSubmitInfo					submitInfo				=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-			DE_NULL,								// const void*					pNext;
-			0u,										// deUint32						waitSemaphoreCount;
-			DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
-			DE_NULL,								// const VkPipelineStageFlags*	pWaitDstStageMask;
-			1u,										// deUint32						commandBufferCount;
-			&commandBuffer.get(),					// const VkCommandBuffer*		pCommandBuffers;
-			0u,										// deUint32						signalSemaphoreCount;
-			DE_NULL,								// const VkSemaphore*			pSignalSemaphores;
-		};
-
-		VK_CHECK(vkd.resetFences(vkDevice, 1, &m_fence.get()));
-		VK_CHECK(vkd.queueSubmit(queue, 1, &submitInfo, *m_fence));
-		VK_CHECK(vkd.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
-	}
+	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 
 	invalidateMappedMemoryRange(vkd, vkDevice, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset(), VK_WHOLE_SIZE);
 

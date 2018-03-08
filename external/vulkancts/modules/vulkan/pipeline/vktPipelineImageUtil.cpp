@@ -27,6 +27,7 @@
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuAstcUtil.hpp"
 #include "deRandom.hpp"
@@ -322,21 +323,7 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,						// const void*				pNext;
-		0u,								// deUint32					waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
-		DE_NULL,
-		1u,								// deUint32					commandBufferCount;
-		&cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-		0u,								// deUint32					signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1, &fence.get(), 0, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	// Read buffer data
 	invalidateMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), VK_WHOLE_SIZE);
@@ -403,7 +390,6 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 	de::MovePtr<Allocation>			bufferAlloc;
 	Move<VkCommandPool>				cmdPool;
 	Move<VkCommandBuffer>			cmdBuffer;
-	Move<VkFence>					fence;
 	const VkImageAspectFlags		imageAspectFlags	= getImageAspectFlags(format);
 	deUint32						stencilOffset		= 0u;
 
@@ -441,9 +427,6 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 	// Create command pool and buffer
 	cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Create fence
-	fence = createFence(vk, device);
 
 	// Barriers for copying buffer to image
 	const VkBufferMemoryBarrier preBufferBarrier =
@@ -538,21 +521,7 @@ void uploadTestTextureInternal (const DeviceInterface&			vk,
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,						// const void*				pNext;
-		0u,								// deUint32					waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
-		DE_NULL,
-		1u,								// deUint32					commandBufferCount;
-		&cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-		0u,								// deUint32					signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1, &fence.get(), true, ~(0ull) /* infinity */));
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 }
 
 bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
@@ -729,7 +698,6 @@ void allocateAndBindSparseImage (const DeviceInterface&						vk,
 				imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
 			}
 		}
-
 		// Handle Metadata. Similarly to MIP tail in aspectRequirements, there are two cases to consider here:
 		//
 		// 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.

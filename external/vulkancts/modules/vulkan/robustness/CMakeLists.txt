@@ -1,13 +1,14 @@
+# Robustness tests
 
-include_directories(
-	..
-	)
+include_directories(..)
 
 set(DEQP_VK_ROBUSTNESS_SRCS
 	vktRobustnessTests.cpp
 	vktRobustnessTests.hpp
 	vktRobustnessBufferAccessTests.cpp
 	vktRobustnessBufferAccessTests.hpp
+	vktRobustBufferAccessWithVariablePointersTests.cpp
+	vktRobustBufferAccessWithVariablePointersTests.hpp
 	vktRobustnessUtil.cpp
 	vktRobustnessUtil.hpp
 	vktRobustnessVertexAccessTests.cpp

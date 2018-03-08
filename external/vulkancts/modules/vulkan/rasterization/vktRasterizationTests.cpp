@@ -43,6 +43,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include <vector>
 
@@ -190,8 +191,6 @@ protected:
 
 	Move<VkShaderModule>							m_vertexShaderModule;
 	Move<VkShaderModule>							m_fragmentShaderModule;
-
-	Move<VkFence>									m_fence;
 
 	Move<VkBuffer>									m_resultBuffer;
 	de::MovePtr<Allocation>							m_resultBufferMemory;
@@ -534,9 +533,6 @@ BaseRenderingTestInstance::BaseRenderingTestInstance (Context& context, VkSample
 		m_vertexShaderModule	= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("vertext_shader"), 0);
 		m_fragmentShaderModule	= createShaderModule(vkd, vkDevice, m_context.getBinaryCollection().get("fragment_shader"), 0);
 	}
-
-	// Fence
-	m_fence = createFence(vkd, vkDevice);
 
 	// Result Buffer
 	{
@@ -902,24 +898,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	}
 
 	// Submit
-	{
-		const VkSubmitInfo					submitInfo				=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-			DE_NULL,								// const void*					pNext;
-			0u,										// deUint32						waitSemaphoreCount;
-			DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
-			DE_NULL,								// const VkPipelineStageFlags*	pWaitDstStageMask;
-			1u,										// deUint32						commandBufferCount;
-			&commandBuffer.get(),					// const VkCommandBuffer*		pCommandBuffers;
-			0u,										// deUint32						signalSemaphoreCount;
-			DE_NULL,								// const VkSemaphore*			pSignalSemaphores;
-		};
-
-		VK_CHECK(vkd.resetFences(vkDevice, 1, &m_fence.get()));
-		VK_CHECK(vkd.queueSubmit(queue, 1, &submitInfo, *m_fence));
-		VK_CHECK(vkd.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity */));
-	}
+	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 
 	invalidateMappedMemoryRange(vkd, vkDevice, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset(), m_resultBufferSize);
 	tcu::copy(result.getAccess(), tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderSize, m_renderSize, 1), m_resultBufferMemory->getHostPtr()));
@@ -2044,7 +2023,7 @@ private:
 
 tcu::TestStatus CullingTestInstance::iterate (void)
 {
-	DE_ASSERT(m_polygonMode < VK_POLYGON_MODE_LAST);
+	DE_ASSERT(m_polygonMode <= VK_POLYGON_MODE_POINT);
 
 	tcu::Surface									resultImage						(m_renderSize, m_renderSize);
 	std::vector<tcu::Vec4>							drawBuffer;

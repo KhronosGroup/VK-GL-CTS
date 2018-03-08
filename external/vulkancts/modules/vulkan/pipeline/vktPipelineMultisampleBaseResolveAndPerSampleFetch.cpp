@@ -26,6 +26,7 @@
 #include "vktPipelineMakeUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuTestLog.hpp"
 #include <vector>
 
@@ -711,7 +712,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 	std::vector<deUint32> sampleIDsOffsets(numSamples);
 
 	{
-		deInt8* sampleIDs = new deInt8[uboOffsetAlignment * numSamples];
+		deInt8* sampleIDs = new deInt8[static_cast<deUint32>(uboOffsetAlignment) * numSamples];
 
 		for (deInt32 sampleNdx = 0u; sampleNdx < static_cast<deInt32>(numSamples); ++sampleNdx)
 		{

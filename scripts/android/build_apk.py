@@ -168,12 +168,12 @@ class Environment:
 		self.ndk		= ndk
 
 class Configuration:
-	def __init__(self, env, buildPath, abis, nativeBuildType, gtfTarget, verbose):
+	def __init__(self, env, buildPath, abis, nativeApi, nativeBuildType, gtfTarget, verbose):
 		self.env				= env
 		self.sourcePath			= DEQP_DIR
 		self.buildPath			= buildPath
 		self.abis				= abis
-		self.nativeApi			= 21
+		self.nativeApi			= nativeApi
 		self.javaApi			= 22
 		self.nativeBuildType	= nativeBuildType
 		self.gtfTarget			= gtfTarget
@@ -190,9 +190,16 @@ class Configuration:
 		if not NDKEnv.isHostOsSupported(self.env.ndk.hostOsName):
 			raise Exception("NDK '%s' is not supported on this machine" % self.env.ndk.hostOsName)
 
-		supportedNDKVersion = 11
-		if self.env.ndk.version[0] != supportedNDKVersion:
-			raise Exception("Android NDK version %d is not supported; build requires NDK version %d" % (self.env.ndk.version[0], supportedNDKVersion))
+		supportedNDKVersion = [11, 15]
+		if self.env.ndk.version[0] not in supportedNDKVersion:
+			raise Exception("Android NDK version %d is not supported; build requires NDK version %s" % (self.env.ndk.version[0], supportedNDKVersion))
+
+		# https://gitlab.khronos.org/Tracker/vk-gl-cts/issues/723
+		if self.env.ndk.version[0] == 15:
+			if "armeabi-v7a" in self.abis:
+				raise Exception("dEQP is incompatible with NDK r15 for armeabi-v7a")
+			else:
+				print >> sys.stderr, "WARNING: Support for NDK r15 is experimental; NDK r11c is recommended for official submissions"
 
 		if self.env.sdk.buildToolsVersion == (0,0,0):
 			raise Exception("No build tools directory found at %s" % os.path.join(self.env.sdk.path, "build-tools"))
@@ -856,6 +863,11 @@ def parseArgs ():
 		dest='abis',
 		default=",".join(NDKEnv.getKnownAbis()),
 		help="ABIs to build")
+	parser.add_argument('--native-api',
+		type=int,
+		dest='nativeApi',
+		default=21,
+		help="Android API level to target in native code")
 	parser.add_argument('--sdk',
 		dest='sdkPath',
 		default=defaultSDKPath,
@@ -915,7 +927,7 @@ if __name__ == "__main__":
 	sdk			= SDKEnv(os.path.realpath(args.sdkPath))
 	buildPath	= os.path.realpath(args.buildRoot)
 	env			= Environment(sdk, ndk)
-	config		= Configuration(env, buildPath, abis=args.abis, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget, verbose=args.verbose)
+	config		= Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget, verbose=args.verbose)
 
 	try:
 		config.check()

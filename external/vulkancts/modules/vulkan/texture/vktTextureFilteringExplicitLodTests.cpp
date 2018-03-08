@@ -38,6 +38,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTestLog.hpp"
@@ -485,21 +486,7 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 
 	VK_CHECK(vkd.endCommandBuffer(copyBuffer.get()));
 
-	const VkSubmitInfo copySubmitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		DE_NULL,
-		0,
-		DE_NULL,
-		DE_NULL,
-		1,
-		&(copyBuffer.get()),
-		0,
-		DE_NULL
-	};
-
-	VK_CHECK(vkd.queueSubmit(ctx.getUniversalQueue(), 1, &copySubmitInfo, 0));
-	VK_CHECK(vkd.queueWaitIdle(ctx.getUniversalQueue()));
+	submitCommandsAndWait(vkd, dev, ctx.getUniversalQueue(), copyBuffer.get());
 }
 
 struct TestCaseData

@@ -1,4 +1,4 @@
-﻿/*-------------------------------------------------------------------------
+/*-------------------------------------------------------------------------
  * Vulkan Conformance Tests
  * ------------------------
  *
@@ -35,6 +35,7 @@
 #include "deSharedPtr.hpp"
 #include "vktTestCase.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include <algorithm>
 
@@ -47,15 +48,15 @@ namespace
 
 using namespace vk;
 
-typedef const VkMemoryDedicatedAllocateInfoKHR								ConstDedicatedInfo;
+typedef const VkMemoryDedicatedAllocateInfo									ConstDedicatedInfo;
 typedef de::SharedPtr<Move<VkDeviceMemory> >								MemoryRegionPtr;
 typedef std::vector<MemoryRegionPtr>										MemoryRegionsList;
 typedef de::SharedPtr<Move<VkBuffer> >										BufferPtr;
 typedef std::vector<BufferPtr>												BuffersList;
 typedef de::SharedPtr<Move<VkImage> >										ImagePtr;
 typedef std::vector<ImagePtr>												ImagesList;
-typedef std::vector<VkBindBufferMemoryInfoKHR>								BindBufferMemoryInfosList;
-typedef std::vector<VkBindImageMemoryInfoKHR>								BindImageMemoryInfosList;
+typedef std::vector<VkBindBufferMemoryInfo>									BindBufferMemoryInfosList;
+typedef std::vector<VkBindImageMemoryInfo>									BindImageMemoryInfosList;
 
 class MemoryMappingRAII
 {
@@ -296,10 +297,10 @@ ConstDedicatedInfo						makeDedicatedAllocationInfo			(VkImage				image)
 	return dedicatedAllocationInfo;
 }
 
-const VkBindBufferMemoryInfoKHR			makeBufferMemoryBindingInfo			(VkBuffer				buffer,
+const VkBindBufferMemoryInfo			makeBufferMemoryBindingInfo			(VkBuffer				buffer,
 																			 VkDeviceMemory			memory)
 {
-	const VkBindBufferMemoryInfoKHR		bufferMemoryBinding					=
+	const VkBindBufferMemoryInfo		bufferMemoryBinding					=
 	{
 		VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHR,						// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
@@ -310,10 +311,10 @@ const VkBindBufferMemoryInfoKHR			makeBufferMemoryBindingInfo			(VkBuffer				buf
 	return bufferMemoryBinding;
 }
 
-const VkBindImageMemoryInfoKHR			makeImageMemoryBindingInfo			(VkImage				image,
+const VkBindImageMemoryInfo				makeImageMemoryBindingInfo			(VkImage				image,
 																			 VkDeviceMemory			memory)
 {
-	const VkBindImageMemoryInfoKHR		imageMemoryBinding					=
+	const VkBindImageMemoryInfo		imageMemoryBinding					=
 	{
 		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,						// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
@@ -391,23 +392,6 @@ const VkCommandBufferBeginInfo			makeCommandBufferInfo				()
 		static_cast<const VkCommandBufferInheritanceInfo*>(DE_NULL)
 	};
 	return cmdBufferBeginInfo;
-}
-
-const VkSubmitInfo						makeSubmitInfo						(const VkCommandBuffer&	commandBuffer)
-{
-	const VkSubmitInfo					submitInfo							=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,										// VkStructureType		sType;
-		DE_NULL,															// const void*			pNext;
-		0u,																	// deUint32				waitSemaphoreCount;
-		DE_NULL,															// const VkSemaphore*	pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,								// const VkPipelineStageFlags* flags;
-		1u,																	// deUint32				commandBufferCount;
-		&commandBuffer,														// const VkCommandBuffer* pCommandBuffers;
-		0u,																	// deUint32				signalSemaphoreCount;
-		DE_NULL																// const VkSemaphore*	pSignalSemaphores;
-	};
-	return submitInfo;
 }
 
 Move<VkCommandBuffer>					createCommandBuffer					(const DeviceInterface&	vk,
@@ -601,7 +585,7 @@ void									makeBinding<VkBuffer>				(BuffersList&			targets,
 		bindMemoryInfos.push_back(makeBufferMemoryBindingInfo(**targets[i], **memory[i]));
 	}
 
-	VK_CHECK(vk.bindBufferMemory2KHR(vkDevice, count, &bindMemoryInfos.front()));
+	VK_CHECK(vk.bindBufferMemory2(vkDevice, count, &bindMemoryInfos.front()));
 }
 
 template<>
@@ -621,7 +605,7 @@ void									makeBinding<VkImage>				(ImagesList&			targets,
 		bindMemoryInfos.push_back(makeImageMemoryBindingInfo(**targets[i], **memory[i]));
 	}
 
-	VK_CHECK(vk.bindImageMemory2KHR(vkDevice, count, &bindMemoryInfos.front()));
+	VK_CHECK(vk.bindImageMemory2(vkDevice, count, &bindMemoryInfos.front()));
 }
 
 template <typename TTarget>
@@ -654,11 +638,7 @@ void									fillUpResource<VkBuffer>			(Move<VkBuffer>&		source,
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo					submitInfo							= makeSubmitInfo(*cmdBuffer);
-	Move<VkFence>						fence								= createFence(vk, vkDevice);
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &*fence, DE_TRUE, ~(0ull)));
+	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
 
 template <>
@@ -700,11 +680,7 @@ void									fillUpResource<VkImage>				(Move<VkBuffer>&		source,
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &dstImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo					submitInfo							= makeSubmitInfo(*cmdBuffer);
-	Move<VkFence>						fence								= createFence(vk, vkDevice);
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &*fence, DE_TRUE, ~(0ull)));
+	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
 
 template <typename TTarget>
@@ -761,11 +737,7 @@ void									readUpResource						(Move<VkImage>&			source,
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 1, &postImageBarrier);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	const VkSubmitInfo					submitInfo							= makeSubmitInfo(*cmdBuffer);
-	Move<VkFence>						fence								= createFence(vk, vkDevice);
-
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &*fence, DE_TRUE, ~(0ull)));
+	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
 
 void									createBuffer						(Move<VkBuffer>&		buffer,
@@ -840,7 +812,7 @@ public:
 	virtual tcu::TestStatus				iterate								(void)
 	{
 		const std::vector<std::string>&	extensions							= m_context.getDeviceExtensions();
-		const deBool					isSupported							= std::find(extensions.begin(), extensions.end(), "VK_KHR_bind_memory2") != extensions.end();
+		const deBool					isSupported							= isDeviceExtensionSupported(m_context.getUsedApiVersion(), extensions, "VK_KHR_bind_memory2");
 		if (!isSupported)
 		{
 			TCU_THROW(NotSupportedError, "Not supported");
@@ -893,7 +865,7 @@ public:
 	virtual tcu::TestStatus				iterate								(void)
 	{
 		const std::vector<std::string>&	extensions							= m_context.getDeviceExtensions();
-		const deBool					isSupported							= std::find(extensions.begin(), extensions.end(), "VK_KHR_bind_memory2") != extensions.end();
+		const deBool					isSupported							= isDeviceExtensionSupported(m_context.getUsedApiVersion(), extensions, "VK_KHR_bind_memory2");
 		if (!isSupported)
 		{
 			TCU_THROW(NotSupportedError, "Not supported");

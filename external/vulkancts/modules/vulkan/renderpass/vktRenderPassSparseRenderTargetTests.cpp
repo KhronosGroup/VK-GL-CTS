@@ -35,6 +35,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuImageCompare.hpp"
 #include "tcuResultCollector.hpp"
@@ -298,7 +299,7 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 									   VkDevice											device,
 									   VkRenderPass										renderPass,
 									   VkPipelineLayout									pipelineLayout,
-									   const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
+									   const BinaryCollection&							binaryCollection,
 									   deUint32											width,
 									   deUint32											height)
 {
@@ -629,26 +630,7 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 
-	{
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-
-			0u,
-			DE_NULL,
-			DE_NULL,
-
-			1u,
-			&*commandBuffer,
-
-			0u,
-			DE_NULL
-		};
-
-		VK_CHECK(vkd.queueSubmit(m_context.getUniversalQueue(), 1u, &submitInfo, (VkFence)0u));
-		VK_CHECK(vkd.queueWaitIdle(m_context.getUniversalQueue()));
-	}
+	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *commandBuffer);
 
 	{
 		const tcu::TextureFormat			format			(mapVkFormat(m_format));

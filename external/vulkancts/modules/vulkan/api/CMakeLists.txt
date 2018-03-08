@@ -3,6 +3,8 @@
 include_directories(..)
 
 set(DEQP_VK_API_SRCS
+	vktApiVersionCheck.cpp
+	vktApiVersionCheck.hpp
 	vktApiTests.cpp
 	vktApiTests.hpp
 	vktApiSmokeTests.cpp
@@ -43,6 +45,8 @@ set(DEQP_VK_API_SRCS
 	vktApiExternalMemoryTests.hpp
 	vktApiBufferAndImageAllocationUtil.hpp
 	vktApiBufferAndImageAllocationUtil.cpp
+	vktApiMaintenance3Check.hpp
+	vktApiMaintenance3Check.cpp
 	vktApiDescriptorSetTests.hpp
 	vktApiDescriptorSetTests.cpp
 	vktApiPipelineTests.hpp

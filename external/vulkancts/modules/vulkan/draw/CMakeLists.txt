@@ -28,6 +28,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawTestCaseUtil.hpp
 	vktBasicDrawTests.hpp
 	vktBasicDrawTests.cpp
+	vktDrawDifferingInterpolationTests.hpp
+	vktDrawDifferingInterpolationTests.cpp
 )
 
 set(DEQP_VK_DRAW_LIBS

@@ -44,6 +44,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 namespace vkt
 {
@@ -2223,23 +2224,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
-	vk::Move<vk::VkFence> fence (createFence(vk, device));
-
-	const vk::VkSubmitInfo  submitInfo  =
-	{
-		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		DE_NULL,
-		0u,
-		(const vk::VkSemaphore*)DE_NULL,
-		(const vk::VkPipelineStageFlags*)DE_NULL,
-		1u,
-		&cmdBuffer.get(),
-		0u,
-		(const vk::VkSemaphore*)DE_NULL,
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	// Read back ac_numPassed data
 	bool counterOk;
@@ -2305,7 +2290,7 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 
 TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 {
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
+	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
 		TCU_THROW(NotSupportedError, "VK_KHR_relaxed_block_layout not supported");
 	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData);
 }
