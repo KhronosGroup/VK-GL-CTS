@@ -1241,7 +1241,6 @@ tcu::TestCaseGroup*	createYCbCrConversionTests (tcu::TestContext& testCtx)
 		const glu::ShaderType	type;
 	} shaderTypes[]	=
 	{
-		{ "vertex",		glu::SHADERTYPE_VERTEX		},
 		{ "fragment",	glu::SHADERTYPE_FRAGMENT	},
 		{ "compute",	glu::SHADERTYPE_COMPUTE		}
 	};

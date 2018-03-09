@@ -3360,6 +3360,7 @@ public:
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "    b_out.data[gl_VertexIndex] = v_in_data;\n"
+				<< "    gl_PointSize = 1.0f;\n"
 				<< "}\n";
 			programCollection.glslSources.add("input_vert") << glu::VertexSource(src.str());
 		}

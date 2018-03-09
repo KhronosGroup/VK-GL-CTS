@@ -266,6 +266,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "  tempResult |= !bool(uvec4(0) == subgroupBallot(bData)) ? 0x2 : 0;\n"
 			<< "  tempResult |= uvec4(0) == subgroupBallot(false) ? 0x4 : 0;\n"
 			<< "  result[gl_VertexIndex] = tempResult;\n"
+			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert")
