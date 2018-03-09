@@ -180,9 +180,6 @@ vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier		(const vk::VkAccessFlags src
 de::MovePtr<vk::Allocation>		bindImage					(const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator, const vk::VkImage image, const vk::MemoryRequirement requirement);
 de::MovePtr<vk::Allocation>		bindBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator, const vk::VkBuffer buffer, const vk::MemoryRequirement requirement);
 
-void							beginRenderPass				(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer, const vk::VkRect2D& renderArea, const tcu::Vec4& clearColor);
-void							endRenderPass				(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
-
 bool							compareWithFileImage		(Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string name);
 
 void							fillBuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::Allocation& alloc, const vk::VkDeviceSize size, const vk::VkDeviceSize offset, const vk::VkFormat format, const tcu::Vec4& color);

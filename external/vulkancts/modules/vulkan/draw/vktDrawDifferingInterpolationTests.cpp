@@ -309,7 +309,6 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			const VkDeviceSize			vertexBufferOffset	= 0;
 			const VkBuffer				buffer				= vertexBuffer->object();
 			const VkOffset3D			zeroOffset			= { 0, 0, 0 };
-			const RenderPassBeginInfo	renderPassBegin		(*renderPass, *framebuffer, renderArea);
 
 			beginCommandBuffer(vk, *cmdBuffer, 0u);
 
@@ -323,11 +322,11 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea);
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &buffer, &vertexBufferOffset);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 			vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
-			vk.cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, cmdBuffer.get());

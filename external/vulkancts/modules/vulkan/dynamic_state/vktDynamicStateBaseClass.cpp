@@ -25,6 +25,7 @@
 #include "vktDynamicStateBaseClass.hpp"
 
 #include "vkPrograms.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 
 namespace vkt
@@ -226,10 +227,7 @@ void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColor
 		vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-	const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
-	const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
-
-	m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
+	vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, vk::makeRect2D(0, 0, WIDTH, HEIGHT));
 }
 
 void DynamicStateBaseClass::setDynamicViewportState (const deUint32 width, const deUint32 height)

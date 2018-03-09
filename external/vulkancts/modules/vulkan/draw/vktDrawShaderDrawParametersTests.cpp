@@ -320,7 +320,7 @@ tcu::TestStatus DrawTest::iterate (void)
 				m_vk.cmdDraw(*m_cmdBuffer, NUM_VERTICES, numInstances, NDX_FIRST_VERTEX, firstInstance);
 		}
 
-		m_vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 	}
 

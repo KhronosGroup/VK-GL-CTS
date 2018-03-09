@@ -41,6 +41,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include <limits>
 
@@ -462,29 +463,15 @@ struct RenderInfo
 void  recordRenderPass (const DeviceInterface& deviceInterface, const RenderInfo& renderInfo)
 {
 	const VkDeviceSize					bindingOffset			= 0;
-	const VkClearValue					clearValue				= makeClearValueColorF32(0.0, 0.0, 1.0, 1.0);
-	VkRenderPassBeginInfo				renderPassBeginState;
 	VkImageMemoryBarrier				renderBarrier;
 
-	deMemset(&renderPassBeginState, 0xcd, sizeof(renderPassBeginState));
-	renderPassBeginState.sType						= VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassBeginState.pNext						= DE_NULL;
-	renderPassBeginState.renderPass					= renderInfo.renderPass;
-	renderPassBeginState.framebuffer				= renderInfo.framebuffer;
-	renderPassBeginState.renderArea.offset.x		= 0;
-	renderPassBeginState.renderArea.offset.y		= 0;
-	renderPassBeginState.renderArea.extent.width	= renderInfo.width;
-	renderPassBeginState.renderArea.extent.height	= renderInfo.height;
-	renderPassBeginState.clearValueCount			= 1;
-	renderPassBeginState.pClearValues				= &clearValue;
-
-	deviceInterface.cmdBeginRenderPass(renderInfo.commandBuffer, &renderPassBeginState, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(deviceInterface, renderInfo.commandBuffer, renderInfo.renderPass, renderInfo.framebuffer, makeRect2D(0, 0, renderInfo.width, renderInfo.height), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
 	if (renderInfo.waitEvent)
 		deviceInterface.cmdWaitEvents(renderInfo.commandBuffer, 1, &renderInfo.event, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
 	deviceInterface.cmdBindPipeline(renderInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderInfo.pipeline);
 	deviceInterface.cmdBindVertexBuffers(renderInfo.commandBuffer, 0u, 1u, &renderInfo.vertexBuffer, &bindingOffset);
 	deviceInterface.cmdDraw(renderInfo.commandBuffer, renderInfo.vertexBufferSize, 1, 0, 0);
-	deviceInterface.cmdEndRenderPass(renderInfo.commandBuffer);
+	endRenderPass(deviceInterface, renderInfo.commandBuffer);
 
 	deMemset(&renderBarrier, 0xcd, sizeof(renderBarrier));
 	renderBarrier.sType								= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;

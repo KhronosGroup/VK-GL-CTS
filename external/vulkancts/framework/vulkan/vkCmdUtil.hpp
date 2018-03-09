@@ -36,6 +36,59 @@ void beginCommandBuffer		(const DeviceInterface&		vk,
 void endCommandBuffer		(const DeviceInterface&	vk,
 							 const VkCommandBuffer	commandBuffer);
 
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const deUint32			clearValueCount,
+					  const VkClearValue*		clearValues,
+					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const VkClearValue&		clearValue,
+					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const tcu::Vec4&			clearColor,
+					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const tcu::UVec4&			clearColor,
+					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const tcu::Vec4&			clearColor,
+					  const float				clearDepth,
+					  const deUint32			clearStencil,
+					  const VkSubpassContents	contents = VK_SUBPASS_CONTENTS_INLINE);
+
+void endRenderPass (const DeviceInterface&	vk,
+					const VkCommandBuffer	commandBuffer);
+
 void submitCommandsAndWait	(const DeviceInterface&	vk,
 							 const VkDevice			device,
 							 const VkQueue			queue,

@@ -598,27 +598,6 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 	// Create command buffer
 	{
-		const VkClearValue				clearValue						= makeClearValueColorF32(0.0, 0.0, 0.0, 0.0);
-
-		const VkClearValue				attachmentClearValues[1]		=
-		{
-			clearValue
-		};
-
-		const VkRenderPassBeginInfo		renderPassBeginInfo				=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,					// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			*m_renderPass,												// VkRenderPass				renderPass;
-			*m_framebuffer,												// VkFramebuffer			framebuffer;
-			{
-				{ 0, 0 },
-				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
-			},															// VkRect2D					renderArea;
-			1u,															// deUint32					clearValueCount;
-			attachmentClearValues										// const VkClearValue*		pClearValues;
-		};
-
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
@@ -645,7 +624,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &initialImageBarrier);
 
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.0f));
 
 		const VkDeviceSize				vertexBufferOffset[1]			= { 0 };
 
@@ -653,7 +632,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &*m_descriptorSet, 0u, DE_NULL);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), vertexBufferOffset);
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(vk, *m_cmdBuffer);
 
 		const VkImageMemoryBarrier		imageBarrier					=
 		{

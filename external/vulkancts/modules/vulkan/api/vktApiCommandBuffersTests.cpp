@@ -307,30 +307,13 @@ CommandBufferRenderPassTestEnvironment::CommandBufferRenderPassTestEnvironment(C
 
 void CommandBufferRenderPassTestEnvironment::beginRenderPass(VkSubpassContents content)
 {
-	const VkClearValue						clearValues[1]			=
-	{
-		makeClearValueColorU32(17, 59, 163, 251),
-	};
-
-	const VkRenderPassBeginInfo				renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-		DE_NULL,												// const void*			pNext;
-		*m_renderPass,											// VkRenderPass			renderPass;
-		*m_frameBuffer,											// VkFramebuffer		framebuffer;
-		DEFAULT_IMAGE_AREA,										// VkRect2D				renderArea;
-		1u,														// deUint32				clearValueCount;
-		clearValues												// const VkClearValue*	pClearValues;
-	};
-
-	m_vkd.cmdBeginRenderPass(m_primaryCommandBuffers[0], &renderPassBeginInfo, content);
+	vk::beginRenderPass(m_vkd, m_primaryCommandBuffers[0], *m_renderPass, *m_frameBuffer, DEFAULT_IMAGE_AREA, tcu::UVec4(17, 59, 163, 251), content);
 }
 
 void CommandBufferRenderPassTestEnvironment::beginPrimaryCommandBuffer(VkCommandBufferUsageFlags usageFlags)
 {
 	beginCommandBuffer(m_vkd, m_primaryCommandBuffers[0], usageFlags);
 }
-
 
 void CommandBufferRenderPassTestEnvironment::beginSecondaryCommandBuffer(VkCommandBufferUsageFlags usageFlags)
 {
@@ -1808,7 +1791,7 @@ tcu::TestStatus renderPassContinueTest(Context& context)
 	env.beginPrimaryCommandBuffer(0);
 	env.beginRenderPass(VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 	vkd.cmdExecuteCommands(primaryCommandBuffer, 1, &secondaryCommandBuffer);
-	vkd.cmdEndRenderPass(primaryCommandBuffer);
+	endRenderPass(vkd, primaryCommandBuffer);
 
 	endCommandBuffer(vkd, primaryCommandBuffer);
 

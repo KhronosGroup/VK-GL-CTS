@@ -1602,7 +1602,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 
 			vk.cmdDraw(*cmdBuffer, (deUint32)m_vertexCount, 1, 0, 0);
 
-			vk.cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
 			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
 				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
@@ -1736,7 +1736,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 
 			vk.cmdDraw(*cmdBuffer, (deUint32)m_vertexCount, 1, 0, 0);
 
-			vk.cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
 			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
 				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
@@ -1961,7 +1961,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &m_vertexBuffer->get(), &m_vertexBufferOffset);
 		vk.cmdDraw(*cmdBuffer, m_vertexCount, 1, 0, 0);
 	}
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	// Decompress reference image
 	{
@@ -2164,7 +2164,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 
 			vk.cmdDraw(*cmdBuffer, (deUint32)m_vertexCount, 1, 0, 0);
 
-			vk.cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
 			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
@@ -2304,7 +2304,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 
 			vk.cmdDraw(*cmdBuffer, (deUint32)m_vertexCount, 1, 0, 0);
 
-			vk.cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 
 			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
 				VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,

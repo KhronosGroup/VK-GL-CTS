@@ -296,12 +296,9 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 	}
-	{
-		const VkRect2D				renderArea		= { { 0, 0 }, { WIDTH, HEIGHT } };
-		const RenderPassBeginInfo	renderPassBegin	(*m_renderPass, *m_framebuffer, renderArea);
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT));
+
 	{
 		const VkDeviceSize	offset	= 0;
 		const VkBuffer		buffer	= m_vertexBuffer->object();
@@ -311,7 +308,7 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	vk.cmdDraw(*cmdBuffer, 6, 1, 0, 0);
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit

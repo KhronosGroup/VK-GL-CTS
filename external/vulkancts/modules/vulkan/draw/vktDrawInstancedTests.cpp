@@ -484,9 +484,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 			const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
-			const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
-
-			m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
 
 			if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
 			{
@@ -560,7 +558,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 					DE_ASSERT(false);
 			}
 
-			m_vk.cmdEndRenderPass(*m_cmdBuffer);
+			endRenderPass(m_vk, *m_cmdBuffer);
 			endCommandBuffer(m_vk, *m_cmdBuffer);
 
 			submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());

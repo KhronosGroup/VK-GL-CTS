@@ -2296,22 +2296,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 	// Create command buffer
 	{
-		const VkClearValue								clearValues					= makeClearValueColorF32(m_clearColor.x(),
-																											 m_clearColor.y(),
-																											 m_clearColor.z(),
-																											 m_clearColor.w());
-
-		const VkRenderPassBeginInfo						renderPassBeginInfo			=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*renderPass,											// VkRenderPass			renderPass;
-			*framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 },  {m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
-			1,														// deUint32				clearValueCount;
-			&clearValues,											// const VkClearValue*	pClearValues;
-		};
-
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -2365,7 +2349,8 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			}
 		}
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), m_clearColor);
+
 		updatePushConstants(*cmdBuffer, *pipelineLayout);
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 		if (!m_uniformInfos.empty())
@@ -2389,7 +2374,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		else
 			vk.cmdDraw(*cmdBuffer, numVertices,  1, 0, 1);
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 		endCommandBuffer(vk, *cmdBuffer);
 	}
 

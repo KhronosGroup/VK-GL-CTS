@@ -3412,21 +3412,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			clearValue.push_back(makeClearValueColorU32(0, 0, 0, 0));
 		}
-		VkRenderPassBeginInfo			passBeginParams	=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			//	VkStructureType		sType;
-			DE_NULL,											//	const void*			pNext;
-			*renderPass,										//	VkRenderPass		renderPass;
-			*framebuffer,										//	VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { renderSize.x(), renderSize.y() } },	//	VkRect2D			renderArea;
-			1u,													//	deUint32			clearValueCount;
-			clearValue.data(),									//	const VkClearValue*	pClearValues;
-		};
-		if (needInterface)
-		{
-			passBeginParams.clearValueCount += 1;
-		}
-		vk.cmdBeginRenderPass(*cmdBuf, &passBeginParams, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), (deUint32)clearValue.size(), clearValue.data());
 	}
 
 	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -3455,7 +3441,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &rawSet, 0, DE_NULL);
 	}
 	vk.cmdDraw(*cmdBuf, deUint32(vertexCount), 1u /*run pipeline once*/, 0u /*first vertex*/, 0u /*first instanceIndex*/);
-	vk.cmdEndRenderPass(*cmdBuf);
+	endRenderPass(vk, *cmdBuf);
 
 	{
 		vector<VkImageMemoryBarrier>	renderFinishBarrier;

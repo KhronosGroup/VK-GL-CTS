@@ -26,6 +26,7 @@
 #include "vktPipelineMakeUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "tcuTestLog.hpp"
 #include <vector>
@@ -795,25 +796,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 			clearValues[attachmentNdx] = makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 		}
 
-		const vk::VkRect2D renderArea =
-		{
-			makeOffset2D(0u, 0u),
-			makeExtent2D(imageMSInfo.extent.width, imageMSInfo.extent.height),
-		};
-
-		// Begin render pass
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-			DE_NULL,										// const void*             pNext;
-			*renderPass,									// VkRenderPass            renderPass;
-			*framebuffer,									// VkFramebuffer           framebuffer;
-			renderArea,										// VkRect2D                renderArea;
-			static_cast<deUint32>(clearValues.size()),		// deUint32                clearValueCount;
-			dataPointer(clearValues),						// const VkClearValue*     pClearValues;
-		};
-
-		deviceInterface.cmdBeginRenderPass(*commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(deviceInterface, *commandBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageMSInfo.extent.width, imageMSInfo.extent.height), (deUint32)clearValues.size(), dataPointer(clearValues));
 
 		// Bind graphics pipeline
 		deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelineMSPass);
@@ -850,7 +833,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		}
 
 		// End render pass
-		deviceInterface.cmdEndRenderPass(*commandBuffer);
+		endRenderPass(deviceInterface, *commandBuffer);
 	}
 
 	{

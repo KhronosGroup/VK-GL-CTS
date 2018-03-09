@@ -27,6 +27,7 @@
 #include "tcuCommandLine.hpp"
 #include "tcuStringTemplate.hpp"
 #include "vkImageUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 
 using namespace tcu;
@@ -1770,17 +1771,11 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 	for (deUint32 width = 1u; width < maxWidth; ++width)
 	{
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkClearValue			clearValue			= {{{0.0f, 0.0f, 0.0f, 0.0f}}};
 		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
 		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer						imageBufferResult	(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkDeviceSize			vertexBufferOffset	= 0u;
-		const VkRenderPassBeginInfo	renderPassBeginInfo	=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, DE_NULL, *renderPass,
-			*framebuffer, {{0, 0}, {maxWidth, 1}}, 1, &clearValue,
-		};
 
 		totalIterations++;
 
@@ -1790,7 +1785,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 			context.getDeviceInterface().cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
 			context.getDeviceInterface().cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
 
-			context.getDeviceInterface().cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
 
 			context.getDeviceInterface().cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
@@ -1804,7 +1799,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 			context.getDeviceInterface().cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, vertexBuffer.getBufferPtr(), &vertexBufferOffset);
 			context.getDeviceInterface().cmdDraw(*cmdBuffer, 2 * width, 1, 0, 0);
 
-			context.getDeviceInterface().cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
 			const VkImageSubresourceRange	subresourceRange	=
 			{
@@ -1993,7 +1988,6 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	{
 		totalIterations++;
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkClearValue			clearValue			= {{{0.0f, 0.0f, 0.0f, 0.0f}}};
 		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
 		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
@@ -2006,12 +2000,6 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 			initializeMemory(context, alloc, extraData[ndx]);
 		}
 
-		const VkRenderPassBeginInfo	renderPassBeginInfo	=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, DE_NULL, *renderPass,
-			*framebuffer, {{0, 0}, {maxWidth, 1}}, 1, &clearValue,
-		};
-
 		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 		{
 			context.getDeviceInterface().cmdSetViewport(
@@ -2020,8 +2008,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 			context.getDeviceInterface().cmdSetScissor(
 				*cmdBuffer, 0, 1, &scissor);
 
-			context.getDeviceInterface().cmdBeginRenderPass(
-				*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
 
 			context.getDeviceInterface().cmdBindPipeline(
 				*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -2037,7 +2024,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 
 			context.getDeviceInterface().cmdDraw(*cmdBuffer, width, 1u, 0u, 0u);
 
-			context.getDeviceInterface().cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
 			const VkImageSubresourceRange	subresourceRange	=
 			{
@@ -2290,7 +2277,6 @@ tcu::TestStatus vkt::subgroups::allStages(
 		const Unique<VkCommandBuffer>	cmdBuffer				(makeCommandBuffer(context, *cmdPool));
 		unsigned						totalIterations			= 0u;
 		unsigned						failedIterations		= 0u;
-		const VkClearValue				clearValue				= {{{0.0f, 0.0f, 0.0f, 0.0f}}};
 		const VkDeviceSize				resultImageSizeInBytes	= maxWidth * 1 * getFormatSizeInBytes(format);
 		Image							resultImage				(context, maxWidth, 1, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 		const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer(context, *renderPass, resultImage.getImageView(), maxWidth, 1));
@@ -2298,11 +2284,6 @@ tcu::TestStatus vkt::subgroups::allStages(
 		const VkRect2D					scissor					= {{0, 0}, {maxWidth, 1}};
 		const vk::VkDeviceSize			imageResultSize			= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer							imageBufferResult		(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-		const VkRenderPassBeginInfo		renderPassBeginInfo		=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, DE_NULL, *renderPass,
-			*framebuffer, {{0, 0}, {maxWidth, 1}}, 1, &clearValue,
-		};
 		const VkImageSubresourceRange	subresourceRange		=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,											//VkImageAspectFlags	aspectMask
@@ -2350,7 +2331,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 			context.getDeviceInterface().cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
 
-			context.getDeviceInterface().cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
 
 			context.getDeviceInterface().cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
@@ -2360,7 +2341,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 			context.getDeviceInterface().cmdDraw(*cmdBuffer, width, 1, 0, 0);
 
-			context.getDeviceInterface().cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
 			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &prepareForTransferBarrier);
 			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, resultImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &region);
@@ -2583,7 +2564,6 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 	{
 		totalIterations++;
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkClearValue			clearValue			= {{{0.0f, 0.0f, 0.0f, 0.0f}}};
 		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
 		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
@@ -2596,12 +2576,6 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 			initializeMemory(context, alloc, extraData[ndx]);
 		}
 
-		const VkRenderPassBeginInfo	renderPassBeginInfo	=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, DE_NULL, *renderPass,
-			*framebuffer, {{0, 0}, {maxWidth, 1}}, 1, &clearValue,
-		};
-
 		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 		{
 			context.getDeviceInterface().cmdSetViewport(
@@ -2610,8 +2584,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 			context.getDeviceInterface().cmdSetScissor(
 				*cmdBuffer, 0, 1, &scissor);
 
-			context.getDeviceInterface().cmdBeginRenderPass(
-				*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, maxWidth, 1u), tcu::Vec4(0.0f));
 
 			context.getDeviceInterface().cmdBindPipeline(
 				*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -2627,7 +2600,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 
 			context.getDeviceInterface().cmdDraw(*cmdBuffer, width, 1u, 0u, 0u);
 
-			context.getDeviceInterface().cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
 			const VkImageSubresourceRange	subresourceRange	=
 			{
@@ -2826,13 +2799,6 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 			const Unique<VkFramebuffer> framebuffer(makeFramebuffer(context,
 													*renderPass, resultImage.getImageView(), width, height));
 
-			const VkClearValue clearValue = {{{0.0f, 0.0f, 0.0f, 0.0f}}};
-
-			const VkRenderPassBeginInfo renderPassBeginInfo = {
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, DE_NULL, *renderPass,
-				*framebuffer, {{0, 0}, {width, height}}, 1, &clearValue,
-			};
-
 			beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 			VkViewport viewport = {0.0f, 0.0f, static_cast<float>(width),
@@ -2847,8 +2813,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 			context.getDeviceInterface().cmdSetScissor(
 				*cmdBuffer, 0, 1, &scissor);
 
-			context.getDeviceInterface().cmdBeginRenderPass(
-				*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(context.getDeviceInterface(), *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, width, height), tcu::Vec4(0.0f));
 
 			context.getDeviceInterface().cmdBindPipeline(
 				*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -2862,7 +2827,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 
 			context.getDeviceInterface().cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
-			context.getDeviceInterface().cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
 			vk::VkBufferImageCopy region = {0, 0, 0,
 				{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0},

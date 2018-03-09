@@ -167,19 +167,8 @@ tcu::TestStatus AttachmentLoadTestInstance::iterate()
 	}
 
 	// Image clear
-	const vk::VkRenderPassBeginInfo		passBeginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// sType
-		DE_NULL,											// pNext
-		*renderPass,										// renderPass
-		*framebuffer,										// framebuffer
-		{ {0, 0}, {RENDER_WIDTH, RENDER_HEIGHT} },			// renderArea
-		1u,													// clearValueCount
-		&m_clearValue,										// pClearValues
-	};
-
-	vk.cmdBeginRenderPass(*cmdBuffer, &passBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
-	vk.cmdEndRenderPass(*cmdBuffer);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT), m_clearValue);
+	endRenderPass(vk, *cmdBuffer);
 
 	{
 		const vk::VkImageMemoryBarrier	endImgBarrier		=

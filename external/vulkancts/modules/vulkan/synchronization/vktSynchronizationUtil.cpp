@@ -23,6 +23,7 @@
 
 #include "vktSynchronizationUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "deStringUtil.hpp"
 
 namespace vkt
@@ -265,28 +266,6 @@ VkBufferImageCopy makeBufferImageCopy (const VkImageSubresourceLayers	subresourc
 	return copyParams;
 }
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const tcu::Vec4&			clearColor)
-{
-	const VkClearValue clearValue = makeClearValueColor(clearColor);
-
-	const VkRenderPassBeginInfo renderPassBeginInfo = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-		DE_NULL,										// const void*             pNext;
-		renderPass,										// VkRenderPass            renderPass;
-		framebuffer,									// VkFramebuffer           framebuffer;
-		renderArea,										// VkRect2D                renderArea;
-		1u,												// uint32_t                clearValueCount;
-		&clearValue,									// const VkClearValue*     pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-}
-
 void beginRenderPassWithRasterizationDisabled (const DeviceInterface&	vk,
 											   const VkCommandBuffer	commandBuffer,
 											   const VkRenderPass		renderPass,
@@ -294,23 +273,7 @@ void beginRenderPassWithRasterizationDisabled (const DeviceInterface&	vk,
 {
 	const VkRect2D renderArea = {{ 0, 0 }, { 0, 0 }};
 
-	const VkRenderPassBeginInfo renderPassBeginInfo = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-		DE_NULL,										// const void*             pNext;
-		renderPass,										// VkRenderPass            renderPass;
-		framebuffer,									// VkFramebuffer           framebuffer;
-		renderArea,										// VkRect2D                renderArea;
-		0u,												// uint32_t                clearValueCount;
-		DE_NULL,										// const VkClearValue*     pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-}
-
-void endRenderPass (const DeviceInterface&	vk,
-					const VkCommandBuffer	commandBuffer)
-{
-	vk.cmdEndRenderPass(commandBuffer);
+	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea);
 }
 
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,

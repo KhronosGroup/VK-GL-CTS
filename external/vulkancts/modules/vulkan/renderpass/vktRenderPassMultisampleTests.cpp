@@ -1435,23 +1435,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 	beginCommandBuffer(vkd, *commandBuffer);
 
 	{
-		const VkRenderPassBeginInfo beginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			DE_NULL,
-
-			*m_renderPass,
-			*m_framebuffer,
-
-			{
-				{ 0u, 0u },
-				{ m_width, m_height }
-			},
-
-			0u,
-			DE_NULL
-		};
-		vkd.cmdBeginRenderPass(*commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_width, m_height));
 
 		// Stencil needs to be cleared if it exists.
 		if (tcu::hasStencilComponent(mapVkFormat(m_srcFormat).order))
@@ -1495,7 +1479,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
 	}
 
-	vkd.cmdEndRenderPass(*commandBuffer);
+	endRenderPass(vkd, *commandBuffer);
 
 	// Memory barriers between rendering and copies
 	{

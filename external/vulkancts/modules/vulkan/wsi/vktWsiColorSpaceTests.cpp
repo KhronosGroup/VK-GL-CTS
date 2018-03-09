@@ -36,6 +36,7 @@
 #include "vkDeviceUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
@@ -883,23 +884,7 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 
 	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
 
-	{
-		const VkClearValue			clearValue		= makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
-		const VkRenderPassBeginInfo	passBeginParams	=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			DE_NULL,
-			*m_renderPass,
-			curFramebuffer,
-			{
-				{ 0, 0 },
-				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
-			},													// renderArea
-			1u,													// clearValueCount
-			&clearValue,										// pClearValues
-		};
-		m_vkd.cmdBeginRenderPass(cmdBuffer, &passBeginParams, VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(m_vkd, cmdBuffer, *m_renderPass, curFramebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.125f, 0.25f, 0.75f, 1.0f));
 
 	m_vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
@@ -910,7 +895,7 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 
 	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
 	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
-	m_vkd.cmdEndRenderPass(cmdBuffer);
+	endRenderPass(m_vkd, cmdBuffer);
 
 	endCommandBuffer(m_vkd, cmdBuffer);
 }

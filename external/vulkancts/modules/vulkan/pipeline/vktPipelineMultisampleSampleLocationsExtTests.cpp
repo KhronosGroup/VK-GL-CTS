@@ -1727,7 +1727,7 @@ protected:
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &m_descriptorSet.get(), 0u, DE_NULL);
 
 		vk.cmdDraw(*cmdBuffer, m_numVertices, 1u, 0u, 0u);
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		// Resolve image -> host buffer
 		recordImageBarrier(vk, *cmdBuffer, *m_resolveImage,
@@ -2409,7 +2409,7 @@ protected:
 			vk.cmdExecuteCommands(currentCmdBuffer, 1u, &secondaryCmdBuffer.get());
 		}
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		// Resolve image -> host buffer
 		recordImageBarrier(vk, *cmdBuffer, *m_resolveImage,
@@ -2608,13 +2608,13 @@ protected:
 		{
 			rt[0].recordBeginRenderPass(vk, currentCmdBuffer, renderArea, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 			vk.cmdExecuteCommands(currentCmdBuffer, 1u, &secondaryCmdBuffer[0].get());
-			vk.cmdEndRenderPass(currentCmdBuffer);
+			endRenderPass(vk, currentCmdBuffer);
 		}
 		else
 		{
 			rt[0].recordBeginRenderPass(vk, currentCmdBuffer, renderArea, VK_SUBPASS_CONTENTS_INLINE);
 			recordFirstPassContents(currentCmdBuffer, *pipeline[0], sampleLocationsInfo[0]);
-			vk.cmdEndRenderPass(currentCmdBuffer);
+			endRenderPass(vk, currentCmdBuffer);
 		}
 
 		endCommandBuffer(vk, currentCmdBuffer);
@@ -2746,13 +2746,13 @@ protected:
 		{
 			rt[1].recordBeginRenderPass(vk, currentCmdBuffer, renderArea, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 			vk.cmdExecuteCommands(currentCmdBuffer, 1u, &secondaryCmdBuffer[1].get());
-			vk.cmdEndRenderPass(currentCmdBuffer);
+			endRenderPass(vk, currentCmdBuffer);
 		}
 		else
 		{
 			rt[1].recordBeginRenderPass(vk, currentCmdBuffer, renderArea, VK_SUBPASS_CONTENTS_INLINE);
 			recordSecondPassContents(currentCmdBuffer, *pipeline[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
-			vk.cmdEndRenderPass(currentCmdBuffer);
+			endRenderPass(vk, currentCmdBuffer);
 		}
 
 		// Resolve image -> host buffer
@@ -2994,7 +2994,7 @@ protected:
 			recordSecondPassContents(*cmdBuffer, *pipeline[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
 		}
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		// Resolve image -> host buffer
 		recordImageBarrier(vk, *cmdBuffer, *m_resolveImage,
@@ -3149,7 +3149,7 @@ protected:
 			recordSecondPassContents(*cmdBuffer, *pipeline[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
 		}
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		// Resolve image -> host buffer
 		recordImageBarrier(vk, *cmdBuffer, *m_resolveImage,

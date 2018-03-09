@@ -1646,7 +1646,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			vk.cmdSetDeviceMask(*cmdBuffer, ((1 << firstDeviceID) | (1 << secondDeviceID)));
 			vk.cmdDrawIndexed(*cmdBuffer, numIndices, 1u, 0, 0, 0);
 		}
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		// Change image layout for copy
 		{

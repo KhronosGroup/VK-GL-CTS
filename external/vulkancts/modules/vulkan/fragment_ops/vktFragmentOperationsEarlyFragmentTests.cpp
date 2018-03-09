@@ -79,34 +79,6 @@ inline VkImageCreateInfo makeImageCreateInfo (const tcu::IVec2& size, const VkFo
 	return imageParams;
 }
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const tcu::Vec4&			clearColor,
-					  const float				clearDepth,
-					  const deUint32			clearStencil)
-{
-	const VkClearValue clearValues[] =
-	{
-		makeClearValueColor(clearColor),						// attachment 0
-		makeClearValueDepthStencil(clearDepth, clearStencil),	// attachment 1
-	};
-
-	const VkRenderPassBeginInfo renderPassBeginInfo = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-		DE_NULL,										// const void*             pNext;
-		renderPass,										// VkRenderPass            renderPass;
-		framebuffer,									// VkFramebuffer           framebuffer;
-		renderArea,										// VkRect2D                renderArea;
-		DE_LENGTH_OF_ARRAY(clearValues),				// uint32_t                clearValueCount;
-		clearValues,									// const VkClearValue*     pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-}
-
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 								   const VkDevice			device,
 								   const VkFormat			colorFormat,
@@ -731,7 +703,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 			commandClearStencilAttachment(vk, *cmdBuffer, makeOffset2D(0, 0), makeExtent2D(renderSize.x()/2, renderSize.y()), 1u);
 
 		vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		{
 			const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(

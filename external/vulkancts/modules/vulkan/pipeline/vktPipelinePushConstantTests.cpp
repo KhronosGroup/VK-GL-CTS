@@ -738,27 +738,13 @@ void PushConstantGraphicsTestInstance::init (void)
 
 	// Create command buffer
 	{
-		const VkClearValue				attachmentClearValues[]	=
-		{
-			defaultClearValue(m_colorFormat)
-		};
-
-		const VkRenderPassBeginInfo		renderPassBeginInfo		=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 } , { m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
-			1,														// deUint32				clearValueCount;
-			attachmentClearValues									// const VkClearValue*	pClearValues;
-		};
+		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		// Update push constant values
 		updatePushConstants(*m_cmdBuffer, *m_pipelineLayout);
@@ -780,7 +766,7 @@ void PushConstantGraphicsTestInstance::init (void)
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / TRIANGLE_COUNT), 1, 0, 0);
 		}
 
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }

@@ -311,28 +311,15 @@ void MultiViewRenderTestInstance::afterDraw (void)
 
 void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -353,7 +340,7 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount, VkRenderPas
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -1609,27 +1596,15 @@ void MultiViewInstancedTestInstance::createVertexData (void)
 
 void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -1643,7 +1618,7 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount,VkRenderP
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -1678,27 +1653,15 @@ void MultiViewInputRateInstanceTestInstance::createVertexData (void)
 
 void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -1713,7 +1676,7 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount,V
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -1743,8 +1706,6 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRend
 	typedef de::SharedPtr<UniquePtr<Allocation> >	AllocationSP;
 
 	const size_t					nonCoherentAtomSize		= static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize);
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
@@ -1811,22 +1772,11 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRend
 		indirectAllocations[subpassNdx] = (AllocationSP(new UniquePtr<Allocation>(allocationBuffer)));
 	}
 
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
-
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -1859,7 +1809,7 @@ void MultiViewDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRend
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -1885,28 +1835,15 @@ MultiViewClearAttachmentsTestInstance::MultiViewClearAttachmentsTestInstance (Co
 
 void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -1958,7 +1895,7 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount,Vk
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -1986,27 +1923,15 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 {
 	typedef de::SharedPtr<Unique<VkCommandBuffer> >	VkCommandBufferSp;
 
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	//Create secondary buffer
 	const VkCommandBufferAllocateInfo	cmdBufferAllocateInfo	=
@@ -2037,7 +1962,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -2100,28 +2025,15 @@ void MultiViewPointSizeTestInstance::createVertexData (void)
 
 void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -2136,7 +2048,7 @@ void MultiViewPointSizeTestInstance::draw (const deUint32 subpassCount, VkRender
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -2239,8 +2151,6 @@ void MultiViewMultsampleTestInstance::createVertexData (void)
 
 void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
@@ -2261,22 +2171,11 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 		makeExtent3D(m_parameters.extent.width, m_parameters.extent.height, 1u),	//  VkExtent3D					extent;
 	};
 
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
-
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -2291,7 +2190,7 @@ void MultiViewMultsampleTestInstance::draw (const deUint32 subpassCount, VkRende
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -2491,22 +2390,10 @@ void MultiViewQueriesTestInstance::createVertexData (void)
 
 void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
-	const VkRect2D				renderArea						= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue			renderPassClearValue			= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer				vertexBuffers[]					= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize			vertexBufferOffsets[]			= {                   0u,                   0u };
 	const deUint32				drawCountPerSubpass				= (subpassCount == 1) ? m_squareCount : 1u;
 	const deUint32				queryCountersNumber				= (subpassCount == 1) ? m_squareCount * getUsedViewsCount(0) : getQueryCountersNumber();
-	const VkRenderPassBeginInfo	renderPassBeginInfo				=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	//  VkStructureType		sType;
-		DE_NULL,									//  const void*			pNext;
-		renderPass,									//  VkRenderPass		renderPass;
-		frameBuffer,								//  VkFramebuffer		framebuffer;
-		renderArea,									//  VkRect2D			renderArea;
-		1u,											//  uint32_t			clearValueCount;
-		&renderPassClearValue,						//  const VkClearValue*	pClearValues;
-	};
 	const VkQueryPoolCreateInfo	occlusionQueryPoolCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,	//  VkStructureType					sType;
@@ -2535,7 +2422,7 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -2581,7 +2468,7 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 	DE_ASSERT(queryStartIndex == queryCountersNumber);
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 
@@ -2722,26 +2609,18 @@ void MultiViewReadbackTestInstance::beforeDraw (void)
 void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines, const bool clearPass)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(m_colorTable[0]);
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
 	const bool						withClearColor			= (clearPass && m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR);
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			//  VkStructureType		sType;
-		DE_NULL,											//  const void*			pNext;
-		renderPass,											//  VkRenderPass		renderPass;
-		frameBuffer,										//  VkFramebuffer		framebuffer;
-		renderArea,											//  VkRect2D			renderArea;
-		withClearColor ? 1u : 0u,							//  uint32_t			clearValueCount;
-		withClearColor ? &renderPassClearValue : DE_NULL,	//  const VkClearValue*	pClearValues;
-	};
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	if (clearPass)
 		beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	if (withClearColor)
+		beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), m_colorTable[0]);
+	else
+		beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height));
 
 	for (deUint32 subpassNdx = 0u; subpassNdx < subpassCount; subpassNdx++)
 	{
@@ -2766,7 +2645,7 @@ void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkR
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	if (!clearPass)
 		afterDraw();
@@ -3126,28 +3005,16 @@ void MultiViewDepthStencilTestInstance::createVertexData (void)
 
 void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
-	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkBuffer					vertexBuffers[]			= { *m_vertexCoordBuffer, *m_vertexColorBuffer };
 	const VkDeviceSize				vertexBufferOffsets[]	= {                   0u,                   0u };
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
 	const deUint32					vertexPerPrimitive		= 4u;
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		renderPass,									// VkRenderPass			renderPass;
-		frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
 
 	beginCommandBuffer(*m_device, *m_cmdBuffer);
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);
 
@@ -3164,7 +3031,7 @@ void MultiViewDepthStencilTestInstance::draw (const deUint32 subpassCount, VkRen
 			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(*m_device, *m_cmdBuffer);
 
 	afterDraw();
 

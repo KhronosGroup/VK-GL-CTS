@@ -412,30 +412,12 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
 	}
 
-	{
-		const vk::VkClearValue			clearValue			= vk::makeClearValueColorF32(0.25f, 0.50f, 0.75f, 1.00f);
-		const vk::VkRenderPassBeginInfo	renderPassBeginInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			DE_NULL,
-
-			renderPass,
-			framebuffer,
-
-			{
-				{ (deInt32)0, (deInt32)0 },
-				{ imageWidth, imageHeight }
-			},
-			1u,
-			&clearValue
-		};
-		vkd.cmdBeginRenderPass(*commandBuffer, &renderPassBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(0, 0, imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
 
 	for (size_t frameNdx = imageNextFrame; frameNdx <= currentFrame; frameNdx++)
 		cmdRenderFrame(vkd, *commandBuffer, pipelineLayout, pipeline, frameNdx, imageWidth, imageHeight);
 
-	vkd.cmdEndRenderPass(*commandBuffer);
+	endRenderPass(vkd, *commandBuffer);
 
 	endCommandBuffer(vkd, *commandBuffer);
 	return commandBuffer;

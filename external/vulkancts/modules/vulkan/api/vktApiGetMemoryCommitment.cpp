@@ -493,32 +493,6 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 	// beginCommandBuffer
 	beginCommandBuffer(vkd, *cmdBuffer);
 
-	const VkExtent3D		extent3D =
-	{
-		256u,	// width
-		256u,	// height
-		1u		// depth
-	};
-
-	const VkClearValue clearValues[1] =
-	{
-		makeClearValueColorF32(0.0f, 0.0f, 1.0f, 1.0f),
-	};
-
-	const VkRenderPassBeginInfo renderPassBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-		DE_NULL,												// const void*			pNext;
-		*renderPass,											// VkRenderPass			renderPass;
-		*framebuffer,											// VkFramebuffer		framebuffer;
-		{
-			{ 0, 0 },
-			{ extent3D.width, extent3D.height }
-		},														// VkRect2D				renderArea;
-		1u,														// deUint32				clearValueCount;
-		clearValues												// const VkClearValue*	pClearValues;
-	};
-
 	const VkImageMemoryBarrier initialImageBarrier =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
@@ -540,11 +514,11 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 	};
 
 	vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &initialImageBarrier);
-	vkd.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vkd, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, 256u, 256u), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
 	vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipelines);
 	// clearAttachments
 	vkd.cmdClearAttachments(*cmdBuffer, 1, &clearAttachment, 1u, &clearRect);
-	vkd.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vkd, *cmdBuffer);
 	endCommandBuffer(vkd, *cmdBuffer);
 
 	// queueSubmit
