@@ -337,10 +337,8 @@ public:
 		DE_ASSERT(m_program->binary->getFormat() == vk::PROGRAM_FORMAT_SPIRV);
 
 		std::ostringstream			validationLog;
-		const vk::ProgramBinary&	programBinary	= *(m_program->binary);
-		const vk::SpirvVersion		spirvVersion	= vk::extractSpirvVersion(programBinary);
 
-		if (vk::validateProgram(*m_program->binary, &validationLog, spirvVersion))
+		if (vk::validateProgram(*m_program->binary, &validationLog))
 			m_program->validationStatus = Program::STATUS_PASSED;
 		else
 			m_program->validationStatus = Program::STATUS_FAILED;
@@ -377,8 +375,8 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						  const std::string&		dstPath,
 						  const bool				validateBinaries,
 						  const deUint32			usedVulkanVersion,
-						  const vk::SpirvVersion	spirvVersionForGlsl,
-						  const vk::SpirvVersion	spirvVersionForAsm)
+						  const vk::SpirvVersion	baselineSpirvVersion,
+						  const vk::SpirvVersion	maxSpirvVersion)
 {
 	const deUint32						numThreads			= deGetNumAvailableLogicalCores();
 
@@ -409,9 +407,9 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 				{
 					const TestCase* const		testCase					= dynamic_cast<TestCase*>(iterator.getNode());
 					const string				casePath					= iterator.getNodePath();
-					vk::ShaderBuildOptions		defaultGlslBuildOptions		(spirvVersionForGlsl, 0u);
-					vk::ShaderBuildOptions		defaultHlslBuildOptions		(spirvVersionForGlsl, 0u);
-					vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(spirvVersionForAsm);
+					vk::ShaderBuildOptions		defaultGlslBuildOptions		(baselineSpirvVersion, 0u);
+					vk::ShaderBuildOptions		defaultHlslBuildOptions		(baselineSpirvVersion, 0u);
+					vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(baselineSpirvVersion);
 					vk::SourceCollections		sourcePrograms				(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
 
 					try
@@ -430,7 +428,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						 ++progIter)
 					{
 						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						if (progIter.getProgram().buildOptions.targetVersion > spirvVersionForGlsl)
+						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
 							continue;
 
 						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.targetVersion));
@@ -443,7 +441,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						 ++progIter)
 					{
 						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						if (progIter.getProgram().buildOptions.targetVersion > spirvVersionForGlsl)
+						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
 							continue;
 
 						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.targetVersion));
@@ -456,7 +454,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						 ++progIter)
 					{
 						// Source program requires higher SPIR-V version than available: skip it to avoid fail
-						if (progIter.getProgram().buildOptions.targetVersion > spirvVersionForAsm)
+						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
 							continue;
 
 						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.targetVersion));
@@ -591,23 +589,23 @@ int main (int argc, const char* argv[])
 
 	try
 	{
-		tcu::DirArchive			archive				(".");
-		tcu::TestLog			log					(deqpCmdLine.getLogFileName(), deqpCmdLine.getLogFlags());
+		tcu::DirArchive			archive					(".");
+		tcu::TestLog			log						(deqpCmdLine.getLogFileName(), deqpCmdLine.getLogFlags());
 		tcu::Platform			platform;
-		tcu::TestContext		testCtx				(platform, archive, log, deqpCmdLine, DE_NULL);
-		vk::SpirvVersion		spirvVersionForGlsl	= vk::getSpirvVersionForGlsl(cmdLine.getOption<opt::VulkanVersion>());
-		vk::SpirvVersion		spirvVersionForAsm	= vk::getSpirvVersionForAsm(cmdLine.getOption<opt::VulkanVersion>());
+		tcu::TestContext		testCtx					(platform, archive, log, deqpCmdLine, DE_NULL);
+		vk::SpirvVersion		baselineSpirvVersion	= vk::getBaselineSpirvVersion(cmdLine.getOption<opt::VulkanVersion>());
+		vk::SpirvVersion		maxSpirvVersion			= vk::getMaxSpirvVersionForGlsl(cmdLine.getOption<opt::VulkanVersion>());
 
-		tcu::print("SPIR-V versions: for GLSL sources: %s, for SPIR-V asm sources: %s\n",
-					getSpirvVersionName(spirvVersionForGlsl).c_str(),
-					getSpirvVersionName(spirvVersionForAsm).c_str());
+		tcu::print("SPIR-V versions: baseline: %s, max supported: %s\n",
+					getSpirvVersionName(baselineSpirvVersion).c_str(),
+					getSpirvVersionName(maxSpirvVersion).c_str());
 
 		const vkt::BuildStats	stats		= vkt::buildPrograms(testCtx,
 																 cmdLine.getOption<opt::DstPath>(),
 																 cmdLine.getOption<opt::Validate>(),
 																 cmdLine.getOption<opt::VulkanVersion>(),
-																 spirvVersionForGlsl,
-																 spirvVersionForAsm);
+																 baselineSpirvVersion,
+																 maxSpirvVersion);
 
 		tcu::print("DONE: %d passed, %d failed, %d not supported\n", stats.numSucceeded, stats.numFailed, stats.notSupported);
 
