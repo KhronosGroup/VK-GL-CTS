@@ -264,11 +264,6 @@ dEQP-VK.glsl.texture_functions.texelfetch.sparse_sampler3d_fixed_fragment
 dEQP-VK.glsl.texture_functions.texelfetch.sparse_usampler3d_vertex
 dEQP-VK.glsl.texture_functions.texelfetch.sparse_usampler3d_fragment
 
-# Issue 420: Exclude problematic clipping tests
-dEQP-VK.clipping.clip_volume.clipped.large_points
-dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
-dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
-
 # Issue 431: Excluded copies and blitting tests
 dEQP-VK.api.copy_and_blit.core.blit_image.simple_tests.scaling_and_offset.b8g8r8a8_unorm_linear
 

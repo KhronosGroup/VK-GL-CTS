@@ -351,8 +351,14 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
 			 "varying highp vec2 texcoord;\n"
 			 "void main()\n"
 			 "{\n"
-			 "  gl_FragColor = texture2D(sampler, texcoord);\n"
+			 "  highp vec4 color = texture2D(sampler, texcoord);\n"
+			 "  gl_FragColor = ${CALCULATE_COLOR};\n"
 			 "}\n";
+
+		if (internalFormat == GL_DEPTH_COMPONENT)
+			specializationMap["CALCULATE_COLOR"] = "vec4(color.r, 0.0, 0.0, 1.0)";
+		else
+			specializationMap["CALCULATE_COLOR"] = "color";
 	}
 
 	vs = tcu::StringTemplate(vs).specialize(specializationMap);
