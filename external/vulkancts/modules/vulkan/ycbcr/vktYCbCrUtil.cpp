@@ -1988,7 +1988,7 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							const IVec2	chromaJRange	(subsampledY ? calculateNearestIJRange(coordFormat, chromaV) : IVec2(j, j));
 
 							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.x(); chromaI++)
+							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
 							{
 								const Interval	srcColor[]	=
 								{
@@ -2012,7 +2012,7 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							const IVec2	chromaJRange	(subsampledY ? calculateLinearIJRange(coordFormat, chromaV) : IVec2(j, j));
 
 							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.x(); chromaI++)
+							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
 							{
 								const Interval	chromaA	(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
 								const Interval	chromaB	(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));
@@ -2177,7 +2177,7 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
 
 							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.x(); chromaI++)
+							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
 							{
 								const Interval	srcColor[]	=
 								{
@@ -2200,7 +2200,7 @@ void calculateBounds (const ChannelAccess&					rPlane,
 							const IVec2	chromaJRange	(calculateNearestIJRange(coordFormat, chromaV));
 
 							for (int chromaJ = chromaJRange.x(); chromaJ <= chromaJRange.y(); chromaJ++)
-							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.x(); chromaI++)
+							for (int chromaI = chromaIRange.x(); chromaI <= chromaIRange.y(); chromaI++)
 							{
 								const Interval	chromaA		(calculateAB(subTexelPrecisionBits, chromaU, chromaI));
 								const Interval	chromaB		(calculateAB(subTexelPrecisionBits, chromaV, chromaJ));

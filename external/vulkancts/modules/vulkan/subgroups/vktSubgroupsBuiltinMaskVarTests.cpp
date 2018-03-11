@@ -291,6 +291,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "{\n"
 			<< bdy.str()
 			<< "  result[gl_VertexIndex] = tempResult;\n"
+			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert")
