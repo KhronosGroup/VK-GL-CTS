@@ -79,7 +79,7 @@ UniformIntegerFunctionCase::UniformIntegerFunctionCase(Context& context, const c
 	oss << "uniform " << glu::declare(varType, "value", 0) << ";\n";
 	m_spec.globalDeclarations = oss.str();
 	m_spec.outputs.push_back(Symbol("result", glu::VarType(glu::TYPE_INT, glu::PRECISION_LOWP)));
-	m_spec.outputs.push_back(Symbol("comparison", glu::VarType(glu::TYPE_BOOL, glu::PRECISION_LOWP)));
+	m_spec.outputs.push_back(Symbol("comparison", glu::VarType(glu::TYPE_BOOL, glu::PRECISION_LAST)));
 }
 
 UniformIntegerFunctionCase::~UniformIntegerFunctionCase(void)
