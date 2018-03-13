@@ -374,6 +374,13 @@ MASTER_GLES2_PKG				= Package(module = GLES2_MODULE, configurations = [
 					  required		= True,
 					  filters		= MASTER_GLES2_COMMON_FILTERS,
 					  runtime		= "46m"),
+		# Risky subset
+		Configuration(name			= "master-risky",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles2-temp-excluded.txt")],
+					  runtime		= "10m"),
 	])
 
 MASTER_GLES3_COMMON_FILTERS		= [
@@ -393,6 +400,13 @@ MASTER_GLES3_PKG				= Package(module = GLES3_MODULE, configurations = [
 					  required		= True,
 					  filters		= MASTER_GLES3_COMMON_FILTERS,
 					  runtime		= "1h50m"),
+		# Risky subset
+		Configuration(name			= "master-risky",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles3-temp-excluded.txt")],
+					  runtime		= "10m"),
 		# Rotations
 		Configuration(name			= "rotate-portrait",
 					  glconfig		= "rgba8888d24s8ms0",
@@ -455,6 +469,13 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 					  required		= True,
 					  filters		= MASTER_GLES31_COMMON_FILTERS,
 					  runtime		= "1h40m"),
+		# Risky subset
+		Configuration(name			= "master-risky",
+					  glconfig		= "rgba8888d24s8ms0",
+					  rotation		= "unspecified",
+					  surfacetype	= "window",
+					  filters		= [include("gles31-temp-excluded.txt")],
+					  runtime		= "10m"),
 
 		# Rotations
 		Configuration(name			= "rotate-portrait",
@@ -511,6 +532,9 @@ MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name			= "master",
 					  filters		= MASTER_VULKAN_FILTERS,
 					  runtime		= "2h29m"),
+		Configuration(name			= "master-risky",
+					  filters		= [include("vk-temp-excluded.txt")],
+					  runtime		= "10m"),
 	])
 
 MUSTPASS_LISTS				= [
