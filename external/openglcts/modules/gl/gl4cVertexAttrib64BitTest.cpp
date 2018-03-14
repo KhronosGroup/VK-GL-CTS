@@ -2598,7 +2598,7 @@ bool LimitTest::testDrawArraysInstanced() const
 	gl.endTransformFeedback();
 	GLU_EXPECT_NO_ERROR(gl.getError(), "EndTransformFeedback");
 
-	if (true == verifyResult(false))
+	if (true == verifyResult(true))
 	{
 		return true;
 	}
@@ -2652,7 +2652,7 @@ bool LimitTest::testDrawElementsInstanced() const
 	gl.endTransformFeedback();
 	GLU_EXPECT_NO_ERROR(gl.getError(), "EndTransformFeedback");
 
-	if (true == verifyResult(false))
+	if (true == verifyResult(true))
 	{
 		return true;
 	}

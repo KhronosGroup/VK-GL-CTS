@@ -287,12 +287,13 @@ bool VertexArrayIndirectDrawingBaseCase::verify()
 	{
 		for (int x = 2; x < width / 2 - 2; ++x)
 		{
-			GLubyte value = pixels[x + y * width];
-			if (value < 190 || value > 194)
+			int value = pixels[x + y * width];
+			// Support 5-bit precision for the framebuffer, re-quantized to 8-bits from glReadPixels.
+			if (value < 189 || value > 197)
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "First quad verification failed. "
 								   << "Wrong value read from framebuffer at " << x << "/" << y << " value: " << value
-								   << ", expected: <190-194>" << tcu::TestLog::EndMessage;
+								   << ", expected: <189-197>" << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}
@@ -303,12 +304,13 @@ bool VertexArrayIndirectDrawingBaseCase::verify()
 	{
 		for (int x = width / 2 + 2; x < width - 2; ++x)
 		{
-			GLubyte value = pixels[x + y * width];
-			if (value < 126 || value > 130)
+			int value = pixels[x + y * width];
+			// Support 5-bit precision for the framebuffer, re-quantized to 8-bits from glReadPixels.
+			if (value < 123 || value > 132)
 			{
 				m_testCtx.getLog() << tcu::TestLog::Message << "Second quad verification failed. "
 								   << "Wrong value read from framebuffer at " << x << "/" << y << " value: " << value
-								   << ", expected: <126-130>" << tcu::TestLog::EndMessage;
+								   << ", expected: <123-132>" << tcu::TestLog::EndMessage;
 				return false;
 			}
 		}

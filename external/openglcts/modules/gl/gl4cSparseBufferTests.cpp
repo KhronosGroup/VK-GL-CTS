@@ -1775,14 +1775,15 @@ bool ClearOpsBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_flags)
 				 (n_current_byte < modified_region_start_offset + modified_region_size) && result_local;
 				 ++n_current_byte)
 			{
+				const unsigned char component_offset = n_current_byte % 4;
 				const unsigned char expected_value =
-					static_cast<unsigned char>((data_rgba8 & (0xFF << (n_current_byte * 8))) >> (n_current_byte * 8));
+					static_cast<unsigned char>((data_rgba8 & (0xFFu << (component_offset * 8))) >> (component_offset * 8));
 				const unsigned char found_value = result_data[n_current_byte];
 
 				if (expected_value != found_value)
 				{
 					m_testCtx.getLog() << tcu::TestLog::Message
-									   << "Unmodified buffer object region has invalid contents. Expected byte "
+									   << "Modified buffer object region has invalid contents. Expected byte "
 									   << "[" << (int)expected_value << "]"
 																		", found byte:"
 																		"["
@@ -3565,8 +3566,7 @@ bool PixelUnpackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_fla
 						expected_value = *texture_data_traveller_ptr;
 					}
 
-					if ((is_from_committed_page && de::abs(expected_value - *read_data_traveller_ptr) >= 1) ||
-						(!is_from_committed_page && *read_data_traveller_ptr != expected_value))
+					if (is_from_committed_page && de::abs(expected_value - *read_data_traveller_ptr) >= 1)
 					{
 						m_testCtx.getLog() << tcu::TestLog::Message << "Invalid texel data (channel:" << n_component
 										   << ")"
@@ -3577,7 +3577,7 @@ bool PixelUnpackBufferStorageTestCase::execute(glw::GLuint sparse_bo_storage_fla
 												   " Expected value:"
 										   << expected_value << ","
 																" found value:"
-										   << *texture_data_traveller_ptr << tcu::TestLog::EndMessage;
+										   << *read_data_traveller_ptr << tcu::TestLog::EndMessage;
 
 						result_local = false;
 					}
@@ -3673,10 +3673,6 @@ bool PixelUnpackBufferStorageTestCase::initTestCaseIteration(glw::GLuint sparse_
 	DE_ASSERT(m_sparse_bo == 0 || m_sparse_bo == sparse_bo);
 
 	m_sparse_bo = sparse_bo;
-
-	/* Set up the sparse buffer. */
-	m_gl.bindBuffer(GL_QUERY_BUFFER, m_sparse_bo);
-	GLU_EXPECT_NO_ERROR(m_gl.getError(), "glBindBuffer() call failed.");
 
 	return result;
 }
