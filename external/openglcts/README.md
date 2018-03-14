@@ -322,7 +322,7 @@ The conformance tests come with native Android support. The following packages
 are needed in order to build an Android binary:
 - Python 2.7.x
 - Android NDK r11c
-- Android SDK with API 24 packages and tools installed
+- Android SDK with API 22 packages and tools installed
 - Apache Ant
 
 An Android binary (for ES 3.2) can be built using command:
