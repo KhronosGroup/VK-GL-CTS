@@ -1113,7 +1113,7 @@ GL_BUILD_CONFIG					= BuildConfig(buildPath, "Debug", ["-DDEQP_TARGET=%s" % DEFA
 if __name__ == "__main__":
 	gtfCMakeLists = os.path.join(DEQP_DIR, "external", "kc-cts", "src", "GTF_ES", "CMakeLists.txt")
 	if os.path.isfile(gtfCMakeLists) == False:
-		raise Exception("GTF sources not found. GTF module is required to build the mustpass files")
+		raise Exception("GTF sources not found. GTF module is required to build the mustpass files. 'cd external && python fetch_kc_cts.py'")
 	genMustpassLists(ES_MUSTPASS_LISTS, ANY_GENERATOR, ES_BUILD_CONFIG)
 	gl_mustpass_lists = generateGLMustpass()
 	genMustpassLists(gl_mustpass_lists, ANY_GENERATOR, GL_BUILD_CONFIG)

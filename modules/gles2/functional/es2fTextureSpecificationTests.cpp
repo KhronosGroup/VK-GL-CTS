@@ -367,6 +367,8 @@ protected:
 	const int					m_width;
 	const int					m_height;
 
+	bool m_half_float_oes;
+
 private:
 								TextureSpecCase		(const TextureSpecCase& other);
 	TextureSpecCase&			operator=			(const TextureSpecCase& other);
@@ -403,6 +405,8 @@ TextureSpecCase::TextureSpecCase (Context& context, const char* name, const char
 	, m_texCubeNegZShader	(tcu::CUBEFACE_NEGATIVE_Z)
 	, m_texCubePosZShader	(tcu::CUBEFACE_POSITIVE_Z)
 {
+	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	m_half_float_oes = glu::hasExtension(gl, glu::ApiType::es(2, 0), "GL_OES_texture_half_float");
 }
 
 TextureSpecCase::~TextureSpecCase (void)
@@ -629,6 +633,9 @@ protected:
 		tcu::TextureLevel	levelData	(fmt);
 		de::Random			rnd			(deStringHash(getName()));
 
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
+
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -672,6 +679,9 @@ protected:
 		de::Random			rnd			(deStringHash(getName()));
 
 		DE_ASSERT(m_width == m_height); // Non-square cubemaps are not supported by GLES2.
+
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
@@ -719,6 +729,9 @@ protected:
 		deUint32			tex			= 0;
 		tcu::TextureLevel	levelData	(fmt);
 		de::Random			rnd			(deStringHash(getName()));
+
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
@@ -770,6 +783,9 @@ protected:
 		de::Random			rnd			(deStringHash(getName()));
 
 		DE_ASSERT(m_width == m_height); // Non-square cubemaps are not supported by GLES2.
+
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
@@ -830,6 +846,9 @@ protected:
 		deUint32			tex			= 0;
 		vector<deUint8>		data;
 
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
+
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, m_alignment);
@@ -877,6 +896,9 @@ protected:
 
 		DE_ASSERT(m_width == m_height); // Non-square cubemaps are not supported by GLES2.
 
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
+
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, m_alignment);
@@ -922,6 +944,9 @@ protected:
 		deUint32			tex			= 0;
 		tcu::TextureLevel	data		(fmt);
 		de::Random			rnd			(deStringHash(getName()));
+
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
@@ -988,6 +1013,9 @@ protected:
 		de::Random			rnd			(deStringHash(getName()));
 
 		DE_ASSERT(m_width == m_height); // Non-square cubemaps are not supported by GLES2.
+
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
@@ -1060,6 +1088,9 @@ protected:
 		tcu::TextureLevel	data		(fmt);
 		de::Random			rnd			(deStringHash(getName()));
 
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
+
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -1113,6 +1144,9 @@ protected:
 		de::Random			rnd			(deStringHash(getName()));
 
 		DE_ASSERT(m_width == m_height); // Non-square cubemaps are not supported by GLES2.
+
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
@@ -1175,6 +1209,9 @@ protected:
 		deUint32			tex			= 0;
 		vector<deUint8>		data;
 
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
+
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
 
@@ -1227,6 +1264,9 @@ protected:
 		vector<deUint8>		data;
 
 		DE_ASSERT(m_width == m_height);
+
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
 
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
@@ -1394,6 +1434,9 @@ protected:
 		if ((texHasRGB && !targetHasRGB) || (texHasAlpha && !targetHasAlpha))
 			throw tcu::NotSupportedError("Copying from current framebuffer is not supported", "", __FILE__, __LINE__);
 
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
+
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_2D, tex);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -1471,6 +1514,9 @@ protected:
 		if ((texHasRGB && !targetHasRGB) || (texHasAlpha && !targetHasAlpha))
 			throw tcu::NotSupportedError("Copying from current framebuffer is not supported", "", __FILE__, __LINE__);
 
+		if (m_dataType == GL_HALF_FLOAT_OES && !m_half_float_oes)
+			throw tcu::NotSupportedError("GL_OES_texture_half_float is not supported", "", __FILE__, __LINE__);
+
 		glGenTextures(1, &tex);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -1546,7 +1592,12 @@ void TextureSpecificationTests::init (void)
 		{ "rgb888",		GL_RGB,				GL_UNSIGNED_BYTE },
 		{ "rgba4444",	GL_RGBA,			GL_UNSIGNED_SHORT_4_4_4_4 },
 		{ "rgba5551",	GL_RGBA,			GL_UNSIGNED_SHORT_5_5_5_1 },
-		{ "rgba8888",	GL_RGBA,			GL_UNSIGNED_BYTE }
+		{ "rgba8888",	GL_RGBA,			GL_UNSIGNED_BYTE },
+		{ "rgba16f",	GL_RGBA,			GL_HALF_FLOAT_OES },
+		{ "rgb16f",		GL_RGB,				GL_HALF_FLOAT_OES },
+		{ "la16f",		GL_LUMINANCE_ALPHA,	GL_HALF_FLOAT_OES },
+		{ "l16f",		GL_LUMINANCE,		GL_HALF_FLOAT_OES },
+		{ "a16f",		GL_ALPHA,			GL_HALF_FLOAT_OES }
 	};
 
 	// Basic TexImage2D usage.
