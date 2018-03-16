@@ -60,8 +60,9 @@ enum Constants
 
 struct TestParams
 {
-	VkFrontFace				frontFace;
-	VkCullModeFlagBits		cullMode;
+	VkFrontFace			frontFace;
+	VkCullModeFlagBits	cullMode;
+	bool				zeroViewportHeight;
 };
 
 class NegativeViewportHeightTestInstance : public TestInstance
@@ -260,13 +261,30 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 	vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
 
 	{
-		const VkClearColorValue		clearColor			= makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f).color;
+		const VkClearColorValue		clearColor			= makeClearValueColorF32(0.125f, 0.25f, 0.5f, 1.0f).color;
 		const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 
 		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL,
 									  VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 		vk.cmdClearColorImage(*cmdBuffer, m_colorTargetImage->object(), VK_IMAGE_LAYOUT_GENERAL, &clearColor, 1, &subresourceRange);
 	}
+
+	if (m_params.zeroViewportHeight)
+	{
+		// Set zero viewport height
+		const VkViewport zeroViewportHeight =
+		{
+			viewport.x,			// float    x;
+			viewport.y / 2.0f,	// float    y;
+			viewport.width,		// float    width;
+			0.0f,				// float    height;
+			viewport.minDepth,	// float    minDepth;
+			viewport.maxDepth	// float    maxDepth;
+		};
+
+		vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &zeroViewportHeight);
+	}
+
 	{
 		const VkMemoryBarrier memBarrier =
 		{
@@ -325,36 +343,45 @@ MovePtr<tcu::TextureLevel> NegativeViewportHeightTestInstance::generateReference
 
 	MovePtr<tcu::TextureLevel>		image	(new tcu::TextureLevel(mapVkFormat(m_colorAttachmentFormat), WIDTH, HEIGHT));
 	const tcu::PixelBufferAccess	access	(image->getAccess());
-	const Vec4						black	(0.0f, 0.0f, 0.0f, 1.0f);
+	const Vec4						blue	(0.125f, 0.25f, 0.5f, 1.0f);
 	const Vec4						white	(1.0f);
 	const Vec4						gray	(0.5f, 0.5f, 0.5f, 1.0f);
 
-	tcu::clear(access, black);
+	tcu::clear(access, blue);
 
-	const int p1 =      static_cast<int>(static_cast<float>(HEIGHT) * (1.0f - 0.6f) / 2.0f);
-	const int p2 = p1 + static_cast<int>(static_cast<float>(HEIGHT) * (2.0f * 0.6f) / 2.0f);
-
-	// left triangle (CCW -> CW after y-flip)
-	if (!isCulled(VK_FRONT_FACE_CLOCKWISE))
+	// Zero viewport height
+	if (m_params.zeroViewportHeight)
 	{
-		const Vec4& color = (m_params.frontFace == VK_FRONT_FACE_CLOCKWISE ? white : gray);
-
-		for (int y = p1; y <= p2; ++y)
-		for (int x = p1; x <  y;  ++x)
-			access.setPixel(color, x, y);
+		return image;
 	}
-
-	// right triangle (CW -> CCW after y-flip)
-	if (!isCulled(VK_FRONT_FACE_COUNTER_CLOCKWISE))
+	// Negative viewport height
+	else
 	{
-		const Vec4& color = (m_params.frontFace == VK_FRONT_FACE_COUNTER_CLOCKWISE ? white : gray);
+		const int p1 =      static_cast<int>(static_cast<float>(HEIGHT) * (1.0f - 0.6f) / 2.0f);
+		const int p2 = p1 + static_cast<int>(static_cast<float>(HEIGHT) * (2.0f * 0.6f) / 2.0f);
 
-		for (int y = p1;        y <= p2;          ++y)
-		for (int x = WIDTH - y; x <  p2 + HEIGHT; ++x)
-			access.setPixel(color, x, y);
+		// left triangle (CCW -> CW after y-flip)
+		if (!isCulled(VK_FRONT_FACE_CLOCKWISE))
+		{
+			const Vec4& color = (m_params.frontFace == VK_FRONT_FACE_CLOCKWISE ? white : gray);
+
+			for (int y = p1; y <= p2; ++y)
+			for (int x = p1; x <  y;  ++x)
+				access.setPixel(color, x, y);
+		}
+
+		// right triangle (CW -> CCW after y-flip)
+		if (!isCulled(VK_FRONT_FACE_COUNTER_CLOCKWISE))
+		{
+			const Vec4& color = (m_params.frontFace == VK_FRONT_FACE_COUNTER_CLOCKWISE ? white : gray);
+
+			for (int y = p1;        y <= p2;          ++y)
+			for (int x = WIDTH - y; x <  p2 + HEIGHT; ++x)
+				access.setPixel(color, x, y);
+		}
+
+		return image;
 	}
-
-	return image;
 }
 
 std::string getCullModeStr (const VkCullModeFlagBits cullMode)
@@ -401,13 +428,28 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 	tcu::TestLog&				log				= m_context.getTestContext().getLog();
 	MovePtr<tcu::TextureLevel>	referenceImage	= generateReferenceImage();
 
-	log << tcu::TestLog::Message
-		<< "Drawing two triangles with negative viewport height, which will cause a y-flip. This changes the sign of the triangle's area."
-		<< tcu::TestLog::EndMessage;
-	log << tcu::TestLog::Message
-		<< "After the flip, the triangle on the left is CW and the triangle on the right is CCW. Right angles of the both triangles should be at the bottom of the image."
-		<< " Front face is white, back face is gray."
-		<< tcu::TestLog::EndMessage;
+	// Zero viewport height
+	if (m_params.zeroViewportHeight)
+	{
+		log << tcu::TestLog::Message
+			<< "Drawing two triangles with zero viewport height."
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message
+			<< "Result image should be empty."
+			<< tcu::TestLog::EndMessage;
+	}
+	// Negative viewport height
+	else
+	{
+		log << tcu::TestLog::Message
+			<< "Drawing two triangles with negative viewport height, which will cause a y-flip. This changes the sign of the triangle's area."
+			<< tcu::TestLog::EndMessage;
+		log << tcu::TestLog::Message
+			<< "After the flip, the triangle on the left is CW and the triangle on the right is CCW. Right angles of the both triangles should be at the bottom of the image."
+			<< " Front face is white, back face is gray."
+			<< tcu::TestLog::EndMessage;
+	}
+
 	log << tcu::TestLog::Message
 		<< "Front face: " << getFrontFaceName(m_params.frontFace) << "\n"
 		<< "Cull mode: "  << getCullModeStr  (m_params.cullMode)  << "\n"
@@ -477,7 +519,7 @@ private:
 	const TestParams	m_params;
 };
 
-void populateTestGroup (tcu::TestCaseGroup* testGroup)
+void populateTestGroup (tcu::TestCaseGroup* testGroup, bool zeroViewportHeight)
 {
 	const struct
 	{
@@ -508,6 +550,7 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup)
 		{
 			frontFace[ndxFrontFace].frontFace,
 			cullMode[ndxCullMode].cullMode,
+			zeroViewportHeight
 		};
 		std::ostringstream	name;
 		name << frontFace[ndxFrontFace].name << "_" << cullMode[ndxCullMode].name;
@@ -520,7 +563,12 @@ void populateTestGroup (tcu::TestCaseGroup* testGroup)
 
 tcu::TestCaseGroup*	createNegativeViewportHeightTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "negative_viewport_height", "Negative viewport height (VK_KHR_maintenance1)", populateTestGroup);
+	return createTestGroup(testCtx, "negative_viewport_height", "Negative viewport height (VK_KHR_maintenance1)", populateTestGroup, false);
+}
+
+tcu::TestCaseGroup*	createZeroViewportHeightTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "zero_viewport_height", "Zero viewport height (VK_KHR_maintenance1)", populateTestGroup, true);
 }
 
 }	// Draw
