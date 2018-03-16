@@ -967,7 +967,7 @@ void copytexsubimage2d_texture_internalformat (NegativeTestContext& ctx)
 	GLuint texture = 0x1234;
 	ctx.glGenTextures	(1, &texture);
 	ctx.glBindTexture	(GL_TEXTURE_2D, texture);
-	ctx.glTexImage2D	(GL_TEXTURE_2D, 0, GL_RGB9_E5, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	ctx.glTexImage2D	(GL_TEXTURE_2D, 0, GL_RGB9_E5, 16, 16, 0, GL_RGB, GL_FLOAT, 0);
 
 	ctx.beginSection("GL_INVALID_OPERATION is generated if internal format of the texture is GL_RGB9_E5");
 	ctx.glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 4, 4);
