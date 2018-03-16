@@ -33,6 +33,7 @@
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"

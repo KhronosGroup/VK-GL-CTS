@@ -2564,7 +2564,7 @@ SparseTexture2LookupTestCase::TokenStringsExt SparseTexture2LookupTestCase::crea
 		else if (s.coordType == "vec3")
 			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>, <TEX_DEPTH>";
 		else if (s.coordType == "vec4")
-			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>, floor(<TEX_DEPTH> / 6), 6";
+			s.sizeDef = "<TEX_WIDTH>, <TEX_HEIGHT>, 6, floor(<TEX_DEPTH> / 6)";
 	}
 	// Set size vector for shadow samplers and non-gether functions selected
 	else

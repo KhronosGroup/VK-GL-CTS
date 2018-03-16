@@ -156,7 +156,7 @@ vk::Move<vk::VkImageView>			makeImageView					(const vk::DeviceInterface&					vk
 																	 const vk::VkImageViewType					imageViewType,
 																	 const vk::VkFormat							format,
 																	 const vk::VkImageSubresourceRange			subresourceRange,
-																	 const vk::VkImageViewUsageCreateInfoKHR*	ImageUsageCreateInfoKHR = DE_NULL);
+																	 const vk::VkImageViewUsageCreateInfo*		ImageUsageCreateInfoKHR = DE_NULL);
 
 vk::Move<vk::VkDescriptorSet>		makeDescriptorSet				(const vk::DeviceInterface&					vk,
 																	 const vk::VkDevice							device,
@@ -182,7 +182,7 @@ vk::VkImageMemoryBarrier			makeImageMemoryBarrier			(const vk::VkAccessFlags				
 																	 const vk::VkImage							image,
 																	 const vk::VkImageSubresourceRange			subresourceRange);
 
-vk::VkImageViewUsageCreateInfoKHR	makeImageViewUsageCreateInfo	(const vk::VkImageUsageFlags				imageUsageFlags);
+vk::VkImageViewUsageCreateInfo		makeImageViewUsageCreateInfo	(const vk::VkImageUsageFlags				imageUsageFlags);
 
 vk::VkSamplerCreateInfo				makeSamplerCreateInfo			();
 
@@ -190,11 +190,6 @@ void								beginCommandBuffer				(const vk::DeviceInterface&					vk,
 																	 const vk::VkCommandBuffer					cmdBuffer);
 
 void								endCommandBuffer				(const vk::DeviceInterface&					vk,
-																	 const vk::VkCommandBuffer					cmdBuffer);
-
-void								submitCommandsAndWait			(const vk::DeviceInterface&					vk,
-																	 const vk::VkDevice							device,
-																	 const vk::VkQueue							queue,
 																	 const vk::VkCommandBuffer					cmdBuffer);
 
 inline vk::VkDeviceSize getImageSizeBytes (const tcu::IVec3& imageSize, const vk::VkFormat format)

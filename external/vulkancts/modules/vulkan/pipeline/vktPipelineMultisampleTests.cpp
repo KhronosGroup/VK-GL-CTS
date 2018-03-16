@@ -25,6 +25,7 @@
 
 #include "vktPipelineMultisampleTests.hpp"
 #include "vktPipelineMultisampleImageTests.hpp"
+#include "vktPipelineMultisampleSampleLocationsExtTests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -35,6 +36,7 @@
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "tcuImageCompare.hpp"
@@ -360,8 +362,6 @@ protected:
 
 	Move<VkCommandPool>							m_cmdPool;
 	Move<VkCommandBuffer>						m_cmdBuffer;
-
-	Move<VkFence>								m_fence;
 
 	std::vector<de::SharedPtr<Allocation> >		m_allocations;
 
@@ -2789,9 +2789,6 @@ void MultisampleRenderer::initialize (Context&									context,
 
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}
-
-	// Create fence
-	m_fence = createFence(vk, vkDevice);
 }
 
 MultisampleRenderer::~MultisampleRenderer (void)
@@ -2804,22 +2801,8 @@ de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render (void)
 	const VkDevice				vkDevice			= m_context.getDevice();
 	const VkQueue				queue				= m_context.getUniversalQueue();
 	const deUint32				queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const VkSubmitInfo			submitInfo	=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,						// const void*				pNext;
-		0u,								// deUint32					waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,								// deUint32					commandBufferCount;
-		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-		0u,								// deUint32					signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
-	};
 
-	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity*/));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	if (m_renderType == RENDER_TYPE_RESOLVE)
 	{
@@ -3060,6 +3043,11 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 	// Load/store on a multisampled rendered image (different kinds of access: color attachment write, storage image, etc.)
 	{
 		multisampleTests->addChild(createMultisampleStorageImageTests(testCtx));
+	}
+
+	// VK_EXT_sample_locations
+	{
+		multisampleTests->addChild(createMultisampleSampleLocationsExtTests(testCtx));
 	}
 
 	return multisampleTests.release();

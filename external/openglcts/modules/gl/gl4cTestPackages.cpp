@@ -73,6 +73,7 @@
 #include "glcExposedExtensionsTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
+#include "glcLayoutLocationTests.hpp"
 #include "glcParallelShaderCompileTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
 #include "glcSampleVariablesTests.hpp"
@@ -374,6 +375,7 @@ void GL45TestPackage::init(void)
 		addChild(new glcts::ShaderGroupVote(getContext()));
 		addChild(new glcts::PolygonOffsetClamp(getContext()));
 		addChild(new glcts::SeparableProgramsTransformFeedbackTests(getContext()));
+		addChild(new glcts::LayoutLocationTests(getContext()));
 		addChild(new gl4cts::SpirvExtensionsTests(getContext()));
 		addChild(new gl4cts::GlSpirvTests(getContext()));
 	}

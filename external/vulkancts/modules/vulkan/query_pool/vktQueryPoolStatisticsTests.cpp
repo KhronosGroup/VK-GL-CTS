@@ -30,6 +30,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deMath.h"
 
@@ -144,35 +145,6 @@ void beginSecondaryCommandBuffer (const DeviceInterface&				vk,
 		&secCmdBufInheritInfo,							// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
 	};
 	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &info));
-}
-
-void submitCommandsAndWait (const DeviceInterface&	vk,
-							const VkDevice			device,
-							const VkQueue			queue,
-							const VkCommandBuffer	commandBuffer)
-{
-	const VkFenceCreateInfo	fenceInfo	=
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkFenceCreateFlags)0,					// VkFenceCreateFlags	flags;
-	};
-	const Unique<VkFence>	fence		(createFence(vk, device, &fenceInfo));
-
-	const VkSubmitInfo		submitInfo	=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType				sType;
-		DE_NULL,						// const void*					pNext;
-		0u,								// uint32_t						waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*			pWaitSemaphores;
-		DE_NULL,						// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,								// uint32_t						commandBufferCount;
-		&commandBuffer,					// const VkCommandBuffer*		pCommandBuffers;
-		0u,								// uint32_t						signalSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*			pSignalSemaphores;
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
 }
 
 Move<VkQueryPool> makeQueryPool (const DeviceInterface& vk, const VkDevice device, VkQueryPipelineStatisticFlags statisticFlags)
@@ -325,15 +297,15 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 	const VkQueue						queue					= m_context.getUniversalQueue();
 	const VkBufferMemoryBarrier			computeFinishBarrier	=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			destQueueFamilyIndex;
-		buffer->object(),							// VkBuffer			buffer;
-		0ull,										// VkDeviceSize		offset;
-		bufferSizeBytes,							// VkDeviceSize		size;
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType	sType;
+		DE_NULL,													// const void*		pNext;
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,									// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			destQueueFamilyIndex;
+		buffer->object(),											// VkBuffer			buffer;
+		0ull,														// VkDeviceSize		offset;
+		bufferSizeBytes,											// VkDeviceSize		size;
 	};
 
 	for(size_t parametersNdx = 0u; parametersNdx < m_parameters.size(); ++parametersNdx)
@@ -443,28 +415,28 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 
 	const VkBufferMemoryBarrier				computeShaderWriteBarrier	=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			destQueueFamilyIndex;
-		buffer->object(),							// VkBuffer			buffer;
-		0ull,										// VkDeviceSize		offset;
-		bufferSizeBytes,							// VkDeviceSize		size;
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType	sType;
+		DE_NULL,													// const void*		pNext;
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			destQueueFamilyIndex;
+		buffer->object(),											// VkBuffer			buffer;
+		0ull,														// VkDeviceSize		offset;
+		bufferSizeBytes,											// VkDeviceSize		size;
 	};
 
 	const VkBufferMemoryBarrier				computeFinishBarrier		=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			destQueueFamilyIndex;
-		buffer->object(),							// VkBuffer			buffer;
-		0ull,										// VkDeviceSize		offset;
-		bufferSizeBytes,							// VkDeviceSize		size;
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType	sType;
+		DE_NULL,													// const void*		pNext;
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,									// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			destQueueFamilyIndex;
+		buffer->object(),											// VkBuffer			buffer;
+		0ull,														// VkDeviceSize		offset;
+		bufferSizeBytes,											// VkDeviceSize		size;
 	};
 
 	std::vector<VkShaderModuleSp>			shaderModule;
@@ -601,28 +573,28 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 
 	const VkBufferMemoryBarrier					computeShaderWriteBarrier		=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			destQueueFamilyIndex;
-		buffer->object(),							// VkBuffer			buffer;
-		0ull,										// VkDeviceSize		offset;
-		bufferSizeBytes,							// VkDeviceSize		size;
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType	sType;
+		DE_NULL,													// const void*		pNext;
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			destQueueFamilyIndex;
+		buffer->object(),											// VkBuffer			buffer;
+		0ull,														// VkDeviceSize		offset;
+		bufferSizeBytes,											// VkDeviceSize		size;
 	};
 
 	const VkBufferMemoryBarrier					computeFinishBarrier			=
 	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_SHADER_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			destQueueFamilyIndex;
-		buffer->object(),							// VkBuffer			buffer;
-		0ull,										// VkDeviceSize		offset;
-		bufferSizeBytes,							// VkDeviceSize		size;
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType	sType;
+		DE_NULL,													// const void*		pNext;
+		VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,									// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,									// deUint32			destQueueFamilyIndex;
+		buffer->object(),											// VkBuffer			buffer;
+		0ull,														// VkDeviceSize		offset;
+		bufferSizeBytes,											// VkDeviceSize		size;
 	};
 
 	std::vector<VkShaderModuleSp>				shaderModule;

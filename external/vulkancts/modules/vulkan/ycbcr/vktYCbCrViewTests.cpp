@@ -34,6 +34,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
@@ -70,53 +71,53 @@ VkFormat getPlaneCompatibleFormat (VkFormat multiPlanarFormat, deUint32 planeNdx
 {
 	switch (multiPlanarFormat)
 	{
-		case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR:
-		case VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR:
-		case VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR:
+		case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+		case VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM:
+		case VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM:
 			if (de::inRange(planeNdx, 0u, 2u))
 				return VK_FORMAT_R8_UNORM;
 
-		case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR:
-		case VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR:
+		case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM:
+		case VK_FORMAT_G8_B8R8_2PLANE_422_UNORM:
 			if (planeNdx == 0)
 				return VK_FORMAT_R8_UNORM;
 			else if (planeNdx == 1)
 				return VK_FORMAT_R8G8_UNORM;
 
-		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR:
-		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR:
-		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
 			if (de::inRange(planeNdx, 0u, 2u))
-				return VK_FORMAT_R10X6_UNORM_PACK16_KHR;
+				return VK_FORMAT_R10X6_UNORM_PACK16;
 
-		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR:
-		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16:
 			if (planeNdx == 0)
-				return VK_FORMAT_R10X6_UNORM_PACK16_KHR;
+				return VK_FORMAT_R10X6_UNORM_PACK16;
 			else if (planeNdx == 1)
-				return VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR;
+				return VK_FORMAT_R10X6G10X6_UNORM_2PACK16;
 
-		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR:
-		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR:
-		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
 			if (de::inRange(planeNdx, 0u, 2u))
-				return VK_FORMAT_R12X4_UNORM_PACK16_KHR;
+				return VK_FORMAT_R12X4_UNORM_PACK16;
 
-		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR:
-		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16:
+		case VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16:
 			if (planeNdx == 0)
-				return VK_FORMAT_R12X4_UNORM_PACK16_KHR;
+				return VK_FORMAT_R12X4_UNORM_PACK16;
 			else if (planeNdx == 1)
-				return VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR;
+				return VK_FORMAT_R12X4G12X4_UNORM_2PACK16;
 
-		case VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR:
-		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR:
-		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR:
+		case VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM:
+		case VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM:
+		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM:
 			if (de::inRange(planeNdx, 0u, 2u))
 				return VK_FORMAT_R16_UNORM;
 
-		case VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR:
-		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR:
+		case VK_FORMAT_G16_B16R16_2PLANE_420_UNORM:
+		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM:
 			if (planeNdx == 0)
 				return VK_FORMAT_R16_UNORM;
 			else if (planeNdx == 1)
@@ -161,11 +162,11 @@ Move<VkImageView> createImageView (const DeviceInterface&		vkd,
 								   VkImage						image,
 								   VkFormat						format,
 								   VkImageAspectFlagBits		imageAspect,
-								   VkSamplerYcbcrConversionKHR	conversion)
+								   VkSamplerYcbcrConversion		conversion)
 {
-	const VkSamplerYcbcrConversionInfoKHR	samplerConversionInfo	=
+	const VkSamplerYcbcrConversionInfo	samplerConversionInfo	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		conversion
 	};
@@ -351,24 +352,7 @@ void executeImageBarrier (const DeviceInterface&		vkd,
 
 	VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
 
-	{
-		const Unique<VkFence>	fence		(createFence(vkd, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&*cmdBuffer,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vkd.waitForFences(device, 1u, &*fence, VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 }
 
 struct TestParameters
@@ -496,25 +480,25 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 	if (imageAlias)
 		VK_CHECK(vkd.bindImageMemory(device, *imageAlias, allocations[params.planeNdx]->getMemory(), allocations[params.planeNdx]->getOffset()));
 
-	const VkSamplerYcbcrConversionCreateInfoKHR	conversionInfo	=
+	const VkSamplerYcbcrConversionCreateInfo	conversionInfo	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
 		DE_NULL,
 		format,
-		VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR,
-		VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR,
+		VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
+		VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
 		{
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 		},
-		VK_CHROMA_LOCATION_MIDPOINT_KHR,
-		VK_CHROMA_LOCATION_MIDPOINT_KHR,
+		VK_CHROMA_LOCATION_MIDPOINT,
+		VK_CHROMA_LOCATION_MIDPOINT,
 		VK_FILTER_NEAREST,
 		VK_FALSE,									// forceExplicitReconstruction
 	};
-	const Unique<VkSamplerYcbcrConversionKHR>	conversion	(createSamplerYcbcrConversionKHR(vkd, device, &conversionInfo));
+	const Unique<VkSamplerYcbcrConversion>		conversion	(createSamplerYcbcrConversion(vkd, device, &conversionInfo));
 	const Unique<VkImageView>					wholeView	(createImageView(vkd, device, *image, format, VK_IMAGE_ASPECT_COLOR_BIT, *conversion));
 	const Unique<VkImageView>					planeView	(createImageView(vkd,
 																			 device,
@@ -523,13 +507,13 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 																			 !imageAlias ? getPlaneAspect(params.planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT,
 																			 *conversion));
 
-	const VkSamplerYcbcrConversionInfoKHR		samplerConversionInfo	=
+	const VkSamplerYcbcrConversionInfo			samplerConversionInfo	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		*conversion,
 	};
-	const VkSamplerCreateInfo							wholeSamplerInfo		=
+	const VkSamplerCreateInfo					wholeSamplerInfo		=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		&samplerConversionInfo,
@@ -550,7 +534,7 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 		VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,	// borderColor
 		VK_FALSE,									// unnormalizedCoords
 	};
-	const VkSamplerCreateInfo							planeSamplerInfo		=
+	const VkSamplerCreateInfo					planeSamplerInfo		=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		DE_NULL,
@@ -717,7 +701,7 @@ void addPlaneViewCase (tcu::TestCaseGroup* group, const TestParameters& params)
 	name << de::toLower(de::toString(params.format).substr(10));
 
 	if ((params.viewType != TestParameters::VIEWTYPE_MEMORY_ALIAS) &&
-		((params.createFlags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0))
+		((params.createFlags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0))
 		name << "_disjoint";
 
 	name << "_plane_" << params.planeNdx;
@@ -730,7 +714,7 @@ void populateViewTypeGroup (tcu::TestCaseGroup* group, TestParameters::ViewType 
 	const glu::ShaderType		shaderType	= glu::SHADERTYPE_FRAGMENT;
 	const UVec2					size		(32, 58);
 	const VkImageCreateFlags	baseFlags	= (VkImageCreateFlags)VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
-											| (viewType == TestParameters::VIEWTYPE_MEMORY_ALIAS ? (VkImageCreateFlags)VK_IMAGE_CREATE_ALIAS_BIT_KHR : 0u);
+											| (viewType == TestParameters::VIEWTYPE_MEMORY_ALIAS ? (VkImageCreateFlags)VK_IMAGE_CREATE_ALIAS_BIT : 0u);
 
 	for (int formatNdx = VK_YCBCR_FORMAT_FIRST; formatNdx < VK_YCBCR_FORMAT_LAST; formatNdx++)
 	{
@@ -742,10 +726,10 @@ void populateViewTypeGroup (tcu::TestCaseGroup* group, TestParameters::ViewType 
 
 		for (int isDisjoint = 0; isDisjoint < 2; ++isDisjoint)
 		{
-			const VkImageCreateFlags	flags	= baseFlags | (isDisjoint == 1 ? (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR : 0u);
+			const VkImageCreateFlags	flags	= baseFlags | (isDisjoint == 1 ? (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT : 0u);
 
 			if ((viewType == TestParameters::VIEWTYPE_MEMORY_ALIAS) &&
-				((flags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) == 0))
+				((flags & VK_IMAGE_CREATE_DISJOINT_BIT) == 0))
 				continue; // Memory alias cases require disjoint planes
 
 			for (deUint32 planeNdx = 0; planeNdx < numPlanes; ++planeNdx)

@@ -281,26 +281,26 @@ enum LineOrientation
 	LINE_ORIENTATION_DIAGONAL,
 };
 
-const VkPointClippingBehaviorKHR invalidClippingBehavior = VK_POINT_CLIPPING_BEHAVIOR_KHR_LAST;
+const VkPointClippingBehavior invalidClippingBehavior = VK_POINT_CLIPPING_BEHAVIOR_LAST;
 
-VkPointClippingBehaviorKHR getClippingBehavior (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+VkPointClippingBehavior getClippingBehavior (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
 {
-	VkPhysicalDevicePointClippingPropertiesKHR	behaviorProperties	=
+	VkPhysicalDevicePointClippingProperties	behaviorProperties	=
 	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES_KHR,	// VkStructureType				sType
-		DE_NULL,															// void*						pNext
-		invalidClippingBehavior												// VkPointClippingBehaviorKHR	pointClippingBehavior
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES,	// VkStructureType				sType
+		DE_NULL,														// void*						pNext
+		invalidClippingBehavior											// VkPointClippingBehavior	pointClippingBehavior
 	};
-	VkPhysicalDeviceProperties2KHR				properties2;
+	VkPhysicalDeviceProperties2				properties2;
 
-	DE_ASSERT(getPointClippingBehaviorKHRName(invalidClippingBehavior) == DE_NULL);
+	DE_ASSERT(getPointClippingBehaviorName(invalidClippingBehavior) == DE_NULL);
 
 	deMemset(&properties2, 0, sizeof(properties2));
 
-	properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+	properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	properties2.pNext = &behaviorProperties;
 
-	vk.getPhysicalDeviceProperties2KHR(physicalDevice, &properties2);
+	vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
 	return behaviorProperties.pointClippingBehavior;
 }
@@ -573,15 +573,15 @@ tcu::TestStatus testLargePoints (Context& context)
 
 	bool pointClippingOutside = true;
 
-	if (de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2"))
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 	{
-		VkPointClippingBehaviorKHR clippingBehavior = getClippingBehavior(context.getInstanceInterface(), context.getPhysicalDevice());
+		VkPointClippingBehavior clippingBehavior = getClippingBehavior(context.getInstanceInterface(), context.getPhysicalDevice());
 
 		switch (clippingBehavior)
 		{
-			case VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES_KHR:		pointClippingOutside = true;				break;
-			case VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY_KHR:	pointClippingOutside = false;				break;
-			case invalidClippingBehavior:								TCU_FAIL("Clipping behavior read failure");	break;
+			case VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES:		pointClippingOutside = true;				break;
+			case VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY:	pointClippingOutside = false;				break;
+			case invalidClippingBehavior:							TCU_FAIL("Clipping behavior read failure");	break;
 			default:
 			{
 				TCU_FAIL("Unexpected clipping behavior reported");

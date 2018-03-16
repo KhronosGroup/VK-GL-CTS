@@ -27,6 +27,8 @@
 #include "tcuTestCase.hpp"
 #include "vkDefs.hpp"
 #include "deUniquePtr.hpp"
+#include "vkPrograms.hpp"
+#include "vkApiVersion.hpp"
 
 namespace glu
 {
@@ -36,8 +38,6 @@ struct ProgramSources;
 namespace vk
 {
 class PlatformInterface;
-class ProgramBinary;
-template<typename Program> class ProgramCollection;
 class Allocator;
 struct SourceCollections;
 }
@@ -50,36 +50,49 @@ class DefaultDevice;
 class Context
 {
 public:
-												Context							(tcu::TestContext&							testCtx,
-																				 const vk::PlatformInterface&				platformInterface,
-																				 vk::ProgramCollection<vk::ProgramBinary>&	progCollection);
+												Context							(tcu::TestContext&				testCtx,
+																				 const vk::PlatformInterface&	platformInterface,
+																				 vk::BinaryCollection&			progCollection);
 												~Context						(void);
 
 	tcu::TestContext&							getTestContext					(void) const { return m_testCtx;			}
 	const vk::PlatformInterface&				getPlatformInterface			(void) const { return m_platformInterface;	}
-	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection				(void) const { return m_progCollection;		}
+	vk::BinaryCollection&						getBinaryCollection				(void) const { return m_progCollection;		}
 
 	// Default instance & device, selected with --deqp-vk-device-id=N
+	deUint32									getAvailableInstanceVersion		(void) const;
 	const std::vector<std::string>&				getInstanceExtensions			(void) const;
 	vk::VkInstance								getInstance						(void) const;
 	const vk::InstanceInterface&				getInstanceInterface			(void) const;
 	vk::VkPhysicalDevice						getPhysicalDevice				(void) const;
+	deUint32									getDeviceVersion				(void) const;
 	const vk::VkPhysicalDeviceFeatures&			getDeviceFeatures				(void) const;
-	const vk::VkPhysicalDeviceFeatures2KHR&		getDeviceFeatures2				(void) const;
+	const vk::VkPhysicalDeviceFeatures2&		getDeviceFeatures2				(void) const;
+	const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&
+												getSamplerYCbCrConversionFeatures
+																				(void) const;
+	const vk::VkPhysicalDevice16BitStorageFeatures&
+												get16BitStorageFeatures			(void) const;
+	const vk::VkPhysicalDeviceVariablePointerFeatures&
+												getVariablePointerFeatures		(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;
 	const vk::DeviceInterface&					getDeviceInterface				(void) const;
 	deUint32									getUniversalQueueFamilyIndex	(void) const;
 	vk::VkQueue									getUniversalQueue				(void) const;
+	deUint32									getUsedApiVersion				(void) const;
 	deUint32									getSparseQueueFamilyIndex		(void) const;
 	vk::VkQueue									getSparseQueue					(void) const;
 	vk::Allocator&								getDefaultAllocator				(void) const;
+	bool										contextSupports					(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const;
+	bool										contextSupports					(const vk::ApiVersion version) const;
+	bool										contextSupports					(const deUint32 requiredApiVersionBits) const;
 
 protected:
 	tcu::TestContext&							m_testCtx;
 	const vk::PlatformInterface&				m_platformInterface;
-	vk::ProgramCollection<vk::ProgramBinary>&	m_progCollection;
+	vk::BinaryCollection&						m_progCollection;
 
 	const de::UniquePtr<DefaultDevice>			m_device;
 	const de::UniquePtr<vk::Allocator>			m_allocator;
@@ -88,7 +101,6 @@ private:
 												Context							(const Context&); // Not allowed
 	Context&									operator=						(const Context&); // Not allowed
 };
-
 
 class TestInstance;
 

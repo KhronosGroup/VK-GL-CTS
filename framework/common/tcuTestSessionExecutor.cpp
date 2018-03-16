@@ -47,14 +47,15 @@ static qpTestCaseType nodeTypeToTestCaseType (TestNodeType nodeType)
 }
 
 TestSessionExecutor::TestSessionExecutor (TestPackageRoot& root, TestContext& testCtx)
-	: m_testCtx			(testCtx)
-	, m_inflater		(testCtx)
-	, m_caseListFilter	(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()))
-	, m_iterator		(root, m_inflater, *m_caseListFilter)
-	, m_state			(STATE_TRAVERSE_HIERARCHY)
-	, m_abortSession	(false)
-	, m_isInTestCase	(false)
-	, m_testStartTime	(0)
+	: m_testCtx				(testCtx)
+	, m_inflater			(testCtx)
+	, m_caseListFilter		(testCtx.getCommandLine().createCaseListFilter(testCtx.getArchive()))
+	, m_iterator			(root, m_inflater, *m_caseListFilter)
+	, m_state				(STATE_TRAVERSE_HIERARCHY)
+	, m_abortSession		(false)
+	, m_isInTestCase		(false)
+	, m_testStartTime		(0)
+	, m_packageStartTime	(0)
 {
 }
 
@@ -89,7 +90,10 @@ bool TestSessionExecutor::iterate (void)
 						}
 
 						case NODETYPE_GROUP:
+						{
+							isEnter ? enterTestGroup(m_iterator.getNodePath()) : leaveTestGroup(m_iterator.getNodePath());
 							break; // nada
+						}
 
 						case NODETYPE_SELF_VALIDATE:
 						case NODETYPE_PERFORMANCE:
@@ -154,12 +158,35 @@ void TestSessionExecutor::enterTestPackage (TestPackage* testPackage)
 	// Create test case wrapper
 	DE_ASSERT(!m_caseExecutor);
 	m_caseExecutor = de::MovePtr<TestCaseExecutor>(testPackage->createExecutor());
+	m_packageStartTime	= deGetMicroseconds();
 }
 
 void TestSessionExecutor::leaveTestPackage (TestPackage* testPackage)
 {
 	DE_UNREF(testPackage);
 	m_caseExecutor.clear();
+	m_testCtx.getLog().startTestsCasesTime();
+
+	{
+		const deInt64 duration = deGetMicroseconds() - m_packageStartTime;
+		m_packageStartTime = 0;
+		m_testCtx.getLog() << TestLog::Integer(testPackage->getName(), "Total tests case duration in microseconds", "us", QP_KEY_TAG_TIME, duration);
+	}
+
+	for(std::map<std::string, deUint64>::iterator it=m_groupsDurationTime.begin(); it != m_groupsDurationTime.end(); ++it)
+		m_testCtx.getLog() << TestLog::Integer(it->first, "The test group case duration in microseconds", "us", QP_KEY_TAG_TIME, it->second);
+
+	m_testCtx.getLog().endTestsCasesTime();
+}
+
+void TestSessionExecutor::enterTestGroup (const std::string& casePath)
+{
+	m_groupsDurationTime[casePath] = deGetMicroseconds();
+}
+
+void TestSessionExecutor::leaveTestGroup (const std::string& casePath)
+{
+	m_groupsDurationTime[casePath] = deGetMicroseconds() - m_groupsDurationTime[casePath];
 }
 
 bool TestSessionExecutor::enterTestCase (TestCase* testCase, const std::string& casePath)

@@ -37,6 +37,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"

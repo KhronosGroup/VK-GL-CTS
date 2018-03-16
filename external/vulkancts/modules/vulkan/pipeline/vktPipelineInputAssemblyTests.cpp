@@ -34,6 +34,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deMath.h"
 #include "deMemory.h"
@@ -177,8 +178,6 @@ private:
 
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
-
-	Move<VkFence>						m_fence;
 };
 
 
@@ -1413,9 +1412,6 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 		vk.cmdEndRenderPass(*m_cmdBuffer);
 		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 	}
-
-	// Create fence
-	m_fence = createFence(vk, vkDevice);
 }
 
 InputAssemblyInstance::~InputAssemblyInstance (void)
@@ -1427,22 +1423,8 @@ tcu::TestStatus InputAssemblyInstance::iterate (void)
 	const DeviceInterface&		vk			= m_context.getDeviceInterface();
 	const VkDevice				vkDevice	= m_context.getDevice();
 	const VkQueue				queue		= m_context.getUniversalQueue();
-	const VkSubmitInfo			submitInfo	=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-		DE_NULL,						// const void*				pNext;
-		0u,								// deUint32					waitSemaphoreCount;
-		DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,
-		1u,								// deUint32					commandBufferCount;
-		&m_cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-		0u,								// deUint32					signalSemaphoreCount;
-		DE_NULL							// const VkSemaphore*		pSignalSemaphores;
-	};
 
-	VK_CHECK(vk.resetFences(vkDevice, 1, &m_fence.get()));
-	VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *m_fence));
-	VK_CHECK(vk.waitForFences(vkDevice, 1, &m_fence.get(), true, ~(0ull) /* infinity*/));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	return verifyImage();
 }

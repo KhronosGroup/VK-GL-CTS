@@ -39,6 +39,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
@@ -568,10 +569,8 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 {
 	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
 	{
-		const std::string extensionName("VK_KHR_dedicated_allocation");
-
-		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), extensionName))
-			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
 	}
 }
 
@@ -857,24 +856,7 @@ void ImageClearingTestInstance::endCommandBuffer (void) const
 
 void ImageClearingTestInstance::submitCommandBuffer (void) const
 {
-	const Unique<VkFence>					fence					(createFence(m_vkd, m_device));
-
-	const VkSubmitInfo						submitInfo				=
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,							// VkStructureType                sType;
-		DE_NULL,												// const void*                    pNext;
-		0u,														// deUint32                       waitSemaphoreCount;
-		DE_NULL,												// const VkSemaphore*             pWaitSemaphores;
-		DE_NULL,												// const VkPipelineStageFlags*    pWaitDstStageMask;
-		1u,														// deUint32                       commandBufferCount;
-		&(*m_commandBuffer),									// const VkCommandBuffer*         pCommandBuffers;
-		0u,														// deUint32                       signalSemaphoreCount;
-		DE_NULL													// const VkSemaphore*             pSignalSemaphores;
-	};
-
-	VK_CHECK(m_vkd.queueSubmit(m_queue, 1, &submitInfo, *fence));
-
-	VK_CHECK(m_vkd.waitForFences(m_device, 1, &fence.get(), VK_TRUE, ~0ull));
+	submitCommandsAndWait(m_vkd, m_device, m_queue, m_commandBuffer.get());
 }
 
 void ImageClearingTestInstance::pipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const
@@ -978,7 +960,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 
 	beginCommandBuffer(0);
 
-	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+	pipelineImageBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 						 VK_PIPELINE_STAGE_TRANSFER_BIT,
 						 VK_ACCESS_TRANSFER_WRITE_BIT,
 						 VK_ACCESS_TRANSFER_READ_BIT,
@@ -989,7 +971,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 	m_vkd.cmdPipelineBarrier(*m_commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 	pipelineImageBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-						 VK_PIPELINE_STAGE_TRANSFER_BIT,
+						 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
 						 VK_ACCESS_TRANSFER_READ_BIT,
 						 VK_ACCESS_TRANSFER_READ_BIT,
 						 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,

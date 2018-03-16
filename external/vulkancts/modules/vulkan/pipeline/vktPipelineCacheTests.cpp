@@ -35,10 +35,12 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deUniquePtr.hpp"
 #include "deMemory.h"
-#include "vkTypeUtil.hpp"
+#include "tcuTestLog.hpp"
 
 #include <sstream>
 #include <vector>
@@ -536,7 +538,6 @@ protected:
 
 	Move<VkCommandPool>     m_cmdPool;
 	Move<VkCommandBuffer>   m_cmdBuffer;
-	Move<VkFence>           m_fence;
 	Move<VkPipelineCache>   m_cache;
 };
 
@@ -554,9 +555,6 @@ CacheTestInstance::CacheTestInstance (Context&                 context,
 
 	// Create command buffer
 	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Create fence
-	m_fence = createFence(vk, vkDevice);
 
 	// Create the Pipeline Cache
 	{
@@ -585,23 +583,7 @@ tcu::TestStatus CacheTestInstance::iterate (void)
 
 	prepareCommandBuffer();
 
-	VK_CHECK(vk.resetFences(vkDevice, 1u, &m_fence.get()));
-
-	const VkSubmitInfo          submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,                      // VkStructureType             sType;
-		DE_NULL,                                            // const void*                 pNext;
-		0u,                                                 // deUint32                    waitSemaphoreCount;
-		DE_NULL,                                            // const VkSemaphore*          pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,               // const VkPipelineStageFlags* pWaitDstStageMask;
-		1u,                                                 // deUint32                    commandBufferCount;
-		&m_cmdBuffer.get(),                                 // const VkCommandBuffer*      pCommandBuffers;
-		0u,                                                 // deUint32                    signalSemaphoreCount;
-		DE_NULL,                                            // const VkSemaphore*          pSignalSemaphores;
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *m_fence));
-
-	VK_CHECK(vk.waitForFences(vkDevice, 1u, &m_fence.get(), true, ~(0ull) /* infinity*/));
+	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
 	return verifyTestResult();
 }
@@ -1113,7 +1095,7 @@ void GraphicsCacheTestInstance::prepareCommandBuffer (void)
 
 	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
 	prepareRenderPass(*m_framebuffer[PIPELINE_CACHE_NDX_NO_CACHE], *m_pipeline[PIPELINE_CACHE_NDX_NO_CACHE]);
@@ -1826,6 +1808,179 @@ InvalidSizeTestInstance::~InvalidSizeTestInstance (void)
 	delete[] m_zeroBlock;
 }
 
+class ZeroSizeTest : public GraphicsCacheTest
+{
+public:
+							ZeroSizeTest	(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+	virtual					~ZeroSizeTest	(void) {}
+	virtual TestInstance*	createInstance	(Context& context) const;
+};
+
+ZeroSizeTest::ZeroSizeTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, description, param)
+{
+}
+
+class ZeroSizeTestInstance : public GraphicsCacheTestInstance
+{
+public:
+							ZeroSizeTestInstance	(Context& context, const CacheTestParam* param);
+	virtual					~ZeroSizeTestInstance	(void);
+protected:
+	deUint8*				m_data;
+	deUint8*				m_zeroBlock;
+};
+
+TestInstance* ZeroSizeTest::createInstance (Context& context) const
+{
+	return new ZeroSizeTestInstance(context, &m_param);
+}
+
+ZeroSizeTestInstance::ZeroSizeTestInstance (Context& context, const CacheTestParam* param)
+	: GraphicsCacheTestInstance	(context, param)
+	, m_data					(DE_NULL)
+	, m_zeroBlock				(DE_NULL)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
+
+	// Create more pipeline caches
+	try
+	{
+		// Create a cache with init data from m_cache
+		size_t dataSize = 0u;
+
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
+
+		m_data = new deUint8[dataSize];
+		deMemset(m_data, 0, dataSize);
+		DE_ASSERT(m_data);
+
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data));
+
+		{
+			// Create a cache with initialDataSize = 0 & pInitialData != NULL
+			const VkPipelineCacheCreateInfo	pipelineCacheCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType             sType;
+				DE_NULL,										// const void*                 pNext;
+				0u,												// VkPipelineCacheCreateFlags  flags;
+				0u,												// deUintptr                   initialDataSize;
+				m_data,											// const void*                 pInitialData;
+			};
+
+			const Unique<VkPipelineCache>	pipelineCache			(createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo));
+		}
+	}
+	catch (...)
+	{
+		delete[] m_data;
+		delete[] m_zeroBlock;
+		throw;
+	}
+}
+
+ZeroSizeTestInstance::~ZeroSizeTestInstance (void)
+{
+	delete[] m_data;
+	delete[] m_zeroBlock;
+}
+
+class InvalidBlobTest : public GraphicsCacheTest
+{
+public:
+							InvalidBlobTest		(tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param);
+	virtual					~InvalidBlobTest	(void) {}
+	virtual TestInstance*	createInstance		(Context& context) const;
+};
+
+InvalidBlobTest::InvalidBlobTest (tcu::TestContext& testContext, const std::string& name, const std::string& description, const CacheTestParam* param)
+	: GraphicsCacheTest(testContext, name, description, param)
+{
+}
+
+class InvalidBlobTestInstance : public GraphicsCacheTestInstance
+{
+public:
+							InvalidBlobTestInstance		(Context& context, const CacheTestParam* param);
+	virtual					~InvalidBlobTestInstance	(void);
+protected:
+	deUint8*				m_data;
+	deUint8*				m_zeroBlock;
+};
+
+TestInstance* InvalidBlobTest::createInstance (Context& context) const
+{
+	return new InvalidBlobTestInstance(context, &m_param);
+}
+
+InvalidBlobTestInstance::InvalidBlobTestInstance (Context& context, const CacheTestParam* param)
+	: GraphicsCacheTestInstance	(context, param)
+	, m_data					(DE_NULL)
+	, m_zeroBlock				(DE_NULL)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			vkDevice	= m_context.getDevice();
+
+	// Create more pipeline caches
+	try
+	{
+		// Create a cache with init data from m_cache
+		size_t dataSize = 0u;
+
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
+
+		m_data = new deUint8[dataSize];
+		deMemset(m_data, 0, dataSize);
+		DE_ASSERT(m_data);
+
+		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data));
+
+		const struct
+		{
+			deUint32	offset;
+			std::string	name;
+		} headerLayout[] =
+		{
+			{ 4u,	"pipeline cache header version"	},
+			{ 8u,	"vendor ID"						},
+			{ 12u,	"device ID"						},
+			{ 16u,	"pipeline cache ID"				}
+		};
+
+		for (deUint32 i = 0u; i < DE_LENGTH_OF_ARRAY(headerLayout); i++)
+		{
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Creating pipeline cache using previously retrieved data with invalid " << headerLayout[i].name << tcu::TestLog::EndMessage;
+
+			m_data[headerLayout[i].offset] = (deUint8)(m_data[headerLayout[i].offset] + 13u);	// Add arbitrary number to create an invalid value
+
+			const VkPipelineCacheCreateInfo	pipelineCacheCreateInfo	=
+			{
+				VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,	// VkStructureType             sType;
+				DE_NULL,										// const void*                 pNext;
+				0u,												// VkPipelineCacheCreateFlags  flags;
+				dataSize,										// deUintptr                   initialDataSize;
+				m_data,											// const void*                 pInitialData;
+			};
+
+			const Unique<VkPipelineCache>	pipelineCache			(createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo));
+
+			m_data[headerLayout[i].offset] = (deUint8)(m_data[headerLayout[i].offset] - 13u);	// Return to original value
+		}
+	}
+	catch (...)
+	{
+		delete[] m_data;
+		delete[] m_zeroBlock;
+		throw;
+	}
+}
+
+InvalidBlobTestInstance::~InvalidBlobTestInstance (void)
+{
+	delete[] m_data;
+	delete[] m_zeroBlock;
+}
 } // anonymous
 
 tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
@@ -1981,6 +2136,16 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 		miscTests->addChild(new InvalidSizeTest(testCtx,
 												"invalid_size_test",
 												"Invalid size test.",
+												&testParam));
+
+		miscTests->addChild(new ZeroSizeTest(testCtx,
+											 "zero_size_test",
+											 "Zero size test.",
+											 &testParam));
+
+		miscTests->addChild(new InvalidBlobTest(testCtx,
+												"invalid_blob_test",
+												"Invalid cache blob test.",
 												&testParam));
 
 		cacheTests->addChild(miscTests.release());

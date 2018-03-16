@@ -27,8 +27,24 @@
 #define STATIC_LIB_NONE	0
 #define STATIC_LIB_ES20	1
 #define STATIC_LIB_ES30	2
+#define STATIC_LIB_ES31	3
+#define STATIC_LIB_ES32	4
 
-#if defined(DEQP_GLES3_DIRECT_LINK)
+#if defined(DEQP_GLES32_DIRECT_LINK)
+#	if (DE_OS == DE_OS_IOS)
+#		include <OpenGLES/ES32/gl.h>
+#	else
+#		include <GLES3/gl32.h>
+#	endif
+#	define STATIC_LIB STATIC_LIB_ES32
+#elif defined(DEQP_GLES31_DIRECT_LINK)
+#	if (DE_OS == DE_OS_IOS)
+#		include <OpenGLES/ES31/gl.h>
+#	else
+#		include <GLES3/gl31.h>
+#	endif
+#	define STATIC_LIB STATIC_LIB_ES31
+#elif defined(DEQP_GLES3_DIRECT_LINK)
 #	if (DE_OS == DE_OS_IOS)
 #		include <OpenGLES/ES3/gl.h>
 #	else
@@ -46,8 +62,6 @@
 #	define STATIC_LIB STATIC_LIB_NONE
 #endif
 
-// \todo [2014-03-14 pyry] ES3.1 support
-
 namespace eglu
 {
 
@@ -58,7 +72,11 @@ tcu::FunctionLibrary* createStaticESLibrary (void)
 #else
 	static const tcu::StaticFunctionLibrary::Entry s_functions[] =
 	{
-#if (STATIC_LIB == STATIC_LIB_ES30)
+#if (STATIC_LIB == STATIC_LIB_ES32)
+#	include "egluStaticES32Library.inl"
+#elif (STATIC_LIB == STATIC_LIB_ES31)
+#	include "egluStaticES31Library.inl"
+#elif (STATIC_LIB == STATIC_LIB_ES30)
 #	include "egluStaticES30Library.inl"
 #elif (STATIC_LIB == STATIC_LIB_ES20)
 #	include "egluStaticES20Library.inl"

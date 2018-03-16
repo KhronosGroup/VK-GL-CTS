@@ -23,9 +23,12 @@
 import os
 import argparse
 import tempfile
+import sys
 
 from build.common import *
 from build.build import *
+
+pythonExecutable = sys.executable or "python"
 
 class Environment:
 	def __init__ (self, srcDir, tmpDir):
@@ -51,7 +54,7 @@ class RunScript(BuildTestStep):
 		return self.scriptPath
 
 	def run (self, env):
-		args = ["python", os.path.join(env.srcDir, self.scriptPath)]
+		args = [pythonExecutable, os.path.join(env.srcDir, self.scriptPath)]
 
 		if self.getExtraArgs != None:
 			args += self.getExtraArgs(env)
@@ -135,8 +138,9 @@ def runSteps (steps):
 		else:
 			print "Skip: %s" % step.getName()
 
-COMMON_GCC_CFLAGS	= ["-Werror", "-Wno-error=unused-function"]
-COMMON_CLANG_CFLAGS	= COMMON_GCC_CFLAGS + ["-Wno-error=unused-command-line-argument"]
+COMMON_CFLAGS		= ["-Werror", "-Wno-error=unused-function"]
+COMMON_GCC_CFLAGS	= COMMON_CFLAGS + ["-Wno-implicit-fallthrough"]
+COMMON_CLANG_CFLAGS	= COMMON_CFLAGS + ["-Wno-error=unused-command-line-argument"]
 GCC_32BIT_CFLAGS	= COMMON_GCC_CFLAGS + ["-m32"]
 CLANG_32BIT_CFLAGS	= COMMON_CLANG_CFLAGS + ["-m32"]
 GCC_64BIT_CFLAGS	= COMMON_GCC_CFLAGS + ["-m64"]

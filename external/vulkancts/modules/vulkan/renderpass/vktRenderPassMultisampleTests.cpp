@@ -36,6 +36,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
@@ -709,15 +710,15 @@ Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
-									   VkDevice											device,
-									   VkFormat											srcFormat,
-									   VkRenderPass										renderPass,
-									   VkPipelineLayout									pipelineLayout,
-									   const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-									   deUint32											width,
-									   deUint32											height,
-									   deUint32											sampleCount)
+Move<VkPipeline> createRenderPipeline (const DeviceInterface&		vkd,
+									   VkDevice						device,
+									   VkFormat						srcFormat,
+									   VkRenderPass					renderPass,
+									   VkPipelineLayout				pipelineLayout,
+									   const vk::BinaryCollection&	binaryCollection,
+									   deUint32						width,
+									   deUint32						height,
+									   deUint32						sampleCount)
 {
 	const tcu::TextureFormat		format						(mapVkFormat(srcFormat));
 	const bool						isDepthStencilFormat		(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order));
@@ -976,15 +977,15 @@ Move<VkPipelineLayout> createSplitPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createSplitPipeline (const DeviceInterface&							vkd,
-									  VkDevice											device,
-									  VkRenderPass										renderPass,
-									  deUint32											subpassIndex,
-									  VkPipelineLayout									pipelineLayout,
-									  const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-									  deUint32											width,
-									  deUint32											height,
-									  deUint32											sampleCount)
+Move<VkPipeline> createSplitPipeline (const DeviceInterface&		vkd,
+									  VkDevice						device,
+									  VkRenderPass					renderPass,
+									  deUint32						subpassIndex,
+									  VkPipelineLayout				pipelineLayout,
+									  const vk::BinaryCollection&	binaryCollection,
+									  deUint32						width,
+									  deUint32						height,
+									  deUint32						sampleCount)
 {
 	const Unique<VkShaderModule>	vertexShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
 	const Unique<VkShaderModule>	fragmentShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-split-frag"), 0u));
@@ -1180,14 +1181,14 @@ Move<VkPipeline> createSplitPipeline (const DeviceInterface&							vkd,
 	return createGraphicsPipeline(vkd, device, DE_NULL, &createInfo);
 }
 
-vector<VkPipelineSp> createSplitPipelines (const DeviceInterface&							vkd,
-										 VkDevice											device,
-										 VkRenderPass										renderPass,
-										 VkPipelineLayout									pipelineLayout,
-										 const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-										 deUint32											width,
-										 deUint32											height,
-										 deUint32											sampleCount)
+vector<VkPipelineSp> createSplitPipelines (const DeviceInterface&		vkd,
+										 VkDevice						device,
+										 VkRenderPass					renderPass,
+										 VkPipelineLayout				pipelineLayout,
+										 const vk::BinaryCollection&	binaryCollection,
+										 deUint32						width,
+										 deUint32						height,
+										 deUint32						sampleCount)
 {
 	std::vector<VkPipelineSp> pipelines (deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT), (VkPipelineSp)0u);
 
@@ -1594,27 +1595,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 
-	{
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-
-			0u,
-			DE_NULL,
-			DE_NULL,
-
-			1u,
-			&*commandBuffer,
-
-			0u,
-			DE_NULL
-		};
-
-		VK_CHECK(vkd.queueSubmit(m_context.getUniversalQueue(), 1u, &submitInfo, (VkFence)0u));
-
-		VK_CHECK(vkd.queueWaitIdle(m_context.getUniversalQueue()));
-	}
+	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *commandBuffer);
 
 	{
 		const tcu::TextureFormat		format			(mapVkFormat(m_dstFormat));

@@ -32,6 +32,7 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuTextureUtil.hpp"
@@ -298,24 +299,7 @@ tcu::ConstPixelBufferAccess InvertedDepthRangesTestInstance::draw (const VkViewp
 	vk.endCommandBuffer(*cmdBuffer);
 
 	// Submit
-	{
-		const Unique<VkFence>	fence		(createFence(vk, device));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,				// VkStructureType                sType;
-			DE_NULL,									// const void*                    pNext;
-			0,											// uint32_t                       waitSemaphoreCount;
-			DE_NULL,									// const VkSemaphore*             pWaitSemaphores;
-			(const VkPipelineStageFlags*)DE_NULL,		// const VkPipelineStageFlags*    pWaitDstStageMask;
-			1,											// uint32_t                       commandBufferCount;
-			&cmdBuffer.get(),							// const VkCommandBuffer*         pCommandBuffers;
-			0,											// uint32_t                       signalSemaphoreCount;
-			DE_NULL										// const VkSemaphore*             pSignalSemaphores;
-		};
-
-		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), VK_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	// Get result
 	{

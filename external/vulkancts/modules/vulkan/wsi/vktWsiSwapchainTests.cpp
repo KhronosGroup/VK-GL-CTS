@@ -87,6 +87,7 @@ void checkAllSupported (const Extensions& supportedExtensions, const vector<stri
 }
 
 Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
+										deUint32						version,
 										const Extensions&				supportedExtensions,
 										Type							wsiType,
 										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
@@ -111,7 +112,7 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 
 	checkAllSupported(supportedExtensions, extensions);
 
-	return createDefaultInstance(vkp, vector<string>(), extensions, pAllocator);
+	return vk::createDefaultInstance(vkp, version, vector<string>(), extensions, pAllocator);
 }
 
 VkPhysicalDeviceFeatures getDeviceFeaturesForWsi (void)
@@ -207,6 +208,7 @@ struct InstanceHelper
 		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
 																	  DE_NULL))
 		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
+													   context.getUsedApiVersion(),
 													   supportedExtensions,
 													   wsiType,
 													   pAllocator))

@@ -245,8 +245,6 @@ protected:
 	static const vk::VkDeviceSize		s_vertexIndexBufferSize;
 	static const deUint16				s_vertexIndices[6];
 
-	vk::Move<vk::VkFence>				m_fence;
-
 	vk::Move<vk::VkBuffer>				m_resultBuffer;
 	de::MovePtr<vk::Allocation>			m_resultBufferMemory;
 	const vk::VkDeviceSize				m_resultBufferSize;

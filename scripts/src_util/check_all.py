@@ -20,36 +20,39 @@
 #
 #-------------------------------------------------------------------------
 
-import sys
-from argparse import ArgumentParser
-from common import getChangedFiles, getAllProjectFiles
-from check_include_guards import checkIncludeGuards
-from check_whitespace import checkWhitespace
-from check_license import checkLicense
-from check_invalid_literals import checkInvalidLiterals
+import	sys
+from	argparse				import	ArgumentParser
+from	common					import	getChangedFiles, getAllProjectFiles
+from	check_include_guards	import	checkIncludeGuards
+from	check_whitespace		import	checkWhitespace
+from	check_license			import	checkLicense
+from	check_boms				import	checkBOMs
+from	check_invalid_literals	import	checkInvalidLiterals
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("-e", "--only-errors",  action="store_true", dest="onlyErrors",   default=False, help="Print only on error")
-    parser.add_argument("-i", "--only-changed", action="store_true", dest="useGitIndex",  default=False, help="Check only modified files. Uses git.")
+	parser = ArgumentParser()
+	parser.add_argument("-e",	"--only-errors",	action="store_true",	dest="onlyErrors",		default=False,	help="Print only on error")
+	parser.add_argument("-i",	"--only-changed",	action="store_true",	dest="useGitIndex",		default=False,	help="Check only modified files. Uses git.")
+	parser.add_argument("-b",	"--fix-bom",		action="store_true",	dest="fixBOMs",			default=False,	help="Attempt to fix BOMs")
 
-    args = parser.parse_args()
+	args = parser.parse_args()
 
-    if args.useGitIndex:
-        files = getChangedFiles()
-    else:
-        files = getAllProjectFiles()
+	if args.useGitIndex:
+		files = getChangedFiles()
+	else:
+		files = getAllProjectFiles()
 
-    error = not all([
-        checkWhitespace(files),
-        checkIncludeGuards(files),
-        checkLicense(files),
-        checkInvalidLiterals(files),
-        #todo checkRedundantIncludeGuards(files),
-        ])
+	error = not all([
+		checkBOMs(files, args.fixBOMs),
+		checkWhitespace(files),
+		checkIncludeGuards(files),
+		checkLicense(files),
+		checkInvalidLiterals(files),
+		#todo checkRedundantIncludeGuards(files),
+		])
 
-    if error:
-        print "One or more checks failed"
-        sys.exit(1)
-    if not args.onlyErrors:
-        print "All checks passed"
+	if	error:
+		print	"One or more checks failed"
+		sys.exit(1)
+	if	not	args.onlyErrors:
+		print	"All checks passed"

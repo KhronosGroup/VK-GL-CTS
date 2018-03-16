@@ -42,6 +42,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include <map>
 #include <set>
@@ -1838,25 +1839,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	// Submit the command buffer
-	{
-		const Unique<vk::VkFence> fence(vk::createFence(vk, device));
-
-		const VkSubmitInfo			submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,	// VkStructureType			sType;
-			DE_NULL,						// const void*				pNext;
-			0u,								// deUint32					waitSemaphoreCount;
-			DE_NULL,						// const VkSemaphore*		pWaitSemaphores;
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,								// deUint32					commandBufferCount;
-			&cmdBuffer.get(),				// const VkCommandBuffer*	pCommandBuffers;
-			0u,								// deUint32					signalSemaphoreCount;
-			DE_NULL							// const VkSemaphore*		pSignalSemaphores;
-		};
-
-		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	// Read back the results
 	tcu::Surface surface(RENDER_WIDTH, RENDER_HEIGHT);

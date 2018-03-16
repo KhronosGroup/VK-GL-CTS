@@ -34,6 +34,8 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkDeviceUtil.hpp"
+#include "vkPlatform.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVectorUtil.hpp"
@@ -70,6 +72,19 @@ using std::string;
 typedef de::SharedPtr<Allocation>				AllocationSp;
 typedef de::SharedPtr<vk::Unique<VkBuffer> >	VkBufferSp;
 
+Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, deUint32 version, const char* extensionName)
+{
+	const vector<VkExtensionProperties>	instanceExts	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	vector<string>						enabledExts;
+
+	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
+		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
+
+	enabledExts.push_back(extensionName);
+
+	return vk::createDefaultInstance(vkp, version, vector<string>() /* layers */, enabledExts);
+}
+
 Move<VkImage> createTestImage (const DeviceInterface&	vkd,
 							   VkDevice					device,
 							   VkFormat					format,
@@ -104,11 +119,11 @@ Move<VkImageView> createImageView (const DeviceInterface&		vkd,
 								   VkDevice						device,
 								   VkImage						image,
 								   VkFormat						format,
-								   VkSamplerYcbcrConversionKHR	conversion)
+								   VkSamplerYcbcrConversion		conversion)
 {
-	const VkSamplerYcbcrConversionInfoKHR	conversionInfo	=
+	const VkSamplerYcbcrConversionInfo		conversionInfo	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		conversion
 	};
@@ -134,11 +149,11 @@ Move<VkImageView> createImageView (const DeviceInterface&		vkd,
 
 Move<VkDescriptorSetLayout> createDescriptorSetLayout (const DeviceInterface& vkd, VkDevice device, VkSampler sampler)
 {
-	const VkDescriptorSetLayoutBinding		binding		=
+	const VkDescriptorSetLayoutBinding		binding			=
 	{
-		0u,												// binding
+		0u,													// binding
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		1u,												// descriptorCount
+		1u,													// descriptorCount
 		VK_SHADER_STAGE_ALL,
 		&sampler
 	};
@@ -180,10 +195,10 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface&	vkd,
 										   VkImageView				imageView,
 										   VkSampler				sampler)
 {
-	Move<VkDescriptorSet>	descSet;
+	Move<VkDescriptorSet>					descSet;
 
 	{
-		const VkDescriptorSetAllocateInfo	allocInfo	=
+		const VkDescriptorSetAllocateInfo	allocInfo			=
 		{
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 			DE_NULL,
@@ -196,13 +211,13 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface&	vkd,
 	}
 
 	{
-		const VkDescriptorImageInfo		imageInfo			=
+		const VkDescriptorImageInfo			imageInfo			=
 		{
 			sampler,
 			imageView,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		};
-		const VkWriteDescriptorSet		descriptorWrite		=
+		const VkWriteDescriptorSet			descriptorWrite		=
 		{
 			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 			DE_NULL,
@@ -295,43 +310,44 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 {
 	checkSupport(context, params);
 
-	const DeviceInterface&				vkd				= context.getDeviceInterface();
-	const VkDevice						device			= context.getDevice();
+	const DeviceInterface&					vkd						= context.getDeviceInterface();
+	const VkDevice							device					= context.getDevice();
 
-	const VkFormat						format			= params.format;
-	const PlanarFormatDescription		formatInfo		= getPlanarFormatDescription(format);
-	const UVec2							size			= params.size;
-	const VkImageCreateFlags			createFlags		= params.flags;
-	const VkImageTiling					tiling			= params.tiling;
-	const bool							mappedMemory	= params.useMappedMemory;
+	const VkFormat							format					= params.format;
+	const PlanarFormatDescription			formatInfo				= getPlanarFormatDescription(format);
+	const UVec2								size					= params.size;
+	const VkImageCreateFlags				createFlags				= params.flags;
+	const VkImageTiling						tiling					= params.tiling;
+	const bool								mappedMemory			= params.useMappedMemory;
 
-	const Unique<VkImage>				image			(createTestImage(vkd, device, format, size, createFlags, tiling, mappedMemory ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED));
-	const vector<AllocationSp>			allocations		(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags, mappedMemory ? MemoryRequirement::HostVisible : MemoryRequirement::Any));
+	const Unique<VkImage>					image					(createTestImage(vkd, device, format, size, createFlags, tiling, mappedMemory ? VK_IMAGE_LAYOUT_PREINITIALIZED : VK_IMAGE_LAYOUT_UNDEFINED));
+	const vector<AllocationSp>				allocations				(allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags, mappedMemory ? MemoryRequirement::HostVisible : MemoryRequirement::Any));
 
-	const VkSamplerYcbcrConversionCreateInfoKHR			conversionInfo			=
+	const VkSamplerYcbcrConversionCreateInfo
+											conversionInfo			=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
 		DE_NULL,
 		format,
-		VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR,
-		VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR,
+		VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
+		VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
 		{
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 		},
-		VK_CHROMA_LOCATION_MIDPOINT_KHR,
-		VK_CHROMA_LOCATION_MIDPOINT_KHR,
+		VK_CHROMA_LOCATION_MIDPOINT,
+		VK_CHROMA_LOCATION_MIDPOINT,
 		VK_FILTER_NEAREST,
 		VK_FALSE,									// forceExplicitReconstruction
 	};
-	const Unique<VkSamplerYcbcrConversionKHR>			conversion				(createSamplerYcbcrConversionKHR(vkd, device, &conversionInfo));
-	const Unique<VkImageView>							imageView				(createImageView(vkd, device, *image, format, *conversion));
+	const Unique<VkSamplerYcbcrConversion>	conversion				(createSamplerYcbcrConversion(vkd, device, &conversionInfo));
+	const Unique<VkImageView>				imageView				(createImageView(vkd, device, *image, format, *conversion));
 
-	const VkSamplerYcbcrConversionInfoKHR	samplerConversionInfo	=
+	const VkSamplerYcbcrConversionInfo		samplerConversionInfo	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		*conversion,
 	};
@@ -358,13 +374,56 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 		VK_FALSE,									// unnormalizedCoords
 	};
 
-	const Unique<VkSampler>				sampler		(createSampler(vkd, device, &samplerInfo));
+	const Unique<VkSampler>					sampler					(createSampler(vkd, device, &samplerInfo));
 
-	const Unique<VkDescriptorSetLayout>	descLayout	(createDescriptorSetLayout(vkd, device, *sampler));
-	const Unique<VkDescriptorPool>		descPool	(createDescriptorPool(vkd, device));
-	const Unique<VkDescriptorSet>		descSet		(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView, *sampler));
+	const Unique<VkDescriptorSetLayout>		descLayout				(createDescriptorSetLayout(vkd, device, *sampler));
+	const Unique<VkDescriptorPool>			descPool				(createDescriptorPool(vkd, device));
+	const Unique<VkDescriptorSet>			descSet					(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView, *sampler));
 
-	MultiPlaneImageData					imageData	(format, size);
+	MultiPlaneImageData						imageData				(format, size);
+
+	const VkPhysicalDeviceImageFormatInfo2			imageFormatInfo	=
+	{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+		DE_NULL,
+		params.format,
+		VK_IMAGE_TYPE_2D,
+		params.tiling,
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT,
+		params.flags,
+	};
+	VkSamplerYcbcrConversionImageFormatProperties		ycbcrProperties =
+	{
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES,
+		DE_NULL,
+		0,
+	};
+	VkImageFormatProperties2				extProperties =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+		&ycbcrProperties,
+		{
+			{
+				0,	// width
+				0,	// height
+				0,	// depth
+			},
+			0u,		// maxMipLevels
+			0u,		// maxArrayLayers
+			0,		// sampleCounts
+			0u,		// maxResourceSize
+		},
+	};
+	VkResult				propsResult;
+	const PlatformInterface&		vkp			= context.getPlatformInterface();
+	const Unique<VkInstance>		instance		(createInstanceWithExtension(vkp, context.getUsedApiVersion(), "VK_KHR_get_physical_device_properties2"));
+	const InstanceDriver			vki			(vkp, *instance);
+
+	// Verify that a yuv image consumes at least one descriptor
+	propsResult = vki.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo, &extProperties);
+
+	TCU_CHECK(propsResult == VK_SUCCESS);
+	TCU_CHECK(ycbcrProperties.combinedImageSamplerDescriptorCount >= 1);
 
 	// Prepare texture data
 	fillGradient(&imageData, Vec4(0.0f), Vec4(1.0f));
@@ -513,14 +572,14 @@ void populatePerFormatGroup (tcu::TestCaseGroup* group, VkFormat format)
 		addFunctionCaseWithPrograms(group, name, "", initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, false));
 
 		if (getPlaneCount(format) > 1)
-			addFunctionCaseWithPrograms(group, name + "_disjoint", "", initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR, tiling, shaderType, false));
+			addFunctionCaseWithPrograms(group, name + "_disjoint", "", initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, false));
 
 		if (tiling == VK_IMAGE_TILING_LINEAR)
 		{
 			addFunctionCaseWithPrograms(group, name + "_mapped", "", initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, true));
 
 			if (getPlaneCount(format) > 1)
-				addFunctionCaseWithPrograms(group, name + "_disjoint_mapped", "", initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR, tiling, shaderType, true));
+				addFunctionCaseWithPrograms(group, name + "_disjoint_mapped", "", initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, true));
 		}
 	}
 }

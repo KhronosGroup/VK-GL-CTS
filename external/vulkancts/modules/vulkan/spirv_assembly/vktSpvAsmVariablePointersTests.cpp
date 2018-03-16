@@ -99,17 +99,12 @@ void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* dst, int 
 //
 // This method finds the correct offset from the base of a vector<float32> given the indexes into the structure.
 // Returns the index in the inclusive range of 0 and 63. Each unit of the offset represents offset by the size of a 32-bit float.
-deUint32 getBaseOffset(	deUint32 indexOuterStruct,
-						deUint32 indexMatrixRow,
+deUint32 getBaseOffset (deUint32 indexMatrixRow,
 						deUint32 indexMatrixCol,
 						deUint32 indexInnerStruct,
 						deUint32 indexVec4Array,
 						deUint32 indexVec4)
 {
-	// index into the outer structure must be zero since the outer structure has only 1 member.
-	if(indexOuterStruct != 0)
-		DE_ASSERT(indexOuterStruct == 0);
-
 	DE_ASSERT(indexMatrixRow < 2);
 	DE_ASSERT(indexMatrixCol < 2);
 	DE_ASSERT(indexInnerStruct < 2);
@@ -154,7 +149,7 @@ deUint32 getBaseOffset(	deUint32 indexOuterStruct,
 //
 // This method finds the correct offset from the base of a vector<float32> given the indexes into the structure.
 // Returns the index in the inclusive range of 0 and 127.
-deUint32 getBaseOffsetForSingleInputBuffer(	deUint32 indexOuterStruct,
+deUint32 getBaseOffsetForSingleInputBuffer (deUint32 indexOuterStruct,
 											deUint32 indexMatrixRow,
 											deUint32 indexMatrixCol,
 											deUint32 indexInnerStruct,
@@ -168,8 +163,8 @@ deUint32 getBaseOffsetForSingleInputBuffer(	deUint32 indexOuterStruct,
 	DE_ASSERT(indexVec4Array < 2);
 	DE_ASSERT(indexVec4 < 4);
 
-	// Get the offset assuming you have only one outer_struct. (use index 0 for outer_struct)
-	deUint32 offset = getBaseOffset(0, indexMatrixRow, indexMatrixCol, indexInnerStruct, indexVec4Array, indexVec4);
+	// Get the offset assuming you have only one outer_struct.
+	deUint32 offset = getBaseOffset(indexMatrixRow, indexMatrixCol, indexInnerStruct, indexVec4Array, indexVec4);
 
 	// If the second outer structure (b) is chosen in the input_buffer, we need to add an offset of 64 since
 	// each outer_struct contains 64 floats.
@@ -1850,8 +1845,10 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGroup*
 
 		for (int indexLevel = 0; indexLevel < numLevels; ++indexLevel)
 		{
-			baseOffset						= getBaseOffset(indexesForLevel[indexLevel][0],
-															indexesForLevel[indexLevel][1],
+			// index into the outer structure must be zero since the outer structure has only 1 member.
+			DE_ASSERT(indexesForLevel[indexLevel][0] == 0);
+
+			baseOffset						= getBaseOffset(indexesForLevel[indexLevel][1],
 															indexesForLevel[indexLevel][2],
 															indexesForLevel[indexLevel][3],
 															indexesForLevel[indexLevel][4],

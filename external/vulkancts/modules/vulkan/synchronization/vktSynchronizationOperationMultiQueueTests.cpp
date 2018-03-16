@@ -31,6 +31,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPlatform.hpp"
+#include "vkCmdUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuTestLog.hpp"
 #include "vktSynchronizationUtil.hpp"
@@ -118,24 +119,18 @@ public:
 		}
 
 		{
-			const std::vector<std::string>&	deviceExtensions	= context.getDeviceExtensions();
-			std::vector<const char*>		charDevExtensions;
-
-			for (size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
-				charDevExtensions.push_back(deviceExtensions[ndx].c_str());
-
 			const VkDeviceCreateInfo		deviceInfo		=
 			{
-				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,			//VkStructureType					sType;
-				DE_NULL,										//const void*						pNext;
-				0u,												//VkDeviceCreateFlags				flags;
-				static_cast<deUint32>(queueInfos.size()),		//deUint32							queueCreateInfoCount;
-				&queueInfos[0],									//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
-				0u,												//deUint32							enabledLayerCount;
-				DE_NULL,										//const char* const*				ppEnabledLayerNames;
-				static_cast<deUint32>(deviceExtensions.size()),	//deUint32							enabledExtensionCount;
-				&charDevExtensions[0],							//const char* const*				ppEnabledExtensionNames;
-				&context.getDeviceFeatures()					//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
+				VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							//VkStructureType					sType;
+				DE_NULL,														//const void*						pNext;
+				0u,																//VkDeviceCreateFlags				flags;
+				static_cast<deUint32>(queueInfos.size()),						//deUint32							queueCreateInfoCount;
+				&queueInfos[0],													//const VkDeviceQueueCreateInfo*	pQueueCreateInfos;
+				0u,																//deUint32							enabledLayerCount;
+				DE_NULL,														//const char* const*				ppEnabledLayerNames;
+				0u,																//deUint32							enabledExtensionCount;
+				DE_NULL,														//const char* const*				ppEnabledExtensionNames;
+				&context.getDeviceFeatures()									//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
 			m_logicalDevice	= createDevice(instance, physicalDevice, &deviceInfo);
@@ -238,7 +233,7 @@ void createBarrierMultiQueue (const DeviceInterface&	vk,
 {
 	if (resource.getType() == RESOURCE_TYPE_IMAGE)
 	{
-		VkImageMemoryBarrier barrier = makeImageMemoryBarrier(writeSync.accessMask, readSync.accessMask,
+		VkImageMemoryBarrier barrier = makeImageMemoryBarrier(secondQueue ? 0u : writeSync.accessMask, !secondQueue ? 0u : readSync.accessMask,
 			writeSync.imageLayout, readSync.imageLayout, resource.getImage().handle, resource.getImage().subresourceRange);
 
 		if (writeFamily != readFamily && VK_SHARING_MODE_EXCLUSIVE == sharingMode)
@@ -248,12 +243,18 @@ void createBarrierMultiQueue (const DeviceInterface&	vk,
 			if (secondQueue)
 			{
 				barrier.oldLayout		= barrier.newLayout;
-				barrier.srcAccessMask	= barrier.dstAccessMask;
+				barrier.srcAccessMask	= 0u;
 			}
-			vk.cmdPipelineBarrier(cmdBuffer, writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
+			vk.cmdPipelineBarrier(cmdBuffer, secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT) : writeSync.stageMask,
+					!secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT) : readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL,
+					0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
 		}
 		else if (!secondQueue)
-			vk.cmdPipelineBarrier(cmdBuffer, writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
+		{
+			vk.cmdPipelineBarrier(cmdBuffer, secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT) : writeSync.stageMask,
+					!secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT) : readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL,
+					0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);
+		}
 	}
 	else if ((resource.getType() == RESOURCE_TYPE_BUFFER || isIndirectBuffer(resource.getType()))	&&
 			 writeFamily != readFamily																&&
@@ -263,15 +264,15 @@ void createBarrierMultiQueue (const DeviceInterface&	vk,
 		{
 			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
 			DE_NULL,									// const void*		pNext;
-			writeSync.accessMask ,						// VkAccessFlags	srcAccessMask;
-			readSync.accessMask,						// VkAccessFlags	dstAccessMask;
+			secondQueue ? 0u : writeSync.accessMask ,	// VkAccessFlags	srcAccessMask;
+			!secondQueue ? 0u : readSync.accessMask,	// VkAccessFlags	dstAccessMask;
 			writeFamily,								// deUint32			srcQueueFamilyIndex;
 			readFamily,									// deUint32			destQueueFamilyIndex;
 			resource.getBuffer().handle,				// VkBuffer			buffer;
 			resource.getBuffer().offset,				// VkDeviceSize		offset;
 			resource.getBuffer().size,					// VkDeviceSize		size;
 		};
-		vk.cmdPipelineBarrier(cmdBuffer, writeSync.stageMask, readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, (const VkBufferMemoryBarrier*)&barrier, 0u, (const VkImageMemoryBarrier *)DE_NULL);
+		vk.cmdPipelineBarrier(cmdBuffer, secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT) : writeSync.stageMask, !secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT) : readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, (const VkBufferMemoryBarrier*)&barrier, 0u, (const VkImageMemoryBarrier *)DE_NULL);
 	}
 }
 

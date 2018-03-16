@@ -1238,13 +1238,11 @@ void RectangleTest::makeGradient(Type (*unpack)(float))
 
 	// element size * elements in row * number of rows * number of 2d images
 	std::size_t bufferSize = elementSize * elementsInRow * rowCount * depth;
-	// need space for the skipped images as well
-	bufferSize *= depth;
 
 	m_gradient.resize(bufferSize);
 	Type* data = reinterpret_cast<Type*>(&m_gradient[0]);
 
-	std::size_t dataToSkip   = m_unpackProperties.skipImages * rowCount * elementsInRowNoAlign;
+	std::size_t dataToSkip   = m_unpackProperties.skipImages * rowCount * elementsInRow;
 	std::size_t index		 = dataToSkip;
 	const Type  defaultValue = unpack(0.5f);
 	std::fill(data, data + dataToSkip, defaultValue);

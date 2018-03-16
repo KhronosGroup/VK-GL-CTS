@@ -22,7 +22,7 @@
 
 from src_util import *
 
-GEN_VERSIONS = set(["2.0", "3.0"])
+GEN_VERSIONS = set(["2.0", "3.0", "3.1", "3.2"])
 
 def commandLibraryEntry (command):
 	return "\t{ \"%s\",\t(deFunctionPtr)%s }," % (command.name, command.name)

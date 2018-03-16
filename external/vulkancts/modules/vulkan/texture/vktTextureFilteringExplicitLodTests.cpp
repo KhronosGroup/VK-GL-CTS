@@ -38,6 +38,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTestLog.hpp"
@@ -485,21 +486,7 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 
 	VK_CHECK(vkd.endCommandBuffer(copyBuffer.get()));
 
-	const VkSubmitInfo copySubmitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		DE_NULL,
-		0,
-		DE_NULL,
-		DE_NULL,
-		1,
-		&(copyBuffer.get()),
-		0,
-		DE_NULL
-	};
-
-	VK_CHECK(vkd.queueSubmit(ctx.getUniversalQueue(), 1, &copySubmitInfo, 0));
-	VK_CHECK(vkd.queueWaitIdle(ctx.getUniversalQueue()));
+	submitCommandsAndWait(vkd, dev, ctx.getUniversalQueue(), copyBuffer.get());
 }
 
 struct TestCaseData
@@ -1276,7 +1263,7 @@ public:
 				{
 				    for (deUint32 derivNdx = 0; derivNdx < DE_LENGTH_OF_ARRAY(derivativePairs); ++derivNdx)
 					{
-						SampleArguments cur;
+						SampleArguments cur = SampleArguments();
 						cur.coord = Vec4((float)i / (float)(2 * m_testCase->m_dimensions[0]),
 										 (float)j / (float)(2 * m_testCase->m_dimensions[1]),
 										 0.0f, 0.0f);
@@ -1298,7 +1285,7 @@ public:
 				{
 					for (deUint32 lodNdx = 0; lodNdx < DE_LENGTH_OF_ARRAY(lodList); ++lodNdx)
 					{
-						SampleArguments cur;
+						SampleArguments cur = SampleArguments();
 						cur.coord = Vec4((float)i / (float)(2 * m_testCase->m_dimensions[0]),
 										 (float)j / (float)(2 * m_testCase->m_dimensions[1]),
 										 0.0f, 0.0f);

@@ -33,6 +33,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"

@@ -48,25 +48,28 @@ tcu::TestStatus basicOneFenceCase (Context& context)
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
+
 	const VkFenceCreateInfo			fenceInfo			=
-														{
-															VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType		sType;
-															DE_NULL,							 // const void*			pNext;
-															0u,									 // VkFenceCreateFlags	flags;
-														};
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType      sType;
+		DE_NULL,								// const void*          pNext;
+		0u,										// VkFenceCreateFlags   flags;
+	};
+
 	const Unique<VkFence>			fence				(createFence(vk, device, &fenceInfo));
+
 	const VkSubmitInfo				submitInfo			=
-														{
-															VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType			sType;
-															DE_NULL,							// const void*				pNext;
-															0u,									// deUint32					waitSemaphoreCount;
-															DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-															(const VkPipelineStageFlags*)DE_NULL,
-															1u,									// deUint32					commandBufferCount;
-															&cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-															0u,									// deUint32					signalSemaphoreCount;
-															DE_NULL,							// const VkSemaphore*		pSignalSemaphores;
-														};
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType                sType;
+		DE_NULL,								// const void*                    pNext;
+		0u,										// deUint32                       waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*             pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,	// const VkPipelineStageFlags*    pWaitDstStageMask;
+		1u,										// deUint32                       commandBufferCount;
+		&cmdBuffer.get(),						// const VkCommandBuffer*         pCommandBuffers;
+		0u,										// deUint32                       signalSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*             pSignalSemaphores;
+	};
 
 	if (VK_NOT_READY != vk.getFenceStatus(device, *fence))
 		return tcu::TestStatus::fail("Created fence should be in unsignaled state");
@@ -99,61 +102,78 @@ tcu::TestStatus basicOneFenceCase (Context& context)
 
 tcu::TestStatus basicMultiFenceCase (Context& context)
 {
-	enum{FISRT_FENCE=0,SECOND_FENCE};
+	enum
+	{
+		FIRST_FENCE = 0,
+		SECOND_FENCE
+	};
+
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,  queueFamilyIndex));
 	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
-	const VkFenceCreateInfo			fenceInfo			=
-														{
-															VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType		sType;
-															DE_NULL,							 // const void*			pNext;
-															0u,									 // VkFenceCreateFlags	flags;
-														};
-	const Move<VkFence>				ptrFence[2]			= { createFence(vk, device, &fenceInfo), createFence(vk, device, &fenceInfo) };
-	const VkFence					fence[2]			= { *ptrFence[FISRT_FENCE], *ptrFence[SECOND_FENCE] };
-	const VkCommandBufferBeginInfo	info				=
-														{
-															VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
-															DE_NULL,										// const void*                              pNext;
-															VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,	// VkCommandBufferUsageFlags                flags;
-															DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
-														};
-	const VkSubmitInfo				submitInfo			=
-														{
-															VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType			sType;
-															DE_NULL,							// const void*				pNext;
-															0u,									// deUint32					waitSemaphoreCount;
-															DE_NULL,							// const VkSemaphore*		pWaitSemaphores;
-															(const VkPipelineStageFlags*)DE_NULL,
-															1u,									// deUint32					commandBufferCount;
-															&cmdBuffer.get(),					// const VkCommandBuffer*	pCommandBuffers;
-															0u,									// deUint32					signalSemaphoreCount;
-															DE_NULL,							// const VkSemaphore*		pSignalSemaphores;
-														};
 
+	const VkFenceCreateInfo			fenceInfo			=
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType      sType;
+		DE_NULL,								// const void*          pNext;
+		0u,										// VkFenceCreateFlags   flags;
+	};
+
+	const Move<VkFence>				ptrFence[2]			=
+	{
+		createFence(vk, device, &fenceInfo),
+		createFence(vk, device, &fenceInfo)
+	};
+
+	const VkFence					fence[2]			=
+	{
+		*ptrFence[FIRST_FENCE],
+		*ptrFence[SECOND_FENCE]
+	};
+
+	const VkCommandBufferBeginInfo	info				=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
+		DE_NULL,										// const void*                              pNext;
+		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,	// VkCommandBufferUsageFlags                flags;
+		DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+	};
+
+	const VkSubmitInfo				submitInfo			=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType                sType;
+		DE_NULL,								// const void*                    pNext;
+		0u,										// deUint32                       waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*             pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,	// const VkPipelineStageFlags*    pWaitDstStageMask;
+		1u,										// deUint32                       commandBufferCount;
+		&cmdBuffer.get(),						// const VkCommandBuffer*         pCommandBuffers;
+		0u,										// deUint32                       signalSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*             pSignalSemaphores;
+	};
 
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &info));
 	endCommandBuffer(vk, *cmdBuffer);
 
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[FISRT_FENCE]));
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[FIRST_FENCE]));
 
-	if (VK_SUCCESS != vk.waitForFences(device, 1u, &fence[FISRT_FENCE], DE_FALSE, LONG_FENCE_WAIT))
+	if (VK_SUCCESS != vk.waitForFences(device, 1u, &fence[FIRST_FENCE], DE_FALSE, LONG_FENCE_WAIT))
 		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS");
 
-	if (VK_SUCCESS != vk.resetFences(device, 1u, &fence[FISRT_FENCE]))
+	if (VK_SUCCESS != vk.resetFences(device, 1u, &fence[FIRST_FENCE]))
 		return tcu::TestStatus::fail("Couldn't reset the fence");
 
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[FISRT_FENCE]));
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[FIRST_FENCE]));
 
-	if (VK_TIMEOUT != vk.waitForFences(device, 2u, &fence[FISRT_FENCE], DE_TRUE, SHORT_FENCE_WAIT))
+	if (VK_TIMEOUT != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_TRUE, SHORT_FENCE_WAIT))
 		return tcu::TestStatus::fail("vkWaitForFences should return VK_TIMEOUT");
 
 	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[SECOND_FENCE]));
 
-	if (VK_SUCCESS != vk.waitForFences(device, 2u, &fence[FISRT_FENCE], DE_TRUE, LONG_FENCE_WAIT))
+	if (VK_SUCCESS != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_TRUE, LONG_FENCE_WAIT))
 		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS");
 
 	return tcu::TestStatus::pass("Basic multi fence tests passed");
@@ -164,12 +184,14 @@ tcu::TestStatus emptySubmitCase (Context& context)
 	const DeviceInterface&			vk					= context.getDeviceInterface();
 	const VkDevice					device				= context.getDevice();
 	const VkQueue					queue				= context.getUniversalQueue();
+
 	const VkFenceCreateInfo			fenceCreateInfo		=
-														{
-															VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// VkStructureType       sType;
-															DE_NULL,									// const void*           pNext;
-															(VkFenceCreateFlags)0,						// VkFenceCreateFlags    flags;
-														};
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType       sType;
+		DE_NULL,								// const void*           pNext;
+		(VkFenceCreateFlags)0,					// VkFenceCreateFlags    flags;
+	};
+
 	const Unique<VkFence>			fence				(createFence(vk, device, &fenceCreateInfo));
 
 	VK_CHECK(vk.queueSubmit(queue, 0u, DE_NULL, *fence));
@@ -180,14 +202,87 @@ tcu::TestStatus emptySubmitCase (Context& context)
 	return tcu::TestStatus::pass("OK");
 }
 
+tcu::TestStatus basicMultiFenceWaitAllFalseCase (Context& context)
+{
+	enum
+	{
+		FIRST_FENCE = 0,
+		SECOND_FENCE
+	};
+
+	const DeviceInterface&			vk					= context.getDeviceInterface();
+	const VkDevice					device				= context.getDevice();
+	const VkQueue					queue				= context.getUniversalQueue();
+	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const Unique<VkCommandPool>		cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(vk, device, *cmdPool));
+
+	const VkFenceCreateInfo			fenceInfo			=
+	{
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType     sType;
+		DE_NULL,								// const void*         pNext;
+		0u,										// VkFenceCreateFlags  flags;
+	};
+
+	const Move<VkFence>				ptrFence[2]			=
+	{
+		createFence(vk, device, &fenceInfo),
+		createFence(vk, device, &fenceInfo)
+	};
+
+	const VkFence					fence[2]			=
+	{
+		*ptrFence[FIRST_FENCE],
+		*ptrFence[SECOND_FENCE]
+	};
+
+	const VkCommandBufferBeginInfo	info				=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
+		DE_NULL,										// const void*                              pNext;
+		VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,	// VkCommandBufferUsageFlags                flags;
+		DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
+	};
+
+	const VkSubmitInfo				submitInfo			=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType                sType;
+		DE_NULL,								// const void*                    pNext;
+		0u,										// deUint32                       waitSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*             pWaitSemaphores;
+		(const VkPipelineStageFlags*)DE_NULL,	// const VkPipelineStageFlags*    pWaitDstStageMask;
+		1u,										// deUint32                       commandBufferCount;
+		&cmdBuffer.get(),						// const VkCommandBuffer*         pCommandBuffers;
+		0u,										// deUint32                       signalSemaphoreCount;
+		DE_NULL,								// const VkSemaphore*             pSignalSemaphores;
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &info));
+	endCommandBuffer(vk, *cmdBuffer);
+
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[FIRST_FENCE]));
+	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, fence[SECOND_FENCE]));
+
+	// Wait for any fence
+	if (VK_SUCCESS != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_FALSE, LONG_FENCE_WAIT))
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS");
+
+	// Wait for all fences
+	if (VK_SUCCESS != vk.waitForFences(device, 2u, &fence[FIRST_FENCE], DE_TRUE, LONG_FENCE_WAIT))
+		return tcu::TestStatus::fail("vkWaitForFences should return VK_SUCCESS");
+
+	return tcu::TestStatus::pass("Basic multi fence test without waitAll passed");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createBasicFenceTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> basicFenceTests(new tcu::TestCaseGroup(testCtx, "fence", "Basic fence tests"));
-	addFunctionCase(basicFenceTests.get(),	 "one",				"Basic one fence tests",							basicOneFenceCase);
-	addFunctionCase(basicFenceTests.get(),	 "multi",			"Basic multi fence tests",							basicMultiFenceCase);
-	addFunctionCase(basicFenceTests.get(),	 "empty_submit",	"Signal a fence after an empty queue submission",	emptySubmitCase);
+	addFunctionCase(basicFenceTests.get(),	"one",					"Basic one fence tests",							basicOneFenceCase);
+	addFunctionCase(basicFenceTests.get(),	"multi",				"Basic multi fence tests",							basicMultiFenceCase);
+	addFunctionCase(basicFenceTests.get(),	"empty_submit",			"Signal a fence after an empty queue submission",	emptySubmitCase);
+	addFunctionCase(basicFenceTests.get(),	"multi_waitall_false",	"Basic multi fence test without waitAll",			basicMultiFenceWaitAllFalseCase);
 
 	return basicFenceTests.release();
 }

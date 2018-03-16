@@ -42,6 +42,28 @@ enum ComputeTestFeatures
 	COMPUTE_TEST_USES_FLOAT64
 };
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Test instance for compute pipeline
+ *
+ * The compute shader is specified in the format of SPIR-V assembly, which
+ * is allowed to access MAX_NUM_INPUT_BUFFERS input storage buffers and
+ * MAX_NUM_OUTPUT_BUFFERS output storage buffers maximally. The shader
+ * source and input/output data are given in a ComputeShaderSpec object.
+ *
+ * This instance runs the given compute shader by feeding the data from input
+ * buffers and compares the data in the output buffers with the expected.
+ *//*--------------------------------------------------------------------*/
+class SpvAsmComputeShaderInstance : public TestInstance
+{
+public:
+										SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features);
+	tcu::TestStatus						iterate						(void);
+
+private:
+	const ComputeShaderSpec&			m_shaderSpec;
+	const ComputeTestFeatures			m_features;
+};
+
 class SpvAsmComputeShaderCase : public TestCase
 {
 public:

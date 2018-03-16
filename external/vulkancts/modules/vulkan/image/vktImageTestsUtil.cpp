@@ -699,12 +699,12 @@ Move<VkImageView> makeImageView (const DeviceInterface&					vk,
 								 const VkImageViewType					imageViewType,
 								 const VkFormat							format,
 								 const VkImageSubresourceRange			subresourceRange,
-								 const VkImageViewUsageCreateInfoKHR*	ImageUsageCreateInfoKHR)
+								 const VkImageViewUsageCreateInfo*		ImageUsageCreateInfo)
 {
 	const VkImageViewCreateInfo imageViewParams =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,		// VkStructureType			sType;
-		ImageUsageCreateInfoKHR,						// const void*				pNext;
+		ImageUsageCreateInfo,							// const void*				pNext;
 		0u,												// VkImageViewCreateFlags	flags;
 		image,											// VkImage					image;
 		imageViewType,									// VkImageViewType			viewType;
@@ -775,16 +775,16 @@ VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask
 	return barrier;
 }
 
-VkImageViewUsageCreateInfoKHR makeImageViewUsageCreateInfo (const VkImageUsageFlags imageUsageFlags)
+VkImageViewUsageCreateInfo makeImageViewUsageCreateInfo (const VkImageUsageFlags imageUsageFlags)
 {
-	VkImageViewUsageCreateInfoKHR imageViewUsageCreateInfoKHR =
+	VkImageViewUsageCreateInfo imageViewUsageCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,	//VkStructureType		sType;
 		DE_NULL,											//const void*			pNext;
 		imageUsageFlags,									//VkImageUsageFlags		usage;
 	};
 
-	return imageViewUsageCreateInfoKHR;
+	return imageViewUsageCreateInfo;
 }
 
 VkSamplerCreateInfo makeSamplerCreateInfo ()
@@ -828,30 +828,6 @@ void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer comman
 void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
 {
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));
-}
-
-void submitCommandsAndWait (const DeviceInterface&	vk,
-							const VkDevice			device,
-							const VkQueue			queue,
-							const VkCommandBuffer	commandBuffer)
-{
-	const Unique<VkFence> fence(createFence(vk, device));
-
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-		DE_NULL,								// const void*					pNext;
-		0u,										// deUint32						waitSemaphoreCount;
-		DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
-		(const VkPipelineStageFlags*)DE_NULL,	// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,										// deUint32						commandBufferCount;
-		&commandBuffer,							// const VkCommandBuffer*		pCommandBuffers;
-		0u,										// deUint32						signalSemaphoreCount;
-		DE_NULL,								// const VkSemaphore*			pSignalSemaphores;
-	};
-
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
 }
 
 tcu::UVec3 getCompressedImageResolutionInBlocks (const vk::VkFormat format, const tcu::UVec3& size)

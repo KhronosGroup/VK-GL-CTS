@@ -35,6 +35,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
@@ -161,7 +162,8 @@ bool isDynamicDescriptorType (vk::VkDescriptorType type)
 	return type == vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC || type == vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 }
 
-void verifyDriverSupport(const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
+void verifyDriverSupport(const deUint32							apiVersion,
+						 const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 						 const std::vector<std::string>&		deviceExtensions,
 						 DescriptorUpdateMethod					updateMethod,
 						 vk::VkDescriptorType					descType,
@@ -180,7 +182,8 @@ void verifyDriverSupport(const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 		case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
 			extensionNames.push_back("VK_KHR_push_descriptor");
 		case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
-			extensionNames.push_back("VK_KHR_descriptor_update_template");
+			if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_descriptor_update_template"))
+				extensionNames.push_back("VK_KHR_descriptor_update_template");
 			break;
 
 		case DESCRIPTOR_UPDATE_METHOD_NORMAL:
@@ -391,9 +394,9 @@ void drawQuadrantReferenceResult (const tcu::PixelBufferAccess& dst, const tcu::
 	tcu::clear(tcu::getSubregion(dst, dst.getWidth() / 2,	dst.getHeight() / 2,	dst.getWidth() - dst.getWidth() / 2,	dst.getHeight() - dst.getHeight() / 2),	c4);
 }
 
-static const vk::VkDescriptorUpdateTemplateEntryKHR createTemplateBinding (deUint32 binding, deUint32 arrayElement, deUint32 descriptorCount, vk::VkDescriptorType descriptorType, size_t offset, size_t stride)
+static const vk::VkDescriptorUpdateTemplateEntry createTemplateBinding (deUint32 binding, deUint32 arrayElement, deUint32 descriptorCount, vk::VkDescriptorType descriptorType, size_t offset, size_t stride)
 {
-	const vk::VkDescriptorUpdateTemplateEntryKHR updateBinding =
+	const vk::VkDescriptorUpdateTemplateEntry updateBinding =
 	{
 		binding,
 		arrayElement,
@@ -749,8 +752,6 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 	const de::MovePtr<vk::Allocation>		bufferMemory				= allocateAndBindObjectMemory(m_vki, m_device, m_allocator, *buffer, vk::MemoryRequirement::HostVisible);
 
 	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(m_vki, m_device));
-	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 
 	// copy content to buffer
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
@@ -765,24 +766,7 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
-	// wait for transfer to complete
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-
-		VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, *cmdCompleteFence));
-	}
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(m_vki, m_device, m_queue, cmd.get());
 
 	dst.setStorage(m_targetFormat, m_targetSize.x(), m_targetSize.y());
 
@@ -835,8 +819,6 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 		};
 
 		const vk::Unique<vk::VkCommandBuffer>	cmd					(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-		const vk::Unique<vk::VkFence>			fence				(vk::createFence(m_vki, m_device));
-		const deUint64							infiniteTimeout		= ~(deUint64)0u;
 
 		VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0,
@@ -845,25 +827,8 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 								 1, &imageBarrier);
 		VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
-		{
-			const vk::VkSubmitInfo	submitInfo	=
-			{
-				vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-				DE_NULL,
-				0u,
-				(const vk::VkSemaphore*)0,
-				(const vk::VkPipelineStageFlags*)DE_NULL,
-				1u,
-				&cmd.get(),
-				0u,
-				(const vk::VkSemaphore*)0,
-			};
+		submitCommandsAndWait(m_vki, m_device, m_queue, cmd.get());
 
-			VK_CHECK(m_vki.queueSubmit(m_queue, 1u, &submitInfo, *fence));
-		}
-		VK_CHECK(m_vki.waitForFences(m_device, 1u, &fence.get(), VK_TRUE, infiniteTimeout));
-
-		// and then render to
 		renderToTarget();
 	}
 
@@ -1182,7 +1147,6 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	const vk::Unique<vk::VkCommandBuffer>				mainCmd						(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	const vk::Unique<vk::VkCommandBuffer>				passCmd						((m_isPrimaryCmdBuf) ? (vk::Move<vk::VkCommandBuffer>()) : (vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY)));
 	const vk::Unique<vk::VkFence>						fence						(vk::createFence(m_vki, m_device));
-	const deUint64										infiniteTimeout				= ~(deUint64)0u;
 	const vk::VkSubpassContents							passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_SUBPASS_CONTENTS_INLINE) : (vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	VK_CHECK(m_vki.beginCommandBuffer(*mainCmd, &mainCmdBufBeginInfo));
@@ -1207,22 +1171,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	VK_CHECK(m_vki.endCommandBuffer(*mainCmd));
 
 	// submit and wait for them to finish before exiting scope. (Killing in-flight objects is a no-no).
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&mainCmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-		VK_CHECK(m_vki.queueSubmit(m_queue, 1, &submitInfo, *fence));
-	}
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &fence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(m_vki, m_device, m_queue, mainCmd.get());
 }
 
 enum DescriptorSetCount
@@ -1329,7 +1278,7 @@ typedef vk::Unique<vk::VkDescriptorSet>					DescriptorSetHandleUp;
 typedef de::SharedPtr<DescriptorSetHandleUp>			DescriptorSetHandleSp;
 typedef vk::Unique<vk::VkDescriptorSetLayout>			DescriptorSetLayoutHandleUp;
 typedef de::SharedPtr<DescriptorSetLayoutHandleUp>		DescriptorSetLayoutHandleSp;
-typedef vk::Unique<vk::VkDescriptorUpdateTemplateKHR>	UpdateTemplateHandleUp;
+typedef vk::Unique<vk::VkDescriptorUpdateTemplate>		UpdateTemplateHandleUp;
 typedef de::SharedPtr<UpdateTemplateHandleUp>			UpdateTemplateHandleSp;
 
 class BufferRenderInstance : public SingleCmdRenderInstance
@@ -1922,15 +1871,15 @@ void BufferRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInter
 		vk::makeDescriptorBufferInfo(bufferA, (vk::VkDeviceSize)offsetA, (vk::VkDeviceSize)BUFFER_DATA_SIZE),
 		vk::makeDescriptorBufferInfo(bufferB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)BUFFER_DATA_SIZE),
 	};
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// descriptorUpdateEntryCount
 		DE_NULL,	// pDescriptorUpdateEntries
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -1974,13 +1923,13 @@ void BufferRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceInter
 	templateCreateInfo.pDescriptorUpdateEntries			= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount		= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(vki, device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(vki, device, &templateCreateInfo);
 	updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	registry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		vki.updateDescriptorSetWithTemplateKHR(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
+		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 }
 
@@ -2407,13 +2356,6 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 	};
 	const vk::Unique<vk::VkCommandPool>				cmdPool				(vk::createCommandPool(m_vki, m_device, &cmdPoolCreateInfo));
 
-	const vk::VkFenceCreateInfo						fenceCreateInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		DE_NULL,
-		0u,			// flags
-	};
-
 	const vk::VkCommandBufferAllocateInfo			cmdBufCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -2430,9 +2372,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const vk::Unique<vk::VkFence>					cmdCompleteFence	(vk::createFence(m_vki, m_device, &fenceCreateInfo));
 	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufCreateInfo));
-	const deUint64									infiniteTimeout		= ~(deUint64)0u;
 
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 
@@ -2490,23 +2430,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
-	// run
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-		VK_CHECK(m_vki.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
-	}
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
 }
 
 //cmdPushDescriptorSet variant
@@ -2528,9 +2452,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	const vk::Unique<vk::VkFence>					cmdCompleteFence	(vk::createFence(m_vki, m_device));
 	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const deUint64									infiniteTimeout		= ~(deUint64)0u;
 
 	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
 
@@ -2559,23 +2481,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	VK_CHECK(m_vki.endCommandBuffer(*cmd));
 
-	// run
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-		VK_CHECK(m_vki.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
-	}
-	VK_CHECK(m_vki.waitForFences(m_device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
 }
 
 class BufferComputeInstance : public vkt::TestInstance
@@ -2855,15 +2761,15 @@ void BufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet 
 		vk::makeDescriptorBufferInfo(viewA, (vk::VkDeviceSize)offsetA, (vk::VkDeviceSize)sizeof(tcu::Vec4[2])),
 		vk::makeDescriptorBufferInfo(viewB, (vk::VkDeviceSize)offsetB, (vk::VkDeviceSize)sizeof(tcu::Vec4[2])),
 	};
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// descriptorUpdateEntryCount
 		DE_NULL,	// pDescriptorUpdateEntries
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -2916,13 +2822,13 @@ void BufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptorSet 
 	templateCreateInfo.pDescriptorUpdateEntries			= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount		= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>			updateTemplate		 = vk::createDescriptorUpdateTemplateKHR(m_vki, m_device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>			updateTemplate		 = vk::createDescriptorUpdateTemplate(m_vki, m_device, &templateCreateInfo);
 	m_updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	m_updateRegistry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		m_vki.updateDescriptorSetWithTemplateKHR(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
+		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
 	}
 }
 
@@ -3819,7 +3725,7 @@ std::string BufferDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* BufferDescriptorCase::createInstance (vkt::Context& context) const
 {
-	verifyDriverSupport(context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
+	verifyDriverSupport(context.getUsedApiVersion(), context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
 
 	if (m_exitingStages == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 	{
@@ -4226,8 +4132,6 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	};
 
 	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(vki, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const vk::Unique<vk::VkFence>			cmdCompleteFence			(vk::createFence(vki, device));
-	const deUint64							infiniteTimeout				= ~(deUint64)0u;
 	std::vector<vk::VkBufferImageCopy>		copySlices;
 
 	// copy data to buffer
@@ -4248,22 +4152,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	VK_CHECK(vki.endCommandBuffer(*cmd));
 
 	// submit and wait for command buffer to complete before killing it
-	{
-		const vk::VkSubmitInfo	submitInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const vk::VkSemaphore*)0,
-			(const vk::VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmd.get(),
-			0u,
-			(const vk::VkSemaphore*)0,
-		};
-		VK_CHECK(vki.queueSubmit(queue, 1, &submitInfo, *cmdCompleteFence));
-	}
-	VK_CHECK(vki.waitForFences(device, 1, &cmdCompleteFence.get(), 0u, infiniteTimeout)); // \note: timeout is failure
+	submitCommandsAndWait(vki, device, queue, cmd.get());
 }
 
 class ImageFetchInstanceImages : private ImageInstanceImages
@@ -4771,15 +4660,15 @@ void ImageFetchRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceI
 															   vk::VkPipelineLayout							pipelineLayout)
 {
 	DE_UNREF(pool);
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -4829,13 +4718,13 @@ void ImageFetchRenderInstance::writeDescriptorSetWithTemplate (const vk::DeviceI
 	templateCreateInfo.pDescriptorUpdateEntries		= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount	= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(vki, device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(vki, device, &templateCreateInfo);
 	updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	registry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		vki.updateDescriptorSetWithTemplateKHR(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
+		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 }
 
@@ -5222,15 +5111,15 @@ void ImageFetchComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptor
 		makeDescriptorImageInfo(m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)), imageLayout),
 		makeDescriptorImageInfo(m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1), imageLayout),
 	};
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -5284,13 +5173,13 @@ void ImageFetchComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescriptor
 	templateCreateInfo.pDescriptorUpdateEntries		= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount	= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(m_vki, m_device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(m_vki, m_device, &templateCreateInfo);
 	m_updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	m_updateRegistry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		m_vki.updateDescriptorSetWithTemplateKHR(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
+		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
 	}
 }
 
@@ -6359,15 +6248,15 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSetWithTemplate (const vk:
 
 	const deUint32											samplerLocation		= shaderInterface == SHADER_INPUT_MULTIPLE_DISCONTIGUOUS_DESCRIPTORS ? 1u : 0u;
 
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -6419,13 +6308,13 @@ void ImageSampleRenderInstance::writeSamplerDescriptorSetWithTemplate (const vk:
 	templateCreateInfo.pDescriptorUpdateEntries		= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount	= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(vki, device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(vki, device, &templateCreateInfo);
 	updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	registry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		vki.updateDescriptorSetWithTemplateKHR(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
+		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 
 }
@@ -6455,15 +6344,15 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSetWithTemplate (cons
 		vk::makeDescriptorImageInfo(samplers[1], images.getImageView(setNdx * getInterfaceNumResources(shaderInterface) + 1), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
 	};
 
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -6508,13 +6397,13 @@ void ImageSampleRenderInstance::writeImageSamplerDescriptorSetWithTemplate (cons
 	templateCreateInfo.pDescriptorUpdateEntries		= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount	= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(vki, device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(vki, device, &templateCreateInfo);
 	updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	registry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		vki.updateDescriptorSetWithTemplateKHR(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
+		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 }
 
@@ -6996,7 +6885,7 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSet (vk::VkDescriptorSet 
 
 void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate (vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush, vk::VkPipelineLayout pipelineLayout)
 {
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
 	const vk::VkDescriptorBufferInfo						resultInfo			= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
 	const vk::VkDescriptorImageInfo							imageInfo			= makeDescriptorImageInfo(m_images.getImageView(setNdx), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	const vk::VkDescriptorImageInfo							samplersInfos[2]	=
@@ -7004,14 +6893,14 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate (vk::VkDe
 		makeDescriptorImageInfo(m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface))),
 		makeDescriptorImageInfo(m_images.getSampler(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)),
 	};
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -7074,13 +6963,13 @@ void ImageSampleComputeInstance::writeSamplerDescriptorSetWithTemplate (vk::VkDe
 	templateCreateInfo.pDescriptorUpdateEntries		= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount	= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(m_vki, m_device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(m_vki, m_device, &templateCreateInfo);
 	m_updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	m_updateRegistry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		m_vki.updateDescriptorSetWithTemplateKHR(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
+		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
 	}
 }
 
@@ -7153,7 +7042,7 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSet (vk::VkDescripto
 
 void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate (vk::VkDescriptorSet descriptorSet, vk::VkDescriptorSetLayout layout, deUint32 setNdx, bool withPush, vk::VkPipelineLayout pipelineLayout)
 {
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
 	const vk::VkDescriptorBufferInfo						resultInfo			= vk::makeDescriptorBufferInfo(m_result.getBuffer(), 0u, (vk::VkDeviceSize)ComputeInstanceResultBuffer::DATA_SIZE);
 	const vk::VkSampler										samplers[2]			=
 	{
@@ -7165,14 +7054,14 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate (vk:
 		makeDescriptorImageInfo(samplers[0], m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface)), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
 		makeDescriptorImageInfo(samplers[1], m_images.getImageView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1), vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
 	};
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -7226,13 +7115,13 @@ void ImageSampleComputeInstance::writeImageSamplerDescriptorSetWithTemplate (vk:
 	templateCreateInfo.pDescriptorUpdateEntries		= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount	= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(m_vki, m_device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(m_vki, m_device, &templateCreateInfo);
 	m_updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	m_updateRegistry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		m_vki.updateDescriptorSetWithTemplateKHR(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
+		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates.back(), m_updateRegistry.back().getRawPointer());
 	}
 }
 
@@ -7843,7 +7732,7 @@ std::string ImageDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* ImageDescriptorCase::createInstance (vkt::Context& context) const
 {
-	verifyDriverSupport(context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
+	verifyDriverSupport(context.getUsedApiVersion(), context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
 
 	switch (m_descriptorType)
 	{
@@ -8575,15 +8464,15 @@ void TexelBufferRenderInstance::writeDescriptorSetWithTemplate (const vk::Device
 		viewA,
 		viewB,
 	};
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
 		pipelineLayout,
@@ -8627,13 +8516,13 @@ void TexelBufferRenderInstance::writeDescriptorSetWithTemplate (const vk::Device
 	templateCreateInfo.pDescriptorUpdateEntries		= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount	= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(vki, device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(vki, device, &templateCreateInfo);
 	updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	registry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		vki.updateDescriptorSetWithTemplateKHR(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
+		vki.updateDescriptorSetWithTemplate(device, descriptorSet, **updateTemplates.back(), registry.back().getRawPointer());
 	}
 }
 
@@ -9022,15 +8911,15 @@ void TexelBufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescripto
 		m_texelBuffers.getBufferView(setNdx * getInterfaceNumResources(m_shaderInterface)),
 		m_texelBuffers.getBufferView(setNdx * getInterfaceNumResources(m_shaderInterface) + 1)
 	};
-	std::vector<vk::VkDescriptorUpdateTemplateEntryKHR>		updateEntries;
-	vk::VkDescriptorUpdateTemplateCreateInfoKHR				templateCreateInfo	=
+	std::vector<vk::VkDescriptorUpdateTemplateEntry>		updateEntries;
+	vk::VkDescriptorUpdateTemplateCreateInfo				templateCreateInfo	=
 	{
 		vk::VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR,
 		DE_NULL,
 		0,
 		0,			// updateCount
 		DE_NULL,	// pUpdates
-		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR,
+		withPush ? vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR : vk::VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
 		layout,
 		vk::VK_PIPELINE_BIND_POINT_COMPUTE,
 		pipelineLayout,
@@ -9083,13 +8972,13 @@ void TexelBufferComputeInstance::writeDescriptorSetWithTemplate (vk::VkDescripto
 	templateCreateInfo.pDescriptorUpdateEntries		= &updateEntries[0];
 	templateCreateInfo.descriptorUpdateEntryCount	= (deUint32)updateEntries.size();
 
-	vk::Move<vk::VkDescriptorUpdateTemplateKHR>				updateTemplate		= vk::createDescriptorUpdateTemplateKHR(m_vki, m_device, &templateCreateInfo);
+	vk::Move<vk::VkDescriptorUpdateTemplate>				updateTemplate		= vk::createDescriptorUpdateTemplate(m_vki, m_device, &templateCreateInfo);
 	m_updateTemplates.push_back(UpdateTemplateHandleSp(new UpdateTemplateHandleUp(updateTemplate)));
 	m_updateRegistry.push_back(updateRegistry);
 
 	if (!withPush)
 	{
-		m_vki.updateDescriptorSetWithTemplateKHR(m_device, descriptorSet, **m_updateTemplates[setNdx], m_updateRegistry.back().getRawPointer());
+		m_vki.updateDescriptorSetWithTemplate(m_device, descriptorSet, **m_updateTemplates[setNdx], m_updateRegistry.back().getRawPointer());
 	}
 }
 
@@ -9413,7 +9302,7 @@ std::string TexelBufferDescriptorCase::genNoAccessSource (void) const
 
 vkt::TestInstance* TexelBufferDescriptorCase::createInstance (vkt::Context& context) const
 {
-	verifyDriverSupport(context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
+	verifyDriverSupport(context.getUsedApiVersion(), context.getDeviceFeatures(), context.getDeviceExtensions(), m_updateMethod, m_descriptorType, m_activeStages);
 
 	if (m_exitingStages == vk::VK_SHADER_STAGE_COMPUTE_BIT)
 	{

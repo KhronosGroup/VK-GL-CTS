@@ -30,6 +30,7 @@
 #include "tcuCompressedTexture.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuAstcUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTextureTestUtil.hpp"
@@ -108,8 +109,29 @@ tcu::TestStatus Compressed2DTestInstance::iterate (void)
 	sampleParams.sampler			= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
 	sampleParams.samplerType		= SAMPLERTYPE_FLOAT;
 	sampleParams.lodMode			= LODMODE_EXACT;
-	sampleParams.colorBias			= formatInfo.lookupBias;
-	sampleParams.colorScale			= formatInfo.lookupScale;
+
+	if (isAstcFormat(m_compressedFormat)
+		|| m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC4_UNORM_BLOCK
+		|| m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC5_UNORM_BLOCK)
+	{
+		sampleParams.colorBias			= tcu::Vec4(0.0f);
+		sampleParams.colorScale			= tcu::Vec4(1.0f);
+	}
+	else if (m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC4_SNORM_BLOCK)
+	{
+		sampleParams.colorBias			= tcu::Vec4(0.5f, 0.0f, 0.0f, 0.0f);
+		sampleParams.colorScale			= tcu::Vec4(0.5f, 1.0f, 1.0f, 1.0f);
+	}
+	else if (m_compressedFormat == tcu::COMPRESSEDTEXFORMAT_BC5_SNORM_BLOCK)
+	{
+		sampleParams.colorBias			= tcu::Vec4(0.5f, 0.5f, 0.0f, 0.0f);
+		sampleParams.colorScale			= tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f);
+	}
+	else
+	{
+		sampleParams.colorBias			= formatInfo.lookupBias;
+		sampleParams.colorScale			= formatInfo.lookupScale;
+	}
 
 	log << TestLog::Message << "Compare reference value = " << sampleParams.ref << TestLog::EndMessage;
 
@@ -125,7 +147,16 @@ tcu::TestStatus Compressed2DTestInstance::iterate (void)
 	sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat), m_texture->getTexture(), &texCoord[0], sampleParams);
 
 	// Compare and log.
-	const bool isOk = compareImages(log, referenceFrame, rendered, pixelFormat.getColorThreshold() + tcu::RGBA(1, 1, 1, 1));
+	tcu::RGBA threshold;
+
+	if (isBcBitExactFormat(m_compressedFormat))
+		threshold = tcu::RGBA(1, 1, 1, 1);
+	else if (isBcFormat(m_compressedFormat))
+		threshold = tcu::RGBA(8, 8, 8, 8);
+	else
+		threshold = pixelFormat.getColorThreshold() + tcu::RGBA(2, 2, 2, 2);
+
+	const bool isOk = compareImages(log, referenceFrame, rendered, threshold);
 
 	return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
 }
@@ -137,7 +168,7 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 	// ETC2 and EAC compressed formats.
 	static const struct {
 		const VkFormat	format;
-	} etc2Formats[] =
+	} formats[] =
 	{
 		{ VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK		},
 		{ VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK		},
@@ -150,6 +181,52 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 		{ VK_FORMAT_EAC_R11_SNORM_BLOCK			},
 		{ VK_FORMAT_EAC_R11G11_UNORM_BLOCK		},
 		{ VK_FORMAT_EAC_R11G11_SNORM_BLOCK		},
+
+		{ VK_FORMAT_ASTC_4x4_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_4x4_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_5x4_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_5x4_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_5x5_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_5x5_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_6x5_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_6x5_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_6x6_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_6x6_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_8x5_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_8x5_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_8x6_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_8x6_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_8x8_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_8x8_SRGB_BLOCK			},
+		{ VK_FORMAT_ASTC_10x5_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_10x5_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_10x6_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_10x6_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_10x8_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_10x8_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_10x10_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_10x10_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_12x10_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_12x10_SRGB_BLOCK		},
+		{ VK_FORMAT_ASTC_12x12_UNORM_BLOCK		},
+		{ VK_FORMAT_ASTC_12x12_SRGB_BLOCK		},
+
+		{ VK_FORMAT_BC1_RGB_UNORM_BLOCK			},
+		{ VK_FORMAT_BC1_RGB_SRGB_BLOCK			},
+		{ VK_FORMAT_BC1_RGBA_UNORM_BLOCK		},
+		{ VK_FORMAT_BC1_RGBA_SRGB_BLOCK			},
+		{ VK_FORMAT_BC2_UNORM_BLOCK				},
+		{ VK_FORMAT_BC2_SRGB_BLOCK				},
+		{ VK_FORMAT_BC3_UNORM_BLOCK				},
+		{ VK_FORMAT_BC3_SRGB_BLOCK				},
+		{ VK_FORMAT_BC4_UNORM_BLOCK				},
+		{ VK_FORMAT_BC4_SNORM_BLOCK				},
+		{ VK_FORMAT_BC5_UNORM_BLOCK				},
+		{ VK_FORMAT_BC5_SNORM_BLOCK				},
+		{ VK_FORMAT_BC6H_UFLOAT_BLOCK			},
+		{ VK_FORMAT_BC6H_SFLOAT_BLOCK			},
+		{ VK_FORMAT_BC7_UNORM_BLOCK				},
+		{ VK_FORMAT_BC7_SRGB_BLOCK				}
 	};
 
 	static const struct {
@@ -172,14 +249,14 @@ void populateTextureCompressedFormatTests (tcu::TestCaseGroup* compressedTexture
 	};
 
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); sizeNdx++)
-	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(etc2Formats); formatNdx++)
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
 	{
-		const string	formatStr	= de::toString(getFormatStr(etc2Formats[formatNdx].format));
+		const string	formatStr	= de::toString(getFormatStr(formats[formatNdx].format));
 		const string	nameBase	= de::toLower(formatStr.substr(10));
 
 		Compressed2DTestParameters	testParameters;
-		testParameters.format		= etc2Formats[formatNdx].format;
+		testParameters.format		= formats[formatNdx].format;
 		testParameters.backingMode	= backingModes[backingNdx].backingMode;
 		testParameters.width		= sizes[sizeNdx].width;
 		testParameters.height		= sizes[sizeNdx].height;

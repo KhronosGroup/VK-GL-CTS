@@ -44,6 +44,10 @@ configName
 <Test Case Log - see the separate section below>
 #endTestCaseResult or #terminateTestCaseResult <cause>
 
+* After test cases, tests time summary is added
+#beginTestsCasesTime <section with time summary>
+#endTestsCasesTime <end of time summary section>
+
 * Execution done
 #endSession
 

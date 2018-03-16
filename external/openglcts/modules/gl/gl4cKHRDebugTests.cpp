@@ -194,14 +194,8 @@ void TestBase::initDebug()
 	const tcu::CommandLine& commandLine = m_test_base_context.getTestContext().getCommandLine();
 	parseRenderConfig(&renderCfg, commandLine);
 
-	if (commandLine.getSurfaceType() == tcu::SURFACETYPE_WINDOW)
-	{
-		renderCfg.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
-	}
-	else
-	{
+	if (commandLine.getSurfaceType() != tcu::SURFACETYPE_WINDOW)
 		throw tcu::NotSupportedError("Test not supported in non-windowed context");
-	}
 
 	m_rc = createRenderContext(platform, commandLine, renderCfg);
 	m_rc->makeCurrent();
@@ -218,14 +212,8 @@ void TestBase::initNonDebug()
 	const tcu::CommandLine& commandLine = m_test_base_context.getTestContext().getCommandLine();
 	parseRenderConfig(&renderCfg, commandLine);
 
-	if (commandLine.getSurfaceType() == tcu::SURFACETYPE_WINDOW)
-	{
-		renderCfg.surfaceType = glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC;
-	}
-	else
-	{
+	if (commandLine.getSurfaceType() != tcu::SURFACETYPE_WINDOW)
 		throw tcu::NotSupportedError("Test not supported in non-windowed context");
-	}
 
 	m_rc = createRenderContext(platform, commandLine, renderCfg);
 	m_rc->makeCurrent();

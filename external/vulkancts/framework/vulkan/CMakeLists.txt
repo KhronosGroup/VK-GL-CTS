@@ -5,6 +5,8 @@ set(VKUTIL_SRCS
 	vkApiVersion.hpp
 	vkBuilderUtil.cpp
 	vkBuilderUtil.hpp
+	vkCmdUtil.cpp
+	vkCmdUtil.hpp
 	vkDefs.cpp
 	vkDefs.hpp
 	vkRef.cpp
@@ -55,6 +57,8 @@ set(VKUTIL_SRCS
 	vkImageWithMemory.hpp
 	vkShaderProgram.cpp
 	vkShaderProgram.hpp
+	vkYCbCrImageWithMemory.cpp
+	vkYCbCrImageWithMemory.hpp
 	)
 
 set(VKUTIL_LIBS
@@ -74,7 +78,7 @@ if (DEQP_HAVE_GLSLANG)
 			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS} -std=c++11")
 	endif ()
 
-	set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARY})
+	set(VKUTIL_LIBS ${VKUTIL_LIBS} ${GLSLANG_LIBRARIES})
 endif ()
 
 if(DEQP_HAVE_SPIRV_TOOLS)

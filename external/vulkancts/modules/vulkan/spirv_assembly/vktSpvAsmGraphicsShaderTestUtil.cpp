@@ -32,6 +32,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "deRandom.hpp"
 
@@ -490,6 +491,7 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_color \"color\"\n"
 		"OpName %BP_gl_VertexIndex \"gl_VertexIndex\"\n"
 		"OpName %BP_gl_InstanceIndex \"gl_InstanceIndex\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpMemberDecorate %BP_gl_PerVertex 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertex 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %BP_gl_PerVertex 2 BuiltIn ClipDistance\n"
@@ -592,6 +594,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpName %BP_gl_in \"gl_in\"\n"
 		"OpName %BP_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
 		"OpName %BP_gl_TessLevelInner \"gl_TessLevelInner\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_out_color Location 1\n"
 		"OpDecorate %BP_gl_InvocationID BuiltIn InvocationId\n"
 		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
@@ -733,6 +736,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_gl_in \"gl_in\"\n"
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 2 BuiltIn ClipDistance\n"
@@ -891,6 +895,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
 		"OpDecorate %BP_out_gl_position BuiltIn Position\n"
 		"OpMemberDecorate %BP_per_vertex_in 0 BuiltIn Position\n"
@@ -1012,6 +1017,7 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_fragColor \"fragColor\"\n"
 		"OpName %BP_vtxColor \"vtxColor\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_fragColor Location 0\n"
 		"OpDecorate %BP_vtxColor Location 1\n"
 		"OpDecorate %BP_gl_FragCoord BuiltIn FragCoord\n"
@@ -1274,114 +1280,174 @@ map<string, string> passthruFragments(void)
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Vertex shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomVertex (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType()));
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	} else {
 		map<string, string> passthru = passthruFragments();
 
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomVertex (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomVertex(dst, context, DE_NULL);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Tessellation control shader gets custom code from context, the rest are
 // pass-through.
-void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("tessc") << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(context.testCodeFragments);
-		dst.spirvAsmSources.add("tesse") << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(passthruInterface(context.interfaces.getOutputType()));
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType()));
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
 
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-		dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(context.testCodeFragments);
-		dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << makeTessControlShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << makeTessEvalShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomTessControl (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomTessControl(dst, context, DE_NULL);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Tessellation evaluation shader gets custom code from context, the rest are
 // pass-through.
-void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("tessc") << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("tesse") << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType()));
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-		dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
-		dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << makeTessControlShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << makeTessEvalShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomTessEval (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomTessEval(dst, context, DE_NULL);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Geometry shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomGeometry (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("geom") << StringTemplate(makeGeometryShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType()));
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("geom", spirVAsmBuildOptions) << StringTemplate(makeGeometryShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-		dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("geom", spirVAsmBuildOptions) << makeGeometryShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomGeometry (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomGeometry(dst, context, DE_NULL);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Fragment shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomFragment (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(context.testCodeFragments);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(context.testCodeFragments);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomFragment (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomFragment(dst, context, DE_NULL);
 }
 
 void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
@@ -2283,39 +2349,25 @@ void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const
 
 	VK_CHECK(vk.endCommandBuffer(cmdBuffer));
 
-	{
-		const VkFenceCreateInfo	fenceParams	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
-			DE_NULL,								//	const void*			pNext;
-			0u,										//	VkFenceCreateFlags	flags;
-		};
-
-		const Unique<VkFence>	fence		(createFence(vk, device, &fenceParams));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-			DE_NULL,								// const void*					pNext;
-			0u,										// deUint32						waitSemaphoreCount;
-			DE_NULL,								// const VkSemaphore*			pWaitSemaphores;
-			DE_NULL,								// const VkPipelineStageFlags*	pWaitDstStageMask;
-			1u,										// deUint32						commandBufferCount;
-			&cmdBuffer,								// const VkCommandBuffer*		pCommandBuffers;
-			0u,										// deUint32						signalSemaphoreCount;
-			DE_NULL									// const VkSemaphore*			pSignalSemaphores;
-		};
-
-		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, device, queue, cmdBuffer);
 }
 
 TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
 {
+	if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getUsedApiVersion())
+	{
+		TCU_THROW(NotSupportedError, string("Vulkan higher than or equal to " + getVulkanName(getMinRequiredVulkanVersion(instance.resources.spirvVersion)) + " is required for this test to run").c_str());
+	}
+
+	const DeviceInterface&						vk						= context.getDeviceInterface();
 	const InstanceInterface&					vkInstance				= context.getInstanceInterface();
 	const VkPhysicalDevice						vkPhysicalDevice		= context.getPhysicalDevice();
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
-	// Create a dedicated logic device with required extensions enabled for this test case.
+	const VkQueue								queue					= context.getUniversalQueue();
+	const VkDevice&								device					= context.getDevice();
+	Allocator&									allocator				= context.getDefaultAllocator();
+	vector<ModuleHandleSp>						modules;
+	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
 	const tcu::UVec2							renderSize				(256, 256);
 	const int									testSpecificSeed		= 31354125;
 	const int									seed					= context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
@@ -2343,6 +2395,13 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		TCU_THROW(NotSupportedError, "Geometry not supported");
 	}
 
+	// Check all required extensions are supported
+	for (std::vector<std::string>::const_iterator i = instance.requiredDeviceExtensions.begin(); i != instance.requiredDeviceExtensions.end(); ++i)
+	{
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), *i))
+			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
+	}
+
 	{
 		for (deUint32 featureNdx = 0; featureNdx < instance.requiredDeviceFeatures.size(); ++featureNdx)
 		{
@@ -2363,6 +2422,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				if (features.shaderFloat64 != VK_TRUE)
 					TCU_THROW(NotSupportedError, "Device feature not supported: shaderFloat64");
 			}
+			else if (feature == "fragmentStoresAndAtomics")
+			{
+				if (features.fragmentStoresAndAtomics != VK_TRUE)
+					TCU_THROW(NotSupportedError, "Device feature not supported: fragmentStoresAndAtomics");
+			}
 			else
 			{
 				TCU_THROW(InternalError, (std::string("Unimplemented physical device feature: ") + feature).c_str());
@@ -2372,7 +2436,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	// 16bit storage features
 	{
-		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext16BitStorage))
+		if (!is16BitStorageFeaturesSupported(context, instance.requestedFeatures.ext16BitStorage))
 			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 	}
 
@@ -2397,19 +2461,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	// Variable Pointers features
 	{
-		if (!isVariablePointersFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.extVariablePointers))
+		if (!isVariablePointersFeaturesSupported(context, instance.requestedFeatures.extVariablePointers))
 			TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
 	}
-
-	// defer device and other resource creation until after feature checks
-	const Unique<VkDevice>						vkDevice				(createDeviceWithExtensions(context, queueFamilyIndex, context.getDeviceExtensions(), instance.requiredDeviceExtensions));
-	const DeviceDriver							vk						(vkInstance, *vkDevice);
-	const VkQueue								queue					= getDeviceQueue(vk, *vkDevice, queueFamilyIndex, 0);
-	const de::UniquePtr<Allocator>				allocatorUptr			(createAllocator(vkInstance, vkPhysicalDevice, vk, *vkDevice));
-	Allocator&									allocator				= *allocatorUptr;
-	vector<ModuleHandleSp>						modules;
-	map<VkShaderStageFlagBits, VkShaderModule>	moduleByStage;
-
 
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
 	de::Random(seed).shuffle(instance.outputColors, instance.outputColors+4);
@@ -2457,10 +2511,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		1u,										//	deUint32			queueFamilyCount;
 		&queueFamilyIndex,						//	const deUint32*		pQueueFamilyIndices;
 	};
-	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, *vkDevice, &vertexBufferParams));
-	const UniquePtr<Allocation>				vertexBufferMemory		(allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>					vertexBuffer			(createBuffer(vk, device, &vertexBufferParams));
+	const UniquePtr<Allocation>				vertexBufferMemory		(allocator.allocate(getBufferMemoryRequirements(vk, device, *vertexBuffer), MemoryRequirement::HostVisible));
 
-	VK_CHECK(vk.bindBufferMemory(*vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
+	VK_CHECK(vk.bindBufferMemory(device, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
 
 	const VkDeviceSize						imageSizeBytes			= (VkDeviceSize)(sizeof(deUint32)*renderSize.x()*renderSize.y());
 	const VkBufferCreateInfo				readImageBufferParams	=
@@ -2474,10 +2528,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		1u,											//	deUint32			queueFamilyCount;
 		&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 	};
-	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, *vkDevice, &readImageBufferParams));
-	const UniquePtr<Allocation>				readImageBufferMemory	(allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
+	const Unique<VkBuffer>					readImageBuffer			(createBuffer(vk, device, &readImageBufferParams));
+	const UniquePtr<Allocation>				readImageBufferMemory	(allocator.allocate(getBufferMemoryRequirements(vk, device, *readImageBuffer), MemoryRequirement::HostVisible));
 
-	VK_CHECK(vk.bindBufferMemory(*vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
+	VK_CHECK(vk.bindBufferMemory(device, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 	VkImageCreateInfo						imageParams				=
 	{
@@ -2498,10 +2552,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_IMAGE_LAYOUT_UNDEFINED,												//	VkImageLayout		initialLayout;
 	};
 
-	const Unique<VkImage>					image					(createImage(vk, *vkDevice, &imageParams));
-	const UniquePtr<Allocation>				imageMemory				(allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *image), MemoryRequirement::Any));
+	const Unique<VkImage>					image					(createImage(vk, device, &imageParams));
+	const UniquePtr<Allocation>				imageMemory				(allocator.allocate(getImageMemoryRequirements(vk, device, *image), MemoryRequirement::Any));
 
-	VK_CHECK(vk.bindImageMemory(*vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
+	VK_CHECK(vk.bindImageMemory(device, *image, imageMemory->getMemory(), imageMemory->getOffset()));
 
 	if (needInterface)
 	{
@@ -2526,9 +2580,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 		};
 
-		vertexInputBuffer = createBuffer(vk, *vkDevice, &vertexInputParams);
-		vertexInputMemory = allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *vertexInputBuffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(*vkDevice, *vertexInputBuffer, vertexInputMemory->getMemory(), vertexInputMemory->getOffset()));
+		vertexInputBuffer = createBuffer(vk, device, &vertexInputParams);
+		vertexInputMemory = allocator.allocate(getBufferMemoryRequirements(vk, device, *vertexInputBuffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(device, *vertexInputBuffer, vertexInputMemory->getMemory(), vertexInputMemory->getOffset()));
 
 		// Create an additional buffer and backing memory for an output variable.
 		const VkDeviceSize						fragOutputImgSize		= (VkDeviceSize)(instance.interfaces.getOutputType().getNumBytes() * renderSize.x() * renderSize.y());
@@ -2543,9 +2597,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,											//	deUint32			queueFamilyCount;
 			&queueFamilyIndex,							//	const deUint32*		pQueueFamilyIndices;
 		};
-		fragOutputBuffer = createBuffer(vk, *vkDevice, &fragOutputParams);
-		fragOutputMemory = allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *fragOutputBuffer), MemoryRequirement::HostVisible);
-		VK_CHECK(vk.bindBufferMemory(*vkDevice, *fragOutputBuffer, fragOutputMemory->getMemory(), fragOutputMemory->getOffset()));
+		fragOutputBuffer = createBuffer(vk, device, &fragOutputParams);
+		fragOutputMemory = allocator.allocate(getBufferMemoryRequirements(vk, device, *fragOutputBuffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(device, *fragOutputBuffer, fragOutputMemory->getMemory(), fragOutputMemory->getOffset()));
 
 		// Create an additional image and backing memory for attachment.
 		// Reuse the previous imageParams since we only need to change the image format.
@@ -2554,10 +2608,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		// Check the usage bits on the given image format are supported.
 		requireFormatUsageSupport(vkInstance, vkPhysicalDevice, imageParams.format, imageParams.tiling, imageParams.usage);
 
-		fragOutputImage			= createImage(vk, *vkDevice, &imageParams);
-		fragOutputImageMemory	= allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *fragOutputImage), MemoryRequirement::Any);
+		fragOutputImage			= createImage(vk, device, &imageParams);
+		fragOutputImageMemory	= allocator.allocate(getImageMemoryRequirements(vk, device, *fragOutputImage), MemoryRequirement::Any);
 
-		VK_CHECK(vk.bindImageMemory(*vkDevice, *fragOutputImage, fragOutputImageMemory->getMemory(), fragOutputImageMemory->getOffset()));
+		VK_CHECK(vk.bindImageMemory(device, *fragOutputImage, fragOutputImageMemory->getMemory(), fragOutputImageMemory->getOffset()));
 	}
 
 	vector<VkAttachmentDescription>			colorAttDescs;
@@ -2642,7 +2696,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		renderPassParams.attachmentCount += 1;
 	}
 
-	const Unique<VkRenderPass>				renderPass				(createRenderPass(vk, *vkDevice, &renderPassParams));
+	const Unique<VkRenderPass>				renderPass				(createRenderPass(vk, device, &renderPassParams));
 
 	const VkImageViewCreateInfo				colorAttViewParams		=
 	{
@@ -2666,7 +2720,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,												//	deUint32			arraySize;
 		},												//	VkImageSubresourceRange		subresourceRange;
 	};
-	const Unique<VkImageView>				colorAttView			(createImageView(vk, *vkDevice, &colorAttViewParams));
+	const Unique<VkImageView>				colorAttView			(createImageView(vk, device, &colorAttViewParams));
 
 	vector<VkImageView>						attViews;
 	attViews.push_back(*colorAttView);
@@ -2687,10 +2741,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	VkDescriptorSetLayout					rawSetLayout			= DE_NULL;
 	VkDescriptorSet							rawSet					= DE_NULL;
 
-	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, *vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 
 	// Command buffer
-	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, *vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	if (numResources != 0)
 	{
@@ -2716,10 +2770,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Resource is a buffer
 			if (!hasImage && !hasSampler)
 			{
-				Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
-				de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+				Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, device, resource, queueFamilyIndex);
+				de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, device, *resourceBuffer), MemoryRequirement::HostVisible);
 
-				VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+				VK_CHECK(vk.bindBufferMemory(device, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
 				// Copy data to memory.
 				{
@@ -2736,7 +2790,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 					resource.second->getBytes(resourceBytes);
 
 					deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
-					VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
+					VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
 				}
 
 				inResourceMemories.push_back(AllocationSp(resourceMemory.release()));
@@ -2745,10 +2799,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Resource is an image
 			else if (hasImage)
 			{
-				Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
-				de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+				Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, device, resource, queueFamilyIndex);
+				de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, device, *resourceBuffer), MemoryRequirement::HostVisible);
 
-				VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+				VK_CHECK(vk.bindBufferMemory(device, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
 				// Copy data to memory.
 				{
@@ -2765,15 +2819,15 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 					resource.second->getBytes(resourceBytes);
 
 					deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
-					VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
+					VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
 				}
 
-				Move<VkImage>					resourceImage			= createImageForResource(vk, *vkDevice, resource, queueFamilyIndex);
-				de::MovePtr<Allocation>			resourceImageMemory		= allocator.allocate(getImageMemoryRequirements(vk, *vkDevice, *resourceImage), MemoryRequirement::Any);
+				Move<VkImage>					resourceImage			= createImageForResource(vk, device, resource, queueFamilyIndex);
+				de::MovePtr<Allocation>			resourceImageMemory		= allocator.allocate(getImageMemoryRequirements(vk, device, *resourceImage), MemoryRequirement::Any);
 
-				VK_CHECK(vk.bindImageMemory(*vkDevice, *resourceImage, resourceImageMemory->getMemory(), resourceImageMemory->getOffset()));
+				VK_CHECK(vk.bindImageMemory(device, *resourceImage, resourceImageMemory->getMemory(), resourceImageMemory->getOffset()));
 
-				copyBufferToImage(vk, *vkDevice, queue, *cmdBuf, resourceBuffer.get(), resourceImage.get());
+				copyBufferToImage(vk, device, queue, *cmdBuf, resourceBuffer.get(), resourceImage.get());
 
 				inResourceMemories.push_back(AllocationSp(resourceImageMemory.release()));
 				inResourceImages.push_back(ImageHandleSp(new ImageHandleUp(resourceImage)));
@@ -2804,11 +2858,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			const Resource&					resource				= instance.resources.outputs[outputNdx];
 			// Create buffer and allocate memory.
-			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
-			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, device, resource, queueFamilyIndex);
+			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, device, *resourceBuffer), MemoryRequirement::HostVisible);
 			vector<deUint8>					resourceBytes;
 
-			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
+			VK_CHECK(vk.bindBufferMemory(device, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
 			// Fill memory with all ones.
 			const VkMappedMemoryRange		range					=
@@ -2822,7 +2876,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 			resource.second->getBytes(resourceBytes);
 			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resourceBytes.size());
-			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
+			VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
 
 			outResourceMemories.push_back(AllocationSp(resourceMemory.release()));
 			outResourceBuffers.push_back(BufferHandleSp(new BufferHandleUp(resourceBuffer)));
@@ -2856,7 +2910,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			numResources,											// bindingCount
 			setLayoutBindings.data(),								// pBindings
 		};
-		setLayout													= createDescriptorSetLayout(vk, *vkDevice, &setLayoutParams);
+		setLayout													= createDescriptorSetLayout(vk, device, &setLayoutParams);
 		rawSetLayout												= *setLayout;
 
 		const VkDescriptorPoolCreateInfo		poolParams			=
@@ -2868,7 +2922,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			numResources,											// poolSizeCount
 			poolSizes.data(),										// pPoolSizes
 		};
-		descriptorPool												= createDescriptorPool(vk, *vkDevice, &poolParams);
+		descriptorPool												= createDescriptorPool(vk, device, &poolParams);
 
 		const VkDescriptorSetAllocateInfo		setAllocParams		=
 		{
@@ -2878,7 +2932,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			1u,														// descriptorSetCount
 			&rawSetLayout,											// pSetLayouts
 		};
-		VK_CHECK(vk.allocateDescriptorSets(*vkDevice, &setAllocParams, &rawSet));
+		VK_CHECK(vk.allocateDescriptorSets(device, &setAllocParams, &rawSet));
 
 		// Update descriptor set.
 		vector<VkWriteDescriptorSet>			writeSpecs;
@@ -2932,7 +2986,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 						},													//	VkImageSubresourceRange		subresourceRange;
 					};
 
-					Move<VkImageView>			imgView			(createImageView(vk, *vkDevice, &imgViewParams));
+					Move<VkImageView>			imgView			(createImageView(vk, device, &imgViewParams));
 					inResourceImageViews.push_back(ImageViewHandleSp(new ImageViewHandleUp(imgView)));
 				}
 
@@ -2960,7 +3014,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 						VK_FALSE									// VkBool32					unnormalizedCoordinates;
 					};
 
-					Move<VkSampler>				sampler			(createSampler(vk, *vkDevice, &samplerParams));
+					Move<VkSampler>				sampler			(createSampler(vk, device, &samplerParams));
 					inResourceSamplers.push_back(SamplerHandleSp(new SamplerHandleUp(sampler)));
 				}
 			}
@@ -3058,7 +3112,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			};
 			writeSpecs.push_back(writeSpec);
 		}
-		vk.updateDescriptorSets(*vkDevice, numResources, writeSpecs.data(), 0, DE_NULL);
+		vk.updateDescriptorSets(device, numResources, writeSpecs.data(), 0, DE_NULL);
 	}
 
 	// Pipeline layout
@@ -3094,14 +3148,43 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		pipelineLayoutParams.setLayoutCount								= 1;
 		pipelineLayoutParams.pSetLayouts								= &rawSetLayout;
 	}
-	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, *vkDevice, &pipelineLayoutParams));
+	const Unique<VkPipelineLayout>			pipelineLayout			(createPipelineLayout(vk, device, &pipelineLayoutParams));
 
 	// Pipeline
 	vector<VkPipelineShaderStageCreateInfo>		shaderStageParams;
 	// We need these vectors to make sure that information about specialization constants for each stage can outlive createGraphicsPipeline().
 	vector<vector<VkSpecializationMapEntry> >	specConstantEntries;
 	vector<VkSpecializationInfo>				specializationInfos;
-	createPipelineShaderStages(vk, *vkDevice, instance, context, modules, shaderStageParams);
+	if (DE_NULL != instance.resources.verifyBinary)
+	{
+		std::string shaderName;
+		switch(instance.customizedStages)
+		{
+		case	VK_SHADER_STAGE_VERTEX_BIT:
+			shaderName= "vert";
+			break;
+		case	VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+			shaderName= "tessc";
+			break;
+		case	VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+			shaderName= "tesse";
+			break;
+		case	VK_SHADER_STAGE_GEOMETRY_BIT:
+			shaderName= "geom";
+			break;
+		case	VK_SHADER_STAGE_FRAGMENT_BIT:
+			shaderName= "frag";
+			break;
+		default:
+			DE_ASSERT(0);
+			break;
+		}
+		const ProgramBinary& binary  = context.getBinaryCollection().get(shaderName);
+		if (!instance.resources.verifyBinary(binary))
+			return tcu::TestStatus::fail("Binary verification of SPIR-V in the test failed");
+
+	}
+	createPipelineShaderStages(vk, device, instance, context, modules, shaderStageParams);
 
 	// And we don't want the reallocation of these vectors to invalidate pointers pointing to their contents.
 	specConstantEntries.reserve(shaderStageParams.size());
@@ -3377,7 +3460,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		0u,														//	deInt32											basePipelineIndex;
 	};
 
-	const Unique<VkPipeline>				pipeline				(createGraphicsPipeline(vk, *vkDevice, DE_NULL, &pipelineParams));
+	const Unique<VkPipeline>				pipeline				(createGraphicsPipeline(vk, device, DE_NULL, &pipelineParams));
 
 	if (needInterface)
 	{
@@ -3403,7 +3486,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				1u,												//	deUint32			arraySize;
 			},													//	VkImageSubresourceRange		subresourceRange;
 		};
-		fragOutputImageView = createImageView(vk, *vkDevice, &fragOutputViewParams);
+		fragOutputImageView = createImageView(vk, device, &fragOutputViewParams);
 		attViews.push_back(*fragOutputImageView);
 	}
 
@@ -3424,7 +3507,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	if (needInterface)
 		framebufferParams.attachmentCount += 1;
 
-	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, *vkDevice, &framebufferParams));
+	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, device, &framebufferParams));
 
 	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
 	{
@@ -3634,7 +3717,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
 
 		deMemcpy(vertexBufPtr, &vertexData[0], sizeof(vertexData));
-		VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
+		VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
 	}
 
 	if (needInterface)
@@ -3673,34 +3756,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			VK_WHOLE_SIZE,							//	VkDeviceSize	size;
 		};
 
-		VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
+		VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
 	}
 
 	// Submit & wait for completion
-	{
-		const VkFenceCreateInfo	fenceParams	=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	//	VkStructureType		sType;
-			DE_NULL,								//	const void*			pNext;
-			0u,										//	VkFenceCreateFlags	flags;
-		};
-		const Unique<VkFence>	fence		(createFence(vk, *vkDevice, &fenceParams));
-		const VkSubmitInfo		submitInfo	=
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-			0u,
-			(const VkSemaphore*)DE_NULL,
-			(const VkPipelineStageFlags*)DE_NULL,
-			1u,
-			&cmdBuf.get(),
-			0u,
-			(const VkSemaphore*)DE_NULL,
-		};
-
-		VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(*vkDevice, 1u, &fence.get(), DE_TRUE, ~0ull));
-	}
+	submitCommandsAndWait(vk, device, queue, cmdBuf.get());
 
 	const void* imagePtr	= readImageBufferMemory->getHostPtr();
 	const tcu::ConstPixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
@@ -3716,7 +3776,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			imageSizeBytes,							//	VkDeviceSize	size;
 		};
 
-		VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
+		VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1u, &range));
 		context.getTestContext().getLog() << TestLog::Image("Result", "Result", pixelBuffer);
 	}
 
@@ -3732,7 +3792,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			fragOutputImgSize,						//	VkDeviceSize	size;
 		};
 
-		VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
+		VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1u, &range));
 	}
 
 	{ // Make sure all output resources are ready.
@@ -3747,7 +3807,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				VK_WHOLE_SIZE,									//	VkDeviceSize	size;
 			};
 
-			VK_CHECK(vk.invalidateMappedMemoryRanges(*vkDevice, 1u, &range));
+			VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1u, &range));
 		}
 	}
 

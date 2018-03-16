@@ -34,6 +34,7 @@
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuImageCompare.hpp"
 #include "tcuResultCollector.hpp"
@@ -443,14 +444,14 @@ Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
-									   VkDevice											device,
-									   VkRenderPass										renderPass,
-									   VkPipelineLayout									pipelineLayout,
-									   const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-									   deUint32											width,
-									   deUint32											height,
-									   deUint32											sampleCount)
+Move<VkPipeline> createRenderPipeline (const DeviceInterface&		vkd,
+									   VkDevice						device,
+									   VkRenderPass					renderPass,
+									   VkPipelineLayout				pipelineLayout,
+									   const vk::BinaryCollection&	binaryCollection,
+									   deUint32						width,
+									   deUint32						height,
+									   deUint32						sampleCount)
 {
 	const Unique<VkShaderModule>					vertexShaderModule				(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
 	const Unique<VkShaderModule>					fragmentShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));
@@ -663,14 +664,14 @@ Move<VkPipelineLayout> createSubpassPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createSubpassPipeline (const DeviceInterface&							vkd,
-									  VkDevice											device,
-									  VkRenderPass										renderPass,
-									  VkPipelineLayout									pipelineLayout,
-									  const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-									  deUint32											width,
-									  deUint32											height,
-									  deUint32											sampleCount)
+Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vkd,
+									  VkDevice						device,
+									  VkRenderPass					renderPass,
+									  VkPipelineLayout				pipelineLayout,
+									  const vk::BinaryCollection&	binaryCollection,
+									  deUint32						width,
+									  deUint32						height,
+									  deUint32						sampleCount)
 {
 	const Unique<VkShaderModule>					vertexShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
 	const Unique<VkShaderModule>					fragmentShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-subpass-frag"), 0u));
@@ -1125,27 +1126,7 @@ tcu::TestStatus SampleReadTestInstance::iterate (void)
 
 	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
 
-	{
-		const VkSubmitInfo submitInfo =
-		{
-			VK_STRUCTURE_TYPE_SUBMIT_INFO,
-			DE_NULL,
-
-			0u,
-			DE_NULL,
-			DE_NULL,
-
-			1u,
-			&*commandBuffer,
-
-			0u,
-			DE_NULL
-		};
-
-		VK_CHECK(vkd.queueSubmit(m_context.getUniversalQueue(), 1u, &submitInfo, (VkFence)0u));
-
-		VK_CHECK(vkd.queueWaitIdle(m_context.getUniversalQueue()));
-	}
+	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *commandBuffer);
 
 	{
 		const tcu::TextureFormat			format		(mapVkFormat(VK_FORMAT_R32_UINT));

@@ -76,7 +76,7 @@ void BufferDedicatedAllocation::createTestBuffer						(VkDeviceSize				size,
 {
 	DE_UNREF(allocator);
 	const std::vector<std::string>&	extensions							= context.getDeviceExtensions();
-	const deBool					isSupported							= std::find(extensions.begin(), extensions.end(), "VK_KHR_dedicated_allocation") != extensions.end();
+	const deBool					isSupported							= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
 	if (!isSupported)
 	{
 		TCU_THROW(NotSupportedError, "Not supported");
@@ -151,7 +151,7 @@ void ImageDedicatedAllocation::createTestImage							(tcu::IVec2					size,
 {
 	DE_UNREF(allocator);
 	const std::vector<std::string>&		extensions						= context.getDeviceExtensions();
-	const deBool						isSupported						= std::find(extensions.begin(), extensions.end(), "VK_KHR_dedicated_allocation") != extensions.end();
+	const deBool						isSupported						= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
 	if (!isSupported)
 	{
 		TCU_THROW(NotSupportedError, "Not supported");

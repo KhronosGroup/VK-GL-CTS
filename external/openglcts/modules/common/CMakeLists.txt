@@ -104,6 +104,8 @@ set(GLCTS_COMMON_SRCS
 	glcTestSubcase.hpp
 	glcExtTokens.cpp
 	glcExtTokens.hpp
+	glcLayoutLocationTests.cpp
+	glcLayoutLocationTests.hpp
 	glcLimitTest.inl
 	glcLimitTest.hpp
 	glcWaiver.hpp

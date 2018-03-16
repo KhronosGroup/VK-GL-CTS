@@ -4893,6 +4893,37 @@ tcu::TestNode::IterateResult SamplesMismatchTest::iterate()
 		throw exc;
 	}
 
+	GLenum expected_result = test_case.m_expected_result;
+
+	if (test_case.m_dst_n_samples > 0 && test_case.m_src_n_samples > 0)
+	{
+		/* Implementations are allowed to use more samples than requested, so we need
+		 * to verify the actual sample counts allocated by the hardware and adjust
+		 * the expected result if they are different from what we requested.
+		 */
+		GLint num_src_samples;
+		GLint num_dst_samples;
+		gl.bindTexture(test_case.m_dst_target, m_dst_tex_name);
+		gl.getTexLevelParameteriv(test_case.m_dst_target, 0, GL_TEXTURE_SAMPLES, &num_dst_samples);
+		gl.bindTexture(test_case.m_src_target, m_src_tex_name);
+		gl.getTexLevelParameteriv(test_case.m_src_target, 0, GL_TEXTURE_SAMPLES, &num_src_samples);
+		if (num_dst_samples != test_case.m_dst_n_samples || num_src_samples != test_case.m_src_n_samples)
+		{
+			/* The hardware allocated a different number of samples, check if this affects the expected
+			 * result of the test. This can happen if we requested different sample counts but the
+			 * hardware ended up allocating the same or viceversa.
+			 */
+			if (test_case.m_dst_n_samples != test_case.m_src_n_samples && num_dst_samples == num_src_samples)
+			{
+				expected_result = GL_NO_ERROR;
+			}
+			else if (test_case.m_dst_n_samples == test_case.m_src_n_samples && num_dst_samples != num_src_samples)
+			{
+				expected_result = GL_INVALID_OPERATION;
+			}
+		}
+	}
+
 	/* Execute CopyImageSubData */
 	gl.copyImageSubData(m_src_tex_name, test_case.m_src_target, 0 /* srcLevel */, 0 /* srcX */, 0 /* srcY */,
 						0 /* srcZ */, m_dst_tex_name, test_case.m_dst_target, 0 /* dstLevel */, 0 /* dstX */,
@@ -4900,7 +4931,7 @@ tcu::TestNode::IterateResult SamplesMismatchTest::iterate()
 
 	/* Verify generated error */
 	error  = gl.getError();
-	result = (test_case.m_expected_result == error);
+	result = (expected_result == error);
 
 	/* Free resources */
 	clean();
@@ -4922,7 +4953,7 @@ tcu::TestNode::IterateResult SamplesMismatchTest::iterate()
 	else
 	{
 		m_context.getTestContext().getLog()
-			<< tcu::TestLog::Message << "Failure. Expected result: " << glu::getErrorStr(test_case.m_expected_result)
+			<< tcu::TestLog::Message << "Failure. Expected result: " << glu::getErrorStr(expected_result)
 			<< " got: " << glu::getErrorStr(error)
 			<< ". Source target: " << glu::getTextureTargetStr(test_case.m_src_target)
 			<< " samples: " << test_case.m_src_n_samples

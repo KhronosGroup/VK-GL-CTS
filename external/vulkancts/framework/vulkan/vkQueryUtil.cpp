@@ -22,15 +22,55 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkQueryUtil.hpp"
+#include "vkApiVersion.hpp"
+
 #include "deMemory.h"
+#include "deString.h"
 #include "deSTLUtil.hpp"
 
-#include <string>
+#include <vector>
 
 namespace vk
 {
 
 using std::vector;
+
+namespace
+{
+
+#include "vkSupportedExtensions.inl"
+
+}
+
+void getCoreInstanceExtensions(deUint32 apiVersion, vector<const char*>& dst)
+{
+	getCoreInstanceExtensionsImpl(apiVersion, dst);
+}
+
+void getCoreDeviceExtensions(deUint32 apiVersion, vector<const char*>& dst)
+{
+	getCoreDeviceExtensionsImpl(apiVersion, dst);
+}
+
+bool isCoreInstanceExtension(const deUint32 apiVersion, const std::string& extension)
+{
+	vector<const char*> coreExtensions;
+	getCoreInstanceExtensions(apiVersion, coreExtensions);
+	if (de::contains(coreExtensions.begin(), coreExtensions.end(), extension))
+		return true;
+
+	return false;
+}
+
+bool isCoreDeviceExtension(const deUint32 apiVersion, const std::string& extension)
+{
+	vector<const char*> coreExtensions;
+	getCoreDeviceExtensions(apiVersion, coreExtensions);
+	if (de::contains(coreExtensions.begin(), coreExtensions.end(), extension))
+		return true;
+
+	return false;
+}
 
 vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, VkInstance instance)
 {
@@ -49,6 +89,29 @@ vector<VkPhysicalDevice> enumeratePhysicalDevices (const InstanceInterface& vk, 
 	}
 
 	return devices;
+}
+
+vector<VkPhysicalDeviceGroupProperties> enumeratePhysicalDeviceGroups(const InstanceInterface& vk, VkInstance instance)
+{
+	deUint32								numDeviceGroups = 0;
+	vector<VkPhysicalDeviceGroupProperties>	properties;
+
+	VK_CHECK(vk.enumeratePhysicalDeviceGroups(instance, &numDeviceGroups, DE_NULL));
+
+	if (numDeviceGroups > 0)
+	{
+		properties.resize(numDeviceGroups);
+		for (deUint32 i = 0; i < numDeviceGroups; i++)
+		{
+			properties[i].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES_KHR;
+			properties[i].pNext = DE_NULL;
+		}
+		VK_CHECK(vk.enumeratePhysicalDeviceGroups(instance, &numDeviceGroups, &properties[0]));
+
+		if ((size_t)numDeviceGroups != properties.size())
+			TCU_FAIL("Returned device group count changed between queries");
+	}
+	return properties;
 }
 
 vector<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
@@ -77,6 +140,17 @@ VkPhysicalDeviceFeatures getPhysicalDeviceFeatures (const InstanceInterface& vk,
 	deMemset(&features, 0, sizeof(features));
 
 	vk.getPhysicalDeviceFeatures(physicalDevice, &features);
+	return features;
+}
+
+VkPhysicalDeviceFeatures2 getPhysicalDeviceFeatures2 (const InstanceInterface& vk, VkPhysicalDevice physicalDevice)
+{
+	VkPhysicalDeviceFeatures2	features;
+
+	deMemset(&features, 0, sizeof(features));
+	features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+	vk.getPhysicalDeviceFeatures2(physicalDevice, &features);
 	return features;
 }
 
@@ -177,9 +251,9 @@ VkMemoryRequirements getImagePlaneMemoryRequirements (const DeviceInterface&	vkd
 													  VkImage					image,
 													  VkImageAspectFlagBits		planeAspect)
 {
-	VkImageMemoryRequirementsInfo2KHR		coreInfo;
-	VkImagePlaneMemoryRequirementsInfoKHR	planeInfo;
-	VkMemoryRequirements2KHR				reqs;
+	VkImageMemoryRequirementsInfo2		coreInfo;
+	VkImagePlaneMemoryRequirementsInfo	planeInfo;
+	VkMemoryRequirements2				reqs;
 
 	deMemset(&coreInfo,		0, sizeof(coreInfo));
 	deMemset(&planeInfo,	0, sizeof(planeInfo));
@@ -194,7 +268,7 @@ VkMemoryRequirements getImagePlaneMemoryRequirements (const DeviceInterface&	vkd
 
 	reqs.sType				= VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR;
 
-	vkd.getImageMemoryRequirements2KHR(device, &coreInfo, &reqs);
+	vkd.getImageMemoryRequirements2(device, &coreInfo, &reqs);
 
 	return reqs.memoryRequirements;
 }
@@ -311,6 +385,38 @@ bool isCompatible (const VkLayerProperties& layerProperties, const RequiredLayer
 	return true;
 }
 
+bool isInstanceExtensionSupported (const deUint32 instanceVersion, const std::vector<std::string>& extensions, const std::string& required)
+{
+	if (isCoreInstanceExtension(instanceVersion, required))
+		return true;
+	else
+		return de::contains(extensions.begin(), extensions.end(), required);
+}
+
+bool isDeviceExtensionSupported (const deUint32 deviceVersion, const std::vector<std::string>& extensions, const std::string& required)
+{
+	if (isCoreDeviceExtension(deviceVersion, required))
+		return true;
+	else
+		return de::contains(extensions.begin(), extensions.end(), required);
+}
+
+bool isInstanceExtensionSupported (const deUint32 instanceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
+{
+	if (isCoreInstanceExtension(instanceVersion, required.name))
+		return true;
+	else
+		return isExtensionSupported(extensions.begin(), extensions.end(), required);
+}
+
+bool isDeviceExtensionSupported (const deUint32 deviceVersion, const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
+{
+	if (isCoreDeviceExtension(deviceVersion, required.name))
+		return true;
+	else
+		return isExtensionSupported(extensions.begin(), extensions.end(), required);
+}
+
 bool isExtensionSupported (const std::vector<VkExtensionProperties>& extensions, const RequiredExtension& required)
 {
 	return isExtensionSupported(extensions.begin(), extensions.end(), required);
@@ -331,6 +437,15 @@ VkQueue getDeviceQueue (const DeviceInterface& vkd, VkDevice device, deUint32 qu
 	VkQueue queue;
 
 	vkd.getDeviceQueue(device, queueFamilyIndex, queueIndex, &queue);
+
+	return queue;
+}
+
+VkQueue getDeviceQueue2 (const DeviceInterface& vkd, VkDevice device, const VkDeviceQueueInfo2* queueInfo)
+{
+	VkQueue queue;
+
+	vkd.getDeviceQueue2(device, queueInfo, &queue);
 
 	return queue;
 }

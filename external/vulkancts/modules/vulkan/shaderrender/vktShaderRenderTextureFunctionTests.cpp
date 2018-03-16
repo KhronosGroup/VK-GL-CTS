@@ -745,7 +745,8 @@ ShaderTextureFunctionInstance::ShaderTextureFunctionInstance (Context&						cont
 															  const TextureSpec&			textureSpec,
 															  const TexLookupParams&		lookupParams,
 															  const ImageBackingMode		imageBackingMode)
-	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL, imageBackingMode)
+	: ShaderRenderCaseInstance	(context, isVertexCase, evaluator, uniformSetup, DE_NULL, imageBackingMode,
+								(isVertexCase ? 92 : GRID_SIZE_DEFAULT_FRAGMENT))
 	, m_lookupSpec				(lookupSpec)
 	, m_textureSpec				(textureSpec)
 	, m_lookupParams			(lookupParams)

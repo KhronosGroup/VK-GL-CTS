@@ -228,7 +228,7 @@ class GitRepo (Source):
 
 		pushWorkingDir(fullDstPath)
 		try:
-			execute(["git", "fetch", url, "+refs/heads/*:refs/remotes/origin/*"])
+			execute(["git", "fetch", "--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout", self.revision])
 		finally:
 			popWorkingDir()
@@ -252,17 +252,17 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		None,
-		"0b0454c42c6b6f6746434bd5c78c5c70f65d9c51",
+		"vulkan-1.1-rc1",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"ac51602455443acafdf79ae92711a7eefb21f21c",
+		"6.2.2596",
 		"glslang"),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		None,
-		"2bf02308656f97898c5f7e433712f21737c61e4e",
+		"vulkan-1.1-rc2",
 		"spirv-headers"),
 ]
 

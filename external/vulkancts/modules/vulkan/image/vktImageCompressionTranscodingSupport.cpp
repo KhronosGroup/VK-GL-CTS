@@ -38,6 +38,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
@@ -447,7 +448,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 			imageData[imageNdx].addImage(MovePtr<Image>(new Image(vk, device, allocator, imageData[imageNdx].getImageInfo(infoNdx), MemoryRequirement::Any)));
 			if (isCompressed)
 			{
-				const VkImageViewUsageCreateInfoKHR	imageViewUsageKHR	=
+				const VkImageViewUsageCreateInfo	imageViewUsageKHR	=
 				{
 					VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,				//VkStructureType		sType;
 					DE_NULL,														//const void*			pNext;
@@ -943,7 +944,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 			VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout			initialLayout;
 		};
 		const VkImageUsageFlags				compressedViewUsageFlags	= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-		const VkImageViewUsageCreateInfoKHR	compressedViewUsageCI		=
+		const VkImageViewUsageCreateInfo	compressedViewUsageCI		=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,					//VkStructureType		sType;
 			DE_NULL,															//const void*			pNext;
@@ -1353,9 +1354,9 @@ protected:
 	ImagesArray							m_uncompressedImages;
 	MovePtr<Image>						m_compressedImage;
 
-	VkImageViewUsageCreateInfoKHR		m_imageViewUsageKHR;
-	VkImageViewUsageCreateInfoKHR*		m_srcImageViewUsageKHR;
-	VkImageViewUsageCreateInfoKHR*		m_dstImageViewUsageKHR;
+	VkImageViewUsageCreateInfo			m_imageViewUsageKHR;
+	VkImageViewUsageCreateInfo*			m_srcImageViewUsageKHR;
+	VkImageViewUsageCreateInfo*			m_dstImageViewUsageKHR;
 	std::vector<tcu::UVec3>				m_compressedImageResVec;
 	std::vector<tcu::UVec3>				m_uncompressedImageResVec;
 	VkFormat							m_srcFormat;
@@ -1425,7 +1426,7 @@ TestStatus GraphicsAttachmentsTestInstance::iterate (void)
 
 void GraphicsAttachmentsTestInstance::prepareData ()
 {
-	VkImageViewUsageCreateInfoKHR*	imageViewUsageKHRNull	= (VkImageViewUsageCreateInfoKHR*)DE_NULL;
+	VkImageViewUsageCreateInfo*	imageViewUsageKHRNull	= (VkImageViewUsageCreateInfo*)DE_NULL;
 
 	m_imageViewUsageKHR			= makeImageViewUsageCreateInfo(m_parameters.compressedImageViewUsage);
 
@@ -1862,7 +1863,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	Move<VkImageView>					refSrcImageView				(makeImageView(vk, device, refSrcImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.formatCompressed, subresourceRange));
 
 	const VkImageUsageFlags				resSrcImageUsageFlags		= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	const VkImageViewUsageCreateInfoKHR	resSrcImageViewUsageKHR		= makeImageViewUsageCreateInfo(resSrcImageUsageFlags);
+	const VkImageViewUsageCreateInfo	resSrcImageViewUsageKHR		= makeImageViewUsageCreateInfo(resSrcImageUsageFlags);
 	Move<VkImageView>					resSrcImageView				(makeImageView(vk, device, resCompressedImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.formatCompressed, resSubresourceRange, &resSrcImageViewUsageKHR));
 
 	const VkImageCreateFlags			refDstImageCreateFlags		= 0;
@@ -2578,7 +2579,7 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).x() >  0u);
 	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).y() >  0u);
 
-	if (std::find(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2") == context.getDeviceExtensions().end())
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported");
 
 	{

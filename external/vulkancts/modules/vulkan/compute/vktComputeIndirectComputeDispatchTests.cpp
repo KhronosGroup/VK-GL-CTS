@@ -39,6 +39,7 @@
 #include "vkMemUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"

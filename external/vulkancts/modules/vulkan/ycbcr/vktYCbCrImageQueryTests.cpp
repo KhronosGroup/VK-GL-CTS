@@ -165,15 +165,15 @@ Move<VkImage> createTestImage (const DeviceInterface&	vkd,
 	return createImage(vkd, device, &createInfo);
 }
 
-Move<VkImageView> createImageView (const DeviceInterface&		vkd,
-								   VkDevice						device,
-								   VkImage						image,
-								   VkFormat						format,
-								   VkSamplerYcbcrConversionKHR	conversion)
+Move<VkImageView> createImageView (const DeviceInterface&	vkd,
+								   VkDevice					device,
+								   VkImage					image,
+								   VkFormat					format,
+								   VkSamplerYcbcrConversion	conversion)
 {
-	const VkSamplerYcbcrConversionInfoKHR				samplerConversionInfo	=
+	const VkSamplerYcbcrConversionInfo				samplerConversionInfo	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		conversion
 	};
@@ -201,13 +201,13 @@ Move<VkImageView> createImageView (const DeviceInterface&		vkd,
 class TestImage
 {
 public:
-								TestImage		(const DeviceInterface&			vkd,
-												 VkDevice						device,
-												 Allocator&						allocator,
-												 VkFormat						format,
-												 const UVec2&					size,
-												 const VkImageCreateFlags		createFlags,
-												 VkSamplerYcbcrConversionKHR	conversion);
+								TestImage		(const DeviceInterface&		vkd,
+												 VkDevice					device,
+												 Allocator&					allocator,
+												 VkFormat					format,
+												 const UVec2&				size,
+												 const VkImageCreateFlags	createFlags,
+												 VkSamplerYcbcrConversion	conversion);
 
 	const UVec2&				getSize			(void) const { return m_size;		}
 	VkImageView					getImageView	(void) const { return *m_imageView; }
@@ -219,13 +219,13 @@ private:
 	const Unique<VkImageView>	m_imageView;
 };
 
-TestImage::TestImage (const DeviceInterface&		vkd,
-					  VkDevice						device,
-					  Allocator&					allocator,
-					  VkFormat						format,
-					  const UVec2&					size,
-					  const VkImageCreateFlags		createFlags,
-					  VkSamplerYcbcrConversionKHR	conversion)
+TestImage::TestImage (const DeviceInterface&	vkd,
+					  VkDevice					device,
+					  Allocator&				allocator,
+					  VkFormat					format,
+					  const UVec2&				size,
+					  const VkImageCreateFlags	createFlags,
+					  VkSamplerYcbcrConversion	conversion)
 	: m_size		(size)
 	, m_image		(createTestImage(vkd, device, format, size, createFlags))
 	, m_allocations	(allocateAndBindImageMemory(vkd, device, allocator, *m_image, format, createFlags))
@@ -345,36 +345,36 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 	const DeviceInterface&				vkd				= context.getDeviceInterface();
 	const VkDevice						device			= context.getDevice();
 
-	const VkSamplerYcbcrConversionCreateInfoKHR			conversionInfo			=
+	const VkSamplerYcbcrConversionCreateInfo		conversionInfo			=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
 		DE_NULL,
 		params.format,
-		VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR,
-		VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR,
+		VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
+		VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
 		{
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 		},
-		VK_CHROMA_LOCATION_MIDPOINT_KHR,
-		VK_CHROMA_LOCATION_MIDPOINT_KHR,
+		VK_CHROMA_LOCATION_MIDPOINT,
+		VK_CHROMA_LOCATION_MIDPOINT,
 		VK_FILTER_NEAREST,
 		VK_FALSE,									// forceExplicitReconstruction
 	};
-	const Unique<VkSamplerYcbcrConversionKHR>			conversion				(isYCbCrImage
-																				 ? createSamplerYcbcrConversionKHR(vkd, device, &conversionInfo)
-																				 : Move<VkSamplerYcbcrConversionKHR>());
+	const Unique<VkSamplerYcbcrConversion>			conversion				(isYCbCrImage
+																			 ? createSamplerYcbcrConversion(vkd, device, &conversionInfo)
+																			 : Move<VkSamplerYcbcrConversion>());
 
-	const VkSamplerYcbcrConversionInfoKHR				samplerConversionInfo	=
+	const VkSamplerYcbcrConversionInfo				samplerConversionInfo	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		*conversion,
 	};
 
-	const VkSamplerCreateInfo							samplerInfo				=
+	const VkSamplerCreateInfo						samplerInfo				=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		isYCbCrImage ? &samplerConversionInfo : DE_NULL,
@@ -405,9 +405,9 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 
 	if (params.query == QUERY_TYPE_IMAGE_SIZE_LOD)
 	{
-		const PlanarFormatDescription&		formatDesc	= getPlanarFormatDescription(params.format);
-		const UVec2							maxDivisor	= getMaxPlaneDivisor(formatDesc);
-		vector<UVec2>						testSizes;
+		const PlanarFormatDescription&	formatDesc	= getPlanarFormatDescription(params.format);
+		const UVec2						maxDivisor	= getMaxPlaneDivisor(formatDesc);
+		vector<UVec2>					testSizes;
 
 		testSizes.push_back(maxDivisor);
 		testSizes.push_back(maxDivisor * UVec2(2u, 1u));
@@ -493,36 +493,36 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 	const DeviceInterface&				vkd				= context.getDeviceInterface();
 	const VkDevice						device			= context.getDevice();
 
-	const VkSamplerYcbcrConversionCreateInfoKHR			conversionInfo			=
+	const VkSamplerYcbcrConversionCreateInfo			conversionInfo			=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
 		DE_NULL,
 		params.format,
-		VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR,
-		VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR,
+		VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
+		VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
 		{
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 		},
-		VK_CHROMA_LOCATION_MIDPOINT_KHR,
-		VK_CHROMA_LOCATION_MIDPOINT_KHR,
+		VK_CHROMA_LOCATION_MIDPOINT,
+		VK_CHROMA_LOCATION_MIDPOINT,
 		VK_FILTER_NEAREST,
 		VK_FALSE,									// forceExplicitReconstruction
 	};
-	const Unique<VkSamplerYcbcrConversionKHR>			conversion				(isYCbCrImage
-																				 ? createSamplerYcbcrConversionKHR(vkd, device, &conversionInfo)
-																				 : Move<VkSamplerYcbcrConversionKHR>());
+	const Unique<VkSamplerYcbcrConversion>			conversion				(isYCbCrImage
+																				 ? createSamplerYcbcrConversion(vkd, device, &conversionInfo)
+																				 : Move<VkSamplerYcbcrConversion>());
 
-	const VkSamplerYcbcrConversionInfoKHR				samplerConversionInfo	=
+	const VkSamplerYcbcrConversionInfo				samplerConversionInfo	=
 	{
-		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR,
+		VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
 		DE_NULL,
 		*conversion,
 	};
 
-	const VkSamplerCreateInfo							samplerInfo				=
+	const VkSamplerCreateInfo						samplerInfo				=
 	{
 		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 		isYCbCrImage ? &samplerConversionInfo : DE_NULL,
@@ -714,7 +714,7 @@ void addImageQueryCase (tcu::TestCaseGroup* group, const TestParameters& params)
 	std::string	name	= de::toLower(de::toString(params.format).substr(10));
 	const bool	isLod	= params.query == QUERY_TYPE_IMAGE_LOD;
 
-	if ((params.flags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0)
+	if ((params.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0)
 		name += "_disjoint";
 
 	addFunctionCaseWithPrograms(group,
@@ -753,7 +753,7 @@ void populateQueryInShaderGroup (tcu::TestCaseGroup* group, QueryGroupParams par
 		addImageQueryCase(group, TestParameters(params.query, format, 0u, params.shaderType));
 
 		if (getPlaneCount(format) > 1)
-			addImageQueryCase(group, TestParameters(params.query, format, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR, params.shaderType));
+			addImageQueryCase(group, TestParameters(params.query, format, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, params.shaderType));
 	}
 }
 

@@ -24,6 +24,7 @@
 
 #include "vktGeometryTestsUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkImageUtil.hpp"
 #include "vkDefs.hpp"
 #include "tcuImageCompare.hpp"
 
@@ -526,6 +527,23 @@ VkBufferImageCopy makeBufferImageCopy (const VkExtent3D					extent,
 	return copyParams;
 }
 
+VkBufferImageCopy makeBufferImageCopy (const vk::VkDeviceSize&				bufferOffset,
+									   const vk::VkImageSubresourceLayers&	imageSubresource,
+									   const vk::VkOffset3D&				imageOffset,
+									   const vk::VkExtent3D&				imageExtent)
+{
+	const VkBufferImageCopy copyParams =
+	{
+		bufferOffset,								//	VkDeviceSize				bufferOffset;
+		0u,											//	deUint32					bufferRowLength;
+		0u,											//	deUint32					bufferImageHeight;
+		imageSubresource,							//	VkImageSubresourceLayers	imageSubresource;
+		imageOffset,								//	VkOffset3D					imageOffset;
+		imageExtent,								//	VkExtent3D					imageExtent;
+	};
+	return copyParams;
+}
+
 Move<VkPipelineLayout> makePipelineLayout (const DeviceInterface&		vk,
 										   const VkDevice				device,
 										   const VkDescriptorSetLayout	descriptorSetLayout)
@@ -655,29 +673,6 @@ void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandB
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));
 }
 
-void submitCommandsAndWait (const DeviceInterface&	vk,
-							const VkDevice			device,
-							const VkQueue			queue,
-							const VkCommandBuffer	commandBuffer)
-{
-	const Unique<VkFence> fence(createFence(vk, device));
-
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType                sType;
-		DE_NULL,							// const void*                    pNext;
-		0u,									// uint32_t                       waitSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*             pWaitSemaphores;
-		DE_NULL,							// const VkPipelineStageFlags*    pWaitDstStageMask;
-		1u,									// uint32_t                       commandBufferCount;
-		&commandBuffer,						// const VkCommandBuffer*         pCommandBuffers;
-		0u,									// uint32_t                       signalSemaphoreCount;
-		DE_NULL,							// const VkSemaphore*             pSignalSemaphores;
-	};
-	VK_CHECK(vk.queueSubmit(queue, 1u, &submitInfo, *fence));
-	VK_CHECK(vk.waitForFences(device, 1u, &fence.get(), DE_TRUE, ~0ull));
-}
-
 bool compareWithFileImage (Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string testName)
 {
 	tcu::TextureLevel referenceImage;
@@ -710,6 +705,44 @@ void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocat
 {
 	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(size));
 	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), size);
+}
+
+void fillBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize offset, const VkDeviceSize size, const VkFormat format, const tcu::Vec4& color)
+{
+	const tcu::TextureFormat	textureFormat		= mapVkFormat(format);
+	const deUint32				colorPixelSize		= static_cast<deUint32>(tcu::getPixelSize(textureFormat));
+	tcu::TextureLevel			colorPixelBuffer	(textureFormat, 1, 1);
+	tcu::PixelBufferAccess		colorPixel			(colorPixelBuffer);
+
+	colorPixel.setPixel(color, 0, 0);
+
+	const deUint8*	src		= static_cast<deUint8*>(colorPixel.getDataPtr());
+	deUint8*		dstBase	= static_cast<deUint8*>(alloc.getHostPtr());
+	deUint8*		dst		= &dstBase[offset];
+
+	for (deUint32 pixelPos = 0; pixelPos < size; pixelPos += colorPixelSize)
+		deMemcpy(&dst[pixelPos], src, colorPixelSize);
+
+	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset() + offset, size);
+}
+
+void fillBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize offset, const VkDeviceSize size, const VkFormat format, const float depth)
+{
+	const tcu::TextureFormat	textureFormat		= mapVkFormat(format);
+	const deUint32				colorPixelSize		= static_cast<deUint32>(tcu::getPixelSize(textureFormat));
+	tcu::TextureLevel			colorPixelBuffer	(textureFormat, 1, 1);
+	tcu::PixelBufferAccess		colorPixel			(colorPixelBuffer);
+
+	colorPixel.setPixDepth(depth, 0, 0);
+
+	const deUint8*	src		= static_cast<deUint8*>(colorPixel.getDataPtr());
+	deUint8*		dstBase	= static_cast<deUint8*>(alloc.getHostPtr());
+	deUint8*		dst		= &dstBase[offset];
+
+	for (deUint32 pixelPos = 0; pixelPos < size; pixelPos += colorPixelSize)
+		deMemcpy(&dst[pixelPos], src, colorPixelSize);
+
+	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset() + offset, size);
 }
 
 VkBool32 checkPointSize (const InstanceInterface& vki, const VkPhysicalDevice physDevice)

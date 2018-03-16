@@ -21,10 +21,6 @@
  * \brief Win32 Vulkan platform
  *//*--------------------------------------------------------------------*/
 
-// \todo [2016-01-22 pyry] GetVersionEx() used by getOSInfo() is deprecated.
-//						   Find a way to get version info without using deprecated APIs.
-#pragma warning(disable : 4996)
-
 #include "tcuWin32VulkanPlatform.hpp"
 #include "tcuWin32Window.hpp"
 
@@ -36,6 +32,8 @@
 
 #include "deUniquePtr.hpp"
 #include "deMemory.h"
+
+#pragma comment(lib, "version.lib")
 
 namespace tcu
 {
@@ -93,9 +91,13 @@ public:
 	{
 	}
 
-	const vk::PlatformInterface& getPlatformInterface (void) const
+	const vk::PlatformInterface&	getPlatformInterface	(void) const
 	{
 		return m_driver;
+	}
+	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
+	{
+		return m_library;
 	}
 
 private:
@@ -117,38 +119,117 @@ vk::Library* VulkanPlatform::createLibrary (void) const
 	return new VulkanLibrary();
 }
 
-const char* getProductTypeName (WORD productType)
+ULONG getStringRegKey (const std::string& regKey, const std::string& strValueName, std::string& strValue)
 {
-	switch (productType)
+	HKEY	hKey;
+	ULONG	nError;
+	CHAR	szBuffer[512];
+	DWORD	dwBufferSize = sizeof(szBuffer);
+
+	nError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, regKey.c_str(), 0, KEY_READ, &hKey);
+
+	if (ERROR_SUCCESS == nError)
+		nError = RegQueryValueExA(hKey, strValueName.c_str(), 0, DE_NULL, (LPBYTE)szBuffer, &dwBufferSize);
+
+	if (ERROR_SUCCESS == nError)
+		strValue = szBuffer;
+
+	return nError;
+}
+
+void getWindowsBits (std::ostream& dst)
+{
+#if defined(_WIN64)
+	dst << "64"; // 64-bit programs run only on Win64
+	return;
+#elif defined(_WIN32)
+	BOOL is64 = false;
+	// 32-bit programs run on both 32-bit and 64-bit Windows.
+	// Function is defined from XP SP2 onwards, so we don't need to
+	// check if it exists.
+	if (IsWow64Process(GetCurrentProcess(), &is64))
 	{
-		case VER_NT_DOMAIN_CONTROLLER:	return "Windows Server (domain controller)";
-		case VER_NT_SERVER:				return "Windows Server";
-		case VER_NT_WORKSTATION:		return "Windows NT";
-		default:						return DE_NULL;
+		if (is64)
+			dst << "64";
+		else
+			dst << "32";
+		return;
+	}
+#endif
+#if !defined(_WIN64)
+	// IsWow64Process returns failure or neither of
+	// _WIN64 or _WIN32 is defined
+	dst << "Unknown";
+#endif
+}
+
+void getOSNameFromRegistry (std::ostream& dst)
+{
+	const char* keypath		= "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+	std::string productname	= "Unknown";
+	std::string releaseid	= "Unknown";
+	std::string optional;
+
+	getStringRegKey(keypath, "ProductName", productname);
+	getStringRegKey(keypath, "ReleaseId", releaseid);
+
+	getWindowsBits(dst);
+
+	dst << " bit Windows Product: " << productname << ", Release: " << releaseid;
+
+	if (ERROR_SUCCESS == getStringRegKey(keypath, "EditionID", optional))
+	{
+		dst << ", Edition: " << optional;
+		if (ERROR_SUCCESS == getStringRegKey(keypath, "EditionSubstring", optional)
+			&& optional.length() > 0)
+			dst << " " << optional;
 	}
 }
 
+void getOSVersionFromDLL (std::ostream& dst)
+{
+	DWORD	buffer_size	= GetFileVersionInfoSize(("kernel32.dll"), DE_NULL);
+	char*	buffer		= 0;
+
+	if (buffer_size != 0)
+	{
+		buffer = new char[buffer_size];
+		if (buffer != 0)
+		{
+			if (GetFileVersionInfo("kernel32.dll", 0, buffer_size, buffer))
+			{
+				VS_FIXEDFILEINFO*	version		= DE_NULL;
+				UINT				version_len	= 0;
+
+				if (VerQueryValue(buffer, "\\", (LPVOID*)&version, &version_len))
+				{
+					dst << ", DLL Version: " << HIWORD(version->dwProductVersionMS) << "." << LOWORD(version->dwProductVersionMS)
+						<< ", DLL Build: "   << HIWORD(version->dwProductVersionLS) << "." << LOWORD(version->dwProductVersionLS);
+				}
+			}
+			delete[] buffer;
+		}
+	}
+}
+
+// Old windows version query APIs lie about the version number. There's no replacement
+// API, and instead applications are supposed to queriy about capabilities instead of
+// relying on operating system version numbers.
+//
+// Since we want to actually know the version number for debugging purposes, we need
+// to use roundabout ways to fetch the information.
+//
+// The registry contains some useful strings, which we print out if the keys
+// are available. The current official way to get version number is to look at a
+// system DLL file and read its version number, so we do that too, in case the
+// registry becomes unreliable in the future.
+//
+// If the DLL method fails, we simply don't print out anything about it.
+// The minimal output from this function is "Windows Product: Unknown, Release: Unknown"
 static void getOSInfo (std::ostream& dst)
 {
-	OSVERSIONINFOEX	osInfo;
-
-	deMemset(&osInfo, 0, sizeof(osInfo));
-	osInfo.dwOSVersionInfoSize = (DWORD)sizeof(osInfo);
-
-	GetVersionEx((OSVERSIONINFO*)&osInfo);
-
-	{
-		const char* const	productName	= getProductTypeName(osInfo.wProductType);
-
-		if (productName)
-			dst << productName;
-		else
-			dst << "unknown product " << tcu::toHex(osInfo.wProductType);
-	}
-
-	dst << " " << osInfo.dwMajorVersion << "." << osInfo.dwMinorVersion
-		<< ", service pack " << osInfo.wServicePackMajor << "." << osInfo.wServicePackMinor
-		<< ", build " << osInfo.dwBuildNumber;
+	getOSNameFromRegistry(dst);
+	getOSVersionFromDLL(dst);
 }
 
 const char* getProcessorArchitectureName (WORD arch)

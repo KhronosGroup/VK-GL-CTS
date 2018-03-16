@@ -46,6 +46,7 @@
 #include "glcBlendEquationAdvancedTests.hpp"
 #include "glcInfoTests.hpp"
 #include "glcInternalformatTests.hpp"
+#include "glcLayoutLocationTests.hpp"
 #include "glcPolygonOffsetClampTests.hpp"
 #include "glcSampleVariablesTests.hpp"
 #include "glcShaderConstExprTests.hpp"
@@ -161,6 +162,7 @@ public:
 	{
 		addChild(new deqp::ShaderNegativeTests(m_context, glu::GLSL_VERSION_310_ES));
 		addChild(new glcts::AggressiveShaderOptimizationsTests(m_context));
+		addChild(new glcts::LayoutLocationTests(m_context));
 	}
 };
 
