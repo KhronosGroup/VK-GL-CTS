@@ -1828,6 +1828,7 @@ tcu::Format::Bitfield<32> getSubgroupFeatureFlagsStr (VkSubgroupFeatureFlags val
 		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT,	"VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT"),
 		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_CLUSTERED_BIT,			"VK_SUBGROUP_FEATURE_CLUSTERED_BIT"),
 		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_QUAD_BIT,				"VK_SUBGROUP_FEATURE_QUAD_BIT"),
+		tcu::Format::BitDesc(VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV,	"VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }

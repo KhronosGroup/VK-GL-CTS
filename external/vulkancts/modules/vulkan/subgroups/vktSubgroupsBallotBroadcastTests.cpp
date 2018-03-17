@@ -465,7 +465,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 }
 
-void supportedCheck (Context& context, const CaseDefinition& caseDef)
+void supportedCheck (Context& context, CaseDefinition caseDef)
 {
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
@@ -484,8 +484,6 @@ void supportedCheck (Context& context, const CaseDefinition& caseDef)
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
-	supportedCheck(context, caseDef);
-
 	if (!subgroups::areSubgroupOperationsSupportedForStage(
 			context, caseDef.shaderStage))
 	{
@@ -522,8 +520,6 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	supportedCheck(context, caseDef);
-
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		if (!subgroups::areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))
@@ -625,19 +621,19 @@ tcu::TestCaseGroup* createSubgroupsBallotBroadcastTests(tcu::TestContext& testCt
 
 			{
 				CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format};
-				addFunctionCaseWithPrograms(group.get(), name + getShaderStageName(caseDef.shaderStage), "", initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(group.get(), name + getShaderStageName(caseDef.shaderStage), "", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			{
 				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, format};
-				addFunctionCaseWithPrograms(group.get(), name + "graphic" , "", initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(group.get(), name + "graphic" , "", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format};
 				addFunctionCaseWithPrograms(group.get(), name + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "",
-							initFrameBufferPrograms, noSSBOtest, caseDef);
+							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 		}
 	}

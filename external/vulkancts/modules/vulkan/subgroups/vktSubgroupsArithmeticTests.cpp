@@ -860,7 +860,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 }
 
-void supportedCheck (Context& context, const CaseDefinition& caseDef)
+void supportedCheck (Context& context, CaseDefinition caseDef)
 {
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
@@ -879,8 +879,6 @@ void supportedCheck (Context& context, const CaseDefinition& caseDef)
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
-	supportedCheck (context, caseDef);
-
 	if (!subgroups::areSubgroupOperationsSupportedForStage(
 				context, caseDef.shaderStage))
 	{
@@ -935,8 +933,6 @@ bool checkShaderStages (Context& context, const CaseDefinition& caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	supportedCheck (context, caseDef);
-
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		if(!checkShaderStages(context,caseDef))
@@ -1090,7 +1086,7 @@ tcu::TestCaseGroup* createSubgroupsArithmeticTests(tcu::TestContext& testCtx)
 											de::toLower(op) + "_" +
 											subgroups::getFormatNameForGLSL(format) +
 											"_" + getShaderStageName(caseDef.shaderStage),
-											"", initPrograms, test, caseDef);
+											"", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			{
@@ -1099,7 +1095,7 @@ tcu::TestCaseGroup* createSubgroupsArithmeticTests(tcu::TestContext& testCtx)
 											de::toLower(op) + "_" +
 											subgroups::getFormatNameForGLSL(format) +
 											"_graphic",
-											"", initPrograms, test, caseDef);
+											"", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
@@ -1107,7 +1103,7 @@ tcu::TestCaseGroup* createSubgroupsArithmeticTests(tcu::TestContext& testCtx)
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format};
 				addFunctionCaseWithPrograms(group.get(), de::toLower(op) + "_" + subgroups::getFormatNameForGLSL(format) +
 											"_" + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "",
-											initFrameBufferPrograms, noSSBOtest, caseDef);
+											supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 		}
 	}

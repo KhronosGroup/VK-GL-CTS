@@ -21,6 +21,8 @@ set(DEQP_VK_SUBGROUPS_SRCS
   vktSubgroupsArithmeticTests.hpp
   vktSubgroupsClusteredTests.cpp
   vktSubgroupsClusteredTests.hpp
+  vktSubgroupsPartitionedTests.cpp
+  vktSubgroupsPartitionedTests.hpp
   vktSubgroupsShuffleTests.cpp
   vktSubgroupsShuffleTests.hpp
   vktSubgroupsQuadTests.cpp
