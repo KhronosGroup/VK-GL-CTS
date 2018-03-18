@@ -1002,16 +1002,18 @@ void generateYCbCrImage (ProtectedContext&				ctx,
 																									 ctx.getPhysicalDevice()).limits.subTexelPrecisionBits);
 
 
-	const vk::PlanarFormatDescription	planeInfo			(vk::getPlanarFormatDescription(config.format));
+	const vk::PlanarFormatDescription	planeInfo				(vk::getPlanarFormatDescription(config.format));
 
-	deUint32							nullAccessData		(0u);
-	ycbcr::ChannelAccess				nullAccess			(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, tcu::IVec3(size.x(), size.y(), 1), tcu::IVec3(0, 0, 0), &nullAccessData, 0u);
-	deUint32							nullAccessAlphaData	(~0u);
-	ycbcr::ChannelAccess				nullAccessAlpha		(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, tcu::IVec3(size.x(), size.y(), 1), tcu::IVec3(0, 0, 0), &nullAccessAlphaData, 0u);
-	ycbcr::ChannelAccess				rChannelAccess		(planeInfo.hasChannelNdx(0) ? getChannelAccess(ycbcrSrc, planeInfo, size, 0) : nullAccess);
-	ycbcr::ChannelAccess				gChannelAccess		(planeInfo.hasChannelNdx(1) ? getChannelAccess(ycbcrSrc, planeInfo, size, 1) : nullAccess);
-	ycbcr::ChannelAccess				bChannelAccess		(planeInfo.hasChannelNdx(2) ? getChannelAccess(ycbcrSrc, planeInfo, size, 2) : nullAccess);
-	ycbcr::ChannelAccess				aChannelAccess		(planeInfo.hasChannelNdx(3) ? getChannelAccess(ycbcrSrc, planeInfo, size, 3) : nullAccessAlpha);
+	deUint32							nullAccessData			(0u);
+	ycbcr::ChannelAccess				nullAccess				(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, tcu::IVec3(size.x(), size.y(), 1), tcu::IVec3(0, 0, 0), &nullAccessData, 0u);
+	deUint32							nullAccessAlphaData		(~0u);
+	ycbcr::ChannelAccess				nullAccessAlpha			(tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT, 1u, tcu::IVec3(size.x(), size.y(), 1), tcu::IVec3(0, 0, 0), &nullAccessAlphaData, 0u);
+	ycbcr::ChannelAccess				rChannelAccess			(planeInfo.hasChannelNdx(0) ? getChannelAccess(ycbcrSrc, planeInfo, size, 0) : nullAccess);
+	ycbcr::ChannelAccess				gChannelAccess			(planeInfo.hasChannelNdx(1) ? getChannelAccess(ycbcrSrc, planeInfo, size, 1) : nullAccess);
+	ycbcr::ChannelAccess				bChannelAccess			(planeInfo.hasChannelNdx(2) ? getChannelAccess(ycbcrSrc, planeInfo, size, 2) : nullAccess);
+	ycbcr::ChannelAccess				aChannelAccess			(planeInfo.hasChannelNdx(3) ? getChannelAccess(ycbcrSrc, planeInfo, size, 3) : nullAccessAlpha);
+	const bool							implicitNearestCosited	((config.chromaFilter == vk::VK_FILTER_NEAREST && !explicitReconstruction) &&
+																 (config.xChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR || config.yChromaOffset == vk::VK_CHROMA_LOCATION_COSITED_EVEN_KHR));
 
 	for (deUint32 planeNdx = 0; planeNdx < planeInfo.numPlanes; planeNdx++)
 		deMemset(ycbcrSrc.getPlanePtr(planeNdx), 0u, ycbcrSrc.getPlaneSize(planeNdx));
@@ -1048,6 +1050,31 @@ void generateYCbCrImage (ProtectedContext&				ctx,
 	std::vector<tcu::Vec4>				uvBounds;
 	std::vector<tcu::IVec4>				ijBounds;
 	ycbcr::calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, texCoords, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, config.xChromaOffset, config.yChromaOffset, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, ycbcrMinBounds, ycbcrMaxBounds, uvBounds, ijBounds);
+
+	// Handle case: If implicit reconstruction and chromaFilter == NEAREST, an implementation may behave as if both chroma offsets are MIDPOINT.
+	if (implicitNearestCosited)
+	{
+		std::vector<tcu::Vec4>			relaxedYcbcrMinBounds;
+		std::vector<tcu::Vec4>			relaxedYcbcrMaxBounds;
+
+		ycbcr::calculateBounds(rChannelAccess, gChannelAccess, bChannelAccess, aChannelAccess, bitDepth, texCoords, filteringPrecision, conversionPrecision, subTexelPrecisionBits, config.textureFilter, config.colorModel, config.colorRange, config.chromaFilter, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, vk::VK_CHROMA_LOCATION_MIDPOINT_KHR, config.componentMapping, explicitReconstruction, config.addressModeU, config.addressModeV, relaxedYcbcrMinBounds, relaxedYcbcrMaxBounds, uvBounds, ijBounds);
+
+		DE_ASSERT(relaxedYcbcrMinBounds.size() == ycbcrMinBounds.size());
+		DE_ASSERT(relaxedYcbcrMaxBounds.size() == ycbcrMaxBounds.size());
+
+		for (size_t i = 0; i < ycbcrMinBounds.size(); i++)
+		{
+			ycbcrMinBounds[i] = tcu::Vec4(de::min<float>(ycbcrMinBounds[i].x(), relaxedYcbcrMinBounds[i].x()),
+										  de::min<float>(ycbcrMinBounds[i].y(), relaxedYcbcrMinBounds[i].y()),
+										  de::min<float>(ycbcrMinBounds[i].z(), relaxedYcbcrMinBounds[i].z()),
+										  de::min<float>(ycbcrMinBounds[i].w(), relaxedYcbcrMinBounds[i].w()));
+
+			ycbcrMaxBounds[i] = tcu::Vec4(de::max<float>(ycbcrMaxBounds[i].x(), relaxedYcbcrMaxBounds[i].x()),
+										  de::max<float>(ycbcrMaxBounds[i].y(), relaxedYcbcrMaxBounds[i].y()),
+										  de::max<float>(ycbcrMaxBounds[i].z(), relaxedYcbcrMaxBounds[i].z()),
+										  de::max<float>(ycbcrMaxBounds[i].w(), relaxedYcbcrMaxBounds[i].w()));
+		}
+	}
 
 	if (vk::isYCbCrFormat(config.format))
 	{
