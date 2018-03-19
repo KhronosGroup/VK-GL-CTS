@@ -516,7 +516,8 @@ deBool qpTestLog_endTestsCasesTime (qpTestLog* log)
 
 	DE_ASSERT(log->isCaseOpen);
 
-	if (!qpXmlWriter_endElement(log->writer, "TestsCasesTime"))
+	if (!qpXmlWriter_endElement(log->writer, "TestsCasesTime") ||
+		!qpXmlWriter_endDocument(log->writer))
 	{
 		qpPrintf("qpTestLog_endTestsCasesTime(): Writing XML failed\n");
 		deMutex_unlock(log->lock);
