@@ -228,7 +228,7 @@ class GitRepo (Source):
 
 		pushWorkingDir(fullDstPath)
 		try:
-			execute(["git", "fetch", url, "+refs/heads/*:refs/remotes/origin/*"])
+			execute(["git", "fetch", "--tags", url, "+refs/heads/*:refs/remotes/origin/*"])
 			execute(["git", "checkout", self.revision])
 		finally:
 			popWorkingDir()
