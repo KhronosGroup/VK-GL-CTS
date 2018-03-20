@@ -1083,6 +1083,7 @@ IVec2 getOffsetRange (const OffsetSize offsetSize)
 
 		case OFFSETSIZE_IMPLEMENTATION_MAXIMUM:
 			DE_FATAL("Not known");
+			return IVec2(-1);
 
 		default:
 			DE_ASSERT(false);

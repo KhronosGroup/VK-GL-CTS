@@ -96,6 +96,7 @@ tcu::TestCaseGroup* createSparseResourcesShaderIntrinsicsTests (tcu::TestContext
 					{
 					case SPARSE_FETCH:
 						if ((imageType == IMAGE_TYPE_CUBE) || (imageType == IMAGE_TYPE_CUBE_ARRAY)) continue;
+						break;
 					case SPARSE_SAMPLE_EXPLICIT_LOD:
 					case SPARSE_SAMPLE_IMPLICIT_LOD:
 					case SPARSE_GATHER:

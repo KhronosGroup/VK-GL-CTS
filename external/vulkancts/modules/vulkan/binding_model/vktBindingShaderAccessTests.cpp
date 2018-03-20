@@ -176,9 +176,9 @@ void verifyDriverSupport(const vk::VkPhysicalDeviceFeatures&	deviceFeatures,
 			extensionNames.push_back("VK_KHR_push_descriptor");
 			break;
 
-		// fall through
 		case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
 			extensionNames.push_back("VK_KHR_push_descriptor");
+		// Fallthrough
 		case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
 			extensionNames.push_back("VK_KHR_descriptor_update_template");
 			break;

@@ -75,6 +75,8 @@ VkFormat getPlaneCompatibleFormat (VkFormat multiPlanarFormat, deUint32 planeNdx
 		case VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR:
 			if (de::inRange(planeNdx, 0u, 2u))
 				return VK_FORMAT_R8_UNORM;
+			else
+				break;
 
 		case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR:
 		case VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR:
@@ -82,6 +84,8 @@ VkFormat getPlaneCompatibleFormat (VkFormat multiPlanarFormat, deUint32 planeNdx
 				return VK_FORMAT_R8_UNORM;
 			else if (planeNdx == 1)
 				return VK_FORMAT_R8G8_UNORM;
+			else
+				break;
 
 		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR:
 		case VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR:
@@ -114,6 +118,8 @@ VkFormat getPlaneCompatibleFormat (VkFormat multiPlanarFormat, deUint32 planeNdx
 		case VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR:
 			if (de::inRange(planeNdx, 0u, 2u))
 				return VK_FORMAT_R16_UNORM;
+			else
+				break;
 
 		case VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR:
 		case VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR:
@@ -121,11 +127,15 @@ VkFormat getPlaneCompatibleFormat (VkFormat multiPlanarFormat, deUint32 planeNdx
 				return VK_FORMAT_R16_UNORM;
 			else if (planeNdx == 1)
 				return VK_FORMAT_R16G16_UNORM;
+			else
+				break;
 
 		default:
-			DE_FATAL("Invalid format and plane index combination");
-			return VK_FORMAT_UNDEFINED;
+			break;
 	}
+
+	DE_FATAL("Invalid format and plane index combination");
+	return VK_FORMAT_UNDEFINED;
 }
 
 Move<VkImage> createTestImage (const DeviceInterface&	vkd,
