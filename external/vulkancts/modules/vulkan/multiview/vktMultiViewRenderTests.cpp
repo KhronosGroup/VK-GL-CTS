@@ -23,6 +23,7 @@
 
 #include "vktMultiViewRenderTests.hpp"
 #include "vktMultiViewRenderUtil.hpp"
+#include "vktMultiViewRenderPassUtil.hpp"
 
 #include "vktTestCase.hpp"
 #include "vkBuilderUtil.hpp"
@@ -75,12 +76,108 @@ enum TestType
 	TEST_TYPE_LAST
 };
 
+enum RenderPassType
+{
+	RENDERPASS_TYPE_LEGACY = 0,
+	RENDERPASS_TYPE_RENDERPASS2,
+};
+
 struct TestParameters
 {
 	VkExtent3D			extent;
 	vector<deUint32>	viewMasks;
 	TestType			viewIndex;
+	RenderPassType		renderPassType;
 };
+
+vk::Move<vk::VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
+										   const VkDevice				device,
+										   const VkFormat				colorFormat,
+										   const vector<deUint32>&		viewMasks,
+										   RenderPassType				renderPassType)
+{
+	switch (renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:
+			return MultiView::makeRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, device, colorFormat, viewMasks);
+		case RENDERPASS_TYPE_RENDERPASS2:
+			return MultiView::makeRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, device, colorFormat, viewMasks);
+		default:
+			TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+vk::Move<vk::VkRenderPass> makeRenderPassWithAttachments (const DeviceInterface&	vk,
+														  const VkDevice			device,
+														  const VkFormat			colorFormat,
+														  const vector<deUint32>&	viewMasks,
+														  RenderPassType			renderPassType)
+{
+	switch (renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:
+			return MultiView::makeRenderPassWithAttachments<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, device, colorFormat, viewMasks);
+		case RENDERPASS_TYPE_RENDERPASS2:
+			return MultiView::makeRenderPassWithAttachments<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, device, colorFormat, viewMasks);
+		default:
+			TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+template<typename RenderpassSubpass>
+void cmdBeginRenderPass (DeviceInterface& vkd, VkCommandBuffer cmdBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassContents contents)
+{
+	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, contents);
+
+	RenderpassSubpass::cmdBeginRenderPass(vkd, cmdBuffer, pRenderPassBegin, &subpassBeginInfo);
+}
+
+void cmdBeginRenderPass (DeviceInterface& vkd, VkCommandBuffer cmdBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassContents contents, RenderPassType renderPassType)
+{
+	switch (renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:		cmdBeginRenderPass<RenderpassSubpass1>(vkd, cmdBuffer, pRenderPassBegin, contents);	break;
+		case RENDERPASS_TYPE_RENDERPASS2:	cmdBeginRenderPass<RenderpassSubpass2>(vkd, cmdBuffer, pRenderPassBegin, contents);	break;
+		default:							TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+template<typename RenderpassSubpass>
+void cmdNextSubpass (DeviceInterface& vkd, VkCommandBuffer cmdBuffer, const VkSubpassContents contents)
+{
+	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, contents);
+	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo		(DE_NULL);
+
+	RenderpassSubpass::cmdNextSubpass(vkd, cmdBuffer, &subpassBeginInfo, &subpassEndInfo);
+}
+
+void cmdNextSubpass (DeviceInterface& vkd, VkCommandBuffer cmdBuffer, const VkSubpassContents contents, RenderPassType renderPassType)
+{
+	switch (renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:		cmdNextSubpass<RenderpassSubpass1>(vkd, cmdBuffer, contents);	break;
+		case RENDERPASS_TYPE_RENDERPASS2:	cmdNextSubpass<RenderpassSubpass2>(vkd, cmdBuffer, contents);	break;
+		default:							TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+template<typename RenderpassSubpass>
+void cmdEndRenderPass (DeviceInterface& vkd, VkCommandBuffer cmdBuffer)
+{
+	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo	(DE_NULL);
+
+	RenderpassSubpass::cmdEndRenderPass(vkd, cmdBuffer, &subpassEndInfo);
+}
+
+void cmdEndRenderPass (DeviceInterface& vkd, VkCommandBuffer cmdBuffer, RenderPassType renderPassType)
+{
+	switch (renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:		cmdEndRenderPass<RenderpassSubpass1>(vkd, cmdBuffer);	break;
+		case RENDERPASS_TYPE_RENDERPASS2:	cmdEndRenderPass<RenderpassSubpass2>(vkd, cmdBuffer);	break;
+		default:							TCU_THROW(InternalError, "Impossible");
+	}
+}
 
 class ImageAttachment
 {
@@ -153,6 +250,7 @@ protected:
 	bool							checkImage				(tcu::ConstPixelBufferAccess& dst);
 	MovePtr<tcu::Texture2DArray>	imageData				(void);
 
+	const bool						m_extensionSupported;
 	const TestParameters			m_parameters;
 	VkFormat						m_colorFormat;
 	const deUint32					m_squareCount;
@@ -171,11 +269,12 @@ protected:
 };
 
 MultiViewRenderTestInstance::MultiViewRenderTestInstance (Context& context, const TestParameters& parameters)
-	: TestInstance		(context)
-	, m_parameters		(fillMissingParameters(parameters))
-	, m_colorFormat		(VK_FORMAT_R8G8B8A8_UNORM)
-	, m_squareCount		(4u)
-	,m_queueFamilyIndex	(0u)
+	: TestInstance			(context)
+	, m_extensionSupported	((parameters.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_parameters			(fillMissingParameters(parameters))
+	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_squareCount			(4u)
+	, m_queueFamilyIndex	(0u)
 {
 	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_multiview"))
 		throw tcu::NotSupportedError("VK_KHR_multiview is not supported");
@@ -191,7 +290,7 @@ tcu::TestStatus MultiViewRenderTestInstance::iterate (void)
 	const deUint32								subpassCount				= static_cast<deUint32>(m_parameters.viewMasks.size());
 
 	// FrameBuffer & renderPass
-	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_colorFormat, m_parameters.viewMasks));
+	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_colorFormat, m_parameters.viewMasks, m_parameters.renderPassType));
 
 	vector<VkImageView>							attachments;
 	attachments.push_back(m_colorAttachment->getImageView());
@@ -286,7 +385,7 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount,VkRenderPass
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
 
@@ -298,10 +397,10 @@ void MultiViewRenderTestInstance::draw (const deUint32 subpassCount,VkRenderPass
 			m_device->cmdDraw(*m_cmdBuffer, 4u, 1u, (drawNdx + subpassNdx % m_squareCount) * 4u, 0u);
 
 		if (subpassNdx < subpassCount - 1u)
-			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
 	afterDraw();
 
@@ -471,6 +570,10 @@ void MultiViewRenderTestInstance::createMultiViewDevices (void)
 
 		if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_multiview"))
 			deviceExtensions.push_back("VK_KHR_multiview");
+
+		if (m_parameters.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+			if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_create_renderpass2"))
+				deviceExtensions.push_back("VK_KHR_create_renderpass2");
 
 		const VkDeviceCreateInfo		deviceInfo			=
 		{
@@ -1026,7 +1129,7 @@ tcu::TestStatus MultiViewAttachmentsTestInstance::iterate (void)
 	m_inputAttachment	= de::SharedPtr<ImageAttachment>(new ImageAttachment(*m_logicalDevice, *m_device, *m_allocator, m_parameters.extent, m_colorFormat));
 
 	// FrameBuffer & renderPass
-	Unique<VkRenderPass>						renderPass				(makeRenderPassWithAttachments(*m_device, *m_logicalDevice, m_colorFormat, m_parameters.viewMasks));
+	Unique<VkRenderPass>						renderPass				(makeRenderPassWithAttachments(*m_device, *m_logicalDevice, m_colorFormat, m_parameters.viewMasks, m_parameters.renderPassType));
 
 	vector<VkImageView>							attachments;
 	attachments.push_back(m_colorAttachment->getImageView());
@@ -1248,13 +1351,12 @@ void MultiViewInstancedTestInstance::createVertexData (void)
 	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color));
 }
 
-void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
+void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkDeviceSize				vertexBufferOffset		= 0u;
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
 	const VkRenderPassBeginInfo		renderPassBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
@@ -1270,7 +1372,7 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount,VkRenderP
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
 
@@ -1281,10 +1383,10 @@ void MultiViewInstancedTestInstance::draw (const deUint32 subpassCount,VkRenderP
 		m_device->cmdDraw(*m_cmdBuffer, 4u, drawCountPerSubpass, 0u, subpassNdx % m_squareCount);
 
 		if (subpassNdx < subpassCount - 1u)
-			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
 	afterDraw();
 
@@ -1298,6 +1400,7 @@ public:
 				MultiViewInputRateInstanceTestInstance	(Context& context, const TestParameters& parameters);
 protected:
 	void		createVertexData						(void);
+
 	void		draw									(const deUint32			subpassCount,
 														 VkRenderPass			renderPass,
 														 VkFramebuffer			frameBuffer,
@@ -1324,13 +1427,12 @@ void MultiViewInputRateInstanceTestInstance::createVertexData (void)
 	m_data.push_back(VertexData(tcu::Vec4( 0.0f, 0.0f, 1.0f, 1.0f), color));
 }
 
-void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
+void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkDeviceSize				vertexBufferOffset		= 0u;
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
 	const VkRenderPassBeginInfo		renderPassBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
@@ -1346,7 +1448,7 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount,V
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
 
@@ -1358,10 +1460,10 @@ void MultiViewInputRateInstanceTestInstance::draw (const deUint32 subpassCount,V
 			m_device->cmdDraw(*m_cmdBuffer, 4u, 4u, 0u, 0u);
 
 		if (subpassNdx < subpassCount - 1u)
-			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
 	afterDraw();
 
@@ -1442,7 +1544,7 @@ void MultiViewIDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRen
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
 
@@ -1463,10 +1565,10 @@ void MultiViewIDrawIndirectTestInstance::draw (const deUint32 subpassCount,VkRen
 		}
 
 		if (subpassNdx < subpassCount - 1u)
-			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
 	afterDraw();
 
@@ -1490,7 +1592,7 @@ MultiViewClearAttachmentsTestInstance::MultiViewClearAttachmentsTestInstance (Co
 {
 }
 
-void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount,VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
+void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines)
 {
 	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
 	const VkClearValue				renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
@@ -1512,7 +1614,7 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount,Vk
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(*m_vertexBuffer), &vertexBufferOffset);
 
@@ -1561,10 +1663,10 @@ void MultiViewClearAttachmentsTestInstance::draw (const deUint32 subpassCount,Vk
 		m_device->cmdClearAttachments(*m_cmdBuffer, 1u, &clearAttachment, 1u, &clearRect);
 
 		if (subpassNdx < subpassCount - 1u)
-			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
 	afterDraw();
 
@@ -1597,7 +1699,6 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 	const VkClearValue					renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
 	const VkDeviceSize					vertexBufferOffset		= 0u;
 	const deUint32						drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
-
 	const VkRenderPassBeginInfo			renderPassBeginInfo		=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
@@ -1613,7 +1714,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 	beforeDraw();
 
-	m_device->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, m_parameters.renderPassType);
 
 	//Create secondary buffer
 	const VkCommandBufferAllocateInfo	cmdBufferAllocateInfo	=
@@ -1641,10 +1742,10 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 		m_device->cmdExecuteCommands(*m_cmdBuffer, 1u, &cmdBufferSecondary.back().get()->get());
 		if (subpassNdx < subpassCount - 1u)
-			m_device->cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+			cmdNextSubpass(*m_device, *m_cmdBuffer, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS, m_parameters.renderPassType);
 	}
 
-	m_device->cmdEndRenderPass(*m_cmdBuffer);
+	cmdEndRenderPass(*m_device, *m_cmdBuffer, m_parameters.renderPassType);
 
 	afterDraw();
 
@@ -1868,11 +1969,23 @@ private:
 };
 } //anonymous
 
+static std::string createViewMasksName(const std::vector<deUint32>& viewMasks)
+{
+	std::ostringstream		masks;
+
+	for (size_t ndx = 0u; ndx < viewMasks.size(); ++ndx)
+	{
+		masks << viewMasks[ndx];
+		if (viewMasks.size() - 1 != ndx)
+			masks << "_";
+	}
+
+	return masks.str();
+}
+
 void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 {
-	tcu::TestContext&			testCtx						= group->getTestContext();
 	const deUint32				testCaseCount				= 6u;
-	MovePtr<tcu::TestCaseGroup>	groupViewIndex				(new tcu::TestCaseGroup(testCtx, "index", "ViewIndex rendering tests."));
 	const string				shaderName[TEST_TYPE_LAST]	=
 	{
 		"masks",
@@ -1925,59 +2038,66 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 	for (deUint32 mask = 1u; mask <= maxViewMask; mask = mask << 1u)
 		viewMasks[5].push_back(mask);
 
-	for (int testTypeNdx = TEST_TYPE_VIEW_MASK; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
+	for (int renderPassTypeNdx = 0; renderPassTypeNdx < 2; ++renderPassTypeNdx)
 	{
-		MovePtr<tcu::TestCaseGroup>	groupShader	(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str(), ""));
-		for (deUint32 testCaseNdx = 0u; testCaseNdx < testCaseCount; ++testCaseNdx)
-		{
-			const TestParameters	parameters		=	{extent3D[testCaseNdx], viewMasks[testCaseNdx], (TestType)testTypeNdx};
-			std::ostringstream		masks;
-			const deUint32			viewMaksSize	=	static_cast<deUint32>(viewMasks[testCaseNdx].size());
+		RenderPassType				renderPassType		((renderPassTypeNdx == 0) ? RENDERPASS_TYPE_LEGACY : RENDERPASS_TYPE_RENDERPASS2);
+		MovePtr<tcu::TestCaseGroup>	groupRenderPass2	((renderPassTypeNdx == 0) ? DE_NULL : new tcu::TestCaseGroup(group->getTestContext(), "renderpass2", "RenderPass2 index tests"));
+		tcu::TestCaseGroup*			targetGroup			((renderPassTypeNdx == 0) ? group : groupRenderPass2.get());
+		tcu::TestContext&			testCtx				(targetGroup->getTestContext());
+		MovePtr<tcu::TestCaseGroup>	groupViewIndex		(new tcu::TestCaseGroup(testCtx, "index", "ViewIndex rendering tests."));
 
-			for (deUint32 ndx = 0u; ndx < viewMaksSize; ++ndx)
+		for (int testTypeNdx = TEST_TYPE_VIEW_MASK; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
+		{
+			MovePtr<tcu::TestCaseGroup>	groupShader			(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str(), ""));
+			const TestType				testType			= static_cast<TestType>(testTypeNdx);
+
+			for (deUint32 testCaseNdx = 0u; testCaseNdx < testCaseCount; ++testCaseNdx)
 			{
-				masks<<viewMasks[testCaseNdx][ndx];
-				if (viewMaksSize - 1 != ndx)
-					masks<<"_";
+				const TestParameters	parameters	=	{ extent3D[testCaseNdx], viewMasks[testCaseNdx], testType, renderPassType };
+				const std::string		testName	=	createViewMasksName(parameters.viewMasks);
+
+				groupShader->addChild(new MultiViewRenderTestsCase(testCtx, testName.c_str(), "", parameters));
 			}
-			groupShader->addChild(new MultiViewRenderTestsCase(testCtx, masks.str().c_str(), "", parameters));
+
+			// maxMultiviewViewCount case
+			{
+				const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
+				const vector<deUint32>	dummyMasks;
+				const TestParameters	parameters			= { incompleteExtent3D, dummyMasks, testType, renderPassType };
+
+				groupShader->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
+			}
+
+			switch (testType)
+			{
+				case TEST_TYPE_VIEW_MASK:
+				case TEST_TYPE_INPUT_ATTACHMENTS:
+				case TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY:
+				case TEST_TYPE_INSTANCED_RENDERING:
+				case TEST_TYPE_INPUT_RATE_INSTANCE:
+				case TEST_TYPE_DRAW_INDIRECT:
+				case TEST_TYPE_CLEAR_ATTACHMENTS:
+				case TEST_TYPE_SECONDARY_CMD_BUFFER:
+				case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
+					targetGroup->addChild(groupShader.release());
+					break;
+				case TEST_TYPE_VIEW_INDEX_IN_VERTEX:
+				case TEST_TYPE_VIEW_INDEX_IN_FRAGMENT:
+				case TEST_TYPE_VIEW_INDEX_IN_GEOMETRY:
+				case TEST_TYPE_VIEW_INDEX_IN_TESELLATION:
+					groupViewIndex->addChild(groupShader.release());
+					break;
+				default:
+					DE_ASSERT(0);
+					break;
+			};
 		}
 
-		// maxMultiviewViewCount case
-		{
-			const VkExtent3D		incompleteExtent3D	= { 16u, 16u, 0u };
-			const vector<deUint32>	dummyMasks;
-			const TestParameters	parameters			= { incompleteExtent3D, dummyMasks, (TestType)testTypeNdx };
+		targetGroup->addChild(groupViewIndex.release());
 
-			groupShader->addChild(new MultiViewRenderTestsCase(testCtx, "max_multi_view_view_count", "", parameters));
-		}
-
-		switch (testTypeNdx)
-		{
-			case TEST_TYPE_VIEW_MASK:
-			case TEST_TYPE_INPUT_ATTACHMENTS:
-			case TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY:
-			case TEST_TYPE_INSTANCED_RENDERING:
-			case TEST_TYPE_INPUT_RATE_INSTANCE:
-			case TEST_TYPE_DRAW_INDIRECT:
-			case TEST_TYPE_CLEAR_ATTACHMENTS:
-			case TEST_TYPE_SECONDARY_CMD_BUFFER:
-			case TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY:
-				group->addChild(groupShader.release());
-				break;
-			case TEST_TYPE_VIEW_INDEX_IN_VERTEX:
-			case TEST_TYPE_VIEW_INDEX_IN_FRAGMENT:
-			case TEST_TYPE_VIEW_INDEX_IN_GEOMETRY:
-			case TEST_TYPE_VIEW_INDEX_IN_TESELLATION:
-				groupViewIndex->addChild(groupShader.release());
-				break;
-			default:
-				DE_ASSERT(0);
-				break;
-		};
+		if (renderPassTypeNdx == 1)
+			group->addChild(groupRenderPass2.release());
 	}
-
-	group->addChild(groupViewIndex.release());
 }
 
 } //MultiView

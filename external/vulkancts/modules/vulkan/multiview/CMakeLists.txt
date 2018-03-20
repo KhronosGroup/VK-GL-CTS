@@ -3,6 +3,8 @@ include_directories(..)
 set(DEQP_VK_MULTI_VIEW_SRCS
 	vktMultiViewTests.hpp
 	vktMultiViewTests.cpp
+	vktMultiViewRenderPassUtil.hpp
+	vktMultiViewRenderPassUtil.cpp
 	vktMultiViewRenderTests.hpp
 	vktMultiViewRenderTests.cpp
 	vktMultiViewRenderUtil.hpp
