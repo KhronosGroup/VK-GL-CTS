@@ -419,7 +419,7 @@ void Parser::advance (void)
 		{
 			case STATE_ENTITY:
 				m_state = STATE_DATA;
-				// Fall-through to STATE_DATA processing.
+				// Fall-through
 
 			case STATE_DATA:
 				switch (curToken)

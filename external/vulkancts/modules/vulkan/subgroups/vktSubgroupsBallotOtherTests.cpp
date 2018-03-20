@@ -124,6 +124,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_INVERSE_BALLOT:
 			return "subgroupInverseBallot";
 		case OPTYPE_BALLOT_BIT_EXTRACT:
@@ -175,6 +176,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		default:
 			DE_FATAL("Unknown op type!");
+			break;
 		case OPTYPE_INVERSE_BALLOT:
 			bdy << "  tempResult |= subgroupInverseBallot(allOnes) ? 0x1 : 0;\n"
 				<< "  tempResult |= subgroupInverseBallot(allZeros) ? 0 : 0x2;\n"
@@ -405,6 +407,7 @@ void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		default:
 			DE_FATAL("Unknown op type!");
+			break;
 		case OPTYPE_INVERSE_BALLOT:
 			bdy << "  tempResult |= subgroupInverseBallot(allOnes) ? 0x1 : 0;\n"
 				<< "  tempResult |= subgroupInverseBallot(allZeros) ? 0 : 0x2;\n"

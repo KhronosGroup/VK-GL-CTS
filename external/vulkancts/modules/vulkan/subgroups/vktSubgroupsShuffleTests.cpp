@@ -121,6 +121,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_SHUFFLE:
 			return "subgroupShuffle";
 		case OPTYPE_SHUFFLE_XOR:

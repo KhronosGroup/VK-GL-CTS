@@ -722,16 +722,19 @@ bool TestCaseBase::comparePixel(const unsigned char* buffer, unsigned int x, uns
 	{
 		result &= (expected_alpha == buffer[texel_offset + 3]);
 	}
+	/* Fallthrough */
 
 	case 3:
 	{
 		result &= (expected_blue == buffer[texel_offset + 2]);
 	}
+	/* Fallthrough */
 
 	case 2:
 	{
 		result &= (expected_green == buffer[texel_offset + 1]);
 	}
+	/* Fallthrough */
 
 	case 1:
 	{

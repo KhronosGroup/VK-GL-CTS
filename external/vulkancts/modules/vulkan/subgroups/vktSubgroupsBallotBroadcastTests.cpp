@@ -120,6 +120,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_BROADCAST:
 			return "subgroupBroadcast";
 		case OPTYPE_BROADCAST_FIRST:

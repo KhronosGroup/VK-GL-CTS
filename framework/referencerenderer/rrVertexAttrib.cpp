@@ -314,6 +314,7 @@ void readFloat (tcu::Vec4& dst, const VertexAttribType type, const int size, con
 		case VERTEXATTRIBTYPE_PURE_INT16:
 		case VERTEXATTRIBTYPE_PURE_INT32:
 			DE_FATAL("Invalid read");
+			break;
 
 		default:
 			DE_ASSERT(false);
@@ -360,6 +361,7 @@ void readInt (tcu::IVec4& dst, const VertexAttribType type, const int size, cons
 		case VERTEXATTRIBTYPE_NONPURE_SNORM_2_10_10_10_REV_CLAMP_BGRA:
 		case VERTEXATTRIBTYPE_NONPURE_SNORM_2_10_10_10_REV_SCALE_BGRA:
 			DE_FATAL("Invalid read");
+			break;
 
 		default:
 			DE_ASSERT(false);
@@ -406,6 +408,7 @@ void readUint (tcu::UVec4& dst, const VertexAttribType type, const int size, con
 		case VERTEXATTRIBTYPE_NONPURE_SNORM_2_10_10_10_REV_CLAMP_BGRA:
 		case VERTEXATTRIBTYPE_NONPURE_SNORM_2_10_10_10_REV_SCALE_BGRA:
 			DE_FATAL("Invalid read");
+			break;
 
 		default:
 			DE_ASSERT(false);
