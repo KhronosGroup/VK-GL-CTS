@@ -96,6 +96,7 @@ EXTENSIONS			= [
 	'GL_ARB_clip_control',
 	'GL_ARB_buffer_storage',
 	'GL_ARB_compute_shader',
+	'GL_ARB_draw_indirect',
 	'GL_ARB_draw_instanced',
 	'GL_ARB_draw_elements_base_vertex',
 	'GL_ARB_direct_state_access',
