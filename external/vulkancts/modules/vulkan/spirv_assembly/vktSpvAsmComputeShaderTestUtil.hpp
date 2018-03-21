@@ -29,6 +29,7 @@
 #include "deSharedPtr.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"
+#include "tcuTestLog.hpp"
 #include "vkMemUtil.hpp"
 #include "vktSpvAsmUtils.hpp"
 
@@ -60,6 +61,7 @@ enum BufferType
 {
 	BUFFERTYPE_INPUT = 0,
 	BUFFERTYPE_EXPECTED,
+	BUFFERTYPE_ATOMIC_RET,
 
 	BUFFERTYPE_LAST
 };
@@ -138,6 +140,17 @@ public:
 				}
 			}
 		}
+		else if (m_type == BUFFERTYPE_ATOMIC_RET)
+		{
+			bytes.resize(m_numInputElements * sizeof(deInt32), 0xff);
+
+			if (m_opAtomic == OPATOMIC_COMPEX)
+			{
+				deInt32* const bytesAsInt = reinterpret_cast<deInt32* const>(&bytes.front());
+				for (size_t ndx = 0; ndx < m_numInputElements; ndx++)
+					bytesAsInt[ndx] = inputInts[ndx] % 2;
+			}
+		}
 		else
 			DE_FATAL("Unknown buffer type");
 	}
@@ -146,6 +159,7 @@ public:
 	{
 		switch (m_type)
 		{
+			case BUFFERTYPE_ATOMIC_RET:
 			case BUFFERTYPE_INPUT:
 				return m_numInputElements * sizeof(deInt32);
 			case BUFFERTYPE_EXPECTED:
@@ -154,6 +168,98 @@ public:
 				DE_FATAL("Unknown buffer type");
 				return 0;
 		}
+	}
+
+	template <int OpAtomic>
+	static bool compareWithRetvals (const std::vector<BufferSp>& inputs, const std::vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, tcu::TestLog& log)
+	{
+		if (outputAllocs.size() != 2 || inputs.size() != 1)
+			DE_FATAL("Wrong number of buffers to compare");
+
+		for (size_t i = 0; i < outputAllocs.size(); ++i)
+		{
+			const deUint32*	values = reinterpret_cast<deUint32*>(outputAllocs[i]->getHostPtr());
+
+			if (i == 1 && OpAtomic != OPATOMIC_COMPEX)
+			{
+				// BUFFERTYPE_ATOMIC_RET for arithmetic operations must be verified manually by matching return values to inputs
+				std::vector<deUint8>	inputBytes;
+				inputs[0]->getBytes(inputBytes);
+
+				const deUint32*			inputValues			= reinterpret_cast<deUint32*>(&inputBytes.front());
+				const size_t			inputValuesCount	= inputBytes.size() / sizeof(deUint32);
+
+				// result of all atomic operations
+				const deUint32			resultValue			= *reinterpret_cast<deUint32*>(outputAllocs[0]->getHostPtr());
+
+				if (!compareRetVals<OpAtomic>(inputValues, inputValuesCount, resultValue, values))
+				{
+					log << tcu::TestLog::Message << "Wrong contents of buffer with return values after atomic operation." << tcu::TestLog::EndMessage;
+					return false;
+				}
+			}
+			else
+			{
+				const BufferSp&			expectedOutput = expectedOutputs[i];
+				std::vector<deUint8>	expectedBytes;
+
+				expectedOutput->getBytes(expectedBytes);
+
+				if (deMemCmp(&expectedBytes.front(), values, expectedBytes.size()))
+				{
+					log << tcu::TestLog::Message << "Wrong contents of buffer after atomic operation" << tcu::TestLog::EndMessage;
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	template <int OpAtomic>
+	static bool compareRetVals (const deUint32* inputValues, const size_t inputValuesCount, const deUint32 resultValue, const deUint32* returnValues)
+	{
+		// as the order of execution is undefined, validation of return values for atomic operations is tricky:
+		// each inputValue stands for one atomic operation. Iterate through all of
+		// done operations in time, each time finding one matching current result and un-doing it.
+
+		std::vector<bool>		operationsUndone (inputValuesCount, false);
+		deUint32				currentResult	 = resultValue;
+
+		for (size_t operationUndone = 0; operationUndone < inputValuesCount; ++operationUndone)
+		{
+			// find which of operations was done at this moment
+			size_t ndx;
+			for (ndx = 0; ndx < inputValuesCount; ++ndx)
+			{
+				if (operationsUndone[ndx]) continue;
+
+				deUint32 previousResult = currentResult;
+
+				switch (OpAtomic)
+				{
+					// operations are undone here, so the actual opeation is reversed
+					case OPATOMIC_IADD:		previousResult -= inputValues[ndx];						break;
+					case OPATOMIC_ISUB:		previousResult += inputValues[ndx];						break;
+					case OPATOMIC_IINC:		previousResult--;										break;
+					case OPATOMIC_IDEC:		previousResult++;										break;
+					default:				DE_FATAL("Unsupported OpAtomic type for return value compare");
+				}
+
+				if (previousResult == returnValues[ndx])
+				{
+					// found matching operation
+					currentResult			= returnValues[ndx];
+					operationsUndone[ndx]	= true;
+					break;
+				}
+			}
+			if (ndx == inputValuesCount)
+			{
+				// no operation matches the current result value
+				return false;
+			}
+		}
+		return true;
 	}
 
 private:
