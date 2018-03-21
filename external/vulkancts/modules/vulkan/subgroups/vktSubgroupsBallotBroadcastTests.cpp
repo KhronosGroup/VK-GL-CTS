@@ -540,6 +540,7 @@ void supportedCheck (Context& context, const CaseDefinition& caseDef)
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
 	supportedCheck(context, caseDef);
+
 	if (!subgroups::areSubgroupOperationsSupportedForStage(
 			context, caseDef.shaderStage))
 	{
@@ -576,20 +577,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupSupported(context))
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
-
-
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
-	}
-
-	if (subgroups::isDoubleFormat(caseDef.format) &&
-			!subgroups::isDoubleSupportedForDevice(context))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup double operations");
-	}
+	supportedCheck(context, caseDef);
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
