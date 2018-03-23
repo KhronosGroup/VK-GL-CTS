@@ -135,8 +135,9 @@ def runSteps (steps):
 		else:
 			print "Skip: %s" % step.getName()
 
-COMMON_GCC_CFLAGS	= ["-Werror", "-Wno-error=unused-function"]
-COMMON_CLANG_CFLAGS	= COMMON_GCC_CFLAGS + ["-Wno-error=unused-command-line-argument"]
+COMMON_CFLAGS		= ["-Werror", "-Wno-error=unused-function"]
+COMMON_GCC_CFLAGS	= COMMON_CFLAGS + ["-Wno-implicit-fallthrough"]
+COMMON_CLANG_CFLAGS	= COMMON_CFLAGS + ["-Wno-error=unused-command-line-argument"]
 GCC_32BIT_CFLAGS	= COMMON_GCC_CFLAGS + ["-m32"]
 CLANG_32BIT_CFLAGS	= COMMON_CLANG_CFLAGS + ["-m32"]
 GCC_64BIT_CFLAGS	= COMMON_GCC_CFLAGS + ["-m64"]
