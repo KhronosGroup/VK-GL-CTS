@@ -952,12 +952,12 @@ VkResult DeviceDriver::getValidationCacheDataEXT (VkDevice device, VkValidationC
 	return m_vk.getValidationCacheDataEXT(device, validationCache, pDataSize, pData);
 }
 
-VkResult DeviceDriver::getMemoryAndroidHardwareBufferPropertiesANDROID (VkDevice device, const pt::AndroidHardwareBufferPtr buffer, VkMemoryAndroidHardwareBufferPropertiesANDROID* pProperties) const
+VkResult DeviceDriver::getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const
 {
-	return m_vk.getMemoryAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);
+	return m_vk.getAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);
 }
 
-VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, pt::AndroidHardwareBufferPtr* pBuffer) const
+VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const
 {
 	return m_vk.getMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
 }

@@ -161,13 +161,6 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES";
 		case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS:									return "VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS";
 		case VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO:									return "VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANDROID_HARDWARE_BUFFER_INFO_ANDROID";
-		case VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID:							return "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID";
-		case VK_STRUCTURE_TYPE_MEMORY_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID:				return "VK_STRUCTURE_TYPE_MEMORY_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID";
-		case VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:						return "VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID";
-		case VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:					return "VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID";
-		case VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_EXTERNAL_FORMAT_PROPERTIES_ANDROID:		return "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_EXTERNAL_FORMAT_PROPERTIES_ANDROID";
-		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID:											return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID";
 		case VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO:										return "VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO";
 		case VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO:								return "VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO";
 		case VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO:							return "VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO";
@@ -310,6 +303,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR:								return "VK_STRUCTURE_TYPE_DISPLAY_PLANE_CAPABILITIES_2_KHR";
 		case VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK:										return "VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK";
 		case VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK:									return "VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK";
+		case VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID:							return "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID";
+		case VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID:						return "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID";
+		case VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID:				return "VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID";
+		case VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:						return "VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID";
+		case VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:					return "VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID";
+		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID:											return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT:										return "VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT";
@@ -5948,19 +5947,6 @@ std::ostream& operator<< (std::ostream& s, const VkShaderModuleValidationCacheCr
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceAndroidHardwareBufferInfoANDROID& value)
-{
-	s << "VkPhysicalDeviceAndroidHardwareBufferInfoANDROID = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tformat = " << value.format << '\n';
-	s << "\ttiling = " << value.tiling << '\n';
-	s << "\timageUsage = " << getImageUsageFlagsStr(value.imageUsage) << '\n';
-	s << "\timageFlags = " << getImageCreateFlagsStr(value.imageFlags) << '\n';
-	s << '}';
-	return s;
-}
-
 std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value)
 {
 	s << "VkAndroidHardwareBufferUsageANDROID = {\n";
@@ -5971,13 +5957,29 @@ std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferUsageAND
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkMemoryAndroidHardwareBufferPropertiesANDROID& value)
+std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value)
 {
-	s << "VkMemoryAndroidHardwareBufferPropertiesANDROID = {\n";
+	s << "VkAndroidHardwareBufferPropertiesANDROID = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tallocationSize = " << value.allocationSize << '\n';
 	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferFormatPropertiesANDROID& value)
+{
+	s << "VkAndroidHardwareBufferFormatPropertiesANDROID = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << "\tformatFeatures = " << getFormatFeatureFlagsStr(value.formatFeatures) << '\n';
+	s << "\tsuggestedYcbcrModel = " << value.suggestedYcbcrModel << '\n';
+	s << "\tsuggestedYcbcrRange = " << value.suggestedYcbcrRange << '\n';
+	s << "\tsuggestedXChromaOffset = " << value.suggestedXChromaOffset << '\n';
+	s << "\tsuggestedYChromaOffset = " << value.suggestedYChromaOffset << '\n';
 	s << '}';
 	return s;
 }
@@ -5998,21 +6000,6 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryGetAndroidHardwareBuffe
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmemory = " << value.memory << '\n';
-	s << '}';
-	return s;
-}
-
-std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferExternalFormatPropertiesANDROID& value)
-{
-	s << "VkAndroidHardwareBufferExternalFormatPropertiesANDROID = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpNext = " << value.pNext << '\n';
-	s << "\texternalFormat = " << value.externalFormat << '\n';
-	s << "\tformatFeatures = " << getFormatFeatureFlagsStr(value.formatFeatures) << '\n';
-	s << "\tsuggestedYcbcrModel = " << value.suggestedYcbcrModel << '\n';
-	s << "\tsuggestedYcbcrRange = " << value.suggestedYcbcrRange << '\n';
-	s << "\tsuggestedXChromaOffset = " << value.suggestedXChromaOffset << '\n';
-	s << "\tsuggestedYChromaOffset = " << value.suggestedYChromaOffset << '\n';
 	s << '}';
 	return s;
 }

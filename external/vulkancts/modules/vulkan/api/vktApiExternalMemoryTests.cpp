@@ -131,6 +131,8 @@ void writeHostMemory (const vk::DeviceInterface&	vkd,
 
 	deMemcpy(ptr, data, size);
 
+	flushMappedMemoryRange(vkd, device, memory, 0, size);
+
 	vkd.unmapMemory(device, memory);
 }
 
@@ -141,6 +143,8 @@ void checkHostMemory (const vk::DeviceInterface&	vkd,
 					  const void*					data)
 {
 	void* const ptr = vk::mapMemory(vkd, device, memory, 0, size, 0);
+
+	invalidateMappedMemoryRange(vkd, device, memory, 0, size);
 
 	if (deMemCmp(ptr, data, size) != 0)
 		TCU_FAIL("Memory contents don't match");
@@ -282,6 +286,12 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_memory_win32");
+	}
+
+	if ((externalMemoryTypes
+			& vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0)
+	{
+		deviceExtensions.push_back("VK_ANDROID_external_memory_android_hardware_buffer");
 	}
 
 	const float								priority				= 0.5f;
@@ -3937,6 +3947,7 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx)
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT).release());
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT).release());
 	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT).release());
+	group->addChild(createMemoryTests(testCtx, vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID).release());
 
 	return group;
 }

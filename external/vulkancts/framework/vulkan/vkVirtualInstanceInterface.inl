@@ -64,4 +64,3 @@ virtual VkResult			getPhysicalDeviceSurfaceCapabilities2EXT			(VkPhysicalDevice 
 virtual VkResult			createIOSSurfaceMVK									(VkInstance instance, const VkIOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
 virtual VkResult			createMacOSSurfaceMVK								(VkInstance instance, const VkMacOSSurfaceCreateInfoMVK* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const = 0;
 virtual void				getPhysicalDeviceMultisamplePropertiesEXT			(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties) const = 0;
-virtual void				getPhysicalDeviceAndroidHardwareBufferUsageANDROID	(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceAndroidHardwareBufferInfoANDROID* pInfo, VkAndroidHardwareBufferUsageANDROID* pUsage) const = 0;
