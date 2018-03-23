@@ -63,6 +63,12 @@ namespace api
 namespace
 {
 
+
+std::string getFormatCaseName (vk::VkFormat format)
+{
+	return de::toLower(de::toString(getFormatStr(format)).substr(10));
+}
+
 vk::VkMemoryDedicatedRequirements getMemoryDedicatedRequirements (const vk::DeviceInterface&	vkd,
 																  vk::VkDevice					device,
 																  vk::VkBuffer					buffer)
@@ -3790,6 +3796,261 @@ de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk:
 	return fenceGroup;
 }
 
+bool ValidateAHardwareBuffer(vk::VkFormat format, deUint64 requiredAhbUsage, const vk::DeviceDriver& vkd, const vk::VkDevice& device)
+{
+	AndroidHardwareBufferExternalApi* ahbApi = AndroidHardwareBufferExternalApi::getInstance();
+	if (!ahbApi)
+	{
+		TCU_THROW(NotSupportedError, "Platform doesn't support Android Hardware Buffer handles");
+	}
+
+	vk::pt::AndroidHardwareBufferPtr ahb = ahbApi->allocate(64u, 64u, 1u, ahbApi->vkFormatToAhbFormat(format), requiredAhbUsage);
+	if (ahb.internal == DE_NULL)
+		return false;
+
+	NativeHandle nativeHandle(ahb);
+	vk::VkAndroidHardwareBufferFormatPropertiesANDROID formatProperties =
+	{
+		vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID,
+		DE_NULL,
+		vk::VK_FORMAT_UNDEFINED,
+		0u,
+		0u,
+		vk::VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
+		vk::VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
+		vk::VK_CHROMA_LOCATION_COSITED_EVEN,
+		vk::VK_CHROMA_LOCATION_COSITED_EVEN
+	};
+	vk::VkAndroidHardwareBufferPropertiesANDROID bufferProperties =
+	{
+		vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
+		&formatProperties,
+		0u,
+		0u
+	};
+
+	VK_CHECK(vkd.getAndroidHardwareBufferPropertiesANDROID(device, ahb, &bufferProperties));
+	TCU_CHECK(formatProperties.format != vk::VK_FORMAT_UNDEFINED);
+	TCU_CHECK(formatProperties.format == format);
+	TCU_CHECK(formatProperties.externalFormat != 0u);
+	TCU_CHECK((formatProperties.formatFeatures & vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0u);
+	TCU_CHECK((formatProperties.formatFeatures & (vk::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT | vk::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT)) != 0u);
+	return true;
+}
+
+tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkFormat format)
+{
+	AndroidHardwareBufferExternalApi* ahbApi = AndroidHardwareBufferExternalApi::getInstance();
+	if (!ahbApi)
+	{
+		TCU_THROW(NotSupportedError, "Platform doesn't support Android Hardware Buffer handles");
+	}
+
+	const vk::VkExternalMemoryHandleTypeFlagBits  externalMemoryType  =	vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+	const vk::PlatformInterface&				  vkp					(context.getPlatformInterface());
+	const vk::Unique<vk::VkInstance>			  instance				(createInstance(vkp, context.getUsedApiVersion(), externalMemoryType, 0u, 0u));
+	const vk::InstanceDriver					  vki					(vkp, *instance);
+	const vk::VkPhysicalDevice					  physicalDevice		(vk::chooseDevice(vki, *instance, context.getTestContext().getCommandLine()));
+	const deUint32								  queueFamilyIndex		(chooseQueueFamilyIndex(vki, physicalDevice, 0u));
+	const vk::Unique<vk::VkDevice>				  device				(createDevice(context.getUsedApiVersion(), vkp, *instance, vki, physicalDevice, 0u, externalMemoryType, 0u, queueFamilyIndex));
+	const vk::DeviceDriver						  vkd					(vkp, *instance, *device);
+	TestLog&									  log				  = context.getTestContext().getLog();
+
+	const vk::VkImageUsageFlagBits				  usageFlags[]		  =
+	{
+		vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+		vk::VK_IMAGE_USAGE_SAMPLED_BIT,
+		vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+		vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+	};
+	const vk::VkImageCreateFlagBits				  createFlags[]		  =
+	{
+		vk::VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,
+		vk::VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,
+		vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+		vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+	};
+	const vk::VkImageTiling						  tilings[]			  =
+	{
+		vk::VK_IMAGE_TILING_OPTIMAL,
+		vk::VK_IMAGE_TILING_LINEAR,
+	};
+	deUint64 mustSupportAhbUsageFlags = ahbApi->mustSupportAhbUsageFlags();
+	const size_t	numOfUsageFlags				= DE_LENGTH_OF_ARRAY(usageFlags);
+	const size_t	numOfCreateFlags			= DE_LENGTH_OF_ARRAY(createFlags);
+	const size_t	numOfFlagCombos				= 1u << (numOfUsageFlags + numOfCreateFlags);
+	const size_t	numOfTilings				= DE_LENGTH_OF_ARRAY(tilings);
+
+	for (size_t combo = 0; combo < numOfFlagCombos; combo++)
+	{
+		vk::VkImageUsageFlags	usage				= 0;
+		vk::VkImageCreateFlags	createFlag			= 0;
+		deUint64				requiredAhbUsage	= 0;
+		for (size_t usageNdx = 0; usageNdx < numOfUsageFlags; usageNdx++)
+		{
+			if ((combo & (1u << usageNdx)) == 0)
+				continue;
+			usage |= usageFlags[usageNdx];
+			requiredAhbUsage |= ahbApi->vkUsageToAhbUsage(usageFlags[usageNdx]);
+		}
+		for (size_t createFlagNdx = 0; createFlagNdx < numOfCreateFlags; createFlagNdx++)
+		{
+			const size_t	bit	= numOfUsageFlags + createFlagNdx;
+			if ((combo & (1u << bit)) == 0)
+				continue;
+			createFlag |= createFlags[createFlagNdx];
+			requiredAhbUsage |= ahbApi->vkCreateToAhbUsage(createFlags[createFlagNdx]);
+		}
+
+		// Only test a combination if the usage flags include at least one of the AHARDWAREBUFFER_USAGE_GPU_* flag.
+		if ((requiredAhbUsage & mustSupportAhbUsageFlags) == 0u)
+			continue;
+
+		// Only test a combination if AHardwareBuffer can be successfully allocated for it.
+		if (!ValidateAHardwareBuffer(format, requiredAhbUsage, vkd, *device))
+			continue;
+
+		bool foundAnyUsableTiling = false;
+		for (size_t tilingIndex = 0; tilingIndex < numOfTilings; tilingIndex++)
+		{
+			const vk::VkImageTiling tiling = tilings[tilingIndex];
+
+			const vk::VkPhysicalDeviceExternalImageFormatInfo	externalInfo		=
+			{
+				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO,
+				DE_NULL,
+				vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID
+			};
+			const vk::VkPhysicalDeviceImageFormatInfo2			info				=
+			{
+				vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+				&externalInfo,
+				format,
+				vk::VK_IMAGE_TYPE_2D,
+				tiling,
+				usage,
+				createFlag,
+			};
+
+			vk::VkAndroidHardwareBufferUsageANDROID				ahbUsageProperties	=
+			{
+				vk::VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID,
+				DE_NULL,
+				0u
+			};
+			vk::VkExternalImageFormatProperties					externalProperties	=
+			{
+				vk::VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES,
+				&ahbUsageProperties,
+				{ 0u, 0u, 0u }
+			};
+			vk::VkImageFormatProperties2						properties			=
+			{
+				vk::VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2,
+				&externalProperties,
+				{
+					{ 0u, 0u, 0u },
+					0u,
+					0u,
+					0u,
+					0u
+				}
+			};
+
+			if (vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &info, &properties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+			{
+				log << TestLog::Message << "Tiling " << tiling << " is not supported." << TestLog::EndMessage;
+				continue;
+			}
+
+			foundAnyUsableTiling = true;
+
+			TCU_CHECK((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) != 0);
+			TCU_CHECK((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) != 0);
+			TCU_CHECK((externalProperties.externalMemoryProperties.externalMemoryFeatures & vk::VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) != 0);
+			deUint32 maxWidth   = properties.imageFormatProperties.maxExtent.width;
+			deUint32 maxHeight  = properties.imageFormatProperties.maxExtent.height;
+			TCU_CHECK(maxWidth >= 4096);
+			TCU_CHECK(maxHeight >= 4096);
+			// Even if not requested, at least one of GPU_* usage flags must be present.
+			TCU_CHECK((ahbUsageProperties.androidHardwareBufferUsage & mustSupportAhbUsageFlags) != 0u);
+			// The AHB usage flags corresponding to the create and usage flags used in info must be present.
+			TCU_CHECK((ahbUsageProperties.androidHardwareBufferUsage & requiredAhbUsage) == requiredAhbUsage);
+
+			log << TestLog::Message << "Required flags: " << std::hex << requiredAhbUsage << " Actual flags: " << std::hex << ahbUsageProperties.androidHardwareBufferUsage
+				<< TestLog::EndMessage;
+
+			struct ImageSize
+			{
+				deUint32 width;
+				deUint32 height;
+			};
+			ImageSize sizes[] =
+			{
+				{64u, 64u},
+				{1024u, 2096u},
+			};
+			for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(sizes); i++)
+			{
+				deUint32								exportedMemoryTypeIndex	= ~0U;
+				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, sizes[i].width, sizes[i].height, tiling, createFlag, usage));
+				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image));
+				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements, externalMemoryType, *image, exportedMemoryTypeIndex));
+				NativeHandle							handle;
+
+				VK_CHECK(vkd.bindImageMemory(*device, *image, *memory, 0u));
+				getMemoryNative(vkd, *device, *memory, externalMemoryType, handle);
+
+				deUint32 ahbFormat = 0;
+				deUint64 anhUsage  = 0;
+				ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, &anhUsage, DE_NULL);
+				TCU_CHECK(ahbFormat == ahbApi->vkFormatToAhbFormat(format));
+				TCU_CHECK((anhUsage & requiredAhbUsage) == requiredAhbUsage);
+			}
+
+			if (properties.imageFormatProperties.maxMipLevels > 1u)
+			{
+				deUint32								exportedMemoryTypeIndex	= ~0U;
+				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, properties.imageFormatProperties.maxMipLevels));
+				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image));
+				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements, externalMemoryType, *image, exportedMemoryTypeIndex));
+				NativeHandle							handle;
+
+				VK_CHECK(vkd.bindImageMemory(*device, *image, *memory, 0u));
+				getMemoryNative(vkd, *device, *memory, externalMemoryType, handle);
+
+				deUint32 ahbFormat = 0;
+				deUint64 anhUsage  = 0;
+				ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, &anhUsage, DE_NULL);
+				TCU_CHECK(ahbFormat == ahbApi->vkFormatToAhbFormat(format));
+				TCU_CHECK((anhUsage & requiredAhbUsage) == requiredAhbUsage);
+			}
+
+			if (properties.imageFormatProperties.maxArrayLayers > 1u)
+			{
+				deUint32								exportedMemoryTypeIndex	= ~0U;
+				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, 1u, properties.imageFormatProperties.maxArrayLayers));
+				const vk::VkMemoryRequirements			requirements			(getImageMemoryRequirements(vkd, *device, *image));
+				const vk::Unique<vk::VkDeviceMemory>	memory					(allocateExportableMemory(vkd, *device, requirements, externalMemoryType, *image, exportedMemoryTypeIndex));
+				NativeHandle							handle;
+
+				VK_CHECK(vkd.bindImageMemory(*device, *image, *memory, 0u));
+				getMemoryNative(vkd, *device, *memory, externalMemoryType, handle);
+
+				deUint32 ahbFormat = 0;
+				deUint64 anhUsage  = 0;
+				ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, &anhUsage, DE_NULL);
+				TCU_CHECK(ahbFormat == ahbApi->vkFormatToAhbFormat(format));
+				TCU_CHECK((anhUsage & requiredAhbUsage) == requiredAhbUsage);
+			}
+		}
+
+		TCU_CHECK(foundAnyUsableTiling);
+	}
+	return tcu::TestStatus::pass("Pass");
+}
+
 de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> fenceGroup (new tcu::TestCaseGroup(testCtx, "fence", "Tests for external fences."));
@@ -3937,6 +4198,31 @@ de::MovePtr<tcu::TestCaseGroup> createMemoryTests (tcu::TestContext& testCtx, vk
 		}
 
 		group->addChild(dedicatedGroup.release());
+	}
+
+	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		de::MovePtr<tcu::TestCaseGroup>	formatGroup	(new tcu::TestCaseGroup(testCtx, "image_formats", "Test minimum image format support"));
+
+		const vk::VkFormat	ahbFormats[]	=
+		{
+			vk::VK_FORMAT_R8G8B8_UNORM,
+			vk::VK_FORMAT_R8G8B8A8_UNORM,
+			vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
+			vk::VK_FORMAT_R16G16B16A16_SFLOAT,
+			vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+		};
+		const size_t		numOfAhbFormats	= DE_LENGTH_OF_ARRAY(ahbFormats);
+
+		for (size_t ahbFormatNdx = 0; ahbFormatNdx < numOfAhbFormats; ahbFormatNdx++)
+		{
+			const vk::VkFormat	format			= ahbFormats[ahbFormatNdx];
+			const std::string	testCaseName	= getFormatCaseName(format);
+
+			addFunctionCase(formatGroup.get(), testCaseName, "", testAndroidHardwareBufferImageFormat, format);
+		}
+
+		group->addChild(formatGroup.release());
 	}
 
 	return group;
