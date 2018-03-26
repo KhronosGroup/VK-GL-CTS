@@ -1225,12 +1225,26 @@ void WideColorSurfaceTest::executeTest (void)
 		{
 			for (deUint32 i = 0; i < m_testAttribList.size(); i +=2)
 			{
-				if (!egl.surfaceAttrib(m_eglDisplay, surface, m_testAttribList[i], m_testAttribList[i+1])) {
-					TCU_FAIL("Unable to set HDR metadata on surface");
+				if (!egl.surfaceAttrib(m_eglDisplay, surface, m_testAttribList[i], m_testAttribList[i+1]))
+				{
+					// Implementation can return EGL_BAD_PARAMETER if given value is not supported.
+					EGLint error = egl.getError();
+					if (error != EGL_BAD_PARAMETER)
+						TCU_FAIL("Unable to set HDR metadata on surface");
+
+					log << tcu::TestLog::Message <<
+						"Warning: Metadata value " << m_testAttribList[i+1] << " for attrib 0x" <<
+						std::hex << m_testAttribList[i] << std::dec <<
+						" not supported by the implementation." << tcu::TestLog::EndMessage;
+					m_testAttribList[i+1] = EGL_BAD_PARAMETER;
 				}
 			}
 			for (deUint32 i = 0; i < m_testAttribList.size(); i +=2)
 			{
+				// Skip unsupported values.
+				if (m_testAttribList[i+1] == EGL_BAD_PARAMETER)
+					continue;
+
 				EGLint value;
 				egl.querySurface(m_eglDisplay, surface, m_testAttribList[i], &value);
 				TCU_CHECK(value == m_testAttribList[i+1]);
@@ -1474,7 +1488,7 @@ void Smpte2086ColorTest::executeTest (void)
 		EGL_SMPTE2086_DISPLAY_PRIMARY_BY_EXT, METADATA_SCALE(0.320),
 		EGL_SMPTE2086_WHITE_POINT_X_EXT, METADATA_SCALE(0.2200),
 		EGL_SMPTE2086_WHITE_POINT_Y_EXT, METADATA_SCALE(0.2578),
-		EGL_SMPTE2086_MAX_LUMINANCE_EXT, METADATA_SCALE(123.0),
+		EGL_SMPTE2086_MAX_LUMINANCE_EXT, METADATA_SCALE(1.31),
 		EGL_SMPTE2086_MIN_LUMINANCE_EXT, METADATA_SCALE(0.123),
 		EGL_NONE
 	};
@@ -1549,8 +1563,8 @@ void Cta8613ColorTest::executeTest (void)
 
 	const EGLint testAttrs[] =
 	{
-		EGL_CTA861_3_MAX_CONTENT_LIGHT_LEVEL_EXT, METADATA_SCALE(234),
-		EGL_CTA861_3_MAX_FRAME_AVERAGE_LEVEL_EXT, METADATA_SCALE(67),
+		EGL_CTA861_3_MAX_CONTENT_LIGHT_LEVEL_EXT, METADATA_SCALE(1.31),
+		EGL_CTA861_3_MAX_FRAME_AVERAGE_LEVEL_EXT, METADATA_SCALE(0.6),
 		EGL_NONE
 	};
 	testObj.addTestAttributes(testAttrs);
