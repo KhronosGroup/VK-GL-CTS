@@ -74,4 +74,3 @@ GetPhysicalDeviceSurfaceCapabilities2EXTFunc			getPhysicalDeviceSurfaceCapabilit
 CreateIOSSurfaceMVKFunc									createIOSSurfaceMVK;
 CreateMacOSSurfaceMVKFunc								createMacOSSurfaceMVK;
 GetPhysicalDeviceMultisamplePropertiesEXTFunc			getPhysicalDeviceMultisamplePropertiesEXT;
-GetPhysicalDeviceAndroidHardwareBufferUsageANDROIDFunc	getPhysicalDeviceAndroidHardwareBufferUsageANDROID;
