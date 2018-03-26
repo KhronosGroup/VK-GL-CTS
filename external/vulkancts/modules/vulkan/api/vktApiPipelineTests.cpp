@@ -32,6 +32,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 namespace vkt
 {
@@ -264,28 +265,6 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 	const Unique<VkShaderModule>					vertexShaderModule				(createShaderModule(vk, device, context.getBinaryCollection().get("vertex"), 0));
 	const Unique<VkShaderModule>					fragmentShaderModule			(createShaderModule(vk, device, context.getBinaryCollection().get("fragment"), 0));
 
-	const VkPipelineShaderStageCreateInfo			shaderStageCreateInfos[]		=
-	{
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
-			DE_NULL,												// const void*                         pNext;
-			(VkPipelineShaderStageCreateFlags)0u,					// VkPipelineShaderStageCreateFlags    flags;
-			VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits               stage;
-			vertexShaderModule.get(),								// VkShaderModule                      shader;
-			"main",													// const char*                         pName;
-			DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
-		},
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
-			DE_NULL,												// const void*                         pNext;
-			(VkPipelineShaderStageCreateFlags)0u,					// VkPipelineShaderStageCreateFlags    flags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits               stage;
-			fragmentShaderModule.get(),								// VkShaderModule                      shader;
-			"main",													// const char*                         pName;
-			DE_NULL,												// const VkSpecializationInfo*         pSpecializationInfo;
-		}
-	};
-
 	const VkPipelineLayoutCreateInfo				pipelineLayoutCreateInfo		=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,		// VkStructureType                     sType;
@@ -310,15 +289,6 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		DE_NULL															// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
 	};
 
-	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType;
-		DE_NULL,														// const void*                                pNext;
-		(VkPipelineInputAssemblyStateCreateFlags)0u,					// VkPipelineInputAssemblyStateCreateFlags    flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,							// VkPrimitiveTopology                        topology;
-		VK_FALSE														// VkBool32                                   primitiveRestartEnable;
-	};
-
 	const VkViewport								viewport						=
 	{
 		0.0f,	// float    x;
@@ -329,22 +299,8 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		0.0f,	// float    maxDepth;
 	};
 
-	const VkRect2D									scissor							=
-	{
-		{ 0,	0	},	// VkOffset2D    offset;
-		{ 64u,	64u	}	// VkExtent2D    extent;
-	};
-
-	const VkPipelineViewportStateCreateInfo			viewPortStateCreateInfo			=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		// VkStructureType                       sType;
-		DE_NULL,													// const void*                           pNext;
-		(VkPipelineViewportStateCreateFlags)0u,						// VkPipelineViewportStateCreateFlags    flags;
-		1u,															// deUint32                              viewportCount;
-		&viewport,													// const VkViewport*                     pViewports;
-		1u,															// deUint32                              scissorCount;
-		&scissor													// const VkRect2D*                       pScissors;
-	};
+	const std::vector<VkViewport>					viewports						(1, viewport);
+	const std::vector<VkRect2D>						scissors						(1, makeRect2D(0, 0, 64u, 64u));
 
 	const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
 	{
@@ -363,19 +319,6 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		1.0f															// float                                      lineWidth;
 	};
 
-	const VkPipelineMultisampleStateCreateInfo		multisampleStateCreateInfo		=
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType                          sType;
-		DE_NULL,														// const void*                              pNext;
-		(VkPipelineMultisampleStateCreateFlags)0u,						// VkPipelineMultisampleStateCreateFlags    flags;
-		VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits                    rasterizationSamples;
-		VK_FALSE,														// VkBool32                                 sampleShadingEnable;
-		0.0f,															// float                                    minSampleShading;
-		DE_NULL,														// const VkSampleMask*                      pSampleMask;
-		VK_FALSE,														// VkBool32                                 alphaToCoverageEnable;
-		VK_FALSE														// VkBool32                                 alphaToOneEnable;
-	};
-
 	const VkPipelineColorBlendAttachmentState		colorBlendAttachmentState		=
 	{
 		VK_FALSE,						// VkBool32                 blendEnable;
@@ -385,7 +328,7 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor            srcAlphaBlendFactor;
 		VK_BLEND_FACTOR_ZERO,			// VkBlendFactor            dstAlphaBlendFactor;
 		VK_BLEND_OP_ADD,				// VkBlendOp                alphaBlendOp;
-		(VkColorComponentFlags)0xF,		// VkColorComponentFlags    colorWriteMask;
+		(VkColorComponentFlags)0xF		// VkColorComponentFlags    colorWriteMask;
 	};
 
 	const VkPipelineColorBlendStateCreateInfo		colorBlendStateCreateInfo		=
@@ -400,30 +343,25 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 		{ 1.0f, 1.0f, 1.0f, 1.0f }										// float                                         blendConstants[4];
 	};
 
-	const VkGraphicsPipelineCreateInfo				graphicsPipelineCreateInfo		=
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType;
-		DE_NULL,											// const void*                                      pNext;
-		(VkPipelineCreateFlags)0u,							// VkPipelineCreateFlags                            flags;
-		DE_LENGTH_OF_ARRAY(shaderStageCreateInfos),			// deUint32                                         stageCount;
-		shaderStageCreateInfos,								// const VkPipelineShaderStageCreateInfo*           pStages;
-		&vertexInputStateCreateInfo,						// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
-		&inputAssemblyStateCreateInfo,						// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
-		DE_NULL,											// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
-		&viewPortStateCreateInfo,							// const VkPipelineViewportStateCreateInfo*         pViewportState;
-		&rasterizationStateCreateInfo,						// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
-		&multisampleStateCreateInfo,						// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
-		DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
-		&colorBlendStateCreateInfo,							// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
-		DE_NULL,											// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
-		pipelineLayout.get(),								// VkPipelineLayout                                 layout;
-		renderPassA,										// VkRenderPass                                     renderPass;
-		0u,													// deUint32                                         subpass;
-		DE_NULL,											// VkPipeline                                       basePipelineHandle;
-		0													// int                                              basePipelineIndex;
-	};
-
-	const Unique<VkPipeline>						graphicsPipeline				(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
+	const Unique<VkPipeline>						graphicsPipeline				(makeGraphicsPipeline(vk,									// const DeviceInterface&                        vk
+																										  device,								// const VkDevice                                device
+																										  *pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
+																										  *vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
+																										  DE_NULL,								// const VkShaderModule                          tessellationControlModule
+																										  DE_NULL,								// const VkShaderModule                          tessellationEvalModule
+																										  DE_NULL,								// const VkShaderModule                          geometryShaderModule
+																										  *fragmentShaderModule,				// const VkShaderModule                          fragmentShaderModule
+																										  renderPassA,							// const VkRenderPass                            renderPass
+																										  viewports,							// const std::vector<VkViewport>&                viewports
+																										  scissors,								// const std::vector<VkRect2D>&                  scissors
+																										  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,	// const VkPrimitiveTopology                     topology
+																										  0u,									// const deUint32                                subpass
+																										  0u,									// const deUint32                                patchControlPoints
+																										  &vertexInputStateCreateInfo,			// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+																										  &rasterizationStateCreateInfo,		// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+																										  DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+																										  DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+																										  &colorBlendStateCreateInfo));			// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 
 	beginRenderPass(vk, commandBuffer.get(), renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 256u, 256u), tcu::Vec4(0.25f, 0.25f, 0.25f, 0.0f));
 

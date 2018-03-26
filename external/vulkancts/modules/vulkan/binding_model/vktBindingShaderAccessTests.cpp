@@ -36,6 +36,7 @@
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuVectorUtil.hpp"
@@ -965,20 +966,8 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		(vk::VkPipelineTessellationStateCreateFlags)0,
 		3u,											// patchControlPoints
 	};
-	const vk::VkViewport								viewport			=
-	{
-		0.0f,										// originX
-		0.0f,										// originY
-		float(m_targetSize.x()),					// width
-		float(m_targetSize.y()),					// height
-		0.0f,										// minDepth
-		1.0f,										// maxDepth
-	};
-	const vk::VkRect2D									renderArea			=
-	{
-		{ 0, 0 },									// offset
-		{ m_targetSize.x(), m_targetSize.y() },		// extent
-	};
+	const vk::VkViewport								viewport			= vk::makeViewport(m_targetSize);
+	const vk::VkRect2D									renderArea			= vk::makeRect2D(m_targetSize);
 	const vk::VkPipelineViewportStateCreateInfo			vpState				=
 	{
 		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,

@@ -38,6 +38,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -1146,29 +1147,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 	// Create Graphics Pipeline
 	{
-		const VkPipelineShaderStageCreateInfo	shaderStageParams[2]	=
-		{
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType					sType;
-				DE_NULL,													// const void*						pNext;
-				0,															// VkPipelineShaderStageCreateFlags flags;
-				VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStage					stage;
-				*vertexShaderModule,										// VkShaderModule					shader;
-				"main",														// const char*						pName;
-				DE_NULL														// const VkSpecializationInfo*		pSpecializationInfo;
-			},
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType					sType;
-				DE_NULL,													// const void*						pNext;
-				0,															// VkPipelineShaderStageCreateFlags flags;
-				VK_SHADER_STAGE_FRAGMENT_BIT,								// VkShaderStage					stage;
-				*fragmentShaderModule,										// VkShaderModule					shader;
-				"main",														// const char*						pName;
-				DE_NULL														// const VkSpecializationInfo*		pSpecializationInfo;
-			}
-		};
-
-		const VkVertexInputBindingDescription	vertexInputBindingDescription[2]	=
+		const VkVertexInputBindingDescription		vertexInputBindingDescription[2]	=
 		{
 			{
 				0u,								// deUint32					binding;
@@ -1182,7 +1161,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			}
 		};
 
-		VkFormat								textureCoordinateFormat			= VK_FORMAT_R32G32B32A32_SFLOAT;
+		VkFormat									textureCoordinateFormat				= VK_FORMAT_R32G32B32A32_SFLOAT;
 
 		switch (numComps) {
 			case 1: textureCoordinateFormat = VK_FORMAT_R32_SFLOAT;				break;
@@ -1193,7 +1172,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 				DE_ASSERT(false);
 		}
 
-		const VkVertexInputAttributeDescription	vertexInputAttributeDescriptions[2] =
+		const VkVertexInputAttributeDescription		vertexInputAttributeDescriptions[2]	=
 		{
 			{
 				0u,									// deUint32	location;
@@ -1209,7 +1188,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			}
 		};
 
-		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams =
+		const VkPipelineVertexInputStateCreateInfo	vertexInputStateParams				=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
@@ -1220,16 +1199,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			vertexInputAttributeDescriptions								// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 		};
 
-		const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyStateParams =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-			DE_NULL,														// const void*								pNext;
-			0,																// VkPipelineInputAssemblyStateCreateFlags	flags;
-			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology						topology;
-			VK_FALSE														// VkBool32									primitiveRestartEnable;
-		};
-
-		const VkViewport						viewport =
+		const VkViewport							viewport							=
 		{
 			m_viewportOffsetX,			// float	originX;
 			m_viewportOffsetY,			// float	originY;
@@ -1238,25 +1208,10 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			0.0f,						// float	minDepth;
 			1.0f						// float	maxDepth;
 		};
+		const std::vector<VkViewport>				viewports							(1, viewport);
+		const std::vector<VkRect2D>					scissors							(1, makeRect2D(tcu::UVec2(m_renderWidth, m_renderHeight)));
 
-		const VkRect2D							scissor =
-		{
-			{ 0, 0 },														// VkOffset2D  offset;
-			{ m_renderWidth, m_renderHeight }								// VkExtent2D  extent;
-		};
-
-		const VkPipelineViewportStateCreateInfo	viewportStateParams =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType						sType;
-			DE_NULL,														// const void*							pNext;
-			0,																// VkPipelineViewportStateCreateFlags	flags;
-			1u,																// deUint32								viewportCount;
-			&viewport,														// const VkViewport*					pViewports;
-			1u,																// deUint32								scissorCount;
-			&scissor														// const VkRect2D*						pScissors;
-		};
-
-		const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
+		const VkPipelineMultisampleStateCreateInfo	multisampleStateParams				=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType							sType;
 			DE_NULL,														// const void*								pNext;
@@ -1269,51 +1224,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			VK_FALSE														// VkBool32									alphaToOneEnable;
 		};
 
-		const VkPipelineRasterizationStateCreateInfo	rasterizationStateCreateInfo	=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType							sType;
-			DE_NULL,														// const void*								pNext;
-			0,																// VkPipelineRasterizationStateCreateFlags	flags;
-			VK_FALSE,														// VkBool32									depthClipEnable;
-			VK_FALSE,														// VkBool32									rasterizerDiscardEnable;
-			VK_POLYGON_MODE_FILL,											// VkFillMode								fillMode;
-			VK_CULL_MODE_NONE,												// VkCullMode								cullMode;
-			VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace								frontFace;
-			VK_FALSE,														// VkBool32									depthBiasEnable;
-			0.0f,															// float									depthBias;
-			0.0f,															// float									depthBiasClamp;
-			0.0f,															// float									slopeScaledDepthBias;
-			1.0f,															// float									lineWidth;
-		};
-
-		const VkPipelineColorBlendAttachmentState	colorBlendAttachmentState	=
-		{
-			VK_FALSE,													// VkBool32			blendEnable;
-			VK_BLEND_FACTOR_ONE,										// VkBlend			srcBlendColor;
-			VK_BLEND_FACTOR_ZERO,										// VkBlend			destBlendColor;
-			VK_BLEND_OP_ADD,											// VkBlendOp		blendOpColor;
-			VK_BLEND_FACTOR_ONE,										// VkBlend			srcBlendAlpha;
-			VK_BLEND_FACTOR_ZERO,										// VkBlend			destBlendAlpha;
-			VK_BLEND_OP_ADD,											// VkBlendOp		blendOpAlpha;
-			(VK_COLOR_COMPONENT_R_BIT |
-			 VK_COLOR_COMPONENT_G_BIT |
-			 VK_COLOR_COMPONENT_B_BIT |
-			 VK_COLOR_COMPONENT_A_BIT)									// VkChannelFlags	channelWriteMask;
-		};
-
-		const VkPipelineColorBlendStateCreateInfo	colorBlendStateParams		=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
-			DE_NULL,													// const void*									pNext;
-			0,															// VkPipelineColorBlendStateCreateFlags			flags;
-			VK_FALSE,													// VkBool32										logicOpEnable;
-			VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-			1u,															// deUint32										attachmentCount;
-			&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState*	pAttachments;
-			{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConst[4];
-		};
-
-		VkSamplerCreateInfo					samplerCreateInfo			= mapSampler(params.sampler, m_textureBindings[texUnit]->getTestTexture().getTextureFormat(), params.minLod, params.maxLod);
+		VkSamplerCreateInfo							samplerCreateInfo					= mapSampler(params.sampler, m_textureBindings[texUnit]->getTestTexture().getTextureFormat(), params.minLod, params.maxLod);
 
 		if (maxAnisotropy > 1.0f)
 		{
@@ -1394,30 +1305,23 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			pipelineLayout = createPipelineLayout(vkd, vkDevice, &pipelineLayoutCreateInfo);
 		}
 
-		const VkGraphicsPipelineCreateInfo graphicsPipelineParams =
-		{
-			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType									sType;
-			DE_NULL,											// const void*										pNext;
-			0u,													// VkPipelineCreateFlags							flags;
-			2u,													// deUint32											stageCount;
-			shaderStageParams,									// const VkPipelineShaderStageCreateInfo*			pStages;
-			&vertexInputStateParams,							// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-			&inputAssemblyStateParams,							// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-			DE_NULL,											// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-			&viewportStateParams,								// const VkPipelineViewportStateCreateInfo*			pViewportState;
-			&rasterizationStateCreateInfo,						// const VkPipelineRasterStateCreateInfo*			pRasterizationState;
-			&multisampleStateParams,							// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-			DE_NULL,											// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-			&colorBlendStateParams,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			DE_NULL,											// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-			*pipelineLayout,									// VkPipelineLayout									layout;
-			*m_renderPass,										// VkRenderPass										renderPass;
-			0u,													// deUint32											subpass;
-			0u,													// VkPipeline										basePipelineHandle;
-			0u													// deInt32											basePipelineIndex;
-		};
-
-		graphicsPipeline		= createGraphicsPipeline(vkd, vkDevice, DE_NULL, &graphicsPipelineParams);
+		graphicsPipeline = makeGraphicsPipeline(vkd,									// const DeviceInterface&                        vk
+												vkDevice,								// const VkDevice                                device
+												*pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
+												*vertexShaderModule,					// const VkShaderModule                          vertexShaderModule
+												DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
+												DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
+												DE_NULL,								// const VkShaderModule                          geometryShaderModule
+												*fragmentShaderModule,					// const VkShaderModule                          fragmentShaderModule
+												*m_renderPass,							// const VkRenderPass                            renderPass
+												viewports,								// const std::vector<VkViewport>&                viewports
+												scissors,								// const std::vector<VkRect2D>&                  scissors
+												VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
+												0u,										// const deUint32                                subpass
+												0u,										// const deUint32                                patchControlPoints
+												&vertexInputStateParams,				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+												DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+												&multisampleStateParams);				// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
 	}
 
 	// Create Vertex Buffer

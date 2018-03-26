@@ -33,6 +33,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuMaybe.hpp"
 #include "tcuTextureUtil.hpp"
@@ -4631,59 +4632,10 @@ void createPipelineWithResources (const vk::DeviceInterface&							vkd,
 	}
 
 	{
-		const vk::VkPipelineShaderStageCreateInfo			shaderStages[]					=
-		{
-			{
-				vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				DE_NULL,
-				0,
-				vk::VK_SHADER_STAGE_VERTEX_BIT,
-				vertexShaderModule,
-				"main",
-				DE_NULL
-			},
-			{
-				vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				DE_NULL,
-				0,
-				vk::VK_SHADER_STAGE_FRAGMENT_BIT,
-				fragmentShaderModule,
-				"main",
-				DE_NULL
-			}
-		};
-		const vk::VkPipelineDepthStencilStateCreateInfo		depthStencilState				=
-		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-			DE_NULL,
-			0u,
-			DE_FALSE,
-			DE_FALSE,
-			vk::VK_COMPARE_OP_ALWAYS,
-			DE_FALSE,
-			DE_FALSE,
-			{
-				vk::VK_STENCIL_OP_KEEP,
-				vk::VK_STENCIL_OP_KEEP,
-				vk::VK_STENCIL_OP_KEEP,
-				vk::VK_COMPARE_OP_ALWAYS,
-				0u,
-				0u,
-				0u,
-			},
-			{
-				vk::VK_STENCIL_OP_KEEP,
-				vk::VK_STENCIL_OP_KEEP,
-				vk::VK_STENCIL_OP_KEEP,
-				vk::VK_COMPARE_OP_ALWAYS,
-				0u,
-				0u,
-				0u,
-			},
-			-1.0f,
-			+1.0f
-		};
-		const vk::VkPipelineVertexInputStateCreateInfo		vertexInputState				=
+		const std::vector<vk::VkViewport>				viewports			(1, vk::makeViewport(0.0f, 0.0f, (float)viewPortWidth, (float)viewPortHeight, 0.0f, 1.0f));
+		const std::vector<vk::VkRect2D>					scissors			(1, vk::makeRect2D(0, 0, viewPortWidth, viewPortHeight));
+
+		const vk::VkPipelineVertexInputStateCreateInfo	vertexInputState	=
 		{
 			vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 			DE_NULL,
@@ -4695,117 +4647,22 @@ void createPipelineWithResources (const vk::DeviceInterface&							vkd,
 			(deUint32)vertexAttributeDescriptions.size(),
 			vertexAttributeDescriptions.empty() ? DE_NULL : &vertexAttributeDescriptions[0]
 		};
-		const vk::VkPipelineInputAssemblyStateCreateInfo	inputAssemblyState				=
-		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-			DE_NULL,
-			0,
-			topology,
-			VK_FALSE
-		};
-		const vk::VkViewport								viewports[]						=
-		{
-			{ 0.0f, 0.0f, (float)viewPortWidth, (float)viewPortHeight, 0.0f, 1.0f }
-		};
-		const vk::VkRect2D									scissors[]						=
-		{
-			{ { 0, 0 }, { (deUint32)viewPortWidth, (deUint32)viewPortHeight } }
-		};
-		const vk::VkPipelineViewportStateCreateInfo			viewportState					=
-		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-			DE_NULL,
-			0,
-			DE_LENGTH_OF_ARRAY(viewports),
-			viewports,
-			DE_LENGTH_OF_ARRAY(scissors),
-			scissors
-		};
-		const vk::VkPipelineRasterizationStateCreateInfo	rasterState						=
-		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-			DE_NULL,
-			0,
 
-			VK_TRUE,
-			VK_FALSE,
-			vk::VK_POLYGON_MODE_FILL,
-			vk::VK_CULL_MODE_NONE,
-			vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,
-			VK_FALSE,
-			0.0f,
-			0.0f,
-			0.0f,
-			1.0f
-		};
-		const vk::VkSampleMask								sampleMask						= ~0u;
-		const vk::VkPipelineMultisampleStateCreateInfo		multisampleState				=
-		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-			DE_NULL,
-			0,
-
-			vk::VK_SAMPLE_COUNT_1_BIT,
-			VK_FALSE,
-			0.0f,
-			&sampleMask,
-			VK_FALSE,
-			VK_FALSE
-		};
-		const vk::VkPipelineColorBlendAttachmentState		attachments[]					=
-		{
-			{
-				VK_FALSE,
-				vk::VK_BLEND_FACTOR_ONE,
-				vk::VK_BLEND_FACTOR_ZERO,
-				vk::VK_BLEND_OP_ADD,
-				vk::VK_BLEND_FACTOR_ONE,
-				vk::VK_BLEND_FACTOR_ZERO,
-				vk::VK_BLEND_OP_ADD,
-				(vk::VK_COLOR_COMPONENT_R_BIT|
-				 vk::VK_COLOR_COMPONENT_G_BIT|
-				 vk::VK_COLOR_COMPONENT_B_BIT|
-				 vk::VK_COLOR_COMPONENT_A_BIT)
-			}
-		};
-		const vk::VkPipelineColorBlendStateCreateInfo		colorBlendState					=
-		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-			DE_NULL,
-			0,
-
-			VK_FALSE,
-			vk::VK_LOGIC_OP_COPY,
-			DE_LENGTH_OF_ARRAY(attachments),
-			attachments,
-			{ 0.0f, 0.0f, 0.0f, 0.0f }
-		};
-		const vk::VkGraphicsPipelineCreateInfo				createInfo						=
-		{
-			vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-			DE_NULL,
-			0u,
-
-			DE_LENGTH_OF_ARRAY(shaderStages),
-			shaderStages,
-
-			&vertexInputState,
-			&inputAssemblyState,
-			DE_NULL,
-			&viewportState,
-			&rasterState,
-			&multisampleState,
-			&depthStencilState,
-			&colorBlendState,
-			DE_NULL,
-			*resources.pipelineLayout,
-			renderPass,
-			subpass,
-			0,
-			0
-		};
-
-		resources.pipeline = vk::createGraphicsPipeline(vkd, device, 0, &createInfo);
+		resources.pipeline = vk::makeGraphicsPipeline(vkd,							// const DeviceInterface&                        vk
+													  device,						// const VkDevice                                device
+													  *resources.pipelineLayout,	// const VkPipelineLayout                        pipelineLayout
+													  vertexShaderModule,			// const VkShaderModule                          vertexShaderModule
+													  DE_NULL,						// const VkShaderModule                          tessellationControlModule
+													  DE_NULL,						// const VkShaderModule                          tessellationEvalModule
+													  DE_NULL,						// const VkShaderModule                          geometryShaderModule
+													  fragmentShaderModule,			// const VkShaderModule                          fragmentShaderModule
+													  renderPass,					// const VkRenderPass                            renderPass
+													  viewports,					// const std::vector<VkViewport>&                viewports
+													  scissors,						// const std::vector<VkRect2D>&                  scissors
+													  topology,						// const VkPrimitiveTopology                     topology
+													  subpass,						// const deUint32                                subpass
+													  0u,							// const deUint32                                patchControlPoints
+													  &vertexInputState);			// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
 	}
 }
 

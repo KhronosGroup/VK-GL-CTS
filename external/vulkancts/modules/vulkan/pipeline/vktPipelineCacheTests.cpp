@@ -268,20 +268,9 @@ Move<VkPipeline> SimpleGraphicsPipelineBuilder::buildPipeline (tcu::UVec2 render
 		VK_FALSE,                                                       // VkBool32                                 primitiveRestartEnable;
 	};
 
-	const VkViewport viewport =
-	{
-		0.0f,                       // float    originX;
-		0.0f,                       // float    originY;
-		(float)renderSize.x(),      // float    width;
-		(float)renderSize.y(),      // float    height;
-		0.0f,                       // float    minDepth;
-		1.0f                        // float    maxDepth;
-	};
-	const VkRect2D scissor =
-	{
-		{ 0, 0 },                                                       // VkOffset2D  offset;
-		{ renderSize.x(), renderSize.y() }                              // VkExtent2D  extent;
-	};
+	const VkViewport	viewport	= makeViewport(renderSize);
+	const VkRect2D		scissor		= makeRect2D(renderSize);
+
 	const VkPipelineViewportStateCreateInfo viewportStateParams =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,          // VkStructureType                      sType;

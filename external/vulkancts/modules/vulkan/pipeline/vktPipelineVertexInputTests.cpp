@@ -38,6 +38,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "tcuFloat.hpp"
 #include "tcuImageCompare.hpp"
 #include "deFloat16.h"
@@ -1007,17 +1008,8 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 			false															// VkBool32									primitiveRestartEnable;
 		};
 
-		const VkViewport viewport =
-		{
-			0.0f,						// float	x;
-			0.0f,						// float	y;
-			(float)m_renderSize.x(),	// float	width;
-			(float)m_renderSize.y(),	// float	height;
-			0.0f,						// float	minDepth;
-			1.0f						// float	maxDepth;
-		};
-
-		const VkRect2D scissor = { { 0, 0 }, { m_renderSize.x(), m_renderSize.y() } };
+		const VkViewport	viewport	= makeViewport(m_renderSize);
+		const VkRect2D		scissor		= makeRect2D(m_renderSize);
 
 		const VkPipelineViewportStateCreateInfo viewportStateParams =
 		{

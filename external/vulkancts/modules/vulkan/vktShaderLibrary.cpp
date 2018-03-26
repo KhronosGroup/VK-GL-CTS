@@ -33,6 +33,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "gluShaderLibrary.hpp"
 #include "gluShaderUtil.hpp"
@@ -750,32 +751,6 @@ PipelineProgram::PipelineProgram (Context& context, const ShaderCaseSpecificatio
 	}
 }
 
-vector<vk::VkPipelineShaderStageCreateInfo> getPipelineShaderStageCreateInfo (const PipelineProgram& program)
-{
-	vector<vk::VkPipelineShaderStageCreateInfo>	infos;
-
-	for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
-	{
-		if (program.hasShader((glu::ShaderType)shaderType))
-		{
-			const vk::VkPipelineShaderStageCreateInfo info =
-			{
-				vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// sType
-				DE_NULL,													// pNext
-				(vk::VkPipelineShaderStageCreateFlags)0,
-				vk::getVkShaderStage((glu::ShaderType)shaderType),			// stage
-				program.getShader((glu::ShaderType)shaderType),				// module
-				"main",
-				DE_NULL,													// pSpecializationInfo
-			};
-
-			infos.push_back(info);
-		}
-	}
-
-	return infos;
-}
-
 Move<vk::VkBuffer> createBuffer (Context& context, vk::VkDeviceSize size, vk::VkBufferUsageFlags usageFlags)
 {
 	const deUint32					queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
@@ -1064,99 +1039,14 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 									 tcu::UVec2					renderSize,
 									 deUint32					size)
 {
-	const vector<vk::VkPipelineShaderStageCreateInfo>	shaderStageParams		(getPipelineShaderStageCreateInfo(program));
+	const vk::VkShaderModule							vertShader				= program.hasShader(glu::SHADERTYPE_VERTEX) ? program.getShader(glu::SHADERTYPE_VERTEX) : DE_NULL;
+	const vk::VkShaderModule							tessControlShader		= program.hasShader(glu::SHADERTYPE_TESSELLATION_CONTROL) ? program.getShader(glu::SHADERTYPE_TESSELLATION_CONTROL) : DE_NULL;
+	const vk::VkShaderModule							tessEvalShader			= program.hasShader(glu::SHADERTYPE_TESSELLATION_EVALUATION) ? program.getShader(glu::SHADERTYPE_TESSELLATION_EVALUATION) : DE_NULL;
+	const vk::VkShaderModule							geomShader				= program.hasShader(glu::SHADERTYPE_GEOMETRY) ? program.getShader(glu::SHADERTYPE_GEOMETRY) : DE_NULL;
+	const vk::VkShaderModule							fragShader				= program.hasShader(glu::SHADERTYPE_FRAGMENT) ? program.getShader(glu::SHADERTYPE_FRAGMENT) : DE_NULL;
 	const vector<vk::VkVertexInputAttributeDescription>	vertexAttribParams		(getVertexAttributeDescriptions(inputValues, inputLayout));
-	const vk::VkPipelineDepthStencilStateCreateInfo		depthStencilParams		=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,		// sType
-		DE_NULL,															// pNext
-		(vk::VkPipelineDepthStencilStateCreateFlags)0,
-		VK_FALSE,															// depthTestEnable
-		VK_FALSE,															// depthWriteEnable
-		vk::VK_COMPARE_OP_ALWAYS,											// depthCompareOp
-		VK_FALSE,															// depthBoundsTestEnable
-		VK_FALSE,															// stencilTestEnable
-		{
-			vk::VK_STENCIL_OP_KEEP,												// stencilFailOp;
-			vk::VK_STENCIL_OP_KEEP,												// stencilPassOp;
-			vk::VK_STENCIL_OP_KEEP,												// stencilDepthFailOp;
-			vk::VK_COMPARE_OP_ALWAYS,											// stencilCompareOp;
-			0u,																	// stencilCompareMask
-			0u,																	// stencilWriteMask
-			0u,																	// stencilReference
-		},																	// front;
-		{
-			vk::VK_STENCIL_OP_KEEP,												// stencilFailOp;
-			vk::VK_STENCIL_OP_KEEP,												// stencilPassOp;
-			vk::VK_STENCIL_OP_KEEP,												// stencilDepthFailOp;
-			vk::VK_COMPARE_OP_ALWAYS,											// stencilCompareOp;
-			0u,																	// stencilCompareMask
-			0u,																	// stencilWriteMask
-			0u,																	// stencilReference
-		},																	// back;
-		-1.0f,																// minDepthBounds
-		+1.0f,																// maxDepthBounds
-	};
-	const vk::VkViewport								viewport0				=
-	{
-		0.0f,																// originX
-		0.0f,																// originY
-		(float)renderSize.x(),												// width
-		(float)renderSize.y(),												// height
-		0.0f,																// minDepth
-		1.0f,																// maxDepth
-	};
-	const vk::VkRect2D									scissor0				=
-	{
-		{ 0u, 0u },															// offset
-		{ renderSize.x(), renderSize.y() }									// extent
-	};
-	const vk::VkPipelineViewportStateCreateInfo			viewportParams			=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// sType
-		DE_NULL,															// pNext
-		(vk::VkPipelineViewportStateCreateFlags)0,
-		1u,																	// viewportCount
-		&viewport0,															// pViewports
-		1u,																	// scissorCount
-		&scissor0,															// pScissors
-	};
-	const vk::VkPipelineMultisampleStateCreateInfo		multisampleParams		=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// sType
-		DE_NULL,															// pNext
-		(vk::VkPipelineMultisampleStateCreateFlags)0,
-		vk::VK_SAMPLE_COUNT_1_BIT,											// rasterSamples
-		DE_FALSE,															// sampleShadingEnable
-		0.0f,																// minSampleShading
-		DE_NULL,															// pSampleMask
-		VK_FALSE,															// alphaToCoverageEnable
-		VK_FALSE,															// alphaToOneEnable
-	};
-	const vk::VkPipelineRasterizationStateCreateInfo	rasterParams			=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// sType
-		DE_NULL,															// pNext
-		(vk::VkPipelineRasterizationStateCreateFlags)0,
-		DE_FALSE,															// depthClipEnable
-		DE_FALSE,															// rasterizerDiscardEnable
-		vk::VK_POLYGON_MODE_FILL,											// fillMode
-		vk::VK_CULL_MODE_NONE,												// cullMode;
-		vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,								// frontFace;
-		VK_FALSE,															// depthBiasEnable
-		0.0f,																// depthBiasConstantFactor
-		0.0f,																// depthBiasClamp
-		0.0f,																// depthBiasSlopeFactor
-		1.0f,																// lineWidth
-	};
-	const vk::VkPipelineInputAssemblyStateCreateInfo	inputAssemblyParams		=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// sType
-		DE_NULL,															// pNext
-		(vk::VkPipelineInputAssemblyStateCreateFlags)0,
-		vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// topology
-		DE_FALSE,															// primitiveRestartEnable
-	};
+	const vector<vk::VkViewport>						viewports				(1, vk::makeViewport(renderSize));
+	const vector<vk::VkRect2D>							scissors				(1, vk::makeRect2D(renderSize));
 	const vk::VkVertexInputBindingDescription			vertexBindings[]		=
 	{
 		{
@@ -1184,7 +1074,7 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 																				| vk::VK_COLOR_COMPONENT_G_BIT
 																				| vk::VK_COLOR_COMPONENT_B_BIT
 																				| vk::VK_COLOR_COMPONENT_A_BIT;
-	vk::VkPipelineColorBlendAttachmentState		attBlendParams[4];
+	vk::VkPipelineColorBlendAttachmentState				attBlendParams[4];
 	for (deUint32 i = 0; i < size; i++)
 	{
 		vk::VkPipelineColorBlendAttachmentState blend =
@@ -1212,30 +1102,26 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		&attBlendParams[0],													// pAttachments
 		{ 0.0f, 0.0f, 0.0f, 0.0f },											// blendConstants
 	};
-	const vk::VkGraphicsPipelineCreateInfo				pipelineParams			=
-	{
-		vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,				// sType
-		DE_NULL,															// pNext
-		0u,																	// flags
-		(deUint32)shaderStageParams.size(),									// stageCount
-		&shaderStageParams[0],												// pStages
-		&vertexInputStateParams,											// pVertexInputState
-		&inputAssemblyParams,												// pInputAssemblyState
-		DE_NULL,															// pTessellationState
-		&viewportParams,													// pViewportState
-		&rasterParams,														// pRasterState
-		&multisampleParams,													// pMultisampleState
-		&depthStencilParams,												// pDepthStencilState
-		&blendParams,														// pColorBlendState
-		(const vk::VkPipelineDynamicStateCreateInfo*)DE_NULL,				// pDynamicState
-		pipelineLayout,														// layout
-		renderPass,															// renderPass
-		0u,																	// subpass
-		DE_NULL,															// basePipelineHandle
-		0u,																	// basePipelineIndex
-	};
 
-	return vk::createGraphicsPipeline(context.getDeviceInterface(), context.getDevice(), DE_NULL, &pipelineParams);
+	return vk::makeGraphicsPipeline(context.getDeviceInterface(),				// const DeviceInterface&                        vk
+									context.getDevice(),						// const VkDevice                                device
+									pipelineLayout,								// const VkPipelineLayout                        pipelineLayout
+									vertShader,									// const VkShaderModule                          vertexShaderModule
+									tessControlShader,							// const VkShaderModule                          tessellationControlShaderModule
+									tessEvalShader,								// const VkShaderModule                          tessellationEvalShaderModule
+									geomShader,									// const VkShaderModule                          geometryShaderModule
+									fragShader,									// const VkShaderModule                          fragmentShaderModule
+									renderPass,									// const VkRenderPass                            renderPass
+									viewports,									// const std::vector<VkViewport>&                viewports
+									scissors,									// const std::vector<VkRect2D>&                  scissors
+									vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
+									0u,											// const deUint32                                subpass
+									0u,											// const deUint32                                patchControlPoints
+									&vertexInputStateParams,					// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+									DE_NULL,									// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+									DE_NULL,									// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+									DE_NULL,									// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+									&blendParams);								// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 }
 
 Move<vk::VkFramebuffer> createFramebuffer (Context& context, vk::VkRenderPass renderPass, Move<vk::VkImageView> colorAttView[4], deUint32 size, int width, int height)

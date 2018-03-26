@@ -526,15 +526,8 @@ Move<VkPipeline> GraphicsPipelineBuilder::build (const DeviceInterface&	vk,
 		m_patchControlPoints,											// uint32_t                                    patchControlPoints;
 	};
 
-	const VkViewport viewport = makeViewport(
-		0.0f, 0.0f,
-		static_cast<float>(m_renderSize.x()), static_cast<float>(m_renderSize.y()),
-		0.0f, 1.0f);
-
-	const VkRect2D scissor = {
-		makeOffset2D(0, 0),
-		makeExtent2D(m_renderSize.x(), m_renderSize.y()),
-	};
+	const VkViewport	viewport	= makeViewport(m_renderSize);
+	const VkRect2D		scissor		= makeRect2D(m_renderSize);
 
 	const bool haveRenderSize = m_renderSize.x() > 0 && m_renderSize.y() > 0;
 
