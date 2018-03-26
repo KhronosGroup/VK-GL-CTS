@@ -2675,6 +2675,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			&clearValues[0]											// const VkClearValue*	pClearValues;
 		};
 
+		vk::VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		std::vector<VkImageMemoryBarrier> imageLayoutBarriers;
 
 		{
@@ -2750,13 +2751,14 @@ void MultisampleRenderer::initialize (Context&									context,
 				{ depthStencilAttachmentAspect, 0u, 1u, 0u, 1u },	// VkImageSubresourceRange	subresourceRange;
 			};
 			imageLayoutBarriers.push_back(depthStencilImageBarrier);
+			dstStageMask |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		};
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
 
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMask, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)imageLayoutBarriers.size(), &imageLayoutBarriers[0]);
 
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);

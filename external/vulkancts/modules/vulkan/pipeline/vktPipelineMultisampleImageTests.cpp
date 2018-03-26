@@ -1294,7 +1294,7 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 			colorImageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 			colorImageBarrier.newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-			const VkImageMemoryBarrier barriers[] =
+			const VkImageMemoryBarrier	barriers[]		=
 			{
 				colorImageBarrier,
 				{
@@ -1311,7 +1311,11 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+			const VkPipelineStageFlags	srcStageMask	= (colorImageBarrier.srcAccessMask == VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+														? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+														: VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+			vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
 
 			colorImageBarrier.srcAccessMask = colorImageBarrier.dstAccessMask;

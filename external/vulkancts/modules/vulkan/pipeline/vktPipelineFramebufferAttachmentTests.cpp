@@ -622,7 +622,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageLayoutBarriers);
 
 			const VkImageSubresourceRange	ranges		= makeColorSubresourceRange(0, caseDef.numLayers);
@@ -648,7 +648,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageClearBarriers);
 		}
 
@@ -1057,7 +1057,7 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 				}
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageBarriers);
 
 			const VkBufferImageCopy		region				=
@@ -1309,7 +1309,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageLayoutBarriers);
 
 			vk.cmdClearColorImage(*cmdBuffer, caseDef.multisample ? *msColorImages[renderTargetIdx] : *colorImages[renderTargetIdx], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColors[renderTargetIdx], 1u, &range);
@@ -1330,7 +1330,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, imageClearBarriers);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, imageClearBarriers);
 		}
 	}
 

@@ -13,6 +13,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawInvertedDepthRangesTests.cpp
 	vktDrawShaderDrawParametersTests.hpp
 	vktDrawShaderDrawParametersTests.cpp
+	vktDrawShaderViewportIndexTests.hpp
+	vktDrawShaderViewportIndexTests.cpp
 	vktDrawSimpleTest.hpp
 	vktDrawSimpleTest.cpp
 	vktDrawNegativeViewportHeightTests.hpp

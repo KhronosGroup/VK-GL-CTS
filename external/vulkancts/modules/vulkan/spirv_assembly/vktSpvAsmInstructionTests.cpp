@@ -616,9 +616,9 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 	ADD_OPATOMIC_CASE_1(isub,	"%unused    = OpAtomicISub %i32 %outloc %one %zero %inval\n", OPATOMIC_ISUB );
 	ADD_OPATOMIC_CASE_1(iinc,	"%unused    = OpAtomicIIncrement %i32 %outloc %one %zero\n",  OPATOMIC_IINC );
 	ADD_OPATOMIC_CASE_1(idec,	"%unused    = OpAtomicIDecrement %i32 %outloc %one %zero\n",  OPATOMIC_IDEC );
-	ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %zero %zero\n"
+	ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %one %zero\n"
 								"             OpStore %outloc %inval2\n",  OPATOMIC_LOAD );
-	ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %zero %zero %inval\n",  OPATOMIC_STORE );
+	ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %one %zero %inval\n",  OPATOMIC_STORE );
 	ADD_OPATOMIC_CASE_N(compex, "%even      = OpSMod %i32 %inval %two\n"
 								"             OpStore %outloc %even\n"
 								"%unused    = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",  OPATOMIC_COMPEX );

@@ -2663,6 +2663,16 @@ string toString (const VkPhysicalDeviceVariablePointerFeatures& value)
 	return s.str();
 }
 
+string toString(const VkPhysicalDevicePushDescriptorPropertiesKHR& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDevicePushDescriptorPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tmaxPushDescriptors = " << value.maxPushDescriptors << '\n';
+	s << '}';
+	return s.str();
+}
+
 bool checkExtension (vector<VkExtensionProperties>& properties, const char* extension)
 {
 	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
@@ -2979,6 +2989,40 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		<< TestLog::Message		<< toString(pointClippingProperties[0])			<< TestLog::EndMessage
 		<< TestLog::Message		<< toString(protectedMemoryPropertiesKHR[0])	<< TestLog::EndMessage
 		<< TestLog::Message		<< toString(subgroupProperties[0])				<< TestLog::EndMessage;
+		}
+
+		const vector<VkExtensionProperties>	extensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+		if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_push_descriptor")))
+		{
+			const int count = 2u;
+			VkPhysicalDevicePushDescriptorPropertiesKHR		pushDescriptorProperties[count];
+
+			for (int ndx = 0; ndx < count; ++ndx)
+			{
+				deMemset(&pushDescriptorProperties[ndx], 0, sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR));
+
+				pushDescriptorProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
+				pushDescriptorProperties[ndx].pNext	= DE_NULL;
+
+				extProperties.pNext = &pushDescriptorProperties[ndx];
+
+				vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+				pushDescriptorProperties[ndx].pNext = DE_NULL;
+			}
+
+			if (deMemCmp(&pushDescriptorProperties[0], &pushDescriptorProperties[1], sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR)) != 0)
+			{
+				TCU_FAIL("Mismatch in vkGetPhysicalDeviceProperties2 in VkPhysicalDevicePushDescriptorPropertiesKHR ");
+			}
+
+			log << TestLog::Message << toString(pushDescriptorProperties[0]) << TestLog::EndMessage;
+
+			if (pushDescriptorProperties[0].maxPushDescriptors < 32)
+			{
+				TCU_FAIL("VkPhysicalDevicePushDescriptorPropertiesKHR.maxPushDescriptors must be at least 32");
+			}
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");

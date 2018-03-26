@@ -25,7 +25,6 @@
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
-#include "pipeline/vktPipelineImageUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkImageUtil.hpp"
@@ -117,7 +116,7 @@ Move<VkImage> createSparseImageAndMemory (const DeviceInterface&				vk,
 
 	Move<VkImage>			destImage			= createImage(vk, device, &imageCreateInfo);
 
-	vkt::pipeline::allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue, allocator, allocations, mapVkFormat(format), *destImage);
+	allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue, allocator, allocations, mapVkFormat(format), *destImage);
 
 	return destImage;
 }

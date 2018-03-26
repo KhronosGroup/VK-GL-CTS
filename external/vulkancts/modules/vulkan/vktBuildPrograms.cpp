@@ -284,6 +284,8 @@ void writeBuildLogs (const vk::SpirVProgramInfo& buildInfo, std::ostream& dst)
 	dst << "source:\n"
 		<< "---\n"
 		<< buildInfo.source << "\n"
+		<< "---\n"
+		<< buildInfo.infoLog << "\n"
 		<< "---\n";
 }
 

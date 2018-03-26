@@ -768,17 +768,6 @@ std::string getShaderImageCoordinates	(const ImageType	imageType,
 	}
 }
 
-VkExtent3D mipLevelExtents (const VkExtent3D& baseExtents, const deUint32 mipLevel)
-{
-	VkExtent3D result;
-
-	result.width	= std::max(baseExtents.width  >> mipLevel, 1u);
-	result.height	= std::max(baseExtents.height >> mipLevel, 1u);
-	result.depth	= std::max(baseExtents.depth  >> mipLevel, 1u);
-
-	return result;
-}
-
 deUint32 getImageMaxMipLevels (const VkImageFormatProperties& imageFormatProperties, const VkExtent3D& extent)
 {
 	const deUint32 widestEdge = std::max(std::max(extent.width, extent.height), extent.depth);
