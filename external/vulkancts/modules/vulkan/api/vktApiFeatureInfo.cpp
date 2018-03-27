@@ -2919,9 +2919,10 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 	log << TestLog::Message << extProperties.properties << TestLog::EndMessage;
 
+	const int count = 2u;
+
 	if (getPhysicalDeviceProperties(vki, physicalDevice).apiVersion >= VK_API_VERSION_1_1)
 	{
-		const int count = 2u;
 		VkPhysicalDeviceIDProperties								IDProperties[count];
 		VkPhysicalDeviceMaintenance3Properties						maintenance3Properties[count];
 		VkPhysicalDeviceMultiviewProperties							multiviewProperties[count];
@@ -2994,7 +2995,6 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_push_descriptor")))
 	{
-		const int count = 2u;
 		VkPhysicalDevicePushDescriptorPropertiesKHR		pushDescriptorProperties[count];
 
 		for (int ndx = 0; ndx < count; ++ndx)
