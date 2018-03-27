@@ -43,6 +43,11 @@
 namespace glu
 {
 
+DE_INLINE   void*   BufferOffsetAsPointer   (uintptr_t byteOffset)
+{
+    return reinterpret_cast<void*>(byteOffset);
+}
+
 class RenderContext;
 
 class Error : public tcu::TestError

@@ -510,7 +510,7 @@ void EnableDisableAttributesTest::PrepareVAO()
 	for (glw::GLint i = 0; i < m_max_attributes; ++i)
 	{
 		gl.vertexAttribIPointer(i, 1, GL_INT, static_cast<glw::GLsizei>(sizeof(glw::GLint) * m_max_attributes),
-								(glw::GLvoid*)((glw::GLint*)NULL + i));
+								glu::BufferOffsetAsPointer(i * sizeof(glw::GLint)));
 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribIPointer call failed.");
 	}
@@ -1511,7 +1511,7 @@ bool VertexBuffersTest::PrepareVAO(bool use_multiple_buffers_function)
 	if (use_multiple_buffers_function)
 	{
 		const glw::GLuint		   buffers[2] = { m_bo_array_0, m_bo_array_0 };
-		static const glw::GLintptr offsets[2] = { (glw::GLintptr)NULL, (glw::GLintptr)((glw::GLint*)NULL + 1) };
+		static const glw::GLintptr offsets[2] = { 0, sizeof(glw::GLint) };
 		static const glw::GLsizei  strides[2] = { sizeof(glw::GLint) * 2, sizeof(glw::GLint) * 2 };
 
 		gl.vertexArrayVertexBuffers(m_vao, 0, 2, buffers, offsets, strides);
@@ -1540,7 +1540,7 @@ bool VertexBuffersTest::PrepareVAO(bool use_multiple_buffers_function)
 			return false;
 		}
 
-		gl.vertexArrayVertexBuffer(m_vao, 1, m_bo_array_0, (glw::GLintptr)((glw::GLint*)NULL + 1),
+		gl.vertexArrayVertexBuffer(m_vao, 1, m_bo_array_0, sizeof(glw::GLint),
 								   sizeof(glw::GLint) * 2);
 
 		if (glw::GLenum error = gl.getError())
@@ -2232,7 +2232,7 @@ bool AttributeFormatTest::PrepareVAO(glw::GLint size, glw::GLenum type_gl_name, 
 	}
 
 	gl.bindVertexBuffer(0, m_bo_array, 0, static_cast<glw::GLsizei>(sizeof(T) * size * 2));
-	gl.bindVertexBuffer(1, m_bo_array, (glw::GLintptr)((T*)NULL + size),
+	gl.bindVertexBuffer(1, m_bo_array, size * sizeof(T),
 						static_cast<glw::GLsizei>(sizeof(T) * size * 2));
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData call failed.");
@@ -2826,7 +2826,7 @@ bool AttributeBindingTest::PrepareVAO()
 	gl.vertexAttribIPointer(0, 1, GL_INT, sizeof(glw::GLint) * 2, NULL);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribIPointer call failed.");
 
-	gl.vertexAttribIPointer(1, 1, GL_INT, sizeof(glw::GLint) * 2, (glw::GLvoid*)((glw::GLint*)NULL + 1));
+	gl.vertexAttribIPointer(1, 1, GL_INT, sizeof(glw::GLint) * 2, glu::BufferOffsetAsPointer(1 * sizeof(glw::GLint)));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribIPointer call failed.");
 
 	gl.enableVertexAttribArray(0);
@@ -3779,7 +3779,7 @@ void GetVertexArrayIndexedTest::PrepareVAO()
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_bo[1]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer call failed.");
 
-	gl.vertexAttribIPointer(1, 2, GL_SHORT, 2, ((glw::GLchar*)NULL + 2));
+	gl.vertexAttribIPointer(1, 2, GL_SHORT, 2, glu::BufferOffsetAsPointer(2 * sizeof(glw::GLchar)));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer call failed.");
 
 	gl.enableVertexAttribArray(1);
@@ -3811,7 +3811,7 @@ void GetVertexArrayIndexedTest::PrepareVAO()
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_bo[3]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindBuffer call failed.");
 
-	gl.vertexAttribPointer(3, 4, GL_UNSIGNED_INT_2_10_10_10_REV, GL_FALSE, 8, ((glw::GLchar*)NULL + 4));
+	gl.vertexAttribPointer(3, 4, GL_UNSIGNED_INT_2_10_10_10_REV, GL_FALSE, 8, glu::BufferOffsetAsPointer(4 * sizeof(glw::GLchar)));
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glVertexAttribPointer call failed.");
 
 	gl.enableVertexAttribArray(3);

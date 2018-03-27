@@ -2929,13 +2929,13 @@ public:
 			// set vao 0 to some value
 			glBindVertexArray(vaos[0]);
 			glBindBuffer(GL_ARRAY_BUFFER, bufs[0]);
-			glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, ((deUint8*)DE_NULL) + 8);
+			glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, glu::BufferOffsetAsPointer(8));
 			expectError(GL_NO_ERROR);
 
 			// set vao 1 to some other value
 			glBindVertexArray(vaos[1]);
 			glBindBuffer(GL_ARRAY_BUFFER, bufs[1]);
-			glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, ((deUint8*)DE_NULL) + 4);
+			glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, glu::BufferOffsetAsPointer(4));
 			expectError(GL_NO_ERROR);
 
 			// verify vao 1 state
@@ -2943,7 +2943,7 @@ public:
 				StateQueryMemoryWriteGuard<GLvoid*> state;
 				glGetVertexAttribPointerv(0, GL_VERTEX_ATTRIB_ARRAY_POINTER, &state);
 				state.verifyValidity(m_testCtx);
-				checkPointerEquals(m_testCtx, state, ((deUint8*)DE_NULL) + 4);
+				checkPointerEquals(m_testCtx, state, glu::BufferOffsetAsPointer(4));
 			}
 			expectError(GL_NO_ERROR);
 
@@ -2953,7 +2953,7 @@ public:
 				StateQueryMemoryWriteGuard<GLvoid*> state;
 				glGetVertexAttribPointerv(0, GL_VERTEX_ATTRIB_ARRAY_POINTER, &state);
 				state.verifyValidity(m_testCtx);
-				checkPointerEquals(m_testCtx, state, ((deUint8*)DE_NULL) + 8);
+				checkPointerEquals(m_testCtx, state, glu::BufferOffsetAsPointer(8));
 			}
 			expectError(GL_NO_ERROR);
 

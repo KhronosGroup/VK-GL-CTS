@@ -1941,7 +1941,7 @@ void AttributePack::render (DrawTestSpec::Primitive primitive, DrawTestSpec::Dra
 
 		GLU_EXPECT_NO_ERROR(m_ctx.getError(), "Setup draw indirect buffer");
 
-		m_ctx.drawArraysIndirect(primitiveToGL(primitive), (const deInt8*)DE_NULL + indirectOffset);
+		m_ctx.drawArraysIndirect(primitiveToGL(primitive), glu::BufferOffsetAsPointer(indirectOffset));
 		GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glDrawArraysIndirect()");
 
 		m_ctx.deleteBuffers(1, &indirectBuf);
@@ -1992,7 +1992,7 @@ void AttributePack::render (DrawTestSpec::Primitive primitive, DrawTestSpec::Dra
 
 		GLU_EXPECT_NO_ERROR(m_ctx.getError(), "Setup draw indirect buffer");
 
-		m_ctx.drawElementsIndirect(primitiveToGL(primitive), indexTypeToGL(indexType), (const deInt8*)DE_NULL + indirectOffset);
+		m_ctx.drawElementsIndirect(primitiveToGL(primitive), indexTypeToGL(indexType), glu::BufferOffsetAsPointer(indirectOffset));
 		GLU_EXPECT_NO_ERROR(m_ctx.getError(), "glDrawArraysIndirect()");
 
 		m_ctx.deleteBuffers(1, &indirectBuf);

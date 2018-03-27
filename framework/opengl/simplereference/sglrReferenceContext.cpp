@@ -4143,7 +4143,7 @@ void ReferenceContext::drawElementsIndirect	(deUint32 mode, deUint32 type, const
 	// Draw
 	{
 		const size_t			sizeOfType		= (type == GL_UNSIGNED_BYTE) ?  (1) : ((type == GL_UNSIGNED_SHORT) ? (2) : (4));
-		const void*				indicesPtr		= (deUint8*)DE_NULL + (command->firstIndex * sizeOfType);
+		const void*				indicesPtr		= glu::BufferOffsetAsPointer(command->firstIndex * sizeOfType);
 
 		drawElementsInstancedBaseVertex(mode, (int)command->count, type, indicesPtr, (int)command->primCount, command->baseVertex);
 	}

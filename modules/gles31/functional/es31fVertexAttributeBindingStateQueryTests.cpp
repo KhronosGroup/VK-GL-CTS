@@ -607,7 +607,7 @@ void MixedVertexBindingOffsetCase::test (tcu::ResultCollector& result)
 	gl.enableLogging(true);
 
 	gl.glBindBuffer(GL_ARRAY_BUFFER, *buffer);
-	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (const deUint8*)DE_NULL + 12);
+	gl.glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, glu::BufferOffsetAsPointer(12));
 
 	verifyStateIndexedInteger(result, gl, GL_VERTEX_BINDING_OFFSET, 1, 12, m_verifier);
 }
