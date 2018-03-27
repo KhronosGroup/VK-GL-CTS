@@ -496,7 +496,7 @@ void MultisampleRenderCase::drawOneIteration (void)
 
 			if (location != -1)
 			{
-				gl.vertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, it->second.stride, (deUint8*)DE_NULL + it->second.offset);
+				gl.vertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, it->second.stride, glu::BufferOffsetAsPointer(it->second.offset));
 				gl.enableVertexAttribArray(location);
 			}
 		}
