@@ -1,10 +1,10 @@
-#ifndef _GL4CKHRDEBUGTESTS_HPP
-#define _GL4CKHRDEBUGTESTS_HPP
+#ifndef _GLCKHRDEBUGTESTS_HPP
+#define _GLCKHRDEBUGTESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
  *
- * Copyright (c) 2015-2016 The Khronos Group Inc.
+ * Copyright (c) 2015-2018 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@
  */ /*-------------------------------------------------------------------*/
 
 /**
- * \file  gl4cKHRDebugTests.hpp
+ * \file  glcKHRDebugTests.hpp
  * \brief Declares test classes for "KHR Debug" functionality.
  */ /*-------------------------------------------------------------------*/
 
@@ -43,7 +43,7 @@ namespace glw
 class Functions;
 }
 
-namespace gl4cts
+namespace glcts
 {
 namespace KHRDebug
 {
@@ -54,7 +54,7 @@ class TestBase
 {
 public:
 	/* Public methods */
-	TestBase(deqp::Context& context, bool is_debug);
+	TestBase(tcu::TestContext& testContext, glu::ApiType apiType, bool is_debug);
 	virtual ~TestBase();
 
 protected:
@@ -73,8 +73,8 @@ private:
 	void initNonDebug();
 
 	/* Private fields */
-	deqp::Context&		m_test_base_context;
-	glu::RenderContext* m_orig_rc;
+	tcu::TestContext&	m_testContext;
+	glu::ApiType		m_apiType;
 };
 
 /** Implementation of test APIErrors. Description follows:
@@ -139,11 +139,11 @@ private:
  * GetPointerv function should generate:
  * - INVALID_ENUM when <pname> is invalid.
  **/
-class APIErrorsTest : public deqp::TestCase, public TestBase
+class APIErrorsTest : public TestBase, public tcu::TestCase
 {
 public:
 	/* Public methods */
-	APIErrorsTest(deqp::Context& context, bool is_debug, const glw::GLchar* name);
+	APIErrorsTest(tcu::TestContext& testCtx, glu::ApiType apiType, bool is_debug, const glw::GLchar* name);
 
 	virtual ~APIErrorsTest()
 	{
@@ -180,11 +180,11 @@ public:
  * will be zero;
  * - delete object.
  **/
-class LabelsTest : public deqp::TestCase, public TestBase
+class LabelsTest : public tcu::TestCase, public TestBase
 {
 public:
 	/* Public methods */
-	LabelsTest(deqp::Context& context, bool is_debug, const glw::GLchar* name);
+	LabelsTest(tcu::TestContext& testCtx, glu::ApiType apiType, bool is_debug, const glw::GLchar* name);
 
 	virtual ~LabelsTest()
 	{
@@ -220,7 +220,7 @@ private:
 	static glw::GLvoid deleteVertexArray(const glw::Functions* gl, glw::GLuint id);
 };
 
-/** Implementation of test ReceiveingMessages. Description follows:
+/** Implementation of test ReceivingMessages. Description follows:
  *
  * This test verifies that it is possible to receive messages.
  *
@@ -302,13 +302,13 @@ private:
  * available;
  * - fetch the message and verify it is the newest one;
  **/
-class ReceiveingMessagesTest : public deqp::TestCase, public TestBase
+class ReceivingMessagesTest : public tcu::TestCase, public TestBase
 {
 public:
 	/* Public methods */
-	ReceiveingMessagesTest(deqp::Context& context);
+	ReceivingMessagesTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 
-	virtual ~ReceiveingMessagesTest()
+	virtual ~ReceivingMessagesTest()
 	{
 	}
 
@@ -383,11 +383,11 @@ private:
  *
  * - check state of DEBUG_GROUP_STACK_DEPTH; It should be 1.
  **/
-class GroupsTest : public deqp::TestCase, public TestBase
+class GroupsTest : public tcu::TestCase, public TestBase
 {
 public:
 	/* Public methods */
-	GroupsTest(deqp::Context& context);
+	GroupsTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 
 	virtual ~GroupsTest()
 	{
@@ -433,11 +433,11 @@ private:
  *   * callback_executed is set to 1 and thread_id is the same
  *   as "test" thread - implementation sent message to proper thread;
  **/
-class SynchronousCallsTest : public deqp::TestCase, public TestBase
+class SynchronousCallsTest : public tcu::TestCase, public TestBase
 {
 public:
 	/* Public methods */
-	SynchronousCallsTest(deqp::Context& context);
+	SynchronousCallsTest(tcu::TestContext& testCtx, glu::ApiType apiType);
 	~SynchronousCallsTest(void);
 
 	/* Public methods inherited from TestCase */
@@ -454,11 +454,11 @@ private:
 } /* KHRDebug */
 
 /** Group class for khr debug conformance tests */
-class KHRDebugTests : public deqp::TestCaseGroup
+class KHRDebugTests : public tcu::TestCaseGroup
 {
 public:
 	/* Public methods */
-	KHRDebugTests(deqp::Context& context);
+	KHRDebugTests(tcu::TestContext& testCtx, glu::ApiType apiType);
 
 	virtual ~KHRDebugTests(void)
 	{
@@ -470,8 +470,11 @@ private:
 	/* Private methods */
 	KHRDebugTests(const KHRDebugTests& other);
 	KHRDebugTests& operator=(const KHRDebugTests& other);
+
+	/* Private members */
+	glu::ApiType m_apiType;
 };
 
-} /* gl4cts */
+} /* glcts */
 
-#endif // _GL4CKHRDEBUGTESTS_HPP
+#endif // _GLCKHRDEBUGTESTS_HPP
