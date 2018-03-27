@@ -366,8 +366,3 @@ void InstanceDriver::getPhysicalDeviceMultisamplePropertiesEXT (VkPhysicalDevice
 {
 	m_vk.getPhysicalDeviceMultisamplePropertiesEXT(physicalDevice, samples, pMultisampleProperties);
 }
-
-void InstanceDriver::getPhysicalDeviceAndroidHardwareBufferUsageANDROID (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceAndroidHardwareBufferInfoANDROID* pInfo, VkAndroidHardwareBufferUsageANDROID* pUsage) const
-{
-	m_vk.getPhysicalDeviceAndroidHardwareBufferUsageANDROID(physicalDevice, pInfo, pUsage);
-}
