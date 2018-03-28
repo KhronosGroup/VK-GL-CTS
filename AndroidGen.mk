@@ -263,6 +263,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmComputeShaderTestUtil.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmConditionalBranchTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmCrossStageInterfaceTests.cpp \
+	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControlsTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmGraphicsShaderTestUtil.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmImageSamplerTests.cpp \
 	external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmIndexingTests.cpp \
