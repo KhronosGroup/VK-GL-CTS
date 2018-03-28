@@ -66,6 +66,12 @@ dEQP-GLES2.functional.texture.wrap.mirror_clamp_nearest_pot_rgba8888
 dEQP-GLES2.functional.texture.wrap.mirror_repeat_nearest_pot_rgba8888
 dEQP-GLES2.functional.texture.wrap.mirror_mirror_nearest_pot_rgba8888
 
+# Bug 18323060
+dEQP-GLES2.functional.shaders.random.all_features.fragment.16
+
+# Bug 21851700
+dEQP-GLES2.functional.shaders.random.all_features.fragment.56
+
 #VK-GL-CTS 242
 dEQP-GLES2.functional.shaders.texture_functions.vertex.texturecubelod
 
