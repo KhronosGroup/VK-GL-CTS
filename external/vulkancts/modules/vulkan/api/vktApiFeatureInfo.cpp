@@ -3300,6 +3300,7 @@ tcu::TestStatus testNoUnknownExtensions (Context& context)
 
 	// All known extensions should be added to allowedExtensions:
 	// allowedExtensions.insert("VK_GOOGLE_extension1");
+	allowedDeviceExtensions.insert("VK_ANDROID_external_memory_android_hardware_buffer");
 	allowedDeviceExtensions.insert("VK_GOOGLE_display_timing");
 
 	// Instance extensions
