@@ -929,6 +929,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fShaderSharedVarTests.cpp \
 	modules/gles31/functional/es31fShaderStateQueryTests.cpp \
 	modules/gles31/functional/es31fShaderTextureSizeTests.cpp \
+	modules/gles31/functional/es31fShaderUniformIntegerFunctionTests.cpp \
 	modules/gles31/functional/es31fStencilTexturingTests.cpp \
 	modules/gles31/functional/es31fSynchronizationTests.cpp \
 	modules/gles31/functional/es31fTessellationGeometryInteractionTests.cpp \

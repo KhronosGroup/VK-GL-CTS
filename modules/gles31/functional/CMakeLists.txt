@@ -193,6 +193,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fShaderFramebufferFetchTests.hpp
 	es31fNegativeShaderFramebufferFetchTests.cpp
 	es31fNegativeShaderFramebufferFetchTests.hpp
+	es31fShaderUniformIntegerFunctionTests.cpp
+	es31fShaderUniformIntegerFunctionTests.hpp
 	)
 
 add_library(deqp-gles31-functional STATIC ${DEQP_GLES31_FUNCTIONAL_SRCS})
