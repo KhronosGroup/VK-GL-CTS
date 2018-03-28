@@ -35,6 +35,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vktProtectedMemBufferValidator.hpp"
 #include "vktProtectedMemUtils.hpp"
@@ -536,7 +537,7 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeFragmentTest(void)
 							  1, &endImgBarrier);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Execute Draw
 	{
@@ -649,7 +650,7 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeComputeTest(void)
 
 		vk.cmdDispatch(*cmdBuffer, dispatchCount, 1u, 1u);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		VK_CHECK(queueSubmit(ctx, PROTECTION_ENABLED, queue, *cmdBuffer, *fence, ~0ull));
 	}
 

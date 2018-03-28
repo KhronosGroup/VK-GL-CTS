@@ -42,6 +42,7 @@
 #include "vkRefUtil.hpp"
 #include "vkStrUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuFloat.hpp"
 #include "tcuFormatUtil.hpp"
@@ -392,11 +393,6 @@ void beginCommandBuffer (const DeviceInterface&			vk,
 		&pInheritanceInfo,
 	};
 	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &pBeginInfo));
-}
-
-void endCommandBuffer (const DeviceInterface& vk, VkCommandBuffer cmdBuffer)
-{
-	VK_CHECK(vk.endCommandBuffer(cmdBuffer));
 }
 
 void queueSubmit (const DeviceInterface& vk, VkQueue queue, deUint32 cmdBufferCount, const VkCommandBuffer* pCmdBuffers, VkFence fence)

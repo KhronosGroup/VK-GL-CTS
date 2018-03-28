@@ -236,9 +236,6 @@ vk::VkBufferImageCopy			makeBufferImageCopy							(const vk::VkImageSubresourceL
 vk::VkMemoryBarrier				makeMemoryBarrier							(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask);
 vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier						(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkBuffer buffer, const vk::VkDeviceSize offset, const vk::VkDeviceSize bufferSizeBytes);
 vk::VkImageMemoryBarrier		makeImageMemoryBarrier						(const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange);
-
-void							beginCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
-void							endCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 void							beginRenderPass								(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer, const vk::VkRect2D& renderArea, const tcu::Vec4& clearColor);
 void							beginRenderPassWithRasterizationDisabled	(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer);
 void							endRenderPass								(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);

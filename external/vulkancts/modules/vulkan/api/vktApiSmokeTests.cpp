@@ -723,16 +723,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	};
 	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 
-	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// sType
-		DE_NULL,												// pNext
-		0u,														// flags
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	// Record commands
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
+	beginCommandBuffer(vk, *cmdBuf);
 
 	{
 		const VkMemoryBarrier		vertFlushBarrier	=
@@ -855,7 +847,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyFinishBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
+	endCommandBuffer(vk, *cmdBuf);
 
 	// Upload vertex data
 	{
@@ -1317,16 +1309,8 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest (Context& context)
 	};
 	const Unique<VkCommandBuffer>			cmdBuf					(allocateCommandBuffer(vk, vkDevice, &cmdBufParams));
 
-	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// sType
-		DE_NULL,												// pNext
-		0u,														// flags
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	// Record commands
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
+	beginCommandBuffer(vk, *cmdBuf);
 
 	{
 		const VkMemoryBarrier		vertFlushBarrier	=
@@ -1449,7 +1433,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest (Context& context)
 		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyFinishBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
+	endCommandBuffer(vk, *cmdBuf);
 
 	// Upload vertex data
 	{

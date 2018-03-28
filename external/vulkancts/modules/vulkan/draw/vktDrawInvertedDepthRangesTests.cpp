@@ -255,10 +255,7 @@ tcu::ConstPixelBufferAccess InvertedDepthRangesTestInstance::draw (const VkViewp
 
 	// Draw
 
-	{
-		const CmdBufferBeginInfo beginInfo;
-		vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
-	}
+	beginCommandBuffer(vk, *cmdBuffer);
 
 	vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
 
@@ -296,7 +293,7 @@ tcu::ConstPixelBufferAccess InvertedDepthRangesTestInstance::draw (const VkViewp
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	vk.cmdDraw(*cmdBuffer, 3, 1, 0, 0);
 	vk.cmdEndRenderPass(*cmdBuffer);
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());

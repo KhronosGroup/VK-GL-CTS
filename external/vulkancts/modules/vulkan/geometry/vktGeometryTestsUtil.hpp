@@ -182,8 +182,6 @@ de::MovePtr<vk::Allocation>		bindBuffer					(const vk::DeviceInterface& vk, cons
 
 void							beginRenderPass				(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const vk::VkFramebuffer framebuffer, const vk::VkRect2D& renderArea, const tcu::Vec4& clearColor);
 void							endRenderPass				(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
-void							beginCommandBuffer			(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
-void							endCommandBuffer			(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 
 bool							compareWithFileImage		(Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string name);
 

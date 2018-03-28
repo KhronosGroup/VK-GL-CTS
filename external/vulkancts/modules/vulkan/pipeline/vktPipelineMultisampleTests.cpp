@@ -39,6 +39,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTestLog.hpp"
 #include "deUniquePtr.hpp"
@@ -2625,14 +2626,6 @@ void MultisampleRenderer::initialize (Context&									context,
 
 	// Create command buffer
 	{
-		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-			DE_NULL,										// const void*						pNext;
-			0u,												// VkCommandBufferUsageFlags		flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		VkClearValue colorClearValue;
 		colorClearValue.color.float32[0] = 0.0f;
 		colorClearValue.color.float32[1] = 0.0f;
@@ -2756,7 +2749,7 @@ void MultisampleRenderer::initialize (Context&									context,
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMask, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)imageLayoutBarriers.size(), &imageLayoutBarriers[0]);
@@ -2789,7 +2782,7 @@ void MultisampleRenderer::initialize (Context&									context,
 
 		vk.cmdEndRenderPass(*m_cmdBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
 

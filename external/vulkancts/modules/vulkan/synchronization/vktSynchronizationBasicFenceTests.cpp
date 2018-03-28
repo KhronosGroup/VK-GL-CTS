@@ -28,6 +28,7 @@
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
 #include "vkRef.hpp"
+#include "vkCmdUtil.hpp"
 
 namespace vkt
 {

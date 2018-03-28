@@ -708,17 +708,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	// Create command buffer and record commands
 
-	const VkCommandBufferBeginInfo		cmdBufferBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
-		DE_NULL,										// pNext
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	const tcu::IVec3&				numWorkGroups		= m_shaderSpec.numWorkGroups;
 
-	VK_CHECK(vkdi.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vkdi, *cmdBuffer);
 	vkdi.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 	vkdi.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
 	if (m_shaderSpec.pushConstants != DE_NULL)
@@ -732,7 +724,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		vkdi.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, /* offset = */ 0, /* size = */ size, data);
 	}
 	vkdi.cmdDispatch(*cmdBuffer, numWorkGroups.x(), numWorkGroups.y(), numWorkGroups.z());
-	VK_CHECK(vkdi.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vkdi, *cmdBuffer);
 
 	submitCommandsAndWait(vkdi, device, queue, *cmdBuffer);
 

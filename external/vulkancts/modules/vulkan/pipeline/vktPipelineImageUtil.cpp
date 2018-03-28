@@ -297,14 +297,6 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 		pixelDataSize								// VkDeviceSize		size;
 	};
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,			// VkCommandBufferUsageFlags		flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	// Copy image to buffer
 
 	const VkBufferImageCopy copyRegion =
@@ -317,11 +309,11 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 		{ renderSize.x(), renderSize.y(), 1u }			// VkExtent3D				imageExtent;
 	};
 
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
 	vk.cmdCopyImageToBuffer(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1, &copyRegion);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 

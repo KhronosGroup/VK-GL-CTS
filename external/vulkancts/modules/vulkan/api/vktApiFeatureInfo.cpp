@@ -472,7 +472,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties* properties, VkPhysicalDev
 	}
 
 	if (limits->maxFramebufferWidth > limits->maxViewportDimensions[0] ||
-	    limits->maxFramebufferHeight > limits->maxViewportDimensions[1])
+		limits->maxFramebufferHeight > limits->maxViewportDimensions[1])
 	{
 		log << TestLog::Message << "limit validation failed, maxFramebufferDimension of "
 			<< "[" << limits->maxFramebufferWidth << ", " << limits->maxFramebufferHeight << "] "
@@ -2920,9 +2920,10 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 	log << TestLog::Message << extProperties.properties << TestLog::EndMessage;
 
+	const int count = 2u;
+
 	if (getPhysicalDeviceProperties(vki, physicalDevice).apiVersion >= VK_API_VERSION_1_1)
 	{
-		const int count = 2u;
 		VkPhysicalDeviceIDProperties								IDProperties[count];
 		VkPhysicalDeviceMaintenance3Properties						maintenance3Properties[count];
 		VkPhysicalDeviceMultiviewProperties							multiviewProperties[count];
@@ -2989,40 +2990,39 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		<< TestLog::Message		<< toString(pointClippingProperties[0])			<< TestLog::EndMessage
 		<< TestLog::Message		<< toString(protectedMemoryPropertiesKHR[0])	<< TestLog::EndMessage
 		<< TestLog::Message		<< toString(subgroupProperties[0])				<< TestLog::EndMessage;
+	}
+
+	const vector<VkExtensionProperties>	extensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+
+	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_push_descriptor")))
+	{
+		VkPhysicalDevicePushDescriptorPropertiesKHR		pushDescriptorProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			deMemset(&pushDescriptorProperties[ndx], 0, sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR));
+
+			pushDescriptorProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
+			pushDescriptorProperties[ndx].pNext	= DE_NULL;
+
+			extProperties.pNext = &pushDescriptorProperties[ndx];
+
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+
+			pushDescriptorProperties[ndx].pNext = DE_NULL;
 		}
 
-		const vector<VkExtensionProperties>	extensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-
-		if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_push_descriptor")))
+		if (deMemCmp(&pushDescriptorProperties[0], &pushDescriptorProperties[1], sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR)) != 0)
 		{
-			const int count = 2u;
-			VkPhysicalDevicePushDescriptorPropertiesKHR		pushDescriptorProperties[count];
+			TCU_FAIL("Mismatch in vkGetPhysicalDeviceProperties2 in VkPhysicalDevicePushDescriptorPropertiesKHR ");
+		}
 
-			for (int ndx = 0; ndx < count; ++ndx)
-			{
-				deMemset(&pushDescriptorProperties[ndx], 0, sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR));
+		log << TestLog::Message << toString(pushDescriptorProperties[0]) << TestLog::EndMessage;
 
-				pushDescriptorProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
-				pushDescriptorProperties[ndx].pNext	= DE_NULL;
-
-				extProperties.pNext = &pushDescriptorProperties[ndx];
-
-				vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
-
-				pushDescriptorProperties[ndx].pNext = DE_NULL;
-			}
-
-			if (deMemCmp(&pushDescriptorProperties[0], &pushDescriptorProperties[1], sizeof(VkPhysicalDevicePushDescriptorPropertiesKHR)) != 0)
-			{
-				TCU_FAIL("Mismatch in vkGetPhysicalDeviceProperties2 in VkPhysicalDevicePushDescriptorPropertiesKHR ");
-			}
-
-			log << TestLog::Message << toString(pushDescriptorProperties[0]) << TestLog::EndMessage;
-
-			if (pushDescriptorProperties[0].maxPushDescriptors < 32)
-			{
-				TCU_FAIL("VkPhysicalDevicePushDescriptorPropertiesKHR.maxPushDescriptors must be at least 32");
-			}
+		if (pushDescriptorProperties[0].maxPushDescriptors < 32)
+		{
+			TCU_FAIL("VkPhysicalDevicePushDescriptorPropertiesKHR.maxPushDescriptors must be at least 32");
+		}
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");

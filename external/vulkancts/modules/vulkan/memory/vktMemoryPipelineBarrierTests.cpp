@@ -1848,7 +1848,7 @@ void SubmitCommandBuffer::prepare (PrepareContext& context)
 			command.submit(submitContext);
 		}
 
-		VK_CHECK(vkd.endCommandBuffer(*m_commandBuffer));
+		endCommandBuffer(vkd, *m_commandBuffer);
 	}
 }
 
@@ -2326,7 +2326,7 @@ void BufferCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 
 	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	{
@@ -2543,7 +2543,7 @@ void BufferCopyToImage::prepare (PrepareContext& context)
 
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
-		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+		endCommandBuffer(vkd, *commandBuffer);
 		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
@@ -2654,7 +2654,7 @@ void BufferCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	{
@@ -2847,7 +2847,7 @@ void BufferCopyFromImage::prepare (PrepareContext& context)
 		vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
-		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+		endCommandBuffer(vkd, *commandBuffer);
 		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
@@ -2991,7 +2991,7 @@ void ImageCopyToBuffer::verify (VerifyContext& context, size_t commandIndex)
 
 	vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &barrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	reference.setUndefined(0, (size_t)m_imageMemorySize);
@@ -3282,7 +3282,7 @@ void ImageCopyFromImage::prepare (PrepareContext& context)
 		vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
-		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+		endCommandBuffer(vkd, *commandBuffer);
 		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
@@ -3446,7 +3446,7 @@ void ImageCopyToImage::prepare (PrepareContext& context)
 
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
-		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+		endCommandBuffer(vkd, *commandBuffer);
 		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
@@ -3561,7 +3561,7 @@ void ImageCopyToImage::verify (VerifyContext& context, size_t commandIndex)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	{
@@ -3764,7 +3764,7 @@ void ImageBlitFromImage::prepare (PrepareContext& context)
 		vkd.cmdCopyBufferToImage(*commandBuffer, *srcBuffer, *m_srcImage, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 
-		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+		endCommandBuffer(vkd, *commandBuffer);
 		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
@@ -3980,7 +3980,7 @@ void ImageBlitToImage::prepare (PrepareContext& context)
 
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 0, (const vk::VkBufferMemoryBarrier*)DE_NULL, 1, &barrier);
 
-		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+		endCommandBuffer(vkd, *commandBuffer);
 		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 	}
 }
@@ -4105,7 +4105,7 @@ void ImageBlitToImage::verify (VerifyContext& context, size_t commandIndex)
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 	submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 	{
@@ -4566,7 +4566,7 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 			vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0, 0, (const vk::VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 		}
 
-		VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+		endCommandBuffer(vkd, *commandBuffer);
 		submitCommandsAndWait(vkd, device, queue, *commandBuffer);
 
 		{

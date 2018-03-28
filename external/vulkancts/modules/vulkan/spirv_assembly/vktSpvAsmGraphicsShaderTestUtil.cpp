@@ -2145,13 +2145,6 @@ void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const
 	};
 
 	// Copy buffer to image
-	const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
-		DE_NULL,										// const void*								pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags				flags;
-		DE_NULL											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-	};
 
 	const VkImageMemoryBarrier		imageBarriers[]		=
 	{
@@ -2193,14 +2186,14 @@ void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const
 		},
 	};
 
-	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, cmdBuffer);
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
 		0u, DE_NULL, 1u, &imageBarriers[0]);
 	vk.cmdCopyBufferToImage(cmdBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
 		0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarriers[1]);
 
-	VK_CHECK(vk.endCommandBuffer(cmdBuffer));
+	endCommandBuffer(vk, cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
 }
@@ -3362,16 +3355,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, device, &framebufferParams));
 
-	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			//	VkStructureType				sType;
-		DE_NULL,												//	const void*					pNext;
-		(VkCommandBufferUsageFlags)0,
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	// Record commands
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
+	beginCommandBuffer(vk, *cmdBuf);
 
 	{
 		const VkMemoryBarrier			vertFlushBarrier	=
@@ -3555,7 +3540,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		}
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
+	endCommandBuffer(vk, *cmdBuf);
 
 	// Upload vertex data
 	{

@@ -33,6 +33,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "tcuStringTemplate.hpp"
@@ -277,7 +278,7 @@ bool BufferValidator<T>::validateBuffer (ProtectedContext&		ctx,
 		vk.cmdBindDescriptorSets(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 		vk.cmdDispatch(*resetCmdBuffer, 1u, 1u, 1u);
 
-		VK_CHECK(vk.endCommandBuffer(*resetCmdBuffer));
+		endCommandBuffer(vk, *resetCmdBuffer);
 		VK_CHECK(queueSubmit(ctx, PROTECTION_ENABLED, queue, *resetCmdBuffer, *fence, ~0ull));
 	}
 
@@ -294,7 +295,7 @@ bool BufferValidator<T>::validateBuffer (ProtectedContext&		ctx,
 		vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 		vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		queueSubmitResult = queueSubmit(ctx, PROTECTION_ENABLED, queue, *cmdBuffer, *fence, oneSec);
 	}

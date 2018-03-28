@@ -109,7 +109,7 @@ public:
 		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
 
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
-		m_vk.endCommandBuffer(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 

@@ -2495,20 +2495,29 @@ class BasicAtomicCase3VSFS : public ShaderStorageBufferObjectBase
 		GLuint* u = (GLuint*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 4, GL_MAP_READ_BIT);
 		if (!u)
 			return ERROR;
-		if (*u != 16)
+		/* g_vs_buffer.u updated in VS which can be invoked multiple times per vertex */
+		if (*u < 16)
 		{
 			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at offset 0 is " << *u
-												<< " should be 16." << tcu::TestLog::EndMessage;
+												<< " should be at least 16." << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 		GLint* i = (GLint*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 64, 4, GL_MAP_READ_BIT);
 		if (!i)
 			return ERROR;
-		if (*i != 16)
+		/* g_vs_buffer.i updated in VS which can be invoked multiple times per vertex */
+		if (*i < 16)
 		{
 			m_context.getTestContext().getLog() << tcu::TestLog::Message << "Data at offset 0 is " << *i
-												<< " should be 16." << tcu::TestLog::EndMessage;
+												<< " should be at least 16." << tcu::TestLog::EndMessage;
+			return ERROR;
+		}
+		/* g_vs_buffer.u should be equivalent to g_vs_buffer.i */
+		if (*u != static_cast<GLuint>(*i))
+		{
+			m_context.getTestContext().getLog() << tcu::TestLog::Message << "uvec data " << *u << "and ivec data " << *i
+												<< "should match" << tcu::TestLog::EndMessage;
 			return ERROR;
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
@@ -2610,7 +2619,7 @@ class BasicAtomicCase3CS : public ShaderStorageBufferObjectBase
 class BasicAtomicCase4VSFS : public ShaderStorageBufferObjectBase
 {
 	GLuint m_program;
-	GLuint m_storage_buffer[2];
+	GLuint m_storage_buffer[3];
 	GLuint m_vertex_array;
 	GLuint m_vertex_buffer;
 
@@ -2629,24 +2638,27 @@ class BasicAtomicCase4VSFS : public ShaderStorageBufferObjectBase
 		const char* const glsl_vs =
 			NL "layout(location = 0) in vec4 g_in_position;" NL
 			   "layout(std430, binding = 0) coherent buffer Counters {" NL "  uint g_uint_counter;" NL
-			   "  int g_int_counter;" NL "};" NL "layout(std430, binding = 1) buffer Output {" NL "  uint udata[8];" NL
-			   "  int idata[8];" NL "} g_output;" NL "void main() {" NL "  gl_Position = g_in_position;" NL
+			   "  int g_int_counter;" NL "};" NL
+			   "layout(std430, binding = 1) buffer OutputU {" NL "  uint udata[8];" NL "} g_outputU;" NL
+			   "layout(std430, binding = 2) buffer OutputI {" NL "  int idata[8];" NL "} g_outputI;" NL
+			   "void main() {" NL "  gl_Position = g_in_position;" NL
 			   "#ifdef GL_ES" NL "  gl_PointSize = 1.0f;" NL "#endif" NL
 			   "  uint uidx = atomicAdd(g_uint_counter, 1u);" NL "  int iidx = atomicAdd(g_int_counter, -1);" NL
-			   "  g_output.udata[uidx] = uidx;" NL "  g_output.idata[iidx] = iidx;" NL "}";
+			   "  g_outputU.udata[uidx] = uidx;" NL "  g_outputI.idata[iidx] = iidx;" NL "}";
 		const char* const glsl_fs =
 			NL "layout(location = 0) out vec4 g_fs_out;" NL "layout(std430, binding = 0) coherent buffer Counters {" NL
 			   "  uint g_uint_counter;" NL "  int g_int_counter;" NL "};" NL
-			   "layout(std430, binding = 1) buffer Output {" NL "  uint udata[8];" NL "  int idata[8];" NL
-			   "} g_output;" NL "void main() {" NL "  g_fs_out = vec4(0, 1, 0, 1);" NL
+			   "layout(std430, binding = 1) buffer OutputU {" NL "  uint udata[8];" NL "} g_outputU;" NL
+			   "layout(std430, binding = 2) buffer OutputI {" NL "  int idata[8];" NL "} g_outputI;" NL
+			   "void main() {" NL "  g_fs_out = vec4(0, 1, 0, 1);" NL
 			   "  uint uidx = atomicAdd(g_uint_counter, 1u);" NL "  int iidx = atomicAdd(g_int_counter, -1);" NL
-			   "  g_output.udata[uidx] = uidx;" NL "  g_output.idata[iidx] = iidx;" NL "}";
+			   "  g_outputU.udata[uidx] = uidx;" NL "  g_outputI.idata[iidx] = iidx;" NL "}";
 		m_program = CreateProgram(glsl_vs, glsl_fs);
 		glLinkProgram(m_program);
 		if (!CheckProgram(m_program))
 			return ERROR;
 
-		glGenBuffers(2, m_storage_buffer);
+		glGenBuffers(3, m_storage_buffer);
 		/* counter buffer */
 		{
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_storage_buffer[0]);
@@ -2658,10 +2670,12 @@ class BasicAtomicCase4VSFS : public ShaderStorageBufferObjectBase
 			*ptr++ = 7;
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 		}
-		/* output buffer */
+		/* output buffers */
 		{
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_storage_buffer[1]);
-			glBufferData(GL_SHADER_STORAGE_BUFFER, 16 * sizeof(int), NULL, GL_DYNAMIC_DRAW);
+			glBufferData(GL_SHADER_STORAGE_BUFFER, 8 * sizeof(int), NULL, GL_DYNAMIC_DRAW);
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_storage_buffer[2]);
+			glBufferData(GL_SHADER_STORAGE_BUFFER, 8 * sizeof(int), NULL, GL_DYNAMIC_DRAW);
 		}
 		/* vertex buffer */
 		{
@@ -2686,6 +2700,7 @@ class BasicAtomicCase4VSFS : public ShaderStorageBufferObjectBase
 		glDrawArrays(GL_POINTS, 0, 4);
 		glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_storage_buffer[1]);
 		GLuint* udata = (GLuint*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 32, GL_MAP_READ_BIT);
 		if (!udata)
 			return ERROR;
@@ -2699,7 +2714,9 @@ class BasicAtomicCase4VSFS : public ShaderStorageBufferObjectBase
 			}
 		}
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-		GLint* idata = (GLint*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 32, 32, GL_MAP_READ_BIT);
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_storage_buffer[2]);
+		GLint* idata = (GLint*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 32, GL_MAP_READ_BIT);
 		if (!idata)
 			return ERROR;
 		for (GLint i = 0; i < 8; ++i)
@@ -2718,7 +2735,7 @@ class BasicAtomicCase4VSFS : public ShaderStorageBufferObjectBase
 	{
 		glUseProgram(0);
 		glDeleteProgram(m_program);
-		glDeleteBuffers(2, m_storage_buffer);
+		glDeleteBuffers(3, m_storage_buffer);
 		glDeleteBuffers(1, &m_vertex_buffer);
 		glDeleteVertexArrays(1, &m_vertex_array);
 		return NO_ERROR;
@@ -7023,9 +7040,18 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			int* data = (int*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 16, GL_MAP_READ_BIT);
 			if (!data)
 				return ERROR;
-			for (int i = 0; i < 4; ++i)
+			for (int i = 0; i < 2; ++i)
 			{
-				if (data[i] != ref_data[i])
+				/* g_data incremented in VS which can be invoked multiple times per vertex */
+				if (data[2*i] < ref_data[2*i])
+				{
+					m_context.getTestContext().getLog()
+						<< tcu::TestLog::Message << "[Buffer0] Data at index " << i << " is " << data[i]
+						<< " should be at least" << ref_data[i] << tcu::TestLog::EndMessage;
+					return ERROR;
+				}
+				/* g_inc */
+				if (data[2*i + 1] != ref_data[2*i + 1])
 				{
 					m_context.getTestContext().getLog()
 						<< tcu::TestLog::Message << "[Buffer0] Data at index " << i << " is " << data[i]
@@ -7042,15 +7068,21 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			int* data = (int*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 8, GL_MAP_READ_BIT);
 			if (!data)
 				return ERROR;
-			for (int i = 0; i < 2; ++i)
+			/* inc */
+			if (data[0] != ref_data[0])
 			{
-				if (data[i] != ref_data[i])
-				{
-					m_context.getTestContext().getLog()
-						<< tcu::TestLog::Message << "[Buffer1] Data at index " << i << " is " << data[i]
-						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
-					return ERROR;
-				}
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[Buffer1] Data at index 0 is " << data[0]
+					<< " should be " << ref_data[0] << tcu::TestLog::EndMessage;
+				return ERROR;
+			}
+			/* data incremented in VS which can be invoked multiple times per vertex */
+			if (data[1] < ref_data[1])
+			{
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[Buffer1] Data at index 1 is " << data[1]
+					<< " should be at least" << ref_data[1] << tcu::TestLog::EndMessage;
+				return ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 		}
@@ -7061,15 +7093,21 @@ class AdvancedUsageSyncCS : public ShaderStorageBufferObjectBase
 			int* data = (int*)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 8, GL_MAP_READ_BIT);
 			if (!data)
 				return ERROR;
-			for (int i = 0; i < 2; ++i)
+			/* inc */
+			if (data[0] != ref_data[0])
 			{
-				if (data[i] != ref_data[i])
-				{
-					m_context.getTestContext().getLog()
-						<< tcu::TestLog::Message << "[Buffer2] Data at index " << i << " is " << data[i]
-						<< " should be " << ref_data[i] << tcu::TestLog::EndMessage;
-					return ERROR;
-				}
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[Buffer2] Data at index 0 is " << data[0]
+					<< " should be " << ref_data[0] << tcu::TestLog::EndMessage;
+				return ERROR;
+			}
+			/* data incremented in VS which can be invoked multiple times per vertex */
+			if (data[1] < ref_data[1])
+			{
+				m_context.getTestContext().getLog()
+					<< tcu::TestLog::Message << "[Buffer2] Data at index 1 is " << data[1]
+					<< " should be at least" << ref_data[1] << tcu::TestLog::EndMessage;
+				return ERROR;
 			}
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 		}

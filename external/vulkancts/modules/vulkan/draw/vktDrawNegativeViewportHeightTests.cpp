@@ -255,10 +255,7 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 
 	// Draw
 
-	{
-		const CmdBufferBeginInfo beginInfo;
-		vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
-	}
+	beginCommandBuffer(vk, *cmdBuffer);
 
 	vk.cmdSetViewport(*cmdBuffer, 0u, 1u, &viewport);
 
@@ -297,7 +294,7 @@ tcu::ConstPixelBufferAccess NegativeViewportHeightTestInstance::draw (const VkVi
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	vk.cmdDraw(*cmdBuffer, 6, 1, 0, 0);
 	vk.cmdEndRenderPass(*cmdBuffer);
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());

@@ -370,9 +370,8 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 	vk::Move<vk::VkCommandPool>		cmdPool				= vk::createCommandPool(vk, device, &cmdPoolCreateInfo);
 
 	vk::Unique<vk::VkCommandBuffer> cmdBuffer			(vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const CmdBufferBeginInfo		beginInfo			(0u);
 
-	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
+	beginCommandBuffer(vk, *cmdBuffer);
 
 	initialTransitionColor2DImage(vk, *cmdBuffer, m_stateObjects->m_colorAttachmentImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
 								  vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -413,7 +412,7 @@ tcu::TestStatus	BasicOcclusionQueryTestInstance::iterate (void)
 					  vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 					  vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
@@ -763,11 +762,10 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordQueryPoolReset (
 	DE_ASSERT(hasSeparateResetCmdBuf());
 
 	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	CmdBufferBeginInfo				beginInfo	(0u);
 
-	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
+	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdResetQueryPool(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL);
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	return cmdBuffer;
 }
@@ -778,9 +776,8 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 	const vk::DeviceInterface&		vk			= m_context.getDeviceInterface();
 
 	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	CmdBufferBeginInfo				beginInfo	(0u);
 
-	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
+	beginCommandBuffer(vk, *cmdBuffer);
 
 	initialTransitionColor2DImage(vk, *cmdBuffer, m_stateObjects->m_colorAttachmentImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
 								  vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -843,7 +840,7 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender (vk::VkCo
 					  vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
 					  vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	return cmdBuffer;
 }
@@ -854,11 +851,10 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordCopyResults (vk:
 	const vk::DeviceInterface&		vk			= m_context.getDeviceInterface();
 
 	vk::Move<vk::VkCommandBuffer>	cmdBuffer	(vk::allocateCommandBuffer(vk, device, cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const CmdBufferBeginInfo		beginInfo	(0u);
 
-	vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
+	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdCopyQueryPoolResults(*cmdBuffer, m_queryPool, 0, NUM_QUERIES_IN_POOL, m_queryPoolResultsBuffer->object(), /*dstOffset*/ 0, m_testVector.queryResultsStride, m_queryResultFlags);
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	return cmdBuffer;
 }

@@ -466,9 +466,8 @@ void DrawTestInstanceBase::initPipeline (const vk::VkDevice device)
 void DrawTestInstanceBase::beginRenderPass (void)
 {
 	const vk::VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	const CmdBufferBeginInfo beginInfo;
 
-	m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
 	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
 								  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -669,7 +668,7 @@ tcu::TestStatus DrawTestInstance<DrawParams>::iterate (void)
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	m_vk.cmdDraw(*m_cmdBuffer, m_data.params.vertexCount, m_data.params.instanceCount, m_data.params.firstVertex, m_data.params.firstInstance);
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
-	m_vk.endCommandBuffer(*m_cmdBuffer);
+	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -783,7 +782,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedParams>::iterate (void)
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, *indexBuffer, 0u, m_data.indexType);
 	m_vk.cmdDrawIndexed(*m_cmdBuffer, m_data.params.indexCount, m_data.params.instanceCount, m_data.params.firstIndex, m_data.params.vertexOffset, m_data.params.firstInstance);
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
-	m_vk.endCommandBuffer(*m_cmdBuffer);
+	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
 
@@ -910,7 +909,7 @@ tcu::TestStatus DrawTestInstance<DrawIndirectParams>::iterate (void)
 	}
 
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
-	m_vk.endCommandBuffer(*m_cmdBuffer);
+	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
 
@@ -1090,7 +1089,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 	}
 
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
-	m_vk.endCommandBuffer(*m_cmdBuffer);
+	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
 

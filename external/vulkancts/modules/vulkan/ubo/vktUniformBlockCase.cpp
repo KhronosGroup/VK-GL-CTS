@@ -1836,7 +1836,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 							  0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit the command buffer
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());

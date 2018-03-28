@@ -744,14 +744,6 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 	// Create command buffer
 	{
-		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-			DE_NULL,										// const void*						pNext;
-			0u,												// VkCommandBufferUsageFlags		flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const VkClearValue attachmentClearValues[2] =
 		{
 			defaultClearValue(m_colorFormat),
@@ -801,7 +793,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
 			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
@@ -821,7 +813,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 		}
 
 		vk.cmdEndRenderPass(*m_cmdBuffer);
-		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
 

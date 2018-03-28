@@ -28,6 +28,7 @@
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "deMath.h"
 #include <iomanip>
 #include <limits>
@@ -590,14 +591,6 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 
 	// Record commands
 	{
-		const VkCommandBufferBeginInfo commandBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType						sType;
-			DE_NULL,										// const void*							pNext;
-			0u,												// VkCommandBufferUsageFlags			flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,	// const VkCommandBufferInheritanceInfo	*pInheritanceInfo;
-		};
-
 		VkClearValue attachmentClearValue;
 		attachmentClearValue.color.float32[0] = 0.0f;
 		attachmentClearValue.color.float32[1] = 0.0f;
@@ -632,7 +625,7 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }			// VkImageSubresourceRange	subresourceRange;
 		};
 
-		VK_CHECK(vk.beginCommandBuffer(*m_commandBuffer, &commandBufferBeginInfo));
+		beginCommandBuffer(vk, *m_commandBuffer, 0u);
 		{
 			vk.cmdPipelineBarrier(*m_commandBuffer,
 								  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -662,7 +655,7 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 			}
 			vk.cmdEndRenderPass(*m_commandBuffer);
 		}
-		VK_CHECK(vk.endCommandBuffer(*m_commandBuffer));
+		endCommandBuffer(vk, *m_commandBuffer);
 	}
 }
 
@@ -724,19 +717,11 @@ ComputeEnvironment::ComputeEnvironment (Context&				context,
 
 	// Record commands
 	{
-		const VkCommandBufferBeginInfo commandBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType						sType;
-			DE_NULL,										// const void*							pNext;
-			0u,												// VkCommandBufferUsageFlags			flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,	// const VkCommandBufferInheritanceInfo	*pInheritanceInfo;
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*m_commandBuffer, &commandBufferBeginInfo));
+		beginCommandBuffer(vk, *m_commandBuffer, 0u);
 		vk.cmdBindPipeline(*m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
 		vk.cmdBindDescriptorSets(*m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1, &m_descriptorSet, 0, DE_NULL);
 		vk.cmdDispatch(*m_commandBuffer, 32, 32, 1);
-		VK_CHECK(vk.endCommandBuffer(*m_commandBuffer));
+		endCommandBuffer(vk, *m_commandBuffer);
 	}
 }
 

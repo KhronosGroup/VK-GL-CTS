@@ -1741,7 +1741,7 @@ protected:
 
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
 
 		invalidateMappedMemoryRange(vk, device, m_colorBufferAlloc->getMemory(), m_colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
@@ -2403,7 +2403,7 @@ protected:
 
 		if (useSecondaryCmdBuffer())
 		{
-			VK_CHECK(vk.endCommandBuffer(currentCmdBuffer));
+			endCommandBuffer(vk, currentCmdBuffer);
 			currentCmdBuffer = *cmdBuffer;
 
 			vk.cmdExecuteCommands(currentCmdBuffer, 1u, &secondaryCmdBuffer.get());
@@ -2423,7 +2423,7 @@ protected:
 
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
 
 		invalidateMappedMemoryRange(vk, device, m_colorBufferAlloc->getMemory(), m_colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
@@ -2590,12 +2590,12 @@ protected:
 			// First render pass contents
 			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[0], rt[0].getRenderPass(), /*subpass*/ 0u, rt[0].getFramebuffer());
 			recordFirstPassContents(*secondaryCmdBuffer[0], *pipeline[0], sampleLocationsInfo[0]);
-			VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer[0]));
+			endCommandBuffer(vk, *secondaryCmdBuffer[0]);
 
 			// Second render pass contents
 			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[1], rt[1].getRenderPass(), /*subpass*/ 0u, rt[1].getFramebuffer());
 			recordSecondPassContents(*secondaryCmdBuffer[1], *pipeline[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
-			VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer[1]));
+			endCommandBuffer(vk, *secondaryCmdBuffer[1]);
 		}
 
 		// Record primary command buffers
@@ -2617,7 +2617,7 @@ protected:
 			vk.cmdEndRenderPass(currentCmdBuffer);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(currentCmdBuffer));
+		endCommandBuffer(vk, currentCmdBuffer);
 
 		// Record the second primary command buffer
 		currentCmdBuffer = *cmdBuffer[1];
@@ -2767,7 +2767,7 @@ protected:
 
 		recordCopyImageToBuffer(vk, currentCmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(currentCmdBuffer));
+		endCommandBuffer(vk, currentCmdBuffer);
 
 		// Submit work
 		{
@@ -2965,12 +2965,12 @@ protected:
 			// First subpass contents
 			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[0], rt.getRenderPass(), /*subpass*/ 0u, rt.getFramebuffer());
 			recordFirstPassContents(*secondaryCmdBuffer[0], *pipeline[0], sampleLocationsInfo[0]);
-			VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer[0]));
+			endCommandBuffer(vk, *secondaryCmdBuffer[0]);
 
 			// Second subpass contents
 			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer[1], rt.getRenderPass(), /*subpass*/ 1u, rt.getFramebuffer());
 			recordSecondPassContents(*secondaryCmdBuffer[1], *pipeline[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
-			VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer[1]));
+			endCommandBuffer(vk, *secondaryCmdBuffer[1]);
 		}
 
 		// Record primary command buffer
@@ -3008,7 +3008,7 @@ protected:
 
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
 		invalidateMappedMemoryRange(vk, device, m_colorBufferAlloc->getMemory(), m_colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
@@ -3130,7 +3130,7 @@ protected:
 			beginSecondaryCommandBuffer(vk, *secondaryCmdBuffer, rt.getRenderPass(), /*subpass*/ 0u, rt.getFramebuffer());
 			recordFirstPassContents(*secondaryCmdBuffer, *pipeline[0], sampleLocationsInfo[0]);
 			recordSecondPassContents(*secondaryCmdBuffer, *pipeline[1], sampleLocationsInfo[1], clearColor1, clearDepthStencil0, scissor);
-			VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer));
+			endCommandBuffer(vk, *secondaryCmdBuffer);
 		}
 
 		// Record primary command buffer
@@ -3163,7 +3163,7 @@ protected:
 
 		recordCopyImageToBuffer(vk, *cmdBuffer, m_renderSize, *m_resolveImage, *m_colorBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
 		invalidateMappedMemoryRange(vk, device, m_colorBufferAlloc->getMemory(), m_colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);

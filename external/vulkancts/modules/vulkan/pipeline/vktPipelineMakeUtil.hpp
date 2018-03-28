@@ -90,7 +90,6 @@ de::MovePtr<vk::Allocation>		bindImage				(const vk::DeviceInterface& vk, const 
 de::MovePtr<vk::Allocation>		bindBuffer				(const vk::DeviceInterface& vk, const vk::VkDevice device, vk::Allocator& allocator, const vk::VkBuffer buffer, const vk::MemoryRequirement requirement);
 de::MovePtr<vk::Allocation>		bindImageDedicated		(const vk::InstanceInterface& vki, const vk::DeviceInterface& vkd, const vk::VkPhysicalDevice physDevice, const vk::VkDevice device, const vk::VkImage image, const vk::MemoryRequirement requirement);
 de::MovePtr<vk::Allocation>		bindBufferDedicated		(const vk::InstanceInterface& vki, const vk::DeviceInterface& vkd, const vk::VkPhysicalDevice physDevice, const vk::VkDevice device, const vk::VkBuffer buffer, const vk::MemoryRequirement requirement);
-void							beginCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer);
 
 } // pipeline
 } // vkt

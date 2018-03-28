@@ -1121,7 +1121,7 @@ void UploadDownloadExecutor::run(Context& context, VkBuffer buffer)
 		DE_ASSERT("Unsupported download method");
 	}
 
-	VK_CHECK(m_vk.endCommandBuffer(*m_cmdBuffer));
+	endCommandBuffer(m_vk, *m_cmdBuffer);
 	submitCommandsAndWait(m_vk, m_device, m_queue, *m_cmdBuffer);
 }
 

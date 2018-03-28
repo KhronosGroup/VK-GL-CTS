@@ -27,6 +27,7 @@
 #include "tcuCommandLine.hpp"
 #include "tcuStringTemplate.hpp"
 #include "vkImageUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 using namespace tcu;
 using namespace std;
@@ -444,24 +445,6 @@ Move<VkCommandBuffer> makeCommandBuffer(
 	};
 	return allocateCommandBuffer(context.getDeviceInterface(),
 								 context.getDevice(), &bufferAllocateParams);
-}
-
-void beginCommandBuffer(Context& context, const VkCommandBuffer commandBuffer)
-{
-	const VkCommandBufferBeginInfo commandBufBeginParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		// VkStructureType				sType;
-		DE_NULL,											// const void*					pNext;
-		0u,													// VkCommandBufferUsageFlags	flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-	VK_CHECK(context.getDeviceInterface().beginCommandBuffer(
-				 commandBuffer, &commandBufBeginParams));
-}
-
-void endCommandBuffer(Context& context, const VkCommandBuffer commandBuffer)
-{
-	VK_CHECK(context.getDeviceInterface().endCommandBuffer(commandBuffer));
 }
 
 Move<VkFence> submitCommandBuffer(
@@ -1801,7 +1784,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 
 		totalIterations++;
 
-		beginCommandBuffer(context, *cmdBuffer);
+		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 		{
 
 			context.getDeviceInterface().cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
@@ -1855,7 +1838,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, discardableImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &copyRegion);
 			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &copyBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 
-			endCommandBuffer(context, *cmdBuffer);
+			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
 			waitFence(context, fence);
@@ -2029,7 +2012,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 			*framebuffer, {{0, 0}, {maxWidth, 1}}, 1, &clearValue,
 		};
 
-		beginCommandBuffer(context, *cmdBuffer);
+		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 		{
 			context.getDeviceInterface().cmdSetViewport(
 				*cmdBuffer, 0, 1, &viewport);
@@ -2088,7 +2071,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, discardableImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &copyRegion);
 			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &copyBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 
-			endCommandBuffer(context, *cmdBuffer);
+			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
 			waitFence(context, fence);
 		}
@@ -2359,7 +2342,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 			totalIterations++;
 
-			beginCommandBuffer(context, *cmdBuffer);
+			beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &colorAttachmentBarrier);
 
@@ -2383,7 +2366,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, resultImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &region);
 			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &copyBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 
-			endCommandBuffer(context, *cmdBuffer);
+			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
 			waitFence(context, fence);
@@ -2619,7 +2602,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 			*framebuffer, {{0, 0}, {maxWidth, 1}}, 1, &clearValue,
 		};
 
-		beginCommandBuffer(context, *cmdBuffer);
+		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 		{
 			context.getDeviceInterface().cmdSetViewport(
 				*cmdBuffer, 0, 1, &viewport);
@@ -2678,7 +2661,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, discardableImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &copyRegion);
 			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &copyBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 
-			endCommandBuffer(context, *cmdBuffer);
+			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
 			waitFence(context, fence);
 		}
@@ -2850,7 +2833,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 				*framebuffer, {{0, 0}, {width, height}}, 1, &clearValue,
 			};
 
-			beginCommandBuffer(context, *cmdBuffer);
+			beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 			VkViewport viewport = {0.0f, 0.0f, static_cast<float>(width),
 								   static_cast<float>(height), 0.0f, 1.0f
@@ -2889,7 +2872,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 					resultImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					resultBuffer.getBuffer(), 1, &region);
 
-			endCommandBuffer(context, *cmdBuffer);
+			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
 
@@ -3080,7 +3063,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		// we are running one test
 		totalIterations++;
 
-		beginCommandBuffer(context, *cmdBuffer);
+		beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 		context.getDeviceInterface().cmdBindPipeline(
 			*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *lastPipeline);
@@ -3092,7 +3075,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		context.getDeviceInterface().cmdDispatch(*cmdBuffer,
 				numWorkgroups[0], numWorkgroups[1], numWorkgroups[2]);
 
-		endCommandBuffer(context, *cmdBuffer);
+		endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 		Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
 

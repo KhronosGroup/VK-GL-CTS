@@ -4184,13 +4184,6 @@ KHR-GL43.copy_image.invalid_alignment
 KHR-GL43.copy_image.integer_tex
 KHR-GL43.draw_indirect_43.advanced-twoPass-Compute-arrays
 KHR-GL43.draw_indirect_43.advanced-twoPass-Compute-elements
-KHR-GL43.khr_debug.api_errors_non_debug
-KHR-GL43.khr_debug.labels_non_debug
-KHR-GL43.khr_debug.receiveing_messages
-KHR-GL43.khr_debug.groups
-KHR-GL43.khr_debug.api_errors_debug
-KHR-GL43.khr_debug.labels_debug
-KHR-GL43.khr_debug.synchronous_calls
 KHR-GL43.program_interface_query.empty-shaders
 KHR-GL43.program_interface_query.simple-shaders
 KHR-GL43.program_interface_query.input-types

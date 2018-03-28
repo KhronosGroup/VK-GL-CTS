@@ -33,6 +33,7 @@
 #include "vkImageUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vktProtectedMemUtils.hpp"
 #include "vktProtectedMemContext.hpp"
@@ -221,7 +222,7 @@ bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData&
 		vk.cmdBindDescriptorSets(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 		vk.cmdDispatch(*resetCmdBuffer, 1u, 1u, 1u);
 
-		VK_CHECK(vk.endCommandBuffer(*resetCmdBuffer));
+		endCommandBuffer(vk, *resetCmdBuffer);
 		VK_CHECK(queueSubmit(ctx, PROTECTION_ENABLED, queue, *resetCmdBuffer, *fence, ~0ull));
 	}
 
@@ -238,7 +239,7 @@ bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData&
 		vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 		vk.cmdDispatch(*cmdBuffer, 1u, 1u, 1u);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		queueSubmitResult										= queueSubmit(ctx, PROTECTION_ENABLED, queue, *cmdBuffer, *fence, oneSec);
 	}

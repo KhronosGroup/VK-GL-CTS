@@ -738,14 +738,6 @@ void PushConstantGraphicsTestInstance::init (void)
 
 	// Create command buffer
 	{
-		const VkCommandBufferBeginInfo	cmdBufferBeginInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-			DE_NULL,										// const void*						pNext;
-			0u,												// VkCommandBufferUsageFlags		flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const VkClearValue				attachmentClearValues[]	=
 		{
 			defaultClearValue(m_colorFormat)
@@ -764,7 +756,7 @@ void PushConstantGraphicsTestInstance::init (void)
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -789,7 +781,7 @@ void PushConstantGraphicsTestInstance::init (void)
 		}
 
 		vk.cmdEndRenderPass(*m_cmdBuffer);
-		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
 
@@ -2058,15 +2050,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 	{
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-			DE_NULL,										// const void*						pNext;
-			0u,												// VkCommandBufferUsageFlags		flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipelines);
 		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1, &(*m_descriptorSet), 0, DE_NULL);
@@ -2077,7 +2061,7 @@ PushConstantComputeTestInstance::PushConstantComputeTestInstance (Context&					c
 
 		vk.cmdDispatch(*m_cmdBuffer, 8, 1, 1);
 
-		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
 

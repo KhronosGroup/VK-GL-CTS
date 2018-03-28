@@ -810,15 +810,7 @@ void TextureRenderer::clearImage(VkImage image)
 
 	commandBuffer = allocateCommandBuffer(vkd, vkDevice, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	const VkCommandBufferBeginInfo		cmdBufferBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
-		DE_NULL,										// const void*								pNext;
-		0u,												// VkCmdBufferOptimizeFlags					flags;
-		DE_NULL											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-	};
-
-	VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vkd, *commandBuffer);
 
 	addImageTransitionBarrier(*commandBuffer, image,
 							  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags		srcStageMask
@@ -839,7 +831,7 @@ void TextureRenderer::clearImage(VkImage image)
 							  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,				// VkImageLayout			oldLayout;
 							  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);		// VkImageLayout			newLayout;
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 }
@@ -1463,17 +1455,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 	commandBuffer = allocateCommandBuffer(vkd, vkDevice, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// Begin Command Buffer
-	{
-		const VkCommandBufferBeginInfo		cmdBufferBeginInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
-			DE_NULL,										// const void*								pNext;
-			0u,												// VkCmdBufferOptimizeFlags					flags;
-			DE_NULL											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &cmdBufferBeginInfo));
-	}
+	beginCommandBuffer(vkd, *commandBuffer);
 
 	// Begin Render Pass
 	{
@@ -1559,7 +1541,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 								  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);		// VkImageLayout			newLayout;
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 
 	// Upload uniform buffer data
 	{

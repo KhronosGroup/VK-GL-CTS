@@ -303,8 +303,7 @@ protected:
 
 	void beginRenderPassWithClearColor (const vk::VkClearColorValue &clearColor)
 	{
-		const CmdBufferBeginInfo beginInfo;
-		m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
 		initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,
 									  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -470,7 +469,7 @@ public:
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 8, 0);
 
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
-		m_vk.endCommandBuffer(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -688,8 +687,7 @@ tcu::TestStatus DepthBoundsTestInstance::iterate (void)
 		stageBuffer->getBoundMemory().getOffset(),
 		dataSize);
 
-	const CmdBufferBeginInfo beginInfo;
-	m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 
 	initialTransitionDepth2DImage(m_vk, *m_cmdBuffer, m_depthImage->object(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 								  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -727,7 +725,7 @@ tcu::TestStatus DepthBoundsTestInstance::iterate (void)
 	m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
 
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
-	m_vk.endCommandBuffer(*m_cmdBuffer);
+	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -856,7 +854,7 @@ public:
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
 
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
-		m_vk.endCommandBuffer(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -1013,7 +1011,7 @@ public:
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
 
 		m_vk.cmdEndRenderPass(*m_cmdBuffer);
-		m_vk.endCommandBuffer(*m_cmdBuffer);
+		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 

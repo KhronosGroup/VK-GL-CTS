@@ -1408,14 +1408,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 		}
 
 		// Begin recording
-		VkCommandBufferBeginInfo				cmdBufBeginParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// sType
-			DE_NULL,												// pNext
-			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,			// flags
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+		beginCommandBuffer(vk, *cmdBuffer);
 
 		// Prepare render target for rendering
 		{
@@ -1679,7 +1672,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &renderFinishBarrier);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		// Submit & wait for completion
 		{
@@ -1759,10 +1752,10 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 						}
 					};
 
-					VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+					beginCommandBuffer(vk, *cmdBuffer);
 					vk.cmdSetDeviceMask(*cmdBuffer, 1 << firstDeviceID);
 					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &preCopyBarrier);
-					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+					endCommandBuffer(vk, *cmdBuffer);
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
 					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
@@ -1799,10 +1792,10 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 						}
 					};
 
-					VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+					beginCommandBuffer(vk, *cmdBuffer);
 					vk.cmdSetDeviceMask(*cmdBuffer, 1 << secondDeviceID);
 					vk.cmdCopyImage(*cmdBuffer, *renderImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *peerImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopy);
-					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+					endCommandBuffer(vk, *cmdBuffer);
 
 					const deUint32 deviceMask = 1 << secondDeviceID;
 					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
@@ -1830,10 +1823,10 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 						}
 					};
 
-					VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+					beginCommandBuffer(vk, *cmdBuffer);
 					vk.cmdSetDeviceMask(*cmdBuffer, 1 << firstDeviceID);
 					vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &postCopyBarrier);
-					VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+					endCommandBuffer(vk, *cmdBuffer);
 
 					const deUint32 deviceMask = 1 << firstDeviceID;
 					SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
@@ -1859,7 +1852,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			const UniquePtr<Allocation>	readImageBufferMemory(memAlloc.allocate(getBufferMemoryRequirements(vk, *m_deviceGroup, *readImageBuffer), MemoryRequirement::HostVisible));
 			VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
-			VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+			beginCommandBuffer(vk, *cmdBuffer);
 
 			// Copy image to buffer
 			{
@@ -1899,7 +1892,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 				};
 				vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &copyFinishBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 			}
-			VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+			endCommandBuffer(vk, *cmdBuffer);
 
 			// Submit & wait for completion
 			{

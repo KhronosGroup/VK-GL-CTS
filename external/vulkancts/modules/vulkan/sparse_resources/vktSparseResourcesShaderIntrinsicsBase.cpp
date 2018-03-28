@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSparseResourcesShaderIntrinsicsBase.hpp"
+#include "vkCmdUtil.hpp"
 
 using namespace vk;
 
