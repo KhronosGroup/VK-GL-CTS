@@ -38,6 +38,8 @@ set(GLCTS_COMMON_SRCS
 	glcInternalformatTests.hpp
 	glcMisc.cpp
 	glcMisc.hpp
+	glcKHRDebugTests.cpp
+	glcKHRDebugTests.hpp
 	glcMultipleContextsTests.cpp
 	glcMultipleContextsTests.hpp
 	glcNoErrorTests.cpp
