@@ -252,7 +252,7 @@ void verifySingleFrame (const FrameTimes& frameTimes, tcu::ResultCollector& resu
 		check_lt(result, frameTimes.firstCompositionStart, frameTimes.displayPresent, "Buffer displayed before it was composited.");
 }
 
-void verifyNeighboringFrames (const FrameTimes& frame1, const FrameTimes& frame2, tcu::ResultCollector& result, bool verifyReadsDone)
+void verifyNeighboringFrames (const FrameTimes& frame1, const FrameTimes& frame2, tcu::ResultCollector& result)
 {
 	// CPU timeline.
 	check_lt(result, frame1.swapBufferBeginNs, frame2.swapBufferBeginNs, "Swap begin times not monotonic.");
@@ -269,9 +269,6 @@ void verifyNeighboringFrames (const FrameTimes& frame1, const FrameTimes& frame2
 
 	if (timestampValid(frame1.displayPresent) && timestampValid(frame2.displayPresent))
 		check_lt(result, frame1.displayPresent, frame2.displayPresent, "Display present times not monotonic.");
-
-	if (verifyReadsDone && timestampValid(frame1.readsDone) && timestampValid(frame2.readsDone))
-		check_lt(result, frame1.readsDone, frame2.readsDone, "Reads done times not monotonic.");
 }
 
 EGLContext createGLES2Context (const Library& egl, EGLDisplay display, EGLConfig config)
@@ -674,7 +671,7 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 				if (i >= frameDelay + 1)
 				{
 					FrameTimes& frame6ago = frameTimes[i-frameDelay-1];
-					verifyNeighboringFrames(frame6ago, frame5ago, m_result, verifyReadsDone);
+					verifyNeighboringFrames(frame6ago, frame5ago, m_result);
 				}
 			}
 		}
