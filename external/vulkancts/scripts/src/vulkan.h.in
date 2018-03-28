@@ -400,6 +400,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT = 1000190001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT = 1000190002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR = 1000196000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR = 1000197000,
     VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_END_RANGE = VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO,
     VK_STRUCTURE_TYPE_RANGE_SIZE = (VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO - VK_STRUCTURE_TYPE_APPLICATION_INFO + 1),
@@ -6253,6 +6254,33 @@ typedef struct VkPhysicalDeviceDriverPropertiesKHR {
     char                       driverInfo[VK_MAX_DRIVER_INFO_SIZE_KHR];
     VkConformanceVersionKHR    conformanceVersion;
 } VkPhysicalDeviceDriverPropertiesKHR;
+
+#define VK_KHR_shader_float_controls 1
+#define VK_KHR_SHADER_FLOAT_CONTROLS_SPEC_VERSION 1
+#define VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME "VK_KHR_shader_float_controls"
+
+typedef struct VkPhysicalDeviceFloatControlsPropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           separateDenormSettings;
+    VkBool32           separateRoundingModeSettings;
+    VkBool32           shaderSignedZeroInfNanPreserveFloat16;
+    VkBool32           shaderSignedZeroInfNanPreserveFloat32;
+    VkBool32           shaderSignedZeroInfNanPreserveFloat64;
+    VkBool32           shaderDenormPreserveFloat16;
+    VkBool32           shaderDenormPreserveFloat32;
+    VkBool32           shaderDenormPreserveFloat64;
+    VkBool32           shaderDenormFlushToZeroFloat16;
+    VkBool32           shaderDenormFlushToZeroFloat32;
+    VkBool32           shaderDenormFlushToZeroFloat64;
+    VkBool32           shaderRoundingModeRTEFloat16;
+    VkBool32           shaderRoundingModeRTEFloat32;
+    VkBool32           shaderRoundingModeRTEFloat64;
+    VkBool32           shaderRoundingModeRTZFloat16;
+    VkBool32           shaderRoundingModeRTZFloat32;
+    VkBool32           shaderRoundingModeRTZFloat64;
+} VkPhysicalDeviceFloatControlsPropertiesKHR;
+
 
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)

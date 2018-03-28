@@ -2556,6 +2556,12 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		}
 	}
 
+	// FloatControls features
+	{
+		if (!isFloatControlsFeaturesSupported(context, instance.requestedFeatures.floatControlsProperties))
+			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
+	}
+
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);
 	de::Random(seed).shuffle(instance.outputColors, instance.outputColors+4);
 	const Vec4								vertexData[]			=

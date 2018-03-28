@@ -728,6 +728,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_display_swapchain",
 		"VK_KHR_sampler_mirror_clamp_to_edge",
 		"VK_KHR_shader_draw_parameters",
+		"VK_KHR_shader_float_controls",
 		"VK_KHR_maintenance1",
 		"VK_KHR_push_descriptor",
 		"VK_KHR_descriptor_update_template",
@@ -2678,6 +2679,32 @@ string toString (const VkPhysicalDevice16BitStorageFeatures& value)
 	return s.str();
 }
 
+string toString (const VkPhysicalDeviceFloatControlsPropertiesKHR& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceFloatControlsPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tseparateDenormSettings = " << value.separateDenormSettings << '\n';
+	s << "\tseparateRoundingModeSettings = " << value.separateRoundingModeSettings << '\n';
+	s << "\tshaderSignedZeroInfNanPreserveFloat16 = " << value.shaderSignedZeroInfNanPreserveFloat16 << '\n';
+	s << "\tshaderSignedZeroInfNanPreserveFloat32 = " << value.shaderSignedZeroInfNanPreserveFloat32 << '\n';
+	s << "\tshaderSignedZeroInfNanPreserveFloat64 = " << value.shaderSignedZeroInfNanPreserveFloat64 << '\n';
+	s << "\tshaderDenormPreserveFloat16 = " << value.shaderDenormPreserveFloat16 << '\n';
+	s << "\tshaderDenormPreserveFloat32 = " << value.shaderDenormPreserveFloat32 << '\n';
+	s << "\tshaderDenormPreserveFloat64 = " << value.shaderDenormPreserveFloat64 << '\n';
+	s << "\tshaderDenormFlushToZeroFloat16 = " << value.shaderDenormFlushToZeroFloat16 << '\n';
+	s << "\tshaderDenormFlushToZeroFloat32 = " << value.shaderDenormFlushToZeroFloat32 << '\n';
+	s << "\tshaderDenormFlushToZeroFloat64 = " << value.shaderDenormFlushToZeroFloat64 << '\n';
+	s << "\tshaderRoundingModeRTEFloat16 = " << value.shaderRoundingModeRTEFloat16 << '\n';
+	s << "\tshaderRoundingModeRTEFloat32 = " << value.shaderRoundingModeRTEFloat32 << '\n';
+	s << "\tshaderRoundingModeRTEFloat64 = " << value.shaderRoundingModeRTEFloat64 << '\n';
+	s << "\tshaderRoundingModeRTZFloat16 = " << value.shaderRoundingModeRTZFloat16 << '\n';
+	s << "\tshaderRoundingModeRTZFloat32 = " << value.shaderRoundingModeRTZFloat32 << '\n';
+	s << "\tshaderRoundingModeRTZFloat64 = " << value.shaderRoundingModeRTZFloat64 << '\n';
+	s << '}';
+	return s.str();
+}
+
 string toString (const VkPhysicalDeviceMultiviewFeatures& value)
 {
 	std::ostringstream	s;
@@ -2770,7 +2797,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	log << TestLog::Message << extFeatures << TestLog::EndMessage;
 
 	vector<VkExtensionProperties>	properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	const bool khr_8bit_storage		= checkExtension(properties,"VK_KHR_8bit_storage");;
+	const bool khr_8bit_storage		= checkExtension(properties,"VK_KHR_8bit_storage");
 	bool khr_16bit_storage			= true;
 	bool khr_multiview				= true;
 	bool deviceProtectedMemory		= true;
@@ -3155,6 +3182,28 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		{
 			TCU_FAIL("VkPhysicalDevicePushDescriptorPropertiesKHR.maxPushDescriptors must be at least 32");
 		}
+	}
+	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_shader_float_controls")))
+	{
+		VkPhysicalDeviceFloatControlsPropertiesKHR floatControlsProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			deMemset(&floatControlsProperties[ndx], 0xFF, sizeof(VkPhysicalDeviceFloatControlsPropertiesKHR));
+			floatControlsProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+			floatControlsProperties[ndx].pNext = DE_NULL;
+
+			extProperties.pNext = &floatControlsProperties[ndx];
+
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+		}
+
+		if (deMemCmp(&floatControlsProperties[0], &floatControlsProperties[1], sizeof(VkPhysicalDeviceFloatControlsPropertiesKHR)) != 0)
+		{
+			TCU_FAIL("Mismatch in VkPhysicalDeviceFloatControlsPropertiesKHR");
+		}
+
+		log << TestLog::Message << toString(floatControlsProperties[0]) << TestLog::EndMessage;
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");
