@@ -469,7 +469,6 @@ void createPipelineShaderStages (const DeviceInterface&						vk,
 // void main (void) { gl_Position = position; vtxColor = test_func(color); }
 string makeVertexShaderAssembly(const map<string, string>& fragments)
 {
-// \todo [2015-11-23 awoloszyn] Remove OpName once these have stabalized
 	static const char vertexShaderBoilerplate[] =
 		"OpCapability Shader\n"
 		"OpCapability ClipDistance\n"
@@ -479,18 +478,6 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Vertex %BP_main \"main\" %BP_stream %BP_position %BP_vtx_color %BP_color %BP_gl_VertexIndex %BP_gl_InstanceIndex ${IF_entrypoint:opt} \n"
 		"${debug:opt}\n"
-		"OpName %BP_gl_PerVertex \"gl_PerVertex\"\n"
-		"OpMemberName %BP_gl_PerVertex 0 \"gl_Position\"\n"
-		"OpMemberName %BP_gl_PerVertex 1 \"gl_PointSize\"\n"
-		"OpMemberName %BP_gl_PerVertex 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %BP_gl_PerVertex 3 \"gl_CullDistance\"\n"
-		"OpName %test_code \"testfun(vf4;\"\n"
-		"OpName %BP_stream \"\"\n"
-		"OpName %BP_position \"position\"\n"
-		"OpName %BP_vtx_color \"vtxColor\"\n"
-		"OpName %BP_color \"color\"\n"
-		"OpName %BP_gl_VertexIndex \"gl_VertexIndex\"\n"
-		"OpName %BP_gl_InstanceIndex \"gl_InstanceIndex\"\n"
 		"${moduleprocessed:opt}\n"
 		"OpMemberDecorate %BP_gl_PerVertex 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertex 1 BuiltIn PointSize\n"
@@ -575,25 +562,6 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_gl_PrimitiveID %BP_in_color %BP_gl_out %BP_gl_in %BP_gl_TessLevelOuter %BP_gl_TessLevelInner ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
-		"OpName %test_code \"testfun(vf4;\"\n"
-		"OpName %BP_out_color \"out_color\"\n"
-		"OpName %BP_gl_InvocationID \"gl_InvocationID\"\n"
-		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
-		"OpName %BP_in_color \"in_color\"\n"
-		"OpName %BP_gl_PerVertex \"gl_PerVertex\"\n"
-		"OpMemberName %BP_gl_PerVertex 0 \"gl_Position\"\n"
-		"OpMemberName %BP_gl_PerVertex 1 \"gl_PointSize\"\n"
-		"OpMemberName %BP_gl_PerVertex 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %BP_gl_PerVertex 3 \"gl_CullDistance\"\n"
-		"OpName %BP_gl_out \"gl_out\"\n"
-		"OpName %BP_gl_PVOut \"gl_PerVertex\"\n"
-		"OpMemberName %BP_gl_PVOut 0 \"gl_Position\"\n"
-		"OpMemberName %BP_gl_PVOut 1 \"gl_PointSize\"\n"
-		"OpMemberName %BP_gl_PVOut 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %BP_gl_PVOut 3 \"gl_CullDistance\"\n"
-		"OpName %BP_gl_in \"gl_in\"\n"
-		"OpName %BP_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
-		"OpName %BP_gl_TessLevelInner \"gl_TessLevelInner\"\n"
 		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_out_color Location 1\n"
 		"OpDecorate %BP_gl_InvocationID BuiltIn InvocationId\n"
@@ -719,23 +687,6 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpExecutionMode %BP_main SpacingEqual\n"
 		"OpExecutionMode %BP_main VertexOrderCcw\n"
 		"${debug:opt}\n"
-		"OpName %test_code \"testfun(vf4;\"\n"
-		"OpName %BP_gl_PerVertexOut \"gl_PerVertex\"\n"
-		"OpMemberName %BP_gl_PerVertexOut 0 \"gl_Position\"\n"
-		"OpMemberName %BP_gl_PerVertexOut 1 \"gl_PointSize\"\n"
-		"OpMemberName %BP_gl_PerVertexOut 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %BP_gl_PerVertexOut 3 \"gl_CullDistance\"\n"
-		"OpName %BP_stream \"\"\n"
-		"OpName %BP_gl_TessCoord \"gl_TessCoord\"\n"
-		"OpName %BP_gl_PerVertexIn \"gl_PerVertex\"\n"
-		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
-		"OpMemberName %BP_gl_PerVertexIn 0 \"gl_Position\"\n"
-		"OpMemberName %BP_gl_PerVertexIn 1 \"gl_PointSize\"\n"
-		"OpMemberName %BP_gl_PerVertexIn 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %BP_gl_PerVertexIn 3 \"gl_CullDistance\"\n"
-		"OpName %BP_gl_in \"gl_in\"\n"
-		"OpName %BP_out_color \"out_color\"\n"
-		"OpName %BP_in_color \"in_color\"\n"
 		"${moduleprocessed:opt}\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 1 BuiltIn PointSize\n"
@@ -885,16 +836,6 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
 		"${debug:opt}\n"
-		"OpName %BP_gl_PrimitiveID \"gl_PrimitiveID\"\n"
-		"OpName %BP_per_vertex_in \"gl_PerVertex\"\n"
-		"OpMemberName %BP_per_vertex_in 0 \"gl_Position\"\n"
-		"OpMemberName %BP_per_vertex_in 1 \"gl_PointSize\"\n"
-		"OpMemberName %BP_per_vertex_in 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %BP_per_vertex_in 3 \"gl_CullDistance\"\n"
-		"OpName %BP_gl_in \"gl_in\"\n"
-		"OpName %BP_out_color \"out_color\"\n"
-		"OpName %BP_in_color \"in_color\"\n"
-		"OpName %test_code \"testfun(vf4;\"\n"
 		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
 		"OpDecorate %BP_out_gl_position BuiltIn Position\n"
@@ -1013,10 +954,6 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor %BP_gl_FragCoord ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OriginUpperLeft\n"
 		"${debug:opt}\n"
-		"OpName %BP_gl_FragCoord \"fragCoord\"\n"
-		"OpName %BP_fragColor \"fragColor\"\n"
-		"OpName %BP_vtxColor \"vtxColor\"\n"
-		"OpName %test_code \"testfun(vf4;\"\n"
 		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_fragColor Location 0\n"
 		"OpDecorate %BP_vtxColor Location 1\n"
@@ -1453,7 +1390,6 @@ void addShaderCodeCustomFragment (vk::SourceCollections& dst, InstanceContext co
 void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 {
 	// \todo [2015-12-07 awoloszyn] Make tessellation / geometry conditional
-	// \todo [2015-12-07 awoloszyn] Remove OpName and OpMemberName at some point
 	dst.spirvAsmSources.add("module") <<
 		"OpCapability Shader\n"
 		"OpCapability ClipDistance\n"
@@ -1479,45 +1415,6 @@ void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
 		"OpExecutionMode %tesse_main VertexOrderCcw\n"
 
 		"OpExecutionMode %frag_main OriginUpperLeft\n"
-
-		"OpName %vert_main \"main\"\n"
-		"OpName %vert_vtxPosition \"vtxPosition\"\n"
-		"OpName %vert_Position \"position\"\n"
-		"OpName %vert_vtxColor \"vtxColor\"\n"
-		"OpName %vert_color \"color\"\n"
-		"OpName %vert_vertex_id \"gl_VertexIndex\"\n"
-		"OpName %vert_instance_id \"gl_InstanceIndex\"\n"
-		"OpName %geom_main \"main\"\n"
-		"OpName %geom_per_vertex_in \"gl_PerVertex\"\n"
-		"OpMemberName %geom_per_vertex_in 0 \"gl_Position\"\n"
-		"OpMemberName %geom_per_vertex_in 1 \"gl_PointSize\"\n"
-		"OpMemberName %geom_per_vertex_in 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %geom_per_vertex_in 3 \"gl_CullDistance\"\n"
-		"OpName %geom_gl_in \"gl_in\"\n"
-		"OpName %geom_out_color \"out_color\"\n"
-		"OpName %geom_in_color \"in_color\"\n"
-		"OpName %tessc_main \"main\"\n"
-		"OpName %tessc_out_color \"out_color\"\n"
-		"OpName %tessc_gl_InvocationID \"gl_InvocationID\"\n"
-		"OpName %tessc_in_color \"in_color\"\n"
-		"OpName %tessc_out_position \"out_position\"\n"
-		"OpName %tessc_in_position \"in_position\"\n"
-		"OpName %tessc_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
-		"OpName %tessc_gl_TessLevelInner \"gl_TessLevelInner\"\n"
-		"OpName %tesse_main \"main\"\n"
-		"OpName %tesse_per_vertex_out \"gl_PerVertex\"\n"
-		"OpMemberName %tesse_per_vertex_out 0 \"gl_Position\"\n"
-		"OpMemberName %tesse_per_vertex_out 1 \"gl_PointSize\"\n"
-		"OpMemberName %tesse_per_vertex_out 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %tesse_per_vertex_out 3 \"gl_CullDistance\"\n"
-		"OpName %tesse_stream \"\"\n"
-		"OpName %tesse_gl_tessCoord \"gl_TessCoord\"\n"
-		"OpName %tesse_in_position \"in_position\"\n"
-		"OpName %tesse_out_color \"out_color\"\n"
-		"OpName %tesse_in_color \"in_color\"\n"
-		"OpName %frag_main \"main\"\n"
-		"OpName %frag_fragColor \"fragColor\"\n"
-		"OpName %frag_vtxColor \"vtxColor\"\n"
 
 		"; Vertex decorations\n"
 		"OpDecorate %vert_vtxPosition Location 2\n"
@@ -1729,15 +1626,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpEntryPoint Vertex %main \"vert1\" %Position %vtxColor %color %vtxPosition %vertex_id %instance_id\n"
 		"OpEntryPoint Vertex %main2 \"vert2\" %Position %vtxColor %color %vtxPosition %vertex_id %instance_id\n"
 
-		"OpName %main \"vert1\"\n"
-		"OpName %main2 \"vert2\"\n"
-		"OpName %vtxPosition \"vtxPosition\"\n"
-		"OpName %Position \"position\"\n"
-		"OpName %vtxColor \"vtxColor\"\n"
-		"OpName %color \"color\"\n"
-		"OpName %vertex_id \"gl_VertexIndex\"\n"
-		"OpName %instance_id \"gl_InstanceIndex\"\n"
-
 		"OpDecorate %vtxPosition Location 2\n"
 		"OpDecorate %Position Location 0\n"
 		"OpDecorate %vtxColor Location 1\n"
@@ -1786,10 +1674,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpExecutionMode %main OriginUpperLeft\n"
 		"OpExecutionMode %main2 OriginUpperLeft\n"
 
-		"OpName %main \"frag1\"\n"
-		"OpName %main2 \"frag2\"\n"
-		"OpName %fragColor \"fragColor\"\n"
-		"OpName %vtxColor \"vtxColor\"\n"
 		"OpDecorate %fragColor Location 0\n"
 		"OpDecorate %vtxColor Location 1\n"
 		SPIRV_ASSEMBLY_TYPES
@@ -1828,16 +1712,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpExecutionMode %geom2_main OutputTriangleStrip\n"
 		"OpExecutionMode %geom1_main OutputVertices 3\n"
 		"OpExecutionMode %geom2_main OutputVertices 3\n"
-		"OpName %geom1_main \"geom1\"\n"
-		"OpName %geom2_main \"geom2\"\n"
-		"OpName %per_vertex_in \"gl_PerVertex\"\n"
-		"OpMemberName %per_vertex_in 0 \"gl_Position\"\n"
-		"OpMemberName %per_vertex_in 1 \"gl_PointSize\"\n"
-		"OpMemberName %per_vertex_in 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %per_vertex_in 3 \"gl_CullDistance\"\n"
-		"OpName %gl_in \"gl_in\"\n"
-		"OpName %out_color \"out_color\"\n"
-		"OpName %in_color \"in_color\"\n"
 		"OpDecorate %out_gl_position BuiltIn Position\n"
 		"OpMemberDecorate %per_vertex_in 0 BuiltIn Position\n"
 		"OpMemberDecorate %per_vertex_in 1 BuiltIn PointSize\n"
@@ -1925,15 +1799,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpEntryPoint TessellationControl %tessc2_main \"tessc2\" %out_color %gl_InvocationID %in_color %out_position %in_position %gl_TessLevelOuter %gl_TessLevelInner\n"
 		"OpExecutionMode %tessc1_main OutputVertices 3\n"
 		"OpExecutionMode %tessc2_main OutputVertices 3\n"
-		"OpName %tessc1_main \"tessc1\"\n"
-		"OpName %tessc2_main \"tessc2\"\n"
-		"OpName %out_color \"out_color\"\n"
-		"OpName %gl_InvocationID \"gl_InvocationID\"\n"
-		"OpName %in_color \"in_color\"\n"
-		"OpName %out_position \"out_position\"\n"
-		"OpName %in_position \"in_position\"\n"
-		"OpName %gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
-		"OpName %gl_TessLevelInner \"gl_TessLevelInner\"\n"
 		"OpDecorate %out_color Location 1\n"
 		"OpDecorate %gl_InvocationID BuiltIn InvocationId\n"
 		"OpDecorate %in_color Location 1\n"
@@ -2026,18 +1891,6 @@ void createMultipleEntries(vk::SourceCollections& dst, InstanceContext)
 		"OpExecutionMode %tesse2_main Triangles\n"
 		"OpExecutionMode %tesse2_main SpacingEqual\n"
 		"OpExecutionMode %tesse2_main VertexOrderCcw\n"
-		"OpName %tesse1_main \"tesse1\"\n"
-		"OpName %tesse2_main \"tesse2\"\n"
-		"OpName %per_vertex_out \"gl_PerVertex\"\n"
-		"OpMemberName %per_vertex_out 0 \"gl_Position\"\n"
-		"OpMemberName %per_vertex_out 1 \"gl_PointSize\"\n"
-		"OpMemberName %per_vertex_out 2 \"gl_ClipDistance\"\n"
-		"OpMemberName %per_vertex_out 3 \"gl_CullDistance\"\n"
-		"OpName %stream \"\"\n"
-		"OpName %gl_tessCoord \"gl_TessCoord\"\n"
-		"OpName %in_position \"in_position\"\n"
-		"OpName %out_color \"out_color\"\n"
-		"OpName %in_color \"in_color\"\n"
 		"OpMemberDecorate %per_vertex_out 0 BuiltIn Position\n"
 		"OpMemberDecorate %per_vertex_out 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %per_vertex_out 2 BuiltIn ClipDistance\n"
@@ -2292,13 +2145,6 @@ void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const
 	};
 
 	// Copy buffer to image
-	const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
-		DE_NULL,										// const void*								pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags				flags;
-		DE_NULL											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-	};
 
 	const VkImageMemoryBarrier		imageBarriers[]		=
 	{
@@ -2340,14 +2186,14 @@ void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const
 		},
 	};
 
-	VK_CHECK(vk.beginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, cmdBuffer);
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
 		0u, DE_NULL, 1u, &imageBarriers[0]);
 	vk.cmdCopyBufferToImage(cmdBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
 		0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarriers[1]);
 
-	VK_CHECK(vk.endCommandBuffer(cmdBuffer));
+	endCommandBuffer(vk, cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
 }
@@ -3509,16 +3355,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	const Unique<VkFramebuffer>				framebuffer				(createFramebuffer(vk, device, &framebufferParams));
 
-	const VkCommandBufferBeginInfo			cmdBufBeginParams		=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			//	VkStructureType				sType;
-		DE_NULL,												//	const void*					pNext;
-		(VkCommandBufferUsageFlags)0,
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	// Record commands
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuf, &cmdBufBeginParams));
+	beginCommandBuffer(vk, *cmdBuf);
 
 	{
 		const VkMemoryBarrier			vertFlushBarrier	=
@@ -3702,7 +3540,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		}
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuf));
+	endCommandBuffer(vk, *cmdBuf);
 
 	// Upload vertex data
 	{

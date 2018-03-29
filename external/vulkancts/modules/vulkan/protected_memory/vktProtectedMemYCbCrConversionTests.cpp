@@ -33,6 +33,7 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkYCbCrImageWithMemory.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vktProtectedMemContext.hpp"
 #include "vktProtectedMemUtils.hpp"
@@ -430,7 +431,7 @@ void uploadYCbCrImage (ProtectedContext&					ctx,
 								1u, &postCopyBarrier);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	{
 		const vk::Unique<vk::VkFence>	fence		(createFence(vk, device));
@@ -563,7 +564,7 @@ bool validateImage (ProtectedContext&							ctx,
 		vk.cmdBindDescriptorSets(*resetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 		vk.cmdDispatch(*resetCmdBuffer, 1u, 1u, 1u);
 
-		VK_CHECK(vk.endCommandBuffer(*resetCmdBuffer));
+		endCommandBuffer(vk, *resetCmdBuffer);
 		VK_CHECK(queueSubmit(ctx, PROTECTION_ENABLED, queue, *resetCmdBuffer, *fence, ~0ull));
 	}
 
@@ -580,7 +581,7 @@ bool validateImage (ProtectedContext&							ctx,
 		vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 		vk.cmdDispatch(*cmdBuffer, CHECK_SIZE, 1u, 1u);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		queueSubmitResult = queueSubmit(ctx, PROTECTION_ENABLED, queue, *cmdBuffer, *fence, oneSec * 5);
 	}
@@ -976,7 +977,7 @@ void renderYCbCrToColor (ProtectedContext&							ctx,
 							  1u, &attachmentEndBarrier);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit command buffer
 	{

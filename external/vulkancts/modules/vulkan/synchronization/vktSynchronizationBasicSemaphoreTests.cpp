@@ -28,6 +28,7 @@
 #include "vkDefs.hpp"
 #include "vkPlatform.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 
 #include "vkRef.hpp"

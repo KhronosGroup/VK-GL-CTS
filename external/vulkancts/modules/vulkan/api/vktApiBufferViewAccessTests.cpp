@@ -37,6 +37,7 @@
 #include "vkRefUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
@@ -597,14 +598,6 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 	// Create command buffer
 	{
-		const VkCommandBufferBeginInfo	cmdBufferBeginInfo				=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,				// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			0u,															// VkCmdBufferOptimizeFlags	flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const VkClearValue				clearValue						= makeClearValueColorF32(0.0, 0.0, 0.0, 0.0);
 
 		const VkClearValue				attachmentClearValues[1]		=
@@ -628,7 +621,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 		const VkImageMemoryBarrier		initialImageBarrier				=
 		{
@@ -713,7 +706,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 		vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
-		VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }
 

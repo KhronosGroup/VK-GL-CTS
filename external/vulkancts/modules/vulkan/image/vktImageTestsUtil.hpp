@@ -186,12 +186,6 @@ vk::VkImageViewUsageCreateInfo		makeImageViewUsageCreateInfo	(const vk::VkImageU
 
 vk::VkSamplerCreateInfo				makeSamplerCreateInfo			();
 
-void								beginCommandBuffer				(const vk::DeviceInterface&					vk,
-																	 const vk::VkCommandBuffer					cmdBuffer);
-
-void								endCommandBuffer				(const vk::DeviceInterface&					vk,
-																	 const vk::VkCommandBuffer					cmdBuffer);
-
 inline vk::VkDeviceSize getImageSizeBytes (const tcu::IVec3& imageSize, const vk::VkFormat format)
 {
 	return tcu::getPixelSize(vk::mapVkFormat(format)) * imageSize.x() * imageSize.y() * imageSize.z();

@@ -622,7 +622,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageLayoutBarriers);
 
 			const VkImageSubresourceRange	ranges		= makeColorSubresourceRange(0, caseDef.numLayers);
@@ -648,7 +648,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageClearBarriers);
 		}
 
@@ -786,7 +786,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		}
 	} // beginCommandBuffer
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results
@@ -1057,7 +1057,7 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 				}
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageBarriers);
 
 			const VkBufferImageCopy		region				=
@@ -1092,7 +1092,7 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 		}
 	} // beginCommandBuffer
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results
@@ -1309,7 +1309,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, 1u, imageLayoutBarriers);
 
 			vk.cmdClearColorImage(*cmdBuffer, caseDef.multisample ? *msColorImages[renderTargetIdx] : *colorImages[renderTargetIdx], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColors[renderTargetIdx], 1u, &range);
@@ -1330,7 +1330,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, imageClearBarriers);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, imageClearBarriers);
 		}
 	}
 
@@ -1461,7 +1461,7 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 			0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results
@@ -1574,7 +1574,7 @@ tcu::TestStatus testUnusedAtt (Context& context)
 	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vk.cmdEndRenderPass(*cmdBuffer);
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	return tcu::TestStatus::pass("Pass");
 }

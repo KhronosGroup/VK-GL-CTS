@@ -33,6 +33,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vktProtectedMemContext.hpp"
 #include "vktProtectedMemUtils.hpp"
@@ -309,11 +310,11 @@ tcu::TestStatus CopyImageToBufferTestInstance<T>::iterate()
 
 	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
 	{
-		VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer));
+		endCommandBuffer(vk, *secondaryCmdBuffer);
 		vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer.get());
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit command buffer
 	const vk::Unique<vk::VkFence>	fence		(vk::createFence(vk, device));

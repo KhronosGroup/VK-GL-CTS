@@ -42792,6 +42792,7 @@ dEQP-GLES3.functional.state_query.floats.aliased_line_width_range_getinteger64
 dEQP-GLES3.functional.state_query.floats.aliased_line_width_range_getfloat
 dEQP-GLES3.functional.state_query.indexed.transform_feedback_buffer_binding
 dEQP-GLES3.functional.state_query.indexed.transform_feedback_buffer_start_size
+dEQP-GLES3.functional.state_query.indexed.transform_feedback_switching_buffer
 dEQP-GLES3.functional.state_query.indexed.uniform_buffer_binding
 dEQP-GLES3.functional.state_query.indexed.uniform_buffer_start_size
 dEQP-GLES3.functional.state_query.texture.texture_2d_is_texture

@@ -1504,7 +1504,7 @@ void ComputeShaderGeneratedCase::renderTo (tcu::Surface& dst)
 
 	gl.bindBuffer(GL_ARRAY_BUFFER, m_dataBufferID);
 	gl.vertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, 8 * (int)sizeof(float), DE_NULL);
-	gl.vertexAttribPointer(colorLoc,    4, GL_FLOAT, GL_FALSE, 8 * (int)sizeof(float), ((const deUint8*)DE_NULL) + 4*sizeof(float));
+	gl.vertexAttribPointer(colorLoc,    4, GL_FLOAT, GL_FALSE, 8 * (int)sizeof(float), glu::BufferOffsetAsPointer(4*sizeof(float)));
 	gl.enableVertexAttribArray(positionLoc);
 	gl.enableVertexAttribArray(colorLoc);
 
@@ -1525,7 +1525,7 @@ void ComputeShaderGeneratedCase::renderTo (tcu::Surface& dst)
 	gl.useProgram(m_shaderProgram->getProgram());
 	for (int drawCmdNdx = 0; drawCmdNdx < m_numDrawCmds; ++drawCmdNdx)
 	{
-		const void* offset = ((deUint8*)DE_NULL) + drawCmdNdx*m_commandSize;
+		const void* offset = glu::BufferOffsetAsPointer(drawCmdNdx*m_commandSize);
 
 		if (m_drawMethod == DRAWMETHOD_DRAWELEMENTS)
 			gl.drawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, offset);

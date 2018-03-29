@@ -33,6 +33,7 @@
 #include "vkPlatform.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vkWsiUtil.hpp"
 
@@ -304,16 +305,9 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 		1
 	};
-	const vk::VkCommandBufferBeginInfo	beginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		0u,
-		DE_NULL
-	};
 
 	vk::Move<vk::VkCommandBuffer>	commandBuffer	(vk::allocateCommandBuffer(vkd, device, &allocateInfo));
-	VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &beginInfo));
+	beginCommandBuffer(vkd, *commandBuffer, 0u);
 
 	{
 		const vk::VkClearValue			clearValue			= vk::makeClearValueColorF32(0.25f, 0.50f, 0.75f, 1.00f);
@@ -339,7 +333,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 
 	vkd.cmdEndRenderPass(*commandBuffer);
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 	return commandBuffer;
 }
 
@@ -1015,16 +1009,9 @@ void SharedPresentableImageTestInstance::initSwapchainResources (void)
 		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 		1
 	};
-	const vk::VkCommandBufferBeginInfo	beginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		0u,
-		DE_NULL
-	};
 
 	const vk::Unique<vk::VkCommandBuffer>	commandBuffer	(vk::allocateCommandBuffer(m_vkd, *m_device, &allocateInfo));
-	VK_CHECK(m_vkd.beginCommandBuffer(*commandBuffer, &beginInfo));
+	beginCommandBuffer(m_vkd, *commandBuffer, 0u);
 
 	const vk::VkImageMemoryBarrier barrier = {
 		vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -1053,7 +1040,7 @@ void SharedPresentableImageTestInstance::initSwapchainResources (void)
 							0, DE_NULL,
 							1, &barrier);
 
-	VK_CHECK(m_vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(m_vkd, *commandBuffer);
 
 	const vk::VkPipelineStageFlags waitDstStages[] = { vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	const vk::VkSubmitInfo submitInfo =

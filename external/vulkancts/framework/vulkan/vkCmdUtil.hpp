@@ -29,6 +29,13 @@
 namespace vk
 {
 
+void beginCommandBuffer		(const DeviceInterface&		vk,
+							 const VkCommandBuffer		commandBuffer,
+							 VkCommandBufferUsageFlags	flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+void endCommandBuffer		(const DeviceInterface&	vk,
+							 const VkCommandBuffer	commandBuffer);
+
 void submitCommandsAndWait	(const DeviceInterface&	vk,
 							 const VkDevice			device,
 							 const VkQueue			queue,

@@ -2160,14 +2160,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	vk::Move<vk::VkCommandPool> cmdPool (createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	vk::Move<vk::VkCommandBuffer> cmdBuffer (allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-	const vk::VkCommandBufferBeginInfo cmdBufBeginParams =
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	//	VkStructureType				sType;
-		DE_NULL,											//	const void*					pNext;
-		0u,													//	VkCmdBufferOptimizeFlags	flags;
-		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufBeginParams));
+	beginCommandBuffer(vk, *cmdBuffer, 0u);
 
 	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
@@ -2222,7 +2215,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, (vk::VkDependencyFlags)0,
 						  0u, DE_NULL, static_cast<deUint32>(barriers.size()), &barriers[0], 0u, DE_NULL);
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 

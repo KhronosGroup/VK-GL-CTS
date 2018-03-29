@@ -956,7 +956,7 @@ tcu::TestStatus MSInstanceBaseResolveAndPerSampleFetch::iterate (void)
 		static_cast<deUint32>(buffersPerSampleHostReadBarriers.size()), dataPointer(buffersPerSampleHostReadBarriers), 0u, DE_NULL);
 
 	// End recording commands
-	VK_CHECK(deviceInterface.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(deviceInterface, *commandBuffer);
 
 	// Submit commands for execution and wait for completion
 	submitCommandsAndWait(deviceInterface, device, queue, *commandBuffer);

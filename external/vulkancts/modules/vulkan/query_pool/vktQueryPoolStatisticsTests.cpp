@@ -106,18 +106,6 @@ std::string outputTypeToGLString (const VkPrimitiveTopology& outputType)
 	}
 }
 
-void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	const VkCommandBufferBeginInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		// VkStructureType							sType;
-		DE_NULL,											// const void*								pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,		// VkCommandBufferUsageFlags				flags;
-		DE_NULL,											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-	};
-	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &info));
-}
-
 void beginSecondaryCommandBuffer (const DeviceInterface&				vk,
 								  const VkCommandBuffer					commandBuffer,
 								  const VkQueryPipelineStatisticFlags	queryFlags,
@@ -352,7 +340,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest (const VkCommandPool
 
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
 				(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &computeFinishBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 
 		m_context.getTestContext().getLog() << tcu::TestLog::Message << "Compute shader invocations: " << getComputeExecution(m_parameters[parametersNdx]) << tcu::TestLog::EndMessage;
 
@@ -487,7 +475,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 					(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &computeShaderWriteBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 		}
 		vk.cmdEndQuery(*secondaryCmdBuffer, *queryPool, 0u);
-	VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer));
+	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
@@ -495,7 +483,7 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest (const VkCo
 		vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
 			(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &computeFinishBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 
-	VK_CHECK(vk.endCommandBuffer(*primaryCmdBuffer));
+	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -642,7 +630,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 				vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 					(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &computeShaderWriteBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 		}
-	VK_CHECK(vk.endCommandBuffer(*secondaryCmdBuffer));
+	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
@@ -661,7 +649,7 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest (c
 			(VkDependencyFlags)0u, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &computeFinishBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
 
 		vk.cmdEndQuery(*primaryCmdBuffer, *queryPool, 0u);
-	VK_CHECK(vk.endCommandBuffer(*primaryCmdBuffer));
+	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1017,7 +1005,7 @@ tcu::TestStatus VertexShaderTestInstance::executeTest (void)
 		transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1150,7 +1138,7 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest (void)
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		draw(*secondaryCmdBuffer);
 		vk.cmdEndQuery(*secondaryCmdBuffer, *queryPool, 0u);
-	vk.endCommandBuffer(*secondaryCmdBuffer);
+	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
@@ -1172,7 +1160,7 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest (void)
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*primaryCmdBuffer);
+	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1222,7 +1210,7 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest (void)
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		draw(*secondaryCmdBuffer);
-	vk.endCommandBuffer(*secondaryCmdBuffer);
+	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
@@ -1246,7 +1234,7 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest (void)
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*primaryCmdBuffer);
+	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1413,7 +1401,7 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest (void)
 		transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1526,7 +1514,7 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest (void)
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		draw(*secondaryCmdBuffer);
 		vk.cmdEndQuery(*secondaryCmdBuffer, *queryPool, 0u);
-	vk.endCommandBuffer(*secondaryCmdBuffer);
+	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
@@ -1548,7 +1536,7 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest (void)
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*primaryCmdBuffer);
+	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1598,7 +1586,7 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest (void)
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		draw(*secondaryCmdBuffer);
-	vk.endCommandBuffer(*secondaryCmdBuffer);
+	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
@@ -1622,7 +1610,7 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest (void)
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*primaryCmdBuffer);
+	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1788,7 +1776,7 @@ tcu::TestStatus	TessellationShaderTestInstance::executeTest (void)
 		transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1867,7 +1855,7 @@ tcu::TestStatus	TessellationShaderSecondrayTestInstance::executeTest (void)
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		draw(*secondaryCmdBuffer);
 		vk.cmdEndQuery(*secondaryCmdBuffer, *queryPool, 0u);
-	vk.endCommandBuffer(*secondaryCmdBuffer);
+	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
@@ -1892,7 +1880,7 @@ tcu::TestStatus	TessellationShaderSecondrayTestInstance::executeTest (void)
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*primaryCmdBuffer);
+	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
@@ -1942,7 +1930,7 @@ tcu::TestStatus	TessellationShaderSecondrayInheritedTestInstance::executeTest (v
 		vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		vk.cmdBindVertexBuffers(*secondaryCmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		draw(*secondaryCmdBuffer);
-	vk.endCommandBuffer(*secondaryCmdBuffer);
+	endCommandBuffer(vk, *secondaryCmdBuffer);
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
@@ -1969,7 +1957,7 @@ tcu::TestStatus	TessellationShaderSecondrayInheritedTestInstance::executeTest (v
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
-	vk.endCommandBuffer(*primaryCmdBuffer);
+	endCommandBuffer(vk, *primaryCmdBuffer);
 
 	// Wait for completion
 	submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);

@@ -156,6 +156,8 @@ protected:
 						 bool generateData = true) const;
 	glu::ProgramSources prepareTexturingProgramSources(GLint internalFormat, GLenum format, GLenum type) const;
 	void renderTexturedQuad(GLuint programId) const;
+	GLenum getUnsizedFormatFromInternalFormat(GLint internalFormat) const;
+	GLenum getTypeFromInternalFormat(GLint internalFormat) const;
 
 private:
 	void generateTextureData(GLuint width, GLuint height, GLenum type, unsigned int pixelSize, unsigned int components,
@@ -377,6 +379,67 @@ void InternalformatCaseBase::renderTexturedQuad(GLuint programId) const
 
 	glu::draw(m_context.getRenderContext(), programId, DE_LENGTH_OF_ARRAY(vertexArrays), vertexArrays,
 			  glu::pr::TriangleStrip(DE_LENGTH_OF_ARRAY(quadIndices), quadIndices));
+}
+
+GLenum InternalformatCaseBase::getUnsizedFormatFromInternalFormat(GLint internalFormat) const
+{
+	switch (internalFormat)
+	{
+	case GL_RGBA:
+	case GL_RGBA4:
+	case GL_RGB5_A1:
+	case GL_RGBA8:
+	case GL_RGB10_A2:
+		return GL_RGBA;
+	case GL_RGB10_A2UI:
+	case GL_RGBA8UI: //remove this
+		return GL_RGBA_INTEGER;
+	case GL_RGB:
+	case GL_RGB565:
+	case GL_RGB8:
+	case GL_RGB10:
+	case GL_RGB9_E5:
+		return GL_RGB;
+	case GL_LUMINANCE_ALPHA:
+	case GL_LUMINANCE4_ALPHA4_OES:
+	case GL_LUMINANCE8_ALPHA8_OES:
+		return GL_LUMINANCE_ALPHA;
+	case GL_LUMINANCE:
+	case GL_LUMINANCE8_OES:
+		return GL_LUMINANCE;
+	case GL_ALPHA:
+	case GL_ALPHA8_OES:
+		return GL_ALPHA;
+	case GL_DEPTH_COMPONENT16:
+	case GL_DEPTH_COMPONENT24:
+	case GL_DEPTH_COMPONENT32:
+		return GL_DEPTH_COMPONENT;
+	case GL_DEPTH24_STENCIL8:
+		return GL_DEPTH_STENCIL;
+	case GL_STENCIL_INDEX8:
+		return GL_STENCIL_INDEX;
+	default:
+		TCU_FAIL("Unrecognized internal format");
+	}
+	return GL_NONE;
+}
+
+GLenum InternalformatCaseBase::getTypeFromInternalFormat(GLint internalFormat) const
+{
+	switch (internalFormat)
+	{
+	case GL_RGB10:
+	case GL_RGB10_A2:
+	case GL_RGB10_A2UI:
+		return GL_UNSIGNED_INT_2_10_10_10_REV;
+	case GL_DEPTH_COMPONENT16:
+	case GL_DEPTH_COMPONENT24:
+		return GL_UNSIGNED_SHORT;
+	case GL_DEPTH_COMPONENT32:
+		return GL_UNSIGNED_INT;
+	}
+
+	return GL_UNSIGNED_BYTE;
 }
 
 void InternalformatCaseBase::generateTextureData(GLuint width, GLuint height, GLenum type, unsigned int pixelSize,
@@ -727,10 +790,6 @@ public:
 	virtual tcu::TestNode::IterateResult iterate(void);
 
 private:
-	GLenum getUnsizedFormatFromInternalFormat(GLint internalFormat) const;
-	GLenum getTypeFromInternalFormat(GLint internalFormat) const;
-
-private:
 	CopyTexImageFormat m_testFormat;
 };
 
@@ -787,44 +846,38 @@ tcu::TestNode::IterateResult CopyTexImageCase::iterate(void)
 
 	GLuint copyFboId				  = 0;
 	GLuint copyFboColorTextureId	  = 0;
-	bool   internalFormatIsRenderable = (textureInternalFormat != GL_RGB9_E5) && (textureInternalFormat != GL_ALPHA) &&
-									  (textureInternalFormat != GL_LUMINANCE) &&
-									  (textureInternalFormat != GL_LUMINANCE_ALPHA);
 
-	// When possible use separate FBO for copy operation
-	if (internalFormatIsRenderable)
+	// When possible use separate FBO for copy operation; create copy FBO and
+	// attach reference texture to color or depth attachment
+	gl.genFramebuffers(1, &copyFboId);
+	gl.bindFramebuffer(GL_FRAMEBUFFER, copyFboId);
+
+	if (textureFormat == GL_DEPTH_COMPONENT)
 	{
-		// Create copy FBO and attach reference texture to color or depth attachment
-		gl.genFramebuffers(1, &copyFboId);
-		gl.bindFramebuffer(GL_FRAMEBUFFER, copyFboId);
-
-		if (textureFormat == GL_DEPTH_COMPONENT)
-		{
-			copyFboColorTextureId = createTexture(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, false);
-			gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, copyFboColorTextureId, 0);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
-			gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, referenceTextureId, 0);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
-		}
-		else
-		{
-			gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, referenceTextureId, 0);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
-		}
-
-		// Check if FBO is compleate
-		GLenum bufferStatus = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
-		if (bufferStatus != GL_FRAMEBUFFER_COMPLETE)
-		{
-			if (bufferStatus == GL_FRAMEBUFFER_UNSUPPORTED)
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Unsuported framebuffer");
-			else
-				m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Framebuffer not complete");
-			return STOP;
-		}
+		copyFboColorTextureId = createTexture(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, false);
+		gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, copyFboColorTextureId, 0);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
+		gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, referenceTextureId, 0);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
+	}
+	else
+	{
+		gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, referenceTextureId, 0);
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D");
 	}
 
-	// Copy attachment from copy FBO to tested texture (if copy FBO culdn't be created
+	// If FBO is complete, then go back to use default FBO
+	GLenum bufferStatus = gl.checkFramebufferStatus(GL_FRAMEBUFFER);
+	if (bufferStatus != GL_FRAMEBUFFER_COMPLETE)
+	{
+		// Bind back to main FBO
+		gl.bindFramebuffer(GL_FRAMEBUFFER, mainFboId);
+		gl.deleteFramebuffers(1, &copyFboId);
+		if (copyFboColorTextureId)
+			gl.deleteTextures(1, &copyFboColorTextureId);
+	}
+
+	// Copy attachment from copy FBO to tested texture (if copy FBO couldn't be created
 	// then copying will be done from main FBO color attachment)
 	gl.bindTexture(GL_TEXTURE_2D, copiedTextureId);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture");
@@ -852,72 +905,10 @@ tcu::TestNode::IterateResult CopyTexImageCase::iterate(void)
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	gl.deleteFramebuffers(1, &mainFboId);
 	gl.deleteTextures(1, &mainFboColorTextureId);
-	if (copyFboId)
-	{
-		gl.deleteFramebuffers(1, &copyFboId);
-		if (copyFboColorTextureId)
-			gl.deleteTextures(1, &copyFboColorTextureId);
-	}
 	gl.deleteTextures(1, &copiedTextureId);
 	gl.deleteTextures(1, &referenceTextureId);
 
 	return STOP;
-}
-
-GLenum CopyTexImageCase::getUnsizedFormatFromInternalFormat(GLint internalFormat) const
-{
-	switch (internalFormat)
-	{
-	case GL_RGBA:
-	case GL_RGBA4:
-	case GL_RGB5_A1:
-	case GL_RGBA8:
-	case GL_RGB10_A2:
-		return GL_RGBA;
-	case GL_RGB10_A2UI:
-		return GL_RGBA_INTEGER;
-	case GL_RGB:
-	case GL_RGB565:
-	case GL_RGB8:
-	case GL_RGB10:
-	case GL_RGB9_E5:
-		return GL_RGB;
-	case GL_LUMINANCE_ALPHA:
-	case GL_LUMINANCE4_ALPHA4_OES:
-	case GL_LUMINANCE8_ALPHA8_OES:
-		return GL_LUMINANCE_ALPHA;
-	case GL_LUMINANCE:
-	case GL_LUMINANCE8_OES:
-		return GL_LUMINANCE;
-	case GL_ALPHA:
-	case GL_ALPHA8_OES:
-		return GL_ALPHA;
-	case GL_DEPTH_COMPONENT16:
-	case GL_DEPTH_COMPONENT24:
-	case GL_DEPTH_COMPONENT32:
-		return GL_DEPTH_COMPONENT;
-	default:
-		TCU_FAIL("Unrecognized internal format");
-	}
-	return GL_NONE;
-}
-
-GLenum CopyTexImageCase::getTypeFromInternalFormat(GLint internalFormat) const
-{
-	switch (internalFormat)
-	{
-	case GL_RGB10:
-	case GL_RGB10_A2:
-	case GL_RGB10_A2UI:
-		return GL_UNSIGNED_INT_2_10_10_10_REV;
-	case GL_DEPTH_COMPONENT16:
-	case GL_DEPTH_COMPONENT24:
-		return GL_UNSIGNED_SHORT;
-	case GL_DEPTH_COMPONENT32:
-		return GL_UNSIGNED_INT;
-	}
-
-	return GL_UNSIGNED_BYTE;
 }
 
 class RenderbufferCase : public InternalformatCaseBase
@@ -935,7 +926,9 @@ private:
 	void   deleteFramebuffer();
 	GLuint createAndAttachRenderBuffer(GLenum rbFormat, GLenum fbAttachment);
 	void renderColoredQuad(GLuint programId, const float* positions) const;
-	glu::ProgramSources prepareColoringProgramSources() const;
+	glu::ProgramSources prepareColoringProgramSources(GLenum format, GLenum type) const;
+	void convertUInt(const tcu::PixelBufferAccess &src, const tcu::PixelBufferAccess &dst);
+	void convertUInt_2_10_10_10_rev(const tcu::PixelBufferAccess &src, const tcu::PixelBufferAccess &dst);
 
 private:
 	GLuint			   m_fbo;
@@ -981,9 +974,18 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 	static const float smallQuadPositionsSet[] = { 5.0f, 5.0f,  0.5f, w / 2, 5.0f,  0.5f,
 												   5.0f, h / 2, 0.5f, w / 2, h / 2, 0.5f };
 
-	tcu::Surface testSurface[2];
-	testSurface[0].setSize(m_renderWidth, m_renderHeight);
-	testSurface[1].setSize(m_renderWidth, m_renderHeight);
+	bool stencilRenderbufferAvailable =
+		(m_testFormat.type == RENDERBUFFER_STENCIL) || (m_testFormat.type == RENDERBUFFER_DEPTH_STENCIL);
+
+	GLenum	testFormat = getUnsizedFormatFromInternalFormat(m_testFormat.format);
+	GLenum	testType = getTypeFromInternalFormat(m_testFormat.format);
+
+	// We need surfaces for depth testing and stencil testing, and also for
+	// storing the reference and the values for the format under testing
+	tcu::Surface testSurface[2][2];
+	for (GLuint loop1 = 0; loop1 < 2; loop1++)
+	for (GLuint loop2 = 0; loop2 < 2; loop2++)
+		testSurface[loop1][loop2].setSize(m_renderWidth, m_renderHeight);
 
 	GLint defaultFramebufferDepthBits   = 0;
 	GLint defaultFramebufferStencilBits = 0;
@@ -1011,39 +1013,50 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 														&defaultFramebufferStencilBits);
 	}
 
-	// Create program that will render texture to screen
-	glu::ShaderProgram program(renderContext, prepareColoringProgramSources());
-	if (!program.isOk())
+	// Create two programs for rendering, one for rendering into default FB, and
+	// a second one to render in our created FB
+
+	glu::ShaderProgram program0(renderContext, prepareColoringProgramSources(GL_RGBA, GL_UNSIGNED_BYTE));
+	glu::ShaderProgram program1(renderContext, prepareColoringProgramSources(testFormat, testType));
+
+	std::vector<glu::ShaderProgram*> programs;
+	programs.push_back(&program0);
+	programs.push_back(&program1);
+
+	bool testNonStencil = (m_testFormat.type != RENDERBUFFER_STENCIL);
+	bool testStencil = defaultFramebufferStencilBits && stencilRenderbufferAvailable;
+
+	for (GLuint loop = 0; loop < 2; loop++)
 	{
-		m_testCtx.getLog() << program;
-		TCU_FAIL("Compile failed");
-	}
-
-	gl.useProgram(program.getProgram());
-	GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
-
-	float mvpMatrix[16];
-	constructOrthoProjMatrix(mvpMatrix, 0.0, m_renderWidth, 0.0f, m_renderHeight, 1.0f, -1.0f);
-	GLint mvpUniformLocation = gl.getUniformLocation(program.getProgram(), "mvpMatrix");
-	gl.uniformMatrix4fv(mvpUniformLocation, 1, 0, mvpMatrix);
-
-	gl.bindTexture(GL_TEXTURE_2D, 0);
-	gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	gl.viewport(0, 0, m_renderWidth, m_renderHeight);
-
-	if (m_testFormat.type != RENDERBUFFER_STENCIL)
-	{
-		if (!createFramebuffer())
-			return STOP;
-
-		if (defaultFramebufferDepthBits)
+		if (!programs[loop]->isOk())
 		{
-			gl.enable(GL_DEPTH_TEST);
-			gl.depthFunc(GL_LESS);
+			m_testCtx.getLog() << *programs[loop];
+			TCU_FAIL("Compile failed");
 		}
 
-		for (GLuint loop = 0; loop < 2; loop++)
+		gl.useProgram(programs[loop]->getProgram());
+		GLU_EXPECT_NO_ERROR(gl.getError(), "glUseProgram");
+
+		float mvpMatrix[16];
+		constructOrthoProjMatrix(mvpMatrix, 0.0, m_renderWidth, 0.0f, m_renderHeight, 1.0f, -1.0f);
+		GLint mvpUniformLocation = gl.getUniformLocation(programs[loop]->getProgram(), "mvpMatrix");
+		gl.uniformMatrix4fv(mvpUniformLocation, 1, 0, mvpMatrix);
+
+		gl.bindTexture(GL_TEXTURE_2D, 0);
+		gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		gl.viewport(0, 0, m_renderWidth, m_renderHeight);
+
+		if (testNonStencil)
 		{
+			if (loop && !createFramebuffer())
+				return STOP;
+
+			if (defaultFramebufferDepthBits)
+			{
+				gl.enable(GL_DEPTH_TEST);
+				gl.depthFunc(GL_LESS);
+			}
+
 			gl.bindFramebuffer(GL_FRAMEBUFFER, loop ? m_fbo : 0);
 			gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -1051,41 +1064,44 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 			{
 				// Draw a small quad just in the z buffer
 				gl.colorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-				renderColoredQuad(program.getProgram(), smallQuadPositionsSet);
+				renderColoredQuad(programs[loop]->getProgram(), smallQuadPositionsSet);
 
 				// Large quad should be drawn on top small one to verify that the depth test is working
 				gl.colorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 			}
 
 			// Draws large quad
-			renderColoredQuad(program.getProgram(), bigQuadPositionsSet);
+			renderColoredQuad(programs[loop]->getProgram(), bigQuadPositionsSet);
 
-			glu::readPixels(renderContext, 0, 0, testSurface[loop].getAccess());
+			if (loop && testFormat == GL_RGBA_INTEGER)
+			{
+				de::ArrayBuffer<deUint32> pixels;
+				pixels.setStorage(4 * m_renderWidth * m_renderHeight);
+				tcu::PixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNSIGNED_INT32),
+												   m_renderWidth, m_renderHeight, 1, pixels.getPtr());
+				glu::readPixels(renderContext, 0, 0, pixelBuffer);
+				if (testType == GL_UNSIGNED_INT_2_10_10_10_REV)
+					convertUInt_2_10_10_10_rev(pixelBuffer, testSurface[0][loop].getAccess());
+				else
+					convertUInt(pixelBuffer, testSurface[0][loop].getAccess());
+			}
+			else
+			{
+				glu::readPixels(renderContext, 0, 0, testSurface[0][loop].getAccess());
+			}
 		}
 
-		deleteFramebuffer();
+		if (loop)
+			deleteFramebuffer();
 
-		// Compare surfaces
-		if (!tcu::fuzzyCompare(m_testCtx.getLog(), "Result", "Image comparison result", testSurface[0], testSurface[1],
-							   0.05f, tcu::COMPARE_LOG_RESULT))
+		if (defaultFramebufferStencilBits && stencilRenderbufferAvailable)
 		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Depth subtest failed");
-			return STOP;
-		}
-	}
+			gl.disable(GL_DEPTH_TEST);
+			gl.enable(GL_STENCIL_TEST);
 
-	bool stencilRenderbufferAvailable =
-		(m_testFormat.type == RENDERBUFFER_STENCIL) || (m_testFormat.type == RENDERBUFFER_DEPTH_STENCIL);
-	if (defaultFramebufferStencilBits && stencilRenderbufferAvailable)
-	{
-		gl.disable(GL_DEPTH_TEST);
-		gl.enable(GL_STENCIL_TEST);
+			if (loop && !createFramebuffer())
+				return STOP;
 
-		if (!createFramebuffer())
-			return STOP;
-
-		for (GLuint loop = 0; loop < 2; loop++)
-		{
 			gl.bindFramebuffer(GL_FRAMEBUFFER, loop ? m_fbo : 0);
 			gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -1095,28 +1111,40 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 			gl.stencilFunc(GL_ALWAYS, 0x0, 0xFF);
 			gl.stencilOp(GL_ZERO, GL_INCR, GL_INCR);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "glStencilOp");
-			renderColoredQuad(program.getProgram(), bigQuadPositionsSet);
+			renderColoredQuad(programs[loop]->getProgram(), bigQuadPositionsSet);
 			gl.disable(GL_SCISSOR_TEST);
 
 			// Only draw where stencil is equal to 1
 			gl.stencilFunc(GL_EQUAL, 0x01, 0xFF);
 			gl.stencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 			gl.clear(GL_COLOR_BUFFER_BIT);
-			renderColoredQuad(program.getProgram(), bigQuadPositionsSet);
+			renderColoredQuad(programs[loop]->getProgram(), bigQuadPositionsSet);
 
-			glu::readPixels(renderContext, 0, 0, testSurface[loop].getAccess());
+			glu::readPixels(renderContext, 0, 0, testSurface[1][loop].getAccess());
+
+			gl.disable(GL_STENCIL_TEST);
+
+			if (loop)
+				deleteFramebuffer();
 		}
+	}
 
-		gl.disable(GL_STENCIL_TEST);
-		deleteFramebuffer();
+	// Compare surfaces for non-stencil
+	if (testNonStencil && !tcu::fuzzyCompare(m_testCtx.getLog(), "Result", "Image comparison result",
+											 testSurface[0][0], testSurface[0][1],
+											 0.05f, tcu::COMPARE_LOG_RESULT))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Depth subtest failed");
+		return STOP;
+	}
 
-		// Compare surfaces
-		if (!tcu::fuzzyCompare(m_testCtx.getLog(), "Result", "Image comparison result", testSurface[0], testSurface[1],
-							   0.05f, tcu::COMPARE_LOG_RESULT))
-		{
-			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Stencil subtest failed");
-			return STOP;
-		}
+	// Compare surfaces for stencil
+	if (testStencil && !tcu::fuzzyCompare(m_testCtx.getLog(), "Result", "Image comparison result",
+										  testSurface[1][0], testSurface[1][1],
+										  0.05f, tcu::COMPARE_LOG_RESULT))
+	{
+		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Stencil subtest failed");
+		return STOP;
 	}
 
 	m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
@@ -1241,12 +1269,14 @@ void RenderbufferCase::renderColoredQuad(GLuint programId, const float* position
 			  glu::pr::TriangleStrip(DE_LENGTH_OF_ARRAY(quadIndices), quadIndices));
 }
 
-glu::ProgramSources RenderbufferCase::prepareColoringProgramSources() const
+glu::ProgramSources RenderbufferCase::prepareColoringProgramSources(GLenum format, GLenum type) const
 {
 	glu::RenderContext& renderContext	  = m_context.getRenderContext();
 	glu::ContextType	contextType		   = renderContext.getType();
 	glu::GLSLVersion	glslVersion		   = glu::getContextTypeGLSLVersion(contextType);
 	std::string			versionDeclaration = glu::getGLSLVersionDeclaration(glslVersion);
+
+	std::map<std::string, std::string>	specializationMap;
 
 	versionDeclaration += "\n";
 	std::string vs = versionDeclaration;
@@ -1256,17 +1286,17 @@ glu::ProgramSources RenderbufferCase::prepareColoringProgramSources() const
 		vs += "in highp vec3 position;\n"
 			  "in highp vec4 color;\n"
 			  "out highp vec4 fColor;\n"
-			  "uniform mat4 mvpMatrix;"
+			  "uniform mat4 mvpMatrix;\n"
 			  "void main()\n"
 			  "{\n"
 			  "  fColor = color;\n"
 			  "  gl_Position = mvpMatrix * vec4(position, 1.0);\n"
 			  "}\n";
 		fs += "in highp vec4 fColor;\n"
-			  "out highp vec4 color;\n"
+			  "out ${COLOR_DATA} color;\n"
 			  "void main()\n"
 			  "{\n"
-			  "  color = fColor;\n"
+			  "  color = ${COMPUTE_COLOR};\n"
 			  "}\n";
 	}
 	else
@@ -1274,7 +1304,7 @@ glu::ProgramSources RenderbufferCase::prepareColoringProgramSources() const
 		vs += "attribute highp vec3 position;\n"
 			  "attribute highp vec4 color;\n"
 			  "varying highp vec4 fColor;\n"
-			  "uniform mat4 mvpMatrix;"
+			  "uniform mat4 mvpMatrix;\n"
 			  "void main()\n"
 			  "{\n"
 			  "  fColor = color;\n"
@@ -1287,6 +1317,39 @@ glu::ProgramSources RenderbufferCase::prepareColoringProgramSources() const
 			  "}\n";
 	}
 
+	if (format == GL_RGBA_INTEGER)
+	{
+		std::string compute_color = "${COLOR_DATA}("
+			"${MAX_RED} * fColor.r, "
+			"${MAX_GREEN} * fColor.g, "
+			"${MAX_BLUE} * fColor.b, "
+			"${MAX_ALPHA} * fColor.a)";
+
+		if (type == GL_UNSIGNED_INT_2_10_10_10_REV)
+		{
+			specializationMap["MAX_RED"] = "1023";
+			specializationMap["MAX_GREEN"] = "1023";
+			specializationMap["MAX_BLUE"] = "1023";
+			specializationMap["MAX_ALPHA"] = "3";
+		}
+		else
+		{
+			specializationMap["MAX_RED"] = "255";
+			specializationMap["MAX_GREEN"] = "255";
+			specializationMap["MAX_BLUE"] = "255";
+			specializationMap["MAX_ALPHA"] = "255";
+		}
+		specializationMap["COLOR_DATA"] = "uvec4";
+		specializationMap["COMPUTE_COLOR"] = tcu::StringTemplate(compute_color).specialize(specializationMap);
+	}
+	else
+	{
+		specializationMap["COLOR_DATA"] = "highp vec4";
+		specializationMap["COMPUTE_COLOR"] = "fColor";
+	}
+
+	vs = tcu::StringTemplate(vs).specialize(specializationMap);
+	fs = tcu::StringTemplate(fs).specialize(specializationMap);
 	return glu::makeVtxFragSources(vs.c_str(), fs.c_str());
 }
 
@@ -1595,5 +1658,29 @@ void InternalformatTests::init()
 		renderbufferGroup->addChild(new RenderbufferCase(m_context, name, rbf));
 	}
 	addChild(renderbufferGroup);
+}
+
+void RenderbufferCase::convertUInt(const tcu::PixelBufferAccess &src, const tcu::PixelBufferAccess &dst)
+{
+	for (int z = 0; z < dst.getDepth(); ++z)
+	for (int y = 0; y < dst.getHeight(); ++y)
+	for (int x = 0; x < dst.getWidth(); ++x)
+	{
+		tcu::UVec4 srcPixel = src.getPixelUint(x, y, z);
+		tcu::Vec4 dstPixel(srcPixel.x() / 255.0f, srcPixel.y() / 255.0f, srcPixel.z() / 255.0f, srcPixel.w() / 255.0f);
+		dst.setPixel(dstPixel, x, y, z);
+	}
+}
+
+void RenderbufferCase::convertUInt_2_10_10_10_rev(const tcu::PixelBufferAccess &src, const tcu::PixelBufferAccess &dst)
+{
+	for (int z = 0; z < dst.getDepth(); ++z)
+	for (int y = 0; y < dst.getHeight(); ++y)
+	for (int x = 0; x < dst.getWidth(); ++x)
+	{
+		tcu::UVec4 srcPixel = src.getPixelUint(x, y, z);
+		tcu::Vec4 dstPixel(srcPixel.x() / 1023.0f, srcPixel.y() / 1023.0f, srcPixel.z() / 1023.0f, srcPixel.w() / 3.0f);
+		dst.setPixel(dstPixel, x, y, z);
+	}
 }
 } /* glcts namespace */

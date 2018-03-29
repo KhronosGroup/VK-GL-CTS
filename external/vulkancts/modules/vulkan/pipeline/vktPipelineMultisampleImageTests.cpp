@@ -844,7 +844,7 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 
 		vk.cmdEndRenderPass(*cmdBuffer);
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 }
@@ -1124,7 +1124,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 				0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers, DE_NULL, 0u);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 		// Verify result
@@ -1281,7 +1281,7 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 			vk.cmdDispatch(*cmdBuffer, caseDef.renderSize.x(), caseDef.renderSize.y(), caseDef.numLayers);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 
@@ -1294,7 +1294,7 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 			colorImageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 			colorImageBarrier.newLayout		= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-			const VkImageMemoryBarrier barriers[] =
+			const VkImageMemoryBarrier	barriers[]		=
 			{
 				colorImageBarrier,
 				{
@@ -1311,7 +1311,11 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 				},
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+			const VkPipelineStageFlags	srcStageMask	= (colorImageBarrier.srcAccessMask == VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+														? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+														: VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+			vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
 
 			colorImageBarrier.srcAccessMask = colorImageBarrier.dstAccessMask;
@@ -1366,7 +1370,7 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 			vk.cmdCopyImageToBuffer(*cmdBuffer, *resolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resolveBuffer, 1u, &copyRegion);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 }

@@ -656,23 +656,6 @@ void endRenderPass (const DeviceInterface&	vk,
 	vk.cmdEndRenderPass(commandBuffer);
 }
 
-void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	const VkCommandBufferBeginInfo info =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType                          sType;
-		DE_NULL,										// const void*                              pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags                flags;
-		DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
-	};
-	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &info));
-}
-
-void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	VK_CHECK(vk.endCommandBuffer(commandBuffer));
-}
-
 bool compareWithFileImage (Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string testName)
 {
 	tcu::TextureLevel referenceImage;

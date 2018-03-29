@@ -725,13 +725,6 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 		0u,												// offset
 		(vk::VkDeviceSize)pixelDataSize					// size
 	};
-	const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
 	const vk::VkImageSubresourceLayers		firstSlice					=
 	{
 		vk::VK_IMAGE_ASPECT_COLOR_BIT,					// aspect
@@ -754,7 +747,7 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	// copy content to buffer
-	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
+	beginCommandBuffer(m_vki, *cmd);
 	m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
 							 0, (const vk::VkMemoryBarrier*)DE_NULL,
 							 0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -764,7 +757,7 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 							 0, (const vk::VkMemoryBarrier*)DE_NULL,
 							 1, &memoryBarrier,
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
-	VK_CHECK(m_vki.endCommandBuffer(*cmd));
+	endCommandBuffer(m_vki, *cmd);
 
 	submitCommandsAndWait(m_vki, m_device, m_queue, cmd.get());
 
@@ -810,22 +803,15 @@ tcu::TestStatus SingleTargetRenderInstance::iterate (void)
 			*m_colorAttachmentImage,						// image
 			fullSubrange,									// subresourceRange
 		};
-		const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			DE_NULL,
-			vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-			(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
 
 		const vk::Unique<vk::VkCommandBuffer>	cmd					(vk::allocateCommandBuffer(m_vki, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-		VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
+		beginCommandBuffer(m_vki, *cmd);
 		m_vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0,
 								 0, (const vk::VkMemoryBarrier*)DE_NULL,
 								 0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 								 1, &imageBarrier);
-		VK_CHECK(m_vki.endCommandBuffer(*cmd));
+		endCommandBuffer(m_vki, *cmd);
 
 		submitCommandsAndWait(m_vki, m_device, m_queue, cmd.get());
 
@@ -1104,13 +1090,6 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		{ 0, 0 },								// offset
 		{ m_targetSize.x(), m_targetSize.y() },	// extent
 	};
-	const vk::VkCommandBufferBeginInfo					mainCmdBufBeginInfo				=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
 	const vk::VkCommandBufferInheritanceInfo			passCmdBufInheritInfo			=
 	{
 		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
@@ -1149,7 +1128,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	const vk::Unique<vk::VkFence>						fence						(vk::createFence(m_vki, m_device));
 	const vk::VkSubpassContents							passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_SUBPASS_CONTENTS_INLINE) : (vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-	VK_CHECK(m_vki.beginCommandBuffer(*mainCmd, &mainCmdBufBeginInfo));
+	beginCommandBuffer(m_vki, *mainCmd);
 	m_vki.cmdBeginRenderPass(*mainCmd, &renderPassBeginInfo, passContents);
 
 	if (m_isPrimaryCmdBuf)
@@ -1162,13 +1141,13 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		VK_CHECK(m_vki.beginCommandBuffer(*passCmd, &passCmdBufBeginInfo));
 		m_vki.cmdBindPipeline(*passCmd, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		writeDrawCmdBuffer(*passCmd);
-		VK_CHECK(m_vki.endCommandBuffer(*passCmd));
+		endCommandBuffer(m_vki, *passCmd);
 
 		m_vki.cmdExecuteCommands(*mainCmd, 1, &passCmd.get());
 	}
 
 	m_vki.cmdEndRenderPass(*mainCmd);
-	VK_CHECK(m_vki.endCommandBuffer(*mainCmd));
+	endCommandBuffer(m_vki, *mainCmd);
 
 	// submit and wait for them to finish before exiting scope. (Killing in-flight objects is a no-no).
 	submitCommandsAndWait(m_vki, m_device, m_queue, mainCmd.get());
@@ -2364,17 +2343,10 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
 		1u,													// count
 	};
-	const vk::VkCommandBufferBeginInfo				cmdBufBeginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
 
 	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, &cmdBufCreateInfo));
 
-	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
+	beginCommandBuffer(m_vki, *cmd);
 
 	m_vki.cmdBindPipeline(*cmd, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
 
@@ -2428,7 +2400,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 							 0, (const vk::VkMemoryBarrier*)DE_NULL,
 							 m_numPostBarriers, m_postBarriers,
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
-	VK_CHECK(m_vki.endCommandBuffer(*cmd));
+	endCommandBuffer(m_vki, *cmd);
 
 	submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
 }
@@ -2444,17 +2416,10 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 		queueFamilyIndex,									// queueFamilyIndex
 	};
 	const vk::Unique<vk::VkCommandPool>				cmdPool				(vk::createCommandPool(m_vki, m_device, &cmdPoolCreateInfo));
-	const vk::VkCommandBufferBeginInfo				cmdBufBeginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
 
 	const vk::Unique<vk::VkCommandBuffer>			cmd					(vk::allocateCommandBuffer(m_vki, m_device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-	VK_CHECK(m_vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
+	beginCommandBuffer(m_vki, *cmd);
 
 	m_vki.cmdBindPipeline(*cmd, vk::VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
 
@@ -2479,7 +2444,7 @@ void ComputeCommand::submitAndWait (deUint32 queueFamilyIndex, vk::VkQueue queue
 							 0, (const vk::VkMemoryBarrier*)DE_NULL,
 							 m_numPostBarriers, m_postBarriers,
 							 0, (const vk::VkImageMemoryBarrier*)DE_NULL);
-	VK_CHECK(m_vki.endCommandBuffer(*cmd));
+	endCommandBuffer(m_vki, *cmd);
 
 	submitCommandsAndWait(m_vki, m_device, queue, cmd.get());
 }
@@ -4123,13 +4088,6 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 		queueFamilyIndex,									// queueFamilyIndex
 	};
 	const vk::Unique<vk::VkCommandPool>		cmdPool						(vk::createCommandPool(vki, device, &cmdPoolCreateInfo));
-	const vk::VkCommandBufferBeginInfo		cmdBufBeginInfo				=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// flags
-		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
 
 	const vk::Unique<vk::VkCommandBuffer>	cmd							(vk::allocateCommandBuffer(vki, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 	std::vector<vk::VkBufferImageCopy>		copySlices;
@@ -4139,7 +4097,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 	flushMappedMemoryRange(vki, device, dataBufferMemory->getMemory(), dataBufferMemory->getOffset(), dataBufferSize);
 
 	// record command buffer
-	VK_CHECK(vki.beginCommandBuffer(*cmd, &cmdBufBeginInfo));
+	beginCommandBuffer(vki, *cmd);
 	vki.cmdPipelineBarrier(*cmd, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0,
 						   0, (const vk::VkMemoryBarrier*)DE_NULL,
 						   1, &preMemoryBarrier,
@@ -4149,7 +4107,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 						   0, (const vk::VkMemoryBarrier*)DE_NULL,
 						   0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
 						   1, &postImageBarrier);
-	VK_CHECK(vki.endCommandBuffer(*cmd));
+	endCommandBuffer(vki, *cmd);
 
 	// submit and wait for command buffer to complete before killing it
 	submitCommandsAndWait(vki, device, queue, cmd.get());

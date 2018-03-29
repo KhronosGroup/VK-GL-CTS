@@ -742,17 +742,9 @@ TimestampTestInstance::~TimestampTestInstance(void)
 
 void TimestampTestInstance::configCommandBuffer(void)
 {
-	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
+	const DeviceInterface& vk = m_context.getDeviceInterface();
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                  sType;
-		DE_NULL,                                        // const void*                      pNext;
-		0u,                                             // VkCommandBufferUsageFlags        flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
@@ -762,7 +754,7 @@ void TimestampTestInstance::configCommandBuffer(void)
 		vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 tcu::TestStatus TimestampTestInstance::iterate(void)
@@ -1237,23 +1229,15 @@ BasicGraphicsTestInstance::~BasicGraphicsTestInstance(void)
 
 void BasicGraphicsTestInstance::configCommandBuffer(void)
 {
-	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
+	const DeviceInterface&		vk							= m_context.getDeviceInterface();
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                  sType;
-		DE_NULL,                                        // const void*                      pNext;
-		0u,                                             // VkCommandBufferUsageFlags        flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-	const VkClearValue attachmentClearValues[2] =
+	const VkClearValue			attachmentClearValues[2]	=
 	{
 		defaultClearValue(m_colorFormat),
 		defaultClearValue(m_depthFormat),
 	};
 
-	const VkRenderPassBeginInfo renderPassBeginInfo =
+	const VkRenderPassBeginInfo	renderPassBeginInfo			=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,               // VkStructureType      sType;
 		DE_NULL,                                                // const void*          pNext;
@@ -1264,9 +1248,9 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 		attachmentClearValues                                   // const VkClearValue*  pClearValues;
 	};
 
-	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
@@ -1298,7 +1282,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 	  }
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 class AdvGraphicsTest : public BasicGraphicsTest
@@ -1492,23 +1476,15 @@ AdvGraphicsTestInstance::~AdvGraphicsTestInstance(void)
 
 void AdvGraphicsTestInstance::configCommandBuffer(void)
 {
-	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
+	const DeviceInterface&		vk							= m_context.getDeviceInterface();
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType              sType;
-		DE_NULL,                                        // const void*                  pNext;
-		0u,                                             // VkCommandBufferUsageFlags    flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-	const VkClearValue attachmentClearValues[2] =
+	const VkClearValue			attachmentClearValues[2]	=
 	{
 		defaultClearValue(m_colorFormat),
 		defaultClearValue(m_depthFormat),
 	};
 
-	const VkRenderPassBeginInfo renderPassBeginInfo =
+	const VkRenderPassBeginInfo	renderPassBeginInfo			=
 	{
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,               // VkStructureType      sType;
 		DE_NULL,                                                // const void*          pNext;
@@ -1519,9 +1495,9 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 		attachmentClearValues                                   // const VkClearValue*  pClearValues;
 	};
 
-	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0,
+	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
 		0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(m_imageLayoutBarriers), m_imageLayoutBarriers);
 
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
@@ -1555,8 +1531,7 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 	  }
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
-
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 class BasicComputeTest : public TimestampTest
@@ -1743,18 +1718,9 @@ BasicComputeTestInstance::~BasicComputeTestInstance(void)
 
 void BasicComputeTestInstance::configCommandBuffer(void)
 {
-	const DeviceInterface&     vk                 = m_context.getDeviceInterface();
+	const DeviceInterface& vk = m_context.getDeviceInterface();
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType          sType;
-		DE_NULL,                                        // const void*              pNext;
-		0u,                                             // VkCmdBufferOptimizeFlags flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-
-	};
-
-	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
@@ -1768,9 +1734,7 @@ void BasicComputeTestInstance::configCommandBuffer(void)
 		vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
-
-
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 class TransferTest : public TimestampTest
@@ -1894,17 +1858,9 @@ TransferTestInstance::~TransferTestInstance(void)
 
 void TransferTestInstance::configCommandBuffer(void)
 {
-	const DeviceInterface&      vk                  = m_context.getDeviceInterface();
+	const DeviceInterface& vk = m_context.getDeviceInterface();
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,    // VkStructureType                  sType;
-		DE_NULL,                                        // const void*                      pNext;
-		0u,                                             // VkCmdBufferOptimizeFlags         flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-	VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	// Initialize buffer/image
 	vk.cmdFillBuffer(*m_cmdBuffer, *m_dstBuffer, 0u, m_bufSize, 0x0);
@@ -2090,7 +2046,7 @@ void TransferTestInstance::configCommandBuffer(void)
 		vk.cmdWriteTimestamp(*m_cmdBuffer, *it, *m_queryPool, timestampEntry++);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 void TransferTestInstance::initialImageTransition (VkCommandBuffer cmdBuffer, VkImage image, VkImageSubresourceRange subRange, VkImageLayout layout)

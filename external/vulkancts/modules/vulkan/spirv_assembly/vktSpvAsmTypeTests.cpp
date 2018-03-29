@@ -89,6 +89,7 @@ public:
 												 OpTernaryFuncType		op,
 												 TernaryFilterFuncType	filter,
 												 const char*			spirvExtension	= DE_NULL);
+	void			createSwitchTests			(void);
 	virtual void	getDataset					(vector<T>& input, deUint32 numElements)		= 0;
 	virtual void	pushResource				(vector<Resource>& resource, vector<T>&	data)	= 0;
 
@@ -101,6 +102,7 @@ public:
 
 protected:
 	de::Random	m_rnd;
+	T			m_cases[3];
 
 private:
 	std::string	createInputDecoration			(deUint32						numInput);
@@ -118,6 +120,8 @@ private:
 												 vector<T>&						data,
 												 OpTernaryFuncType				operation,
 												 TernaryFilterFuncType			filter);
+	deUint32	fillResources					(GraphicsResources&				resources,
+												 vector<T>&						data);
 	void		createStageTests				(const char*					testName,
 												 const char*					spirvOperation,
 												 GraphicsResources&				resources,
@@ -416,6 +420,32 @@ deUint32 SpvAsmTypeTests<T>::combine	(GraphicsResources&		resources,
 	pushResource(resources.outputs, outputs);
 
 	return outputsSize / sizeWithPadding;
+}
+
+template <class T>
+deUint32 SpvAsmTypeTests<T>::fillResources	(GraphicsResources&	resources,
+											 vector<T>&			data)
+{
+	vector<T>	outputs;
+
+	outputs.reserve(data.size());
+
+	for (deUint32 elemNdx = 0; elemNdx < data.size(); ++elemNdx)
+	{
+		if (data[elemNdx] == m_cases[0])
+			outputs.push_back(1000);
+		else if (data[elemNdx] == m_cases[1])
+			outputs.push_back(1100);
+		else if (data[elemNdx] == m_cases[2])
+			outputs.push_back(1200);
+		else
+			outputs.push_back(10);
+	}
+
+	pushResource(resources.inputs, data);
+	pushResource(resources.inputs, outputs);
+
+	return static_cast<deUint32>(outputs.size());
 }
 
 template <class T>
@@ -720,6 +750,148 @@ void SpvAsmTypeTests<T>::createTests	(const char*			testName,
 }
 
 template <class T>
+void SpvAsmTypeTests<T>::createSwitchTests	(void)
+{
+	const StringTemplate	decoration		("OpDecorate %input DescriptorSet 0\n"
+											 "OpDecorate %input Binding 0\n"
+											 "OpDecorate %input NonWritable\n"
+											 "OpDecorate %expectedOutput DescriptorSet 0\n"
+											 "OpDecorate %expectedOutput Binding 1\n"
+											 "OpDecorate %expectedOutput NonWritable\n"
+											 "OpDecorate %a${num_elements}testtype ArrayStride ${typesize}\n"
+											 "OpDecorate %buf BufferBlock\n"
+											 "OpMemberDecorate %buf 0 Offset 0\n");
+
+	const StringTemplate	pre_pre_main	("%fp_bool = OpTypePointer Function %bool\n"
+											 "%c_u32_${num_elements} = OpConstant %u32 ${num_elements}\n"
+											 "%c_i32_${num_elements} = OpConstant %i32 ${num_elements}\n");
+
+	const StringTemplate	scalar_pre_main	("%testtype = ${scalartype}\n");
+
+	const StringTemplate	post_pre_main	("%c_casedefault = OpConstant %${testtype} 10\n"
+											 "%c_case0 = OpConstant %${testtype} 1000\n"
+											 "%c_case1 = OpConstant %${testtype} 1100\n"
+											 "%c_case2 = OpConstant %${testtype} 1200\n"
+											 "%a${num_elements}testtype = OpTypeArray %${testtype} %c_u32_${num_elements}\n"
+											 "%up_testtype = OpTypePointer Uniform %${testtype}\n"
+											 "%buf = OpTypeStruct %a${num_elements}testtype\n"
+											 "%bufptr = OpTypePointer Uniform %buf\n"
+											 "%input = OpVariable %bufptr Uniform\n"
+											 "%expectedOutput = OpVariable %bufptr Uniform\n");
+
+	const StringTemplate	testfun			("%test_code = OpFunction %v4f32 None %v4f32_function\n"
+											 "%param = OpFunctionParameter %v4f32\n"
+
+											 "%entry = OpLabel\n"
+											 "%counter = OpVariable %fp_i32 Function\n"
+											 "%return = OpVariable %fp_v4f32 Function\n"
+											 "%works = OpVariable %fp_bool Function\n"
+											 "OpStore %counter %c_i32_0\n"
+											 "OpStore %return %param\n"
+											 "OpBranch %loop\n"
+
+											 "%loop = OpLabel\n"
+											 "%counter_val = OpLoad %i32 %counter\n"
+											 "%lt = OpSLessThan %bool %counter_val %c_i32_${num_elements}\n"
+											 "OpLoopMerge %loop_exit %inc None\n"
+											 "OpBranchConditional %lt %load %loop_exit\n"
+
+											 "%load = OpLabel\n"
+											 "%input_loc = OpAccessChain %up_testtype %input %c_i32_0 %counter_val\n"
+											 "%input_val = OpLoad %${testtype} %input_loc\n"
+											 "%expectedOutput_loc = OpAccessChain %up_testtype %expectedOutput %c_i32_0 %counter_val\n"
+											 "%expectedOutput_val = OpLoad %${testtype} %expectedOutput_loc\n"
+
+											 "OpSelectionMerge %switch_exit None\n"
+											 "OpSwitch %input_val %default ${case0} %case0 ${case1} %case1 ${case2} %case2\n"
+
+											 "%default = OpLabel\n"
+											 "%is_default = OpIEqual %bool %expectedOutput_val %c_casedefault\n"
+											 "OpBranch %switch_exit\n"
+
+											 "%case0 = OpLabel\n"
+											 "%is_case0 = OpIEqual %bool %expectedOutput_val %c_case0\n"
+											 "OpBranch %switch_exit\n"
+
+											 "%case1 = OpLabel\n"
+											 "%is_case1 = OpIEqual %bool %expectedOutput_val %c_case1\n"
+											 "OpBranch %switch_exit\n"
+
+											 "%case2 = OpLabel\n"
+											 "%is_case2 = OpIEqual %bool %expectedOutput_val %c_case2\n"
+											 "OpBranch %switch_exit\n"
+
+											 "%switch_exit = OpLabel\n"
+											 "%case_result = OpPhi %bool %is_default %default %is_case0 %case0 %is_case1 %case1 %is_case2 %case2\n"
+											 "OpSelectionMerge %result_end None\n"
+											 "OpBranchConditional %case_result %result_correct %result_incorrect\n"
+
+											 "%result_correct = OpLabel\n"
+											 "OpBranch %result_end\n"
+
+											 "%result_incorrect = OpLabel\n"
+											 "%counter_val_end = OpIAdd %i32 %counter_val %c_i32_${num_elements}\n"
+											 "OpStore %counter %counter_val_end\n"
+											 "OpStore %return %c_v4f32_1_0_0_1\n"
+											 "OpBranch %result_end\n"
+
+											 "%result_end = OpLabel\n"
+											 "OpBranch %inc\n"
+
+											 "%inc = OpLabel\n"
+											 "%counter_val_next = OpIAdd %i32 %counter_val %c_i32_1\n"
+											 "OpStore %counter %counter_val_next\n"
+											 "OpBranch %loop\n"
+
+											 "%loop_exit = OpLabel\n"
+											 "%return_val = OpLoad %v4f32 %return\n"
+											 "OpReturnValue %return_val\n"
+
+											 "OpFunctionEnd\n");
+
+	GraphicsResources		resources;
+	RGBA					defaultColors[4];
+	map<string, string>		fragments;
+	map<string, string>		specs;
+	std::vector<string>		noExtensions;
+	std::vector<string>		features;
+	VulkanFeatures			requiredFeatures;
+	vector<T>				dataset;
+	deUint32				numElements;
+
+	getDefaultColors(defaultColors);
+
+	dataset.reserve(TEST_DATASET_SIZE);
+	getDataset(dataset, TEST_DATASET_SIZE);
+	numElements = fillResources(resources, dataset);
+
+	if (m_deviceFeature)
+		features.insert(features.begin(), m_deviceFeature);
+
+	specs["testtype"] = m_spirvTestType;
+	specs["scalartype"] = m_spirvType;
+	specs["typesize"] = numberToString(m_typeSize / 8);
+	specs["num_elements"] = numberToString(numElements);
+	specs["case0"] = numberToString(m_cases[0]);
+	specs["case1"] = numberToString(m_cases[1]);
+	specs["case2"] = numberToString(m_cases[2]);
+
+	fragments["decoration"] = decoration.specialize(specs);
+
+	fragments["pre_main"] = pre_pre_main.specialize(specs);
+	if (specs["testtype"].compare(UNDEFINED_SPIRV_TEST_TYPE) == 0)
+		fragments["pre_main"] += scalar_pre_main.specialize(specs);
+	fragments["pre_main"] += post_pre_main.specialize(specs);
+
+	fragments["testfun"] = testfun.specialize(specs);
+
+	if (m_spirvCapability)
+		fragments["capability"] = "OpCapability " + string(m_spirvCapability);
+
+	createTestsForAllStages("switch", defaultColors, defaultColors, fragments, resources, noExtensions, features, this, requiredFeatures);
+}
+
+template <class T>
 bool SpvAsmTypeTests<T>::filterNone	(T)
 {
 	return true;
@@ -780,6 +952,9 @@ SpvAsmTypeInt32Tests::SpvAsmTypeInt32Tests	(tcu::TestContext&	testCtx,
 											 deUint32			vectorSize)
 	: SpvAsmTypeTests	(testCtx, "i32", "int32 tests", DE_NULL, DE_NULL, "OpTypeInt 32 1", 32, vectorSize)
 {
+	m_cases[0] = -3221;
+	m_cases[1] = 3210;
+	m_cases[2] = 268438669;
 }
 
 SpvAsmTypeInt32Tests::~SpvAsmTypeInt32Tests (void)
@@ -793,6 +968,12 @@ void SpvAsmTypeInt32Tests::getDataset	(vector<deInt32>&	input,
 	input.push_back(0);
 	input.push_back(deIntMinValue32(32) + 1); // So MIN = -MAX
 	input.push_back(deIntMaxValue32(32));
+
+	// Push switch cases
+	input.push_back(m_cases[0]);
+	input.push_back(m_cases[1]);
+	input.push_back(m_cases[2]);
+
 	numElements -= static_cast<deUint32>(input.size());
 
 	// Random values
@@ -823,6 +1004,9 @@ SpvAsmTypeInt64Tests::SpvAsmTypeInt64Tests	(tcu::TestContext&	testCtx,
 											 deUint32			vectorSize)
 	: SpvAsmTypeTests	(testCtx, "i64", "int64 tests", "shaderInt64", "Int64", "OpTypeInt 64 1", 64, vectorSize)
 {
+	m_cases[0] = 3210;
+	m_cases[1] = -268438669;
+	m_cases[2] = 26843866939192872;
 }
 
 SpvAsmTypeInt64Tests::~SpvAsmTypeInt64Tests (void)
@@ -836,6 +1020,12 @@ void SpvAsmTypeInt64Tests::getDataset	(vector<deInt64>&	input,
 	input.push_back(0);
 	input.push_back(0xFFFF859A3BF78592);// A 64-bit negative number
 	input.push_back(0x7FFF859A3BF78592);// A 64-bit positive number
+
+	// Push switch cases
+	input.push_back(m_cases[0]);
+	input.push_back(m_cases[1]);
+	input.push_back(m_cases[2]);
+
 	numElements -= static_cast<deUint32>(input.size());
 
 	// Random values
@@ -866,6 +1056,9 @@ SpvAsmTypeUint32Tests::SpvAsmTypeUint32Tests	(tcu::TestContext&	testCtx,
 												 deUint32			vectorSize)
 	: SpvAsmTypeTests	(testCtx, "u32", "uint32 tests", DE_NULL, DE_NULL, "OpTypeInt 32 0", 32, vectorSize)
 {
+	m_cases[0] = 0;
+	m_cases[1] = 3210;
+	m_cases[2] = 268438669;
 }
 
 SpvAsmTypeUint32Tests::~SpvAsmTypeUint32Tests (void)
@@ -878,6 +1071,12 @@ void SpvAsmTypeUint32Tests::getDataset	(vector<deUint32>&	input,
 	// Push first special cases
 	input.push_back(0);  // Min value
 	input.push_back(~0); // Max value
+
+	// Push switch cases
+	input.push_back(m_cases[0]);
+	input.push_back(m_cases[1]);
+	input.push_back(m_cases[2]);
+
 	numElements -= static_cast<deUint32>(input.size());
 
 	// Random values
@@ -908,6 +1107,9 @@ SpvAsmTypeUint64Tests::SpvAsmTypeUint64Tests	(tcu::TestContext&	testCtx,
 												 deUint32			vectorSize)
 	: SpvAsmTypeTests	(testCtx, "u64", "uint64 tests", "shaderInt64", "Int64", "OpTypeInt 64 0", 64, vectorSize)
 {
+	m_cases[0] = 3210;
+	m_cases[1] = 268438669;
+	m_cases[2] = 26843866939192872;
 }
 
 SpvAsmTypeUint64Tests::~SpvAsmTypeUint64Tests (void)
@@ -920,6 +1122,12 @@ void SpvAsmTypeUint64Tests::getDataset	(vector<deUint64>&	input,
 	// Push first special cases
 	input.push_back(0);  // Min value
 	input.push_back(~0); // Max value
+
+	// Push switch cases
+	input.push_back(m_cases[0]);
+	input.push_back(m_cases[1]);
+	input.push_back(m_cases[2]);
+
 	numElements -= static_cast<deUint32>(input.size());
 
 	// Random values
@@ -1199,6 +1407,11 @@ tcu::TestCaseGroup* createTypeTests	(tcu::TestContext& testCtx)
 	MAKE_TEST_SV_I_3("find_lsb", "FindILsb", lsb, FILTER_NONE, "GLSL.std.450");
 	MAKE_TEST_SV_I_3("find_msb", "FindSMsb", msb, FILTER_NONE, "GLSL.std.450");
 	MAKE_TEST_SV_U_3("find_msb", "FindUMsb", msb, FILTER_NONE, "GLSL.std.450");
+
+	int32Tests[0]->createSwitchTests();
+	int64Tests[0]->createSwitchTests();
+	uint32Tests[0]->createSwitchTests();
+	uint64Tests[0]->createSwitchTests();
 
 	typeScalarTests->addChild(int32Tests[0].release());
 	typeScalarTests->addChild(int64Tests[0].release());

@@ -786,17 +786,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	commandBuffer = allocateCommandBuffer(vkd, vkDevice, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// Begin Command Buffer
-	{
-		const VkCommandBufferBeginInfo		cmdBufferBeginInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
-			DE_NULL,										// const void*								pNext;
-			0u,												// VkCmdBufferOptimizeFlags					flags;
-			DE_NULL											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &cmdBufferBeginInfo));
-	}
+	beginCommandBuffer(vkd, *commandBuffer);
 
 	addImageTransitionBarrier(*commandBuffer, *m_image,
 							  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// VkPipelineStageFlags		srcStageMask
@@ -888,7 +878,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 
 	// Set Point Size
 	{

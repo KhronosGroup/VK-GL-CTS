@@ -665,15 +665,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 			},
 		};
 
-		const VkCommandBufferBeginInfo	cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType
-			DE_NULL,										// const void*						pNext
-			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags
-			(const VkCommandBufferInheritanceInfo*)DE_NULL	// VkCommandBufferInheritanceInfo	pInheritanceInfo
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*transferCmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *transferCmdBuffer);
 		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
@@ -691,7 +683,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 				0, (const VkBufferMemoryBarrier*)DE_NULL,
 				DE_LENGTH_OF_ARRAY(imagePostBarrier), imagePostBarrier);
 
-		VK_CHECK(vk.endCommandBuffer(*transferCmdBuffer));
+		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
 	}
@@ -830,21 +822,13 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 			}
 		};
 
-		const VkCommandBufferBeginInfo	cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType
-			DE_NULL,										// const void*						pNext
-			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags
-			(const VkCommandBufferInheritanceInfo*)DE_NULL	// VkCommandBufferInheritanceInfo	pInheritanceInfo
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*transferCmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *transferCmdBuffer);
 		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_HOST_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
 				0, (const VkBufferMemoryBarrier*)DE_NULL,
 				DE_LENGTH_OF_ARRAY(imageBarrier), imageBarrier);
-		VK_CHECK(vk.endCommandBuffer(*transferCmdBuffer));
+		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
 	}
@@ -975,15 +959,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 			}
 		};
 
-		const VkCommandBufferBeginInfo	cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType
-			DE_NULL,										// const void*						pNext
-			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags
-			(const VkCommandBufferInheritanceInfo*)DE_NULL	// VkCommandBufferInheritanceInfo	pInheritanceInfo
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*transferCmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *transferCmdBuffer);
 		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
@@ -995,7 +971,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 				0, (const VkMemoryBarrier*)DE_NULL,
 				1, &bufferBarrier,
 				0, (const VkImageMemoryBarrier*)DE_NULL);
-		VK_CHECK(vk.endCommandBuffer(*transferCmdBuffer));
+		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
 	}
@@ -1056,15 +1032,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 			}
 		};
 
-		const VkCommandBufferBeginInfo	cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType
-			DE_NULL,										// const void*						pNext
-			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags
-			(const VkCommandBufferInheritanceInfo*)DE_NULL	// VkCommandBufferInheritanceInfo	pInheritanceInfo
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*transferCmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *transferCmdBuffer, 0u);
 		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
@@ -1076,7 +1044,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 				0, (const VkMemoryBarrier*)DE_NULL,
 				1, &bufferBarrier,
 				0, (const VkImageMemoryBarrier*)DE_NULL);
-		VK_CHECK(vk.endCommandBuffer(*transferCmdBuffer));
+		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
 
@@ -1359,22 +1327,14 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 			}
 		};
 
-		const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		// VkStructureType					sType
-			DE_NULL,											// const void*						pNext
-			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,		// VkCommandBufferUsageFlags		flags
-			(const VkCommandBufferInheritanceInfo*)DE_NULL		// VkCommandBufferInheritanceInfo	pInheritanceInfo
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*transferCmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *transferCmdBuffer);
 		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
 				0, (const VkBufferMemoryBarrier*)DE_NULL,
 				1, &barrier);
 
-		VK_CHECK(vk.endCommandBuffer(*transferCmdBuffer));
+		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
 	}
@@ -1468,15 +1428,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 			}
 		};
 
-		const VkCommandBufferBeginInfo	cmdBufferBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType
-			DE_NULL,										// const void*						pNext
-			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags
-			(const VkCommandBufferInheritanceInfo*)DE_NULL	// VkCommandBufferInheritanceInfo	pInheritanceInfo
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*transferCmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *transferCmdBuffer);
 		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
@@ -1488,7 +1440,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 				0, (const VkMemoryBarrier*)DE_NULL,
 				1, &bufferBarrier,
 				0, (const VkImageMemoryBarrier*)DE_NULL);
-		VK_CHECK(vk.endCommandBuffer(*transferCmdBuffer));
+		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
 

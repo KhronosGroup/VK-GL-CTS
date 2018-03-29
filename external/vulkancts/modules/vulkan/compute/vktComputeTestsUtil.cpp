@@ -270,22 +270,5 @@ VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask
 	return barrier;
 }
 
-void beginCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	const VkCommandBufferBeginInfo commandBufBeginParams =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		0u,												// VkCommandBufferUsageFlags		flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &commandBufBeginParams));
-}
-
-void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandBuffer)
-{
-	VK_CHECK(vk.endCommandBuffer(commandBuffer));
-}
-
 } // compute
 } // vkt

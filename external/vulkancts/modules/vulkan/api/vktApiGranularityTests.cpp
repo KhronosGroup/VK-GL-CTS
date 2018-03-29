@@ -33,6 +33,7 @@
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "tcuTestLog.hpp"
@@ -301,17 +302,8 @@ void GranularityInstance::initRenderPass (void)
 	// Create CommandBuffer
 	m_cmdBuffer	= allocateCommandBuffer(vk, device, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-	{	// Begin CommandBuffer
-		const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
-			DE_NULL,										// const void*								pNext;
-			0u,												// VkCmdBufferOptimizeFlags					flags;
-			DE_NULL,										// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
-		};
-
-		VK_CHECK(vk.beginCommandBuffer(*m_cmdBuffer, &cmdBufferBeginInfo));
-	}
+	// Begin CommandBuffer
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 }
 
 void GranularityInstance::beginRenderPass (void)
@@ -343,7 +335,7 @@ void GranularityInstance::endRenderPass (void)
 	const DeviceInterface&	vk	= m_context.getDeviceInterface();
 
 	vk.cmdEndRenderPass(*m_cmdBuffer);
-	VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 tcu::TestStatus GranularityInstance::iterate (void)

@@ -33,6 +33,7 @@
 #include "vkCmdUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vkTypeUtil.cpp"
+#include "vkCmdUtil.cpp"
 
 #include "tcuTestLog.hpp"
 
@@ -489,16 +490,8 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 		1u	// layerCount
 	};
 
-	const VkCommandBufferBeginInfo	commandBufferBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,			// VkStructureType					sType;
-		DE_NULL,												// const void*						pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,			// VkCommandBufferUsageFlags		flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	// beginCommandBuffer
-	VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &commandBufferBeginInfo));
+	beginCommandBuffer(vkd, *cmdBuffer);
 
 	const VkExtent3D		extent3D =
 	{
@@ -552,7 +545,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 	// clearAttachments
 	vkd.cmdClearAttachments(*cmdBuffer, 1, &clearAttachment, 1u, &clearRect);
 	vkd.cmdEndRenderPass(*cmdBuffer);
-	vkd.endCommandBuffer(*cmdBuffer);
+	endCommandBuffer(vkd, *cmdBuffer);
 
 	// queueSubmit
 	const VkQueue	queue	= m_context.getUniversalQueue();

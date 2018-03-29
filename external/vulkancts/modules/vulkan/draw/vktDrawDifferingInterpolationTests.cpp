@@ -297,7 +297,6 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 		{
 			const VkQueue				queue				= m_context.getUniversalQueue();
 			const VkClearColorValue		clearColor			= { { 0.0f, 0.0f, 0.0f, 1.0f } };
-			const CmdBufferBeginInfo	beginInfo;
 			const ImageSubresourceRange subresourceRange	(VK_IMAGE_ASPECT_COLOR_BIT);
 			const VkMemoryBarrier		memBarrier			=
 			{
@@ -312,7 +311,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			const VkOffset3D			zeroOffset			= { 0, 0, 0 };
 			const RenderPassBeginInfo	renderPassBegin		(*renderPass, *framebuffer, renderArea);
 
-			vk.beginCommandBuffer(*cmdBuffer, &beginInfo);
+			beginCommandBuffer(vk, *cmdBuffer, 0u);
 
 			initialTransitionColor2DImage(vk, *cmdBuffer, colorTargetImages[frameIdx]->object(), VK_IMAGE_LAYOUT_GENERAL,
 										  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -329,7 +328,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 			vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
 			vk.cmdEndRenderPass(*cmdBuffer);
-			vk.endCommandBuffer(*cmdBuffer);
+			endCommandBuffer(vk, *cmdBuffer);
 
 			submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 

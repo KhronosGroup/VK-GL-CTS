@@ -293,19 +293,17 @@ tcu::TestNode::IterateResult GetnUniformTest::iterate()
 	program.Init(cs /* cs */, "" /* fs */, "" /* gs */, "" /* tcs */, "" /* tes */, "" /* vs */);
 	program.Use();
 
-	/* For gl4.5 use shader storage buffer */
+	/* Initialize shader storage buffer */
 	GLuint buf;
-	if (!glslES320)
-	{
-		gl.genBuffers(1, &buf);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "GenBuffers");
 
-		gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "BindBufferBase");
+	gl.genBuffers(1, &buf);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "GenBuffers");
 
-		gl.bufferData(GL_SHADER_STORAGE_BUFFER, 16, DE_NULL, GL_STREAM_DRAW);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "BufferData");
-	}
+	gl.bindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buf);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "BindBufferBase");
+
+	gl.bufferData(GL_SHADER_STORAGE_BUFFER, 16, DE_NULL, GL_STREAM_DRAW);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "BufferData");
 
 	/* passing uniform values */
 	gl.programUniform4fv(program.m_id, 11, 1, input4f);
@@ -359,10 +357,7 @@ tcu::TestNode::IterateResult GetnUniformTest::iterate()
 		m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
 	}
 
-	if (!glslES320)
-	{
-		gl.deleteBuffers(1, &buf);
-	}
+	gl.deleteBuffers(1, &buf);
 
 	/* Done */
 	return tcu::TestNode::STOP;
@@ -373,30 +368,20 @@ std::string GetnUniformTest::getComputeShader(bool glslES320)
 	std::stringstream shader;
 	shader << "#version " << (glslES320 ? "320 es\n" : "450\n");
 	shader << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-			  "layout (location = 11) uniform vec4 inputf;\n"
-			  "layout (location = 12) uniform ivec3 inputi;\n"
-			  "layout (location = 13) uniform uvec4 inputu;\n";
-	if (glslES320)
-	{
-		shader << "shared float valuef;\n"
-				  "shared int valuei;\n"
-				  "shared uint valueu;\n";
-	}
-	else
-	{
-		shader << "layout (std140, binding = 0) buffer ssbo {"
-				  "   float valuef;\n"
-				  "   int valuei;\n"
-				  "   uint valueu;\n"
-				  "};\n";
-	}
-	shader << "void main()\n"
-			  "{\n"
-			  "   valuef = inputf.r + inputf.g + inputf.b + inputf.a;\n"
-			  "   valuei = inputi.r + inputi.g + inputi.b;\n"
-			  "   valueu = inputu.r + inputu.g + inputu.b + inputu.a;\n"
-			  "}\n";
-
+		  "layout (location = 11) uniform vec4 inputf;\n"
+		  "layout (location = 12) uniform ivec3 inputi;\n"
+		  "layout (location = 13) uniform uvec4 inputu;\n"
+		  "layout (std140, binding = 0) buffer ssbo {\n"
+		  "   float valuef;\n"
+		  "   int valuei;\n"
+		  "   uint valueu;\n"
+		  "};\n"
+		  "void main()\n"
+		  "{\n"
+		  "   valuef = inputf.r + inputf.g + inputf.b + inputf.a;\n"
+		  "   valuei = inputi.r + inputi.g + inputi.b;\n"
+		  "   valueu = inputu.r + inputu.g + inputu.b + inputu.a;\n"
+		  "}\n";
 	return shader.str();
 }
 

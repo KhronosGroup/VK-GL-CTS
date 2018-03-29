@@ -798,17 +798,8 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 				const vk::VkQueue						queue			(context.getUniversalQueue());
 				const vk::Unique<vk::VkCommandPool>		cmdPool			(createCommandPool(vkd, device, (vk::VkCommandPoolCreateFlags)0, queueFamilyNdx));
 				const vk::Unique<vk::VkCommandBuffer>	cmdBuffer		(allocateCommandBuffer(vkd, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-				{
-					const vk::VkCommandBufferBeginInfo	beginInfo		=
-					{
-						vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-						DE_NULL,
-						(vk::VkCommandBufferUsageFlags)vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-						(const vk::VkCommandBufferInheritanceInfo*)DE_NULL
-					};
 
-					VK_CHECK(vkd.beginCommandBuffer(*cmdBuffer, &beginInfo));
-				}
+				beginCommandBuffer(vkd, *cmdBuffer);
 
 				for (size_t i = 0; i < copies.size(); i++)
 				{
@@ -840,7 +831,7 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 											&preCopyBarrier);
 				}
 
-				VK_CHECK(vkd.endCommandBuffer(*cmdBuffer));
+				endCommandBuffer(vkd, *cmdBuffer);
 
 				submitCommandsAndWait(vkd, device, queue, *cmdBuffer);
 			}

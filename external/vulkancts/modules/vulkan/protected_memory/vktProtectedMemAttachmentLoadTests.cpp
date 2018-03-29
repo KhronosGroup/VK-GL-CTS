@@ -33,6 +33,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "vktProtectedMemContext.hpp"
 #include "vktProtectedMemUtils.hpp"
@@ -209,7 +210,7 @@ tcu::TestStatus AttachmentLoadTestInstance::iterate()
 								1, &endImgBarrier);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	// Submit command buffer
 	const vk::Unique<vk::VkFence>	fence		(vk::createFence(vk, device));

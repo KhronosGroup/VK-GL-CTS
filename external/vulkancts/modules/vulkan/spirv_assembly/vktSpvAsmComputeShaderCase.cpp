@@ -33,6 +33,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkImageUtil.hpp"
 
 namespace
 {
@@ -143,84 +144,6 @@ Move<VkImage> createImageAndBindMemory (const DeviceInterface& vkdi, const VkDev
 	*outMemory = imageMemory;
 
 	return image;
-}
-
-void copyBufferToImage (const DeviceInterface& vkdi, const VkDevice& device, const VkQueue& queue, VkCommandBuffer cmdBuffer, VkBuffer buffer, VkImage image)
-{
-	const VkBufferImageCopy			copyRegion			=
-	{
-		0u,												// VkDeviceSize				bufferOffset;
-		0u,												// deUint32					bufferRowLength;
-		0u,												// deUint32					bufferImageHeight;
-		{
-			VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags		aspect;
-			0u,												// deUint32					mipLevel;
-			0u,												// deUint32					baseArrayLayer;
-			1u,												// deUint32					layerCount;
-		},												// VkImageSubresourceLayers	imageSubresource;
-		{ 0, 0, 0 },									// VkOffset3D				imageOffset;
-		{ 8, 8, 1 }										// VkExtent3D				imageExtent;
-	};
-
-	// Copy buffer to image
-	const VkCommandBufferBeginInfo	cmdBufferBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType							sType;
-		DE_NULL,										// const void*								pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags				flags;
-		DE_NULL											// const VkCommandBufferInheritanceInfo*	pInheritanceInfo;
-	};
-
-	const VkImageMemoryBarrier		imageBarriers[]		=
-	{
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			DE_NULL,									// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-			image,										// VkImage					image;
-			{											// VkImageSubresourceRange	subresourceRange;
-				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
-				0u,								// deUint32				baseMipLevel;
-				1u,								// deUint32				mipLevels;
-				0u,								// deUint32				baseArraySlice;
-				1u								// deUint32				arraySize;
-			}
-		},
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_SHADER_READ_BIT,					// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-			image,										// VkImage					image;
-			{											// VkImageSubresourceRange	subresourceRange;
-				VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
-				0u,								// deUint32				baseMipLevel;
-				1u,								// deUint32				mipLevels;
-				0u,								// deUint32				baseArraySlice;
-				1u								// deUint32				arraySize;
-			}
-		},
-	};
-
-	VK_CHECK(vkdi.beginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo));
-	vkdi.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
-		0u, DE_NULL, 1u, &imageBarriers[0]);
-	vkdi.cmdCopyBufferToImage(cmdBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
-	vkdi.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
-		0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarriers[1]);
-
-	VK_CHECK(vkdi.endCommandBuffer(cmdBuffer));
-
-	submitCommandsAndWait(vkdi, device, queue, cmdBuffer);
 }
 
 void setMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, const void* data, bool coherent = false)
@@ -569,18 +492,18 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		// Image
 		else if (hasImage)
 		{
-			const BufferSp&		input			= m_shaderSpec.inputs[inputNdx];
-			vector<deUint8>		inputBytes;
+			const BufferSp&				input			= m_shaderSpec.inputs[inputNdx];
+			vector<deUint8>				inputBytes;
 
 			input->getBytes(inputBytes);
 
-			const size_t		numBytes		= inputBytes.size();
+			const size_t				numBytes		= inputBytes.size();
 
-			AllocationMp		bufferAlloc;
-			BufferHandleUp*		buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc));
+			AllocationMp				bufferAlloc;
+			BufferHandleUp*				buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc));
 
-			AllocationMp		imageAlloc;
-			ImageHandleUp*		image			= new ImageHandleUp(createImageAndBindMemory(vkdi, device, descType, allocator, queueFamilyIndex, &imageAlloc));
+			AllocationMp				imageAlloc;
+			ImageHandleUp*				image			= new ImageHandleUp(createImageAndBindMemory(vkdi, device, descType, allocator, queueFamilyIndex, &imageAlloc));
 
 			setMemory(vkdi, device, &*bufferAlloc, numBytes, &inputBytes.front());
 
@@ -590,7 +513,24 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			inputImages.push_back(ImageHandleSp(image));
 			inputAllocs.push_back(de::SharedPtr<Allocation>(imageAlloc.release()));
 
-			copyBufferToImage(vkdi, device, queue, cmdBuffer.get(), buffer->get(), image->get());
+			const VkBufferImageCopy		copyRegion		=
+			{
+				0u,												// VkDeviceSize				bufferOffset;
+				0u,												// deUint32					bufferRowLength;
+				0u,												// deUint32					bufferImageHeight;
+				{
+					VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags		aspect;
+					0u,												// deUint32					mipLevel;
+					0u,												// deUint32					baseArrayLayer;
+					1u,												// deUint32					layerCount;
+				},												// VkImageSubresourceLayers	imageSubresource;
+				{ 0, 0, 0 },									// VkOffset3D				imageOffset;
+				{ 8, 8, 1 }										// VkExtent3D				imageExtent;
+			};
+			vector<VkBufferImageCopy>	copyRegions;
+			copyRegions.push_back(copyRegion);
+
+			copyBufferToImage(vkdi, device, queue, queueFamilyIndex, buffer->get(), (deUint32)numBytes, copyRegions, DE_NULL, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u, image->get());
 		}
 	}
 
@@ -768,17 +708,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	// Create command buffer and record commands
 
-	const VkCommandBufferBeginInfo		cmdBufferBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
-		DE_NULL,										// pNext
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	const tcu::IVec3&				numWorkGroups		= m_shaderSpec.numWorkGroups;
 
-	VK_CHECK(vkdi.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vkdi, *cmdBuffer);
 	vkdi.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
 	vkdi.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0, 1, &descriptorSet.get(), 0, DE_NULL);
 	if (m_shaderSpec.pushConstants != DE_NULL)
@@ -792,7 +724,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		vkdi.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, /* offset = */ 0, /* size = */ size, data);
 	}
 	vkdi.cmdDispatch(*cmdBuffer, numWorkGroups.x(), numWorkGroups.y(), numWorkGroups.z());
-	VK_CHECK(vkdi.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vkdi, *cmdBuffer);
 
 	submitCommandsAndWait(vkdi, device, queue, *cmdBuffer);
 

@@ -348,7 +348,7 @@ de::MovePtr<vk::BufferWithMemory> makeBuffer (ProtectedContext&			context,
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// sType
 		DE_NULL,									// pNext
-		(vk::VkBufferCreateFlagBits)flags,			// flags
+		(vk::VkBufferCreateFlags)flags,				// flags
 		(vk::VkDeviceSize)size,						// size
 		usageFlags,									// usage
 		vk::VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
@@ -467,18 +467,6 @@ vk::Move<vk::VkPipelineLayout> createPipelineLayout (ProtectedContext& context, 
 	};
 
 	return vk::createPipelineLayout(context.getDeviceInterface(), context.getDevice(), &params);
-}
-
-void beginCommandBuffer (const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer)
-{
-	const vk::VkCommandBufferBeginInfo	beginInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
-		DE_NULL,											// pNext
-		0u,													// flags
-		(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,	// pInheritanceInfo
-	};
-	VK_CHECK(vk.beginCommandBuffer(commandBuffer, &beginInfo));
 }
 
 void beginSecondaryCommandBuffer (const vk::DeviceInterface&				vk,

@@ -1003,72 +1003,6 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 	}
 
-	// Create command pool and buffer
-	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-	cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Barriers for copying buffer to image
-	const VkBufferMemoryBarrier preBufferBarrier =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_HOST_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
-		*buffer,									// VkBuffer			buffer;
-		0u,											// VkDeviceSize		offset;
-		bufferSize									// VkDeviceSize		size;
-	};
-
-	const VkImageMemoryBarrier preImageBarrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		0u,												// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
-		destImage,										// VkImage					image;
-		{												// VkImageSubresourceRange	subresourceRange;
-			aspectMask,								// VkImageAspect	aspect;
-			0u,										// deUint32			baseMipLevel;
-			mipLevels,								// deUint32			mipLevels;
-			0u,										// deUint32			baseArraySlice;
-			arrayLayers								// deUint32			arraySize;
-		}
-	};
-
-	const VkImageMemoryBarrier postImageBarrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
-		destImage,										// VkImage					image;
-		{												// VkImageSubresourceRange	subresourceRange;
-			aspectMask,								// VkImageAspect	aspect;
-			0u,										// deUint32			baseMipLevel;
-			mipLevels,								// deUint32			mipLevels;
-			0u,										// deUint32			baseArraySlice;
-			arrayLayers								// deUint32			arraySize;
-		}
-	};
-
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
 	// Get copy regions and write buffer data
 	{
 		deUint32	layerDataOffset		= 0;
@@ -1114,14 +1048,7 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 
 	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
 
-	// Copy buffer to image
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
-	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-
-	submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
+	copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, mipLevels, arrayLayers, destImage);
 }
 
 void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
@@ -1187,15 +1114,6 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 		}
 	};
 
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-
 	const VkImageSubresourceRange clearRange		=
 	{
 		aspectMask,										// VkImageAspectFlags	aspectMask;
@@ -1206,7 +1124,7 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 	};
 
 	// Copy buffer to image
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
 	if (aspectMask == VK_IMAGE_ASPECT_COLOR_BIT)
 	{
@@ -1217,7 +1135,7 @@ void ShaderRenderCaseInstance::clearImage (const tcu::Sampler&					refSampler,
 		vk.cmdClearDepthStencilImage(*cmdBuffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearValue.depthStencil, 1, &clearRange);
 	}
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, cmdBuffer.get());
 }
@@ -1308,18 +1226,22 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 	const deUint32							queueFamilyIndex		= getUniversalQueueFamilyIndex();
 	const InstanceInterface&				instance				= getInstanceInterface();
 	const VkPhysicalDeviceProperties		deviceProperties		= getPhysicalDeviceProperties(instance, physicalDevice);
-	const VkPhysicalDeviceMemoryProperties	deviceMemoryProperties	= getPhysicalDeviceMemoryProperties(instance, physicalDevice);
 	const bool								isShadowSampler			= refSampler.compare != tcu::Sampler::COMPAREMODE_NONE;
 	const VkImageAspectFlags				aspectMask				= isShadowSampler ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-
 	const Unique<VkSemaphore>				imageMemoryBindSemaphore(createSemaphore(vk, vkDevice));
+	Move<VkBuffer>							buffer;
 	deUint32								bufferSize				= 0u;
+	de::MovePtr<Allocation>					bufferAlloc;
+	std::vector<VkBufferImageCopy>			copyRegions;
 	std::vector<deUint32>					offsetMultiples;
+
 	offsetMultiples.push_back(4u);
 	offsetMultiples.push_back(texFormat.getPixelSize());
 
 	if (isImageSizeSupported(imageCreateInfo.imageType, texSize, deviceProperties.limits) == false)
 		TCU_THROW(NotSupportedError, "Image size not supported for device.");
+
+	allocateAndBindSparseImage(vk, vkDevice, physicalDevice, instance, imageCreateInfo, *imageMemoryBindSemaphore, sparseQueue, m_memAlloc, m_allocations, texFormat, sparseImage);
 
 	// Calculate buffer size
 	for (TextureData::const_iterator mit = textureData.begin(); mit != textureData.end(); ++mit)
@@ -1334,320 +1256,25 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 	}
 
 	{
-		deUint32 sparseMemoryReqCount = 0;
-
-		vk.getImageSparseMemoryRequirements(vkDevice, sparseImage, &sparseMemoryReqCount, DE_NULL);
-
-		DE_ASSERT(sparseMemoryReqCount != 0);
-
-		std::vector<VkSparseImageMemoryRequirements> sparseImageMemoryRequirements;
-		sparseImageMemoryRequirements.resize(sparseMemoryReqCount);
-
-		vk.getImageSparseMemoryRequirements(vkDevice, sparseImage, &sparseMemoryReqCount, &sparseImageMemoryRequirements[0]);
-
-		const deUint32 noMatchFound = ~((deUint32)0);
-
-		deUint32 aspectIndex = noMatchFound;
-		for (deUint32 memoryReqNdx = 0; memoryReqNdx < sparseMemoryReqCount; ++memoryReqNdx)
+		// Create source buffer
+		const VkBufferCreateInfo bufferParams =
 		{
-			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask == aspectMask)
-			{
-				aspectIndex = memoryReqNdx;
-				break;
-			}
-		}
-
-		deUint32 metadataAspectIndex = noMatchFound;
-		for (deUint32 memoryReqNdx = 0; memoryReqNdx < sparseMemoryReqCount; ++memoryReqNdx)
-		{
-			if (sparseImageMemoryRequirements[memoryReqNdx].formatProperties.aspectMask & VK_IMAGE_ASPECT_METADATA_BIT)
-			{
-				metadataAspectIndex = memoryReqNdx;
-				break;
-			}
-		}
-
-		if (aspectIndex == noMatchFound)
-			TCU_THROW(NotSupportedError, "Required image aspect not supported.");
-
-		const VkMemoryRequirements	memoryRequirements	= getImageMemoryRequirements(vk, vkDevice, sparseImage);
-
-		deUint32 memoryType = noMatchFound;
-		for (deUint32 memoryTypeNdx = 0; memoryTypeNdx < deviceMemoryProperties.memoryTypeCount; ++memoryTypeNdx)
-		{
-			if ((memoryRequirements.memoryTypeBits & (1u << memoryTypeNdx)) != 0 &&
-				MemoryRequirement::Any.matchesHeap(deviceMemoryProperties.memoryTypes[memoryTypeNdx].propertyFlags))
-			{
-				memoryType = memoryTypeNdx;
-				break;
-			}
-		}
-
-		if (memoryType == noMatchFound)
-			TCU_THROW(NotSupportedError, "No matching memory type found.");
-
-		if (memoryRequirements.size > deviceProperties.limits.sparseAddressSpaceSize)
-			TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits.");
-
-		// Check if the image format supports sparse operations
-		const std::vector<VkSparseImageFormatProperties> sparseImageFormatPropVec =
-			getPhysicalDeviceSparseImageFormatProperties(instance, physicalDevice, imageCreateInfo.format, imageCreateInfo.imageType, imageCreateInfo.samples, imageCreateInfo.usage, imageCreateInfo.tiling);
-
-		if (sparseImageFormatPropVec.size() == 0)
-			TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
-
-		const VkSparseImageMemoryRequirements		aspectRequirements	= sparseImageMemoryRequirements[aspectIndex];
-		const VkExtent3D							imageGranularity	= aspectRequirements.formatProperties.imageGranularity;
-
-		std::vector<VkSparseImageMemoryBind>		imageResidencyMemoryBinds;
-		std::vector<VkSparseMemoryBind>				imageMipTailMemoryBinds;
-
-		for (deUint32 layerNdx = 0; layerNdx < arrayLayers; ++ layerNdx)
-		{
-			for (deUint32 mipLevelNdx = 0; mipLevelNdx < aspectRequirements.imageMipTailFirstLod; ++mipLevelNdx)
-			{
-				const VkExtent3D	mipExtent		= mipLevelExtents(imageCreateInfo.extent, mipLevelNdx);
-				const tcu::UVec3	numSparseBinds	= alignedDivide(mipExtent, imageGranularity);
-				const tcu::UVec3	lastBlockExtent	= tcu::UVec3(mipExtent.width  % imageGranularity.width  ? mipExtent.width  % imageGranularity.width  : imageGranularity.width,
-																 mipExtent.height % imageGranularity.height ? mipExtent.height % imageGranularity.height : imageGranularity.height,
-																 mipExtent.depth  % imageGranularity.depth  ? mipExtent.depth  % imageGranularity.depth  : imageGranularity.depth );
-
-				for (deUint32 z = 0; z < numSparseBinds.z(); ++z)
-				for (deUint32 y = 0; y < numSparseBinds.y(); ++y)
-				for (deUint32 x = 0; x < numSparseBinds.x(); ++x)
-				{
-					const VkMemoryRequirements allocRequirements =
-					{
-						// 28.7.5 alignment shows the block size in bytes
-						memoryRequirements.alignment,		// VkDeviceSize	size;
-						memoryRequirements.alignment,		// VkDeviceSize	alignment;
-						memoryRequirements.memoryTypeBits,	// uint32_t		memoryTypeBits;
-					};
-
-					de::SharedPtr<Allocation> allocation(m_memAlloc.allocate(allocRequirements, MemoryRequirement::Any).release());
-
-					m_allocations.push_back(allocation);
-
-					VkOffset3D offset;
-					offset.x = x*imageGranularity.width;
-					offset.y = y*imageGranularity.height;
-					offset.z = z*imageGranularity.depth;
-
-					VkExtent3D extent;
-					extent.width	= (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : imageGranularity.width;
-					extent.height	= (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : imageGranularity.height;
-					extent.depth	= (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : imageGranularity.depth;
-
-					const VkSparseImageMemoryBind imageMemoryBind =
-					{
-						{
-							aspectMask,	// VkImageAspectFlags	aspectMask;
-							mipLevelNdx,// uint32_t				mipLevel;
-							layerNdx,	// uint32_t				arrayLayer;
-						},							// VkImageSubresource		subresource;
-						offset,						// VkOffset3D				offset;
-						extent,						// VkExtent3D				extent;
-						allocation->getMemory(),	// VkDeviceMemory			memory;
-						allocation->getOffset(),	// VkDeviceSize				memoryOffset;
-						0u,							// VkSparseMemoryBindFlags	flags;
-					};
-
-					imageResidencyMemoryBinds.push_back(imageMemoryBind);
-				}
-			}
-
-			// Handle MIP tail. There are two cases to consider here:
-			//
-			// 1) VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT is requested by the driver: each layer needs a separate tail.
-			// 2) otherwise:                                                            only one tail is needed.
-			{
-				if (imageMipTailMemoryBinds.size() == 0 || (aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
-				{
-					const VkMemoryRequirements allocRequirements =
-					{
-						aspectRequirements.imageMipTailSize,	// VkDeviceSize	size;
-						memoryRequirements.alignment,			// VkDeviceSize	alignment;
-						memoryRequirements.memoryTypeBits,		// uint32_t		memoryTypeBits;
-					};
-
-					const de::SharedPtr<Allocation> allocation(m_memAlloc.allocate(allocRequirements, MemoryRequirement::Any).release());
-
-					const VkSparseMemoryBind imageMipTailMemoryBind =
-					{
-						aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride,	// VkDeviceSize					resourceOffset;
-						aspectRequirements.imageMipTailSize,														// VkDeviceSize					size;
-						allocation->getMemory(),																	// VkDeviceMemory				memory;
-						allocation->getOffset(),																	// VkDeviceSize					memoryOffset;
-						0u,																							// VkSparseMemoryBindFlags		flags;
-					};
-
-					m_allocations.push_back(allocation);
-					imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
-				}
-
-				// Metadata
-				if (metadataAspectIndex != noMatchFound)
-				{
-					const VkSparseImageMemoryRequirements	metadataAspectRequirements = sparseImageMemoryRequirements[metadataAspectIndex];
-
-					if (imageMipTailMemoryBinds.size() == 1 || (metadataAspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) == 0)
-					{
-						const VkMemoryRequirements metadataAllocRequirements =
-						{
-							metadataAspectRequirements.imageMipTailSize,	// VkDeviceSize	size;
-							memoryRequirements.alignment,					// VkDeviceSize	alignment;
-							memoryRequirements.memoryTypeBits,				// uint32_t		memoryTypeBits;
-						};
-						const de::SharedPtr<Allocation>	metadataAllocation(m_memAlloc.allocate(metadataAllocRequirements, MemoryRequirement::Any).release());
-
-						const VkSparseMemoryBind metadataMipTailMemoryBind =
-						{
-							metadataAspectRequirements.imageMipTailOffset +
-							layerNdx * metadataAspectRequirements.imageMipTailStride,			// VkDeviceSize					resourceOffset;
-							metadataAspectRequirements.imageMipTailSize,						// VkDeviceSize					size;
-							metadataAllocation->getMemory(),									// VkDeviceMemory				memory;
-							metadataAllocation->getOffset(),									// VkDeviceSize					memoryOffset;
-							VK_SPARSE_MEMORY_BIND_METADATA_BIT									// VkSparseMemoryBindFlags		flags;
-						};
-
-						m_allocations.push_back(metadataAllocation);
-						imageMipTailMemoryBinds.push_back(metadataMipTailMemoryBind);
-					}
-				}
-			}
-		}
-
-		VkBindSparseInfo bindSparseInfo =
-		{
-			VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,			//VkStructureType							sType;
-			DE_NULL,									//const void*								pNext;
-			0u,											//deUint32									waitSemaphoreCount;
-			DE_NULL,									//const VkSemaphore*						pWaitSemaphores;
-			0u,											//deUint32									bufferBindCount;
-			DE_NULL,									//const VkSparseBufferMemoryBindInfo*		pBufferBinds;
-			0u,											//deUint32									imageOpaqueBindCount;
-			DE_NULL,									//const VkSparseImageOpaqueMemoryBindInfo*	pImageOpaqueBinds;
-			0u,											//deUint32									imageBindCount;
-			DE_NULL,									//const VkSparseImageMemoryBindInfo*		pImageBinds;
-			1u,											//deUint32									signalSemaphoreCount;
-			&imageMemoryBindSemaphore.get()				//const VkSemaphore*						pSignalSemaphores;
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
+			DE_NULL,								// const void*			pNext;
+			0u,										// VkBufferCreateFlags	flags;
+			bufferSize,								// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,		// VkBufferUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+			0u,										// deUint32				queueFamilyIndexCount;
+			DE_NULL,								// const deUint32*		pQueueFamilyIndices;
 		};
 
-		VkSparseImageMemoryBindInfo			imageResidencyBindInfo;
-		VkSparseImageOpaqueMemoryBindInfo	imageMipTailBindInfo;
+		buffer		= createBuffer(vk, vkDevice, &bufferParams);
+		bufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
 
-		if (imageResidencyMemoryBinds.size() > 0)
-		{
-			imageResidencyBindInfo.image		= sparseImage;
-			imageResidencyBindInfo.bindCount	= static_cast<deUint32>(imageResidencyMemoryBinds.size());
-			imageResidencyBindInfo.pBinds		= &imageResidencyMemoryBinds[0];
-
-			bindSparseInfo.imageBindCount		= 1u;
-			bindSparseInfo.pImageBinds			= &imageResidencyBindInfo;
-		}
-
-		if (imageMipTailMemoryBinds.size() > 0)
-		{
-			imageMipTailBindInfo.image = sparseImage;
-			imageMipTailBindInfo.bindCount = static_cast<deUint32>(imageMipTailMemoryBinds.size());
-			imageMipTailBindInfo.pBinds = &imageMipTailMemoryBinds[0];
-
-			bindSparseInfo.imageOpaqueBindCount = 1u;
-			bindSparseInfo.pImageOpaqueBinds = &imageMipTailBindInfo;
-		}
-
-		VK_CHECK(vk.queueBindSparse(sparseQueue, 1u, &bindSparseInfo, DE_NULL));
+		VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 	}
 
-	Move<VkCommandPool>		cmdPool;
-	Move<VkCommandBuffer>	cmdBuffer;
-
-	// Create command pool
-	cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-
-	// Create command buffer
-	cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-	// Create source buffer
-	const VkBufferCreateInfo bufferParams =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		0u,											// VkBufferCreateFlags	flags;
-		bufferSize,									// VkDeviceSize			size;
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
-		0u,											// deUint32				queueFamilyIndexCount;
-		DE_NULL,									// const deUint32*		pQueueFamilyIndices;
-	};
-
-	Move<VkBuffer>					buffer		= createBuffer(vk, vkDevice, &bufferParams);
-	de::MovePtr<Allocation>			bufferAlloc = m_memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *buffer), MemoryRequirement::HostVisible);
-	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
-
-	// Barriers for copying buffer to image
-	const VkBufferMemoryBarrier preBufferBarrier =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_HOST_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
-		*buffer,									// VkBuffer			buffer;
-		0u,											// VkDeviceSize		offset;
-		bufferSize									// VkDeviceSize		size;
-	};
-
-	const VkImageMemoryBarrier preImageBarrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		0u,												// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_UNDEFINED,						// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
-		sparseImage,									// VkImage					image;
-		{												// VkImageSubresourceRange	subresourceRange;
-			aspectMask,								// VkImageAspect	aspect;
-			0u,										// deUint32			baseMipLevel;
-			mipLevels,								// deUint32			mipLevels;
-			0u,										// deUint32			baseArraySlice;
-			arrayLayers								// deUint32			arraySize;
-		}
-	};
-
-	const VkImageMemoryBarrier postImageBarrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
-		sparseImage,									// VkImage					image;
-		{												// VkImageSubresourceRange	subresourceRange;
-			aspectMask,								// VkImageAspect	aspect;
-			0u,										// deUint32			baseMipLevel;
-			mipLevels,								// deUint32			mipLevels;
-			0u,										// deUint32			baseArraySlice;
-			arrayLayers								// deUint32			arraySize;
-		}
-	};
-
-	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,	// VkCommandBufferUsageFlags		flags;
-		(const VkCommandBufferInheritanceInfo*)DE_NULL,
-	};
-
-	std::vector<VkBufferImageCopy>	copyRegions;
 	// Get copy regions and write buffer data
 	{
 		deUint32	layerDataOffset		= 0;
@@ -1690,42 +1317,7 @@ void ShaderRenderCaseInstance::uploadSparseImage (const tcu::TextureFormat&		tex
 			}
 		}
 	}
-
-	// Copy buffer to image
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
-	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, sparseImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
-
-	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
-
-	const VkSubmitInfo submitInfo =
-	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// VkStructureType				sType;
-		DE_NULL,								// const void*					pNext;
-		1u,										// deUint32						waitSemaphoreCount;
-		&imageMemoryBindSemaphore.get(),		// const VkSemaphore*			pWaitSemaphores;
-		&pipelineStageFlags,					// const VkPipelineStageFlags*	pWaitDstStageMask;
-		1u,										// deUint32						commandBufferCount;
-		&cmdBuffer.get(),						// const VkCommandBuffer*		pCommandBuffers;
-		0u,										// deUint32						signalSemaphoreCount;
-		DE_NULL									// const VkSemaphore*			pSignalSemaphores;
-	};
-
-	Move<VkFence>	fence = createFence(vk, vkDevice);
-
-	try
-	{
-		VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
-		VK_CHECK(vk.waitForFences(vkDevice, 1, &fence.get(), true, ~(0ull) /* infinity */));
-		VK_CHECK(vk.queueWaitIdle(sparseQueue));
-	}
-	catch (...)
-	{
-		VK_CHECK(vk.deviceWaitIdle(vkDevice));
-		throw;
-	}
+	copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, &(*imageMemoryBindSemaphore), aspectMask, mipLevels, arrayLayers, sparseImage);
 }
 
 void ShaderRenderCaseInstance::useSampler (deUint32 bindingLocation, deUint32 textureId)
@@ -2704,14 +2296,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 	// Create command buffer
 	{
-		const VkCommandBufferBeginInfo					cmdBufferBeginInfo			=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			0u,												// VkCmdBufferOptimizeFlags	flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const VkClearValue								clearValues					= makeClearValueColorF32(m_clearColor.x(),
 																											 m_clearColor.y(),
 																											 m_clearColor.z(),
@@ -2730,7 +2314,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
-		VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *cmdBuffer);
 
 		{
 			const VkImageMemoryBarrier					imageBarrier				=
@@ -2806,7 +2390,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			vk.cmdDraw(*cmdBuffer, numVertices,  1, 0, 1);
 
 		vk.cmdEndRenderPass(*cmdBuffer);
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 	}
 
 	// Execute Draw
@@ -2833,14 +2417,6 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset()));
 
 		// Copy image to buffer
-		const VkCommandBufferBeginInfo					cmdBufferBeginInfo			=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			0u,												// VkCmdBufferOptimizeFlags	flags;
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
 		const Move<VkCommandBuffer>						resultCmdBuffer				= allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		const VkBufferImageCopy							copyParams					=
@@ -2858,7 +2434,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 			{ m_renderSize.x(), m_renderSize.y(), 1u }	// VkExtent3D			imageExtent;
 		};
 
-		VK_CHECK(vk.beginCommandBuffer(*resultCmdBuffer, &cmdBufferBeginInfo));
+		beginCommandBuffer(vk, *resultCmdBuffer);
 
 		const VkImageMemoryBarrier						imageBarrier				=
 		{
@@ -2897,7 +2473,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 		vk.cmdCopyImageToBuffer(*resultCmdBuffer, isMultiSampling() ? *resolvedImage : *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *readImageBuffer, 1u, &copyParams);
 		vk.cmdPipelineBarrier(*resultCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
-		VK_CHECK(vk.endCommandBuffer(*resultCmdBuffer));
+		endCommandBuffer(vk, *resultCmdBuffer);
 
 		submitCommandsAndWait(vk, vkDevice, queue, resultCmdBuffer.get());
 

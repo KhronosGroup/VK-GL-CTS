@@ -25,6 +25,7 @@
 #include "vktDynamicStateBaseClass.hpp"
 
 #include "vkPrograms.hpp"
+#include "vkCmdUtil.hpp"
 
 namespace vkt
 {
@@ -203,8 +204,7 @@ void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColor
 {
 	if (!skipBeginCmdBuffer)
 	{
-		const CmdBufferBeginInfo beginInfo;
-		m_vk.beginCommandBuffer(*m_cmdBuffer, &beginInfo);
+		beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 	}
 
 	initialTransitionColor2DImage(m_vk, *m_cmdBuffer, m_colorTargetImage->object(), vk::VK_IMAGE_LAYOUT_GENERAL,

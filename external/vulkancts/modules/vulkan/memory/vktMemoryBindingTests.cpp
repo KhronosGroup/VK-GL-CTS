@@ -382,18 +382,6 @@ const VkImageMemoryBarrier				makeMemoryBarrierInfo				(VkImage				image,
 	return imageBarrier;
 }
 
-const VkCommandBufferBeginInfo			makeCommandBufferInfo				()
-{
-	const VkCommandBufferBeginInfo		cmdBufferBeginInfo					=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-		static_cast<const VkCommandBufferInheritanceInfo*>(DE_NULL)
-	};
-	return cmdBufferBeginInfo;
-}
-
 Move<VkCommandBuffer>					createCommandBuffer					(const DeviceInterface&	vk,
 																			 VkDevice				device,
 																			 VkCommandPool			commandPool)
@@ -627,16 +615,15 @@ void									fillUpResource<VkBuffer>			(Move<VkBuffer>&		source,
 	const VkBufferMemoryBarrier			srcBufferBarrier					= makeMemoryBarrierInfo(*source, params.bufferSize, TransferFromResource);
 	const VkBufferMemoryBarrier			dstBufferBarrier					= makeMemoryBarrierInfo(*target, params.bufferSize, TransferToResource);
 
-	const VkCommandBufferBeginInfo		cmdBufferBeginInfo					= makeCommandBufferInfo();
 	Move<VkCommandPool>					commandPool							= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, 0);
 	Move<VkCommandBuffer>				cmdBuffer							= createCommandBuffer(vk, vkDevice, *commandPool);
 	VkBufferCopy						bufferCopy							= { 0u, 0u, params.bufferSize };
 
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &srcBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 	vk.cmdCopyBuffer(*cmdBuffer, *source, *target, 1, &bufferCopy);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
@@ -655,7 +642,6 @@ void									fillUpResource<VkImage>				(Move<VkBuffer>&		source,
 	const VkImageMemoryBarrier			preImageBarrier						= makeMemoryBarrierInfo(*target, 0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	const VkImageMemoryBarrier			dstImageBarrier						= makeMemoryBarrierInfo(*target, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	const VkCommandBufferBeginInfo		cmdBufferBeginInfo					= makeCommandBufferInfo();
 	Move<VkCommandPool>					commandPool							= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, 0);
 	Move<VkCommandBuffer>				cmdBuffer							= createCommandBuffer(vk, vkDevice, *commandPool);
 
@@ -674,11 +660,11 @@ void									fillUpResource<VkImage>				(Move<VkBuffer>&		source,
 		params.imageSize													// VkExtent3D			imageExtent;
 	};
 
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &srcBufferBarrier, 1, &preImageBarrier);
 	vk.cmdCopyBufferToImage(*cmdBuffer, *source, *target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, (&copyRegion));
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &dstImageBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
@@ -712,7 +698,6 @@ void									readUpResource						(Move<VkImage>&			source,
 	const VkBufferMemoryBarrier			dstBufferBarrier					= makeMemoryBarrierInfo(*target, params.bufferSize, TransferToResource);
 	const VkImageMemoryBarrier			postImageBarrier					= makeMemoryBarrierInfo(*source, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-	const VkCommandBufferBeginInfo		cmdBufferBeginInfo					= makeCommandBufferInfo();
 	Move<VkCommandPool>					commandPool							= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, 0);
 	Move<VkCommandBuffer>				cmdBuffer							= createCommandBuffer(vk, vkDevice, *commandPool);
 
@@ -731,11 +716,11 @@ void									readUpResource						(Move<VkImage>&			source,
 		params.imageSize													// VkExtent3D			imageExtent;
 	};
 
-	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
 	vk.cmdCopyImageToBuffer(*cmdBuffer, *source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *target, 1, (&copyRegion));
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 1, &postImageBarrier);
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }

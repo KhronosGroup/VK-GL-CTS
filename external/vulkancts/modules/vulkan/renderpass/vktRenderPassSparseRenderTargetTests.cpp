@@ -25,7 +25,6 @@
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
-#include "pipeline/vktPipelineImageUtil.hpp"
 
 #include "vkDefs.hpp"
 #include "vkImageUtil.hpp"
@@ -117,7 +116,7 @@ Move<VkImage> createSparseImageAndMemory (const DeviceInterface&				vk,
 
 	Move<VkImage>			destImage			= createImage(vk, device, &imageCreateInfo);
 
-	vkt::pipeline::allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue, allocator, allocations, mapVkFormat(format), *destImage);
+	allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue, allocator, allocations, mapVkFormat(format), *destImage);
 
 	return destImage;
 }
@@ -521,18 +520,7 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
 	const Unique<VkCommandBuffer>	commandBuffer	(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-	{
-		const VkCommandBufferBeginInfo beginInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			DE_NULL,
-
-			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-			DE_NULL
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*commandBuffer, &beginInfo));
-	}
+	beginCommandBuffer(vkd, *commandBuffer);
 
 	{
 		const VkRenderPassBeginInfo beginInfo =
@@ -628,7 +616,7 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(vkd, *commandBuffer);
 
 	submitCommandsAndWait(vkd, m_context.getDevice(), m_context.getUniversalQueue(), *commandBuffer);
 

@@ -517,7 +517,7 @@ tcu::TestStatus ComputeTestInstance::iterate (void)
 			0u, DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results
@@ -683,7 +683,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 			0u, DE_NULL, 1u, &shaderWriteBarrier, 0u, DE_NULL);
 	}
 
-	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	// Verify results

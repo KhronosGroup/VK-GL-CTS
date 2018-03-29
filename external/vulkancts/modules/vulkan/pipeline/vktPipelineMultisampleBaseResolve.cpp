@@ -428,7 +428,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 			fullImageRange
 		);
 
-		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 2u, imageOutputAttachmentBarriers);
+		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 2u, imageOutputAttachmentBarriers);
 	}
 
 	{
@@ -521,7 +521,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 	}
 
 	// End recording commands
-	VK_CHECK(deviceInterface.endCommandBuffer(*commandBuffer));
+	endCommandBuffer(deviceInterface, *commandBuffer);
 
 	// Submit commands for execution and wait for completion
 	submitCommandsAndWait(deviceInterface, device, queue, *commandBuffer);

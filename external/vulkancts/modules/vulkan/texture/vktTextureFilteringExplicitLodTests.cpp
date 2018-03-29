@@ -404,15 +404,7 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 		bufCurPtr += copySize;
 	}
 
-	const VkCommandBufferBeginInfo beginInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		DE_NULL,
-		VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-		DE_NULL
-	};
-
-	VK_CHECK(vkd.beginCommandBuffer(copyBuffer.get(), &beginInfo));
+	beginCommandBuffer(vkd, copyBuffer.get());
 
 	const VkImageSubresourceRange imMemBarSubRange =
 	{
@@ -484,7 +476,7 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 						   1,
 						   &imMemBar);
 
-	VK_CHECK(vkd.endCommandBuffer(copyBuffer.get()));
+	endCommandBuffer(vkd, copyBuffer.get());
 
 	submitCommandsAndWait(vkd, dev, ctx.getUniversalQueue(), copyBuffer.get());
 }

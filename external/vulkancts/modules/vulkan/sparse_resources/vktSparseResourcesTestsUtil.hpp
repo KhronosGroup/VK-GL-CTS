@@ -122,12 +122,6 @@ bool							isImageSizeSupported				(const vk::InstanceInterface&		instance,
 																	 const ImageType					imageType,
 																	 const tcu::UVec3&					imageSize);
 
-vk::VkExtent3D					mipLevelExtents						(const vk::VkExtent3D&				baseExtents,
-																	 const deUint32						mipLevel);
-
-tcu::UVec3						mipLevelExtents						(const tcu::UVec3&					baseExtents,
-																	 const deUint32						mipLevel);
-
 deUint32						getImageMaxMipLevels				(const vk::VkImageFormatProperties& imageFormatProperties,
 																	 const vk::VkExtent3D&				extent);
 
@@ -244,12 +238,6 @@ vk::VkSparseMemoryBind			makeSparseMemoryBind				(const vk::DeviceInterface&			v
 																	 const deUint32						memoryType,
 																	 const vk::VkDeviceSize				resourceOffset,
 																	 const vk::VkSparseMemoryBindFlags	flags			= 0u);
-
-void							beginCommandBuffer					(const vk::DeviceInterface&			vk,
-																	 const vk::VkCommandBuffer			cmdBuffer);
-
-void							endCommandBuffer					(const vk::DeviceInterface&			vk,
-																	 const vk::VkCommandBuffer			cmdBuffer);
 
 void							submitCommands						(const vk::DeviceInterface&			vk,
 																	 const vk::VkQueue					queue,

@@ -881,8 +881,8 @@ void BBoxRenderCase::setupRender (const IterationConfig& config)
 	gl.clear(GL_COLOR_BUFFER_BIT);
 
 	gl.bindBuffer(GL_ARRAY_BUFFER, **m_vbo);
-	gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, (int)(VA_NUM_ATTRIB_VECS * sizeof(float[4])), (const float*)DE_NULL + 4 * VA_POS_VEC_NDX);
-	gl.vertexAttribPointer(colLocation, 4, GL_FLOAT, GL_FALSE, (int)(VA_NUM_ATTRIB_VECS * sizeof(float[4])), (const float*)DE_NULL + 4 * VA_COL_VEC_NDX);
+	gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, (int)(VA_NUM_ATTRIB_VECS * sizeof(float[4])), glu::BufferOffsetAsPointer(4 * VA_POS_VEC_NDX * sizeof(float)));
+	gl.vertexAttribPointer(colLocation, 4, GL_FLOAT, GL_FALSE, (int)(VA_NUM_ATTRIB_VECS * sizeof(float[4])), glu::BufferOffsetAsPointer(4 * VA_COL_VEC_NDX * sizeof(float)));
 	gl.enableVertexAttribArray(posLocation);
 	gl.enableVertexAttribArray(colLocation);
 	gl.useProgram(m_program->getProgram());
@@ -3860,8 +3860,8 @@ DepthDrawCase::IterateResult DepthDrawCase::iterate (void)
 	GLU_EXPECT_NO_ERROR(gl.getError(), "setup viewport");
 
 	gl.bindBuffer(GL_ARRAY_BUFFER, **m_vbo);
-	gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, (int)(8 * sizeof(float)), (const float*)DE_NULL);
-	gl.vertexAttribPointer(colLocation, 4, GL_FLOAT, GL_FALSE, (int)(8 * sizeof(float)), (const float*)DE_NULL + 4);
+	gl.vertexAttribPointer(posLocation, 4, GL_FLOAT, GL_FALSE, (int)(8 * sizeof(float)), glu::BufferOffsetAsPointer(0 * sizeof(float)));
+	gl.vertexAttribPointer(colLocation, 4, GL_FLOAT, GL_FALSE, (int)(8 * sizeof(float)), glu::BufferOffsetAsPointer(4 * sizeof(float)));
 	gl.enableVertexAttribArray(posLocation);
 	gl.enableVertexAttribArray(colLocation);
 	gl.useProgram(m_program->getProgram());

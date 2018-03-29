@@ -407,7 +407,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 		}
 	}
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
-	m_vk.endCommandBuffer(*m_cmdBuffer);
+	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 
@@ -659,7 +659,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 		}
 	}
 	m_vk.cmdEndRenderPass(*m_cmdBuffer);
-	m_vk.endCommandBuffer(*m_cmdBuffer);
+	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
 

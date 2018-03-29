@@ -758,7 +758,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 				0u, DE_NULL, 1u, &postCopyColorBufferBarrier, 0u, DE_NULL);
 		}
 
-		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 	}
 

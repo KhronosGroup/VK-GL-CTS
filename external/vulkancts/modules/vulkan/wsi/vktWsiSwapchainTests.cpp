@@ -39,6 +39,7 @@
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
@@ -1229,16 +1230,7 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 {
 	const VkFramebuffer	curFramebuffer	= **m_framebuffers[imageNdx];
 
-	{
-		const VkCommandBufferBeginInfo	cmdBufBeginParams	=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			DE_NULL,
-			(VkCommandBufferUsageFlags)0,
-			(const VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-		VK_CHECK(m_vkd.beginCommandBuffer(cmdBuffer, &cmdBufBeginParams));
-	}
+	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
 
 	{
 		const VkClearValue			clearValue		= makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
@@ -1269,7 +1261,7 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
 	m_vkd.cmdEndRenderPass(cmdBuffer);
 
-	VK_CHECK(m_vkd.endCommandBuffer(cmdBuffer));
+	endCommandBuffer(m_vkd, cmdBuffer);
 }
 
 void TriangleRenderer::getPrograms (SourceCollections& dst)

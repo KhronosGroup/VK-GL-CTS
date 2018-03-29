@@ -1523,17 +1523,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 
 	// Record command buffer
 
-	{
-		const vk::VkCommandBufferBeginInfo beginInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
-			DE_NULL,											// pNext
-			0u,													// flags
-			(const vk::VkCommandBufferInheritanceInfo*)DE_NULL,
-		};
-
-		VK_CHECK(vkd.beginCommandBuffer(*m_cmdBuffer, &beginInfo));
-	}
+	beginCommandBuffer(vkd, *m_cmdBuffer, 0u);
 
 	{
 		const vk::VkMemoryBarrier		vertFlushBarrier	=
@@ -1690,7 +1680,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 							   0, (const vk::VkImageMemoryBarrier*)DE_NULL);
 	}
 
-	VK_CHECK(vkd.endCommandBuffer(*m_cmdBuffer));
+	endCommandBuffer(vkd, *m_cmdBuffer);
 }
 
 ShaderCaseInstance::~ShaderCaseInstance (void)
