@@ -29,6 +29,5 @@ dEQP-GLES3.functional.shaders.declarations.unspecified_precision.usamplerCube_ve
 dEQP-GLES3.functional.shaders.declarations.unspecified_precision.usamplerCube_fragment
 dEQP-GLES3.functional.shaders.declarations.unspecified_precision.usampler2DArray_vertex
 dEQP-GLES3.functional.shaders.declarations.unspecified_precision.usampler2DArray_fragment
-dEQP-GLES3.functional.shaders.metamorphic.synthetic.variant_2
 dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_nonms
 dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_ms
