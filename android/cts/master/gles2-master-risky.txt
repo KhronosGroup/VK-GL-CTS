@@ -1,0 +1,6 @@
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.float_partially_specified_fragment
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.float_fragment
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec2_fragment
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec3_fragment
+dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec4_fragment
+dEQP-GLES2.functional.rasterization.limits.points
