@@ -4735,7 +4735,7 @@ PrimitivesGeneratedQueryCase::IterateResult PrimitivesGeneratedQueryCase::iterat
 
 		if (oneLocation != -1)
 		{
-			gl.vertexAttribPointer(oneLocation, 4, GL_FLOAT, GL_FALSE, 2 * (int)sizeof(tcu::Vec4), (const tcu::Vec4*)DE_NULL + 1);
+			gl.vertexAttribPointer(oneLocation, 4, GL_FLOAT, GL_FALSE, 2 * (int)sizeof(tcu::Vec4), glu::BufferOffsetAsPointer(1 * sizeof(tcu::Vec4)));
 			gl.enableVertexAttribArray(oneLocation);
 		}
 

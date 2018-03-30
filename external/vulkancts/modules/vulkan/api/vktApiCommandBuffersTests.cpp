@@ -3241,6 +3241,100 @@ tcu::TestStatus submitBufferNullFence(Context& context)
 	return testResult;
 }
 
+tcu::TestStatus submitTwoBuffersOneBufferNullWithFence(Context& context)
+{
+	const VkDevice							vkDevice				= context.getDevice();
+	const DeviceInterface&					vk						= context.getDeviceInterface();
+	const VkQueue							queue					= context.getUniversalQueue();
+	const deUint32							queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
+	const deUint32							BUFFER_COUNT			= 2u;
+
+	const VkCommandPoolCreateInfo			cmdPoolParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,			// sType;
+		DE_NULL,											// pNext;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,	// flags;
+		queueFamilyIndex,									// queueFamilyIndex;
+	};
+	const Unique<VkCommandPool>				cmdPool					(createCommandPool(vk, vkDevice, &cmdPoolParams));
+
+	const VkCommandBufferAllocateInfo		cmdBufParams			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// sType;
+		DE_NULL,										// pNext;
+		*cmdPool,										// pool;
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level;
+		BUFFER_COUNT,									// bufferCount;
+	};
+
+	VkCommandBuffer							cmdBuffers[BUFFER_COUNT];
+	VK_CHECK(vk.allocateCommandBuffers(vkDevice, &cmdBufParams, cmdBuffers));
+
+	const VkCommandBufferBeginInfo			cmdBufBeginInfo			=
+	{
+		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// sType
+		DE_NULL,										// pNext
+		0u,												// flags
+		(const VkCommandBufferInheritanceInfo*)DE_NULL,	// pInheritanceInfo
+	};
+
+	std::vector<VkEventSp>					events;
+	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
+		events.push_back(VkEventSp(new vk::Unique<VkEvent>(createEvent(vk, vkDevice))));
+
+	// Record the command buffers
+	for (deUint32 ndx = 0; ndx < BUFFER_COUNT; ++ndx)
+	{
+		VK_CHECK(vk.beginCommandBuffer(cmdBuffers[ndx], &cmdBufBeginInfo));
+		{
+			vk.cmdSetEvent(cmdBuffers[ndx], events[ndx]->get(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+		}
+		VK_CHECK(vk.endCommandBuffer(cmdBuffers[ndx]));
+	}
+
+	// First command buffer
+	const VkSubmitInfo						submitInfoNonNullFirst	=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,				// sType
+		DE_NULL,									// pNext
+		0u,											// waitSemaphoreCount
+		DE_NULL,									// pWaitSemaphores
+		(const VkPipelineStageFlags*)DE_NULL,		// pWaitDstStageMask
+		1u,											// commandBufferCount
+		&cmdBuffers[0],								// pCommandBuffers
+		0u,											// signalSemaphoreCount
+		DE_NULL,									// pSignalSemaphores
+	};
+
+	// Second command buffer
+	const VkSubmitInfo						submitInfoNonNullSecond	=
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,				// sType
+		DE_NULL,									// pNext
+		0u,											// waitSemaphoreCount
+		DE_NULL,									// pWaitSemaphores
+		(const VkPipelineStageFlags*)DE_NULL,		// pWaitDstStageMask
+		1u,											// commandBufferCount
+		&cmdBuffers[1],								// pCommandBuffers
+		0u,											// signalSemaphoreCount
+		DE_NULL,									// pSignalSemaphores
+	};
+
+	// Fence will be submitted with the null queue
+	const Unique<VkFence>					fence					(createFence(vk, vkDevice));
+
+	// Perform two separate queueSubmit calls on the same queue followed
+	// by a third call with no submitInfos and with a valid fence
+	VK_CHECK(vk.queueSubmit(queue,	1u,	&submitInfoNonNullFirst,	DE_NULL));
+	VK_CHECK(vk.queueSubmit(queue,	1u,	&submitInfoNonNullSecond,	DE_NULL));
+	VK_CHECK(vk.queueSubmit(queue,	0u,	DE_NULL,					fence.get()));
+
+	// Wait for the queue
+	VK_CHECK(vk.waitForFences(vkDevice, 1u, &fence.get(), VK_TRUE, INFINITE_TIMEOUT));
+
+	return tcu::TestStatus::pass("Buffers have been submitted correctly");
+}
+
 /******** 19.5. Secondary Command Buffer Execution (5.6 in VK 1.0 Spec) *******/
 tcu::TestStatus executeSecondaryBufferTest(Context& context)
 {
@@ -3868,6 +3962,7 @@ tcu::TestCaseGroup* createCommandBuffersTests (tcu::TestContext& testCtx)
 	addFunctionCase				(commandBuffersTests.get(), "submit_wait_single_semaphore",		"", submitBufferWaitSingleSemaphore);
 	addFunctionCase				(commandBuffersTests.get(), "submit_wait_many_semaphores",		"", submitBufferWaitManySemaphores);
 	addFunctionCase				(commandBuffersTests.get(), "submit_null_fence",				"", submitBufferNullFence);
+	addFunctionCase				(commandBuffersTests.get(), "submit_two_buffers_one_buffer_null_with_fence", "", submitTwoBuffersOneBufferNullWithFence);
 	/* 19.5. Secondary Command Buffer Execution (5.6 in VK 1.0 Spec) */
 	addFunctionCase				(commandBuffersTests.get(), "secondary_execute",				"",	executeSecondaryBufferTest);
 	addFunctionCase				(commandBuffersTests.get(), "secondary_execute_twice",			"",	executeSecondaryBufferTwiceTest);

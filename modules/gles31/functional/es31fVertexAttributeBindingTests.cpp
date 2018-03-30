@@ -918,7 +918,7 @@ void MixedBindingCase::renderTo (tcu::Surface& dst)
 
 			gl.glBindBuffer(GL_ARRAY_BUFFER, m_colorOffsetBuffer);
 			gl.glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), DE_NULL);
-			gl.glVertexAttribPointer(offsetLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), (deUint8*)DE_NULL + sizeof(tcu::Vec4));
+			gl.glVertexAttribPointer(offsetLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), glu::BufferOffsetAsPointer(sizeof(tcu::Vec4)));
 			GLU_EXPECT_NO_ERROR(gl.glGetError(), "set va");
 
 			// draw
@@ -967,7 +967,7 @@ void MixedBindingCase::renderTo (tcu::Surface& dst)
 			// bind color using old api
 			gl.glBindBuffer(GL_ARRAY_BUFFER, m_colorOffsetBuffer);
 			gl.glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), DE_NULL);
-			gl.glVertexAttribPointer(offsetLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), (deUint8*)DE_NULL + sizeof(tcu::Vec4));
+			gl.glVertexAttribPointer(offsetLoc, 4, GL_FLOAT, GL_FALSE, glw::GLsizei(2 * sizeof(tcu::Vec4)), glu::BufferOffsetAsPointer(sizeof(tcu::Vec4)));
 			gl.glVertexAttribDivisor(colorLoc, 1);
 			gl.glVertexAttribDivisor(offsetLoc, 1);
 			GLU_EXPECT_NO_ERROR(gl.glGetError(), "set va");
@@ -1147,7 +1147,7 @@ void MixedApiCase::renderTo (tcu::Surface& dst)
 
 			gl.glBindBuffer(GL_ARRAY_BUFFER, *dummyBuffer);
 			gl.glVertexAttribPointer(positionLoc, 4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(2 * sizeof(tcu::Vec4)), (const deUint8*)DE_NULL);
-			gl.glVertexAttribPointer(colorLoc,    4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(2 * sizeof(tcu::Vec4)), (const deUint8*)DE_NULL + sizeof(tcu::Vec4));
+			gl.glVertexAttribPointer(colorLoc,    4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(2 * sizeof(tcu::Vec4)), glu::BufferOffsetAsPointer(sizeof(tcu::Vec4)));
 
 			// change buffer with vertex_attrib_binding
 
@@ -1202,7 +1202,7 @@ void MixedApiCase::renderTo (tcu::Surface& dst)
 
 			gl.glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
 			gl.glVertexAttribPointer(bindingPoint1, 4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(2 * sizeof(tcu::Vec4)), (const deUint8*)DE_NULL);
-			gl.glVertexAttribPointer(bindingPoint2, 4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(2 * sizeof(tcu::Vec4)), (const deUint8*)DE_NULL + sizeof(tcu::Vec4));
+			gl.glVertexAttribPointer(bindingPoint2, 4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(2 * sizeof(tcu::Vec4)), glu::BufferOffsetAsPointer(sizeof(tcu::Vec4)));
 
 			// change buffer binding point with vertex_attrib_binding
 

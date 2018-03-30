@@ -1372,6 +1372,7 @@ void addCompute16bitStorageUniform16To16Group (tcu::TestCaseGroup* group)
 	spec.inputs.push_back(BufferSp(new Float16Buffer(float16Data)));
 	spec.outputs.push_back(BufferSp(new Float16Buffer(float16DummyData)));
 	spec.extensions.push_back("VK_KHR_16bit_storage");
+	spec.requestedVulkanFeatures = get16BitStorageFeatures("uniform_buffer_block");
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "stress_test", "Granularity stress test", spec));
 }
@@ -3719,7 +3720,7 @@ tcu::TestCaseGroup* create16BitStorageComputeGroup (tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "uniform_16_to_32", "16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16To32Group);
 	addTestGroup(group.get(), "push_constant_16_to_32", "16bit floats/ints to 32bit tests under capability StoragePushConstant16", addCompute16bitStoragePushConstant16To32Group);
 
-	addTestGroup(group.get(), "uniform_16_to_16", "16bit floats/ints to 16bit tests under capability StoragePushConstant16", addCompute16bitStorageUniform16To16Group);
+	addTestGroup(group.get(), "uniform_16_to_16", "16bit floats/ints to 16bit tests under capability StorageUniformBufferBlock16", addCompute16bitStorageUniform16To16Group);
 
 	return group.release();
 }

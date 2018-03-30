@@ -264,6 +264,24 @@ protected:
 	const ImageBackingMode						m_backingMode;
 };
 
+class SampleMaskWithDepthTestTest : public vkt::TestCase
+{
+public:
+												SampleMaskWithDepthTestTest		(tcu::TestContext&				testContext,
+																				 const std::string&				name,
+																				 const std::string&				description,
+																				 const VkSampleCountFlagBits	rasterizationSamples,
+																				 const bool						enablePostDepthCoverage		= false);
+
+												~SampleMaskWithDepthTestTest	(void) {}
+
+	void										initPrograms					(SourceCollections&		programCollection)	const;
+	TestInstance*								createInstance					(Context&				context)			const;
+private:
+	const VkSampleCountFlagBits					m_rasterizationSamples;
+	const bool									m_enablePostDepthCoverage;
+};
+
 typedef de::SharedPtr<Unique<VkPipeline> > VkPipelineSp;
 
 class MultisampleRenderer
@@ -290,8 +308,9 @@ public:
 																			 const std::vector<Vertex4RGBA>*				pVertices,
 																			 const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 																			 const VkPipelineColorBlendAttachmentState&		blendState,
-																		     const RenderType								renderType,
-																			 const ImageBackingMode							backingMode);
+																			 const RenderType								renderType,
+																			 const ImageBackingMode							backingMode,
+																			 const float									depthClearValue			= 1.0f);
 
 	virtual										~MultisampleRenderer		(void);
 
@@ -367,6 +386,7 @@ protected:
 	std::vector<de::SharedPtr<Allocation> >		m_allocations;
 
 	ImageBackingMode							m_backingMode;
+	const float									m_depthClearValue;
 };
 
 class RasterizationSamplesInstance : public vkt::TestInstance
@@ -496,6 +516,49 @@ protected:
 	const VkPipelineColorBlendAttachmentState	m_colorBlendState;
 	const GeometryType							m_geometryType;
 	const ImageBackingMode						m_backingMode;
+};
+
+class SampleMaskWithDepthTestInstance : public vkt::TestInstance
+{
+public:
+													SampleMaskWithDepthTestInstance		(Context&							context,
+																						 const VkSampleCountFlagBits		rasterizationSamples,
+																						 const bool							enablePostDepthCoverage);
+													~SampleMaskWithDepthTestInstance	(void) {}
+
+	tcu::TestStatus									iterate								(void);
+
+protected:
+	VkPipelineMultisampleStateCreateInfo			getMultisampleState					(const VkSampleCountFlagBits		rasterizationSamples);
+	std::vector<Vertex4RGBA>						generateVertices					(void);
+	tcu::TestStatus									verifyImage							(const tcu::ConstPixelBufferAccess&	result);
+
+	struct SampleCoverage
+	{
+		SampleCoverage() {};
+		SampleCoverage(deUint32 min_, deUint32 max_)
+			: min(min_), max(max_) {};
+
+		deUint32	min;
+		deUint32	max;
+	};
+
+	const VkSampleCountFlagBits						m_rasterizationSamples;
+	const bool										m_enablePostDepthCoverage;
+	const VkFormat									m_colorFormat;
+	const VkFormat									m_depthStencilFormat;
+	const tcu::IVec2								m_renderSize;
+	const bool										m_useDepth;
+	const bool										m_useStencil;
+	const VkPrimitiveTopology						m_topology;
+	const tcu::Vec4									m_renderColor;
+	const std::vector<Vertex4RGBA>					m_vertices;
+	const VkPipelineMultisampleStateCreateInfo		m_multisampleStateParams;
+	const VkPipelineColorBlendAttachmentState		m_blendState;
+	const RenderType								m_renderType;
+	const ImageBackingMode							m_imageBackingMode;
+	const float										m_depthClearValue;
+	std::map<VkSampleCountFlagBits, SampleCoverage>	m_refCoverageAfterDepthTest;
 };
 
 
@@ -1093,6 +1156,62 @@ VkPipelineMultisampleStateCreateInfo AlphaToCoverageTest::getAlphaToCoverageStat
 	return multisampleStateParams;
 }
 
+// SampleMaskWithDepthTestTest
+
+SampleMaskWithDepthTestTest::SampleMaskWithDepthTestTest (tcu::TestContext&					testContext,
+														  const std::string&				name,
+														  const std::string&				description,
+														  const VkSampleCountFlagBits		rasterizationSamples,
+														  const bool						enablePostDepthCoverage)
+	: vkt::TestCase				(testContext, name, description)
+	, m_rasterizationSamples	(rasterizationSamples)
+	, m_enablePostDepthCoverage	(enablePostDepthCoverage)
+{
+}
+
+void SampleMaskWithDepthTestTest::initPrograms (SourceCollections& programCollection) const
+{
+	DE_ASSERT((int)m_rasterizationSamples <= 32);
+
+	static const char* vertexSource =
+		"#version 440\n"
+		"layout(location = 0) in vec4 position;\n"
+		"layout(location = 1) in vec4 color;\n"
+		"layout(location = 0) out vec4 vtxColor;\n"
+		"out gl_PerVertex\n"
+		"{\n"
+		"    vec4 gl_Position;\n"
+		"};\n"
+		"\n"
+		"void main (void)\n"
+		"{\n"
+		"    gl_Position = position;\n"
+		"    vtxColor = color;\n"
+		"}\n";
+
+	std::ostringstream fragmentSource;
+	fragmentSource <<
+		"#version 440\n"
+		<< (m_enablePostDepthCoverage ? "#extension GL_ARB_post_depth_coverage : require\n" : "") <<
+		"layout(early_fragment_tests) in;\n"
+		<< (m_enablePostDepthCoverage ? "layout(post_depth_coverage) in;\n" : "") <<
+		"layout(location = 0) in vec4 vtxColor;\n"
+		"layout(location = 0) out vec4 fragColor;\n"
+		"void main (void)\n"
+		"{\n"
+		"    const int coveredSamples = bitCount(gl_SampleMaskIn[0]);\n"
+		"    fragColor = vtxColor * (1.0 / " << (int)m_rasterizationSamples << " * coveredSamples);\n"
+		"}\n";
+
+	programCollection.glslSources.add("color_vert") << glu::VertexSource(vertexSource);
+	programCollection.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource.str());
+}
+
+TestInstance* SampleMaskWithDepthTestTest::createInstance (Context& context) const
+{
+	return new SampleMaskWithDepthTestInstance(context, m_rasterizationSamples, m_enablePostDepthCoverage);
+}
+
 // RasterizationSamplesInstance
 
 RasterizationSamplesInstance::RasterizationSamplesInstance (Context&										context,
@@ -1624,6 +1743,158 @@ tcu::TestStatus AlphaToCoverageInstance::verifyImage (const tcu::ConstPixelBuffe
 	return tcu::TestStatus::pass("Image matches reference value");
 }
 
+// SampleMaskWithDepthTestInstance
+
+SampleMaskWithDepthTestInstance::SampleMaskWithDepthTestInstance (Context&						context,
+																  const VkSampleCountFlagBits	rasterizationSamples,
+																  const bool					enablePostDepthCoverage)
+	: vkt::TestInstance			(context)
+	, m_rasterizationSamples	(rasterizationSamples)
+	, m_enablePostDepthCoverage	(enablePostDepthCoverage)
+	, m_colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_depthStencilFormat		(VK_FORMAT_D16_UNORM)
+	, m_renderSize				(tcu::IVec2(3, 3))
+	, m_useDepth				(true)
+	, m_useStencil				(false)
+	, m_topology				(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+	, m_renderColor				(tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f))
+	, m_vertices				(generateVertices())
+	, m_multisampleStateParams	(getMultisampleState(rasterizationSamples))
+	, m_blendState				(getDefaultColorBlendAttachmentState())
+	, m_renderType				(RENDER_TYPE_RESOLVE)
+	, m_imageBackingMode		(IMAGE_BACKING_MODE_REGULAR)
+	, m_depthClearValue			(0.667f)
+{
+	if (!m_context.getDeviceProperties().limits.standardSampleLocations)
+		TCU_THROW(NotSupportedError, "standardSampleLocations required");
+
+	std::vector<VkExtensionProperties> supportedExtensions = enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), DE_NULL);
+
+	if (!isExtensionSupported(supportedExtensions, RequiredExtension("VK_EXT_post_depth_coverage")))
+		TCU_THROW(NotSupportedError, "VK_EXT_post_depth_coverage not supported");
+
+	m_refCoverageAfterDepthTest[VK_SAMPLE_COUNT_2_BIT]	= SampleCoverage(1u, 1u);	// !< Sample coverage of the diagonally halved pixel,
+	m_refCoverageAfterDepthTest[VK_SAMPLE_COUNT_4_BIT]	= SampleCoverage(2u, 2u);	// !< with max possible subPixelPrecisionBits threshold
+	m_refCoverageAfterDepthTest[VK_SAMPLE_COUNT_8_BIT]	= SampleCoverage(2u, 6u);	// !<
+	m_refCoverageAfterDepthTest[VK_SAMPLE_COUNT_16_BIT]	= SampleCoverage(6u, 11u);	// !<
+}
+
+tcu::TestStatus SampleMaskWithDepthTestInstance::iterate (void)
+{
+	de::MovePtr<tcu::TextureLevel>	result;
+
+	MultisampleRenderer renderer (m_context, m_colorFormat, m_depthStencilFormat, m_renderSize, m_useDepth, m_useStencil, 1u, &m_topology,
+								  &m_vertices, m_multisampleStateParams, m_blendState, m_renderType, m_imageBackingMode, m_depthClearValue);
+	result = renderer.render();
+
+	return verifyImage(result->getAccess());
+}
+
+VkPipelineMultisampleStateCreateInfo SampleMaskWithDepthTestInstance::getMultisampleState (const VkSampleCountFlagBits rasterizationSamples)
+{
+	const VkPipelineMultisampleStateCreateInfo multisampleStateParams =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType							sType;
+		DE_NULL,													// const void*								pNext;
+		0u,															// VkPipelineMultisampleStateCreateFlags	flags;
+		rasterizationSamples,										// VkSampleCountFlagBits					rasterizationSamples;
+		false,														// VkBool32									sampleShadingEnable;
+		0.0f,														// float									minSampleShading;
+		DE_NULL,													// const VkSampleMask*						pSampleMask;
+		false,														// VkBool32									alphaToCoverageEnable;
+		false														// VkBool32									alphaToOneEnable;
+	};
+
+	return multisampleStateParams;
+}
+
+std::vector<Vertex4RGBA> SampleMaskWithDepthTestInstance::generateVertices (void)
+{
+	std::vector<Vertex4RGBA> vertices;
+
+	{
+		const Vertex4RGBA vertexInput = { tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f), m_renderColor };
+		vertices.push_back(vertexInput);
+	}
+	{
+		const Vertex4RGBA vertexInput = { tcu::Vec4(1.0f, -1.0f, 1.0f, 1.0f), m_renderColor };
+		vertices.push_back(vertexInput);
+	}
+	{
+		const Vertex4RGBA vertexInput = { tcu::Vec4(-1.0f,  1.0f, 1.0f, 1.0f), m_renderColor };
+		vertices.push_back(vertexInput);
+	}
+
+	return vertices;
+}
+
+tcu::TestStatus SampleMaskWithDepthTestInstance::verifyImage (const tcu::ConstPixelBufferAccess& result)
+{
+	bool			pass	= true;
+	const int		width	= result.getWidth();
+	const int		height	= result.getHeight();
+	tcu::TestLog&	log		= m_context.getTestContext().getLog();
+
+	DE_ASSERT(width == 3);
+	DE_ASSERT(height == 3);
+
+	const tcu::Vec4 clearColor = tcu::Vec4(0.0f);
+
+	for (int x = 0; x < width; ++x)
+	for (int y = 0; y < height; ++y)
+	{
+		const tcu::Vec4 resultPixel = result.getPixel(x, y);
+
+		if (x + y == 0)
+		{
+			if (resultPixel != m_renderColor)
+			{
+				log << tcu::TestLog::Message << "x: " << x << " y: " << y << " Result: " << resultPixel
+					<< " Reference: " << m_renderColor << tcu::TestLog::EndMessage;
+				pass = false;
+			}
+		}
+		else if (x + y == 1)
+		{
+			// default: m_rasterizationSamples bits set in FS's gl_SampleMaskIn[0] (before depth test)
+			// post_depth_coverage: m_refCoverageAfterDepthTest[m_rasterizationSamples] bits set in FS's gl_SampleMaskIn[0] (after depth test)
+			const float		threshold	= 0.02f;
+			const float		minCoverage	= (m_enablePostDepthCoverage ? (float)m_refCoverageAfterDepthTest[m_rasterizationSamples].min / (float)m_rasterizationSamples : 1.0f)
+										* ((float)m_refCoverageAfterDepthTest[m_rasterizationSamples].min / (float)m_rasterizationSamples);
+			const float		maxCoverage	= (m_enablePostDepthCoverage ? (float)m_refCoverageAfterDepthTest[m_rasterizationSamples].max / (float)m_rasterizationSamples : 1.0f)
+										* ((float)m_refCoverageAfterDepthTest[m_rasterizationSamples].max / (float)m_rasterizationSamples);
+
+			bool			localPass	= true;
+			for (deUint32 componentNdx = 0u; componentNdx < m_renderColor.SIZE; ++componentNdx)
+			{
+				if (m_renderColor[componentNdx] != 0.0f && (resultPixel[componentNdx] <= m_renderColor[componentNdx] * (minCoverage - threshold)
+															|| resultPixel[componentNdx] >= m_renderColor[componentNdx] * (maxCoverage + threshold)))
+					localPass = false;
+			}
+
+			if (!localPass)
+			{
+				log << tcu::TestLog::Message << "x: " << x << " y: " << y << " Result: " << resultPixel
+					<< " Reference range ( " << m_renderColor * (minCoverage - threshold) << " ; " << m_renderColor * (maxCoverage + threshold) << " )" << tcu::TestLog::EndMessage;
+				pass = false;
+			}
+		}
+		else
+		{
+			if (resultPixel != clearColor)
+			{
+				log << tcu::TestLog::Message << "x: " << x << " y: " << y << " Result: " << resultPixel
+					<< " Reference: " << clearColor << tcu::TestLog::EndMessage;
+				pass = false;
+			}
+		}
+	}
+
+	if (pass)
+		return tcu::TestStatus::pass("Passed");
+	else
+		return tcu::TestStatus::fail("Failed");
+}
 
 // MultisampleRenderer
 
@@ -1647,6 +1918,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 	, m_colorBlendState			(blendState)
 	, m_renderType				(renderType)
 	, m_backingMode				(backingMode)
+	, m_depthClearValue			(1.0f)
 {
 	initialize(context, 1u, &topology, &vertices);
 }
@@ -1663,7 +1935,8 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 										  const VkPipelineMultisampleStateCreateInfo&	multisampleStateParams,
 										  const VkPipelineColorBlendAttachmentState&	blendState,
 										  const RenderType								renderType,
-										  const ImageBackingMode						backingMode)
+										  const ImageBackingMode						backingMode,
+										  const float									depthClearValue)
 	: m_context					(context)
 	, m_bindSemaphore			(createSemaphore(context.getDeviceInterface(), context.getDevice()))
 	, m_colorFormat				(colorFormat)
@@ -1675,6 +1948,7 @@ MultisampleRenderer::MultisampleRenderer (Context&										context,
 	, m_colorBlendState			(blendState)
 	, m_renderType				(renderType)
 	, m_backingMode				(backingMode)
+	, m_depthClearValue			(depthClearValue)
 {
 	initialize(context, numTopologies, pTopology, pVertices);
 }
@@ -2633,7 +2907,7 @@ void MultisampleRenderer::initialize (Context&									context,
 		colorClearValue.color.float32[3] = 0.0f;
 
 		VkClearValue depthStencilClearValue;
-		depthStencilClearValue.depthStencil.depth = 1.0f;
+		depthStencilClearValue.depthStencil.depth = m_depthClearValue;
 		depthStencilClearValue.depthStencil.stencil = 0u;
 
 		std::vector<VkClearValue> clearValues;
@@ -3043,6 +3317,32 @@ tcu::TestCaseGroup* createMultisampleTests (tcu::TestContext& testCtx)
 	// VK_EXT_sample_locations
 	{
 		multisampleTests->addChild(createMultisampleSampleLocationsExtTests(testCtx));
+	}
+
+	// Sample mask with and without vk_ext_post_depth_coverage
+	{
+		const vk::VkSampleCountFlagBits standardSamplesSet[] =
+		{
+			vk::VK_SAMPLE_COUNT_2_BIT,
+			vk::VK_SAMPLE_COUNT_4_BIT,
+			vk::VK_SAMPLE_COUNT_8_BIT,
+			vk::VK_SAMPLE_COUNT_16_BIT
+		};
+
+		de::MovePtr<tcu::TestCaseGroup> sampleMaskWithDepthTestGroup(new tcu::TestCaseGroup(testCtx, "sample_mask_with_depth_test", ""));
+
+		for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(standardSamplesSet); ++ndx)
+		{
+			std::ostringstream caseName;
+			caseName << "samples_" << standardSamplesSet[ndx];
+
+			sampleMaskWithDepthTestGroup->addChild(new SampleMaskWithDepthTestTest(testCtx, caseName.str(), "", standardSamplesSet[ndx]));
+
+			caseName << "_post_depth_coverage";
+			sampleMaskWithDepthTestGroup->addChild(new SampleMaskWithDepthTestTest(testCtx, caseName.str(), "", standardSamplesSet[ndx], true));
+
+		}
+		multisampleTests->addChild(sampleMaskWithDepthTestGroup.release());
 	}
 
 	return multisampleTests.release();

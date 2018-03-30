@@ -3997,8 +3997,8 @@ void RenderPerformanceTestBase::setupVertexAttribs (void) const
 	gl.enableVertexAttribArray(m_colorLoc);
 	gl.enableVertexAttribArray(m_positionLoc);
 
-	gl.vertexAttribPointer(m_colorLoc,    4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(8 * sizeof(float)), (const tcu::Vec4*)DE_NULL + 0);
-	gl.vertexAttribPointer(m_positionLoc, 4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(8 * sizeof(float)), (const tcu::Vec4*)DE_NULL + 1);
+	gl.vertexAttribPointer(m_colorLoc,    4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(8 * sizeof(float)), glu::BufferOffsetAsPointer(0 * sizeof(tcu::Vec4)));
+	gl.vertexAttribPointer(m_positionLoc, 4, GL_FLOAT, GL_FALSE, (glw::GLsizei)(8 * sizeof(float)), glu::BufferOffsetAsPointer(1 * sizeof(tcu::Vec4)));
 
 	gl.useProgram(m_renderProgram->getProgram());
 
