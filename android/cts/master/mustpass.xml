@@ -23,9 +23,11 @@
 	</TestPackage>
 	<TestPackage name="dEQP-GLES2">
 		<Configuration caseListFile="gles2-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
+		<Configuration caseListFile="gles2-master-risky.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-risky"/>
 	</TestPackage>
 	<TestPackage name="dEQP-GLES3">
 		<Configuration caseListFile="gles3-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
+		<Configuration caseListFile="gles3-master-risky.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-risky"/>
 		<Configuration caseListFile="gles3-rotate-portrait.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=0 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-portrait"/>
 		<Configuration caseListFile="gles3-rotate-landscape.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=90 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-landscape"/>
 		<Configuration caseListFile="gles3-rotate-reverse-portrait.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=180 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-reverse-portrait"/>
@@ -35,6 +37,7 @@
 	</TestPackage>
 	<TestPackage name="dEQP-GLES31">
 		<Configuration caseListFile="gles31-master.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master"/>
+		<Configuration caseListFile="gles31-master-risky.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=unspecified --deqp-surface-type=window --deqp-watchdog=enable" name="master-risky"/>
 		<Configuration caseListFile="gles31-rotate-portrait.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=0 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-portrait"/>
 		<Configuration caseListFile="gles31-rotate-landscape.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=90 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-landscape"/>
 		<Configuration caseListFile="gles31-rotate-reverse-portrait.txt" commandLine="--deqp-gl-config-name=rgba8888d24s8ms0 --deqp-screen-rotation=180 --deqp-surface-type=window --deqp-watchdog=enable" name="rotate-reverse-portrait"/>
@@ -44,5 +47,6 @@
 	</TestPackage>
 	<TestPackage name="dEQP-VK">
 		<Configuration caseListFile="vk-master.txt" commandLine="--deqp-watchdog=enable" name="master"/>
+		<Configuration caseListFile="vk-master-risky.txt" commandLine="--deqp-watchdog=enable" name="master-risky"/>
 	</TestPackage>
 </Mustpass>
