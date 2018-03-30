@@ -152,7 +152,7 @@ static ComputeShaderSpec getComputeShaderSpec ()
 	ComputeShaderSpec	spec;
 
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
-		inputFloats[ndx] = rnd.getFloat(1.0f, 100.0f);
+		inputFloats[ndx] = deFloatFloor(rnd.getFloat(1.0f, 100.0f));
 
 	for (size_t ndx = 0; ndx < numElements; ++ndx)
 	{
