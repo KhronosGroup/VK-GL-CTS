@@ -1030,12 +1030,14 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
             BufferedReader testlistReader = new BufferedReader(testlist);
             String testName;
             while ((testName = testlistReader.readLine()) != null) {
-                // Test name -> testId -> only one config -> done.
-                final Set<BatchRunConfiguration> testInstanceSet = new LinkedHashSet<>();
-                BatchRunConfiguration config = new BatchRunConfiguration(configName, screenRotation, surfaceType, required);
-                testInstanceSet.add(config);
-                TestDescription test = pathToIdentifier(testName);
-                instances.put(test, testInstanceSet);
+                if (testName.length() > 0) {
+                    // Test name -> testId -> only one config -> done.
+                    final Set<BatchRunConfiguration> testInstanceSet = new LinkedHashSet<>();
+                    BatchRunConfiguration config = new BatchRunConfiguration(configName, screenRotation, surfaceType, required);
+                    testInstanceSet.add(config);
+                    TestDescription test = pathToIdentifier(testName);
+                    instances.put(test, testInstanceSet);
+                }
             }
             testlistReader.close();
         }
