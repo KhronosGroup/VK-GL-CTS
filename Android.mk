@@ -22,7 +22,7 @@ LOCAL_C_INCLUDES += \
 
 deqp_compile_flags := \
 	-DDEQP_SUPPORT_GLES1=1 \
-	-DDE_ANDROID_API=9 \
+	-DDE_ANDROID_API=28 \
 	-D_XOPEN_SOURCE=600 \
 	-DDEQP_TARGET_NAME=\"android\" \
 	-DQP_SUPPORT_PNG=1 \
@@ -48,7 +48,7 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_CFLAGS += \
 	$(deqp_compile_flags)
 
-LOCAL_SDK_VERSION := 22
+LOCAL_SDK_VERSION := 27
 LOCAL_CPPFLAGS += -Wno-non-virtual-dtor -Wno-delete-non-virtual-dtor
 LOCAL_NDK_STL_VARIANT := c++_static
 LOCAL_RTTI_FLAG := -frtti -fexceptions
