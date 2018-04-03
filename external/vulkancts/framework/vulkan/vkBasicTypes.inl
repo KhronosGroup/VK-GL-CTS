@@ -5,6 +5,8 @@
 #define VK_API_VERSION_1_1					(static_cast<deUint32>			(VK_MAKE_VERSION(1, 1, 0)))
 #define VK_MAX_PHYSICAL_DEVICE_NAME_SIZE	(static_cast<size_t>			(256))
 #define VK_MAX_EXTENSION_NAME_SIZE			(static_cast<size_t>			(256))
+#define VK_MAX_DRIVER_NAME_SIZE_KHR			(static_cast<size_t>			(256))
+#define VK_MAX_DRIVER_INFO_SIZE_KHR			(static_cast<size_t>			(256))
 #define VK_UUID_SIZE						(static_cast<size_t>			(16))
 #define VK_LUID_SIZE						(static_cast<size_t>			(8))
 #define VK_MAX_MEMORY_TYPES					(static_cast<size_t>			(32))
@@ -321,6 +323,7 @@ enum VkStructureType
 	VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT								= 1000160000,
 	VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT				= 1000160001,
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR						= 1000177000,
+	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR							= 1000196000,
 };
 
 enum VkSystemAllocationScope

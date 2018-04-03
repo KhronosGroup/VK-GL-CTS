@@ -46,6 +46,8 @@ DEFINITIONS			= [
 	("VK_API_VERSION_1_1",					"deUint32"),
 	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
 	("VK_MAX_EXTENSION_NAME_SIZE",			"size_t"),
+	("VK_MAX_DRIVER_NAME_SIZE_KHR",			"size_t"),
+	("VK_MAX_DRIVER_INFO_SIZE_KHR",			"size_t"),
 	("VK_UUID_SIZE",						"size_t"),
 	("VK_LUID_SIZE",						"size_t"),
 	("VK_MAX_MEMORY_TYPES",					"size_t"),

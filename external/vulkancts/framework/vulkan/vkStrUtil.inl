@@ -517,6 +517,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkDisplayModeProperties2KHR& va
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageFormatListCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkConformanceVersionKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDriverPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);

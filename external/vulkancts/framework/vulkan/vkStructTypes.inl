@@ -2328,6 +2328,24 @@ struct VkImageFormatListCreateInfoKHR
 	const VkFormat*	pViewFormats;
 };
 
+struct VkConformanceVersionKHR
+{
+	deUint8	major;
+	deUint8	minor;
+	deUint8	subminor;
+	deUint8	patch;
+};
+
+struct VkPhysicalDeviceDriverPropertiesKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	deUint32				driverID;
+	char					driverName[VK_MAX_DRIVER_NAME_SIZE_KHR];
+	char					driverInfo[VK_MAX_DRIVER_INFO_SIZE_KHR];
+	VkConformanceVersionKHR	conformanceVersion;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

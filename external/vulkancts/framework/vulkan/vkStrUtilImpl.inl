@@ -332,6 +332,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR";
 		default:																				return DE_NULL;
 	}
 }
@@ -5340,6 +5341,30 @@ std::ostream& operator<< (std::ostream& s, const VkImageFormatListCreateInfoKHR&
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tviewFormatCount = " << value.viewFormatCount << '\n';
 	s << "\tpViewFormats = " << value.pViewFormats << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkConformanceVersionKHR& value)
+{
+	s << "VkConformanceVersionKHR = {\n";
+	s << "\tmajor = " << value.major << '\n';
+	s << "\tminor = " << value.minor << '\n';
+	s << "\tsubminor = " << value.subminor << '\n';
+	s << "\tpatch = " << value.patch << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDriverPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceDriverPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdriverID = " << value.driverID << '\n';
+	s << "\tdriverName = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.driverName)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.driverName))) << '\n';
+	s << "\tdriverInfo = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.driverInfo)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.driverInfo))) << '\n';
+	s << "\tconformanceVersion = " << value.conformanceVersion << '\n';
 	s << '}';
 	return s;
 }

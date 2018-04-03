@@ -422,6 +422,16 @@ inline VkPresentRegionKHR makePresentRegionKHR (deUint32 rectangleCount, const V
 	return res;
 }
 
+inline VkConformanceVersionKHR makeConformanceVersionKHR (deUint8 major, deUint8 minor, deUint8 subminor, deUint8 patch)
+{
+	VkConformanceVersionKHR res;
+	res.major		= major;
+	res.minor		= minor;
+	res.subminor	= subminor;
+	res.patch		= patch;
+	return res;
+}
+
 inline VkIndirectCommandsTokenNVX makeIndirectCommandsTokenNVX (VkIndirectCommandsTokenTypeNVX tokenType, VkBuffer buffer, VkDeviceSize offset)
 {
 	VkIndirectCommandsTokenNVX res;
