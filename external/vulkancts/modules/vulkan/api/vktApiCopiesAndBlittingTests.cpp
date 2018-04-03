@@ -3000,6 +3000,29 @@ bool BlittingMipmaps::checkLinearFilteredResult (void)
 
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < m_params.mipLevels; mipLevelNdx++)
 	{
+		// Update reference results with previous results that have been verified.
+		// This needs to be done such that accumulated errors don't exceed the fixed threshold.
+		for (deUint32 i = 0; i < m_params.regions.size(); i++)
+		{
+			const CopyRegion region = m_params.regions[i];
+			const deUint32 srcMipLevel = m_params.regions[i].imageBlit.srcSubresource.mipLevel;
+			const deUint32 dstMipLevel = m_params.regions[i].imageBlit.dstSubresource.mipLevel;
+			de::MovePtr<tcu::TextureLevel>	prevResultLevel;
+			tcu::ConstPixelBufferAccess src;
+			if (srcMipLevel < mipLevelNdx)
+			{
+				// Generate expected result from rendered result that was previously verified
+				prevResultLevel	= readImage(*m_destination, m_params.dst.image, srcMipLevel);
+				src = prevResultLevel->getAccess();
+			}
+			else
+			{
+				// Previous reference mipmaps might have changed, so recompute expected result
+				src = m_expectedTextureLevel[srcMipLevel]->getAccess();
+			}
+			copyRegionToTextureLevel(src, m_expectedTextureLevel[dstMipLevel]->getAccess(), region, dstMipLevel);
+		}
+
 		de::MovePtr<tcu::TextureLevel>			resultLevel			= readImage(*m_destination, m_params.dst.image, mipLevelNdx);
 		const tcu::ConstPixelBufferAccess&		resultAccess		= resultLevel->getAccess();
 
