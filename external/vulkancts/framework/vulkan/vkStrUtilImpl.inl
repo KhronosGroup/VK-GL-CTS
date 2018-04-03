@@ -5373,6 +5373,30 @@ std::ostream& operator<< (std::ostream& s, const VkImageFormatListCreateInfoKHR&
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkConformanceVersionKHR& value)
+{
+	s << "VkConformanceVersionKHR = {\n";
+	s << "\tmajor = " << value.major << '\n';
+	s << "\tminor = " << value.minor << '\n';
+	s << "\tsubminor = " << value.subminor << '\n';
+	s << "\tpatch = " << value.patch << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDriverPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceDriverPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdriverID = " << value.driverID << '\n';
+	s << "\tdriverName = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.driverName)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.driverName))) << '\n';
+	s << "\tdriverInfo = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.driverInfo)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.driverInfo))) << '\n';
+	s << "\tconformanceVersion = " << value.conformanceVersion << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value)
 {
 	s << "VkDebugReportCallbackCreateInfoEXT = {\n";

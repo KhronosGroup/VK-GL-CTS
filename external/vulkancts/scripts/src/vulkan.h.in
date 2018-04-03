@@ -6215,6 +6215,28 @@ VKAPI_ATTR void VKAPI_CALL vkGetDescriptorSetLayoutSupportKHR(
     VkDescriptorSetLayoutSupport*               pSupport);
 #endif
 
+#define VK_KHR_driver_properties 1
+#define VK_MAX_DRIVER_NAME_SIZE_KHR       256
+#define VK_MAX_DRIVER_INFO_SIZE_KHR       256
+#define VK_KHR_DRIVER_PROPERTIES_SPEC_VERSION 1
+#define VK_KHR_DRIVER_PROPERTIES_EXTENSION_NAME "VK_KHR_driver_properties"
+
+typedef struct VkConformanceVersionKHR {
+    uint8_t    major;
+    uint8_t    minor;
+    uint8_t    subminor;
+    uint8_t    patch;
+} VkConformanceVersionKHR;
+
+typedef struct VkPhysicalDeviceDriverPropertiesKHR {
+    VkStructureType            sType;
+    void*                      pNext;
+    uint32_t                   driverID;
+    char                       driverName[VK_MAX_DRIVER_NAME_SIZE_KHR];
+    char                       driverInfo[VK_MAX_DRIVER_INFO_SIZE_KHR];
+    VkConformanceVersionKHR    conformanceVersion;
+} VkPhysicalDeviceDriverPropertiesKHR;
+
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
 

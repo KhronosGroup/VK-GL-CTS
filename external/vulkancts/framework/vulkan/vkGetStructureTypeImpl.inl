@@ -841,6 +841,11 @@ template<> VkStructureType getStructureType<VkImageFormatListCreateInfoKHR> (voi
 	return VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDriverPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
