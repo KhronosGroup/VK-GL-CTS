@@ -1,3 +1,10 @@
+dEQP-VK.api.external.memory.android_hardware_buffer.suballocated.host_visible.import_twice
+dEQP-VK.api.external.memory.android_hardware_buffer.dedicated.host_visible.import_twice
+dEQP-VK.api.external.memory.android_hardware_buffer.image_formats.r8g8b8_unorm
+dEQP-VK.api.external.memory.android_hardware_buffer.image_formats.r8g8b8a8_unorm
+dEQP-VK.api.external.memory.android_hardware_buffer.image_formats.r5g6b5_unorm_pack16
+dEQP-VK.api.external.memory.android_hardware_buffer.image_formats.r16g16b16a16_sfloat
+dEQP-VK.api.external.memory.android_hardware_buffer.image_formats.a2b10g10r10_unorm_pack32
 dEQP-VK.memory.mapping.dedicated_alloc.image.full.33.simple
 dEQP-VK.memory.mapping.dedicated_alloc.image.full.33.remap
 dEQP-VK.memory.mapping.dedicated_alloc.image.full.33.flush
