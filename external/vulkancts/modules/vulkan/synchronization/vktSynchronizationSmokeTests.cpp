@@ -466,6 +466,7 @@ void  recordRenderPass (const DeviceInterface& deviceInterface, const RenderInfo
 	VkImageMemoryBarrier				renderBarrier;
 
 	beginRenderPass(deviceInterface, renderInfo.commandBuffer, renderInfo.renderPass, renderInfo.framebuffer, makeRect2D(0, 0, renderInfo.width, renderInfo.height), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
+
 	if (renderInfo.waitEvent)
 		deviceInterface.cmdWaitEvents(renderInfo.commandBuffer, 1, &renderInfo.event, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
 	deviceInterface.cmdBindPipeline(renderInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderInfo.pipeline);
@@ -1261,7 +1262,7 @@ tcu::TestStatus testEvents (Context& context)
 	// make forward progress as long as the event is not signaled
 	VK_CHECK(deviceInterface.queueSubmit(queue, 1, &submitInfo, testContext.fences[0]));
 
-	testStatus  = deviceInterface.waitForFences(device, 1, &testContext.fences[0], true, 1);
+	testStatus  = deviceInterface.waitForFences(device, 1, &testContext.fences[0], true, 10000000);
 	if (testStatus != VK_TIMEOUT)
 	{
 		log << TestLog::Message << "testSynchronizationPrimitives failed to wait for set event from host." << TestLog::EndMessage;
