@@ -1915,8 +1915,7 @@ tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
 		{
 			const VkFormatFeatureFlags	required	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
 													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
-													| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT;
+													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 
 			if ((supported & required) != required)
 			{
