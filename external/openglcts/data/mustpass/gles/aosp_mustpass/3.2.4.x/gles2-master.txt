@@ -10078,7 +10078,6 @@ dEQP-GLES2.functional.shaders.random.all_features.fragment.12
 dEQP-GLES2.functional.shaders.random.all_features.fragment.13
 dEQP-GLES2.functional.shaders.random.all_features.fragment.14
 dEQP-GLES2.functional.shaders.random.all_features.fragment.15
-dEQP-GLES2.functional.shaders.random.all_features.fragment.16
 dEQP-GLES2.functional.shaders.random.all_features.fragment.17
 dEQP-GLES2.functional.shaders.random.all_features.fragment.18
 dEQP-GLES2.functional.shaders.random.all_features.fragment.19
@@ -10118,7 +10117,6 @@ dEQP-GLES2.functional.shaders.random.all_features.fragment.52
 dEQP-GLES2.functional.shaders.random.all_features.fragment.53
 dEQP-GLES2.functional.shaders.random.all_features.fragment.54
 dEQP-GLES2.functional.shaders.random.all_features.fragment.55
-dEQP-GLES2.functional.shaders.random.all_features.fragment.56
 dEQP-GLES2.functional.shaders.random.all_features.fragment.57
 dEQP-GLES2.functional.shaders.random.all_features.fragment.58
 dEQP-GLES2.functional.shaders.random.all_features.fragment.59
