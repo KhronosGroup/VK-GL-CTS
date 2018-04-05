@@ -1300,27 +1300,11 @@ tcu::TestStatus test (Context& context, const TestParams params)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
-	const VkClearValue			clearValue	= makeClearValueColor(clearColor);
-	const VkRect2D				renderArea	=
-	{
-		makeOffset2D(0, 0),
-		makeExtent2D(params.image.size.width, params.image.size.height),
-	};
-	const VkRenderPassBeginInfo renderPassBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-		DE_NULL,										// const void*             pNext;
-		*renderPass,									// VkRenderPass            renderPass;
-		*framebuffer,									// VkFramebuffer           framebuffer;
-		renderArea,										// VkRect2D                renderArea;
-		1u,												// uint32_t                clearValueCount;
-		&clearValue,									// const VkClearValue*     pClearValues;
-	};
-	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, params.image.size.width, params.image.size.height), clearColor);
 
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 	vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	// Prepare color image for copy
 	{
@@ -1486,21 +1470,6 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule, imageExtent2D, dsUsed));
 	const Unique<VkCommandPool>			cmdPool				(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
 	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-	const VkRect2D						renderArea			=
-	{
-		makeOffset2D(0, 0),
-		imageExtent2D,
-	};
-	const VkRenderPassBeginInfo			renderPassBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		*renderPass,									// VkRenderPass				renderPass;
-		*framebuffer,									// VkFramebuffer			framebuffer;
-		renderArea,										// VkRect2D					renderArea;
-		0u,												// uint32_t					clearValueCount;
-		DE_NULL,										// const VkClearValue*		pClearValues;
-	};
 	const VkImageSubresourceRange		colorSubresRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers);
 	const VkImageSubresourceRange		dsSubresRange		= makeImageSubresourceRange(dsAspectFlags, 0u, 1u, 0u, params.image.numLayers);
 	const VkImageMemoryBarrier			colorPassBarrier	= makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -1596,11 +1565,10 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 			.update(vk, device);
 
 		vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet[pass], 0u, DE_NULL);
-
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(imageExtent2D));
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &colorPassBarrier);
 

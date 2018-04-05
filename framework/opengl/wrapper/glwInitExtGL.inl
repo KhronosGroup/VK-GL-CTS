@@ -583,6 +583,12 @@ if (de::contains(extSet, "GL_ARB_compute_shader"))
 	gl->dispatchComputeIndirect	= (glDispatchComputeIndirectFunc)	loader->get("glDispatchComputeIndirect");
 }
 
+if (de::contains(extSet, "GL_ARB_draw_indirect"))
+{
+	gl->drawArraysIndirect		= (glDrawArraysIndirectFunc)	loader->get("glDrawArraysIndirect");
+	gl->drawElementsIndirect	= (glDrawElementsIndirectFunc)	loader->get("glDrawElementsIndirect");
+}
+
 if (de::contains(extSet, "GL_ARB_draw_instanced"))
 {
 	gl->drawArraysInstanced		= (glDrawArraysInstancedFunc)	loader->get("glDrawArraysInstancedARB");

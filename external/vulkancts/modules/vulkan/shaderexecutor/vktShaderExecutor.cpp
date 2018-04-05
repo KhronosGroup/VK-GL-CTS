@@ -1192,17 +1192,6 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 
 	// Create command buffer
 	{
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*renderPass,											// VkRenderPass			renderPass;
-			*framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { renderSize.x(), renderSize.y() } },		// VkRect2D				renderArea;
-			(deUint32)attachmentClearValues.size(),					// deUint32				attachmentCount;
-			&attachmentClearValues[0]								// const VkClearValue*	pAttachmentClearValues;
-		};
-
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -1211,7 +1200,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 							  0, (const VkMemoryBarrier*)DE_NULL,
 							  0, (const VkBufferMemoryBarrier*)DE_NULL,
 							  (deUint32)colorImagePreRenderBarriers.size(), colorImagePreRenderBarriers.empty() ? DE_NULL : &colorImagePreRenderBarriers[0]);
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), (deUint32)attachmentClearValues.size(), &attachmentClearValues[0]);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 
@@ -1237,7 +1226,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, numberOfVertexAttributes, &buffers[0], &offsets[0]);
 		vk.cmdDraw(*cmdBuffer, (deUint32)positions.size(), 1u, 0u, 0u);
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 		vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
 							  0, (const VkMemoryBarrier*)DE_NULL,
 							  0, (const VkBufferMemoryBarrier*)DE_NULL,
@@ -2493,27 +2482,13 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 
 	// Create command buffer
 	{
-		const VkClearValue clearValues[1] =
-		{
-			getDefaultClearColor()
-		};
-
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*renderPass,											// VkRenderPass			renderPass;
-			*framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { renderSize.x(), renderSize.y() } },		// VkRect2D				renderArea;
-			1,														// deUint32				attachmentCount;
-			clearValues												// const VkClearValue*	pClearValues;
-		};
+		const VkClearValue clearValue = getDefaultClearColor();
 
 		cmdBuffer = allocateCommandBuffer(vk, vkDevice, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		beginCommandBuffer(vk, *cmdBuffer);
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearValue);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 
@@ -2524,7 +2499,7 @@ void TessellationExecutor::renderTess (deUint32 numValues, deUint32 vertexCount,
 
 		vk.cmdDraw(*cmdBuffer, vertexCount, 1, 0, 0);
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 		endCommandBuffer(vk, *cmdBuffer);
 	}
 

@@ -316,25 +316,14 @@ void GranularityInstance::beginRenderPass (void)
 		{ 1, 1 }	// VkExtent2D	extent;
 	};
 
-	const VkRenderPassBeginInfo		renderPassBeginInfo	=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		*m_renderPass,								// VkRenderPass			renderPass;
-		*m_frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		0u,											// uint32_t				clearValueCount;
-		DE_NULL										// const VkClearValue*	pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vk::beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_frameBuffer, renderArea);
 }
 
 void GranularityInstance::endRenderPass (void)
 {
 	const DeviceInterface&	vk	= m_context.getDeviceInterface();
 
-	vk.cmdEndRenderPass(*m_cmdBuffer);
+	vk::endRenderPass(vk, *m_cmdBuffer);
 	endCommandBuffer(vk, *m_cmdBuffer);
 }
 

@@ -222,7 +222,9 @@ static deUint32 findQueueFamilyIndexWithCaps (const InstanceInterface& vkInstanc
 	TCU_THROW(NotSupportedError, "No matching queue found");
 }
 
-Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
+Move<VkDevice> createDefaultDevice (const PlatformInterface&			vkp,
+									VkInstance							instance,
+									const InstanceInterface&			vki,
 									VkPhysicalDevice					physicalDevice,
 									const deUint32						apiVersion,
 									deUint32							queueIndex,
@@ -293,7 +295,7 @@ Move<VkDevice> createDefaultDevice (const InstanceInterface&			vki,
 	deviceInfo.ppEnabledLayerNames			= (layerPtrs.empty() ? DE_NULL : &layerPtrs[0]);
 	deviceInfo.pEnabledFeatures				= enabledFeatures.pNext ? DE_NULL : &enabledFeatures.features;
 
-	return createDevice(vki, physicalDevice, &deviceInfo);
+	return createDevice(vkp, instance, vki, physicalDevice, &deviceInfo);
 };
 
 bool isPhysicalDeviceFeatures2Supported (const deUint32 version, const vector<string>& instanceExtensions)
@@ -430,8 +432,8 @@ DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::Co
 	, m_universalQueueFamilyIndex	(findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT))
 	, m_sparseQueueFamilyIndex		(m_deviceFeatures.coreFeatures.features.sparseBinding ? findQueueFamilyIndexWithCaps(m_instanceInterface, m_physicalDevice, VK_QUEUE_SPARSE_BINDING_BIT) : 0)
 	, m_deviceProperties			(getPhysicalDeviceProperties(m_instanceInterface, m_physicalDevice))
-	, m_device						(createDefaultDevice(m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.coreFeatures, m_deviceExtensions, cmdLine))
-	, m_deviceInterface				(m_instanceInterface, *m_device)
+	, m_device						(createDefaultDevice(vkPlatform, *m_instance, m_instanceInterface, m_physicalDevice, m_usedApiVersion, m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_deviceFeatures.coreFeatures, m_deviceExtensions, cmdLine))
+	, m_deviceInterface				(vkPlatform, *m_instance, *m_device)
 {
 	DE_ASSERT(m_deviceVersions.first == m_deviceVersion);
 }

@@ -1121,24 +1121,9 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 			if (useDepthStencil)
 				clearValues.insert(clearValues.end(), numSlices, makeClearValueDepthStencil(REFERENCE_DEPTH_VALUE, REFERENCE_STENCIL_VALUE));
 
-			const VkRect2D			renderArea	=
-			{
-				makeOffset2D(0, 0),
-				makeExtent2D(imageSize.x(), imageSize.y()),
-			};
-			const VkRenderPassBeginInfo	renderPassBeginInfo	=
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-				DE_NULL,									// const void*             pNext;
-				*renderPass,								// VkRenderPass            renderPass;
-				*framebuffer,								// VkFramebuffer           framebuffer;
-				renderArea,									// VkRect2D                renderArea;
-				static_cast<deUint32>(clearValues.size()),	// uint32_t                clearValueCount;
-				&clearValues[0],							// const VkClearValue*     pClearValues;
-			};
 			const VkDeviceSize		vertexBufferOffset	= 0ull;
 
-			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, imageSize.x(), imageSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 		}
 
@@ -1152,7 +1137,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, subpassNdx*4u, 0u);
 		}
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		// Copy colorImage -> host visible colorBuffer
 		{
@@ -1369,24 +1354,9 @@ void drawToMipLevel (const Context&				context,
 			if (useDepth || useStencil)
 				clearValues.insert(clearValues.end(), numSlices, makeClearValueDepthStencil(REFERENCE_DEPTH_VALUE, REFERENCE_STENCIL_VALUE));
 
-			const VkRect2D			renderArea	=
-			{
-				makeOffset2D(0, 0),
-				makeExtent2D(mipSize.x(), mipSize.y()),
-			};
-			const VkRenderPassBeginInfo	renderPassBeginInfo	=
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-				DE_NULL,									// const void*             pNext;
-				*renderPass,								// VkRenderPass            renderPass;
-				*framebuffer,								// VkFramebuffer           framebuffer;
-				renderArea,									// VkRect2D                renderArea;
-				static_cast<deUint32>(clearValues.size()),	// uint32_t                clearValueCount;
-				&clearValues[0],							// const VkClearValue*     pClearValues;
-			};
 			const VkDeviceSize		vertexBufferOffset	= 0ull;
 
-			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, mipSize.x(), mipSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer, &vertexBufferOffset);
 		}
 
@@ -1400,7 +1370,7 @@ void drawToMipLevel (const Context&				context,
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, subpassNdx*4u, 0u);
 		}
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);

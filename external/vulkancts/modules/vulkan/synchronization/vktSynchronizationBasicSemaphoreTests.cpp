@@ -238,7 +238,7 @@ tcu::TestStatus basicMultiQueueCase (Context& context)
 	deviceInfo.queueCreateInfoCount		= (queues[FIRST].queueFamilyIndex == queues[SECOND].queueFamilyIndex) ? 1 : COUNT;
 	deviceInfo.pQueueCreateInfos		= queueInfos;
 
-	logicalDevice = vk::createDevice(instance, physicalDevice, &deviceInfo);
+	logicalDevice = vk::createDevice(context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
 
 	for (deUint32 queueReqNdx = 0; queueReqNdx < COUNT; ++queueReqNdx)
 	{

@@ -55,6 +55,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(new InstancedTests					(testCtx));
 	group->addChild(new ShaderDrawParametersTests		(testCtx));
 	group->addChild(createNegativeViewportHeightTests	(testCtx));
+	group->addChild(createZeroViewportHeightTests		(testCtx));
 	group->addChild(createInvertedDepthRangesTests		(testCtx));
 	group->addChild(createDifferingInterpolationTests	(testCtx));
 	group->addChild(createShaderViewportIndexTests		(testCtx));

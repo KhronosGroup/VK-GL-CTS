@@ -209,9 +209,7 @@ void DrawTestsBaseClass::beginRenderPass (void)
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 	const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
-	const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
-
-	m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
+	vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
 }
 
 }	// Draw

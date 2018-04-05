@@ -2457,8 +2457,8 @@ void ComputeTestInstance::createDeviceGroup (void)
 		(deviceExtensions.empty() ? DE_NULL : &deviceExtensions[0]),	// const char* const*				ppEnabledExtensionNames;
 		&deviceFeatures,												// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
-	m_logicalDevice		= createDevice(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
-	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
+	m_logicalDevice		= createDevice(m_context.getPlatformInterface(), m_deviceGroupInstance.get(), instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceInfo);
+	m_deviceDriver		= de::MovePtr<DeviceDriver>(new DeviceDriver(m_context.getPlatformInterface(), m_deviceGroupInstance.get(), *m_logicalDevice));
 }
 
 class DispatchBaseTest : public vkt::TestCase

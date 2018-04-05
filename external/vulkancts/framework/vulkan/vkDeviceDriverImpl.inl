@@ -2,6 +2,11 @@
  * be lost! Modify the generating script instead.
  */
 
+PFN_vkVoidFunction DeviceDriver::getDeviceProcAddr (VkDevice device, const char* pName) const
+{
+	return m_vk.getDeviceProcAddr(device, pName);
+}
+
 void DeviceDriver::destroyDevice (VkDevice device, const VkAllocationCallbacks* pAllocator) const
 {
 	m_vk.destroyDevice(device, pAllocator);

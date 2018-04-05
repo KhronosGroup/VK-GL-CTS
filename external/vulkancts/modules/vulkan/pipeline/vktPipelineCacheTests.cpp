@@ -1060,25 +1060,14 @@ void GraphicsCacheTestInstance::prepareRenderPass (VkFramebuffer framebuffer, Vk
 		defaultClearValue(m_depthFormat),
 	};
 
-	const VkRenderPassBeginInfo renderPassBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,               // VkStructureType      sType;
-		DE_NULL,                                                // const void*          pNext;
-		*m_renderPass,                                          // VkRenderPass         renderPass;
-		framebuffer,                                            // VkFramebuffer        framebuffer;
-		{ { 0, 0 }, { m_renderSize.x(), m_renderSize.y() } },   // VkRect2D             renderArea;
-		2u,                                                     // deUint32             clearValueCount;
-		attachmentClearValues                                   // const VkClearValue*  pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 	VkDeviceSize offsets = 0u;
 	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &offsets);
 	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1u, 0u, 0u);
 
-	vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(vk, *m_cmdBuffer);
 }
 
 void GraphicsCacheTestInstance::prepareCommandBuffer (void)

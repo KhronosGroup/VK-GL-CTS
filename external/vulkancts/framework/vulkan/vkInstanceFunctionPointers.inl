@@ -9,7 +9,6 @@ GetPhysicalDeviceImageFormatPropertiesFunc				getPhysicalDeviceImageFormatProper
 GetPhysicalDevicePropertiesFunc							getPhysicalDeviceProperties;
 GetPhysicalDeviceQueueFamilyPropertiesFunc				getPhysicalDeviceQueueFamilyProperties;
 GetPhysicalDeviceMemoryPropertiesFunc					getPhysicalDeviceMemoryProperties;
-GetDeviceProcAddrFunc									getDeviceProcAddr;
 CreateDeviceFunc										createDevice;
 EnumerateDeviceExtensionPropertiesFunc					enumerateDeviceExtensionProperties;
 EnumerateDeviceLayerPropertiesFunc						enumerateDeviceLayerProperties;

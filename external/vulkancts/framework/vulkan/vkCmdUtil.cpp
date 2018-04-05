@@ -24,6 +24,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkDefs.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
 
 namespace vk
 {
@@ -45,6 +46,123 @@ void endCommandBuffer (const DeviceInterface& vk, const VkCommandBuffer commandB
 	VK_CHECK(vk.endCommandBuffer(commandBuffer));
 }
 
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const deUint32			clearValueCount,
+					  const VkClearValue*		clearValues,
+					  const VkSubpassContents	contents)
+{
+	const VkRenderPassBeginInfo	renderPassBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
+		DE_NULL,									// const void*             pNext;
+		renderPass,									// VkRenderPass            renderPass;
+		framebuffer,								// VkFramebuffer           framebuffer;
+		renderArea,									// VkRect2D                renderArea;
+		clearValueCount,							// deUint32                clearValueCount;
+		clearValues,								// const VkClearValue*     pClearValues;
+	};
+
+	vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, contents);
+}
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const VkClearValue&		clearValue,
+					  const VkSubpassContents	contents)
+{
+	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, 1u, &clearValue, contents);
+}
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const tcu::Vec4&			clearColor,
+					  const VkSubpassContents	contents)
+{
+	const VkClearValue clearValue = makeClearValueColor(clearColor);
+
+	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, clearValue, contents);
+}
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const tcu::UVec4&			clearColor,
+					  const VkSubpassContents	contents)
+{
+	const VkClearValue clearValue = makeClearValueColorU32(clearColor.x(), clearColor.y(), clearColor.z(), clearColor.w());
+
+	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, clearValue, contents);
+}
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const VkSubpassContents	contents)
+{
+	const VkRenderPassBeginInfo renderPassBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
+		DE_NULL,									// const void*             pNext;
+		renderPass,									// VkRenderPass            renderPass;
+		framebuffer,								// VkFramebuffer           framebuffer;
+		renderArea,									// VkRect2D                renderArea;
+		0u,											// deUint32                clearValueCount;
+		DE_NULL,									// const VkClearValue*     pClearValues;
+	};
+
+	vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, contents);
+}
+
+void beginRenderPass (const DeviceInterface&	vk,
+					  const VkCommandBuffer		commandBuffer,
+					  const VkRenderPass		renderPass,
+					  const VkFramebuffer		framebuffer,
+					  const VkRect2D&			renderArea,
+					  const tcu::Vec4&			clearColor,
+					  const float				clearDepth,
+					  const deUint32			clearStencil,
+					  const VkSubpassContents	contents)
+{
+	const VkClearValue			clearValues[]		=
+	{
+		makeClearValueColor(clearColor),						// attachment 0
+		makeClearValueDepthStencil(clearDepth, clearStencil),	// attachment 1
+	};
+
+	const VkRenderPassBeginInfo	renderPassBeginInfo	=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
+		DE_NULL,									// const void*             pNext;
+		renderPass,									// VkRenderPass            renderPass;
+		framebuffer,								// VkFramebuffer           framebuffer;
+		renderArea,									// VkRect2D                renderArea;
+		DE_LENGTH_OF_ARRAY(clearValues),			// deUint32                clearValueCount;
+		clearValues,								// const VkClearValue*     pClearValues;
+	};
+
+	vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, contents);
+}
+
+void endRenderPass (const DeviceInterface&	vk,
+					const VkCommandBuffer	commandBuffer)
+{
+	vk.cmdEndRenderPass(commandBuffer);
+}
+
 void submitCommandsAndWait (const DeviceInterface&	vk,
 							const VkDevice			device,
 							const VkQueue			queue,
@@ -58,12 +176,12 @@ void submitCommandsAndWait (const DeviceInterface&	vk,
 	{
 		VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,	//	VkStructureType		sType;
 		DE_NULL,										//	const void*			pNext;
-		0u,												//	uint32_t			waitSemaphoreCount;
-		DE_NULL,										//	const uint32_t*		pWaitSemaphoreDeviceIndices;
-		1u,												//	uint32_t			commandBufferCount;
-		&deviceMask,									//	const uint32_t*		pCommandBufferDeviceMasks;
-		0u,												//	uint32_t			signalSemaphoreCount;
-		DE_NULL,										//	const uint32_t*		pSignalSemaphoreDeviceIndices;
+		0u,												//	deUint32			waitSemaphoreCount;
+		DE_NULL,										//	const deUint32*		pWaitSemaphoreDeviceIndices;
+		1u,												//	deUint32			commandBufferCount;
+		&deviceMask,									//	const deUint32*		pCommandBufferDeviceMasks;
+		0u,												//	deUint32			signalSemaphoreCount;
+		DE_NULL,										//	const deUint32*		pSignalSemaphoreDeviceIndices;
 	};
 
 	const VkSubmitInfo		submitInfo				=

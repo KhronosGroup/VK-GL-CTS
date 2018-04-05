@@ -1,6 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
+m_vk.getDeviceProcAddr									= (GetDeviceProcAddrFunc)								GET_PROC_ADDR("vkGetDeviceProcAddr");
 m_vk.destroyDevice										= (DestroyDeviceFunc)									GET_PROC_ADDR("vkDestroyDevice");
 m_vk.getDeviceQueue										= (GetDeviceQueueFunc)									GET_PROC_ADDR("vkGetDeviceQueue");
 m_vk.queueSubmit										= (QueueSubmitFunc)										GET_PROC_ADDR("vkQueueSubmit");

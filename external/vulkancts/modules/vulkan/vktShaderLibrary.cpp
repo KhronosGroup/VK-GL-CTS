@@ -1570,19 +1570,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 			vk::VkClearValue value = vk::makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
 			clearValue[outNdx] = value;
 		}
-
-		const vk::VkRenderPassBeginInfo	passBeginInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// sType
-			DE_NULL,										// pNext
-			*m_renderPass,									// renderPass
-			*m_framebuffer,									// framebuffer
-			{ { 0, 0 }, { RENDER_WIDTH, RENDER_HEIGHT } },	// renderArea
-			m_outputCount,			// clearValueCount
-			&clearValue[0],									// pClearValues
-		};
-
-		vkd.cmdBeginRenderPass(*m_cmdBuffer, &passBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vkd, *m_cmdBuffer, *m_renderPass, *m_framebuffer, vk::makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT), m_outputCount, clearValue);
 	}
 
 	vkd.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -1599,7 +1587,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 
 	vkd.cmdBindIndexBuffer	(*m_cmdBuffer, *m_posNdxBuffer, (vk::VkDeviceSize)INDICES_OFFSET, vk::VK_INDEX_TYPE_UINT16);
 	vkd.cmdDrawIndexed		(*m_cmdBuffer, 6u, 1u, 0u, 0u, 0u);
-	vkd.cmdEndRenderPass	(*m_cmdBuffer);
+	endRenderPass			(vkd, *m_cmdBuffer);
 
 	{
 		vk::VkImageMemoryBarrier	renderFinishBarrier[4];

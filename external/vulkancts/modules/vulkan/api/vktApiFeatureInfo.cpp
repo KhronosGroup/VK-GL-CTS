@@ -1379,8 +1379,8 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 		DE_NULL,														//pEnabledFeatures;
 	};
 
-	Move<VkDevice>		deviceGroup = createDevice(vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
-	const DeviceDriver	vk	(vki, *deviceGroup);
+	Move<VkDevice>		deviceGroup = createDevice(vkp, *instance, vki, deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &deviceCreateInfo);
+	const DeviceDriver	vk	(vkp, *instance, *deviceGroup);
 	context.getInstanceInterface().getPhysicalDeviceMemoryProperties(deviceGroupProps[devGroupIdx].physicalDevices[deviceIdx], &memProps);
 
 	peerMemFeatures = reinterpret_cast<VkPeerMemoryFeatureFlags*>(buffer);
@@ -1885,8 +1885,12 @@ VkPhysicalDeviceSamplerYcbcrConversionFeatures getPhysicalDeviceSamplerYcbcrConv
 	return ycbcrFeatures;
 }
 
-void checkYcbcrConversionSupport (Context& context)
+void checkYcbcrApiSupport (Context& context)
 {
+	// check if YCbcr API and are supported by implementation
+
+	// the support for formats and YCbCr may still be optional - see isYcbcrConversionSupported below
+
 	if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_sampler_ycbcr_conversion"))
 	{
 		if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_sampler_ycbcr_conversion"))
@@ -1895,13 +1899,15 @@ void checkYcbcrConversionSupport (Context& context)
 		// Hard dependency for ycbcr
 		TCU_CHECK(de::contains(context.getInstanceExtensions().begin(), context.getInstanceExtensions().end(), "VK_KHR_get_physical_device_properties2"));
 	}
+}
 
-	{
-		const VkPhysicalDeviceSamplerYcbcrConversionFeatures	ycbcrFeatures	= getPhysicalDeviceSamplerYcbcrConversionFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+bool isYcbcrConversionSupported (Context& context)
+{
+	checkYcbcrApiSupport(context);
 
-		if (ycbcrFeatures.samplerYcbcrConversion == VK_FALSE)
-			TCU_THROW(NotSupportedError, "samplerYcbcrConversion is not supported");
-	}
+	const VkPhysicalDeviceSamplerYcbcrConversionFeatures	ycbcrFeatures	= getPhysicalDeviceSamplerYcbcrConversionFeatures(context.getInstanceInterface(), context.getPhysicalDevice());
+
+	return (ycbcrFeatures.samplerYcbcrConversion == VK_TRUE);
 }
 
 VkFormatFeatureFlags getAllowedYcbcrFormatFeatures (VkFormat format)
@@ -1921,7 +1927,7 @@ VkFormatFeatureFlags getAllowedYcbcrFormatFeatures (VkFormat format)
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT;
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT;
 	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT;
-    flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
+	flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
 
 	// multi-plane formats *may* support DISJOINT_BIT
 	if (getPlaneCount(format) >= 2)
@@ -1936,7 +1942,8 @@ VkFormatFeatureFlags getAllowedYcbcrFormatFeatures (VkFormat format)
 tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
 {
 	DE_ASSERT(isYCbCrFormat(format));
-	checkYcbcrConversionSupport(context);
+	// check if Ycbcr format enums are valid given the version and extensions
+	checkYcbcrApiSupport(context);
 
 	TestLog&					log						= context.getTestContext().getLog();
 	const VkFormatProperties	properties				= getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
@@ -1960,7 +1967,8 @@ tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
 		VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
 		VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM
 	};
-	const bool					isRequiredBaseFormat	(de::contains(DE_ARRAY_BEGIN(s_requiredBaseFormats), DE_ARRAY_END(s_requiredBaseFormats), format));
+	const bool					isRequiredBaseFormat	= isYcbcrConversionSupported(context) &&
+														  de::contains(DE_ARRAY_BEGIN(s_requiredBaseFormats), DE_ARRAY_END(s_requiredBaseFormats), format);
 
 	log << TestLog::Message << properties << TestLog::EndMessage;
 
@@ -1974,8 +1982,7 @@ tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
 		{
 			const VkFormatFeatureFlags	required	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
 													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
-													| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT;
+													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 
 			if ((supported & required) != required)
 			{
@@ -2446,7 +2453,8 @@ struct ImageFormatPropertyCase
 tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, const VkImageType imageType, const VkImageTiling tiling)
 {
 	if (isYCbCrFormat(format))
-		checkYcbcrConversionSupport(context);
+		// check if Ycbcr format enums are valid given the version and extensions
+		checkYcbcrApiSupport(context);
 
 	TestLog&						log					= context.getTestContext().getLog();
 	const VkPhysicalDeviceFeatures&	deviceFeatures		= context.getDeviceFeatures();
@@ -2465,7 +2473,7 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 					  "A sampled image format must have VK_FORMAT_FEATURE_TRANSFER_SRC_BIT and VK_FORMAT_FEATURE_TRANSFER_DST_BIT format feature flags set");
 	}
 
-	if (format == VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR || format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR)
+	if (isYcbcrConversionSupported(context) && (format == VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR || format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR))
 	{
 		const VkFormatFeatureFlags requiredFeatures = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR | VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
 
@@ -3171,7 +3179,8 @@ tcu::TestStatus deviceMemoryProperties2 (Context& context)
 tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format, const VkImageType imageType, const VkImageTiling tiling)
 {
 	if (isYCbCrFormat(format))
-		checkYcbcrConversionSupport(context);
+		// check if Ycbcr format enums are valid given the version and extensions
+		checkYcbcrApiSupport(context);
 
 	TestLog&						log				= context.getTestContext().getLog();
 

@@ -132,7 +132,9 @@ deUint32 chooseQueueFamilyIndex (const vk::InstanceInterface& vki, vk::VkPhysica
 	return supportedFamilyIndices[0];
 }
 
-vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::InstanceInterface&		vki,
+vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::PlatformInterface&		vkp,
+											vk::VkInstance						instance,
+											const vk::InstanceInterface&		vki,
 											vk::VkPhysicalDevice				physicalDevice,
 											const Extensions&					supportedExtensions,
 											const deUint32						queueFamilyIndex,
@@ -178,7 +180,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi (const vk::InstanceInterface&		vki,
 			TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
 	}
 
-	return createDevice(vki, physicalDevice, &deviceParams, pAllocator);
+	return createDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
 de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
@@ -410,30 +412,12 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
 	}
 
-	{
-		const vk::VkClearValue			clearValue			= vk::makeClearValueColorF32(0.25f, 0.50f, 0.75f, 1.00f);
-		const vk::VkRenderPassBeginInfo	renderPassBeginInfo	=
-		{
-			vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			DE_NULL,
-
-			renderPass,
-			framebuffer,
-
-			{
-				{ (deInt32)0, (deInt32)0 },
-				{ imageWidth, imageHeight }
-			},
-			1u,
-			&clearValue
-		};
-		vkd.cmdBeginRenderPass(*commandBuffer, &renderPassBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(0, 0, imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
 
 	for (size_t frameNdx = imageNextFrame; frameNdx <= currentFrame; frameNdx++)
 		cmdRenderFrame(vkd, *commandBuffer, pipelineLayout, pipeline, frameNdx, imageWidth, imageHeight);
 
-	vkd.cmdEndRenderPass(*commandBuffer);
+	endRenderPass(vkd, *commandBuffer);
 
 	endCommandBuffer(vkd, *commandBuffer);
 	return commandBuffer;
@@ -1055,8 +1039,8 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 
 	, m_queueFamilyIndex		(chooseQueueFamilyIndex(m_vki, m_physicalDevice, *m_surface))
 	, m_deviceExtensions		(vk::enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, DE_NULL))
-	, m_device					(createDeviceWithWsi(m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useIncrementalPresent))
-	, m_vkd						(m_vki, *m_device)
+	, m_device					(createDeviceWithWsi(m_vkp, *m_instance, m_vki, m_physicalDevice, m_deviceExtensions, m_queueFamilyIndex, testConfig.useIncrementalPresent))
+	, m_vkd						(m_vkp, *m_instance, *m_device)
 	, m_queue					(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
 
 	, m_commandPool				(createCommandPool(m_vkd, *m_device, m_queueFamilyIndex))

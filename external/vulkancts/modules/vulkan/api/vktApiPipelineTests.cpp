@@ -30,6 +30,8 @@
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 namespace vkt
 {
@@ -423,26 +425,7 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 
 	const Unique<VkPipeline>						graphicsPipeline				(createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineCreateInfo));
 
-	const VkClearValue								clearValues						=
-	{
-		{ { 0.25f, 0.25f, 0.25f, 0.0f } },		// VkClearColorValue           color;
-	};
-
-	const VkRenderPassBeginInfo						renderPassBeginInfo				=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType        sType;
-		DE_NULL,										// const void*            pNext;
-		renderPassB.get(),								// VkRenderPass           renderPass;
-		frameBuffer.get(),								// VkFramebuffer          framebuffer;
-		{
-			{ 0,	0		},		// VkOffset2D    offset;
-			{ 256u,	256u	}		// VkExtent2D    extent;
-		},												// VkRect2D               renderArea;
-		1,												// deUint32               clearValueCount;
-		&clearValues									// const VkClearValue*    pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(commandBuffer.get(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, commandBuffer.get(), renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 256u, 256u), tcu::Vec4(0.25f, 0.25f, 0.25f, 0.0f));
 
 	vk.cmdBindPipeline(commandBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
 
@@ -451,7 +434,7 @@ tcu::TestStatus renderpassLifetimeTest (Context& context)
 
 	vk.cmdDraw(commandBuffer.get(), 3u, 1u, 0u, 0u);
 
-	vk.cmdEndRenderPass(commandBuffer.get());
+	endRenderPass(vk, commandBuffer.get());
 
 	VK_CHECK(vk.endCommandBuffer(commandBuffer.get()));
 
@@ -693,23 +676,8 @@ tcu::TestStatus framebufferCompatibleRenderPassTest (Context& context)
 																					VK_ATTACHMENT_STORE_OP_STORE,
 																					VK_IMAGE_LAYOUT_GENERAL));
 
-	// Use framebuffer in a compatible render pass
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
-		DE_NULL,									// const void*            pNext;
-		renderPassB.get(),							// VkRenderPass           renderPass;
-		frameBuffer.get(),							// VkFramebuffer          framebuffer;
-		{
-			{ 0,	0	},	// VkOffset2D    offset;
-			{ 0u,	0u	}	// VkExtent2D    extent;
-		},											// VkRect2D               renderArea;
-		0,											// deUint32               clearValueCount;
-		DE_NULL										// const VkClearValue*    pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(commandBuffer.get(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vk.cmdEndRenderPass(commandBuffer.get());
+	beginRenderPass(vk, commandBuffer.get(), renderPassB.get(), frameBuffer.get(), makeRect2D(0, 0, 0u, 0u));
+	endRenderPass(vk, commandBuffer.get());
 
 	VK_CHECK(vk.endCommandBuffer(commandBuffer.get()));
 
@@ -1215,28 +1183,7 @@ tcu::TestStatus pipelineLayoutLifetimeGraphicsTest (Context& context)
 
 	const Unique<VkPipeline>				graphicsPipeline			(createSimpleGraphicsPipeline(vk, device, DE_LENGTH_OF_ARRAY(shaderStageCreateInfos), shaderStageCreateInfos, pipelineLayoutB, renderPass.get()));
 
-	{
-		const VkClearValue			clearValues			=
-		{
-			{ { 0.25f, 0.25f, 0.25f, 0.0f } }
-		};
-
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
-			DE_NULL,									// const void*            pNext;
-			renderPass.get(),							// VkRenderPass           renderPass;
-			frameBuffer.get(),							// VkFramebuffer          framebuffer;
-			{
-				{ 0,	0		},	// VkOffset2D    offset;
-				{ 256u,	256u	}	// VkExtent2D    extent;
-			},											// VkRect2D               renderArea;
-			1,											// deUint32               clearValueCount;
-			&clearValues								// const VkClearValue*    pClearValues;
-		};
-
-		vk.cmdBeginRenderPass(commandBuffer.get(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(vk, commandBuffer.get(), renderPass.get(), frameBuffer.get(), makeRect2D(0, 0, 256u, 256u), tcu::Vec4(0.25f, 0.25f, 0.25f, 0.0f));
 
 	vk.cmdBindPipeline(commandBuffer.get(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
 

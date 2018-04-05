@@ -32,6 +32,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
@@ -2615,24 +2616,7 @@ public:
 	void recordCommands (const VkCommandBuffer cmdBuffer)
 	{
 		const DeviceInterface&		vk						= m_context.getDeviceInterface();
-		const VkRenderPassBeginInfo	renderPassBeginInfo		=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_frameBuffer,											// VkFramebuffer		framebuffer;
-			{
-				{ 0, 0 },											// VkOffset2D			offset;
-				{
-					m_resource.getImage().extent.width,				// deUint32				width;
-					m_resource.getImage().extent.height				// deUint32				height;
-				}													// VkExtent2D			extent;
-			},														// VkRect2D				renderArea;
-			1u,														// deUint32				clearValueCount;
-			&m_clearValue											// const VkClearValue*	pClearValues;
-		};
-
-		vk.cmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_frameBuffer, makeRect2D(0 ,0, m_resource.getImage().extent.width, m_resource.getImage().extent.height), m_clearValue);
 
 		const VkClearAttachment	clearAttachment	=
 		{
@@ -2656,7 +2640,7 @@ public:
 
 		vk.cmdClearAttachments(cmdBuffer, 1, &clearAttachment, 1, &clearRect);
 
-		vk.cmdEndRenderPass(cmdBuffer);
+		endRenderPass(vk, cmdBuffer);
 	}
 
 	SyncInfo getSyncInfo (void) const

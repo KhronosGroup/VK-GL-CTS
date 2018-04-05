@@ -1237,17 +1237,6 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 		defaultClearValue(m_depthFormat),
 	};
 
-	const VkRenderPassBeginInfo	renderPassBeginInfo			=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,               // VkStructureType      sType;
-		DE_NULL,                                                // const void*          pNext;
-		*m_renderPass,                                          // VkRenderPass         renderPass;
-		*m_framebuffer,                                         // VkFramebuffer        framebuffer;
-		{ { 0u, 0u }, { m_renderSize.x(), m_renderSize.y() } }, // VkRect2D             renderArea;
-		2u,                                                     // deUint32             clearValueCount;
-		attachmentClearValues                                   // const VkClearValue*  pClearValues;
-	};
-
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
@@ -1255,7 +1244,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
-	vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines);
 	VkDeviceSize offsets = 0u;
@@ -1271,7 +1260,7 @@ void BasicGraphicsTestInstance::configCommandBuffer(void)
 	  }
 	}
 
-	vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(vk, *m_cmdBuffer);
 
 	if(!m_inRenderPass)
 	{
@@ -1484,17 +1473,6 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 		defaultClearValue(m_depthFormat),
 	};
 
-	const VkRenderPassBeginInfo	renderPassBeginInfo			=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,               // VkStructureType      sType;
-		DE_NULL,                                                // const void*          pNext;
-		*m_renderPass,                                          // VkRenderPass         renderPass;
-		*m_framebuffer,                                         // VkFramebuffer        framebuffer;
-		{ { 0u, 0u }, { m_renderSize.x(), m_renderSize.y() } }, // VkRect2D             renderArea;
-		2u,                                                     // deUint32             clearValueCount;
-		attachmentClearValues                                   // const VkClearValue*  pClearValues;
-	};
-
 	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, (VkDependencyFlags)0,
@@ -1502,7 +1480,7 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 
 	vk.cmdResetQueryPool(*m_cmdBuffer, *m_queryPool, 0u, TimestampTest::ENTRY_COUNT);
 
-	vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), 2u, attachmentClearValues);
 
 	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelines);
 
@@ -1520,7 +1498,7 @@ void AdvGraphicsTestInstance::configCommandBuffer(void)
 	  }
 	}
 
-	vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(vk, *m_cmdBuffer);
 
 	if(!m_inRenderPass)
 	{

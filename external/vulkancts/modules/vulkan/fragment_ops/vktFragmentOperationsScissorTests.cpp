@@ -581,23 +581,7 @@ public:
 
 		beginCommandBuffer(vk, *m_cmdBuffer);
 
-		const VkClearValue			clearValue	= makeClearValueColor(m_clearColor);
-		const VkRect2D				renderArea	=
-		{
-			makeOffset2D(0, 0),
-			makeExtent2D(m_renderSize.x(), m_renderSize.y()),
-		};
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-			DE_NULL,										// const void*             pNext;
-			*m_renderPass,									// VkRenderPass            renderPass;
-			*m_framebuffer,									// VkFramebuffer           framebuffer;
-			renderArea,										// VkRect2D                renderArea;
-			1u,												// uint32_t                clearValueCount;
-			&clearValue,									// const VkClearValue*     pClearValues;
-		};
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), m_clearColor);
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 		{
@@ -606,7 +590,7 @@ public:
 		}
 
 		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_vertices.size()), 1u, 0u, 0u);
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(vk, *m_cmdBuffer);
 
 		// Prepare color image for copy
 		{

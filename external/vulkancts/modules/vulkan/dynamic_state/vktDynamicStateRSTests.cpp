@@ -28,6 +28,7 @@
 #include "vktDynamicStateTestCaseUtil.hpp"
 
 #include "vkImageUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 
 #include "tcuTextureUtil.hpp"
@@ -306,15 +307,12 @@ protected:
 			vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 			0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-		const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
-		const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
-
 		transition2DImage(m_vk, *m_cmdBuffer, m_depthStencilImage->object(), vk::VK_IMAGE_ASPECT_DEPTH_BIT | vk::VK_IMAGE_ASPECT_STENCIL_BIT,
 						  vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 						  vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 						  vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
-		m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
+		vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, vk::makeRect2D(0, 0, WIDTH, HEIGHT));
 	}
 
 	void setDynamicViewportState (const deUint32 width, const deUint32 height)
@@ -428,7 +426,7 @@ public:
 		setDynamicRasterizationState(1.0f, -1.0f);
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 8, 0);
 
-		m_vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -523,7 +521,7 @@ public:
 		setDynamicRasterizationState(1.0f, 0.0f);
 		m_vk.cmdDraw(*m_cmdBuffer, 4, 1, 4, 0);
 
-		m_vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -616,7 +614,7 @@ public:
 
 		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
 
-		m_vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());

@@ -342,28 +342,6 @@ Move<VkBuffer> createBuffer (const DeviceInterface&	vk,
 	return createBuffer(vk, device, &pCreateInfo);
 }
 
-void cmdBeginRenderPass (const DeviceInterface&	vk,
-						 VkCommandBuffer		cmdBuffer,
-						 VkRenderPass			pRenderPassBegin_renderPass,
-						 VkFramebuffer			pRenderPassBegin_framebuffer,
-						 VkRect2D				pRenderPassBegin_renderArea,
-						 deUint32				pRenderPassBegin_clearValueCount,
-						 const VkClearValue*	pRenderPassBegin_pAttachmentClearValues,
-						 VkSubpassContents		contents)
-{
-	const VkRenderPassBeginInfo pRenderPassBegin =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		DE_NULL,
-		pRenderPassBegin_renderPass,
-		pRenderPassBegin_framebuffer,
-		pRenderPassBegin_renderArea,
-		pRenderPassBegin_clearValueCount,
-		pRenderPassBegin_pAttachmentClearValues,
-	};
-	vk.cmdBeginRenderPass(cmdBuffer, &pRenderPassBegin, contents);
-}
-
 void beginCommandBuffer (const DeviceInterface&			vk,
 						 VkCommandBuffer				cmdBuffer,
 						 VkCommandBufferUsageFlags		pBeginInfo_flags,
@@ -2526,7 +2504,7 @@ void pushRenderPassCommands (const DeviceInterface&							vk,
 			const VkSubpassContents	contents = subpassRenderers[subpassNdx]->isSecondary() ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : VK_SUBPASS_CONTENTS_INLINE;
 
 			if (subpassNdx == 0)
-				cmdBeginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, (deUint32)attachmentClearValues.size(), attachmentClearValues.empty() ? DE_NULL : &attachmentClearValues[0], contents);
+				beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, (deUint32)attachmentClearValues.size(), attachmentClearValues.empty() ? DE_NULL : &attachmentClearValues[0], contents);
 			else
 				vk.cmdNextSubpass(commandBuffer, contents);
 
@@ -2546,7 +2524,7 @@ void pushRenderPassCommands (const DeviceInterface&							vk,
 			}
 		}
 
-		vk.cmdEndRenderPass(commandBuffer);
+		endRenderPass(vk, commandBuffer);
 	}
 }
 

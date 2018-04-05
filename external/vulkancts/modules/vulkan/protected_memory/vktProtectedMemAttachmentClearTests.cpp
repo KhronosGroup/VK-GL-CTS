@@ -175,27 +175,16 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
 	}
 
 	// Image clear to different from input color
-	const vk::VkClearValue				clearValue			=
-		vk::makeClearValueColorF32(m_clearValue.color.float32[0] < 0.5f ? 1.0f : 0.0f,
-								   m_clearValue.color.float32[1] < 0.5f ? 1.0f : 0.0f,
-								   m_clearValue.color.float32[2] < 0.5f ? 1.0f : 0.0f,
-								   m_clearValue.color.float32[3] < 0.5f ? 1.0f : 0.0f
-		);
-	const vk::VkRenderPassBeginInfo		passBeginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// sType
-		DE_NULL,												// pNext
-		*renderPass,											// renderPass
-		*framebuffer,											// framebuffer
-		{ {0, 0}, {RENDER_WIDTH, RENDER_HEIGHT} },				// renderArea
-		1u,														// clearValueCount
-		&clearValue												// pClearValues
-	};
+
+	const tcu::Vec4						clearValue			(m_clearValue.color.float32[0] < 0.5f ? 1.0f : 0.0f,
+															 m_clearValue.color.float32[1] < 0.5f ? 1.0f : 0.0f,
+															 m_clearValue.color.float32[2] < 0.5f ? 1.0f : 0.0f,
+															 m_clearValue.color.float32[3] < 0.5f ? 1.0f : 0.0f);
 
 	const vk::VkSubpassContents			subpassContents		= m_cmdBufferType == CMD_BUFFER_SECONDARY
 															  ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
 															  : vk::VK_SUBPASS_CONTENTS_INLINE;
-	vk.cmdBeginRenderPass(*cmdBuffer, &passBeginInfo, subpassContents);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT), clearValue, subpassContents);
 
 	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
 	{
@@ -251,7 +240,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
 		vk.cmdExecuteCommands(*cmdBuffer, 1u, &secondaryCmdBuffer.get());
 	}
 
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	{
 		const vk::VkImageMemoryBarrier	endImgBarrier		=

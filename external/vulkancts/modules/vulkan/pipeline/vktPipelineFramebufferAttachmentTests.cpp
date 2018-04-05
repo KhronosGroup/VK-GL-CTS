@@ -654,24 +654,9 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		// Render pass: this should render only to the area defined by renderSize (smaller than the size of the attachment)
 		{
-			const VkRect2D				renderArea			=
-			{
-				makeOffset2D(0, 0),
-				makeExtent2D(caseDef.renderSize.x(), caseDef.renderSize.y()),
-			};
-			const VkRenderPassBeginInfo renderPassBeginInfo =
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-				DE_NULL,									// const void*             pNext;
-				*renderPass,								// VkRenderPass            renderPass;
-				*framebuffer,								// VkFramebuffer           framebuffer;
-				renderArea,									// VkRect2D                renderArea;
-				0,											// uint32_t                clearValueCount;
-				DE_NULL,									// const VkClearValue*     pClearValues;
-			};
 			const VkDeviceSize			vertexBufferOffset	= 0ull;
 
-			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
 			{
 				vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 				for (deUint32 layerNdx = 0; layerNdx < caseDef.numLayers; ++layerNdx)
@@ -683,7 +668,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 					vk.cmdDraw(*cmdBuffer, 4u, 1u, layerNdx*4u, 0u);
 				}
 			}
-			vk.cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 		}
 
 		// If we are using a multi-sampled render target (msColorImage), resolve it now (to colorImage)
@@ -1012,31 +997,16 @@ tcu::TestStatus testNoAtt (Context& context, const bool multisample)
 
 		// Render pass
 		{
-			const VkRect2D renderArea =
-			{
-				makeOffset2D(0, 0),
-				makeExtent2D(renderSize.x(), renderSize.y()),
-			};
-			const VkRenderPassBeginInfo renderPassBeginInfo =
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-				DE_NULL,									// const void*             pNext;
-				*renderPass,								// VkRenderPass            renderPass;
-				*framebuffer,								// VkFramebuffer           framebuffer;
-				renderArea,									// VkRect2D                renderArea;
-				0,											// uint32_t                clearValueCount;
-				DE_NULL,									// const VkClearValue*     pClearValues;
-			};
 			const VkDeviceSize vertexBufferOffset = 0ull;
 
-			vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()));
 
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **pipeline[0]);
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
-			vk.cmdEndRenderPass(*cmdBuffer);
+			endRenderPass(vk, *cmdBuffer);
 		}
 
 		// copy image to host visible colorBuffer
@@ -1336,30 +1306,15 @@ tcu::TestStatus testDifferentAttachmentSizes (Context& context, const CaseDef ca
 
 	// Render pass: this should render only to the area defined by renderSize (smaller than the size of the attachment)
 	{
-		const VkRect2D				renderArea			=
-		{
-			makeOffset2D(0, 0),
-			makeExtent2D(caseDef.renderSize.x(), caseDef.renderSize.y()),
-		};
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-			DE_NULL,									// const void*             pNext;
-			*renderPass,								// VkRenderPass            renderPass;
-			*framebuffer,								// VkFramebuffer           framebuffer;
-			renderArea,									// VkRect2D                renderArea;
-			0,											// uint32_t                clearValueCount;
-			DE_NULL,									// const VkClearValue*     pClearValues;
-		};
 		const VkDeviceSize			vertexBufferOffset	= 0ull;
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, caseDef.renderSize.x(), caseDef.renderSize.y()));
 		{
 			vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 			vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 		}
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 	}
 
 	// If we are using a multi-sampled render target (msColorImage), resolve it now (to colorImage)
@@ -1560,20 +1515,9 @@ tcu::TestStatus testUnusedAtt (Context& context)
 
 	const Move<VkFramebuffer>		framebuffer				= createFramebuffer(vk, device, &framebufferCreateInfo, DE_NULL);
 
-	const VkRenderPassBeginInfo		renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		DE_NULL,
-		*renderPass,
-		*framebuffer,
-		{{0, 0}, {32, 32}},
-		0,
-		DE_NULL
-	};
-
 	beginCommandBuffer(vk, *cmdBuffer);
-	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vk.cmdEndRenderPass(*cmdBuffer);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, 32u, 32u));
+	endRenderPass(vk, *cmdBuffer);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	return tcu::TestStatus::pass("Pass");

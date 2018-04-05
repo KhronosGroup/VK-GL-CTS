@@ -1109,17 +1109,6 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		vk::VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	// flags
 		&passCmdBufInheritInfo,
 	};
-	const vk::VkClearValue								clearValue					= vk::makeClearValueColorF32(0.0f, 0.0f, 0.0f, 0.0f);
-	const vk::VkRenderPassBeginInfo						renderPassBeginInfo			=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		DE_NULL,
-		*m_renderPass,		// renderPass
-		*m_framebuffer,		// framebuffer
-		renderArea,			// renderArea
-		1u,					// clearValueCount
-		&clearValue,		// pClearValues
-	};
 
 	const vk::VkPipelineLayout							pipelineLayout				(getPipelineLayout());
 	const vk::Unique<vk::VkPipeline>					pipeline					(createPipeline(pipelineLayout));
@@ -1129,7 +1118,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 	const vk::VkSubpassContents							passContents				= (m_isPrimaryCmdBuf) ? (vk::VK_SUBPASS_CONTENTS_INLINE) : (vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	beginCommandBuffer(m_vki, *mainCmd);
-	m_vki.cmdBeginRenderPass(*mainCmd, &renderPassBeginInfo, passContents);
+	beginRenderPass(m_vki, *mainCmd, *m_renderPass, *m_framebuffer, renderArea, tcu::Vec4(0.0f), passContents);
 
 	if (m_isPrimaryCmdBuf)
 	{
@@ -1146,7 +1135,7 @@ void SingleCmdRenderInstance::renderToTarget (void)
 		m_vki.cmdExecuteCommands(*mainCmd, 1, &passCmd.get());
 	}
 
-	m_vki.cmdEndRenderPass(*mainCmd);
+	endRenderPass(m_vki, *mainCmd);
 	endCommandBuffer(m_vki, *mainCmd);
 
 	// submit and wait for them to finish before exiting scope. (Killing in-flight objects is a no-no).

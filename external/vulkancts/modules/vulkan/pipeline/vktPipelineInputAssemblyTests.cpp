@@ -34,6 +34,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deMath.h"
@@ -1360,17 +1361,6 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 	{
 		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
 
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 } , { m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
-			1u,														// deUint32				clearValueCount;
-			&attachmentClearValue									// const VkClearValue*	pClearValues;
-		};
-
 		const VkImageMemoryBarrier attachmentLayoutBarrier =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
@@ -1392,7 +1382,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, 1u, &attachmentLayoutBarrier);
 
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		const VkDeviceSize vertexBufferOffset = 0;
 
@@ -1401,7 +1391,7 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 		vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indexBuffer, 0, m_indexType);
 		vk.cmdDrawIndexed(*m_cmdBuffer, (deUint32)m_indices.size(), 1, 0, 0, 0);
 
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }

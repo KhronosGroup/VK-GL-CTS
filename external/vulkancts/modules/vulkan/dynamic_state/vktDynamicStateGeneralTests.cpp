@@ -100,7 +100,7 @@ public:
 		setDynamicViewportState(1, &viewport, &scissor_2);
 		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
 
-		m_vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -197,7 +197,7 @@ public:
 		setDynamicViewportState(1, &viewport, &scissor_2);
 		m_vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_data.size()), 1, 0, 0);
 
-		m_vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -334,7 +334,7 @@ public:
 		// draw quad using vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
 		m_vk.cmdDraw(*m_cmdBuffer, 6, 1, 4, 0);
 
-		m_vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(m_vk, *m_cmdBuffer);
 		endCommandBuffer(m_vk, *m_cmdBuffer);
 
 		submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());

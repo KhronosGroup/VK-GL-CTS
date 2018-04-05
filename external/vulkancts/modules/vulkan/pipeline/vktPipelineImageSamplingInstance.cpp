@@ -30,6 +30,7 @@
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTextureUtil.hpp"
@@ -819,20 +820,6 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 	{
 		const std::vector<VkClearValue> attachmentClearValues (m_imageCount, defaultClearValue(m_colorFormat));
 
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{
-				{ 0, 0 },
-				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
-			},														// VkRect2D				renderArea;
-			static_cast<deUint32>(attachmentClearValues.size()),	// deUint32				clearValueCount;
-			&attachmentClearValues[0]								// const VkClearValue*	pClearValues;
-		};
-
 		std::vector<VkImageMemoryBarrier> preAttachmentBarriers(m_imageCount);
 
 		for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
@@ -860,7 +847,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)m_imageCount, &preAttachmentBarriers[0]);
 
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)attachmentClearValues.size(), &attachmentClearValues[0]);
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
 
@@ -870,7 +857,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }

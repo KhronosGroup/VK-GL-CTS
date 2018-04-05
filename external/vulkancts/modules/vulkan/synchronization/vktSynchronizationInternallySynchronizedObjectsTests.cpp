@@ -256,7 +256,7 @@ MovePtr<MultiQueues> createQueues (const Context& context, const VkQueueFlags& q
 	deviceInfo.queueCreateInfoCount		= static_cast<deUint32>(queues.countQueueFamilyIndex());
 	deviceInfo.pQueueCreateInfos		= &queueInfos[0];
 
-	queues.setDevice(createDevice(instance, physicalDevice, &deviceInfo));
+	queues.setDevice(createDevice(context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo));
 
 	for (deUint32 queueFamilyIndex = 0; queueFamilyIndex < queues.countQueueFamilyIndex(); ++queueFamilyIndex)
 	{

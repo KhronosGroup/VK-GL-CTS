@@ -390,6 +390,8 @@ vk::VkPhysicalDevice getPhysicalDevice (const vk::InstanceInterface& vki, vk::Vk
 }
 
 vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
+									 const vk::PlatformInterface&					vkp,
+									 vk::VkInstance									instance,
 									 const vk::InstanceInterface&					vki,
 									 vk::VkPhysicalDevice							physicalDevice,
 									 vk::VkExternalMemoryHandleTypeFlagBits		memoryHandleType,
@@ -469,7 +471,7 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 			0u
 		};
 
-		return vk::createDevice(vki, physicalDevice, &createInfo);
+		return vk::createDevice(vkp, instance, vki, physicalDevice, &createInfo);
 	}
 	catch (const vk::Error& error)
 	{
@@ -1038,8 +1040,8 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_queueFamiliesA			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiA, m_physicalDeviceA))
 	, m_queueFamilyIndicesA		(getFamilyIndices(m_queueFamiliesA))
 	, m_getMemReq2Supported		(vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_get_memory_requirements2"))
-	, m_deviceA					(createDevice(context.getUsedApiVersion(), m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
-	, m_vkdA					(m_vkiA, *m_deviceA)
+	, m_deviceA					(createDevice(context.getUsedApiVersion(), context.getPlatformInterface(), *m_instanceA, m_vkiA, m_physicalDeviceA, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
+	, m_vkdA					(context.getPlatformInterface(), *m_instanceA, *m_deviceA)
 
 	, m_instanceB				(createInstance(context.getPlatformInterface(), context.getUsedApiVersion()))
 
@@ -1047,8 +1049,8 @@ SharingTestInstance::SharingTestInstance (Context&		context,
 	, m_physicalDeviceB			(getPhysicalDevice(m_vkiB, *m_instanceB, getDeviceId(m_vkiA, m_physicalDeviceA)))
 	, m_queueFamiliesB			(vk::getPhysicalDeviceQueueFamilyProperties(m_vkiB, m_physicalDeviceB))
 	, m_queueFamilyIndicesB		(getFamilyIndices(m_queueFamiliesB))
-	, m_deviceB					(createDevice(context.getUsedApiVersion(), m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
-	, m_vkdB					(m_vkiB, *m_deviceB)
+	, m_deviceB					(createDevice(context.getUsedApiVersion(), context.getPlatformInterface(), *m_instanceB, m_vkiB, m_physicalDeviceB, m_config.memoryHandleType, m_config.semaphoreHandleType, m_config.dedicated, m_getMemReq2Supported))
+	, m_vkdB					(context.getPlatformInterface(), *m_instanceB, *m_deviceB)
 
 	, m_semaphoreHandleType		(m_config.semaphoreHandleType)
 	, m_memoryHandleType		(m_config.memoryHandleType)

@@ -628,34 +628,6 @@ VkBufferMemoryBarrier makeBufferMemoryBarrier (const VkAccessFlags	srcAccessMask
 	return barrier;
 }
 
-void beginRenderPass (const DeviceInterface&	vk,
-					  const VkCommandBuffer		commandBuffer,
-					  const VkRenderPass		renderPass,
-					  const VkFramebuffer		framebuffer,
-					  const VkRect2D&			renderArea,
-					  const tcu::Vec4&			clearColor)
-{
-	const VkClearValue clearValue = makeClearValueColor(clearColor);
-
-	const VkRenderPassBeginInfo renderPassBeginInfo = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-		DE_NULL,										// const void*             pNext;
-		renderPass,										// VkRenderPass            renderPass;
-		framebuffer,									// VkFramebuffer           framebuffer;
-		renderArea,										// VkRect2D                renderArea;
-		1u,												// uint32_t                clearValueCount;
-		&clearValue,									// const VkClearValue*     pClearValues;
-	};
-
-	vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-}
-
-void endRenderPass (const DeviceInterface&	vk,
-					const VkCommandBuffer	commandBuffer)
-{
-	vk.cmdEndRenderPass(commandBuffer);
-}
-
 bool compareWithFileImage (Context& context, const tcu::ConstPixelBufferAccess& resultImage, std::string testName)
 {
 	tcu::TextureLevel referenceImage;

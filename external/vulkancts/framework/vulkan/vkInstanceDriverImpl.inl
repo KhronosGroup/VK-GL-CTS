@@ -42,11 +42,6 @@ void InstanceDriver::getPhysicalDeviceMemoryProperties (VkPhysicalDevice physica
 	m_vk.getPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
 }
 
-PFN_vkVoidFunction InstanceDriver::getDeviceProcAddr (VkDevice device, const char* pName) const
-{
-	return m_vk.getDeviceProcAddr(device, pName);
-}
-
 VkResult InstanceDriver::createDevice (VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) const
 {
 	return m_vk.createDevice(physicalDevice, pCreateInfo, pAllocator, pDevice);

@@ -4451,22 +4451,8 @@ void SubmitRenderPass::submit (SubmitContext& context)
 {
 	const vk::DeviceInterface&		vkd				= context.getContext().getDeviceInterface();
 	const vk::VkCommandBuffer		commandBuffer	= context.getCommandBuffer();
-	const vk::VkClearValue			clearValue		= vk::makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
 
-	const vk::VkRenderPassBeginInfo	beginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		DE_NULL,
-
-		*m_renderPass,
-		*m_framebuffer,
-
-		{ { 0, 0 },  { (deUint32)m_targetWidth, (deUint32)m_targetHeight } },
-		1u,
-		&clearValue
-	};
-
-	vkd.cmdBeginRenderPass(commandBuffer, &beginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vkd, commandBuffer, *m_renderPass, *m_framebuffer, vk::makeRect2D(0, 0, m_targetWidth, m_targetHeight), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
 	{
@@ -4475,7 +4461,7 @@ void SubmitRenderPass::submit (SubmitContext& context)
 		command.submit(context);
 	}
 
-	vkd.cmdEndRenderPass(commandBuffer);
+	endRenderPass(vkd, commandBuffer);
 }
 
 void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)

@@ -91,19 +91,19 @@
 namespace // compilation
 {
 
-vk::ProgramBinary* compileProgram (const vk::GlslSource& source, glu::ShaderProgramInfo* buildInfo)
+vk::ProgramBinary* compileProgram (const vk::GlslSource& source, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine)
 {
-	return vk::buildProgram(source, buildInfo);
+	return vk::buildProgram(source, buildInfo, commandLine);
 }
 
-vk::ProgramBinary* compileProgram (const vk::HlslSource& source, glu::ShaderProgramInfo* buildInfo)
+vk::ProgramBinary* compileProgram (const vk::HlslSource& source, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine)
 {
-	return vk::buildProgram(source, buildInfo);
+	return vk::buildProgram(source, buildInfo, commandLine);
 }
 
-vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, vk::SpirVProgramInfo* buildInfo)
+vk::ProgramBinary* compileProgram (const vk::SpirVAsmSource& source, vk::SpirVProgramInfo* buildInfo, const tcu::CommandLine& commandLine)
 {
-	return vk::assembleProgram(source, buildInfo);
+	return vk::assembleProgram(source, buildInfo, commandLine);
 }
 
 template <typename InfoType, typename IteratorType>
@@ -111,7 +111,8 @@ vk::ProgramBinary* buildProgram (const std::string&					casePath,
 								 IteratorType						iter,
 								 const vk::BinaryRegistryReader&	prebuiltBinRegistry,
 								 tcu::TestLog&						log,
-								 vk::BinaryCollection*				progCollection)
+								 vk::BinaryCollection*				progCollection,
+								 const tcu::CommandLine&			commandLine)
 {
 	const vk::ProgramIdentifier		progId		(casePath, iter.getName());
 	const tcu::ScopedLogSection		progSection	(log, iter.getName(), "Program: " + iter.getName());
@@ -120,7 +121,7 @@ vk::ProgramBinary* buildProgram (const std::string&					casePath,
 
 	try
 	{
-		binProg	= de::MovePtr<vk::ProgramBinary>(compileProgram(iter.getProgram(), &buildInfo));
+		binProg	= de::MovePtr<vk::ProgramBinary>(compileProgram(iter.getProgram(), &buildInfo, commandLine));
 		log << buildInfo;
 	}
 	catch (const tcu::NotSupportedError& err)
@@ -233,6 +234,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(spirvVersionForAsm);
 	vk::SourceCollections		sourceProgs					(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
 	const bool					doShaderLog					= log.isShaderLoggingEnabled();
+	const tcu::CommandLine&		commandLine					= m_context.getTestContext().getCommandLine();
 
 	DE_UNREF(casePath); // \todo [2015-03-13 pyry] Use this to identify ProgramCollection storage path
 
@@ -247,7 +249,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 		if (progIter.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForGlsl(m_context.getUsedApiVersion()))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
-		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
+		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
 
 		if (doShaderLog)
 		{
@@ -271,7 +273,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 		if (progIter.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForGlsl(m_context.getUsedApiVersion()))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
-		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::HlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
+		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::HlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
 
 		if (doShaderLog)
 		{
@@ -295,7 +297,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 		if (asmIterator.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForAsm(m_context.getUsedApiVersion()))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
-		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection);
+		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
 	}
 
 	DE_ASSERT(!m_instance);

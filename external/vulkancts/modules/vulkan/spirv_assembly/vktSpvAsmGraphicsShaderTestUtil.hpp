@@ -415,6 +415,22 @@ void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext& co
 void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
 void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions);
 
+void createTestForStage(vk::VkShaderStageFlagBits					stage,
+						const std::string&							name,
+						const tcu::RGBA								(&inputColors)[4],
+						const tcu::RGBA								(&outputColors)[4],
+						const std::map<std::string, std::string>&	testCodeFragments,
+						const std::vector<deInt32>&					specConstants,
+						const PushConstants&						pushConstants,
+						const GraphicsResources&					resources,
+						const GraphicsInterfaces&					interfaces,
+						const std::vector<std::string>&				extensions,
+						const std::vector<std::string>&				features,
+						VulkanFeatures								vulkanFeatures,
+						tcu::TestCaseGroup*							tests,
+						const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
+						const std::string&							failMessageTemplate = std::string());
+
 void createTestsForAllStages (const std::string&						name,
 							  const tcu::RGBA							(&inputColors)[4],
 							  const tcu::RGBA							(&outputColors)[4],
@@ -583,6 +599,7 @@ void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const std::map
 // * Different bit patterns of NaNs are allowed.
 // * For the rest, require exactly the same bit pattern.
 bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags flags, tcu::TestLog& log);
+bool compare16BitFloat (deFloat16 returned, float original, RoundingModeFlags flags, tcu::TestLog& log);
 
 // Compare the returned 32-bit float against its expected value.
 //

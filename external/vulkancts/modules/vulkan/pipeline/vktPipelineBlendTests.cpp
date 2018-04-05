@@ -37,6 +37,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuPlatform.hpp"
@@ -697,17 +698,6 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 	{
 		const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
 
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { m_renderSize.x(), m_renderSize.y() } },	// VkRect2D				renderArea;
-			1,														// deUint32				clearValueCount;
-			&attachmentClearValue									// const VkClearValue*	pClearValues;
-		};
-
 		// Color image layout transition
 		const VkImageMemoryBarrier imageLayoutBarrier =
 		{
@@ -730,7 +720,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, 1u, &imageLayoutBarrier);
 
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), attachmentClearValue);
 
 		const VkDeviceSize quadOffset = (m_vertices.size() / BlendTest::QUAD_COUNT) * sizeof(Vertex4RGBA);
 
@@ -743,7 +733,7 @@ BlendTestInstance::BlendTestInstance (Context&									context,
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)(m_vertices.size() / BlendTest::QUAD_COUNT), 1, 0, 0);
 		}
 
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(vk, *m_cmdBuffer);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }

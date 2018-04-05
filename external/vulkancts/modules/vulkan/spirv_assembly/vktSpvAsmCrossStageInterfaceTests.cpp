@@ -354,18 +354,6 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 	Move<VkPipelineLayout>					pipelineLayout			= makePipelineLayout (vk, vkDevice);
 	Move<VkCommandPool>						cmdPool;
 	Move<VkCommandBuffer>					cmdBuffer;
-	const VkClearValue						renderPassClearValue	= makeClearValueColor(tcu::Vec4(0.0f));
-	const VkRect2D							renderArea				= { { 0, 0 }, { m_extent.width, m_extent.height } };
-	const VkRenderPassBeginInfo				renderPassBeginInfo		=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,									// const void*			pNext;
-		*renderPass,								// VkRenderPass			renderPass;
-		*frameBuffer,								// VkFramebuffer		framebuffer;
-		renderArea,									// VkRect2D				renderArea;
-		1u,											// uint32_t				clearValueCount;
-		&renderPassClearValue,						// const VkClearValue*	pClearValues;
-	};
 
 	// cmdPool
 	{
@@ -436,6 +424,7 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 		vector<VkPipelineShaderStageCreateInfo>		shaderStageParams;
 		map<VkShaderStageFlagBits, ShaderModuleSP>	shaderModule;
 		string										imageDescription;
+		const VkClearValue							renderPassClearValue = makeClearValueColor(tcu::Vec4(0.0f));
 		madeShaderModule(shaderModule, shaderStageParams, (VkShaderStageFlagBits)shadersStagesFlagsBits[stagesNdx], optionNdx);
 
 		Move<VkPipeline>			graphicsPipeline		= makeGraphicsPipeline (*renderPass, *pipelineLayout, static_cast<deUint32>(shaderModule.size()), &shaderStageParams[0], VK_VERTEX_INPUT_RATE_VERTEX,
@@ -456,7 +445,7 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 			VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *frameBuffer, makeRect2D(0, 0, m_extent.width, m_extent.height), tcu::Vec4(0.0f));
 
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &(*vertexBuffer), &vertexBufferOffset);
 
@@ -464,7 +453,7 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 
 		vk.cmdDraw(*cmdBuffer, m_verticesCount, 1u, 0u, 0u);
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		endCommandBuffer(vk, *cmdBuffer);
 

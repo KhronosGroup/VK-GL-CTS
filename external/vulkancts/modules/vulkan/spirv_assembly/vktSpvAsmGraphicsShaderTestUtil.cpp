@@ -2050,6 +2050,11 @@ bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags fla
 	return false;
 }
 
+bool compare16BitFloat (deFloat16 returned, float original, RoundingModeFlags flags, tcu::TestLog& log)
+{
+	return compare16BitFloat (original, (deUint16)returned, flags, log);
+}
+
 bool compare32BitFloat (float expected, float returned, tcu::TestLog& log)
 {
 	const Float32	expectedFloat	(expected);
@@ -3407,21 +3412,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			clearValue.push_back(makeClearValueColorU32(0, 0, 0, 0));
 		}
-		VkRenderPassBeginInfo			passBeginParams	=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			//	VkStructureType		sType;
-			DE_NULL,											//	const void*			pNext;
-			*renderPass,										//	VkRenderPass		renderPass;
-			*framebuffer,										//	VkFramebuffer		framebuffer;
-			{ { 0, 0 }, { renderSize.x(), renderSize.y() } },	//	VkRect2D			renderArea;
-			1u,													//	deUint32			clearValueCount;
-			clearValue.data(),									//	const VkClearValue*	pClearValues;
-		};
-		if (needInterface)
-		{
-			passBeginParams.clearValueCount += 1;
-		}
-		vk.cmdBeginRenderPass(*cmdBuf, &passBeginParams, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), (deUint32)clearValue.size(), clearValue.data());
 	}
 
 	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -3450,7 +3441,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0, 1, &rawSet, 0, DE_NULL);
 	}
 	vk.cmdDraw(*cmdBuf, deUint32(vertexCount), 1u /*run pipeline once*/, 0u /*first vertex*/, 0u /*first instanceIndex*/);
-	vk.cmdEndRenderPass(*cmdBuf);
+	endRenderPass(vk, *cmdBuf);
 
 	{
 		vector<VkImageMemoryBarrier>	renderFinishBarrier;
@@ -3779,6 +3770,119 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	return TestStatus::pass("Rendered output matches input");
 }
 
+const vector<ShaderElement>& getVertFragPipelineStages()
+{
+	static vector<ShaderElement> vertFragPipelineStages;
+	if(vertFragPipelineStages.empty())
+	{
+		vertFragPipelineStages.push_back(ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT));
+		vertFragPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
+	};
+	return vertFragPipelineStages;
+}
+
+const vector<ShaderElement>& getTessPipelineStages()
+{
+	static vector<ShaderElement> tessPipelineStages;
+	if(tessPipelineStages.empty())
+	{
+		tessPipelineStages.push_back(ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT));
+		tessPipelineStages.push_back(ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		tessPipelineStages.push_back(ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		tessPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
+	};
+	return tessPipelineStages;
+}
+
+const vector<ShaderElement>& getGeomPipelineStages()
+{
+	static vector<ShaderElement> geomPipelineStages;
+	if(geomPipelineStages.empty())
+	{
+		geomPipelineStages.push_back(ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT));
+		geomPipelineStages.push_back(ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY_BIT));
+		geomPipelineStages.push_back(ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT));
+	};
+	return geomPipelineStages;
+}
+
+// Helper structure used by addTestForStage function.
+struct StageData
+{
+	typedef const vector<ShaderElement>& (*GetPipelineStagesFn)();
+	typedef void (*AddShaderCodeCustomStageFn)(vk::SourceCollections&, InstanceContext);
+
+	GetPipelineStagesFn			getPipelineFn;
+	AddShaderCodeCustomStageFn	initProgramsFn;
+
+	StageData()
+		: getPipelineFn(DE_NULL)
+		, initProgramsFn(DE_NULL)
+	{
+	}
+
+	StageData(GetPipelineStagesFn pipelineGetter, AddShaderCodeCustomStageFn programsInitializer)
+		: getPipelineFn(pipelineGetter)
+		, initProgramsFn(programsInitializer)
+	{
+	}
+};
+
+// Helper function used by addTestForStage function.
+const StageData& getStageData(vk::VkShaderStageFlagBits stage)
+{
+	// Construct map
+	static map<vk::VkShaderStageFlagBits, StageData> testedStageData;
+	if(testedStageData.empty())
+	{
+		testedStageData[VK_SHADER_STAGE_VERTEX_BIT]					 = StageData(getVertFragPipelineStages, addShaderCodeCustomVertex);
+		testedStageData[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT]	 = StageData(getTessPipelineStages, addShaderCodeCustomTessControl);
+		testedStageData[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = StageData(getTessPipelineStages, addShaderCodeCustomTessEval);
+		testedStageData[VK_SHADER_STAGE_GEOMETRY_BIT]				 = StageData(getGeomPipelineStages, addShaderCodeCustomGeometry);
+		testedStageData[VK_SHADER_STAGE_FRAGMENT_BIT]				 = StageData(getVertFragPipelineStages, addShaderCodeCustomFragment);
+	}
+
+	return testedStageData[stage];
+}
+
+void createTestForStage(vk::VkShaderStageFlagBits	stage,
+						const std::string&			name,
+						const RGBA					(&inputColors)[4],
+						const RGBA					(&outputColors)[4],
+						const map<string, string>&	testCodeFragments,
+						const vector<deInt32>&		specConstants,
+						const PushConstants&		pushConstants,
+						const GraphicsResources&	resources,
+						const GraphicsInterfaces&	interfaces,
+						const vector<string>&		extensions,
+						const vector<string>&		features,
+						VulkanFeatures				vulkanFeatures,
+						tcu::TestCaseGroup*			tests,
+						const qpTestResult			failResult,
+						const string&				failMessageTemplate)
+{
+	const StageData& stageData = getStageData(stage);
+	DE_ASSERT(stageData.getPipelineFn || stageData.initProgramsFn);
+	const vector<ShaderElement>& pipeline = stageData.getPipelineFn();
+
+	StageToSpecConstantMap	specConstantMap;
+	if (!specConstants.empty())
+		specConstantMap[stage] = specConstants;
+
+	InstanceContext ctx(inputColors, outputColors, testCodeFragments, specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, stage);
+	for (size_t i = 0; i < pipeline.size(); ++i)
+	{
+		ctx.moduleMap[pipeline[i].moduleName].push_back(std::make_pair(pipeline[i].entryName, pipeline[i].stage));
+		ctx.requiredStages = static_cast<VkShaderStageFlagBits>(ctx.requiredStages | pipeline[i].stage);
+	}
+
+	ctx.failResult = failResult;
+	if (!failMessageTemplate.empty())
+		ctx.failMessageTemplate = failMessageTemplate;
+
+	addFunctionCaseWithPrograms<InstanceContext>(tests, name, "", stageData.initProgramsFn, runAndVerifyDefaultPipeline, ctx);
+}
+
 void createTestsForAllStages (const std::string&			name,
 							  const RGBA					(&inputColors)[4],
 							  const RGBA					(&outputColors)[4],
@@ -3794,83 +3898,35 @@ void createTestsForAllStages (const std::string&			name,
 							  const qpTestResult			failResult,
 							  const string&					failMessageTemplate)
 {
-	const ShaderElement		vertFragPipelineStages[]		=
-	{
-		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
-		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
-	};
+	createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, name + "_vert",
+					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
+					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
 
-	const ShaderElement		tessPipelineStages[]			=
-	{
-		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
-		ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
-		ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
-		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
-	};
+	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, name + "_tessc",
+					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
+					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
 
-	const ShaderElement		geomPipelineStages[]				=
-	{
-		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
-		ShaderElement("geom", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
-		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
-	};
+	createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, name + "_tesse",
+					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
+					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
 
-	StageToSpecConstantMap	specConstantMap;
+	createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, name + "_geom",
+					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
+					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
 
-	specConstantMap[VK_SHADER_STAGE_VERTEX_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(
-			tests, name + "_vert", "", addShaderCodeCustomVertex, runAndVerifyDefaultPipeline,
-			createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_VERTEX_BIT, failResult, failMessageTemplate));
-
-	specConstantMap.clear();
-	specConstantMap[VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(
-			tests, name + "_tessc", "", addShaderCodeCustomTessControl, runAndVerifyDefaultPipeline,
-			createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, failResult, failMessageTemplate));
-
-	specConstantMap.clear();
-	specConstantMap[VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(
-			tests, name + "_tesse", "", addShaderCodeCustomTessEval, runAndVerifyDefaultPipeline,
-			createInstanceContext(tessPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, failResult, failMessageTemplate));
-
-	specConstantMap.clear();
-	specConstantMap[VK_SHADER_STAGE_GEOMETRY_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(
-			tests, name + "_geom", "", addShaderCodeCustomGeometry, runAndVerifyDefaultPipeline,
-			createInstanceContext(geomPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_GEOMETRY_BIT, failResult, failMessageTemplate));
-
-	specConstantMap.clear();
-	specConstantMap[VK_SHADER_STAGE_FRAGMENT_BIT] = specConstants;
-	addFunctionCaseWithPrograms<InstanceContext>(
-			tests, name + "_frag", "", addShaderCodeCustomFragment, runAndVerifyDefaultPipeline,
-			createInstanceContext(vertFragPipelineStages, inputColors, outputColors, testCodeFragments,
-				specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, vk::VK_SHADER_STAGE_FRAGMENT_BIT, failResult, failMessageTemplate));
+	createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, name + "_frag",
+					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
+					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
 }
 
 void addTessCtrlTest(tcu::TestCaseGroup* group, const char* name, const map<string, string>& fragments)
 {
 	RGBA defaultColors[4];
 	getDefaultColors(defaultColors);
-	const ShaderElement pipelineStages[] =
-	{
-		ShaderElement("vert", "main", VK_SHADER_STAGE_VERTEX_BIT),
-		ShaderElement("tessc", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
-		ShaderElement("tesse", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
-		ShaderElement("frag", "main", VK_SHADER_STAGE_FRAGMENT_BIT),
-	};
 
-	addFunctionCaseWithPrograms<InstanceContext>(
-			group, name, "", addShaderCodeCustomTessControl,
-			runAndVerifyDefaultPipeline, createInstanceContext(
-				pipelineStages, defaultColors, defaultColors, fragments,
-				StageToSpecConstantMap(), PushConstants(), GraphicsResources(),
-				GraphicsInterfaces(), vector<string>(), vector<string>(),
-				VulkanFeatures(), vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, name,
+					   defaultColors, defaultColors, fragments, vector<deInt32>(), PushConstants(), GraphicsResources(),
+					   GraphicsInterfaces(), vector<string>(), vector<string>(), VulkanFeatures(), group);
 }
 
 } // SpirVAssembly

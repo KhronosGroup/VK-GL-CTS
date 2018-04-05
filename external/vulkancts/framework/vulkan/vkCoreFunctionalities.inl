@@ -29,7 +29,7 @@ void initApisMap (ApisMap& apis)
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkGetPhysicalDeviceQueueFamilyProperties",			FUNCTIONORIGIN_INSTANCE));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkGetPhysicalDeviceMemoryProperties",				FUNCTIONORIGIN_INSTANCE));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkGetInstanceProcAddr",							FUNCTIONORIGIN_PLATFORM));
-	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkGetDeviceProcAddr",								FUNCTIONORIGIN_INSTANCE));
+	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkGetDeviceProcAddr",								FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkCreateDevice",									FUNCTIONORIGIN_INSTANCE));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkDestroyDevice",									FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_0].push_back(FunctionInfo("vkEnumerateInstanceExtensionProperties",			FUNCTIONORIGIN_PLATFORM));
@@ -167,7 +167,7 @@ void initApisMap (ApisMap& apis)
 	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkGetPhysicalDeviceQueueFamilyProperties",			FUNCTIONORIGIN_INSTANCE));
 	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkGetPhysicalDeviceMemoryProperties",				FUNCTIONORIGIN_INSTANCE));
 	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkGetInstanceProcAddr",							FUNCTIONORIGIN_PLATFORM));
-	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkGetDeviceProcAddr",								FUNCTIONORIGIN_INSTANCE));
+	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkGetDeviceProcAddr",								FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkCreateDevice",									FUNCTIONORIGIN_INSTANCE));
 	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkDestroyDevice",									FUNCTIONORIGIN_DEVICE));
 	apis[VK_API_VERSION_1_1].push_back(FunctionInfo("vkEnumerateInstanceExtensionProperties",			FUNCTIONORIGIN_PLATFORM));

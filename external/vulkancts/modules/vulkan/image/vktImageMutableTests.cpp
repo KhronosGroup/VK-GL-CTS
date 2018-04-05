@@ -1363,24 +1363,7 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 		{
 			vector<VkClearValue>	clearValues		(m_caseDef.numLayers, m_viewIsIntegerFormat ? REFERENCE_CLEAR_COLOR_INT[0] : REFERENCE_CLEAR_COLOR_FLOAT[0]);
 
-			const VkRect2D			renderArea	=
-			{
-				makeOffset2D(0, 0),
-				makeExtent2D(m_caseDef.size.x(), m_caseDef.size.y()),
-			};
-
-			const VkRenderPassBeginInfo	renderPassBeginInfo	=
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType         sType;
-				DE_NULL,									// const void*             pNext;
-				*m_uDraw.renderPass,							// VkRenderPass            renderPass;
-				*m_uDraw.framebuffer,							// VkFramebuffer           framebuffer;
-				renderArea,									// VkRect2D                renderArea;
-				static_cast<deUint32>(clearValues.size()),	// deUint32                clearValueCount;
-				&clearValues[0],							// const VkClearValue*     pClearValues;
-			};
-
-			m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(m_vk, *m_cmdBuffer, *m_uDraw.renderPass, *m_uDraw.framebuffer, makeRect2D(0, 0, m_caseDef.size.x(), m_caseDef.size.y()), (deUint32)clearValues.size(), &clearValues[0]);
 		}
 
 		// Render
@@ -1398,7 +1381,7 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 			vertexBufferOffset	+= vertexDataPerDraw;
 		}
 
-		m_vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(m_vk, *m_cmdBuffer);
 	}
 
 	m_imageLayoutAfterUpload	= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

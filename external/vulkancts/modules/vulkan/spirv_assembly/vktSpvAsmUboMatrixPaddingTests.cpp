@@ -146,16 +146,22 @@ void addComputeUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 
 void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 {
-	de::Random				rnd					(deStringHash(group->getName()));
-	map<string, string>		fragments;
-	const deUint32			numDataPoints		= 128;
-	RGBA					defaultColors[4];
-	GraphicsResources		resources;
-	vector<tcu::Vec4>		inputData;
+	de::Random					rnd					(deStringHash(group->getName()));
+	map<string, string>			fragments;
+	const deUint32				numDataPoints		= 128;
+	RGBA						defaultColors[4];
+	GraphicsResources			resources;
 
-	inputData.reserve(numDataPoints);
+	std::vector<deInt32>		noSpecConstants;
+	PushConstants				noPushConstants;
+	GraphicsInterfaces			noInterfaces;
+	std::vector<std::string>	noFeatures;
+	std::vector<std::string>	noExtensions;
+	VulkanFeatures				vulkanFeatures = VulkanFeatures();
+
+	vector<tcu::Vec4> inputData(numDataPoints);
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
-		inputData.push_back(tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat()));
+		inputData[numIdx] = tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat());
 
 	resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, BufferSp(new Vec4Buffer(inputData))));
 	// Shader is expected to pass the input data by treating the input vec4 as mat2x2
@@ -242,7 +248,24 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 
 	resources.inputs.back().first	= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-	createTestsForAllStages("mat2x2", defaultColors, defaultColors, fragments, resources, vector<string>(), group);
+	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
+	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
+	createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "mat2x2_vert", defaultColors, defaultColors, fragments, noSpecConstants,
+					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+
+	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "mat2x2_tessc", defaultColors, defaultColors, fragments, noSpecConstants,
+					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+
+	createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "mat2x2_tesse", defaultColors, defaultColors, fragments, noSpecConstants,
+					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+
+	createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, "mat2x2_geom", defaultColors, defaultColors, fragments, noSpecConstants,
+					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+
+	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
+	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
+	createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "mat2x2_frag", defaultColors, defaultColors, fragments, noSpecConstants,
+					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
 }
 
 tcu::TestCaseGroup* createUboMatrixPaddingComputeGroup (tcu::TestContext& testCtx)

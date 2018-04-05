@@ -1715,18 +1715,6 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 	};
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &beginInfo));
 
-	const vk::VkClearValue clearValue = vk::makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
-	const vk::VkRenderPassBeginInfo passBeginInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-		DE_NULL,										// const void*			pNext;
-		*renderPass,									// VkRenderPass			renderPass;
-		*framebuffer,									// VkFramebuffer		framebuffer;
-		{ { 0, 0 }, { RENDER_WIDTH, RENDER_HEIGHT } },	// VkRect2D				renderArea;
-		1u,												// deUint32				clearValueCount;
-		&clearValue,									// const VkClearValue*	pClearValues;
-	};
-
 	// Add barrier for initializing image state
 	{
 		const vk::VkImageMemoryBarrier  initializeBarrier =
@@ -1755,7 +1743,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 			1, &initializeBarrier);
 	}
 
-	vk.cmdBeginRenderPass(*cmdBuffer, &passBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT), tcu::Vec4(0.125f, 0.25f, 0.75f, 1.0f));
 
 	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
@@ -1765,7 +1753,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 	vk.cmdBindIndexBuffer(*cmdBuffer, *indicesBuffer, (vk::VkDeviceSize)0, vk::VK_INDEX_TYPE_UINT32);
 
 	vk.cmdDrawIndexed(*cmdBuffer, DE_LENGTH_OF_ARRAY(indices), 1u, 0u, 0u, 0u);
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	// Add render finish barrier
 	{

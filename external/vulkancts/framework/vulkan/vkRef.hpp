@@ -117,10 +117,12 @@ template<>
 class Deleter<VkDevice>
 {
 public:
-									Deleter		(const InstanceInterface& instanceIface, VkDevice device, const VkAllocationCallbacks* allocator)
-										: m_destroyDevice	((DestroyDeviceFunc)instanceIface.getDeviceProcAddr(device, "vkDestroyDevice"))
-										, m_allocator		(allocator)
-									{}
+									Deleter		(const PlatformInterface& platformIface, VkInstance instance, VkDevice device, const VkAllocationCallbacks* allocator)
+									{
+										GetDeviceProcAddrFunc getDeviceProcAddr = (GetDeviceProcAddrFunc)platformIface.getInstanceProcAddr(instance, "vkGetDeviceProcAddr");
+										m_destroyDevice = (DestroyDeviceFunc)getDeviceProcAddr(device, "vkDestroyDevice");
+										m_allocator = allocator;
+									}
 									Deleter		(void)
 										: m_destroyDevice	((DestroyDeviceFunc)DE_NULL)
 										, m_allocator		(DE_NULL)
