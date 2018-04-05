@@ -673,7 +673,7 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 	vk.cmdBindVertexBuffers (*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
 	vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	{
 		const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(

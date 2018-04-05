@@ -489,24 +489,12 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeFragmentTest(void)
 							  1, &startImgBarrier);
 	}
 
-	const vk::VkClearValue				clearValue			=	vk::makeClearValueColorF32(0.125f, 0.25f, 0.5f, 1.0f);
-	const vk::VkRenderPassBeginInfo		renderPassBeginInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// VkStructureType		sType;
-		DE_NULL,												// const void*			pNext;
-		*renderPass,											// VkRenderPass			renderPass;
-		*framebuffer,											// VkFramebuffer		framebuffer;
-		{ { 0, 0 }, { RENDER_WIDTH, RENDER_HEIGHT } },			// VkRect2D				renderArea;
-		1u,														// deUint32				attachmentCount;
-		&clearValue												// const VkClearValue*	pAttachmentClearValues;
-	};
-
-	vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT), tcu::Vec4(0.125f, 0.25f, 0.5f, 1.0f));
 	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
 
 	vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	{
 		const vk::VkImageMemoryBarrier	endImgBarrier		=

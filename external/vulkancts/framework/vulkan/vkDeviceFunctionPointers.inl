@@ -1,6 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  */
+GetDeviceProcAddrFunc								getDeviceProcAddr;
 DestroyDeviceFunc									destroyDevice;
 GetDeviceQueueFunc									getDeviceQueue;
 QueueSubmitFunc										queueSubmit;

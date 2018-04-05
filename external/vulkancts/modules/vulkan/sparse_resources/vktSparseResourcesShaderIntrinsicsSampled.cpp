@@ -22,6 +22,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSparseResourcesShaderIntrinsicsSampled.hpp"
+#include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 
 using namespace vk;
 
@@ -878,15 +880,10 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
 	{
-		const vk::VkExtent3D mipLevelSize = mipLevelExtents(imageSparseInfo.extent, mipLevelNdx);
+		const vk::VkExtent3D	mipLevelSize	= mipLevelExtents(imageSparseInfo.extent, mipLevelNdx);
+		const vk::VkRect2D		renderArea		= makeRect2D(0, 0, mipLevelSize.width, mipLevelSize.height);
 
-		const vk::VkRect2D renderArea =
-		{
-			makeOffset2D(0u, 0u),
-			makeExtent2D(mipLevelSize.width, mipLevelSize.height),
-		};
-
-		const VkViewport viewport = makeViewport
+		const VkViewport		viewport		= makeViewport
 		(
 			0.0f, 0.0f,
 			static_cast<float>(mipLevelSize.width), static_cast<float>(mipLevelSize.height),
@@ -934,20 +931,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 		descriptorUpdateBuilder.update(deviceInterface, getDevice());
 
 		// Begin render pass
-		{
-			const VkRenderPassBeginInfo renderPassBeginInfo =
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType         sType;
-				DE_NULL,										// const void*             pNext;
-				*m_renderPass,									// VkRenderPass            renderPass;
-				**m_framebuffers[mipLevelNdx],					// VkFramebuffer           framebuffer;
-				renderArea,										// VkRect2D                renderArea;
-				static_cast<deUint32>(clearValues.size()),		// deUint32                clearValueCount;
-				&clearValues[0],								// const VkClearValue*     pClearValues;
-			};
-
-			deviceInterface.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		}
+		beginRenderPass(deviceInterface, commandBuffer, *m_renderPass, **m_framebuffers[mipLevelNdx], renderArea, (deUint32)clearValues.size(), &clearValues[0]);
 
 		// Bind graphics pipeline
 		deviceInterface.cmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
@@ -982,7 +966,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 		deviceInterface.cmdDraw(commandBuffer, 4u, 1u, 0u, 0u);
 
 		// End render pass
-		deviceInterface.cmdEndRenderPass(commandBuffer);
+		endRenderPass(deviceInterface, commandBuffer);
 	}
 
 	{

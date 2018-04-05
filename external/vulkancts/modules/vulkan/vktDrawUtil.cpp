@@ -719,37 +719,16 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 			vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u, &vulkanProgram.descriptorSet, 0u, DE_NULL);
 
 		// Begin render pass
-		{
-			std::vector<VkClearValue> clearValues;
-
-			clearValues.push_back(makeClearValueColor(Vec4(0.0f, 0.0f, 0.0f, 1.0f)));
-			if (!!vulkanProgram.depthImageView)
-				clearValues.push_back(makeClearValueDepthStencil(0.0, 0));
-
-			const VkRect2D		renderArea =
-			{
-				makeOffset2D(0, 0),
-				makeExtent2D(m_drawState.renderSize.x(), m_drawState.renderSize.y())
-			};
-
-			const VkRenderPassBeginInfo renderPassBeginInfo = {
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,							// VkStructureType								sType;
-				DE_NULL,															// const void*									pNext;
-				*m_renderPass,														// VkRenderPass									renderPass;
-				*m_framebuffer,														// VkFramebuffer								framebuffer;
-				renderArea,															// VkRect2D										renderArea;
-				static_cast<deUint32>(clearValues.size()),							// uint32_t										clearValueCount;
-				&clearValues[0],													// const VkClearValue*							pClearValues;
-			};
-
-			vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-		}
+		if (!!vulkanProgram.depthImageView)
+			beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_drawState.renderSize.x(), m_drawState.renderSize.y()), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f), 0.0f, 0);
+		else
+			beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_drawState.renderSize.x(), m_drawState.renderSize.y()), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0u, 1u, &(**m_vertexBuffer), &zeroOffset);
 
 		vk.cmdDraw(*m_cmdBuffer, static_cast<deUint32>(m_drawCallData.vertices.size()), 1u, 0u, 0u);
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(vk, *m_cmdBuffer);
 
 		// Barrier: draw -> copy from image
 		{

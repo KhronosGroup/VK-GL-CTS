@@ -94,14 +94,35 @@ inline VkComponentMapping makeComponentMappingRGBA (void)
 								VK_COMPONENT_SWIZZLE_A);
 }
 
-inline VkExtent3D makeExtent3D(const tcu::IVec3& vec)
+inline VkExtent3D makeExtent3D (const tcu::IVec3& vec)
 {
 	return makeExtent3D((deUint32)vec.x(), (deUint32)vec.y(), (deUint32)vec.z());
 }
 
-inline VkExtent3D makeExtent3D(const tcu::UVec3& vec)
+inline VkExtent3D makeExtent3D (const tcu::UVec3& vec)
 {
 	return makeExtent3D(vec.x(), vec.y(), vec.z());
+}
+
+inline VkRect2D makeRect2D (deInt32 x, deInt32 y, deUint32 width, deUint32 height)
+{
+	VkRect2D r;
+	r.offset.x		= x;
+	r.offset.y		= y;
+	r.extent.width	= width;
+	r.extent.height	= height;
+
+	return r;
+}
+
+inline VkRect2D makeRect2D (VkExtent2D extent)
+{
+	VkRect2D r;
+	r.offset.x	= 0;
+	r.offset.y	= 0;
+	r.extent	= extent;
+
+	return r;
 }
 
 } // vk

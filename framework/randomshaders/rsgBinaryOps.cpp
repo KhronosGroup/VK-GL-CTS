@@ -283,10 +283,16 @@ Expression* BinaryOp<Precedence, Assoc>::createNextChild (GeneratorState& state)
 			VariableType floatType(VariableType::TYPE_FLOAT, 1);
 			if (m_leftValueRange.getType() == floatType)
 			{
+				VariableType boolType(VariableType::TYPE_BOOL, 1);
+				const ValueRange boolRange(boolType);
+
+				ParenOp* parenRight = new ParenOp(state, boolRange);
+				parenRight->setChild(m_rightValueExpr);
+
 				typedef CustomBinaryOp<EvaluateSub> CustomSubOp;
 				CustomSubOp* subOperation = new CustomSubOp();
 				subOperation->setLeftValue(m_leftValueExpr);
-				subOperation->setRightValue(m_rightValueExpr);
+				subOperation->setRightValue(parenRight);
 
 				CustomAbsOp* absOperation = new CustomAbsOp();
 				absOperation->setChild(subOperation);
@@ -297,8 +303,6 @@ Expression* BinaryOp<Precedence, Assoc>::createNextChild (GeneratorState& state)
 				lessOperation->setLeftValue(absOperation);
 				lessOperation->setRightValue(epsilonLiteral);
 
-				VariableType boolType(VariableType::TYPE_BOOL, 1);
-				const ValueRange boolRange(boolType);
 				ParenOp* parenOperation = new ParenOp(state, boolRange);
 				parenOperation->setChild(lessOperation);
 				BoolLiteral* trueLiteral = new BoolLiteral(true);

@@ -2927,6 +2927,29 @@ bool BlittingMipmaps::checkLinearFilteredResult (void)
 
 	for (deUint32 mipLevelNdx = 0u; mipLevelNdx < m_params.mipLevels; mipLevelNdx++)
 	{
+		// Update reference results with previous results that have been verified.
+		// This needs to be done such that accumulated errors don't exceed the fixed threshold.
+		for (deUint32 i = 0; i < m_params.regions.size(); i++)
+		{
+			const CopyRegion region = m_params.regions[i];
+			const deUint32 srcMipLevel = m_params.regions[i].imageBlit.srcSubresource.mipLevel;
+			const deUint32 dstMipLevel = m_params.regions[i].imageBlit.dstSubresource.mipLevel;
+			de::MovePtr<tcu::TextureLevel>	prevResultLevel;
+			tcu::ConstPixelBufferAccess src;
+			if (srcMipLevel < mipLevelNdx)
+			{
+				// Generate expected result from rendered result that was previously verified
+				prevResultLevel	= readImage(*m_destination, m_params.dst.image, srcMipLevel);
+				src = prevResultLevel->getAccess();
+			}
+			else
+			{
+				// Previous reference mipmaps might have changed, so recompute expected result
+				src = m_expectedTextureLevel[srcMipLevel]->getAccess();
+			}
+			copyRegionToTextureLevel(src, m_expectedTextureLevel[dstMipLevel]->getAccess(), region, dstMipLevel);
+		}
+
 		de::MovePtr<tcu::TextureLevel>			resultLevel			= readImage(*m_destination, m_params.dst.image, mipLevelNdx);
 		const tcu::ConstPixelBufferAccess&		resultAccess		= resultLevel->getAccess();
 
@@ -3710,28 +3733,9 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 		// Create command buffer
 		{
-			const VkClearValue clearValues[1] =
-			{
-				makeClearValueColorF32(0.0f, 0.0f, 1.0f, 1.0f),
-			};
-
-			const VkRenderPassBeginInfo renderPassBeginInfo =
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-				DE_NULL,												// const void*			pNext;
-				*renderPass,											// VkRenderPass			renderPass;
-				*framebuffer,											// VkFramebuffer		framebuffer;
-				{
-					{ 0, 0 },
-					{ m_params.src.image.extent.width, m_params.src.image.extent.height }
-				},														// VkRect2D				renderArea;
-				1u,														// deUint32				clearValueCount;
-				clearValues												// const VkClearValue*	pClearValues;
-			};
-
 			beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 			vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
-			vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(vk, *m_cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, m_params.src.image.extent.width, m_params.src.image.extent.height), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f));
 
 			const VkDeviceSize	vertexBufferOffset	= 0u;
 
@@ -3739,7 +3743,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 			vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
 			vk.cmdDraw(*m_cmdBuffer, (deUint32)vertices.size(), 1, 0, 0);
 
-			vk.cmdEndRenderPass(*m_cmdBuffer);
+			endRenderPass(vk, *m_cmdBuffer);
 			endCommandBuffer(vk, *m_cmdBuffer);
 		}
 

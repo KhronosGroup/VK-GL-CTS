@@ -28,6 +28,7 @@
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "deMath.h"
 #include <iomanip>
@@ -73,7 +74,8 @@ Move<VkDevice> createRobustBufferAccessDevice (Context& context)
 		&enabledFeatures						// const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 	};
 
-	return createDevice(context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
+	return createDevice(context.getPlatformInterface(), context.getInstance(),
+						context.getInstanceInterface(), context.getPhysicalDevice(), &deviceParams);
 }
 
 bool areEqual (float a, float b)
@@ -591,26 +593,6 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 
 	// Record commands
 	{
-		VkClearValue attachmentClearValue;
-		attachmentClearValue.color.float32[0] = 0.0f;
-		attachmentClearValue.color.float32[1] = 0.0f;
-		attachmentClearValue.color.float32[2] = 0.0f;
-		attachmentClearValue.color.float32[3] = 0.0f;
-
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{
-				{ 0, 0 },
-				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
-			},														// VkRect2D				renderArea;
-			1,														// deUint32				clearValueCount;
-			&attachmentClearValue									// const VkClearValue*	pClearValues;
-		};
-
 		const VkImageMemoryBarrier imageLayoutBarrier =
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// VkStructureType			sType;
@@ -635,7 +617,7 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 								  0u, DE_NULL,
 								  1u, &imageLayoutBarrier);
 
-			vk.cmdBeginRenderPass(*m_commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			beginRenderPass(vk, *m_commandBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), tcu::Vec4(0.0f));
 			{
 				const std::vector<VkDeviceSize> vertexBufferOffsets(drawConfig.vertexBuffers.size(), 0ull);
 
@@ -653,7 +635,7 @@ GraphicsEnvironment::GraphicsEnvironment (Context&					context,
 					vk.cmdDrawIndexed(*m_commandBuffer, drawConfig.indexCount, drawConfig.instanceCount, 0, 0, 0);
 				}
 			}
-			vk.cmdEndRenderPass(*m_commandBuffer);
+			endRenderPass(vk, *m_commandBuffer);
 		}
 		endCommandBuffer(vk, *m_commandBuffer);
 	}

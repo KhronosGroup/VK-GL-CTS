@@ -1093,24 +1093,7 @@ tcu::TestStatus ImageClearingTestInstance::verifyResultImage (const std::string&
 
 void ImageClearingTestInstance::beginRenderPass (VkSubpassContents content, VkClearValue clearValue) const
 {
-	const VkRenderPassBeginInfo renderPassBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-		DE_NULL,												// const void*			pNext;
-		*m_renderPass,											// VkRenderPass			renderPass;
-		*m_frameBuffer,											// VkFramebuffer		framebuffer;
-		{
-			{ 0, 0 },												// VkOffset2D			offset;
-			{
-				m_params.imageExtent.width,								// deUint32				width;
-				m_params.imageExtent.height								// deUint32				height;
-			}														// VkExtent2D			extent;
-		},														// VkRect2D				renderArea;
-		1u,														// deUint32				clearValueCount;
-		&clearValue												// const VkClearValue*	pClearValues;
-	};
-
-	m_vkd.cmdBeginRenderPass(*m_commandBuffer, &renderPassBeginInfo, content);
+	vk::beginRenderPass(m_vkd, *m_commandBuffer, *m_renderPass, *m_frameBuffer, makeRect2D(0, 0, m_params.imageExtent.width, m_params.imageExtent.height), clearValue, content);
 }
 
 class ClearColorImageTestInstance : public ImageClearingTestInstance
@@ -1162,7 +1145,7 @@ TestStatus ClearColorImageTestInstance::iterate (void)
 	if (m_isAttachmentFormat)
 	{
 		beginRenderPass(VK_SUBPASS_CONTENTS_INLINE, m_params.initValue);
-		m_vkd.cmdEndRenderPass(*m_commandBuffer);
+		endRenderPass(m_vkd, *m_commandBuffer);
 
 		pipelineImageBarrier(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,		// VkPipelineStageFlags		srcStageMask
 			VK_PIPELINE_STAGE_TRANSFER_BIT,								// VkPipelineStageFlags		dstStageMask
@@ -1229,7 +1212,7 @@ TestStatus ClearDepthStencilImageTestInstance::iterate (void)
 	if (m_isAttachmentFormat)
 	{
 		beginRenderPass(VK_SUBPASS_CONTENTS_INLINE, m_params.initValue);
-		m_vkd.cmdEndRenderPass(*m_commandBuffer);
+		endRenderPass(m_vkd, *m_commandBuffer);
 
 		pipelineImageBarrier(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,					// VkPipelineStageFlags		srcStageMask
 							 VK_PIPELINE_STAGE_TRANSFER_BIT,						// VkPipelineStageFlags		dstStageMask
@@ -1349,7 +1332,7 @@ public:
 
 		beginRenderPass(VK_SUBPASS_CONTENTS_INLINE, m_params.initValue);
 		m_vkd.cmdClearAttachments(*m_commandBuffer, 1, &clearAttachment, static_cast<deUint32>(clearRects.size()), &clearRects[0]);
-		m_vkd.cmdEndRenderPass(*m_commandBuffer);
+		endRenderPass(m_vkd, *m_commandBuffer);
 
 		pipelineImageBarrier(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,			// VkPipelineStageFlags		srcStageMask
 							 VK_PIPELINE_STAGE_TRANSFER_BIT,				// VkPipelineStageFlags		dstStageMask

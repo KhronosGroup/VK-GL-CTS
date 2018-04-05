@@ -28,8 +28,11 @@ DE_BEGIN_EXTERN_C
 #if defined(DEQP_USE_RELEASE_INFO_FILE)
 #	include "qpReleaseInfo.inl"
 #else
-#	define DEQP_RELEASE_NAME	"unknown"
-#	define DEQP_RELEASE_ID		0xcafebabe
+#	define DEQP_RELEASE_NAME				"unknown"
+#	define DEQP_RELEASE_ID					0xcafebabe
+#	define DEQP_RELEASE_GLSL_NAME			"unknown"
+#	define DEQP_RELEASE_SPIRV_TOOLS_NAME	"unknown"
+#	define DEQP_RELEASE_SPIRV_HEADERS_NAME	"unknown"
 #endif
 
 const char* qpGetTargetName (void)
@@ -49,6 +52,21 @@ const char* qpGetReleaseName (void)
 deUint32 qpGetReleaseId (void)
 {
 	return DEQP_RELEASE_ID;
+}
+
+const char* qpGetReleaseGlslName (void)
+{
+	return DEQP_RELEASE_GLSL_NAME;
+}
+
+const char* qpGetReleaseSpirvToolsName (void)
+{
+	return DEQP_RELEASE_SPIRV_TOOLS_NAME;
+}
+
+const char* qpGetReleaseSpirvHeadersName (void)
+{
+	return DEQP_RELEASE_SPIRV_HEADERS_NAME;
 }
 
 DE_END_EXTERN_C

@@ -51,7 +51,18 @@ namespace
 using namespace std;
 using namespace vk;
 
-tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIterations)
+struct ResetDescriptorPoolTestParams
+{
+	ResetDescriptorPoolTestParams	(deUint32 numIterations, bool freeDescriptorSets = false)
+		: m_numIterations		(numIterations)
+		, m_freeDescriptorSets	(freeDescriptorSets)
+	{}
+
+	deUint32	m_numIterations;
+	bool		m_freeDescriptorSets;
+};
+
+tcu::TestStatus resetDescriptorPoolTest (Context& context, const ResetDescriptorPoolTestParams params)
 {
 	const deUint32				numDescriptorSetsPerIter = 2048;
 	const DeviceInterface&		vkd						 = context.getDeviceInterface();
@@ -63,15 +74,14 @@ tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIteration
 		numDescriptorSetsPerIter	// descriptorCount
 	};
 
-	// \todo [2016-05-24 collinbaker] Test with flag VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT
 	const VkDescriptorPoolCreateInfo descriptorPoolInfo =
 	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,	// sType
-		NULL,											// pNext
-		0,												// flags
-		numDescriptorSetsPerIter,						// maxSets
-		1,												// poolSizeCount
-		&descriptorPoolSize								// pPoolSizes
+		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,																			// sType
+		NULL,																													// pNext
+		(params.m_freeDescriptorSets) ? (VkDescriptorPoolCreateFlags)VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT : 0u,	// flags
+		numDescriptorSetsPerIter,																								// maxSets
+		1,																														// poolSizeCount
+		&descriptorPoolSize																										// pPoolSizes
 	};
 
 	{
@@ -130,10 +140,12 @@ tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIteration
 
 			vector<VkDescriptorSet> testSets(numDescriptorSetsPerIter);
 
-			for (deUint32 ndx = 0; ndx < numIterations; ++ndx)
+			for (deUint32 ndx = 0; ndx < params.m_numIterations; ++ndx)
 			{
 				// The test should crash in this loop at some point if there is a memory leak
 				VK_CHECK(vkd.allocateDescriptorSets(device, &descriptorSetInfo, &testSets[0]));
+				if (params.m_freeDescriptorSets)
+					VK_CHECK(vkd.freeDescriptorSets(device, *descriptorPool, 1, &testSets[0]));
 				VK_CHECK(vkd.resetDescriptorPool(device, *descriptorPool, 0));
 			}
 
@@ -274,11 +286,19 @@ tcu::TestCaseGroup* createDescriptorPoolTests (tcu::TestContext& testCtx)
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_reset_short",
 					"Test 2 cycles of vkAllocateDescriptorSets and vkResetDescriptorPool (should pass)",
-					resetDescriptorPoolTest, 2U);
+					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U));
 	addFunctionCase(descriptorPoolTests.get(),
 					"repeated_reset_long",
 					"Test many cycles of vkAllocateDescriptorSets and vkResetDescriptorPool",
-					resetDescriptorPoolTest, numIterationsHigh);
+					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(numIterationsHigh));
+	addFunctionCase(descriptorPoolTests.get(),
+					"repeated_free_reset_short",
+					"Test 2 cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool (should pass)",
+					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(2U, true));
+	addFunctionCase(descriptorPoolTests.get(),
+					"repeated_free_reset_long",
+					"Test many cycles of vkAllocateDescriptorSets, vkFreeDescriptorSets and vkResetDescriptorPool",
+					resetDescriptorPoolTest, ResetDescriptorPoolTestParams(numIterationsHigh, true));
 	addFunctionCase(descriptorPoolTests.get(),
 					"out_of_pool_memory",
 					"Test that when we run out of descriptors a correct error code is returned",

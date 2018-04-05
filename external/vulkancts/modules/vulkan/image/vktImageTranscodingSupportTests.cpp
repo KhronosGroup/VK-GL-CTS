@@ -415,7 +415,7 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer->get(), vertexBufferOffset);
 	vk.cmdDraw(*cmdBuffer, vertexCount, 1, 0, 0);
 
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
 		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
@@ -676,7 +676,7 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer->get(), vertexBufferOffset);
 		vk.cmdDraw(*cmdBuffer, vertexCount, 1, 0, 0);
 	}
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
 		VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,

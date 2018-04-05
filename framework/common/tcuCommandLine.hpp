@@ -211,6 +211,12 @@ public:
 	//! Should we run tests that exhaust memory (--deqp-test-oom)
 	bool							isOutOfMemoryTestEnabled	(void) const;
 
+	//! Should the shader cache be enabled (--deqp-shadercache)
+	bool							isShadercacheEnabled		(void) const;
+
+	//! Get the filename for shader cache (--deqp-shadercache-filename)
+	const char*						getShaderCacheFilename		(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

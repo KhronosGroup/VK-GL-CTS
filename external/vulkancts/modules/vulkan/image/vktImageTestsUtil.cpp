@@ -24,6 +24,7 @@
 #include "vktImageTestsUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
 #include "tcuTextureUtil.hpp"
 
 using namespace vk;
@@ -1286,28 +1287,13 @@ void beginRenderPass (const DeviceInterface&	vk,
 					  const VkFramebuffer		framebuffer,
 					  const VkExtent2D&			renderSize)
 {
-	const VkClearValue			clearValues[]		=
+	const VkRect2D renderArea =
 	{
-		makeClearValueColorF32(0.0, 0.0, 0.0, 0.0),
-		makeClearValueColorF32(0.0, 0.0, 0.0, 0.0),
-	};
-	const VkRect2D				renderArea			=
-	{
-		{0, 0},											// VkOffset2D				offset;
-		renderSize,										// VkExtent2D				extent;
-	};
-	const VkRenderPassBeginInfo	renderPassBeginInfo =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		renderPass,										// VkRenderPass				renderPass;
-		framebuffer,									// VkFramebuffer			framebuffer;
-		renderArea,										// VkRect2D					renderArea;
-		DE_LENGTH_OF_ARRAY(clearValues),				// uint32_t					clearValueCount;
-		clearValues,									// const VkClearValue*		pClearValues;
+		{0, 0},			// VkOffset2D				offset;
+		renderSize,		// VkExtent2D				extent;
 	};
 
-	vk.cmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, commandBuffer, renderPass, framebuffer, renderArea, tcu::Vec4(0.0f), 0.0f, 0u);
 }
 
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,

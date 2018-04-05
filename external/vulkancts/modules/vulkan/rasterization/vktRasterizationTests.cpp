@@ -807,25 +807,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	}
 
 	// Begin Render Pass
-	{
-		const VkClearValue					clearValue				= makeClearValueColorF32(0.0, 0.0, 0.0, 1.0);
-
-		const VkRenderPassBeginInfo			renderPassBeginInfo		=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_frameBuffer,											// VkFramebuffer		framebuffer;
-			{
-				{ 0, 0 },
-				{ m_renderSize, m_renderSize }
-			},														// VkRect2D				renderArea;
-			1u,														// deUint32				clearValueCount;
-			&clearValue												// const VkClearValue*	pClearValues;
-		};
-
-		vkd.cmdBeginRenderPass(*commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_frameBuffer, vk::makeRect2D(0, 0, m_renderSize, m_renderSize), tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
 	const VkDeviceSize						vertexBufferOffset		= 0;
 
@@ -833,7 +815,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1, &m_descriptorSet.get(), 0u, DE_NULL);
 	vkd.cmdBindVertexBuffers(*commandBuffer, 0, 1, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdDraw(*commandBuffer, (deUint32)positionData.size(), 1, 0, 0);
-	vkd.cmdEndRenderPass(*commandBuffer);
+	endRenderPass(vkd, *commandBuffer);
 
 	// Copy Image
 	{

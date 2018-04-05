@@ -1299,19 +1299,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 							  1, &startImgBarrier);
 	}
 
-	const vk::VkClearValue				clearValue			= vk::makeClearValueColorF32(0.0f, 0.0f, 0.0f, 0.0f);
-	const vk::VkRenderPassBeginInfo		passBeginInfo		=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,		// sType
-		DE_NULL,											// pNext
-		*renderPass,										// renderPass
-		*framebuffer,										// framebuffer
-		{ { 0, 0 }, { RENDER_WIDTH, RENDER_HEIGHT } },		// renderArea
-		1u,													// clearValueCount
-		&clearValue,										// pClearValues
-	};
-
-	vk.cmdBeginRenderPass(*cmdBuffer, &passBeginInfo, vk::VK_SUBPASS_CONTENTS_INLINE);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT), tcu::Vec4(0.0f));
 
 	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
@@ -1325,7 +1313,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 
 	vk.cmdDraw(*cmdBuffer, /*vertexCount*/ 4u, 1u, 0u, 1u);
 
-	vk.cmdEndRenderPass(*cmdBuffer);
+	endRenderPass(vk, *cmdBuffer);
 
 	{
 		const vk::VkImageMemoryBarrier	endImgBarrier		=

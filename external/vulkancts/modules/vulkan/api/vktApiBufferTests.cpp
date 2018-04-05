@@ -149,10 +149,11 @@ private:
 	{
 										SparseContext					(Move<VkDevice>&			device,
 																		 const deUint32				queueFamilyIndex,
-																		 const InstanceInterface&	interface)
+																		 const PlatformInterface&	platformInterface,
+																		 VkInstance					instance)
 										: m_device						(device)
 										, m_queueFamilyIndex			(queueFamilyIndex)
-										, m_deviceInterface				(interface, *m_device)
+										, m_deviceInterface				(platformInterface, instance, *m_device)
 		{
 		}
 
@@ -217,9 +218,9 @@ private:
 				&deviceFeatures
 			};
 
-			Move<VkDevice>				device							= createDevice(vk, physicalDevice, &deviceInfo);
+			Move<VkDevice>				device							= createDevice(m_context.getPlatformInterface(), m_context.getInstance(), vk, physicalDevice, &deviceInfo);
 
-			return new SparseContext(device, queueIndex, vk);
+			return new SparseContext(device, queueIndex, m_context.getPlatformInterface(), m_context.getInstance());
 		}
 
 		return DE_NULL;

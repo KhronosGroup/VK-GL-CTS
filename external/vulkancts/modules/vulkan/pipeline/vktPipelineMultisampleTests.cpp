@@ -36,6 +36,7 @@
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
@@ -2928,20 +2929,6 @@ void MultisampleRenderer::initialize (Context&									context,
 			clearValues.push_back(depthStencilClearValue);
 		}
 
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_framebuffer,											// VkFramebuffer		framebuffer;
-			{
-				{ 0, 0 },
-				{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }
-			},														// VkRect2D				renderArea;
-			(deUint32)clearValues.size(),							// deUint32				clearValueCount;
-			&clearValues[0]											// const VkClearValue*	pClearValues;
-		};
-
 		vk::VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		std::vector<VkImageMemoryBarrier> imageLayoutBarriers;
 
@@ -3028,7 +3015,7 @@ void MultisampleRenderer::initialize (Context&									context,
 		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStageMask, (VkDependencyFlags)0,
 			0u, DE_NULL, 0u, DE_NULL, (deUint32)imageLayoutBarriers.size(), &imageLayoutBarriers[0]);
 
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()), (deUint32)clearValues.size(), &clearValues[0]);
 
 		VkDeviceSize vertexBufferOffset = 0u;
 
@@ -3054,7 +3041,7 @@ void MultisampleRenderer::initialize (Context&									context,
 			}
 		}
 
-		vk.cmdEndRenderPass(*m_cmdBuffer);
+		endRenderPass(vk, *m_cmdBuffer);
 
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}

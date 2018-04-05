@@ -30,6 +30,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
+#include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 
 #include "deMath.h"
@@ -980,10 +981,8 @@ tcu::TestStatus VertexShaderTestInstance::executeTest (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -992,7 +991,7 @@ tcu::TestStatus VertexShaderTestInstance::executeTest (void)
 
 		vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0]);
 
 		vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
@@ -1000,7 +999,7 @@ tcu::TestStatus VertexShaderTestInstance::executeTest (void)
 		draw(*cmdBuffer);
 		vk.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -1142,10 +1141,8 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest (void)
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -1154,9 +1151,9 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest (void)
 
 		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 
-		vk.cmdBeginRenderPass(*primaryCmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
-		vk.cmdEndRenderPass(*primaryCmdBuffer);
+		endRenderPass(vk, *primaryCmdBuffer);
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
@@ -1214,10 +1211,8 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest (void)
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -1227,9 +1222,9 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest (void)
 		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 		vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 
-		vk.cmdBeginRenderPass(*primaryCmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
-		vk.cmdEndRenderPass(*primaryCmdBuffer);
+		endRenderPass(vk, *primaryCmdBuffer);
 		vk.cmdEndQuery(*primaryCmdBuffer, *queryPool, 0u);
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -1374,10 +1369,8 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -1386,7 +1379,7 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest (void)
 
 		vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0]);
 
 		vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
@@ -1396,7 +1389,7 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest (void)
 
 		vk.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -1518,10 +1511,8 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest (void)
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -1529,9 +1520,9 @@ tcu::TestStatus GeometryShaderSecondaryTestInstance::executeTest (void)
 									  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
 
 		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
-		vk.cmdBeginRenderPass(*primaryCmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
-		vk.cmdEndRenderPass(*primaryCmdBuffer);
+		endRenderPass(vk, *primaryCmdBuffer);
 
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -1590,10 +1581,8 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest (void)
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -1602,9 +1591,9 @@ tcu::TestStatus GeometryShaderSecondaryInheritedTestInstance::executeTest (void)
 
 		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 		vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
-		vk.cmdBeginRenderPass(*primaryCmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
-		vk.cmdEndRenderPass(*primaryCmdBuffer);
+		endRenderPass(vk, *primaryCmdBuffer);
 		vk.cmdEndQuery(*primaryCmdBuffer, *queryPool, 0u);
 
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
@@ -1749,10 +1738,8 @@ tcu::TestStatus	TessellationShaderTestInstance::executeTest (void)
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -1761,7 +1748,7 @@ tcu::TestStatus	TessellationShaderTestInstance::executeTest (void)
 
 		vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
 
-		vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_INLINE);
+		beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0]);
 
 		vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 		vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
@@ -1771,7 +1758,7 @@ tcu::TestStatus	TessellationShaderTestInstance::executeTest (void)
 
 		vk.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
 
-		vk.cmdEndRenderPass(*cmdBuffer);
+		endRenderPass(vk, *cmdBuffer);
 
 		transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -1859,10 +1846,8 @@ tcu::TestStatus	TessellationShaderSecondrayTestInstance::executeTest (void)
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -1873,9 +1858,9 @@ tcu::TestStatus	TessellationShaderSecondrayTestInstance::executeTest (void)
 		vk.cmdBindPipeline(*primaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 
-		vk.cmdBeginRenderPass(*primaryCmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
-		vk.cmdEndRenderPass(*primaryCmdBuffer);
+		endRenderPass(vk, *primaryCmdBuffer);
 
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
 						  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -1934,10 +1919,8 @@ tcu::TestStatus	TessellationShaderSecondrayInheritedTestInstance::executeTest (v
 
 	beginCommandBuffer(vk, *primaryCmdBuffer);
 	{
-		const VkRect2D				renderArea				= { { 0, 0 }, { WIDTH, HEIGHT } };
 		std::vector<VkClearValue>	renderPassClearValues	(2);
 		deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
-		const RenderPassBeginInfo	renderPassBegin			(*m_renderPass, *m_framebuffer, renderArea, renderPassClearValues);
 
 		initialTransitionColor2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 									  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
@@ -1949,9 +1932,9 @@ tcu::TestStatus	TessellationShaderSecondrayInheritedTestInstance::executeTest (v
 		vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, 1u);
 		vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
 
-		vk.cmdBeginRenderPass(*primaryCmdBuffer, &renderPassBegin, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, WIDTH, HEIGHT), (deUint32)renderPassClearValues.size(), &renderPassClearValues[0], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
-		vk.cmdEndRenderPass(*primaryCmdBuffer);
+		endRenderPass(vk, *primaryCmdBuffer);
 		vk.cmdEndQuery(*primaryCmdBuffer, *queryPool, 0u);
 
 		transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,

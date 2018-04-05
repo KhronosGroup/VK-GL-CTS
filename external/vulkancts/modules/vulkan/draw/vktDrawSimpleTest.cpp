@@ -146,7 +146,7 @@ tcu::TestStatus SimpleDraw::iterate (void)
 			break;
 	}
 
-	m_vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(m_vk, *m_cmdBuffer);
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -238,7 +238,7 @@ tcu::TestStatus SimpleDrawInstanced::iterate (void)
 			break;
 	}
 
-	m_vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(m_vk, *m_cmdBuffer);
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());

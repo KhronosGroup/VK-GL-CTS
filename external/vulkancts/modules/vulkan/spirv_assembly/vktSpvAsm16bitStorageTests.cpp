@@ -104,6 +104,40 @@ using tcu::Vec4;
 namespace
 {
 
+enum ShaderTemplate
+{
+	SHADERTEMPLATE_TYPES = 0,
+	SHADERTEMPLATE_STRIDE32BIT_STD140,
+	SHADERTEMPLATE_STRIDE32BIT_STD430,
+	SHADERTEMPLATE_STRIDE16BIT_STD140,
+	SHADERTEMPLATE_STRIDE16BIT_STD430,
+	SHADERTEMPLATE_STRIDEMIX_STD140,
+	SHADERTEMPLATE_STRIDEMIX_STD430
+};
+
+bool compare16Bit (float original, deUint16 returned, RoundingModeFlags flags, tcu::TestLog& log)
+{
+	return compare16BitFloat (original, returned, flags, log);
+}
+
+bool compare16Bit (deFloat16 returned, float original, RoundingModeFlags flags, tcu::TestLog& log)
+{
+	return compare16BitFloat (original, returned, flags, log);
+}
+
+bool compare16Bit (deInt16 returned, deInt16 original, RoundingModeFlags flags, tcu::TestLog& log)
+{
+	DE_UNREF(flags);
+	DE_UNREF(log);
+	return (returned == original);
+}
+
+struct StructTestData
+{
+	const int structArraySize; //Size of Struct Array
+	const int nestedArraySize; //Max size of any nested arrays
+};
+
 struct Capability
 {
 	const char*				name;
@@ -118,6 +152,8 @@ static const Capability	CAPABILITIES[]	=
 	{"uniform",					"StorageUniform16",				"Block",		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER},
 };
 
+static const StructTestData structData = {7, 11};
+
 VulkanFeatures	get16BitStorageFeatures	(const char* cap)
 {
 	VulkanFeatures features;
@@ -131,6 +167,27 @@ VulkanFeatures	get16BitStorageFeatures	(const char* cap)
 	return features;
 }
 
+int getStructSize(const ShaderTemplate  shaderTemplate)
+{
+	switch (shaderTemplate)
+	{
+	case SHADERTEMPLATE_STRIDE16BIT_STD140:
+		return 600 * structData.structArraySize;		//size of struct in f16 with offsets
+	case SHADERTEMPLATE_STRIDE16BIT_STD430:
+		return 184 * structData.structArraySize;		//size of struct in f16 with offsets
+	case SHADERTEMPLATE_STRIDE32BIT_STD140:
+		return 304 * structData.structArraySize;		//size of struct in f32 with offsets
+	case SHADERTEMPLATE_STRIDE32BIT_STD430:
+		return 184 * structData.structArraySize;		//size of struct in f32 with offset
+	case SHADERTEMPLATE_STRIDEMIX_STD140:
+		return 4480 * structData.structArraySize / 2;	//size of struct in 16b with offset
+	case SHADERTEMPLATE_STRIDEMIX_STD430:
+		return 1216 * structData.structArraySize / 2;	//size of struct in 16b with offset
+	default:
+		DE_ASSERT(0);
+	}
+	return 0;
+}
 
 // Batch function to check arrays of 16-bit floats.
 //
@@ -213,7 +270,6 @@ bool computeCheck16BitFloats (const std::vector<BufferSp>&	originalFloats,
 
 	return true;
 }
-
 
 // Batch function to check arrays of 32-bit floats.
 //
@@ -355,7 +411,6 @@ vector<deInt16> getInt16s (de::Random& rnd, const deUint32 count)
 // 0   011 1000 1   000 0000 1111 1111 0000 0000 (0x3880ff00: not exact half way within two 16-bit normalized; round to zero: 0x0403)
 // 1   011 1000 1   000 0000 1111 1111 0000 0000 (0xb880ff00: not exact half way within two 16-bit normalized; round to zero: 0x8404)
 
-
 // Generate and return 32-bit floats
 //
 // The first 24 number pairs are manually picked, while the rest are randomly generated.
@@ -481,6 +536,775 @@ vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count)
 		float16.push_back(rnd.getUint16());
 
 	return float16;
+}
+
+void addInfo(vector<bool>& info, int& ndx, const int count, bool isData)
+{
+	for (int index = 0; index < count; ++index)
+		info[ndx++] = isData;
+}
+
+vector<deFloat16> data16bitStd140 (de::Random& rnd)
+{
+	return getFloat16s(rnd, getStructSize(SHADERTEMPLATE_STRIDE16BIT_STD140));
+}
+
+vector<bool> info16bitStd140 (void)
+{
+	int				ndx			= 0u;
+	vector<bool>	infoData	(getStructSize(SHADERTEMPLATE_STRIDE16BIT_STD140));
+
+	for(int elementNdx = 0; elementNdx < structData.structArraySize; ++elementNdx)
+	{
+		infoData[ndx++] = true;						//f16
+		infoData[ndx++] = false;					//offset
+
+		infoData[ndx++] = true;						//v2f16
+		infoData[ndx++] = true;						//v2f16
+
+		addInfo(infoData, ndx, 3, true);			//v3f16
+		infoData[ndx++] = false;					//offset
+
+		addInfo(infoData, ndx, 4, true);			//v4f16
+		addInfo(infoData, ndx, 4, false);			//offset
+
+		//f16[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			infoData[ndx++] = true;					//f16[0];
+			addInfo(infoData, ndx, 7, false);		//offset
+		}
+
+		//struct {f16, v2f16[3]} [11]
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			//struct.f16
+			infoData[ndx++] = true;					//f16
+			addInfo(infoData, ndx, 7, false);		//offset
+			//struct.f16.v2f16[3]
+			for (int j = 0; j < 3; ++j)
+			{
+				infoData[ndx++] = true;				//v2f16
+				infoData[ndx++] = true;				//v2f16
+				addInfo(infoData, ndx, 6, false);	//offset
+			}
+		}
+
+		//vec2[11];
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			infoData[ndx++] = true;					//v2f16
+			infoData[ndx++] = true;					//v2f16
+			addInfo(infoData, ndx, 6, false);		//offset
+		}
+
+		//f16
+		infoData[ndx++] = true;						//f16
+		addInfo(infoData, ndx, 7, false);			//offset
+
+		//vec3[11]
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			addInfo(infoData, ndx, 3, true);		//vec3
+			addInfo(infoData, ndx, 5, false);		//offset
+		}
+
+		//vec4[3]
+		for (int i = 0; i < 3; ++i)
+		{
+			addInfo(infoData, ndx, 4, true);		//vec4
+			addInfo(infoData, ndx, 4, false);		//offset
+		}
+	}
+
+	//Please check the data and offset
+	DE_ASSERT(ndx == static_cast<int>(infoData.size()));
+
+	return infoData;
+}
+
+vector<deFloat16> data16bitStd430 (de::Random& rnd)
+{
+	return getFloat16s(rnd, getStructSize(SHADERTEMPLATE_STRIDE16BIT_STD430));
+}
+
+vector<bool> info16bitStd430 (void)
+{
+	int				ndx			= 0u;
+	vector<bool>	infoData	(getStructSize(SHADERTEMPLATE_STRIDE16BIT_STD430));
+
+	for(int elementNdx = 0; elementNdx < structData.structArraySize; ++elementNdx)
+	{
+		infoData[ndx++] = true;					//f16
+		infoData[ndx++] = false;				//offset
+
+		infoData[ndx++] = true;					//v2f16
+		infoData[ndx++] = true;					//v2f16
+
+		addInfo(infoData, ndx, 3, true);		//v3f16
+		infoData[ndx++] = false;				//offset
+
+		addInfo(infoData, ndx, 4, true);		//v4f16
+
+		//f16[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			infoData[ndx++] = true;				//f16;
+		}
+		addInfo(infoData, ndx, 1, false);		//offset
+
+		//struct {f16, v2f16[3]} [11]
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			//struct.f16
+			infoData[ndx++] = true;				//f16
+			infoData[ndx++] = false;			//offset
+			//struct.f16.v2f16[3]
+			for (int j = 0; j < 3; ++j)
+			{
+				infoData[ndx++] = true;			//v2f16
+				infoData[ndx++] = true;			//v2f16
+			}
+		}
+
+		//vec2[11];
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			infoData[ndx++] = true;				//v2f16
+			infoData[ndx++] = true;				//v2f16
+		}
+
+		//f16
+		infoData[ndx++] = true;					//f16
+		infoData[ndx++] = false;				//offset
+
+		//vec3[11]
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			addInfo(infoData, ndx, 3, true);	//vec3
+			infoData[ndx++] = false;			//offset
+		}
+
+		//vec4[3]
+		for (int i = 0; i < 3; ++i)
+		{
+			addInfo(infoData, ndx, 4, true);	//vec4
+		}
+	}
+
+	//Please check the data and offset
+	DE_ASSERT(ndx == static_cast<int>(infoData.size()));
+	return infoData;
+}
+
+vector<float> data32bitStd140 (de::Random& rnd)
+{
+	return getFloat32s(rnd, getStructSize(SHADERTEMPLATE_STRIDE32BIT_STD140));
+}
+
+vector<bool> info32bitStd140 (void)
+{
+	int				ndx			= 0u;
+	vector<bool>	infoData	(getStructSize(SHADERTEMPLATE_STRIDE32BIT_STD140));
+
+	for(int elementNdx = 0; elementNdx < structData.structArraySize; ++elementNdx)
+	{
+		infoData[ndx++] = true;					//f32
+		infoData[ndx++] = false;				//offset
+
+		infoData[ndx++] = true;					//v2f32
+		infoData[ndx++] = true;					//v2f32
+
+		addInfo(infoData, ndx, 3, true);		//v3f32
+		infoData[ndx++] = false;				//offset
+
+		addInfo(infoData, ndx, 4, true);		//v4f16
+
+		//f32[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			infoData[ndx++] = true;				//f32;
+			addInfo(infoData, ndx, 3, false);	//offset
+		}
+
+		//struct {f32, v2f32[3]} [11]
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			//struct.f32
+			infoData[ndx++] = true;				//f32
+			addInfo(infoData, ndx, 3, false);	//offset
+			//struct.f32.v2f16[3]
+			for (int j = 0; j < 3; ++j)
+			{
+				infoData[ndx++] = true;			//v2f32
+				infoData[ndx++] = true;			//v2f32
+				infoData[ndx++] = false;		//offset
+				infoData[ndx++] = false;		//offset
+			}
+		}
+
+		//v2f32[11];
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			infoData[ndx++] = true;				//v2f32
+			infoData[ndx++] = true;				//v2f32
+			infoData[ndx++] = false;			//offset
+			infoData[ndx++] = false;			//offset
+		}
+
+		//f16
+		infoData[ndx++] = true;					//f16
+		addInfo(infoData, ndx, 3, false);		//offset
+
+		//vec3[11]
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			addInfo(infoData, ndx, 3, true);	//v3f32
+			infoData[ndx++] = false;			//offset
+		}
+
+		//vec4[3]
+		for (int i = 0; i < 3; ++i)
+		{
+			addInfo(infoData, ndx, 4, true);	//vec4
+		}
+	}
+
+	//Please check the data and offset
+	DE_ASSERT(ndx == static_cast<int>(infoData.size()));
+	return infoData;
+}
+
+vector<float> data32bitStd430 (de::Random& rnd)
+{
+	return getFloat32s(rnd, getStructSize(SHADERTEMPLATE_STRIDE32BIT_STD430));
+}
+
+vector<bool> info32bitStd430 (void)
+{
+	int				ndx			= 0u;
+	vector<bool>	infoData	(getStructSize(SHADERTEMPLATE_STRIDE32BIT_STD430));
+
+	for(int elementNdx = 0; elementNdx < structData.structArraySize; ++elementNdx)
+	{
+		infoData[ndx++] = true;					//f32
+		infoData[ndx++] = false;				//offset
+
+		infoData[ndx++] = true;					//v2f32
+		infoData[ndx++] = true;					//v2f32
+
+		addInfo(infoData, ndx, 3, true);		//v3f32
+		infoData[ndx++] = false;				//offset
+
+		addInfo(infoData, ndx, 4, true);		//v4f16
+
+		//f32[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			infoData[ndx++] = true;				//f32;
+		}
+		infoData[ndx++] = false;				//offset
+
+		//struct {f32, v2f32[3]} [11]
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			//struct.f32
+			infoData[ndx++] = true;				//f32
+			infoData[ndx++] = false;			//offset
+			//struct.f32.v2f16[3]
+			for (int j = 0; j < 3; ++j)
+			{
+				infoData[ndx++] = true;			//v2f32
+				infoData[ndx++] = true;			//v2f32
+			}
+		}
+
+		//v2f32[11];
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			infoData[ndx++] = true;				//v2f32
+			infoData[ndx++] = true;				//v2f32
+		}
+
+		//f32
+		infoData[ndx++] = true;					//f32
+		infoData[ndx++] = false;				//offset
+
+		//vec3[11]
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			addInfo(infoData, ndx, 3, true);	//v3f32
+			infoData[ndx++] = false;			//offset
+		}
+
+		//vec4[3]
+		for (int i = 0; i < 3; ++i)
+		{
+			addInfo(infoData, ndx, 4, true);	//vec4
+		}
+	}
+
+	//Please check the data and offset
+	DE_ASSERT(ndx == static_cast<int>(infoData.size()));
+	return infoData;
+}
+
+vector<deInt16> dataMixStd140 (de::Random& rnd)
+{
+	return getInt16s(rnd, getStructSize(SHADERTEMPLATE_STRIDEMIX_STD140));
+}
+
+vector<bool> infoMixStd140 (void)
+{
+	int				ndx			= 0u;
+	vector<bool>	infoData	(getStructSize(SHADERTEMPLATE_STRIDEMIX_STD140));
+	for(int elementNdx = 0; elementNdx < structData.structArraySize; ++elementNdx)
+	{
+		infoData[ndx++] = true;				//16b
+		addInfo(infoData, ndx, 1, false);		//offset
+
+		addInfo(infoData, ndx, 2, true);		//32b
+
+		addInfo(infoData, ndx, 2, true);		//v2b16
+		addInfo(infoData, ndx, 2, false);		//offset
+
+		addInfo(infoData, ndx, 4, true);		//v2b32
+
+		addInfo(infoData, ndx, 3, true);		//v3b16
+		addInfo(infoData, ndx, 1, false);		//offset
+
+		addInfo(infoData, ndx, 6, true);		//v3b32
+		addInfo(infoData, ndx, 2, false);		//offset
+
+		addInfo(infoData, ndx, 4, true);		//v4b16
+		addInfo(infoData, ndx, 4, false);		//offset
+
+		addInfo(infoData, ndx, 8, true);		//v4b32
+
+		//strut {b16, b32, v2b16[11], b32[11]}
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			infoData[ndx++] = true;				//16b
+			addInfo(infoData, ndx, 1, false);	//offset
+
+			addInfo(infoData, ndx, 2, true);	//32b
+			addInfo(infoData, ndx, 4, false);	//offset
+
+			for (int j = 0; j < structData.nestedArraySize; ++j)
+			{
+				addInfo(infoData, ndx, 2, true);	//v2b16[11]
+				addInfo(infoData, ndx, 6, false);	//offset
+			}
+
+			for (int j = 0; j < structData.nestedArraySize; ++j)
+			{
+				addInfo(infoData, ndx, 2, true);	//b32[11]
+				addInfo(infoData, ndx, 6, false);	//offset
+			}
+		}
+
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			infoData[ndx++] = true;				//16b[11]
+			addInfo(infoData, ndx, 7, false);		//offset
+		}
+
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			addInfo(infoData, ndx, 2, true);	//b32bIn[11]
+			addInfo(infoData, ndx, 6, false);	//offset
+		}
+	}
+
+	//Please check the data and offset
+	DE_ASSERT(ndx == static_cast<int>(infoData.size()));
+	return infoData;
+}
+
+vector<deInt16> dataMixStd430 (de::Random& rnd)
+{
+	return getInt16s(rnd, getStructSize(SHADERTEMPLATE_STRIDEMIX_STD430));
+}
+
+vector<bool> infoMixStd430 (void)
+{
+	int				ndx			= 0u;
+	vector<bool>	infoData	(getStructSize(SHADERTEMPLATE_STRIDEMIX_STD430));
+	for(int elementNdx = 0; elementNdx < structData.structArraySize; ++elementNdx)
+	{
+		infoData[ndx++] = true;				//16b
+		addInfo(infoData, ndx, 1, false);		//offset
+
+		addInfo(infoData, ndx, 2, true);		//32b
+
+		addInfo(infoData, ndx, 2, true);		//v2b16
+		addInfo(infoData, ndx, 2, false);		//offset
+
+		addInfo(infoData, ndx, 4, true);		//v2b32
+
+		addInfo(infoData, ndx, 3, true);		//v3b16
+		addInfo(infoData, ndx, 1, false);		//offset
+
+		addInfo(infoData, ndx, 6, true);		//v3b32
+		addInfo(infoData, ndx, 2, false);		//offset
+
+		addInfo(infoData, ndx, 4, true);		//v4b16
+		addInfo(infoData, ndx, 4, false);		//offset
+
+		addInfo(infoData, ndx, 8, true);		//v4b32
+
+		//strut {b16, b32, v2b16[11], b32[11]}
+		for (int i = 0; i < structData.nestedArraySize; ++i)
+		{
+			infoData[ndx++] = true;			//16b
+			addInfo(infoData, ndx, 1, false);	//offset
+
+			addInfo(infoData, ndx, 2, true);	//32b
+
+			addInfo(infoData, ndx, 22, true);	//v2b16[11]
+
+			addInfo(infoData, ndx, 22, true);	//b32[11]
+		}
+
+		addInfo(infoData, ndx, 11, true);		//16b[11]
+		infoData[ndx++] = false;				//offset
+
+		addInfo(infoData, ndx, 22, true);		//32b[11]
+		addInfo(infoData, ndx, 6, false);		//offset
+	}
+
+	//Please check the data and offset
+	DE_ASSERT(ndx == static_cast<int>(infoData.size()));
+	return infoData;
+}
+
+template<typename originType, typename resultType, ShaderTemplate funcOrigin, ShaderTemplate funcResult>
+bool compareStruct(const resultType* returned, const originType* original, tcu::TestLog& log)
+{
+		vector<bool>		resultInfo;
+		vector<bool>		originInfo;
+		vector<resultType>	resultToCompare;
+		vector<originType>	originToCompare;
+
+		switch(funcOrigin)
+		{
+		case SHADERTEMPLATE_STRIDE16BIT_STD140:
+			originInfo = info16bitStd140();
+			break;
+		case SHADERTEMPLATE_STRIDE16BIT_STD430:
+			originInfo = info16bitStd430();
+			break;
+		case SHADERTEMPLATE_STRIDE32BIT_STD140:
+			originInfo = info32bitStd140();
+			break;
+		case SHADERTEMPLATE_STRIDE32BIT_STD430:
+			originInfo = info32bitStd430();
+			break;
+		case SHADERTEMPLATE_STRIDEMIX_STD140:
+			originInfo = infoMixStd140();
+			break;
+		case SHADERTEMPLATE_STRIDEMIX_STD430:
+			originInfo = infoMixStd430();
+			break;
+		default:
+			DE_ASSERT(0);
+		}
+
+		switch(funcResult)
+		{
+		case SHADERTEMPLATE_STRIDE16BIT_STD140:
+			resultInfo = info16bitStd140();
+			break;
+		case SHADERTEMPLATE_STRIDE16BIT_STD430:
+			resultInfo = info16bitStd430();
+			break;
+		case SHADERTEMPLATE_STRIDE32BIT_STD140:
+			resultInfo = info32bitStd140();
+			break;
+		case SHADERTEMPLATE_STRIDE32BIT_STD430:
+			resultInfo = info32bitStd430();
+			break;
+		case SHADERTEMPLATE_STRIDEMIX_STD140:
+			resultInfo = infoMixStd140();
+			break;
+		case SHADERTEMPLATE_STRIDEMIX_STD430:
+			resultInfo = infoMixStd430();
+			break;
+		default:
+			DE_ASSERT(0);
+		}
+
+		for (unsigned int ndx = 0; ndx < static_cast<unsigned int>(resultInfo.size()); ++ndx)
+		{
+			if (resultInfo[ndx])
+				resultToCompare.push_back(returned[ndx]);
+		}
+
+		for (unsigned int ndx = 0; ndx < static_cast<unsigned int>(originInfo.size()); ++ndx)
+		{
+			if (originInfo[ndx])
+				originToCompare.push_back(original[ndx]);
+		}
+
+		//Different offset but that same amount of data
+		DE_ASSERT(originToCompare.size() == resultToCompare.size());
+		for (unsigned int ndx = 0; ndx < static_cast<unsigned int>(originToCompare.size()); ++ndx)
+		{
+			if (!compare16Bit(originToCompare[ndx], resultToCompare[ndx], RoundingModeFlags(ROUNDINGMODE_RTE | ROUNDINGMODE_RTZ), log))
+				return false;
+		}
+		return true;
+}
+
+template<typename originType, typename resultType, ShaderTemplate funcOrigin, ShaderTemplate funcResult>
+bool computeCheckStruct (const std::vector<BufferSp>&	originalFloats,
+						 const vector<AllocationSp>&	outputAllocs,
+						 const std::vector<BufferSp>&	/* expectedOutputs */,
+						 tcu::TestLog&					log)
+{
+	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
+	{
+		vector<deUint8>	originalBytes;
+		originalFloats[outputNdx]->getBytes(originalBytes);
+
+		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
+		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
+
+		if(!compareStruct<originType, resultType, funcOrigin, funcResult>(returned, original, log))
+			return false;
+	}
+	return true;
+}
+
+template<typename originType, typename resultType, ShaderTemplate funcOrigin, ShaderTemplate funcResult>
+bool graphicsCheckStruct (const std::vector<Resource>&	originalFloats,
+							   const vector<AllocationSp>&	outputAllocs,
+							   const std::vector<Resource>&	/* expectedOutputs */,
+							   tcu::TestLog&				log)
+{
+	for (deUint32 outputNdx = 0; outputNdx < static_cast<deUint32>(outputAllocs.size()); ++outputNdx)
+	{
+		vector<deUint8>	originalBytes;
+		originalFloats[outputNdx].second->getBytes(originalBytes);
+
+		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
+		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
+
+		if(!compareStruct<originType, resultType, funcOrigin, funcResult>(returned, original, log))
+			return false;
+	}
+	return true;
+}
+
+string getStructShaderComponet (const ShaderTemplate component)
+{
+	switch(component)
+	{
+	case SHADERTEMPLATE_TYPES:
+		return string(
+		"%f16       = OpTypeFloat 16\n"
+		"%v2f16     = OpTypeVector %f16 2\n"
+		"%v3f16     = OpTypeVector %f16 3\n"
+		"%v4f16     = OpTypeVector %f16 4\n"
+		"%f16ptr    = OpTypePointer Uniform %f16\n"
+		"%v2f16ptr  = OpTypePointer Uniform %v2f16\n"
+		"%v3f16ptr  = OpTypePointer Uniform %v3f16\n"
+		"%v4f16ptr  = OpTypePointer Uniform %v4f16\n"
+		"\n"
+		"%f32ptr   = OpTypePointer Uniform %f32\n"
+		"%v2f32ptr = OpTypePointer Uniform %v2f32\n"
+		"%v3f32ptr = OpTypePointer Uniform %v3f32\n"
+		"%v4f32ptr = OpTypePointer Uniform %v4f32\n");
+	case SHADERTEMPLATE_STRIDE16BIT_STD140:
+		return string(
+		//struct {f16, v2f16[3]} [11]
+		"OpDecorate %v2f16arr3 ArrayStride 16\n"
+		"OpMemberDecorate %struct16 0 Offset 0\n"
+		"OpMemberDecorate %struct16 1 Offset 16\n"
+		"OpDecorate %struct16arr11 ArrayStride 64\n"
+
+		"OpDecorate %f16arr3       ArrayStride 16\n"
+		"OpDecorate %v2f16arr11    ArrayStride 16\n"
+		"OpDecorate %v3f16arr11    ArrayStride 16\n"
+		"OpDecorate %v4f16arr3     ArrayStride 16\n"
+		"OpDecorate %f16StructArr7 ArrayStride 1200\n"
+		"\n"
+		"OpMemberDecorate %f16Struct 0 Offset 0\n"		//f16
+		"OpMemberDecorate %f16Struct 1 Offset 4\n"		//v2f16
+		"OpMemberDecorate %f16Struct 2 Offset 8\n"		//v3f16
+		"OpMemberDecorate %f16Struct 3 Offset 16\n"		//v4f16
+		"OpMemberDecorate %f16Struct 4 Offset 32\n"		//f16[3]
+		"OpMemberDecorate %f16Struct 5 Offset 80\n"		//struct {f16, v2f16[3]} [11]
+		"OpMemberDecorate %f16Struct 6 Offset 784\n"	//v2f16[11]
+		"OpMemberDecorate %f16Struct 7 Offset 960\n"	//f16
+		"OpMemberDecorate %f16Struct 8 Offset 976\n"	//v3f16[11]
+		"OpMemberDecorate %f16Struct 9 Offset 1152\n");	//v4f16[3]
+
+	case SHADERTEMPLATE_STRIDE16BIT_STD430:
+		return string(
+		//struct {f16, v2f16[3]} [11]
+		"OpDecorate %v2f16arr3 ArrayStride 4\n"
+		"OpMemberDecorate %struct16 0 Offset 0\n"
+		"OpMemberDecorate %struct16 1 Offset 4\n"
+		"OpDecorate %struct16arr11 ArrayStride 16\n"
+
+		"OpDecorate %f16arr3    ArrayStride 2\n"
+		"OpDecorate %v2f16arr11 ArrayStride 4\n"
+		"OpDecorate %v3f16arr11 ArrayStride 8\n"
+		"OpDecorate %v4f16arr3  ArrayStride 8\n"
+		"OpDecorate %f16StructArr7 ArrayStride 368\n"
+		"\n"
+		"OpMemberDecorate %f16Struct 0 Offset 0\n"		//f16
+		"OpMemberDecorate %f16Struct 1 Offset 4\n"		//v2f16
+		"OpMemberDecorate %f16Struct 2 Offset 8\n"		//v3f16
+		"OpMemberDecorate %f16Struct 3 Offset 16\n"		//v4f16
+		"OpMemberDecorate %f16Struct 4 Offset 24\n"		//f16[3]
+		"OpMemberDecorate %f16Struct 5 Offset 32\n"		//struct {f16, v2f16[3]} [11]
+		"OpMemberDecorate %f16Struct 6 Offset 208\n"	//v2f16[11]
+		"OpMemberDecorate %f16Struct 7 Offset 252\n"	//f16
+		"OpMemberDecorate %f16Struct 8 Offset 256\n"	//v3f16[11]
+		"OpMemberDecorate %f16Struct 9 Offset 344\n");	//v4f16[3]
+	case SHADERTEMPLATE_STRIDE32BIT_STD140:
+		return string (
+		//struct {f32, v2f32[3]} [11]
+		"OpDecorate %v2f32arr3 ArrayStride 16\n"
+		"OpMemberDecorate %struct32 0 Offset 0\n"
+		"OpMemberDecorate %struct32 1 Offset 16\n"
+		"OpDecorate %struct32arr11 ArrayStride 64\n"
+
+		"OpDecorate %f32arr3   ArrayStride 16\n"
+		"OpDecorate %v2f32arr11 ArrayStride 16\n"
+		"OpDecorate %v3f32arr11 ArrayStride 16\n"
+		"OpDecorate %v4f32arr3 ArrayStride 16\n"
+		"OpDecorate %f32StructArr7 ArrayStride 1216\n"
+		"\n"
+
+		"OpMemberDecorate %f32Struct 0 Offset 0\n"		//f32
+		"OpMemberDecorate %f32Struct 1 Offset 8\n"		//v2f32
+		"OpMemberDecorate %f32Struct 2 Offset 16\n"		//v3f32
+		"OpMemberDecorate %f32Struct 3 Offset 32\n"		//v4f32
+		"OpMemberDecorate %f32Struct 4 Offset 48\n"		//f32[3]
+		"OpMemberDecorate %f32Struct 5 Offset 96\n"		//struct {f32, v2f32[3]} [11]
+		"OpMemberDecorate %f32Struct 6 Offset 800\n"	//v2f32[11]
+		"OpMemberDecorate %f32Struct 7 Offset 976\n"	//f32
+		"OpMemberDecorate %f32Struct 8 Offset 992\n"	//v3f32[11]
+		"OpMemberDecorate %f32Struct 9 Offset 1168\n");	//v4f32[3]
+
+	case SHADERTEMPLATE_STRIDE32BIT_STD430:
+		return string(
+		//struct {f32, v2f32[3]} [11]
+		"OpDecorate %v2f32arr3 ArrayStride 8\n"
+		"OpMemberDecorate %struct32 0 Offset 0\n"
+		"OpMemberDecorate %struct32 1 Offset 8\n"
+		"OpDecorate %struct32arr11 ArrayStride 32\n"
+
+		"OpDecorate %f32arr3    ArrayStride 4\n"
+		"OpDecorate %v2f32arr11 ArrayStride 8\n"
+		"OpDecorate %v3f32arr11 ArrayStride 16\n"
+		"OpDecorate %v4f32arr3  ArrayStride 16\n"
+		"OpDecorate %f32StructArr7 ArrayStride 736\n"
+		"\n"
+
+		"OpMemberDecorate %f32Struct 0 Offset 0\n"		//f32
+		"OpMemberDecorate %f32Struct 1 Offset 8\n"		//v2f32
+		"OpMemberDecorate %f32Struct 2 Offset 16\n"		//v3f32
+		"OpMemberDecorate %f32Struct 3 Offset 32\n"		//v4f32
+		"OpMemberDecorate %f32Struct 4 Offset 48\n"		//f32[3]
+		"OpMemberDecorate %f32Struct 5 Offset 64\n"		//struct {f32, v2f32[3]}[11]
+		"OpMemberDecorate %f32Struct 6 Offset 416\n"	//v2f32[11]
+		"OpMemberDecorate %f32Struct 7 Offset 504\n"	//f32
+		"OpMemberDecorate %f32Struct 8 Offset 512\n"	//v3f32[11]
+		"OpMemberDecorate %f32Struct 9 Offset 688\n");	//v4f32[3]
+	case SHADERTEMPLATE_STRIDEMIX_STD140:
+		return string(
+		"\n"//strutNestedIn {b16, b32, v2b16[11], b32[11]}
+		"OpDecorate %v2b16NestedArr11${InOut} ArrayStride 16\n"	//v2b16[11]
+		"OpDecorate %b32NestedArr11${InOut} ArrayStride 16\n"	//b32[11]
+		"OpMemberDecorate %sNested${InOut} 0 Offset 0\n"		//b16
+		"OpMemberDecorate %sNested${InOut} 1 Offset 4\n"		//b32
+		"OpMemberDecorate %sNested${InOut} 2 Offset 16\n"		//v2b16[11]
+		"OpMemberDecorate %sNested${InOut} 3 Offset 192\n"		//b32[11]
+		"OpDecorate %sNestedArr11${InOut} ArrayStride 368\n"	//strutNestedIn[11]
+		"\n"//strutIn {b16, b32, v2b16, v2b32, v3b16, v3b32, v4b16, v4b32, strutNestedIn[11], b16In[11], b32bIn[11]}
+		"OpDecorate %sb16Arr11${InOut} ArrayStride 16\n"		//b16In[11]
+		"OpDecorate %sb32Arr11${InOut} ArrayStride 16\n"		//b32bIn[11]
+		"OpMemberDecorate %struct${InOut} 0 Offset 0\n"			//b16
+		"OpMemberDecorate %struct${InOut} 1 Offset 4\n"			//b32
+		"OpMemberDecorate %struct${InOut} 2 Offset 8\n"			//v2b16
+		"OpMemberDecorate %struct${InOut} 3 Offset 16\n"		//v2b32
+		"OpMemberDecorate %struct${InOut} 4 Offset 24\n"		//v3b16
+		"OpMemberDecorate %struct${InOut} 5 Offset 32\n"		//v3b32
+		"OpMemberDecorate %struct${InOut} 6 Offset 48\n"		//v4b16
+		"OpMemberDecorate %struct${InOut} 7 Offset 64\n"		//v4b32
+		"OpMemberDecorate %struct${InOut} 8 Offset 80\n"		//strutNestedIn[11]
+		"OpMemberDecorate %struct${InOut} 9 Offset 4128\n"		//b16In[11]
+		"OpMemberDecorate %struct${InOut} 10 Offset 4304\n"		//b32bIn[11]
+		"OpDecorate %structArr7${InOut} ArrayStride 4480\n");	//strutIn[7]
+	case SHADERTEMPLATE_STRIDEMIX_STD430:
+		return string(
+		"\n"//strutNestedOut {b16, b32, v2b16[11], b32[11]}
+		"OpDecorate %v2b16NestedArr11${InOut} ArrayStride 4\n"	//v2b16[11]
+		"OpDecorate %b32NestedArr11${InOut}  ArrayStride 4\n"	//b32[11]
+		"OpMemberDecorate %sNested${InOut} 0 Offset 0\n"		//b16
+		"OpMemberDecorate %sNested${InOut} 1 Offset 4\n"		//b32
+		"OpMemberDecorate %sNested${InOut} 2 Offset 8\n"		//v2b16[11]
+		"OpMemberDecorate %sNested${InOut} 3 Offset 52\n"		//b32[11]
+		"OpDecorate %sNestedArr11${InOut} ArrayStride 96\n"		//strutNestedOut[11]
+		"\n"//strutOut {b16, b32, v2b16, v2b32, v3b16, v3b32, v4b16, v4b32, strutNestedOut[11], b16Out[11], b32bOut[11]}
+		"OpDecorate %sb16Arr11${InOut} ArrayStride 2\n"			//b16Out[11]
+		"OpDecorate %sb32Arr11${InOut} ArrayStride 4\n"			//b32bOut[11]
+		"OpMemberDecorate %struct${InOut} 0 Offset 0\n"			//b16
+		"OpMemberDecorate %struct${InOut} 1 Offset 4\n"			//b32
+		"OpMemberDecorate %struct${InOut} 2 Offset 8\n"			//v2b16
+		"OpMemberDecorate %struct${InOut} 3 Offset 16\n"		//v2b32
+		"OpMemberDecorate %struct${InOut} 4 Offset 24\n"		//v3b16
+		"OpMemberDecorate %struct${InOut} 5 Offset 32\n"		//v3b32
+		"OpMemberDecorate %struct${InOut} 6 Offset 48\n"		//v4b16
+		"OpMemberDecorate %struct${InOut} 7 Offset 64\n"		//v4b32
+		"OpMemberDecorate %struct${InOut} 8 Offset 80\n"		//strutNestedOut[11]
+		"OpMemberDecorate %struct${InOut} 9 Offset 1136\n"		//b16Out[11]
+		"OpMemberDecorate %struct${InOut} 10 Offset 1160\n"		//b32bOut[11]
+		"OpDecorate %structArr7${InOut} ArrayStride 1216\n");	//strutOut[7]
+
+	default:
+		return string("");
+	}
+}
+
+/*Return string contains spirv loop begin.
+ the spec should contains "exeCount" - with name of const i32, it is number of executions
+ the spec should contains "loopName" - suffix for all local names
+ %Val${loopName} - index which can be used inside loop
+ "%ndxArr${loopName}   = OpVariable %fp_i32  Function\n" - has to be defined outside
+ The function should be always use with endLoop function*/
+std::string beginLoop(const std::map<std::string, std::string>& spec)
+{
+	const tcu::StringTemplate	loopBegin	(
+	"OpStore %ndxArr${loopName} %zero\n"
+	"OpBranch %Loop${loopName}\n"
+	"%Loop${loopName} = OpLabel\n"
+	"OpLoopMerge %MergeLabel1${loopName} %MergeLabel2${loopName} None\n"
+	"OpBranch %Label1${loopName}\n"
+	"%Label1${loopName} = OpLabel\n"
+	"%Val${loopName} = OpLoad %i32 %ndxArr${loopName}\n"
+	"%LessThan${loopName} = OpSLessThan %bool %Val${loopName} %${exeCount}\n"
+	"OpBranchConditional %LessThan${loopName} %ifLabel${loopName} %MergeLabel1${loopName}\n"
+	"%ifLabel${loopName} = OpLabel\n");
+	return loopBegin.specialize(spec);
+}
+/*Return string contains spirv loop end.
+ the spec should contains "loopName" - suffix for all local names, suffix should be the same in beginLoop
+The function should be always use with beginLoop function*/
+std::string endLoop(const std::map<std::string, std::string>& spec)
+{
+	const tcu::StringTemplate	loopEnd	(
+	"OpBranch %MergeLabel2${loopName}\n"
+	"%MergeLabel2${loopName} = OpLabel\n"
+	"%plusOne${loopName} = OpIAdd %i32 %Val${loopName} %c_i32_1\n"
+	"OpStore %ndxArr${loopName} %plusOne${loopName}\n"
+	"OpBranch %Loop${loopName}\n"
+	"%MergeLabel1${loopName} = OpLabel\n");
+	return loopEnd.specialize(spec);
 }
 
 void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
@@ -969,7 +1793,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 		}
 	}
-	{  // integers
+	{// integers
 		const char		sintTypes[]		=
 			"%i16       = OpTypeInt 16 1\n"
 			"%i16ptr    = OpTypePointer PushConstant %i16\n"
@@ -1635,6 +2459,657 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
+	}
+}
+
+void addCompute16bitStorageUniform16StructTo32StructGroup (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&				testCtx			= group->getTestContext();
+	de::Random						rnd				(deStringHash(group->getName()));
+	const StringTemplate			shaderTemplate	(
+		"OpCapability Shader\n"
+		"OpCapability ${capability}\n"
+		"OpExtension \"SPV_KHR_16bit_storage\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"\n"
+		"${strideF16}"
+		"\n"
+		"${strideF32}"
+		"\n"
+		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
+		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
+		"OpDecorate %SSBO_IN ${storage}\n"
+		"OpDecorate %SSBO_OUT BufferBlock\n"
+		"OpDecorate %ssboIN DescriptorSet 0\n"
+		"OpDecorate %ssboOUT DescriptorSet 0\n"
+		"OpDecorate %ssboIN Binding 0\n"
+		"OpDecorate %ssboOUT Binding 1\n"
+		"\n"
+		"%bool     = OpTypeBool\n"
+		"%void     = OpTypeVoid\n"
+		"%voidf    = OpTypeFunction %void\n"
+		"%u32      = OpTypeInt 32 0\n"
+		"%uvec3    = OpTypeVector %u32 3\n"
+		"%uvec3ptr = OpTypePointer Input %uvec3\n"
+		"\n"
+		"%i32      = OpTypeInt 32 1\n"
+		"%v2i32    = OpTypeVector %i32 2\n"
+		"%v4i32    = OpTypeVector %i32 4\n"
+		"\n"
+		"%f32      = OpTypeFloat 32\n"
+		"%v2f32    = OpTypeVector %f32 2\n"
+		"%v3f32    = OpTypeVector %f32 3\n"
+		"%v4f32    = OpTypeVector %f32 4\n"
+		"${types}\n"
+		"\n"
+		"%zero = OpConstant %i32 0\n"
+		"%c_i32_1 = OpConstant %i32 1\n"
+		"%c_i32_2 = OpConstant %i32 2\n"
+		"%c_i32_3 = OpConstant %i32 3\n"
+		"%c_i32_4 = OpConstant %i32 4\n"
+		"%c_i32_5 = OpConstant %i32 5\n"
+		"%c_i32_6 = OpConstant %i32 6\n"
+		"%c_i32_7 = OpConstant %i32 7\n"
+		"%c_i32_8 = OpConstant %i32 8\n"
+		"%c_i32_9 = OpConstant %i32 9\n"
+		"\n"
+		"%c_u32_1 = OpConstant %u32 1\n"
+		"%c_u32_3 = OpConstant %u32 3\n"
+		"%c_u32_7 = OpConstant %u32 7\n"
+		"%c_u32_11 = OpConstant %u32 11\n"
+		"\n"
+		"%f16arr3       = OpTypeArray %f16 %c_u32_3\n"
+		"%v2f16arr3    = OpTypeArray %v2f16 %c_u32_3\n"
+		"%v2f16arr11    = OpTypeArray %v2f16 %c_u32_11\n"
+		"%v3f16arr11    = OpTypeArray %v3f16 %c_u32_11\n"
+		"%v4f16arr3     = OpTypeArray %v4f16 %c_u32_3\n"
+		"%struct16      = OpTypeStruct %f16 %v2f16arr3\n"
+		"%struct16arr11 = OpTypeArray %struct16 %c_u32_11\n"
+		"%f16Struct = OpTypeStruct %f16 %v2f16 %v3f16 %v4f16 %f16arr3 %struct16arr11 %v2f16arr11 %f16 %v3f16arr11 %v4f16arr3\n"
+		"\n"
+		"%f32arr3   = OpTypeArray %f32 %c_u32_3\n"
+		"%v2f32arr3 = OpTypeArray %v2f32 %c_u32_3\n"
+		"%v2f32arr11 = OpTypeArray %v2f32 %c_u32_11\n"
+		"%v3f32arr11 = OpTypeArray %v3f32 %c_u32_11\n"
+		"%v4f32arr3 = OpTypeArray %v4f32 %c_u32_3\n"
+		"%struct32      = OpTypeStruct %f32 %v2f32arr3\n"
+		"%struct32arr11 = OpTypeArray %struct32 %c_u32_11\n"
+		"%f32Struct = OpTypeStruct %f32 %v2f32 %v3f32 %v4f32 %f32arr3 %struct32arr11 %v2f32arr11 %f32 %v3f32arr11 %v4f32arr3\n"
+		"\n"
+		"%f16StructArr7      = OpTypeArray %f16Struct %c_u32_7\n"
+		"%f32StructArr7      = OpTypeArray %f32Struct %c_u32_7\n"
+		"%SSBO_IN            = OpTypeStruct %f16StructArr7\n"
+		"%SSBO_OUT           = OpTypeStruct %f32StructArr7\n"
+		"%up_SSBOIN          = OpTypePointer Uniform %SSBO_IN\n"
+		"%up_SSBOOUT         = OpTypePointer Uniform %SSBO_OUT\n"
+		"%ssboIN             = OpVariable %up_SSBOIN Uniform\n"
+		"%ssboOUT            = OpVariable %up_SSBOOUT Uniform\n"
+		"\n"
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%y         = OpCompositeExtract %u32 %idval 1\n"
+		"\n"
+		"%f16src  = OpAccessChain %f16ptr %ssboIN %zero %x %zero\n"
+		"%val_f16 = OpLoad %f16 %f16src\n"
+		"%val_f32 = OpFConvert %f32 %val_f16\n"
+		"%f32dst  = OpAccessChain %f32ptr %ssboOUT %zero %x %zero\n"
+		"OpStore %f32dst %val_f32\n"
+		"\n"
+		"%v2f16src  = OpAccessChain %v2f16ptr %ssboIN %zero %x %c_i32_1\n"
+		"%val_v2f16 = OpLoad %v2f16 %v2f16src\n"
+		"%val_v2f32 = OpFConvert %v2f32 %val_v2f16\n"
+		"%v2f32dst  = OpAccessChain %v2f32ptr %ssboOUT %zero %x %c_i32_1\n"
+		"OpStore %v2f32dst %val_v2f32\n"
+		"\n"
+		"%v3f16src  = OpAccessChain %v3f16ptr %ssboIN %zero %x %c_i32_2\n"
+		"%val_v3f16 = OpLoad %v3f16 %v3f16src\n"
+		"%val_v3f32 = OpFConvert %v3f32 %val_v3f16\n"
+		"%v3f32dst  = OpAccessChain %v3f32ptr %ssboOUT %zero %x %c_i32_2\n"
+		"OpStore %v3f32dst %val_v3f32\n"
+		"\n"
+		"%v4f16src  = OpAccessChain %v4f16ptr %ssboIN %zero %x %c_i32_3\n"
+		"%val_v4f16 = OpLoad %v4f16 %v4f16src\n"
+		"%val_v4f32 = OpFConvert %v4f32 %val_v4f16\n"
+		"%v4f32dst  = OpAccessChain %v4f32ptr %ssboOUT %zero %x %c_i32_3\n"
+		"OpStore %v4f32dst %val_v4f32\n"
+		"\n"
+		//struct {f16, v2f16[3]}
+		"%Sf16src  = OpAccessChain %f16ptr %ssboIN %zero %x %c_i32_5 %y %zero\n"
+		"%Sval_f16 = OpLoad %f16 %Sf16src\n"
+		"%Sval_f32 = OpFConvert %f32 %Sval_f16\n"
+		"%Sf32dst2  = OpAccessChain %f32ptr %ssboOUT %zero %x %c_i32_5 %y %zero\n"
+		"OpStore %Sf32dst2 %Sval_f32\n"
+		"\n"
+		"%Sv2f16src0   = OpAccessChain %v2f16ptr %ssboIN %zero %x %c_i32_5 %y %c_i32_1 %zero\n"
+		"%Sv2f16_0     = OpLoad %v2f16 %Sv2f16src0\n"
+		"%Sv2f32_0     = OpFConvert %v2f32 %Sv2f16_0\n"
+		"%Sv2f32dst_0  = OpAccessChain %v2f32ptr %ssboOUT %zero %x %c_i32_5 %y %c_i32_1 %zero\n"
+		"OpStore %Sv2f32dst_0 %Sv2f32_0\n"
+		"\n"
+		"%Sv2f16src1  = OpAccessChain %v2f16ptr %ssboIN %zero %x %c_i32_5 %y %c_i32_1 %c_i32_1\n"
+		"%Sv2f16_1 = OpLoad %v2f16 %Sv2f16src1\n"
+		"%Sv2f32_1 = OpFConvert %v2f32 %Sv2f16_1\n"
+		"%Sv2f32dst_1  = OpAccessChain %v2f32ptr %ssboOUT %zero %x %c_i32_5 %y %c_i32_1 %c_i32_1\n"
+		"OpStore %Sv2f32dst_1 %Sv2f32_1\n"
+		"\n"
+		"%Sv2f16src2  = OpAccessChain %v2f16ptr %ssboIN %zero %x %c_i32_5 %y %c_i32_1 %c_i32_2\n"
+		"%Sv2f16_2 = OpLoad %v2f16 %Sv2f16src2\n"
+		"%Sv2f32_2 = OpFConvert %v2f32 %Sv2f16_2\n"
+		"%Sv2f32dst_2  = OpAccessChain %v2f32ptr %ssboOUT %zero %x %c_i32_5 %y %c_i32_1 %c_i32_2\n"
+		"OpStore %Sv2f32dst_2 %Sv2f32_2\n"
+		"\n"
+
+		"%v2f16src2  = OpAccessChain %v2f16ptr %ssboIN %zero %x %c_i32_6 %y\n"
+		"%val2_v2f16 = OpLoad %v2f16 %v2f16src2\n"
+		"%val2_v2f32 = OpFConvert %v2f32 %val2_v2f16\n"
+		"%v2f32dst2  = OpAccessChain %v2f32ptr %ssboOUT %zero %x %c_i32_6 %y\n"
+		"OpStore %v2f32dst2 %val2_v2f32\n"
+		"\n"
+		"%f16src2  = OpAccessChain %f16ptr %ssboIN %zero %x %c_i32_7\n"
+		"%val2_f16 = OpLoad %f16 %f16src2\n"
+		"%val2_f32 = OpFConvert %f32 %val2_f16\n"
+		"%f32dst2  = OpAccessChain %f32ptr %ssboOUT %zero %x %c_i32_7\n"
+		"OpStore %f32dst2 %val2_f32\n"
+		"\n"
+		"%v3f16src2  = OpAccessChain %v3f16ptr %ssboIN %zero %x %c_i32_8 %y\n"
+		"%val2_v3f16 = OpLoad %v3f16 %v3f16src2\n"
+		"%val2_v3f32 = OpFConvert %v3f32 %val2_v3f16\n"
+		"%v3f32dst2  = OpAccessChain %v3f32ptr %ssboOUT %zero %x %c_i32_8 %y\n"
+		"OpStore %v3f32dst2 %val2_v3f32\n"
+		"\n"
+
+		//Array with 3 elements
+		"%LessThan3 = OpSLessThan %bool %y %c_i32_3\n"
+		"OpSelectionMerge %BlockIf None\n"
+		"OpBranchConditional %LessThan3 %LabelIf %BlockIf\n"
+		"%LabelIf = OpLabel\n"
+		"  %f16src3  = OpAccessChain %f16ptr %ssboIN %zero %x %c_i32_4 %y\n"
+		"  %val3_f16 = OpLoad %f16 %f16src3\n"
+		"  %val3_f32 = OpFConvert %f32 %val3_f16\n"
+		"  %f32dst3  = OpAccessChain %f32ptr %ssboOUT %zero %x %c_i32_4 %y\n"
+		"  OpStore %f32dst3 %val3_f32\n"
+		"\n"
+		"  %v4f16src2  = OpAccessChain %v4f16ptr %ssboIN %zero %x %c_i32_9 %y\n"
+		"  %val2_v4f16 = OpLoad %v4f16 %v4f16src2\n"
+		"  %val2_v4f32 = OpFConvert %v4f32 %val2_v4f16\n"
+		"  %v4f32dst2  = OpAccessChain %v4f32ptr %ssboOUT %zero %x %c_i32_9 %y\n"
+		"  OpStore %v4f32dst2 %val2_v4f32\n"
+		"OpBranch %BlockIf\n"
+		"%BlockIf = OpLabel\n"
+
+		"   OpReturn\n"
+		"   OpFunctionEnd\n");
+
+	{  // Floats
+		vector<float>			float32Data		(getStructSize(SHADERTEMPLATE_STRIDE32BIT_STD430), 0.0f);
+
+		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+		{
+			vector<deFloat16>		float16DData	= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? data16bitStd430(rnd) : data16bitStd140(rnd);
+			ComputeShaderSpec		spec;
+			map<string, string>		specs;
+			string					testName		= string(CAPABILITIES[capIdx].name);
+
+			specs["capability"]		= CAPABILITIES[capIdx].cap;
+			specs["storage"]		= CAPABILITIES[capIdx].decor;
+			specs["strideF16"]		= getStructShaderComponet((VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? SHADERTEMPLATE_STRIDE16BIT_STD430 : SHADERTEMPLATE_STRIDE16BIT_STD140);
+			specs["strideF32"]		= getStructShaderComponet(SHADERTEMPLATE_STRIDE32BIT_STD430);
+			specs["types"]			= getStructShaderComponet(SHADERTEMPLATE_TYPES);
+
+			spec.assembly			= shaderTemplate.specialize(specs);
+			spec.numWorkGroups		= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
+			spec.verifyIO			= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ?  computeCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430>
+																										: computeCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
+			spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
+			spec.inputs.push_back(BufferSp(new Float16Buffer(float16DData)));
+			spec.outputs.push_back(BufferSp(new Float32Buffer(float32Data)));
+			spec.extensions.push_back("VK_KHR_16bit_storage");
+			spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+		}
+	}
+}
+
+void addCompute16bitStorageUniform32StructTo16StructGroup (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&				testCtx			= group->getTestContext();
+	de::Random						rnd				(deStringHash(group->getName()));
+
+	const StringTemplate			shaderTemplate	(
+		"OpCapability Shader\n"
+		"OpCapability ${capability}\n"
+		"OpExtension \"SPV_KHR_16bit_storage\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"\n"
+		"${strideF16}"
+		"\n"
+		"${strideF32}"
+		"\n"
+		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
+		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
+		"OpDecorate %SSBO_IN ${storage}\n"
+		"OpDecorate %SSBO_OUT BufferBlock\n"
+		"OpDecorate %ssboIN DescriptorSet 0\n"
+		"OpDecorate %ssboOUT DescriptorSet 0\n"
+		"OpDecorate %ssboIN Binding 0\n"
+		"OpDecorate %ssboOUT Binding 1\n"
+		"\n"
+		"%bool     = OpTypeBool\n"
+		"%void     = OpTypeVoid\n"
+		"%voidf    = OpTypeFunction %void\n"
+		"%u32      = OpTypeInt 32 0\n"
+		"%uvec3    = OpTypeVector %u32 3\n"
+		"%uvec3ptr = OpTypePointer Input %uvec3\n"
+		"\n"
+		"%i32      = OpTypeInt 32 1\n"
+		"%v2i32    = OpTypeVector %i32 2\n"
+		"%v4i32    = OpTypeVector %i32 4\n"
+		"\n"
+		"%f32      = OpTypeFloat 32\n"
+		"%v2f32    = OpTypeVector %f32 2\n"
+		"%v3f32    = OpTypeVector %f32 3\n"
+		"%v4f32    = OpTypeVector %f32 4\n"
+		"${types}\n"
+		"\n"
+		"%zero = OpConstant %i32 0\n"
+		"%c_i32_1 = OpConstant %i32 1\n"
+		"%c_i32_2 = OpConstant %i32 2\n"
+		"%c_i32_3 = OpConstant %i32 3\n"
+		"%c_i32_4 = OpConstant %i32 4\n"
+		"%c_i32_5 = OpConstant %i32 5\n"
+		"%c_i32_6 = OpConstant %i32 6\n"
+		"%c_i32_7 = OpConstant %i32 7\n"
+		"%c_i32_8 = OpConstant %i32 8\n"
+		"%c_i32_9 = OpConstant %i32 9\n"
+		"\n"
+		"%c_u32_1 = OpConstant %u32 1\n"
+		"%c_u32_3 = OpConstant %u32 3\n"
+		"%c_u32_7 = OpConstant %u32 7\n"
+		"%c_u32_11 = OpConstant %u32 11\n"
+		"\n"
+		"%f16arr3       = OpTypeArray %f16 %c_u32_3\n"
+		"%v2f16arr3    = OpTypeArray %v2f16 %c_u32_3\n"
+		"%v2f16arr11    = OpTypeArray %v2f16 %c_u32_11\n"
+		"%v3f16arr11    = OpTypeArray %v3f16 %c_u32_11\n"
+		"%v4f16arr3     = OpTypeArray %v4f16 %c_u32_3\n"
+		"%struct16      = OpTypeStruct %f16 %v2f16arr3\n"
+		"%struct16arr11 = OpTypeArray %struct16 %c_u32_11\n"
+		"%f16Struct = OpTypeStruct %f16 %v2f16 %v3f16 %v4f16 %f16arr3 %struct16arr11 %v2f16arr11 %f16 %v3f16arr11 %v4f16arr3\n"
+		"\n"
+		"%f32arr3   = OpTypeArray %f32 %c_u32_3\n"
+		"%v2f32arr3 = OpTypeArray %v2f32 %c_u32_3\n"
+		"%v2f32arr11 = OpTypeArray %v2f32 %c_u32_11\n"
+		"%v3f32arr11 = OpTypeArray %v3f32 %c_u32_11\n"
+		"%v4f32arr3 = OpTypeArray %v4f32 %c_u32_3\n"
+		"%struct32      = OpTypeStruct %f32 %v2f32arr3\n"
+		"%struct32arr11 = OpTypeArray %struct32 %c_u32_11\n"
+		"%f32Struct = OpTypeStruct %f32 %v2f32 %v3f32 %v4f32 %f32arr3 %struct32arr11 %v2f32arr11 %f32 %v3f32arr11 %v4f32arr3\n"
+		"\n"
+		"%f16StructArr7      = OpTypeArray %f16Struct %c_u32_7\n"
+		"%f32StructArr7      = OpTypeArray %f32Struct %c_u32_7\n"
+		"%SSBO_IN            = OpTypeStruct %f32StructArr7\n"
+		"%SSBO_OUT           = OpTypeStruct %f16StructArr7\n"
+		"%up_SSBOIN          = OpTypePointer Uniform %SSBO_IN\n"
+		"%up_SSBOOUT         = OpTypePointer Uniform %SSBO_OUT\n"
+		"%ssboIN             = OpVariable %up_SSBOIN Uniform\n"
+		"%ssboOUT            = OpVariable %up_SSBOOUT Uniform\n"
+		"\n"
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%y         = OpCompositeExtract %u32 %idval 1\n"
+		"\n"
+		"%f32src  = OpAccessChain %f32ptr %ssboIN %zero %x %zero\n"
+		"%val_f32 = OpLoad %f32 %f32src\n"
+		"%val_f16 = OpFConvert %f16 %val_f32\n"
+		"%f16dst  = OpAccessChain %f16ptr %ssboOUT %zero %x %zero\n"
+		"OpStore %f16dst %val_f16\n"
+		"\n"
+		"%v2f32src  = OpAccessChain %v2f32ptr %ssboIN %zero %x %c_i32_1\n"
+		"%val_v2f32 = OpLoad %v2f32 %v2f32src\n"
+		"%val_v2f16 = OpFConvert %v2f16 %val_v2f32\n"
+		"%v2f16dst  = OpAccessChain %v2f16ptr %ssboOUT %zero %x %c_i32_1\n"
+		"OpStore %v2f16dst %val_v2f16\n"
+		"\n"
+		"%v3f32src  = OpAccessChain %v3f32ptr %ssboIN %zero %x %c_i32_2\n"
+		"%val_v3f32 = OpLoad %v3f32 %v3f32src\n"
+		"%val_v3f16 = OpFConvert %v3f16 %val_v3f32\n"
+		"%v3f16dst  = OpAccessChain %v3f16ptr %ssboOUT %zero %x %c_i32_2\n"
+		"OpStore %v3f16dst %val_v3f16\n"
+		"\n"
+		"%v4f32src  = OpAccessChain %v4f32ptr %ssboIN %zero %x %c_i32_3\n"
+		"%val_v4f32 = OpLoad %v4f32 %v4f32src\n"
+		"%val_v4f16 = OpFConvert %v4f16 %val_v4f32\n"
+		"%v4f16dst  = OpAccessChain %v4f16ptr %ssboOUT %zero %x %c_i32_3\n"
+		"OpStore %v4f16dst %val_v4f16\n"
+		"\n"
+
+		//struct {f16, v2f16[3]}
+		"%Sf32src  = OpAccessChain %f32ptr %ssboIN %zero %x %c_i32_5 %y %zero\n"
+		"%Sval_f32 = OpLoad %f32 %Sf32src\n"
+		"%Sval_f16 = OpFConvert %f16 %Sval_f32\n"
+		"%Sf16dst2  = OpAccessChain %f16ptr %ssboOUT %zero %x %c_i32_5 %y %zero\n"
+		"OpStore %Sf16dst2 %Sval_f16\n"
+		"\n"
+		"%Sv2f32src0   = OpAccessChain %v2f32ptr %ssboIN %zero %x %c_i32_5 %y %c_i32_1 %zero\n"
+		"%Sv2f32_0     = OpLoad %v2f32 %Sv2f32src0\n"
+		"%Sv2f16_0     = OpFConvert %v2f16 %Sv2f32_0\n"
+		"%Sv2f16dst_0  = OpAccessChain %v2f16ptr %ssboOUT %zero %x %c_i32_5 %y %c_i32_1 %zero\n"
+		"OpStore %Sv2f16dst_0 %Sv2f16_0\n"
+		"\n"
+		"%Sv2f32src1  = OpAccessChain %v2f32ptr %ssboIN %zero %x %c_i32_5 %y %c_i32_1 %c_i32_1\n"
+		"%Sv2f32_1 = OpLoad %v2f32 %Sv2f32src1\n"
+		"%Sv2f16_1 = OpFConvert %v2f16 %Sv2f32_1\n"
+		"%Sv2f16dst_1  = OpAccessChain %v2f16ptr %ssboOUT %zero %x %c_i32_5 %y %c_i32_1 %c_i32_1\n"
+		"OpStore %Sv2f16dst_1 %Sv2f16_1\n"
+		"\n"
+		"%Sv2f32src2  = OpAccessChain %v2f32ptr %ssboIN %zero %x %c_i32_5 %y %c_i32_1 %c_i32_2\n"
+		"%Sv2f32_2 = OpLoad %v2f32 %Sv2f32src2\n"
+		"%Sv2f16_2 = OpFConvert %v2f16 %Sv2f32_2\n"
+		"%Sv2f16dst_2  = OpAccessChain %v2f16ptr %ssboOUT %zero %x %c_i32_5 %y %c_i32_1 %c_i32_2\n"
+		"OpStore %Sv2f16dst_2 %Sv2f16_2\n"
+		"\n"
+
+		"%v2f32src2  = OpAccessChain %v2f32ptr %ssboIN %zero %x %c_i32_6 %y\n"
+		"%val2_v2f32 = OpLoad %v2f32 %v2f32src2\n"
+		"%val2_v2f16 = OpFConvert %v2f16 %val2_v2f32\n"
+		"%v2f16dst2  = OpAccessChain %v2f16ptr %ssboOUT %zero %x %c_i32_6 %y\n"
+		"OpStore %v2f16dst2 %val2_v2f16\n"
+		"\n"
+		"%f32src2  = OpAccessChain %f32ptr %ssboIN %zero %x %c_i32_7\n"
+		"%val2_f32 = OpLoad %f32 %f32src2\n"
+		"%val2_f16 = OpFConvert %f16 %val2_f32\n"
+		"%f16dst2  = OpAccessChain %f16ptr %ssboOUT %zero %x %c_i32_7\n"
+		"OpStore %f16dst2 %val2_f16\n"
+		"\n"
+		"%v3f32src2  = OpAccessChain %v3f32ptr %ssboIN %zero %x %c_i32_8 %y\n"
+		"%val2_v3f32 = OpLoad %v3f32 %v3f32src2\n"
+		"%val2_v3f16 = OpFConvert %v3f16 %val2_v3f32\n"
+		"%v3f16dst2  = OpAccessChain %v3f16ptr %ssboOUT %zero %x %c_i32_8 %y\n"
+		"OpStore %v3f16dst2 %val2_v3f16\n"
+		"\n"
+
+		//Array with 3 elements
+		"%LessThan3 = OpSLessThan %bool %y %c_i32_3\n"
+		"OpSelectionMerge %BlockIf None\n"
+		"OpBranchConditional %LessThan3 %LabelIf %BlockIf\n"
+		"  %LabelIf = OpLabel\n"
+		"  %f32src3  = OpAccessChain %f32ptr %ssboIN %zero %x %c_i32_4 %y\n"
+		"  %val3_f32 = OpLoad %f32 %f32src3\n"
+		"  %val3_f16 = OpFConvert %f16 %val3_f32\n"
+		"  %f16dst3  = OpAccessChain %f16ptr %ssboOUT %zero %x %c_i32_4 %y\n"
+		"  OpStore %f16dst3 %val3_f16\n"
+		"\n"
+		"  %v4f32src2  = OpAccessChain %v4f32ptr %ssboIN %zero %x %c_i32_9 %y\n"
+		"  %val2_v4f32 = OpLoad %v4f32 %v4f32src2\n"
+		"  %val2_v4f16 = OpFConvert %v4f16 %val2_v4f32\n"
+		"  %v4f16dst2  = OpAccessChain %v4f16ptr %ssboOUT %zero %x %c_i32_9 %y\n"
+		"  OpStore %v4f16dst2 %val2_v4f16\n"
+		"OpBranch %BlockIf\n"
+		"%BlockIf = OpLabel\n"
+
+		"   OpReturn\n"
+		"   OpFunctionEnd\n");
+
+	{  // Floats
+		vector<deFloat16>		float16Data		(getStructSize(SHADERTEMPLATE_STRIDE16BIT_STD430), 0u);
+
+		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+		{
+			ComputeShaderSpec		spec;
+			map<string, string>		specs;
+			string					testName		= string(CAPABILITIES[capIdx].name);
+			vector<float>			float32DData	= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? data32bitStd430(rnd) : data32bitStd140(rnd);
+
+			specs["capability"]		= CAPABILITIES[capIdx].cap;
+			specs["storage"]		= CAPABILITIES[capIdx].decor;
+			specs["strideF16"]		= getStructShaderComponet(SHADERTEMPLATE_STRIDE16BIT_STD430);
+			specs["strideF32"]		= getStructShaderComponet((VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? SHADERTEMPLATE_STRIDE32BIT_STD430 : SHADERTEMPLATE_STRIDE32BIT_STD140);
+			specs["types"]			= getStructShaderComponet(SHADERTEMPLATE_TYPES);
+
+			spec.assembly			= shaderTemplate.specialize(specs);
+			spec.numWorkGroups		= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
+			spec.verifyIO			= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? computeCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD430, SHADERTEMPLATE_STRIDE16BIT_STD430> : computeCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE16BIT_STD430>;
+			spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
+
+			spec.inputs.push_back(BufferSp(new Float32Buffer(float32DData)));
+			spec.outputs.push_back(BufferSp(new Float16Buffer(float16Data)));
+			spec.extensions.push_back("VK_KHR_16bit_storage");
+			spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+		}
+	}
+}
+
+void addCompute16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&		testCtx			= group->getTestContext();
+	de::Random				rnd				(deStringHash(group->getName()));
+	vector<deInt16>			outData			(getStructSize(SHADERTEMPLATE_STRIDEMIX_STD430), 0u);
+
+	const StringTemplate	shaderTemplate	(
+		"OpCapability Shader\n"
+		"OpCapability StorageUniformBufferBlock16\n"
+		"${capability}\n"
+		"OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
+		"OpExtension \"SPV_KHR_16bit_storage\"\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"${OutOffsets}"
+		"${InOffsets}"
+		"\n"//SSBO IN
+		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
+		"OpDecorate %ssboIN DescriptorSet 0\n"
+		"OpDecorate %SSBO_IN ${storage}\n"
+		"OpDecorate %SSBO_OUT BufferBlock\n"
+		"OpDecorate %ssboIN Binding 0\n"
+		"\n"//SSBO OUT
+		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
+		"OpDecorate %ssboOUT DescriptorSet 0\n"
+		"OpDecorate %ssboOUT Binding 1\n"
+		"\n"//Types
+		"%void  = OpTypeVoid\n"
+		"%bool  = OpTypeBool\n"
+		"%i16   = OpTypeInt 16 1\n"
+		"%v2i16 = OpTypeVector %i16 2\n"
+		"%v3i16 = OpTypeVector %i16 3\n"
+		"%v4i16 = OpTypeVector %i16 4\n"
+		"%i32   = OpTypeInt 32 1\n"
+		"%v2i32 = OpTypeVector %i32 2\n"
+		"%v3i32 = OpTypeVector %i32 3\n"
+		"%v4i32 = OpTypeVector %i32 4\n"
+		"%u32   = OpTypeInt 32 0\n"
+		"%uvec3 = OpTypeVector %u32 3\n"
+		"%f32   = OpTypeFloat 32\n"
+		"%v4f32 = OpTypeVector %f32  4\n"
+		"%voidf = OpTypeFunction %void\n"
+		"\n"//Consta value
+		"%zero     = OpConstant %i32 0\n"
+		"%c_i32_1  = OpConstant %i32 1\n"
+		"%c_i32_2  = OpConstant %i32 2\n"
+		"%c_i32_3  = OpConstant %i32 3\n"
+		"%c_i32_4  = OpConstant %i32 4\n"
+		"%c_i32_5  = OpConstant %i32 5\n"
+		"%c_i32_6  = OpConstant %i32 6\n"
+		"%c_i32_7  = OpConstant %i32 7\n"
+		"%c_i32_8  = OpConstant %i32 8\n"
+		"%c_i32_9  = OpConstant %i32 9\n"
+		"%c_i32_10 = OpConstant %i32 10\n"
+		"%c_i32_11 = OpConstant %i32 11\n"
+		"%c_u32_1  = OpConstant %u32 1\n"
+		"%c_u32_7  = OpConstant %u32 7\n"
+		"%c_u32_11 = OpConstant %u32 11\n"
+		"\n"//Arrays & Structs
+		"%v2b16NestedArr11In  = OpTypeArray %v2i16 %c_u32_11\n"
+		"%b32NestedArr11In    = OpTypeArray %i32 %c_u32_11\n"
+		"%sb16Arr11In         = OpTypeArray %i16 %c_u32_11\n"
+		"%sb32Arr11In         = OpTypeArray %i32 %c_u32_11\n"
+		"%sNestedIn           = OpTypeStruct %i16 %i32 %v2b16NestedArr11In %b32NestedArr11In\n"
+		"%sNestedArr11In      = OpTypeArray %sNestedIn %c_u32_11\n"
+		"%structIn            = OpTypeStruct %i16 %i32 %v2i16 %v2i32 %v3i16 %v3i32 %v4i16 %v4i32 %sNestedArr11In %sb16Arr11In %sb32Arr11In\n"
+		"%structArr7In        = OpTypeArray %structIn %c_u32_7\n"
+		"%v2b16NestedArr11Out = OpTypeArray %v2i16 %c_u32_11\n"
+		"%b32NestedArr11Out   = OpTypeArray %i32 %c_u32_11\n"
+		"%sb16Arr11Out        = OpTypeArray %i16 %c_u32_11\n"
+		"%sb32Arr11Out        = OpTypeArray %i32 %c_u32_11\n"
+		"%sNestedOut          = OpTypeStruct %i16 %i32 %v2b16NestedArr11Out %b32NestedArr11Out\n"
+		"%sNestedArr11Out     = OpTypeArray %sNestedOut %c_u32_11\n"
+		"%structOut           = OpTypeStruct %i16 %i32 %v2i16 %v2i32 %v3i16 %v3i32 %v4i16 %v4i32 %sNestedArr11Out %sb16Arr11Out %sb32Arr11Out\n"
+		"%structArr7Out       = OpTypeArray %structOut %c_u32_7\n"
+		"\n"//Pointers
+		"%i16outPtr   = OpTypePointer Uniform %i16\n"
+		"%v2i16outPtr = OpTypePointer Uniform %v2i16\n"
+		"%v3i16outPtr = OpTypePointer Uniform %v3i16\n"
+		"%v4i16outPtr = OpTypePointer Uniform %v4i16\n"
+		"%i32outPtr   = OpTypePointer Uniform %i32\n"
+		"%v2i32outPtr = OpTypePointer Uniform %v2i32\n"
+		"%v3i32outPtr = OpTypePointer Uniform %v3i32\n"
+		"%v4i32outPtr = OpTypePointer Uniform %v4i32\n"
+		"%fp_i32      = OpTypePointer Function %i32\n"
+		"%uvec3ptr    = OpTypePointer Input %uvec3\n"
+		"\n"//SSBO IN
+		"%SSBO_IN    = OpTypeStruct %structArr7In\n"
+		"%up_SSBOIN  = OpTypePointer Uniform %SSBO_IN\n"
+		"%ssboIN     = OpVariable %up_SSBOIN Uniform\n"
+		"\n"//SSBO OUT
+		"%SSBO_OUT   = OpTypeStruct %structArr7Out\n"
+		"%up_SSBOOUT = OpTypePointer Uniform %SSBO_OUT\n"
+		"%ssboOUT    = OpVariable %up_SSBOOUT Uniform\n"
+		"\n"//MAIN
+		"%id      = OpVariable %uvec3ptr Input\n"
+		"%main    = OpFunction %void None %voidf\n"
+		"%label   = OpLabel\n"
+		"%idval   = OpLoad %uvec3 %id\n"
+		"%x       = OpCompositeExtract %u32 %idval 0\n"
+		"%y       = OpCompositeExtract %u32 %idval 1\n"
+		"%ndxArrz = OpVariable %fp_i32  Function\n"
+		"\n"//strutOut.b16 = strutIn.b16
+		"%inP1  = OpAccessChain %i16${inPtr} %ssboIN %zero %x %zero\n"
+		"%inV1  = OpLoad %i16 %inP1\n"
+		"%outP1 = OpAccessChain %i16outPtr %ssboOUT %zero %x %zero\n"
+		"OpStore %outP1 %inV1\n"
+		"\n"//strutOut.b32 = strutIn.b32
+		"%inP2  = OpAccessChain %i32${inPtr} %ssboIN %zero %x %c_i32_1\n"
+		"%inV2  = OpLoad %i32 %inP2\n"
+		"%outP2 = OpAccessChain %i32outPtr %ssboOUT %zero %x %c_i32_1\n"
+		"OpStore %outP2 %inV2\n"
+		"\n"//strutOut.v2b16 = strutIn.v2b16
+		"%inP3  = OpAccessChain %v2i16${inPtr} %ssboIN %zero %x %c_i32_2\n"
+		"%inV3  = OpLoad %v2i16 %inP3\n"
+		"%outP3 = OpAccessChain %v2i16outPtr %ssboOUT %zero %x %c_i32_2\n"
+		"OpStore %outP3 %inV3\n"
+		"\n"//strutOut.v2b32 = strutIn.v2b32
+		"%inP4  = OpAccessChain %v2i32${inPtr} %ssboIN %zero %x %c_i32_3\n"
+		"%inV4  = OpLoad %v2i32 %inP4\n"
+		"%outP4 = OpAccessChain %v2i32outPtr %ssboOUT %zero %x %c_i32_3\n"
+		"OpStore %outP4 %inV4\n"
+		"\n"//strutOut.v3b16 = strutIn.v3b16
+		"%inP5  = OpAccessChain %v3i16${inPtr} %ssboIN %zero %x %c_i32_4\n"
+		"%inV5  = OpLoad %v3i16 %inP5\n"
+		"%outP5 = OpAccessChain %v3i16outPtr %ssboOUT %zero %x %c_i32_4\n"
+		"OpStore %outP5 %inV5\n"
+		"\n"//strutOut.v3b32 = strutIn.v3b32
+		"%inP6  = OpAccessChain %v3i32${inPtr} %ssboIN %zero %x %c_i32_5\n"
+		"%inV6  = OpLoad %v3i32 %inP6\n"
+		"%outP6 = OpAccessChain %v3i32outPtr %ssboOUT %zero %x %c_i32_5\n"
+		"OpStore %outP6 %inV6\n"
+		"\n"//strutOut.v4b16 = strutIn.v4b16
+		"%inP7  = OpAccessChain %v4i16${inPtr} %ssboIN %zero %x %c_i32_6\n"
+		"%inV7  = OpLoad %v4i16 %inP7\n"
+		"%outP7 = OpAccessChain %v4i16outPtr %ssboOUT %zero %x %c_i32_6\n"
+		"OpStore %outP7 %inV7\n"
+		"\n"//strutOut.v4b32 = strutIn.v4b32
+		"%inP8  = OpAccessChain %v4i32${inPtr} %ssboIN %zero %x %c_i32_7\n"
+		"%inV8  = OpLoad %v4i32 %inP8\n"
+		"%outP8 = OpAccessChain %v4i32outPtr %ssboOUT %zero %x %c_i32_7\n"
+		"OpStore %outP8 %inV8\n"
+		"\n"//strutOut.b16[y] = strutIn.b16[y]
+		"%inP9  = OpAccessChain %i16${inPtr} %ssboIN %zero %x %c_i32_9 %y\n"
+		"%inV9  = OpLoad %i16 %inP9\n"
+		"%outP9 = OpAccessChain %i16outPtr %ssboOUT %zero %x %c_i32_9 %y\n"
+		"OpStore %outP9 %inV9\n"
+		"\n"//strutOut.b32[y] = strutIn.b32[y]
+		"%inP10  = OpAccessChain %i32${inPtr} %ssboIN %zero %x %c_i32_10 %y\n"
+		"%inV10  = OpLoad %i32 %inP10\n"
+		"%outP10 = OpAccessChain %i32outPtr %ssboOUT %zero %x %c_i32_10 %y\n"
+		"OpStore %outP10 %inV10\n"
+		"\n"//strutOut.strutNestedOut[y].b16 = strutIn.strutNestedIn[y].b16
+		"%inP11 = OpAccessChain %i16${inPtr} %ssboIN %zero %x %c_i32_8 %y %zero\n"
+		"%inV11 = OpLoad %i16 %inP11\n"
+		"%outP11 = OpAccessChain %i16outPtr %ssboOUT %zero %x %c_i32_8 %y %zero\n"
+		"OpStore %outP11 %inV11\n"
+		"\n"//strutOut.strutNestedOut[y].b32 = strutIn.strutNestedIn[y].b32
+		"%inP12 = OpAccessChain %i32${inPtr} %ssboIN %zero %x %c_i32_8 %y %c_i32_1\n"
+		"%inV12 = OpLoad %i32 %inP12\n"
+		"%outP12 = OpAccessChain %i32outPtr %ssboOUT %zero %x %c_i32_8 %y %c_i32_1\n"
+		"OpStore %outP12 %inV12\n"
+		"\n"
+		"${zBeginLoop}"
+		"\n"//strutOut.strutNestedOut[y].v2b16[valNdx] = strutIn.strutNestedIn[y].v2b16[valNdx]
+		"%inP13  = OpAccessChain %v2i16${inPtr} %ssboIN %zero %x %c_i32_8 %y %c_i32_2 %Valz\n"
+		"%inV13  = OpLoad %v2i16 %inP13\n"
+		"%outP13 = OpAccessChain %v2i16outPtr %ssboOUT %zero %x %c_i32_8 %y %c_i32_2 %Valz\n"
+		"OpStore %outP13 %inV13\n"
+		"\n"//strutOut.strutNestedOut[y].b32[valNdx] = strutIn.strutNestedIn[y].b32[valNdx]
+		"%inP14  = OpAccessChain %i32${inPtr} %ssboIN %zero %x %c_i32_8 %y %c_i32_3 %Valz\n"
+		"%inV14  = OpLoad %i32 %inP14\n"
+		"%outP14 = OpAccessChain %i32outPtr %ssboOUT %zero %x %c_i32_8 %y %c_i32_3 %Valz\n"
+		"OpStore %outP14 %inV14\n"
+		"\n${zEndLoop}\n"
+		"OpBranch %exitLabel\n"
+		"%exitLabel = OpLabel\n"
+		"OpReturn\n"
+		"OpFunctionEnd\n");
+
+	for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+	{  // int
+		const bool				isUniform	= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER == CAPABILITIES[capIdx].dtype;
+		vector<deInt16>			inData		= isUniform ? dataMixStd140(rnd) : dataMixStd430(rnd);
+		ComputeShaderSpec		spec;
+		map<string, string>		specsOffset;
+		map<string, string>		specsLoop;
+		map<string, string>		specs;
+		string					testName	= string(CAPABILITIES[capIdx].name);
+
+		specsLoop["exeCount"]	= "c_i32_11";
+		specsLoop["loopName"]	= "z";
+		specs["zBeginLoop"]		= beginLoop(specsLoop);
+		specs["zEndLoop"]		= endLoop(specsLoop);
+		specs["capability"]		= isUniform ? "OpCapability " + string(CAPABILITIES[capIdx].cap) : " ";
+		specs["inPtr"]			= "outPtr";
+		specs["storage"]		= isUniform ? "Block" : "BufferBlock";
+		specsOffset["InOut"]	= "In";
+		specs["InOffsets"]		= StringTemplate(isUniform ? getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD140) : getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD430)).specialize(specsOffset);
+		specsOffset["InOut"]	= "Out";
+		specs["OutOffsets"]		= StringTemplate(getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD430)).specialize(specsOffset);
+
+		spec.assembly					= shaderTemplate.specialize(specs);
+		spec.numWorkGroups				= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
+		spec.verifyIO					= isUniform ? computeCheckStruct<deInt16, deInt16, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : computeCheckStruct<deInt16, deInt16, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
+		spec.inputTypes[0]				= CAPABILITIES[capIdx].dtype;
+		spec.inputs.push_back			(BufferSp(new Int16Buffer(inData)));
+		spec.outputs.push_back			(BufferSp(new Int16Buffer(outData)));
+		spec.extensions.push_back		("VK_KHR_16bit_storage");
+		spec.requestedVulkanFeatures	= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 	}
 }
 
@@ -3711,6 +5186,692 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 	}
 }
 
+void addGraphics16BitStorageUniformStructFloat16To32Group (tcu::TestCaseGroup* testGroup)
+{
+	de::Random							rnd					(deStringHash(testGroup->getName()));
+	map<string, string>					fragments;
+	vector<string>						extensions;
+	RGBA								defaultColors[4];
+	const StringTemplate				capabilities		("OpCapability ${cap}\n");
+	vector<float>						float32Data			(getStructSize(SHADERTEMPLATE_STRIDE32BIT_STD430), 0.0f);
+
+	extensions.push_back("VK_KHR_16bit_storage");
+	fragments["extension"]	= "OpExtension \"SPV_KHR_16bit_storage\"";
+
+	getDefaultColors(defaultColors);
+
+	const StringTemplate preMain		(
+		"\n"
+		"${types}\n"
+		"\n"
+		"%zero = OpConstant %i32 0\n"
+		"%c_i32_5 = OpConstant %i32 5\n"
+		"%c_i32_6 = OpConstant %i32 6\n"
+		"%c_i32_7 = OpConstant %i32 7\n"
+		"%c_i32_8 = OpConstant %i32 8\n"
+		"%c_i32_9 = OpConstant %i32 9\n"
+		"%c_i32_11 = OpConstant %i32 11\n"
+		"\n"
+		"%c_u32_7 = OpConstant %u32 7\n"
+		"%c_u32_11 = OpConstant %u32 11\n"
+		"\n"
+		"%f16arr3       = OpTypeArray %f16 %c_u32_3\n"
+		"%v2f16arr3    = OpTypeArray %v2f16 %c_u32_3\n"
+		"%v2f16arr11    = OpTypeArray %v2f16 %c_u32_11\n"
+		"%v3f16arr11    = OpTypeArray %v3f16 %c_u32_11\n"
+		"%v4f16arr3     = OpTypeArray %v4f16 %c_u32_3\n"
+		"%struct16      = OpTypeStruct %f16 %v2f16arr3\n"
+		"%struct16arr11 = OpTypeArray %struct16 %c_u32_11\n"
+		"%f16Struct = OpTypeStruct %f16 %v2f16 %v3f16 %v4f16 %f16arr3 %struct16arr11 %v2f16arr11 %f16 %v3f16arr11 %v4f16arr3\n"
+		"\n"
+		"%f32arr3   = OpTypeArray %f32 %c_u32_3\n"
+		"%v2f32arr3 = OpTypeArray %v2f32 %c_u32_3\n"
+		"%v2f32arr11 = OpTypeArray %v2f32 %c_u32_11\n"
+		"%v3f32arr11 = OpTypeArray %v3f32 %c_u32_11\n"
+		"%v4f32arr3 = OpTypeArray %v4f32 %c_u32_3\n"
+		"%struct32      = OpTypeStruct %f32 %v2f32arr3\n"
+		"%struct32arr11 = OpTypeArray %struct32 %c_u32_11\n"
+		"%f32Struct = OpTypeStruct %f32 %v2f32 %v3f32 %v4f32 %f32arr3 %struct32arr11 %v2f32arr11 %f32 %v3f32arr11 %v4f32arr3\n"
+		"\n"
+		"%f16StructArr7      = OpTypeArray %f16Struct %c_u32_7\n"
+		"%f32StructArr7      = OpTypeArray %f32Struct %c_u32_7\n"
+		"%SSBO_IN            = OpTypeStruct %f16StructArr7\n"
+		"%SSBO_OUT           = OpTypeStruct %f32StructArr7\n"
+		"%up_SSBOIN          = OpTypePointer Uniform %SSBO_IN\n"
+		"%up_SSBOOUT         = OpTypePointer Uniform %SSBO_OUT\n"
+		"%ssboIN             = OpVariable %up_SSBOIN Uniform\n"
+		"%ssboOUT            = OpVariable %up_SSBOOUT Uniform\n"
+		"\n");
+
+	const StringTemplate decoration		(
+		"${strideF16}"
+		"\n"
+		"${strideF32}"
+		"\n"
+		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
+		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
+		"OpDecorate %SSBO_IN ${indecor}\n"
+		"OpDecorate %SSBO_OUT BufferBlock\n"
+		"OpDecorate %ssboIN DescriptorSet 0\n"
+		"OpDecorate %ssboOUT DescriptorSet 0\n"
+		"OpDecorate %ssboIN Binding 0\n"
+		"OpDecorate %ssboOUT Binding 1\n"
+		"\n");
+
+	fragments["testfun"]			=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"    %param = OpFunctionParameter %v4f32\n"
+		"%label     = OpLabel\n"
+		"%loopNdx    = OpVariable %fp_i32 Function\n"
+		"%insideLoopNdx = OpVariable %fp_i32 Function\n"
+
+		"OpStore %loopNdx %zero\n"
+		"OpBranch %loop\n"
+		"%loop = OpLabel\n"
+		"OpLoopMerge %merge %13 None\n"
+		"OpBranch %14\n"
+		"%14 = OpLabel\n"
+		"%valLoopNdx = OpLoad %i32 %loopNdx\n"
+		"%18 = OpSLessThan %bool %valLoopNdx %c_i32_7\n"
+		"OpBranchConditional %18 %11 %merge\n"
+		"%11 = OpLabel\n"
+		"\n"
+		"%f16src  = OpAccessChain %f16ptr %ssboIN %zero %valLoopNdx %zero\n"
+		"%val_f16 = OpLoad %f16 %f16src\n"
+		"%val_f32 = OpFConvert %f32 %val_f16\n"
+		"%f32dst  = OpAccessChain %f32ptr %ssboOUT %zero %valLoopNdx %zero\n"
+		"OpStore %f32dst %val_f32\n"
+		"\n"
+		"%v2f16src  = OpAccessChain %v2f16ptr %ssboIN %zero %valLoopNdx %c_i32_1\n"
+		"%val_v2f16 = OpLoad %v2f16 %v2f16src\n"
+		"%val_v2f32 = OpFConvert %v2f32 %val_v2f16\n"
+		"%v2f32dst  = OpAccessChain %v2f32ptr %ssboOUT %zero %valLoopNdx %c_i32_1\n"
+		"OpStore %v2f32dst %val_v2f32\n"
+		"\n"
+		"%v3f16src  = OpAccessChain %v3f16ptr %ssboIN %zero %valLoopNdx %c_i32_2\n"
+		"%val_v3f16 = OpLoad %v3f16 %v3f16src\n"
+		"%val_v3f32 = OpFConvert %v3f32 %val_v3f16\n"
+		"%v3f32dst  = OpAccessChain %v3f32ptr %ssboOUT %zero %valLoopNdx %c_i32_2\n"
+		"OpStore %v3f32dst %val_v3f32\n"
+		"\n"
+		"%v4f16src  = OpAccessChain %v4f16ptr %ssboIN %zero %valLoopNdx %c_i32_3\n"
+		"%val_v4f16 = OpLoad %v4f16 %v4f16src\n"
+		"%val_v4f32 = OpFConvert %v4f32 %val_v4f16\n"
+		"%v4f32dst  = OpAccessChain %v4f32ptr %ssboOUT %zero %valLoopNdx %c_i32_3\n"
+		"OpStore %v4f32dst %val_v4f32\n"
+		"\n"
+		"%f16src2  = OpAccessChain %f16ptr %ssboIN %zero %valLoopNdx %c_i32_7\n"
+		"%val2_f16 = OpLoad %f16 %f16src2\n"
+		"%val2_f32 = OpFConvert %f32 %val2_f16\n"
+		"%f32dst2  = OpAccessChain %f32ptr %ssboOUT %zero %valLoopNdx %c_i32_7\n"
+		"OpStore %f32dst2 %val2_f32\n"
+		"\n"
+		"OpStore %insideLoopNdx %zero\n"
+		"OpBranch %loopInside\n"
+		"%loopInside = OpLabel\n"
+		"OpLoopMerge %92 %93 None\n"
+		"OpBranch %94\n"
+		"%94 = OpLabel\n"
+		"%valInsideLoopNdx = OpLoad %i32 %insideLoopNdx\n"
+		"%96 = OpSLessThan %bool %valInsideLoopNdx %c_i32_11\n"
+		"OpBranchConditional %96 %91 %92\n"
+		"\n"
+		"%91 = OpLabel\n"
+		"\n"
+		"%v2f16src2  = OpAccessChain %v2f16ptr %ssboIN %zero %valLoopNdx %c_i32_6 %valInsideLoopNdx\n"
+		"%val2_v2f16 = OpLoad %v2f16 %v2f16src2\n"
+		"%val2_v2f32 = OpFConvert %v2f32 %val2_v2f16\n"
+		"%v2f32dst2  = OpAccessChain %v2f32ptr %ssboOUT %zero %valLoopNdx %c_i32_6 %valInsideLoopNdx\n"
+		"OpStore %v2f32dst2 %val2_v2f32\n"
+		"\n"
+		"%v3f16src2  = OpAccessChain %v3f16ptr %ssboIN %zero %valLoopNdx %c_i32_8 %valInsideLoopNdx\n"
+		"%val2_v3f16 = OpLoad %v3f16 %v3f16src2\n"
+		"%val2_v3f32 = OpFConvert %v3f32 %val2_v3f16\n"
+		"%v3f32dst2  = OpAccessChain %v3f32ptr %ssboOUT %zero %valLoopNdx %c_i32_8 %valInsideLoopNdx\n"
+		"OpStore %v3f32dst2 %val2_v3f32\n"
+		"\n"
+		//struct {f16, v2f16[3]}
+		"%Sf16src  = OpAccessChain %f16ptr %ssboIN %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %zero\n"
+		"%Sval_f16 = OpLoad %f16 %Sf16src\n"
+		"%Sval_f32 = OpFConvert %f32 %Sval_f16\n"
+		"%Sf32dst2  = OpAccessChain %f32ptr %ssboOUT %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %zero\n"
+		"OpStore %Sf32dst2 %Sval_f32\n"
+		"\n"
+		"%Sv2f16src0   = OpAccessChain %v2f16ptr %ssboIN %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %zero\n"
+		"%Sv2f16_0     = OpLoad %v2f16 %Sv2f16src0\n"
+		"%Sv2f32_0     = OpFConvert %v2f32 %Sv2f16_0\n"
+		"%Sv2f32dst_0  = OpAccessChain %v2f32ptr %ssboOUT %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %zero\n"
+		"OpStore %Sv2f32dst_0 %Sv2f32_0\n"
+		"\n"
+		"%Sv2f16src1  = OpAccessChain %v2f16ptr %ssboIN %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %c_i32_1\n"
+		"%Sv2f16_1 = OpLoad %v2f16 %Sv2f16src1\n"
+		"%Sv2f32_1 = OpFConvert %v2f32 %Sv2f16_1\n"
+		"%Sv2f32dst_1  = OpAccessChain %v2f32ptr %ssboOUT %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %c_i32_1\n"
+		"OpStore %Sv2f32dst_1 %Sv2f32_1\n"
+		"\n"
+		"%Sv2f16src2  = OpAccessChain %v2f16ptr %ssboIN %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %c_i32_2\n"
+		"%Sv2f16_2 = OpLoad %v2f16 %Sv2f16src2\n"
+		"%Sv2f32_2 = OpFConvert %v2f32 %Sv2f16_2\n"
+		"%Sv2f32dst_2  = OpAccessChain %v2f32ptr %ssboOUT %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %c_i32_2\n"
+		"OpStore %Sv2f32dst_2 %Sv2f32_2\n"
+		"\n"
+		//Array with 3 elements
+		"%LessThan3 = OpSLessThan %bool %valInsideLoopNdx %c_i32_3\n"
+		"OpSelectionMerge %BlockIf None\n"
+		"OpBranchConditional %LessThan3 %LabelIf %BlockIf\n"
+		"%LabelIf = OpLabel\n"
+		"  %f16src3  = OpAccessChain %f16ptr %ssboIN %zero %valLoopNdx %c_i32_4 %valInsideLoopNdx\n"
+		"  %val3_f16 = OpLoad %f16 %f16src3\n"
+		"  %val3_f32 = OpFConvert %f32 %val3_f16\n"
+		"  %f32dst3  = OpAccessChain %f32ptr %ssboOUT %zero %valLoopNdx %c_i32_4 %valInsideLoopNdx\n"
+		"  OpStore %f32dst3 %val3_f32\n"
+		"\n"
+		"  %v4f16src2  = OpAccessChain %v4f16ptr %ssboIN %zero %valLoopNdx %c_i32_9 %valInsideLoopNdx\n"
+		"  %val2_v4f16 = OpLoad %v4f16 %v4f16src2\n"
+		"  %val2_v4f32 = OpFConvert %v4f32 %val2_v4f16\n"
+		"  %v4f32dst2  = OpAccessChain %v4f32ptr %ssboOUT %zero %valLoopNdx %c_i32_9 %valInsideLoopNdx\n"
+		"  OpStore %v4f32dst2 %val2_v4f32\n"
+		"OpBranch %BlockIf\n"
+		"%BlockIf = OpLabel\n"
+		"\n"
+		"OpBranch %93\n"
+		"%93 = OpLabel\n"
+		"%132 = OpLoad %i32 %insideLoopNdx\n"
+		"%133 = OpIAdd %i32 %132 %c_i32_1\n"
+		"OpStore %insideLoopNdx %133\n"
+		"OpBranch %loopInside\n"
+		"\n"
+		"%92 = OpLabel\n"
+		"OpBranch %13\n"
+		"%13 = OpLabel\n"
+		"%134 = OpLoad %i32 %loopNdx\n"
+		"%135 = OpIAdd %i32 %134 %c_i32_1\n"
+		"OpStore %loopNdx %135\n"
+		"OpBranch %loop\n"
+
+		"%merge = OpLabel\n"
+		"         OpReturnValue %param\n"
+		"         OpFunctionEnd\n";
+
+		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+		{
+			vector<deFloat16>	float16Data	= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? data16bitStd430(rnd) :  data16bitStd140(rnd);
+			GraphicsResources	resources;
+			map<string, string>	specs;
+			string				testName	= string(CAPABILITIES[capIdx].name);
+
+			specs["cap"]					= CAPABILITIES[capIdx].cap;
+			specs["indecor"]				= CAPABILITIES[capIdx].decor;
+			specs["strideF16"]				= getStructShaderComponet((VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? SHADERTEMPLATE_STRIDE16BIT_STD430 : SHADERTEMPLATE_STRIDE16BIT_STD140);
+			specs["strideF32"]				= getStructShaderComponet(SHADERTEMPLATE_STRIDE32BIT_STD430);
+			specs["types"]					= getStructShaderComponet(SHADERTEMPLATE_TYPES);
+
+			fragments["capability"]			= capabilities.specialize(specs);
+			fragments["decoration"]			= decoration.specialize(specs);
+			fragments["pre_main"]			= preMain.specialize(specs);
+
+			resources.inputs.push_back(std::make_pair(CAPABILITIES[capIdx].dtype, BufferSp(new Float16Buffer(float16Data))));
+			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+			resources.verifyIO = (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? graphicsCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430> : graphicsCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
+
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+		}
+}
+
+void addGraphics16BitStorageUniformStructFloat32To16Group (tcu::TestCaseGroup* testGroup)
+{
+	de::Random							rnd					(deStringHash(testGroup->getName()));
+	map<string, string>					fragments;
+	vector<string>						extensions;
+	RGBA								defaultColors[4];
+	const StringTemplate				capabilities		("OpCapability ${cap}\n");
+	vector<deUint16>					float16Data			(getStructSize(SHADERTEMPLATE_STRIDE16BIT_STD430), 0u);
+
+	extensions.push_back("VK_KHR_16bit_storage");
+	fragments["extension"]	= "OpExtension \"SPV_KHR_16bit_storage\"";
+
+	getDefaultColors(defaultColors);
+
+	const StringTemplate preMain		(
+		"\n"
+		"${types}\n"
+		"\n"
+		"%zero = OpConstant %i32 0\n"
+		"%c_i32_5 = OpConstant %i32 5\n"
+		"%c_i32_6 = OpConstant %i32 6\n"
+		"%c_i32_7 = OpConstant %i32 7\n"
+		"%c_i32_8 = OpConstant %i32 8\n"
+		"%c_i32_9 = OpConstant %i32 9\n"
+		"%c_i32_11 = OpConstant %i32 11\n"
+		"\n"
+		"%c_u32_7 = OpConstant %u32 7\n"
+		"%c_u32_11 = OpConstant %u32 11\n"
+		"\n"
+		"%f16arr3       = OpTypeArray %f16 %c_u32_3\n"
+		"%v2f16arr3    = OpTypeArray %v2f16 %c_u32_3\n"
+		"%v2f16arr11    = OpTypeArray %v2f16 %c_u32_11\n"
+		"%v3f16arr11    = OpTypeArray %v3f16 %c_u32_11\n"
+		"%v4f16arr3     = OpTypeArray %v4f16 %c_u32_3\n"
+		"%struct16      = OpTypeStruct %f16 %v2f16arr3\n"
+		"%struct16arr11 = OpTypeArray %struct16 %c_u32_11\n"
+		"%f16Struct = OpTypeStruct %f16 %v2f16 %v3f16 %v4f16 %f16arr3 %struct16arr11 %v2f16arr11 %f16 %v3f16arr11 %v4f16arr3\n"
+		"\n"
+		"%f32arr3   = OpTypeArray %f32 %c_u32_3\n"
+		"%v2f32arr3 = OpTypeArray %v2f32 %c_u32_3\n"
+		"%v2f32arr11 = OpTypeArray %v2f32 %c_u32_11\n"
+		"%v3f32arr11 = OpTypeArray %v3f32 %c_u32_11\n"
+		"%v4f32arr3 = OpTypeArray %v4f32 %c_u32_3\n"
+		"%struct32      = OpTypeStruct %f32 %v2f32arr3\n"
+		"%struct32arr11 = OpTypeArray %struct32 %c_u32_11\n"
+		"%f32Struct = OpTypeStruct %f32 %v2f32 %v3f32 %v4f32 %f32arr3 %struct32arr11 %v2f32arr11 %f32 %v3f32arr11 %v4f32arr3\n"
+		"\n"
+		"%f16StructArr7      = OpTypeArray %f16Struct %c_u32_7\n"
+		"%f32StructArr7      = OpTypeArray %f32Struct %c_u32_7\n"
+		"%SSBO_IN            = OpTypeStruct %f32StructArr7\n"
+		"%SSBO_OUT           = OpTypeStruct %f16StructArr7\n"
+		"%up_SSBOIN          = OpTypePointer Uniform %SSBO_IN\n"
+		"%up_SSBOOUT         = OpTypePointer Uniform %SSBO_OUT\n"
+		"%ssboIN             = OpVariable %up_SSBOIN Uniform\n"
+		"%ssboOUT            = OpVariable %up_SSBOOUT Uniform\n"
+		"\n");
+
+	const StringTemplate decoration		(
+		"${strideF16}"
+		"\n"
+		"${strideF32}"
+		"\n"
+		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
+		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
+		"OpDecorate %SSBO_IN ${indecor}\n"
+		"OpDecorate %SSBO_OUT BufferBlock\n"
+		"OpDecorate %ssboIN DescriptorSet 0\n"
+		"OpDecorate %ssboOUT DescriptorSet 0\n"
+		"OpDecorate %ssboIN Binding 0\n"
+		"OpDecorate %ssboOUT Binding 1\n"
+		"\n");
+
+	fragments["testfun"]			=
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param = OpFunctionParameter %v4f32\n"
+		"%label     = OpLabel\n"
+		"%loopNdx    = OpVariable %fp_i32 Function\n"
+		"%insideLoopNdx = OpVariable %fp_i32 Function\n"
+
+		"OpStore %loopNdx %zero\n"
+		"OpBranch %loop\n"
+		"%loop = OpLabel\n"
+		"OpLoopMerge %merge %13 None\n"
+		"OpBranch %14\n"
+		"%14 = OpLabel\n"
+		"%valLoopNdx = OpLoad %i32 %loopNdx\n"
+		"%18 = OpSLessThan %bool %valLoopNdx %c_i32_7\n"
+		"OpBranchConditional %18 %11 %merge\n"
+		"%11 = OpLabel\n"
+		"\n"
+		"%f32src  = OpAccessChain %f32ptr %ssboIN %zero %valLoopNdx %zero\n"
+		"%val_f32 = OpLoad %f32 %f32src\n"
+		"%val_f16 = OpFConvert %f16 %val_f32\n"
+		"%f16dst  = OpAccessChain %f16ptr %ssboOUT %zero %valLoopNdx %zero\n"
+		"OpStore %f16dst %val_f16\n"
+		"\n"
+		"%v2f32src  = OpAccessChain %v2f32ptr %ssboIN %zero %valLoopNdx %c_i32_1\n"
+		"%val_v2f32 = OpLoad %v2f32 %v2f32src\n"
+		"%val_v2f16 = OpFConvert %v2f16 %val_v2f32\n"
+		"%v2f16dst  = OpAccessChain %v2f16ptr %ssboOUT %zero %valLoopNdx %c_i32_1\n"
+		"OpStore %v2f16dst %val_v2f16\n"
+		"\n"
+		"%v3f32src  = OpAccessChain %v3f32ptr %ssboIN %zero %valLoopNdx %c_i32_2\n"
+		"%val_v3f32 = OpLoad %v3f32 %v3f32src\n"
+		"%val_v3f16 = OpFConvert %v3f16 %val_v3f32\n"
+		"%v3f16dst  = OpAccessChain %v3f16ptr %ssboOUT %zero %valLoopNdx %c_i32_2\n"
+		"OpStore %v3f16dst %val_v3f16\n"
+		"\n"
+		"%v4f32src  = OpAccessChain %v4f32ptr %ssboIN %zero %valLoopNdx %c_i32_3\n"
+		"%val_v4f32 = OpLoad %v4f32 %v4f32src\n"
+		"%val_v4f16 = OpFConvert %v4f16 %val_v4f32\n"
+		"%v4f16dst  = OpAccessChain %v4f16ptr %ssboOUT %zero %valLoopNdx %c_i32_3\n"
+		"OpStore %v4f16dst %val_v4f16\n"
+		"\n"
+		"%f32src2  = OpAccessChain %f32ptr %ssboIN %zero %valLoopNdx %c_i32_7\n"
+		"%val2_f32 = OpLoad %f32 %f32src2\n"
+		"%val2_f16 = OpFConvert %f16 %val2_f32\n"
+		"%f16dst2  = OpAccessChain %f16ptr %ssboOUT %zero %valLoopNdx %c_i32_7\n"
+		"OpStore %f16dst2 %val2_f16\n"
+		"\n"
+		"OpStore %insideLoopNdx %zero\n"
+		"OpBranch %loopInside\n"
+		"%loopInside = OpLabel\n"
+		"OpLoopMerge %92 %93 None\n"
+		"OpBranch %94\n"
+		"%94 = OpLabel\n"
+		"%valInsideLoopNdx = OpLoad %i32 %insideLoopNdx\n"
+		"%96 = OpSLessThan %bool %valInsideLoopNdx %c_i32_11\n"
+		"OpBranchConditional %96 %91 %92\n"
+		"\n"
+		"%91 = OpLabel\n"
+		"\n"
+		//struct {f16, v2f16[3]}
+		"%Sf32src  = OpAccessChain %f32ptr %ssboIN %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %zero\n"
+		"%Sval_f32 = OpLoad %f32 %Sf32src\n"
+		"%Sval_f16 = OpFConvert %f16 %Sval_f32\n"
+		"%Sf16dst2  = OpAccessChain %f16ptr %ssboOUT %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %zero\n"
+		"OpStore %Sf16dst2 %Sval_f16\n"
+		"\n"
+		"%Sv2f32src0   = OpAccessChain %v2f32ptr %ssboIN %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %zero\n"
+		"%Sv2f32_0     = OpLoad %v2f32 %Sv2f32src0\n"
+		"%Sv2f16_0     = OpFConvert %v2f16 %Sv2f32_0\n"
+		"%Sv2f16dst_0  = OpAccessChain %v2f16ptr %ssboOUT %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %zero\n"
+		"OpStore %Sv2f16dst_0 %Sv2f16_0\n"
+		"\n"
+		"%Sv2f32src1  = OpAccessChain %v2f32ptr %ssboIN %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %c_i32_1\n"
+		"%Sv2f32_1 = OpLoad %v2f32 %Sv2f32src1\n"
+		"%Sv2f16_1 = OpFConvert %v2f16 %Sv2f32_1\n"
+		"%Sv2f16dst_1  = OpAccessChain %v2f16ptr %ssboOUT %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %c_i32_1\n"
+		"OpStore %Sv2f16dst_1 %Sv2f16_1\n"
+		"\n"
+		"%Sv2f32src2  = OpAccessChain %v2f32ptr %ssboIN %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %c_i32_2\n"
+		"%Sv2f32_2 = OpLoad %v2f32 %Sv2f32src2\n"
+		"%Sv2f16_2 = OpFConvert %v2f16 %Sv2f32_2\n"
+		"%Sv2f16dst_2  = OpAccessChain %v2f16ptr %ssboOUT %zero %valLoopNdx %c_i32_5 %valInsideLoopNdx %c_i32_1 %c_i32_2\n"
+		"OpStore %Sv2f16dst_2 %Sv2f16_2\n"
+		"\n"
+
+		"%v2f32src2  = OpAccessChain %v2f32ptr %ssboIN %zero %valLoopNdx %c_i32_6 %valInsideLoopNdx\n"
+		"%val2_v2f32 = OpLoad %v2f32 %v2f32src2\n"
+		"%val2_v2f16 = OpFConvert %v2f16 %val2_v2f32\n"
+		"%v2f16dst2  = OpAccessChain %v2f16ptr %ssboOUT %zero %valLoopNdx %c_i32_6 %valInsideLoopNdx\n"
+		"OpStore %v2f16dst2 %val2_v2f16\n"
+		"\n"
+		"%v3f32src2  = OpAccessChain %v3f32ptr %ssboIN %zero %valLoopNdx %c_i32_8 %valInsideLoopNdx\n"
+		"%val2_v3f32 = OpLoad %v3f32 %v3f32src2\n"
+		"%val2_v3f16 = OpFConvert %v3f16 %val2_v3f32\n"
+		"%v3f16dst2  = OpAccessChain %v3f16ptr %ssboOUT %zero %valLoopNdx %c_i32_8 %valInsideLoopNdx\n"
+		"OpStore %v3f16dst2 %val2_v3f16\n"
+		"\n"
+
+		//Array with 3 elements
+		"%LessThan3 = OpSLessThan %bool %valInsideLoopNdx %c_i32_3\n"
+		"OpSelectionMerge %BlockIf None\n"
+		"OpBranchConditional %LessThan3 %LabelIf %BlockIf\n"
+		"  %LabelIf = OpLabel\n"
+		"  %f32src3  = OpAccessChain %f32ptr %ssboIN %zero %valLoopNdx %c_i32_4 %valInsideLoopNdx\n"
+		"  %val3_f32 = OpLoad %f32 %f32src3\n"
+		"  %val3_f16 = OpFConvert %f16 %val3_f32\n"
+		"  %f16dst3  = OpAccessChain %f16ptr %ssboOUT %zero %valLoopNdx %c_i32_4 %valInsideLoopNdx\n"
+		"  OpStore %f16dst3 %val3_f16\n"
+		"\n"
+		"  %v4f32src2  = OpAccessChain %v4f32ptr %ssboIN %zero %valLoopNdx %c_i32_9 %valInsideLoopNdx\n"
+		"  %val2_v4f32 = OpLoad %v4f32 %v4f32src2\n"
+		"  %val2_v4f16 = OpFConvert %v4f16 %val2_v4f32\n"
+		"  %v4f16dst2  = OpAccessChain %v4f16ptr %ssboOUT %zero %valLoopNdx %c_i32_9 %valInsideLoopNdx\n"
+		"  OpStore %v4f16dst2 %val2_v4f16\n"
+		"OpBranch %BlockIf\n"
+		"%BlockIf = OpLabel\n"
+
+		"OpBranch %93\n"
+		"%93 = OpLabel\n"
+		"%132 = OpLoad %i32 %insideLoopNdx\n"
+		"%133 = OpIAdd %i32 %132 %c_i32_1\n"
+		"OpStore %insideLoopNdx %133\n"
+		"OpBranch %loopInside\n"
+		"\n"
+		"%92 = OpLabel\n"
+		"OpBranch %13\n"
+		"%13 = OpLabel\n"
+		"%134 = OpLoad %i32 %loopNdx\n"
+		"%135 = OpIAdd %i32 %134 %c_i32_1\n"
+		"OpStore %loopNdx %135\n"
+		"OpBranch %loop\n"
+
+		"%merge = OpLabel\n"
+		"         OpReturnValue %param\n"
+		"         OpFunctionEnd\n";
+
+	for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+	{
+		map<string, string>	specs;
+		string				testName	= string(CAPABILITIES[capIdx].name);
+		vector<float>		float32Data	= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? data32bitStd430(rnd) : data32bitStd140(rnd);
+		GraphicsResources	resources;
+
+		specs["cap"]					= "StorageUniformBufferBlock16";
+		specs["indecor"]				= CAPABILITIES[capIdx].decor;
+		specs["strideF16"]				= getStructShaderComponet(SHADERTEMPLATE_STRIDE16BIT_STD430);
+		specs["strideF32"]				= getStructShaderComponet((VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? SHADERTEMPLATE_STRIDE32BIT_STD430 : SHADERTEMPLATE_STRIDE32BIT_STD140);
+		specs["types"]					= getStructShaderComponet(SHADERTEMPLATE_TYPES);
+
+		fragments["capability"]			= capabilities.specialize(specs);
+		fragments["decoration"]			= decoration.specialize(specs);
+		fragments["pre_main"]			= preMain.specialize(specs);
+
+		resources.inputs.push_back(std::make_pair( CAPABILITIES[capIdx].dtype, BufferSp(new Float32Buffer(float32Data))));
+		resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16Data))));
+		resources.verifyIO				=  (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? graphicsCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD430, SHADERTEMPLATE_STRIDE16BIT_STD430> : graphicsCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE16BIT_STD430>;
+
+		VulkanFeatures features;
+		features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+
+		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
+	}
+}
+
+void addGraphics16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
+{
+	de::Random							rnd					(deStringHash(group->getName()));
+	map<string, string>					fragments;
+	vector<string>						extensions;
+	RGBA								defaultColors[4];
+	const StringTemplate				capabilities		("OpCapability StorageUniformBufferBlock16\n"
+															"${cap}\n");
+	vector<deInt16>						outData				(getStructSize(SHADERTEMPLATE_STRIDEMIX_STD430), 0u);
+
+	extensions.push_back("VK_KHR_16bit_storage");
+	fragments["extension"]	= "OpExtension \"SPV_KHR_16bit_storage\"\n";
+
+	getDefaultColors(defaultColors);
+
+	const StringTemplate				preMain				(
+		"\n"//Types
+		"%i16    = OpTypeInt 16 1\n"
+		"%v2i16  = OpTypeVector %i16 2\n"
+		"%v3i16  = OpTypeVector %i16 3\n"
+		"%v4i16  = OpTypeVector %i16 4\n"
+		"\n"//Consta value
+		"%zero     = OpConstant %i32 0\n"
+		"%c_i32_5  = OpConstant %i32 5\n"
+		"%c_i32_6  = OpConstant %i32 6\n"
+		"%c_i32_7  = OpConstant %i32 7\n"
+		"%c_i32_8  = OpConstant %i32 8\n"
+		"%c_i32_9  = OpConstant %i32 9\n"
+		"%c_i32_10 = OpConstant %i32 10\n"
+		"%c_i32_11 = OpConstant %i32 11\n"
+		"%c_u32_7  = OpConstant %u32 7\n"
+		"%c_u32_11 = OpConstant %u32 11\n"
+		"\n"//Arrays & Structs
+		"%v2b16NestedArr11In  = OpTypeArray %v2i16 %c_u32_11\n"
+		"%b32NestedArr11In   = OpTypeArray %i32 %c_u32_11\n"
+		"%sb16Arr11In         = OpTypeArray %i16 %c_u32_11\n"
+		"%sb32Arr11In        = OpTypeArray %i32 %c_u32_11\n"
+		"%sNestedIn          = OpTypeStruct %i16 %i32 %v2b16NestedArr11In %b32NestedArr11In\n"
+		"%sNestedArr11In     = OpTypeArray %sNestedIn %c_u32_11\n"
+		"%structIn           = OpTypeStruct %i16 %i32 %v2i16 %v2i32 %v3i16 %v3i32 %v4i16 %v4i32 %sNestedArr11In %sb16Arr11In %sb32Arr11In\n"
+		"%structArr7In       = OpTypeArray %structIn %c_u32_7\n"
+		"%v2b16NestedArr11Out = OpTypeArray %v2i16 %c_u32_11\n"
+		"%b32NestedArr11Out  = OpTypeArray %i32 %c_u32_11\n"
+		"%sb16Arr11Out        = OpTypeArray %i16 %c_u32_11\n"
+		"%sb32Arr11Out       = OpTypeArray %i32 %c_u32_11\n"
+		"%sNestedOut         = OpTypeStruct %i16 %i32 %v2b16NestedArr11Out %b32NestedArr11Out\n"
+		"%sNestedArr11Out    = OpTypeArray %sNestedOut %c_u32_11\n"
+		"%structOut          = OpTypeStruct %i16 %i32 %v2i16 %v2i32 %v3i16 %v3i32 %v4i16 %v4i32 %sNestedArr11Out %sb16Arr11Out %sb32Arr11Out\n"
+		"%structArr7Out      = OpTypeArray %structOut %c_u32_7\n"
+		"\n"//Pointers
+		"%i16outPtr    = OpTypePointer Uniform %i16\n"
+		"%v2i16outPtr  = OpTypePointer Uniform %v2i16\n"
+		"%v3i16outPtr  = OpTypePointer Uniform %v3i16\n"
+		"%v4i16outPtr  = OpTypePointer Uniform %v4i16\n"
+		"%i32outPtr   = OpTypePointer Uniform %i32\n"
+		"%v2i32outPtr = OpTypePointer Uniform %v2i32\n"
+		"%v3i32outPtr = OpTypePointer Uniform %v3i32\n"
+		"%v4i32outPtr = OpTypePointer Uniform %v4i32\n"
+		"%uvec3ptr = OpTypePointer Input %v3u32\n"
+		"\n"//SSBO IN
+		"%SSBO_IN    = OpTypeStruct %structArr7In\n"
+		"%up_SSBOIN  = OpTypePointer Uniform %SSBO_IN\n"
+		"%ssboIN     = OpVariable %up_SSBOIN Uniform\n"
+		"\n"//SSBO OUT
+		"%SSBO_OUT   = OpTypeStruct %structArr7Out\n"
+		"%up_SSBOOUT = OpTypePointer Uniform %SSBO_OUT\n"
+		"%ssboOUT    = OpVariable %up_SSBOOUT Uniform\n");
+
+		const StringTemplate			decoration			(
+		"${OutOffsets}"
+		"${InOffsets}"
+		"\n"//SSBO IN
+		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
+		"OpDecorate %ssboIN DescriptorSet 0\n"
+		"OpDecorate %SSBO_IN ${storage}\n"
+		"OpDecorate %SSBO_OUT BufferBlock\n"
+		"OpDecorate %ssboIN Binding 0\n"
+		"\n"//SSBO OUT
+		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
+		"OpDecorate %ssboOUT DescriptorSet 0\n"
+		"OpDecorate %ssboOUT Binding 1\n");
+
+		const StringTemplate			testFun				(
+		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%param     = OpFunctionParameter %v4f32\n"
+		"%label     = OpLabel\n"
+		"%ndxArrx   = OpVariable %fp_i32  Function\n"
+		"%ndxArry   = OpVariable %fp_i32  Function\n"
+		"%ndxArrz   = OpVariable %fp_i32  Function\n"
+		"${xBeginLoop}"
+		"\n"//strutOut.b16 = strutIn.b16
+		"%inP1  = OpAccessChain %i16${inPtr} %ssboIN %zero %Valx %zero\n"
+		"%inV1  = OpLoad %i16 %inP1\n"
+		"%outP1 = OpAccessChain %i16outPtr %ssboOUT %zero %Valx %zero\n"
+		"OpStore %outP1 %inV1\n"
+		"\n"//strutOut.b32 = strutIn.b32
+		"%inP2  = OpAccessChain %i32${inPtr} %ssboIN %zero %Valx %c_i32_1\n"
+		"%inV2  = OpLoad %i32 %inP2\n"
+		"%outP2 = OpAccessChain %i32outPtr %ssboOUT %zero %Valx %c_i32_1\n"
+		"OpStore %outP2 %inV2\n"
+		"\n"//strutOut.v2b16 = strutIn.v2b16
+		"%inP3  = OpAccessChain %v2i16${inPtr} %ssboIN %zero %Valx %c_i32_2\n"
+		"%inV3  = OpLoad %v2i16 %inP3\n"
+		"%outP3 = OpAccessChain %v2i16outPtr %ssboOUT %zero %Valx %c_i32_2\n"
+		"OpStore %outP3 %inV3\n"
+		"\n"//strutOut.v2b32 = strutIn.v2b32
+		"%inP4  = OpAccessChain %v2i32${inPtr} %ssboIN %zero %Valx %c_i32_3\n"
+		"%inV4  = OpLoad %v2i32 %inP4\n"
+		"%outP4 = OpAccessChain %v2i32outPtr %ssboOUT %zero %Valx %c_i32_3\n"
+		"OpStore %outP4 %inV4\n"
+		"\n"//strutOut.v3b16 = strutIn.v3b16
+		"%inP5  = OpAccessChain %v3i16${inPtr} %ssboIN %zero %Valx %c_i32_4\n"
+		"%inV5  = OpLoad %v3i16 %inP5\n"
+		"%outP5 = OpAccessChain %v3i16outPtr %ssboOUT %zero %Valx %c_i32_4\n"
+		"OpStore %outP5 %inV5\n"
+		"\n"//strutOut.v3b32 = strutIn.v3b32
+		"%inP6  = OpAccessChain %v3i32${inPtr} %ssboIN %zero %Valx %c_i32_5\n"
+		"%inV6  = OpLoad %v3i32 %inP6\n"
+		"%outP6 = OpAccessChain %v3i32outPtr %ssboOUT %zero %Valx %c_i32_5\n"
+		"OpStore %outP6 %inV6\n"
+		"\n"//strutOut.v4b16 = strutIn.v4b16
+		"%inP7  = OpAccessChain %v4i16${inPtr} %ssboIN %zero %Valx %c_i32_6\n"
+		"%inV7  = OpLoad %v4i16 %inP7\n"
+		"%outP7 = OpAccessChain %v4i16outPtr %ssboOUT %zero %Valx %c_i32_6\n"
+		"OpStore %outP7 %inV7\n"
+		"\n"//strutOut.v4b32 = strutIn.v4b32
+		"%inP8  = OpAccessChain %v4i32${inPtr} %ssboIN %zero %Valx %c_i32_7\n"
+		"%inV8  = OpLoad %v4i32 %inP8\n"
+		"%outP8 = OpAccessChain %v4i32outPtr %ssboOUT %zero %Valx %c_i32_7\n"
+		"OpStore %outP8 %inV8\n"
+		"${yBeginLoop}"
+		"\n"//strutOut.b16[y] = strutIn.b16[y]
+		"%inP9  = OpAccessChain %i16${inPtr} %ssboIN %zero %Valx %c_i32_9 %Valy\n"
+		"%inV9  = OpLoad %i16 %inP9\n"
+		"%outP9 = OpAccessChain %i16outPtr %ssboOUT %zero %Valx %c_i32_9 %Valy\n"
+		"OpStore %outP9 %inV9\n"
+		"\n"//strutOut.b32[y] = strutIn.b32[y]
+		"%inP10  = OpAccessChain %i32${inPtr} %ssboIN %zero %Valx %c_i32_10 %Valy\n"
+		"%inV10  = OpLoad %i32 %inP10\n"
+		"%outP10 = OpAccessChain %i32outPtr %ssboOUT %zero %Valx %c_i32_10 %Valy\n"
+		"OpStore %outP10 %inV10\n"
+		"\n"//strutOut.strutNestedOut[y].b16 = strutIn.strutNestedIn[y].b16
+		"%inP11 = OpAccessChain %i16${inPtr} %ssboIN %zero %Valx %c_i32_8 %Valy %zero\n"
+		"%inV11 = OpLoad %i16 %inP11\n"
+		"%outP11 = OpAccessChain %i16outPtr %ssboOUT %zero %Valx %c_i32_8 %Valy %zero\n"
+		"OpStore %outP11 %inV11\n"
+		"\n"//strutOut.strutNestedOut[y].b32 = strutIn.strutNestedIn[y].b32
+		"%inP12 = OpAccessChain %i32${inPtr} %ssboIN %zero %Valx %c_i32_8 %Valy %c_i32_1\n"
+		"%inV12 = OpLoad %i32 %inP12\n"
+		"%outP12 = OpAccessChain %i32outPtr %ssboOUT %zero %Valx %c_i32_8 %Valy %c_i32_1\n"
+		"OpStore %outP12 %inV12\n"
+		"${zBeginLoop}"
+		"\n"//strutOut.strutNestedOut[y].v2b16[valNdx] = strutIn.strutNestedIn[y].v2b16[valNdx]
+		"%inP13  = OpAccessChain %v2i16${inPtr} %ssboIN %zero %Valx %c_i32_8 %Valy %c_i32_2 %Valz\n"
+		"%inV13  = OpLoad %v2i16 %inP13\n"
+		"%outP13 = OpAccessChain %v2i16outPtr %ssboOUT %zero %Valx %c_i32_8 %Valy %c_i32_2 %Valz\n"
+		"OpStore %outP13 %inV13\n"
+		"\n"//strutOut.strutNestedOut[y].b32[valNdx] = strutIn.strutNestedIn[y].b32[valNdx]
+		"%inP14  = OpAccessChain %i32${inPtr} %ssboIN %zero %Valx %c_i32_8 %Valy %c_i32_3 %Valz\n"
+		"%inV14  = OpLoad %i32 %inP14\n"
+		"%outP14 = OpAccessChain %i32outPtr %ssboOUT %zero %Valx %c_i32_8 %Valy %c_i32_3 %Valz\n"
+		"OpStore %outP14 %inV14\n"
+		"${zEndLoop}"
+		"${yEndLoop}"
+		"${xEndLoop}"
+		"\n"
+		"OpBranch %ExitLabel\n"
+		"%ExitLabel = OpLabel\n"
+		"OpReturnValue %param\n"
+		"OpFunctionEnd\n");
+
+	for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+	{  // int
+		const bool				isUniform	= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER == CAPABILITIES[capIdx].dtype;
+		vector<deInt16>			inData		= isUniform ? dataMixStd140(rnd) : dataMixStd430(rnd);
+		GraphicsResources		resources;
+		map<string, string>		specsLoop;
+		map<string, string>		specsOffset;
+		map<string, string>		specs;
+		string					testName	= string(CAPABILITIES[capIdx].name);
+
+		specsLoop["exeCount"]	= "c_i32_7";
+		specsLoop["loopName"]	= "x";
+		specs["xBeginLoop"]		= beginLoop(specsLoop);
+		specs["xEndLoop"]		= endLoop(specsLoop);
+
+		specsLoop["exeCount"]	= "c_i32_11";
+		specsLoop["loopName"]	= "y";
+		specs["yBeginLoop"]		= beginLoop(specsLoop);
+		specs["yEndLoop"]		= endLoop(specsLoop);
+
+		specsLoop["exeCount"]	= "c_i32_11";
+		specsLoop["loopName"]	= "z";
+		specs["zBeginLoop"]		= beginLoop(specsLoop);
+		specs["zEndLoop"]		= endLoop(specsLoop);
+
+		specs["storage"]		= isUniform ? "Block" : "BufferBlock";
+		specs["cap"]			= isUniform ?"OpCapability " + string( CAPABILITIES[capIdx].cap) : "";
+		specs["inPtr"]			= "outPtr";
+		specsOffset["InOut"]	= "In";
+		specs["InOffsets"]		= StringTemplate(isUniform ? getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD140) : getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD430)).specialize(specsOffset);
+		specsOffset["InOut"]	= "Out";
+		specs["OutOffsets"]		= StringTemplate(getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD430)).specialize(specsOffset);
+
+		fragments["capability"]			= capabilities.specialize(specs);
+		fragments["decoration"]			= decoration.specialize(specs);
+		fragments["pre_main"]			= preMain.specialize(specs);
+		fragments["testfun"]			= testFun.specialize(specs);
+
+		resources.verifyIO				= isUniform ? graphicsCheckStruct<deInt16, deInt16, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : graphicsCheckStruct<deInt16, deInt16, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
+		resources.inputs.push_back(std::make_pair( CAPABILITIES[capIdx].dtype, BufferSp(new Int16Buffer(inData))));
+		resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(outData))));
+
+		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, group, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
+	}
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* create16BitStorageComputeGroup (tcu::TestContext& testCtx)
@@ -3719,6 +5880,9 @@ tcu::TestCaseGroup* create16BitStorageComputeGroup (tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "uniform_32_to_16", "32bit floats/ints to 16bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform32To16Group);
 	addTestGroup(group.get(), "uniform_16_to_32", "16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16To32Group);
 	addTestGroup(group.get(), "push_constant_16_to_32", "16bit floats/ints to 32bit tests under capability StoragePushConstant16", addCompute16bitStoragePushConstant16To32Group);
+	addTestGroup(group.get(), "uniform_16struct_to_32struct", "16bit floats struct to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16StructTo32StructGroup);
+	addTestGroup(group.get(), "uniform_32struct_to_16struct", "32bit floats struct to 16bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform32StructTo16StructGroup);
+	addTestGroup(group.get(), "struct_mixed_types", "mixed type of 8bit and 32bit struct", addCompute16bitStructMixedTypesGroup);
 
 	addTestGroup(group.get(), "uniform_16_to_16", "16bit floats/ints to 16bit tests under capability StorageUniformBufferBlock16", addCompute16bitStorageUniform16To16Group);
 
@@ -3739,6 +5903,9 @@ tcu::TestCaseGroup* create16BitStorageGraphicsGroup (tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "input_output_int_16_to_32", "16-bit int into 32-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputInt16To32Group);
 	addTestGroup(group.get(), "push_constant_float_16_to_32", "16-bit floats into 32-bit tests under capability StoragePushConstant16", addGraphics16BitStoragePushConstantFloat16To32Group);
 	addTestGroup(group.get(), "push_constant_int_16_to_32", "16-bit int into 32-bit tests under capability StoragePushConstant16", addGraphics16BitStoragePushConstantInt16To32Group);
+	addTestGroup(group.get(), "uniform_16struct_to_32struct", "16-bit float struct into 32-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformStructFloat16To32Group);
+	addTestGroup(group.get(), "uniform_32struct_to_16struct", "32-bit float struct into 16-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformStructFloat32To16Group);
+	addTestGroup(group.get(), "struct_mixed_types", "mixed type of 8bit and 32bit struct", addGraphics16bitStructMixedTypesGroup);
 
 	return group.release();
 }

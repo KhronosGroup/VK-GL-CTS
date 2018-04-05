@@ -489,9 +489,8 @@ void DrawTestInstanceBase::beginRenderPass (void)
 		0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
 	const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
-	const RenderPassBeginInfo renderPassBegin(*m_renderPass, *m_framebuffer, renderArea);
 
-	m_vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBegin, vk::VK_SUBPASS_CONTENTS_INLINE);
+	vk::beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 void DrawTestInstanceBase::generateRefImage (const tcu::PixelBufferAccess& access, const std::vector<tcu::Vec4>& vertices, const std::vector<tcu::Vec4>& colors) const
@@ -667,7 +666,7 @@ tcu::TestStatus DrawTestInstance<DrawParams>::iterate (void)
 	m_vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 	m_vk.cmdDraw(*m_cmdBuffer, m_data.params.vertexCount, m_data.params.instanceCount, m_data.params.firstVertex, m_data.params.firstInstance);
-	m_vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(m_vk, *m_cmdBuffer);
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, device, queue, m_cmdBuffer.get());
@@ -781,7 +780,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedParams>::iterate (void)
 
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, *indexBuffer, 0u, m_data.indexType);
 	m_vk.cmdDrawIndexed(*m_cmdBuffer, m_data.params.indexCount, m_data.params.instanceCount, m_data.params.firstIndex, m_data.params.vertexOffset, m_data.params.firstInstance);
-	m_vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(m_vk, *m_cmdBuffer);
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
@@ -908,7 +907,7 @@ tcu::TestStatus DrawTestInstance<DrawIndirectParams>::iterate (void)
 		m_vk.cmdDrawIndirect(*m_cmdBuffer, *indirectBuffer, indirectAlloc->getOffset(), (deUint32)m_data.commands.size(), sizeof(vk::VkDrawIndirectCommand));
 	}
 
-	m_vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(m_vk, *m_cmdBuffer);
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());
@@ -1088,7 +1087,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 		m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, *indirectBuffer, indirectAlloc->getOffset(), (deUint32)m_data.commands.size(), sizeof(vk::VkDrawIndexedIndirectCommand));
 	}
 
-	m_vk.cmdEndRenderPass(*m_cmdBuffer);
+	endRenderPass(m_vk, *m_cmdBuffer);
 	endCommandBuffer(m_vk, *m_cmdBuffer);
 
 	submitCommandsAndWait(m_vk, vkDevice, queue, m_cmdBuffer.get());

@@ -417,8 +417,8 @@ tcu::TestStatus createDeviceTest (Context& context)
 		DE_NULL,								//pEnabledFeatures;
 	};
 
-	const Unique<VkDevice>			device					(createDevice(instanceDriver, physicalDevice, &deviceCreateInfo));
-	const DeviceDriver				deviceDriver			(instanceDriver, device.get());
+	const Unique<VkDevice>			device					(createDevice(platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+	const DeviceDriver				deviceDriver			(platformInterface, instance.get(), device.get());
 	const VkQueue					queue					= getDeviceQueue(deviceDriver, *device,  queueFamilyIndex, queueIndex);
 
 	VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -476,7 +476,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 			}
 
 			{
-				const DeviceDriver	deviceDriver	(instanceDriver, devices[deviceNdx]);
+				const DeviceDriver	deviceDriver	(platformInterface, instance.get(), devices[deviceNdx]);
 				const VkQueue		queue			= getDeviceQueue(deviceDriver, devices[deviceNdx], queueFamilyIndex, queueIndex);
 
 				VK_CHECK(deviceDriver.queueWaitIdle(queue));
@@ -493,7 +493,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 		{
 			if (devices[deviceNdx] != (VkDevice)DE_NULL)
 			{
-				DeviceDriver deviceDriver(instanceDriver, devices[deviceNdx]);
+				DeviceDriver deviceDriver(platformInterface, instance.get(), devices[deviceNdx]);
 				deviceDriver.destroyDevice(devices[deviceNdx], DE_NULL/*pAllocator*/);
 			}
 		}
@@ -505,7 +505,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 	{
 		if (devices[deviceNdx] != (VkDevice)DE_NULL)
 		{
-			DeviceDriver deviceDriver(instanceDriver, devices[deviceNdx]);
+			DeviceDriver deviceDriver(platformInterface, instance.get(), devices[deviceNdx]);
 			deviceDriver.destroyDevice(devices[deviceNdx], DE_NULL/*pAllocator*/);
 		}
 	}
@@ -557,7 +557,7 @@ tcu::TestStatus createDeviceWithUnsupportedExtensionsTest (Context& context)
 
 		if (device)
 		{
-			const DeviceDriver	deviceIface	(instanceDriver, device);
+			const DeviceDriver	deviceIface	(platformInterface, instance.get(), device);
 			deviceIface.destroyDevice(device, DE_NULL/*pAllocator*/);
 		}
 
@@ -631,8 +631,8 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 			DE_NULL,								//ppEnabledExtensionNames;
 			DE_NULL,								//pEnabledFeatures;
 		};
-		const Unique<VkDevice>			device				(createDevice(instanceDriver, physicalDevice, &deviceCreateInfo));
-		const DeviceDriver				deviceDriver		(instanceDriver, device.get());
+		const Unique<VkDevice>			device				(createDevice(platformInterface, *instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+		const DeviceDriver				deviceDriver		(platformInterface, instance.get(), device.get());
 		const deUint32					queueFamilyIndex	= deviceCreateInfo.pQueueCreateInfos->queueFamilyIndex;
 		const deUint32					queueCount			= deviceCreateInfo.pQueueCreateInfos->queueCount;
 
@@ -719,8 +719,8 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 	vki.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
 	{
-		const Unique<VkDevice>	device		(createDevice(vki, physicalDevice, &deviceCreateInfo));
-		const DeviceDriver		vkd			(vki, device.get());
+		const Unique<VkDevice>	device		(createDevice(vkp, *instance, vki, physicalDevice, &deviceCreateInfo));
+		const DeviceDriver		vkd			(vkp, instance.get(), device.get());
 		const VkQueue			queue		= getDeviceQueue(vkd, *device, queueFamilyIndex, queueIndex);
 
 		VK_CHECK(vkd.queueWaitIdle(queue));
@@ -927,8 +927,8 @@ tcu::TestStatus createDeviceQueue2Test (Context& context)
 	};
 
 	{
-		const Unique<VkDevice>				device					(createDevice(instanceDriver, physicalDevice, &deviceCreateInfo));
-		const DeviceDriver					deviceDriver			(instanceDriver, device.get());
+		const Unique<VkDevice>				device					(createDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+		const DeviceDriver					deviceDriver			(platformInterface, instance, device.get());
 		const VkQueue						queue2					= getDeviceQueue2(deviceDriver, *device, &deviceQueueInfo2);
 
 		VK_CHECK(deviceDriver.queueWaitIdle(queue2));
@@ -982,8 +982,8 @@ tcu::TestStatus createDeviceQueue2UnmatchedFlagsTest (Context& context)
 	};
 
 	{
-		const Unique<VkDevice>		device					(createDevice(instanceDriver, physicalDevice, &deviceCreateInfo));
-		const DeviceDriver			deviceDriver			(instanceDriver, device.get());
+		const Unique<VkDevice>		device					(createDevice(platformInterface, instance, instanceDriver, physicalDevice, &deviceCreateInfo));
+		const DeviceDriver			deviceDriver			(platformInterface, instance, device.get());
 		const VkQueue				queue2					= getDeviceQueue2(deviceDriver, *device, &deviceQueueInfo2);
 
 		if (queue2 != DE_NULL)
@@ -1316,7 +1316,7 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 		else if (result != VK_SUCCESS)
 			return tcu::TestStatus::fail("VkCreateDevice returned " + de::toString(result));
 
-		DeviceDriver(vki, device).destroyDevice(device, &allocationCallbacks);
+		DeviceDriver(vkp, instance, device).destroyDevice(device, &allocationCallbacks);
 		vki.destroyInstance(instance, &allocationCallbacks);
 		freeAllocTracker();
 	}

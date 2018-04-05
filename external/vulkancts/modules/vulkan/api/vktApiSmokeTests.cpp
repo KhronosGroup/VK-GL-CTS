@@ -757,26 +757,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &colorAttBarrier);
 	}
 
-	{
-		const VkClearValue			clearValue		= makeClearValueColorF32(clearColor[0],
-																			 clearColor[1],
-																			 clearColor[2],
-																			 clearColor[3]);
-		const VkRenderPassBeginInfo	passBeginParams	=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// sType
-			DE_NULL,											// pNext
-			*renderPass,										// renderPass
-			*framebuffer,										// framebuffer
-			{
-				{ 0, 0 },
-				{ (deUint32)renderSize.x(), (deUint32)renderSize.y() }
-			},													// renderArea
-			1u,													// clearValueCount
-			&clearValue,										// pClearValues
-		};
-		vk.cmdBeginRenderPass(*cmdBuf, &passBeginParams, VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor);
 
 	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 	{
@@ -784,7 +765,7 @@ tcu::TestStatus renderTriangleTest (Context& context)
 		vk.cmdBindVertexBuffers(*cmdBuf, 0u, 1u, &vertexBuffer.get(), &bindingOffset);
 	}
 	vk.cmdDraw(*cmdBuf, 3u, 1u, 0u, 0u);
-	vk.cmdEndRenderPass(*cmdBuf);
+	endRenderPass(vk, *cmdBuf);
 
 	{
 		const VkImageMemoryBarrier	renderFinishBarrier	=
@@ -1343,26 +1324,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest (Context& context)
 		vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &colorAttBarrier);
 	}
 
-	{
-		const VkClearValue			clearValue		= makeClearValueColorF32(clearColor[0],
-																			 clearColor[1],
-																			 clearColor[2],
-																			 clearColor[3]);
-		const VkRenderPassBeginInfo	passBeginParams	=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,			// sType
-			DE_NULL,											// pNext
-			*renderPass,										// renderPass
-			*framebuffer,										// framebuffer
-			{
-				{ 0, 0 },
-				{ (deUint32)renderSize.x(), (deUint32)renderSize.y() }
-			},													// renderArea
-			1u,													// clearValueCount
-			&clearValue,										// pClearValues
-		};
-		vk.cmdBeginRenderPass(*cmdBuf, &passBeginParams, VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(vk, *cmdBuf, *renderPass, *framebuffer, makeRect2D(0, 0, renderSize.x(), renderSize.y()), clearColor);
 
 	vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 	{
@@ -1370,7 +1332,7 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest (Context& context)
 		vk.cmdBindVertexBuffers(*cmdBuf, 0u, 1u, &vertexBuffer.get(), &bindingOffset);
 	}
 	vk.cmdDraw(*cmdBuf, 3u, 1u, 0u, 0u);
-	vk.cmdEndRenderPass(*cmdBuf);
+	endRenderPass(vk, *cmdBuf);
 
 	{
 		const VkImageMemoryBarrier	renderFinishBarrier	=

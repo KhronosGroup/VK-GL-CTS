@@ -133,8 +133,8 @@ public:
 				&context.getDeviceFeatures()									//const VkPhysicalDeviceFeatures*	pEnabledFeatures;
 			};
 
-			m_logicalDevice	= createDevice(instance, physicalDevice, &deviceInfo);
-			m_deviceDriver	= MovePtr<DeviceDriver>(new DeviceDriver(instance, *m_logicalDevice));
+			m_logicalDevice	= createDevice(context.getPlatformInterface(), context.getInstance(), instance, physicalDevice, &deviceInfo);
+			m_deviceDriver	= MovePtr<DeviceDriver>(new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *m_logicalDevice));
 			m_allocator		= MovePtr<Allocator>(new SimpleAllocator(*m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(instance, physicalDevice)));
 
 			for (std::map<deUint32, QueueData>::iterator it = m_queues.begin(); it != m_queues.end(); ++it)

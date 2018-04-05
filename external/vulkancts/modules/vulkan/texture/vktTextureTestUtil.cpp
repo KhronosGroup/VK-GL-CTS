@@ -1458,23 +1458,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 	beginCommandBuffer(vkd, *commandBuffer);
 
 	// Begin Render Pass
-	{
-		const VkRenderPassBeginInfo			renderPassBeginInfo		=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,				// VkStructureType		sType;
-			DE_NULL,												// const void*			pNext;
-			*m_renderPass,											// VkRenderPass			renderPass;
-			*m_frameBuffer,											// VkFramebuffer		framebuffer;
-			{
-				{ 0, 0 },
-				{ m_renderWidth, m_renderHeight }
-			},														// VkRect2D				renderArea;
-			0u,														// deUint32				clearValueCount;
-			DE_NULL													// const VkClearValue*	pClearValues;
-		};
-
-		vkd.cmdBeginRenderPass(*commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-	}
+	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_frameBuffer, makeRect2D(0, 0, m_renderWidth, m_renderHeight));
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
 	vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1, &descriptorSet[0].get(), 0u, DE_NULL);
@@ -1483,7 +1467,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 	vkd.cmdBindVertexBuffers(*commandBuffer, 1, 1, &vertexBuffer.get(), &vertexBufferOffset);
 	vkd.cmdBindIndexBuffer(*commandBuffer, *m_vertexIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 	vkd.cmdDrawIndexed(*commandBuffer, 6, 1, 0, 0, 0);
-	vkd.cmdEndRenderPass(*commandBuffer);
+	endRenderPass(vkd, *commandBuffer);
 
 	// Copy Image
 	{

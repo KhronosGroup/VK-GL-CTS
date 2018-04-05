@@ -144,7 +144,9 @@ deUint32 chooseProtectedMemQueueFamilyIndex	(const vk::InstanceDriver&	vkd,
 	TCU_THROW(NotSupportedError, "No matching universal protected queue found");
 }
 
-vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
+vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::PlatformInterface&		vkp,
+												 vk::VkInstance						instance,
+												 const vk::InstanceDriver&			vkd,
 												 vk::VkPhysicalDevice				physicalDevice,
 												 const deUint32						queueFamilyIndex,
 												 const deUint32						apiVersion,
@@ -239,7 +241,7 @@ vk::Move<vk::VkDevice> makeProtectedMemDevice	(const vk::InstanceDriver&			vkd,
 		DE_NULL															// pEnabledFeatures
 	};
 
-	return vk::createDevice(vkd, physicalDevice, &deviceParams, DE_NULL);
+	return vk::createDevice(vkp, instance, vkd, physicalDevice, &deviceParams, DE_NULL);
 }
 
 vk::VkQueue getProtectedQueue	(const vk::DeviceInterface&	vk,
