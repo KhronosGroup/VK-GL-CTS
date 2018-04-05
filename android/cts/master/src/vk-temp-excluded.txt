@@ -55,3 +55,28 @@ dEQP-VK.memory.mapping.dedicated_alloc.image.full.8095.subflush_separate
 dEQP-VK.memory.mapping.dedicated_alloc.image.full.8095.subinvalidate
 dEQP-VK.memory.mapping.dedicated_alloc.image.full.8095.subinvalidate_overlapping
 dEQP-VK.memory.mapping.dedicated_alloc.image.full.8095.subinvalidate_separate
+
+# b/77319653
+dEQP-VK.protected_memory.interaction.wsi.android.swapchain.create.min_image_count
+
+# b/77321170
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_1
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_10
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_2
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_3
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_4
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_5
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_6
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_7
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_8
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.compute.compswap.random.atomic_compswap_9
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_1
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_10
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_2
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_3
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_4
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_5
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_6
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_7
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_8
+dEQP-VK.protected_memory.ssbo.ssbo_atomic.fragment.compswap.random.atomic_compswap_9
