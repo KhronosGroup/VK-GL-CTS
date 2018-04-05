@@ -212,7 +212,7 @@ private:
 																		glw::GLuint buffer);
 	typedef void(GLW_APIENTRY* TransformFeedbackBufferRange_ProcAddress)(glw::GLuint xfb, glw::GLuint index,
 																		 glw::GLuint buffer, glw::GLintptr offset,
-																		 glw::GLsizei size);
+																		 glw::GLsizeiptr size);
 
 	GetTransformFeedbacki_v_ProcAddress		 m_gl_getTransformFeedbacki_v;
 	GetTransformFeedbacki64_v_ProcAddress	m_gl_getTransformFeedbacki64_v;
