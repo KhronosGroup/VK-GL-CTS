@@ -558,6 +558,7 @@ DE_DECLARE_COMMAND_LINE_OPT(Validate,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(VulkanVersion,			deUint32);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCache,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,	std::string);
+DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,	bool);
 
 static const de::cmdline::NamedValue<bool> s_enableNames[] =
 {
@@ -578,12 +579,13 @@ void registerOptions (de::cmdline::Parser& parser)
 
 	DE_STATIC_ASSERT(vk::SPIRV_VERSION_1_3 + 1 == vk::SPIRV_VERSION_LAST);
 
-	parser << Option<opt::DstPath>				("d", "dst-path",				"Destination path",	"out")
-		   << Option<opt::Cases>				("n", "deqp-case",				"Case path filter (works as in test binaries)")
-		   << Option<opt::Validate>				("v", "validate-spv",			"Validate generated SPIR-V binaries")
-		   << Option<opt::VulkanVersion>		("t", "target-vulkan-version",	"Target Vulkan version", s_vulkanVersion, "1.1")
-		   << Option<opt::ShaderCache>			("s", "shadercache",			"Enable or disable shader cache", s_enableNames, "disable")
-		   << Option<opt::ShaderCacheFilename>	("r", "shadercache-filename",	"Write shader cache to given file", "shadercache.bin");
+	parser << Option<opt::DstPath>("d", "dst-path", "Destination path", "out")
+		<< Option<opt::Cases>("n", "deqp-case", "Case path filter (works as in test binaries)")
+		<< Option<opt::Validate>("v", "validate-spv", "Validate generated SPIR-V binaries")
+		<< Option<opt::VulkanVersion>("t", "target-vulkan-version", "Target Vulkan version", s_vulkanVersion, "1.1")
+		<< Option<opt::ShaderCache>("s", "shadercache", "Enable or disable shader cache", s_enableNames, "enable")
+		<< Option<opt::ShaderCacheFilename>("r", "shadercache-filename", "Write shader cache to given file", "shadercache.bin")
+		<< Option<opt::ShaderCacheTruncate>("x", "shadercache-truncate", "Truncate shader cache before running", s_enableNames, "enable");
 }
 
 } // opt
@@ -624,6 +626,15 @@ int main (int argc, const char* argv[])
 		{
 			deqpArgv.push_back("--deqp-shadercache");
 			if (cmdLine.getOption<opt::ShaderCache>())
+				deqpArgv.push_back("enable");
+			else
+				deqpArgv.push_back("disable");
+		}
+
+		if (cmdLine.hasOption<opt::ShaderCacheTruncate>())
+		{
+			deqpArgv.push_back("--deqp-shadercache-truncate");
+			if (cmdLine.getOption<opt::ShaderCacheTruncate>())
 				deqpArgv.push_back("enable");
 			else
 				deqpArgv.push_back("disable");

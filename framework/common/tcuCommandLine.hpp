@@ -121,101 +121,104 @@ private:
 class CommandLine
 {
 public:
-									CommandLine					(void);
-									CommandLine					(int argc, const char* const* argv);
-	explicit						CommandLine					(const std::string& cmdLine);
-									~CommandLine				(void);
+									CommandLine						(void);
+									CommandLine						(int argc, const char* const* argv);
+	explicit						CommandLine						(const std::string& cmdLine);
+									~CommandLine					(void);
 
-	bool							parse						(int argc, const char* const* argv);
-	bool							parse						(const std::string& cmdLine);
+	bool							parse							(int argc, const char* const* argv);
+	bool							parse							(const std::string& cmdLine);
 
 	//! Get log file name (--deqp-log-filename)
-	const char*						getLogFileName				(void) const;
+	const char*						getLogFileName					(void) const;
 
 	//! Get logging flags
-	deUint32						getLogFlags					(void) const;
+	deUint32						getLogFlags						(void) const;
 
 	//! Get run mode (--deqp-runmode)
-	RunMode							getRunMode					(void) const;
+	RunMode							getRunMode						(void) const;
 
 	//! Get caselist dump target file pattern (--deqp-caselist-export-file)
-	const char*						getCaseListExportFile		(void) const;
+	const char*						getCaseListExportFile			(void) const;
 
 	//! Get default window visibility (--deqp-visibility)
-	WindowVisibility				getVisibility				(void) const;
+	WindowVisibility				getVisibility					(void) const;
 
 	//! Get watchdog enable status (--deqp-watchdog)
-	bool							isWatchDogEnabled			(void) const;
+	bool							isWatchDogEnabled				(void) const;
 
 	//! Get crash handling enable status (--deqp-crashhandler)
-	bool							isCrashHandlingEnabled		(void) const;
+	bool							isCrashHandlingEnabled			(void) const;
 
 	//! Get base seed for randomization (--deqp-base-seed)
-	int								getBaseSeed					(void) const;
+	int								getBaseSeed						(void) const;
 
 	//! Get test iteration count (--deqp-test-iteration-count)
-	int								getTestIterationCount		(void) const;
+	int								getTestIterationCount			(void) const;
 
 	//! Get rendering target width (--deqp-surface-width)
-	int								getSurfaceWidth				(void) const;
+	int								getSurfaceWidth					(void) const;
 
 	//! Get rendering target height (--deqp-surface-height)
-	int								getSurfaceHeight			(void) const;
+	int								getSurfaceHeight				(void) const;
 
 	//! Get rendering taget type (--deqp-surface-type)
-	SurfaceType						getSurfaceType				(void) const;
+	SurfaceType						getSurfaceType					(void) const;
 
 	//! Get screen rotation (--deqp-screen-rotation)
-	ScreenRotation					getScreenRotation			(void) const;
+	ScreenRotation					getScreenRotation				(void) const;
 
 	//! Get GL context factory name (--deqp-gl-context-type)
-	const char*						getGLContextType			(void) const;
+	const char*						getGLContextType				(void) const;
 
 	//! Get GL config ID (--deqp-gl-config-id)
-	int								getGLConfigId				(void) const;
+	int								getGLConfigId					(void) const;
 
 	//! Get GL config name (--deqp-gl-config-name)
-	const char*						getGLConfigName				(void) const;
+	const char*						getGLConfigName					(void) const;
 
 	//! Get GL context flags (--deqp-gl-context-flags)
-	const char*						getGLContextFlags			(void) const;
+	const char*						getGLContextFlags				(void) const;
 
 	//! Get OpenCL platform ID (--deqp-cl-platform-id)
-	int								getCLPlatformId				(void) const;
+	int								getCLPlatformId					(void) const;
 
 	//! Get OpenCL device IDs (--deqp-cl-device-ids)
-	void							getCLDeviceIds				(std::vector<int>& deviceIds) const	{ deviceIds = getCLDeviceIds(); }
-	const std::vector<int>&			getCLDeviceIds				(void) const;
+	void							getCLDeviceIds					(std::vector<int>& deviceIds) const	{ deviceIds = getCLDeviceIds(); }
+	const std::vector<int>&			getCLDeviceIds					(void) const;
 
 	//! Get extra OpenCL program build options (--deqp-cl-build-options)
-	const char*						getCLBuildOptions			(void) const;
+	const char*						getCLBuildOptions				(void) const;
 
 	//! Get EGL native display factory (--deqp-egl-display-type)
-	const char*						getEGLDisplayType			(void) const;
+	const char*						getEGLDisplayType				(void) const;
 
 	//! Get EGL native window factory (--deqp-egl-window-type)
-	const char*						getEGLWindowType			(void) const;
+	const char*						getEGLWindowType				(void) const;
 
 	//! Get EGL native pixmap factory (--deqp-egl-pixmap-type)
-	const char*						getEGLPixmapType			(void) const;
+	const char*						getEGLPixmapType				(void) const;
 
 	//! Get Vulkan device ID (--deqp-vk-device-id)
-	int								getVKDeviceId				(void) const;
+	int								getVKDeviceId					(void) const;
 
 	//! Get Vulkan device group ID (--deqp-vk-device-group-id)
-	int								getVKDeviceGroupId			(void) const;
+	int								getVKDeviceGroupId				(void) const;
 
 	//! Enable development-time test case validation checks
-	bool							isValidationEnabled			(void) const;
+	bool							isValidationEnabled				(void) const;
 
 	//! Should we run tests that exhaust memory (--deqp-test-oom)
-	bool							isOutOfMemoryTestEnabled	(void) const;
+	bool							isOutOfMemoryTestEnabled		(void) const;
 
 	//! Should the shader cache be enabled (--deqp-shadercache)
-	bool							isShadercacheEnabled		(void) const;
+	bool							isShadercacheEnabled			(void) const;
 
 	//! Get the filename for shader cache (--deqp-shadercache-filename)
-	const char*						getShaderCacheFilename		(void) const;
+	const char*						getShaderCacheFilename			(void) const;
+
+	//! Should the shader cache be truncated before run (--deqp-shadercache-truncate)
+	bool							isShaderCacheTruncateEnabled	(void) const;
 
 	//! Get shader optimization recipe (--deqp-optimization-recipe)
 	int								getOptimizationRecipe		(void) const;

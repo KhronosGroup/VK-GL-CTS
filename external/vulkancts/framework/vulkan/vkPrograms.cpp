@@ -354,6 +354,47 @@ void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramIn
 
 de::Mutex							cacheFileMutex;
 map<deUint32, vector<deUint32> >	cacheFileIndex;
+bool								cacheFileFirstRun = true;
+
+void shaderCacheFirstRunCheck (const char* shaderCacheFile, bool truncate)
+{
+	cacheFileMutex.lock();
+	if (cacheFileFirstRun)
+	{
+		cacheFileFirstRun = false;
+		if (truncate)
+		{
+			// Open file with "w" access to truncate it
+			FILE* f = fopen(shaderCacheFile, "wb");
+			if (f)
+				fclose(f);
+		}
+		else
+		{
+			// Parse chunked shader cache file for hashes and offsets
+			FILE* file = fopen(shaderCacheFile, "rb");
+			int count = 0;
+			if (file)
+			{
+				deUint32 chunksize	= 0;
+				deUint32 hash		= 0;
+				deUint32 offset		= 0;
+				bool ok				= true;
+				while (ok)
+				{
+					offset = (deUint32)ftell(file);
+					if (ok) ok = fread(&chunksize, 1, 4, file)				== 4;
+					if (ok) ok = fread(&hash, 1, 4, file)					== 4;
+					if (ok) cacheFileIndex[hash].push_back(offset);
+					if (ok) ok = fseek(file, offset + chunksize, SEEK_SET)	== 0;
+					count++;
+				}
+				fclose(file);
+			}
+		}
+	}
+	cacheFileMutex.unlock();
+}
 
 std::string intToString (deUint32 integer)
 {
@@ -362,30 +403,6 @@ std::string intToString (deUint32 integer)
 	temp_sstream << integer;
 
 	return temp_sstream.str();
-}
-
-// Parse chunked shader cache file for hashes and offsets
-void shaderCacheParse (const char* shaderCacheFile)
-{
-	FILE* file = fopen(shaderCacheFile, "rb");
-	int count = 0;
-	if (file)
-	{
-		deUint32 chunksize	= 0;
-		deUint32 hash		= 0;
-		deUint32 offset		= 0;
-		bool ok				= true;
-		while (ok)
-		{
-			offset = (deUint32)ftell(file);
-			if (ok) ok = fread(&chunksize, 1, 4, file)				== 4;
-			if (ok) ok = fread(&hash, 1, 4, file)					== 4;
-			if (ok) cacheFileIndex[hash].push_back(offset);
-			if (ok) ok = fseek(file, offset + chunksize, SEEK_SET)	== 0;
-			count++;
-		}
-		fclose(file);
-	}
 }
 
 vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char* shaderCacheFilename)
@@ -400,8 +417,6 @@ vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char*
 	char*			source		= 0;
 	bool			ok			= true;
 	cacheFileMutex.lock();
-	if (cacheFileIndex.empty())
-		shaderCacheParse(shaderCacheFilename);
 
 	if (cacheFileIndex.count(hash) == 0)
 	{
@@ -531,6 +546,7 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 
 	if (commandLine.isShadercacheEnabled())
 	{
+		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
 		getCompileEnvironment(shaderstring);
 		getBuildOptions(shaderstring, program.buildOptions, optimizationRecipe);
 
@@ -607,6 +623,7 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 
 	if (commandLine.isShadercacheEnabled())
 	{
+		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
 		getCompileEnvironment(shaderstring);
 		getBuildOptions(shaderstring, program.buildOptions, optimizationRecipe);
 
@@ -683,6 +700,7 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 
 	if (commandLine.isShadercacheEnabled())
 	{
+		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
 		getCompileEnvironment(shaderstring);
 		shaderstring += "Target Spir-V ";
 		shaderstring += getSpirvVersionName(spirvVersion);
