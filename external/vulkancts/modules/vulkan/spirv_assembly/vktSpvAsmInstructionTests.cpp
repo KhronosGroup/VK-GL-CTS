@@ -8929,6 +8929,126 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+tcu::TestCaseGroup* createOpCompositeExtractGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group		(new tcu::TestCaseGroup(testCtx, "opcompositeextract", "Test the OpCompositeExtract instruction"));
+	ComputeShaderSpec				spec;
+	de::Random						rnd			(deStringHash(group->getName()));
+	const int						numElements = 100;
+	vector<float>					input		(4 * numElements, 0);
+	vector<float>					output		(4 * numElements, 0);
+
+	fillRandomScalars(rnd, -100.0f, 100.0f, &input[0], 4 * numElements);
+
+	for(size_t ndx = 0; ndx < numElements; ++ndx)
+	{
+		output[ndx * 4]		= input[ndx * 4 + 2];
+		output[ndx * 4 + 1] = input[ndx * 4 + 1];
+		output[ndx * 4 + 2] = input[ndx * 4];
+		output[ndx * 4 + 3] = input[ndx * 4 + 3];
+	}
+
+	const string shader (
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %gl_GlobalInvocationID\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpSource OpenCL_C 120\n"
+
+		"OpMemberDecorate %struct_4_f32 0 Offset 0\n"
+		"OpMemberDecorate %struct_4_f32 1 Offset 4\n"
+		"OpMemberDecorate %struct_4_f32 2 Offset 8\n"
+		"OpMemberDecorate %struct_4_f32 3 Offset 12\n"
+		"OpDecorate %_runtimearr_struct_4_f32 ArrayStride 16\n"
+		"OpMemberDecorate %InStruct 0 Offset 0\n"
+		"OpDecorate %InStruct BufferBlock\n"
+		"OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId\n"
+		"OpDecorate %output DescriptorSet 0\n"
+		"OpDecorate %output Binding 1\n"
+		"OpDecorate %input DescriptorSet 0\n"
+		"OpDecorate %input Binding 0\n"
+
+		"%f32                       = OpTypeFloat 32\n"
+		"%struct_4_f32              = OpTypeStruct %f32 %f32 %f32 %f32\n"
+		"%_runtimearr_struct_4_f32  = OpTypeRuntimeArray %struct_4_f32\n"
+		"%InStruct                  = OpTypeStruct %_runtimearr_struct_4_f32\n"
+		"%_ptr_Uniform__InStruct    = OpTypePointer Uniform %InStruct\n"
+		"%uint                      = OpTypeInt 32 0\n"
+		"%void                      = OpTypeVoid\n"
+		"%voidf                     = OpTypeFunction %void\n"
+		"%v3uint                    = OpTypeVector %uint 3\n"
+		"%_ptr_Input_v3uint         = OpTypePointer Input %v3uint\n"
+		"%_ptr_Input_uint           = OpTypePointer Input %uint\n"
+		"%_ptr_Uniform_float        = OpTypePointer Uniform %f32\n"
+		"%structf                   = OpTypeFunction %struct_4_f32 %struct_4_f32\n"
+		"%_ptr_Private_v3uint       = OpTypePointer Private %v3uint\n"
+		"%uint_0                    = OpConstant %uint 0\n"
+		"%uint_1                    = OpConstant %uint 1\n"
+		"%uint_2                    = OpConstant %uint 2\n"
+		"%uint_3                    = OpConstant %uint 3\n"
+		"%gl_GlobalInvocationID     = OpVariable %_ptr_Input_v3uint Input\n"
+		"%output                    = OpVariable %_ptr_Uniform__InStruct Uniform\n"
+		"%input                     = OpVariable %_ptr_Uniform__InStruct Uniform\n"
+
+		"%helper                    = OpFunction %struct_4_f32 Const %structf\n"
+		"%param_struct              = OpFunctionParameter %struct_4_f32\n"
+		"%label1                    = OpLabel\n"
+
+		"%param_a                   = OpCompositeExtract %f32 %param_struct 0\n"
+		"%param_b                   = OpCompositeExtract %f32 %param_struct 1\n"
+		"%param_c                   = OpCompositeExtract %f32 %param_struct 2\n"
+		"%param_d                   = OpCompositeExtract %f32 %param_struct 3\n"
+
+		"%returnVal                 = OpCompositeConstruct %struct_4_f32 %param_c %param_b %param_a %param_d\n"
+
+		"                             OpReturnValue %returnVal\n"
+		"                             OpFunctionEnd\n"
+
+		"%main                      = OpFunction %void None %voidf\n"
+		"%label2                    = OpLabel\n"
+
+		"%struct_index              = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_0\n"
+		"%struct_loc                = OpLoad %uint %struct_index\n"
+		"%input_a_loc               = OpAccessChain %_ptr_Uniform_float %input %uint_0 %struct_loc %uint_0\n"
+		"%input_a                   = OpLoad %f32 %input_a_loc\n"
+		"%input_b_loc               = OpAccessChain %_ptr_Uniform_float %input %uint_0 %struct_loc %uint_1\n"
+		"%input_b                   = OpLoad %f32 %input_b_loc\n"
+		"%input_c_loc               = OpAccessChain %_ptr_Uniform_float %input %uint_0 %struct_loc %uint_2\n"
+		"%input_c                   = OpLoad %f32 %input_c_loc\n"
+		"%input_d_loc               = OpAccessChain %_ptr_Uniform_float %input %uint_0 %struct_loc %uint_3\n"
+		"%input_d                   = OpLoad %f32 %input_d_loc\n"
+
+		"%input_struct              = OpCompositeConstruct %struct_4_f32 %input_a %input_b %input_c %input_d\n"
+
+		"%output_struct             = OpFunctionCall %struct_4_f32 %helper %input_struct\n"
+
+		"%output_a                  = OpCompositeExtract %f32 %output_struct 0\n"
+		"%output_b                  = OpCompositeExtract %f32 %output_struct 1\n"
+		"%output_c                  = OpCompositeExtract %f32 %output_struct 2\n"
+		"%output_d                  = OpCompositeExtract %f32 %output_struct 3\n"
+
+		"%output_a_loc              = OpAccessChain %_ptr_Uniform_float %output %uint_0 %struct_loc %uint_0\n"
+		"                             OpStore %output_a_loc %output_a\n"
+		"%output_b_loc              = OpAccessChain %_ptr_Uniform_float %output %uint_0 %struct_loc %uint_1\n"
+		"                             OpStore %output_b_loc %output_b\n"
+		"%output_c_loc              = OpAccessChain %_ptr_Uniform_float %output %uint_0 %struct_loc %uint_2\n"
+		"                             OpStore %output_c_loc %output_c\n"
+		"%output_d_loc              = OpAccessChain %_ptr_Uniform_float %output %uint_0 %struct_loc %uint_3\n"
+		"                             OpStore %output_d_loc %output_d\n"
+
+		"                             OpReturn\n"
+		"                             OpFunctionEnd\n");
+
+	spec.inputs.push_back(BufferSp(new Buffer<float>(input)));
+	spec.outputs.push_back(BufferSp(new Buffer<float>(output)));
+	spec.assembly = shader;
+	spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+	group->addChild(new SpvAsmComputeShaderCase(testCtx, "basic_test", "OpCompositeExtract test", spec));
+
+	return group.release();
+}
+
 struct AssemblyStructInfo
 {
 	AssemblyStructInfo (const deUint32 comp, const deUint32 idx)
@@ -9430,6 +9550,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpUConvert", "uconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpFConvert", "fconvert"));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
+	computeTests->addChild(createOpCompositeExtractGroup(testCtx));
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
 	computeTests->addChild(createShaderDefaultOutputGroup(testCtx));
 	computeTests->addChild(createOpNMinGroup(testCtx));
