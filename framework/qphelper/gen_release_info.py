@@ -96,21 +96,26 @@ if __name__ == "__main__":
 
 	if args.git:
 		gitDir				= args.gitDir				if args.gitDir				!= None else defaultGitDir
-		glslGitDir			= args.glslGitDir			if args.glslGitDir			!= None else defaultGlslGitDir
-		spirvToolsGitDir	= args.spirvToolsGitDir		if args.spirvToolsGitDir	!= None else defaultSpirvToolsGitDir
-		spirvHeadersGitDir	= args.spirvHeadersGitDir	if args.spirvHeadersGitDir	!= None else defaultSpirvHeadersGitDir
 		head				= getHead(gitDir)
-		glslHead			= getHead(glslGitDir)
-		spirvToolsHead		= getHead(spirvToolsGitDir)
-		spirvHeadersHead	= getHead(spirvHeadersGitDir)
 		releaseName			= "git-%s" % head
 		releaseId			= "0x%s" % head[0:8]
-		glslName			= "git-%s" % glslHead
-		spirvToolsName		= "git-%s" % spirvToolsHead
-		spirvHeadersName	= "git-%s" % spirvHeadersHead
 	else:
 		releaseName			= args.releaseName
 		releaseId			= args.releaseId
+
+	if args.glslGitDir or os.path.exists(defaultGlslGitDir):
+		glslGitDir			= args.glslGitDir			if args.glslGitDir			!= None else defaultGlslGitDir
+		spirvToolsGitDir	= args.spirvToolsGitDir		if args.spirvToolsGitDir	!= None else defaultSpirvToolsGitDir
+		spirvHeadersGitDir	= args.spirvHeadersGitDir	if args.spirvHeadersGitDir	!= None else defaultSpirvHeadersGitDir
+		glslHead			= getHead(glslGitDir)
+		spirvToolsHead		= getHead(spirvToolsGitDir)
+		spirvHeadersHead	= getHead(spirvHeadersGitDir)
+		glslName			= "git-%s" % glslHead
+		spirvToolsName		= "git-%s" % spirvToolsHead
+		spirvHeadersName	= "git-%s" % spirvHeadersHead
+	elif args.git:
+		glslName = spirvToolsName = spirvHeadersName = "N/A"
+	else:
 		glslName			= args.releaseName
 		spirvToolsName		= args.releaseName
 		spirvHeadersName	= args.releaseName
