@@ -916,51 +916,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 		VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *readImage, imageMemory.get(), 0));
 
 		// Create renderpass
-		{
-			const VkAttachmentDescription			colorAttDesc =
-			{
-				0u,												// flags
-				colorFormat,									// format
-				VK_SAMPLE_COUNT_1_BIT,							// samples
-				VK_ATTACHMENT_LOAD_OP_CLEAR,					// loadOp
-				VK_ATTACHMENT_STORE_OP_STORE,					// storeOp
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,				// stencilLoadOp
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,				// stencilStoreOp
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// initialLayout
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// finalLayout
-			};
-			const VkAttachmentReference				colorAttRef =
-			{
-				0u,												// attachment
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// layout
-			};
-			const VkSubpassDescription				subpassDesc =
-			{
-				(VkSubpassDescriptionFlags)0u,					// flags
-				VK_PIPELINE_BIND_POINT_GRAPHICS,				// pipelineBindPoint
-				0u,												// inputAttachmentCount
-				DE_NULL,										// pInputAttachments
-				1u,												// colorAttachmentCount
-				&colorAttRef,									// pColorAttachments
-				DE_NULL,										// pResolveAttachments
-				DE_NULL,										// depthStencilAttachment
-				0u,												// preserveAttachmentCount
-				DE_NULL,										// pPreserveAttachments
-			};
-			const VkRenderPassCreateInfo			renderPassParams =
-			{
-				VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,		// sType
-				DE_NULL,										// pNext
-				0u,												// flags
-				1u,												// attachmentCount
-				&colorAttDesc,									// pAttachments
-				1u,												// subpassCount
-				&subpassDesc,									// pSubpasses
-				0u,												// dependencyCount
-				DE_NULL,										// pDependencies
-			};
-			renderPass = createRenderPass(vk, *m_deviceGroup, &renderPassParams);
-		}
+		renderPass = makeRenderPass(vk, *m_deviceGroup, colorFormat);
 
 		// Create descriptors
 		{

@@ -4308,40 +4308,6 @@ void SubmitRenderPass::prepare (PrepareContext& context)
 	const vk::VkDevice						device			= context.getContext().getDevice();
 	const vector<deUint32>&					queueFamilies	= context.getContext().getQueueFamilies();
 
-	const vk::VkAttachmentReference	colorAttachments[]	=
-	{
-		{ 0, vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL }
-	};
-	const vk::VkSubpassDescription	subpass				=
-	{
-		0u,
-		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-
-		0u,
-		DE_NULL,
-
-		DE_LENGTH_OF_ARRAY(colorAttachments),
-		colorAttachments,
-		DE_NULL,
-		DE_NULL,
-		0u,
-		DE_NULL
-	};
-	const vk::VkAttachmentDescription attachment =
-	{
-		0u,
-		vk::VK_FORMAT_R8G8B8A8_UNORM,
-		vk::VK_SAMPLE_COUNT_1_BIT,
-
-		vk::VK_ATTACHMENT_LOAD_OP_CLEAR,
-		vk::VK_ATTACHMENT_STORE_OP_STORE,
-
-		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,
-
-		vk::VK_IMAGE_LAYOUT_UNDEFINED,
-		vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
-	};
 	{
 		const vk::VkImageCreateInfo createInfo =
 		{
@@ -4395,25 +4361,8 @@ void SubmitRenderPass::prepare (PrepareContext& context)
 
 		m_colorTargetView = vk::createImageView(vkd, device, &createInfo);
 	}
-	{
-		const vk::VkRenderPassCreateInfo createInfo =
-		{
-			vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-			DE_NULL,
-			0u,
 
-			1u,
-			&attachment,
-
-			1u,
-			&subpass,
-
-			0,
-			DE_NULL
-		};
-
-		m_renderPass = vk::createRenderPass(vkd, device, &createInfo);
-	}
+	m_renderPass = vk::makeRenderPass(vkd, device, vk::VK_FORMAT_R8G8B8A8_UNORM, vk::VK_FORMAT_UNDEFINED, vk::VK_ATTACHMENT_LOAD_OP_CLEAR, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	{
 		const vk::VkImageView				imageViews[]	=

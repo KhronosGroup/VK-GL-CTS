@@ -283,4 +283,94 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
+Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
+								   const VkDevice				device,
+								   const VkFormat				colorFormat,
+								   const VkFormat				depthStencilFormat,
+								   const VkAttachmentLoadOp		loadOperation,
+								   const VkImageLayout			finalLayoutColor,
+								   const VkImageLayout			finalLayoutDepthStencil,
+								   const VkImageLayout			subpassLayoutColor,
+								   const VkImageLayout			subpassLayoutDepthStencil)
+{
+	const bool								hasColor							= colorFormat != VK_FORMAT_UNDEFINED;
+	const bool								hasDepthStencil						= depthStencilFormat != VK_FORMAT_UNDEFINED;
+	const VkImageLayout						initialLayoutColor					= loadOperation == VK_ATTACHMENT_LOAD_OP_LOAD ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+	const VkImageLayout						initialLayoutDepthStencil			= loadOperation == VK_ATTACHMENT_LOAD_OP_LOAD ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+
+	const VkAttachmentDescription			colorAttachmentDescription			=
+	{
+		(VkAttachmentDescriptionFlags)0,	// VkAttachmentDescriptionFlags    flags
+		colorFormat,						// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits           samples
+		loadOperation,						// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,		// VkAttachmentStoreOp             storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,	// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,	// VkAttachmentStoreOp             stencilStoreOp
+		initialLayoutColor,					// VkImageLayout                   initialLayout
+		finalLayoutColor					// VkImageLayout                   finalLayout
+	};
+
+	const VkAttachmentDescription			depthStencilAttachmentDescription	=
+	{
+		(VkAttachmentDescriptionFlags)0,	// VkAttachmentDescriptionFlags    flags
+		depthStencilFormat,					// VkFormat                        format
+		VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits           samples
+		loadOperation,						// VkAttachmentLoadOp              loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,		// VkAttachmentStoreOp             storeOp
+		loadOperation,						// VkAttachmentLoadOp              stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_STORE,		// VkAttachmentStoreOp             stencilStoreOp
+		initialLayoutDepthStencil,			// VkImageLayout                   initialLayout
+		finalLayoutDepthStencil				// VkImageLayout                   finalLayout
+	};
+
+	std::vector<VkAttachmentDescription>	attachmentDescriptions;
+
+	if (hasColor)
+		attachmentDescriptions.push_back(colorAttachmentDescription);
+	if (hasDepthStencil)
+		attachmentDescriptions.push_back(depthStencilAttachmentDescription);
+
+	const VkAttachmentReference				colorAttachmentRef					=
+	{
+		0u,					// deUint32         attachment
+		subpassLayoutColor	// VkImageLayout    layout
+	};
+
+	const VkAttachmentReference				depthStencilAttachmentRef			=
+	{
+		hasColor ? 1u : 0u,			// deUint32         attachment
+		subpassLayoutDepthStencil	// VkImageLayout    layout
+	};
+
+	const VkSubpassDescription				subpassDescription					=
+	{
+		(VkSubpassDescriptionFlags)0,							// VkSubpassDescriptionFlags       flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,						// VkPipelineBindPoint             pipelineBindPoint
+		0u,														// deUint32                        inputAttachmentCount
+		DE_NULL,												// const VkAttachmentReference*    pInputAttachments
+		hasColor ? 1u : 0u,										// deUint32                        colorAttachmentCount
+		hasColor ? &colorAttachmentRef : DE_NULL,				// const VkAttachmentReference*    pColorAttachments
+		DE_NULL,												// const VkAttachmentReference*    pResolveAttachments
+		hasDepthStencil ? &depthStencilAttachmentRef : DE_NULL,	// const VkAttachmentReference*    pDepthStencilAttachment
+		0u,														// deUint32                        preserveAttachmentCount
+		DE_NULL													// const deUint32*                 pPreserveAttachments
+	};
+
+	const VkRenderPassCreateInfo			renderPassInfo						=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType
+		DE_NULL,									// const void*                       pNext
+		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags           flags
+		(deUint32)attachmentDescriptions.size(),	// deUint32                          attachmentCount
+		&attachmentDescriptions[0],					// const VkAttachmentDescription*    pAttachments
+		1u,											// deUint32                          subpassCount
+		&subpassDescription,						// const VkSubpassDescription*       pSubpasses
+		0u,											// deUint32                          dependencyCount
+		DE_NULL										// const VkSubpassDependency*        pDependencies
+	};
+
+	return createRenderPass(vk, device, &renderPassInfo);
+}
+
 } // vk

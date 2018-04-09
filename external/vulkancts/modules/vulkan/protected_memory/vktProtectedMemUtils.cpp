@@ -31,6 +31,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkDebugReportUtil.hpp"
 #include "vkApiVersion.hpp"
+#include "vkObjUtil.hpp"
 
 #include "vkPlatform.hpp"
 #include "vktProtectedMemContext.hpp"
@@ -384,53 +385,7 @@ vk::Move<vk::VkRenderPass> createRenderPass (ProtectedContext& context, vk::VkFo
 	const vk::VkDevice					vkDevice				= context.getDevice();
 	const vk::DeviceInterface&			vk						= context.getDeviceInterface();
 
-	const vk::VkAttachmentDescription	attachmentDescription	=
-	{
-		0u,												// VkAttachmentDescriptorFlags	flags;
-		format,											// VkFormat						format;
-		vk::VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits		samples;
-		vk::VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp			loadOp;
-		vk::VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp;
-		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp;
-		vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp;
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout				initialLayout;
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout				finalLayout;
-	};
-
-	const vk::VkAttachmentReference		attachmentReference		=
-	{
-		0u,												// deUint32			attachment;
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout;
-	};
-
-	const vk::VkSubpassDescription		subpassDescription		=
-	{
-		0u,											// VkSubpassDescriptionFlags	flags;
-		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,		// VkPipelineBindPoint			pipelineBindPoint;
-		0u,											// deUint32						inputAttachmentCount;
-		DE_NULL,									// const VkAttachmentReference*	pInputAttachments;
-		1u,											// deUint32						colorAttachmentCount;
-		&attachmentReference,						// const VkAttachmentReference*	pColorAttachments;
-		DE_NULL,									// const VkAttachmentReference*	pResolveAttachments;
-		DE_NULL,									// const VkAttachmentReference*	pDepthStencilAttachment;
-		0u,											// deUint32						preserveAttachmentCount;
-		DE_NULL										// const VkAttachmentReference*	pPreserveAttachments;
-	};
-
-	const vk::VkRenderPassCreateInfo	renderPassParams		=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType;
-		DE_NULL,										// const void*						pNext;
-		0u,												// VkRenderPassCreateFlags			flags;
-		1u,												// deUint32							attachmentCount;
-		&attachmentDescription,							// const VkAttachmentDescription*	pAttachments;
-		1u,												// deUint32							subpassCount;
-		&subpassDescription,							// const VkSubpassDescription*		pSubpasses;
-		0u,												// deUint32							dependencyCount;
-		DE_NULL											// const VkSubpassDependency*		pDependencies;
-	};
-
-	return vk::createRenderPass(vk, vkDevice, &renderPassParams);
+	return vk::makeRenderPass(vk, vkDevice, format);
 }
 
 vk::Move<vk::VkFramebuffer> createFramebuffer (ProtectedContext& context, deUint32 width, deUint32 height,

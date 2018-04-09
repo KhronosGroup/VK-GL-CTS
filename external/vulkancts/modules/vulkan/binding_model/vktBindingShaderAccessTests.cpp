@@ -475,10 +475,6 @@ private:
 																		 const tcu::TextureFormat&	format,
 																		 vk::VkImage				image);
 
-	static vk::Move<vk::VkRenderPass>		createRenderPass			(const vk::DeviceInterface&	vki,
-																		 vk::VkDevice				device,
-																		 const tcu::TextureFormat&	format);
-
 	static vk::Move<vk::VkFramebuffer>		createFramebuffer			(const vk::DeviceInterface&	vki,
 																		 vk::VkDevice				device,
 																		 vk::VkRenderPass			renderpass,
@@ -528,7 +524,7 @@ SingleTargetRenderInstance::SingleTargetRenderInstance (Context&							context,
 	, m_colorAttachmentMemory	(DE_NULL)
 	, m_colorAttachmentImage	(createColorAttachment(m_vki, m_device, m_allocator, m_targetFormat, m_targetSize, &m_colorAttachmentMemory))
 	, m_colorAttachmentView		(createColorAttachmentView(m_vki, m_device, m_targetFormat, *m_colorAttachmentImage))
-	, m_renderPass				(createRenderPass(m_vki, m_device, m_targetFormat))
+	, m_renderPass				(makeRenderPass(m_vki, m_device, vk::mapTextureFormat(m_targetFormat)))
 	, m_framebuffer				(createFramebuffer(m_vki, m_device, *m_renderPass, *m_colorAttachmentView, m_targetSize))
 	, m_cmdPool					(createCommandPool(m_vki, m_device, context.getUniversalQueueFamilyIndex()))
 	, m_firstIteration			(true)
@@ -592,61 +588,6 @@ vk::Move<vk::VkImageView> SingleTargetRenderInstance::createColorAttachmentView 
 	};
 
 	return vk::createImageView(vki, device, &createInfo);
-}
-
-vk::Move<vk::VkRenderPass> SingleTargetRenderInstance::createRenderPass (const vk::DeviceInterface&		vki,
-																		 vk::VkDevice					device,
-																		 const tcu::TextureFormat&		format)
-{
-	const vk::VkAttachmentDescription	attachmentDescription	=
-	{
-		(vk::VkAttachmentDescriptionFlags)0,
-		vk::mapTextureFormat(format),					// format
-		vk::VK_SAMPLE_COUNT_1_BIT,						// samples
-		vk::VK_ATTACHMENT_LOAD_OP_CLEAR,				// loadOp
-		vk::VK_ATTACHMENT_STORE_OP_STORE,				// storeOp
-		vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// stencilLoadOp
-		vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,			// stencilStoreOp
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// initialLayout
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// finalLayout
-	};
-	const vk::VkAttachmentReference		colorAttachment			=
-	{
-		0u,												// attachment
-		vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// layout
-	};
-	const vk::VkAttachmentReference		depthStencilAttachment	=
-	{
-		VK_ATTACHMENT_UNUSED,							// attachment
-		vk::VK_IMAGE_LAYOUT_UNDEFINED					// layout
-	};
-	const vk::VkSubpassDescription		subpass					=
-	{
-		(vk::VkSubpassDescriptionFlags)0,
-		vk::VK_PIPELINE_BIND_POINT_GRAPHICS,			// pipelineBindPoint
-		0u,												// inputAttachmentCount
-		DE_NULL,										// pInputAttachments
-		1u,												// colorAttachmentCount
-		&colorAttachment,								// pColorAttachments
-		DE_NULL,										// pResolveAttachments
-		&depthStencilAttachment,						// pDepthStencilAttachment
-		0u,												// preserveAttachmentCount
-		DE_NULL											// pPreserveAttachments
-	};
-	const vk::VkRenderPassCreateInfo	renderPassCreateInfo	=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		DE_NULL,
-		(vk::VkRenderPassCreateFlags)0,
-		1u,												// attachmentCount
-		&attachmentDescription,							// pAttachments
-		1u,												// subpassCount
-		&subpass,										// pSubpasses
-		0u,												// dependencyCount
-		DE_NULL,										// pDependencies
-	};
-
-	return vk::createRenderPass(vki, device, &renderPassCreateInfo);
 }
 
 vk::Move<vk::VkFramebuffer> SingleTargetRenderInstance::createFramebuffer (const vk::DeviceInterface&	vki,

@@ -193,62 +193,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkDevice				device,
 									 VkFormat				dstFormat)
 {
-	const VkAttachmentReference		dstAttachmentRef	=
-	{
-		0u,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-	};
-	const VkAttachmentDescription	dstAttachment		=
-	{
-		0u,
-
-		dstFormat,
-		VK_SAMPLE_COUNT_1_BIT,
-
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_STORE,
-
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,
-
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-	};
-	const VkSubpassDescription		subpasses[]			=
-	{
-		{
-			(VkSubpassDescriptionFlags)0,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-
-			0u,
-			DE_NULL,
-
-			1u,
-			&dstAttachmentRef,
-			DE_NULL,
-
-			DE_NULL,
-			0u,
-			DE_NULL
-		}
-	};
-	const VkRenderPassCreateInfo	createInfo			=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		DE_NULL,
-		(VkRenderPassCreateFlags)0u,
-
-		1u,
-		&dstAttachment,
-
-		1u,
-		subpasses,
-
-		0u,
-		DE_NULL
-	};
-
-	return createRenderPass(vkd, device, &createInfo);
+	return makeRenderPass(vkd, device, dstFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
 }
 
 Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vkd,

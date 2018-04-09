@@ -33,6 +33,7 @@
 #include "vkImageUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
@@ -2542,74 +2543,20 @@ public:
 
 		m_attachmentView = makeImageView(vk, device, m_resource.getImage().handle, getImageViewType(m_resource.getImage().imageType), m_resource.getImage().format, m_resource.getImage().subresourceRange);
 
-		const VkAttachmentDescription colorAttachmentDescription =
-		{
-			(VkAttachmentDescriptionFlags)0,	// VkAttachmentDescriptionFlags		flags;
-			m_resource.getImage().format,		// VkFormat							format;
-			VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits			samples;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,	// VkAttachmentLoadOp				loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,		// VkAttachmentStoreOp				storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,	// VkAttachmentLoadOp				stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,		// VkAttachmentStoreOp				stencilStoreOp;
-			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout					initialLayout;
-			syncInfo.imageLayout				// VkImageLayout					finalLayout;
-		};
-
-		const VkAttachmentReference colorAttachmentReference =
-		{
-			0u,						// deUint32			attachment;
-			syncInfo.imageLayout	// VkImageLayout	layout;
-		};
-
-		const VkAttachmentReference depthStencilAttachmentReference =
-		{
-			0u,						// deUint32			attachment;
-			syncInfo.imageLayout	// VkImageLayout	layout;
-		};
-
-		VkSubpassDescription subpassDescription =
-		{
-			(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags;
-			VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint;
-			0u,									// deUint32							inputAttachmentCount;
-			DE_NULL,							// const VkAttachmentReference*		pInputAttachments;
-			0u,									// deUint32							colorAttachmentCount;
-			DE_NULL,							// const VkAttachmentReference*		pColorAttachments;
-			DE_NULL,							// const VkAttachmentReference*		pResolveAttachments;
-			DE_NULL,							// const VkAttachmentReference*		pDepthStencilAttachment;
-			0u,									// deUint32							preserveAttachmentCount;
-			DE_NULL								// const deUint32*					pPreserveAttachments;
-		};
-
 		switch (m_resource.getImage().subresourceRange.aspectMask)
 		{
 			case VK_IMAGE_ASPECT_COLOR_BIT:
-				subpassDescription.colorAttachmentCount	= 1u;
-				subpassDescription.pColorAttachments	= &colorAttachmentReference;
+				m_renderPass = makeRenderPass(vk, device, m_resource.getImage().format, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_DONT_CARE, syncInfo.imageLayout);
 			break;
 			case VK_IMAGE_ASPECT_STENCIL_BIT:
 			case VK_IMAGE_ASPECT_DEPTH_BIT:
-				subpassDescription.pDepthStencilAttachment = &depthStencilAttachmentReference;
+				m_renderPass = makeRenderPass(vk, device, VK_FORMAT_UNDEFINED, m_resource.getImage().format, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, syncInfo.imageLayout);
 			break;
 			default:
 				DE_ASSERT(0);
 			break;
 		}
 
-		const VkRenderPassCreateInfo renderPassInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType;
-			DE_NULL,									// const void*						pNext;
-			(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags;
-			1u,											// deUint32							attachmentCount;
-			&colorAttachmentDescription,				// const VkAttachmentDescription*	pAttachments;
-			1u,											// deUint32							subpassCount;
-			&subpassDescription,						// const VkSubpassDescription*		pSubpasses;
-			0u,											// deUint32							dependencyCount;
-			DE_NULL										// const VkSubpassDependency*		pDependencies;
-		};
-
-		m_renderPass	= createRenderPass(vk, device, &renderPassInfo);
 		m_frameBuffer	= makeFramebuffer(vk, device, *m_renderPass, *m_attachmentView, m_resource.getImage().extent.width, m_resource.getImage().extent.height, 1u);
 	}
 

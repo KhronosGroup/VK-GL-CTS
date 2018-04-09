@@ -37,6 +37,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deUniquePtr.hpp"
 #include "deMemory.h"
@@ -759,80 +760,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 	}
 
 	// Create render pass
-	{
-		const VkAttachmentDescription colorAttachmentDescription =
-		{
-			0u,                                                 // VkAttachmentDescriptionFlags    flags;
-			m_colorFormat,                                      // VkFormat                        format;
-			VK_SAMPLE_COUNT_1_BIT,                              // VkSampleCountFlagBits           samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,                        // VkAttachmentLoadOp              loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,                       // VkAttachmentStoreOp             storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,                    // VkAttachmentLoadOp              stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,                   // VkAttachmentStoreOp             stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,           // VkImageLayout                   initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,           // VkImageLayout                   finalLayout;
-		};
-
-		const VkAttachmentDescription depthAttachmentDescription =
-		{
-			0u,                                                 // VkAttachmentDescriptionFlags flags;
-			m_depthFormat,                                      // VkFormat                     format;
-			VK_SAMPLE_COUNT_1_BIT,                              // VkSampleCountFlagBits        samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,                        // VkAttachmentLoadOp           loadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,                   // VkAttachmentStoreOp          storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,                    // VkAttachmentLoadOp           stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,                   // VkAttachmentStoreOp          stencilStoreOp;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,   // VkImageLayout                initialLayout;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,   // VkImageLayout                finalLayout;
-		};
-
-		const VkAttachmentDescription attachments[2] =
-		{
-			colorAttachmentDescription,
-			depthAttachmentDescription
-		};
-
-		const VkAttachmentReference colorAttachmentReference =
-		{
-			0u,                                                 // deUint32         attachment;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL            // VkImageLayout    layout;
-		};
-
-		const VkAttachmentReference depthAttachmentReference =
-		{
-			1u,                                                 // deUint32         attachment;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL    // VkImageLayout    layout;
-		};
-
-		const VkSubpassDescription subpassDescription =
-		{
-			0u,                                                 // VkSubpassDescriptionFlags        flags;
-			VK_PIPELINE_BIND_POINT_GRAPHICS,                    // VkPipelineBindPoint              pipelineBindPoint;
-			0u,                                                 // deUint32                         inputAttachmentCount;
-			DE_NULL,                                            // const VkAttachmentReference*     pInputAttachments;
-			1u,                                                 // deUint32                         colorAttachmentCount;
-			&colorAttachmentReference,                          // const VkAttachmentReference*     pColorAttachments;
-			DE_NULL,                                            // const VkAttachmentReference*     pResolveAttachments;
-			&depthAttachmentReference,                          // const VkAttachmentReference*     pDepthStencilAttachment;
-			0u,                                                 // deUint32                         preserveAttachmentCount;
-			DE_NULL                                             // const VkAttachmentReference*     pPreserveAttachments;
-		};
-
-		const VkRenderPassCreateInfo renderPassParams =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,          // VkStructureType                  sType;
-			DE_NULL,                                            // const void*                      pNext;
-			0u,                                                 // VkRenderPassCreateFlags          flags;
-			2u,                                                 // deUint32                         attachmentCount;
-			attachments,                                        // const VkAttachmentDescription*   pAttachments;
-			1u,                                                 // deUint32                         subpassCount;
-			&subpassDescription,                                // const VkSubpassDescription*      pSubpasses;
-			0u,                                                 // deUint32                         dependencyCount;
-			DE_NULL                                             // const VkSubpassDependency*       pDependencies;
-		};
-
-		m_renderPass = createRenderPass(vk, vkDevice, &renderPassParams);
-	}
+	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
 
 	const VkComponentMapping    ComponentMappingRGBA = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A};
 	// Create color image

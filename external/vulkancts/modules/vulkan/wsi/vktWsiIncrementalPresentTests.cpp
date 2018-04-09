@@ -566,65 +566,7 @@ vk::Move<vk::VkRenderPass> createRenderPass (const vk::DeviceInterface&	vkd,
 											 vk::VkDevice				device,
 											 vk::VkFormat				format)
 {
-	const vk::VkAttachmentDescription	attachments[]			=
-	{
-		{
-			0u,
-			format,
-			vk::VK_SAMPLE_COUNT_1_BIT,
-
-			vk::VK_ATTACHMENT_LOAD_OP_LOAD,
-			vk::VK_ATTACHMENT_STORE_OP_STORE,
-
-			vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,
-
-			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-		}
-	};
-	const vk::VkAttachmentReference		colorAttachmentRefs[]	=
-	{
-		{
-			0u,
-			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		}
-	};
-	const vk::VkSubpassDescription		subpasses[]				=
-	{
-		{
-			0u,
-			vk::VK_PIPELINE_BIND_POINT_GRAPHICS,
-			0u,
-			DE_NULL,
-
-			DE_LENGTH_OF_ARRAY(colorAttachmentRefs),
-			colorAttachmentRefs,
-			DE_NULL,
-
-			DE_NULL,
-			0u,
-			DE_NULL
-		}
-	};
-
-	const vk::VkRenderPassCreateInfo	createInfo				=
-	{
-		vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		DE_NULL,
-		0u,
-
-		DE_LENGTH_OF_ARRAY(attachments),
-		attachments,
-
-		DE_LENGTH_OF_ARRAY(subpasses),
-		subpasses,
-
-		0u,
-		DE_NULL
-	};
-
-	return vk::createRenderPass(vkd, device, &createInfo);
+	return vk::makeRenderPass(vkd, device, format, vk::VK_FORMAT_UNDEFINED, vk::VK_ATTACHMENT_LOAD_OP_LOAD, vk::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 }
 
 vk::Move<vk::VkPipeline> createPipeline (const vk::DeviceInterface&	vkd,
