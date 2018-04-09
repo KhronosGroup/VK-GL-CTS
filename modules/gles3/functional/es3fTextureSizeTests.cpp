@@ -125,7 +125,7 @@ Texture2DSizeCase::IterateResult Texture2DSizeCase::iterate (void)
 	tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 	const tcu::IVec4		texBits			= tcu::getTextureFormatBitDepth(glu::mapGLTransferFormat(m_format, m_dataType));
 	const tcu::PixelFormat&	rtFmt			= m_renderCtx.getRenderTarget().getPixelFormat();
-	const tcu::PixelFormat	thresholdFormat(std::min(texBits[0], rtFmt.redBits), std::min(texBits[1], rtFmt.greenBits), std::min(texBits[2], rtFmt.blueBits), std::min(texBits[3], rtFmt.alphaBits));
+	const tcu::PixelFormat	thresholdFormat(de::min(texBits[0], rtFmt.redBits), de::min(texBits[1], rtFmt.greenBits), de::min(texBits[2], rtFmt.blueBits), de::min(texBits[3], rtFmt.alphaBits));
 	tcu::RGBA				threshold		= thresholdFormat.getColorThreshold() + tcu::RGBA(7,7,7,7);
 	deUint32				wrapS			= GL_CLAMP_TO_EDGE;
 	deUint32				wrapT			= GL_CLAMP_TO_EDGE;
@@ -271,7 +271,7 @@ bool TextureCubeSizeCase::testFace (tcu::CubeFace face)
 	tcu::Surface			referenceFrame	(viewport.width, viewport.height);
 	const tcu::IVec4		texBits			= tcu::getTextureFormatBitDepth(glu::mapGLTransferFormat(m_format, m_dataType));
 	const tcu::PixelFormat&	rtFmt			= m_renderCtx.getRenderTarget().getPixelFormat();
-	const tcu::PixelFormat	thresholdFormat(std::min(texBits[0], rtFmt.redBits), std::min(texBits[1], rtFmt.greenBits), std::min(texBits[2], rtFmt.blueBits), std::min(texBits[3], rtFmt.alphaBits));
+	const tcu::PixelFormat	thresholdFormat(de::min(texBits[0], rtFmt.redBits), de::min(texBits[1], rtFmt.greenBits), de::min(texBits[2], rtFmt.blueBits), de::min(texBits[3], rtFmt.alphaBits));
 	tcu::RGBA				threshold		= thresholdFormat.getColorThreshold() + tcu::RGBA(7,7,7,7);
 	deUint32				wrapS			= GL_CLAMP_TO_EDGE;
 	deUint32				wrapT			= GL_CLAMP_TO_EDGE;
