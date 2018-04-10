@@ -506,11 +506,8 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 
 		// Begin render pass
 		{
-			const VkRect2D renderArea = {
-				makeOffset2D(0, 0),
-				makeExtent2D(renderSize.x(), renderSize.y()),
-			};
-			const tcu::Vec4 clearColor = tcu::RGBA::red().toVec();
+			const VkRect2D	renderArea	= makeRect2D(renderSize);
+			const tcu::Vec4	clearColor	= tcu::RGBA::red().toVec();
 
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
 		}
@@ -526,11 +523,7 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 		};
 		vk.cmdSetViewport(*cmdBuffer, 0, 1, &viewport);
 
-		const VkRect2D scissor =
-		{
-			makeOffset2D(0, 0),
-			makeExtent2D(renderSize.x(), renderSize.y()),
-		};
+		const VkRect2D scissor = makeRect2D(renderSize);
 		vk.cmdSetScissor(*cmdBuffer, 0, 1, &scissor);
 
 		vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, testCases[caseNdx].pipeline);

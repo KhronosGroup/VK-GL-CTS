@@ -1040,11 +1040,8 @@ public:
 		}
 
 		{
-			const VkRect2D renderArea = {
-				makeOffset2D(0, 0),
-				makeExtent2D(m_colorImageExtent.width, m_colorImageExtent.height),
-			};
-			const tcu::Vec4 clearColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			const VkRect2D	renderArea	= makeRect2D(m_colorImageExtent);
+			const tcu::Vec4	clearColor	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 			beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, clearColor);
 		}
@@ -2355,11 +2352,8 @@ public:
 		}
 
 		{
-			const VkRect2D renderArea = {
-				makeOffset2D(0, 0),
-				makeExtent2D(m_attachmentExtent.width, m_attachmentExtent.height),
-			};
-			const tcu::Vec4 clearColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			const VkRect2D	renderArea	= makeRect2D(m_attachmentExtent);
+			const tcu::Vec4	clearColor	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 			beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, clearColor);
 		}
@@ -2572,11 +2566,7 @@ public:
 			m_clearValue										// VkClearValue			clearValue;
 		};
 
-		const VkRect2D			rect2D			=
-		{
-			{ 0u, 0u, },																	//	VkOffset2D	offset;
-			{ m_resource.getImage().extent.width, m_resource.getImage().extent.height },	//	VkExtent2D	extent;
-		};
+		const VkRect2D			rect2D			= makeRect2D(m_resource.getImage().extent);
 
 		const VkClearRect		clearRect		=
 		{
@@ -2736,11 +2726,8 @@ public:
 		}
 
 		{
-			const VkRect2D renderArea = {
-				makeOffset2D(0, 0),
-				makeExtent2D(m_colorImageExtent.width, m_colorImageExtent.height),
-			};
-			const tcu::Vec4 clearColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			const VkRect2D	renderArea	= makeRect2D(m_colorImageExtent);
+			const tcu::Vec4	clearColor	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 			beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, clearColor);
 		}
@@ -3203,11 +3190,8 @@ public:
 		}
 
 		{
-			const VkRect2D renderArea = {
-				makeOffset2D(0, 0),
-				makeExtent2D(m_colorImageExtent.width, m_colorImageExtent.height),
-			};
-			const tcu::Vec4 clearColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+			const VkRect2D	renderArea	= makeRect2D(m_colorImageExtent);
+			const tcu::Vec4	clearColor	= tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 			beginRenderPass(vk, cmdBuffer, *m_renderPass, *m_framebuffer, renderArea, clearColor);
 		}

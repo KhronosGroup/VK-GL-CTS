@@ -217,9 +217,6 @@ vk::Move<vk::VkFramebuffer> makeFramebuffer (const vk::DeviceInterface&	vk,
 											 const vk::VkExtent2D&		size,
 											 const deUint32				layersCount);
 
-vk::VkRect2D makeScissor (const deUint32	width,
-						  const deUint32	height);
-
 } // image
 } // vkt
 

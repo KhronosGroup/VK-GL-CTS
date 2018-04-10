@@ -211,27 +211,8 @@ StateObjects::StateObjects (const vk::DeviceInterface&vk, vkt::Context &context,
 		pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", vk::VK_SHADER_STAGE_FRAGMENT_BIT));
 		pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(primitive));
 		pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &attachmentState));
-		const vk::VkViewport viewport	=
-		{
-			0,		// float x;
-			0,		// float y;
-			WIDTH,	// float width;
-			HEIGHT,	// float height;
-			0.0f,	// float minDepth;
-			1.0f	// float maxDepth;
-		};
-
-		const vk::VkRect2D scissor		=
-		{
-			{
-				0,		// deInt32 x
-				0,		// deInt32 y
-			},		// VkOffset2D	offset;
-			{
-				WIDTH,	// deInt32 width;
-				HEIGHT,	// deInt32 height
-			},		// VkExtent2D	extent;
-		};
+		const vk::VkViewport viewport	= vk::makeViewport(WIDTH, HEIGHT);
+		const vk::VkRect2D scissor		= vk::makeRect2D(WIDTH, HEIGHT);
 		pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1, std::vector<vk::VkViewport>(1, viewport), std::vector<vk::VkRect2D>(1, scissor)));
 		pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState(true, true, vk::VK_COMPARE_OP_GREATER_OR_EQUAL));
 		pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());

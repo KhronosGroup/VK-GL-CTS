@@ -1676,23 +1676,18 @@ struct GraphicsPipeline
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 			VK_FALSE								// primitiveRestartEnable
 		};
-		const VkViewport								viewports[]			=
-		{
-			{ 0.0f, 0.0f, 64.f, 64.f, 0.0f, 1.0f }
-		};
-		const VkRect2D									scissors[]			=
-		{
-			{ { 0, 0 }, { 64, 64 } }
-		};
+		const VkViewport								viewport			= makeViewport(tcu::UVec2(64));
+		const VkRect2D									scissor				= makeRect2D(tcu::UVec2(64));
+
 		const VkPipelineViewportStateCreateInfo			viewportState		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 			DE_NULL,
 			(VkPipelineViewportStateCreateFlags)0,
-			DE_LENGTH_OF_ARRAY(viewports),
-			viewports,
-			DE_LENGTH_OF_ARRAY(scissors),
-			scissors,
+			1u,
+			&viewport,
+			1u,
+			&scissor,
 		};
 		const VkPipelineRasterizationStateCreateInfo	rasterState			=
 		{

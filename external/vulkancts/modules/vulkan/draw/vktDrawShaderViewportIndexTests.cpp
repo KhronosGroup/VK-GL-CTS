@@ -257,7 +257,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 	for (std::vector<UVec4>::const_iterator it = cells.begin(); it != cells.end(); ++it) {
 		const VkViewport viewport = makeViewport(float(it->x()), float(it->y()), float(it->z()), float(it->w()), 0.0f, 1.0f);
 		viewports.push_back(viewport);
-		const VkRect2D rect = { {0, 0}, {renderSize.x(), renderSize.y()} };
+		const VkRect2D rect = makeRect2D(renderSize);
 		rectScissors.push_back(rect);
 	}
 

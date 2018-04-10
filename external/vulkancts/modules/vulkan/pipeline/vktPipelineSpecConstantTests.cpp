@@ -647,12 +647,9 @@ tcu::TestStatus GraphicsTestInstance::iterate (void)
 
 	// Draw commands
 
-	const VkRect2D renderArea = {
-		makeOffset2D(0, 0),
-		makeExtent2D(renderSize.x(), renderSize.y()),
-	};
-	const tcu::Vec4    clearColor         (0.0f, 0.0f, 0.0f, 1.0f);
-	const VkDeviceSize vertexBufferOffset = 0ull;
+	const VkRect2D		renderArea			= makeRect2D(renderSize);
+	const tcu::Vec4		clearColor			(0.0f, 0.0f, 0.0f, 1.0f);
+	const VkDeviceSize	vertexBufferOffset	= 0ull;
 
 	beginCommandBuffer(vk, *cmdBuffer);
 

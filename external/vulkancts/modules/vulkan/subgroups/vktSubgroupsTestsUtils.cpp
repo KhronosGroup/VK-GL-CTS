@@ -1653,8 +1653,8 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 	for (deUint32 width = 1u; width < maxWidth; ++width)
 	{
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
-		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
+		const VkViewport			viewport			= makeViewport(maxWidth, 1u);
+		const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer						imageBufferResult	(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkDeviceSize			vertexBufferOffset	= 0u;
@@ -1870,8 +1870,8 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	{
 		totalIterations++;
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
-		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
+		const VkViewport			viewport			= makeViewport(maxWidth, 1u);
+		const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer						imageBufferResult	(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkDeviceSize			vertexBufferOffset	= 0u;
@@ -2162,8 +2162,8 @@ tcu::TestStatus vkt::subgroups::allStages(
 		const VkDeviceSize				resultImageSizeInBytes	= maxWidth * 1 * getFormatSizeInBytes(format);
 		Image							resultImage				(context, maxWidth, 1, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 		const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer(context, *renderPass, resultImage.getImageView(), maxWidth, 1));
-		const VkViewport				viewport				= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
-		const VkRect2D					scissor					= {{0, 0}, {maxWidth, 1}};
+		const VkViewport				viewport				= makeViewport(maxWidth, 1u);
+		const VkRect2D					scissor					= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize			imageResultSize			= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer							imageBufferResult		(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkImageSubresourceRange	subresourceRange		=
@@ -2446,8 +2446,8 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 	{
 		totalIterations++;
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
-		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
+		const VkViewport			viewport			= makeViewport(maxWidth, 1u);
+		const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer						imageBufferResult	(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkDeviceSize			vertexBufferOffset	= 0u;
@@ -2683,9 +2683,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 
 			beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
-			VkViewport viewport = {0.0f, 0.0f, static_cast<float>(width),
-								   static_cast<float>(height), 0.0f, 1.0f
-								  };
+			VkViewport viewport = makeViewport(width, height);
 
 			context.getDeviceInterface().cmdSetViewport(
 				*cmdBuffer, 0, 1, &viewport);

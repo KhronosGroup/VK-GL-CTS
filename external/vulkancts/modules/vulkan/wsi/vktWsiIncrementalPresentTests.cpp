@@ -328,12 +328,7 @@ void cmdRenderFrame (const vk::DeviceInterface&	vkd,
 
 	if (frameNdx == 0)
 	{
-		const vk::VkRect2D	scissor	=
-		{
-			{ 0u, 0u },
-			{ imageWidth, imageHeight }
-		};
-
+		const vk::VkRect2D	scissor	= vk::makeRect2D(imageWidth, imageHeight);
 		vkd.cmdSetScissor(commandBuffer, 0u, 1u, &scissor);
 		const vk::VkClearAttachment	attachment	=
 		{
@@ -413,7 +408,7 @@ vk::Move<vk::VkCommandBuffer> createCommandBuffer (const vk::DeviceInterface&	vk
 		vkd.cmdPipelineBarrier(*commandBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, DE_NULL, 0, DE_NULL, 1, &barrier);
 	}
 
-	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(0, 0, imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
+	beginRenderPass(vkd, *commandBuffer, renderPass, framebuffer, vk::makeRect2D(imageWidth, imageHeight), tcu::Vec4(0.25f, 0.5f, 0.75f, 1.0f));
 
 	for (size_t frameNdx = imageNextFrame; frameNdx <= currentFrame; frameNdx++)
 		cmdRenderFrame(vkd, *commandBuffer, pipelineLayout, pipeline, frameNdx, imageWidth, imageHeight);

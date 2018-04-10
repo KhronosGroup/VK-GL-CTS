@@ -860,10 +860,7 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 	}
 
 	{
-		const VkRect2D renderArea = {
-			makeOffset2D(0, 0),
-			makeExtent2D(renderSize.x(), renderSize.y()),
-		};
+		const VkRect2D renderArea = makeRect2D(renderSize);
 		const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);

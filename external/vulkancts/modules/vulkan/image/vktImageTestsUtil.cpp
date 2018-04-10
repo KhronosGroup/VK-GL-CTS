@@ -1222,17 +1222,5 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 	return createFramebuffer(vk, device, &framebufferInfo);
 }
 
-VkRect2D makeScissor (const deUint32	width,
-					  const deUint32	height)
-{
-	const VkRect2D scissor =
-	{
-		{ 0u, 0u },			// VkOffset2D	offset;
-		{ width, height }	// VkExtent2D	extent;
-	};
-
-	return scissor;
-}
-
 } // image
 } // vkt

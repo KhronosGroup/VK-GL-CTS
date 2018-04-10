@@ -140,6 +140,11 @@ inline VkRect2D makeRect2D(const VkExtent2D& extent)
 	return makeRect2D(0, 0, extent.width, extent.height);
 }
 
+inline VkRect2D makeRect2D(const deUint32 width, const deUint32 height)
+{
+	return makeRect2D(0, 0, width, height);
+}
+
 inline VkViewport makeViewport(const tcu::IVec2& vec)
 {
 	return makeViewport(0.0f, 0.0f, (float)vec.x(), (float)vec.y(), 0.0f, 1.0f);
@@ -163,6 +168,11 @@ inline VkViewport makeViewport(const VkExtent3D& extent)
 inline VkViewport makeViewport(const VkExtent2D& extent)
 {
 	return makeViewport(0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f);
+}
+
+inline VkViewport makeViewport(const deUint32 width, const deUint32 height)
+{
+	return makeViewport(0.0f, 0.0f, (float)width, (float)height, 0.0f, 1.0f);
 }
 
 } // vk
