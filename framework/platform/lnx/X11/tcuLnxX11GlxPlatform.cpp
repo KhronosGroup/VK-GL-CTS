@@ -665,6 +665,7 @@ GlxDrawable* createDrawable (GlxVisual& visual, const RenderConfig& config)
 	{
 		case RenderConfig::SURFACETYPE_DONT_CARE:
 			DE_FATAL("Impossible case");
+			break;
 
 		case RenderConfig::SURFACETYPE_WINDOW:
 			return new GlxWindow(visual, config);

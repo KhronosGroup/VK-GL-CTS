@@ -178,9 +178,9 @@ void verifyDriverSupport(const deUint32							apiVersion,
 			extensionNames.push_back("VK_KHR_push_descriptor");
 			break;
 
-		// fall through
 		case DESCRIPTOR_UPDATE_METHOD_WITH_PUSH_TEMPLATE:
 			extensionNames.push_back("VK_KHR_push_descriptor");
+		// Fallthrough
 		case DESCRIPTOR_UPDATE_METHOD_WITH_TEMPLATE:
 			if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_descriptor_update_template"))
 				extensionNames.push_back("VK_KHR_descriptor_update_template");

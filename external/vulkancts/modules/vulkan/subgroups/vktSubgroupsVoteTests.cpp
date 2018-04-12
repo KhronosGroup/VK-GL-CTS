@@ -200,6 +200,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_ALL:
 			return "subgroupAll";
 		case OPTYPE_ANY:

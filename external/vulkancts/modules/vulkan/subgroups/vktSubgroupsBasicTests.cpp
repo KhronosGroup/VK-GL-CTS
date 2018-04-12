@@ -303,6 +303,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_ELECT:
 			return "subgroupElect";
 		case OPTYPE_SUBGROUP_BARRIER:
@@ -1099,6 +1100,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 		{
 			default:
 				DE_FATAL("Unhandled op type!");
+				break;
 			case OPTYPE_SUBGROUP_BARRIER:
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER:
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_BUFFER:
@@ -1590,6 +1592,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		{
 			default:
 				DE_FATAL("Unhandled op type!");
+				break;
 			case OPTYPE_SUBGROUP_BARRIER:
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER:
 			case OPTYPE_SUBGROUP_MEMORY_BARRIER_BUFFER:

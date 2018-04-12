@@ -118,6 +118,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_CLUSTERED:
 			return "clustered";
 		case OPTYPE_QUAD:

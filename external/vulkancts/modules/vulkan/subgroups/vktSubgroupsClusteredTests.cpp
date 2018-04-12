@@ -124,6 +124,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_CLUSTERED_ADD:
 			return "subgroupClusteredAdd";
 		case OPTYPE_CLUSTERED_MUL:
@@ -147,6 +148,7 @@ std::string getOpTypeOperation(int opType, vk::VkFormat format, std::string lhs,
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_CLUSTERED_ADD:
 			return lhs + " + " + rhs;
 		case OPTYPE_CLUSTERED_MUL:
@@ -238,6 +240,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 	{
 		default:
 			DE_FATAL("Unhandled format!");
+			break;
 		case VK_FORMAT_R32_SINT:
 		case VK_FORMAT_R32G32_SINT:
 		case VK_FORMAT_R32G32B32_SINT:
@@ -271,6 +274,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_CLUSTERED_ADD:
 			return subgroups::getFormatNameForGLSL(format) + "(0)";
 		case OPTYPE_CLUSTERED_MUL:
@@ -291,6 +295,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			else
 			{
 				DE_FATAL("Unhandled case");
+				return "";
 			}
 		case OPTYPE_CLUSTERED_MAX:
 			if (isFloat)
@@ -308,6 +313,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			else
 			{
 				DE_FATAL("Unhandled case");
+				return "";
 			}
 		case OPTYPE_CLUSTERED_AND:
 			return subgroups::getFormatNameForGLSL(format) + "(~0)";

@@ -121,6 +121,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_QUAD_BROADCAST:
 			return "subgroupQuadBroadcast";
 		case OPTYPE_QUAD_SWAP_HORIZONTAL:

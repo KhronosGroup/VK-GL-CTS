@@ -2052,14 +2052,19 @@ public:
 		// Note all these cases fall through
 		case 5:
 			vtxSrc << "layout(location = 3) out vec4 o_val5;\n";
+		// Fallthrough
 		case 4:
 			vtxSrc << "flat out uvec4 val4;\n";
+		// Fallthrough
 		case 3:
 			vtxSrc << "flat out ivec2 val3;\n";
+		// Fallthrough
 		case 2:
 			vtxSrc << "out vec3 val2[2];\n";
+		// Fallthrough
 		case 1:
 			vtxSrc << "out vec4 val1;\n";
+		// Fallthrough
 		default:
 			vtxSrc << "out float val0;\n";
 		}
@@ -2109,14 +2114,19 @@ public:
 		// Note all these cases fall through
 		case 5:
 			fragSrc << "layout(location = 3) in vec4 i_val5;\n";
+		// Fallthrough
 		case 4:
 			fragSrc << "flat in uvec4 val4;\n";
+		// Fallthrough
 		case 3:
 			fragSrc << "flat in ivec2 val3;\n";
+		// Fallthrough
 		case 2:
 			fragSrc << "in vec3 val2[2];\n";
+		// Fallthrough
 		case 1:
 			fragSrc << "in vec4 val1;\n";
+		// Fallthrough
 		default:
 			fragSrc << "in float val0;\n";
 		}
@@ -2881,6 +2891,7 @@ public:
 		{
 		case SET_DEFAULT_PRECISION:
 			vtxSrc << "precision " << precision << " float;\n";
+		// Fallthrough
 		case DEFAULT_PRECISION:
 			vtxSrc << "out float var;\n";
 			break;
@@ -2905,6 +2916,7 @@ public:
 		{
 		case SET_DEFAULT_PRECISION:
 			fragSrc << "precision " << precision << " float;\n";
+		// Fallthrough
 		case DEFAULT_PRECISION:
 			fragSrc << "in float var;\n";
 			break;
@@ -2951,6 +2963,7 @@ public:
 		{
 		case SET_DEFAULT_PRECISION:
 			vtxSrc << "precision " << precision << " int;\n";
+		// Fallthrough
 		case DEFAULT_PRECISION:
 			vtxSrc << "flat out int var;\n";
 			break;
@@ -2975,6 +2988,7 @@ public:
 		{
 		case SET_DEFAULT_PRECISION:
 			fragSrc << "precision " << precision << " int;\n";
+		// Fallthrough
 		case DEFAULT_PRECISION:
 			fragSrc << "flat in int var;\n";
 			break;
@@ -3021,6 +3035,7 @@ public:
 		{
 		case SET_DEFAULT_PRECISION:
 			vtxSrc << "precision " << precision << " int;\n";
+		// Fallthrough
 		case DEFAULT_PRECISION:
 			vtxSrc << "flat out uint var;\n";
 			break;
@@ -3045,6 +3060,7 @@ public:
 		{
 		case SET_DEFAULT_PRECISION:
 			fragSrc << "precision " << precision << " int;\n";
+		// Fallthrough
 		case DEFAULT_PRECISION:
 			fragSrc << "flat in uint var;\n";
 			break;

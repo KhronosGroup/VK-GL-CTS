@@ -43,6 +43,7 @@ deUint32 getFormatSizeInBytes(const VkFormat format)
 	{
 		default:
 			DE_FATAL("Unhandled format!");
+			return 0;
 		case VK_FORMAT_R32_SINT:
 		case VK_FORMAT_R32_UINT:
 			return sizeof(deInt32);
@@ -734,6 +735,7 @@ std::string vkt::subgroups::getShaderStageName(VkShaderStageFlags stage)
 	{
 		default:
 			DE_FATAL("Unhandled stage!");
+			return "";
 		case VK_SHADER_STAGE_COMPUTE_BIT:
 			return "compute";
 		case VK_SHADER_STAGE_FRAGMENT_BIT:
@@ -755,6 +757,7 @@ std::string vkt::subgroups::getSubgroupFeatureName(vk::VkSubgroupFeatureFlagBits
 	{
 		default:
 			DE_FATAL("Unknown subgroup feature category!");
+			return "";
 		case VK_SUBGROUP_FEATURE_BASIC_BIT:
 			return "VK_SUBGROUP_FEATURE_BASIC_BIT";
 		case VK_SUBGROUP_FEATURE_VOTE_BIT:
@@ -1034,6 +1037,7 @@ std::string vkt::subgroups::getVertShaderForStage(vk::VkShaderStageFlags stage)
 	{
 		default:
 			DE_FATAL("Unhandled stage!");
+			return "";
 		case VK_SHADER_STAGE_FRAGMENT_BIT:
 			return
 				"#version 450\n"
@@ -1149,6 +1153,7 @@ std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)
 	{
 		default:
 			DE_FATAL("Unhandled format!");
+			return "";
 		case VK_FORMAT_R32_SINT:
 			return "int";
 		case VK_FORMAT_R32G32_SINT:
@@ -1505,6 +1510,7 @@ void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBO
 		{
 			default:
 				DE_FATAL("Illegal buffer format");
+				break;
 			case VK_FORMAT_R8_USCALED:
 			case VK_FORMAT_R8G8_USCALED:
 			case VK_FORMAT_R8G8B8_USCALED:

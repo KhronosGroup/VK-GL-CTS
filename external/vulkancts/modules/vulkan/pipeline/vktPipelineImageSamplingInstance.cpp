@@ -1517,6 +1517,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 				break;
 			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
 				depthChannelType = tcu::TextureFormat::FLOAT;
+				break;
 			default:
 				DE_ASSERT("Unhandled texture format type in switch");
 			}
