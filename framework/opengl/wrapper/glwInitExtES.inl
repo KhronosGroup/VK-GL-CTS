@@ -24,6 +24,14 @@ if (de::contains(extSet, "GL_KHR_debug"))
 	gl->pushDebugGroup			= (glPushDebugGroupFunc)		loader->get("glPushDebugGroupKHR");
 }
 
+if (de::contains(extSet, "GL_EXT_robustness"))
+{
+	gl->getGraphicsResetStatusEXT	= (glGetGraphicsResetStatusEXTFunc)	loader->get("glGetGraphicsResetStatusEXT");
+	gl->getnUniformfv				= (glGetnUniformfvFunc)				loader->get("glGetnUniformfvEXT");
+	gl->getnUniformiv				= (glGetnUniformivFunc)				loader->get("glGetnUniformivEXT");
+	gl->readnPixels					= (glReadnPixelsFunc)				loader->get("glReadnPixelsEXT");
+}
+
 if (de::contains(extSet, "GL_KHR_robustness"))
 {
 	gl->getGraphicsResetStatus	= (glGetGraphicsResetStatusFunc)	loader->get("glGetGraphicsResetStatusKHR");
@@ -46,14 +54,6 @@ if (de::contains(extSet, "GL_EXT_tessellation_shader"))
 if (de::contains(extSet, "GL_EXT_geometry_shader"))
 {
 	gl->framebufferTexture	= (glFramebufferTextureFunc)	loader->get("glFramebufferTextureEXT");
-}
-
-if (de::contains(extSet, "GL_EXT_robustness"))
-{
-	gl->getGraphicsResetStatusEXT	= (glGetGraphicsResetStatusEXTFunc)	loader->get("glGetGraphicsResetStatusEXT");
-	gl->getnUniformfv				= (glGetnUniformfvFunc)				loader->get("glGetnUniformfvEXT");
-	gl->getnUniformiv				= (glGetnUniformivFunc)				loader->get("glGetnUniformivEXT");
-	gl->readnPixels					= (glReadnPixelsFunc)				loader->get("glReadnPixelsEXT");
 }
 
 if (de::contains(extSet, "GL_EXT_texture_buffer"))
