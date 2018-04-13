@@ -331,7 +331,7 @@ bool check64BitFloats (const std::vector<Resource>&		/* originalFloats */,
 
 		const double*	returnedAsDouble	= static_cast<const double*>(outputAllocs[outputNdx]->getHostPtr());
 		const double*	expectedAsDouble	= reinterpret_cast<const double*>(&expectedBytes.front());
-		const deUint32	count			= static_cast<deUint32>(expectedBytes.size() / sizeof(double));
+		const deUint32	count				= static_cast<deUint32>(expectedBytes.size() / sizeof(double));
 
 		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
 			if (!compare64BitFloat(expectedAsDouble[numNdx], returnedAsDouble[numNdx], log))
