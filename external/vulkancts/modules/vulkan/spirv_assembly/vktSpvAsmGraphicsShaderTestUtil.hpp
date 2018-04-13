@@ -615,6 +615,7 @@ bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags fla
 // * Different bit patterns of NaNs are allowed.
 // * For the rest, require exactly the same bit pattern.
 bool compare16BitFloat (deUint16 returned, float original, tcu::TestLog& log);
+bool compare16BitFloat (deFloat16 original, deFloat16 returned, std::string& error);
 
 // Given the original 64-bit float value, computes the corresponding 16-bit
 // float value under the given rounding mode flags and compares with the
