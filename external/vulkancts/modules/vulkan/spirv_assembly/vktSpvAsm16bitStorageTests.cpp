@@ -33,17 +33,11 @@
 //      3. Convert X16 to X32.
 //      4. Store X32 to BufferBlock.
 //      5. Host inspects X32.
-// * Test {StorageInputOutput16} 16-to-16:
-//   * For newly enabled types T:
-//     1. Host creates X16 stream values of type T.
-//     2. Shaders have corresponding capability.
-//     3. For each viable shader stage:
-//       3a. Load X16 Input variable.
-//       3b. Store X16 to Output variable.
-//     4. Host inspects resulting values.
 // * Test {StorageInputOutput16} 16-to-16 one value to two:
-//     Like the previous test, but write X16 to two different output variables.
+//     Like the current 16-to-16 tests, but write X16 to two different output variables.
 //     (Checks that the 16-bit intermediate value can be used twice.)
+//     Note: The current framework allows only one interface to be used.
+//     Maybe the best solution is to add custom shaders that manually use two interfaces.
 
 #include "vktSpvAsm16bitStorageTests.hpp"
 
@@ -3684,6 +3678,113 @@ void addGraphics16BitStorageInputOutputFloat16To32Group (tcu::TestCaseGroup* tes
 	}
 }
 
+void addGraphics16BitStorageInputOutputFloat16To16Group (tcu::TestCaseGroup* testGroup)
+{
+	de::Random			rnd					(deStringHash(testGroup->getName()));
+	RGBA				defaultColors[4];
+	vector<string>		extensions;
+	map<string, string>	fragments			= passthruFragments();
+	const deUint32		numDataPoints		= 64;
+	vector<deFloat16>	float16Data			(getFloat16s(rnd, numDataPoints));
+	VulkanFeatures		requiredFeatures;
+
+	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
+	extensions.push_back("VK_KHR_16bit_storage");
+
+	fragments["capability"]					= "OpCapability StorageInputOutput16\n";
+	fragments["extension"]					= "OpExtension \"SPV_KHR_16bit_storage\"\n";
+
+	getDefaultColors(defaultColors);
+
+	struct Case
+	{
+		const char*	name;
+		const char*	interfaceOpFunc;
+		const char*	preMain;
+		const char*	inputType;
+		const char*	outputType;
+		deUint32	numPerCase;
+		deUint32	numElements;
+	};
+
+	Case				cases[]				=
+	{
+		{ // Scalar cases
+			"scalar",
+
+			"%interface_op_func = OpFunction %f16 None %f16_f16_function\n"
+			"        %io_param1 = OpFunctionParameter %f16\n"
+			"            %entry = OpLabel\n"
+			"              %ret = OpCopyObject %f16 %io_param1\n"
+			"                     OpReturnValue %ret\n"
+			"                     OpFunctionEnd\n",
+
+			"             %f16 = OpTypeFloat 16\n"
+			"          %ip_f16 = OpTypePointer Input %f16\n"
+			"           %a3f16 = OpTypeArray %f16 %c_i32_3\n"
+			"        %ip_a3f16 = OpTypePointer Input %a3f16\n"
+			"%f16_f16_function = OpTypeFunction %f16 %f16\n"
+			"          %op_f16 = OpTypePointer Output %f16\n"
+			"        %op_a3f16 = OpTypePointer Output %a3f16\n",
+
+			"f16",
+			"f16",
+			4,
+			1,
+		},
+		{ // Vector cases
+			"vector",
+
+			"%interface_op_func = OpFunction %v2f16 None %v2f16_v2f16_function\n"
+			"        %io_param1 = OpFunctionParameter %v2f16\n"
+			"            %entry = OpLabel\n"
+			"              %ret = OpCopyObject %v2f16 %io_param1\n"
+			"                     OpReturnValue %ret\n"
+			"                     OpFunctionEnd\n",
+
+			"                 %f16 = OpTypeFloat 16\n"
+			"               %v2f16 = OpTypeVector %f16 2\n"
+			"            %ip_v2f16 = OpTypePointer Input %v2f16\n"
+			"             %a3v2f16 = OpTypeArray %v2f16 %c_i32_3\n"
+			"          %ip_a3v2f16 = OpTypePointer Input %a3v2f16\n"
+			"%v2f16_v2f16_function = OpTypeFunction %v2f16 %v2f16\n"
+			"            %op_v2f16 = OpTypePointer Output %v2f16\n"
+			"          %op_a3v2f16 = OpTypePointer Output %a3v2f16\n",
+
+			"v2f16",
+			"v2f16",
+			2 * 4,
+			2,
+		}
+	};
+
+	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
+	{
+		fragments["interface_op_func"]			= cases[caseIdx].interfaceOpFunc;
+		fragments["pre_main"]					= cases[caseIdx].preMain;
+
+		fragments["input_type"]					= cases[caseIdx].inputType;
+		fragments["output_type"]				= cases[caseIdx].outputType;
+
+		GraphicsInterfaces	interfaces;
+		const deUint32		numPerCase			= cases[caseIdx].numPerCase;
+		vector<deFloat16>	subInputsOutputs	(numPerCase);
+
+		for (deUint32 caseNdx = 0; caseNdx < numDataPoints / numPerCase; ++caseNdx)
+		{
+			string testName = string(cases[caseIdx].name) + numberToString(caseNdx);
+
+			for (deUint32 numNdx = 0; numNdx < numPerCase; ++numNdx)
+				subInputsOutputs[numNdx] = float16Data[caseNdx * numPerCase + numNdx];
+
+			interfaces.setInputOutput(std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_FLOAT16), BufferSp(new Float16Buffer(subInputsOutputs))),
+									  std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_FLOAT16), BufferSp(new Float16Buffer(subInputsOutputs))));
+
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, requiredFeatures);
+		}
+	}
+}
+
 void addGraphics16BitStorageInputOutputInt32To16Group (tcu::TestCaseGroup* testGroup)
 {
 	de::Random							rnd					(deStringHash(testGroup->getName()));
@@ -3951,6 +4052,116 @@ void addGraphics16BitStorageInputOutputInt16To32Group (tcu::TestCaseGroup* testG
 				interfaces.setInputOutput(std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_UINT16), BufferSp(new Int16Buffer(subInputs))),
 										  std::make_pair(IFDataType(cases[caseIdx].numElements, NUMBERTYPE_UINT32), BufferSp(new Int32Buffer(subOutputs))));
 			}
+			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, requiredFeatures);
+		}
+	}
+}
+
+void addGraphics16BitStorageInputOutputInt16To16Group (tcu::TestCaseGroup* testGroup)
+{
+	de::Random				rnd					(deStringHash(testGroup->getName()));
+	RGBA					defaultColors[4];
+	vector<string>			extensions;
+	map<string, string>		fragments			= passthruFragments();
+	const deUint32			numDataPoints		= 64;
+	// inputs and outputs are declared to be vectors of signed integers.
+	// However, depending on the test, they may be interpreted as unsiged
+	// integers. That won't be a problem as long as we passed the bits
+	// in faithfully to the pipeline.
+	vector<deInt16>			inputs				= getInt16s(rnd, numDataPoints);
+	VulkanFeatures			requiredFeatures;
+
+	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
+	extensions.push_back("VK_KHR_16bit_storage");
+
+	fragments["capability"]						= "OpCapability StorageInputOutput16\n";
+	fragments["extension"]						= "OpExtension \"SPV_KHR_16bit_storage\"\n";
+
+	getDefaultColors(defaultColors);
+
+	const StringTemplate	scalarIfOpFunc		(
+			"%interface_op_func = OpFunction %${type16} None %${type16}_${type16}_function\n"
+			"        %io_param1 = OpFunctionParameter %${type16}\n"
+			"            %entry = OpLabel\n"
+			"              %ret = OpCopyObject %${type16} %io_param1\n"
+			"                     OpReturnValue %ret\n"
+			"                     OpFunctionEnd\n");
+
+	const StringTemplate	scalarPreMain		(
+			"             %${type16} = OpTypeInt 16 ${signed}\n"
+			"          %ip_${type16} = OpTypePointer Input %${type16}\n"
+			"           %a3${type16} = OpTypeArray %${type16} %c_i32_3\n"
+			"        %ip_a3${type16} = OpTypePointer Input %a3${type16}\n"
+			"%${type16}_${type16}_function = OpTypeFunction %${type16} %${type16}\n"
+			"          %op_${type16} = OpTypePointer Output %${type16}\n"
+			"        %op_a3${type16} = OpTypePointer Output %a3${type16}\n");
+
+	const StringTemplate	vecIfOpFunc			(
+			"%interface_op_func = OpFunction %${type16} None %${type16}_${type16}_function\n"
+			"        %io_param1 = OpFunctionParameter %${type16}\n"
+			"            %entry = OpLabel\n"
+			"              %ret = OpCopyObject %${type16} %io_param1\n"
+			"                     OpReturnValue %ret\n"
+			"                     OpFunctionEnd\n");
+
+	const StringTemplate	vecPreMain			(
+			"                   %i16 = OpTypeInt 16 1\n"
+			"                   %u16 = OpTypeInt 16 0\n"
+			"                 %v4i16 = OpTypeVector %i16 4\n"
+			"                 %v4u16 = OpTypeVector %u16 4\n"
+			"          %ip_${type16} = OpTypePointer Input %${type16}\n"
+			"           %a3${type16} = OpTypeArray %${type16} %c_i32_3\n"
+			"        %ip_a3${type16} = OpTypePointer Input %a3${type16}\n"
+			"%${type16}_${type16}_function = OpTypeFunction %${type16} %${type16}\n"
+			"          %op_${type16} = OpTypePointer Output %${type16}\n"
+			"        %op_a3${type16} = OpTypePointer Output %a3${type16}\n");
+
+	struct Case
+	{
+		const char*				name;
+		const StringTemplate&	interfaceOpFunc;
+		const StringTemplate&	preMain;
+		const char*				type16;
+		const char*				sign;
+		deUint32				numPerCase;
+		deUint32				numElements;
+	};
+
+	Case					cases[]				=
+	{
+		{"scalar_sint",	scalarIfOpFunc,	scalarPreMain,	"i16",		"1",	4,		1},
+		{"scalar_uint",	scalarIfOpFunc,	scalarPreMain,	"u16",		"0",	4,		1},
+		{"vector_sint",	vecIfOpFunc,	vecPreMain,		"v4i16",	"1",	4 * 4,	4},
+		{"vector_uint",	vecIfOpFunc,	vecPreMain,		"v4u16",	"0",	4 * 4,	4},
+	};
+
+	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
+	{
+		map<string, string>				specs;
+
+		specs["type16"]					= cases[caseIdx].type16;
+		specs["signed"]					= cases[caseIdx].sign;
+
+		fragments["pre_main"]			= cases[caseIdx].preMain.specialize(specs);
+		fragments["interface_op_func"]	= cases[caseIdx].interfaceOpFunc.specialize(specs);
+		fragments["input_type"]			= cases[caseIdx].type16;
+		fragments["output_type"]		= cases[caseIdx].type16;
+
+		GraphicsInterfaces				interfaces;
+		const deUint32					numPerCase			= cases[caseIdx].numPerCase;
+		vector<deInt16>					subInputsOutputs	(numPerCase);
+		const NumberType				numberType			= strcmp(cases[caseIdx].sign, "1") == 0 ? NUMBERTYPE_INT16 : NUMBERTYPE_UINT16;
+
+		for (deUint32 caseNdx = 0; caseNdx < numDataPoints / numPerCase; ++caseNdx)
+		{
+			string testName = string(cases[caseIdx].name) + numberToString(caseNdx);
+
+			for (deUint32 numNdx = 0; numNdx < numPerCase; ++numNdx)
+				subInputsOutputs[numNdx] = inputs[caseNdx * numPerCase + numNdx];
+
+			interfaces.setInputOutput(std::make_pair(IFDataType(cases[caseIdx].numElements, numberType), BufferSp(new Int16Buffer(subInputsOutputs))),
+									  std::make_pair(IFDataType(cases[caseIdx].numElements, numberType), BufferSp(new Int16Buffer(subInputsOutputs))));
+
 			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, interfaces, extensions, testGroup, requiredFeatures);
 		}
 	}
@@ -5899,8 +6110,10 @@ tcu::TestCaseGroup* create16BitStorageGraphicsGroup (tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "uniform_int_16_to_32", "16-bit int into 32-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformInt16To32Group);
 	addTestGroup(group.get(), "input_output_float_32_to_16", "32-bit floats into 16-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat32To16Group);
 	addTestGroup(group.get(), "input_output_float_16_to_32", "16-bit floats into 32-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat16To32Group);
+	addTestGroup(group.get(), "input_output_float_16_to_16", "16-bit floats pass-through tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputFloat16To16Group);
 	addTestGroup(group.get(), "input_output_int_32_to_16", "32-bit int into 16-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputInt32To16Group);
 	addTestGroup(group.get(), "input_output_int_16_to_32", "16-bit int into 32-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputInt16To32Group);
+	addTestGroup(group.get(), "input_output_int_16_to_16", "16-bit int into 16-bit tests under capability StorageInputOutput16", addGraphics16BitStorageInputOutputInt16To16Group);
 	addTestGroup(group.get(), "push_constant_float_16_to_32", "16-bit floats into 32-bit tests under capability StoragePushConstant16", addGraphics16BitStoragePushConstantFloat16To32Group);
 	addTestGroup(group.get(), "push_constant_int_16_to_32", "16-bit int into 32-bit tests under capability StoragePushConstant16", addGraphics16BitStoragePushConstantInt16To32Group);
 	addTestGroup(group.get(), "uniform_16struct_to_32struct", "16-bit float struct into 32-bit tests under capability StorageUniform{|BufferBlock}16", addGraphics16BitStorageUniformStructFloat16To32Group);
