@@ -42,28 +42,32 @@ public:
 		WIN32HANDLETYPE_LAST
 	};
 
-						NativeHandle	(void);
-						NativeHandle	(const NativeHandle& other);
-						NativeHandle	(int fd);
-						NativeHandle	(Win32HandleType type, vk::pt::Win32Handle handle);
-						~NativeHandle	(void);
+										NativeHandle				(void);
+										NativeHandle				(const NativeHandle& other);
+										NativeHandle				(int fd);
+										NativeHandle				(Win32HandleType type, vk::pt::Win32Handle handle);
+										NativeHandle				(vk::pt::AndroidHardwareBufferPtr buffer);
+										~NativeHandle				(void);
 
-	NativeHandle&		operator=		(int fd);
+	NativeHandle&						operator=					(int fd);
+	NativeHandle&						operator=					(vk::pt::AndroidHardwareBufferPtr buffer);
 
-	void				setWin32Handle	(Win32HandleType type, vk::pt::Win32Handle handle);
+	void								setWin32Handle				(Win32HandleType type, vk::pt::Win32Handle handle);
 
-	vk::pt::Win32Handle	getWin32Handle	(void) const;
-	int					getFd			(void) const;
-	void				disown			(void);
-	void				reset			(void);
+	vk::pt::Win32Handle					getWin32Handle				(void) const;
+	int									getFd						(void) const;
+	vk::pt::AndroidHardwareBufferPtr	getAndroidHardwareBuffer	(void) const;
+	void								disown						(void);
+	void								reset						(void);
 
 private:
-	int					m_fd;
-	Win32HandleType		m_win32HandleType;
-	vk::pt::Win32Handle	m_win32Handle;
+	int									m_fd;
+	Win32HandleType						m_win32HandleType;
+	vk::pt::Win32Handle					m_win32Handle;
+	vk::pt::AndroidHardwareBufferPtr	m_androidHardwareBuffer;
 
 	// Disabled
-	NativeHandle&		operator=		(const NativeHandle&);
+	NativeHandle&						operator=					(const NativeHandle&);
 };
 
 const char*						externalSemaphoreTypeToName	(vk::VkExternalSemaphoreHandleTypeFlagBits	type);

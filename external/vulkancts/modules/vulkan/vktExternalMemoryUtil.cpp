@@ -36,6 +36,11 @@
 #	include <windows.h>
 #endif
 
+#if (DE_OS == DE_OS_ANDROID) && defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__)
+#	include <android/hardware_buffer.h>
+#	define USE_ANDROID_O_HARDWARE_BUFFER 1
+#endif
+
 namespace vkt
 {
 namespace ExternalMemoryUtil
@@ -59,21 +64,24 @@ deUint32 chooseMemoryType (deUint32 bits)
 } // anonymous
 
 NativeHandle::NativeHandle (void)
-	: m_fd				(-1)
-	, m_win32HandleType	(WIN32HANDLETYPE_LAST)
-	, m_win32Handle		(DE_NULL)
+	: m_fd						(-1)
+	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
+	, m_win32Handle				(DE_NULL)
+	, m_androidHardwareBuffer	(DE_NULL)
 {
 }
 
 NativeHandle::NativeHandle (const NativeHandle& other)
-	: m_fd				(-1)
-	, m_win32HandleType	(WIN32HANDLETYPE_LAST)
-	, m_win32Handle		(DE_NULL)
+	: m_fd						(-1)
+	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
+	, m_win32Handle				(DE_NULL)
+	, m_androidHardwareBuffer	(DE_NULL)
 {
 	if (other.m_fd >= 0)
 	{
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 		DE_ASSERT(!other.m_win32Handle.internal);
+		DE_ASSERT(!other.m_androidHardwareBuffer.internal);
 		m_fd = dup(other.m_fd);
 		TCU_CHECK(m_fd >= 0);
 #else
@@ -90,6 +98,7 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 			case WIN32HANDLETYPE_NT:
 			{
 				DE_ASSERT(other.m_fd == -1);
+				DE_ASSERT(!other.m_androidHardwareBuffer.internal);
 
 				const HANDLE process = ::GetCurrentProcess();
 				::DuplicateHandle(process, other.m_win32Handle.internal, process, &m_win32Handle.internal, 0, TRUE, DUPLICATE_SAME_ACCESS);
@@ -110,21 +119,40 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 		DE_FATAL("Platform doesn't support win32 handles");
 #endif
 	}
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
+	else if (other.m_androidHardwareBuffer.internal)
+	{
+		DE_ASSERT(other.m_fd == -1);
+		DE_ASSERT(!other.m_win32Handle.internal);
+		m_androidHardwareBuffer = other.m_androidHardwareBuffer;
+		AHardwareBuffer_acquire((AHardwareBuffer*)m_androidHardwareBuffer.internal);
+	}
+#endif
 	else
 		DE_FATAL("Native handle can't be duplicated");
 }
 
 NativeHandle::NativeHandle (int fd)
-	: m_fd				(fd)
-	, m_win32HandleType	(WIN32HANDLETYPE_LAST)
-	, m_win32Handle		(DE_NULL)
+	: m_fd						(fd)
+	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
+	, m_win32Handle				(DE_NULL)
+	, m_androidHardwareBuffer	(DE_NULL)
 {
 }
 
 NativeHandle::NativeHandle (Win32HandleType handleType, vk::pt::Win32Handle handle)
-	: m_fd				(-1)
-	, m_win32HandleType	(handleType)
-	, m_win32Handle		(handle)
+	: m_fd						(-1)
+	, m_win32HandleType			(handleType)
+	, m_win32Handle				(handle)
+	, m_androidHardwareBuffer	(DE_NULL)
+{
+}
+
+NativeHandle::NativeHandle (vk::pt::AndroidHardwareBufferPtr buffer)
+	: m_fd						(-1)
+	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
+	, m_win32Handle				(DE_NULL)
+	, m_androidHardwareBuffer	(buffer)
 {
 }
 
@@ -139,6 +167,7 @@ void NativeHandle::reset (void)
 	{
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 		DE_ASSERT(!m_win32Handle.internal);
+		DE_ASSERT(!m_androidHardwareBuffer.internal);
 		::close(m_fd);
 #else
 		DE_FATAL("Platform doesn't support file descriptors");
@@ -152,6 +181,7 @@ void NativeHandle::reset (void)
 		{
 			case WIN32HANDLETYPE_NT:
 				DE_ASSERT(m_fd == -1);
+				DE_ASSERT(!m_androidHardwareBuffer.internal);
 				::CloseHandle((HANDLE)m_win32Handle.internal);
 				break;
 
@@ -166,9 +196,19 @@ void NativeHandle::reset (void)
 #endif
 	}
 
-	m_fd				= -1;
-	m_win32Handle		= vk::pt::Win32Handle(DE_NULL);
-	m_win32HandleType	= WIN32HANDLETYPE_LAST;
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
+	if (m_androidHardwareBuffer.internal)
+	{
+		DE_ASSERT(m_fd == -1);
+		DE_ASSERT(!m_win32Handle.internal);
+		AHardwareBuffer_release((AHardwareBuffer*)m_androidHardwareBuffer.internal);
+	}
+#endif
+
+	m_fd					= -1;
+	m_win32Handle			= vk::pt::Win32Handle(DE_NULL);
+	m_win32HandleType		= WIN32HANDLETYPE_LAST;
+	m_androidHardwareBuffer	= vk::pt::AndroidHardwareBufferPtr(DE_NULL);
 }
 
 NativeHandle& NativeHandle::operator= (int fd)
@@ -176,6 +216,15 @@ NativeHandle& NativeHandle::operator= (int fd)
 	reset();
 
 	m_fd = fd;
+
+	return *this;
+}
+
+NativeHandle& NativeHandle::operator= (vk::pt::AndroidHardwareBufferPtr buffer)
+{
+	reset();
+
+	m_androidHardwareBuffer = buffer;
 
 	return *this;
 }
@@ -192,19 +241,29 @@ void NativeHandle::disown (void)
 {
 	m_fd = -1;
 	m_win32Handle = vk::pt::Win32Handle(DE_NULL);
+	m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(DE_NULL);
 }
 
 vk::pt::Win32Handle NativeHandle::getWin32Handle (void) const
 {
 	DE_ASSERT(m_fd == -1);
+	DE_ASSERT(!m_androidHardwareBuffer.internal);
 	return m_win32Handle;
 }
 
 int NativeHandle::getFd (void) const
 {
 	DE_ASSERT(!m_win32Handle.internal);
-
+	DE_ASSERT(!m_androidHardwareBuffer.internal);
 	return m_fd;
+}
+
+
+vk::pt::AndroidHardwareBufferPtr NativeHandle::getAndroidHardwareBuffer (void) const
+{
+	DE_ASSERT(m_fd == -1);
+	DE_ASSERT(!m_win32Handle.internal);
+	return m_androidHardwareBuffer;
 }
 
 const char* externalSemaphoreTypeToName (vk::VkExternalSemaphoreHandleTypeFlagBits type)
@@ -278,6 +337,9 @@ const char* externalMemoryTypeToName (vk::VkExternalMemoryHandleTypeFlagBits typ
 
 		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT:
 			return "d3d12_resource";
+
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID:
+			return "android_hardware_buffer";
 
 		default:
 			DE_FATAL("Unknown external memory type");
@@ -436,11 +498,26 @@ void getMemoryNative (const vk::DeviceInterface&					vkd,
 				break;
 
 			default:
-				DE_FATAL("Unknow external memory handle type");
+				DE_FATAL("Unknown external memory handle type");
 		}
 	}
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		const vk::VkMemoryGetAndroidHardwareBufferInfoANDROID	info	=
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+			DE_NULL,
+
+			memory,
+		};
+		vk::pt::AndroidHardwareBufferPtr						ahb	(DE_NULL);
+
+		VK_CHECK(vkd.getMemoryAndroidHardwareBufferANDROID(device, &info, &ahb));
+		TCU_CHECK(ahb.internal);
+		nativeHandle = ahb;
+	}
 	else
-		DE_FATAL("Unknow external memory handle type");
+		DE_FATAL("Unknown external memory handle type");
 }
 
 vk::Move<vk::VkFence> createExportableFence (const vk::DeviceInterface&					vkd,
@@ -937,6 +1014,39 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 
 		return memory;
 	}
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		AHardwareBuffer_Desc desc;
+		AHardwareBuffer_describe(static_cast<const AHardwareBuffer*>(handle.getAndroidHardwareBuffer().internal), &desc);
+
+		DE_ASSERT(desc.format == AHARDWAREBUFFER_FORMAT_BLOB || image != 0);
+
+		vk::VkImportAndroidHardwareBufferInfoANDROID	importInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+			DE_NULL,
+			handle.getAndroidHardwareBuffer()
+		};
+		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+			&importInfo,
+			image,
+			buffer,
+		};
+		const vk::VkMemoryAllocateInfo					info =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			(isDedicated ? (const void*)&dedicatedInfo : (const void*)&importInfo),
+			requirements.size,
+			(memoryTypeIndex == ~0U) ? chooseMemoryType(requirements.memoryTypeBits)  : memoryTypeIndex
+		};
+		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
+
+		return memory;
+	}
+#endif // (USE_ANDROID_O_HARDWARE_BUFFER)
 	else
 	{
 		DE_FATAL("Unknown external memory type");
