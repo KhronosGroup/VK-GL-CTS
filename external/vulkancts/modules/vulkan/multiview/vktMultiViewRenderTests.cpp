@@ -2503,7 +2503,6 @@ public:
 						MultiViewReadbackTestInstance	(Context& context, const TestParameters& parameters);
 protected:
 	tcu::TestStatus		iterate							(void);
-	void				beforeDraw						(void);
 	void				drawClears						(const deUint32				subpassCount,
 														 VkRenderPass				renderPass,
 														 VkFramebuffer				frameBuffer,
@@ -2574,23 +2573,6 @@ tcu::TestStatus MultiViewReadbackTestInstance::iterate (void)
 	}
 
 	return tcu::TestStatus::pass("Pass");
-}
-
-void MultiViewReadbackTestInstance::beforeDraw (void)
-{
-	const VkImageSubresourceRange	subresourceRange		=
-	{
-		VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask;
-		0u,							//deUint32				baseMipLevel;
-		1u,							//deUint32				levelCount;
-		0u,							//deUint32				baseArrayLayer;
-		m_parameters.extent.depth,	//deUint32				layerCount;
-	};
-
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		0, 0,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 }
 
 void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines, const bool clearPass)
