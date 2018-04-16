@@ -1063,6 +1063,9 @@ SpvAsmTypeInt16Tests::SpvAsmTypeInt16Tests	(tcu::TestContext&	testCtx,
 											 deUint32			vectorSize)
 	: SpvAsmTypeTests	(testCtx, "i16", "int16 tests", "shaderInt16", "Int16", "OpTypeInt 16 1", 16, vectorSize)
 {
+	m_cases[0] = -3221;
+	m_cases[1] = 3210;
+	m_cases[2] = 19597;
 }
 
 SpvAsmTypeInt16Tests::~SpvAsmTypeInt16Tests (void)
@@ -1076,6 +1079,12 @@ void SpvAsmTypeInt16Tests::getDataset	(vector<deInt16>&	input,
 	input.push_back(0);
 	input.push_back(static_cast<deInt16>(deIntMinValue32(16)));// A 16-bit negative number
 	input.push_back(static_cast<deInt16>(deIntMaxValue32(16)));// A 16-bit positive number
+
+	// Push switch cases
+	input.push_back(m_cases[0]);
+	input.push_back(m_cases[1]);
+	input.push_back(m_cases[2]);
+
 	numElements -= static_cast<deUint32>(input.size());
 
 	// Random values
@@ -1210,6 +1219,9 @@ SpvAsmTypeUint16Tests::SpvAsmTypeUint16Tests	(tcu::TestContext&	testCtx,
 												 deUint32			vectorSize)
 	: SpvAsmTypeTests	(testCtx, "u16", "uint16 tests", "shaderInt16", "Int16", "OpTypeInt 16 0", 16, vectorSize)
 {
+	m_cases[0] = 0;
+	m_cases[1] = 3210;
+	m_cases[2] = 19597;
 }
 
 SpvAsmTypeUint16Tests::~SpvAsmTypeUint16Tests (void)
@@ -1222,6 +1234,12 @@ void SpvAsmTypeUint16Tests::getDataset	(vector<deUint16>&	input,
 	// Push first special cases
 	input.push_back(0);  // Min value
 	input.push_back(~0); // Max value
+
+	//Push switch cases
+	input.push_back(m_cases[0]);
+	input.push_back(m_cases[1]);
+	input.push_back(m_cases[2]);
+
 	numElements -= static_cast<deUint32>(input.size());
 
 	// Random values
@@ -1694,8 +1712,10 @@ tcu::TestCaseGroup* createTypeTests	(tcu::TestContext& testCtx)
 	MAKE_TEST_SV_I_1("mul_sdiv", DE_NULL, mul_div, FILTER_ZERO, DE_NULL);
 	MAKE_TEST_SV_U_1("mul_udiv", DE_NULL, mul_div, FILTER_ZERO, DE_NULL);
 
+	int16Tests[0]->createSwitchTests();
 	int32Tests[0]->createSwitchTests();
 	int64Tests[0]->createSwitchTests();
+	uint16Tests[0]->createSwitchTests();
 	uint32Tests[0]->createSwitchTests();
 	uint64Tests[0]->createSwitchTests();
 
