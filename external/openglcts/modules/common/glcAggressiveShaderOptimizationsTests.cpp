@@ -454,6 +454,10 @@ tcu::TestNode::IterateResult TrigonometryTestCase::iterate(void)
 
 	int  renderWidth  = 64;
 	int  renderHeight = 64;
+	if (renderWidth > m_context.getRenderTarget().getWidth())
+		renderWidth = m_context.getRenderTarget().getWidth();
+	if (renderHeight > m_context.getRenderTarget().getHeight())
+		renderHeight = m_context.getRenderTarget().getHeight();
 	bool isSin		  = std::string(m_testedFunction) == "sin";
 
 	gl.viewport(0, 0, renderWidth, renderHeight);
