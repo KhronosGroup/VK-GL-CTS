@@ -1,5 +1,2 @@
 # Temporarily excluded for b/72496590
 dEQP-GLES2.functional.rasterization.limits.points
-
-# Temporarily excluded for b/72992757
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.*
