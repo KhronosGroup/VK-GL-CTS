@@ -138,6 +138,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_ADD:
 			return "subgroupAdd";
 		case OPTYPE_MUL:
@@ -189,6 +190,7 @@ std::string getOpTypeOperation(int opType, vk::VkFormat format, std::string lhs,
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_ADD:
 		case OPTYPE_INCLUSIVE_ADD:
 		case OPTYPE_EXCLUSIVE_ADD:
@@ -294,6 +296,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 	{
 		default:
 			DE_FATAL("Unhandled format!");
+			break;
 		case VK_FORMAT_R32_SINT:
 		case VK_FORMAT_R32G32_SINT:
 		case VK_FORMAT_R32G32B32_SINT:
@@ -327,6 +330,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_ADD:
 		case OPTYPE_INCLUSIVE_ADD:
 		case OPTYPE_EXCLUSIVE_ADD:
@@ -353,6 +357,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			else
 			{
 				DE_FATAL("Unhandled case");
+				return "";
 			}
 		case OPTYPE_MAX:
 		case OPTYPE_INCLUSIVE_MAX:
@@ -372,6 +377,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			else
 			{
 				DE_FATAL("Unhandled case");
+				return "";
 			}
 		case OPTYPE_AND:
 		case OPTYPE_INCLUSIVE_AND:
@@ -929,18 +935,7 @@ bool checkShaderStages (Context& context, const CaseDefinition& caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupSupported(context))
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
-
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_ARITHMETIC_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup arithmetic operations");
-	}
-
-	if (subgroups::isDoubleFormat(caseDef.format) && !subgroups::isDoubleSupportedForDevice(context))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup double operations");
-	}
+	supportedCheck (context, caseDef);
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{

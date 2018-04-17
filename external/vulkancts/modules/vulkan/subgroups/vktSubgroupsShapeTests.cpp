@@ -118,6 +118,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_CLUSTERED:
 			return "clustered";
 		case OPTYPE_QUAD:
@@ -551,8 +552,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupSupported(context))
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
+	supportedCheck (context, caseDef);
 
 	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BASIC_BIT))
 	{
@@ -560,27 +560,6 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 				   "Subgroup feature " +
 				   subgroups::getShaderStageName(VK_SUBGROUP_FEATURE_BASIC_BIT) +
 				   " is a required capability!");
-	}
-
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
-	}
-
-	if (OPTYPE_CLUSTERED == caseDef.opType)
-	{
-		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_CLUSTERED_BIT))
-		{
-			TCU_THROW(NotSupportedError, "Subgroup shape tests require that clustered operations are supported!");
-		}
-	}
-
-	if (OPTYPE_QUAD == caseDef.opType)
-	{
-		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_QUAD_BIT))
-		{
-			TCU_THROW(NotSupportedError, "Subgroup shape tests require that quad operations are supported!");
-		}
 	}
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)

@@ -345,9 +345,8 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 
 	if (sparse)
 	{
-		deUint32 numSparseImageProperties;
-		vk::VkSparseImageFormatProperties					sparseImageFormatProperties;
-		m_context.getInstanceInterface().getPhysicalDeviceSparseImageFormatProperties(m_context.getPhysicalDevice(), format, imageType, VK_SAMPLE_COUNT_1_BIT, imageUsageFlags, imageTiling, &numSparseImageProperties, &sparseImageFormatProperties);
+		deUint32 numSparseImageProperties = 0;
+		m_context.getInstanceInterface().getPhysicalDeviceSparseImageFormatProperties(m_context.getPhysicalDevice(), format, imageType, VK_SAMPLE_COUNT_1_BIT, imageUsageFlags, imageTiling, &numSparseImageProperties, DE_NULL);
 		if (numSparseImageProperties == 0)
 			TCU_THROW(NotSupportedError, (std::string("Sparse format not supported: ") + vk::getFormatName(format)).c_str());
 	}

@@ -1,0 +1,7 @@
+#VK-GL-CTS 293
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_separate_grid_1000x1000_drawcount_5000
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_combined_grid_1000x1000_drawcount_5000
+
+# Bug 20453509
+dEQP-GLES31.functional.shaders.multisample_interpolation.interpolate_at_centroid.consistency.*
+dEQP-GLES31.functional.shaders.multisample_interpolation.interpolate_at_centroid.array_element.*

@@ -124,6 +124,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_CLUSTERED_ADD:
 			return "subgroupClusteredAdd";
 		case OPTYPE_CLUSTERED_MUL:
@@ -147,6 +148,7 @@ std::string getOpTypeOperation(int opType, vk::VkFormat format, std::string lhs,
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_CLUSTERED_ADD:
 			return lhs + " + " + rhs;
 		case OPTYPE_CLUSTERED_MUL:
@@ -238,6 +240,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 	{
 		default:
 			DE_FATAL("Unhandled format!");
+			break;
 		case VK_FORMAT_R32_SINT:
 		case VK_FORMAT_R32G32_SINT:
 		case VK_FORMAT_R32G32B32_SINT:
@@ -271,6 +274,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_CLUSTERED_ADD:
 			return subgroups::getFormatNameForGLSL(format) + "(0)";
 		case OPTYPE_CLUSTERED_MUL:
@@ -291,6 +295,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			else
 			{
 				DE_FATAL("Unhandled case");
+				return "";
 			}
 		case OPTYPE_CLUSTERED_MAX:
 			if (isFloat)
@@ -308,6 +313,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			else
 			{
 				DE_FATAL("Unhandled case");
+				return "";
 			}
 		case OPTYPE_CLUSTERED_AND:
 			return subgroups::getFormatNameForGLSL(format) + "(~0)";
@@ -786,18 +792,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupSupported(context))
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
-
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_CLUSTERED_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup clustered operations");
-	}
-
-	if (subgroups::isDoubleFormat(caseDef.format) && !subgroups::isDoubleSupportedForDevice(context))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup double operations");
-	}
+	supportedCheck (context, caseDef);
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{

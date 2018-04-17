@@ -3766,7 +3766,7 @@ tcu::TestNode::IterateResult DispatchBindTexturesTest::iterate()
 		{
 		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
 			is_array = true;
-		/* Intended pass-through */
+		/* Intentional fallthrough */
 
 		case GL_TEXTURE_2D_MULTISAMPLE:
 			texture[i].InitStorage(m_context, target, 1, GL_R32UI, width, height, depth);
@@ -4017,7 +4017,7 @@ tcu::TestNode::IterateResult DispatchBindImageTexturesTest::iterate()
 		{
 		case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
 			is_array = true;
-		/* Intended pass-through */
+		/* Intentional fallthrough */
 
 		case GL_TEXTURE_2D_MULTISAMPLE:
 			texture[i].InitStorage(m_context, target, 1, GL_R32UI, width, height, depth);

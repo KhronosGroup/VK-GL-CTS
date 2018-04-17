@@ -228,6 +228,7 @@ static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::Ren
 		case GL_RG16F:
 		case GL_R16F:
 			out.push_back("GL_EXT_color_buffer_half_float");
+		// Fallthrough
 
 		case GL_RGBA32F:
 		case GL_RGB32F:
@@ -236,6 +237,7 @@ static std::vector<std::string> getEnablingExtensions (deUint32 format, glu::Ren
 		case GL_R32F:
 			if (!isES32)
 				out.push_back("GL_EXT_color_buffer_float");
+			break;
 
 		default:
 			break;

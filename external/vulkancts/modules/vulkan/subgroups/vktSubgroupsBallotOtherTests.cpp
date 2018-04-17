@@ -124,6 +124,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_INVERSE_BALLOT:
 			return "subgroupInverseBallot";
 		case OPTYPE_BALLOT_BIT_EXTRACT:
@@ -175,6 +176,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		default:
 			DE_FATAL("Unknown op type!");
+			break;
 		case OPTYPE_INVERSE_BALLOT:
 			bdy << "  tempResult |= subgroupInverseBallot(allOnes) ? 0x1 : 0;\n"
 				<< "  tempResult |= subgroupInverseBallot(allZeros) ? 0 : 0x2;\n"
@@ -405,6 +407,7 @@ void initPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 	{
 		default:
 			DE_FATAL("Unknown op type!");
+			break;
 		case OPTYPE_INVERSE_BALLOT:
 			bdy << "  tempResult |= subgroupInverseBallot(allOnes) ? 0x1 : 0;\n"
 				<< "  tempResult |= subgroupInverseBallot(allZeros) ? 0 : 0x2;\n"
@@ -666,6 +669,7 @@ void supportedCheck (Context& context)
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
 	supportedCheck(context);
+
 	if (!subgroups::areSubgroupOperationsSupportedForStage(
 			context, caseDef.shaderStage))
 	{
@@ -694,13 +698,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupSupported(context))
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
-
-	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup ballot operations");
-	}
+	supportedCheck(context);
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{

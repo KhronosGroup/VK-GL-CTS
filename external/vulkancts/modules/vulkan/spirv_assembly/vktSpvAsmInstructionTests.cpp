@@ -8490,8 +8490,8 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 		tcu::RGBA			defaultColors[4];
 
 		getDefaultColors			(defaultColors);
-		resources.inputs.push_back	(std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, test->m_inputBuffer));
-		resources.outputs.push_back	(std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, test->m_outputBuffer));
+		resources.inputs.push_back	(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, test->m_inputBuffer));
+		resources.outputs.push_back	(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, test->m_outputBuffer));
 		extensions.push_back		("VK_KHR_storage_buffer_storage_class");
 
 		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType))

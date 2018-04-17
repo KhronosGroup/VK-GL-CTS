@@ -4638,11 +4638,20 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 
 	switch (inCount)
 	{
-		case 4: DE_ASSERT(inputs.in3.size() == numValues);
-		case 3: DE_ASSERT(inputs.in2.size() == numValues);
-		case 2: DE_ASSERT(inputs.in1.size() == numValues);
-		case 1: DE_ASSERT(inputs.in0.size() == numValues);
-		default: break;
+		case 4:
+			DE_ASSERT(inputs.in3.size() == numValues);
+		// Fallthrough
+		case 3:
+			DE_ASSERT(inputs.in2.size() == numValues);
+		// Fallthrough
+		case 2:
+			DE_ASSERT(inputs.in1.size() == numValues);
+		// Fallthrough
+		case 1:
+			DE_ASSERT(inputs.in0.size() == numValues);
+		// Fallthrough
+		default:
+			break;
 	}
 
 	// Print out the statement and its definitions
@@ -4677,18 +4686,27 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 
 	switch (inCount)
 	{
-		case 4: spec.inputs[3] = makeSymbol(*variables.in3);
-		case 3:	spec.inputs[2] = makeSymbol(*variables.in2);
-		case 2:	spec.inputs[1] = makeSymbol(*variables.in1);
-		case 1:	spec.inputs[0] = makeSymbol(*variables.in0);
-		default: break;
+		case 4:
+			spec.inputs[3] = makeSymbol(*variables.in3);
+		// Fallthrough
+		case 3:
+			spec.inputs[2] = makeSymbol(*variables.in2);
+		// Fallthrough
+		case 2:
+			spec.inputs[1] = makeSymbol(*variables.in1);
+		// Fallthrough
+		case 1:
+			spec.inputs[0] = makeSymbol(*variables.in0);
+		// Fallthrough
+		default:
+			break;
 	}
 
 	spec.outputs.resize(outCount);
 
 	switch (outCount)
 	{
-		case 2:	spec.outputs[1] = makeSymbol(*variables.out1);
+		case 2:	spec.outputs[1] = makeSymbol(*variables.out1);	// Fallthrough
 		case 1:	spec.outputs[0] = makeSymbol(*variables.out0);
 		default: break;
 	}
@@ -4776,6 +4794,7 @@ void PrecisionCase::testStatement (const Variables<In, Out>&	variables,
 					failStr = "Fail";
 					result = false;
 				}
+			// Fallthrough
 
 			case 1:
 				reference0      = convert<Out0>(highpFmt, env.lookup(*variables.out0));
