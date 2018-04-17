@@ -71,7 +71,8 @@ set(DECPP_LIBS
 	)
 
 # \note [pyry] Somewhat kludgy that toolchain file doesn't set it, but there is no easy way
-if (DE_OS_IS_ANDROID)
+# This is no longer needed in modern NDKs
+if (DE_OS_IS_ANDROID AND DEQP_TARGET_TOOLCHAIN STREQUAL "ndk-r11")
 	if (DEFINED ANDROID_CXX_LIBRARY)
 		set(DECPP_LIBS ${DECPP_LIBS} ${ANDROID_CXX_LIBRARY})
 	else ()

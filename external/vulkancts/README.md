@@ -16,7 +16,7 @@ The following tools must be installed and present in the PATH variable:
 
  * Git (for checking out sources)
  * Python 2.7.x (all recent versions in 2.x should work, 3.x is not supported)
- * CMake 2.8 (3.2 for Android NDK r15 builds) or newer
+ * CMake 2.8 (3.6 for Android NDK r15+ builds) or newer
 
 ### Win32
 
@@ -28,7 +28,7 @@ The following tools must be installed and present in the PATH variable:
 
 ### Android
 
- * Android NDK r11c (NDK r15 support is experimental)
+ * Android NDK r15c or later. NDK r11c still works but will be deprecated soon.
  * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 22
  * Java Development Kit (JDK)
  * Windows: either NMake or Ninja in PATH
