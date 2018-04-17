@@ -25,14 +25,6 @@
 //
 // \todo [2017-02-08 antiagainst] Additional corner cases to check:
 //
-// * Test OpAccessChain with subword types
-//  * For newly enabled types T:
-//    * For composite types: vector, matrix, structures, array over T:
-//      1. Use OpAccessChain to form a pointer to a subword type.
-//      2. Load the subword value X16.
-//      3. Convert X16 to X32.
-//      4. Store X32 to BufferBlock.
-//      5. Host inspects X32.
 // * Test {StorageInputOutput16} 16-to-16 one value to two:
 //     Like the current 16-to-16 tests, but write X16 to two different output variables.
 //     (Checks that the 16-bit intermediate value can be used twice.)
@@ -1615,6 +1607,203 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
 	}
+}
+
+void addCompute16bitStorageUniform16To32ChainAccessGroup (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&				testCtx			= group->getTestContext();
+	de::Random						rnd				(deStringHash(group->getName()));
+	const deUint32					structSize		= 24; // In number of 16bit items. Includes padding.
+	vector<deFloat16>				inputDataFloat	= getFloat16s(rnd, structSize * 4);
+	vector<deInt16>					inputDataInt	= getInt16s(rnd, structSize * 4);
+	vector<float>					outputDataFloat;
+	vector<deInt32>					outputDataSInt;
+	vector<deInt32>					outputDataUInt;
+	vector<tcu::UVec4>				indices;
+
+	// Input is an array of a struct that varies on 16bit data type being tested:
+	//
+	// Float:
+	//
+	// float16 scalars[3]
+	// mat4x3  matrix
+	// vec3    vector
+	//
+	// Int:
+	//
+	// int16 scalars[3]
+	// int16 array2D[4][3]
+	// ivec3 vector
+	//
+	// UInt:
+	//
+	// uint16 scalars[3]
+	// uint16 array2D[4][3]
+	// uvec3  vector
+
+	const StringTemplate			shaderTemplate	(
+		"                              OpCapability Shader\n"
+		"                              OpCapability ${capability}\n"
+		"                              OpExtension \"SPV_KHR_16bit_storage\"\n"
+		"                         %1 = OpExtInstImport \"GLSL.std.450\"\n"
+		"                              OpMemoryModel Logical GLSL450\n"
+		"                              OpEntryPoint GLCompute %main \"main\"\n"
+		"                              OpExecutionMode %main LocalSize 1 1 1\n"
+		"                              OpSource GLSL 430\n"
+		"                              OpDecorate %Output BufferBlock\n"
+		"                              OpDecorate %dataOutput DescriptorSet 0\n"
+		"                              OpDecorate %dataOutput Binding 1\n"
+		"                              OpDecorate %scalarArray ArrayStride 2\n"
+		"                              OpDecorate %scalarArray2D ArrayStride 8\n"
+		"                              OpMemberDecorate %S 0 Offset 0\n"
+		"                              OpMemberDecorate %S 1 Offset 8\n"
+		"                              ${decoration:opt}\n"
+		"                              OpMemberDecorate %S 2 Offset 40\n"
+		"                              OpDecorate %_arr_S_uint_4 ArrayStride 48\n"
+		"                              OpMemberDecorate %Input 0 Offset 0\n"
+		"                              OpMemberDecorate %Output 0 Offset 0\n"
+		"                              OpDecorate %Input ${storage}\n"
+		"                              OpDecorate %dataInput DescriptorSet 0\n"
+		"                              OpDecorate %dataInput Binding 0\n"
+		"                       %f16 = OpTypeFloat 16\n"
+		"                       %f32 = OpTypeFloat 32\n"
+		"                       %i16 = OpTypeInt 16 1\n"
+		"                       %i32 = OpTypeInt 32 1\n"
+		"                       %u16 = OpTypeInt 16 0\n"
+		"                       %u32 = OpTypeInt 32 0\n"
+		"                      %void = OpTypeVoid\n"
+		"                  %voidFunc = OpTypeFunction %void\n"
+		"        %_ptr_Function_uint = OpTypePointer Function %u32\n"
+		"                     %v3u32 = OpTypeVector %u32 3\n"
+		"          %_ptr_Input_v3u32 = OpTypePointer Input %v3u32\n"
+		"                     %int_0 = OpConstant %i32 0\n"
+		"                    %uint_3 = OpConstant %u32 3\n"
+		"                    %uint_4 = OpConstant %u32 4\n"
+		"                        %s0 = OpConstant %u32 ${s0}\n"
+		"                        %s1 = OpConstant %u32 ${s1}\n"
+		"                        %s2 = OpConstant %u32 ${s2}\n"
+		"                        %s3 = OpConstant %u32 ${s3}\n"
+		"                    %Output = OpTypeStruct %${type}32\n"
+		"       %_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
+		"                %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
+		"               %scalarArray = OpTypeArray %${type}16 %uint_3\n"
+		"                     %v3f16 = OpTypeVector %f16 3\n"
+		"                     %v3i16 = OpTypeVector %i16 3\n"
+		"                     %v3u16 = OpTypeVector %u16 3\n"
+		"                    %matrix = OpTypeMatrix %v3f16 4\n"
+		"             %scalarArray2D = OpTypeArray %scalarArray %uint_4\n"
+		"                         %S = OpTypeStruct %scalarArray %${type2D} %v3${type}16\n"
+		"             %_arr_S_uint_4 = OpTypeArray %S %uint_4\n"
+		"                     %Input = OpTypeStruct %_arr_S_uint_4\n"
+		"        %_ptr_Uniform_Input = OpTypePointer Uniform %Input\n"
+		"                 %dataInput = OpVariable %_ptr_Uniform_Input Uniform\n"
+		"   %_ptr_Uniform_16bit_data = OpTypePointer Uniform %${type}16\n"
+		"   %_ptr_Uniform_32bit_data = OpTypePointer Uniform %${type}32\n"
+		"                      %main = OpFunction %void None %voidFunc\n"
+		"                     %entry = OpLabel\n"
+		"                   %dataPtr = ${accessChain}\n"
+		"                      %data = OpLoad %${type}16 %dataPtr\n"
+		"                 %converted = ${convert}\n"
+		"                    %outPtr = OpAccessChain %_ptr_Uniform_32bit_data %dataOutput %int_0\n"
+		"                              OpStore %outPtr %converted\n"
+		"                              OpReturn\n"
+		"                              OpFunctionEnd\n");
+
+	// Generate constant indices for OpChainAccess. We need to use constant values
+	// when indexing into structures. This loop generates all permutations.
+	for (deUint32 idx0 = 0; idx0 < 4; ++idx0)
+		for (deUint32 idx1 = 0; idx1 < 3; ++idx1)
+			for (deUint32 idx2 = 0; idx2 < (idx1 == 1u ? 4u : 3u); ++idx2)
+				for (deUint32 idx3 = 0; idx3 < (idx1 == 1u ? 3u : 1u); ++idx3)
+					indices.push_back(tcu::UVec4(idx0, idx1, idx2, idx3));
+
+
+	for (deUint32 numIdx = 0; numIdx < (deUint32)indices.size(); ++numIdx)
+	{
+		const deUint16		signBitMask			= 0x8000;
+		const deUint32		signExtendMask		= 0xffff0000;
+		// Determine the selected output float for the selected indices.
+		const tcu::UVec4	vec					= indices[numIdx];
+		// Offsets are in multiples of 16bits.
+		const deUint32		fieldOffsets[3][3]	=
+		{
+			{0u,	1u,	0u},
+			{4u,	4u,	1u},
+			{20u,	1u,	0u}
+		};
+		const deUint32		offset				= vec.x() * structSize + fieldOffsets[vec.y()][0] + fieldOffsets[vec.y()][1] * vec.z() + fieldOffsets[vec.y()][2] * vec.w();
+		const bool			hasSign				= inputDataInt[offset] & signBitMask;
+
+		outputDataFloat.push_back(deFloat16To32(inputDataFloat[offset]));
+		outputDataUInt.push_back((deUint16)inputDataInt[offset]);
+		outputDataSInt.push_back((deInt32)(inputDataInt[offset] | (hasSign ? signExtendMask : 0u)));
+	}
+
+	for (deUint32 indicesIdx = 0; indicesIdx < (deUint32)indices.size(); ++indicesIdx)
+		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
+		{
+			string						indexString		= de::toString(indices[indicesIdx].x()) + "_" + de::toString(indices[indicesIdx].y()) + "_" + de::toString(indices[indicesIdx].z());
+			if (indices[indicesIdx].y() == 1)
+				indexString += string("_") + de::toString(indices[indicesIdx].w());
+
+			const string				testNameBase	= string(CAPABILITIES[capIdx].name) + "_" + indexString + "_";
+			const ComputeTestFeatures	features		= COMPUTE_TEST_USES_NONE;
+
+			struct DataType
+			{
+				string		name;
+				string		type;
+				string		convert;
+				string		type2D; // Matrix when using floats. 2D array otherwise.
+				BufferSp	inputs;
+				BufferSp	outputs;
+			};
+
+			const DataType				dataTypes[]		=
+			{
+				{ "float",	"f", "OpFConvert %f32 %data",	"matrix",			BufferSp(new Float16Buffer(inputDataFloat)),	BufferSp(new Float32Buffer(vector<float>(1, outputDataFloat[indicesIdx])))	},
+				{ "int",	"i", "OpSConvert %i32 %data",	"scalarArray2D",	BufferSp(new Int16Buffer(inputDataInt)),		BufferSp(new Int32Buffer(vector<deInt32>(1, outputDataSInt[indicesIdx])))	},
+				{ "uint",	"u", "OpUConvert %u32 %data",	"scalarArray2D",	BufferSp(new Int16Buffer(inputDataInt)),		BufferSp(new Int32Buffer(vector<deInt32>(1, outputDataUInt[indicesIdx])))	}
+			};
+
+			for (deUint32 dataTypeIdx = 0; dataTypeIdx < DE_LENGTH_OF_ARRAY(dataTypes); ++dataTypeIdx)
+			{
+				const string				testName	= testNameBase + dataTypes[dataTypeIdx].name;
+				map<string, string>			specs;
+				ComputeShaderSpec			spec;
+
+				specs["capability"]						= CAPABILITIES[capIdx].cap;
+				specs["storage"]						= CAPABILITIES[capIdx].decor;
+				specs["s0"]								= de::toString(indices[indicesIdx].x());
+				specs["s1"]								= de::toString(indices[indicesIdx].y());
+				specs["s2"]								= de::toString(indices[indicesIdx].z());
+				specs["s3"]								= de::toString(indices[indicesIdx].w());
+				specs["type"]							= dataTypes[dataTypeIdx].type;
+				specs["convert"]						= dataTypes[dataTypeIdx].convert;
+				specs["type2D"]							= dataTypes[dataTypeIdx].type2D;
+
+				if (indices[indicesIdx].y() == 1)
+					specs["accessChain"]				= "OpAccessChain %_ptr_Uniform_16bit_data %dataInput %int_0 %s0 %s1 %s2 %s3";
+				else
+					specs["accessChain"]				= "OpAccessChain %_ptr_Uniform_16bit_data %dataInput %int_0 %s0 %s1 %s2";
+
+				if (dataTypeIdx == 0)
+				{
+					spec.verifyIO		= check32BitFloats;
+					specs["decoration"]	= "OpMemberDecorate %S 1 ColMajor\nOpMemberDecorate %S 1 MatrixStride 8\n";
+				}
+
+				spec.assembly							= shaderTemplate.specialize(specs);
+				spec.numWorkGroups						= IVec3(1, 1, 1);
+				spec.extensions.push_back				("VK_KHR_16bit_storage");
+				spec.requestedVulkanFeatures			= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				spec.inputTypes[0]						= CAPABILITIES[capIdx].dtype;
+				spec.inputs.push_back(dataTypes[dataTypeIdx].inputs);
+				spec.outputs.push_back(dataTypes[dataTypeIdx].outputs);
+
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec, features));
+			}
+		}
 }
 
 void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
@@ -6094,8 +6283,8 @@ tcu::TestCaseGroup* create16BitStorageComputeGroup (tcu::TestContext& testCtx)
 	addTestGroup(group.get(), "uniform_16struct_to_32struct", "16bit floats struct to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16StructTo32StructGroup);
 	addTestGroup(group.get(), "uniform_32struct_to_16struct", "32bit floats struct to 16bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform32StructTo16StructGroup);
 	addTestGroup(group.get(), "struct_mixed_types", "mixed type of 8bit and 32bit struct", addCompute16bitStructMixedTypesGroup);
-
 	addTestGroup(group.get(), "uniform_16_to_16", "16bit floats/ints to 16bit tests under capability StorageUniformBufferBlock16", addCompute16bitStorageUniform16To16Group);
+	addTestGroup(group.get(), "uniform_16_to_32_chainaccess", "chain access 16bit floats/ints to 32bit tests under capability StorageUniform{|BufferBlock}", addCompute16bitStorageUniform16To32ChainAccessGroup);
 
 	return group.release();
 }
