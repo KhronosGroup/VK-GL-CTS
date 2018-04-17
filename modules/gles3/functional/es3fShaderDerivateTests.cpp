@@ -214,7 +214,7 @@ float computeFloatingPointError (const float value, const int numAccurateBits)
 {
 	const int		numGarbageBits	= 23-numAccurateBits;
 	const deUint32	mask			= (1u<<numGarbageBits)-1u;
-	const int		exp				= tcu::Float32(value).exponent();
+	const int		exp				= (tcu::Float32(value).exponent() < -3) ? -3 : tcu::Float32(value).exponent();
 
 	return tcu::Float32::construct(+1, exp, (1u<<23) | mask).asFloat() - tcu::Float32::construct(+1, exp, 1u<<23).asFloat();
 }
@@ -323,6 +323,20 @@ enum
 	INTERPOLATION_LOST_BITS = 3, // number mantissa of bits allowed to be lost in varying interpolation
 };
 
+static int getInterpolationLostBitsWarning (const glu::Precision precision)
+{
+	// number mantissa of bits allowed to be lost in varying interpolation
+	switch (precision)
+	{
+		case glu::PRECISION_HIGHP:		return 9;
+		case glu::PRECISION_MEDIUMP:	return 3;
+		case glu::PRECISION_LOWP:		return 3;
+		default:
+			DE_ASSERT(false);
+			return 0;
+	}
+}
+
 static inline tcu::Vec4 getDerivateThreshold (const glu::Precision precision, const tcu::Vec4& valueMin, const tcu::Vec4& valueMax, const tcu::Vec4& expectedDerivate)
 {
 	const int			baseBits		= getNumMantissaBits(precision);
@@ -336,6 +350,21 @@ static inline tcu::Vec4 getDerivateThreshold (const glu::Precision precision, co
 					 computeFloatingPointError(expectedDerivate[2], numAccurateBits[2]),
 					 computeFloatingPointError(expectedDerivate[3], numAccurateBits[3]));
 }
+
+static inline tcu::Vec4 getDerivateThresholdWarning (const glu::Precision precision, const tcu::Vec4& valueMin, const tcu::Vec4& valueMax, const tcu::Vec4& expectedDerivate)
+{
+	const int			baseBits		= getNumMantissaBits(precision);
+	const tcu::UVec4	derivExp		= getCompExpBits(expectedDerivate);
+	const tcu::UVec4	maxValueExp		= max(getCompExpBits(valueMin), getCompExpBits(valueMax));
+	const tcu::UVec4	numBitsLost		= maxValueExp - min(maxValueExp, derivExp);
+	const tcu::IVec4	numAccurateBits	= max(baseBits - numBitsLost.asInt() - getInterpolationLostBitsWarning(precision), tcu::IVec4(0));
+
+	return tcu::Vec4(computeFloatingPointError(expectedDerivate[0], numAccurateBits[0]),
+					 computeFloatingPointError(expectedDerivate[1], numAccurateBits[1]),
+					 computeFloatingPointError(expectedDerivate[2], numAccurateBits[2]),
+					 computeFloatingPointError(expectedDerivate[3], numAccurateBits[3]));
+}
+
 
 namespace
 {
@@ -369,7 +398,7 @@ enum VerificationLogging
 	LOG_NOTHING
 };
 
-static bool verifyConstantDerivate (tcu::TestLog&						log,
+static qpTestResult verifyConstantDerivate (tcu::TestLog&				log,
 									const tcu::ConstPixelBufferAccess&	result,
 									const tcu::PixelBufferAccess&		errorMask,
 									glu::DataType						dataType,
@@ -412,7 +441,7 @@ static bool verifyConstantDerivate (tcu::TestLog&						log,
 	if (numFailedPixels > 0 && logPolicy == LOG_ALL)
 		log << TestLog::Message << "FAIL: found " << numFailedPixels << " failed pixels" << TestLog::EndMessage;
 
-	return numFailedPixels == 0;
+	return (numFailedPixels == 0) ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL;
 }
 
 struct Linear2DFunctionEvaluator
@@ -433,7 +462,7 @@ tcu::Vec4 Linear2DFunctionEvaluator::evaluateAt (float screenX, float screenY) c
 	return matrix * position;
 }
 
-static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							log,
+static qpTestResult reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							log,
 														  const tcu::ConstPixelBufferAccess&	result,
 														  const tcu::PixelBufferAccess&			errorMask,
 														  glu::DataType							dataType,
@@ -551,7 +580,7 @@ static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							lo
 	if (numFailedPixels > 0)
 		log << TestLog::Message << "FAIL: found " << numFailedPixels << " failed pixels" << TestLog::EndMessage;
 
-	return numFailedPixels == 0;
+	return (numFailedPixels == 0) ? QP_TEST_RESULT_PASS : QP_TEST_RESULT_FAIL;
 }
 
 // TriangleDerivateCase
@@ -559,34 +588,34 @@ static bool reverifyConstantDerivateWithFlushRelaxations (tcu::TestLog&							lo
 class TriangleDerivateCase : public TestCase
 {
 public:
-						TriangleDerivateCase	(Context& context, const char* name, const char* description);
-						~TriangleDerivateCase	(void);
+							TriangleDerivateCase	(Context& context, const char* name, const char* description);
+							~TriangleDerivateCase	(void);
 
-	IterateResult		iterate					(void);
+	IterateResult			iterate					(void);
 
 protected:
-	virtual void		setupRenderState		(deUint32 program) { DE_UNREF(program); }
-	virtual bool		verify					(const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask) = DE_NULL;
+	virtual void			setupRenderState		(deUint32 program) { DE_UNREF(program); }
+	virtual qpTestResult	verify					(const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask) = DE_NULL;
 
-	tcu::IVec2			getViewportSize			(void) const;
-	tcu::Vec4			getSurfaceThreshold		(void) const;
+	tcu::IVec2				getViewportSize			(void) const;
+	tcu::Vec4				getSurfaceThreshold		(void) const;
 
-	glu::DataType		m_dataType;
-	glu::Precision		m_precision;
+	glu::DataType			m_dataType;
+	glu::Precision			m_precision;
 
-	glu::DataType		m_coordDataType;
-	glu::Precision		m_coordPrecision;
+	glu::DataType			m_coordDataType;
+	glu::Precision			m_coordPrecision;
 
-	std::string			m_fragmentSrc;
+	std::string				m_fragmentSrc;
 
-	tcu::Vec4			m_coordMin;
-	tcu::Vec4			m_coordMax;
-	tcu::Vec4			m_derivScale;
-	tcu::Vec4			m_derivBias;
+	tcu::Vec4				m_coordMin;
+	tcu::Vec4				m_coordMax;
+	tcu::Vec4				m_derivScale;
+	tcu::Vec4				m_derivBias;
 
-	SurfaceType			m_surfaceType;
-	int					m_numSamples;
-	deUint32			m_hint;
+	SurfaceType				m_surfaceType;
+	int						m_numSamples;
+	deUint32				m_hint;
 };
 
 TriangleDerivateCase::TriangleDerivateCase (Context& context, const char* name, const char* description)
@@ -825,18 +854,24 @@ TriangleDerivateCase::IterateResult TriangleDerivateCase::iterate (void)
 		tcu::Surface errorMask(result.getWidth(), result.getHeight());
 		tcu::clear(errorMask.getAccess(), tcu::RGBA::green().toVec());
 
-		const bool isOk = verify(result.getAccess(), errorMask.getAccess());
+		const qpTestResult testResult = verify(result.getAccess(), errorMask.getAccess());
+		const char* failStr = "Fail";
 
 		m_testCtx.getLog() << TestLog::ImageSet("Result", "Result images")
 						   << TestLog::Image("Rendered", "Rendered image", result);
 
-		if (!isOk)
+		if (testResult != QP_TEST_RESULT_PASS)
 			m_testCtx.getLog() << TestLog::Image("ErrorMask", "Error mask", errorMask);
 
 		m_testCtx.getLog() << TestLog::EndImageSet;
 
-		m_testCtx.setTestResult(isOk ? QP_TEST_RESULT_PASS	: QP_TEST_RESULT_FAIL,
-								isOk ? "Pass"				: "Image comparison failed");
+		if (testResult == QP_TEST_RESULT_PASS)
+			failStr = "Pass";
+		else if (testResult == QP_TEST_RESULT_QUALITY_WARNING)
+			failStr = "QualityWarning";
+
+		m_testCtx.setTestResult(testResult, failStr);
+
 	}
 
 	return STOP;
@@ -875,7 +910,7 @@ public:
 	void				init						(void);
 
 protected:
-	bool				verify						(const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask);
+	qpTestResult		verify						(const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask);
 
 private:
 	DerivateFunc		m_func;
@@ -922,7 +957,7 @@ void ConstantDerivateCase::init (void)
 	m_derivBias		= tcu::Vec4(0.5f, 0.5f, 0.5f, 0.5f);
 }
 
-bool ConstantDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask)
+qpTestResult ConstantDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask)
 {
 	const tcu::Vec4 reference	(0.0f); // Derivate of constant argument should always be 0
 	const tcu::Vec4	threshold	= getSurfaceThreshold() / abs(m_derivScale);
@@ -942,7 +977,7 @@ public:
 	void				init					(void);
 
 protected:
-	bool				verify					(const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask);
+	qpTestResult		verify					(const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask);
 
 private:
 	DerivateFunc		m_func;
@@ -1049,7 +1084,7 @@ void LinearDerivateCase::init (void)
 	}
 }
 
-bool LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask)
+qpTestResult LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask)
 {
 	const tcu::Vec4		xScale				= tcu::Vec4(1.0f, 0.0f, 0.5f, -0.5f);
 	const tcu::Vec4		yScale				= tcu::Vec4(0.0f, 1.0f, 0.5f, -0.5f);
@@ -1057,13 +1092,15 @@ bool LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, cons
 
 	if (m_func == DERIVATE_DFDX || m_func == DERIVATE_DFDY)
 	{
-		const bool			isX			= m_func == DERIVATE_DFDX;
-		const float			div			= isX ? float(result.getWidth()) : float(result.getHeight());
-		const tcu::Vec4		scale		= isX ? xScale : yScale;
-		const tcu::Vec4		reference	= ((m_coordMax - m_coordMin) / div) * scale;
-		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_precision, m_coordMin*scale, m_coordMax*scale, reference);
-		const tcu::Vec4		threshold	= max(surfaceThreshold, opThreshold);
-		const int			numComps	= glu::getDataTypeFloatScalars(m_dataType);
+		const bool			isX				= m_func == DERIVATE_DFDX;
+		const float			div				= isX ? float(result.getWidth()) : float(result.getHeight());
+		const tcu::Vec4		scale			= isX ? xScale : yScale;
+		const tcu::Vec4		reference		= ((m_coordMax - m_coordMin) / div) * scale;
+		const tcu::Vec4		opThreshold		= getDerivateThreshold(m_precision, m_coordMin*scale, m_coordMax*scale, reference);
+		const tcu::Vec4		opThresholdW	= getDerivateThresholdWarning(m_precision, m_coordMin*scale, m_coordMax*scale, reference);
+		const tcu::Vec4		threshold		= max(surfaceThreshold, opThreshold);
+		const tcu::Vec4		thresholdW		= max(surfaceThreshold, opThresholdW);
+		const int			numComps		= glu::getDataTypeFloatScalars(m_dataType);
 
 		m_testCtx.getLog()
 			<< tcu::TestLog::Message
@@ -1075,14 +1112,27 @@ bool LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, cons
 		// This improves performance significantly.
 		if (verifyConstantDerivate(m_testCtx.getLog(), result, errorMask, m_dataType,
 								   reference, threshold, m_derivScale, m_derivBias,
-								   LOG_NOTHING))
+								   LOG_NOTHING) == QP_TEST_RESULT_PASS)
 		{
 			m_testCtx.getLog()
 				<< tcu::TestLog::Message
 				<< "No incorrect derivatives found, result valid."
 				<< tcu::TestLog::EndMessage;
 
-			return true;
+			return QP_TEST_RESULT_PASS;
+		}
+
+		// Check with relaxed threshold value
+		if (verifyConstantDerivate(m_testCtx.getLog(), result, errorMask, m_dataType,
+								   reference, thresholdW, m_derivScale, m_derivBias,
+								   LOG_NOTHING) == QP_TEST_RESULT_PASS)
+		{
+			m_testCtx.getLog()
+				<< tcu::TestLog::Message
+				<< "No incorrect derivatives found, result valid with quality warning."
+				<< tcu::TestLog::EndMessage;
+
+			return QP_TEST_RESULT_QUALITY_WARNING;
 		}
 
 		// some pixels exceed error bounds calculated for normal values. Verify that these
@@ -1115,18 +1165,36 @@ bool LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, cons
 	else
 	{
 		DE_ASSERT(m_func == DERIVATE_FWIDTH);
-		const float			w			= float(result.getWidth());
-		const float			h			= float(result.getHeight());
+		const float			w				= float(result.getWidth());
+		const float			h				= float(result.getHeight());
 
-		const tcu::Vec4		dx			= ((m_coordMax - m_coordMin) / w) * xScale;
-		const tcu::Vec4		dy			= ((m_coordMax - m_coordMin) / h) * yScale;
-		const tcu::Vec4		reference	= tcu::abs(dx) + tcu::abs(dy);
-		const tcu::Vec4		dxThreshold	= getDerivateThreshold(m_precision, m_coordMin*xScale, m_coordMax*xScale, dx);
-		const tcu::Vec4		dyThreshold	= getDerivateThreshold(m_precision, m_coordMin*yScale, m_coordMax*yScale, dy);
-		const tcu::Vec4		threshold	= max(surfaceThreshold, max(dxThreshold, dyThreshold));
+		const tcu::Vec4		dx				= ((m_coordMax - m_coordMin) / w) * xScale;
+		const tcu::Vec4		dy				= ((m_coordMax - m_coordMin) / h) * yScale;
+		const tcu::Vec4		reference		= tcu::abs(dx) + tcu::abs(dy);
+		const tcu::Vec4		dxThreshold		= getDerivateThreshold(m_precision, m_coordMin*xScale, m_coordMax*xScale, dx);
+		const tcu::Vec4		dyThreshold		= getDerivateThreshold(m_precision, m_coordMin*yScale, m_coordMax*yScale, dy);
+		const tcu::Vec4		dxThresholdW	= getDerivateThresholdWarning(m_precision, m_coordMin*xScale, m_coordMax*xScale, dx);
+		const tcu::Vec4		dyThresholdW	= getDerivateThresholdWarning(m_precision, m_coordMin*yScale, m_coordMax*yScale, dy);
+		const tcu::Vec4		threshold		= max(surfaceThreshold, max(dxThreshold, dyThreshold));
+		const tcu::Vec4		thresholdW		= max(surfaceThreshold, max(dxThresholdW, dyThresholdW));
+		qpTestResult        testResult		= QP_TEST_RESULT_FAIL;
 
-		return verifyConstantDerivate(m_testCtx.getLog(), result, errorMask, m_dataType,
+		testResult = verifyConstantDerivate(m_testCtx.getLog(), result, errorMask, m_dataType,
 									  reference, threshold, m_derivScale, m_derivBias);
+
+		// return if result is pass
+		if (testResult == QP_TEST_RESULT_PASS)
+			return testResult;
+
+		// re-check with relaxed threshold
+		testResult = verifyConstantDerivate(m_testCtx.getLog(), result, errorMask, m_dataType,
+									  reference, thresholdW, m_derivScale, m_derivBias);
+
+		// if with relaxed threshold test is passing then mark the result with quality warning.
+		if (testResult == QP_TEST_RESULT_PASS)
+			testResult = QP_TEST_RESULT_QUALITY_WARNING;
+
+		return testResult;
 	}
 }
 
@@ -1143,7 +1211,7 @@ public:
 
 protected:
 	void				setupRenderState		(deUint32 program);
-	bool				verify					(const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask);
+	qpTestResult		verify					(const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask);
 
 private:
 	DerivateFunc		m_func;
@@ -1335,7 +1403,7 @@ void TextureDerivateCase::setupRenderState (deUint32 program)
 	gl.uniform1i		(gl.getUniformLocation(program, "u_sampler"), texUnit);
 }
 
-bool TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask)
+qpTestResult TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, const tcu::PixelBufferAccess& errorMask)
 {
 	// \note Edges are ignored in comparison
 	if (result.getWidth() < 2 || result.getHeight() < 2)
@@ -1352,13 +1420,15 @@ bool TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, con
 
 	if (m_func == DERIVATE_DFDX || m_func == DERIVATE_DFDY)
 	{
-		const bool			isX			= m_func == DERIVATE_DFDX;
-		const float			div			= isX ? w : h;
-		const tcu::Vec4		scale		= isX ? xScale : yScale;
-		const tcu::Vec4		reference	= ((m_texValueMax - m_texValueMin) / div) * scale;
-		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_precision, m_texValueMin*scale, m_texValueMax*scale, reference);
-		const tcu::Vec4		threshold	= max(surfaceThreshold, opThreshold);
-		const int			numComps	= glu::getDataTypeFloatScalars(m_dataType);
+		const bool			isX				= m_func == DERIVATE_DFDX;
+		const float			div				= isX ? w : h;
+		const tcu::Vec4		scale			= isX ? xScale : yScale;
+		const tcu::Vec4		reference		= ((m_texValueMax - m_texValueMin) / div) * scale;
+		const tcu::Vec4		opThreshold		= getDerivateThreshold(m_precision, m_texValueMin*scale, m_texValueMax*scale, reference);
+		const tcu::Vec4		opThresholdW	= getDerivateThresholdWarning(m_precision, m_texValueMin*scale, m_texValueMax*scale, reference);
+		const tcu::Vec4		threshold		= max(surfaceThreshold, opThreshold);
+		const tcu::Vec4		thresholdW		= max(surfaceThreshold, opThresholdW);
+		const int			numComps		= glu::getDataTypeFloatScalars(m_dataType);
 
 		m_testCtx.getLog()
 			<< tcu::TestLog::Message
@@ -1370,15 +1440,35 @@ bool TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, con
 		// This improves performance significantly.
 		if (verifyConstantDerivate(m_testCtx.getLog(), compareArea, maskArea, m_dataType,
 								   reference, threshold, m_derivScale, m_derivBias,
-								   LOG_NOTHING))
+								   LOG_NOTHING) == QP_TEST_RESULT_PASS)
 		{
 			m_testCtx.getLog()
 				<< tcu::TestLog::Message
 				<< "No incorrect derivatives found, result valid."
 				<< tcu::TestLog::EndMessage;
 
-			return true;
+			return QP_TEST_RESULT_PASS;
 		}
+
+		m_testCtx.getLog()
+			<< tcu::TestLog::Message
+			<< "Verifying result image.\n"
+			<< "\tValid derivative is " << LogVecComps(reference, numComps) << " with Warning threshold " << LogVecComps(thresholdW, numComps)
+			<< tcu::TestLog::EndMessage;
+
+		// Re-check with relaxed threshold
+		if (verifyConstantDerivate(m_testCtx.getLog(), compareArea, maskArea, m_dataType,
+								   reference, thresholdW, m_derivScale, m_derivBias,
+								   LOG_NOTHING) == QP_TEST_RESULT_PASS)
+		{
+			m_testCtx.getLog()
+				<< tcu::TestLog::Message
+				<< "No incorrect derivatives found, result valid with quality warning."
+				<< tcu::TestLog::EndMessage;
+
+			return QP_TEST_RESULT_QUALITY_WARNING;
+		}
+
 
 		// some pixels exceed error bounds calculated for normal values. Verify that these
 		// potentially invalid pixels are in fact valid due to (for example) subnorm flushing.
@@ -1407,15 +1497,32 @@ bool TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, con
 	else
 	{
 		DE_ASSERT(m_func == DERIVATE_FWIDTH);
-		const tcu::Vec4	dx			= ((m_texValueMax - m_texValueMin) / w) * xScale;
-		const tcu::Vec4	dy			= ((m_texValueMax - m_texValueMin) / h) * yScale;
-		const tcu::Vec4	reference	= tcu::abs(dx) + tcu::abs(dy);
-		const tcu::Vec4	dxThreshold	= getDerivateThreshold(m_precision, m_texValueMin*xScale, m_texValueMax*xScale, dx);
-		const tcu::Vec4	dyThreshold	= getDerivateThreshold(m_precision, m_texValueMin*yScale, m_texValueMax*yScale, dy);
-		const tcu::Vec4	threshold	= max(surfaceThreshold, max(dxThreshold, dyThreshold));
+		const tcu::Vec4	dx				= ((m_texValueMax - m_texValueMin) / w) * xScale;
+		const tcu::Vec4	dy				= ((m_texValueMax - m_texValueMin) / h) * yScale;
+		const tcu::Vec4	reference		= tcu::abs(dx) + tcu::abs(dy);
+		const tcu::Vec4	dxThreshold		= getDerivateThreshold(m_precision, m_texValueMin*xScale, m_texValueMax*xScale, dx);
+		const tcu::Vec4	dyThreshold		= getDerivateThreshold(m_precision, m_texValueMin*yScale, m_texValueMax*yScale, dy);
+		const tcu::Vec4	dxThresholdW	= getDerivateThresholdWarning(m_precision, m_texValueMin*xScale, m_texValueMax*xScale, dx);
+		const tcu::Vec4	dyThresholdW	= getDerivateThresholdWarning(m_precision, m_texValueMin*yScale, m_texValueMax*yScale, dy);
+		const tcu::Vec4	threshold		= max(surfaceThreshold, max(dxThreshold, dyThreshold));
+		const tcu::Vec4	thresholdW		= max(surfaceThreshold, max(dxThresholdW, dyThresholdW));
+		qpTestResult	testResult		= QP_TEST_RESULT_FAIL;
 
-		return verifyConstantDerivate(m_testCtx.getLog(), compareArea, maskArea, m_dataType,
+		testResult = verifyConstantDerivate(m_testCtx.getLog(), compareArea, maskArea, m_dataType,
 									  reference, threshold, m_derivScale, m_derivBias);
+
+		if (testResult == QP_TEST_RESULT_PASS)
+			return testResult;
+
+		// Re-Check with relaxed threshold
+		testResult = verifyConstantDerivate(m_testCtx.getLog(), compareArea, maskArea, m_dataType,
+									  reference, thresholdW, m_derivScale, m_derivBias);
+
+		// If test is passing with relaxed threshold then mark quality warning
+		if (testResult == QP_TEST_RESULT_PASS)
+			testResult = QP_TEST_RESULT_QUALITY_WARNING;
+
+		return testResult;
 	}
 }
 
