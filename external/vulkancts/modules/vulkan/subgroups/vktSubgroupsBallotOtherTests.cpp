@@ -50,72 +50,14 @@ enum OpType
 static bool checkVertexPipelineStages(std::vector<const void*> datas,
 									  deUint32 width, deUint32)
 {
-	const deUint32* data =
-		reinterpret_cast<const deUint32*>(datas[0]);
-	for (deUint32 x = 0; x < width; ++x)
-	{
-		deUint32 val = data[x];
-
-		if (0xf != val)
-		{
-			return false;
-		}
-	}
-
-	return true;
+	return vkt::subgroups::check(datas, width, 0xf);
 }
 
 static bool checkCompute(std::vector<const void*> datas,
 						 const deUint32 numWorkgroups[3], const deUint32 localSize[3],
 						 deUint32)
 {
-	const deUint32* data =
-		reinterpret_cast<const deUint32*>(datas[0]);
-
-	for (deUint32 nX = 0; nX < numWorkgroups[0]; ++nX)
-	{
-		for (deUint32 nY = 0; nY < numWorkgroups[1]; ++nY)
-		{
-			for (deUint32 nZ = 0; nZ < numWorkgroups[2]; ++nZ)
-			{
-				for (deUint32 lX = 0; lX < localSize[0]; ++lX)
-				{
-					for (deUint32 lY = 0; lY < localSize[1]; ++lY)
-					{
-						for (deUint32 lZ = 0; lZ < localSize[2];
-								++lZ)
-						{
-							const deUint32 globalInvocationX =
-								nX * localSize[0] + lX;
-							const deUint32 globalInvocationY =
-								nY * localSize[1] + lY;
-							const deUint32 globalInvocationZ =
-								nZ * localSize[2] + lZ;
-
-							const deUint32 globalSizeX =
-								numWorkgroups[0] * localSize[0];
-							const deUint32 globalSizeY =
-								numWorkgroups[1] * localSize[1];
-
-							const deUint32 offset =
-								globalSizeX *
-								((globalSizeY *
-								  globalInvocationZ) +
-								 globalInvocationY) +
-								globalInvocationX;
-
-							if (0xf != data[offset])
-							{
-								return false;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return true;
+	return vkt::subgroups::checkCompute(datas, numWorkgroups, localSize, 0xf);
 }
 
 std::string getOpTypeName(int opType)

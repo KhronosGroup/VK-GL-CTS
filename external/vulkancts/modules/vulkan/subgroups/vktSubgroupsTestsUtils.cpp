@@ -1742,6 +1742,33 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 	return tcu::TestStatus::pass("OK");
 }
 
+bool vkt::subgroups::check(std::vector<const void*> datas,
+	deUint32 width, deUint32 ref)
+{
+	const deUint32* data = reinterpret_cast<const deUint32*>(datas[0]);
+
+	for (deUint32 n = 0; n < width; ++n)
+	{
+		if (data[n] != ref)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool vkt::subgroups::checkCompute(std::vector<const void*> datas,
+	const deUint32 numWorkgroups[3], const deUint32 localSize[3],
+	deUint32 ref)
+{
+	const deUint32 globalSizeX = numWorkgroups[0] * localSize[0];
+	const deUint32 globalSizeY = numWorkgroups[1] * localSize[1];
+	const deUint32 globalSizeZ = numWorkgroups[2] * localSize[2];
+
+	return check(datas, globalSizeX * globalSizeY * globalSizeZ, ref);
+}
+
 tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	Context& context, VkFormat format, SSBOData* extraData,
 	deUint32 extraDataCount,

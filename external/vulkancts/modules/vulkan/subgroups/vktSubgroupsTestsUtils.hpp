@@ -125,6 +125,13 @@ void setTesCtrlShaderFrameBuffer (vk::SourceCollections& programCollection);
 
 void setTesEvalShaderFrameBuffer (vk::SourceCollections& programCollection);
 
+bool check(std::vector<const void*> datas,
+	deUint32 width, deUint32 ref);
+
+bool checkCompute(std::vector<const void*> datas,
+	const deUint32 numWorkgroups[3], const deUint32 localSize[3],
+	deUint32 ref);
+
 tcu::TestStatus makeTessellationEvaluationFrameBufferTest(Context& context, vk::VkFormat format,
 	SSBOData* extraData, deUint32 extraDataCount,
 	bool (*checkResult)(std::vector<const void*> datas, deUint32 width, deUint32 subgroupSize),
