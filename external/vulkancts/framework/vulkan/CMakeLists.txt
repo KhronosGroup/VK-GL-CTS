@@ -87,8 +87,16 @@ if(DEQP_HAVE_SPIRV_TOOLS)
 	include_directories(${spirv-tools_SOURCE_DIR}/include)
 	include_directories(${spirv-tools_SOURCE_DIR}/external/include)
 
+	# \note Code interfacing with spirv-opt needs to include third-party headers
+	#       that cause all sorts of warnings to appear.
+	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
+		set_source_files_properties(
+			FILES vkPrograms.cpp
+			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS} -std=c++11")
+	endif ()
+
 	add_definitions(-DDEQP_HAVE_SPIRV_TOOLS=1)
-	set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-Tools)
+	set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-Tools SPIRV-Tools-opt)
 endif()
 
 add_library(vkutil STATIC ${VKUTIL_SRCS})

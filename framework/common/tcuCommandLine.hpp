@@ -217,6 +217,12 @@ public:
 	//! Get the filename for shader cache (--deqp-shadercache-filename)
 	const char*						getShaderCacheFilename		(void) const;
 
+	//! Get shader optimization recipe (--deqp-optimization-recipe)
+	int								getOptimizationRecipe		(void) const;
+
+	//! Enable optimizing of spir-v (--deqp-optimize-spirv)
+	bool							isSpirvOptimizationEnabled	(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

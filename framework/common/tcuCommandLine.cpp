@@ -91,6 +91,8 @@ DE_DECLARE_COMMAND_LINE_OPT(LogFlush,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(Validation,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCache,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(Optimization,				int);
+DE_DECLARE_COMMAND_LINE_OPT(OptimizeSpirv,				bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -181,7 +183,9 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<LogFlush>				(DE_NULL,	"deqp-log-flush",				"Enable or disable log file fflush",				s_enableNames,		"enable")
 		<< Option<Validation>			(DE_NULL,	"deqp-validation",				"Enable or disable test case validation",			s_enableNames,		"disable")
 		<< Option<ShaderCache>			(DE_NULL,	"deqp-shadercache",				"Enable or disable shader cache",					s_enableNames,		"disable")
-		<< Option<ShaderCacheFilename>	(DE_NULL,	"deqp-shadercache-filename",	"Write shader cache to given file",										"shadercache.bin");
+		<< Option<ShaderCacheFilename>	(DE_NULL,	"deqp-shadercache-filename",	"Write shader cache to given file",										"shadercache.bin")
+		<< Option<Optimization>			(DE_NULL,	"deqp-optimization-recipe",		"Shader optimization recipe (0=disabled)",								"0")
+		<< Option<OptimizeSpirv>		(DE_NULL,	"deqp-optimize-spirv",			"Apply optimization to spir-v shaders as well",		s_enableNames,		"disable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -797,6 +801,8 @@ bool					CommandLine::isValidationEnabled		(void) const	{ return m_cmdLine.getOp
 bool					CommandLine::isOutOfMemoryTestEnabled	(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();						}
 bool					CommandLine::isShadercacheEnabled		(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();					}
 const char*				CommandLine::getShaderCacheFilename		(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();	}
+int						CommandLine::getOptimizationRecipe		(void) const	{ return m_cmdLine.getOption<opt::Optimization>();					}
+bool					CommandLine::isSpirvOptimizationEnabled	(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();					}
 
 const char* CommandLine::getGLContextType (void) const
 {

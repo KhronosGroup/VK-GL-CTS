@@ -21,6 +21,10 @@
  * \brief Program utilities.
  *//*--------------------------------------------------------------------*/
 
+#if defined(DEQP_HAVE_SPIRV_TOOLS)
+#include "spirv-tools/optimizer.hpp"
+#endif
+
 #include "qpInfo.h"
 
 #include "vkPrograms.hpp"
@@ -65,6 +69,230 @@ ProgramBinary::ProgramBinary (ProgramFormat format, size_t binarySize, const deU
 
 namespace
 {
+
+#if defined(DEQP_HAVE_SPIRV_TOOLS)
+
+void optimizeCompiledBinary (vector<deUint32>& binary, int optimizationRecipe, const SpirvVersion spirvVersion)
+{
+	spv_target_env targetEnv = SPV_ENV_VULKAN_1_0;
+
+	// Map SpirvVersion with spv_target_env:
+	switch (spirvVersion)
+	{
+		case SPIRV_VERSION_1_0: targetEnv = SPV_ENV_VULKAN_1_0;	break;
+		case SPIRV_VERSION_1_1:
+		case SPIRV_VERSION_1_2:
+		case SPIRV_VERSION_1_3: targetEnv = SPV_ENV_VULKAN_1_1;	break;
+		default:
+			TCU_THROW(InternalError, "Unexpected SPIR-V version requested");
+	}
+
+	spvtools::Optimizer optimizer(targetEnv);
+
+	switch (optimizationRecipe)
+	{
+		case 1:
+			// The example recipe from:
+			// https://www.lunarg.com/wp-content/uploads/2017/08/SPIR-V-Shader-Size-Reduction-Using-spirv-opt_v1.0.pdf
+			optimizer.RegisterPass(spvtools::CreateInlineExhaustivePass());				// --inline-entry-points-exhaustive
+			optimizer.RegisterPass(spvtools::CreateLocalAccessChainConvertPass());		// --convert-local-access-chains
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());// --eliminate-local-single-block
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());			// --eliminate-local-single-store
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());			// --eliminate-insert-extract
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());				// --eliminate-dead-code-aggressive
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());				// --eliminate-dead-branches
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());					// --merge-blocks
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());// --eliminate-local-single-block
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());			// --eliminate-local-single-store
+			optimizer.RegisterPass(spvtools::CreateLocalMultiStoreElimPass());			// --eliminate-local-multi-store
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());			// --eliminate-insert-extract
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());				// --eliminate-dead-code-aggressive
+			optimizer.RegisterPass(spvtools::CreateCommonUniformElimPass());			// --eliminate-common-uniform
+			break;
+		case 2: // RegisterPerformancePasses from commandline optimizer tool october 2017
+			optimizer.RegisterPass(spvtools::CreateInlineExhaustivePass());
+			optimizer.RegisterPass(spvtools::CreateLocalAccessChainConvertPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());
+			optimizer.RegisterPass(spvtools::CreateLocalMultiStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateCommonUniformElimPass());
+			break;
+		case 3: // RegisterSizePasses from commandline optimizer tool october 2017
+			optimizer.RegisterPass(spvtools::CreateInlineExhaustivePass());
+			optimizer.RegisterPass(spvtools::CreateLocalAccessChainConvertPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());
+			optimizer.RegisterPass(spvtools::CreateLocalMultiStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateCommonUniformElimPass());
+			break;
+		case 4: // RegisterLegalizationPasses from commandline optimizer tool April 2018
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateMergeReturnPass());
+			optimizer.RegisterPass(spvtools::CreateInlineExhaustivePass());
+			optimizer.RegisterPass(spvtools::CreateEliminateDeadFunctionsPass());
+			optimizer.RegisterPass(spvtools::CreatePrivateToLocalPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateScalarReplacementPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateLocalMultiStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateCCPPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateSimplificationPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateCopyPropagateArraysPass());
+			optimizer.RegisterPass(spvtools::CreateDeadInsertElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			break;
+		case 5: // RegisterPerformancePasses from commandline optimizer tool April 2018
+			optimizer.RegisterPass(spvtools::CreateRemoveDuplicatesPass());
+			optimizer.RegisterPass(spvtools::CreateMergeReturnPass());
+			optimizer.RegisterPass(spvtools::CreateInlineExhaustivePass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateScalarReplacementPass());
+			optimizer.RegisterPass(spvtools::CreateLocalAccessChainConvertPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateLocalMultiStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateCCPPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateRedundancyEliminationPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateDeadInsertElimPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateSimplificationPass());
+			optimizer.RegisterPass(spvtools::CreateIfConversionPass());
+			optimizer.RegisterPass(spvtools::CreateCopyPropagateArraysPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());
+			optimizer.RegisterPass(spvtools::CreateRedundancyEliminationPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+				// comment from tool:
+			    // Currently exposing driver bugs resulting in crashes (#946)
+				// .RegisterPass(CreateCommonUniformElimPass())
+			break;
+		case 6: // RegisterPerformancePasses from commandline optimizer tool April 2018 with CreateCommonUniformElimPass
+			optimizer.RegisterPass(spvtools::CreateRemoveDuplicatesPass());
+			optimizer.RegisterPass(spvtools::CreateMergeReturnPass());
+			optimizer.RegisterPass(spvtools::CreateInlineExhaustivePass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateScalarReplacementPass());
+			optimizer.RegisterPass(spvtools::CreateLocalAccessChainConvertPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateLocalMultiStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateCCPPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateRedundancyEliminationPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateDeadInsertElimPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateSimplificationPass());
+			optimizer.RegisterPass(spvtools::CreateIfConversionPass());
+			optimizer.RegisterPass(spvtools::CreateCopyPropagateArraysPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());
+			optimizer.RegisterPass(spvtools::CreateRedundancyEliminationPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateCommonUniformElimPass());
+			break;
+		case 7: // RegisterSizePasses from commandline optimizer tool April 2018
+			optimizer.RegisterPass(spvtools::CreateRemoveDuplicatesPass());
+			optimizer.RegisterPass(spvtools::CreateMergeReturnPass());
+			optimizer.RegisterPass(spvtools::CreateInlineExhaustivePass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateScalarReplacementPass());
+			optimizer.RegisterPass(spvtools::CreateLocalAccessChainConvertPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateDeadInsertElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalMultiStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateCCPPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateIfConversionPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateDeadInsertElimPass());
+			optimizer.RegisterPass(spvtools::CreateRedundancyEliminationPass());
+			optimizer.RegisterPass(spvtools::CreateCFGCleanupPass());
+				// comment from tool:
+				// Currently exposing driver bugs resulting in crashes (#946)
+				// .RegisterPass(CreateCommonUniformElimPass())
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			break;
+		case 8: // RegisterSizePasses from commandline optimizer tool April 2018 with CreateCommonUniformElimPass
+			optimizer.RegisterPass(spvtools::CreateRemoveDuplicatesPass());
+			optimizer.RegisterPass(spvtools::CreateMergeReturnPass());
+			optimizer.RegisterPass(spvtools::CreateInlineExhaustivePass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateScalarReplacementPass());
+			optimizer.RegisterPass(spvtools::CreateLocalAccessChainConvertPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalSingleStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateDeadInsertElimPass());
+			optimizer.RegisterPass(spvtools::CreateLocalMultiStoreElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateCCPPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateDeadBranchElimPass());
+			optimizer.RegisterPass(spvtools::CreateIfConversionPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			optimizer.RegisterPass(spvtools::CreateBlockMergePass());
+			optimizer.RegisterPass(spvtools::CreateInsertExtractElimPass());
+			optimizer.RegisterPass(spvtools::CreateDeadInsertElimPass());
+			optimizer.RegisterPass(spvtools::CreateRedundancyEliminationPass());
+			optimizer.RegisterPass(spvtools::CreateCFGCleanupPass());
+			optimizer.RegisterPass(spvtools::CreateCommonUniformElimPass());
+			optimizer.RegisterPass(spvtools::CreateAggressiveDCEPass());
+			break;
+		default:
+			TCU_THROW(InternalError, "Unknown optimization recipe requested");
+	}
+
+	const bool ok = optimizer.Run(binary.data(), binary.size(), &binary);
+
+	if (!ok)
+		TCU_THROW(InternalError, "Optimizer call failed");
+}
+
+#endif // defined(DEQP_HAVE_SPIRV_TOOLS)
+
 
 bool isNativeSpirVBinaryEndianness (void)
 {
@@ -275,7 +503,7 @@ void getCompileEnvironment (std::string& shaderstring)
 }
 
 // Insert compilation options into the shader string.
-void getBuildOptions (std::string& shaderstring, const ShaderBuildOptions& buildOptions)
+void getBuildOptions (std::string& shaderstring, const ShaderBuildOptions& buildOptions, int optimizationRecipe)
 {
 	shaderstring += "Target Spir-V ";
 	shaderstring += getSpirvVersionName(buildOptions.targetVersion);
@@ -284,20 +512,27 @@ void getBuildOptions (std::string& shaderstring, const ShaderBuildOptions& build
 		shaderstring += "Flag:Allow relaxed offsets\n";
 	if (buildOptions.flags & ShaderBuildOptions::FLAG_USE_STORAGE_BUFFER_STORAGE_CLASS)
 		shaderstring += "Flag:Use storage buffer storage class\n";
+	if (optimizationRecipe != 0)
+	{
+		shaderstring += "Optimization recipe ";
+		shaderstring += optimizationRecipe;
+		shaderstring += "\n";
+	}
 }
 
 ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine)
 {
-	const SpirvVersion	spirvVersion	= program.buildOptions.targetVersion;
-	const bool			validateBinary	= VALIDATE_BINARIES;
+	const SpirvVersion	spirvVersion		= program.buildOptions.targetVersion;
+	const bool			validateBinary		= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
 	std::string			shaderstring;
-	vk::ProgramBinary*	res				= 0;
+	vk::ProgramBinary*	res					= 0;
+	const int			optimizationRecipe	= commandLine.getOptimizationRecipe();
 
 	if (commandLine.isShadercacheEnabled())
 	{
 		getCompileEnvironment(shaderstring);
-		getBuildOptions(shaderstring, program.buildOptions);
+		getBuildOptions(shaderstring, program.buildOptions, optimizationRecipe);
 
 		for (int i = 0; i < glu::SHADERTYPE_LAST; i++)
 		{
@@ -351,6 +586,9 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 		if (validateBinary)
 			validateCompiledBinary(binary, buildInfo, spirvVersion);
 
+		if (optimizationRecipe != 0)
+			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
+
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
 			shadercacheSave(res, shaderstring, commandLine.getShaderCacheFilename());
@@ -360,16 +598,17 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 
 ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine)
 {
-	const SpirvVersion	spirvVersion	= program.buildOptions.targetVersion;
-	const bool			validateBinary	= VALIDATE_BINARIES;
+	const SpirvVersion	spirvVersion		= program.buildOptions.targetVersion;
+	const bool			validateBinary		= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
 	std::string			shaderstring;
-	vk::ProgramBinary*	res				= 0;
+	vk::ProgramBinary*	res					= 0;
+	const int			optimizationRecipe	= commandLine.getOptimizationRecipe();
 
 	if (commandLine.isShadercacheEnabled())
 	{
 		getCompileEnvironment(shaderstring);
-		getBuildOptions(shaderstring, program.buildOptions);
+		getBuildOptions(shaderstring, program.buildOptions, optimizationRecipe);
 
 		for (int i = 0; i < glu::SHADERTYPE_LAST; i++)
 		{
@@ -423,6 +662,9 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 		if (validateBinary)
 			validateCompiledBinary(binary, buildInfo, spirvVersion);
 
+		if (optimizationRecipe != 0)
+			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
+
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
 			shadercacheSave(res, shaderstring, commandLine.getShaderCacheFilename());
@@ -437,6 +679,7 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 	vector<deUint32>	binary;
 	vk::ProgramBinary*	res					= 0;
 	std::string			shaderstring;
+	const int			optimizationRecipe	= commandLine.isSpirvOptimizationEnabled() ? commandLine.getOptimizationRecipe() : 0;
 
 	if (commandLine.isShadercacheEnabled())
 	{
@@ -444,6 +687,12 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 		shaderstring += "Target Spir-V ";
 		shaderstring += getSpirvVersionName(spirvVersion);
 		shaderstring += "\n";
+		if (optimizationRecipe != 0)
+		{
+			shaderstring += "Optimization recipe ";
+			shaderstring += optimizationRecipe;
+			shaderstring += "\n";
+		}
 
 		shaderstring += program.source;
 
@@ -476,6 +725,9 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 				TCU_THROW(InternalError, "Validation failed for assembled SPIR-V binary");
 			}
 		}
+
+		if (optimizationRecipe != 0)
+			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())

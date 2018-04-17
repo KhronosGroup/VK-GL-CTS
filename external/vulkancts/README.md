@@ -370,3 +370,48 @@ case list must be refreshed by running:
 	python scripts/build_caselists.py path/to/cherry/data
 
 Cherry must be restarted for the case list update to take effect.
+
+
+Shader Optimizer
+----------------
+
+Vulkan CTS can be optionally run with the shader optimizer enabled. This
+is an experimental feature which can be used to further stress both the
+drivers as well as the optimizer itself. The shader optimizer is disabled
+by default.
+
+The following command line options can be used to configure the shader
+optimizer:
+
+	--deqp-optimization-recipe=<number>
+
+The list of the optimization recipes can be found and customized in the
+`optimizeCompiledBinary()` function in `vkPrograms.cpp`.
+
+As of this writing, there are 8 recipes to choose from:
+
+	0. Disabled (default)
+	1. The example recipe from spir-v opt 1.0 whitepaper
+	2. RegisterPerformancePasses from commandline optimizer tool october 2017
+	3. RegisterSizePasses from commandline optimizer tool october 2017
+	4. RegisterLegalizationPasses from commandline optimizer tool April 2018
+	5. RegisterPerformancePasses from commandline optimizer tool April 2018
+	6. RegisterPerformancePasses from commandline optimizer tool April 2018 with CreateCommonUniformElimPass
+	7. RegisterSizePasses from commandline optimizer tool April 2018
+	8. RegisterSizePasses from commandline optimizer tool April 2018 with CreateCommonUniformElimPass
+
+The `Register...Passes()` calls change in the SPIR-V optimizer tool from
+time to time. Since different sets of passes may result in different
+shaders, having several fixed sets is useful for issue discovery.
+
+	--deqp-optimize-spirv=enable
+
+This option is not required to run the optimizer. By default, the shader
+optimizer only optimizes shaders generated from GLSL or HLSL, and leaves
+hand-written SPIR-V shaders alone.
+
+Many of the hand-written SPIR-V tests stress specific features of the
+SPIR-V which might get optimized out. Using this option will enable the
+optimizer on the hand-written SPIR-V as well, which may be useful in
+finding new bugs in drivers or the optimizer itself, but will likely
+invalidate the tests themselves.
