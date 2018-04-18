@@ -1918,7 +1918,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 	beforeDraw();
 
-	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	//Create secondary buffer
 	const VkCommandBufferAllocateInfo	cmdBufferAllocateInfo	=
