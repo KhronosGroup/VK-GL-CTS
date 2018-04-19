@@ -106,6 +106,7 @@ static const FormatKey s_extSrgbWriteControlFormats[] =
 static const FormatKey s_es3NoExtRboFormats[] =
 {
 	GL_RGB10_A2,
+	GL_SRGB8_ALPHA8,
 };
 static const FormatKey s_es3NoExtTextureFormats[] =
 {
