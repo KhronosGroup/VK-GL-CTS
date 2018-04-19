@@ -37,6 +37,7 @@
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuVector.hpp"
@@ -188,60 +189,6 @@ VkImageCreateInfo makeImageCreateInfo (const VkFormat format, const UVec2& size,
 	return imageParams;
 }
 
-//! A single-attachment, single-subpass render pass.
-Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
-								   const VkDevice			device,
-								   const VkFormat			colorFormat)
-{
-	const VkAttachmentDescription colorAttachmentDescription =
-	{
-		(VkAttachmentDescriptionFlags)0,					// VkAttachmentDescriptionFlags		flags;
-		colorFormat,										// VkFormat							format;
-		VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
-		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
-		VK_IMAGE_LAYOUT_UNDEFINED,							// VkImageLayout					initialLayout;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,			// VkImageLayout					finalLayout;
-	};
-
-	const VkAttachmentReference colorAttachmentRef =
-	{
-		0u,													// deUint32			attachment;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL			// VkImageLayout	layout;
-	};
-
-	const VkSubpassDescription subpassDescription =
-	{
-		(VkSubpassDescriptionFlags)0,						// VkSubpassDescriptionFlags		flags;
-		VK_PIPELINE_BIND_POINT_GRAPHICS,					// VkPipelineBindPoint				pipelineBindPoint;
-		0u,													// deUint32							inputAttachmentCount;
-		DE_NULL,											// const VkAttachmentReference*		pInputAttachments;
-		1u,													// deUint32							colorAttachmentCount;
-		&colorAttachmentRef,								// const VkAttachmentReference*		pColorAttachments;
-		DE_NULL,											// const VkAttachmentReference*		pResolveAttachments;
-		DE_NULL,											// const VkAttachmentReference*		pDepthStencilAttachment;
-		0u,													// deUint32							preserveAttachmentCount;
-		DE_NULL												// const deUint32*					pPreserveAttachments;
-	};
-
-	const VkRenderPassCreateInfo renderPassInfo =
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,			// VkStructureType					sType;
-		DE_NULL,											// const void*						pNext;
-		(VkRenderPassCreateFlags)0,							// VkRenderPassCreateFlags			flags;
-		1u,													// deUint32							attachmentCount;
-		&colorAttachmentDescription,						// const VkAttachmentDescription*	pAttachments;
-		1u,													// deUint32							subpassCount;
-		&subpassDescription,								// const VkSubpassDescription*		pSubpasses;
-		0u,													// deUint32							dependencyCount;
-		DE_NULL												// const VkSubpassDependency*		pDependencies;
-	};
-
-	return createRenderPass(vk, device, &renderPassInfo);
-}
-
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									   const VkDevice				device,
 									   const VkPipelineLayout		pipelineLayout,
@@ -310,7 +257,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 	for (std::vector<UVec4>::const_iterator it = cells.begin(); it != cells.end(); ++it) {
 		const VkViewport viewport = makeViewport(float(it->x()), float(it->y()), float(it->z()), float(it->w()), 0.0f, 1.0f);
 		viewports.push_back(viewport);
-		const VkRect2D rect = { {0, 0}, {renderSize.x(), renderSize.y()} };
+		const VkRect2D rect = makeRect2D(renderSize);
 		rectScissors.push_back(rect);
 	}
 

@@ -34,6 +34,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include <string>
 

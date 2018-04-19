@@ -749,21 +749,8 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		VK_FALSE,														// VkBool32									primitiveRestartEnable;
 	};
 
-	const VkViewport								viewport							=
-	{
-		0.0f,								// float	originX;
-		0.0f,								// float	originY;
-		(float)m_parameters.extent.width,	// float	width;
-		(float)m_parameters.extent.height,	// float	height;
-		0.0f,								// float	minDepth;
-		1.0f								// float	maxDepth;
-	};
-
-	const VkRect2D									scissor								=
-	{
-		{ 0, 0 },													// VkOffset2D	offset;
-		{ m_parameters.extent.width, m_parameters.extent.height }	// VkExtent2D	extent;
-	};
+	const VkViewport								viewport							= makeViewport(m_parameters.extent);
+	const VkRect2D									scissor								= makeRect2D(m_parameters.extent);
 
 	const VkPipelineViewportStateCreateInfo			viewportStateParams					=
 	{
@@ -2608,7 +2595,7 @@ void MultiViewReadbackTestInstance::beforeDraw (void)
 
 void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines, const bool clearPass)
 {
-	const VkRect2D					renderArea				= { { 0, 0 }, { m_parameters.extent.width, m_parameters.extent.height } };
+	const VkRect2D					renderArea				= makeRect2D(m_parameters.extent);
 	const deUint32					drawCountPerSubpass		= (subpassCount == 1) ? m_squareCount : 1u;
 	const bool						withClearColor			= (clearPass && m_parameters.viewIndex == TEST_TYPE_READBACK_WITH_IMPLICIT_CLEAR);
 

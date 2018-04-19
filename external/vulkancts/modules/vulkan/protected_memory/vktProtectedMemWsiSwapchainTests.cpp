@@ -37,6 +37,7 @@
 #include "vkDeviceUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "vkWsiPlatform.hpp"
 #include "vkWsiUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
@@ -681,191 +682,20 @@ vk::Move<vk::VkPipeline> TriangleRenderer::createPipeline (const vk::DeviceInter
 	//		 and can be deleted immediately following that call.
 	const vk::Unique<vk::VkShaderModule>				vertShaderModule		(createShaderModule(vkd, device, binaryCollection.get("tri-vert"), 0));
 	const vk::Unique<vk::VkShaderModule>				fragShaderModule		(createShaderModule(vkd, device, binaryCollection.get("tri-frag"), 0));
+	const std::vector<vk::VkViewport>					viewports				(1, vk::makeViewport(renderSize));
+	const std::vector<vk::VkRect2D>						scissors				(1, vk::makeRect2D(renderSize));
 
-	const vk::VkPipelineShaderStageCreateInfo			shaderStageParams[]		=
-	{
-		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			(vk::VkPipelineShaderStageCreateFlags)0,
-			vk::VK_SHADER_STAGE_VERTEX_BIT,
-			*vertShaderModule,
-			"main",
-			DE_NULL
-		},
-		{
-			vk::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			DE_NULL,
-			(vk::VkPipelineShaderStageCreateFlags)0,
-			vk::VK_SHADER_STAGE_FRAGMENT_BIT,
-			*fragShaderModule,
-			"main",
-			DE_NULL
-		}
-	};
-	const vk::VkPipelineDepthStencilStateCreateInfo		depthStencilParams		=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineDepthStencilStateCreateFlags)0,
-		DE_FALSE,									// depthTestEnable
-		DE_FALSE,									// depthWriteEnable
-		vk::VK_COMPARE_OP_ALWAYS,					// depthCompareOp
-		DE_FALSE,									// depthBoundsTestEnable
-		DE_FALSE,									// stencilTestEnable
-		{
-			vk::VK_STENCIL_OP_KEEP,						// failOp
-			vk::VK_STENCIL_OP_KEEP,						// passOp
-			vk::VK_STENCIL_OP_KEEP,						// depthFailOp
-			vk::VK_COMPARE_OP_ALWAYS,					// compareOp
-			0u,											// compareMask
-			0u,											// writeMask
-			0u,											// reference
-		},											// front
-		{
-			vk::VK_STENCIL_OP_KEEP,						// failOp
-			vk::VK_STENCIL_OP_KEEP,						// passOp
-			vk::VK_STENCIL_OP_KEEP,						// depthFailOp
-			vk::VK_COMPARE_OP_ALWAYS,					// compareOp
-			0u,											// compareMask
-			0u,											// writeMask
-			0u,											// reference
-		},											// back
-		-1.0f,										// minDepthBounds
-		+1.0f,										// maxDepthBounds
-	};
-	const vk::VkViewport								viewport0				=
-	{
-		0.0f,										// x
-		0.0f,										// y
-		(float)renderSize.x(),						// width
-		(float)renderSize.y(),						// height
-		0.0f,										// minDepth
-		1.0f,										// maxDepth
-	};
-	const vk::VkRect2D									scissor0				=
-	{
-		{ 0u, 0u, },								// offset
-		{ renderSize.x(), renderSize.y() },			// extent
-	};
-	const vk::VkPipelineViewportStateCreateInfo			viewportParams			=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineViewportStateCreateFlags)0,
-		1u,
-		&viewport0,
-		1u,
-		&scissor0
-	};
-	const vk::VkPipelineMultisampleStateCreateInfo		multisampleParams		=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineMultisampleStateCreateFlags)0,
-		vk::VK_SAMPLE_COUNT_1_BIT,					// rasterizationSamples
-		VK_FALSE,									// sampleShadingEnable
-		0.0f,										// minSampleShading
-		(const vk::VkSampleMask*)DE_NULL,			// sampleMask
-		VK_FALSE,									// alphaToCoverageEnable
-		VK_FALSE,									// alphaToOneEnable
-	};
-	const vk::VkPipelineRasterizationStateCreateInfo	rasterParams			=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineRasterizationStateCreateFlags)0,
-		VK_FALSE,										// depthClampEnable
-		VK_FALSE,										// rasterizerDiscardEnable
-		vk::VK_POLYGON_MODE_FILL,						// polygonMode
-		vk::VK_CULL_MODE_NONE,							// cullMode
-		vk::VK_FRONT_FACE_COUNTER_CLOCKWISE,			// frontFace
-		VK_FALSE,										// depthBiasEnable
-		0.0f,											// depthBiasConstantFactor
-		0.0f,											// depthBiasClamp
-		0.0f,											// depthBiasSlopeFactor
-		1.0f,											// lineWidth
-	};
-	const vk::VkPipelineInputAssemblyStateCreateInfo	inputAssemblyParams		=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineInputAssemblyStateCreateFlags)0,
-		vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		DE_FALSE,									// primitiveRestartEnable
-	};
-	const vk::VkVertexInputBindingDescription			vertexBinding0			=
-	{
-		0u,											// binding
-		(deUint32)sizeof(tcu::Vec4),				// stride
-		vk::VK_VERTEX_INPUT_RATE_VERTEX,			// inputRate
-	};
-	const vk::VkVertexInputAttributeDescription			vertexAttrib0			=
-	{
-		0u,											// location
-		0u,											// binding
-		vk::VK_FORMAT_R32G32B32A32_SFLOAT,			// format
-		0u,											// offset
-	};
-	const vk::VkPipelineVertexInputStateCreateInfo		vertexInputStateParams	=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineVertexInputStateCreateFlags)0,
-		1u,
-		&vertexBinding0,
-		1u,
-		&vertexAttrib0,
-	};
-	const vk::VkPipelineColorBlendAttachmentState		attBlendParams0			=
-	{
-		VK_FALSE,									// blendEnable
-		vk::VK_BLEND_FACTOR_ONE,					// srcColorBlendFactor
-		vk::VK_BLEND_FACTOR_ZERO,					// dstColorBlendFactor
-		vk::VK_BLEND_OP_ADD,						// colorBlendOp
-		vk::VK_BLEND_FACTOR_ONE,					// srcAlphaBlendFactor
-		vk::VK_BLEND_FACTOR_ZERO,					// dstAlphaBlendFactor
-		vk::VK_BLEND_OP_ADD,						// alphaBlendOp
-		(vk::VK_COLOR_COMPONENT_R_BIT|
-		 vk::VK_COLOR_COMPONENT_G_BIT|
-		 vk::VK_COLOR_COMPONENT_B_BIT|
-		 vk::VK_COLOR_COMPONENT_A_BIT),				// colorWriteMask
-	};
-	const vk::VkPipelineColorBlendStateCreateInfo		blendParams				=
-	{
-		vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineColorBlendStateCreateFlags)0,
-		VK_FALSE,									// logicOpEnable
-		vk::VK_LOGIC_OP_COPY,
-		1u,
-		&attBlendParams0,
-		{ 0.0f, 0.0f, 0.0f, 0.0f },					// blendConstants[4]
-	};
-	const vk::VkGraphicsPipelineCreateInfo				pipelineParams			=
-	{
-		vk::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		DE_NULL,
-		(vk::VkPipelineCreateFlags)0,
-		(deUint32)DE_LENGTH_OF_ARRAY(shaderStageParams),
-		shaderStageParams,
-		&vertexInputStateParams,
-		&inputAssemblyParams,
-		(const vk::VkPipelineTessellationStateCreateInfo*)DE_NULL,
-		&viewportParams,
-		&rasterParams,
-		&multisampleParams,
-		&depthStencilParams,
-		&blendParams,
-		(const vk::VkPipelineDynamicStateCreateInfo*)DE_NULL,
-		pipelineLayout,
-		renderPass,
-		0u,											// subpass
-		DE_NULL,									// basePipelineHandle
-		0u,											// basePipelineIndex
-	};
-
-	return vk::createGraphicsPipeline(vkd, device, (vk::VkPipelineCache)0, &pipelineParams);
+	return vk::makeGraphicsPipeline(vkd,				// const DeviceInterface&            vk
+									device,				// const VkDevice                    device
+									pipelineLayout,		// const VkPipelineLayout            pipelineLayout
+									*vertShaderModule,	// const VkShaderModule              vertexShaderModule
+									DE_NULL,			// const VkShaderModule              tessellationControlShaderModule
+									DE_NULL,			// const VkShaderModule              tessellationEvalShaderModule
+									DE_NULL,			// const VkShaderModule              geometryShaderModule
+									*fragShaderModule,	// const VkShaderModule              fragmentShaderModule
+									renderPass,			// const VkRenderPass                renderPass
+									viewports,			// const std::vector<VkViewport>&    viewports
+									scissors);			// const std::vector<VkRect2D>&      scissors
 }
 
 TriangleRenderer::TriangleRenderer (ProtectedContext&				context,

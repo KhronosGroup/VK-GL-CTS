@@ -3104,26 +3104,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		-1.0f,														//	float				minDepthBounds;
 		+1.0f,														//	float				maxDepthBounds;
 	};
-	const VkViewport						viewport0				=
-	{
-		0.0f,														//	float	originX;
-		0.0f,														//	float	originY;
-		(float)renderSize.x(),										//	float	width;
-		(float)renderSize.y(),										//	float	height;
-		0.0f,														//	float	minDepth;
-		1.0f,														//	float	maxDepth;
-	};
-	const VkRect2D							scissor0				=
-	{
-		{
-			0u,															//	deInt32	x;
-			0u,															//	deInt32	y;
-		},															//	VkOffset2D	offset;
-		{
-			renderSize.x(),												//	deInt32	width;
-			renderSize.y(),												//	deInt32	height;
-		},															//	VkExtent2D	extent;
-	};
+	const VkViewport							viewport0				= makeViewport(renderSize);
+	const VkRect2D								scissor0				= makeRect2D(renderSize);
 	const VkPipelineViewportStateCreateInfo		viewportParams			=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		//	VkStructureType		sType;

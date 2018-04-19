@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 2.8.2)
 
 find_package(Git)
+find_package(PythonInterp 2)
 
 # dEQP Target.
 set(DEQP_TARGET "default" CACHE STRING "dEQP Target (default, android...)")

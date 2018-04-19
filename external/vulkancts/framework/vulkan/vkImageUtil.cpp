@@ -2601,7 +2601,8 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImageAspectFlags						imageAspectFlags,
 						deUint32								mipLevels,
 						deUint32								arrayLayers,
-						VkImage									destImage)
+						VkImage									destImage,
+						VkImageLayout							destImageLayout)
 {
 	Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -2648,7 +2649,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
 		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout			newLayout;
+		destImageLayout,								// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
 		destImage,										// VkImage					image;

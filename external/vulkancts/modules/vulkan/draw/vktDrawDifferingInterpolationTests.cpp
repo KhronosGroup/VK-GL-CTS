@@ -28,6 +28,7 @@
 #include "vktDrawBaseClass.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 
 #include "deDefs.h"
@@ -255,19 +256,8 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			Move<VkPipelineLayout>			pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 			const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
-			VkViewport viewport;
-			viewport.x				= 0;
-			viewport.y				= 0;
-			viewport.width			= static_cast<float>(WIDTH);
-			viewport.height			= static_cast<float>(HEIGHT);
-			viewport.minDepth		= 0.0f;
-			viewport.maxDepth		= 1.0f;
-
-			VkRect2D scissor;
-			scissor.offset.x		= 0;
-			scissor.offset.y		= 0;
-			scissor.extent.width	= WIDTH;
-			scissor.extent.height	= HEIGHT;
+			VkViewport	viewport	= makeViewport(WIDTH, HEIGHT);
+			VkRect2D	scissor		= makeRect2D(WIDTH, HEIGHT);
 
 			const VkVertexInputBindingDescription vertexInputBindingDescription = { 0, (deUint32)sizeof(tcu::Vec4) * 2, VK_VERTEX_INPUT_RATE_VERTEX };
 
@@ -305,7 +295,7 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 				VK_ACCESS_TRANSFER_WRITE_BIT,
 				VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
 			};
-			const VkRect2D				renderArea			= { { 0, 0 }, { WIDTH, HEIGHT } };
+			const VkRect2D				renderArea			= makeRect2D(WIDTH, HEIGHT);
 			const VkDeviceSize			vertexBufferOffset	= 0;
 			const VkBuffer				buffer				= vertexBuffer->object();
 			const VkOffset3D			zeroOffset			= { 0, 0, 0 };

@@ -35,9 +35,9 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
-#include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
@@ -203,55 +203,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 	}
 
 	// Create render pass
-	{
-		const VkAttachmentDescription	colorAttachmentDescription		=
-		{
-			0u,															// VkAttachmentDescriptionFlags flags;
-			m_colorFormat,												// VkFormat					format;
-			VK_SAMPLE_COUNT_1_BIT,										// deUint32					samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,								// VkAttachmentLoadOp		loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,								// VkAttachmentStoreOp		storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,							// VkAttachmentLoadOp		stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,							// VkAttachmentStoreOp		stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			finalLayout;
-		};
-
-		const VkAttachmentReference		colorAttachmentReference		=
-		{
-			0u,															// deUint32					attachment;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL					// VkImageLayout			layout;
-		};
-
-		const VkSubpassDescription		subpassDescription				=
-		{
-			0u,															// VkSubpassDescriptionFlags flags;
-			VK_PIPELINE_BIND_POINT_GRAPHICS,							// VkPipelineBindPoint		pipelineBindPoint;
-			0u,															// deUint32					inputCount;
-			DE_NULL,													// const VkAttachmentReference* pInputAttachments;
-			1u,															// deUint32					colorCount;
-			&colorAttachmentReference,									// const VkAttachmentReference* pColorAttachments;
-			DE_NULL,													// const VkAttachmentReference* pResolveAttachments;
-			DE_NULL,													// VkAttachmentReference	depthStencilAttachment;
-			0u,															// deUint32					preserveCount;
-			DE_NULL														// const VkAttachmentReference* pPreserveAttachments;
-		};
-
-		const VkRenderPassCreateInfo	renderPassParams				=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,					// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			(VkRenderPassCreateFlags)0,
-			1u,															// deUint32					attachmentCount;
-			&colorAttachmentDescription,								// const VkAttachmentDescription* pAttachments;
-			1u,															// deUint32					subpassCount;
-			&subpassDescription,										// const VkSubpassDescription* pSubpasses;
-			0u,															// deUint32					dependencyCount;
-			DE_NULL														// const VkSubpassDependency* pDependencies;
-		};
-
-		m_renderPass = createRenderPass(vk, vkDevice, &renderPassParams);
-	}
+	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat);
 
 	// Create framebuffer
 	{
@@ -401,184 +353,20 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 	// Create pipeline
 	{
+		const std::vector<VkViewport>	viewports	(1, makeViewport(m_renderSize));
+		const std::vector<VkRect2D>		scissors	(1, makeRect2D(m_renderSize));
 
-		const VkPipelineShaderStageCreateInfo
-										shaderStageParams[2]			=
-		{
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType			sType;
-				DE_NULL,												// const void*				pNext;
-				(VkPipelineShaderStageCreateFlags)0,
-				VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStage			stage;
-				*m_vertexShaderModule,									// VkShader					shader;
-				"main",
-				DE_NULL													// const VkSpecializationInfo* pSpecializationInfo;
-			},
-			{
-				VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType			sType;
-				DE_NULL,												// const void*				pNext;
-				(VkPipelineShaderStageCreateFlags)0,
-				VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStage			stage;
-				*m_fragmentShaderModule,								// VkShader					shader;
-				"main",
-				DE_NULL													// const VkSpecializationInfo* pSpecializationInfo;
-			}
-		};
-
-		const VkVertexInputBindingDescription
-										vertexInputBindingDescription	=
-		{
-			0u,															// deUint32					binding;
-			sizeof(tcu::Vec4),											// deUint32					strideInBytes;
-			VK_VERTEX_INPUT_RATE_VERTEX									// VkVertexInputStepRate	stepRate;
-		};
-
-		const VkVertexInputAttributeDescription
-										vertexInputAttributeDescriptions[1]
-																		=
-		{
-			{
-				0u,														// deUint32					location;
-				0u,														// deUint32					binding;
-				VK_FORMAT_R32G32B32A32_SFLOAT,							// VkFormat					format;
-				0u														// deUint32					offsetInBytes;
-			}
-		};
-
-		const VkPipelineVertexInputStateCreateInfo
-										vertexInputStateParams			=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			(VkPipelineVertexInputStateCreateFlags)0,
-			1u,															// deUint32					bindingCount;
-			&vertexInputBindingDescription,								// const VkVertexInputBindingDescription* pVertexBindingDescriptions;
-			1u,															// deUint32					attributeCount;
-			vertexInputAttributeDescriptions							// const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-		};
-
-		const VkPipelineInputAssemblyStateCreateInfo
-										inputAssemblyStateParams		=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			(VkPipelineInputAssemblyStateCreateFlags)0,
-			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,						// VkPrimitiveTopology		topology;
-			false														// VkBool32					primitiveRestartEnable;
-		};
-
-		const VkViewport				viewport						=
-		{
-			0.0f,														// float					originX;
-			0.0f,														// float					originY;
-			(float)m_renderSize.x(),									// float					width;
-			(float)m_renderSize.y(),									// float					height;
-			0.0f,														// float					minDepth;
-			1.0f														// float					maxDepth;
-		};
-		const VkRect2D					scissor							=
-		{
-			{ 0, 0 },													// VkOffset2D				offset;
-			{ (deUint32)m_renderSize.x(), (deUint32)m_renderSize.y() }	// VkExtent2D				extent;
-		};
-		const VkPipelineViewportStateCreateInfo
-										viewportStateParams				=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			(VkPipelineViewportStateCreateFlags)0,
-			1u,															// deUint32					viewportCount;
-			&viewport,													// const VkViewport*		pViewports;
-			1u,															// deUint32					scissorCount;
-			&scissor													// const VkRect2D*			pScissors;
-		};
-
-		const VkPipelineRasterizationStateCreateInfo
-										rasterStateParams				=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			(VkPipelineRasterizationStateCreateFlags)0,
-			false,														// VkBool32					depthClipEnable;
-			false,														// VkBool32					rasterizerDiscardEnable;
-			VK_POLYGON_MODE_FILL,										// VkFillMode				fillMode;
-			VK_CULL_MODE_NONE,											// VkCullMode				cullMode;
-			VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace				frontFace;
-			VK_FALSE,													// VkBool32					depthBiasEnable;
-			0.0f,														// float					depthBias;
-			0.0f,														// float					depthBiasClamp;
-			0.0f,														// float					slopeScaledDepthBias;
-			1.0f,														// float					lineWidth;
-		};
-
-		const VkPipelineMultisampleStateCreateInfo
-										multisampleStateParams			=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			0u,															// VkPipelineMultisampleStateCreateFlags flags;
-			VK_SAMPLE_COUNT_1_BIT,										// VkSampleCountFlagBits	rasterizationSamples;
-			VK_FALSE,													// VkBool32					sampleShadingEnable;
-			0.0f,														// float					minSampleShading;
-			DE_NULL,													// const VkSampleMask*		pSampleMask;
-			VK_FALSE,													// VkBool32					alphaToCoverageEnable;
-			VK_FALSE													// VkBool32					alphaToOneEnable;
-		};
-
-		const VkPipelineColorBlendAttachmentState
-										colorBlendAttachmentState		=
-		{
-			false,														// VkBool32					blendEnable;
-			VK_BLEND_FACTOR_ONE,										// VkBlend					srcBlendColor;
-			VK_BLEND_FACTOR_ZERO,										// VkBlend					destBlendColor;
-			VK_BLEND_OP_ADD,											// VkBlendOp				blendOpColor;
-			VK_BLEND_FACTOR_ONE,										// VkBlend					srcBlendAlpha;
-			VK_BLEND_FACTOR_ZERO,										// VkBlend					destBlendAlpha;
-			VK_BLEND_OP_ADD,											// VkBlendOp				blendOpAlpha;
-			(VK_COLOR_COMPONENT_R_BIT |
-			 VK_COLOR_COMPONENT_G_BIT |
-			 VK_COLOR_COMPONENT_B_BIT |
-			 VK_COLOR_COMPONENT_A_BIT)									// VkChannelFlags			channelWriteMask;
-		};
-
-		const VkPipelineColorBlendStateCreateInfo
-										colorBlendStateParams			=
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			(VkPipelineColorBlendStateCreateFlags)0,
-			false,														// VkBool32					logicOpEnable;
-			VK_LOGIC_OP_COPY,											// VkLogicOp				logicOp;
-			1u,															// deUint32					attachmentCount;
-			&colorBlendAttachmentState,									// const VkPipelineColorBlendAttachmentState* pAttachments;
-			{ 0.0f, 0.0f, 0.0f, 0.0f },									// float					blendConst[4];
-		};
-
-		const VkGraphicsPipelineCreateInfo
-										graphicsPipelineParams			=
-		{
-			VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,			// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			0u,															// VkPipelineCreateFlags	flags;
-			2u,															// deUint32					stageCount;
-			shaderStageParams,											// const VkPipelineShaderStageCreateInfo*			pStages;
-			&vertexInputStateParams,									// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-			&inputAssemblyStateParams,									// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-			DE_NULL,													// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-			&viewportStateParams,										// const VkPipelineViewportStateCreateInfo*			pViewportState;
-			&rasterStateParams,											// const VkPipelineRasterStateCreateInfo*			pRasterState;
-			&multisampleStateParams,									// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-			DE_NULL,													// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-			&colorBlendStateParams,										// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-			DE_NULL,													// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-			*m_pipelineLayout,											// VkPipelineLayout			layout;
-			*m_renderPass,												// VkRenderPass				renderPass;
-			0u,															// deUint32					subpass;
-			0u,															// VkPipeline				basePipelineHandle;
-			0u															// deInt32					basePipelineIndex;
-		};
-
-		m_graphicsPipelines = createGraphicsPipeline(vk, vkDevice, DE_NULL, &graphicsPipelineParams);
+		m_graphicsPipelines = makeGraphicsPipeline(vk,						// const DeviceInterface&            vk
+												   vkDevice,				// const VkDevice                    device
+												   *m_pipelineLayout,		// const VkPipelineLayout            pipelineLayout
+												   *m_vertexShaderModule,	// const VkShaderModule              vertexShaderModule
+												   DE_NULL,					// const VkShaderModule              tessellationControlModule
+												   DE_NULL,					// const VkShaderModule              tessellationEvalModule
+												   DE_NULL,					// const VkShaderModule              geometryShaderModule
+												   *m_fragmentShaderModule,	// const VkShaderModule              fragmentShaderModule
+												   *m_renderPass,			// const VkRenderPass                renderPass
+												   viewports,				// const std::vector<VkViewport>&    viewports
+												   scissors);				// const std::vector<VkRect2D>&      scissors
 	}
 
 	// Create vertex buffer

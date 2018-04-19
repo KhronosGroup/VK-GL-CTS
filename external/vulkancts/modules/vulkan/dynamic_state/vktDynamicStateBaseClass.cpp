@@ -232,21 +232,10 @@ void DynamicStateBaseClass::beginRenderPassWithClearColor(const vk::VkClearColor
 
 void DynamicStateBaseClass::setDynamicViewportState (const deUint32 width, const deUint32 height)
 {
-	vk::VkViewport viewport;
-	viewport.x = 0;
-	viewport.y = 0;
-	viewport.width = static_cast<float>(width);
-	viewport.height = static_cast<float>(height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
+	vk::VkViewport viewport = vk::makeViewport(tcu::UVec2(width, height));
 	m_vk.cmdSetViewport(*m_cmdBuffer, 0, 1, &viewport);
 
-	vk::VkRect2D scissor;
-	scissor.offset.x = 0;
-	scissor.offset.y = 0;
-	scissor.extent.width = width;
-	scissor.extent.height = height;
+	vk::VkRect2D scissor = vk::makeRect2D(tcu::UVec2(width, height));
 	m_vk.cmdSetScissor(*m_cmdBuffer, 0, 1, &scissor);
 }
 

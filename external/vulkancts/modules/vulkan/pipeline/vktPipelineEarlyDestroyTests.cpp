@@ -29,6 +29,7 @@
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkRefUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "deUniquePtr.hpp"
 
 namespace vkt
@@ -91,53 +92,7 @@ tcu::TestStatus testEarlyDestroy (Context& context, bool usePipelineCache)
 
 	const Unique<VkPipelineLayout>					pipelineLayout					(createPipelineLayout(vk, vkDevice, &pipelineLayoutCreateInfo, DE_NULL));
 
-	const VkAttachmentDescription					attachmentDescription			=
-	{
-		0u,											// VkAttachmentDescriptionFlags    flags;
-		VK_FORMAT_R8G8B8A8_UNORM,					// VkFormat                        format;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits           samples;
-		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp              loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp             storeOp;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp              stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp             stencilStoreOp;
-		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout                   initialLayout;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
-	};
-
-	const VkAttachmentReference						color							=
-	{
-		0u,											// deUint32         attachment;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout    layout;
-	};
-
-	const VkSubpassDescription						subpassDescription				=
-	{
-		0u,									// VkSubpassDescriptionFlags       flags;
-		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint             pipelineBindPoint;
-		0u,									// deUint32                        inputAttachmentCount;
-		DE_NULL,							// const VkAttachmentReference*    pInputAttachments;
-		1u,									// deUint32                        colorAttachmentCount;
-		&color,								// const VkAttachmentReference*    pColorAttachments;
-		DE_NULL,							// const VkAttachmentReference*    pResolveAttachments;
-		DE_NULL,							// const VkAttachmentReference*    pDepthStencilAttachment;
-		0u,									// deUint32                        preserveAttachmentCount;
-		DE_NULL								// const deUint32*                 pPreserveAttachments;
-	};
-
-	const VkRenderPassCreateInfo					renderPassCreateInfo			=
-	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType;
-		DE_NULL,									// const void*                       pNext;
-		0u,											// VkRenderPassCreateFlags           flags;
-		1u,											// deUint32                          attachmentCount;
-		&attachmentDescription,						// const VkAttachmentDescription*    pAttachments;
-		1u,											// deUint32                          subpassCount;
-		&subpassDescription,						// const VkSubpassDescription*       pSubpasses;
-		0u,											// deUint32                          dependencyCount;
-		DE_NULL										// const VkSubpassDependency*        pDependencies;
-	};
-
-	const Unique<VkRenderPass>						renderPass						(createRenderPass(vk, vkDevice, &renderPassCreateInfo, DE_NULL));
+	const Unique<VkRenderPass>						renderPass						(makeRenderPass(vk, vkDevice, VK_FORMAT_R8G8B8A8_UNORM));
 
 	const VkPipelineShaderStageCreateInfo			stages[]						=
 	{

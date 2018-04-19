@@ -32,6 +32,7 @@
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
 #include "vktDrawImageObjectUtil.hpp"
@@ -404,19 +405,8 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 
 	const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
-	vk::VkViewport viewport;
-	viewport.x				= 0;
-	viewport.y				= 0;
-	viewport.width			= static_cast<float>(WIDTH);
-	viewport.height			= static_cast<float>(HEIGHT);
-	viewport.minDepth		= 0.0f;
-	viewport.maxDepth		= 1.0f;
-
-	vk::VkRect2D scissor;
-	scissor.offset.x		= 0;
-	scissor.offset.y		= 0;
-	scissor.extent.width	= WIDTH;
-	scissor.extent.height	= HEIGHT;
+	vk::VkViewport	viewport	= vk::makeViewport(WIDTH, HEIGHT);
+	vk::VkRect2D	scissor		= vk::makeRect2D(WIDTH, HEIGHT);
 
 	PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, 0);
 	pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", vk::VK_SHADER_STAGE_VERTEX_BIT));
@@ -483,7 +473,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 				vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 				0, 1, &memBarrier, 0, DE_NULL, 0, DE_NULL);
 
-			const vk::VkRect2D renderArea = { { 0, 0 }, { WIDTH, HEIGHT } };
+			const vk::VkRect2D renderArea = vk::makeRect2D(WIDTH, HEIGHT);
 			beginRenderPass(m_vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, renderArea);
 
 			if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED || m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)

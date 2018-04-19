@@ -137,15 +137,8 @@ std::vector<PipelineSp> makeGraphicsPipelines (const DeviceInterface&		vk,
 		VK_FALSE,														// VkBool32                                    primitiveRestartEnable;
 	};
 
-	const VkViewport viewport = makeViewport(
-		0.0f, 0.0f,
-		static_cast<float>(renderSize.x()), static_cast<float>(renderSize.y()),
-		0.0f, 1.0f);
-
-	const VkRect2D scissor = {
-		makeOffset2D(0, 0),
-		makeExtent2D(renderSize.x(), renderSize.y()),
-	};
+	const VkViewport	viewport	= makeViewport(renderSize);
+	const VkRect2D		scissor		= makeRect2D(renderSize);
 
 	const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
 	{

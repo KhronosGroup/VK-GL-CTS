@@ -198,11 +198,7 @@ InvertedDepthRangesTestInstance::InvertedDepthRangesTestInstance (Context& conte
 
 	// Graphics pipeline
 
-	const VkRect2D scissor =
-	{
-		{ 0,	0	},	// x, y
-		{ 256,	256	},	// width, height
-	};
+	const VkRect2D scissor = makeRect2D(256u, 256u);
 
 	std::vector<VkDynamicState>		dynamicStates;
 	dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
