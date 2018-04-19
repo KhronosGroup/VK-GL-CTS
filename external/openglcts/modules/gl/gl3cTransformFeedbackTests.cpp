@@ -3171,7 +3171,7 @@ void gl3cts::TransformFeedback::CaptureVertexSeparate::bindBuffer(BindBufferCase
 	case BIND_BUFFER_OFFSET_CASE:
 		for (glw::GLint i = 0; i < m_max_transform_feedback_separate_attribs; ++i)
 		{
-			m_glBindBufferOffsetEXT(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_buffers[i], 0);
+			m_glBindBufferOffsetEXT(GL_TRANSFORM_FEEDBACK_BUFFER, i, m_buffers[i], 0);
 		}
 		break;
 	default:
