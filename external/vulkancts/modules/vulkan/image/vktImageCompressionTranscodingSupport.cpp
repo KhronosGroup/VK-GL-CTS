@@ -1719,7 +1719,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0u, DE_NULL, 1u, &srcCopyImageBarrierPost);
 
 			// Define destination image layout
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0u, DE_NULL, 1u, &dstInitImageBarrier);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0u, DE_NULL, 1u, &dstInitImageBarrier);
 
 			beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderSize);
 
@@ -2660,7 +2660,7 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 
 } // anonymous ns
 
-static tcu::UVec3 getUnniceResolution(const VkFormat format, const deUint32 layers)
+static tcu::UVec3 getUnniceResolution (const VkFormat format, const deUint32 layers)
 {
 	const deUint32	unniceMipmapTextureSize[]	= { 1, 1, 1, 8, 22, 48, 117, 275, 604, 208, 611, 274, 1211 };
 	const deUint32	baseTextureWidth			= unniceMipmapTextureSize[getBlockWidth(format)];
