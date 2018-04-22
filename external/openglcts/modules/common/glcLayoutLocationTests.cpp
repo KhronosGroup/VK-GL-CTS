@@ -473,18 +473,13 @@ tcu::TestNode::IterateResult SpecifiedLocationCase::iterate(void)
 
 	if (m_isImageCase)
 	{
-		gl.bindImageTexture(definedBinding, resultData.textureId, 0, GL_FALSE, 0, GL_READ_ONLY, m_imageFormat);
+		gl.bindImageTexture(definedBinding, resultData.textureId, 0, GL_TRUE, 0, GL_READ_ONLY, m_imageFormat);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glBindImageTexture");
-
-		// in ES image uniforms cannot be updated
-		// through any of the glUniform* commands
-		if (!contextTypeES)
-		{
-			gl.uniform1i(expectedLocation, definedBinding);
-			GLU_EXPECT_NO_ERROR(gl.getError(), "Uniform1i");
-		}
 	}
-	else
+
+	// in ES image uniforms cannot be updated
+	// through any of the glUniform* commands
+	if (!(contextTypeES && m_isImageCase))
 	{
 		gl.uniform1i(expectedLocation, definedBinding);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glUniform1i");
