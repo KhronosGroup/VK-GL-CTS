@@ -1,10 +1,10 @@
-#ifndef _TCUOSXPLATFORM_HPP
-#define _TCUOSXPLATFORM_HPP
+#ifndef _TCUOSXVULKANPLATFORM_HPP
+#define _TCUOSXVULKANPLATFORM_HPP
 /*-------------------------------------------------------------------------
  * drawElements Quality Program Tester Core
  * ----------------------------------------
  *
- * Copyright 2014 The Android Open Source Project
+ * Copyright (c) 2018 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,30 @@
  *
  *//*!
  * \file
- * \brief OS X platform.
+ * \brief OSX Vulkan Platform.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuPlatform.hpp"
+#include "vkWsiPlatform.hpp"
+#include "vkPlatform.hpp"
 
-tcu::Platform* createPlatform (void);
+namespace tcu
+{
+namespace osx
 
-#endif // _TCUOSXPLATFORM_HPP
+{
+
+class VulkanPlatform : public vk::Platform
+{
+public:
+						VulkanPlatform		();
+	vk::wsi::Display*	createWsiDisplay	(vk::wsi::Type wsiType) const;
+	vk::Library*		createLibrary		(void) const;
+	void				describePlatform	(std::ostream& dst) const;
+	void				getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
+};
+
+
+} // osx
+} // tcu
+
+#endif // _TCUOSXVULKANPLATFORM_HPP

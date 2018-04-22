@@ -338,10 +338,6 @@ UVec2 getMaxPlaneDivisor (const PlanarFormatDescription& formatDesc)
 tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 {
 	const bool							isYCbCrImage	= isYCbCrFormat(params.format);
-
-	if (isYCbCrImage)
-		checkImageSupport(context, params.format, params.flags);
-
 	const DeviceInterface&				vkd				= context.getDeviceInterface();
 	const VkDevice						device			= context.getDevice();
 
@@ -483,13 +479,17 @@ tcu::TestStatus testImageQuery (Context& context, TestParameters params)
 	}
 }
 
-tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
+void checkSupport (Context& context, TestParameters params)
 {
-	const bool							isYCbCrImage	= isYCbCrFormat(params.format);
+	const bool isYCbCrImage = isYCbCrFormat(params.format);
 
 	if (isYCbCrImage)
 		checkImageSupport(context, params.format, params.flags);
+}
 
+tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
+{
+	const bool							isYCbCrImage	= isYCbCrFormat(params.format);
 	const DeviceInterface&				vkd				= context.getDeviceInterface();
 	const VkDevice						device			= context.getDevice();
 
@@ -720,6 +720,7 @@ void addImageQueryCase (tcu::TestCaseGroup* group, const TestParameters& params)
 	addFunctionCaseWithPrograms(group,
 								name,
 								"",
+								checkSupport,
 								isLod ? initImageQueryLodPrograms : initImageQueryPrograms,
 								isLod ? testImageQueryLod : testImageQuery,
 								params);

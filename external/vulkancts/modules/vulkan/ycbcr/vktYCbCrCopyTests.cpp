@@ -93,7 +93,7 @@ struct TestConfig
 	ImageConfig	dst;
 };
 
-void checkSupport (Context& context, const TestConfig& config)
+void checkSupport (Context& context, const TestConfig config)
 {
 	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), string("VK_KHR_sampler_ycbcr_conversion")))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_sampler_ycbcr_conversion not supported");
@@ -745,8 +745,6 @@ void logTestCaseInfo (TestLog&							log,
 
 tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 {
-	checkSupport(context, config);
-
 	{
 		const size_t			copyCount	= 10;
 		TestLog&				log			(context.getTestContext().getLog());
@@ -1077,7 +1075,7 @@ void initTests (tcu::TestCaseGroup* testGroup)
 						const bool			dstDisjoint	= dstDisjointNdx == 1;
 						const TestConfig	config		(ImageConfig(srcFormat, srcTiling, srcDisjoint, srcSize), ImageConfig(dstFormat, dstTiling, dstDisjoint, dstSize));
 
-						addFunctionCase(dstFormatGroup.get(), string(srcTilingName) + (srcDisjoint ? "_disjoint_" : "_") + string(dstTilingName) + (dstDisjoint ? "_disjoint" : ""), "", imageCopyTest, config);
+						addFunctionCase(dstFormatGroup.get(), string(srcTilingName) + (srcDisjoint ? "_disjoint_" : "_") + string(dstTilingName) + (dstDisjoint ? "_disjoint" : ""), "", checkSupport, imageCopyTest, config);
 					}
 				}
 			}

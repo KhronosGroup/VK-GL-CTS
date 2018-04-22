@@ -241,6 +241,8 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	if (!vktCase)
 		TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
 
+	vktCase->checkSupport(m_context);
+
 	m_progCollection.clear();
 	vktCase->initPrograms(sourceProgs);
 
