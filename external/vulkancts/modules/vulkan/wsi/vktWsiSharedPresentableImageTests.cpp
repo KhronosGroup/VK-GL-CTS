@@ -83,6 +83,9 @@ vk::Move<vk::VkInstance> createInstanceWithWsi (const vk::PlatformInterface&		vk
 {
 	vector<string>	extensions;
 
+	if (!vk::isCoreInstanceExtension(version, "VK_KHR_get_physical_device_properties2"))
+		extensions.push_back("VK_KHR_get_physical_device_properties2");
+
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back("VK_KHR_get_surface_capabilities2");
 	// Required for device extension to expose new physical device bits (in this
