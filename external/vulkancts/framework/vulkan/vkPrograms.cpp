@@ -300,14 +300,39 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 		getBuildOptions(shaderstring, program.buildOptions);
 
 		for (int i = 0; i < glu::SHADERTYPE_LAST; i++)
-			for (std::vector<std::string>::const_iterator it = program.sources[i].begin(); it != program.sources[i].end(); ++it)
-				if (it->length() > 0)
-				{
-					shaderstring += glu::getShaderTypeName((glu::ShaderType)i);
+		{
+			if (!program.sources[i].empty())
+			{
+				shaderstring += glu::getShaderTypeName((glu::ShaderType)i);
+
+				for (std::vector<std::string>::const_iterator it = program.sources[i].begin(); it != program.sources[i].end(); ++it)
 					shaderstring += *it;
-				}
+			}
+		}
 
 		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
+
+		if (res)
+		{
+			buildInfo->program.infoLog		= "Loaded from cache";
+			buildInfo->program.linkOk		= true;
+			buildInfo->program.linkTimeUs	= 0;
+
+			for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
+			{
+				if (!program.sources[shaderType].empty())
+				{
+					glu::ShaderInfo	shaderBuildInfo;
+
+					shaderBuildInfo.type			= (glu::ShaderType)shaderType;
+					shaderBuildInfo.source			= shaderstring;
+					shaderBuildInfo.compileTimeUs	= 0;
+					shaderBuildInfo.compileOk		= true;
+
+					buildInfo->shaders.push_back(shaderBuildInfo);
+				}
+			}
+		}
 	}
 
 	if (!res)
@@ -347,14 +372,39 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 		getBuildOptions(shaderstring, program.buildOptions);
 
 		for (int i = 0; i < glu::SHADERTYPE_LAST; i++)
-			for (std::vector<std::string>::const_iterator it = program.sources[i].begin(); it != program.sources[i].end(); ++it)
-				if (it->length() > 0)
-				{
-					shaderstring += glu::getShaderTypeName((glu::ShaderType)i);
+		{
+			if (!program.sources[i].empty())
+			{
+				shaderstring += glu::getShaderTypeName((glu::ShaderType)i);
+
+				for (std::vector<std::string>::const_iterator it = program.sources[i].begin(); it != program.sources[i].end(); ++it)
 					shaderstring += *it;
-				}
+			}
+		}
 
 		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
+
+		if (res)
+		{
+			buildInfo->program.infoLog		= "Loaded from cache";
+			buildInfo->program.linkOk		= true;
+			buildInfo->program.linkTimeUs	= 0;
+
+			for (int shaderType = 0; shaderType < glu::SHADERTYPE_LAST; shaderType++)
+			{
+				if (!program.sources[shaderType].empty())
+				{
+					glu::ShaderInfo	shaderBuildInfo;
+
+					shaderBuildInfo.type			= (glu::ShaderType)shaderType;
+					shaderBuildInfo.source			= shaderstring;
+					shaderBuildInfo.compileTimeUs	= 0;
+					shaderBuildInfo.compileOk		= true;
+
+					buildInfo->shaders.push_back(shaderBuildInfo);
+				}
+			}
+		}
 	}
 
 	if (!res)
@@ -398,6 +448,14 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 		shaderstring += program.source;
 
 		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
+
+		if (res)
+		{
+			buildInfo->source			= shaderstring;
+			buildInfo->compileOk		= true;
+			buildInfo->compileTimeUs	= 0;
+			buildInfo->infoLog			= "Loaded from cache";
+		}
 	}
 
 	if (!res)
