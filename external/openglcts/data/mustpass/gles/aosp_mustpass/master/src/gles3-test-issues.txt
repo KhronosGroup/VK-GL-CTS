@@ -171,3 +171,11 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragme
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragment.vec4
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec3
+
+# Bug 22632106
+dEQP-GLES3.functional.shaders.texture_functions.texturelodoffset.usampler2darray_vertex
+dEQP-GLES3.functional.shaders.texture_functions.textureprojlodoffset.isampler3d_vertex
+dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.sampler3d_bias_fixed_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.sampler3d_bias_float_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.isampler3d_bias_fragment
+dEQP-GLES3.functional.shaders.texture_functions.textureprojoffset.usampler3d_bias_fragment
