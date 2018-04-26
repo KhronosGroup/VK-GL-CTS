@@ -1302,7 +1302,7 @@ void addVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 		"OpDecorate %outdata  Binding 3\n");
 
 	const StringTemplate testFunction	(
-		"%test_code		= OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code		= OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param			= OpFunctionParameter %v4f32\n"
 		"%entry			= OpLabel\n"
 
@@ -1735,7 +1735,7 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGroup*
 	);
 
 	const StringTemplate testFunction	(
-		"%test_code		= OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code		= OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param			= OpFunctionParameter %v4f32\n"
 		"%entry			= OpLabel\n"
 
@@ -2142,7 +2142,7 @@ void addSingleInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGro
 	);
 
 	const StringTemplate testFunction	(
-		"%test_code		= OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code		= OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param			= OpFunctionParameter %v4f32\n"
 		"%entry			= OpLabel\n"
 
@@ -2471,7 +2471,7 @@ void addNullptrVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 	);
 
 	const StringTemplate testFunction	(
-		"%test_code		= OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code		= OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param			= OpFunctionParameter %v4f32\n"
 		"%entry			= OpLabel\n"
 

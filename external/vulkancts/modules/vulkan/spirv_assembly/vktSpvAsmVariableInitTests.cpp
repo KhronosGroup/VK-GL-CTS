@@ -200,7 +200,7 @@ void addGraphicsVariableInitPrivateTest (tcu::TestCaseGroup* group)
 	StringTemplate			decoration			(decorations);
 
 	StringTemplate			testFun				(
-		"            %test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"            %test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"                %param = OpFunctionParameter %v4f32\n"
 		"                %entry = OpLabel\n"
 		"           %outputData = OpLoad %${type} %f1\n"

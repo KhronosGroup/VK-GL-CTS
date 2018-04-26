@@ -497,7 +497,7 @@ void SpvAsmTypeTests<T>::createStageTests	(const char*			testName,
 												 "%bufptr = OpTypePointer Uniform %buf\n"
 												 "%output = OpVariable %bufptr Uniform\n");
 
-	const StringTemplate		pre_testfun		("%test_code = OpFunction %v4f32 None %v4f32_function\n"
+	const StringTemplate		pre_testfun		("%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 												 "%param = OpFunctionParameter %v4f32\n"
 												 "%entry = OpLabel\n"
 												 "%counter = OpVariable %fp_i32 Function\n"
@@ -835,7 +835,7 @@ void SpvAsmTypeTests<T>::createSwitchTests	(void)
 											 "%input = OpVariable %bufptr Uniform\n"
 											 "%expectedOutput = OpVariable %bufptr Uniform\n");
 
-	const StringTemplate	testfun			("%test_code = OpFunction %v4f32 None %v4f32_function\n"
+	const StringTemplate	testfun			("%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 											 "%param = OpFunctionParameter %v4f32\n"
 
 											 "%entry = OpLabel\n"

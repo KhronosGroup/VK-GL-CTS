@@ -2166,7 +2166,7 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 			"OpDecorate %ssbo16 Binding 1\n");
 
 	const StringTemplate	scalarTestFunc(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -2228,7 +2228,7 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 			"OpDecorate %ssbo16 Binding 1\n");
 
 	const StringTemplate	vecTestFunc(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -3353,7 +3353,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 			"${rounddecor}\n");
 
 		fragments["testfun"]				=
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -3446,7 +3446,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 
 		// ssbo16[] <- convert ssbo32[] to 16bit float
 		fragments["testfun"]				=
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -3544,7 +3544,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 			"${rounddecor}\n");
 
 		fragments["testfun"]				=
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -4399,7 +4399,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 	getDefaultColors(defaultColors);
 
 	const StringTemplate	testFun		(
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"    %param = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -4711,7 +4711,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 	getDefaultColors(defaultColors);
 
 	const StringTemplate	testFun		(
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"    %param = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -5068,7 +5068,7 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 			"OpDecorate %ssbo16 Binding 0\n");
 
 	const StringTemplate scalarTestFunc	(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -5130,7 +5130,7 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 			"OpDecorate %ssbo16 Binding 0\n");
 
 	const StringTemplate vecTestFunc	(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -5294,7 +5294,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 
 		// ssbo32[] <- convert ssbo16[] to 32bit float
 		const StringTemplate testFun		(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -5400,7 +5400,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 
 		// ssbo32[] <- convert ssbo16[] to 32bit float
 		const StringTemplate testFun		(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -5510,7 +5510,7 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 			"OpDecorate %ssbo16 Binding 0\n");
 
 		fragments["testfun"]				=
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -5659,7 +5659,7 @@ void addGraphics16BitStorageUniformStructFloat16To32Group (tcu::TestCaseGroup* t
 		"\n");
 
 	fragments["testfun"]			=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"    %param = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"%loopNdx    = OpVariable %fp_i32 Function\n"
@@ -5891,7 +5891,7 @@ void addGraphics16BitStorageUniformStructFloat32To16Group (tcu::TestCaseGroup* t
 		"\n");
 
 	fragments["testfun"]			=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"%loopNdx    = OpVariable %fp_i32 Function\n"
@@ -6138,7 +6138,7 @@ void addGraphics16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		"OpDecorate %ssboOUT Binding 1\n");
 
 		const StringTemplate			testFun				(
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"%ndxArrx   = OpVariable %fp_i32  Function\n"

@@ -5569,7 +5569,7 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 		"OpNoLine\n"
 		"OpLine %name 1 1\n"
 		"OpLine %name 1 1\n"
-		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"%second_function = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"OpNoLine\n"
 		"OpLine %name 1 1\n"
 		"OpNoLine\n"
@@ -5590,7 +5590,7 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 		"OpNoLine\n"
 		"OpNoLine\n"
 		"OpLine %name 1 1\n"
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"OpNoLine\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"OpNoLine\n"
@@ -5626,7 +5626,7 @@ tcu::TestCaseGroup* createOpModuleProcessedTests(tcu::TestContext& testCtx)
 		"OpModuleProcessed \"Date: 2017/09/21\"\n";
 
 	fragments["pre_main"]	=
-		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"%second_function = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%second_param1 = OpFunctionParameter %v4f32\n"
 		"%label_secondfunction = OpLabel\n"
 		"OpReturnValue %second_param1\n"
@@ -5634,7 +5634,7 @@ tcu::TestCaseGroup* createOpModuleProcessedTests(tcu::TestContext& testCtx)
 
 	fragments["testfun"]		=
 		// A %test_code function that returns its argument unchanged.
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%val1 = OpFunctionCall %v4f32 %second_function %param1\n"
@@ -5672,7 +5672,7 @@ tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 		"OpLine %other_name 4294967295 0\n"
 		"OpLine %other_name 32 40\n"
 		"OpLine %file_name 0 0\n"
-		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"%second_function = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"OpLine %file_name 1 0\n"
 		"%second_param1 = OpFunctionParameter %v4f32\n"
 		"OpLine %file_name 1 3\n"
@@ -5687,7 +5687,7 @@ tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 	fragments["testfun"]		=
 		// A %test_code function that returns its argument unchanged.
 		"OpLine %file_name 1 0\n"
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"OpLine %file_name 16 330\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"OpLine %file_name 14 442\n"
@@ -5716,7 +5716,7 @@ tcu::TestCaseGroup* createOpConstantNullTests(tcu::TestContext& testCtx)
 
 
 	const char						functionStart[] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%lbl    = OpLabel\n";
 
@@ -5833,7 +5833,7 @@ tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
 
 
 	const char						functionStart[]	 =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%lbl    = OpLabel\n";
 
@@ -5984,7 +5984,7 @@ tcu::TestCaseGroup* createSelectionBlockOrderTests(tcu::TestContext& testCtx)
 	//   return result;
 	// }
 	const char						function[]			=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1    = OpFunctionParameter %v4f32\n"
 		"%lbl       = OpLabel\n"
 		"%iptr      = OpVariable %fp_i32 Function\n"
@@ -6076,7 +6076,7 @@ tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 	//   return result;
 	// }
 	const char						function[]			=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1    = OpFunctionParameter %v4f32\n"
 		"%lbl       = OpLabel\n"
 		"%iptr      = OpVariable %fp_i32 Function\n"
@@ -6189,7 +6189,7 @@ tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
 		"%c_struct2 = OpConstantComposite %struct2 %c_a3f32_2\n";
 
 	const char						function[]			=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%entry     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
@@ -6323,7 +6323,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"%sc_op     = OpSpecConstantOp ${SC_RESULT_TYPE} ${SC_OP}\n";
 
 	const char	function1[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"${TYPE_CONVERT:opt}"
@@ -6477,7 +6477,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n";								// (sc_2 - sc_0) * sc_1
 
 	const char	function2[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
@@ -6539,7 +6539,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 	//   return result;
 	// }
 	const char	function1[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1    = OpFunctionParameter %v4f32\n"
 		"%lbl       = OpLabel\n"
 		"%iptr      = OpVariable %fp_i32 Function\n"
@@ -6603,7 +6603,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	// Add .4 to the second element of the given parameter.
 	const char	function2[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%entry     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
@@ -6645,7 +6645,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	// Swap the second and the third element of the given parameter.
 	const char	function3[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%entry     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
@@ -6702,7 +6702,7 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 		"%c_f32_n1pn24   = OpConstant %f32 -0x1p-24\n";
 
 	const char						function[]	 =
-		"%test_code      = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code      = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param          = OpFunctionParameter %v4f32\n"
 		"%label          = OpLabel\n"
 		"%var1           = OpVariable %fp_f32 Function %c_f32_1pl2_23\n"
@@ -6769,7 +6769,7 @@ tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 		"%fp_stype          = OpTypePointer Function %stype\n";
 
 	const char						function[]	 =
-		"%test_code         = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code         = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1            = OpFunctionParameter %v4f32\n"
 		"%lbl               = OpLabel\n"
 		"%v1                = OpVariable %fp_v4f32 Function\n"
@@ -6862,7 +6862,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	{
 		fragments["undef_type"] = tests[testNdx].type;
 		fragments["testfun"] = StringTemplate(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"%param1 = OpFunctionParameter %v4f32\n"
 			"%label_testfun = OpLabel\n"
 			"%undef = OpUndef ${undef_type}\n"
@@ -6874,7 +6874,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	fragments.clear();
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %f32\n"
@@ -6890,7 +6890,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("float32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %i32\n"
@@ -6903,7 +6903,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("sint32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %u32\n"
@@ -6916,7 +6916,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("uint32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %v4f32\n"
@@ -6953,7 +6953,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	fragments["pre_main"] =
 		"%m2x2f32 = OpTypeMatrix %v2f32 2\n";
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %m2x2f32\n"
@@ -7113,7 +7113,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		"%test_constant = OpConstant %f32 ";  // The value will be test.constant.
 
 	StringTemplate	function			(
-		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code     = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%a             = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
@@ -7132,7 +7132,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"%c             = OpSpecConstantOp %f32 QuantizeToF16 %test_constant\n";
 
 	StringTemplate	specConstantFunction(
-		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code     = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"${condition}\n"
@@ -7240,7 +7240,7 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 	const char* specDecorations = "OpDecorate %input_const  SpecId 0\n";
 
 	const char* function  =
-		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code     = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%a             = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
@@ -7387,7 +7387,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	// itself. In SPIR-V terms, the "loop construct" contains no blocks at all
 	// -- the "continue construct" forms the entire loop.
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7416,7 +7416,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 	// Body comprised of multiple basic blocks.
 	const StringTemplate multiBlock(
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7472,7 +7472,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 	// A loop with continue statement.
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7512,7 +7512,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 	// A loop with break.
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7557,7 +7557,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 	// A loop with return.
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7620,7 +7620,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"%false = OpConstantFalse %bool\n";
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7680,7 +7680,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%Workgroup = OpConstant %i32 2\n"
 		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n";
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
@@ -7694,7 +7694,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n"
 		"%c_f32_5 = OpConstant %f32 5.\n";
 	const string setupPercentZero =	 // Begins %test_code function with code that sets %zero to 0u but cannot be optimized away.
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%entry = OpLabel\n"
 		";param1 components are between 0 and 1, so dot product is 4 or less\n"
@@ -7784,7 +7784,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n"
 		"%c_f32_10 = OpConstant %f32 10.\n";
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%entry = OpLabel\n"
 		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
@@ -7833,7 +7833,7 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 	// vec4 result = (param1 * 8.0) - 4.0;
 	// return (frem(result.x,3) + 0.75, frem(result.y, -3) + 0.75, 0, 1)
 	fragments["testfun"]				 =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%v_times_8 = OpVectorTimesScalar %v4f32 %param1 %c_f32_8\n"
@@ -7879,7 +7879,7 @@ tcu::TestCaseGroup* createOpSRemGraphicsTests(tcu::TestContext& testCtx, qpTestR
 	// ivec4 result = ivec4(srem(ints.x, ints.y), srem(ints.y, ints.z), srem(ints.z, ints.x), 255);
 	// return float(result + 128) / 255.0;
 	fragments["testfun"]				 =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%div255 = OpFMul %v4f32 %param1 %c_v4f32_255\n"
@@ -7962,7 +7962,7 @@ tcu::TestCaseGroup* createOpSModGraphicsTests(tcu::TestContext& testCtx, qpTestR
 	// ivec4 result = ivec4(smod(ints.x, ints.y), smod(ints.y, ints.z), smod(ints.z, ints.x), 255);
 	// return float(result + 128) / 255.0;
 	fragments["testfun"]				 =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%div255 = OpFMul %v4f32 %param1 %c_v4f32_255\n"
@@ -8499,7 +8499,7 @@ const map<string, string> getConvertCaseFragments (string instruction, const Con
 		"     %SSBOo = OpVariable %ptr_SSBOo StorageBuffer\n");
 
 	const StringTemplate testfun (
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"%iLoc      = OpAccessChain %ptr_in %SSBOi %c_u32_0\n"
@@ -9327,7 +9327,7 @@ tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
 	getDefaultColors(defaultColors);
 
 	opNopFragments["testfun"]		=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"OpNop\n"
@@ -9365,7 +9365,7 @@ tcu::TestCaseGroup* createOpNameTests (tcu::TestContext& testCtx)
 		"OpName %BP_main \"not_main\"";
 
 	opNameFragments["testfun"]		=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_func = OpLabel\n"
 		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
