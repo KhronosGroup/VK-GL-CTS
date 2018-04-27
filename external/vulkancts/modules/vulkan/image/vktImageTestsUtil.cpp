@@ -25,6 +25,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 #include "tcuTextureUtil.hpp"
 
 using namespace vk;
@@ -54,102 +55,6 @@ Image::Image (const DeviceInterface&	vk,
 	m_image = createImage(vk, device, &imageCreateInfo);
 	m_allocation = allocator.allocate(getImageMemoryRequirements(vk, device, *m_image), memoryRequirement);
 	VK_CHECK(vk.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
-}
-
-struct CompressedFormatParameters
-{
-	VkFormat	format;
-	deUint32	blockBytes;
-	deUint32	blockWidth;
-	deUint32	blockHeight;
-};
-
-CompressedFormatParameters	compressedFormatParameters[VK_FORMAT_ASTC_12x12_SRGB_BLOCK - VK_FORMAT_BC1_RGB_UNORM_BLOCK + 1]	=
-{
-	{ VK_FORMAT_BC1_RGB_UNORM_BLOCK,		8,	4,	4 },
-	{ VK_FORMAT_BC1_RGB_SRGB_BLOCK,			8,	4,	4 },
-	{ VK_FORMAT_BC1_RGBA_UNORM_BLOCK,		8,	4,	4 },
-	{ VK_FORMAT_BC1_RGBA_SRGB_BLOCK,		8,	4,	4 },
-	{ VK_FORMAT_BC2_UNORM_BLOCK,			16,	4,	4 },
-	{ VK_FORMAT_BC2_SRGB_BLOCK,				16,	4,	4 },
-	{ VK_FORMAT_BC3_UNORM_BLOCK,			16,	4,	4 },
-	{ VK_FORMAT_BC3_SRGB_BLOCK,				16,	4,	4 },
-	{ VK_FORMAT_BC4_UNORM_BLOCK,			8,	4,	4 },
-	{ VK_FORMAT_BC4_SNORM_BLOCK,			8,	4,	4 },
-	{ VK_FORMAT_BC5_UNORM_BLOCK,			16,	4,	4 },
-	{ VK_FORMAT_BC5_SNORM_BLOCK,			16,	4,	4 },
-	{ VK_FORMAT_BC6H_UFLOAT_BLOCK,			16,	4,	4 },
-	{ VK_FORMAT_BC6H_SFLOAT_BLOCK,			16,	4,	4 },
-	{ VK_FORMAT_BC7_UNORM_BLOCK,			16,	4,	4 },
-	{ VK_FORMAT_BC7_SRGB_BLOCK,				16,	4,	4 },
-	{ VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,	8,	4,	4 },
-	{ VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,		8,	4,	4 },
-	{ VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,	8,	4,	4 },
-	{ VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,	8,	4,	4 },
-	{ VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,	16,	4,	4 },
-	{ VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,	16,	4,	4 },
-	{ VK_FORMAT_EAC_R11_UNORM_BLOCK,		8,	4,	4 },
-	{ VK_FORMAT_EAC_R11_SNORM_BLOCK,		8,	4,	4 },
-	{ VK_FORMAT_EAC_R11G11_UNORM_BLOCK,		16,	4,	4 },
-	{ VK_FORMAT_EAC_R11G11_SNORM_BLOCK,		16,	4,	4 },
-	{ VK_FORMAT_ASTC_4x4_UNORM_BLOCK,		16,	4,	4 },
-	{ VK_FORMAT_ASTC_4x4_SRGB_BLOCK,		16,	4,	4 },
-	{ VK_FORMAT_ASTC_5x4_UNORM_BLOCK,		16,	5,	4 },
-	{ VK_FORMAT_ASTC_5x4_SRGB_BLOCK,		16,	5,	4 },
-	{ VK_FORMAT_ASTC_5x5_UNORM_BLOCK,		16,	5,	5 },
-	{ VK_FORMAT_ASTC_5x5_SRGB_BLOCK,		16,	5,	5 },
-	{ VK_FORMAT_ASTC_6x5_UNORM_BLOCK,		16,	6,	5 },
-	{ VK_FORMAT_ASTC_6x5_SRGB_BLOCK,		16,	6,	5 },
-	{ VK_FORMAT_ASTC_6x6_UNORM_BLOCK,		16,	6,	6 },
-	{ VK_FORMAT_ASTC_6x6_SRGB_BLOCK,		16,	6,	6 },
-	{ VK_FORMAT_ASTC_8x5_UNORM_BLOCK,		16,	8,	5 },
-	{ VK_FORMAT_ASTC_8x5_SRGB_BLOCK,		16,	8,	5 },
-	{ VK_FORMAT_ASTC_8x6_UNORM_BLOCK,		16,	8,	6 },
-	{ VK_FORMAT_ASTC_8x6_SRGB_BLOCK,		16,	8,	6 },
-	{ VK_FORMAT_ASTC_8x8_UNORM_BLOCK,		16,	8,	8 },
-	{ VK_FORMAT_ASTC_8x8_SRGB_BLOCK,		16,	8,	8 },
-	{ VK_FORMAT_ASTC_10x5_UNORM_BLOCK,		16,	10,	5 },
-	{ VK_FORMAT_ASTC_10x5_SRGB_BLOCK,		16,	10,	5 },
-	{ VK_FORMAT_ASTC_10x6_UNORM_BLOCK,		16,	10,	6 },
-	{ VK_FORMAT_ASTC_10x6_SRGB_BLOCK,		16,	10,	6 },
-	{ VK_FORMAT_ASTC_10x8_UNORM_BLOCK,		16,	10,	8 },
-	{ VK_FORMAT_ASTC_10x8_SRGB_BLOCK,		16,	10,	8 },
-	{ VK_FORMAT_ASTC_10x10_UNORM_BLOCK,		16,	10,	10 },
-	{ VK_FORMAT_ASTC_10x10_SRGB_BLOCK,		16,	10,	10 },
-	{ VK_FORMAT_ASTC_12x10_UNORM_BLOCK,		16,	12,	10 },
-	{ VK_FORMAT_ASTC_12x10_SRGB_BLOCK,		16,	12,	10 },
-	{ VK_FORMAT_ASTC_12x12_UNORM_BLOCK,		16,	12,	12 },
-	{ VK_FORMAT_ASTC_12x12_SRGB_BLOCK,		16,	12,	12 },
-};
-
-deUint32 getBlockSizeInBytes(const VkFormat compressedFormat)
-{
-	deUint32 formatNdx = static_cast<deUint32>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
-
-	DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
-	DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
-
-	return compressedFormatParameters[formatNdx].blockBytes;
-}
-
-deUint32 getBlockWidth(const VkFormat compressedFormat)
-{
-	deUint32 formatNdx = static_cast<deUint32>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
-
-	DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
-	DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
-
-	return compressedFormatParameters[formatNdx].blockWidth;
-}
-
-deUint32 getBlockHeight(const VkFormat compressedFormat)
-{
-	deUint32 formatNdx = static_cast<deUint32>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
-
-	DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
-	DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
-
-	return compressedFormatParameters[formatNdx].blockHeight;
 }
 
 tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize)
@@ -374,194 +279,95 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&	vk,
 									   const deUint32			colorAttachmentCount,
 									   const bool				dynamicSize)
 {
-	const VkFormat	vertexFormatPosition		= VK_FORMAT_R32G32B32A32_SFLOAT;
-	const deUint32	vertexSizePosition			= tcu::getPixelSize(mapVkFormat(vertexFormatPosition));
-	const deUint32	vertexBufferOffsetPosition	= 0u;
-	const deUint32	vertexDataStride			= vertexSizePosition;
+	std::vector<VkViewport>								viewports;
+	std::vector<VkRect2D>								scissors;
 
-	const VkVertexInputBindingDescription vertexBinding =
+	const VkViewport									viewport						= makeViewport(renderSize);
+	const VkRect2D										scissor							= makeRect2D(renderSize);
+
+	const VkFormat										vertexFormatPosition			= VK_FORMAT_R32G32B32A32_SFLOAT;
+	const deUint32										vertexSizePosition				= tcu::getPixelSize(mapVkFormat(vertexFormatPosition));
+	const deUint32										vertexBufferOffsetPosition		= 0u;
+	const deUint32										vertexDataStride				= vertexSizePosition;
+
+	if (!dynamicSize)
 	{
-		0u,																// deUint32										binding;
-		vertexDataStride,												// deUint32										stride;
-		VK_VERTEX_INPUT_RATE_VERTEX										// VkVertexInputRate							inputRate;
+		viewports.push_back(viewport);
+		scissors.push_back(scissor);
+	}
+
+	const VkVertexInputBindingDescription				vertexInputBindingDescription	=
+	{
+		0u,							// deUint32             binding;
+		vertexDataStride,			// deUint32             stride;
+		VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputRate    inputRate;
 	};
 
-	const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] =
+	const VkVertexInputAttributeDescription				vertexInputAttributeDescription	=
 	{
-		// position
-		{
-			0u,															// deUint32										location;
-			0u,															// deUint32										binding;
-			vertexFormatPosition,										// VkFormat										format;
-			vertexBufferOffsetPosition,									// deUint32										offset;
-		},
+		0u,							// deUint32    location;
+		0u,							// deUint32    binding;
+		vertexFormatPosition,		// VkFormat    format;
+		vertexBufferOffsetPosition,	// deUint32    offset;
 	};
 
-	const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo =
+	const VkPipelineVertexInputStateCreateInfo			vertexInputStateCreateInfo		=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,		// VkStructureType								sType;
-		DE_NULL,														// const void*									pNext;
-		(VkPipelineVertexInputStateCreateFlags)0,						// VkPipelineVertexInputStateCreateFlags		flags;
-		1u,																// uint32_t										vertexBindingDescriptionCount;
-		&vertexBinding,													// const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
-		DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),			// uint32_t										vertexAttributeDescriptionCount;
-		vertexInputAttributeDescriptions,								// const VkVertexInputAttributeDescription*		pVertexAttributeDescriptions;
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType;
+		DE_NULL,													// const void*                                 pNext;
+		(VkPipelineVertexInputStateCreateFlags)0,					// VkPipelineVertexInputStateCreateFlags       flags;
+		1u,															// deUint32                                    vertexBindingDescriptionCount;
+		&vertexInputBindingDescription,								// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+		1u,															// deUint32                                    vertexAttributeDescriptionCount;
+		&vertexInputAttributeDescription							// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
 	};
 
-	const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo =
+	const VkColorComponentFlags							colorComponentsAll				= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	const VkPipelineColorBlendAttachmentState			colorBlendAttachmentState		=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType								sType;
-		DE_NULL,														// const void*									pNext;
-		(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags		flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology							topology;
-		VK_FALSE,														// VkBool32										primitiveRestartEnable;
+		VK_FALSE,				// VkBool32                 blendEnable;
+		VK_BLEND_FACTOR_ONE,	// VkBlendFactor            srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,	// VkBlendFactor            dstColorBlendFactor;
+		VK_BLEND_OP_ADD,		// VkBlendOp                colorBlendOp;
+		VK_BLEND_FACTOR_ONE,	// VkBlendFactor            srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,	// VkBlendFactor            dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,		// VkBlendOp                alphaBlendOp;
+		colorComponentsAll		// VkColorComponentFlags    colorWriteMask;
 	};
 
-	const VkViewport viewport =
+	std::vector<VkPipelineColorBlendAttachmentState>	colorAttachments				(colorAttachmentCount, colorBlendAttachmentState);
+
+	const VkPipelineColorBlendStateCreateInfo			pipelineColorBlendStateInfo		=
 	{
-		0.0f,															// float										originX;
-		0.0f,															// float										originY;
-		(float)renderSize.width,										// float										width;
-		(float)renderSize.height,										// float										height;
-		0.0f,															// float										minDepth;
-		1.0f															// float										maxDepth;
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType                              sType;
+		DE_NULL,														// const void*                                  pNext;
+		(VkPipelineColorBlendStateCreateFlags)0,						// VkPipelineColorBlendStateCreateFlags         flags;
+		VK_FALSE,														// VkBool32                                     logicOpEnable;
+		VK_LOGIC_OP_COPY,												// VkLogicOp                                    logicOp;
+		(deUint32)colorAttachments.size(),								// deUint32                                     attachmentCount;
+		colorAttachments.size() != 0 ? &colorAttachments[0] : DE_NULL,	// const VkPipelineColorBlendAttachmentState*   pAttachments;
+		{ 0.0f, 0.0f, 0.0f, 0.0f }										// float                                        blendConstants[4];
 	};
 
-	const VkRect2D scissor =
-	{
-		{ 0u, 0u },														// VkOffset2D									offset;
-		renderSize														// VkExtent2D									extent;
-	};
-
-	const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType								sType;
-		DE_NULL,														// const void*									pNext;
-		(VkPipelineViewportStateCreateFlags)0,							// VkPipelineViewportStateCreateFlags			flags;
-		1u,																// uint32_t										viewportCount;
-		&viewport, // dynamic state										// const VkViewport*							pViewports;
-		1u,																// uint32_t										scissorCount;
-		&scissor, // dynamic state										// const VkRect2D*								pScissors;
-	};
-
-	const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// VkStructureType								sType;
-		DE_NULL,														// const void*									pNext;
-		(VkPipelineRasterizationStateCreateFlags)0,						// VkPipelineRasterizationStateCreateFlags		flags;
-		VK_FALSE,														// VkBool32										depthClampEnable;
-		VK_FALSE,														// VkBool32										rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,											// VkPolygonMode								polygonMode;
-		VK_CULL_MODE_NONE,												// VkCullModeFlags								cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,								// VkFrontFace									frontFace;
-		VK_FALSE,														// VkBool32										depthBiasEnable;
-		0.0f,															// float										depthBiasConstantFactor;
-		0.0f,															// float										depthBiasClamp;
-		0.0f,															// float										depthBiasSlopeFactor;
-		1.0f,															// float										lineWidth;
-	};
-
-	const VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// VkStructureType								sType;
-		DE_NULL,														// const void*									pNext;
-		(VkPipelineMultisampleStateCreateFlags)0,						// VkPipelineMultisampleStateCreateFlags		flags;
-		VK_SAMPLE_COUNT_1_BIT,											// VkSampleCountFlagBits						rasterizationSamples;
-		VK_FALSE,														// VkBool32										sampleShadingEnable;
-		0.0f,															// float										minSampleShading;
-		DE_NULL,														// const VkSampleMask*							pSampleMask;
-		VK_FALSE,														// VkBool32										alphaToCoverageEnable;
-		VK_FALSE														// VkBool32										alphaToOneEnable;
-	};
-
-	const VkColorComponentFlags					colorComponentsAll			= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	const VkPipelineColorBlendAttachmentState	colorBlendAttachmentState	=
-	{
-		VK_FALSE,														// VkBool32										blendEnable;
-		VK_BLEND_FACTOR_ONE,											// VkBlendFactor								srcColorBlendFactor;
-		VK_BLEND_FACTOR_ZERO,											// VkBlendFactor								dstColorBlendFactor;
-		VK_BLEND_OP_ADD,												// VkBlendOp									colorBlendOp;
-		VK_BLEND_FACTOR_ONE,											// VkBlendFactor								srcAlphaBlendFactor;
-		VK_BLEND_FACTOR_ZERO,											// VkBlendFactor								dstAlphaBlendFactor;
-		VK_BLEND_OP_ADD,												// VkBlendOp									alphaBlendOp;
-		colorComponentsAll,												// VkColorComponentFlags						colorWriteMask;
-	};
-	std::vector<VkPipelineColorBlendAttachmentState> colorAttachments(colorAttachmentCount, colorBlendAttachmentState);
-
-	const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,		// VkStructureType								sType;
-		DE_NULL,														// const void*									pNext;
-		(VkPipelineColorBlendStateCreateFlags)0,						// VkPipelineColorBlendStateCreateFlags			flags;
-		VK_FALSE,														// VkBool32										logicOpEnable;
-		VK_LOGIC_OP_COPY,												// VkLogicOp									logicOp;
-		(deUint32)colorAttachments.size(),								// deUint32										attachmentCount;
-		colorAttachments.size() != 0 ? &colorAttachments[0] : DE_NULL,	// const VkPipelineColorBlendAttachmentState*	pAttachments;
-		{ 0.0f, 0.0f, 0.0f, 0.0f },										// float										blendConstants[4];
-	};
-
-	const VkPipelineShaderStageCreateInfo pShaderStages[] =
-	{
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType								sType;
-			DE_NULL,													// const void*									pNext;
-			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags				flags;
-			VK_SHADER_STAGE_VERTEX_BIT,									// VkShaderStageFlagBits						stage;
-			vertexModule,												// VkShaderModule								module;
-			"main",														// const char*									pName;
-			DE_NULL,													// const VkSpecializationInfo*					pSpecializationInfo;
-		},
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,		// VkStructureType								sType;
-			DE_NULL,													// const void*									pNext;
-			(VkPipelineShaderStageCreateFlags)0,						// VkPipelineShaderStageCreateFlags				flags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,								// VkShaderStageFlagBits						stage;
-			fragmentModule,												// VkShaderModule								module;
-			"main",														// const char*									pName;
-			DE_NULL,													// const VkSpecializationInfo*					pSpecializationInfo;
-		}
-	};
-	const deUint32 numActiveShaderStages = DE_LENGTH_OF_ARRAY(pShaderStages);
-
-	const VkDynamicState dynamicStates[] =
-	{
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR,
-	};
-
-	const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,			// VkStructureType									sType;
-		DE_NULL,														// const void*										pNext;
-		(VkPipelineDynamicStateCreateFlags)0,							// VkPipelineDynamicStateCreateFlags				flags;
-		DE_LENGTH_OF_ARRAY(dynamicStates),								// deUint32											dynamicStateCount;
-		dynamicStates,													// const VkDynamicState*							pDynamicStates;
-	};
-
-	const VkGraphicsPipelineCreateInfo graphicsPipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,				// VkStructureType									sType;
-		DE_NULL,														// const void*										pNext;
-		(VkPipelineCreateFlags)0,										// VkPipelineCreateFlags							flags;
-		numActiveShaderStages,											// deUint32											stageCount;
-		pShaderStages,													// const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateInfo,											// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&pipelineInputAssemblyStateInfo,								// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		DE_NULL,														// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		&pipelineViewportStateInfo,										// const VkPipelineViewportStateCreateInfo*			pViewportState;
-		&pipelineRasterizationStateInfo,								// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&pipelineMultisampleStateInfo,									// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		DE_NULL,														// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-		&pipelineColorBlendStateInfo,									// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		dynamicSize ? &dynamicStateCreateInfo : DE_NULL,				// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout,													// VkPipelineLayout									layout;
-		renderPass,														// VkRenderPass										renderPass;
-		0u,																// deUint32											subpass;
-		DE_NULL,														// VkPipeline										basePipelineHandle;
-		0,																// deInt32											basePipelineIndex;
-	};
-
-	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+	return vk::makeGraphicsPipeline(vk,										// const DeviceInterface&                        vk
+									device,									// const VkDevice                                device
+									pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
+									vertexModule,							// const VkShaderModule                          vertexShaderModule
+									DE_NULL,								// const VkShaderModule                          tessellationControlModule
+									DE_NULL,								// const VkShaderModule                          tessellationEvalModule
+									DE_NULL,								// const VkShaderModule                          geometryShaderModule
+									fragmentModule,							// const VkShaderModule                          fragmentShaderModule
+									renderPass,								// const VkRenderPass                            renderPass
+									viewports,								// const std::vector<VkViewport>&                viewports
+									scissors,								// const std::vector<VkRect2D>&                  scissors
+									VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
+									0u,										// const deUint32                                subpass
+									0u,										// const deUint32                                patchControlPoints
+									&vertexInputStateCreateInfo,			// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+									DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+									DE_NULL,								// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+									DE_NULL,								// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+									&pipelineColorBlendStateInfo);			// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 }
 
 //! A single-subpass render pass.
@@ -1318,18 +1124,6 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 	};
 
 	return createFramebuffer(vk, device, &framebufferInfo);
-}
-
-VkRect2D makeScissor (const deUint32	width,
-					  const deUint32	height)
-{
-	const VkRect2D scissor =
-	{
-		{ 0u, 0u },			// VkOffset2D	offset;
-		{ width, height }	// VkExtent2D	extent;
-	};
-
-	return scissor;
 }
 
 } // image

@@ -199,11 +199,7 @@ NegativeViewportHeightTestInstance::NegativeViewportHeightTestInstance (Context&
 
 	// Graphics pipeline
 
-	const VkRect2D scissor =
-	{
-		{ 0,		0		},		// x, y
-		{ WIDTH,	HEIGHT	},		// width, height
-	};
+	const VkRect2D scissor = makeRect2D(WIDTH, HEIGHT);
 
 	std::vector<VkDynamicState>		dynamicStates;
 	dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);

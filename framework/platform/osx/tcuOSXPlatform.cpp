@@ -22,14 +22,18 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuOSXPlatform.hpp"
+#include "tcuRenderTarget.hpp"
+
+#include "tcuOSXVulkanPlatform.hpp"
+
+#include "gluDefs.hpp"
+#include "gluPlatform.hpp"
 #include "gluRenderContext.hpp"
 #include "gluRenderConfig.hpp"
-#include "tcuRenderTarget.hpp"
 #include "glwFunctions.hpp"
 #include "glwInitFunctions.hpp"
 #include "deDynamicLibrary.hpp"
 #include "glwEnums.hpp"
-#include "gluDefs.hpp"
 
 #include <string>
 
@@ -43,6 +47,69 @@
 
 namespace tcu
 {
+
+class CGLRenderContext : public glu::RenderContext
+{
+public:
+								CGLRenderContext		(const glu::RenderConfig& config);
+								~CGLRenderContext		(void);
+
+	glu::ContextType			getType					(void) const { return m_type;			}
+	const glw::Functions&		getFunctions			(void) const { return m_functions;		}
+	const tcu::RenderTarget&	getRenderTarget			(void) const { return m_renderTarget;	}
+	void						postIterate				(void) {}
+
+private:
+	const glu::ContextType		m_type;
+	CGLContextObj				m_context;
+	glw::Functions				m_functions;
+	RenderTarget				m_renderTarget;
+};
+
+class CGLContextFactory : public glu::ContextFactory
+{
+public:
+	CGLContextFactory (void)
+		: glu::ContextFactory("cgl", "CGL Context (surfaceless, use fbo)")
+	{
+	}
+
+	glu::RenderContext*	createContext (const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext*) const
+	{
+		return new CGLRenderContext(config);
+	}
+};
+
+class OSXGLPlatform : public glu::Platform
+{
+public:
+	OSXGLPlatform(void)
+	{
+		m_contextFactoryRegistry.registerFactory(new CGLContextFactory());
+	}
+
+	~OSXGLPlatform(void) {}
+};
+
+class OSXPlatform : public tcu::Platform
+{
+public:
+	OSXPlatform(void)
+		: m_gluPlatform(), m_vkPlatform()
+	{
+	}
+
+	~OSXPlatform(void)
+	{
+	}
+
+	const glu::Platform&	getGLPlatform	(void) const { return m_gluPlatform; }
+	const vk::Platform&		getVulkanPlatform	(void) const { return m_vkPlatform; }
+
+private:
+	OSXGLPlatform m_gluPlatform;
+	osx::VulkanPlatform m_vkPlatform;
+};
 
 namespace
 {
@@ -65,24 +132,6 @@ private:
 };
 
 } // anonymous
-
-class CGLRenderContext : public glu::RenderContext
-{
-public:
-								CGLRenderContext		(const glu::RenderConfig& config);
-								~CGLRenderContext		(void);
-
-	glu::ContextType			getType					(void) const { return m_type;			}
-	const glw::Functions&		getFunctions			(void) const { return m_functions;		}
-	const tcu::RenderTarget&	getRenderTarget			(void) const { return m_renderTarget;	}
-	void						postIterate				(void) {}
-
-private:
-	const glu::ContextType		m_type;
-	CGLContextObj				m_context;
-	glw::Functions				m_functions;
-	RenderTarget				m_renderTarget;
-};
 
 static CGLOpenGLProfile getCGLProfile (glu::ContextType type)
 {
@@ -170,29 +219,6 @@ CGLRenderContext::~CGLRenderContext (void)
 	CGLSetCurrentContext(DE_NULL);
 	if (m_context)
 		CGLDestroyContext(m_context);
-}
-
-class CGLContextFactory : public glu::ContextFactory
-{
-public:
-	CGLContextFactory (void)
-		: glu::ContextFactory("cgl", "CGL Context (surfaceless, use fbo)")
-	{
-	}
-
-	glu::RenderContext*	createContext (const glu::RenderConfig& config, const tcu::CommandLine&) const
-	{
-		return new CGLRenderContext(config);
-	}
-};
-
-OSXPlatform::OSXPlatform (void)
-{
-	m_contextFactoryRegistry.registerFactory(new CGLContextFactory());
-}
-
-OSXPlatform::~OSXPlatform (void)
-{
 }
 
 } // tcu

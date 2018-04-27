@@ -2194,6 +2194,102 @@ void imageUtilSelfTest (void)
 	}
 }
 
+struct CompressedFormatParameters
+{
+	VkFormat	format;
+	deUint32	blockBytes;
+	deUint32	blockWidth;
+	deUint32	blockHeight;
+};
+
+CompressedFormatParameters	compressedFormatParameters[VK_FORMAT_ASTC_12x12_SRGB_BLOCK - VK_FORMAT_BC1_RGB_UNORM_BLOCK + 1] =
+{
+	{ VK_FORMAT_BC1_RGB_UNORM_BLOCK,		8,	4,	4 },
+	{ VK_FORMAT_BC1_RGB_SRGB_BLOCK,			8,	4,	4 },
+	{ VK_FORMAT_BC1_RGBA_UNORM_BLOCK,		8,	4,	4 },
+	{ VK_FORMAT_BC1_RGBA_SRGB_BLOCK,		8,	4,	4 },
+	{ VK_FORMAT_BC2_UNORM_BLOCK,			16,	4,	4 },
+	{ VK_FORMAT_BC2_SRGB_BLOCK,				16,	4,	4 },
+	{ VK_FORMAT_BC3_UNORM_BLOCK,			16,	4,	4 },
+	{ VK_FORMAT_BC3_SRGB_BLOCK,				16,	4,	4 },
+	{ VK_FORMAT_BC4_UNORM_BLOCK,			8,	4,	4 },
+	{ VK_FORMAT_BC4_SNORM_BLOCK,			8,	4,	4 },
+	{ VK_FORMAT_BC5_UNORM_BLOCK,			16,	4,	4 },
+	{ VK_FORMAT_BC5_SNORM_BLOCK,			16,	4,	4 },
+	{ VK_FORMAT_BC6H_UFLOAT_BLOCK,			16,	4,	4 },
+	{ VK_FORMAT_BC6H_SFLOAT_BLOCK,			16,	4,	4 },
+	{ VK_FORMAT_BC7_UNORM_BLOCK,			16,	4,	4 },
+	{ VK_FORMAT_BC7_SRGB_BLOCK,				16,	4,	4 },
+	{ VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,	8,	4,	4 },
+	{ VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,		8,	4,	4 },
+	{ VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,	8,	4,	4 },
+	{ VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,	8,	4,	4 },
+	{ VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,	16,	4,	4 },
+	{ VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,	16,	4,	4 },
+	{ VK_FORMAT_EAC_R11_UNORM_BLOCK,		8,	4,	4 },
+	{ VK_FORMAT_EAC_R11_SNORM_BLOCK,		8,	4,	4 },
+	{ VK_FORMAT_EAC_R11G11_UNORM_BLOCK,		16,	4,	4 },
+	{ VK_FORMAT_EAC_R11G11_SNORM_BLOCK,		16,	4,	4 },
+	{ VK_FORMAT_ASTC_4x4_UNORM_BLOCK,		16,	4,	4 },
+	{ VK_FORMAT_ASTC_4x4_SRGB_BLOCK,		16,	4,	4 },
+	{ VK_FORMAT_ASTC_5x4_UNORM_BLOCK,		16,	5,	4 },
+	{ VK_FORMAT_ASTC_5x4_SRGB_BLOCK,		16,	5,	4 },
+	{ VK_FORMAT_ASTC_5x5_UNORM_BLOCK,		16,	5,	5 },
+	{ VK_FORMAT_ASTC_5x5_SRGB_BLOCK,		16,	5,	5 },
+	{ VK_FORMAT_ASTC_6x5_UNORM_BLOCK,		16,	6,	5 },
+	{ VK_FORMAT_ASTC_6x5_SRGB_BLOCK,		16,	6,	5 },
+	{ VK_FORMAT_ASTC_6x6_UNORM_BLOCK,		16,	6,	6 },
+	{ VK_FORMAT_ASTC_6x6_SRGB_BLOCK,		16,	6,	6 },
+	{ VK_FORMAT_ASTC_8x5_UNORM_BLOCK,		16,	8,	5 },
+	{ VK_FORMAT_ASTC_8x5_SRGB_BLOCK,		16,	8,	5 },
+	{ VK_FORMAT_ASTC_8x6_UNORM_BLOCK,		16,	8,	6 },
+	{ VK_FORMAT_ASTC_8x6_SRGB_BLOCK,		16,	8,	6 },
+	{ VK_FORMAT_ASTC_8x8_UNORM_BLOCK,		16,	8,	8 },
+	{ VK_FORMAT_ASTC_8x8_SRGB_BLOCK,		16,	8,	8 },
+	{ VK_FORMAT_ASTC_10x5_UNORM_BLOCK,		16,	10,	5 },
+	{ VK_FORMAT_ASTC_10x5_SRGB_BLOCK,		16,	10,	5 },
+	{ VK_FORMAT_ASTC_10x6_UNORM_BLOCK,		16,	10,	6 },
+	{ VK_FORMAT_ASTC_10x6_SRGB_BLOCK,		16,	10,	6 },
+	{ VK_FORMAT_ASTC_10x8_UNORM_BLOCK,		16,	10,	8 },
+	{ VK_FORMAT_ASTC_10x8_SRGB_BLOCK,		16,	10,	8 },
+	{ VK_FORMAT_ASTC_10x10_UNORM_BLOCK,		16,	10,	10 },
+	{ VK_FORMAT_ASTC_10x10_SRGB_BLOCK,		16,	10,	10 },
+	{ VK_FORMAT_ASTC_12x10_UNORM_BLOCK,		16,	12,	10 },
+	{ VK_FORMAT_ASTC_12x10_SRGB_BLOCK,		16,	12,	10 },
+	{ VK_FORMAT_ASTC_12x12_UNORM_BLOCK,		16,	12,	12 },
+	{ VK_FORMAT_ASTC_12x12_SRGB_BLOCK,		16,	12,	12 }
+};
+
+deUint32 getBlockSizeInBytes (const VkFormat compressedFormat)
+{
+	deUint32 formatNdx = static_cast<deUint32>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
+
+	DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
+	DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
+
+	return compressedFormatParameters[formatNdx].blockBytes;
+}
+
+deUint32 getBlockWidth (const VkFormat compressedFormat)
+{
+	deUint32 formatNdx = static_cast<deUint32>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
+
+	DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
+	DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
+
+	return compressedFormatParameters[formatNdx].blockWidth;
+}
+
+deUint32 getBlockHeight (const VkFormat compressedFormat)
+{
+	deUint32 formatNdx = static_cast<deUint32>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
+
+	DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
+	DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
+
+	return compressedFormatParameters[formatNdx].blockHeight;
+}
+
 VkFilter mapFilterMode (tcu::Sampler::FilterMode filterMode)
 {
 	DE_STATIC_ASSERT(tcu::Sampler::FILTERMODE_LAST == 6);
@@ -2601,7 +2697,8 @@ void copyBufferToImage (const DeviceInterface&					vk,
 						VkImageAspectFlags						imageAspectFlags,
 						deUint32								mipLevels,
 						deUint32								arrayLayers,
-						VkImage									destImage)
+						VkImage									destImage,
+						VkImageLayout							destImageLayout)
 {
 	Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -2648,7 +2745,7 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags			srcAccessMask;
 		VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags			dstAccessMask;
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,			// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// VkImageLayout			newLayout;
+		destImageLayout,								// VkImageLayout			newLayout;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex;
 		destImage,										// VkImage					image;

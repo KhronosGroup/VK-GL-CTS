@@ -23,22 +23,8 @@
  * \brief OS X platform.
  *//*--------------------------------------------------------------------*/
 
-#include "tcuDefs.hpp"
 #include "tcuPlatform.hpp"
-#include "gluPlatform.hpp"
 
-namespace tcu
-{
-
-class OSXPlatform : public tcu::Platform, private glu::Platform
-{
-public:
-							OSXPlatform		(void);
-							~OSXPlatform	(void);
-
-	const glu::Platform&	getGLPlatform	(void) const { return static_cast<const glu::Platform&>(*this);	}
-};
-
-} // tcu
+tcu::Platform* createPlatform (void);
 
 #endif // _TCUOSXPLATFORM_HPP

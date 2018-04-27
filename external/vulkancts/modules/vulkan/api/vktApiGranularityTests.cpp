@@ -34,6 +34,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "tcuTestLog.hpp"
@@ -310,11 +311,7 @@ void GranularityInstance::beginRenderPass (void)
 {
 	const DeviceInterface&	vk	= m_context.getDeviceInterface();
 
-	const VkRect2D	renderArea	=
-	{
-		{ 0, 0 },	// VkOffset2D    offset;
-		{ 1, 1 }	// VkExtent2D	extent;
-	};
+	const VkRect2D	renderArea	= makeRect2D(1u, 1u);
 
 	vk::beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_frameBuffer, renderArea);
 }

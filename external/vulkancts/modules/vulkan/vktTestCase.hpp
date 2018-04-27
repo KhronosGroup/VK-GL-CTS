@@ -113,6 +113,7 @@ public:
 
 	virtual void			initPrograms	(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*	createInstance	(Context& context) const = 0;
+	virtual void			checkSupport	(Context& context) const;
 
 	IterateResult			iterate			(void) { DE_ASSERT(false); return STOP; } // Deprecated in this module
 };

@@ -933,27 +933,8 @@ void VertexShaderTestInstance::createPipeline (void)
 	pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_parametersGraphic.primitiveTopology));
 	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &attachmentState));
 
-	const VkViewport	viewport	=
-	{
-		0.0f,		// float x;
-		0.0f,		// float y;
-		WIDTH,	// float width;
-		HEIGHT,	// float height;
-		0.0f,	// float minDepth;
-		1.0f	// float maxDepth;
-	};
-
-	const VkRect2D		scissor		=
-	{
-		{
-			0,		// deInt32 x
-			0,		// deInt32 y
-		},		// VkOffset2D	offset;
-		{
-			WIDTH,	// deInt32 width;
-			HEIGHT,	// deInt32 height
-		},		// VkExtent2D	extent;
-	};
+	const VkViewport	viewport	= makeViewport(WIDTH, HEIGHT);
+	const VkRect2D		scissor		= makeRect2D(WIDTH, HEIGHT);
 	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1u, std::vector<VkViewport>(1, viewport), std::vector<VkRect2D>(1, scissor)));
 	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
@@ -1316,27 +1297,9 @@ void GeometryShaderTestInstance::createPipeline (void)
 	pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(m_parametersGraphic.primitiveTopology));
 	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &attachmentState));
 
-	const VkViewport	viewport	=
-	{
-		0.0f,		// float x;
-		0.0f,		// float y;
-		WIDTH,	// float width;
-		HEIGHT,	// float height;
-		0.0f,	// float minDepth;
-		1.0f	// float maxDepth;
-	};
+	const VkViewport	viewport	= makeViewport(WIDTH, HEIGHT);
+	const VkRect2D		scissor		= makeRect2D(WIDTH, HEIGHT);
 
-	const VkRect2D		scissor		=
-	{
-		{
-			0,		// deInt32 x
-			0,		// deInt32 y
-		},		// VkOffset2D	offset;
-		{
-			WIDTH,	// deInt32 width;
-			HEIGHT,	// deInt32 height
-		},		// VkExtent2D	extent;
-	};
 	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1, std::vector<VkViewport>(1, viewport), std::vector<VkRect2D>(1, scissor)));
 
 	if (m_context.getDeviceFeatures().depthBounds)
@@ -1690,27 +1653,9 @@ void TessellationShaderTestInstance::createPipeline (void)
 	pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST));
 	pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &attachmentState));
 
-	const VkViewport	viewport	=
-	{
-		0.0f,		// float x;
-		0.0f,		// float y;
-		WIDTH,	// float width;
-		HEIGHT,	// float height;
-		0.0f,	// float minDepth;
-		1.0f	// float maxDepth;
-	};
+	const VkViewport	viewport	= makeViewport(WIDTH, HEIGHT);
+	const VkRect2D		scissor		= makeRect2D(WIDTH, HEIGHT);
 
-	const VkRect2D		scissor		=
-	{
-		{
-			0,		// deInt32 x
-			0,		// deInt32 y
-		},		// VkOffset2D	offset;
-		{
-			WIDTH,	// deInt32 width;
-			HEIGHT,	// deInt32 height
-		},		// VkExtent2D	extent;
-	};
 	pipelineCreateInfo.addState(PipelineCreateInfo::ViewportState(1, std::vector<VkViewport>(1, viewport), std::vector<VkRect2D>(1, scissor)));
 	pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState());
 	pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());

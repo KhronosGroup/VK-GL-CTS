@@ -29,6 +29,7 @@
 #include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 using namespace tcu;
 using namespace std;
@@ -172,81 +173,8 @@ Move<VkPipeline> makeGraphicsPipeline(Context&									context,
 									  const bool								frameBufferTests = false,
 									  const vk::VkFormat						attachmentFormat = VK_FORMAT_R32G32B32A32_SFLOAT)
 {
-	const VkBool32 disableRasterization = !(VK_SHADER_STAGE_FRAGMENT_BIT & stages);
-	std::vector<vk::VkPipelineShaderStageCreateInfo> pipelineShaderStageParams;
-	{
-		const vk::VkPipelineShaderStageCreateInfo	stageCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType					sType
-				DE_NULL,											// const void*						pNext
-				0u,													// VkPipelineShaderStageCreateFlags	flags
-				VK_SHADER_STAGE_VERTEX_BIT,							// VkShaderStageFlagBits			stage
-				vertexShaderModule,									// VkShaderModule					module
-				"main",												// const char*						pName
-				DE_NULL												// const VkSpecializationInfo*		pSpecializationInfo
-		};
-		pipelineShaderStageParams.push_back(stageCreateInfo);
-	}
-
-	if (VK_SHADER_STAGE_FRAGMENT_BIT & stages)
-	{
-		const vk::VkPipelineShaderStageCreateInfo	stageCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType
-			DE_NULL,												// const void*							pNext
-			0u,														// VkPipelineShaderStageCreateFlags		flags
-			VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits				stage
-			fragmentShaderModule,									// VkShaderModule						module
-			"main",													// const char*							pName
-			DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo
-		};
-		pipelineShaderStageParams.push_back(stageCreateInfo);
-	}
-
-	if (VK_SHADER_STAGE_GEOMETRY_BIT & stages)
-	{
-		const vk::VkPipelineShaderStageCreateInfo	stageCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType
-			DE_NULL,												// const void*							pNext
-			0u,														// VkPipelineShaderStageCreateFlags		flags
-			VK_SHADER_STAGE_GEOMETRY_BIT,							// VkShaderStageFlagBits				stage
-			geometryShaderModule,									// VkShaderModule						module
-			"main",													// const char*							pName
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo
-		};
-		pipelineShaderStageParams.push_back(stageCreateInfo);
-	}
-
-	if (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT & stages)
-	{
-		const vk::VkPipelineShaderStageCreateInfo	stageCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType
-			DE_NULL,												// const void*							pNext
-			0u,														// VkPipelineShaderStageCreateFlags		flags
-			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,				// VkShaderStageFlagBits				stage
-			tessellationControlModule,								// VkShaderModule						module
-			"main",													// const char*							pName
-			DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo
-		};
-		pipelineShaderStageParams.push_back(stageCreateInfo);
-	}
-
-	if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT & stages)
-	{
-		const vk::VkPipelineShaderStageCreateInfo	stageCreateInfo =
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType
-			DE_NULL,												// const void*							pNext
-			0u,														// VkPipelineShaderStageCreateFlags		flags
-			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,			// VkShaderStageFlagBits				stage
-			tessellationEvaluationModule,							// VkShaderModule						module
-			"main",													// const char*							pName
-			DE_NULL													// const VkSpecializationInfo*			pSpecializationInfo
-		};
-		pipelineShaderStageParams.push_back(stageCreateInfo);
-	}
+	std::vector<VkViewport>	noViewports;
+	std::vector<VkRect2D>	noScissors;
 
 	const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
 	{
@@ -257,52 +185,6 @@ Move<VkPipeline> makeGraphicsPipeline(Context&									context,
 		vertexInputBindingDescription,								// const VkVertexInputBindingDescription*		pVertexBindingDescriptions;
 		vertexInputAttributeDescriptions == DE_NULL ? 0u : 1u,		// deUint32										vertexAttributeDescriptionCount;
 		vertexInputAttributeDescriptions,							// const VkVertexInputAttributeDescription*		pVertexAttributeDescriptions;
-	};
-
-	const VkPipelineTessellationStateCreateInfo tessellationStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
-		DE_NULL,
-		0,
-		(VK_SHADER_STAGE_FRAGMENT_BIT & stages && frameBufferTests) ? 2u : 1u
-	};
-
-	const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, DE_NULL,
-		0u, topology, VK_FALSE
-	};
-
-	const VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, DE_NULL, 0u, 1u,
-		DE_NULL, 1u, DE_NULL,
-	};
-
-	const VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, DE_NULL,
-		0u, VK_FALSE, disableRasterization, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
-		VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_FALSE, 0.0f, 0.0f, 0.0f, 1.0f
-	};
-
-	const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, DE_NULL, 0u,
-		VK_SAMPLE_COUNT_1_BIT, VK_FALSE, 0.0f, DE_NULL, VK_FALSE, VK_FALSE
-	};
-
-	const VkStencilOpState stencilOpState =
-	{
-		VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_COMPARE_OP_NEVER,
-		0, 0, 0
-	};
-
-	const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, DE_NULL, 0u,
-		VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER, VK_FALSE, VK_FALSE, stencilOpState,
-		stencilOpState, 0.0f, 0.0f
 	};
 
 	const deUint32 numChannels = getNumUsedChannels(mapVkFormat(attachmentFormat).order);
@@ -326,33 +208,27 @@ Move<VkPipeline> makeGraphicsPipeline(Context&									context,
 		{ 0.0f, 0.0f, 0.0f, 0.0f }
 	};
 
-	const VkDynamicState dynamicState[2] =
-	{
-		VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR
-	};
+	const deUint32 patchControlPoints = (VK_SHADER_STAGE_FRAGMENT_BIT & stages && frameBufferTests) ? 2u : 1u;
 
-	const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, DE_NULL, 0u, 2,
-		dynamicState,
-	};
-
-	const bool usingTessellation = (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT & stages)
-								   || (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT & stages);
-
-	const VkGraphicsPipelineCreateInfo pipelineCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, DE_NULL, 0u,
-		static_cast<deUint32>(pipelineShaderStageParams.size()),
-		&pipelineShaderStageParams[0], &vertexInputStateCreateInfo,
-		&inputAssemblyStateCreateInfo, usingTessellation ? &tessellationStateCreateInfo : DE_NULL, &viewportStateCreateInfo,
-		&rasterizationStateCreateInfo, &multisampleStateCreateInfo,
-		&depthStencilStateCreateInfo, &colorBlendStateCreateInfo,
-		&dynamicStateCreateInfo, pipelineLayout, renderPass, 0, DE_NULL, 0
-	};
-
-	return createGraphicsPipeline(context.getDeviceInterface(),
-								  context.getDevice(), DE_NULL, &pipelineCreateInfo);
+	return vk::makeGraphicsPipeline(context.getDeviceInterface(),	// const DeviceInterface&                        vk
+									context.getDevice(),			// const VkDevice                                device
+									pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
+									vertexShaderModule,				// const VkShaderModule                          vertexShaderModule
+									tessellationControlModule,		// const VkShaderModule                          tessellationControlShaderModule
+									tessellationEvaluationModule,	// const VkShaderModule                          tessellationEvalShaderModule
+									geometryShaderModule,			// const VkShaderModule                          geometryShaderModule
+									fragmentShaderModule,			// const VkShaderModule                          fragmentShaderModule
+									renderPass,						// const VkRenderPass                            renderPass
+									noViewports,					// const std::vector<VkViewport>&                viewports
+									noScissors,						// const std::vector<VkRect2D>&                  scissors
+									topology,						// const VkPrimitiveTopology                     topology
+									0u,								// const deUint32                                subpass
+									patchControlPoints,				// const deUint32                                patchControlPoints
+									&vertexInputStateCreateInfo,	// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+									DE_NULL,						// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+									DE_NULL,						// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+									DE_NULL,						// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+									&colorBlendStateCreateInfo);	// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 }
 
 Move<VkPipeline> makeComputePipeline(Context& context,
@@ -1777,8 +1653,8 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 	for (deUint32 width = 1u; width < maxWidth; ++width)
 	{
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
-		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
+		const VkViewport			viewport			= makeViewport(maxWidth, 1u);
+		const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer						imageBufferResult	(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkDeviceSize			vertexBufferOffset	= 0u;
@@ -1994,8 +1870,8 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 	{
 		totalIterations++;
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
-		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
+		const VkViewport			viewport			= makeViewport(maxWidth, 1u);
+		const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer						imageBufferResult	(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkDeviceSize			vertexBufferOffset	= 0u;
@@ -2286,8 +2162,8 @@ tcu::TestStatus vkt::subgroups::allStages(
 		const VkDeviceSize				resultImageSizeInBytes	= maxWidth * 1 * getFormatSizeInBytes(format);
 		Image							resultImage				(context, maxWidth, 1, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 		const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer(context, *renderPass, resultImage.getImageView(), maxWidth, 1));
-		const VkViewport				viewport				= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
-		const VkRect2D					scissor					= {{0, 0}, {maxWidth, 1}};
+		const VkViewport				viewport				= makeViewport(maxWidth, 1u);
+		const VkRect2D					scissor					= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize			imageResultSize			= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer							imageBufferResult		(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkImageSubresourceRange	subresourceRange		=
@@ -2570,8 +2446,8 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 	{
 		totalIterations++;
 		const Unique<VkFramebuffer>	framebuffer			(makeFramebuffer(context, *renderPass, discardableImage.getImageView(), maxWidth, 1));
-		const VkViewport			viewport			= {0.0f, 0.0f, static_cast<float>(maxWidth), 1.0f, 0.0f, 1.0f};
-		const VkRect2D				scissor				= {{0, 0}, {maxWidth, 1}};
+		const VkViewport			viewport			= makeViewport(maxWidth, 1u);
+		const VkRect2D				scissor				= makeRect2D(maxWidth, 1u);
 		const vk::VkDeviceSize		imageResultSize		= tcu::getPixelSize(vk::mapVkFormat(format)) * maxWidth;
 		Buffer						imageBufferResult	(context, imageResultSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		const VkDeviceSize			vertexBufferOffset	= 0u;
@@ -2807,9 +2683,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 
 			beginCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
-			VkViewport viewport = {0.0f, 0.0f, static_cast<float>(width),
-								   static_cast<float>(height), 0.0f, 1.0f
-								  };
+			VkViewport viewport = makeViewport(width, height);
 
 			context.getDeviceInterface().cmdSetViewport(
 				*cmdBuffer, 0, 1, &viewport);
@@ -2837,8 +2711,21 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 
 			vk::VkBufferImageCopy region = {0, 0, 0,
 				{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0},
-				{width, height, 1}
-			};
+				{width, height, 1}};
+
+			const vk::VkImageSubresourceRange subresourceRange = {
+				VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u};
+
+			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
+																	VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+																	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+																	resultImage.getImage(), subresourceRange);
+
+			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer,
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u,
+					(const VkBufferMemoryBarrier*)DE_NULL, 1u, &prepareForTransferBarrier);
+
 			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer,
 					resultImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					resultBuffer.getBuffer(), 1, &region);

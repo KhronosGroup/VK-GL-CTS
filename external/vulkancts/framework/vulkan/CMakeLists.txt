@@ -59,6 +59,8 @@ set(VKUTIL_SRCS
 	vkShaderProgram.hpp
 	vkYCbCrImageWithMemory.cpp
 	vkYCbCrImageWithMemory.hpp
+	vkObjUtil.cpp
+	vkObjUtil.hpp
 	)
 
 set(VKUTIL_LIBS

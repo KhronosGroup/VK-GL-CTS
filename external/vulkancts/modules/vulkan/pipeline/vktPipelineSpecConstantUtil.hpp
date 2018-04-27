@@ -70,7 +70,6 @@ enum FeatureFlagBits
 typedef deUint32 FeatureFlags;
 
 vk::VkImageCreateInfo			makeImageCreateInfo		(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
-vk::Move<vk::VkRenderPass>		makeRenderPass			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat);
 void							requireFeatures			(const vk::InstanceInterface& vki, const vk::VkPhysicalDevice physDevice, const FeatureFlags flags);
 
 // Ugly, brute-force replacement for the initializer list

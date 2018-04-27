@@ -184,7 +184,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
 	const vk::VkSubpassContents			subpassContents		= m_cmdBufferType == CMD_BUFFER_SECONDARY
 															  ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
 															  : vk::VK_SUBPASS_CONTENTS_INLINE;
-	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT), clearValue, subpassContents);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, vk::makeRect2D(RENDER_WIDTH, RENDER_HEIGHT), clearValue, subpassContents);
 
 	if (m_cmdBufferType == CMD_BUFFER_SECONDARY)
 	{
@@ -210,21 +210,7 @@ tcu::TestStatus AttachmentClearTestInstance::iterate()
 			0u,													//uint32_t				colorAttachment
 			m_clearValue										// VkClearValue			clearValue;
 		};
-		const vk::VkOffset2D			offset				=
-		{
-			0,													//int32_t				x;
-			0													//int32_t				y;
-		};
-		const vk::VkExtent2D			extent				=
-		{
-			RENDER_WIDTH,										//uint32_t				width;
-			RENDER_HEIGHT										//uint32_t				height;
-		};
-		const vk::VkRect2D				rect2D				=
-		{
-			offset,												//VkOffset2D			offset;
-			extent												//VkExtent2D			extent;
-		};
+		const vk::VkRect2D				rect2D				= vk::makeRect2D(RENDER_WIDTH, RENDER_HEIGHT);
 		const vk::VkClearRect			clearRect			=
 		{
 			rect2D,												// VkRect2D				rect;

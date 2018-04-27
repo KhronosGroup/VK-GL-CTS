@@ -287,7 +287,7 @@ ShaderSpec getShaderSpec (const TestParameters&)
 	return spec;
 }
 
-void checkSupport (Context& context, const TestParameters& params)
+void checkSupport (Context& context, const TestParameters params)
 {
 	checkImageSupport(context, params.format, params.flags, params.tiling);
 }
@@ -308,8 +308,6 @@ void generateLookupCoordinates (const UVec2& imageSize, vector<Vec2>* dst)
 
 tcu::TestStatus testFormat (Context& context, TestParameters params)
 {
-	checkSupport(context, params);
-
 	const DeviceInterface&					vkd						= context.getDeviceInterface();
 	const VkDevice							device					= context.getDevice();
 
@@ -569,17 +567,17 @@ void populatePerFormatGroup (tcu::TestCaseGroup* group, VkFormat format)
 		const char* const		shaderTypeName	= shaderTypes[shaderTypeNdx].name;
 		const string			name			= string(shaderTypeName) + "_" + tilingName;
 
-		addFunctionCaseWithPrograms(group, name, "", initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, false));
+		addFunctionCaseWithPrograms(group, name, "", checkSupport, initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, false));
 
 		if (getPlaneCount(format) > 1)
-			addFunctionCaseWithPrograms(group, name + "_disjoint", "", initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, false));
+			addFunctionCaseWithPrograms(group, name + "_disjoint", "", checkSupport, initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, false));
 
 		if (tiling == VK_IMAGE_TILING_LINEAR)
 		{
-			addFunctionCaseWithPrograms(group, name + "_mapped", "", initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, true));
+			addFunctionCaseWithPrograms(group, name + "_mapped", "", checkSupport, initPrograms, testFormat, TestParameters(format, size, 0u, tiling, shaderType, true));
 
 			if (getPlaneCount(format) > 1)
-				addFunctionCaseWithPrograms(group, name + "_disjoint_mapped", "", initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, true));
+				addFunctionCaseWithPrograms(group, name + "_disjoint_mapped", "", checkSupport, initPrograms, testFormat, TestParameters(format, size, (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT, tiling, shaderType, true));
 		}
 	}
 }

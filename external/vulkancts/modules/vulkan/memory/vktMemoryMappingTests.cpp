@@ -306,7 +306,7 @@ Move<VkImage> makeImage (const DeviceInterface& vk, VkDevice device, VkDeviceSiz
 {
 	const VkDeviceSize					sizeInPixels					= (size + 3u) / 4u;
 	const deUint32						sqrtSize						= static_cast<deUint32>(deFloatCeil(deFloatSqrt(static_cast<float>(sizeInPixels))));
-	const deUint32						powerOfTwoSize					= deMaxu32(deSmallestGreaterOrEquallPowerOfTwoU32(sqrtSize), 4096u);
+	const deUint32						powerOfTwoSize					= deSmallestGreaterOrEquallPowerOfTwoU32(sqrtSize);
 	const VkImageCreateInfo				colorImageParams				=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,							// VkStructureType			sType;

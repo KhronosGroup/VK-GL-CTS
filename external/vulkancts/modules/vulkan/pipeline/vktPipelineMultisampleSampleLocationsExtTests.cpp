@@ -37,6 +37,7 @@
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
@@ -460,16 +461,6 @@ int countUniqueColors (const tcu::ConstPixelBufferAccess& image)
 	return static_cast<int>(colors.size());
 }
 
-inline VkRect2D makeRect2D (const deInt32 x, const deInt32 y, const deUint32 width, const deUint32 height)
-{
-	VkRect2D rect;
-	rect.offset.x		= x;
-	rect.offset.y		= y;
-	rect.extent.width	= width;
-	rect.extent.height	= height;
-	return rect;
-}
-
 Move<VkImage> makeImage (const DeviceInterface&			vk,
 						 const VkDevice					device,
 						 const VkImageCreateFlags		flags,
@@ -671,42 +662,8 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&				vk,
 		dataOrNullPtr(vertexInputAttributeDescriptions),				// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions;
 	};
 
-	const VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,														// const void*								pNext;
-		(VkPipelineInputAssemblyStateCreateFlags)0,						// VkPipelineInputAssemblyStateCreateFlags	flags;
-		topology,														// VkPrimitiveTopology						topology;
-		VK_FALSE,														// VkBool32									primitiveRestartEnable;
-	};
-
-	const VkPipelineViewportStateCreateInfo pipelineViewportStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,			// VkStructureType						sType;
-		DE_NULL,														// const void*							pNext;
-		(VkPipelineViewportStateCreateFlags)0,							// VkPipelineViewportStateCreateFlags	flags;
-		1u,																// uint32_t								viewportCount;
-		&viewport,														// const VkViewport*					pViewports;
-		1u,																// uint32_t								scissorCount;
-		&scissor,														// const VkRect2D*						pScissors;
-	};
-
-	const VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType							sType;
-		DE_NULL,													// const void*								pNext;
-		(VkPipelineRasterizationStateCreateFlags)0,					// VkPipelineRasterizationStateCreateFlags	flags;
-		VK_FALSE,													// VkBool32									depthClampEnable;
-		VK_FALSE,													// VkBool32									rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,										// VkPolygonMode							polygonMode;
-		VK_CULL_MODE_NONE,											// VkCullModeFlags							cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace								frontFace;
-		VK_FALSE,													// VkBool32									depthBiasEnable;
-		0.0f,														// float									depthBiasConstantFactor;
-		0.0f,														// float									depthBiasClamp;
-		0.0f,														// float									depthBiasSlopeFactor;
-		1.0f,														// float									lineWidth;
-	};
+	const std::vector<VkViewport>	viewports	(1, viewport);
+	const std::vector<VkRect2D>		scissors	(1, scissor);
 
 	const VkPipelineSampleLocationsStateCreateInfoEXT pipelineSampleLocationsCreateInfo =
 	{
@@ -745,60 +702,6 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&				vk,
 		1.0f,														// float									maxDepthBounds;
 	};
 
-	const VkColorComponentFlags colorComponentsAll = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	// Number of blend attachments must equal the number of color attachments during any subpass.
-	const VkPipelineColorBlendAttachmentState defaultBlendAttachmentState =
-	{
-		VK_FALSE,				// VkBool32					blendEnable;
-		VK_BLEND_FACTOR_ONE,	// VkBlendFactor			srcColorBlendFactor;
-		VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			dstColorBlendFactor;
-		VK_BLEND_OP_ADD,		// VkBlendOp				colorBlendOp;
-		VK_BLEND_FACTOR_ONE,	// VkBlendFactor			srcAlphaBlendFactor;
-		VK_BLEND_FACTOR_ZERO,	// VkBlendFactor			dstAlphaBlendFactor;
-		VK_BLEND_OP_ADD,		// VkBlendOp				alphaBlendOp;
-		colorComponentsAll,		// VkColorComponentFlags	colorWriteMask;
-	};
-
-	const deUint32								numColorAttachments					 = 1u;
-	const VkPipelineColorBlendAttachmentState	pipelineColorBlendAttachmentStates[] =
-	{
-		defaultBlendAttachmentState,
-	};
-
-	const VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType								sType;
-		DE_NULL,													// const void*									pNext;
-		(VkPipelineColorBlendStateCreateFlags)0,					// VkPipelineColorBlendStateCreateFlags			flags;
-		VK_FALSE,													// VkBool32										logicOpEnable;
-		VK_LOGIC_OP_COPY,											// VkLogicOp									logicOp;
-		numColorAttachments,										// deUint32										attachmentCount;
-		pipelineColorBlendAttachmentStates,							// const VkPipelineColorBlendAttachmentState*	pAttachments;
-		{ 0.0f, 0.0f, 0.0f, 0.0f },									// float										blendConstants[4];
-	};
-
-	const VkPipelineShaderStageCreateInfo pShaderStages[] =
-	{
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits				stage;
-			vertexModule,											// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-		},
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType						sType;
-			DE_NULL,												// const void*							pNext;
-			(VkPipelineShaderStageCreateFlags)0,					// VkPipelineShaderStageCreateFlags		flags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,							// VkShaderStageFlagBits				stage;
-			fragmentModule,											// VkShaderModule						module;
-			"main",													// const char*							pName;
-			DE_NULL,												// const VkSpecializationInfo*			pSpecializationInfo;
-		}
-	};
-
 	const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,		// VkStructureType                      sType;
@@ -808,30 +711,26 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&				vk,
 		dataOrNullPtr(dynamicState),								// const VkDynamicState*                pDynamicStates;
 	};
 
-	const VkGraphicsPipelineCreateInfo	graphicsPipelineInfo =
-	{
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,			// VkStructureType									sType;
-		DE_NULL,													// const void*										pNext;
-		(VkPipelineCreateFlags)0,									// VkPipelineCreateFlags							flags;
-		DE_LENGTH_OF_ARRAY(pShaderStages),							// deUint32											stageCount;
-		pShaderStages,												// const VkPipelineShaderStageCreateInfo*			pStages;
-		&vertexInputStateInfo,										// const VkPipelineVertexInputStateCreateInfo*		pVertexInputState;
-		&pipelineInputAssemblyStateInfo,							// const VkPipelineInputAssemblyStateCreateInfo*	pInputAssemblyState;
-		DE_NULL,													// const VkPipelineTessellationStateCreateInfo*		pTessellationState;
-		&pipelineViewportStateInfo,									// const VkPipelineViewportStateCreateInfo*			pViewportState;
-		&pipelineRasterizationStateInfo,							// const VkPipelineRasterizationStateCreateInfo*	pRasterizationState;
-		&pipelineMultisampleStateInfo,								// const VkPipelineMultisampleStateCreateInfo*		pMultisampleState;
-		&pipelineDepthStencilStateInfo,								// const VkPipelineDepthStencilStateCreateInfo*		pDepthStencilState;
-		&pipelineColorBlendStateInfo,								// const VkPipelineColorBlendStateCreateInfo*		pColorBlendState;
-		(dynamicState.empty() ? DE_NULL : &dynamicStateCreateInfo),	// const VkPipelineDynamicStateCreateInfo*			pDynamicState;
-		pipelineLayout,												// VkPipelineLayout									layout;
-		renderPass,													// VkRenderPass										renderPass;
-		subpassIndex,												// deUint32											subpass;
-		DE_NULL,													// VkPipeline										basePipelineHandle;
-		-1,															// deInt32											basePipelineIndex;
-	};
-
-	return createGraphicsPipeline(vk, device, DE_NULL, &graphicsPipelineInfo);
+	return makeGraphicsPipeline(vk,								// const DeviceInterface&                        vk
+								device,							// const VkDevice                                device
+								pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
+								vertexModule,					// const VkShaderModule                          vertexShaderModule
+								DE_NULL,						// const VkShaderModule                          tessellationControlShaderModule
+								DE_NULL,						// const VkShaderModule                          tessellationEvalShaderModule
+								DE_NULL,						// const VkShaderModule                          geometryShaderModule
+								fragmentModule,					// const VkShaderModule                          fragmentShaderModule
+								renderPass,						// const VkRenderPass                            renderPass
+								viewports,						// const std::vector<VkViewport>&                viewports
+								scissors,						// const std::vector<VkRect2D>&                  scissors
+								topology,						// const VkPrimitiveTopology                     topology
+								subpassIndex,					// const deUint32                                subpass
+								0u,								// const deUint32                                patchControlPoints
+								&vertexInputStateInfo,			// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+								DE_NULL,						// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+								&pipelineMultisampleStateInfo,	// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+								&pipelineDepthStencilStateInfo,	// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+								DE_NULL,						// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+								&dynamicStateCreateInfo);		// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
 }
 
 inline Move<VkPipeline> makeGraphicsPipelineSinglePassColor (const DeviceInterface&				vk,
@@ -1649,9 +1548,9 @@ protected:
 
 		const DeviceInterface&			vk				= m_context.getDeviceInterface();
 		const VkDevice					device			= m_context.getDevice();
-		const VkViewport				viewport		= makeViewport(0.0f, 0.0f, static_cast<float>(m_renderSize.x()), static_cast<float>(m_renderSize.y()), 0.0f, 1.0f);
-		const VkRect2D					renderArea		= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
-		const VkRect2D					scissor			= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
+		const VkViewport				viewport		= makeViewport(m_renderSize);
+		const VkRect2D					renderArea		= makeRect2D(m_renderSize);
+		const VkRect2D					scissor			= makeRect2D(m_renderSize);
 		const Unique<VkShaderModule>	vertexModule	(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 		const Unique<VkShaderModule>	fragmentModule	(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 		const Unique<VkPipelineLayout>	pipelineLayout	(makePipelineLayout(vk, device, *m_descriptorSetLayout));
@@ -2312,9 +2211,9 @@ protected:
 	{
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
 		const VkDevice					device				= m_context.getDevice();
-		const VkViewport				viewport			= makeViewport(0.0f, 0.0f, static_cast<float>(m_renderSize.x()), static_cast<float>(m_renderSize.y()), 0.0f, 1.0f);
-		const VkRect2D					renderArea			= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
-		const VkRect2D					scissor				= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
+		const VkViewport				viewport			= makeViewport(m_renderSize);
+		const VkRect2D					renderArea			= makeRect2D(m_renderSize);
+		const VkRect2D					scissor				= makeRect2D(m_renderSize);
 		const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 		const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 		const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
@@ -2434,9 +2333,9 @@ protected:
 	{
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
 		const VkDevice					device				= m_context.getDevice();
-		const VkViewport				viewport			= makeViewport(0.0f, 0.0f, static_cast<float>(m_renderSize.x()), static_cast<float>(m_renderSize.y()), 0.0f, 1.0f);
-		const VkRect2D					renderArea			= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
-		const VkRect2D					scissor				= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
+		const VkViewport				viewport			= makeViewport(m_renderSize);
+		const VkRect2D					renderArea			= makeRect2D(m_renderSize);
+		const VkRect2D					scissor				= makeRect2D(m_renderSize);
 		const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 		const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 		const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
@@ -2846,9 +2745,9 @@ protected:
 
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
 		const VkDevice					device				= m_context.getDevice();
-		const VkViewport				viewport			= makeViewport(0.0f, 0.0f, static_cast<float>(m_renderSize.x()), static_cast<float>(m_renderSize.y()), 0.0f, 1.0f);
-		const VkRect2D					renderArea			= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
-		const VkRect2D					scissor				= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
+		const VkViewport				viewport			= makeViewport(m_renderSize);
+		const VkRect2D					renderArea			= makeRect2D(m_renderSize);
+		const VkRect2D					scissor				= makeRect2D(m_renderSize);
 		const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 		const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 		const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));
@@ -3024,9 +2923,9 @@ protected:
 
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
 		const VkDevice					device				= m_context.getDevice();
-		const VkViewport				viewport			= makeViewport(0.0f, 0.0f, static_cast<float>(m_renderSize.x()), static_cast<float>(m_renderSize.y()), 0.0f, 1.0f);
-		const VkRect2D					renderArea			= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
-		const VkRect2D					scissor				= makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
+		const VkViewport				viewport			= makeViewport(m_renderSize);
+		const VkRect2D					renderArea			= makeRect2D(m_renderSize);
+		const VkRect2D					scissor				= makeRect2D(m_renderSize);
 		const Unique<VkShaderModule>	vertexModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
 		const Unique<VkShaderModule>	fragmentModule		(createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0u));
 		const Unique<VkPipelineLayout>	pipelineLayout		(makePipelineLayout(vk, device));

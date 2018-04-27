@@ -106,9 +106,6 @@ private:
 	Image&							operator=		(const Image&);
 };
 
-deUint32				getBlockSizeInBytes	(const vk::VkFormat compressedFormat);
-deUint32				getBlockWidth		(const vk::VkFormat compressedFormat);
-deUint32				getBlockHeight		(const vk::VkFormat compressedFormat);
 tcu::UVec3				getShaderGridSize	(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size used for addresing image in a shader
 tcu::UVec3				getLayerSize		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Size of a single layer
 deUint32				getNumLayers		(const ImageType imageType, const tcu::UVec3& imageSize);	//!< Number of array layers (for array and cube types)
@@ -216,9 +213,6 @@ vk::Move<vk::VkFramebuffer> makeFramebuffer (const vk::DeviceInterface&	vk,
 											 const vk::VkImageView*		pAttachments,
 											 const vk::VkExtent2D&		size,
 											 const deUint32				layersCount);
-
-vk::VkRect2D makeScissor (const deUint32	width,
-						  const deUint32	height);
 
 } // image
 } // vkt

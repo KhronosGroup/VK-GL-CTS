@@ -513,6 +513,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			inputImages.push_back(ImageHandleSp(image));
 			inputAllocs.push_back(de::SharedPtr<Allocation>(imageAlloc.release()));
 
+			const VkImageLayout			imageLayout		= (descType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			const VkBufferImageCopy		copyRegion		=
 			{
 				0u,												// VkDeviceSize				bufferOffset;
@@ -530,7 +531,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			vector<VkBufferImageCopy>	copyRegions;
 			copyRegions.push_back(copyRegion);
 
-			copyBufferToImage(vkdi, device, queue, queueFamilyIndex, buffer->get(), (deUint32)numBytes, copyRegions, DE_NULL, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u, image->get());
+			copyBufferToImage(vkdi, device, queue, queueFamilyIndex, buffer->get(), (deUint32)numBytes, copyRegions, DE_NULL, VK_IMAGE_ASPECT_COLOR_BIT, 1u, 1u, image->get(), imageLayout);
 		}
 	}
 

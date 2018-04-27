@@ -67,6 +67,10 @@ VkSamplerCreateInfo			mapSampler					(const tcu::Sampler& sampler, const tcu::Te
 
 void						imageUtilSelfTest			(void);
 
+deUint32					getBlockSizeInBytes			(const VkFormat compressedFormat);
+deUint32					getBlockWidth				(const VkFormat compressedFormat);
+deUint32					getBlockHeight				(const VkFormat compressedFormat);
+
 // \todo [2017-05-18 pyry] Consider moving this to tcu
 struct PlanarFormatDescription
 {
@@ -150,7 +154,8 @@ void							copyBufferToImage				(const DeviceInterface&						vk,
 																 vk::VkImageAspectFlags						imageAspectFlags,
 																 deUint32									mipLevels,
 																 deUint32									arrayLayers,
-																 vk::VkImage								destImage);
+																 vk::VkImage								destImage,
+																 VkImageLayout								destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 /*--------------------------------------------------------------------*//*!
  * Checks if the physical device supports creation of the specified

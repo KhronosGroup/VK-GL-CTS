@@ -34,6 +34,7 @@
 #include "vkPlatform.hpp"
 #include "vkStrUtil.hpp"
 #include "vkAllocationCallbackUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuResultCollector.hpp"
@@ -1570,72 +1571,7 @@ struct RenderPass
 
 	static Move<VkRenderPass> create (const Environment& env, const Resources&, const Parameters&)
 	{
-		const VkAttachmentDescription	attachments[]		=
-		{
-			{
-				(VkAttachmentDescriptionFlags)0,
-				VK_FORMAT_R8G8B8A8_UNORM,
-				VK_SAMPLE_COUNT_1_BIT,
-				VK_ATTACHMENT_LOAD_OP_CLEAR,
-				VK_ATTACHMENT_STORE_OP_STORE,
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			},
-			{
-				(VkAttachmentDescriptionFlags)0,
-				VK_FORMAT_D16_UNORM,
-				VK_SAMPLE_COUNT_1_BIT,
-				VK_ATTACHMENT_LOAD_OP_CLEAR,
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			}
-		};
-		const VkAttachmentReference		colorAttachments[]	=
-		{
-			{
-				0u,											// attachment
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			}
-		};
-		const VkAttachmentReference		dsAttachment		=
-		{
-			1u,											// attachment
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-		};
-		const VkSubpassDescription		subpasses[]			=
-		{
-			{
-				(VkSubpassDescriptionFlags)0,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				0u,											// inputAttachmentCount
-				DE_NULL,									// pInputAttachments
-				DE_LENGTH_OF_ARRAY(colorAttachments),
-				colorAttachments,
-				DE_NULL,									// pResolveAttachments
-				&dsAttachment,
-				0u,											// preserveAttachmentCount
-				DE_NULL,									// pPreserveAttachments
-			}
-		};
-		const VkRenderPassCreateInfo	renderPassInfo		=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-			DE_NULL,
-			(VkRenderPassCreateFlags)0,
-			DE_LENGTH_OF_ARRAY(attachments),
-			attachments,
-			DE_LENGTH_OF_ARRAY(subpasses),
-			subpasses,
-			0u,												// dependencyCount
-			DE_NULL											// pDependencies
-		};
-
-		return createRenderPass(env.vkd, env.device, &renderPassInfo, env.allocationCallbacks);
+		return makeRenderPass(env.vkd, env.device, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D16_UNORM);
 	}
 };
 
@@ -1740,23 +1676,18 @@ struct GraphicsPipeline
 			VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 			VK_FALSE								// primitiveRestartEnable
 		};
-		const VkViewport								viewports[]			=
-		{
-			{ 0.0f, 0.0f, 64.f, 64.f, 0.0f, 1.0f }
-		};
-		const VkRect2D									scissors[]			=
-		{
-			{ { 0, 0 }, { 64, 64 } }
-		};
+		const VkViewport								viewport			= makeViewport(tcu::UVec2(64));
+		const VkRect2D									scissor				= makeRect2D(tcu::UVec2(64));
+
 		const VkPipelineViewportStateCreateInfo			viewportState		=
 		{
 			VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
 			DE_NULL,
 			(VkPipelineViewportStateCreateFlags)0,
-			DE_LENGTH_OF_ARRAY(viewports),
-			viewports,
-			DE_LENGTH_OF_ARRAY(scissors),
-			scissors,
+			1u,
+			&viewport,
+			1u,
+			&scissor,
 		};
 		const VkPipelineRasterizationStateCreateInfo	rasterState			=
 		{

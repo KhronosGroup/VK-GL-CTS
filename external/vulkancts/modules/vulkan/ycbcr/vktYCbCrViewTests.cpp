@@ -456,6 +456,15 @@ void checkImageUsageSupport (Context&			context,
 	}
 }
 
+void checkSupport(Context& context, TestParameters params)
+{
+	const VkFormat					planeViewFormat	= getPlaneCompatibleFormat(params.format, params.planeNdx);
+	const VkImageUsageFlags			usage			= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+	checkImageSupport(context, params.format, params.createFlags);
+	checkImageUsageSupport(context, params.format, usage);
+	checkImageUsageSupport(context, planeViewFormat, usage);
+}
 
 tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 {
@@ -473,11 +482,6 @@ tcu::TestStatus testPlaneView (Context& context, TestParameters params)
 	const UVec2						size			= params.size;
 	const UVec2						planeSize		(size.x() / formatInfo.planes[params.planeNdx].widthDivisor,
 													 size.y() / formatInfo.planes[params.planeNdx].heightDivisor);
-	const VkImageUsageFlags			usage			= VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-
-	checkImageSupport(context, format, createFlags);
-	checkImageUsageSupport(context, format, usage);
-	checkImageUsageSupport(context, planeViewFormat, usage);
 
 	const Unique<VkImage>			image			(createTestImage(vkd, device, format, size, createFlags));
 	const Unique<VkImage>			imageAlias		((params.viewType == TestParameters::VIEWTYPE_MEMORY_ALIAS)
@@ -714,7 +718,7 @@ void addPlaneViewCase (tcu::TestCaseGroup* group, const TestParameters& params)
 
 	name << "_plane_" << params.planeNdx;
 
-	addFunctionCaseWithPrograms(group, name.str(), "", initPrograms, testPlaneView, params);
+	addFunctionCaseWithPrograms(group, name.str(), "", checkSupport, initPrograms, testPlaneView, params);
 }
 
 void populateViewTypeGroup (tcu::TestCaseGroup* group, TestParameters::ViewType viewType)
