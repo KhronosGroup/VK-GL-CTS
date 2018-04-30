@@ -404,6 +404,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT = 1000190002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR = 1000196000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR = 1000197000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR = 1000211000,
     VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_END_RANGE = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
     VK_STRUCTURE_TYPE_RANGE_SIZE = (VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT - VK_STRUCTURE_TYPE_APPLICATION_INFO + 1),
@@ -7865,9 +7866,6 @@ typedef struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT {
 #define VK_NV_SHADER_SUBGROUP_PARTITIONED_EXTENSION_NAME "VK_NV_shader_subgroup_partitioned"
 
 
-
-
-
 #define VK_EXT_descriptor_indexing 1
 #define VK_EXT_DESCRIPTOR_INDEXING_SPEC_VERSION 2
 #define VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME "VK_EXT_descriptor_indexing"
@@ -7990,6 +7988,7 @@ typedef struct VkDescriptorPoolInlineUniformBlockCreateInfoEXT {
     uint32_t           maxInlineUniformBlockBindings;
 } VkDescriptorPoolInlineUniformBlockCreateInfoEXT;
 
+
 #define VK_KHR_shader_atomic_int64 1
 #define VK_KHR_SHADER_ATOMIC_INT64_SPEC_VERSION 1
 #define VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME "VK_KHR_shader_atomic_int64"
@@ -8000,6 +7999,18 @@ typedef struct VkPhysicalDeviceShaderAtomicInt64FeaturesKHR {
     VkBool32           shaderBufferInt64Atomics;
     VkBool32           shaderSharedInt64Atomics;
 } VkPhysicalDeviceShaderAtomicInt64FeaturesKHR;
+
+
+#define VK_KHR_vulkan_memory_model 1
+#define VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION 2
+#define VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME "VK_KHR_vulkan_memory_model"
+
+typedef struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           vulkanMemoryModel;
+    VkBool32           vulkanMemoryModelDeviceScope;
+} VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
 
 #ifdef __cplusplus
 }

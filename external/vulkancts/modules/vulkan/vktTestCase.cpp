@@ -315,6 +315,8 @@ public:
 	VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT	vertexAttributeDivisorFeatures;
 	VkPhysicalDeviceDescriptorIndexingFeaturesEXT		descriptorIndexingFeatures;
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT		inlineUniformBlockFeatures;
+	VkPhysicalDeviceVulkanMemoryModelFeaturesKHR		vulkanMemoryModelFeatures;
+	VkPhysicalDeviceShaderAtomicInt64FeaturesKHR		shaderAtomicInt64Features;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -333,6 +335,8 @@ public:
 		deMemset(&vertexAttributeDivisorFeatures, 0, sizeof(vertexAttributeDivisorFeatures));
 		deMemset(&descriptorIndexingFeatures, 0, sizeof(descriptorIndexingFeatures));
 		deMemset(&inlineUniformBlockFeatures, 0, sizeof(inlineUniformBlockFeatures));
+		deMemset(&vulkanMemoryModelFeatures, 0, sizeof(vulkanMemoryModelFeatures));
+		deMemset(&shaderAtomicInt64Features, 0, sizeof(shaderAtomicInt64Features));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -345,6 +349,8 @@ public:
 		vertexAttributeDivisorFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
 		descriptorIndexingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
 		inlineUniformBlockFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
+		vulkanMemoryModelFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR;
+		shaderAtomicInt64Features.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR;
 
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
@@ -391,6 +397,16 @@ public:
 				*nextPtr	= &vertexAttributeDivisorFeatures;
 				nextPtr		= &vertexAttributeDivisorFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_vulkan_memory_model"))
+			{
+				*nextPtr	= &vulkanMemoryModelFeatures;
+				nextPtr		= &vulkanMemoryModelFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_shader_atomic_int64"))
+			{
+				*nextPtr	= &shaderAtomicInt64Features;
+				nextPtr		= &shaderAtomicInt64Features.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -425,6 +441,8 @@ public:
 	const VkPhysicalDeviceVariablePointerFeatures&			getVariablePointerFeatures			(void) const	{ return m_deviceFeatures.variablePointerFeatures;			}
 	const VkPhysicalDeviceFloat16Int8FeaturesKHR&			getFloat16Int8Features				(void) const	{ return m_deviceFeatures.float16Int8Features;				}
 	const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&	getVertexAttributeDivisorFeatures	(void) const	{ return m_deviceFeatures.vertexAttributeDivisorFeatures;	}
+	const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&		getVulkanMemoryModelFeatures		(void) const	{ return m_deviceFeatures.vulkanMemoryModelFeatures;	}
+	const VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&		getShaderAtomicInt64Features		(void) const	{ return m_deviceFeatures.shaderAtomicInt64Features;	}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -555,6 +573,10 @@ const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
 										Context::getFloat16Int8Features			(void) const { return m_device->getFloat16Int8Features();		}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&
 										Context::getVertexAttributeDivisorFeatures	(void) const { return m_device->getVertexAttributeDivisorFeatures();	}
+const vk::VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&
+										Context::getVulkanMemoryModelFeatures	(void) const { return m_device->getVulkanMemoryModelFeatures();	}
+const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&
+										Context::getShaderAtomicInt64Features	(void) const { return m_device->getShaderAtomicInt64Features();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}
