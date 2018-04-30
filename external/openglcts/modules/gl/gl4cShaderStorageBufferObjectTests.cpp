@@ -7792,8 +7792,7 @@ class AdvancedUnsizedArrayLength2 : public ShaderStorageBufferObjectBase
 		}
 		if (stagept == fragment)
 		{
-			os << NL "layout(location = 0) out vec4 o_color;" NL "void main() {" NL
-					 "  o_color = vec4(0.0, 1.0, 0.0, 1.0);";
+			os << NL "void main() {";
 		}
 		os << NL "}";
 		return os.str();
@@ -7855,8 +7854,7 @@ class AdvancedUnsizedArrayLength2 : public ShaderStorageBufferObjectBase
 		}
 		if (stage == fragment)
 		{
-			os << NL "layout(location = 0) out vec4 o_color;" << decl
-			   << NL "void main() {" NL "  o_color = vec4(0.0, 1.0, 0.0, 1.0);" << expr;
+			os << NL << decl << NL "void main() {" << expr;
 		}
 		if (stage == compute)
 		{
