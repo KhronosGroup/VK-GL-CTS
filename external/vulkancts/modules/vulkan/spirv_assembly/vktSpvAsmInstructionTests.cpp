@@ -8538,8 +8538,10 @@ tcu::TestCaseGroup* createConvertComputeTests (tcu::TestContext& testCtx, const 
 		spec.inputs.push_back	(test->m_inputBuffer);
 		spec.outputs.push_back	(test->m_outputBuffer);
 
-		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType))
+		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType)) {
 			spec.extensions.push_back("VK_KHR_16bit_storage");
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		}
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "", spec, test->m_features));
 	}
@@ -8561,6 +8563,7 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 		vector<string>		extensions;
 		vector<deInt32>		noSpecConstants;
 		PushConstants		noPushConstants;
+		VulkanFeatures          vulkanFeatures;
 		GraphicsInterfaces	noInterfaces;
 		tcu::RGBA			defaultColors[4];
 
@@ -8569,12 +8572,14 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 		resources.outputs.push_back	(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, test->m_outputBuffer));
 		extensions.push_back		("VK_KHR_storage_buffer_storage_class");
 
-		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType))
+		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType)) {
 			extensions.push_back("VK_KHR_16bit_storage");
+			vulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		}
 
 		createTestsForAllStages(
 			test->m_name, defaultColors, defaultColors, fragments, noSpecConstants,
-			noPushConstants, resources, noInterfaces, extensions, features, VulkanFeatures(), group.get());
+			noPushConstants, resources, noInterfaces, extensions, features, vulkanFeatures, group.get());
 	}
 	return group.release();
 }
