@@ -78,6 +78,7 @@ RenderThread::RenderThread (NativeActivity& activity)
 	, m_window			(DE_NULL)
 	, m_paused			(false)
 	, m_finish			(false)
+	, m_receivedFirstResize(false)
 {
 }
 
@@ -143,13 +144,39 @@ void RenderThread::processMessage (const Message& message)
 			if (m_windowState != WINDOWSTATE_NOT_CREATED && m_windowState != WINDOWSTATE_DESTROYED)
 				throw InternalError("Got unexpected onNativeWindowCreated() event from system");
 
-			m_windowState	= WINDOWSTATE_NOT_INITIALIZED;
+			// The documented behavior for the callbacks is that the native activity
+			// will get a call to onNativeWindowCreated(), at which point it should have
+			// a surface to render to, and can then start immediately.
+			//
+			// The actual creation process has the framework making calls to both
+			// onNativeWindowCreated() and then onNativeWindowResized(). The test
+			// waits for that first resize before it considers the window ready for
+			// rendering.
+			//
+			// However subsequent events in the framework may cause the window to be
+			// recreated at a new position without a size change, which sends on
+			// onNativeWindowDestroyed(), and then on onNativeWindowCreated() without
+			// a follow-up onNativeWindowResized(). If this happens, the test will
+			// stop rendering as it is no longer in the ready state, and a watchdog
+			// thread will eventually kill the test, causing it to fail. We therefore
+			// set the window state back to READY and process the window creation here
+			// if we have already observed that first resize call.
+			if (!m_receivedFirstResize) {
+				m_windowState	= WINDOWSTATE_NOT_INITIALIZED;
+			} else {
+				m_windowState	= WINDOWSTATE_READY;
+				onWindowCreated(message.payload.window);
+			}
 			m_window		= message.payload.window;
 			break;
 
 		case MESSAGE_WINDOW_RESIZED:
 			if (m_window != message.payload.window)
 				throw InternalError("Got onNativeWindowResized() event targeting different window");
+
+			// Record that we've the first resize event, in case the window is
+			// recreated later without a resize.
+			m_receivedFirstResize = true;
 
 			if (m_windowState == WINDOWSTATE_NOT_INITIALIZED)
 			{
