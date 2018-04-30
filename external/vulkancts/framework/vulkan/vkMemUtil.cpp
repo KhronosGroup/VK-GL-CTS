@@ -106,6 +106,9 @@ const MemoryRequirement MemoryRequirement::HostVisible		= MemoryRequirement(Memo
 const MemoryRequirement MemoryRequirement::Coherent			= MemoryRequirement(MemoryRequirement::FLAG_COHERENT);
 const MemoryRequirement MemoryRequirement::LazilyAllocated	= MemoryRequirement(MemoryRequirement::FLAG_LAZY_ALLOCATION);
 const MemoryRequirement MemoryRequirement::Protected		= MemoryRequirement(MemoryRequirement::FLAG_PROTECTED);
+const MemoryRequirement MemoryRequirement::Local			= MemoryRequirement(MemoryRequirement::FLAG_LOCAL);
+const MemoryRequirement MemoryRequirement::Cached			= MemoryRequirement(MemoryRequirement::FLAG_CACHED);
+const MemoryRequirement MemoryRequirement::NonLocal			= MemoryRequirement(MemoryRequirement::FLAG_NON_LOCAL);
 
 bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 {
@@ -131,6 +134,18 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 
 	// protected
 	if ((m_flags & FLAG_PROTECTED) && !(heapFlags & VK_MEMORY_PROPERTY_PROTECTED_BIT))
+		return false;
+
+	// local
+	if ((m_flags & FLAG_LOCAL) && !(heapFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+		return false;
+
+	// cached
+	if ((m_flags & FLAG_CACHED) && !(heapFlags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT))
+		return false;
+
+	// non-local
+	if ((m_flags & FLAG_NON_LOCAL) && (heapFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
 		return false;
 
 	return true;

@@ -3091,6 +3091,14 @@ struct VkPhysicalDeviceShaderAtomicInt64FeaturesKHR
 	VkBool32		shaderSharedInt64Atomics;
 };
 
+struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		vulkanMemoryModel;
+	VkBool32		vulkanMemoryModelDeviceScope;
+};
+
 
 
 

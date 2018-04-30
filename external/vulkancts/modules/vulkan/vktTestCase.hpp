@@ -78,6 +78,10 @@ public:
 												get16BitStorageFeatures			(void) const;
 	const vk::VkPhysicalDeviceVariablePointerFeatures&
 												getVariablePointerFeatures		(void) const;
+	const vk::VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&
+												getVulkanMemoryModelFeatures	(void) const;
+	const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&
+												getShaderAtomicInt64Features	(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;
