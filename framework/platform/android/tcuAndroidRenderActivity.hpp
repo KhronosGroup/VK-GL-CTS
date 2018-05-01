@@ -158,6 +158,7 @@ private:
 	ANativeWindow*			m_window;
 	bool					m_paused;					//!< Is rendering paused?
 	bool					m_finish;					//!< Has thread received FINISH message?
+	bool					m_receivedFirstResize;				//!< Has the first onWindowResized been processed?
 };
 
 class RenderActivity : public NativeActivity
