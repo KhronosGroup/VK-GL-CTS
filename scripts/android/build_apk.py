@@ -29,6 +29,7 @@
 import os
 import re
 import sys
+import glob
 import string
 import shutil
 import argparse
@@ -712,6 +713,19 @@ class AddNativeLibsToAPK (BuildStep):
 
 			shutil.copyfile(libSrcPath, libAbsPath)
 			libFiles.append(libRelPath)
+
+			# Add Vulkan Layers from NDK, if available
+			libVkLayerSrcDir	= os.path.join(config.env.ndk.path, "sources", "third_party", "vulkan", "src", "build-android", "jniLibs", abi)
+			libVkLayerGlob		= os.path.join(libVkLayerSrcDir, "libVkLayer_*.so")
+			libVkLayers		= glob.glob(libVkLayerGlob)
+
+			for libVkLayerSrcPath in libVkLayers:
+				libVkLayerFileName	= os.path.basename(libVkLayerSrcPath)
+				libVkLayerRelPath	= os.path.join("lib", abi, libVkLayerFileName)
+				libVkLayerAbsPath	= os.path.join(pkgPath, libVkLayerRelPath)
+
+				shutil.copyfile(libVkLayerSrcPath, libVkLayerAbsPath)
+				libFiles.append(libVkLayerRelPath)
 
 		shutil.copyfile(srcPath, dstPath)
 		addFilesToAPK(config, dstPath, pkgPath, libFiles)
