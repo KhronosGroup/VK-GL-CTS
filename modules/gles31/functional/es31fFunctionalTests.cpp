@@ -196,6 +196,7 @@ public:
 	{
 		static const ShaderLibraryGroup::File	s_filesES31[]	=
 		{
+			{ "shaders/es31/declarations.test",						"declarations",				"Declarations"						},
 			{ "shaders/es31/linkage_geometry.test",					"geometry",					"Geometry shader"					},
 			{ "shaders/es31/linkage_tessellation.test",				"tessellation",				"Tessellation shader"				},
 			{ "shaders/es31/linkage_tessellation_geometry.test",	"tessellation_geometry",	"Tessellation and geometry shader"	},
