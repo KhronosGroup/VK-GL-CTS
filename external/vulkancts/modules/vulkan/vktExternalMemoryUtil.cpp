@@ -1044,8 +1044,6 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 		};
 		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
 
-		handle.disown();
-
 		return memory;
 	}
 #endif // (USE_ANDROID_O_HARDWARE_BUFFER)
