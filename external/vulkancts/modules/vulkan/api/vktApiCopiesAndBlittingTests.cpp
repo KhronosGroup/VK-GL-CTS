@@ -3819,17 +3819,17 @@ void ResolveImageToImage::copyMSImageToMSImage (void)
 		const VkImageSubresourceLayers	sourceSubresourceLayers	=
 		{
 			getAspectFlags(srcTcuFormat),	// VkImageAspectFlags	aspectMask;
-			0u,								// uint32_t				mipLevel;
-			0u,								// uint32_t				baseArrayLayer;
-			1u								// uint32_t				layerCount;
+			0u,								// deUint32				mipLevel;
+			0u,								// deUint32				baseArrayLayer;
+			1u								// deUint32				layerCount;
 		};
 
 		const VkImageSubresourceLayers	destinationSubresourceLayers	=
 		{
 			getAspectFlags(srcTcuFormat),	// VkImageAspectFlags	aspectMask;//getAspectFlags(dstTcuFormat)
-			0u,								// uint32_t				mipLevel;
-			layerNdx,						// uint32_t				baseArrayLayer;
-			1u								// uint32_t				layerCount;
+			0u,								// deUint32				mipLevel;
+			layerNdx,						// deUint32				baseArrayLayer;
+			1u								// deUint32				layerCount;
 		};
 
 		const VkImageCopy				imageCopy	=
@@ -4021,9 +4021,9 @@ const VkExtent3D				defaultHalfExtent		= {defaultHalfSize, defaultHalfSize, 1};
 const VkImageSubresourceLayers	defaultSourceLayer		=
 {
 	VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-	0u,							// uint32_t				mipLevel;
-	0u,							// uint32_t				baseArrayLayer;
-	1u,							// uint32_t				layerCount;
+	0u,							// deUint32				mipLevel;
+	0u,							// deUint32				baseArrayLayer;
+	1u,							// deUint32				layerCount;
 };
 
 void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
@@ -4139,9 +4139,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			const VkImageSubresourceLayers  sourceLayer =
 			{
 				VK_IMAGE_ASPECT_DEPTH_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 			const VkImageCopy				testCopy	=
 			{
@@ -4177,9 +4177,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			const VkImageSubresourceLayers  sourceLayer =
 			{
 				VK_IMAGE_ASPECT_STENCIL_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,								// uint32_t				mipLevel;
-				0u,								// uint32_t				baseArrayLayer;
-				1u								// uint32_t				layerCount;
+				0u,								// deUint32				mipLevel;
+				0u,								// deUint32				baseArrayLayer;
+				1u								// deUint32				layerCount;
 			};
 			const VkImageCopy				testCopy	=
 			{
@@ -4748,17 +4748,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				slicesLayersNdx,			// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				slicesLayersNdx,			// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -4798,17 +4798,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				slicesLayersNdx,			// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				slicesLayersNdx,			// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -4848,17 +4848,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0,							// uint32_t				baseArrayLayer;
-				slicesLayers				// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0,							// deUint32				baseArrayLayer;
+				slicesLayers				// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -4897,17 +4897,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				slicesLayers				// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				slicesLayers				// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -4951,17 +4951,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 					VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
-					0u,								// uint32_t				mipLevel;
-					slicesLayersNdx,				// uint32_t				baseArrayLayer;
-					1u								// uint32_t				layerCount;
+					0u,								// deUint32				mipLevel;
+					slicesLayersNdx,				// deUint32				baseArrayLayer;
+					1u								// deUint32				layerCount;
 			};
 
 
@@ -5008,17 +5008,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				slicesLayersNdx,			// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				slicesLayersNdx,			// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -5067,8 +5067,8 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			0u,											// VkDeviceSize				bufferOffset;
-			0u,											// uint32_t					bufferRowLength;
-			0u,											// uint32_t					bufferImageHeight;
+			0u,											// deUint32					bufferRowLength;
+			0u,											// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{0, 0, 0},									// VkOffset3D				imageOffset;
 			defaultExtent								// VkExtent3D				imageExtent;
@@ -5093,8 +5093,8 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			defaultSize * defaultHalfSize,				// VkDeviceSize				bufferOffset;
-			0u,											// uint32_t					bufferRowLength;
-			0u,											// uint32_t					bufferImageHeight;
+			0u,											// deUint32					bufferRowLength;
+			0u,											// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
 			defaultHalfExtent							// VkExtent3D				imageExtent;
@@ -5133,8 +5133,8 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 			const VkBufferImageCopy	bufferImageCopy		=
 			{
 				offset,						// VkDeviceSize				bufferOffset;
-				bufferRowLength,			// uint32_t					bufferRowLength;
-				bufferImageHeight,			// uint32_t					bufferImageHeight;
+				bufferRowLength,			// deUint32					bufferRowLength;
+				bufferImageHeight,			// deUint32					bufferImageHeight;
 				defaultSourceLayer,			// VkImageSubresourceLayers	imageSubresource;
 				{0, 0, 0},					// VkOffset3D				imageOffset;
 				imageExtent					// VkExtent3D				imageExtent;
@@ -5144,6 +5144,58 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		}
 
 		group->addChild(new CopyImageToBufferTestCase(testCtx, "regions", "Copy from image to buffer with multiple regions", params));
+	}
+
+	{
+		TestParams				params;
+		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent				= defaultExtent;
+		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			0u,											// VkDeviceSize				bufferOffset;
+			defaultSize,								// deUint32					bufferRowLength;
+			defaultSize,								// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion				copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer", "Copy from image to a buffer that is just large enough to contain the data", params));
+	}
+
+	{
+		TestParams				params;
+		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent				= defaultExtent;
+		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultFourthSize;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultFourthSize,							// VkDeviceSize				bufferOffset;
+			defaultSize,								// deUint32					bufferRowLength;
+			defaultSize,								// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion				copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer_offset", "Copy from image to a buffer that is just large enough to contain the data", params));
 	}
 }
 
@@ -5163,8 +5215,8 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			0u,											// VkDeviceSize				bufferOffset;
-			0u,											// uint32_t					bufferRowLength;
-			0u,											// uint32_t					bufferImageHeight;
+			0u,											// deUint32					bufferRowLength;
+			0u,											// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{0, 0, 0},									// VkOffset3D				imageOffset;
 			defaultExtent								// VkExtent3D				imageExtent;
@@ -5193,8 +5245,8 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 			const VkBufferImageCopy	bufferImageCopy	=
 			{
 				0u,																// VkDeviceSize				bufferOffset;
-				0u,																// uint32_t					bufferRowLength;
-				0u,																// uint32_t					bufferImageHeight;
+				0u,																// deUint32					bufferRowLength;
+				0u,																// deUint32					bufferImageHeight;
 				defaultSourceLayer,												// VkImageSubresourceLayers	imageSubresource;
 				{offset, defaultHalfSize, 0},									// VkOffset3D				imageOffset;
 				{defaultFourthSize / divisor, defaultFourthSize / divisor, 1}	// VkExtent3D				imageExtent;
@@ -5218,8 +5270,8 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			defaultFourthSize,							// VkDeviceSize				bufferOffset;
-			defaultHalfSize + defaultFourthSize,		// uint32_t					bufferRowLength;
-			defaultHalfSize + defaultFourthSize,		// uint32_t					bufferImageHeight;
+			defaultHalfSize + defaultFourthSize,		// deUint32					bufferRowLength;
+			defaultHalfSize + defaultFourthSize,		// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
 			defaultHalfExtent							// VkExtent3D				imageExtent;
@@ -5230,6 +5282,58 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.regions.push_back(copyRegion);
 
 		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset", "Copy from buffer to image with buffer offset", params));
+	}
+
+	{
+		TestParams				params;
+		params.src.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
+		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent				= defaultExtent;
+		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			0u,											// VkDeviceSize				bufferOffset;
+			defaultSize,								// deUint32					bufferRowLength;
+			defaultSize,								// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion				copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer", "Copy from buffer that is just large enough to contain the accessed elements", params));
+	}
+
+	{
+		TestParams				params;
+		params.src.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultFourthSize;
+		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent				= defaultExtent;
+		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultFourthSize,							// VkDeviceSize				bufferOffset;
+			defaultSize,								// deUint32					bufferRowLength;
+			defaultSize,								// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion				copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer_offset", "Copy from buffer that is just large enough to contain the accessed elements", params));
 	}
 }
 
@@ -6872,9 +6976,9 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 		const VkImageResolve			testResolve	=
 		{
@@ -6915,9 +7019,9 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 		const VkImageResolve			testResolve	=
 		{
@@ -6958,9 +7062,9 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 
 		for (int i = 0; i < 256; i += 64)
@@ -7005,9 +7109,9 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 
 		const VkImageResolve			testResolve	=
@@ -7051,9 +7155,9 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
-			0u,								// uint32_t				mipLevel;
-			layerNdx,						// uint32_t				baseArrayLayer;
-			1u								// uint32_t				layerCount;
+			0u,								// deUint32				mipLevel;
+			layerNdx,						// deUint32				baseArrayLayer;
+			1u								// deUint32				layerCount;
 		};
 
 		const VkImageResolve			testResolve	=
@@ -7094,9 +7198,9 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 		const VkImageResolve			testResolve	=
 		{
