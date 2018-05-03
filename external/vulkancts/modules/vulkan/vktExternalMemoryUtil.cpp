@@ -933,7 +933,9 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 		};
 		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
 
-		handle.disown();
+		// The handle's owned reference must also be released. Do not discard the handle below.
+		if (externalType != vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT)
+			handle.disown();
 
 		return memory;
 	}
