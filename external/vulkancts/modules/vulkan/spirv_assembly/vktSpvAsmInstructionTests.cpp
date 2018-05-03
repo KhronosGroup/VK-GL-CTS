@@ -380,10 +380,10 @@ bool compareFUnord (const std::vector<BufferSp>& inputs, const vector<Allocation
 	inputs[1]->getBytes(input2Bytes);
 	expectedOutputs[0]->getBytes(expectedBytes);
 
-	const deInt32* const	expectedOutputAsInt		= reinterpret_cast<const deInt32* const>(&expectedBytes.front());
-	const deInt32* const	outputAsInt				= static_cast<const deInt32* const>(outputAllocs[0]->getHostPtr());
-	const float* const		input1AsFloat			= reinterpret_cast<const float* const>(&input1Bytes.front());
-	const float* const		input2AsFloat			= reinterpret_cast<const float* const>(&input2Bytes.front());
+	const deInt32* const	expectedOutputAsInt		= reinterpret_cast<const deInt32*>(&expectedBytes.front());
+	const deInt32* const	outputAsInt				= static_cast<const deInt32*>(outputAllocs[0]->getHostPtr());
+	const float* const		input1AsFloat			= reinterpret_cast<const float*>(&input1Bytes.front());
+	const float* const		input2AsFloat			= reinterpret_cast<const float*>(&input2Bytes.front());
 	bool returnValue								= true;
 
 	for (size_t idx = 0; idx < expectedBytes.size() / sizeof(deInt32); ++idx)
@@ -4427,7 +4427,7 @@ bool compareNan (const std::vector<BufferSp>&, const vector<AllocationSp>& outpu
 	// Only size is needed because we cannot compare Nans.
 	size_t byteSize = expectedOutputs[0]->getByteSize();
 
-	const float* const	output_as_float	= static_cast<const float* const>(outputAllocs[0]->getHostPtr());
+	const float* const	output_as_float	= static_cast<const float*>(outputAllocs[0]->getHostPtr());
 
 	for (size_t idx = 0; idx < byteSize / sizeof(float); ++idx)
 	{

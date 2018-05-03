@@ -165,8 +165,8 @@ tcu::TestCase::IterateResult TextureCubeMapArrayTex3DValidation::iterate()
 	createTexture();
 
 	/* Check if GL_INVALID_OPERATION is set if levels argument is greater than floor(log2(max(width, height))) + 1*/
-	const glw::GLfloat maxTextureSize = (const glw::GLfloat)de::max(correctWidth, correctHeight);
-	const glw::GLint   maxLevels	  = (const glw::GLint)floor(log(maxTextureSize) / log(2.0f)) + 1;
+	const glw::GLfloat maxTextureSize = (glw::GLfloat)de::max(correctWidth, correctHeight);
+	const glw::GLint   maxLevels	  = (glw::GLint)floor(log(maxTextureSize) / log(2.0f)) + 1;
 
 	gl.texStorage3D(GL_TEXTURE_CUBE_MAP_ARRAY, maxLevels + 1, /* levels */
 					GL_RGBA8,								  /* internalformat*/

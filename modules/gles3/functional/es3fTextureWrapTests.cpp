@@ -390,7 +390,7 @@ void TextureWrapTests::init (void)
 	};
 
 #define FOR_EACH(ITERATOR, ARRAY, BODY)	\
-	for (int (ITERATOR) = 0; (ITERATOR) < DE_LENGTH_OF_ARRAY(ARRAY); (ITERATOR)++)	\
+	for (int ITERATOR = 0; ITERATOR < DE_LENGTH_OF_ARRAY(ARRAY); ITERATOR++)	\
 		BODY
 
 	// RGBA8 cases.

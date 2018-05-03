@@ -10681,7 +10681,7 @@ GPUShaderFP64Test8::_argument_lists GPUShaderFP64Test8::getArgumentListsForVaria
 		else
 		{
 			/* Throw all children nodes to the queue */
-			const unsigned int n_children_nodes = (const unsigned int)current_node_ptr->children.size();
+			const unsigned int n_children_nodes = (unsigned int)current_node_ptr->children.size();
 
 			for (unsigned int n_children_node = 0; n_children_node < n_children_nodes; ++n_children_node)
 			{
@@ -10691,7 +10691,7 @@ GPUShaderFP64Test8::_argument_lists GPUShaderFP64Test8::getArgumentListsForVaria
 	} while (nodes_queue.size() > 0);
 
 	/* For all leaf nodes, move up the tree and construct the argument lists. */
-	const unsigned int n_leaf_nodes = (const unsigned int)leaf_nodes.size();
+	const unsigned int n_leaf_nodes = (unsigned int)leaf_nodes.size();
 	_argument_lists	result;
 
 	for (unsigned int n_leaf_node = 0; n_leaf_node < n_leaf_nodes; ++n_leaf_node)

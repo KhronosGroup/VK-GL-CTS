@@ -1136,7 +1136,10 @@ void ComputeCacheTestInstance::buildBuffers (void)
 		m_outputBuf[ndx] = createBufferAndBindMemory(m_context, size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_outputBufferAlloc[ndx]);
 
 		pVec = reinterpret_cast<tcu::Vec4*>(m_outputBufferAlloc[ndx]->getHostPtr());
-		memset(pVec, 0u, size);
+
+		for (deUint32 i = 0; i < (size / sizeof(tcu::Vec4)); i++)
+			pVec[i] = tcu::Vec4(0.0f);
+
 		flushMappedMemoryRange(vk, vkDevice, m_outputBufferAlloc[ndx]->getMemory(), m_outputBufferAlloc[ndx]->getOffset(), size);
 	}
 }

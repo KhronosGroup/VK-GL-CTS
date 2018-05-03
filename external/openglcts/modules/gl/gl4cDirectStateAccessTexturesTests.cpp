@@ -1303,7 +1303,7 @@ tcu::TestNode::IterateResult BufferTest<T, S, N>::iterate()
 
 		CleanProgram();
 	}
-	catch (tcu::NotSupportedError e)
+	catch (tcu::NotSupportedError& e)
 	{
 		throw e;
 	}
@@ -2378,7 +2378,7 @@ tcu::TestNode::IterateResult StorageAndSubImageTest<T, S, N, D, I>::iterate()
 		PrepareProgram(FragmentShaderDeclaration(), FragmentShaderTail());
 		is_ok = Test();
 	}
-	catch (tcu::NotSupportedError e)
+	catch (tcu::NotSupportedError& e)
 	{
 		throw e;
 	}
@@ -3904,7 +3904,7 @@ tcu::TestNode::IterateResult StorageMultisampleTest<T, S, N, D>::iterate()
 
 		is_ok = Test();
 	}
-	catch (tcu::NotSupportedError e)
+	catch (tcu::NotSupportedError& e)
 	{
 		throw e;
 	}
