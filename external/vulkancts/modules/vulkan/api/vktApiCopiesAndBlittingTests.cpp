@@ -346,12 +346,6 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance (Context& context, 
 	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
-	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
-	}
-
 	// Create command pool
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
@@ -839,32 +833,6 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
-	if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
-		(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
-			TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
-	}
-
-	VkImageFormatProperties properties;
-	if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.src.image.format,
-																				m_params.src.image.imageType,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																				0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
-		(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.dst.image.format,
-																				m_params.dst.image.imageType,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-																				0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-	{
-		TCU_THROW(NotSupportedError, "Format not supported");
-	}
-
 	// Create source image
 	{
 		const VkImageCreateInfo	sourceImageParams		=
@@ -1176,12 +1144,48 @@ public:
 														 const TestParams				params)
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
-							{}
+	{}
 
 	virtual TestInstance*	createInstance				(Context&						context) const
-							{
-								return new CopyImageToImage(context, m_params);
-							}
+	{
+		return new CopyImageToImage(context, m_params);
+	}
+
+	virtual void			checkSupport				(Context&						context) const
+	{
+		if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
+		{
+			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+				TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
+		}
+
+		if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
+			(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
+		{
+			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
+				TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+		}
+
+		VkImageFormatProperties properties;
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.src.image.format,
+																					m_params.src.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.dst.image.format,
+																					m_params.dst.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+	}
+
 private:
 	TestParams				m_params;
 };
@@ -1768,47 +1772,6 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&					memAlloc			= context.getDefaultAllocator();
-
-	VkImageFormatProperties properties;
-	if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.src.image.format,
-																				VK_IMAGE_TYPE_2D,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																				0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
-		(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.dst.image.format,
-																				VK_IMAGE_TYPE_2D,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-																				0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-	{
-		TCU_THROW(NotSupportedError, "Format not supported");
-	}
-
-	VkFormatProperties srcFormatProperties;
-	context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.src.image.format, &srcFormatProperties);
-	if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Format feature blit source not supported");
-	}
-
-	VkFormatProperties dstFormatProperties;
-	context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.dst.image.format, &dstFormatProperties);
-	if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
-	}
-
-	if (m_params.filter == VK_FILTER_LINEAR)
-	{
-		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
-		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
-	}
 
 	// Create source image
 	{
@@ -2593,12 +2556,57 @@ public:
 													 const TestParams				params)
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
-							{}
+	{}
 
 	virtual TestInstance*	createInstance			(Context&						context) const
-							{
-								return new BlittingImages(context, m_params);
-							}
+	{
+		return new BlittingImages(context, m_params);
+	}
+
+	virtual void			checkSupport			(Context&						context) const
+	{
+		VkImageFormatProperties properties;
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.src.image.format,
+																					VK_IMAGE_TYPE_2D,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.dst.image.format,
+																					VK_IMAGE_TYPE_2D,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
+		VkFormatProperties srcFormatProperties;
+		context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.src.image.format, &srcFormatProperties);
+		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Format feature blit source not supported");
+		}
+
+		VkFormatProperties dstFormatProperties;
+		context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.dst.image.format, &dstFormatProperties);
+		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
+		}
+
+		if (m_params.filter == VK_FILTER_LINEAR)
+		{
+			if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+				TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
+			if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+				TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
+		}
+	}
+
 private:
 	TestParams				m_params;
 };
@@ -2634,70 +2642,6 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&					memAlloc			= context.getDefaultAllocator();
-
-	{
-		VkImageFormatProperties	properties;
-		if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				   m_params.src.image.format,
-																				   VK_IMAGE_TYPE_2D,
-																				   VK_IMAGE_TILING_OPTIMAL,
-																				   VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																				   0,
-																				   &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		{
-			TCU_THROW(NotSupportedError, "Format not supported");
-		}
-		else if ((m_params.src.image.extent.width	> properties.maxExtent.width)	||
-				 (m_params.src.image.extent.height	> properties.maxExtent.height)	||
-				 (m_params.src.image.extent.depth	> properties.maxArrayLayers))
-		{
-			TCU_THROW(NotSupportedError, "Image size not supported");
-		}
-	}
-
-	{
-		VkImageFormatProperties	properties;
-		if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				   m_params.dst.image.format,
-																				   VK_IMAGE_TYPE_2D,
-																				   VK_IMAGE_TILING_OPTIMAL,
-																				   VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-																				   0,
-																				   &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		{
-			TCU_THROW(NotSupportedError, "Format not supported");
-		}
-		else if ((m_params.dst.image.extent.width	> properties.maxExtent.width)	||
-				 (m_params.dst.image.extent.height	> properties.maxExtent.height)	||
-				 (m_params.dst.image.extent.depth	> properties.maxArrayLayers))
-		{
-			TCU_THROW(NotSupportedError, "Image size not supported");
-		}
-		else if (m_params.mipLevels > properties.maxMipLevels)
-		{
-			TCU_THROW(NotSupportedError, "Number of mip levels not supported");
-		}
-	}
-
-	const VkFormatProperties	srcFormatProperties	= getPhysicalDeviceFormatProperties (vki, vkPhysDevice, m_params.src.image.format);
-	if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Format feature blit source not supported");
-	}
-
-	const VkFormatProperties	dstFormatProperties	= getPhysicalDeviceFormatProperties (vki, vkPhysDevice, m_params.dst.image.format);
-	if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
-	}
-
-	if (m_params.filter == VK_FILTER_LINEAR)
-	{
-		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
-		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
-	}
 
 	// Create source image
 	{
@@ -3267,12 +3211,82 @@ public:
 													 const TestParams				params)
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
-							{}
+	{}
 
 	virtual TestInstance*	createInstance			(Context&						context) const
-							{
-								return new BlittingMipmaps(context, m_params);
-							}
+	{
+		return new BlittingMipmaps(context, m_params);
+	}
+
+	virtual void			checkSupport			(Context&						context) const
+	{
+		const InstanceInterface&	vki					= context.getInstanceInterface();
+		const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
+		{
+			VkImageFormatProperties	properties;
+			if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																						m_params.src.image.format,
+																						VK_IMAGE_TYPE_2D,
+																						VK_IMAGE_TILING_OPTIMAL,
+																						VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																						0,
+																						&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			{
+				TCU_THROW(NotSupportedError, "Format not supported");
+			}
+			else if ((m_params.src.image.extent.width	> properties.maxExtent.width)	||
+						(m_params.src.image.extent.height	> properties.maxExtent.height)	||
+						(m_params.src.image.extent.depth	> properties.maxArrayLayers))
+			{
+				TCU_THROW(NotSupportedError, "Image size not supported");
+			}
+		}
+
+		{
+			VkImageFormatProperties	properties;
+			if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																						m_params.dst.image.format,
+																						VK_IMAGE_TYPE_2D,
+																						VK_IMAGE_TILING_OPTIMAL,
+																						VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																						0,
+																						&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			{
+				TCU_THROW(NotSupportedError, "Format not supported");
+			}
+			else if ((m_params.dst.image.extent.width	> properties.maxExtent.width)	||
+						(m_params.dst.image.extent.height	> properties.maxExtent.height)	||
+						(m_params.dst.image.extent.depth	> properties.maxArrayLayers))
+			{
+				TCU_THROW(NotSupportedError, "Image size not supported");
+			}
+			else if (m_params.mipLevels > properties.maxMipLevels)
+			{
+				TCU_THROW(NotSupportedError, "Number of mip levels not supported");
+			}
+		}
+
+		const VkFormatProperties	srcFormatProperties	= getPhysicalDeviceFormatProperties (vki, vkPhysDevice, m_params.src.image.format);
+		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Format feature blit source not supported");
+		}
+
+		const VkFormatProperties	dstFormatProperties	= getPhysicalDeviceFormatProperties (vki, vkPhysDevice, m_params.dst.image.format);
+		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
+		}
+
+		if (m_params.filter == VK_FILTER_LINEAR)
+		{
+			if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+				TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
+			if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+				TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
+		}
+	}
+
 private:
 	TestParams				m_params;
 };
@@ -3312,11 +3326,6 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 	: CopiesAndBlittingTestInstance	(context, params)
 	, m_options						(options)
 {
-	const VkSampleCountFlagBits	rasterizationSamples	= m_params.samples;
-
-	if (!(context.getDeviceProperties().limits.framebufferColorSampleCounts & rasterizationSamples))
-		throw tcu::NotSupportedError("Unsupported number of rasterization samples");
-
 	const InstanceInterface&	vki						= context.getInstanceInterface();
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice			= context.getPhysicalDevice();
@@ -3337,22 +3346,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 	Move<VkPipelineLayout>		pipelineLayout;
 	Move<VkPipeline>			graphicsPipeline;
 
-	VkImageFormatProperties properties;
-	if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.src.image.format,
-																				m_params.src.image.imageType,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
-		(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.dst.image.format,
-																				m_params.dst.image.imageType,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-	{
-		TCU_THROW(NotSupportedError, "Format not supported");
-	}
+	const VkSampleCountFlagBits	rasterizationSamples	= m_params.samples;
 
 	// Create color image.
 	{
@@ -3934,13 +3928,40 @@ public:
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
 								, m_options		(options)
-							{}
-	virtual	void			initPrograms				(SourceCollections&		programCollection) const;
+	{}
+
+							virtual	void			initPrograms				(SourceCollections&		programCollection) const;
 
 	virtual TestInstance*	createInstance				(Context&				context) const
-							{
-								return new ResolveImageToImage(context, m_params, m_options);
-							}
+	{
+		return new ResolveImageToImage(context, m_params, m_options);
+	}
+
+	virtual void			checkSupport				(Context&				context) const
+	{
+		const VkSampleCountFlagBits	rasterizationSamples = m_params.samples;
+
+		if (!(context.getDeviceProperties().limits.framebufferColorSampleCounts & rasterizationSamples))
+			throw tcu::NotSupportedError("Unsupported number of rasterization samples");
+
+		VkImageFormatProperties properties;
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.src.image.format,
+																					m_params.src.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.dst.image.format,
+																					m_params.dst.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+	}
+
 private:
 	TestParams							m_params;
 	const ResolveImageToImageOptions	m_options;
