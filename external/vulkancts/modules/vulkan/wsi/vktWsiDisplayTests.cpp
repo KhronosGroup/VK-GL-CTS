@@ -494,8 +494,23 @@ bool DisplayCoverageTestInstance::getDisplayModeProperties(VkDisplayKHR display,
  *//*--------------------------------------------------------------------*/
 bool DisplayCoverageTestInstance::getDisplays2 (DisplayVector& displays)
 {
-	deUint32								countReported	=	0u;
-	deUint32								countRetrieved	=	0u;
+	deUint32								countReported		=	0u;
+	deUint32								countRetrieved		=	0u;
+	const VkDisplayPropertiesKHR			displayProperties	=	{
+																		DE_NULL,										// VkDisplayKHR					display
+																		DE_NULL,										// const char*					displayName
+																		{0, 0},											// VkExtent2D					physicalDimensions
+																		{0, 0},											// VkExtent2D					physicalResolution
+																		0,												// VkSurfaceTransformFlagsKHR	supportedTransforms
+																		VK_FALSE,										// VkBool32						planeReorderPossible
+																		VK_FALSE										// VkBool32						persistentContent
+																	};
+	const VkDisplayProperties2KHR			displayProperties2	=	{
+																		VK_STRUCTURE_TYPE_DISPLAY_PROPERTIES_2_KHR,		// VkStructureType			sType
+																		DE_NULL,										// void*					pNext
+																		displayProperties								// VkDisplayPropertiesKHR	displayProperties
+																	};
+
 	std::vector<VkDisplayProperties2KHR>	displaysProps;
 	VkResult								result;
 
@@ -515,7 +530,7 @@ bool DisplayCoverageTestInstance::getDisplays2 (DisplayVector& displays)
 		return false;
 	}
 
-	displaysProps.resize(countReported);
+	displaysProps.resize(countReported, displayProperties2);
 
 	countRetrieved = countReported;
 
@@ -567,9 +582,21 @@ bool DisplayCoverageTestInstance::getDisplays2 (DisplayVector& displays)
  *//*--------------------------------------------------------------------*/
 bool DisplayCoverageTestInstance::getDisplayModeProperties2 (VkDisplayKHR display, DisplayModeProperties2Vector& modeProperties)
 {
-	deUint32	countReported	=	0u;
-	deUint32	countRetrieved	=	0u;
-	VkResult	result;
+	deUint32							countReported			=	0u;
+	deUint32							countRetrieved			=	0u;
+	const VkDisplayModePropertiesKHR	displayModeProperties	=	{
+																		DE_NULL,											// VkDisplayModeKHR				displayMode
+																		{													// VkDisplayModeParametersKHR	parameters
+																			{0, 0},											// VkExtent2D					visibleRegion
+																			0												// uint32_t						refreshRate
+																		}
+																	};
+	const VkDisplayModeProperties2KHR	displayModeProperties2	=	{
+																		VK_STRUCTURE_TYPE_DISPLAY_MODE_PROPERTIES_2_KHR,	// VkStructureType				sType
+																		DE_NULL,											// void*						pNext
+																		displayModeProperties								// VkDisplayModePropertiesKHR	displayModeProperties
+																	};
+	VkResult							result;
 
 	modeProperties.clear();
 
@@ -589,7 +616,7 @@ bool DisplayCoverageTestInstance::getDisplayModeProperties2 (VkDisplayKHR displa
 		return false;
 	}
 
-	modeProperties.resize(countReported);
+	modeProperties.resize(countReported, displayModeProperties2);
 
 	countRetrieved = countReported;
 
@@ -1718,13 +1745,13 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
 																						DE_NULL,					// void*					pNext
 																						nonUpdatedDisplayProperties	// VkDisplayPropertiesKHR	displayProperties
 																					};
-		VkStructureType							canaryItem						=	VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;	// Some invalid but compilable value
+		const VkDisplayKHR						canaryDisplay					=	static_cast<VkDisplayKHR>(0xABCDEF11);
 		const deUint32							canaryItemCount					=	1;
 		std::vector<VkDisplayProperties2KHR>	displaysProps2						(displayCountRequested + canaryItemCount, nonUpdatedDisplayProperties2);
 		deUint32								displayCountRetrieved			=	displayCountRequested;
 		DisplaySet								displaySet;
 
-		displaysProps2[displayCountExpected].sType = canaryItem;
+		displaysProps2[displayCountExpected].displayProperties.display = canaryDisplay;
 
 		result = m_vki.getPhysicalDeviceDisplayProperties2KHR(	m_physicalDevice,		// VkPhysicalDevice			physicalDevice
 																&displayCountRetrieved,	// uint32_t*				pPropertyCount
@@ -1777,7 +1804,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
 		}
 
 		// Check the driver has not written more than requested
-		if (displaysProps2[displayCountExpected].sType != canaryItem)
+		if (displaysProps2[displayCountExpected].displayProperties.display != canaryDisplay)
 			TCU_FAIL("Memory damage detected: driver has written more than expected");
 
 		// Check display handle uniqueness
@@ -1860,12 +1887,12 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
 																						DE_NULL,					// void*						pNext
 																						nonUpdatedPlaneProperties	// VkDisplayPlanePropertiesKHR	displayPlaneProperties
 																					};
-		VkStructureType								canaryItem					=	VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;	// Some invalid but compilable value
+		const VkDisplayKHR							canaryDisplay				=	static_cast<VkDisplayKHR>(0xABCDEF11);
 		const deUint32								canaryItemCount				=	1;
 		std::vector<VkDisplayPlaneProperties2KHR>	planeProps2						(planeCountRequested + canaryItemCount, nonUpdatedPlaneProperties2);
 		deUint32									planeCountRetrieved			=	planeCountRequested;
 
-		planeProps2[planeCountExpected].sType = canaryItem;
+		planeProps2[planeCountExpected].displayPlaneProperties.currentDisplay = canaryDisplay;
 
 		result = m_vki.getPhysicalDeviceDisplayPlaneProperties2KHR(	m_physicalDevice,		// VkPhysicalDevice					physicalDevice
 																	&planeCountRetrieved,	// uint32_t*						pPropertyCount
@@ -1915,7 +1942,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
 		}
 
 		// Check the driver has not written more than requested
-		if (planeProps2[planeCountExpected].sType != canaryItem)
+		if (planeProps2[planeCountExpected].displayPlaneProperties.currentDisplay != canaryDisplay)
 			TCU_FAIL("Memory damage detected: driver has written more than expected");
 	}
 
@@ -2094,12 +2121,12 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR (v
 																							DE_NULL,					// void*						pNext
 																							nonUpdatedModeProperties	// VkDisplayModePropertiesKHR	displayModeProperties
 																						};
-			VkStructureType								canaryItem					=	VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;	// Some invalid but compilable value
+			const VkDisplayModeKHR						canaryDisplayMode			=	static_cast<VkDisplayModeKHR>(0xABCDEF11);
 			const deUint32								canaryItemCount				=	1;
 			std::vector<VkDisplayModeProperties2KHR>	modesProperties2				(modesCountRequested + canaryItemCount, nonUpdatedModeProperties2);
 			deUint32									modesCountRetrieved			=	modesCountRequested;
 
-			modesProperties2[modesCountExpected].sType = canaryItem;
+			modesProperties2[modesCountExpected].displayModeProperties.displayMode = canaryDisplayMode;
 
 			result = m_vki.getDisplayModeProperties2KHR(m_physicalDevice,		// VkPhysicalDevice				physicalDevice
 														display,				// VkDisplayKHR					display
@@ -2151,7 +2178,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR (v
 			}
 
 			// Check the driver has not written more than requested
-			if (modesProperties2[modesCountExpected].sType != canaryItem)
+			if (modesProperties2[modesCountExpected].displayModeProperties.displayMode != canaryDisplayMode)
 				TCU_FAIL("Memory damage detected: driver has written more than expected");
 		}
 	}
