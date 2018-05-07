@@ -146,8 +146,8 @@ tcu::TestStatus						FillBufferTestInstance::iterate		(void)
 		VK_QUEUE_FAMILY_IGNORED,										// deUint32					srcQueueFamilyIndex;
 		VK_QUEUE_FAMILY_IGNORED,										// deUint32					dstQueueFamilyIndex;
 		*m_destination,													// VkBuffer					buffer;
-		0u,																// VkDeviceSize				offset;
-		m_params.dstOffset												// VkDeviceSize				size;
+		m_params.dstOffset,												// VkDeviceSize				offset;
+		m_params.dstSize												// VkDeviceSize				size;
 	};
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -159,7 +159,7 @@ tcu::TestStatus						FillBufferTestInstance::iterate		(void)
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel	(new tcu::TextureLevel(m_destinationTextureLevel->getAccess().getFormat(), dstLevelWidth, 1));
-	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset(), m_params.dstOffset);
+	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset() + m_params.dstOffset, m_params.dstSize);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 
 	return checkTestResult(resultLevel->getAccess());
