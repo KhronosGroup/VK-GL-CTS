@@ -57,6 +57,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineFramebufferAttachmentTests.hpp
 	vktPipelineSamplerTests.cpp
 	vktPipelineSamplerTests.hpp
+	vktPipelineStencilExportTests.cpp
+	vktPipelineStencilExportTests.hpp
 	vktPipelineStencilTests.cpp
 	vktPipelineStencilTests.hpp
 	vktPipelineTests.cpp
