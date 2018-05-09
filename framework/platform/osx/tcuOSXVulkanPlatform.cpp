@@ -48,9 +48,14 @@ public:
 	{
 	}
 
-	const vk::PlatformInterface& getPlatformInterface (void) const
+	const vk::PlatformInterface&	getPlatformInterface	(void) const
 	{
 		return m_driver;
+	}
+
+	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
+	{
+		return m_library;
 	}
 
 private:

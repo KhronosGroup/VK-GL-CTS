@@ -79,3 +79,10 @@ endif ()
 if (DE_OS_IS_WIN32)
 	set(DEQP_SUPPORT_WGL ON)
 endif ()
+
+# MacOS?
+if (DE_OS_IS_OSX)
+	find_package(OpenGL REQUIRED)
+	set(DEQP_PLATFORM_LIBRARIES ${OPENGL_LIBRARIES})
+	include_directories(${OPENGL_INCLUDE_DIRS})
+endif()
