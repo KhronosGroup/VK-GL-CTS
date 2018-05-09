@@ -2029,16 +2029,18 @@ struct CompareEachPixelInEachRegion
 		{
 			const VkImageBlit& blit = regionIter->imageBlit;
 
-			const int	dx		= deSign32(blit.dstOffsets[1].x - blit.dstOffsets[0].x);
-			const int	dy		= deSign32(blit.dstOffsets[1].y - blit.dstOffsets[0].y);
+			const int	xStart	= deMin32(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
+			const int	yStart	= deMin32(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
+			const int	xEnd	= deMax32(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
+			const int	yEnd	= deMax32(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
 			const float	xScale	= static_cast<float>(blit.srcOffsets[1].x - blit.srcOffsets[0].x) / static_cast<float>(blit.dstOffsets[1].x - blit.dstOffsets[0].x);
 			const float	yScale	= static_cast<float>(blit.srcOffsets[1].y - blit.srcOffsets[0].y) / static_cast<float>(blit.dstOffsets[1].y - blit.dstOffsets[0].y);
 			const float srcInvW	= 1.0f / static_cast<float>(sourceWidth);
 			const float srcInvH	= 1.0f / static_cast<float>(sourceHeight);
 
 			for (int z = 0; z < sourceDepth; z++)
-			for (int y = blit.dstOffsets[0].y; y < blit.dstOffsets[1].y; y += dy)
-			for (int x = blit.dstOffsets[0].x; x < blit.dstOffsets[1].x; x += dx)
+			for (int y = yStart; y < yEnd; y++)
+			for (int x = xStart; x < xEnd; x++)
 			{
 				const tcu::Vec2 srcNormCoord
 				(
