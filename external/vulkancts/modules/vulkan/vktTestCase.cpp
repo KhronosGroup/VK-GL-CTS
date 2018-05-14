@@ -316,6 +316,7 @@ public:
 	VkPhysicalDeviceVulkanMemoryModelFeaturesKHR		vulkanMemoryModelFeatures;
 	VkPhysicalDeviceShaderAtomicInt64FeaturesKHR		shaderAtomicInt64Features;
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures;
+	VkPhysicalDeviceFloat16Int8FeaturesKHR				float16Int8Features;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -333,6 +334,7 @@ public:
 		deMemset(&vulkanMemoryModelFeatures, 0, sizeof(vulkanMemoryModelFeatures));
 		deMemset(&shaderAtomicInt64Features, 0, sizeof(shaderAtomicInt64Features));
 		deMemset(&scalarBlockLayoutFeatures, 0, sizeof(scalarBlockLayoutFeatures));
+		deMemset(&float16Int8Features, 0, sizeof(float16Int8Features));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -344,7 +346,7 @@ public:
 		vulkanMemoryModelFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR;
 		shaderAtomicInt64Features.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR;
 		scalarBlockLayoutFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
-
+		float16Int8Features.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
@@ -395,6 +397,11 @@ public:
 				*nextPtr	= &scalarBlockLayoutFeatures;
 				nextPtr		= &scalarBlockLayoutFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_shader_float16_int8"))
+			{
+				*nextPtr	= &float16Int8Features;
+				nextPtr		= &float16Int8Features.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -430,6 +437,7 @@ public:
 	const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&		getVulkanMemoryModelFeatures		(void) const	{ return m_deviceFeatures.vulkanMemoryModelFeatures;	}
 	const VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&		getShaderAtomicInt64Features		(void) const	{ return m_deviceFeatures.shaderAtomicInt64Features;	}
 	const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&		getScalarBlockLayoutFeatures		(void) const	{ return m_deviceFeatures.scalarBlockLayoutFeatures;	}
+	const VkPhysicalDeviceFloat16Int8FeaturesKHR&			getFloat16Int8Features				(void) const	{ return m_deviceFeatures.float16Int8Features;				}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -567,6 +575,8 @@ const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&
 										Context::getShaderAtomicInt64Features	(void) const { return m_device->getShaderAtomicInt64Features();	}
 const vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&
 										Context::getScalarBlockLayoutFeatures	(void) const { return m_device->getScalarBlockLayoutFeatures();	}
+const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
+										Context::getFloat16Int8Features			(void) const { return m_device->getFloat16Int8Features();		}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

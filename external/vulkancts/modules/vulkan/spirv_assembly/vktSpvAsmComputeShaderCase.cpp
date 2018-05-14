@@ -466,6 +466,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			if (!isVariablePointersFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
 				TCU_THROW(NotSupportedError, "Request Variable Pointer feature not supported");
 		}
+
+		// Float16/Int8 shader features
+		{
+			if (!isFloat16Int8FeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extFloat16Int8))
+				TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
+		}
 	}
 
 	DE_ASSERT(!m_shaderSpec.outputs.empty());

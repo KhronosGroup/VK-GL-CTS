@@ -316,6 +316,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR = 1000079000,
     VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR = 1000079001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR = 1000080000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR = 1000082000,
     VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR = 1000084000,
     VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX = 1000086000,
     VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX = 1000086001,
@@ -5545,6 +5546,19 @@ VKAPI_ATTR void VKAPI_CALL vkCmdPushDescriptorSetWithTemplateKHR(
     uint32_t                                    set,
     const void*                                 pData);
 #endif
+
+#define VK_KHR_shader_float16_int8 1
+#define VK_KHR_SHADER_FLOAT16_INT8_SPEC_VERSION 1
+#define VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME "VK_KHR_shader_float16_int8"
+
+typedef struct VkPhysicalDeviceFloat16Int8FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderFloat16;
+    VkBool32           shaderInt8;
+} VkPhysicalDeviceFloat16Int8FeaturesKHR;
+
+
 
 #define VK_KHR_16bit_storage 1
 typedef VkPhysicalDevice16BitStorageFeatures VkPhysicalDevice16BitStorageFeaturesKHR;

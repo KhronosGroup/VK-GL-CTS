@@ -493,6 +493,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetWin32HandleInfoKH
 std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloat16Int8FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);

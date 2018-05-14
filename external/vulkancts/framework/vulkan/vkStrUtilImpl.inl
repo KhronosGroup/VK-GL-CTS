@@ -268,6 +268,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR:									return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR:										return "VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:												return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:									return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:						return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
@@ -5075,6 +5076,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePushDescriptorP
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tmaxPushDescriptors = " << value.maxPushDescriptors << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFloat16Int8FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceFloat16Int8FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderFloat16 = " << value.shaderFloat16 << '\n';
+	s << "\tshaderInt8 = " << value.shaderInt8 << '\n';
 	s << '}';
 	return s;
 }

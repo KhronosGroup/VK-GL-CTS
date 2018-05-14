@@ -2537,56 +2537,56 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	// Core features
 	{
-		const char* unsupportedFeature = DE_NULL;
+		const VkShaderStageFlags		vertexPipelineStoresAndAtomicsAffected	= vk::VK_SHADER_STAGE_VERTEX_BIT
+																				| vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT
+																				| vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT
+																				| vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+		const char*						unsupportedFeature						= DE_NULL;
+		vk::VkPhysicalDeviceFeatures	localRequiredCoreFeatures				= instance.requestedFeatures.coreFeatures;
 
-		if (!isCoreFeaturesSupported(context, instance.requestedFeatures.coreFeatures, &unsupportedFeature))
+		// reset fragment stores and atomics feature requirement
+		if ((localRequiredCoreFeatures.fragmentStoresAndAtomics != DE_FALSE) &&
+			(instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
+		{
+			localRequiredCoreFeatures.fragmentStoresAndAtomics = DE_FALSE;
+		}
+
+		// reset vertex pipeline stores and atomics feature requirement
+		if (localRequiredCoreFeatures.vertexPipelineStoresAndAtomics != DE_FALSE &&
+			(instance.customizedStages & vertexPipelineStoresAndAtomicsAffected) == 0)
+		{
+			localRequiredCoreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
+		}
+
+		if (!isCoreFeaturesSupported(context, localRequiredCoreFeatures, &unsupportedFeature))
 			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
 	}
 
 	// Extension features
 	{
+		// 8bit storage features
+		{
+			if (!is8BitStorageFeaturesSupported(context, instance.requestedFeatures.ext8BitStorage))
+				TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
+		}
+
 		// 16bit storage features
 		{
 			if (!is16BitStorageFeaturesSupported(context, instance.requestedFeatures.ext16BitStorage))
 				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 		}
 
-		// 8bit storage features
+		// Variable Pointers features
 		{
-			if (!is8BitStorageFeaturesSupported(context, instance.requestedFeatures.ext8BitStorage))
-				TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
+			if (!isVariablePointersFeaturesSupported(context, instance.requestedFeatures.extVariablePointers))
+				TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
 		}
-	}
 
-	// 64bit float feature
-	{
-		if (instance.requestedFeatures.coreFeatures.shaderFloat64 == DE_TRUE && features.shaderFloat64 == DE_FALSE)
-			TCU_THROW(NotSupportedError, "Requested shaderFloat64 feature not supported");
-	}
-
-	// fragment stores and atomics feature
-	{
-		if (features.fragmentStoresAndAtomics == DE_FALSE &&
-			instance.requestedFeatures.coreFeatures.fragmentStoresAndAtomics == DE_TRUE &&
-			instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT)
-			TCU_THROW(NotSupportedError, "Requested fragmentStoresAndAtomics feature not supported");
-	}
-
-	// vertex pipeline stores and atomics feature
-	{
-		if (features.vertexPipelineStoresAndAtomics == DE_FALSE &&
-			instance.requestedFeatures.coreFeatures.vertexPipelineStoresAndAtomics == DE_TRUE &&
-			(instance.customizedStages & vk::VK_SHADER_STAGE_VERTEX_BIT ||
-			 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ||
-			 instance.customizedStages & vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
-			 instance.customizedStages & vk::VK_SHADER_STAGE_GEOMETRY_BIT))
-			TCU_THROW(NotSupportedError, "Requested vertexPipelineStoresAndAtomics feature not supported");
-	}
-
-	// Variable Pointers features
-	{
-		if (!isVariablePointersFeaturesSupported(context, instance.requestedFeatures.extVariablePointers))
-			TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
+		// Float16/Int8 shader features
+		{
+			if (!isFloat16Int8FeaturesSupported(context, instance.requestedFeatures.extFloat16Int8))
+				TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
+		}
 	}
 
 	de::Random(seed).shuffle(instance.inputColors, instance.inputColors+4);

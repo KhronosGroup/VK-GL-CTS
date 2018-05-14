@@ -157,18 +157,27 @@ enum ExtensionVariablePointersFeaturesBits
 };
 typedef deUint32 ExtensionVariablePointersFeatures;
 
+enum ExtensionFloat16Int8FeaturesBits
+{
+	EXTFLOAT16INT8FEATURES_FLOAT16	= (1u << 1),
+	EXTFLOAT16INT8FEATURES_INT8		= (1u << 2),
+};
+typedef deUint32 ExtensionFloat16Int8Features;
+
 struct VulkanFeatures
 {
 	vk::VkPhysicalDeviceFeatures		coreFeatures;
 	Extension16BitStorageFeatures		ext16BitStorage;
 	ExtensionVariablePointersFeatures	extVariablePointers;
 	Extension8BitStorageFeatures		ext8BitStorage;
+	ExtensionFloat16Int8Features		extFloat16Int8;
 
 	VulkanFeatures				(void)
 		: coreFeatures			(vk::VkPhysicalDeviceFeatures())
 		, ext16BitStorage		(0)
 		, extVariablePointers	(0)
 		, ext8BitStorage		(0)
+		, extFloat16Int8		(0)
 	{
 		deMemset(&coreFeatures, 0, sizeof(coreFeatures));
 	}
@@ -184,12 +193,21 @@ bool isCoreFeaturesSupported (const Context&						context,
 							  const char**							missingFeature);
 
 // Returns true if the given 16bit storage extension features in `toCheck` are all supported.
+bool isCoreFeaturesSupported (const Context&						context,
+							  const vk::VkPhysicalDeviceFeatures&	toCheck,
+							  const char**							missingFeature);
+
+// Returns true if the given 16bit storage extension features in `toCheck` are all supported.
 bool is16BitStorageFeaturesSupported (const Context&				context,
 									  Extension16BitStorageFeatures	toCheck);
 
 // Returns true if the given variable pointers extension features in `toCheck` are all supported.
 bool isVariablePointersFeaturesSupported (const Context&					context,
 										  ExtensionVariablePointersFeatures	toCheck);
+
+// Returns true if the given 16bit float/8bit int extension features in `toCheck` are all supported.
+bool isFloat16Int8FeaturesSupported (const Context&					context,
+									 ExtensionFloat16Int8Features	toCheck);
 
 deUint32 getMinRequiredVulkanVersion (const vk::SpirvVersion version);
 

@@ -726,6 +726,11 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePushDescriptorProper
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceFloat16Int8FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPresentRegionsKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR;
