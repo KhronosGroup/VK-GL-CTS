@@ -151,6 +151,19 @@ bool isVariablePointersFeaturesSupported (const Context& context, ExtensionVaria
 	return true;
 }
 
+bool isFloat16Int8FeaturesSupported (const Context& context, ExtensionFloat16Int8Features toCheck)
+{
+	const VkPhysicalDeviceFloat16Int8FeaturesKHR& extensionFeatures = context.getFloat16Int8Features();
+
+	if ((toCheck & EXTFLOAT16INT8FEATURES_FLOAT16) != 0 && extensionFeatures.shaderFloat16 == VK_FALSE)
+		return false;
+
+	if ((toCheck & EXTFLOAT16INT8FEATURES_INT8) != 0 && extensionFeatures.shaderInt8 == VK_FALSE)
+		return false;
+
+	return true;
+}
+
 deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)
 {
 	switch(version)

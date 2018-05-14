@@ -2106,6 +2106,14 @@ struct VkPhysicalDevicePushDescriptorPropertiesKHR
 	deUint32		maxPushDescriptors;
 };
 
+struct VkPhysicalDeviceFloat16Int8FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFloat16;
+	VkBool32		shaderInt8;
+};
+
 struct VkRectLayerKHR
 {
 	VkOffset2D	offset;
