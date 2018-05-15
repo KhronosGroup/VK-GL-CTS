@@ -1260,7 +1260,7 @@ void RectangleTest::makeGradient(Type (*unpack)(float))
 				{
 					float value   = static_cast<float>(x - m_unpackProperties.skipPixels) / GRADIENT_WIDTH;
 					int   channel = i - elementsInGroup * x;
-					value *= 1.0 - 0.25 * channel;
+					value *= 1.0f - 0.25f * channel;
 					data[index] = unpack(value);
 				}
 				else
@@ -1414,7 +1414,7 @@ GLuint RectangleTest::unpack_UNSIGNED_INT_5_9_9_9_REV(float value)
 	GLfloat green = value * 0.75f;
 	GLfloat blue  = value * 0.50f;
 
-	GLfloat sharedExpMax = (deFloatPow(2, N) - 1) / deFloatPow(2, N) * deFloatPow(2, E_max - B);
+	GLfloat sharedExpMax = (deFloatPow(2.0f, (float)N) - 1.0f) / deFloatPow(2.0f, (float)N) * deFloatPow(2.0f, (float)(E_max - B));
 
 	GLfloat red_c   = deFloatMax(0, deFloatMin(sharedExpMax, red));
 	GLfloat green_c = deFloatMax(0, deFloatMin(sharedExpMax, green));
@@ -1424,18 +1424,18 @@ GLuint RectangleTest::unpack_UNSIGNED_INT_5_9_9_9_REV(float value)
 
 	GLfloat exp_p = deFloatMax(-B - 1, deFloatFloor(deFloatLog2(max_c))) + 1 + B;
 
-	GLfloat max_s = deFloatFloor(max_c / deFloatPow(2, exp_p - B - N) + 0.5);
+	GLfloat max_s = deFloatFloor(max_c / deFloatPow(2.0f, exp_p - (float)B - (float)N) + 0.5f);
 
 	GLfloat exp_s;
 
-	if (0 <= max_s && max_s < deFloatPow(2, N))
+	if (0 <= max_s && max_s < deFloatPow(2.0f, (float)N))
 		exp_s = exp_p;
 	else
 		exp_s = exp_p + 1;
 
-	GLfloat red_s   = deFloatFloor(red_c / deFloatPow(2, exp_s - B - N) + 0.5);
-	GLfloat green_s = deFloatFloor(green_c / deFloatPow(2, exp_s - B - N) + 0.5);
-	GLfloat blue_s  = deFloatFloor(blue_c / deFloatPow(2, exp_s - B - N) + 0.5);
+	GLfloat red_s   = deFloatFloor(red_c / deFloatPow(2.0f, exp_s - (float)B - (float)N) + 0.5f);
+	GLfloat green_s = deFloatFloor(green_c / deFloatPow(2.0f, exp_s - (float)B - (float)N) + 0.5f);
+	GLfloat blue_s  = deFloatFloor(blue_c / deFloatPow(2.0f, exp_s - (float)B - (float)N) + 0.5f);
 
 	GLuint c1 = (static_cast<GLuint>(red_s)) & 511;
 	GLuint c2 = (static_cast<GLuint>(green_s)) & 511;
@@ -2754,9 +2754,9 @@ void RectangleTest::makeBuffer(const GLvoid* gradient, const PixelFormat& format
 		for (int j = 0; j < componentCount; j++)
 		{
 			if (samplerIsIntUintFloat == 1)
-				valuesInt[j] = static_cast<Type>(sourceData[componentCount * i + j]);
+				valuesInt[j] = (int)static_cast<Type>(sourceData[componentCount * i + j]);
 			else if (samplerIsIntUintFloat == 2)
-				valuesUint[j] = static_cast<Type>(sourceData[componentCount * i + j]);
+				valuesUint[j] = (unsigned int)static_cast<Type>(sourceData[componentCount * i + j]);
 			else if (samplerIsIntUintFloat == 3)
 				values[j] = pack(sourceData[componentCount * i + j]);
 		}
@@ -3408,16 +3408,16 @@ void RectangleTest::pack_UNSIGNED_INT_5_9_9_9_REV(rawFloatPixel* values, GLuint 
 	GLuint	pGreen = ((value >> 9) & 511);
 	GLuint	pRed   = ((value >> 0) & 511);
 
-	(*values)[2] = pBlue * pow(2.0, pExp - B - N);
-	(*values)[1] = pGreen * pow(2.0, pExp - B - N);
-	(*values)[0] = pRed * pow(2.0, pExp - B - N);
-	(*values)[3] = 1.0;
+	(*values)[2] = (float)(pBlue * pow(2.0, pExp - B - N));
+	(*values)[1] = (float)(pGreen * pow(2.0, pExp - B - N));
+	(*values)[0] = (float)(pRed * pow(2.0, pExp - B - N));
+	(*values)[3] = 1.0f;
 }
 
 void RectangleTest::pack_FLOAT_32_UNSIGNED_INT_24_8_REV(rawFloatPixel* values, F_32_UINT_24_8_REV value)
 {
 	(*values)[0] = value.d;
-	(*values)[1] = (value.s & 255) / 255.0;
+	(*values)[1] = (value.s & 255) / 255.0f;
 }
 
 bool RectangleTest::getTexImage()

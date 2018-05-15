@@ -377,19 +377,19 @@ bool verifyMappings(std::string glslSource, std::string spirVSource, SpirVMappin
 		if (glslCodeCount > 0)
 		{
 			// Count all SpirV code variants occurrences in SpirV source
-			for (int s = 0; s < it->second.size(); ++s)
+			for (int s = 0; s < (signed)it->second.size(); ++s)
 			{
 				std::vector<std::string> spirVCodes = de::splitString(it->second[s], ' ');
 
-				for (int v = 0; v < spirVSourceLines.size(); ++v)
+				for (int v = 0; v < (signed)spirVSourceLines.size(); ++v)
 				{
 					std::vector<std::string> spirVLineCodes = de::splitString(spirVSourceLines[v], ' ');
 
 					bool matchAll = true;
-					for (int j = 0; j < spirVCodes.size(); ++j)
+					for (int j = 0; j < (signed)spirVCodes.size(); ++j)
 					{
 						bool match = false;
-						for (int i = 0; i < spirVLineCodes.size(); ++i)
+						for (int i = 0; i < (signed)spirVLineCodes.size(); ++i)
 						{
 							if (spirVLineCodes[i] == spirVCodes[j])
 								match = true;
@@ -428,7 +428,7 @@ void writeSpirV(const char* filename, ShaderBinary binary)
 		// This will be extended in the future
 		deUint8 count = (deUint8)binary.shaderTypes.size();
 		fwrite((void*)&count, 1, 1, file);
-		for (int i = 0; i < binary.shaderTypes.size(); ++i)
+		for (int i = 0; i < (signed)binary.shaderTypes.size(); ++i)
 		{
 			fwrite((void*)&binary.shaderTypes[i], 1, sizeof(ShaderType), file);
 
@@ -456,7 +456,7 @@ ShaderBinary readSpirV(tcu::Resource* resource)
 	resource->read(&count, 1);
 	binary.shaderTypes.resize(count);
 	binary.shaderEntryPoints.resize(count);
-	for (int i = 0; i < binary.shaderTypes.size(); ++i)
+	for (int i = 0; i < (signed)binary.shaderTypes.size(); ++i)
 	{
 		resource->read((deUint8*)&binary.shaderTypes[i], sizeof(ShaderType));
 
@@ -1097,7 +1097,7 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 		// Remove name reflection for defined variables
 		std::vector<std::string> lines = de::splitString(output, '\n');
 		std::string				 input;
-		for (int i = 0; i < lines.size(); ++i)
+		for (int i = 0; i < (signed)lines.size(); ++i)
 		{
 			if (lines[i].find("OpName %position") != std::string::npos)
 				continue;
@@ -2067,7 +2067,7 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVBuiltInFunctionsTest::iterate()
 {
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
-	for (int i = 0; i < m_sources.size(); ++i)
+	for (int i = 0; i < (signed)m_sources.size(); ++i)
 	{
 		ShaderSource shaderSource = m_sources[i];
 
@@ -2810,7 +2810,7 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 
 	bool result = true;
 
-	for (int v = 0; v < m_validations.size(); ++v)
+	for (int v = 0; v < (signed)m_validations.size(); ++v)
 	{
 		for (int it = ITERATE_GLSL; it < ITERATE_LAST; ++it)
 		{
@@ -2818,7 +2818,7 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 			if (it == ITERATE_GLSL)
 			{
 				ProgramSources sources;
-				for (int s = 0; s < m_validations[v].shaders.size(); ++s)
+				for (int s = 0; s < (signed)m_validations[v].shaders.size(); ++s)
 					sources << m_validations[v].shaders[s];
 
 				program = new ShaderProgram(gl, sources);
@@ -2829,7 +2829,7 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 
 #if defined						DEQP_HAVE_GLSLANG
 				ProgramBinaries binaries;
-				for (int s = 0; s < m_validations[v].shaders.size(); ++s)
+				for (int s = 0; s < (signed)m_validations[v].shaders.size(); ++s)
 				{
 					ShaderBinary shaderBinary =
 						glslangUtils::makeSpirV(m_context.getTestContext().getLog(), m_validations[v].shaders[s]);
@@ -2854,7 +2854,7 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 #if defined					DEQP_HAVE_SPIRV_TOOLS
 				std::string spirvSource;
 
-				for (int s = 0; s < m_validations[v].shaders.size(); ++s)
+				for (int s = 0; s < (signed)m_validations[v].shaders.size(); ++s)
 				{
 					ShaderSource shaderSource = m_validations[v].shaders[s];
 
@@ -3121,7 +3121,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validPerVertexFragFunc(Valid
 	gl.disable(GL_CLIP_DISTANCE0);
 
 	bool result = true;
-	for (int o = 0; o < outputs.size(); ++o)
+	for (int o = 0; o < (signed)outputs.size(); ++o)
 	{
 		GLuint output;
 		gl.readPixels(outputs[o].x, outputs[o].y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)&output);
@@ -3205,7 +3205,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validPerVertexPointFunc(Vali
 	gl.disable(GL_CLIP_DISTANCE0);
 
 	bool result = true;
-	for (int o = 0; o < outputs.size(); ++o)
+	for (int o = 0; o < (signed)outputs.size(); ++o)
 	{
 		GLuint output;
 		gl.readPixels(outputs[o].x, outputs[o].y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)&output);
@@ -3295,7 +3295,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validTesselationGeometryFunc
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glGetTexImage");
 
 	bool result = true;
-	for (int o = 0; o < outputs.size(); ++o)
+	for (int o = 0; o < (signed)outputs.size(); ++o)
 	{
 		GLuint output = pixels[(outputs[o].x + outputs[o].y * 64) + outputs[o].z * 64 * 64];
 
@@ -3407,7 +3407,7 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validMultiSamplingFunc(Valid
 
 	const int epsilon = 2;
 	bool result = true;
-	for (int o = 0; o < outputs.size(); ++o)
+	for (int o = 0; o < (signed)outputs.size(); ++o)
 	{
 		GLuint output;
 		gl.readPixels(outputs[o].x, outputs[o].y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)&output);
@@ -3828,12 +3828,12 @@ tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
 
 	bool result = true;
 
-	for (int p = 0; p < m_pipelines.size(); ++p)
+	for (int p = 0; p < (signed)m_pipelines.size(); ++p)
 	{
 		ProgramBinaries programBinaries;
 
 		Pipeline& pipeline = m_pipelines[p];
-		for (int s = 0; s < pipeline.size(); ++s)
+		for (int s = 0; s < (signed)pipeline.size(); ++s)
 		{
 			ShaderStage& stage = pipeline[s];
 #if defined				 DEQP_HAVE_GLSLANG
@@ -3884,7 +3884,7 @@ tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
 		}
 
 #if defined DEQP_HAVE_SPIRV_TOOLS
-		for (int s = 0; s < pipeline.size(); ++s)
+		for (int s = 0; s < (signed)pipeline.size(); ++s)
 		{
 			ShaderStage  stage  = pipeline[s];
 			ShaderBinary binary = stage.binary;
@@ -3892,7 +3892,7 @@ tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
 			std::string spirVSource;
 			glslangUtils::spirvDisassemble(spirVSource, binary.binary);
 
-			for (int c = 0; c < stage.caps.size(); ++c)
+			for (int c = 0; c < (signed)stage.caps.size(); ++c)
 			{
 				std::string spirVSourceCut;
 				int			foundCount = spirVCapabilityCutOff(spirVSource, spirVSourceCut, stage.caps, c);
@@ -3935,14 +3935,14 @@ int SpirvValidationCapabilitiesTest::spirVCapabilityCutOff(std::string spirVSrcI
 	toDisable.push_back(current[0]);
 
 	// Search for capabilities that depends on current one as it should be removed either
-	for (int cr = 0; cr < capabilities.size(); ++cr)
+	for (int cr = 0; cr < (signed)capabilities.size(); ++cr)
 	{
 		std::vector<std::string> split = de::splitString(capabilities[cr], ' ');
 
 		if (split[0] == current[0])
 			continue;
 
-		for (int s = 1; s < split.size(); ++s)
+		for (int s = 1; s < (signed)split.size(); ++s)
 		{
 			if (split[s] == current[0])
 				toDisable.push_back(split[0]);
@@ -3952,7 +3952,7 @@ int SpirvValidationCapabilitiesTest::spirVCapabilityCutOff(std::string spirVSrcI
 	// Disable current capability and capabilities that depends on it
 	int foundCount = 0;
 	spirVSrcOutput = spirVSrcInput;
-	for (int d = 0; d < toDisable.size(); ++d)
+	for (int d = 0; d < (signed)toDisable.size(); ++d)
 	{
 		std::string searchString = std::string("OpCapability ") + toDisable[d];
 
