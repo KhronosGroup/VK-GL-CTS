@@ -3855,7 +3855,7 @@ deUint32 vkFormatToAhbFormat(deUint64 vkFormat) {
 	return 0u;
 }
 
-bool ValidateAHardwareBuffer(vk::VkFormat format, deUint32 requiredAhbUsage, const vk::InstanceDriver& vki, const vk::VkDevice& device) {
+bool ValidateAHardwareBuffer(vk::VkFormat format, deUint32 requiredAhbUsage, const vk::DeviceDriver& vkd, const vk::VkDevice& device) {
 	AHardwareBuffer_Desc    hbufferdesc =
 	{
 		64u,
@@ -3871,6 +3871,9 @@ bool ValidateAHardwareBuffer(vk::VkFormat format, deUint32 requiredAhbUsage, con
 	AHardwareBuffer_allocate(&hbufferdesc, &hbuffer);
 	if (!hbuffer)
 		return false;
+
+	NativeHandle nativeHandle;
+	nativeHandle = vk::pt::AndroidHardwareBufferPtr(hbuffer);
 
 	vk::VkAndroidHardwareBufferFormatPropertiesANDROID formatProperties =
 	{
@@ -3890,10 +3893,8 @@ bool ValidateAHardwareBuffer(vk::VkFormat format, deUint32 requiredAhbUsage, con
 		0u,
 		0u
 	};
-	vk::GetAndroidHardwareBufferPropertiesANDROIDFunc func =
-			(vk::GetAndroidHardwareBufferPropertiesANDROIDFunc)vki.getDeviceProcAddr(device, "vkGetAndroidHardwareBufferPropertiesANDROID");
 
-	VK_CHECK(func(device, vk::pt::AndroidHardwareBufferPtr(hbuffer), &bufferProperties));
+	VK_CHECK(vkd.getAndroidHardwareBufferPropertiesANDROID(device, vk::pt::AndroidHardwareBufferPtr(hbuffer), &bufferProperties));
 	TCU_CHECK(formatProperties.format != vk::VK_FORMAT_UNDEFINED);
 	TCU_CHECK(formatProperties.format == format);
 	TCU_CHECK(formatProperties.externalFormat != 0u);
@@ -3969,7 +3970,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat(Context& context, vk::VkFor
 			continue;
 
 		// Only test a combination if AHardwareBuffer can be successfully allocated for it.
-		if (!ValidateAHardwareBuffer(format, requiredAhbUsage, vki, *device))
+		if (!ValidateAHardwareBuffer(format, requiredAhbUsage, vkd, *device))
 			continue;
 
 		const vk::VkPhysicalDeviceExternalImageFormatInfo	externalInfo		=
