@@ -473,7 +473,8 @@ VkPipelineStageFlags getAllPipelineStageFlags (void)
 		   | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
 		   | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT
 		   | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-		   | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		   | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
+		   | VK_PIPELINE_STAGE_HOST_BIT;
 }
 
 class AttachmentReference
@@ -488,6 +489,7 @@ public:
 
 	deUint32		getAttachment			(void) const { return m_attachment;	}
 	VkImageLayout	getImageLayout			(void) const { return m_layout;		}
+	void			setImageLayout			(VkImageLayout layout) { m_layout = layout;	}
 
 private:
 	deUint32		m_attachment;
@@ -2373,7 +2375,7 @@ void pushImageInitializationCommands (const DeviceInterface&								vk,
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,					// sType;
 				DE_NULL,												// pNext;
 
-				(oldLayout != VK_IMAGE_LAYOUT_UNDEFINED ? getAllMemoryWriteFlags() : (VkAccessFlags)0),					// srcAccessMask
+				getMemoryFlagsForLayout(oldLayout),																		// srcAccessMask
 				getAllMemoryReadFlags() | getMemoryFlagsForLayout(attachmentInfo[attachmentNdx].getInitialLayout()),	// dstAccessMask
 
 				oldLayout,												// oldLayout
@@ -4744,10 +4746,22 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	};
 
-	const VkImageLayout subpassLayouts[] =
+	const VkImageLayout subpassLayoutsColor[] =
 	{
 		VK_IMAGE_LAYOUT_GENERAL,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+	};
+
+	const VkImageLayout subpassLayoutsDepthStencil[] =
+	{
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+	};
+
+	const VkImageLayout subpassLayoutsInput[] =
+	{
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	};
 
 	enum AllocationType
@@ -4924,8 +4938,6 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 						for (size_t colorAttachmentNdx = 0; colorAttachmentNdx < subpassColorAttachments.size(); colorAttachmentNdx++)
 						{
 							const deUint32		colorAttachmentIndex	= subpassColorAttachments[colorAttachmentNdx];
-							// \todo [mika 2016-08-25] Check if attachment is not used as input attachment and use other image layouts
-							const VkImageLayout	subpassLayout			= VK_IMAGE_LAYOUT_GENERAL;
 
 							if (lastUseOfAttachment[colorAttachmentIndex])
 							{
@@ -4950,14 +4962,12 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 
 							lastUseOfAttachment[colorAttachmentIndex] = just(subpassIndex);
 
-							colorAttachmentReferences.push_back(AttachmentReference((deUint32)subpassColorAttachments[colorAttachmentNdx], subpassLayout));
+							colorAttachmentReferences.push_back(AttachmentReference((deUint32)subpassColorAttachments[colorAttachmentNdx], VK_IMAGE_LAYOUT_GENERAL));
 						}
 
 						for (size_t inputAttachmentNdx = 0; inputAttachmentNdx < subpassInputAttachments.size(); inputAttachmentNdx++)
 						{
 							const deUint32		inputAttachmentIndex	= subpassInputAttachments[inputAttachmentNdx];
-							// \todo [mika 2016-08-25] Check if attachment is not used as color attachment and use other image layouts
-							const VkImageLayout	subpassLayout			= VK_IMAGE_LAYOUT_GENERAL;
 
 							if(lastUseOfAttachment[inputAttachmentIndex])
 							{
@@ -5002,13 +5012,12 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 
 								lastUseOfAttachment[inputAttachmentIndex] = just(subpassIndex);
 
-								inputAttachmentReferences.push_back(AttachmentReference((deUint32)subpassInputAttachments[inputAttachmentNdx], subpassLayout));
+								inputAttachmentReferences.push_back(AttachmentReference((deUint32)subpassInputAttachments[inputAttachmentNdx], VK_IMAGE_LAYOUT_GENERAL));
 							}
 						}
 
 						if (depthStencilAttachment)
 						{
-							// \todo [mika 2016-08-25] Check if attachment is not used as input attachment and use other image layouts
 							if (lastUseOfAttachment[*depthStencilAttachment])
 							{
 								if(*lastUseOfAttachment[*depthStencilAttachment] == subpassIndex)
@@ -5064,6 +5073,38 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 								preserveAttachments.push_back(attachmentIndex);
 						}
 
+						// Use random image layout when possible
+						for (size_t colorRefIdx = 0; colorRefIdx < colorAttachmentReferences.size(); ++colorRefIdx)
+						{
+							bool usedAsInput = false;
+							for (size_t inputRefIdx = 0; inputRefIdx < inputAttachmentReferences.size(); ++inputRefIdx)
+								if (colorAttachmentReferences[colorRefIdx].getAttachment() == inputAttachmentReferences[inputRefIdx].getAttachment())
+									usedAsInput = true;
+
+							if (!usedAsInput)
+								colorAttachmentReferences[colorRefIdx].setImageLayout(rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor)));
+						}
+						for (size_t inputRefIdx = 0; inputRefIdx < inputAttachmentReferences.size(); ++inputRefIdx)
+						{
+							bool usedAsDepthStencil	= inputAttachmentReferences[inputRefIdx].getAttachment() == depthStencilAttachmentReference.getAttachment();
+							bool usedAsColor		= false;
+							for (size_t colorRefIdx = 0; colorRefIdx < colorAttachmentReferences.size(); ++colorRefIdx)
+								if (inputAttachmentReferences[inputRefIdx].getAttachment() == colorAttachmentReferences[colorRefIdx].getAttachment())
+									usedAsColor = true;
+
+							if (!usedAsColor && !usedAsDepthStencil)
+								inputAttachmentReferences[inputRefIdx].setImageLayout(rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsInput), DE_ARRAY_END(subpassLayoutsInput)));
+						}
+						{
+							bool usedAsInput = false;
+							for (size_t inputRefIdx = 0; inputRefIdx < inputAttachmentReferences.size(); ++inputRefIdx)
+								if (depthStencilAttachmentReference.getAttachment() == inputAttachmentReferences[inputRefIdx].getAttachment())
+									usedAsInput = true;
+
+							if (!usedAsInput)
+								depthStencilAttachmentReference.setImageLayout(rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsDepthStencil), DE_ARRAY_END(subpassLayoutsDepthStencil)));
+						}
+
 						subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u,
 												inputAttachmentReferences,
 												colorAttachmentReferences,
@@ -5117,7 +5158,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 
 						for (size_t attachmentNdx = 0; attachmentNdx < subpassNdx + 1; attachmentNdx++)
 						{
-							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
+							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor));
 
 							colorAttachmentReferences.push_back(AttachmentReference((deUint32)attachmentNdx, subpassLayout));
 						}
@@ -5138,7 +5179,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 
 						for (size_t attachmentNdx = 0; attachmentNdx < (attachmentCount - subpassNdx); attachmentNdx++)
 						{
-							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
+							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor));
 
 							colorAttachmentReferences.push_back(AttachmentReference((deUint32)attachmentNdx, subpassLayout));
 						}
@@ -5159,7 +5200,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 
 						for (size_t attachmentNdx = 0; attachmentNdx < attachmentCount / 2; attachmentNdx++)
 						{
-							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
+							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor));
 
 							colorAttachmentReferences.push_back(AttachmentReference((deUint32)(subpassNdx + attachmentNdx), subpassLayout));
 						}
@@ -5180,7 +5221,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 
 						for (size_t attachmentNdx = 0; attachmentNdx < subpassNdx + 1; attachmentNdx++)
 						{
-							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
+							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor));
 
 							colorAttachmentReferences.push_back(AttachmentReference((deUint32)attachmentNdx, subpassLayout));
 						}
@@ -5199,7 +5240,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 
 						for (size_t attachmentNdx = 0; attachmentNdx < (attachmentCount - subpassNdx); attachmentNdx++)
 						{
-							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts));
+							const VkImageLayout subpassLayout = rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor));
 
 							colorAttachmentReferences.push_back(AttachmentReference((deUint32)attachmentNdx, subpassLayout));
 						}
@@ -5216,7 +5257,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 				{
 					subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u,
 											vector<AttachmentReference>(),
-											vector<AttachmentReference>(1, AttachmentReference(0, rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts)))),
+											vector<AttachmentReference>(1, AttachmentReference(0, rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor)))),
 											vector<AttachmentReference>(),
 											AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
 											vector<deUint32>()));
@@ -5225,7 +5266,7 @@ void addAttachmentAllocationTests (tcu::TestCaseGroup* group, AllocationKind all
 					{
 						subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS, 0u,
 												vector<AttachmentReference>(1, AttachmentReference((deUint32)(subpassNdx - 1), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)),
-												vector<AttachmentReference>(1, AttachmentReference((deUint32)(subpassNdx), rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayouts), DE_ARRAY_END(subpassLayouts)))),
+												vector<AttachmentReference>(1, AttachmentReference((deUint32)(subpassNdx), rng.choose<VkImageLayout>(DE_ARRAY_BEGIN(subpassLayoutsColor), DE_ARRAY_END(subpassLayoutsColor)))),
 												vector<AttachmentReference>(),
 												AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
 												vector<deUint32>()));

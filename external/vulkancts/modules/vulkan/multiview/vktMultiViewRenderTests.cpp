@@ -280,8 +280,8 @@ void MultiViewRenderTestInstance::beforeDraw (void)
 	};
 	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
 		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		0, 0,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+		0, VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	const VkClearValue renderPassClearValue = makeClearValueColor(tcu::Vec4(0.0f));
 	m_device->cmdClearColorImage(*m_cmdBuffer, m_colorAttachment->getImage(),  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &renderPassClearValue.color, 1, &subresourceRange);
@@ -1918,7 +1918,7 @@ void MultiViewSecondaryCommandBufferTestInstance::draw (const deUint32 subpassCo
 
 	beforeDraw();
 
-	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f));
+	beginRenderPass(*m_device, *m_cmdBuffer, renderPass, frameBuffer, makeRect2D(0, 0, m_parameters.extent.width, m_parameters.extent.height), tcu::Vec4(0.0f), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	//Create secondary buffer
 	const VkCommandBufferAllocateInfo	cmdBufferAllocateInfo	=
@@ -2503,7 +2503,6 @@ public:
 						MultiViewReadbackTestInstance	(Context& context, const TestParameters& parameters);
 protected:
 	tcu::TestStatus		iterate							(void);
-	void				beforeDraw						(void);
 	void				drawClears						(const deUint32				subpassCount,
 														 VkRenderPass				renderPass,
 														 VkFramebuffer				frameBuffer,
@@ -2574,23 +2573,6 @@ tcu::TestStatus MultiViewReadbackTestInstance::iterate (void)
 	}
 
 	return tcu::TestStatus::pass("Pass");
-}
-
-void MultiViewReadbackTestInstance::beforeDraw (void)
-{
-	const VkImageSubresourceRange	subresourceRange		=
-	{
-		VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask;
-		0u,							//deUint32				baseMipLevel;
-		1u,							//deUint32				levelCount;
-		0u,							//deUint32				baseArrayLayer;
-		m_parameters.extent.depth,	//deUint32				layerCount;
-	};
-
-	imageBarrier(*m_device, *m_cmdBuffer, m_colorAttachment->getImage(), subresourceRange,
-		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		0, 0,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 }
 
 void MultiViewReadbackTestInstance::drawClears (const deUint32 subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer, vector<PipelineSp>& pipelines, const bool clearPass)

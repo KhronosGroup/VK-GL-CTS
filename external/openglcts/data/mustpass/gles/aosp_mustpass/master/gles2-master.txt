@@ -1369,11 +1369,6 @@ dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_verte
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_fragment_main
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_attribute
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_uniform
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.float_partially_specified_fragment
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.float_fragment
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec2_fragment
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec3_fragment
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec4_fragment
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_x_vertex
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_x_fragment
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_xx_vertex

@@ -530,22 +530,26 @@ struct OpAtomicCase
 {
 	const char*		name;
 	const char*		assembly;
+	const char*		retValAssembly;
 	OpAtomicType	opAtomic;
 	deInt32			numOutputElements;
 
-					OpAtomicCase			(const char* _name, const char* _assembly, OpAtomicType _opAtomic, deInt32 _numOutputElements)
+					OpAtomicCase(const char* _name, const char* _assembly, const char* _retValAssembly, OpAtomicType _opAtomic, deInt32 _numOutputElements)
 						: name				(_name)
 						, assembly			(_assembly)
+						, retValAssembly	(_retValAssembly)
 						, opAtomic			(_opAtomic)
 						, numOutputElements	(_numOutputElements) {}
 };
 
-tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer)
+tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer, int numElements = 65535, bool verifyReturnValues = false)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx,
-																				useStorageBuffer ? "opatomic_storage_buffer" : "opatomic",
-																				"Test the OpAtomic* opcodes"));
-	const int						numElements			= 65535;
+	std::string						groupName			("opatomic");
+	if (useStorageBuffer)
+		groupName += "_storage_buffer";
+	if (verifyReturnValues)
+		groupName += "_return_values";
+	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Test the OpAtomic* opcodes"));
 	vector<OpAtomicCase>			cases;
 
 	const StringTemplate			shaderTemplate	(
@@ -574,6 +578,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"OpMemberDecorate %sumbuf 0 Coherent\n"
 		"OpMemberDecorate %sumbuf 0 Offset 0\n"
 
+		"${RETVAL_BUF_DECORATE}"
+
 		+ getComputeAsmCommonTypes("${BLOCK_POINTER_TYPE}") +
 
 		"%buf       = OpTypeStruct %i32arr\n"
@@ -583,6 +589,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"%sumbuf    = OpTypeStruct %i32arr\n"
 		"%sumbufptr = OpTypePointer ${BLOCK_POINTER_TYPE} %sumbuf\n"
 		"%sum       = OpVariable %sumbufptr ${BLOCK_POINTER_TYPE}\n"
+
+		"${RETVAL_BUF_DECL}"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%minusone  = OpConstant %i32 -1\n"
@@ -600,28 +608,39 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 
 		"%outloc    = OpAccessChain %i32ptr %sum %zero ${INDEX}\n"
 		"${INSTRUCTION}"
+		"${RETVAL_ASSEMBLY}"
 
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS) \
+	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS) \
 	do { \
-		DE_STATIC_ASSERT((NUM_OUTPUT_ELEMENTS) == 1 || (NUM_OUTPUT_ELEMENTS) == numElements); \
-		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS)); \
+		DE_ASSERT((NUM_OUTPUT_ELEMENTS) == 1 || (NUM_OUTPUT_ELEMENTS) == numElements); \
+		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS)); \
 	} while (deGetFalse())
-	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, 1)
-	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, numElements)
+	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, 1)
+	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, numElements)
 
-	ADD_OPATOMIC_CASE_1(iadd,	"%unused    = OpAtomicIAdd %i32 %outloc %one %zero %inval\n", OPATOMIC_IADD );
-	ADD_OPATOMIC_CASE_1(isub,	"%unused    = OpAtomicISub %i32 %outloc %one %zero %inval\n", OPATOMIC_ISUB );
-	ADD_OPATOMIC_CASE_1(iinc,	"%unused    = OpAtomicIIncrement %i32 %outloc %one %zero\n",  OPATOMIC_IINC );
-	ADD_OPATOMIC_CASE_1(idec,	"%unused    = OpAtomicIDecrement %i32 %outloc %one %zero\n",  OPATOMIC_IDEC );
-	ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %one %zero\n"
-								"             OpStore %outloc %inval2\n",  OPATOMIC_LOAD );
-	ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %one %zero %inval\n",  OPATOMIC_STORE );
+	ADD_OPATOMIC_CASE_1(iadd,	"%retv      = OpAtomicIAdd %i32 %outloc %one %zero %inval\n",
+								"             OpStore %retloc %retv\n", OPATOMIC_IADD );
+	ADD_OPATOMIC_CASE_1(isub,	"%retv      = OpAtomicISub %i32 %outloc %one %zero %inval\n",
+								"             OpStore %retloc %retv\n", OPATOMIC_ISUB );
+	ADD_OPATOMIC_CASE_1(iinc,	"%retv      = OpAtomicIIncrement %i32 %outloc %one %zero\n",
+								"             OpStore %retloc %retv\n", OPATOMIC_IINC );
+	ADD_OPATOMIC_CASE_1(idec,	"%retv      = OpAtomicIDecrement %i32 %outloc %one %zero\n",
+								"             OpStore %retloc %retv\n", OPATOMIC_IDEC );
+	if (!verifyReturnValues)
+	{
+		ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %one %zero\n"
+									"             OpStore %outloc %inval2\n", "", OPATOMIC_LOAD );
+		ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %one %zero %inval\n", "", OPATOMIC_STORE );
+	}
+
 	ADD_OPATOMIC_CASE_N(compex, "%even      = OpSMod %i32 %inval %two\n"
 								"             OpStore %outloc %even\n"
-								"%unused    = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",  OPATOMIC_COMPEX );
+								"%retv      = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",
+								"			  OpStore %retloc %retv\n", OPATOMIC_COMPEX );
+
 
 	#undef ADD_OPATOMIC_CASE
 	#undef ADD_OPATOMIC_CASE_1
@@ -638,6 +657,36 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		specializations["INSTRUCTION"]			= cases[caseNdx].assembly;
 		specializations["BLOCK_DECORATION"]		= useStorageBuffer ? "Block" : "BufferBlock";
 		specializations["BLOCK_POINTER_TYPE"]	= useStorageBuffer ? "StorageBuffer" : "Uniform";
+
+		if (verifyReturnValues)
+		{
+			const StringTemplate blockDecoration	(
+				"\n"
+				"OpDecorate %retbuf ${BLOCK_DECORATION}\n"
+				"OpDecorate %ret DescriptorSet 0\n"
+				"OpDecorate %ret Binding 2\n"
+				"OpMemberDecorate %retbuf 0 Offset 0\n\n");
+
+			const StringTemplate blockDeclaration	(
+				"\n"
+				"%retbuf    = OpTypeStruct %i32arr\n"
+				"%retbufptr = OpTypePointer ${BLOCK_POINTER_TYPE} %retbuf\n"
+				"%ret       = OpVariable %retbufptr ${BLOCK_POINTER_TYPE}\n\n");
+
+			specializations["RETVAL_ASSEMBLY"] =
+				"%retloc    = OpAccessChain %i32ptr %ret %zero %x\n"
+				+ std::string(cases[caseNdx].retValAssembly);
+
+			specializations["RETVAL_BUF_DECORATE"]	= blockDecoration.specialize(specializations);
+			specializations["RETVAL_BUF_DECL"]		= blockDeclaration.specialize(specializations);
+		}
+		else
+		{
+			specializations["RETVAL_ASSEMBLY"]		= "";
+			specializations["RETVAL_BUF_DECORATE"]	= "";
+			specializations["RETVAL_BUF_DECL"]		= "";
+		}
+
 		spec.assembly							= shaderTemplate.specialize(specializations);
 
 		if (useStorageBuffer)
@@ -645,7 +694,33 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 
 		spec.inputs.push_back(BufferSp(new OpAtomicBuffer(numElements, cases[caseNdx].numOutputElements, cases[caseNdx].opAtomic, BUFFERTYPE_INPUT)));
 		spec.outputs.push_back(BufferSp(new OpAtomicBuffer(numElements, cases[caseNdx].numOutputElements, cases[caseNdx].opAtomic, BUFFERTYPE_EXPECTED)));
+		if (verifyReturnValues)
+			spec.outputs.push_back(BufferSp(new OpAtomicBuffer(numElements, cases[caseNdx].numOutputElements, cases[caseNdx].opAtomic, BUFFERTYPE_ATOMIC_RET)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+		if (verifyReturnValues)
+		{
+			switch (cases[caseNdx].opAtomic)
+			{
+				case OPATOMIC_IADD:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_IADD>;
+					break;
+				case OPATOMIC_ISUB:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_ISUB>;
+					break;
+				case OPATOMIC_IINC:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_IINC>;
+					break;
+				case OPATOMIC_IDEC:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_IDEC>;
+					break;
+				case OPATOMIC_COMPEX:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_COMPEX>;
+					break;
+				default:
+					DE_FATAL("Unsupported OpAtomic type for return value verification");
+			}
+		}
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
 
@@ -9313,7 +9388,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx));
 	computeTests->addChild(createOpAtomicGroup(testCtx, false));
-	computeTests->addChild(createOpAtomicGroup(testCtx, true)); // Using new StorageBuffer decoration
+	computeTests->addChild(createOpAtomicGroup(testCtx, true));					// Using new StorageBuffer decoration
+	computeTests->addChild(createOpAtomicGroup(testCtx, false, 1024, true));	// Return value validation
 	computeTests->addChild(createOpLineGroup(testCtx));
 	computeTests->addChild(createOpModuleProcessedGroup(testCtx));
 	computeTests->addChild(createOpNoLineGroup(testCtx));

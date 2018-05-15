@@ -1910,6 +1910,14 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 				   " is a required capability!");
 	}
 
+	if (OPTYPE_ELECT != caseDef.opType && VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage)
+	{
+		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Subgroup basic operation non-compute stage test required that ballot operations are supported!");
+		}
+	}
+
 	const deUint32						inputDatasCount	= OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? 3u : 2u;
 	std::vector<subgroups::SSBOData>	inputDatas		(inputDatasCount);
 
