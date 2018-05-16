@@ -729,7 +729,6 @@ void GeometryShader_gl_in_ArrayLengthTest::deinit()
 	gl.bindVertexArray(0);
 	gl.bindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0 /* offset */, 0 /* id */);
 	gl.bindBuffer(GL_ARRAY_BUFFER, 0);
-
 	/* Delete everything */
 	if (0 != m_vertex_array_object_id)
 	{
@@ -1087,7 +1086,6 @@ void GeometryShader_gl_PointSize_ValueTest::deinit()
 	/* Bind defaults */
 	gl.useProgram(0);
 	gl.bindVertexArray(0);
-	gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0 /* texture */, 0 /* level */);
 	gl.bindTexture(GL_TEXTURE_2D, 0);
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
@@ -1313,7 +1311,6 @@ void GeometryShader_gl_Position_ValueTest::deinit()
 	/* Bind default values */
 	gl.useProgram(0);
 	gl.bindVertexArray(0);
-	gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0 /* texture */, 0 /* level */);
 	gl.bindTexture(GL_TEXTURE_2D, 0);
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
