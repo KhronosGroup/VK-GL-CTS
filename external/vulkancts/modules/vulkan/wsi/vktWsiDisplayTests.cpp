@@ -457,7 +457,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
 		TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
 	if (displayCountReported == 0)
-		TCU_THROW(ResourceError, std::string("Cannot perform test: no displays found").c_str());
+		TCU_THROW(NotSupportedError, std::string("Cannot perform test: no displays found").c_str());
 
 	displayCountToTest = displayCountReported;
 	if (displayCountReported > MAX_TESTED_DISPLAY_COUNT)
@@ -585,7 +585,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
 		TCU_FAIL("Failed to retrieve displays");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	displaySet = DisplaySet(displaysVector.begin(), displaysVector.end());
 
@@ -708,7 +708,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayPlaneSupportedDisplay
 		TCU_FAIL("Failed to retrieve displays");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	displaySet = DisplaySet(displaysVector.begin(), displaysVector.end());
 
@@ -832,7 +832,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModePropertiesKHR(voi
 		TCU_FAIL("Failed to retrieve displays list");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	for (DisplayVector::iterator	it =  displaysVector.begin();
 									it != displaysVector.end();
@@ -924,7 +924,7 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayModeKHR(void)
 		TCU_FAIL("Failed to retrieve displays");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	for (DisplayVector::iterator	it =  displaysVector.begin();
 									it != displaysVector.end();
@@ -1037,7 +1037,20 @@ tcu::TestStatus	DisplayCoverageTestInstance::testGetDisplayPlaneCapabilitiesKHR(
 		TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
 	if (planeCountReported == 0)
+	{
+		DisplayVector	displaysVector;
+
+		// If we don't have any displays then it's alright to have no planes, as
+		// per the Vulkan Spec:
+		//		Devices must support at least one plane on each display
+		if (!getDisplays(displaysVector))
+			TCU_FAIL("Failed to retrieve displays");
+
+		if (displaysVector.empty())
+			TCU_THROW(NotSupportedError, "No display planes reported");
+
 		TCU_FAIL("No planes defined");
+	}
 
 	if (planeCountReported > MAX_TESTED_PLANE_COUNT)
 	{
@@ -1175,6 +1188,13 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR(vo
 	DisplayVector								displaysVector;
 	VkResult									result;
 
+	// Get displays
+	if (!getDisplays(displaysVector))
+		TCU_FAIL("Failed to retrieve displays");
+
+	if (displaysVector.empty())
+		TCU_THROW(NotSupportedError, "No displays reported");
+
 	// Get planes
 	result = m_vki.getPhysicalDeviceDisplayPlanePropertiesKHR(	m_physicalDevice,		// VkPhysicalDevice				physicalDevice
 																&planeCountReported,	// uint32_t*					pPropertyCount
@@ -1210,13 +1230,6 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR(vo
 	if (planeCountRetrieved != planeCountTested)
 		TCU_FAIL_STR(	string("Number of planes requested (") + de::toString(planeCountTested) +
 						") does not match retrieved (" + de::toString(planeCountRetrieved) + ")");
-
-	// Get displays
-	if (!getDisplays(displaysVector))
-		TCU_FAIL("Failed to retrieve displays");
-
-	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
 
 	// Iterate through displays-modes
 	for (DisplayVector::iterator	it =  displaysVector.begin();
