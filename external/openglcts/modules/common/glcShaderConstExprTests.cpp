@@ -238,7 +238,7 @@ void createTestCasesForAllShaderTypes(const ShaderExecutorParams& params, std::v
 		std::string		caseName(params.caseName + '_' + getShaderTypeName(shaderType));
 
 		outputTests.push_back(
-			new ExecutorTestCase<OutputType>(context, caseName.c_str(), shaderType, shaderSpec, params.outputFloat));
+			new ExecutorTestCase<OutputType>(context, caseName.c_str(), shaderType, shaderSpec, static_cast<OutputType>(params.outputFloat)));
 	}
 }
 

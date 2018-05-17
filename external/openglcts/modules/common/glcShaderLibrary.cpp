@@ -777,7 +777,7 @@ void ShaderParser::parseValueElement(DataType expectedDataType, ShaderCase::Valu
 			}
 
 			assumeToken(TOKEN_INT_LITERAL);
-			elems[scalarNdx].int32 = signMult * parseIntLiteral(m_curTokenStr.c_str());
+			elems[scalarNdx].int32 = (deInt32)(signMult * parseIntLiteral(m_curTokenStr.c_str()));
 			advanceToken(TOKEN_INT_LITERAL);
 		}
 		else
@@ -985,7 +985,7 @@ void ShaderParser::parseShaderCase(vector<tcu::TestNode*>& shaderNodeList)
 			std::string postfix	= "";
 
 			assumeToken(TOKEN_INT_LITERAL);
-			versionNum = parseIntLiteral(m_curTokenStr.c_str());
+			versionNum = (int)parseIntLiteral(m_curTokenStr.c_str());
 			advanceToken();
 
 			if (m_curToken == TOKEN_IDENTIFIER)

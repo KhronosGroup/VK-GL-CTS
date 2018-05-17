@@ -713,7 +713,7 @@ void TestClampModeForInternalFormat::calcTextureEpsilon(const GLsizei textureBit
 		{
 			const float zeroEpsilon = deFloatLdExp(1.0f, -13);
 			textureEpsilon[i]		= (1.0f / (deFloatLdExp(1.0f, bits) - 1.0f)) + zeroEpsilon;
-			textureEpsilon[i]		= deMin(1.0f, textureEpsilon[i]);
+			textureEpsilon[i]		= (float)deMin(1.0f, textureEpsilon[i]);
 		}
 
 		/* If we have 8 bits framebuffer, we should hit the right value within one intensity level. */
