@@ -130,6 +130,7 @@ def prefixName (prefix, name):
 	name = name.replace("WIN_32_", "WIN32_")
 	name = name.replace("8_BIT_", "8BIT_")
 	name = name.replace("16_BIT_", "16BIT_")
+	name = name.replace("INT_64_", "INT64_")
 	name = name.replace("D_3_D_12_", "D3D12_")
 	name = name.replace("IOSSURFACE_", "IOS_SURFACE_")
 	name = name.replace("MAC_OS", "MACOS_")
