@@ -284,7 +284,7 @@ static std::string generatePassthroughFragmentShader (const ShaderSpec& shaderSp
 {
 	std::ostringstream	src;
 
-	src <<"#version 310 es\n";
+	src <<"#version 450\n";
 
 	if (!shaderSpec.globalDeclarations.empty())
 		src << shaderSpec.globalDeclarations << "\n";
