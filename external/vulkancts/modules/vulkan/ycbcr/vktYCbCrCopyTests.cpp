@@ -917,6 +917,9 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 				}
 			}
 
+			bool ignoreLsb6Bits = areLsb6BitsDontCare(srcData.getFormat(), dstData.getFormat());
+			bool ignoreLsb4Bits = areLsb4BitsDontCare(srcData.getFormat(), dstData.getFormat());
+
 			for (deUint32 planeNdx = 0; planeNdx < result.getDescription().numPlanes; ++planeNdx)
 			{
 				for (size_t byteNdx = 0; byteNdx < result.getPlaneSize(planeNdx); byteNdx++)
@@ -924,13 +927,38 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 					const deUint8	res	= ((const deUint8*)result.getPlanePtr(planeNdx))[byteNdx];
 					const deUint8	ref	= ((const deUint8*)reference.getPlanePtr(planeNdx))[byteNdx];
 
-					if (res != ref)
+					if (!(byteNdx & 0x01) && (ignoreLsb6Bits))
 					{
-						log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx << ", Expected: " << (deUint32)ref << ", Got: " << (deUint32)res << TestLog::EndMessage;
-						errorCount++;
+						if ((res & 0xC0) != (ref & 0xC0))
+						{
+							log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx << ", Expected: " << (deUint32)(ref & 0xC0) << ", Got: " << (deUint32)(res & 0xC0) << TestLog::EndMessage;
+							errorCount++;
 
-						if (errorCount > maxErrorCount)
-							break;
+							if (errorCount > maxErrorCount)
+								break;
+						}
+					}
+					else if (!(byteNdx & 0x01) && (ignoreLsb4Bits))
+					{
+						if ((res & 0xF0) != (ref & 0xF0))
+						{
+							log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx << ", Expected: " << (deUint32)(ref & 0xF0) << ", Got: " << (deUint32)(res & 0xF0) << TestLog::EndMessage;
+							errorCount++;
+
+							if (errorCount > maxErrorCount)
+								break;
+						}
+					}
+					else
+					{
+						if (res != ref)
+						{
+							log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx << ", Expected: " << (deUint32)ref << ", Got: " << (deUint32)res << TestLog::EndMessage;
+							errorCount++;
+
+							if (errorCount > maxErrorCount)
+								break;
+						}
 					}
 				}
 
