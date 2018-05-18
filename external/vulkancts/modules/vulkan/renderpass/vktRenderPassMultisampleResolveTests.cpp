@@ -764,6 +764,7 @@ private:
 	void											logImage							(const std::string&					name,
 																						 const tcu::ConstPixelBufferAccess&	image);
 
+	const bool										m_featuresSupported;
 	const bool										m_extensionSupported;
 	const RenderPassType							m_renderPassType;
 
@@ -798,6 +799,7 @@ private:
 
 MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config)
 	: TestInstance				(context)
+	, m_featuresSupported		((config.layerCount > 1) && context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER))
 	, m_extensionSupported		((config.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
 	, m_renderPassType			(config.renderPassType)
 	, m_format					(config.format)
@@ -827,16 +829,6 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_sum						(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::FLOAT), m_width, m_height, m_layerCount)
 	, m_sampleMask				(0x0u)
 {
-	if (m_layerCount > 1)
-	{
-		const InstanceInterface&		vki			= context.getInstanceInterface();
-		const VkPhysicalDevice			physDevice	= context.getPhysicalDevice();
-		const VkPhysicalDeviceFeatures	features	= getPhysicalDeviceFeatures (vki, physDevice);
-
-		if (!features.geometryShader)
-			TCU_THROW(NotSupportedError, "Missing feature: geometryShader");
-	}
-
 	tcu::clear(m_sum.getAccess(), Vec4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 
