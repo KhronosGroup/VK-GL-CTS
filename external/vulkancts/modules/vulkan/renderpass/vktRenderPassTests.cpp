@@ -5848,6 +5848,13 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 																vk::VK_DEPENDENCY_BY_REGION_BIT));
 
+								deps.push_back(SubpassDependency(1, 1,
+																vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+																vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																vk::VK_DEPENDENCY_BY_REGION_BIT));
+
 								if (useInputAspect)
 								{
 									const VkInputAttachmentAspectReference inputAspect =
@@ -6094,6 +6101,13 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 																vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 
+																vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
+																vk::VK_DEPENDENCY_BY_REGION_BIT));
+
+								deps.push_back(SubpassDependency(1, 1,
+																vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+																vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 																vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 																vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 																vk::VK_DEPENDENCY_BY_REGION_BIT));
