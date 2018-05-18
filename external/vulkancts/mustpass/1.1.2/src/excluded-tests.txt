@@ -57,3 +57,10 @@ dEQP-VK.tessellation.primitive_discard.triangles_fractional_odd_spacing_cw_valid
 dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_ccw_valid_levels
 dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_cw_valid_levels
 
+# Excluded from 1.1.2 only due to being problematic for an IHV
+dEQP-VK.ssbo.layout.random.16bit.nested_structs_arrays_instance_arrays.10
+dEQP-VK.ssbo.layout.random.16bit.relaxed.26
+dEQP-VK.ssbo.layout.random.16bit.relaxed.49
+dEQP-VK.ssbo.layout.random.16bit.relaxed.55
+dEQP-VK.ssbo.layout.random.16bit.relaxed.73
+dEQP-VK.ssbo.layout.random.8bit.nested_structs_arrays.14

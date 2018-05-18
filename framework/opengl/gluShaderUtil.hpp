@@ -209,6 +209,31 @@ enum DataType
 	TYPE_INT_IMAGE_BUFFER,
 	TYPE_UINT_IMAGE_BUFFER,
 
+	TYPE_UINT8,
+	TYPE_UINT8_VEC2,
+	TYPE_UINT8_VEC3,
+	TYPE_UINT8_VEC4,
+
+	TYPE_INT8,
+	TYPE_INT8_VEC2,
+	TYPE_INT8_VEC3,
+	TYPE_INT8_VEC4,
+
+	TYPE_UINT16,
+	TYPE_UINT16_VEC2,
+	TYPE_UINT16_VEC3,
+	TYPE_UINT16_VEC4,
+
+	TYPE_INT16,
+	TYPE_INT16_VEC2,
+	TYPE_INT16_VEC3,
+	TYPE_INT16_VEC4,
+
+	TYPE_FLOAT16,
+	TYPE_FLOAT16_VEC2,
+	TYPE_FLOAT16_VEC3,
+	TYPE_FLOAT16_VEC4,
+
 	TYPE_LAST
 };
 
@@ -231,9 +256,9 @@ inline bool		isDataTypeMatrix			(DataType dataType)	{ return ((dataType >= TYPE_
 inline bool		isDataTypeIntOrIVec			(DataType dataType)	{ return (dataType >= TYPE_INT)        && (dataType <= TYPE_INT_VEC4);     }
 inline bool		isDataTypeUintOrUVec		(DataType dataType)	{ return (dataType >= TYPE_UINT)       && (dataType <= TYPE_UINT_VEC4);    }
 inline bool		isDataTypeBoolOrBVec		(DataType dataType)	{ return (dataType >= TYPE_BOOL)       && (dataType <= TYPE_BOOL_VEC4);    }
-inline bool		isDataTypeScalar			(DataType dataType) { return (dataType == TYPE_FLOAT) || (dataType == TYPE_DOUBLE) ||(dataType == TYPE_INT) || (dataType == TYPE_UINT) || (dataType == TYPE_BOOL); }
-inline bool		isDataTypeVector			(DataType dataType) { return deInRange32(dataType, TYPE_FLOAT_VEC2, TYPE_FLOAT_VEC4) || deInRange32(dataType, TYPE_DOUBLE_VEC2, TYPE_DOUBLE_VEC4) || deInRange32(dataType, TYPE_INT_VEC2, TYPE_INT_VEC4) || deInRange32(dataType, TYPE_UINT_VEC2, TYPE_UINT_VEC4) || deInRange32(dataType, TYPE_BOOL_VEC2, TYPE_BOOL_VEC4); }
-inline bool		isDataTypeScalarOrVector	(DataType dataType) { return deInRange32(dataType, TYPE_FLOAT, TYPE_FLOAT_VEC4) || deInRange32(dataType, TYPE_DOUBLE, TYPE_DOUBLE_VEC4) || deInRange32(dataType, TYPE_INT, TYPE_INT_VEC4) || deInRange32(dataType, TYPE_UINT, TYPE_UINT_VEC4) || deInRange32(dataType, TYPE_BOOL, TYPE_BOOL_VEC4); }
+inline bool		isDataTypeScalar			(DataType dataType) { return (dataType == TYPE_FLOAT) || (dataType == TYPE_DOUBLE) ||(dataType == TYPE_INT) || (dataType == TYPE_UINT) || (dataType == TYPE_BOOL) || (dataType == TYPE_UINT8) || (dataType == TYPE_INT8) || (dataType == TYPE_UINT16) || (dataType == TYPE_INT16) || (dataType == TYPE_FLOAT16); }
+inline bool		isDataTypeVector			(DataType dataType) { return deInRange32(dataType, TYPE_FLOAT_VEC2, TYPE_FLOAT_VEC4) || deInRange32(dataType, TYPE_DOUBLE_VEC2, TYPE_DOUBLE_VEC4) || deInRange32(dataType, TYPE_INT_VEC2, TYPE_INT_VEC4) || deInRange32(dataType, TYPE_UINT_VEC2, TYPE_UINT_VEC4) || deInRange32(dataType, TYPE_BOOL_VEC2, TYPE_BOOL_VEC4) || deInRange32(dataType, TYPE_UINT8_VEC2, TYPE_UINT8_VEC4) || deInRange32(dataType, TYPE_INT8_VEC2, TYPE_INT8_VEC4) || deInRange32(dataType, TYPE_UINT16_VEC2, TYPE_UINT16_VEC4) || deInRange32(dataType, TYPE_INT16_VEC2, TYPE_INT16_VEC4) || deInRange32(dataType, TYPE_FLOAT16_VEC2, TYPE_FLOAT16_VEC4); }
+inline bool		isDataTypeScalarOrVector	(DataType dataType) { return deInRange32(dataType, TYPE_FLOAT, TYPE_FLOAT_VEC4) || deInRange32(dataType, TYPE_DOUBLE, TYPE_DOUBLE_VEC4) || deInRange32(dataType, TYPE_INT, TYPE_INT_VEC4) || deInRange32(dataType, TYPE_UINT, TYPE_UINT_VEC4) || deInRange32(dataType, TYPE_BOOL, TYPE_BOOL_VEC4) || deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC4) || deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC4) || deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC4) || deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC4) || deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_VEC4); }
 inline bool		isDataTypeSampler			(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_1D) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE); }
 inline bool		isDataTypeImage				(DataType dataType)	{ return (dataType >= TYPE_IMAGE_2D) && (dataType <= TYPE_UINT_IMAGE_3D); }
 inline bool		isDataTypeSamplerMultisample(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_2D_MULTISAMPLE) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE); }
@@ -241,6 +266,8 @@ inline bool		isDataTypeAtomicCounter		(DataType dataType)	{ return dataType == T
 inline bool		isDataTypeSamplerBuffer		(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_BUFFER) && (dataType <= TYPE_UINT_SAMPLER_BUFFER); }
 inline bool		isDataTypeSamplerMSArray	(DataType dataType)	{ return (dataType >= TYPE_SAMPLER_2D_MULTISAMPLE_ARRAY) && (dataType <= TYPE_UINT_SAMPLER_2D_MULTISAMPLE_ARRAY); }
 inline bool		isDataTypeImageBuffer		(DataType dataType)	{ return (dataType >= TYPE_IMAGE_BUFFER) && (dataType <= TYPE_UINT_IMAGE_BUFFER); }
+inline bool		isDataTypeExplicitPrecision	(DataType dataType)	{ return deInRange32(dataType, TYPE_UINT8, TYPE_UINT8_VEC4) || deInRange32(dataType, TYPE_INT8, TYPE_INT8_VEC4) || deInRange32(dataType, TYPE_UINT16, TYPE_UINT16_VEC4) || deInRange32(dataType, TYPE_INT16, TYPE_INT16_VEC4) || deInRange32(dataType, TYPE_FLOAT16, TYPE_FLOAT16_VEC4); }
+inline bool		dataTypeSupportsPrecisionModifier(DataType dataType)	{ return !isDataTypeBoolOrBVec(dataType) && !isDataTypeExplicitPrecision(dataType);    }
 
 int				getDataTypeMatrixNumRows	(DataType dataType);
 int				getDataTypeMatrixNumColumns	(DataType dataType);
