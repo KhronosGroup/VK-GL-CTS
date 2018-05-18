@@ -113,6 +113,12 @@ void RandomUniformBlockCase::generateBlock (de::Random& rnd, deUint32 layoutFlag
 	if (m_features & FEATURE_STD140_LAYOUT)
 		layoutFlagCandidates.push_back(LAYOUT_STD140);
 
+	if (m_features & FEATURE_16BIT_STORAGE)
+		layoutFlags |= LAYOUT_16BIT_STORAGE;
+
+	if (m_features & FEATURE_8BIT_STORAGE)
+		layoutFlags |= LAYOUT_8BIT_STORAGE;
+
 	layoutFlags |= rnd.choose<deUint32>(layoutFlagCandidates.begin(), layoutFlagCandidates.end());
 
 	if (m_features & FEATURE_MATRIX_LAYOUT)
@@ -195,6 +201,17 @@ VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bo
 		typeCandidates.push_back(glu::TYPE_UINT);
 		typeCandidates.push_back(glu::TYPE_BOOL);
 
+		if (m_features & FEATURE_16BIT_STORAGE) {
+			typeCandidates.push_back(glu::TYPE_UINT16);
+			typeCandidates.push_back(glu::TYPE_INT16);
+			typeCandidates.push_back(glu::TYPE_FLOAT16);
+		}
+
+		if (m_features & FEATURE_8BIT_STORAGE) {
+			typeCandidates.push_back(glu::TYPE_UINT8);
+			typeCandidates.push_back(glu::TYPE_INT8);
+		}
+
 		if (m_features & FEATURE_VECTORS)
 		{
 			typeCandidates.push_back(glu::TYPE_FLOAT_VEC2);
@@ -209,6 +226,27 @@ VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bo
 			typeCandidates.push_back(glu::TYPE_BOOL_VEC2);
 			typeCandidates.push_back(glu::TYPE_BOOL_VEC3);
 			typeCandidates.push_back(glu::TYPE_BOOL_VEC4);
+			if (m_features & FEATURE_16BIT_STORAGE)
+			{
+				typeCandidates.push_back(glu::TYPE_FLOAT16_VEC2);
+				typeCandidates.push_back(glu::TYPE_FLOAT16_VEC3);
+				typeCandidates.push_back(glu::TYPE_FLOAT16_VEC4);
+				typeCandidates.push_back(glu::TYPE_INT16_VEC2);
+				typeCandidates.push_back(glu::TYPE_INT16_VEC3);
+				typeCandidates.push_back(glu::TYPE_INT16_VEC4);
+				typeCandidates.push_back(glu::TYPE_UINT16_VEC2);
+				typeCandidates.push_back(glu::TYPE_UINT16_VEC3);
+				typeCandidates.push_back(glu::TYPE_UINT16_VEC4);
+			}
+			if (m_features & FEATURE_8BIT_STORAGE)
+			{
+				typeCandidates.push_back(glu::TYPE_INT8_VEC2);
+				typeCandidates.push_back(glu::TYPE_INT8_VEC3);
+				typeCandidates.push_back(glu::TYPE_INT8_VEC4);
+				typeCandidates.push_back(glu::TYPE_UINT8_VEC2);
+				typeCandidates.push_back(glu::TYPE_UINT8_VEC3);
+				typeCandidates.push_back(glu::TYPE_UINT8_VEC4);
+			}
 		}
 
 		if (m_features & FEATURE_MATRICES)
@@ -226,7 +264,7 @@ VarType RandomUniformBlockCase::generateType (de::Random& rnd, int typeDepth, bo
 		glu::DataType	type	= rnd.choose<glu::DataType>(typeCandidates.begin(), typeCandidates.end());
 		deUint32		flags	= (m_shuffleUniformMembers ? static_cast<deUint32>(LAYOUT_OFFSET) : 0u);
 
-		if (!glu::isDataTypeBoolOrBVec(type))
+		if (glu::dataTypeSupportsPrecisionModifier(type))
 		{
 			// Precision.
 			static const deUint32 precisionCandidates[] = { PRECISION_LOW, PRECISION_MEDIUM, PRECISION_HIGH };

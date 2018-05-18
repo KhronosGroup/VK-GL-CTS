@@ -275,6 +275,26 @@ const char* getDataTypeName (DataType dataType)
 		"imageBuffer",
 		"iimageBuffer",
 		"uimageBuffer",
+		"uint8_t",
+		"u8vec2",
+		"u8vec3",
+		"u8vec4",
+		"int8_t",
+		"i8vec2",
+		"i8vec3",
+		"i8vec4",
+		"uint16_t",
+		"u16vec2",
+		"u16vec3",
+		"u16vec4",
+		"int16_t",
+		"i16vec2",
+		"i16vec3",
+		"i16vec4",
+		"float16_t",
+		"f16vec2",
+		"f16vec3",
+		"f16vec4",
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_names) == TYPE_LAST);
@@ -380,6 +400,26 @@ int getDataTypeScalarSize (DataType dataType)
 		1,		// imageBuffer
 		1,		// iimageBuffer
 		1,		// uimageBuffer
+		1,		// uint8_t
+		2,		// u8vec2
+		3,		// u8vec3
+		4,		// u8vec4
+		1,		// int8_t
+		2,		// i8vec2
+		3,		// i8vec3
+		4,		// i8vec4
+		1,		// uint16_t
+		2,		// u16vec2
+		3,		// u16vec3
+		4,		// u16vec4
+		1,		// int16_t
+		2,		// i16vec2
+		3,		// i16vec3
+		4,		// i16vec4
+		1,		// float16_t
+		2,		// f16vec2
+		3,		// f16vec3
+		4,		// f16vec4
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_sizes) == TYPE_LAST);
@@ -485,6 +525,26 @@ DataType getDataTypeScalarType (DataType dataType)
 		TYPE_IMAGE_BUFFER,						// imageBuffer
 		TYPE_INT_IMAGE_BUFFER,					// iimageBuffer
 		TYPE_UINT_IMAGE_BUFFER,					// uimageBuffer
+		TYPE_UINT8,								// uint8_t
+		TYPE_UINT8,								// u8vec2
+		TYPE_UINT8,								// u8vec3
+		TYPE_UINT8,								// u8vec4
+		TYPE_INT8,								// int8_t
+		TYPE_INT8,								// i8vec2
+		TYPE_INT8,								// i8vec3
+		TYPE_INT8,								// i8vec4
+		TYPE_UINT16,							// uint16_t
+		TYPE_UINT16,							// u16vec2
+		TYPE_UINT16,							// u16vec3
+		TYPE_UINT16,							// u16vec4
+		TYPE_INT16,								// int16_t
+		TYPE_INT16,								// i16vec2
+		TYPE_INT16,								// i16vec3
+		TYPE_INT16,								// i16vec4
+		TYPE_FLOAT16,							// float16_t
+		TYPE_FLOAT16,							// f16vec2
+		TYPE_FLOAT16,							// f16vec3
+		TYPE_FLOAT16,							// f16vec4
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_scalarTypes) == TYPE_LAST);
@@ -590,6 +650,26 @@ DataType getDataTypeFloatScalars (DataType dataType)
 		TYPE_INVALID,		// imageBuffer
 		TYPE_INVALID,		// iimageBuffer
 		TYPE_INVALID,		// uimageBuffer
+		TYPE_FLOAT,			// uint8_t
+		TYPE_FLOAT_VEC2,	// u8vec2
+		TYPE_FLOAT_VEC3,	// u8vec3
+		TYPE_FLOAT_VEC4,	// u8vec4
+		TYPE_FLOAT,			// int8_t
+		TYPE_FLOAT_VEC2,	// i8vec2
+		TYPE_FLOAT_VEC3,	// i8vec3
+		TYPE_FLOAT_VEC4,	// i8vec4
+		TYPE_FLOAT,			// uint16_t
+		TYPE_FLOAT_VEC2,	// u16vec2
+		TYPE_FLOAT_VEC3,	// u16vec3
+		TYPE_FLOAT_VEC4,	// u16vec4
+		TYPE_FLOAT,			// int16_t
+		TYPE_FLOAT_VEC2,	// i16vec2
+		TYPE_FLOAT_VEC3,	// i16vec3
+		TYPE_FLOAT_VEC4,	// i16vec4
+		TYPE_FLOAT,			// float16_t
+		TYPE_FLOAT_VEC2,	// f16vec2
+		TYPE_FLOAT_VEC3,	// f16vec3
+		TYPE_FLOAT_VEC4,	// f16vec4
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_floatTypes) == TYPE_LAST);
@@ -695,6 +775,26 @@ DataType getDataTypeDoubleScalars (DataType dataType)
 		TYPE_INVALID,		// imageBuffer
 		TYPE_INVALID,		// iimageBuffer
 		TYPE_INVALID,		// uimageBuffer
+		TYPE_DOUBLE,		// uint18_t
+		TYPE_DOUBLE_VEC2,	// u8vec2
+		TYPE_DOUBLE_VEC3,	// u8vec3
+		TYPE_DOUBLE_VEC4,	// u8vec4
+		TYPE_DOUBLE,		// int8_t
+		TYPE_DOUBLE_VEC2,	// i8vec2
+		TYPE_DOUBLE_VEC3,	// i8vec3
+		TYPE_DOUBLE_VEC4,	// i8vec4
+		TYPE_DOUBLE,		// uint16_t
+		TYPE_DOUBLE_VEC2,	// u16vec2
+		TYPE_DOUBLE_VEC3,	// u16vec3
+		TYPE_DOUBLE_VEC4,	// u16vec4
+		TYPE_DOUBLE,		// int16_t
+		TYPE_DOUBLE_VEC2,	// i16vec2
+		TYPE_DOUBLE_VEC3,	// i16vec3
+		TYPE_DOUBLE_VEC4,	// i16vec4
+		TYPE_DOUBLE,		// float16_t
+		TYPE_DOUBLE_VEC2,	// f16vec2
+		TYPE_DOUBLE_VEC3,	// f16vec3
+		TYPE_DOUBLE_VEC4,	// f16vec4
 	};
 
 	DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_doubleTypes) == TYPE_LAST);
@@ -712,6 +812,11 @@ DataType getDataTypeVector (DataType scalarType, int size)
 		case TYPE_INT:
 		case TYPE_UINT:
 		case TYPE_BOOL:
+		case TYPE_UINT8:
+		case TYPE_INT8:
+		case TYPE_UINT16:
+		case TYPE_INT16:
+		case TYPE_FLOAT16:
 			return (DataType)((int)scalarType + size - 1);
 		default:
 			return TYPE_INVALID;
