@@ -1448,15 +1448,20 @@ void uploadBufferData (const DeviceInterface&	vk,
 					   VkDevice					device,
 					   const Allocation&		memory,
 					   size_t					size,
-					   const void*				data)
+					   const void*				data,
+					   VkDeviceSize				nonCoherentAtomSize)
 {
+	// Expand the range to flush to account for the nonCoherentAtomSize
+	VkDeviceSize roundedOffset = (VkDeviceSize)deAlignSize(deUint32(memory.getOffset()), deUint32(nonCoherentAtomSize));
+	VkDeviceSize roundedSize = (VkDeviceSize)deAlignSize(deUint32(memory.getOffset() + size - roundedOffset), deUint32(nonCoherentAtomSize));
+
 	const VkMappedMemoryRange range =
 	{
 		VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType;
 		DE_NULL,								// pNext;
 		memory.getMemory(),						// mem;
-		memory.getOffset(),						// offset;
-		(VkDeviceSize)size						// size;
+		roundedOffset,							// offset;
+		roundedSize,							// size;
 	};
 	void* const ptr = memory.getHostPtr();
 
@@ -1925,7 +1930,9 @@ public:
 			m_vertexBufferMemory	= allocateBuffer(vki, vk, physDevice, device, *m_vertexBuffer, MemoryRequirement::HostVisible, allocator, allocationKind);
 
 			bindBufferMemory(vk, device, *m_vertexBuffer, m_vertexBufferMemory->getMemory(), m_vertexBufferMemory->getOffset());
-			uploadBufferData(vk, device, *m_vertexBufferMemory, renderQuad.getVertexDataSize(), renderQuad.getVertexPointer());
+
+			const vk::VkPhysicalDeviceProperties properties = vk::getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+			uploadBufferData(vk, device, *m_vertexBufferMemory, renderQuad.getVertexDataSize(), renderQuad.getVertexPointer(), properties.limits.nonCoherentAtomSize);
 
 			if (renderInfo.getInputAttachmentCount() > 0)
 			{
