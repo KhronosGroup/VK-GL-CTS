@@ -29,6 +29,7 @@
 #include "deUniquePtr.hpp"
 #include "vkPrograms.hpp"
 #include "vkApiVersion.hpp"
+#include "vktTestCaseDefs.hpp"
 
 namespace glu
 {
@@ -85,6 +86,7 @@ public:
 	bool										contextSupports					(const deUint32 requiredApiVersionBits) const;
 	bool										requireDeviceExtension			(const std::string& required);
 	bool										requireInstanceExtension		(const std::string& required);
+	bool										requireDeviceCoreFeature		(const DeviceCoreFeature requiredDeviceCoreFeature);
 
 protected:
 	tcu::TestContext&							m_testCtx;

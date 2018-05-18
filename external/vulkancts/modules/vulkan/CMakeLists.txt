@@ -65,6 +65,7 @@ include_directories(
 	)
 
 set(DEQP_VK_SRCS
+	vktTestCaseDefs.hpp
 	vktTestCase.cpp
 	vktTestCase.hpp
 	vktTestCaseUtil.cpp

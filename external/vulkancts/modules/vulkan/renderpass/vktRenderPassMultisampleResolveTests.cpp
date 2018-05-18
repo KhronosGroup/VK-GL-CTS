@@ -827,6 +827,7 @@ private:
 	void											submitSwitch						(RenderPassType						renderPassType);
 	void											verify								(void);
 
+	const bool										m_featuresSupported;
 	const bool										m_extensionSupported;
 	const RenderPassType							m_renderPassType;
 
@@ -860,6 +861,7 @@ private:
 
 MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& context, TestConfig config)
 	: TestInstance				(context)
+	, m_featuresSupported		((config.layerCount > 1) && context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER))
 	, m_extensionSupported		((config.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
 	, m_renderPassType			(config.renderPassType)
 	, m_format					(config.format)
