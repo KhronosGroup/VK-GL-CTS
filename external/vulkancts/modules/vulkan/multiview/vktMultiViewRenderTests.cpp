@@ -780,7 +780,7 @@ Move<VkPipeline> MultiViewRenderTestInstance::makeGraphicsPipeline (const VkRend
 		1.0f,														// float									lineWidth;
 	};
 
-	const VkSampleCountFlagBits						sampleCountFlagBits					= (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex) ? VK_SAMPLE_COUNT_2_BIT :
+	const VkSampleCountFlagBits						sampleCountFlagBits					= (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex) ? VK_SAMPLE_COUNT_4_BIT :
 																						  VK_SAMPLE_COUNT_1_BIT;
 	const VkPipelineMultisampleStateCreateInfo		multisampleStateParams				=
 	{
@@ -2071,7 +2071,7 @@ tcu::TestStatus MultiViewMultsampleTestInstance::iterate (void)
 	const deUint32								subpassCount				= static_cast<deUint32>(m_parameters.viewMasks.size());
 
 	// FrameBuffer & renderPass
-	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, VK_SAMPLE_COUNT_2_BIT));
+	Unique<VkRenderPass>						renderPass					(makeRenderPass (*m_device, *m_logicalDevice, m_parameters.colorFormat, m_parameters.viewMasks, VK_SAMPLE_COUNT_4_BIT));
 
 	vector<VkImageView>							attachments;
 	attachments.push_back(m_colorAttachment->getImageView());
@@ -3433,7 +3433,7 @@ void multiViewRenderCreateTests (tcu::TestCaseGroup* group)
 	{
 		MovePtr<tcu::TestCaseGroup>	groupShader			(new tcu::TestCaseGroup(testCtx, shaderName[testTypeNdx].c_str(), ""));
 		const TestType				testType			= static_cast<TestType>(testTypeNdx);
-		const VkSampleCountFlagBits	sampleCountFlags	= (testType == TEST_TYPE_MULTISAMPLE) ? VK_SAMPLE_COUNT_2_BIT : VK_SAMPLE_COUNT_1_BIT;
+		const VkSampleCountFlagBits	sampleCountFlags	= (testType == TEST_TYPE_MULTISAMPLE) ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
 		const VkFormat				colorFormat			= (testType == TEST_TYPE_MULTISAMPLE) ? VK_FORMAT_R32G32B32A32_SFLOAT : VK_FORMAT_R8G8B8A8_UNORM;
 
 		if (testTypeNdx == TEST_TYPE_DEPTH || testTypeNdx == TEST_TYPE_STENCIL)
