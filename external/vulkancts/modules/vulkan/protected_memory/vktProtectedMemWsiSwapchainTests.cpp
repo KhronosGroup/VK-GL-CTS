@@ -204,6 +204,7 @@ struct TestParameters
 
 std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::wsi::Type								wsiType,
 																		   TestDimension								dimension,
+																		   const ProtectedContext&						context,
 																		   const vk::VkSurfaceCapabilitiesKHR&			capabilities,
 																		   const std::vector<vk::VkSurfaceFormatKHR>&	formats,
 																		   const std::vector<vk::VkPresentModeKHR>&		presentModes)
@@ -239,8 +240,62 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 	{
 		case TEST_DIMENSION_MIN_IMAGE_COUNT:
 		{
-			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, (capabilities.maxImageCount > 0) ? capabilities.maxImageCount : capabilities.minImageCount + 16u);
+			// Estimate how much memory each swapchain image consumes. This isn't perfect, since
+			// swapchain images may have additional constraints that equivalent non-swapchain
+			// images don't have. But it's the best we can do.
+			const vk::DeviceInterface&				vkd					= context.getDeviceInterface();
+			vk::VkDevice							device				= context.getDevice();
+			vk::VkMemoryRequirements				memoryRequirements;
+			{
+				const vk::VkImageCreateInfo			imageInfo			=
+				{
+					vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+					DE_NULL,
+					vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+					vk::VK_IMAGE_TYPE_2D,
+					baseParameters.imageFormat,
+					{
+						baseParameters.imageExtent.width,
+						baseParameters.imageExtent.height,
+						1,
+					},
+					1,	// mipLevels
+					baseParameters.imageArrayLayers,
+					vk::VK_SAMPLE_COUNT_1_BIT,
+					vk::VK_IMAGE_TILING_OPTIMAL,
+					baseParameters.imageUsage,
+					baseParameters.imageSharingMode,
+					baseParameters.queueFamilyIndexCount,
+					baseParameters.pQueueFamilyIndices,
+					vk::VK_IMAGE_LAYOUT_UNDEFINED
+				};
+				vk::Move<vk::VkImage>				image				= vk::createImage(vkd, device, &imageInfo);
 
+				memoryRequirements	= vk::getImageMemoryRequirements(vkd, device, *image);
+			}
+
+			// Determine the maximum memory heap space available for protected images
+			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
+			vk::VkDeviceSize						protectedHeapSize	= 0;
+			deUint32								protectedHeapMask	= 0;
+			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
+			{
+				deUint32 heapIndex	= memoryProperties.memoryTypes[memType].heapIndex;
+				if ((memoryRequirements.memoryTypeBits & (1u << memType)) != 0 &&
+					(memoryProperties.memoryTypes[memType].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT) != 0 &&
+					(protectedHeapMask & (1u << heapIndex)) == 0)
+				{
+					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
+					protectedHeapMask |= 1u << heapIndex;
+				}
+			}
+
+			// If the implementation doesn't have a max image count, min+16 means we won't clamp.
+			// Limit it to how many protected images we estimate can be allocated, with one image
+			// worth of slack for alignment, swapchain-specific constraints, etc.
+			const deUint32	maxImageCount		= de::min((capabilities.maxImageCount > 0) ? capabilities.maxImageCount : capabilities.minImageCount + 16u,
+														  deUint32(protectedHeapSize / memoryRequirements.size) - 1);
+			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, maxImageCount);
 			for (deUint32 imageCount = capabilities.minImageCount; imageCount <= maxImageCountToTest; ++imageCount)
 			{
 				cases.push_back(baseParameters);
@@ -404,10 +459,11 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 
 std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::wsi::Type					wsiType,
 																		   TestDimension					dimension,
-																		   const vk::InstanceInterface&		vki,
-																		   vk::VkPhysicalDevice				physicalDevice,
+																		   const ProtectedContext&			context,
 																		   vk::VkSurfaceKHR					surface)
 {
+	const vk::InstanceInterface&				vki				= context.getInstanceDriver();
+	vk::VkPhysicalDevice						physicalDevice	= context.getPhysicalDevice();
 	const vk::VkSurfaceCapabilitiesKHR			capabilities	= vk::wsi::getPhysicalDeviceSurfaceCapabilities(vki,
 																											   physicalDevice,
 																											   surface);
@@ -418,7 +474,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 																											    physicalDevice,
 																											    surface);
 
-	return generateSwapchainParameterCases(wsiType, dimension, capabilities, formats, presentModes);
+	return generateSwapchainParameterCases(wsiType, dimension, context, capabilities, formats, presentModes);
 }
 
 tcu::TestStatus createSwapchainTest (Context& baseCtx, TestParameters params)
@@ -432,10 +488,9 @@ tcu::TestStatus createSwapchainTest (Context& baseCtx, TestParameters params)
 	ProtectedContext								context		(baseCtx, params.wsiType, *native.display, *native.window, instExts, devExts);
 	vk::VkSurfaceKHR								surface		= context.getSurface();
 	const std::vector<vk::VkSwapchainCreateInfoKHR>	cases		(generateSwapchainParameterCases(params.wsiType,
-																						 params.dimension,
-																						 context.getInstanceDriver(),
-																						 context.getPhysicalDevice(),
-																						 surface));
+																								 params.dimension,
+																								 context,
+																								 surface));
 	deUint32										queueIdx	= context.getQueueFamilyIndex();
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{

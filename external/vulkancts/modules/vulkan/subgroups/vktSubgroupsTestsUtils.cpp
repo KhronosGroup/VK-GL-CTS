@@ -2528,8 +2528,21 @@ tcu::TestStatus vkt::subgroups::makeFragmentTest(
 
 			vk::VkBufferImageCopy region = {0, 0, 0,
 				{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0},
-				{width, height, 1}
-			};
+				{width, height, 1}};
+
+			const vk::VkImageSubresourceRange subresourceRange = {
+				VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u};
+
+			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
+																	VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+																	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+																	resultImage.getImage(), subresourceRange);
+
+			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer,
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u,
+					(const VkBufferMemoryBarrier*)DE_NULL, 1u, &prepareForTransferBarrier);
+
 			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer,
 					resultImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 					resultBuffer.getBuffer(), 1, &region);
