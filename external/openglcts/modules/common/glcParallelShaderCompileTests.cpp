@@ -47,14 +47,14 @@ static const char* shaderVersionGL = "#version 450\n";
 static const char* vShader		   = "\n"
 							 "in vec3 vertex;\n"
 							 "\n"
-							 "int main() {\n"
+							 "void main() {\n"
 							 "    gl_Position = vec4(vertex, 1);\n"
 							 "}\n";
 
 static const char* fShader = "\n"
-							 "out ver4 fragColor;\n"
+							 "out vec4 fragColor;\n"
 							 "\n"
-							 "int main() {\n"
+							 "void main() {\n"
 							 "    fragColor = vec4(1, 1, 1, 1);\n"
 							 "}\n";
 
