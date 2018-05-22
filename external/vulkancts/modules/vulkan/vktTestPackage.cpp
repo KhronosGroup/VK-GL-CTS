@@ -50,6 +50,7 @@
 #include "vktShaderRenderDerivateTests.hpp"
 #include "vktShaderRenderDiscardTests.hpp"
 #include "vktShaderRenderIndexingTests.hpp"
+#include "vktShaderRenderLimitTests.hpp"
 #include "vktShaderRenderLoopTests.hpp"
 #include "vktShaderRenderMatrixTests.hpp"
 #include "vktShaderRenderOperatorTests.hpp"
@@ -416,6 +417,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	glslTests->addChild(sr::createDerivateTests			(testCtx));
 	glslTests->addChild(sr::createDiscardTests			(testCtx));
 	glslTests->addChild(sr::createIndexingTests			(testCtx));
+	glslTests->addChild(sr::createLimitTests			(testCtx));
 	glslTests->addChild(sr::createLoopTests				(testCtx));
 	glslTests->addChild(sr::createMatrixTests			(testCtx));
 	glslTests->addChild(sr::createOperatorTests			(testCtx));
