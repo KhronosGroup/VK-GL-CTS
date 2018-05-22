@@ -195,8 +195,12 @@ void Texture3DBase::verifyTestResult(const float* texCoords, const tcu::Surface&
 									 const ReferenceParams& refParams, bool isNearestOnly) const
 {
 	const tcu::PixelFormat pixelFormat = m_context.getRenderTarget().getPixelFormat();
-	const tcu::IVec4	   colorBits   = max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2),
-									 tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
+	const tcu::IVec4    refChannelBitDepth	= tcu::getTextureFormatBitDepth(reference.getFormat());
+	const tcu::IVec4    colorBits = max(tcu::IVec4(de::min(pixelFormat.redBits, refChannelBitDepth[0]),
+						de::min(pixelFormat.greenBits, refChannelBitDepth[1]),
+						de::min(pixelFormat.blueBits, refChannelBitDepth[2]),
+						de::min(pixelFormat.alphaBits, refChannelBitDepth[3])) - (isNearestOnly ? 1 : 2),
+						tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
 	tcu::LodPrecision	lodPrecision(18, 6);
 	tcu::LookupPrecision lookupPrecision;
 	lookupPrecision.colorThreshold = tcu::computeFixedPointThreshold(colorBits) / refParams.colorScale;
