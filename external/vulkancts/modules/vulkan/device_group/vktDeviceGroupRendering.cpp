@@ -849,70 +849,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			imageMemory = allocateMemory(vk, *m_deviceGroup, &allocInfo);
 		}
 
-		if ((m_testMode & TEST_MODE_SFR) && (m_physicalDeviceCount > 1))
-		{
-			if (m_usePeerFetch && !isPeerFetchAllowed(memoryTypeNdx, firstDeviceID, secondDeviceID))
-				TCU_THROW(NotSupportedError, "Peer texture reads is not supported.");
-
-			// Check if peer memory can be used as source of a copy command in case of SFR bindings, always allowed in case of 1 device
-			VkPeerMemoryFeatureFlags				peerMemFeatures;
-			const VkPhysicalDeviceMemoryProperties	deviceMemProps = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_physicalDevices[secondDeviceID]);
-			vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps.memoryTypes[memoryTypeNdx].heapIndex, firstDeviceID, secondDeviceID, &peerMemFeatures);
-			isPeerMemAsCopySrcAllowed = (peerMemFeatures & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT);
-
-			VkRect2D zeroRect = {
-				{
-					0,	//	VkOffset2D.x
-					0,	//	VkOffset2D.x
-				},
-				{
-					0,	//	VkExtent2D.x
-					0,	//	VkExtent2D.x
-				}
-			};
-			vector<VkRect2D> sfrRects;
-			for (deUint32 i = 0; i < m_physicalDeviceCount*m_physicalDeviceCount; i++)
-				sfrRects.push_back(zeroRect);
-
-			if (m_physicalDeviceCount == 1u)
-			{
-				sfrRects[0].extent.width	= (deInt32)renderSize.x();
-				sfrRects[0].extent.height	= (deInt32)renderSize.y();
-			}
-			else
-			{
-				// Split into 2 vertical halves
-				sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID].extent.width	= (deInt32)renderSize.x() / 2;
-				sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID].extent.height	= (deInt32)renderSize.y();
-				sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID]				= sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID];
-				sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID].offset.x		= (deInt32)renderSize.x() / 2;
-				sfrRects[secondDeviceID * m_physicalDeviceCount + firstDeviceID]				= sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID];
-				sfrRects[secondDeviceID * m_physicalDeviceCount + secondDeviceID]				= sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID];
-			}
-
-			VkBindImageMemoryDeviceGroupInfo	devGroupBindInfo =
-			{
-				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO,		// sType
-				DE_NULL,													// pNext
-				0u,															// deviceIndexCount
-				DE_NULL,													// pDeviceIndices
-				m_physicalDeviceCount*m_physicalDeviceCount,				// SFRRectCount
-				&sfrRects[0],												// pSFRRects
-			};
-
-			VkBindImageMemoryInfo				bindInfo =
-			{
-				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,					// sType
-				&devGroupBindInfo,											// pNext
-				*renderImage,												// image
-				imageMemory.get(),											// memory
-				0u,															// memoryOffset
-			};
-			VK_CHECK(vk.bindImageMemory2(*m_deviceGroup, 1, &bindInfo));
-		}
-		else
-			VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *renderImage, imageMemory.get(), 0));
-
+		VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *renderImage, imageMemory.get(), 0));
 		VK_CHECK(vk.bindImageMemory(*m_deviceGroup, *readImage, imageMemory.get(), 0));
 
 		// Create renderpass
@@ -1169,18 +1106,9 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			cmdBuffer = allocateCommandBuffer(vk, *m_deviceGroup, &cmdBufParams);
 		}
 
-		// Begin recording
-		beginCommandBuffer(vk, *cmdBuffer);
-
-		// Prepare render target for rendering
+		// Do a layout transition for renderImage
 		{
-			const VkMemoryBarrier		vertFlushBarrier =
-			{
-				VK_STRUCTURE_TYPE_MEMORY_BARRIER,			// sType
-				DE_NULL,									// pNext
-				VK_ACCESS_HOST_WRITE_BIT,					// srcAccessMask
-				VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,		// dstAccessMask
-			};
+			beginCommandBuffer(vk, *cmdBuffer);
 			const VkImageMemoryBarrier	colorAttBarrier =
 			{
 				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// sType
@@ -1201,8 +1129,78 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					1u,										// layerCount
 				}											// subresourceRange
 			};
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, (VkDependencyFlags)0, 1, &vertFlushBarrier, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &colorAttBarrier);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &colorAttBarrier);
+
+			endCommandBuffer(vk, *cmdBuffer);
+			const deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
+			SubmitBufferAndWaitForIdle(vk, cmdBuffer.get(), deviceMask);
 		}
+
+		// Bind renderImage across devices for SFR
+		if ((m_testMode & TEST_MODE_SFR) && (m_physicalDeviceCount > 1))
+		{
+			if (m_usePeerFetch && !isPeerFetchAllowed(memoryTypeNdx, firstDeviceID, secondDeviceID))
+				TCU_THROW(NotSupportedError, "Peer texture reads is not supported.");
+
+			// Check if peer memory can be used as source of a copy command in case of SFR bindings, always allowed in case of 1 device
+			VkPeerMemoryFeatureFlags				peerMemFeatures;
+			const VkPhysicalDeviceMemoryProperties	deviceMemProps = getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_physicalDevices[secondDeviceID]);
+			vk.getDeviceGroupPeerMemoryFeatures(*m_deviceGroup, deviceMemProps.memoryTypes[memoryTypeNdx].heapIndex, firstDeviceID, secondDeviceID, &peerMemFeatures);
+			isPeerMemAsCopySrcAllowed = (peerMemFeatures & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT);
+
+			VkRect2D zeroRect = {
+				{
+					0,	//	VkOffset2D.x
+					0,	//	VkOffset2D.x
+				},
+				{
+					0,	//	VkExtent2D.x
+					0,	//	VkExtent2D.x
+				}
+			};
+			vector<VkRect2D> sfrRects;
+			for (deUint32 i = 0; i < m_physicalDeviceCount*m_physicalDeviceCount; i++)
+				sfrRects.push_back(zeroRect);
+
+			if (m_physicalDeviceCount == 1u)
+			{
+				sfrRects[0].extent.width	= (deInt32)renderSize.x();
+				sfrRects[0].extent.height	= (deInt32)renderSize.y();
+			}
+			else
+			{
+				// Split into 2 vertical halves
+				sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID].extent.width	= (deInt32)renderSize.x() / 2;
+				sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID].extent.height	= (deInt32)renderSize.y();
+				sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID]				= sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID];
+				sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID].offset.x		= (deInt32)renderSize.x() / 2;
+				sfrRects[secondDeviceID * m_physicalDeviceCount + firstDeviceID]				= sfrRects[firstDeviceID * m_physicalDeviceCount + firstDeviceID];
+				sfrRects[secondDeviceID * m_physicalDeviceCount + secondDeviceID]				= sfrRects[firstDeviceID * m_physicalDeviceCount + secondDeviceID];
+			}
+
+			VkBindImageMemoryDeviceGroupInfo	devGroupBindInfo =
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO,		// sType
+				DE_NULL,													// pNext
+				0u,															// deviceIndexCount
+				DE_NULL,													// pDeviceIndices
+				m_physicalDeviceCount*m_physicalDeviceCount,				// SFRRectCount
+				&sfrRects[0],												// pSFRRects
+			};
+
+			VkBindImageMemoryInfo				bindInfo =
+			{
+				VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO,					// sType
+				&devGroupBindInfo,											// pNext
+				*renderImage,												// image
+				imageMemory.get(),											// memory
+				0u,															// memoryOffset
+			};
+			VK_CHECK(vk.bindImageMemory2(*m_deviceGroup, 1, &bindInfo));
+		}
+
+		// Begin recording
+		beginCommandBuffer(vk, *cmdBuffer);
 
 		// Update buffers
 		{
