@@ -2811,16 +2811,6 @@ struct VkShaderModuleValidationCacheCreateInfoEXT
 	VkValidationCacheEXT	validationCache;
 };
 
-struct VkPhysicalDeviceAndroidHardwareBufferInfoANDROID
-{
-	VkStructureType		sType;
-	void*				pNext;
-	VkFormat			format;
-	VkImageTiling		tiling;
-	VkImageUsageFlags	imageUsage;
-	VkImageCreateFlags	imageFlags;
-};
-
 struct VkAndroidHardwareBufferUsageANDROID
 {
 	VkStructureType	sType;
@@ -2828,7 +2818,7 @@ struct VkAndroidHardwareBufferUsageANDROID
 	deUint64		androidHardwareBufferUsage;
 };
 
-struct VkMemoryAndroidHardwareBufferPropertiesANDROID
+struct VkAndroidHardwareBufferPropertiesANDROID
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -2836,11 +2826,24 @@ struct VkMemoryAndroidHardwareBufferPropertiesANDROID
 	deUint32		memoryTypeBits;
 };
 
-struct VkImportAndroidHardwareBufferInfoANDROID
+struct VkAndroidHardwareBufferFormatPropertiesANDROID
 {
 	VkStructureType					sType;
-	const void*						pNext;
-	pt::AndroidHardwareBufferPtr	buffer;
+	void*							pNext;
+	VkFormat						format;
+	deUint64						externalFormat;
+	VkFormatFeatureFlags			formatFeatures;
+	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
+	VkSamplerYcbcrRange				suggestedYcbcrRange;
+	VkChromaLocation				suggestedXChromaOffset;
+	VkChromaLocation				suggestedYChromaOffset;
+};
+
+struct VkImportAndroidHardwareBufferInfoANDROID
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	struct pt::AndroidHardwareBufferPtr	buffer;
 };
 
 struct VkMemoryGetAndroidHardwareBufferInfoANDROID
@@ -2850,23 +2853,11 @@ struct VkMemoryGetAndroidHardwareBufferInfoANDROID
 	VkDeviceMemory	memory;
 };
 
-struct VkAndroidHardwareBufferExternalFormatPropertiesANDROID
-{
-	VkStructureType					sType;
-	void*							pNext;
-	deUint32						externalFormat;
-	VkFormatFeatureFlags			formatFeatures;
-	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
-	VkSamplerYcbcrRange				suggestedYcbcrRange;
-	VkChromaLocation				suggestedXChromaOffset;
-	VkChromaLocation				suggestedYChromaOffset;
-};
-
 struct VkExternalFormatANDROID
 {
 	VkStructureType	sType;
 	void*			pNext;
-	deUint32		externalFormat;
+	deUint64		externalFormat;
 };
 
 

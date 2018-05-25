@@ -126,6 +126,7 @@ static const FormatKey s_es3NoExtTextureColorRenderableFormats[] =
 	GL_RGBA8,
 	GL_RGB10_A2,
 	GL_RGB565,
+	GL_SRGB8_ALPHA8,
 };
 
 // with ES3 core and GL_EXT_color_buffer_float

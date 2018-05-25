@@ -28,7 +28,7 @@
 #include "tcuFunctionLibrary.hpp"
 #include "deMemory.h"
 
-#if (DE_OS == DE_OS_ANDROID) && defined(__ANDROID_API_O__) && (__ANDROID_API__ >= __ANDROID_API_O__)
+#if (DE_OS == DE_OS_ANDROID) && defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__ /* __ANDROID_API_O__ */)
 #	define USE_ANDROID_O_HARDWARE_BUFFER
 #endif
 #if defined(USE_ANDROID_O_HARDWARE_BUFFER)
@@ -1255,6 +1255,80 @@ VKAPI_ATTR VkResult VKAPI_CALL createSharedSwapchainsKHR (VkDevice device, deUin
 	for (deUint32 ndx = 0; ndx < swapchainCount; ++ndx)
 	{
 		pSwapchains[ndx] = allocateNonDispHandle<SwapchainKHR, VkSwapchainKHR>(device, pCreateInfos+ndx, pAllocator);
+	}
+
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalBufferPropertiesKHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalBufferInfo* pExternalBufferInfo, VkExternalBufferProperties* pExternalBufferProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalBufferInfo);
+
+	pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = 0;
+	pExternalBufferProperties->externalMemoryProperties.exportFromImportedHandleTypes = 0;
+	pExternalBufferProperties->externalMemoryProperties.compatibleHandleTypes = 0;
+
+	if (pExternalBufferInfo->handleType == VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		pExternalBufferProperties->externalMemoryProperties.externalMemoryFeatures = VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
+		pExternalBufferProperties->externalMemoryProperties.exportFromImportedHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+		pExternalBufferProperties->externalMemoryProperties.compatibleHandleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+	}
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceImageFormatProperties2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo, VkImageFormatProperties2* pImageFormatProperties)
+{
+	const VkPhysicalDeviceExternalImageFormatInfo* const	externalInfo		= findStructure<VkPhysicalDeviceExternalImageFormatInfo>(pImageFormatInfo->pNext);
+	VkExternalImageFormatProperties*	const				externalProperties	= findStructure<VkExternalImageFormatProperties>(pImageFormatProperties->pNext);
+	VkResult												result;
+
+	result = getPhysicalDeviceImageFormatProperties(physicalDevice, pImageFormatInfo->format, pImageFormatInfo->type, pImageFormatInfo->tiling, pImageFormatInfo->usage, pImageFormatInfo->flags, &pImageFormatProperties->imageFormatProperties);
+	if (result != VK_SUCCESS)
+		return result;
+
+	if (externalInfo && externalInfo->handleType != 0)
+	{
+		if (externalInfo->handleType != VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+
+		if (!(pImageFormatInfo->format == VK_FORMAT_R8G8B8A8_UNORM
+			  || pImageFormatInfo->format == VK_FORMAT_R8G8B8_UNORM
+			  || pImageFormatInfo->format == VK_FORMAT_R5G6B5_UNORM_PACK16
+			  || pImageFormatInfo->format == VK_FORMAT_R16G16B16A16_SFLOAT
+			  || pImageFormatInfo->format == VK_FORMAT_A2R10G10B10_UNORM_PACK32))
+		{
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+
+		if (pImageFormatInfo->type != VK_IMAGE_TYPE_2D)
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+
+		if ((pImageFormatInfo->usage & ~(VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+										| VK_IMAGE_USAGE_TRANSFER_DST_BIT
+										| VK_IMAGE_USAGE_SAMPLED_BIT
+										| VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT))
+			!= 0)
+		{
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+
+		if ((pImageFormatInfo->flags & ~(VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT
+										/*| VK_IMAGE_CREATE_PROTECTED_BIT_KHR*/
+										/*| VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR*/))
+			!= 0)
+		{
+			return VK_ERROR_FORMAT_NOT_SUPPORTED;
+		}
+
+		if (externalProperties)
+		{
+			externalProperties->externalMemoryProperties.externalMemoryFeatures			= VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR
+																						| VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR
+																						| VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR;
+			externalProperties->externalMemoryProperties.exportFromImportedHandleTypes	= VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+			externalProperties->externalMemoryProperties.compatibleHandleTypes			= VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID;
+		}
 	}
 
 	return VK_SUCCESS;
