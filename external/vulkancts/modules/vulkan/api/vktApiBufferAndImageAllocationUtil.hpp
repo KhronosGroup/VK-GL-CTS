@@ -89,7 +89,8 @@ public:
 																		 Allocator&					allocator,
 																		 Move<VkImage>&				image,
 																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory) const = 0;
+																		 de::MovePtr<Allocation>&	memory,
+																		 VkImageTiling				tiling = VK_IMAGE_TILING_OPTIMAL) const = 0;
 };
 
 class ImageSuballocation : public IImageAllocator
@@ -101,7 +102,8 @@ public:
 																		 Allocator&					allocator,
 																		 Move<VkImage>&				image,
 																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory) const; // override
+																		 de::MovePtr<Allocation>&	memory,
+																		 VkImageTiling				tiling = VK_IMAGE_TILING_OPTIMAL) const; // override
 };
 
 class ImageDedicatedAllocation	: public IImageAllocator
@@ -113,7 +115,8 @@ public:
 																		 Allocator&					allocator,
 																		 Move<VkImage>&				image,
 																		 const MemoryRequirement&	requirement,
-																		 de::MovePtr<Allocation>&	memory) const; // override
+																		 de::MovePtr<Allocation>&	memory,
+																		 VkImageTiling				tiling = VK_IMAGE_TILING_OPTIMAL) const; // override
 };
 
 } // api
