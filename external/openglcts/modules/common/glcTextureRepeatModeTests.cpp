@@ -1323,6 +1323,7 @@ tcu::TestNode::IterateResult TestClampModeForInternalFormat::iterate(void)
 
 	/* Cleanup */
 	gl.bindTexture(GL_TEXTURE_2D, 0);
+	gl.deleteTextures(1, &resultTextureId);
 	gl.deleteTextures(1, &sourceTextureId);
 	gl.bindFramebuffer(GL_FRAMEBUFFER, fbId);
 	gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
