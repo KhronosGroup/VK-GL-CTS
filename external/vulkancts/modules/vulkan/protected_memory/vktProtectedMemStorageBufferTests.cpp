@@ -893,9 +893,12 @@ tcu::TestCaseGroup* createAtomicStorageBufferTests (tcu::TestContext& testctx)
 			{
 				const std::string					name			= "atomic_" + atomicTypeStr + "_" + de::toString(ndx + 1);
 				deUint32							atomicArg		= rnd.getUint16();
-				tcu::UVec4							inputValue		(rnd.getUint16(), rnd.getUint16(), rnd.getUint16(), rnd.getUint16());
+				tcu::UVec4							inputValue;
 				tcu::UVec4							refValue;
 				std::string							atomicCall;
+
+				for (int i = 0; i < 4; i++)
+					inputValue[i] = rnd.getUint16();
 
 				calculateAtomicOpData(atomicType, inputValue, atomicArg, atomicCall, refValue, ndx);
 
