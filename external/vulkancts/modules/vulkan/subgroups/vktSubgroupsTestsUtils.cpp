@@ -800,6 +800,7 @@ void vkt::subgroups::addNoSubgroupShader (SourceCollections& programCollection)
 		"  float pixelSize = 2.0f/1024.0f;\n"
 		"   float pixelPosition = pixelSize/2.0f - 1.0f;\n"
 		"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
+		"  gl_PointSize = 1.0f;
 		"}\n"
 	*/
 		const std::string vertNoSubgroup =
@@ -838,6 +839,8 @@ void vkt::subgroups::addNoSubgroupShader (SourceCollections& programCollection)
 			"%26 = OpVariable %25 Input\n"
 			"%33 = OpConstant %6 0\n"
 			"%35 = OpTypePointer Output %16\n"
+			"%37 = OpConstant %23 1\n"
+			"%38 = OpTypePointer Output %6\n"
 			"%4 = OpFunction %2 None %3\n"
 			"%5 = OpLabel\n"
 			"%8 = OpVariable %7 Function\n"
@@ -856,6 +859,8 @@ void vkt::subgroups::addNoSubgroupShader (SourceCollections& programCollection)
 			"%34 = OpCompositeConstruct %16 %32 %33 %33 %14\n"
 			"%36 = OpAccessChain %35 %22 %24\n"
 			"OpStore %36 %34\n"
+			"%39 = OpAccessChain %38 %22 %37\n"
+			"OpStore %39 %14\n"
 			"OpReturn\n"
 			"OpFunctionEnd\n";
 		programCollection.spirvAsmSources.add("vert_noSubgroup") << vertNoSubgroup;
