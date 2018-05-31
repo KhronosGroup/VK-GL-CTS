@@ -59,7 +59,7 @@ class Display : public NativeDisplay
 {
 public:
 	static const Capability CAPABILITIES		= Capability(CAPABILITY_GET_DISPLAY_LEGACY|
-															 CAPABILITY_GET_DISPLAY_PLATFORM);
+															 CAPABILITY_GET_DISPLAY_PLATFORM_EXT);
 
 								Display				(MovePtr<wayland::Display> waylandDisplay)
 									: NativeDisplay	(CAPABILITIES,

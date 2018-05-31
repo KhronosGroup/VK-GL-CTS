@@ -238,19 +238,26 @@ EGLDisplay getDisplay (NativeDisplay& nativeDisplay)
 	const Library&	egl								= nativeDisplay.getLibrary();
 	const bool		supportsLegacyGetDisplay		= (nativeDisplay.getCapabilities() & NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY) != 0;
 	const bool		supportsPlatformGetDisplay		= (nativeDisplay.getCapabilities() & NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM) != 0;
+	const bool		supportsPlatformGetDisplayEXT	= (nativeDisplay.getCapabilities() & NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM_EXT) != 0;
 	bool			usePlatformExt					= false;
 	EGLDisplay		display							= EGL_NO_DISPLAY;
 
 	TCU_CHECK_INTERNAL(supportsLegacyGetDisplay || supportsPlatformGetDisplay);
 
-	if (supportsPlatformGetDisplay)
+	if (supportsPlatformGetDisplayEXT)
 	{
 		const vector<string> platformExts = getClientExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
 						 de::contains(platformExts.begin(), platformExts.end(), string(nativeDisplay.getPlatformExtensionName()));
 	}
 
-	if (usePlatformExt)
+	if (supportsPlatformGetDisplay)
+	{
+		display = egl.getPlatformDisplay(nativeDisplay.getPlatformType(), nativeDisplay.getPlatformNative(), nativeDisplay.getPlatformAttributes());
+		EGLU_CHECK_MSG(egl, "eglGetPlatformDisplay()");
+		TCU_CHECK(display != EGL_NO_DISPLAY);
+	}
+	else if (usePlatformExt)
 	{
 		const vector<EGLint>	legacyAttribs	= toLegacyAttribList(nativeDisplay.getPlatformAttributes());
 
