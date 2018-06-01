@@ -1125,10 +1125,6 @@ dEQP-GLES3.functional.shaders.preprocessor.builtin.line_vertex
 dEQP-GLES3.functional.shaders.preprocessor.builtin.line_fragment
 dEQP-GLES3.functional.shaders.preprocessor.builtin.line_and_file_vertex
 dEQP-GLES3.functional.shaders.preprocessor.builtin.line_and_file_fragment
-dEQP-GLES3.functional.shaders.preprocessor.builtin.line_expression_vertex
-dEQP-GLES3.functional.shaders.preprocessor.builtin.line_expression_fragment
-dEQP-GLES3.functional.shaders.preprocessor.builtin.line_and_file_expression_vertex
-dEQP-GLES3.functional.shaders.preprocessor.builtin.line_and_file_expression_fragment
 dEQP-GLES3.functional.shaders.preprocessor.builtin.line_defined_1_vertex
 dEQP-GLES3.functional.shaders.preprocessor.builtin.line_defined_1_fragment
 dEQP-GLES3.functional.shaders.preprocessor.builtin.line_defined_2_vertex
