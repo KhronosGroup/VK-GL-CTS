@@ -3192,38 +3192,6 @@ group builtin "Built-in Symbol Tests"
 		""
 	end
 
-	case line_expression
-		version 300 es
-		values { output float out0 = 20.0; }
-		both ""
-			#version 300 es
-			precision mediump float;
-			${DECLARATIONS}
-			void main()
-			{
-			#line +20
-				out0 = float(__LINE__);
-				${OUTPUT}
-			}
-		""
-	end
-
-	case line_and_file_expression
-		version 300 es
-		values { output vec4 out0 = vec4(243.0, 243.0, 10.0, 10.0); }
-		both ""
-			#version 300 es
-			precision mediump float;
-			${DECLARATIONS}
-			void main()
-			{
-			#line (233 +10) (+10)
-				out0 = vec4(__LINE__, __LINE__, __FILE__, __FILE__);
-				${OUTPUT}
-			}
-		""
-	end
-
 	case line_defined_1
 		version 300 es
 		values { output float out0 = 4.0; }

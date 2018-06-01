@@ -43,6 +43,7 @@ const char* getName (Type wsiType)
 		"mir",
 		"android",
 		"win32",
+		"macos",
 	};
 	return de::getSizedArrayElement<TYPE_LAST>(s_names, wsiType);
 }
@@ -57,6 +58,7 @@ const char* getExtensionName (Type wsiType)
 		"VK_KHR_mir_surface",
 		"VK_KHR_android_surface",
 		"VK_KHR_win32_surface",
+		"VK_MVK_macos_surface"
 	};
 	return de::getSizedArrayElement<TYPE_LAST>(s_extNames, wsiType);
 }
@@ -115,6 +117,13 @@ const PlatformProperties& getPlatformProperties (Type wsiType)
 			noDisplayLimit,
 			noWindowLimit,
 		},
+		// VK_MVK_macos_surface
+		{
+			PlatformProperties::FEATURE_INITIAL_WINDOW_SIZE|PlatformProperties::FEATURE_RESIZE_WINDOW,
+			PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE,
+			noDisplayLimit,
+			noWindowLimit,
+		},
 	};
 
 	return de::getSizedArrayElement<TYPE_LAST>(s_properties, wsiType);
@@ -129,7 +138,7 @@ VkResult createSurface (const InstanceInterface&		vki,
 						VkSurfaceKHR*					pSurface)
 {
 	// Update this function if you add more WSI implementations
-	DE_STATIC_ASSERT(TYPE_LAST == 6);
+	DE_STATIC_ASSERT(TYPE_LAST == 7);
 
 	switch (wsiType)
 	{
@@ -225,6 +234,20 @@ VkResult createSurface (const InstanceInterface&		vki,
 			};
 
 			return vki.createWin32SurfaceKHR(instance, &createInfo, pAllocator, pSurface);
+		}
+
+		case TYPE_MACOS:
+		{
+			const MacOSWindowInterface&			macOSWindow		= dynamic_cast<const MacOSWindowInterface&>(nativeWindow);
+			const VkMacOSSurfaceCreateInfoMVK	createInfo		=
+			{
+				VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK,
+				DE_NULL,
+				(VkMacOSSurfaceCreateFlagsMVK)0,
+				macOSWindow.getNative()
+			};
+
+			return vki.createMacOSSurfaceMVK(instance, &createInfo, pAllocator, pSurface);
 		}
 
 		default:

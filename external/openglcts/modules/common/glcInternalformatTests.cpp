@@ -485,8 +485,10 @@ void InternalformatCaseBase::generateTextureData(GLuint width, GLuint height, GL
 			float	 posY  = (lheight - static_cast<float>(y)) / lheight;
 			float	 rposX = 1.f - posX;
 			float	 rposY = 1.f - posY;
-			tcu::Vec4 c		= colors[0] * (posX * posY) + colors[1] * (rposX * posY) + colors[2] * (posX * rposY) +
-						  colors[3] * (rposX * rposY);
+			tcu::Vec4 c		= colors[0] * (posX * posY) + colors[1] * (rposX * posY) + colors[2] * (posX * rposY);
+
+			// Hard-code the alpha as small floating point instability results in large differences for some formats
+			c[3] = 1.f;
 			convertColor(c, dataPtr, static_cast<int>(components));
 			dataPtr += pixelSize;
 		}
@@ -719,6 +721,11 @@ tcu::TestNode::IterateResult Texture2DCase::iterate(void)
 	const TextureFormat& referenceFormat = formatIterator->second;
 	glu::RenderContext&  renderContext   = m_context.getRenderContext();
 	const Functions&	 gl				 = renderContext.getFunctions();
+
+	if (m_renderWidth > m_context.getRenderTarget().getWidth())
+		m_renderWidth = m_context.getRenderTarget().getWidth();
+	if (m_renderHeight > m_context.getRenderTarget().getHeight())
+		m_renderHeight = m_context.getRenderTarget().getHeight();
 
 	// Setup viewport
 	gl.viewport(0, 0, m_renderWidth, m_renderHeight);
@@ -1057,7 +1064,7 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 				gl.depthFunc(GL_LESS);
 			}
 
-			gl.bindFramebuffer(GL_FRAMEBUFFER, loop ? m_fbo : 0);
+			gl.bindFramebuffer(GL_FRAMEBUFFER, loop ? m_fbo : m_context.getRenderContext().getDefaultFramebuffer());
 			gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			if (defaultFramebufferDepthBits)
@@ -1102,7 +1109,7 @@ tcu::TestNode::IterateResult RenderbufferCase::iterate(void)
 			if (loop && !createFramebuffer())
 				return STOP;
 
-			gl.bindFramebuffer(GL_FRAMEBUFFER, loop ? m_fbo : 0);
+			gl.bindFramebuffer(GL_FRAMEBUFFER, loop ? m_fbo : m_context.getRenderContext().getDefaultFramebuffer());
 			gl.clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			// Draw a rect scissored to half the screen height, incrementing the stencil buffer.

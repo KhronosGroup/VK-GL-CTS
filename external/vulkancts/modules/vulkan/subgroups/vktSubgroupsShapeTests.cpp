@@ -489,7 +489,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 }
 
-void supportedCheck (Context& context, const CaseDefinition& caseDef)
+void supportedCheck (Context& context, CaseDefinition caseDef)
 {
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
@@ -518,8 +518,6 @@ void supportedCheck (Context& context, const CaseDefinition& caseDef)
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
-	supportedCheck (context, caseDef);
-
 	if (!subgroups::areSubgroupOperationsSupportedForStage(
 				context, caseDef.shaderStage))
 	{
@@ -552,8 +550,6 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	supportedCheck (context, caseDef);
-
 	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BASIC_BIT))
 	{
 		return tcu::TestStatus::fail(
@@ -628,7 +624,7 @@ tcu::TestCaseGroup* createSubgroupsShapeTests(tcu::TestContext& testCtx)
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT};
 			addFunctionCaseWithPrograms(group.get(),
 									op + "_" + getShaderStageName(caseDef.shaderStage), "",
-									initPrograms, test, caseDef);
+									supportedCheck, initPrograms, test, caseDef);
 		}
 
 		{
@@ -639,14 +635,14 @@ tcu::TestCaseGroup* createSubgroupsShapeTests(tcu::TestContext& testCtx)
 			};
 			addFunctionCaseWithPrograms(group.get(),
 									op + "_graphic", "",
-									initPrograms, test, caseDef);
+									supportedCheck, initPrograms, test, caseDef);
 		}
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
 			addFunctionCaseWithPrograms(group.get(),op + "_" + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "",
-										initFrameBufferPrograms, noSSBOtest, caseDef);
+										supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
 

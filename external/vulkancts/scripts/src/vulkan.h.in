@@ -3597,6 +3597,7 @@ typedef enum VkSubgroupFeatureFlagBits {
     VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT = 0x00000020,
     VK_SUBGROUP_FEATURE_CLUSTERED_BIT = 0x00000040,
     VK_SUBGROUP_FEATURE_QUAD_BIT = 0x00000080,
+    VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV = 0x00000100,
     VK_SUBGROUP_FEATURE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkSubgroupFeatureFlagBits;
 typedef VkFlags VkSubgroupFeatureFlags;
@@ -6340,6 +6341,33 @@ VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirectCountAMD(
     uint32_t                                    stride);
 #endif
 
+#define VK_KHR_draw_indirect_count 1
+#define VK_KHR_DRAW_INDIRECT_COUNT_SPEC_VERSION 1
+#define VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME "VK_KHR_draw_indirect_count"
+
+typedef void (VKAPI_PTR *PFN_vkCmdDrawIndirectCountKHR)(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
+typedef void (VKAPI_PTR *PFN_vkCmdDrawIndexedIndirectCountKHR)(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndirectCountKHR(
+    VkCommandBuffer                             commandBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    VkBuffer                                    countBuffer,
+    VkDeviceSize                                countBufferOffset,
+    uint32_t                                    maxDrawCount,
+    uint32_t                                    stride);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdDrawIndexedIndirectCountKHR(
+    VkCommandBuffer                             commandBuffer,
+    VkBuffer                                    buffer,
+    VkDeviceSize                                offset,
+    VkBuffer                                    countBuffer,
+    VkDeviceSize                                countBufferOffset,
+    uint32_t                                    maxDrawCount,
+    uint32_t                                    stride);
+#endif
+
 #define VK_AMD_negative_viewport_height 1
 #define VK_AMD_NEGATIVE_VIEWPORT_HEIGHT_SPEC_VERSION 1
 #define VK_AMD_NEGATIVE_VIEWPORT_HEIGHT_EXTENSION_NAME "VK_AMD_negative_viewport_height"
@@ -7555,6 +7583,10 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetMemoryAndroidHardwareBufferANDROID(
     const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo,
     struct AHardwareBuffer**                    pBuffer);
 #endif
+
+#define VK_NV_shader_subgroup_partitioned 1
+#define VK_NV_SHADER_SUBGROUP_PARTITIONED_SPEC_VERSION 1
+#define VK_NV_SHADER_SUBGROUP_PARTITIONED_EXTENSION_NAME "VK_NV_shader_subgroup_partitioned"
 
 #ifdef __cplusplus
 }

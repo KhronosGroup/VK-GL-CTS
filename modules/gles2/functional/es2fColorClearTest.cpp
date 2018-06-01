@@ -316,8 +316,8 @@ void ColorClearTest::init (void)
 	addChild(new ColorClearCase(m_context, "short_scissored_rgb",	30,		2,4,		false,	true,	false,	true	));
 	addChild(new ColorClearCase(m_context, "scissored_rgb",			15,		4,30,		false,	true,	false,	true	));
 	addChild(new ColorClearCase(m_context, "scissored_rgba",		15,		4,30,		true,	true,	false,	true	));
-	addChild(new ColorClearCase(m_context, "masked_rgb",			15,		4,30,		false,	true,	false,	true	));
-	addChild(new ColorClearCase(m_context, "masked_rgba",			15,		4,30,		true,	true,	false,	true	));
+	addChild(new ColorClearCase(m_context, "masked_rgb",			15,		4,30,		false,	false,	true,	true	));
+	addChild(new ColorClearCase(m_context, "masked_rgba",			15,		4,30,		true,	false,	true,	true	));
 	addChild(new ColorClearCase(m_context, "masked_scissored_rgb",	15,		4,30,		false,	true,	true,	true	));
 	addChild(new ColorClearCase(m_context, "masked_scissored_rgba",	15,		4,30,		true,	true,	true,	true	));
 	addChild(new ColorClearCase(m_context, "complex_rgb",			15,		5,50,		false,	true,	true,	false	));

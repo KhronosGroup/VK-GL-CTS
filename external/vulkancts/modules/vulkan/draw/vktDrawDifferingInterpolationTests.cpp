@@ -250,10 +250,11 @@ tcu::TestStatus DrawTestInstance::iterate (void)
 			flushMappedMemoryRange(vk, device, vertexBuffer->getBoundMemory().getMemory(), vertexBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
 		}
 
+		const PipelineLayoutCreateInfo	pipelineLayoutCreateInfo;
+		Move<VkPipelineLayout>			pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
 		// Create pipeline
 		{
-			const PipelineLayoutCreateInfo	pipelineLayoutCreateInfo;
-			Move<VkPipelineLayout>			pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 			const PipelineCreateInfo::ColorBlendState::Attachment vkCbAttachmentState;
 
 			VkViewport	viewport	= makeViewport(WIDTH, HEIGHT);

@@ -277,6 +277,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBuiltinMaskVarTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsClusteredTests.cpp \
+	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsPartitionedTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsQuadTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsShapeTests.cpp \
 	external/vulkancts/modules/vulkan/subgroups/vktSubgroupsShuffleTests.cpp \

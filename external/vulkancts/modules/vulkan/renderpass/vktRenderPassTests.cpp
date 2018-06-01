@@ -5925,7 +5925,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 					addFunctionCaseWithPrograms<TestConfig>(loadOpGroup.get(), renderTypes[renderTypeNdx].str, renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, DE_FALSE, 90239, 0, allocationKind));
 				}
 
-				if (isStencilAttachment && isDepthAttachment)
+				if (isStencilAttachment && isDepthAttachment && loadOp != VK_ATTACHMENT_LOAD_OP_CLEAR)
 				{
 					{
 						const RenderPass			renderPass			(vector<Attachment>(1, Attachment(vkFormat,

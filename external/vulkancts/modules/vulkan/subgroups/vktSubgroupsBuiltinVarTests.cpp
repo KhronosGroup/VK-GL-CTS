@@ -1510,11 +1510,15 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 }
 
-tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
+void supportedCheck (Context& context, CaseDefinition caseDef)
 {
+	DE_UNREF(caseDef);
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
+}
 
+tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
+{
 	if (!areSubgroupOperationsSupportedForStage(
 				context, caseDef.shaderStage))
 	{
@@ -1596,9 +1600,6 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupSupported(context))
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
-
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		if (!areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))
@@ -1709,14 +1710,14 @@ tcu::TestCaseGroup* createSubgroupsBuiltinVarTests(tcu::TestContext& testCtx)
 
 			addFunctionCaseWithPrograms(group.get(),
 										varLower + "_graphic", "",
-										initPrograms, test, caseDef);
+										supportedCheck, initPrograms, test, caseDef);
 		}
 
 		{
 			const CaseDefinition caseDef = {"gl_" + var, VK_SHADER_STAGE_COMPUTE_BIT};
 			addFunctionCaseWithPrograms(group.get(),
 						varLower + "_" + getShaderStageName(caseDef.shaderStage), "",
-						initPrograms, test, caseDef);
+						supportedCheck, initPrograms, test, caseDef);
 		}
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
@@ -1724,7 +1725,7 @@ tcu::TestCaseGroup* createSubgroupsBuiltinVarTests(tcu::TestContext& testCtx)
 			const CaseDefinition caseDef = {"gl_" + var, stages[stageIndex]};
 			addFunctionCaseWithPrograms(group.get(),
 						varLower + "_" + getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
-						initFrameBufferPrograms, noSSBOtest, caseDef);
+						supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
 
@@ -1736,7 +1737,7 @@ tcu::TestCaseGroup* createSubgroupsBuiltinVarTests(tcu::TestContext& testCtx)
 
 		addFunctionCaseWithPrograms(group.get(), de::toLower(var) +
 									"_" + getShaderStageName(caseDef.shaderStage), "",
-									initPrograms, test, caseDef);
+									supportedCheck, initPrograms, test, caseDef);
 	}
 
 	return group.release();

@@ -1974,14 +1974,17 @@ void SpvAsmTypeTests<T>::finalizeFullOperation (string&			fullOperation,
 	if (returnHighPart)
 	{
 		DE_ASSERT(sizeof(T) == sizeof(deInt16));
+		DE_ASSERT((m_inputType == TYPE_I16) || (m_inputType == TYPE_U16));
 
+		const bool		signedness		= (m_inputType == TYPE_I16);
+		const string	convertOp		= signedness ? "OpSConvert" : "OpUConvert";
 		const string	convertPrefix	= (m_vectorSize == 1) ? "" : "v" + de::toString(m_vectorSize);
 		const string	convertType		= convertPrefix + "u32";
 
 		// Zero extend value to double-width value, then return high part
 		fullOperation += "%op_result_a = OpUConvert %" + convertType + " " + resultName + "\n";
 		fullOperation += "%op_result_b = OpShiftRightLogical %" + convertType + " %op_result_a %c_shift\n";
-		fullOperation += "%op_result   = OpUConvert %" + m_spirvTestType + " %op_result_b\n";
+		fullOperation += "%op_result   = " + convertOp + " %" + m_spirvTestType + " %op_result_b\n";
 	}
 	else if (isBooleanResult)
 	{

@@ -1402,7 +1402,7 @@ void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBO
 			{
 				deUint32* ptr = reinterpret_cast<deUint32*>(alloc.getHostPtr());
 
-				for (vk::VkDeviceSize k = 0; k < (size / 4); k++)
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(deUint32)); k++)
 				{
 					ptr[k] = rnd.getUint32();
 				}
@@ -1415,7 +1415,7 @@ void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBO
 			{
 				float* ptr = reinterpret_cast<float*>(alloc.getHostPtr());
 
-				for (vk::VkDeviceSize k = 0; k < (size / 4); k++)
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(float)); k++)
 				{
 					ptr[k] = rnd.getFloat();
 				}
@@ -1428,7 +1428,7 @@ void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBO
 			{
 				double* ptr = reinterpret_cast<double*>(alloc.getHostPtr());
 
-				for (vk::VkDeviceSize k = 0; k < (size / 4); k++)
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(double)); k++)
 				{
 					ptr[k] = rnd.getDouble();
 				}

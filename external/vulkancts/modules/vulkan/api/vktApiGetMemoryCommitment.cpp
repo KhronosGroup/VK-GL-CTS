@@ -285,7 +285,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 	const VkClearRect clearRect =
 	{
 		rect,
-		1u, // baseArrayLayer
+		0u, // baseArrayLayer
 		1u	// layerCount
 	};
 

@@ -1596,6 +1596,28 @@ VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountAMD (VkCommandBuffer comma
 	DE_UNREF(stride);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndexedIndirectCountKHR (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(buffer);
+	DE_UNREF(offset);
+	DE_UNREF(countBuffer);
+	DE_UNREF(countBufferOffset);
+	DE_UNREF(maxDrawCount);
+	DE_UNREF(stride);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceExternalImageFormatPropertiesNV (VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties)
 {
 	DE_UNREF(physicalDevice);
@@ -2080,6 +2102,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,					cmdDebugMarkerInsertEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,					cmdDrawIndirectCountAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountAMD,			cmdDrawIndexedIndirectCountAMD),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountKHR,					cmdDrawIndirectCountKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountKHR,			cmdDrawIndexedIndirectCountKHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,					getMemoryWin32HandleNV),
 	VK_NULL_FUNC_ENTRY(vkCmdProcessCommandsNVX,						cmdProcessCommandsNVX),
 	VK_NULL_FUNC_ENTRY(vkCmdReserveSpaceForCommandsNVX,				cmdReserveSpaceForCommandsNVX),

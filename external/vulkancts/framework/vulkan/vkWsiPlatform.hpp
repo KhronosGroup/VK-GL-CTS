@@ -173,6 +173,16 @@ struct TypeTraits<TYPE_WIN32>
 typedef DisplayInterface<TYPE_WIN32>	Win32DisplayInterface;
 typedef WindowInterface<TYPE_WIN32>		Win32WindowInterface;
 
+// VK_MVK_macos_surface
+
+template<>
+struct TypeTraits<TYPE_MACOS>
+{
+	typedef void*						NativeWindowType;
+};
+
+typedef WindowInterface<TYPE_MACOS>		MacOSWindowInterface;
+
 } // wsi
 } // vk
 

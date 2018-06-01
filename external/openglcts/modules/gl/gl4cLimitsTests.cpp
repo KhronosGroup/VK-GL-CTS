@@ -90,7 +90,7 @@ void LimitsTests::init(void)
 		{ "max_vertex_attrib_stride",						 GL_MAX_VERTEX_ATTRIB_STRIDE,						 2048,  0, "" },
 		{ "max_texture_buffer_size",						 GL_MAX_TEXTURE_BUFFER_SIZE,						 65536, 0, "" },
 		{ "max_rectangle_texture_size",						 GL_MAX_RECTANGLE_TEXTURE_SIZE,						 16384, 0, "" },
-		{ "min_map_buffer_alignment",						 GL_MIN_MAP_BUFFER_ALIGNMENT,						 64,	1, "" },
+		{ "min_map_buffer_alignment",						 GL_MIN_MAP_BUFFER_ALIGNMENT,						 64,	0, "" },
 		{ "max_vertex_attribs",								 GL_MAX_VERTEX_ATTRIBS,								 16,	0, "gl_MaxVertexAttribs" },
 		{ "max_vertex_uniform_components",					 GL_MAX_VERTEX_UNIFORM_COMPONENTS,					 1024,  0, "gl_MaxVertexUniformComponents" },
 		{ "max_vertex_uniform_vectors",						 GL_MAX_VERTEX_UNIFORM_VECTORS,						 256,   0, "gl_MaxVertexUniformVectors" },

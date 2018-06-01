@@ -71,3 +71,9 @@ dEQP-GLES2.functional.shaders.random.all_features.fragment.16
 
 # Bug 21851700
 dEQP-GLES2.functional.shaders.random.all_features.fragment.56
+
+# Negative ES2 tests
+dEQP-GLES2.functional.shaders.texture_functions.invalid.texture2d_bias_in_vertex
+dEQP-GLES2.functional.shaders.texture_functions.invalid.texturecube_bias_in_vertex
+dEQP-GLES2.functional.shaders.texture_functions.invalid.texture2dlod_in_fragment
+dEQP-GLES2.functional.shaders.constant_expressions.invalid.precision_specifier
