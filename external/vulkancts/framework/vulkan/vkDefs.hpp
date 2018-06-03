@@ -25,7 +25,7 @@
 
 #include "tcuDefs.hpp"
 
-#if (DE_OS == DE_OS_ANDROID) && defined(__ARM_ARCH_7A__)
+#if (DE_OS == DE_OS_ANDROID) && defined(__ARM_ARCH) && defined(__ARM_32BIT_STATE)
 #	define VKAPI_ATTR __attribute__((pcs("aapcs-vfp")))
 #else
 #	define VKAPI_ATTR
