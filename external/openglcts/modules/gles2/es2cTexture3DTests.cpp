@@ -169,9 +169,10 @@ void Texture3DBase::getSupportedCompressedFormats(std::set<int>& formatsSet) con
 	formatsSet.clear();
 	for (int formatNdx = 0; formatNdx < tcu::COMPRESSEDTEXFORMAT_LAST; formatNdx++)
 	{
-		// ETC2/EAC texture compression algorithm supports only two-dimensional images
+		// ETC2/EAC/BC (also known as DXT) texture compression algorithm
+		// supports only two-dimensional images
 		tcu::CompressedTexFormat format = static_cast<tcu::CompressedTexFormat>(formatNdx);
-		if (tcu::isEtcFormat(format))
+		if (tcu::isEtcFormat(format) || tcu::isBcFormat(format))
 			continue;
 
 		int glFormat = glu::getGLFormat(format);

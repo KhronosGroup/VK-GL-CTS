@@ -91,6 +91,9 @@ DE_DECLARE_COMMAND_LINE_OPT(LogFlush,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(Validation,					bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCache,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,		std::string);
+DE_DECLARE_COMMAND_LINE_OPT(Optimization,				int);
+DE_DECLARE_COMMAND_LINE_OPT(OptimizeSpirv,				bool);
+DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,		bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -180,8 +183,11 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<TestOOM>				(DE_NULL,	"deqp-test-oom",				"Run tests that exhaust memory on purpose",			s_enableNames,		TEST_OOM_DEFAULT)
 		<< Option<LogFlush>				(DE_NULL,	"deqp-log-flush",				"Enable or disable log file fflush",				s_enableNames,		"enable")
 		<< Option<Validation>			(DE_NULL,	"deqp-validation",				"Enable or disable test case validation",			s_enableNames,		"disable")
-		<< Option<ShaderCache>			(DE_NULL,	"deqp-shadercache",				"Enable or disable shader cache",					s_enableNames,		"disable")
-		<< Option<ShaderCacheFilename>	(DE_NULL,	"deqp-shadercache-filename",	"Write shader cache to given file",										"shadercache.bin");
+		<< Option<Optimization>			(DE_NULL,	"deqp-optimization-recipe",		"Shader optimization recipe (0=disabled)",								"0")
+		<< Option<OptimizeSpirv>		(DE_NULL,	"deqp-optimize-spirv",			"Apply optimization to spir-v shaders as well",		s_enableNames,		"disable")
+		<< Option<ShaderCache>			(DE_NULL,	"deqp-shadercache",				"Enable or disable shader cache",					s_enableNames,		"enable")
+		<< Option<ShaderCacheFilename>	(DE_NULL,	"deqp-shadercache-filename",	"Write shader cache to given file",										"shadercache.bin")
+		<< Option<ShaderCacheTruncate>	(DE_NULL,	"deqp-shadercache-truncate",	"Truncate shader cache before running tests",		s_enableNames,		"enable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -775,28 +781,31 @@ bool CommandLine::parse (const std::string& cmdLine)
 	return isOk;
 }
 
-const char*				CommandLine::getLogFileName				(void) const	{ return m_cmdLine.getOption<opt::LogFilename>().c_str();			}
-deUint32				CommandLine::getLogFlags				(void) const	{ return m_logFlags;												}
-RunMode					CommandLine::getRunMode					(void) const	{ return m_cmdLine.getOption<opt::RunMode>();						}
-const char*				CommandLine::getCaseListExportFile		(void) const	{ return m_cmdLine.getOption<opt::ExportFilenamePattern>().c_str();	}
-WindowVisibility		CommandLine::getVisibility				(void) const	{ return m_cmdLine.getOption<opt::Visibility>();					}
-bool					CommandLine::isWatchDogEnabled			(void) const	{ return m_cmdLine.getOption<opt::WatchDog>();						}
-bool					CommandLine::isCrashHandlingEnabled		(void) const	{ return m_cmdLine.getOption<opt::CrashHandler>();					}
-int						CommandLine::getBaseSeed				(void) const	{ return m_cmdLine.getOption<opt::BaseSeed>();						}
-int						CommandLine::getTestIterationCount		(void) const	{ return m_cmdLine.getOption<opt::TestIterationCount>();			}
-int						CommandLine::getSurfaceWidth			(void) const	{ return m_cmdLine.getOption<opt::SurfaceWidth>();					}
-int						CommandLine::getSurfaceHeight			(void) const	{ return m_cmdLine.getOption<opt::SurfaceHeight>();					}
-SurfaceType				CommandLine::getSurfaceType				(void) const	{ return m_cmdLine.getOption<opt::SurfaceType>();					}
-ScreenRotation			CommandLine::getScreenRotation			(void) const	{ return m_cmdLine.getOption<opt::ScreenRotation>();				}
-int						CommandLine::getGLConfigId				(void) const	{ return m_cmdLine.getOption<opt::GLConfigID>();					}
-int						CommandLine::getCLPlatformId			(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();					}
-const std::vector<int>&	CommandLine::getCLDeviceIds				(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();					}
-int						CommandLine::getVKDeviceId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceID>();					}
-int						CommandLine::getVKDeviceGroupId			(void) const	{ return m_cmdLine.getOption<opt::VKDeviceGroupID>();				}
-bool					CommandLine::isValidationEnabled		(void) const	{ return m_cmdLine.getOption<opt::Validation>();					}
-bool					CommandLine::isOutOfMemoryTestEnabled	(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();						}
-bool					CommandLine::isShadercacheEnabled		(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();					}
-const char*				CommandLine::getShaderCacheFilename		(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();	}
+const char*				CommandLine::getLogFileName					(void) const	{ return m_cmdLine.getOption<opt::LogFilename>().c_str();			}
+deUint32				CommandLine::getLogFlags					(void) const	{ return m_logFlags;												}
+RunMode					CommandLine::getRunMode						(void) const	{ return m_cmdLine.getOption<opt::RunMode>();						}
+const char*				CommandLine::getCaseListExportFile			(void) const	{ return m_cmdLine.getOption<opt::ExportFilenamePattern>().c_str();	}
+WindowVisibility		CommandLine::getVisibility					(void) const	{ return m_cmdLine.getOption<opt::Visibility>();					}
+bool					CommandLine::isWatchDogEnabled				(void) const	{ return m_cmdLine.getOption<opt::WatchDog>();						}
+bool					CommandLine::isCrashHandlingEnabled			(void) const	{ return m_cmdLine.getOption<opt::CrashHandler>();					}
+int						CommandLine::getBaseSeed					(void) const	{ return m_cmdLine.getOption<opt::BaseSeed>();						}
+int						CommandLine::getTestIterationCount			(void) const	{ return m_cmdLine.getOption<opt::TestIterationCount>();			}
+int						CommandLine::getSurfaceWidth				(void) const	{ return m_cmdLine.getOption<opt::SurfaceWidth>();					}
+int						CommandLine::getSurfaceHeight				(void) const	{ return m_cmdLine.getOption<opt::SurfaceHeight>();					}
+SurfaceType				CommandLine::getSurfaceType					(void) const	{ return m_cmdLine.getOption<opt::SurfaceType>();					}
+ScreenRotation			CommandLine::getScreenRotation				(void) const	{ return m_cmdLine.getOption<opt::ScreenRotation>();				}
+int						CommandLine::getGLConfigId					(void) const	{ return m_cmdLine.getOption<opt::GLConfigID>();					}
+int						CommandLine::getCLPlatformId				(void) const	{ return m_cmdLine.getOption<opt::CLPlatformID>();					}
+const std::vector<int>&	CommandLine::getCLDeviceIds					(void) const	{ return m_cmdLine.getOption<opt::CLDeviceIDs>();					}
+int						CommandLine::getVKDeviceId					(void) const	{ return m_cmdLine.getOption<opt::VKDeviceID>();					}
+int						CommandLine::getVKDeviceGroupId				(void) const	{ return m_cmdLine.getOption<opt::VKDeviceGroupID>();				}
+bool					CommandLine::isValidationEnabled			(void) const	{ return m_cmdLine.getOption<opt::Validation>();					}
+bool					CommandLine::isOutOfMemoryTestEnabled		(void) const	{ return m_cmdLine.getOption<opt::TestOOM>();						}
+bool					CommandLine::isShadercacheEnabled			(void) const	{ return m_cmdLine.getOption<opt::ShaderCache>();					}
+const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheFilename>().c_str();	}
+bool					CommandLine::isShaderCacheTruncateEnabled	(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheTruncate>();			}
+int						CommandLine::getOptimizationRecipe			(void) const	{ return m_cmdLine.getOption<opt::Optimization>();					}
+bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();					}
 
 const char* CommandLine::getGLContextType (void) const
 {

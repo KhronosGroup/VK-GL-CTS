@@ -713,6 +713,7 @@ void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string
 		"VK_KHR_external_semaphore_capabilities",
 		"VK_KHR_external_fence_capabilities",
 		"VK_KHR_device_group_creation",
+		"VK_KHR_get_display_properties2",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);

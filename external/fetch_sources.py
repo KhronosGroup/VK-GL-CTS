@@ -252,17 +252,17 @@ PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/spirv-tools.git",
 		"git@gitlab.khronos.org:spirv/spirv-tools.git",
-		"21394e0bc90c5a3860dcfcd55b401167e7452cd0",
+		"c1d31d1eebbc16cd410ac758f9a560d7270741e6",
 		"spirv-tools"),
 	GitRepo(
-		"https://gitlab.khronos.org/GLSL/glslang.git",
-		"git@gitlab.khronos.org:GLSL/glslang.git",
-		"vulkan-1.1-rc8",
+		"https://github.com/KhronosGroup/glslang.git",
+		None,
+		"ed834895ea68aaa4a6d4975be17751a25899acde",
 		"glslang"),
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
 		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-		"09890ff70955c8c1e605780c51d419b08ad8e94c",
+		"a41732c8af22acf25eb3d3333b771a947840ec5c",
 		"spirv-headers"),
 ]
 

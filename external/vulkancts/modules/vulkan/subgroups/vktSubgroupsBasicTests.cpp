@@ -1880,11 +1880,15 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 }
 
-tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
+void supportedCheck (Context& context, CaseDefinition caseDef)
 {
+	DE_UNREF(caseDef);
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
+}
 
+tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
+{
 	if (!subgroups::areSubgroupOperationsSupportedForStage(
 				context, caseDef.shaderStage))
 	{
@@ -1908,6 +1912,14 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 				   "Subgroup feature " +
 				   subgroups::getSubgroupFeatureName(VK_SUBGROUP_FEATURE_BASIC_BIT) +
 				   " is a required capability!");
+	}
+
+	if (OPTYPE_ELECT != caseDef.opType && VK_SHADER_STAGE_COMPUTE_BIT != caseDef.shaderStage)
+	{
+		if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BALLOT_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Subgroup basic operation non-compute stage test required that ballot operations are supported!");
+		}
 	}
 
 	const deUint32						inputDatasCount	= OPTYPE_SUBGROUP_MEMORY_BARRIER_IMAGE == caseDef.opType ? 3u : 2u;
@@ -1958,9 +1970,6 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	if (!subgroups::isSubgroupSupported(context))
-		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
-
 	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_BASIC_BIT))
 	{
 		return tcu::TestStatus::fail(
@@ -2152,7 +2161,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT};
 			addFunctionCaseWithPrograms(group.get(),
 										op + "_" + getShaderStageName(caseDef.shaderStage), "",
-										initPrograms, test, caseDef);
+										supportedCheck, initPrograms, test, caseDef);
 		}
 
 		if (OPTYPE_SUBGROUP_MEMORY_BARRIER_SHARED == opTypeIndex)
@@ -2165,7 +2174,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS};
 			addFunctionCaseWithPrograms(group.get(),
 										op + "_graphic", "",
-										initPrograms, test, caseDef);
+										supportedCheck, initPrograms, test, caseDef);
 		}
 
 		if (OPTYPE_ELECT == opTypeIndex)
@@ -2175,7 +2184,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
 				addFunctionCaseWithPrograms(group.get(),
 							op + "_" + getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
-							initFrameBufferPrograms, noSSBOtest, caseDef);
+							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 		}
 		else
@@ -2185,7 +2194,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 				const CaseDefinition caseDefFrag = {opTypeIndex, stages[stageIndex]};
 				addFunctionCaseWithPrograms(group.get(),
 							op + "_" + getShaderStageName(caseDefFrag.shaderStage)+"_framebuffer", "",
-							initFrameBufferPrograms, noSSBOtest, caseDefFrag);
+							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDefFrag);
 			}
 		}
 

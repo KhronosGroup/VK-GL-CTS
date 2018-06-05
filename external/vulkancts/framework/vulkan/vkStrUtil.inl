@@ -585,10 +585,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageToColorStateC
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCoverageModulationStateCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationCacheCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkShaderModuleValidationCacheCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferUsageANDROID& value);
-std::ostream&	operator<<	(std::ostream& s, const VkMemoryAndroidHardwareBufferPropertiesANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferPropertiesANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferFormatPropertiesANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value);
-std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferExternalFormatPropertiesANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value);

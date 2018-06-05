@@ -1375,12 +1375,21 @@ tcu::TestStatus pipelineLayoutLifetimeComputeTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
+void checkSupport (Context& context)
+{
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
+
+	// Throws exception if not supported
+	getRenderTargetFormat(vki, physicalDevice);
+}
+
 tcu::TestCaseGroup* createrenderpassTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> renderPassTests(new tcu::TestCaseGroup(testCtx, "renderpass", "Renderpass tests"));
 
-	addFunctionCaseWithPrograms(renderPassTests.get(), "destroy_pipeline_renderpass", "Draw after destroying the renderpass used to create a pipeline", createDestroyPipelineRenderPassSource, renderpassLifetimeTest);
-	addFunctionCase(renderPassTests.get(), "framebuffer_compatible_renderpass", "Use a render pass with a framebuffer that was created using another compatible render pass", framebufferCompatibleRenderPassTest);
+	addFunctionCaseWithPrograms(renderPassTests.get(), "destroy_pipeline_renderpass", "Draw after destroying the renderpass used to create a pipeline", checkSupport, createDestroyPipelineRenderPassSource, renderpassLifetimeTest);
+	addFunctionCase(renderPassTests.get(), "framebuffer_compatible_renderpass", "Use a render pass with a framebuffer that was created using another compatible render pass", checkSupport, framebufferCompatibleRenderPassTest);
 
 	return renderPassTests.release();
 }
@@ -1389,8 +1398,8 @@ tcu::TestCaseGroup* createPipelineLayoutLifetimeTests (tcu::TestContext& testCtx
 {
 	de::MovePtr<tcu::TestCaseGroup> pipelineLayoutLifetimeTests(new tcu::TestCaseGroup(testCtx, "lifetime", "Pipeline layout lifetime tests"));
 
-	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "graphics", "Test pipeline layout lifetime in graphics pipeline", createPipelineLayoutLifetimeGraphicsSource, pipelineLayoutLifetimeGraphicsTest);
-	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "compute", "Test pipeline layout lifetime in compute pipeline", createPipelineLayoutLifetimeComputeSource, pipelineLayoutLifetimeComputeTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "graphics", "Test pipeline layout lifetime in graphics pipeline", checkSupport, createPipelineLayoutLifetimeGraphicsSource, pipelineLayoutLifetimeGraphicsTest);
+	addFunctionCaseWithPrograms(pipelineLayoutLifetimeTests.get(), "compute", "Test pipeline layout lifetime in compute pipeline", checkSupport, createPipelineLayoutLifetimeComputeSource, pipelineLayoutLifetimeComputeTest);
 
 	return pipelineLayoutLifetimeTests.release();
 }

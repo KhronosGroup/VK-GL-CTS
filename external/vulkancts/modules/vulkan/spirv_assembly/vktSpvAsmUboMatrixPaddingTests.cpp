@@ -201,7 +201,7 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 	// into output buffer containing floats. The input and output buffer data should match.
 	// The whole array is handled inside a for loop.
 	fragments["testfun"]	=
-		"            %test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"            %test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"                %param = OpFunctionParameter %v4f32\n"
 
 		"                %entry = OpLabel\n"

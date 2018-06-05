@@ -936,8 +936,9 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 }
 
-void supportedCheck (Context& context)
+void supportedCheck (Context& context, CaseDefinition caseDef)
 {
+	DE_UNREF(caseDef);
 	if (!subgroups::isSubgroupSupported(context))
 		TCU_THROW(NotSupportedError, "Subgroup operations are not supported");
 
@@ -949,8 +950,6 @@ void supportedCheck (Context& context)
 
 tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 {
-	supportedCheck(context);
-
 	if (!subgroups::areSubgroupOperationsSupportedForStage(
 			context, caseDef.shaderStage))
 	{
@@ -986,8 +985,6 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 {
-	supportedCheck(context);
-
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		if (!subgroups::areSubgroupOperationsSupportedForStage(context, caseDef.shaderStage))
@@ -1060,19 +1057,19 @@ tcu::TestCaseGroup* createSubgroupsBallotTests(tcu::TestContext& testCtx)
 
 	{
 		const CaseDefinition caseDef = {VK_SHADER_STAGE_COMPUTE_BIT};
-		addFunctionCaseWithPrograms(group.get(), getShaderStageName(caseDef.shaderStage), "", initPrograms, test, caseDef);
+		addFunctionCaseWithPrograms(group.get(), getShaderStageName(caseDef.shaderStage), "", supportedCheck, initPrograms, test, caseDef);
 	}
 
 	{
 			const CaseDefinition caseDef = {VK_SHADER_STAGE_ALL_GRAPHICS};
-			addFunctionCaseWithPrograms(group.get(), "graphic", "", initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(group.get(), "graphic", "", supportedCheck, initPrograms, test, caseDef);
 	}
 
 	for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 	{
 		const CaseDefinition caseDef = {stages[stageIndex]};
 		addFunctionCaseWithPrograms(group.get(), getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
-					initFrameBufferPrograms, noSSBOtest, caseDef);
+					supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 	}
 
 	return group.release();

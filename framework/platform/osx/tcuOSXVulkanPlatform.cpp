@@ -23,6 +23,7 @@
 
 #include "tcuOSXVulkanPlatform.hpp"
 #include "tcuOSXPlatform.hpp"
+#include "tcuOSXMetalView.hpp"
 #include "vkWsiPlatform.hpp"
 #include "gluPlatform.hpp"
 #include "tcuFunctionLibrary.hpp"
@@ -39,6 +40,38 @@ namespace tcu
 namespace osx
 {
 
+class VulkanWindow : public vk::wsi::MacOSWindowInterface
+{
+public:
+	VulkanWindow (MovePtr<osx::MetalView> view)
+	: vk::wsi::MacOSWindowInterface(view->getView())
+	, m_view(view)
+	{
+	}
+
+	void resize (const UVec2& newSize) {
+		m_view->setSize(newSize.x(), newSize.y());
+	}
+
+private:
+	UniquePtr<osx::MetalView> m_view;
+};
+
+class VulkanDisplay : public vk::wsi::Display
+{
+public:
+	VulkanDisplay ()
+	{
+	}
+
+	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
+	{
+		const deUint32 width = !initialSize ? 400 : initialSize->x();
+		const deUint32 height = !initialSize ? 300 : initialSize->y();
+		return new VulkanWindow(MovePtr<osx::MetalView>(new osx::MetalView(width, height)));
+	}
+};
+
 class VulkanLibrary : public vk::Library
 {
 public:
@@ -48,9 +81,14 @@ public:
 	{
 	}
 
-	const vk::PlatformInterface& getPlatformInterface (void) const
+	const vk::PlatformInterface&	getPlatformInterface	(void) const
 	{
 		return m_driver;
+	}
+
+	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
+	{
+		return m_library;
 	}
 
 private:
@@ -64,13 +102,10 @@ VulkanPlatform::VulkanPlatform ()
 
 vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 {
-	switch(wsiType)
-	{
-	//TODO: Core Graphics WSI
-	default:
+	if (wsiType != vk::wsi::TYPE_MACOS)
 		TCU_THROW(NotSupportedError, "WSI type not supported");
 
-	};
+	return new VulkanDisplay();
 }
 
 vk::Library* VulkanPlatform::createLibrary (void) const

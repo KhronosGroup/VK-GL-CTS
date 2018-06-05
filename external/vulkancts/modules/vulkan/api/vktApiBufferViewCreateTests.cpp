@@ -123,6 +123,21 @@ public:
 	{
 		return new BufferViewTestInstance(ctx, m_testCase);
 	}
+	virtual void						checkSupport					(Context&					ctx) const
+	{
+		VkFormatProperties					properties;
+
+		ctx.getInstanceInterface().getPhysicalDeviceFormatProperties(ctx.getPhysicalDevice(), m_testCase.format, &properties);
+		if (!(properties.bufferFeatures & m_testCase.features))
+			TCU_THROW(NotSupportedError, "Format not supported");
+		if (m_testCase.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)
+		{
+			const std::vector<std::string>&		extensions = ctx.getDeviceExtensions();
+			const deBool						isSupported = isDeviceExtensionSupported(ctx.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
+			if (!isSupported)
+				TCU_THROW(NotSupportedError, "Dedicated allocation not supported");
+		}
+	}
 private:
 	BufferViewCaseParameters			m_testCase;
 };
@@ -196,11 +211,6 @@ tcu::TestStatus BufferDedicatedAllocation::createTestBuffer				(VkDeviceSize				
 																		 Move<VkBuffer>&			testBuffer,
 																		 Move<VkDeviceMemory>&		memory) const
 {
-	const std::vector<std::string>&		extensions						= context.getDeviceExtensions();
-	const deBool						isSupported						= isDeviceExtensionSupported(context.getUsedApiVersion(), extensions, "VK_KHR_dedicated_allocation");
-	if (!isSupported)
-		TCU_THROW(NotSupportedError, "Not supported");
-
 	const InstanceInterface&			vkInstance						= context.getInstanceInterface();
 	const VkDevice						vkDevice						= context.getDevice();
 	const VkPhysicalDevice				vkPhysicalDevice				= context.getPhysicalDevice();
@@ -322,11 +332,6 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 	const VkDeviceSize					size							= 3 * 5 * 7 * 64;
 	Move<VkBuffer>						testBuffer;
 	Move<VkDeviceMemory>				testBufferMemory;
-	VkFormatProperties					properties;
-
-	m_context.getInstanceInterface().getPhysicalDeviceFormatProperties(m_context.getPhysicalDevice(), m_testCase.format, &properties);
-	if (!(properties.bufferFeatures & m_testCase.features))
-		TCU_THROW(NotSupportedError, "Format not supported");
 
 	// Create buffer
 	if (m_testCase.bufferAllocationKind == ALLOCATION_KIND_DEDICATED)

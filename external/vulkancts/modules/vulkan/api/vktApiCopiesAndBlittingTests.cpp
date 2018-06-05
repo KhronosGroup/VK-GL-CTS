@@ -346,12 +346,6 @@ CopiesAndBlittingTestInstance::CopiesAndBlittingTestInstance (Context& context, 
 	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 
-	if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
-			TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
-	}
-
 	// Create command pool
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
@@ -839,32 +833,6 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
-	if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
-		(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
-	{
-		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
-			TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
-	}
-
-	VkImageFormatProperties properties;
-	if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.src.image.format,
-																				m_params.src.image.imageType,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																				0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
-		(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.dst.image.format,
-																				m_params.dst.image.imageType,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-																				0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-	{
-		TCU_THROW(NotSupportedError, "Format not supported");
-	}
-
 	// Create source image
 	{
 		const VkImageCreateInfo	sourceImageParams		=
@@ -1176,12 +1144,48 @@ public:
 														 const TestParams				params)
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
-							{}
+	{}
 
 	virtual TestInstance*	createInstance				(Context&						context) const
-							{
-								return new CopyImageToImage(context, m_params);
-							}
+	{
+		return new CopyImageToImage(context, m_params);
+	}
+
+	virtual void			checkSupport				(Context&						context) const
+	{
+		if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
+		{
+			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+				TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
+		}
+
+		if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
+			(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
+		{
+			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
+				TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+		}
+
+		VkImageFormatProperties properties;
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.src.image.format,
+																					m_params.src.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.dst.image.format,
+																					m_params.dst.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+	}
+
 private:
 	TestParams				m_params;
 };
@@ -1769,47 +1773,6 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&					memAlloc			= context.getDefaultAllocator();
 
-	VkImageFormatProperties properties;
-	if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.src.image.format,
-																				VK_IMAGE_TYPE_2D,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																				0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
-		(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.dst.image.format,
-																				VK_IMAGE_TYPE_2D,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-																				0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-	{
-		TCU_THROW(NotSupportedError, "Format not supported");
-	}
-
-	VkFormatProperties srcFormatProperties;
-	context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.src.image.format, &srcFormatProperties);
-	if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Format feature blit source not supported");
-	}
-
-	VkFormatProperties dstFormatProperties;
-	context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.dst.image.format, &dstFormatProperties);
-	if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
-	}
-
-	if (m_params.filter == VK_FILTER_LINEAR)
-	{
-		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
-		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
-	}
-
 	// Create source image
 	{
 		const VkImageCreateInfo		sourceImageParams		=
@@ -2066,16 +2029,18 @@ struct CompareEachPixelInEachRegion
 		{
 			const VkImageBlit& blit = regionIter->imageBlit;
 
-			const int	dx		= deSign32(blit.dstOffsets[1].x - blit.dstOffsets[0].x);
-			const int	dy		= deSign32(blit.dstOffsets[1].y - blit.dstOffsets[0].y);
+			const int	xStart	= deMin32(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
+			const int	yStart	= deMin32(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
+			const int	xEnd	= deMax32(blit.dstOffsets[0].x, blit.dstOffsets[1].x);
+			const int	yEnd	= deMax32(blit.dstOffsets[0].y, blit.dstOffsets[1].y);
 			const float	xScale	= static_cast<float>(blit.srcOffsets[1].x - blit.srcOffsets[0].x) / static_cast<float>(blit.dstOffsets[1].x - blit.dstOffsets[0].x);
 			const float	yScale	= static_cast<float>(blit.srcOffsets[1].y - blit.srcOffsets[0].y) / static_cast<float>(blit.dstOffsets[1].y - blit.dstOffsets[0].y);
 			const float srcInvW	= 1.0f / static_cast<float>(sourceWidth);
 			const float srcInvH	= 1.0f / static_cast<float>(sourceHeight);
 
 			for (int z = 0; z < sourceDepth; z++)
-			for (int y = blit.dstOffsets[0].y; y < blit.dstOffsets[1].y; y += dy)
-			for (int x = blit.dstOffsets[0].x; x < blit.dstOffsets[1].x; x += dx)
+			for (int y = yStart; y < yEnd; y++)
+			for (int x = xStart; x < xEnd; x++)
 			{
 				const tcu::Vec2 srcNormCoord
 				(
@@ -2593,12 +2558,57 @@ public:
 													 const TestParams				params)
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
-							{}
+	{}
 
 	virtual TestInstance*	createInstance			(Context&						context) const
-							{
-								return new BlittingImages(context, m_params);
-							}
+	{
+		return new BlittingImages(context, m_params);
+	}
+
+	virtual void			checkSupport			(Context&						context) const
+	{
+		VkImageFormatProperties properties;
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.src.image.format,
+																					VK_IMAGE_TYPE_2D,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.dst.image.format,
+																					VK_IMAGE_TYPE_2D,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+
+		VkFormatProperties srcFormatProperties;
+		context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.src.image.format, &srcFormatProperties);
+		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Format feature blit source not supported");
+		}
+
+		VkFormatProperties dstFormatProperties;
+		context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.dst.image.format, &dstFormatProperties);
+		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
+		}
+
+		if (m_params.filter == VK_FILTER_LINEAR)
+		{
+			if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+				TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
+			if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+				TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
+		}
+	}
+
 private:
 	TestParams				m_params;
 };
@@ -2634,70 +2644,6 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 	const VkDevice				vkDevice			= context.getDevice();
 	const deUint32				queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
 	Allocator&					memAlloc			= context.getDefaultAllocator();
-
-	{
-		VkImageFormatProperties	properties;
-		if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				   m_params.src.image.format,
-																				   VK_IMAGE_TYPE_2D,
-																				   VK_IMAGE_TILING_OPTIMAL,
-																				   VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																				   0,
-																				   &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		{
-			TCU_THROW(NotSupportedError, "Format not supported");
-		}
-		else if ((m_params.src.image.extent.width	> properties.maxExtent.width)	||
-				 (m_params.src.image.extent.height	> properties.maxExtent.height)	||
-				 (m_params.src.image.extent.depth	> properties.maxArrayLayers))
-		{
-			TCU_THROW(NotSupportedError, "Image size not supported");
-		}
-	}
-
-	{
-		VkImageFormatProperties	properties;
-		if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				   m_params.dst.image.format,
-																				   VK_IMAGE_TYPE_2D,
-																				   VK_IMAGE_TILING_OPTIMAL,
-																				   VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-																				   0,
-																				   &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-		{
-			TCU_THROW(NotSupportedError, "Format not supported");
-		}
-		else if ((m_params.dst.image.extent.width	> properties.maxExtent.width)	||
-				 (m_params.dst.image.extent.height	> properties.maxExtent.height)	||
-				 (m_params.dst.image.extent.depth	> properties.maxArrayLayers))
-		{
-			TCU_THROW(NotSupportedError, "Image size not supported");
-		}
-		else if (m_params.mipLevels > properties.maxMipLevels)
-		{
-			TCU_THROW(NotSupportedError, "Number of mip levels not supported");
-		}
-	}
-
-	const VkFormatProperties	srcFormatProperties	= getPhysicalDeviceFormatProperties (vki, vkPhysDevice, m_params.src.image.format);
-	if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Format feature blit source not supported");
-	}
-
-	const VkFormatProperties	dstFormatProperties	= getPhysicalDeviceFormatProperties (vki, vkPhysDevice, m_params.dst.image.format);
-	if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
-	{
-		TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
-	}
-
-	if (m_params.filter == VK_FILTER_LINEAR)
-	{
-		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
-		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-			TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
-	}
 
 	// Create source image
 	{
@@ -3267,12 +3213,82 @@ public:
 													 const TestParams				params)
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
-							{}
+	{}
 
 	virtual TestInstance*	createInstance			(Context&						context) const
-							{
-								return new BlittingMipmaps(context, m_params);
-							}
+	{
+		return new BlittingMipmaps(context, m_params);
+	}
+
+	virtual void			checkSupport			(Context&						context) const
+	{
+		const InstanceInterface&	vki					= context.getInstanceInterface();
+		const VkPhysicalDevice		vkPhysDevice		= context.getPhysicalDevice();
+		{
+			VkImageFormatProperties	properties;
+			if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																						m_params.src.image.format,
+																						VK_IMAGE_TYPE_2D,
+																						VK_IMAGE_TILING_OPTIMAL,
+																						VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																						0,
+																						&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			{
+				TCU_THROW(NotSupportedError, "Format not supported");
+			}
+			else if ((m_params.src.image.extent.width	> properties.maxExtent.width)	||
+						(m_params.src.image.extent.height	> properties.maxExtent.height)	||
+						(m_params.src.image.extent.depth	> properties.maxArrayLayers))
+			{
+				TCU_THROW(NotSupportedError, "Image size not supported");
+			}
+		}
+
+		{
+			VkImageFormatProperties	properties;
+			if (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																						m_params.dst.image.format,
+																						VK_IMAGE_TYPE_2D,
+																						VK_IMAGE_TILING_OPTIMAL,
+																						VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																						0,
+																						&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
+			{
+				TCU_THROW(NotSupportedError, "Format not supported");
+			}
+			else if ((m_params.dst.image.extent.width	> properties.maxExtent.width)	||
+						(m_params.dst.image.extent.height	> properties.maxExtent.height)	||
+						(m_params.dst.image.extent.depth	> properties.maxArrayLayers))
+			{
+				TCU_THROW(NotSupportedError, "Image size not supported");
+			}
+			else if (m_params.mipLevels > properties.maxMipLevels)
+			{
+				TCU_THROW(NotSupportedError, "Number of mip levels not supported");
+			}
+		}
+
+		const VkFormatProperties	srcFormatProperties	= getPhysicalDeviceFormatProperties (vki, vkPhysDevice, m_params.src.image.format);
+		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Format feature blit source not supported");
+		}
+
+		const VkFormatProperties	dstFormatProperties	= getPhysicalDeviceFormatProperties (vki, vkPhysDevice, m_params.dst.image.format);
+		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
+		{
+			TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
+		}
+
+		if (m_params.filter == VK_FILTER_LINEAR)
+		{
+			if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+				TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
+			if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+				TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
+		}
+	}
+
 private:
 	TestParams				m_params;
 };
@@ -3312,11 +3328,6 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 	: CopiesAndBlittingTestInstance	(context, params)
 	, m_options						(options)
 {
-	const VkSampleCountFlagBits	rasterizationSamples	= m_params.samples;
-
-	if (!(context.getDeviceProperties().limits.framebufferColorSampleCounts & rasterizationSamples))
-		throw tcu::NotSupportedError("Unsupported number of rasterization samples");
-
 	const InstanceInterface&	vki						= context.getInstanceInterface();
 	const DeviceInterface&		vk						= context.getDeviceInterface();
 	const VkPhysicalDevice		vkPhysDevice			= context.getPhysicalDevice();
@@ -3337,22 +3348,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 	Move<VkPipelineLayout>		pipelineLayout;
 	Move<VkPipeline>			graphicsPipeline;
 
-	VkImageFormatProperties properties;
-	if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.src.image.format,
-																				m_params.src.image.imageType,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
-		(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
-																				m_params.dst.image.format,
-																				m_params.dst.image.imageType,
-																				VK_IMAGE_TILING_OPTIMAL,
-																				VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0,
-																				&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
-	{
-		TCU_THROW(NotSupportedError, "Format not supported");
-	}
+	const VkSampleCountFlagBits	rasterizationSamples	= m_params.samples;
 
 	// Create color image.
 	{
@@ -3825,17 +3821,17 @@ void ResolveImageToImage::copyMSImageToMSImage (void)
 		const VkImageSubresourceLayers	sourceSubresourceLayers	=
 		{
 			getAspectFlags(srcTcuFormat),	// VkImageAspectFlags	aspectMask;
-			0u,								// uint32_t				mipLevel;
-			0u,								// uint32_t				baseArrayLayer;
-			1u								// uint32_t				layerCount;
+			0u,								// deUint32				mipLevel;
+			0u,								// deUint32				baseArrayLayer;
+			1u								// deUint32				layerCount;
 		};
 
 		const VkImageSubresourceLayers	destinationSubresourceLayers	=
 		{
 			getAspectFlags(srcTcuFormat),	// VkImageAspectFlags	aspectMask;//getAspectFlags(dstTcuFormat)
-			0u,								// uint32_t				mipLevel;
-			layerNdx,						// uint32_t				baseArrayLayer;
-			1u								// uint32_t				layerCount;
+			0u,								// deUint32				mipLevel;
+			layerNdx,						// deUint32				baseArrayLayer;
+			1u								// deUint32				layerCount;
 		};
 
 		const VkImageCopy				imageCopy	=
@@ -3934,13 +3930,40 @@ public:
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
 								, m_options		(options)
-							{}
-	virtual	void			initPrograms				(SourceCollections&		programCollection) const;
+	{}
+
+							virtual	void			initPrograms				(SourceCollections&		programCollection) const;
 
 	virtual TestInstance*	createInstance				(Context&				context) const
-							{
-								return new ResolveImageToImage(context, m_params, m_options);
-							}
+	{
+		return new ResolveImageToImage(context, m_params, m_options);
+	}
+
+	virtual void			checkSupport				(Context&				context) const
+	{
+		const VkSampleCountFlagBits	rasterizationSamples = m_params.samples;
+
+		if (!(context.getDeviceProperties().limits.framebufferColorSampleCounts & rasterizationSamples))
+			throw tcu::NotSupportedError("Unsupported number of rasterization samples");
+
+		VkImageFormatProperties properties;
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.src.image.format,
+																					m_params.src.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.dst.image.format,
+																					m_params.dst.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_DST_BIT, 0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+	}
+
 private:
 	TestParams							m_params;
 	const ResolveImageToImageOptions	m_options;
@@ -4000,9 +4023,9 @@ const VkExtent3D				defaultHalfExtent		= {defaultHalfSize, defaultHalfSize, 1};
 const VkImageSubresourceLayers	defaultSourceLayer		=
 {
 	VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-	0u,							// uint32_t				mipLevel;
-	0u,							// uint32_t				baseArrayLayer;
-	1u,							// uint32_t				layerCount;
+	0u,							// deUint32				mipLevel;
+	0u,							// deUint32				baseArrayLayer;
+	1u,							// deUint32				layerCount;
 };
 
 void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
@@ -4118,9 +4141,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			const VkImageSubresourceLayers  sourceLayer =
 			{
 				VK_IMAGE_ASPECT_DEPTH_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 			const VkImageCopy				testCopy	=
 			{
@@ -4156,9 +4179,9 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 			const VkImageSubresourceLayers  sourceLayer =
 			{
 				VK_IMAGE_ASPECT_STENCIL_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,								// uint32_t				mipLevel;
-				0u,								// uint32_t				baseArrayLayer;
-				1u								// uint32_t				layerCount;
+				0u,								// deUint32				mipLevel;
+				0u,								// deUint32				baseArrayLayer;
+				1u								// deUint32				layerCount;
 			};
 			const VkImageCopy				testCopy	=
 			{
@@ -4727,17 +4750,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				slicesLayersNdx,			// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				slicesLayersNdx,			// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -4777,17 +4800,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				slicesLayersNdx,			// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				slicesLayersNdx,			// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -4827,17 +4850,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0,							// uint32_t				baseArrayLayer;
-				slicesLayers				// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0,							// deUint32				baseArrayLayer;
+				slicesLayers				// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -4876,17 +4899,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				slicesLayers				// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				slicesLayers				// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -4930,17 +4953,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 					VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
-					0u,								// uint32_t				mipLevel;
-					slicesLayersNdx,				// uint32_t				baseArrayLayer;
-					1u								// uint32_t				layerCount;
+					0u,								// deUint32				mipLevel;
+					slicesLayersNdx,				// deUint32				baseArrayLayer;
+					1u								// deUint32				layerCount;
 			};
 
 
@@ -4987,17 +5010,17 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 			const VkImageSubresourceLayers	sourceLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				slicesLayersNdx,			// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				slicesLayersNdx,			// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageSubresourceLayers	destinationLayer	=
 			{
 				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-				0u,							// uint32_t				mipLevel;
-				0u,							// uint32_t				baseArrayLayer;
-				1u							// uint32_t				layerCount;
+				0u,							// deUint32				mipLevel;
+				0u,							// deUint32				baseArrayLayer;
+				1u							// deUint32				layerCount;
 			};
 
 			const VkImageCopy				testCopy	=
@@ -5046,8 +5069,8 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			0u,											// VkDeviceSize				bufferOffset;
-			0u,											// uint32_t					bufferRowLength;
-			0u,											// uint32_t					bufferImageHeight;
+			0u,											// deUint32					bufferRowLength;
+			0u,											// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{0, 0, 0},									// VkOffset3D				imageOffset;
 			defaultExtent								// VkExtent3D				imageExtent;
@@ -5072,8 +5095,8 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			defaultSize * defaultHalfSize,				// VkDeviceSize				bufferOffset;
-			0u,											// uint32_t					bufferRowLength;
-			0u,											// uint32_t					bufferImageHeight;
+			0u,											// deUint32					bufferRowLength;
+			0u,											// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
 			defaultHalfExtent							// VkExtent3D				imageExtent;
@@ -5112,8 +5135,8 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 			const VkBufferImageCopy	bufferImageCopy		=
 			{
 				offset,						// VkDeviceSize				bufferOffset;
-				bufferRowLength,			// uint32_t					bufferRowLength;
-				bufferImageHeight,			// uint32_t					bufferImageHeight;
+				bufferRowLength,			// deUint32					bufferRowLength;
+				bufferImageHeight,			// deUint32					bufferImageHeight;
 				defaultSourceLayer,			// VkImageSubresourceLayers	imageSubresource;
 				{0, 0, 0},					// VkOffset3D				imageOffset;
 				imageExtent					// VkExtent3D				imageExtent;
@@ -5123,6 +5146,58 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		}
 
 		group->addChild(new CopyImageToBufferTestCase(testCtx, "regions", "Copy from image to buffer with multiple regions", params));
+	}
+
+	{
+		TestParams				params;
+		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent				= defaultExtent;
+		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			0u,											// VkDeviceSize				bufferOffset;
+			defaultSize,								// deUint32					bufferRowLength;
+			defaultSize,								// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion				copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer", "Copy from image to a buffer that is just large enough to contain the data", params));
+	}
+
+	{
+		TestParams				params;
+		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.src.image.extent				= defaultExtent;
+		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultFourthSize;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultFourthSize,							// VkDeviceSize				bufferOffset;
+			defaultSize,								// deUint32					bufferRowLength;
+			defaultSize,								// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion				copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyImageToBufferTestCase(testCtx, "tightly_sized_buffer_offset", "Copy from image to a buffer that is just large enough to contain the data", params));
 	}
 }
 
@@ -5142,8 +5217,8 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			0u,											// VkDeviceSize				bufferOffset;
-			0u,											// uint32_t					bufferRowLength;
-			0u,											// uint32_t					bufferImageHeight;
+			0u,											// deUint32					bufferRowLength;
+			0u,											// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{0, 0, 0},									// VkOffset3D				imageOffset;
 			defaultExtent								// VkExtent3D				imageExtent;
@@ -5172,8 +5247,8 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 			const VkBufferImageCopy	bufferImageCopy	=
 			{
 				0u,																// VkDeviceSize				bufferOffset;
-				0u,																// uint32_t					bufferRowLength;
-				0u,																// uint32_t					bufferImageHeight;
+				0u,																// deUint32					bufferRowLength;
+				0u,																// deUint32					bufferImageHeight;
 				defaultSourceLayer,												// VkImageSubresourceLayers	imageSubresource;
 				{offset, defaultHalfSize, 0},									// VkOffset3D				imageOffset;
 				{defaultFourthSize / divisor, defaultFourthSize / divisor, 1}	// VkExtent3D				imageExtent;
@@ -5197,8 +5272,8 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		const VkBufferImageCopy	bufferImageCopy	=
 		{
 			defaultFourthSize,							// VkDeviceSize				bufferOffset;
-			defaultHalfSize + defaultFourthSize,		// uint32_t					bufferRowLength;
-			defaultHalfSize + defaultFourthSize,		// uint32_t					bufferImageHeight;
+			defaultHalfSize + defaultFourthSize,		// deUint32					bufferRowLength;
+			defaultHalfSize + defaultFourthSize,		// deUint32					bufferImageHeight;
 			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
 			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
 			defaultHalfExtent							// VkExtent3D				imageExtent;
@@ -5209,6 +5284,58 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.regions.push_back(copyRegion);
 
 		group->addChild(new CopyBufferToImageTestCase(testCtx, "buffer_offset", "Copy from buffer to image with buffer offset", params));
+	}
+
+	{
+		TestParams				params;
+		params.src.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
+		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent				= defaultExtent;
+		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			0u,											// VkDeviceSize				bufferOffset;
+			defaultSize,								// deUint32					bufferRowLength;
+			defaultSize,								// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion				copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer", "Copy from buffer that is just large enough to contain the accessed elements", params));
+	}
+
+	{
+		TestParams				params;
+		params.src.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultFourthSize;
+		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+		params.dst.image.extent				= defaultExtent;
+		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		params.allocationKind				= allocationKind;
+
+		const VkBufferImageCopy	bufferImageCopy	=
+		{
+			defaultFourthSize,							// VkDeviceSize				bufferOffset;
+			defaultSize,								// deUint32					bufferRowLength;
+			defaultSize,								// deUint32					bufferImageHeight;
+			defaultSourceLayer,							// VkImageSubresourceLayers	imageSubresource;
+			{defaultFourthSize, defaultFourthSize, 0},	// VkOffset3D				imageOffset;
+			defaultHalfExtent							// VkExtent3D				imageExtent;
+		};
+		CopyRegion				copyRegion;
+		copyRegion.bufferImageCopy	= bufferImageCopy;
+
+		params.regions.push_back(copyRegion);
+
+		group->addChild(new CopyBufferToImageTestCase(testCtx, "tightly_sized_buffer_offset", "Copy from buffer that is just large enough to contain the accessed elements", params));
 	}
 }
 
@@ -6851,9 +6978,9 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 		const VkImageResolve			testResolve	=
 		{
@@ -6894,9 +7021,9 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 		const VkImageResolve			testResolve	=
 		{
@@ -6937,9 +7064,9 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 
 		for (int i = 0; i < 256; i += 64)
@@ -6984,9 +7111,9 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 
 		const VkImageResolve			testResolve	=
@@ -7030,9 +7157,9 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
-			0u,								// uint32_t				mipLevel;
-			layerNdx,						// uint32_t				baseArrayLayer;
-			1u								// uint32_t				layerCount;
+			0u,								// deUint32				mipLevel;
+			layerNdx,						// deUint32				baseArrayLayer;
+			1u								// deUint32				layerCount;
 		};
 
 		const VkImageResolve			testResolve	=
@@ -7073,9 +7200,9 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 		const VkImageSubresourceLayers	sourceLayer	=
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,							// uint32_t				mipLevel;
-			0u,							// uint32_t				baseArrayLayer;
-			1u							// uint32_t				layerCount;
+			0u,							// deUint32				mipLevel;
+			0u,							// deUint32				baseArrayLayer;
+			1u							// deUint32				layerCount;
 		};
 		const VkImageResolve			testResolve	=
 		{

@@ -531,22 +531,26 @@ struct OpAtomicCase
 {
 	const char*		name;
 	const char*		assembly;
+	const char*		retValAssembly;
 	OpAtomicType	opAtomic;
 	deInt32			numOutputElements;
 
-					OpAtomicCase			(const char* _name, const char* _assembly, OpAtomicType _opAtomic, deInt32 _numOutputElements)
+					OpAtomicCase(const char* _name, const char* _assembly, const char* _retValAssembly, OpAtomicType _opAtomic, deInt32 _numOutputElements)
 						: name				(_name)
 						, assembly			(_assembly)
+						, retValAssembly	(_retValAssembly)
 						, opAtomic			(_opAtomic)
 						, numOutputElements	(_numOutputElements) {}
 };
 
-tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer)
+tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStorageBuffer, int numElements = 65535, bool verifyReturnValues = false)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx,
-																				useStorageBuffer ? "opatomic_storage_buffer" : "opatomic",
-																				"Test the OpAtomic* opcodes"));
-	const int						numElements			= 65535;
+	std::string						groupName			("opatomic");
+	if (useStorageBuffer)
+		groupName += "_storage_buffer";
+	if (verifyReturnValues)
+		groupName += "_return_values";
+	de::MovePtr<tcu::TestCaseGroup>	group				(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Test the OpAtomic* opcodes"));
 	vector<OpAtomicCase>			cases;
 
 	const StringTemplate			shaderTemplate	(
@@ -575,6 +579,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"OpMemberDecorate %sumbuf 0 Coherent\n"
 		"OpMemberDecorate %sumbuf 0 Offset 0\n"
 
+		"${RETVAL_BUF_DECORATE}"
+
 		+ getComputeAsmCommonTypes("${BLOCK_POINTER_TYPE}") +
 
 		"%buf       = OpTypeStruct %i32arr\n"
@@ -584,6 +590,8 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		"%sumbuf    = OpTypeStruct %i32arr\n"
 		"%sumbufptr = OpTypePointer ${BLOCK_POINTER_TYPE} %sumbuf\n"
 		"%sum       = OpVariable %sumbufptr ${BLOCK_POINTER_TYPE}\n"
+
+		"${RETVAL_BUF_DECL}"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%minusone  = OpConstant %i32 -1\n"
@@ -601,28 +609,39 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 
 		"%outloc    = OpAccessChain %i32ptr %sum %zero ${INDEX}\n"
 		"${INSTRUCTION}"
+		"${RETVAL_ASSEMBLY}"
 
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS) \
+	#define ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS) \
 	do { \
-		DE_STATIC_ASSERT((NUM_OUTPUT_ELEMENTS) == 1 || (NUM_OUTPUT_ELEMENTS) == numElements); \
-		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS)); \
+		DE_ASSERT((NUM_OUTPUT_ELEMENTS) == 1 || (NUM_OUTPUT_ELEMENTS) == numElements); \
+		cases.push_back(OpAtomicCase(#NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, NUM_OUTPUT_ELEMENTS)); \
 	} while (deGetFalse())
-	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, 1)
-	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, OPATOMIC, numElements)
+	#define ADD_OPATOMIC_CASE_1(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, 1)
+	#define ADD_OPATOMIC_CASE_N(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC) ADD_OPATOMIC_CASE(NAME, ASSEMBLY, RETVAL_ASSEMBLY, OPATOMIC, numElements)
 
-	ADD_OPATOMIC_CASE_1(iadd,	"%unused    = OpAtomicIAdd %i32 %outloc %one %zero %inval\n", OPATOMIC_IADD );
-	ADD_OPATOMIC_CASE_1(isub,	"%unused    = OpAtomicISub %i32 %outloc %one %zero %inval\n", OPATOMIC_ISUB );
-	ADD_OPATOMIC_CASE_1(iinc,	"%unused    = OpAtomicIIncrement %i32 %outloc %one %zero\n",  OPATOMIC_IINC );
-	ADD_OPATOMIC_CASE_1(idec,	"%unused    = OpAtomicIDecrement %i32 %outloc %one %zero\n",  OPATOMIC_IDEC );
-	ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %one %zero\n"
-								"             OpStore %outloc %inval2\n",  OPATOMIC_LOAD );
-	ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %one %zero %inval\n",  OPATOMIC_STORE );
+	ADD_OPATOMIC_CASE_1(iadd,	"%retv      = OpAtomicIAdd %i32 %outloc %one %zero %inval\n",
+								"             OpStore %retloc %retv\n", OPATOMIC_IADD );
+	ADD_OPATOMIC_CASE_1(isub,	"%retv      = OpAtomicISub %i32 %outloc %one %zero %inval\n",
+								"             OpStore %retloc %retv\n", OPATOMIC_ISUB );
+	ADD_OPATOMIC_CASE_1(iinc,	"%retv      = OpAtomicIIncrement %i32 %outloc %one %zero\n",
+								"             OpStore %retloc %retv\n", OPATOMIC_IINC );
+	ADD_OPATOMIC_CASE_1(idec,	"%retv      = OpAtomicIDecrement %i32 %outloc %one %zero\n",
+								"             OpStore %retloc %retv\n", OPATOMIC_IDEC );
+	if (!verifyReturnValues)
+	{
+		ADD_OPATOMIC_CASE_N(load,	"%inval2    = OpAtomicLoad %i32 %inloc %one %zero\n"
+									"             OpStore %outloc %inval2\n", "", OPATOMIC_LOAD );
+		ADD_OPATOMIC_CASE_N(store,	"             OpAtomicStore %outloc %one %zero %inval\n", "", OPATOMIC_STORE );
+	}
+
 	ADD_OPATOMIC_CASE_N(compex, "%even      = OpSMod %i32 %inval %two\n"
 								"             OpStore %outloc %even\n"
-								"%unused    = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",  OPATOMIC_COMPEX );
+								"%retv      = OpAtomicCompareExchange %i32 %outloc %one %zero %zero %minusone %zero\n",
+								"			  OpStore %retloc %retv\n", OPATOMIC_COMPEX );
+
 
 	#undef ADD_OPATOMIC_CASE
 	#undef ADD_OPATOMIC_CASE_1
@@ -639,6 +658,36 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 		specializations["INSTRUCTION"]			= cases[caseNdx].assembly;
 		specializations["BLOCK_DECORATION"]		= useStorageBuffer ? "Block" : "BufferBlock";
 		specializations["BLOCK_POINTER_TYPE"]	= useStorageBuffer ? "StorageBuffer" : "Uniform";
+
+		if (verifyReturnValues)
+		{
+			const StringTemplate blockDecoration	(
+				"\n"
+				"OpDecorate %retbuf ${BLOCK_DECORATION}\n"
+				"OpDecorate %ret DescriptorSet 0\n"
+				"OpDecorate %ret Binding 2\n"
+				"OpMemberDecorate %retbuf 0 Offset 0\n\n");
+
+			const StringTemplate blockDeclaration	(
+				"\n"
+				"%retbuf    = OpTypeStruct %i32arr\n"
+				"%retbufptr = OpTypePointer ${BLOCK_POINTER_TYPE} %retbuf\n"
+				"%ret       = OpVariable %retbufptr ${BLOCK_POINTER_TYPE}\n\n");
+
+			specializations["RETVAL_ASSEMBLY"] =
+				"%retloc    = OpAccessChain %i32ptr %ret %zero %x\n"
+				+ std::string(cases[caseNdx].retValAssembly);
+
+			specializations["RETVAL_BUF_DECORATE"]	= blockDecoration.specialize(specializations);
+			specializations["RETVAL_BUF_DECL"]		= blockDeclaration.specialize(specializations);
+		}
+		else
+		{
+			specializations["RETVAL_ASSEMBLY"]		= "";
+			specializations["RETVAL_BUF_DECORATE"]	= "";
+			specializations["RETVAL_BUF_DECL"]		= "";
+		}
+
 		spec.assembly							= shaderTemplate.specialize(specializations);
 
 		if (useStorageBuffer)
@@ -646,7 +695,33 @@ tcu::TestCaseGroup* createOpAtomicGroup (tcu::TestContext& testCtx, bool useStor
 
 		spec.inputs.push_back(BufferSp(new OpAtomicBuffer(numElements, cases[caseNdx].numOutputElements, cases[caseNdx].opAtomic, BUFFERTYPE_INPUT)));
 		spec.outputs.push_back(BufferSp(new OpAtomicBuffer(numElements, cases[caseNdx].numOutputElements, cases[caseNdx].opAtomic, BUFFERTYPE_EXPECTED)));
+		if (verifyReturnValues)
+			spec.outputs.push_back(BufferSp(new OpAtomicBuffer(numElements, cases[caseNdx].numOutputElements, cases[caseNdx].opAtomic, BUFFERTYPE_ATOMIC_RET)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
+
+		if (verifyReturnValues)
+		{
+			switch (cases[caseNdx].opAtomic)
+			{
+				case OPATOMIC_IADD:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_IADD>;
+					break;
+				case OPATOMIC_ISUB:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_ISUB>;
+					break;
+				case OPATOMIC_IINC:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_IINC>;
+					break;
+				case OPATOMIC_IDEC:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_IDEC>;
+					break;
+				case OPATOMIC_COMPEX:
+					spec.verifyIO = OpAtomicBuffer::compareWithRetvals<OPATOMIC_COMPEX>;
+					break;
+				default:
+					DE_FATAL("Unsupported OpAtomic type for return value verification");
+			}
+		}
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
 
@@ -5495,7 +5570,7 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 		"OpNoLine\n"
 		"OpLine %name 1 1\n"
 		"OpLine %name 1 1\n"
-		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"%second_function = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"OpNoLine\n"
 		"OpLine %name 1 1\n"
 		"OpNoLine\n"
@@ -5516,7 +5591,7 @@ tcu::TestCaseGroup* createOpNoLineTests(tcu::TestContext& testCtx)
 		"OpNoLine\n"
 		"OpNoLine\n"
 		"OpLine %name 1 1\n"
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"OpNoLine\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"OpNoLine\n"
@@ -5552,7 +5627,7 @@ tcu::TestCaseGroup* createOpModuleProcessedTests(tcu::TestContext& testCtx)
 		"OpModuleProcessed \"Date: 2017/09/21\"\n";
 
 	fragments["pre_main"]	=
-		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"%second_function = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%second_param1 = OpFunctionParameter %v4f32\n"
 		"%label_secondfunction = OpLabel\n"
 		"OpReturnValue %second_param1\n"
@@ -5560,7 +5635,7 @@ tcu::TestCaseGroup* createOpModuleProcessedTests(tcu::TestContext& testCtx)
 
 	fragments["testfun"]		=
 		// A %test_code function that returns its argument unchanged.
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%val1 = OpFunctionCall %v4f32 %second_function %param1\n"
@@ -5598,7 +5673,7 @@ tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 		"OpLine %other_name 4294967295 0\n"
 		"OpLine %other_name 32 40\n"
 		"OpLine %file_name 0 0\n"
-		"%second_function = OpFunction %v4f32 None %v4f32_function\n"
+		"%second_function = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"OpLine %file_name 1 0\n"
 		"%second_param1 = OpFunctionParameter %v4f32\n"
 		"OpLine %file_name 1 3\n"
@@ -5613,7 +5688,7 @@ tcu::TestCaseGroup* createOpLineTests(tcu::TestContext& testCtx)
 	fragments["testfun"]		=
 		// A %test_code function that returns its argument unchanged.
 		"OpLine %file_name 1 0\n"
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"OpLine %file_name 16 330\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"OpLine %file_name 14 442\n"
@@ -5642,7 +5717,7 @@ tcu::TestCaseGroup* createOpConstantNullTests(tcu::TestContext& testCtx)
 
 
 	const char						functionStart[] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%lbl    = OpLabel\n";
 
@@ -5759,7 +5834,7 @@ tcu::TestCaseGroup* createOpConstantCompositeTests(tcu::TestContext& testCtx)
 
 
 	const char						functionStart[]	 =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%lbl    = OpLabel\n";
 
@@ -5910,7 +5985,7 @@ tcu::TestCaseGroup* createSelectionBlockOrderTests(tcu::TestContext& testCtx)
 	//   return result;
 	// }
 	const char						function[]			=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1    = OpFunctionParameter %v4f32\n"
 		"%lbl       = OpLabel\n"
 		"%iptr      = OpVariable %fp_i32 Function\n"
@@ -6002,7 +6077,7 @@ tcu::TestCaseGroup* createSwitchBlockOrderTests(tcu::TestContext& testCtx)
 	//   return result;
 	// }
 	const char						function[]			=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1    = OpFunctionParameter %v4f32\n"
 		"%lbl       = OpLabel\n"
 		"%iptr      = OpVariable %fp_i32 Function\n"
@@ -6115,7 +6190,7 @@ tcu::TestCaseGroup* createDecorationGroupTests(tcu::TestContext& testCtx)
 		"%c_struct2 = OpConstantComposite %struct2 %c_a3f32_2\n";
 
 	const char						function[]			=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%entry     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
@@ -6249,7 +6324,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"%sc_op     = OpSpecConstantOp ${SC_RESULT_TYPE} ${SC_OP}\n";
 
 	const char	function1[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"${TYPE_CONVERT:opt}"
@@ -6403,7 +6478,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		"%sc_final    = OpSpecConstantOp %i32   IMul             %sc_sub      %sc_ext_2\n";								// (sc_2 - sc_0) * sc_1
 
 	const char	function2[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
@@ -6465,7 +6540,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 	//   return result;
 	// }
 	const char	function1[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1    = OpFunctionParameter %v4f32\n"
 		"%lbl       = OpLabel\n"
 		"%iptr      = OpVariable %fp_i32 Function\n"
@@ -6529,7 +6604,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	// Add .4 to the second element of the given parameter.
 	const char	function2[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%entry     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
@@ -6571,7 +6646,7 @@ tcu::TestCaseGroup* createOpPhiTests(tcu::TestContext& testCtx)
 
 	// Swap the second and the third element of the given parameter.
 	const char	function3[]				=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%entry     = OpLabel\n"
 		"%result    = OpVariable %fp_v4f32 Function\n"
@@ -6628,7 +6703,7 @@ tcu::TestCaseGroup* createNoContractionTests(tcu::TestContext& testCtx)
 		"%c_f32_n1pn24   = OpConstant %f32 -0x1p-24\n";
 
 	const char						function[]	 =
-		"%test_code      = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code      = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param          = OpFunctionParameter %v4f32\n"
 		"%label          = OpLabel\n"
 		"%var1           = OpVariable %fp_f32 Function %c_f32_1pl2_23\n"
@@ -6695,7 +6770,7 @@ tcu::TestCaseGroup* createMemoryAccessTests(tcu::TestContext& testCtx)
 		"%fp_stype          = OpTypePointer Function %stype\n";
 
 	const char						function[]	 =
-		"%test_code         = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code         = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1            = OpFunctionParameter %v4f32\n"
 		"%lbl               = OpLabel\n"
 		"%v1                = OpVariable %fp_v4f32 Function\n"
@@ -6788,7 +6863,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	{
 		fragments["undef_type"] = tests[testNdx].type;
 		fragments["testfun"] = StringTemplate(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"%param1 = OpFunctionParameter %v4f32\n"
 			"%label_testfun = OpLabel\n"
 			"%undef = OpUndef ${undef_type}\n"
@@ -6800,7 +6875,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	fragments.clear();
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %f32\n"
@@ -6816,7 +6891,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("float32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %i32\n"
@@ -6829,7 +6904,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("sint32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %u32\n"
@@ -6842,7 +6917,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("uint32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %v4f32\n"
@@ -6879,7 +6954,7 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	fragments["pre_main"] =
 		"%m2x2f32 = OpTypeMatrix %v2f32 2\n";
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%undef = OpUndef %m2x2f32\n"
@@ -7039,7 +7114,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 		"%test_constant = OpConstant %f32 ";  // The value will be test.constant.
 
 	StringTemplate	function			(
-		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code     = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%a             = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
@@ -7058,7 +7133,7 @@ void createOpQuantizeSingleOptionTests(tcu::TestCaseGroup* testCtx)
 			"%c             = OpSpecConstantOp %f32 QuantizeToF16 %test_constant\n";
 
 	StringTemplate	specConstantFunction(
-		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code     = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"${condition}\n"
@@ -7166,7 +7241,7 @@ void createOpQuantizeTwoPossibilityTests(tcu::TestCaseGroup* testCtx)
 	const char* specDecorations = "OpDecorate %input_const  SpecId 0\n";
 
 	const char* function  =
-		"%test_code     = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code     = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1        = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%a             = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
@@ -7313,7 +7388,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 	// itself. In SPIR-V terms, the "loop construct" contains no blocks at all
 	// -- the "continue construct" forms the entire loop.
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7342,7 +7417,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 	// Body comprised of multiple basic blocks.
 	const StringTemplate multiBlock(
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7398,7 +7473,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 	// A loop with continue statement.
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7438,7 +7513,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 	// A loop with break.
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7483,7 +7558,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 
 	// A loop with return.
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7546,7 +7621,7 @@ tcu::TestCaseGroup* createLoopTests(tcu::TestContext& testCtx)
 		"%false = OpConstantFalse %bool\n";
 
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7606,7 +7681,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%Workgroup = OpConstant %i32 2\n"
 		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n";
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
@@ -7620,7 +7695,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n"
 		"%c_f32_5 = OpConstant %f32 5.\n";
 	const string setupPercentZero =	 // Begins %test_code function with code that sets %zero to 0u but cannot be optimized away.
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%entry = OpLabel\n"
 		";param1 components are between 0 and 1, so dot product is 4 or less\n"
@@ -7710,7 +7785,7 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%WorkgroupAcquireRelease = OpConstant %i32 0x108\n"
 		"%c_f32_10 = OpConstant %f32 10.\n";
 	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%entry = OpLabel\n"
 		"%val0 = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
@@ -7759,7 +7834,7 @@ tcu::TestCaseGroup* createFRemTests(tcu::TestContext& testCtx)
 	// vec4 result = (param1 * 8.0) - 4.0;
 	// return (frem(result.x,3) + 0.75, frem(result.y, -3) + 0.75, 0, 1)
 	fragments["testfun"]				 =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%v_times_8 = OpVectorTimesScalar %v4f32 %param1 %c_f32_8\n"
@@ -7805,7 +7880,7 @@ tcu::TestCaseGroup* createOpSRemGraphicsTests(tcu::TestContext& testCtx, qpTestR
 	// ivec4 result = ivec4(srem(ints.x, ints.y), srem(ints.y, ints.z), srem(ints.z, ints.x), 255);
 	// return float(result + 128) / 255.0;
 	fragments["testfun"]				 =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%div255 = OpFMul %v4f32 %param1 %c_v4f32_255\n"
@@ -7888,7 +7963,7 @@ tcu::TestCaseGroup* createOpSModGraphicsTests(tcu::TestContext& testCtx, qpTestR
 	// ivec4 result = ivec4(smod(ints.x, ints.y), smod(ints.y, ints.z), smod(ints.z, ints.x), 255);
 	// return float(result + 128) / 255.0;
 	fragments["testfun"]				 =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"%div255 = OpFMul %v4f32 %param1 %c_v4f32_255\n"
@@ -8425,7 +8500,7 @@ const map<string, string> getConvertCaseFragments (string instruction, const Con
 		"     %SSBOo = OpVariable %ptr_SSBOo StorageBuffer\n");
 
 	const StringTemplate testfun (
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param     = OpFunctionParameter %v4f32\n"
 		"%label     = OpLabel\n"
 		"%iLoc      = OpAccessChain %ptr_in %SSBOi %c_u32_0\n"
@@ -8464,8 +8539,10 @@ tcu::TestCaseGroup* createConvertComputeTests (tcu::TestContext& testCtx, const 
 		spec.inputs.push_back	(test->m_inputBuffer);
 		spec.outputs.push_back	(test->m_outputBuffer);
 
-		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType))
+		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType)) {
 			spec.extensions.push_back("VK_KHR_16bit_storage");
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		}
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "", spec, test->m_features));
 	}
@@ -8487,6 +8564,7 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 		vector<string>		extensions;
 		vector<deInt32>		noSpecConstants;
 		PushConstants		noPushConstants;
+		VulkanFeatures          vulkanFeatures;
 		GraphicsInterfaces	noInterfaces;
 		tcu::RGBA			defaultColors[4];
 
@@ -8495,12 +8573,14 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 		resources.outputs.push_back	(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, test->m_outputBuffer));
 		extensions.push_back		("VK_KHR_storage_buffer_storage_class");
 
-		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType))
+		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64 || usesInt16(test->m_fromType, test->m_toType)) {
 			extensions.push_back("VK_KHR_16bit_storage");
+			vulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		}
 
 		createTestsForAllStages(
 			test->m_name, defaultColors, defaultColors, fragments, noSpecConstants,
-			noPushConstants, resources, noInterfaces, extensions, features, VulkanFeatures(), group.get());
+			noPushConstants, resources, noInterfaces, extensions, features, vulkanFeatures, group.get());
 	}
 	return group.release();
 }
@@ -9248,7 +9328,7 @@ tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
 	getDefaultColors(defaultColors);
 
 	opNopFragments["testfun"]		=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"OpNop\n"
@@ -9286,7 +9366,7 @@ tcu::TestCaseGroup* createOpNameTests (tcu::TestContext& testCtx)
 		"OpName %BP_main \"not_main\"";
 
 	opNameFragments["testfun"]		=
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_func = OpLabel\n"
 		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
@@ -9314,7 +9394,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpNopGroup(testCtx));
 	computeTests->addChild(createOpFUnordGroup(testCtx));
 	computeTests->addChild(createOpAtomicGroup(testCtx, false));
-	computeTests->addChild(createOpAtomicGroup(testCtx, true)); // Using new StorageBuffer decoration
+	computeTests->addChild(createOpAtomicGroup(testCtx, true));					// Using new StorageBuffer decoration
+	computeTests->addChild(createOpAtomicGroup(testCtx, false, 1024, true));	// Return value validation
 	computeTests->addChild(createOpLineGroup(testCtx));
 	computeTests->addChild(createOpModuleProcessedGroup(testCtx));
 	computeTests->addChild(createOpNoLineGroup(testCtx));

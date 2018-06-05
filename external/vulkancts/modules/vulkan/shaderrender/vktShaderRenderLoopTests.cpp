@@ -174,7 +174,11 @@ enum LoopCase
 		LOOPCASE_NESTED_SEQUENCE,							// two loops in sequence nested inside a th$
 		LOOPCASE_NESTED_TRICKY_DATAFLOW_1,					// nested loops with tricky data flow
 		LOOPCASE_NESTED_TRICKY_DATAFLOW_2,					// nested loops with tricky data flow
-
+		LOOPCASE_PRE_FALLTHROUGH,							// loop inside switch fallthrough portion
+		LOOPCASE_POST_FALLTHROUGH,							// loop inside switch with fallthrough after
+		LOOPCASE_DOWHILE_TRAP,								// dowhile loop inside loop which shouldn't loop
+		LOOPCASE_IFBLOCK,									// loop inside if block
+		LOOPCASE_ELSEBLOCK,									// loop inside else block
 		//LOOPCASE_MULTI_DECLARATION,						// for (int i,j,k; ...) ...  -- illegal?
 
 		LOOPCASE_LAST
@@ -209,8 +213,13 @@ static const char* getLoopCaseName (LoopCase loopCase)
 				"nested",
 				"nested_sequence",
 				"nested_tricky_dataflow_1",
-				"nested_tricky_dataflow_2"
-				//"multi_declaration",
+				"nested_tricky_dataflow_2",
+				"pre_fallthrough",
+				"post_fallthrough",
+				"dowhile_trap",
+				"ifblock",
+				"elseblock"
+				// "multi_declaration",
 		};
 
 		DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_names) == LOOPCASE_LAST);
@@ -455,7 +464,7 @@ static de::MovePtr<ShaderLoopCase> createGenericLoopCase (tcu::TestContext&	test
 	// Loop body.
 	std::string loopBody;
 
-	loopBody = "		res = res.yzwx;\n";
+	loopBody = "		res = res.yzwx + vec4(1.0);\n";
 
 	if (loopType == LOOPTYPE_FOR)
 	{
@@ -484,6 +493,8 @@ static de::MovePtr<ShaderLoopCase> createGenericLoopCase (tcu::TestContext&	test
 	}
 	else
 		DE_ASSERT(false);
+
+	op << "	res -= vec4(" + de::toString(numLoopIters) + ");\n";
 
 	if (isVertexCase)
 	{
@@ -648,59 +659,59 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 
 			case LOOPCASE_INFINITE_WITH_UNCONDITIONAL_BREAK_FIRST:
 				numIters = 0;
-				op << "	for (;;) { break; res = res.yzwx; }\n";
+				op << "	for (;;) { break; res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_INFINITE_WITH_UNCONDITIONAL_BREAK_LAST:
 				numIters = 1;
-				op << "	for (;;) { res = res.yzwx; break; }\n";
+				op << "	for (;;) { res = res.yzwx + vec4(1.0); break; }\n";
 				break;
 
 			case LOOPCASE_INFINITE_WITH_CONDITIONAL_BREAK:
 				numIters = 2;
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	for (;;) { res = res.yzwx; if (i == ${ONE}) break; i++; }\n";
+				op << "	for (;;) { res = res.yzwx + vec4(1.0); if (i == ${ONE}) break; i++; }\n";
 				break;
 
 			case LOOPCASE_SINGLE_STATEMENT:
-				op << "	${FOR_LOOP} res = res.yzwx;\n";
+				op << "	${FOR_LOOP} res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_COMPOUND_STATEMENT:
 				iterCount	= 2;
 				numIters	= 2 * iterCount;
-				op << "	${FOR_LOOP} { res = res.yzwx; res = res.yzwx; }\n";
+				op << "	${FOR_LOOP} { res = res.yzwx + vec4(1.0); res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_SEQUENCE_STATEMENT:
 				iterCount	= 2;
 				numIters	= 2 * iterCount;
-				op << "	${FOR_LOOP} res = res.yzwx, res = res.yzwx;\n";
+				op << "	${FOR_LOOP} res = res.yzwx + vec4(1.0), res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_NO_ITERATIONS:
 				iterCount	= 0;
 				numIters	= 0;
-				op << "	${FOR_LOOP} res = res.yzwx;\n";
+				op << "	${FOR_LOOP} res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_SINGLE_ITERATION:
 				iterCount	= 1;
 				numIters	= 1;
-				op << "	${FOR_LOOP} res = res.yzwx;\n";
+				op << "	${FOR_LOOP} res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_SELECT_ITERATION_COUNT:
-				op << "	for (int i = 0; i < (ub_true ? ${ITER_COUNT} : 0); i++) res = res.yzwx;\n";
+				op << "	for (int i = 0; i < (ub_true ? ${ITER_COUNT} : 0); i++) res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_CONDITIONAL_CONTINUE:
 				numIters = iterCount - 1;
-				op << "	${FOR_LOOP} { if (i == ${TWO}) continue; res = res.yzwx; }\n";
+				op << "	${FOR_LOOP} { if (i == ${TWO}) continue; res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_UNCONDITIONAL_CONTINUE:
-				op << "	${FOR_LOOP} { res = res.yzwx; continue; }\n";
+				op << "	${FOR_LOOP} { res = res.yzwx + vec4(1.0); continue; }\n";
 				break;
 
 			case LOOPCASE_ONLY_CONTINUE:
@@ -710,48 +721,48 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 
 			case LOOPCASE_DOUBLE_CONTINUE:
 				numIters = iterCount - 1;
-				op << "	${FOR_LOOP} { if (i == ${TWO}) continue; res = res.yzwx; continue; }\n";
+				op << "	${FOR_LOOP} { if (i == ${TWO}) continue; res = res.yzwx + vec4(1.0); continue; }\n";
 				break;
 
 			case LOOPCASE_CONDITIONAL_BREAK:
 				numIters = 2;
-				op << "	${FOR_LOOP} { if (i == ${TWO}) break; res = res.yzwx; }\n";
+				op << "	${FOR_LOOP} { if (i == ${TWO}) break; res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_UNCONDITIONAL_BREAK:
 				numIters = 1;
-				op << "	${FOR_LOOP} { res = res.yzwx; break; }\n";
+				op << "	${FOR_LOOP} { res = res.yzwx + vec4(1.0); break; }\n";
 				break;
 
 			case LOOPCASE_PRE_INCREMENT:
-				op << "	for (int i = 0; i < ${ITER_COUNT}; ++i) { res = res.yzwx; }\n";
+				op << "	for (int i = 0; i < ${ITER_COUNT}; ++i) { res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_POST_INCREMENT:
-				op << "	${FOR_LOOP} { res = res.yzwx; }\n";
+				op << "	${FOR_LOOP} { res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_MIXED_BREAK_CONTINUE:
 				numIters	= 2;
 				iterCount	= 5;
-				op << "	${FOR_LOOP} { if (i == 0) continue; else if (i == 3) break; res = res.yzwx; }\n";
+				op << "	${FOR_LOOP} { if (i == 0) continue; else if (i == 3) break; res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_VECTOR_COUNTER:
-				op << "	for (${COUNTER_PRECISION} ivec4 i = ivec4(0, 1, ${ITER_COUNT}, 0); i.x < i.z; i.x += i.y) { res = res.yzwx; }\n";
+				op << "	for (${COUNTER_PRECISION} ivec4 i = ivec4(0, 1, ${ITER_COUNT}, 0); i.x < i.z; i.x += i.y) { res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_101_ITERATIONS:
 				numIters = iterCount = 101;
-				op << "	${FOR_LOOP} res = res.yzwx;\n";
+				op << "	${FOR_LOOP} res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_SEQUENCE:
 				iterCount	= 5;
 				numIters	= 5;
 				op << "	${COUNTER_PRECISION} int i;\n";
-				op << "	for (i = 0; i < ${TWO}; i++) { res = res.yzwx; }\n";
-				op << "	for (; i < ${ITER_COUNT}; i++) { res = res.yzwx; }\n";
+				op << "	for (i = 0; i < ${TWO}; i++) { res = res.yzwx + vec4(1.0); }\n";
+				op << "	for (; i < ${ITER_COUNT}; i++) { res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_NESTED:
@@ -759,7 +770,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "	for (${COUNTER_PRECISION} int i = 0; i < ${TWO}; i++)\n";
 				op << "	{\n";
 				op << "		for (${COUNTER_PRECISION} int j = 0; j < ${ITER_COUNT}; j++)\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "	}\n";
 				break;
 
@@ -768,9 +779,9 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "	for (${COUNTER_PRECISION} int i = 0; i < ${ITER_COUNT}; i++)\n";
 				op << "	{\n";
 				op << "		for (${COUNTER_PRECISION} int j = 0; j < ${TWO}; j++)\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		for (${COUNTER_PRECISION} int j = 0; j < ${ONE}; j++)\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "	}\n";
 				break;
 
@@ -780,7 +791,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "	{\n";
 				op << "		res = coords; // ignore outer loop effect \n";
 				op << "		for (${COUNTER_PRECISION} int j = 0; j < ${TWO}; j++)\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "	}\n";
 				break;
 
@@ -788,10 +799,77 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				numIters = iterCount;
 				op << "	${FOR_LOOP}\n";
 				op << "	{\n";
-				op << "		res = coords.wxyz;\n";
+				op << "		res = coords.wxyz - vec4(1.0);\n";
 				op << "		for (${COUNTER_PRECISION} int j = 0; j < ${TWO}; j++)\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		coords = res;\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_PRE_FALLTHROUGH:
+				numIters = iterCount + 1;
+				op << "	int j = 3;\n";
+				op << "	switch (j)\n";
+				op << "	{\n";
+				op << "	case 3:\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	case 4:\n";
+				op << "		${FOR_LOOP}\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		break;\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_POST_FALLTHROUGH:
+				numIters = iterCount + 1;
+				op << "	int j = 3;\n";
+				op << "	switch (j)\n";
+				op << "	{\n";
+				op << "	case 3:\n";
+				op << "		${FOR_LOOP}\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "	case 4:\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "		break;\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_DOWHILE_TRAP:
+				numIters = iterCount = 3;
+				op << "	${FOR_LOOP}\n";
+				op << "	{\n";
+				op << "		do\n";
+				op << "		{\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		} while (i >= ${THREE});\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_IFBLOCK:
+				numIters = iterCount;
+				op << "	int j = 3;\n";
+				op << "	if (j == ${THREE})\n";
+				op << "	{\n";
+				op << "		${FOR_LOOP}\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "	}\n";
+				op << "	else\n";
+				op << "	{\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_ELSEBLOCK:
+				numIters = iterCount;
+				op << "	int j = 2;\n";
+				op << "	if (j == ${THREE})\n";
+				op << "	{\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	}\n";
+				op << "	else\n";
+				op << "	{\n";
+				op << "		${FOR_LOOP}\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "	}\n";
 				break;
 
@@ -819,60 +897,60 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 
 			case LOOPCASE_INFINITE_WITH_UNCONDITIONAL_BREAK_FIRST:
 				numIters = 0;
-				op << "	while (true) { break; res = res.yzwx; }\n";
+				op << "	while (true) { break; res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_INFINITE_WITH_UNCONDITIONAL_BREAK_LAST:
 				numIters = 1;
-				op << "	while (true) { res = res.yzwx; break; }\n";
+				op << "	while (true) { res = res.yzwx + vec4(1.0); break; }\n";
 				break;
 
 			case LOOPCASE_INFINITE_WITH_CONDITIONAL_BREAK:
 				numIters = 2;
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	while (true) { res = res.yzwx; if (i == ${ONE}) break; i++; }\n";
+				op << "	while (true) { res = res.yzwx + vec4(1.0); if (i == ${ONE}) break; i++; }\n";
 				break;
 
 			case LOOPCASE_SINGLE_STATEMENT:
-				op << "	${WHILE_LOOP} res = res.yzwx;\n";
+				op << "	${WHILE_LOOP} res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_COMPOUND_STATEMENT:
 				iterCount	= 2;
 				numIters	= 2 * iterCount;
-				op << "	${WHILE_LOOP} { res = res.yzwx; res = res.yzwx; }\n";
+				op << "	${WHILE_LOOP} { res = res.yzwx + vec4(1.0); res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_SEQUENCE_STATEMENT:
 				iterCount	= 2;
 				numIters	= 2 * iterCount;
-				op << "	${WHILE_LOOP} res = res.yzwx, res = res.yzwx;\n";
+				op << "	${WHILE_LOOP} res = res.yzwx + vec4(1.0), res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_NO_ITERATIONS:
 				iterCount	= 0;
 				numIters	= 0;
-				op << "	${WHILE_LOOP} res = res.yzwx;\n";
+				op << "	${WHILE_LOOP} res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_SINGLE_ITERATION:
 				iterCount	= 1;
 				numIters	= 1;
-				op << "	${WHILE_LOOP} res = res.yzwx;\n";
+				op << "	${WHILE_LOOP} res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_SELECT_ITERATION_COUNT:
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	while (i < (ub_true ? ${ITER_COUNT} : 0)) { res = res.yzwx; i++; }\n";
+				op << "	while (i < (ub_true ? ${ITER_COUNT} : 0)) { res = res.yzwx + vec4(1.0); i++; }\n";
 				break;
 
 			case LOOPCASE_CONDITIONAL_CONTINUE:
 				numIters = iterCount - 1;
-				op << "	${WHILE_LOOP} { if (i == ${TWO}) continue; res = res.yzwx; }\n";
+				op << "	${WHILE_LOOP} { if (i == ${TWO}) continue; res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_UNCONDITIONAL_CONTINUE:
-				op << "	${WHILE_LOOP} { res = res.yzwx; continue; }\n";
+				op << "	${WHILE_LOOP} { res = res.yzwx + vec4(1.0); continue; }\n";
 				break;
 
 			case LOOPCASE_ONLY_CONTINUE:
@@ -882,52 +960,52 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 
 			case LOOPCASE_DOUBLE_CONTINUE:
 				numIters = iterCount - 1;
-				op << "	${WHILE_LOOP} { if (i == ${ONE}) continue; res = res.yzwx; continue; }\n";
+				op << "	${WHILE_LOOP} { if (i == ${ONE}) continue; res = res.yzwx + vec4(1.0); continue; }\n";
 				break;
 
 			case LOOPCASE_CONDITIONAL_BREAK:
 				numIters = 2;
-				op << "	${WHILE_LOOP} { if (i == ${THREE}) break; res = res.yzwx; }\n";
+				op << "	${WHILE_LOOP} { if (i == ${THREE}) break; res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_UNCONDITIONAL_BREAK:
 				numIters = 1;
-				op << "	${WHILE_LOOP} { res = res.yzwx; break; }\n";
+				op << "	${WHILE_LOOP} { res = res.yzwx + vec4(1.0); break; }\n";
 				break;
 
 			case LOOPCASE_PRE_INCREMENT:
 				numIters = iterCount - 1;
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	while (++i < ${ITER_COUNT}) { res = res.yzwx; }\n";
+				op << "	while (++i < ${ITER_COUNT}) { res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_POST_INCREMENT:
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	while (i++ < ${ITER_COUNT}) { res = res.yzwx; }\n";
+				op << "	while (i++ < ${ITER_COUNT}) { res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_MIXED_BREAK_CONTINUE:
 				numIters	= 2;
 				iterCount	= 5;
-				op << "	${WHILE_LOOP} { if (i == 0) continue; else if (i == 3) break; res = res.yzwx; }\n";
+				op << "	${WHILE_LOOP} { if (i == 0) continue; else if (i == 3) break; res = res.yzwx + vec4(1.0); }\n";
 				break;
 
 			case LOOPCASE_VECTOR_COUNTER:
 				op << "	${COUNTER_PRECISION} ivec4 i = ivec4(0, 1, ${ITER_COUNT}, 0);\n";
-				op << "	while (i.x < i.z) { res = res.yzwx; i.x += i.y; }\n";
+				op << "	while (i.x < i.z) { res = res.yzwx + vec4(1.0); i.x += i.y; }\n";
 				break;
 
 			case LOOPCASE_101_ITERATIONS:
 				numIters = iterCount = 101;
-				op << "	${WHILE_LOOP} res = res.yzwx;\n";
+				op << "	${WHILE_LOOP} res = res.yzwx + vec4(1.0);\n";
 				break;
 
 			case LOOPCASE_SEQUENCE:
 				iterCount	= 6;
 				numIters	= iterCount - 1;
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	while (i++ < ${TWO}) { res = res.yzwx; }\n";
-				op << "	while (i++ < ${ITER_COUNT}) { res = res.yzwx; }\n"; // \note skips one iteration
+				op << "	while (i++ < ${TWO}) { res = res.yzwx + vec4(1.0); }\n";
+				op << "	while (i++ < ${ITER_COUNT}) { res = res.yzwx + vec4(1.0); }\n"; // \note skips one iteration
 				break;
 
 			case LOOPCASE_NESTED:
@@ -937,7 +1015,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "	{\n";
 				op << "		${COUNTER_PRECISION} int j = 0;\n";
 				op << "		while (j++ < ${ITER_COUNT})\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "	}\n";
 				break;
 
@@ -948,9 +1026,9 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "	{\n";
 				op << "		${COUNTER_PRECISION} int j = 0;\n";
 				op << "		while (j++ < ${ONE})\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		while (j++ < ${THREE})\n"; // \note skips one iteration
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "	}\n";
 				break;
 
@@ -961,7 +1039,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "		res = coords; // ignore outer loop effect \n";
 				op << "		${COUNTER_PRECISION} int j = 0;\n";
 				op << "		while (j++ < ${TWO})\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "	}\n";
 				break;
 
@@ -969,11 +1047,78 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				numIters = iterCount;
 				op << "	${WHILE_LOOP}\n";
 				op << "	{\n";
-				op << "		res = coords.wxyz;\n";
+				op << "		res = coords.wxyz - vec4(1.0);\n";
 				op << "		${COUNTER_PRECISION} int j = 0;\n";
 				op << "		while (j++ < ${TWO})\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		coords = res;\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_PRE_FALLTHROUGH:
+				numIters = iterCount + 1;
+				op << "	int j = 3;\n";
+				op << "	switch (j)\n";
+				op << "	{\n";
+				op << "	case 3:\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	case 4:\n";
+				op << "		${WHILE_LOOP}\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		break;\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_POST_FALLTHROUGH:
+				numIters = iterCount + 1;
+				op << "	int j = 3;\n";
+				op << "	switch (j)\n";
+				op << "	{\n";
+				op << "	case 3:\n";
+				op << "		${WHILE_LOOP}\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "	case 4:\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "		break;\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_DOWHILE_TRAP:
+				numIters = iterCount = 3;
+				op << "	${WHILE_LOOP}\n";
+				op << "	{\n";
+				op << "		do\n";
+				op << "		{\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		} while (i > ${THREE});\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_IFBLOCK:
+				numIters = iterCount;
+				op << "	int j = 3;\n";
+				op << "	if (j == ${THREE})\n";
+				op << "	{\n";
+				op << "		${WHILE_LOOP}\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "	}\n";
+				op << "	else\n";
+				op << "	{\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_ELSEBLOCK:
+				numIters = iterCount;
+				op << "	int j = 2;\n";
+				op << "	if (j == ${THREE})\n";
+				op << "	{\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	}\n";
+				op << "	else\n";
+				op << "	{\n";
+				op << "		${WHILE_LOOP}\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "	}\n";
 				break;
 
@@ -1003,34 +1148,34 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 
 			case LOOPCASE_INFINITE_WITH_UNCONDITIONAL_BREAK_FIRST:
 				numIters = 0;
-				op << "	do { break; res = res.yzwx; } while (true);\n";
+				op << "	do { break; res = res.yzwx + vec4(1.0); } while (true);\n";
 				break;
 
 			case LOOPCASE_INFINITE_WITH_UNCONDITIONAL_BREAK_LAST:
 				numIters = 1;
-				op << "	do { res = res.yzwx; break; } while (true);\n";
+				op << "	do { res = res.yzwx + vec4(1.0); break; } while (true);\n";
 				break;
 
 			case LOOPCASE_INFINITE_WITH_CONDITIONAL_BREAK:
 				numIters = 2;
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	do { res = res.yzwx; if (i == ${ONE}) break; i++; } while (true);\n";
+				op << "	do { res = res.yzwx + vec4(1.0); if (i == ${ONE}) break; i++; } while (true);\n";
 				break;
 
 			case LOOPCASE_SINGLE_STATEMENT:
-				op << "	${DO_WHILE_PRE} res = res.yzwx; ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} res = res.yzwx + vec4(1.0); ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_COMPOUND_STATEMENT:
 				iterCount	= 2;
 				numIters	= 2 * iterCount;
-				op << "	${DO_WHILE_PRE} { res = res.yzwx; res = res.yzwx; } ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} { res = res.yzwx + vec4(1.0); res = res.yzwx + vec4(1.0); } ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_SEQUENCE_STATEMENT:
 				iterCount	= 2;
 				numIters	= 2 * iterCount;
-				op << "	${DO_WHILE_PRE} res = res.yzwx, res = res.yzwx; ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} res = res.yzwx + vec4(1.0), res = res.yzwx + vec4(1.0); ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_NO_ITERATIONS:
@@ -1040,21 +1185,21 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 			case LOOPCASE_SINGLE_ITERATION:
 				iterCount	= 1;
 				numIters	= 1;
-				op << "	${DO_WHILE_PRE} res = res.yzwx; ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} res = res.yzwx + vec4(1.0); ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_SELECT_ITERATION_COUNT:
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	do { res = res.yzwx; } while (++i < (ub_true ? ${ITER_COUNT} : 0));\n";
+				op << "	do { res = res.yzwx + vec4(1.0); } while (++i < (ub_true ? ${ITER_COUNT} : 0));\n";
 				break;
 
 			case LOOPCASE_CONDITIONAL_CONTINUE:
 				numIters = iterCount - 1;
-				op << "	${DO_WHILE_PRE} { if (i == ${TWO}) continue; res = res.yzwx; } ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} { if (i == ${TWO}) continue; res = res.yzwx + vec4(1.0); } ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_UNCONDITIONAL_CONTINUE:
-				op << "	${DO_WHILE_PRE} { res = res.yzwx; continue; } ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} { res = res.yzwx + vec4(1.0); continue; } ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_ONLY_CONTINUE:
@@ -1064,52 +1209,52 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 
 			case LOOPCASE_DOUBLE_CONTINUE:
 				numIters = iterCount - 1;
-				op << "	${DO_WHILE_PRE} { if (i == ${TWO}) continue; res = res.yzwx; continue; } ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} { if (i == ${TWO}) continue; res = res.yzwx + vec4(1.0); continue; } ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_CONDITIONAL_BREAK:
 				numIters = 2;
-				op << "	${DO_WHILE_PRE} { res = res.yzwx; if (i == ${ONE}) break; } ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} { res = res.yzwx + vec4(1.0); if (i == ${ONE}) break; } ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_UNCONDITIONAL_BREAK:
 				numIters = 1;
-				op << "	${DO_WHILE_PRE} { res = res.yzwx; break; } ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} { res = res.yzwx + vec4(1.0); break; } ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_PRE_INCREMENT:
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	do { res = res.yzwx; } while (++i < ${ITER_COUNT});\n";
+				op << "	do { res = res.yzwx + vec4(1.0); } while (++i < ${ITER_COUNT});\n";
 				break;
 
 			case LOOPCASE_POST_INCREMENT:
 				numIters = iterCount + 1;
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	do { res = res.yzwx; } while (i++ < ${ITER_COUNT});\n";
+				op << "	do { res = res.yzwx + vec4(1.0); } while (i++ < ${ITER_COUNT});\n";
 				break;
 
 			case LOOPCASE_MIXED_BREAK_CONTINUE:
 				numIters	= 2;
 				iterCount	= 5;
-				op << "	${DO_WHILE_PRE} { if (i == 0) continue; else if (i == 3) break; res = res.yzwx; } ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} { if (i == 0) continue; else if (i == 3) break; res = res.yzwx + vec4(1.0); } ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_VECTOR_COUNTER:
 				op << "	${COUNTER_PRECISION} ivec4 i = ivec4(0, 1, ${ITER_COUNT}, 0);\n";
-				op << "	do { res = res.yzwx; } while ((i.x += i.y) < i.z);\n";
+				op << "	do { res = res.yzwx + vec4(1.0); } while ((i.x += i.y) < i.z);\n";
 				break;
 
 			case LOOPCASE_101_ITERATIONS:
 				numIters = iterCount = 101;
-				op << "	${DO_WHILE_PRE} res = res.yzwx; ${DO_WHILE_POST}\n";
+				op << "	${DO_WHILE_PRE} res = res.yzwx + vec4(1.0); ${DO_WHILE_POST}\n";
 				break;
 
 			case LOOPCASE_SEQUENCE:
 				iterCount	= 5;
 				numIters	= 5;
 				op << "	${COUNTER_PRECISION} int i = 0;\n";
-				op << "	do { res = res.yzwx; } while (++i < ${TWO});\n";
-				op << "	do { res = res.yzwx; } while (++i < ${ITER_COUNT});\n";
+				op << "	do { res = res.yzwx + vec4(1.0); } while (++i < ${TWO});\n";
+				op << "	do { res = res.yzwx + vec4(1.0); } while (++i < ${ITER_COUNT});\n";
 				break;
 
 			case LOOPCASE_NESTED:
@@ -1119,7 +1264,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "	{\n";
 				op << "		${COUNTER_PRECISION} int j = 0;\n";
 				op << "		do\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		while (++j < ${ITER_COUNT});\n";
 				op << "	} while (++i < ${TWO});\n";
 				break;
@@ -1131,10 +1276,10 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "	{\n";
 				op << "		${COUNTER_PRECISION} int j = 0;\n";
 				op << "		do\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		while (++j < ${TWO});\n";
 				op << "		do\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		while (++j < ${THREE});\n";
 				op << "	} while (++i < ${ITER_COUNT});\n";
 				break;
@@ -1146,7 +1291,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				op << "		res = coords; // ignore outer loop effect \n";
 				op << "		${COUNTER_PRECISION} int j = 0;\n";
 				op << "		do\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		while (++j < ${TWO});\n";
 				op << "	} ${DO_WHILE_POST}\n";
 				break;
@@ -1155,12 +1300,87 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 				numIters = iterCount;
 				op << "	${DO_WHILE_PRE}\n";
 				op << "	{\n";
-				op << "		res = coords.wxyz;\n";
+				op << "		res = coords.wxyz - vec4(1.0);\n";
 				op << "		${COUNTER_PRECISION} int j = 0;\n";
 				op << "		while (j++ < ${TWO})\n";
-				op << "			res = res.yzwx;\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
 				op << "		coords = res;\n";
 				op << "	} ${DO_WHILE_POST}\n";
+				break;
+
+			case LOOPCASE_PRE_FALLTHROUGH:
+				numIters = iterCount + 1;
+				op << "	int j = 3;\n";
+				op << "	switch (j)\n";
+				op << "	{\n";
+				op << "	case 3:\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	case 4:\n";
+				op << "		${DO_WHILE_PRE}\n";
+				op << "		{\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		} ${DO_WHILE_POST}\n";
+				op << "		break;\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_POST_FALLTHROUGH:
+				numIters = iterCount + 1;
+				op << "	int j = 3;\n";
+				op << "	switch (j)\n";
+				op << "	{\n";
+				op << "	case 3:\n";
+				op << "		${DO_WHILE_PRE}\n";
+				op << "		{\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		} ${DO_WHILE_POST}\n";
+				op << "	case 4:\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "		break;\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_DOWHILE_TRAP:
+				numIters = iterCount = 3;
+				op << "	${DO_WHILE_PRE}\n";
+				op << "	{\n";
+				op << "		do\n";
+				op << "		{\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		} while (i >= ${THREE});\n";
+				op << "	} ${DO_WHILE_POST}\n";
+				break;
+
+			case LOOPCASE_IFBLOCK:
+				numIters = iterCount;
+				op << "	int j = 3;\n";
+				op << "	if (j == ${THREE})\n";
+				op << "	{\n";
+				op << "		${DO_WHILE_PRE}\n";
+				op << "		{\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		} ${DO_WHILE_POST}\n";
+				op << "	}\n";
+				op << "	else\n";
+				op << "	{\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	}\n";
+				break;
+
+			case LOOPCASE_ELSEBLOCK:
+				numIters = iterCount;
+				op << "	int j = 2;\n";
+				op << "	if (j == ${THREE})\n";
+				op << "	{\n";
+				op << "		res = res.yzwx + vec4(1.0);\n";
+				op << "	}\n";
+				op << "	else\n";
+				op << "	{\n";
+				op << "		${DO_WHILE_PRE}\n";
+				op << "		{\n";
+				op << "			res = res.yzwx + vec4(1.0);\n";
+				op << "		} ${DO_WHILE_POST}\n";
+				op << "	}\n";
 				break;
 
 			default:
@@ -1179,6 +1399,8 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 	}
 
 	// Shader footers.
+	op << "	res -= vec4(${NUM_ITERS});\n";
+
 	if (isVertexCase)
 	{
 		vtx << "	v_color = res.rgb;\n";
@@ -1201,6 +1423,9 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 	std::string twoStr;
 	std::string threeStr;
 	std::string iterCountStr;
+	std::string numItersStr;
+
+	numItersStr = de::toString(numIters);
 
 	if (loopCountType == LOOPCOUNT_CONSTANT)
 	{
@@ -1229,6 +1454,7 @@ static de::MovePtr<ShaderLoopCase> createSpecialLoopCase (tcu::TestContext&	test
 	std::map<std::string, std::string> params;
 	params.insert(std::pair<std::string, std::string>("PRECISION", "mediump"));
 	params.insert(std::pair<std::string, std::string>("ITER_COUNT", iterCountStr));
+	params.insert(std::pair<std::string, std::string>("NUM_ITERS", numItersStr));
 	params.insert(std::pair<std::string, std::string>("COUNTER_PRECISION", counterPrecisionStr));
 	params.insert(std::pair<std::string, std::string>("FOR_LOOP", forLoopStr));
 	params.insert(std::pair<std::string, std::string>("WHILE_LOOP", whileLoopStr));

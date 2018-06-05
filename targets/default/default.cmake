@@ -79,3 +79,12 @@ endif ()
 if (DE_OS_IS_WIN32)
 	set(DEQP_SUPPORT_WGL ON)
 endif ()
+
+# MacOS?
+if (DE_OS_IS_OSX)
+	find_package(OpenGL REQUIRED)
+	find_library(COCOA_LIBRARY Cocoa)
+	find_library(QUARTZCORE_LIBRARY QuartzCore)
+	set(DEQP_PLATFORM_LIBRARIES ${OPENGL_LIBRARIES} ${COCOA_LIBRARY} ${QUARTZCORE_LIBRARY})
+	include_directories(${OPENGL_INCLUDE_DIRS})
+endif()

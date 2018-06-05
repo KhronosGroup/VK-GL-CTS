@@ -1,0 +1,204 @@
+group unspecified_precision "Invalid declarations with unspecified precision"
+
+	case float_partially_specified_fragment
+		version 310 es
+		expect compile_fail
+		vertex ""
+			#version 310 es
+			${VERTEX_DECLARATIONS}
+			void main() {}
+		""
+		fragment ""
+			#version 310 es
+			// no global precision qualifier (e.g. precision mediump float)
+			void main() {
+				mediump float x = 1.0;
+				vec3 y = vec3(x);
+				mediump vec4 z = vec4(y, x);
+			}
+		""
+	end
+
+	case float_fragment
+		version 310 es
+		expect compile_fail
+		vertex ""
+			#version 310 es
+			void main() {}
+		""
+		fragment ""
+			#version 310 es
+			void main() { float v; }
+		""
+	end
+
+	case vec2_fragment
+		version 310 es
+		expect compile_fail
+		vertex ""
+			#version 310 es
+			void main() {}
+		""
+		fragment ""
+			#version 310 es
+			void main() { vec2 v; }
+		""
+	end
+
+	case vec3_fragment
+		version 310 es
+		expect compile_fail
+		vertex ""
+			#version 310 es
+			void main() {}
+		""
+		fragment ""
+			#version 310 es
+			void main() { vec3 v; }
+		""
+	end
+
+	case vec4_fragment
+		version 310 es
+		expect compile_fail
+		vertex ""
+			#version 310 es
+			void main() {}
+		""
+		fragment ""
+			#version 310 es
+			void main() { vec4 v; }
+		""
+	end
+
+	case sampler3D
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform sampler3D samp;
+			void main() {}
+		""
+	end
+
+	case samplerCubeShadow
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform samplerCubeShadow samp;
+			void main() {}
+		""
+	end
+
+	case sampler2DShadow
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform sampler2DShadow samp;
+			void main() {}
+		""
+	end
+
+	case sampler2DArray
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform sampler2DArray samp;
+			void main() {}
+		""
+	end
+
+	case sampler2DArrayShadow
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform sampler2DArrayShadow samp;
+			void main() {}
+		""
+	end
+
+	case isampler2D
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform isampler2D samp;
+			void main() {}
+		""
+	end
+
+	case isampler3D
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform isampler3D samp;
+			void main() {}
+		""
+	end
+
+	case isamplerCube
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform isamplerCube samp;
+			void main() {}
+		""
+	end
+
+	case isampler2DArray
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform isampler2DArray samp;
+			void main() {}
+		""
+	end
+
+	case usampler2D
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform usampler2D samp;
+			void main() {}
+		""
+	end
+
+	case usampler3D
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform usampler3D samp;
+			void main() {}
+		""
+	end
+
+	case usamplerCube
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform usamplerCube samp;
+			void main() {}
+		""
+	end
+
+	case usampler2DArray
+		version 310 es
+		expect compile_fail
+		both ""
+			#version 310 es
+			uniform usampler2DArray samp;
+			void main() {}
+		""
+	end
+
+end # unspecified_precision

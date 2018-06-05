@@ -1091,19 +1091,19 @@ template<> VkStructureType getStructureType<VkShaderModuleValidationCacheCreateI
 	return VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceAndroidHardwareBufferInfoANDROID> (void)
-{
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANDROID_HARDWARE_BUFFER_INFO_ANDROID;
-}
-
 template<> VkStructureType getStructureType<VkAndroidHardwareBufferUsageANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_USAGE_ANDROID;
 }
 
-template<> VkStructureType getStructureType<VkMemoryAndroidHardwareBufferPropertiesANDROID> (void)
+template<> VkStructureType getStructureType<VkAndroidHardwareBufferPropertiesANDROID> (void)
 {
-	return VK_STRUCTURE_TYPE_MEMORY_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID;
+	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkAndroidHardwareBufferFormatPropertiesANDROID> (void)
+{
+	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_FORMAT_PROPERTIES_ANDROID;
 }
 
 template<> VkStructureType getStructureType<VkImportAndroidHardwareBufferInfoANDROID> (void)
@@ -1114,11 +1114,6 @@ template<> VkStructureType getStructureType<VkImportAndroidHardwareBufferInfoAND
 template<> VkStructureType getStructureType<VkMemoryGetAndroidHardwareBufferInfoANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID;
-}
-
-template<> VkStructureType getStructureType<VkAndroidHardwareBufferExternalFormatPropertiesANDROID> (void)
-{
-	return VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_EXTERNAL_FORMAT_PROPERTIES_ANDROID;
 }
 
 template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)

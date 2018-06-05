@@ -394,7 +394,7 @@ void createPipelineShaderStages (const DeviceInterface&						vk,
 	"%v4f32 = OpTypeVector %f32 4\n"															\
 	"%v4bool = OpTypeVector %bool 4\n"															\
 																								\
-	"%v4f32_function = OpTypeFunction %v4f32 %v4f32\n"											\
+	"%v4f32_v4f32_function = OpTypeFunction %v4f32 %v4f32\n"									\
 	"%bool_function = OpTypeFunction %bool\n"													\
 	"%fun = OpTypeFunction %void\n"																\
 																								\
@@ -509,6 +509,7 @@ string makeVertexShaderAssembly (const map<string, string>& fragments)
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
 		"${IF_carryforward:opt}\n"
+		"${post_interface_op_vert:opt}\n"
 		"%BP_pos = OpLoad %v4f32 %BP_position\n"
 		"%BP_gl_pos = OpAccessChain %op_v4f32 %BP_stream %c_i32_0\n"
 		"OpStore %BP_gl_pos %BP_pos\n"
@@ -609,6 +610,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"%BP_label = OpLabel\n"
 		"%BP_gl_Invoc = OpLoad %i32 %BP_gl_InvocationID\n"
 		"${IF_carryforward:opt}\n"
+		"${post_interface_op_tessc:opt}\n"
 		"%BP_in_col_loc = OpAccessChain %ip_v4f32 %BP_in_color %BP_gl_Invoc\n"
 		"%BP_out_col_loc = OpAccessChain %op_v4f32 %BP_out_color %BP_gl_Invoc\n"
 		"%BP_in_col_val = OpLoad %v4f32 %BP_in_col_loc\n"
@@ -725,6 +727,7 @@ string makeTessEvalShaderAssembly (const map<string, string>& fragments)
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label = OpLabel\n"
 		"${IF_carryforward:opt}\n"
+		"${post_interface_op_tesse:opt}\n"
 		"%BP_gl_TC_0 = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_0\n"
 		"%BP_gl_TC_1 = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_1\n"
 		"%BP_gl_TC_2 = OpAccessChain %ip_f32 %BP_gl_TessCoord %c_u32_2\n"
@@ -872,6 +875,7 @@ string makeGeometryShaderAssembly (const map<string, string>& fragments)
 		"%BP_label = OpLabel\n"
 
 		"${IF_carryforward:opt}\n"
+		"${post_interface_op_geom:opt}\n"
 
 		"%BP_primitiveId = OpLoad %i32 %BP_gl_PrimitiveID\n"
 		"%BP_addr_vertexIdInCurrentPatch = OpAccessChain %BP_pp_i32 %BP_vertexIdInCurrentPatch %BP_primitiveId\n"
@@ -973,6 +977,7 @@ string makeFragmentShaderAssembly (const map<string, string>& fragments)
 		"%BP_main = OpFunction %void None %fun\n"
 		"%BP_label_main = OpLabel\n"
 		"${IF_carryforward:opt}\n"
+		"${post_interface_op_frag:opt}\n"
 		"%BP_tmp1 = OpLoad %v4f32 %BP_vtxColor\n"
 		"%BP_tmp2 = OpFunctionCall %v4f32 %test_code %BP_tmp1\n"
 		"OpStore %BP_fragColor %BP_tmp2\n"
@@ -1042,11 +1047,12 @@ map<string, string> passthruInterface (const IFDataType& data_type)
 			"%op_" + var_type + " = OpTypePointer Output %" + var_type + "\n";
 	}
 
-	fragments["pre_main"]			+=
-		functype + " = OpTypeFunction %" + var_type + " %" + var_type + "\n"
-		"%a3" + var_type + " = OpTypeArray %" + var_type + " %c_i32_3\n"
-		"%ip_a3" + var_type + " = OpTypePointer Input %a3" + var_type + "\n"
-		"%op_a3" + var_type + " = OpTypePointer Output %a3" + var_type + "\n";
+	if (strcmp(var_type.c_str(), "v4f32") != 0)
+		fragments["pre_main"]		+=
+			functype + " = OpTypeFunction %" + var_type + " %" + var_type + "\n"
+			"%a3" + var_type + " = OpTypeArray %" + var_type + " %c_i32_3\n"
+			"%ip_a3" + var_type + " = OpTypePointer Input %a3" + var_type + "\n"
+			"%op_a3" + var_type + " = OpTypePointer Output %a3" + var_type + "\n";
 
 	return fragments;
 }
@@ -1074,13 +1080,14 @@ map<string, string> fillInterfacePlaceholderVert (void)
 		"                OpStore %IF_output %IF_result\n";
 
 	// Make sure the rest still need to be instantialized.
-	fragments["capability"]			= "${capability:opt}";
-	fragments["extension"]			= "${extension:opt}";
-	fragments["debug"]				= "${debug:opt}";
-	fragments["decoration"]			= "${decoration:opt}";
-	fragments["pre_main"]			= "${pre_main:opt}";
-	fragments["testfun"]			= "${testfun}";
-	fragments["interface_op_func"]	= "${interface_op_func}";
+	fragments["capability"]				= "${capability:opt}";
+	fragments["extension"]				= "${extension:opt}";
+	fragments["debug"]					= "${debug:opt}";
+	fragments["decoration"]				= "${decoration:opt}";
+	fragments["pre_main"]				= "${pre_main:opt}";
+	fragments["testfun"]				= "${testfun}";
+	fragments["interface_op_func"]		= "${interface_op_func}";
+	fragments["post_interface_op_vert"]	= "${post_interface_op_vert:opt}";
 
 	return fragments;
 }
@@ -1109,13 +1116,14 @@ map<string, string> fillInterfacePlaceholderFrag (void)
 		"                OpStore %IF_output %IF_result\n";
 
 	// Make sure the rest still need to be instantialized.
-	fragments["capability"]			= "${capability:opt}";
-	fragments["extension"]			= "${extension:opt}";
-	fragments["debug"]				= "${debug:opt}";
-	fragments["decoration"]			= "${decoration:opt}";
-	fragments["pre_main"]			= "${pre_main:opt}";
-	fragments["testfun"]			= "${testfun}";
-	fragments["interface_op_func"]	= "${interface_op_func}";
+	fragments["capability"]				= "${capability:opt}";
+	fragments["extension"]				= "${extension:opt}";
+	fragments["debug"]					= "${debug:opt}";
+	fragments["decoration"]				= "${decoration:opt}";
+	fragments["pre_main"]				= "${pre_main:opt}";
+	fragments["testfun"]				= "${testfun}";
+	fragments["interface_op_func"]		= "${interface_op_func}";
+	fragments["post_interface_op_frag"]	= "${post_interface_op_frag:opt}";
 
 	return fragments;
 }
@@ -1156,13 +1164,14 @@ map<string, string> fillInterfacePlaceholderTessCtrl (void)
 		"OpStore %IF_output_ptr2 %IF_input_res2\n";
 
 	// Make sure the rest still need to be instantialized.
-	fragments["capability"]			= "${capability:opt}";
-	fragments["extension"]			= "${extension:opt}";
-	fragments["debug"]				= "${debug:opt}";
-	fragments["decoration"]			= "${decoration:opt}";
-	fragments["pre_main"]			= "${pre_main:opt}";
-	fragments["testfun"]			= "${testfun}";
-	fragments["interface_op_func"]	= "${interface_op_func}";
+	fragments["capability"]					= "${capability:opt}";
+	fragments["extension"]					= "${extension:opt}";
+	fragments["debug"]						= "${debug:opt}";
+	fragments["decoration"]					= "${decoration:opt}";
+	fragments["pre_main"]					= "${pre_main:opt}";
+	fragments["testfun"]					= "${testfun}";
+	fragments["interface_op_func"]			= "${interface_op_func}";
+	fragments["post_interface_op_tessc"]	= "${post_interface_op_tessc:opt}";
 
 	return fragments;
 }
@@ -1193,13 +1202,15 @@ map<string, string> fillInterfacePlaceholderTessEvalGeom (void)
 		"OpStore %IF_output %IF_input_res0\n";
 
 	// Make sure the rest still need to be instantialized.
-	fragments["capability"]			= "${capability:opt}";
-	fragments["extension"]			= "${extension:opt}";
-	fragments["debug"]				= "${debug:opt}";
-	fragments["decoration"]			= "${decoration:opt}";
-	fragments["pre_main"]			= "${pre_main:opt}";
-	fragments["testfun"]			= "${testfun}";
-	fragments["interface_op_func"]	= "${interface_op_func}";
+	fragments["capability"]					= "${capability:opt}";
+	fragments["extension"]					= "${extension:opt}";
+	fragments["debug"]						= "${debug:opt}";
+	fragments["decoration"]					= "${decoration:opt}";
+	fragments["pre_main"]					= "${pre_main:opt}";
+	fragments["testfun"]					= "${testfun}";
+	fragments["interface_op_func"]			= "${interface_op_func}";
+	fragments["post_interface_op_tesse"]	= "${post_interface_op_tesse:opt}";
+	fragments["post_interface_op_geom"]		= "${post_interface_op_geom:opt}";
 
 	return fragments;
 }
@@ -1209,7 +1220,7 @@ map<string, string> passthruFragments (void)
 	map<string, string> fragments;
 	fragments["testfun"] =
 		// A %test_code function that returns its argument unchanged.
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"%param1 = OpFunctionParameter %v4f32\n"
 		"%label_testfun = OpLabel\n"
 		"OpReturnValue %param1\n"

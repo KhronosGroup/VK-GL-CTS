@@ -449,10 +449,6 @@ dEQP-GLES2.functional.shaders.preprocessor.builtin.line_vertex
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_fragment
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_and_file_vertex
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_and_file_fragment
-dEQP-GLES2.functional.shaders.preprocessor.builtin.line_expression_vertex
-dEQP-GLES2.functional.shaders.preprocessor.builtin.line_expression_fragment
-dEQP-GLES2.functional.shaders.preprocessor.builtin.line_and_file_expression_vertex
-dEQP-GLES2.functional.shaders.preprocessor.builtin.line_and_file_expression_fragment
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_1_vertex
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_1_fragment
 dEQP-GLES2.functional.shaders.preprocessor.builtin.line_defined_2_vertex
@@ -1369,11 +1365,6 @@ dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_verte
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_fragment_main
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_attribute
 dEQP-GLES2.functional.shaders.declarations.invalid_declarations.invariant_uniform
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.float_partially_specified_fragment
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.float_fragment
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec2_fragment
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec3_fragment
-dEQP-GLES2.functional.shaders.declarations.unspecified_precision.vec4_fragment
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_x_vertex
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_x_fragment
 dEQP-GLES2.functional.shaders.swizzles.vector_swizzles.mediump_vec2_xx_vertex
@@ -7918,9 +7909,6 @@ dEQP-GLES2.functional.shaders.texture_functions.fragment.texture2dproj_vec3_bias
 dEQP-GLES2.functional.shaders.texture_functions.fragment.texture2dproj_vec4_bias
 dEQP-GLES2.functional.shaders.texture_functions.fragment.texturecube
 dEQP-GLES2.functional.shaders.texture_functions.fragment.texturecube_bias
-dEQP-GLES2.functional.shaders.texture_functions.invalid.texture2d_bias_in_vertex
-dEQP-GLES2.functional.shaders.texture_functions.invalid.texturecube_bias_in_vertex
-dEQP-GLES2.functional.shaders.texture_functions.invalid.texture2dlod_in_fragment
 dEQP-GLES2.functional.shaders.texture_functions.invalid.texturecubelod_in_fragment
 dEQP-GLES2.functional.shaders.invariance.highp.common_subexpression_0
 dEQP-GLES2.functional.shaders.invariance.highp.common_subexpression_1
@@ -8431,7 +8419,6 @@ dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.vector_rela
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.vector_relational.not_bvec3_fragment
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.vector_relational.not_bvec4_vertex
 dEQP-GLES2.functional.shaders.constant_expressions.builtin_functions.vector_relational.not_bvec4_fragment
-dEQP-GLES2.functional.shaders.constant_expressions.invalid.precision_specifier
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.0
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.1
 dEQP-GLES2.functional.shaders.random.basic_expression.vertex.2

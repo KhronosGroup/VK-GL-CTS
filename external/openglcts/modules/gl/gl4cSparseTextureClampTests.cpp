@@ -472,7 +472,7 @@ void SparseTextureClampLookupResidencyTestCase::draw(GLint target, GLint layer, 
 	// The fragment shader uses (z * 6) % 6 to calculate a cube face index.
 	GLfloat cubeMapArrayZCoord = GLfloat(layer) / 6.0f + 0.01f;
 	// The fragment shader does not modify w for layer selection.
-	GLfloat cubeMapArrayWCoord = layer / 6;
+	GLfloat cubeMapArrayWCoord = GLfloat(layer / 6); // Note: integer division
 	const GLfloat texCoordCubeMapArray[16] = { 0.0f, 0.0f, cubeMapArrayZCoord, cubeMapArrayWCoord,
 											   1.0f, 0.0f, cubeMapArrayZCoord, cubeMapArrayWCoord,
 											   0.0f, 1.0f, cubeMapArrayZCoord, cubeMapArrayWCoord,

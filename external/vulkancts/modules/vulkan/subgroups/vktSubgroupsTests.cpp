@@ -32,6 +32,7 @@
 #include "vktSubgroupsBallotOtherTests.hpp"
 #include "vktSubgroupsArithmeticTests.hpp"
 #include "vktSubgroupsClusteredTests.hpp"
+#include "vktSubgroupsPartitionedTests.hpp"
 #include "vktSubgroupsShuffleTests.hpp"
 #include "vktSubgroupsQuadTests.hpp"
 #include "vktSubgroupsShapeTests.hpp"
@@ -58,6 +59,7 @@ void createChildren(tcu::TestCaseGroup* subgroupsTests)
 	subgroupsTests->addChild(createSubgroupsBallotOtherTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsArithmeticTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsClusteredTests(testCtx));
+	subgroupsTests->addChild(createSubgroupsPartitionedTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsShuffleTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsQuadTests(testCtx));
 	subgroupsTests->addChild(createSubgroupsShapeTests(testCtx));
