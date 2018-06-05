@@ -54,6 +54,9 @@
 #include "spirv-tools/optimizer.hpp"
 #endif // DEQP_HAVE_SPIRV_TOOLS
 
+#include "deUniquePtr.hpp"
+typedef de::UniquePtr<tcu::Resource> ResourceUniquePtr;
+
 using namespace glu;
 using namespace glw;
 
@@ -697,11 +700,11 @@ tcu::TestNode::IterateResult SpirvModulesPositiveTest::iterate()
 #else  // DEQP_HAVE_GLSLANG
 			tcu::Archive&   archive = m_testCtx.getArchive();
 			ProgramBinaries binaries;
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/vertex.nspv"));
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/tess_control.nspv"));
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/tess_evaluation.nspv"));
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/geometry.nspv"));
-			binaries << commonUtils::readSpirV(archive.getResource("spirv/modules_positive/fragment.nspv"));
+			binaries << commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/modules_positive/vertex.nspv")).get());
+			binaries << commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/modules_positive/tess_control.nspv")).get());
+			binaries << commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/modules_positive/tess_evaluation.nspv")).get());
+			binaries << commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/modules_positive/geometry.nspv")).get());
+			binaries << commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/modules_positive/fragment.nspv")).get());
 			program		  = new ShaderProgram(gl, binaries);
 #endif // DEQP_HAVE_GLSLANG
 		}
@@ -920,7 +923,7 @@ tcu::TestNode::IterateResult SpirvShaderBinaryMultipleShaderObjectsTest::iterate
 #else  // DEQP_HAVE_SPIRV_TOOLS
 	tcu::Archive& archive = m_testCtx.getArchive();
 	ShaderBinary  binary  = commonUtils::readSpirV(
-		archive.getResource("spirv/spirv_modules_shader_binary_multiple_shader_objects/binary.nspv"));
+	    ResourceUniquePtr(archive.getResource("spirv/spirv_modules_shader_binary_multiple_shader_objects/binary.nspv")).get());
 #endif // DEQP_HAVE_SPIRV_TOOLS
 
 	ProgramBinaries binaries;
@@ -1088,7 +1091,7 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 	}
 #else  // DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
 	tcu::Archive& archive = m_testCtx.getArchive();
-	vertexBinary		  = commonUtils::readSpirV(archive.getResource("spirv/modules_state_queries/vertex.nspv"));
+	vertexBinary		  = commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/modules_state_queries/vertex.nspv")).get());
 #endif // DEQP_HAVE_GLSLANG && DEQP_HAVE_SPIRV_TOOLS
 
 	binaries << vertexBinary;
@@ -1258,7 +1261,7 @@ tcu::TestNode::IterateResult SpirvModulesErrorVerificationTest::iterate()
 	vertexBinary = glslangUtils::makeSpirV(m_context.getTestContext().getLog(), VertexSource(m_vertex));
 #else  // DEQP_HAVE_GLSLANG
 	tcu::Archive& archive = m_testCtx.getArchive();
-	vertexBinary		  = commonUtils::readSpirV(archive.getResource("spirv/modules_error_verification/vertex.nspv"));
+	vertexBinary		  = commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/modules_error_verification/vertex.nspv")).get());
 #endif // DEQP_HAVE_GLSLANG
 
 	gl.shaderSource(m_glslShaderId, 1, &shaderSrc, &shaderLen);
@@ -2057,8 +2060,7 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVBuiltInFunctionsTest::iterate()
 			vertexBinary = glslangUtils::makeSpirV(m_context.getTestContext().getLog(), vertexSource);
 #else  // DEQP_HAVE_GLSLANG
 			tcu::Archive& archive = m_testCtx.getArchive();
-			vertexBinary =
-				commonUtils::readSpirV(archive.getResource("spirv/glsl_to_spirv_builtin_functions/common_vertex.nspv"));
+			vertexBinary = commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/glsl_to_spirv_builtin_functions/common_vertex.nspv")).get());
 #endif //DEQP_HAVE_GLSLANG
 			binaries << vertexBinary;
 		}
@@ -2075,7 +2077,7 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVBuiltInFunctionsTest::iterate()
 			ss << "spirv/glsl_to_spirv_builtin_functions/binary_" << i << ".nspv";
 
 			tcu::Archive& archive = m_testCtx.getArchive();
-			shaderBinary		  = commonUtils::readSpirV(archive.getResource(ss.str().c_str()));
+			shaderBinary		  = commonUtils::readSpirV(ResourceUniquePtr(archive.getResource(ss.str().c_str())).get());
 		}
 #endif // DEQP_HAVE_GLSLANG
 
@@ -2111,7 +2113,7 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVBuiltInFunctionsTest::iterate()
 #else  // DEQP_HAVE_GLSLANG
 			tcu::Archive& archive = m_testCtx.getArchive();
 			tessEvalBinary		  = commonUtils::readSpirV(
-				archive.getResource("spirv/glsl_to_spirv_builtin_functions/common_tesseval.nspv"));
+			    ResourceUniquePtr(archive.getResource("spirv/glsl_to_spirv_builtin_functions/common_tesseval.nspv")).get());
 #endif // DEQP_HAVE_GLSLANG
 			binaries << tessEvalBinary;
 		}
@@ -2428,9 +2430,9 @@ tcu::TestNode::IterateResult SpirvGlslToSpirVSpecializationConstantsTest::iterat
 	{
 		tcu::Archive& archive = m_testCtx.getArchive();
 		vertexBinary =
-			commonUtils::readSpirV(archive.getResource("spirv/glsl_to_spirv_specialization_constants/vertex.nspv"));
+			commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/glsl_to_spirv_specialization_constants/vertex.nspv")).get());
 		fragmentBinary =
-			commonUtils::readSpirV(archive.getResource("spirv/glsl_to_spirv_specialization_constants/fragment.nspv"));
+			commonUtils::readSpirV(ResourceUniquePtr(archive.getResource("spirv/glsl_to_spirv_specialization_constants/fragment.nspv")).get());
 	}
 #endif // DEQP_HAVE_GLSLANG
 	fragmentBinary << SpecializationData(10, 128);
@@ -2819,7 +2821,7 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 					std::stringstream ss;
 					ss << "spirv/spirv_validation_builtin_variable_decorations/shader_" << v << "_" << s << ".nspv";
 
-					ShaderBinary shaderBinary = commonUtils::readSpirV(archive.getResource(ss.str().c_str()));
+					ShaderBinary shaderBinary = commonUtils::readSpirV(ResourceUniquePtr(archive.getResource(ss.str().c_str())).get());
 					binariesVec.push_back(shaderBinary);
 					binaries << shaderBinary;
 				}
