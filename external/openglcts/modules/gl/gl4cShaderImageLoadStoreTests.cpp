@@ -4006,7 +4006,10 @@ class LoadStoreMachine : public ShaderImageLoadStoreBase
 			else
 			{
 				T data[12];
-				memset(&data[0], 0, sizeof(data));
+
+				for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(data); ndx++)
+					data[ndx] = T(0);
+
 				glGetTexImage(targets[i], 0, Format<T>(), Type<T>(), &data[0]);
 
 				int count = 1;

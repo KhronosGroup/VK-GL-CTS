@@ -823,7 +823,7 @@ void GPUShader5TextureGatherOffsetTestBase::prepareProgramInput()
 	prepareVertexBufferInfoForCoordinates();
 
 	/* Constant for number of vertex buffers */
-	const unsigned int n_vertex_buffers = (const unsigned int)m_vertex_buffer_infos.size();
+	const unsigned int n_vertex_buffers = (unsigned int)m_vertex_buffer_infos.size();
 
 	/* Prepare storage for vertex buffer ids */
 	m_vertex_buffer_ids.resize(n_vertex_buffers);

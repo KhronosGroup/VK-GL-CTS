@@ -139,6 +139,7 @@ std::string getOpTypeName(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_ADD:
 			return "subgroupAdd";
 		case OPTYPE_MUL:
@@ -190,6 +191,7 @@ std::string getOpTypeNamePartitioned(int opType)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_ADD:
 			return "subgroupPartitionedAddNV";
 		case OPTYPE_MUL:
@@ -245,6 +247,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 	{
 		default:
 			DE_FATAL("Unhandled format!");
+			return "";
 		case VK_FORMAT_R32_SINT:
 		case VK_FORMAT_R32G32_SINT:
 		case VK_FORMAT_R32G32B32_SINT:
@@ -278,6 +281,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 	{
 		default:
 			DE_FATAL("Unsupported op type");
+			return "";
 		case OPTYPE_ADD:
 		case OPTYPE_INCLUSIVE_ADD:
 		case OPTYPE_EXCLUSIVE_ADD:
@@ -304,6 +308,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			else
 			{
 				DE_FATAL("Unhandled case");
+				return "";
 			}
 		case OPTYPE_MAX:
 		case OPTYPE_INCLUSIVE_MAX:
@@ -323,6 +328,7 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			else
 			{
 				DE_FATAL("Unhandled case");
+				return "";
 			}
 		case OPTYPE_AND:
 		case OPTYPE_INCLUSIVE_AND:

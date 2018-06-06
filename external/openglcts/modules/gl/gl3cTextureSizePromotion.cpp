@@ -129,7 +129,7 @@ tcu::TestNode::IterateResult FunctionalTest::iterate()
 						{
 							prepareSourceTexture(s_formats[i], s_source_texture_targets[j]);
 						}
-						catch (tcu::NotSupportedError e)
+						catch (tcu::NotSupportedError& e)
 						{
 							continue;
 						}

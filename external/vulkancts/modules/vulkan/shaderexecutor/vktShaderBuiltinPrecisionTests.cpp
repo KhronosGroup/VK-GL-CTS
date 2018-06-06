@@ -2151,7 +2151,7 @@ protected:																\
 	ExprP<TRET>		doExpand		(ExpandContext&,					\
 									 const CLASS::ArgExprs& args_) const \
 	{																	\
-		const ExprP<float>& (ARG0) = args_.a;							\
+		const ExprP<float>& ARG0 = args_.a;								\
 		return EXPANSION;												\
 	}																	\
 };																		\
@@ -2175,8 +2175,8 @@ public:																	\
 protected:																\
 	ExprP<TRET>		doExpand	(ExpandContext&, const ArgExprs& args_) const \
 	{																	\
-		const ExprP<T0>& (Arg0) = args_.a;								\
-		const ExprP<T1>& (Arg1) = args_.b;								\
+		const ExprP<T0>& Arg0 = args_.a;								\
+		const ExprP<T1>& Arg1 = args_.b;								\
 		return EXPANSION;												\
 	}																	\
 };																		\
@@ -2200,9 +2200,9 @@ public:																			\
 protected:																		\
 	ExprP<TRET>		doExpand	(ExpandContext&, const ArgExprs& args_) const	\
 	{																			\
-		const ExprP<T0>& (ARG0) = args_.a;										\
-		const ExprP<T1>& (ARG1) = args_.b;										\
-		const ExprP<T2>& (ARG2) = args_.c;										\
+		const ExprP<T0>& ARG0 = args_.a;										\
+		const ExprP<T1>& ARG1 = args_.b;										\
+		const ExprP<T2>& ARG2 = args_.c;										\
 		return EXPANSION;														\
 	}																			\
 };																				\
