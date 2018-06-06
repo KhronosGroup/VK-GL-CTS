@@ -2477,7 +2477,9 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 	if (isYcbcrConversionSupported(context) && (format == VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR || format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR))
 	{
-		const VkFormatFeatureFlags requiredFeatures = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR | VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
+		VkFormatFeatureFlags requiredFeatures = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR | VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR;
+		if (tiling == VK_IMAGE_TILING_OPTIMAL)
+			requiredFeatures |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR;
 
 		results.check((supportedFeatures & requiredFeatures) == requiredFeatures,
 					  getFormatName(format) + string(" must support ") + de::toString(getFormatFeatureFlagsStr(requiredFeatures)));
