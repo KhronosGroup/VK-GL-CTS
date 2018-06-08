@@ -111,8 +111,8 @@ static const GLenum s_debugSeverities[] =
 
 static bool isKHRDebugSupported (Context& ctx)
 {
-	const bool isES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
-	return isES32 || ctx.getContextInfo().isExtensionSupported("GL_KHR_debug");
+	const bool supportsES32 = glu::contextSupports(ctx.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	return supportsES32 || ctx.getContextInfo().isExtensionSupported("GL_KHR_debug");
 }
 
 class BaseCase;
@@ -309,7 +309,7 @@ struct MessageData
 	MessageData (const MessageID& id_, GLenum severity_, const string& message_) : id(id_) , severity(severity_) , message(message_) {}
 };
 
-extern "C" typedef void GLW_APIENTRY DebugCallbackFunc(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, void*);
+extern "C" typedef void GLW_APIENTRY DebugCallbackFunc(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, const void*);
 
 // Base class
 class BaseCase : public NegativeTestShared::ErrorCase
@@ -326,7 +326,8 @@ public:
 	virtual void				expectError			(GLenum error0, GLenum error1);
 
 protected:
-	struct VerificationResult {
+	struct VerificationResult
+	{
 		const qpTestResult	result;
 		const string		resultMessage;
 		const string		logMessage;
@@ -354,9 +355,9 @@ protected:
 	tcu::ResultCollector		m_results;
 };
 
-void BaseCase::callbackHandle (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, void* userParam)
+void BaseCase::callbackHandle (GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
 {
-	static_cast<BaseCase*>(userParam)->callback(source, type, id, severity, string(message, &message[length]));
+	static_cast<BaseCase*>(const_cast<void*>(userParam))->callback(source, type, id, severity, string(message, &message[length]));
 }
 
 BaseCase::BaseCase (Context& ctx, const char* name, const char* desc)
@@ -2802,7 +2803,7 @@ GroupStackDepthQueryCase::IterateResult GroupStackDepthQueryCase::iterate (void)
 	return STOP;
 }
 
-extern "C" void GLW_APIENTRY dummyCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, void*)
+extern "C" void GLW_APIENTRY dummyCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const char*, const void*)
 {
 	// dummy
 }

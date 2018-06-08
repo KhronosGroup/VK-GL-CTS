@@ -79,6 +79,7 @@ public:
 	static const MemoryRequirement	HostVisible;
 	static const MemoryRequirement	Coherent;
 	static const MemoryRequirement	LazilyAllocated;
+	static const MemoryRequirement	Protected;
 
 	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
 	{
@@ -104,6 +105,7 @@ private:
 		FLAG_HOST_VISIBLE		= 1u << 0u,
 		FLAG_COHERENT			= 1u << 1u,
 		FLAG_LAZY_ALLOCATION	= 1u << 2u,
+		FLAG_PROTECTED			= 1u << 3u,
 	};
 };
 
@@ -139,6 +141,7 @@ de::MovePtr<Allocation>	allocateDedicated			(const InstanceInterface& vki, const
 void*					mapMemory					(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory mem, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags);
 void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
+
 deUint32				getCompatibleMemoryTypes	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement);
 void					bindImagePlaneMemory		(const DeviceInterface&	vkd, VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset, VkImageAspectFlagBits planeAspect);
 

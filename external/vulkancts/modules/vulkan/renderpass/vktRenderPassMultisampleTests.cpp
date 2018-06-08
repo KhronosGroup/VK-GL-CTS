@@ -709,15 +709,19 @@ Move<VkPipelineLayout> createRenderPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
-									   VkDevice											device,
-									   VkRenderPass										renderPass,
-									   VkPipelineLayout									pipelineLayout,
-									   const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-									   deUint32											width,
-									   deUint32											height,
-									   deUint32											sampleCount)
+Move<VkPipeline> createRenderPipeline (const DeviceInterface&		vkd,
+									   VkDevice						device,
+									   VkFormat						srcFormat,
+									   VkRenderPass					renderPass,
+									   VkPipelineLayout				pipelineLayout,
+									   const vk::BinaryCollection&	binaryCollection,
+									   deUint32						width,
+									   deUint32						height,
+									   deUint32						sampleCount)
 {
+	const tcu::TextureFormat		format						(mapVkFormat(srcFormat));
+	const bool						isDepthStencilFormat		(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order));
+
 	const Unique<VkShaderModule>	vertexShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
 	const Unique<VkShaderModule>	fragmentShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-frag"), 0u));
 	const VkSpecializationInfo		emptyShaderSpecializations	=
@@ -876,8 +880,8 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 
 		VK_FALSE,
 		VK_LOGIC_OP_COPY,
-		1u,
-		&attachmentBlendState,
+		(isDepthStencilFormat ? 0u : 1u),
+		(isDepthStencilFormat ? DE_NULL : &attachmentBlendState),
 		{ 0.0f, 0.0f, 0.0f, 0.0f }
 	};
 	const VkGraphicsPipelineCreateInfo createInfo =
@@ -972,15 +976,15 @@ Move<VkPipelineLayout> createSplitPipelineLayout (const DeviceInterface&	vkd,
 	return createPipelineLayout(vkd, device, &createInfo);
 }
 
-Move<VkPipeline> createSplitPipeline (const DeviceInterface&							vkd,
-									  VkDevice											device,
-									  VkRenderPass										renderPass,
-									  deUint32											subpassIndex,
-									  VkPipelineLayout									pipelineLayout,
-									  const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-									  deUint32											width,
-									  deUint32											height,
-									  deUint32											sampleCount)
+Move<VkPipeline> createSplitPipeline (const DeviceInterface&		vkd,
+									  VkDevice						device,
+									  VkRenderPass					renderPass,
+									  deUint32						subpassIndex,
+									  VkPipelineLayout				pipelineLayout,
+									  const vk::BinaryCollection&	binaryCollection,
+									  deUint32						width,
+									  deUint32						height,
+									  deUint32						sampleCount)
 {
 	const Unique<VkShaderModule>	vertexShaderModule			(createShaderModule(vkd, device, binaryCollection.get("quad-vert"), 0u));
 	const Unique<VkShaderModule>	fragmentShaderModule		(createShaderModule(vkd, device, binaryCollection.get("quad-split-frag"), 0u));
@@ -1176,29 +1180,19 @@ Move<VkPipeline> createSplitPipeline (const DeviceInterface&							vkd,
 	return createGraphicsPipeline(vkd, device, DE_NULL, &createInfo);
 }
 
-vector<VkPipeline> createSplitPipelines (const DeviceInterface&								vkd,
-										 VkDevice											device,
-										 VkRenderPass										renderPass,
-										 VkPipelineLayout									pipelineLayout,
-										 const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection,
-										 deUint32											width,
-										 deUint32											height,
-										 deUint32											sampleCount)
+vector<VkPipelineSp> createSplitPipelines (const DeviceInterface&		vkd,
+										 VkDevice						device,
+										 VkRenderPass					renderPass,
+										 VkPipelineLayout				pipelineLayout,
+										 const vk::BinaryCollection&	binaryCollection,
+										 deUint32						width,
+										 deUint32						height,
+										 deUint32						sampleCount)
 {
-	vector<VkPipeline> pipelines (deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT), (VkPipeline)0u);
+	std::vector<VkPipelineSp> pipelines (deDivRoundUp32(sampleCount, MAX_COLOR_ATTACHMENT_COUNT), (VkPipelineSp)0u);
 
-	try
-	{
-		for (size_t ndx = 0; ndx < pipelines.size(); ndx++)
-			pipelines[ndx] = createSplitPipeline(vkd, device, renderPass, (deUint32)(ndx + 1), pipelineLayout, binaryCollection, width, height, sampleCount).disown();
-	}
-	catch (...)
-	{
-		for (size_t ndx = 0; ndx < pipelines.size(); ndx++)
-			vkd.destroyPipeline(device, pipelines[ndx], DE_NULL);
-
-		throw;
-	}
+	for (size_t ndx = 0; ndx < pipelines.size(); ndx++)
+		pipelines[ndx] = safeSharedPtr(new Unique<VkPipeline>(createSplitPipeline(vkd, device, renderPass, (deUint32)(ndx + 1), pipelineLayout, binaryCollection, width, height, sampleCount)));
 
 	return pipelines;
 }
@@ -1377,7 +1371,7 @@ private:
 
 	const Unique<VkDescriptorSetLayout>				m_splitDescriptorSetLayout;
 	const Unique<VkPipelineLayout>					m_splitPipelineLayout;
-	const vector<VkPipeline>						m_splitPipelines;
+	const std::vector<VkPipelineSp>					m_splitPipelines;
 	const Unique<VkDescriptorPool>					m_splitDescriptorPool;
 	const Unique<VkDescriptorSet>					m_splitDescriptorSet;
 
@@ -1416,7 +1410,7 @@ MultisampleRenderPassTestInstance::MultisampleRenderPassTestInstance (Context& c
 	, m_framebuffer					(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_srcImageView, m_dstMultisampleImageViews, m_dstSinglesampleImageViews, m_width, m_height))
 
 	, m_renderPipelineLayout		(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
-	, m_renderPipeline				(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
+	, m_renderPipeline				(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), m_srcFormat, *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height, m_sampleCount))
 
 	, m_splitDescriptorSetLayout	(createSplitDescriptorSetLayout(context.getDeviceInterface(), context.getDevice(), m_srcFormat))
 	, m_splitPipelineLayout			(createSplitPipelineLayout(context.getDeviceInterface(), context.getDevice(), *m_splitDescriptorSetLayout))
@@ -1468,6 +1462,29 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 			DE_NULL
 		};
 		vkd.cmdBeginRenderPass(*commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		// Stencil needs to be cleared if it exists.
+		if (tcu::hasStencilComponent(mapVkFormat(m_srcFormat).order))
+		{
+			const VkClearAttachment clearAttachment =
+			{
+				VK_IMAGE_ASPECT_STENCIL_BIT,						// VkImageAspectFlags	aspectMask;
+				0,													// deUint32				colorAttachment;
+				makeClearValueDepthStencil(0, 0)					// VkClearValue			clearValue;
+			};
+
+			const VkClearRect clearRect =
+			{
+				{
+					{ 0u, 0u },
+					{ m_width, m_height }
+				},
+				0,													// deUint32	baseArrayLayer;
+				1													// deUint32	layerCount;
+			};
+
+			vkd.cmdClearAttachments(*commandBuffer, 1, &clearAttachment, 1, &clearRect);
+		}
 	}
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
@@ -1482,7 +1499,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 	{
 		vkd.cmdNextSubpass(*commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_splitPipelines[splitPipelineNdx]);
+		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, **m_splitPipelines[splitPipelineNdx]);
 		vkd.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_splitPipelineLayout, 0u, 1u,  &*m_splitDescriptorSet, 0u, DE_NULL);
 		vkd.cmdPushConstants(*commandBuffer, *m_splitPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(splitPipelineNdx), &splitPipelineNdx);
 		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
@@ -1973,6 +1990,9 @@ struct Programs
 					const UVec4	bits		(tcu::getTextureFormatBitDepth(format).cast<deUint32>());
 					const IVec4 minValue	(0);
 					const IVec4 range		((UVec4(1u) << tcu::min(bits, UVec4(30))).cast<deInt32>());
+					const IVec4 maxV		((UVec4(1u) << (bits - UVec4(1u))).cast<deInt32>());
+					const IVec4 clampMax	(maxV - 1);
+					const IVec4 clampMin	(-maxV);
 					std::ostringstream		fragmentShader;
 
 					fragmentShader <<
@@ -2019,8 +2039,11 @@ struct Programs
 						}
 					}
 
+					// The spec doesn't define whether signed-integers are clamped on output,
+					// so we'll clamp them explicitly to have well-defined outputs.
 					fragmentShader <<
-						"\to_color = ivec4(color[0], color[1], color[2], color[3]);\n"
+						"\to_color = clamp(ivec4(color[0], color[1], color[2], color[3]), " <<
+						"ivec4" << clampMin << ", ivec4" << clampMax << ");\n" <<
 						"}\n";
 
 					dst.glslSources.add("quad-frag") << glu::FragmentSource(fragmentShader.str());

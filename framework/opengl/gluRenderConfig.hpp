@@ -34,6 +34,15 @@ class CommandLine;
 namespace glu
 {
 
+enum ResetNotificationStrategy
+{
+	RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED = 0,		//!< Not specified, implementation-dependent
+	RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION,	//!< No reset notification (may not be supported)
+	RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET,	//!< Lose context on reset (may not be supported)
+
+	RESET_NOTIFICATION_STRATEGY_LAST
+};
+
 /*--------------------------------------------------------------------*//*!
  * \brief Rendering context configuration.
  *//*--------------------------------------------------------------------*/
@@ -63,37 +72,40 @@ struct RenderConfig
 		DONT_CARE = -1
 	};
 
-	ContextType			type;
+	ContextType					type;
 
-	int					width;
-	int					height;
-	SurfaceType			surfaceType;
-	Visibility			windowVisibility;
+	int							width;
+	int							height;
+	SurfaceType					surfaceType;
+	Visibility					windowVisibility;
 
-	int					id;
+	int							id;
 
-	int					redBits;
-	int					greenBits;
-	int					blueBits;
-	int					alphaBits;
-	int					depthBits;
-	int					stencilBits;
-	int					numSamples;
+	int							redBits;
+	int							greenBits;
+	int							blueBits;
+	int							alphaBits;
+	int							depthBits;
+	int							stencilBits;
+	int							numSamples;
+
+	ResetNotificationStrategy	resetNotificationStrategy;
 
 	RenderConfig (ContextType type_ = ContextType())
-		: type				(type_)
-		, width				(DONT_CARE)
-		, height			(DONT_CARE)
-		, surfaceType		(SURFACETYPE_DONT_CARE)
-		, windowVisibility	(VISIBILITY_VISIBLE)
-		, id				(DONT_CARE)
-		, redBits			(DONT_CARE)
-		, greenBits			(DONT_CARE)
-		, blueBits			(DONT_CARE)
-		, alphaBits			(DONT_CARE)
-		, depthBits			(DONT_CARE)
-		, stencilBits		(DONT_CARE)
-		, numSamples		(DONT_CARE)
+		: type						(type_)
+		, width						(DONT_CARE)
+		, height					(DONT_CARE)
+		, surfaceType				(SURFACETYPE_DONT_CARE)
+		, windowVisibility			(VISIBILITY_VISIBLE)
+		, id						(DONT_CARE)
+		, redBits					(DONT_CARE)
+		, greenBits					(DONT_CARE)
+		, blueBits					(DONT_CARE)
+		, alphaBits					(DONT_CARE)
+		, depthBits					(DONT_CARE)
+		, stencilBits				(DONT_CARE)
+		, numSamples				(DONT_CARE)
+		, resetNotificationStrategy	(RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
 	{
 	}
 } DE_WARN_UNUSED_TYPE;

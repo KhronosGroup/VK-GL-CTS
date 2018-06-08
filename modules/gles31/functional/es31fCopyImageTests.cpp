@@ -1843,7 +1843,7 @@ private:
 			, results			(log)
 			, srcImage			(NULL)
 			, dstImage			(NULL)
-			, textureRenderer	(renderContext, log, glu::GLSL_VERSION_310_ES, glu::PRECISION_HIGHP)
+			, textureRenderer	(renderContext, log, glu::getContextTypeGLSLVersion(renderContext.getType()), glu::PRECISION_HIGHP)
 		{
 		}
 

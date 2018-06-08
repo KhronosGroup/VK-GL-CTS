@@ -1,11 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
-<<<<<<< HEAD
- * Generated from Khronos EGL API description (egl.xml) revision 28861.
-=======
- * Generated from Khronos EGL API description (egl.xml) revision 7fdf7d3a1ad50afa03968db889b68af211da6e27.
->>>>>>> 2528a63a9... Fetch gl.xml, egl.xml from Github repos
+ * Generated from Khronos EGL API description (egl.xml) revision 13a26984991216cbf9a44fbf390f95dc05b5493a.
  */
 #define										eglBindAPI							eglwBindAPI
 #define										eglBindTexImage						eglwBindTexImage
@@ -53,9 +49,11 @@
 #define										eglQuerySurface						eglwQuerySurface
 #define										eglReleaseTexImage					eglwReleaseTexImage
 #define										eglReleaseThread					eglwReleaseThread
+#define										eglSetDamageRegionKHR				eglwSetDamageRegionKHR
 #define										eglSignalSyncKHR					eglwSignalSyncKHR
 #define										eglSurfaceAttrib					eglwSurfaceAttrib
 #define										eglSwapBuffers						eglwSwapBuffers
+#define										eglSwapBuffersWithDamageKHR			eglwSwapBuffersWithDamageKHR
 #define										eglSwapInterval						eglwSwapInterval
 #define										eglTerminate						eglwTerminate
 #define										eglUnlockSurfaceKHR					eglwUnlockSurfaceKHR
@@ -71,7 +69,7 @@ EGLint										eglwClientWaitSync					(EGLDisplay dpy, EGLSync sync, EGLint fla
 EGLint										eglwClientWaitSyncKHR				(EGLDisplay dpy, EGLSyncKHR sync, EGLint flags, EGLTimeKHR timeout);
 EGLBoolean									eglwCopyBuffers						(EGLDisplay dpy, EGLSurface surface, EGLNativePixmapType target);
 EGLContext									eglwCreateContext					(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list);
-EGLImage									eglwCreateImage						(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
+EGLImage									eglwCreateImage						(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLAttrib *attrib_list);
 EGLImageKHR									eglwCreateImageKHR					(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
 EGLSurface									eglwCreatePbufferFromClientBuffer	(EGLDisplay dpy, EGLenum buftype, EGLClientBuffer buffer, EGLConfig config, const EGLint *attrib_list);
 EGLSurface									eglwCreatePbufferSurface			(EGLDisplay dpy, EGLConfig config, const EGLint *attrib_list);
@@ -110,9 +108,11 @@ const char *								eglwQueryString						(EGLDisplay dpy, EGLint name);
 EGLBoolean									eglwQuerySurface					(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint *value);
 EGLBoolean									eglwReleaseTexImage					(EGLDisplay dpy, EGLSurface surface, EGLint buffer);
 EGLBoolean									eglwReleaseThread					();
+EGLBoolean									eglwSetDamageRegionKHR				(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects);
 EGLBoolean									eglwSignalSyncKHR					(EGLDisplay dpy, EGLSyncKHR sync, EGLenum mode);
 EGLBoolean									eglwSurfaceAttrib					(EGLDisplay dpy, EGLSurface surface, EGLint attribute, EGLint value);
 EGLBoolean									eglwSwapBuffers						(EGLDisplay dpy, EGLSurface surface);
+EGLBoolean									eglwSwapBuffersWithDamageKHR		(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects);
 EGLBoolean									eglwSwapInterval					(EGLDisplay dpy, EGLint interval);
 EGLBoolean									eglwTerminate						(EGLDisplay dpy);
 EGLBoolean									eglwUnlockSurfaceKHR				(EGLDisplay dpy, EGLSurface surface);

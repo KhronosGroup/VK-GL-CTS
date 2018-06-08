@@ -29,6 +29,7 @@
 
 #include <string>
 #include <vector>
+#include <istream>
 
 namespace tcu
 {
@@ -88,6 +89,28 @@ enum ScreenRotation
 
 class CaseTreeNode;
 class CasePaths;
+class Archive;
+
+class CaseListFilter
+{
+public:
+									CaseListFilter				(const de::cmdline::CommandLine& cmdLine, const tcu::Archive& archive);
+									CaseListFilter				(void);
+									~CaseListFilter				(void);
+
+	//! Check if test group is in supplied test case list.
+	bool							checkTestGroupName			(const char* groupName) const;
+
+	//! Check if test case is in supplied test case list.
+	bool							checkTestCaseName			(const char* caseName) const;
+
+private:
+	CaseListFilter												(const CaseListFilter&);	// not allowed!
+	CaseListFilter&					operator=					(const CaseListFilter&);	// not allowed!
+
+	CaseTreeNode*					m_caseTree;
+	de::MovePtr<const CasePaths>	m_casePaths;
+};
 
 /*--------------------------------------------------------------------*//*!
  * \brief Test command line
@@ -179,17 +202,30 @@ public:
 	//! Get Vulkan device ID (--deqp-vk-device-id)
 	int								getVKDeviceId				(void) const;
 
+	//! Get Vulkan device group ID (--deqp-vk-device-group-id)
+	int								getVKDeviceGroupId			(void) const;
+
 	//! Enable development-time test case validation checks
 	bool							isValidationEnabled			(void) const;
 
 	//! Should we run tests that exhaust memory (--deqp-test-oom)
-	bool							isOutOfMemoryTestEnabled(void) const;
+	bool							isOutOfMemoryTestEnabled	(void) const;
 
-	//! Check if test group is in supplied test case list.
-	bool							checkTestGroupName			(const char* groupName) const;
-
-	//! Check if test case is in supplied test case list.
-	bool							checkTestCaseName			(const char* caseName) const;
+	/*--------------------------------------------------------------------*//*!
+	 * \brief Creates case list filter
+	 * \param archive Resources
+	 *
+	 * Creates case list filter based on one of the following parameters:
+	 *
+	 * --deqp-case
+	 * --deqp-caselist
+	 * --deqp-caselist-file
+	 * --deqp-caselist-resource
+	 * --deqp-stdin-caselist
+	 *
+	 * Throws std::invalid_argument if parsing fails.
+	 *//*--------------------------------------------------------------------*/
+	de::MovePtr<CaseListFilter>		createCaseListFilter		(const tcu::Archive& archive) const;
 
 protected:
 	const de::cmdline::CommandLine&	getCommandLine				(void) const;
@@ -204,8 +240,6 @@ private:
 
 	de::cmdline::CommandLine		m_cmdLine;
 	deUint32						m_logFlags;
-	CaseTreeNode*					m_caseTree;
-	de::MovePtr<const CasePaths>	m_casePaths;
 };
 
 } // tcu

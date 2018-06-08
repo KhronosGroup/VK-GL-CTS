@@ -38,39 +38,98 @@ OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
 						"xml/gl.xml",
-						"7ac9c857db1e3a6065485e4e2144151f48a4f1c4",
-						"2475e1ff6d69048e67a49188d8be09195b261ed96b2b4108a0f7d7a459834674")
+						"a3ee0ed08111d44ac3cb863d9e3e81a7c28f9d90",
+						"bfe070bafe6a0758f23964a078262b45ad163adf7f2dc320f44757908033d107")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',
 	'GL_KHR_blend_equation_advanced',
 	'GL_KHR_blend_equation_advanced_coherent',
 	'GL_KHR_debug',
+	'GL_KHR_robustness',
+	'GL_KHR_no_error',
+	'GL_KHR_parallel_shader_compile',
+	'GL_EXT_bgra',
 	'GL_EXT_geometry_point_size',
 	'GL_EXT_tessellation_shader',
 	'GL_EXT_geometry_shader',
 	'GL_EXT_robustness',
 	'GL_EXT_texture_buffer',
+	'GL_EXT_texture_filter_anisotropic',
+	'GL_EXT_texture_cube_map_array',
 	'GL_EXT_texture_snorm',
 	'GL_EXT_primitive_bounding_box',
-	'GL_OES_EGL_image',
-	'GL_OES_compressed_ETC1_RGB8_texture',
-	'GL_OES_compressed_paletted_texture',
-	'GL_OES_texture_half_float',
-	'GL_OES_texture_storage_multisample_2d_array',
-	'GL_OES_sample_shading',
 	'GL_EXT_texture_compression_s3tc',
-	'GL_IMG_texture_compression_pvrtc',
+	'GL_EXT_texture_type_2_10_10_10_REV',
 	'GL_EXT_copy_image',
+	'GL_EXT_depth_bounds_test',
+	'GL_EXT_direct_state_access',
 	'GL_EXT_draw_buffers_indexed',
+	'GL_EXT_draw_elements_base_vertex',
+	'GL_EXT_direct_state_access',
+	'GL_EXT_read_format_bgra',
+	'GL_EXT_texture_storage',
 	'GL_EXT_texture_sRGB_decode',
 	'GL_EXT_texture_border_clamp',
 	'GL_EXT_texture_sRGB_R8',
 	'GL_EXT_texture_sRGB_RG8',
 	'GL_EXT_debug_marker',
-	'GL_EXT_robustness',
-	'GL_KHR_robustness',
-	'GL_EXT_draw_elements_base_vertex',
+	'GL_EXT_polygon_offset_clamp',
+	'GL_IMG_texture_compression_pvrtc',
+	'GL_OES_EGL_image',
+	'GL_OES_EGL_image_external',
+	'GL_OES_compressed_ETC1_RGB8_texture',
+	'GL_OES_compressed_paletted_texture',
+	'GL_OES_required_internalformat',
+	'GL_OES_packed_depth_stencil',
+	'GL_OES_texture_3D',
+	'GL_OES_texture_half_float',
+	'GL_OES_texture_storage_multisample_2d_array',
+	'GL_OES_sample_shading',
+	'GL_OES_standard_derivatives',
+	'GL_OES_stencil1',
+	'GL_OES_stencil4',
+	'GL_OES_surfaceless_context',
+	'GL_OES_mapbuffer',
+	'GL_OES_vertex_array_object',
+	'GL_OES_viewport_array',
+	'GL_ARB_clip_control',
+	'GL_ARB_buffer_storage',
+	'GL_ARB_compute_shader',
+	'GL_ARB_draw_instanced',
+	'GL_ARB_draw_elements_base_vertex',
+	'GL_ARB_direct_state_access',
+	'GL_ARB_get_program_binary',
+	'GL_ARB_indirect_parameters',
+	'GL_ARB_internalformat_query',
+	'GL_ARB_instanced_arrays',
+	'GL_ARB_multi_draw_indirect',
+	'GL_ARB_parallel_shader_compile',
+	'GL_ARB_program_interface_query',
+	'GL_ARB_separate_shader_objects',
+	'GL_ARB_shader_ballot',
+	'GL_ARB_shader_image_load_store',
+	'GL_ARB_shader_viewport_layer_array',
+	'GL_ARB_sparse_buffer',
+	'GL_ARB_sparse_texture',
+	'GL_ARB_spirv_extensions',
+	'GL_ARB_tessellation_shader',
+	'GL_ARB_texture_barrier',
+	'GL_ARB_texture_filter_minmax',
+	'GL_ARB_texture_gather',
+	'GL_ARB_texture_storage',
+	'GL_ARB_texture_storage_multisample',
+	'GL_ARB_texture_multisample',
+	'GL_ARB_texture_view',
+	'GL_ARB_transform_feedback2',
+	'GL_ARB_transform_feedback3',
+	'GL_ARB_transform_feedback_instanced',
+	'GL_ARB_transform_feedback_overflow_query',
+	'GL_ARB_vertex_array_bgra',
+	'GL_ARB_vertex_attrib_64bit',
+	'GL_ARB_vertex_attrib_binding',
+	'GL_NV_deep_texture3D',
+	'GL_NV_internalformat_sample_query',
 	'GL_OES_draw_elements_base_vertex',
 	'GL_OVR_multiview',
 	'GL_OVR_multiview_multisampled_render_to_texture',
@@ -79,13 +138,7 @@ EXTENSIONS			= [
 def getGLRegistry ():
 	return khr_util.registry_cache.getRegistry(GL_SOURCE)
 
-# return the name of a core command corresponding to an extension command.
-# Ideally this should be done using the alias attribute of commands, but dEQP
-# just strips the extension suffix.
-def getCoreName (name):
-	return re.sub('[A-Z]+$', '', name)
-
-def getHybridInterface ():
+def getHybridInterface (stripAliasedExtCommands = True):
 	# This is a bit awkward, since we have to create a strange hybrid
 	# interface that includes both GL and ES features and extensions.
 	registry = getGLRegistry()
@@ -105,13 +158,19 @@ def getHybridInterface ():
 		# extensions to be included.
 		spec.addExtension(extension, 'gles2', 'core', force=True)
 
-	# Remove redundant extension commands that are already provided by core.
-	for commandName in list(spec.commands):
-		coreName = getCoreName(commandName)
-		if coreName != commandName and coreName in spec.commands:
-			spec.commands.remove(commandName)
+	iface = khr_util.registry.createInterface(registry, spec, 'gles2')
 
-	return khr_util.registry.createInterface(registry, spec, 'gles2')
+	if stripAliasedExtCommands:
+		# Remove redundant extension commands that are already provided by core.
+		strippedCmds = []
+
+		for command in iface.commands:
+			if command.alias == None:
+				strippedCmds.append(command)
+
+		iface.commands = strippedCmds
+
+	return iface
 
 def getInterface (registry, api, version=None, profile=None, **kwargs):
 	spec = khr_util.registry.spec(registry, api, version, profile, **kwargs)

@@ -67,16 +67,18 @@ struct VulkanFeatures
 };
 
 // Returns true if the given 16bit storage extension features in `toCheck` are all supported.
-bool is16BitStorageFeaturesSupported (const vk::InstanceInterface&	vkInstance,
-									  vk::VkPhysicalDevice			device,
-									  const std::vector<std::string>& instanceExtensions,
-									  Extension16BitStorageFeatures	toCheck);
+bool is16BitStorageFeaturesSupported (const deUint32 apiVersion,
+									  const vk::InstanceInterface&		vkInstance,
+									  vk::VkPhysicalDevice				device,
+									  const std::vector<std::string>&	instanceExtensions,
+									  Extension16BitStorageFeatures		toCheck);
 
 // Returns true if the given variable pointers extension features in `toCheck` are all supported.
-bool isVariablePointersFeaturesSupported (const vk::InstanceInterface&		vkInstance,
+bool isVariablePointersFeaturesSupported (const deUint32 apiVersion,
+										  const vk::InstanceInterface&		vkInstance,
 										  vk::VkPhysicalDevice				device,
-									      const std::vector<std::string>&   instanceExtensions,
-										  ExtensionVariablePointersFeatures toCheck);
+										  const std::vector<std::string>&	instanceExtensions,
+										  ExtensionVariablePointersFeatures	toCheck);
 
 // Creates a Vulkan logical device with the requiredExtensions enabled and all other extensions disabled.
 // The logical device will be created from the instance and physical device in the given context.
@@ -91,6 +93,10 @@ vk::Allocator* createAllocator (const vk::InstanceInterface& instanceInterface,
 								const vk::VkPhysicalDevice physicalDevice,
 								const vk::DeviceInterface& deviceInterface,
 								const vk::VkDevice device);
+
+deUint32 getMinRequiredVulkanVersion (const vk::SpirvVersion version);
+
+std::string	getVulkanName (const deUint32 version);
 
 } // SpirVAssembly
 } // vkt

@@ -279,9 +279,6 @@ dEQP-VK.clipping.clip_volume.clipped.large_points
 dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
 dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
 
-# Vulkan issue 382: vkCmdBlitImage filtering behavior underspecified
-dEQP-VK.api.copy_and_blit.core.blit_image.all_formats*_nearest
-
 # Issue 431: Excluded copies and blitting tests
 dEQP-VK.api.copy_and_blit.core.blit_image.simple_tests.scaling_and_offset.b8g8r8a8_unorm_linear
 
@@ -291,53 +288,15 @@ dEQP-VK.spirv_assembly.instruction.compute.opfunord.*
 # New tests from AOSP
 dEQP-VK.texture.explicit_lod.*
 
-# Exclude tests which are not on the Android CTS mustpass list
-dEQP-VK.texture.mipmap.2d.projected.*
+#VK-GL-CTS 110: Excluded wsi android tests as they require android loader support
+dEQP-VK.wsi.android.surface.query_devgroup_*
 
-#VK-GL-CTS 526
-dEQP-VK.pipeline.render_to_image.*.huge.*
-
-#VK-GL-CTS 534
-dEQP-VK.api.copy_and_blit.*.resolve_image.diff_image_size.*
-
-#VK-GL-CTS 535
-dEQP-VK.renderpass.*.multisample.*
-
-#VK-GL-CTS 538
-dEQP-VK.renderpass.*.multisample_resolve.*
-
-#VK-GL-CTS 542
-dEQP-VK.pipeline.render_to_image.*.mipmap.*
-dEQP-VK.api.image_clearing.*.*multiple_layers
-dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_d16_unorm
-dEQP-VK.pipeline.render_to_image.*.small.r32_uint_d16_unorm
-dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_d16_unorm
-dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d16_unorm
-dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r32_uint_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_d24_unorm_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r32_uint_d24_unorm_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_d24_unorm_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d24_unorm_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r8g8b8a8_unorm_d32_sfloat_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r32_uint_d32_sfloat_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r16g16_sint_d32_sfloat_s8_uint
-dEQP-VK.pipeline.render_to_image.*.small.r32g32b32a32_sfloat_d32_sfloat_s8_uint
-
-#VK-GL-CTS 655
-dEQP-VK.glsl.builtin_var.fragdepth.*
-
-#VK-GL-CTS 656
-dEQP-VK.glsl.builtin_var.fragcoord_msaa.*
-
-#VK-GL-CTS 657
-dEQP-VK.memory.requirements.dedicated_allocation.buffer.*
-dEQP-VK.memory.requirements.dedicated_allocation.image.*
+#VK-GL-CTS 749
+dEQP-VK.glsl.builtin.precision.atan2.mediump_compute.*
 
 # Issue: b/66464066
 dEQP-VK.wsi.android.shared_presentable_image.scale_down.*
 
 # Issue: b/67022169
 dEQP-VK.wsi.android.incremental_present.scale_down.*
+

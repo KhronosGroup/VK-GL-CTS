@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktImageCompressionTranscodingSupport.hpp"
+#include "vktImageLoadStoreUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"
@@ -446,7 +447,7 @@ TestStatus BasicComputeTestInstance::iterate (void)
 			imageData[imageNdx].addImage(MovePtr<Image>(new Image(vk, device, allocator, imageData[imageNdx].getImageInfo(infoNdx), MemoryRequirement::Any)));
 			if (isCompressed)
 			{
-				const VkImageViewUsageCreateInfoKHR	imageViewUsageKHR	=
+				const VkImageViewUsageCreateInfo	imageViewUsageKHR	=
 				{
 					VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,				//VkStructureType		sType;
 					DE_NULL,														//const void*			pNext;
@@ -942,7 +943,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 			VK_IMAGE_LAYOUT_UNDEFINED,											// VkImageLayout			initialLayout;
 		};
 		const VkImageUsageFlags				compressedViewUsageFlags	= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-		const VkImageViewUsageCreateInfoKHR	compressedViewUsageCI		=
+		const VkImageViewUsageCreateInfo	compressedViewUsageCI		=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR,					//VkStructureType		sType;
 			DE_NULL,															//const void*			pNext;
@@ -1130,21 +1131,28 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 						referenceImage.get(), subresourceRange)
 				};
 
-				 const VkBufferMemoryBarrier		preCopyBufferBarrier[]		=
+				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL,
+					DE_LENGTH_OF_ARRAY(postShaderImageBarriers), postShaderImageBarriers);
+			}
+
+			vk.cmdCopyImageToBuffer(cmdBuffer, resultImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resultBuffer.get(), 1u, &copyRegion);
+			vk.cmdCopyImageToBuffer(cmdBuffer, referenceImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, referenceBuffer.get(), 1u, &copyRegion);
+
+			{
+				const VkBufferMemoryBarrier		postCopyBufferBarrier[]		=
 				{
-					makeBufferMemoryBarrier( 0, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
 						resultBuffer.get(), 0ull, bufferSize),
 
-					makeBufferMemoryBarrier( 0, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+					makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
 						referenceBuffer.get(), 0ull, bufferSize),
 				};
 
-				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(preCopyBufferBarrier), preCopyBufferBarrier,
-					DE_LENGTH_OF_ARRAY(postShaderImageBarriers), postShaderImageBarriers);
+				vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(postCopyBufferBarrier), postCopyBufferBarrier,
+					0u, (const VkImageMemoryBarrier*)DE_NULL);
 			}
-			vk.cmdCopyImageToBuffer(cmdBuffer, resultImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resultBuffer.get(), 1u, &copyRegion);
-			vk.cmdCopyImageToBuffer(cmdBuffer, referenceImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, referenceBuffer.get(), 1u, &copyRegion);
 		}
 		endCommandBuffer(vk, cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, cmdBuffer);
@@ -1345,9 +1353,9 @@ protected:
 	ImagesArray							m_uncompressedImages;
 	MovePtr<Image>						m_compressedImage;
 
-	VkImageViewUsageCreateInfoKHR		m_imageViewUsageKHR;
-	VkImageViewUsageCreateInfoKHR*		m_srcImageViewUsageKHR;
-	VkImageViewUsageCreateInfoKHR*		m_dstImageViewUsageKHR;
+	VkImageViewUsageCreateInfo			m_imageViewUsageKHR;
+	VkImageViewUsageCreateInfo*			m_srcImageViewUsageKHR;
+	VkImageViewUsageCreateInfo*			m_dstImageViewUsageKHR;
 	std::vector<tcu::UVec3>				m_compressedImageResVec;
 	std::vector<tcu::UVec3>				m_uncompressedImageResVec;
 	VkFormat							m_srcFormat;
@@ -1417,7 +1425,7 @@ TestStatus GraphicsAttachmentsTestInstance::iterate (void)
 
 void GraphicsAttachmentsTestInstance::prepareData ()
 {
-	VkImageViewUsageCreateInfoKHR*	imageViewUsageKHRNull	= (VkImageViewUsageCreateInfoKHR*)DE_NULL;
+	VkImageViewUsageCreateInfo*	imageViewUsageKHRNull	= (VkImageViewUsageCreateInfo*)DE_NULL;
 
 	m_imageViewUsageKHR			= makeImageViewUsageCreateInfo(m_parameters.compressedImageViewUsage);
 
@@ -1854,7 +1862,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	Move<VkImageView>					refSrcImageView				(makeImageView(vk, device, refSrcImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.formatCompressed, subresourceRange));
 
 	const VkImageUsageFlags				resSrcImageUsageFlags		= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	const VkImageViewUsageCreateInfoKHR	resSrcImageViewUsageKHR		= makeImageViewUsageCreateInfo(resSrcImageUsageFlags);
+	const VkImageViewUsageCreateInfo	resSrcImageViewUsageKHR		= makeImageViewUsageCreateInfo(resSrcImageUsageFlags);
 	Move<VkImageView>					resSrcImageView				(makeImageView(vk, device, resCompressedImage->get(), mapImageViewType(m_parameters.imageType), m_parameters.formatCompressed, resSubresourceRange, &resSrcImageViewUsageKHR));
 
 	const VkImageCreateFlags			refDstImageCreateFlags		= 0;
@@ -2570,7 +2578,7 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).x() >  0u);
 	DE_ASSERT(getLayerSize(m_parameters.imageType, m_parameters.size).y() >  0u);
 
-	if (std::find(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance2") == context.getDeviceExtensions().end())
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported");
 
 	{
@@ -2603,6 +2611,11 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 		if (deInRange32(m_parameters.formatCompressed, VK_FORMAT_ASTC_4x4_UNORM_BLOCK, VK_FORMAT_ASTC_12x12_SRGB_BLOCK) &&
 			!physicalDeviceFeatures.textureCompressionASTC_LDR)
 			TCU_THROW(NotSupportedError, "textureCompressionASTC_LDR not supported");
+
+		if ((m_parameters.uncompressedImageUsage & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) &&
+			isStorageImageExtendedFormat(m_parameters.formatUncompressed) &&
+			!physicalDeviceFeatures.shaderStorageImageExtendedFormats)
+			TCU_THROW(NotSupportedError, "Storage view format requires shaderStorageImageExtended");
 	}
 
 	switch (m_parameters.shader)

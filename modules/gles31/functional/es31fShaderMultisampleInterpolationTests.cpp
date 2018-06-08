@@ -287,7 +287,7 @@ std::string	SampleQualifierRenderCase::genVertexSource (int numTargetSamples) co
 
 	buf <<	"}";
 
-	return specializeShader(buf.str(), m_context.getRenderContext().getType());;
+	return specializeShader(buf.str(), m_context.getRenderContext().getType());
 }
 
 std::string	SampleQualifierRenderCase::genFragmentSource (int numTargetSamples) const

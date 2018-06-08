@@ -172,6 +172,5 @@ dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragme
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec3
 dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec3
 
-# Temporarily excluded: b/73070970
+# b/73070970
 dEQP-GLES3.functional.shaders.declarations.unspecified_precision.*
-

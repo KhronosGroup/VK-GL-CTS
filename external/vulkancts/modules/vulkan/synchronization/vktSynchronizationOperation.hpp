@@ -110,46 +110,50 @@ enum OperationName
 class OperationContext
 {
 public:
-												OperationContext		(Context&			context,
-																		 PipelineCacheData&	pipelineCacheData);
+									OperationContext		(Context&			context,
+															 PipelineCacheData&	pipelineCacheData);
 
-												OperationContext		(Context&					context,
-																		 PipelineCacheData&			pipelineCacheData,
-																		 const vk::DeviceInterface&	vk,
-																		 const vk::VkDevice			device,
-																		 vk::Allocator&				allocator);
+									OperationContext		(Context&					context,
+															 PipelineCacheData&			pipelineCacheData,
+															 const vk::DeviceInterface&	vk,
+															 const vk::VkDevice			device,
+															 vk::Allocator&				allocator);
 
-												OperationContext		(const vk::InstanceInterface&				vki,
-																		 const vk::DeviceInterface&					vkd,
-																		 vk::VkPhysicalDevice						physicalDevice,
-																		 vk::VkDevice								device,
-																		 vk::Allocator&								allocator,
-																		 const std::vector<std::string>&			deviceExtensions,
-																		 vk::ProgramCollection<vk::ProgramBinary>&	programCollection,
-																		 PipelineCacheData&							pipelineCacheData);
+									OperationContext		(const deUint32						apiVersion,
+															 const vk::InstanceInterface&		vki,
+															 const vk::DeviceInterface&			vkd,
+															 vk::VkPhysicalDevice				physicalDevice,
+															 vk::VkDevice						device,
+															 vk::Allocator&						allocator,
+															 const std::vector<std::string>&	deviceExtensions,
+															 vk::BinaryCollection&				programCollection,
+															 PipelineCacheData&					pipelineCacheData);
 
-	const vk::InstanceInterface&				getInstanceInterface	(void) const { return m_vki; }
-	const vk::DeviceInterface&					getDeviceInterface		(void) const { return m_vk; }
-	vk::VkPhysicalDevice						getPhysicalDevice		(void) const { return m_physicalDevice; }
-	vk::VkDevice								getDevice				(void) const { return m_device; }
-	vk::Allocator&								getAllocator			(void) const { return m_allocator; }
-	vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_progCollection; }
-	PipelineCacheData&							getPipelineCacheData	(void) const { return m_pipelineCacheData; }
-	const std::vector<std::string>&				getDeviceExtensions		(void) const { return m_deviceExtensions;}
+	const vk::InstanceInterface&	getInstanceInterface	(void) const { return m_vki; }
+	const vk::DeviceInterface&		getDeviceInterface		(void) const { return m_vk; }
+	vk::VkPhysicalDevice			getPhysicalDevice		(void) const { return m_physicalDevice; }
+	vk::VkDevice					getDevice				(void) const { return m_device; }
+	vk::Allocator&					getAllocator			(void) const { return m_allocator; }
+	vk::BinaryCollection&			getBinaryCollection		(void) const { return m_progCollection; }
+	PipelineCacheData&				getPipelineCacheData	(void) const { return m_pipelineCacheData; }
+	const std::vector<std::string>&	getDeviceExtensions		(void) const { return m_deviceExtensions;}
+	deUint32						getUsedApiVersion		(void) const { return m_usedApiVersion; }
+
 
 private:
-	const vk::InstanceInterface&				m_vki;
-	const vk::DeviceInterface&					m_vk;
-	const vk::VkPhysicalDevice					m_physicalDevice;
-	const vk::VkDevice							m_device;
-	vk::Allocator&								m_allocator;
-	vk::ProgramCollection<vk::ProgramBinary>&	m_progCollection;
-	PipelineCacheData&							m_pipelineCacheData;
-	const std::vector<std::string>&				m_deviceExtensions;
+	const vk::InstanceInterface&	m_vki;
+	const vk::DeviceInterface&		m_vk;
+	const vk::VkPhysicalDevice		m_physicalDevice;
+	const vk::VkDevice				m_device;
+	vk::Allocator&					m_allocator;
+	vk::BinaryCollection&			m_progCollection;
+	PipelineCacheData&				m_pipelineCacheData;
+	const std::vector<std::string>&	m_deviceExtensions;
+	const deUint32					m_usedApiVersion;
 
 	// Disabled
-												OperationContext		(const OperationContext&);
-	OperationContext&							operator=				(const OperationContext&);
+									OperationContext		(const OperationContext&);
+	OperationContext&				operator=				(const OperationContext&);
 };
 
 // Common interface to images and buffers used by operations.

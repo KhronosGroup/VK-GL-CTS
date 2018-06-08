@@ -28,6 +28,7 @@ import proc_address_tests
 import enums
 import func_ptrs
 import library
+import gtf_wrapper
 
 def gen ():
 	registry	= getEGLRegistry()
@@ -39,3 +40,4 @@ def gen ():
 	enums.gen(iface)
 	func_ptrs.gen(iface)
 	library.gen(registry)
+	gtf_wrapper.gen(registry)

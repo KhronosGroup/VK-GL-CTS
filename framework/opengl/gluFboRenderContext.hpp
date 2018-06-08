@@ -54,6 +54,9 @@ public:
 	virtual void						postIterate				(void);
 
 	virtual deUint32					getDefaultFramebuffer	(void) const { return m_framebuffer; }
+	virtual glw::GenericFuncType		getProcAddress			(const char* name) const { return m_context->getProcAddress(name); }
+
+	virtual void						makeCurrent				(void);
 
 private:
 	void								createFramebuffer		(const RenderConfig& config);

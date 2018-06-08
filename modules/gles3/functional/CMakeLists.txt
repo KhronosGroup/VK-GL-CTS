@@ -77,6 +77,8 @@ set(DEQP_GLES3_FUNCTIONAL_SRCS
 	es3fShaderLoopTests.hpp
 	es3fShaderMatrixTests.cpp
 	es3fShaderMatrixTests.hpp
+	es3fShaderMetamorphicTests.cpp
+	es3fShaderMetamorphicTests.hpp
 	es3fShaderOperatorTests.cpp
 	es3fShaderOperatorTests.hpp
 	es3fShaderPrecisionTests.cpp

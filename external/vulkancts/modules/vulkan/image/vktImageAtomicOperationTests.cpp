@@ -82,6 +82,7 @@ enum AtomicOperation
 	ATOMIC_OPERATION_OR,
 	ATOMIC_OPERATION_XOR,
 	ATOMIC_OPERATION_EXCHANGE,
+	ATOMIC_OPERATION_COMPARE_EXCHANGE,
 
 	ATOMIC_OPERATION_LAST
 };
@@ -126,6 +127,7 @@ static string getAtomicFuncArgumentShaderStr (const AtomicOperation	op,
 		case ATOMIC_OPERATION_XOR:
 			return string("(" + x + "*" + x + " + " + y + "*" + y + " + " + z + "*" + z + ")");
 		case ATOMIC_OPERATION_EXCHANGE:
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:
 			return string("((" + z + "*" + toString(gridSize.x()) + " + " + x + ")*" + toString(gridSize.y()) + " + " + y + ")");
 		default:
 			DE_ASSERT(false);
@@ -137,13 +139,14 @@ static string getAtomicOperationCaseName (const AtomicOperation op)
 {
 	switch (op)
 	{
-		case ATOMIC_OPERATION_ADD:			return string("add");
-		case ATOMIC_OPERATION_MIN:			return string("min");
-		case ATOMIC_OPERATION_MAX:			return string("max");
-		case ATOMIC_OPERATION_AND:			return string("and");
-		case ATOMIC_OPERATION_OR:			return string("or");
-		case ATOMIC_OPERATION_XOR:			return string("xor");
-		case ATOMIC_OPERATION_EXCHANGE:		return string("exchange");
+		case ATOMIC_OPERATION_ADD:				return string("add");
+		case ATOMIC_OPERATION_MIN:				return string("min");
+		case ATOMIC_OPERATION_MAX:				return string("max");
+		case ATOMIC_OPERATION_AND:				return string("and");
+		case ATOMIC_OPERATION_OR:				return string("or");
+		case ATOMIC_OPERATION_XOR:				return string("xor");
+		case ATOMIC_OPERATION_EXCHANGE:			return string("exchange");
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return string("compare_exchange");
 		default:
 			DE_ASSERT(false);
 			return DE_NULL;
@@ -154,13 +157,14 @@ static string getAtomicOperationShaderFuncName (const AtomicOperation op)
 {
 	switch (op)
 	{
-		case ATOMIC_OPERATION_ADD:			return string("imageAtomicAdd");
-		case ATOMIC_OPERATION_MIN:			return string("imageAtomicMin");
-		case ATOMIC_OPERATION_MAX:			return string("imageAtomicMax");
-		case ATOMIC_OPERATION_AND:			return string("imageAtomicAnd");
-		case ATOMIC_OPERATION_OR:			return string("imageAtomicOr");
-		case ATOMIC_OPERATION_XOR:			return string("imageAtomicXor");
-		case ATOMIC_OPERATION_EXCHANGE:		return string("imageAtomicExchange");
+		case ATOMIC_OPERATION_ADD:				return string("imageAtomicAdd");
+		case ATOMIC_OPERATION_MIN:				return string("imageAtomicMin");
+		case ATOMIC_OPERATION_MAX:				return string("imageAtomicMax");
+		case ATOMIC_OPERATION_AND:				return string("imageAtomicAnd");
+		case ATOMIC_OPERATION_OR:				return string("imageAtomicOr");
+		case ATOMIC_OPERATION_XOR:				return string("imageAtomicXor");
+		case ATOMIC_OPERATION_EXCHANGE:			return string("imageAtomicExchange");
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return string("imageAtomicCompSwap");
 		default:
 			DE_ASSERT(false);
 			return DE_NULL;
@@ -172,13 +176,14 @@ static deInt32 getOperationInitialValue (const AtomicOperation op)
 	switch (op)
 	{
 		// \note 18 is just an arbitrary small nonzero value.
-		case ATOMIC_OPERATION_ADD:			return 18;
-		case ATOMIC_OPERATION_MIN:			return (1 << 15) - 1;
-		case ATOMIC_OPERATION_MAX:			return 18;
-		case ATOMIC_OPERATION_AND:			return (1 << 15) - 1;
-		case ATOMIC_OPERATION_OR:			return 18;
-		case ATOMIC_OPERATION_XOR:			return 18;
-		case ATOMIC_OPERATION_EXCHANGE:		return 18;
+		case ATOMIC_OPERATION_ADD:				return 18;
+		case ATOMIC_OPERATION_MIN:				return (1 << 15) - 1;
+		case ATOMIC_OPERATION_MAX:				return 18;
+		case ATOMIC_OPERATION_AND:				return (1 << 15) - 1;
+		case ATOMIC_OPERATION_OR:				return 18;
+		case ATOMIC_OPERATION_XOR:				return 18;
+		case ATOMIC_OPERATION_EXCHANGE:			return 18;
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return 18;
 		default:
 			DE_ASSERT(false);
 			return -1;
@@ -202,6 +207,7 @@ static deInt32 getAtomicFuncArgument (const AtomicOperation op, const IVec3& inv
 		case ATOMIC_OPERATION_XOR:
 			return x*x + y*y + z*z;
 		case ATOMIC_OPERATION_EXCHANGE:
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:
 			return (z*gridSize.x() + x)*gridSize.y() + y;
 		default:
 			DE_ASSERT(false);
@@ -225,13 +231,14 @@ static deInt32 computeBinaryAtomicOperationResult (const AtomicOperation op, con
 {
 	switch (op)
 	{
-		case ATOMIC_OPERATION_ADD:			return a + b;
-		case ATOMIC_OPERATION_MIN:			return de::min(a, b);
-		case ATOMIC_OPERATION_MAX:			return de::max(a, b);
-		case ATOMIC_OPERATION_AND:			return a & b;
-		case ATOMIC_OPERATION_OR:			return a | b;
-		case ATOMIC_OPERATION_XOR:			return a ^ b;
-		case ATOMIC_OPERATION_EXCHANGE:		return b;
+		case ATOMIC_OPERATION_ADD:				return a + b;
+		case ATOMIC_OPERATION_MIN:				return de::min(a, b);
+		case ATOMIC_OPERATION_MAX:				return de::max(a, b);
+		case ATOMIC_OPERATION_AND:				return a & b;
+		case ATOMIC_OPERATION_OR:				return a | b;
+		case ATOMIC_OPERATION_XOR:				return a ^ b;
+		case ATOMIC_OPERATION_EXCHANGE:			return b;
+		case ATOMIC_OPERATION_COMPARE_EXCHANGE:	return (a == 18) ? b : a;
 		default:
 			DE_ASSERT(false);
 			return -1;
@@ -290,7 +297,8 @@ void BinaryAtomicEndResultCase::initPrograms (SourceCollections& sourceCollectio
 	const string	atomicArgExpr			= (uintFormat ? "uint" : intFormat ? "int" : "float")
 											+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
 
-	const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + ", " + atomicArgExpr + ")";
+	const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ? ", 18" + string(uintFormat ? "u" : "") : "";
+	const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
 	const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 	const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
 
@@ -364,7 +372,8 @@ void BinaryAtomicIntermValuesCase::initPrograms (SourceCollections& sourceCollec
 	const string	atomicArgExpr			= (uintFormat ? "uint" : intFormat ? "int" : "float")
 											+ getAtomicFuncArgumentShaderStr(m_operation, "gx", "gy", "gz", IVec3(NUM_INVOCATIONS_PER_PIXEL*gridSize.x(), gridSize.y(), gridSize.z()));
 
-	const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + ", " + atomicArgExpr + ")";
+	const string	compareExchangeStr		= (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE) ? ", 18" + string(uintFormat ? "u" : "")  : "";
+	const string	atomicInvocation		= getAtomicOperationShaderFuncName(m_operation) + "(u_resultImage, " + atomicCoord + compareExchangeStr + ", " + atomicArgExpr + ")";
 	const string	shaderImageFormatStr	= getShaderImageFormatQualifier(m_format);
 	const string	shaderImageTypeStr		= getShaderImageType(m_format, m_imageType);
 
@@ -680,6 +689,20 @@ bool BinaryAtomicEndResultInstance::verifyResult (Allocation& outputBufferAlloca
 				return false;
 		}
 		else if (m_operation == ATOMIC_OPERATION_EXCHANGE)
+		{
+			// Check if the end result equals one of the atomic args.
+			bool matchFound = false;
+
+			for (deInt32 i = 0; i < static_cast<deInt32>(NUM_INVOCATIONS_PER_PIXEL) && !matchFound; i++)
+			{
+				const IVec3 gid(x + i*gridSize.x(), y, z);
+				matchFound = (resultValue == getAtomicFuncArgument(m_operation, gid, extendedGridSize));
+			}
+
+			if (!matchFound)
+				return false;
+		}
+		else if (m_operation == ATOMIC_OPERATION_COMPARE_EXCHANGE)
 		{
 			// Check if the end result equals one of the atomic args.
 			bool matchFound = false;

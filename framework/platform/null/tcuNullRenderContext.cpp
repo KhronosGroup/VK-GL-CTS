@@ -168,6 +168,11 @@ Context::Context (ContextType ctxType_)
 		addExtension("GL_ANDROID_extension_pack_es31a");
 		addExtension("GL_EXT_copy_image");
 	}
+	else if (ctxType.getAPI() == ApiType::es(3, 2))
+	{
+		version					= "OpenGL ES 3.2";
+		shadingLanguageVersion	= "OpenGL ES GLSL ES 3.2";
+	}
 	else if (glu::isContextTypeGLCore(ctxType) && ctxType.getMajorVersion() == 3)
 	{
 		version					= "3.3.0";
@@ -177,6 +182,16 @@ Context::Context (ContextType ctxType_)
 	{
 		version					= "4.4.0";
 		shadingLanguageVersion	= "4.40";
+	}
+	else if (glu::isContextTypeGLCore(ctxType) && ctxType.getMajorVersion() == 4 && ctxType.getMinorVersion() == 5)
+	{
+		version					= "4.5.0";
+		shadingLanguageVersion	= "4.50";
+	}
+	else if (glu::isContextTypeGLCore(ctxType) && ctxType.getMajorVersion() == 4 && ctxType.getMinorVersion() == 6)
+	{
+		version					= "4.6.0";
+		shadingLanguageVersion	= "4.60";
 	}
 	else
 		throw tcu::NotSupportedError("Unsupported GL version", "", __FILE__, __LINE__);
@@ -754,6 +769,10 @@ RenderContext::~RenderContext (void)
 }
 
 void RenderContext::postIterate (void)
+{
+}
+
+void RenderContext::makeCurrent (void)
 {
 }
 

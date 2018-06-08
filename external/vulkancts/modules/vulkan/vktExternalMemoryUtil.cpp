@@ -36,6 +36,11 @@
 #	include <windows.h>
 #endif
 
+#if (DE_OS == DE_OS_ANDROID) && defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__)
+#	include <android/hardware_buffer.h>
+#	define USE_ANDROID_O_HARDWARE_BUFFER 1
+#endif
+
 namespace vkt
 {
 namespace ExternalMemoryUtil
@@ -59,21 +64,24 @@ deUint32 chooseMemoryType (deUint32 bits)
 } // anonymous
 
 NativeHandle::NativeHandle (void)
-	: m_fd				(-1)
-	, m_win32HandleType	(WIN32HANDLETYPE_LAST)
-	, m_win32Handle		(DE_NULL)
+	: m_fd						(-1)
+	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
+	, m_win32Handle				(DE_NULL)
+	, m_androidHardwareBuffer	(DE_NULL)
 {
 }
 
 NativeHandle::NativeHandle (const NativeHandle& other)
-	: m_fd				(-1)
-	, m_win32HandleType	(WIN32HANDLETYPE_LAST)
-	, m_win32Handle		(DE_NULL)
+	: m_fd						(-1)
+	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
+	, m_win32Handle				(DE_NULL)
+	, m_androidHardwareBuffer	(DE_NULL)
 {
 	if (other.m_fd >= 0)
 	{
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 		DE_ASSERT(!other.m_win32Handle.internal);
+		DE_ASSERT(!other.m_androidHardwareBuffer.internal);
 		m_fd = dup(other.m_fd);
 		TCU_CHECK(m_fd >= 0);
 #else
@@ -90,6 +98,7 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 			case WIN32HANDLETYPE_NT:
 			{
 				DE_ASSERT(other.m_fd == -1);
+				DE_ASSERT(!other.m_androidHardwareBuffer.internal);
 
 				const HANDLE process = ::GetCurrentProcess();
 				::DuplicateHandle(process, other.m_win32Handle.internal, process, &m_win32Handle.internal, 0, TRUE, DUPLICATE_SAME_ACCESS);
@@ -110,21 +119,40 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 		DE_FATAL("Platform doesn't support win32 handles");
 #endif
 	}
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
+	else if (other.m_androidHardwareBuffer.internal)
+	{
+		DE_ASSERT(other.m_fd == -1);
+		DE_ASSERT(!other.m_win32Handle.internal);
+		m_androidHardwareBuffer = other.m_androidHardwareBuffer;
+		AHardwareBuffer_acquire((AHardwareBuffer*)m_androidHardwareBuffer.internal);
+	}
+#endif
 	else
 		DE_FATAL("Native handle can't be duplicated");
 }
 
 NativeHandle::NativeHandle (int fd)
-	: m_fd				(fd)
-	, m_win32HandleType	(WIN32HANDLETYPE_LAST)
-	, m_win32Handle		(DE_NULL)
+	: m_fd						(fd)
+	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
+	, m_win32Handle				(DE_NULL)
+	, m_androidHardwareBuffer	(DE_NULL)
 {
 }
 
 NativeHandle::NativeHandle (Win32HandleType handleType, vk::pt::Win32Handle handle)
-	: m_fd				(-1)
-	, m_win32HandleType	(handleType)
-	, m_win32Handle		(handle)
+	: m_fd						(-1)
+	, m_win32HandleType			(handleType)
+	, m_win32Handle				(handle)
+	, m_androidHardwareBuffer	(DE_NULL)
+{
+}
+
+NativeHandle::NativeHandle (vk::pt::AndroidHardwareBufferPtr buffer)
+	: m_fd						(-1)
+	, m_win32HandleType			(WIN32HANDLETYPE_LAST)
+	, m_win32Handle				(DE_NULL)
+	, m_androidHardwareBuffer	(buffer)
 {
 }
 
@@ -139,6 +167,7 @@ void NativeHandle::reset (void)
 	{
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX)
 		DE_ASSERT(!m_win32Handle.internal);
+		DE_ASSERT(!m_androidHardwareBuffer.internal);
 		::close(m_fd);
 #else
 		DE_FATAL("Platform doesn't support file descriptors");
@@ -152,6 +181,7 @@ void NativeHandle::reset (void)
 		{
 			case WIN32HANDLETYPE_NT:
 				DE_ASSERT(m_fd == -1);
+				DE_ASSERT(!m_androidHardwareBuffer.internal);
 				::CloseHandle((HANDLE)m_win32Handle.internal);
 				break;
 
@@ -166,9 +196,19 @@ void NativeHandle::reset (void)
 #endif
 	}
 
-	m_fd				= -1;
-	m_win32Handle		= vk::pt::Win32Handle(DE_NULL);
-	m_win32HandleType	= WIN32HANDLETYPE_LAST;
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
+	if (m_androidHardwareBuffer.internal)
+	{
+		DE_ASSERT(m_fd == -1);
+		DE_ASSERT(!m_win32Handle.internal);
+		AHardwareBuffer_release((AHardwareBuffer*)m_androidHardwareBuffer.internal);
+	}
+#endif
+
+	m_fd					= -1;
+	m_win32Handle			= vk::pt::Win32Handle(DE_NULL);
+	m_win32HandleType		= WIN32HANDLETYPE_LAST;
+	m_androidHardwareBuffer	= vk::pt::AndroidHardwareBufferPtr(DE_NULL);
 }
 
 NativeHandle& NativeHandle::operator= (int fd)
@@ -176,6 +216,15 @@ NativeHandle& NativeHandle::operator= (int fd)
 	reset();
 
 	m_fd = fd;
+
+	return *this;
+}
+
+NativeHandle& NativeHandle::operator= (vk::pt::AndroidHardwareBufferPtr buffer)
+{
+	reset();
+
+	m_androidHardwareBuffer = buffer;
 
 	return *this;
 }
@@ -192,38 +241,48 @@ void NativeHandle::disown (void)
 {
 	m_fd = -1;
 	m_win32Handle = vk::pt::Win32Handle(DE_NULL);
+	m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(DE_NULL);
 }
 
 vk::pt::Win32Handle NativeHandle::getWin32Handle (void) const
 {
 	DE_ASSERT(m_fd == -1);
+	DE_ASSERT(!m_androidHardwareBuffer.internal);
 	return m_win32Handle;
 }
 
 int NativeHandle::getFd (void) const
 {
 	DE_ASSERT(!m_win32Handle.internal);
-
+	DE_ASSERT(!m_androidHardwareBuffer.internal);
 	return m_fd;
 }
 
-const char* externalSemaphoreTypeToName (vk::VkExternalSemaphoreHandleTypeFlagBitsKHR type)
+
+vk::pt::AndroidHardwareBufferPtr NativeHandle::getAndroidHardwareBuffer (void) const
+{
+	DE_ASSERT(m_fd == -1);
+	DE_ASSERT(!m_win32Handle.internal);
+	return m_androidHardwareBuffer;
+}
+
+const char* externalSemaphoreTypeToName (vk::VkExternalSemaphoreHandleTypeFlagBits type)
 {
 	switch (type)
 	{
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT:
 			return "opaque_fd";
 
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
 			return "opaque_win32";
 
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 			return "opaque_win32_kmt";
 
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT:
 			return "d3d12_fenc";
 
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT:
 			return "sync_fd";
 
 		default:
@@ -232,20 +291,20 @@ const char* externalSemaphoreTypeToName (vk::VkExternalSemaphoreHandleTypeFlagBi
 	}
 }
 
-const char* externalFenceTypeToName (vk::VkExternalFenceHandleTypeFlagBitsKHR type)
+const char* externalFenceTypeToName (vk::VkExternalFenceHandleTypeFlagBits type)
 {
 	switch (type)
 	{
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT:
 			return "opaque_fd";
 
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
 			return "opaque_win32";
 
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 			return "opaque_win32_kmt";
 
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT:
 			return "sync_fd";
 
 		default:
@@ -254,30 +313,33 @@ const char* externalFenceTypeToName (vk::VkExternalFenceHandleTypeFlagBitsKHR ty
 	}
 }
 
-const char* externalMemoryTypeToName (vk::VkExternalMemoryHandleTypeFlagBitsKHR type)
+const char* externalMemoryTypeToName (vk::VkExternalMemoryHandleTypeFlagBits type)
 {
 	switch (type)
 	{
-		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT:
 			return "opaque_fd";
 
-		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT:
 			return "opaque_win32";
 
-		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 			return "opaque_win32_kmt";
 
-		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHR:
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT:
 			return "d3d11_texture";
 
-		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT_KHR:
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT:
 			return "d3d11_texture_kmt";
 
-		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT_KHR:
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT:
 			return "d3d12_heap";
 
-		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT_KHR:
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT:
 			return "d3d12_resource";
+
+		case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID:
+			return "android_hardware_buffer";
 
 		default:
 			DE_FATAL("Unknown external memory type");
@@ -285,19 +347,19 @@ const char* externalMemoryTypeToName (vk::VkExternalMemoryHandleTypeFlagBitsKHR 
 	}
 }
 
-bool isSupportedPermanence (vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	type,
+bool isSupportedPermanence (vk::VkExternalSemaphoreHandleTypeFlagBits	type,
 							Permanence										permanence)
 {
 	switch (type)
 	{
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 			return permanence == PERMANENCE_PERMANENT || permanence == PERMANENCE_TEMPORARY;
 
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT:
 			return permanence == PERMANENCE_PERMANENT || permanence == PERMANENCE_TEMPORARY;
 
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT:
 			return permanence == PERMANENCE_TEMPORARY;
 
 		default:
@@ -306,18 +368,18 @@ bool isSupportedPermanence (vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	type,
 	}
 }
 
-Transference getHandelTypeTransferences (vk::VkExternalSemaphoreHandleTypeFlagBitsKHR type)
+Transference getHandelTypeTransferences (vk::VkExternalSemaphoreHandleTypeFlagBits type)
 {
 	switch (type)
 	{
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 			return TRANSFERENCE_REFERENCE;
 
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT:
 			return TRANSFERENCE_REFERENCE;
 
-		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT:
 			return TRANSFERENCE_COPY;
 
 		default:
@@ -326,19 +388,19 @@ Transference getHandelTypeTransferences (vk::VkExternalSemaphoreHandleTypeFlagBi
 	}
 }
 
-bool isSupportedPermanence (vk::VkExternalFenceHandleTypeFlagBitsKHR	type,
+bool isSupportedPermanence (vk::VkExternalFenceHandleTypeFlagBits	type,
 							Permanence									permanence)
 {
 	switch (type)
 	{
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 			return permanence == PERMANENCE_PERMANENT || permanence == PERMANENCE_TEMPORARY;
 
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT:
 			return permanence == PERMANENCE_PERMANENT || permanence == PERMANENCE_TEMPORARY;
 
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT:
 			return permanence == PERMANENCE_TEMPORARY;
 
 		default:
@@ -347,18 +409,18 @@ bool isSupportedPermanence (vk::VkExternalFenceHandleTypeFlagBitsKHR	type,
 	}
 }
 
-Transference getHandelTypeTransferences (vk::VkExternalFenceHandleTypeFlagBitsKHR type)
+Transference getHandelTypeTransferences (vk::VkExternalFenceHandleTypeFlagBits type)
 {
 	switch (type)
 	{
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 			return TRANSFERENCE_REFERENCE;
 
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT:
 			return TRANSFERENCE_REFERENCE;
 
-		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR:
+		case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT:
 			return TRANSFERENCE_COPY;
 
 		default:
@@ -370,7 +432,7 @@ Transference getHandelTypeTransferences (vk::VkExternalFenceHandleTypeFlagBitsKH
 int getMemoryFd (const vk::DeviceInterface&					vkd,
 				 vk::VkDevice								device,
 				 vk::VkDeviceMemory							memory,
-				 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType)
+				 vk::VkExternalMemoryHandleTypeFlagBits		externalType)
 {
 	const vk::VkMemoryGetFdInfoKHR	info	=
 	{
@@ -391,10 +453,10 @@ int getMemoryFd (const vk::DeviceInterface&					vkd,
 void getMemoryNative (const vk::DeviceInterface&					vkd,
 						 vk::VkDevice								device,
 						 vk::VkDeviceMemory							memory,
-						 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+						 vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 						 NativeHandle&								nativeHandle)
 {
-	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
 	{
 		const vk::VkMemoryGetFdInfoKHR	info	=
 		{
@@ -410,8 +472,8 @@ void getMemoryNative (const vk::DeviceInterface&					vkd,
 		TCU_CHECK(fd >= 0);
 		nativeHandle = fd;
 	}
-	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-		|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
+		|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 	{
 		const vk::VkMemoryGetWin32HandleInfoKHR	info	=
 		{
@@ -427,31 +489,46 @@ void getMemoryNative (const vk::DeviceInterface&					vkd,
 
 		switch (externalType)
 		{
-			case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
+			case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT:
 				nativeHandle.setWin32Handle(NativeHandle::WIN32HANDLETYPE_NT, handle);
 				break;
 
-			case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+			case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 				nativeHandle.setWin32Handle(NativeHandle::WIN32HANDLETYPE_KMT, handle);
 				break;
 
 			default:
-				DE_FATAL("Unknow external memory handle type");
+				DE_FATAL("Unknown external memory handle type");
 		}
 	}
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		const vk::VkMemoryGetAndroidHardwareBufferInfoANDROID	info	=
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+			DE_NULL,
+
+			memory,
+		};
+		vk::pt::AndroidHardwareBufferPtr						ahb	(DE_NULL);
+
+		VK_CHECK(vkd.getMemoryAndroidHardwareBufferANDROID(device, &info, &ahb));
+		TCU_CHECK(ahb.internal);
+		nativeHandle = ahb;
+	}
 	else
-		DE_FATAL("Unknow external memory handle type");
+		DE_FATAL("Unknown external memory handle type");
 }
 
 vk::Move<vk::VkFence> createExportableFence (const vk::DeviceInterface&					vkd,
 											 vk::VkDevice								device,
-											 vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType)
+											 vk::VkExternalFenceHandleTypeFlagBits		externalType)
 {
-	const vk::VkExportFenceCreateInfoKHR	exportCreateInfo	=
+	const vk::VkExportFenceCreateInfo	exportCreateInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO,
 		DE_NULL,
-		(vk::VkExternalFenceHandleTypeFlagsKHR)externalType
+		(vk::VkExternalFenceHandleTypeFlags)externalType
 	};
 	const vk::VkFenceCreateInfo				createInfo			=
 	{
@@ -466,7 +543,7 @@ vk::Move<vk::VkFence> createExportableFence (const vk::DeviceInterface&					vkd,
 int getFenceFd (const vk::DeviceInterface&					vkd,
 				vk::VkDevice								device,
 				vk::VkFence									fence,
-				vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType)
+				vk::VkExternalFenceHandleTypeFlagBits		externalType)
 {
 	const vk::VkFenceGetFdInfoKHR	info	=
 	{
@@ -487,11 +564,11 @@ int getFenceFd (const vk::DeviceInterface&					vkd,
 void getFenceNative (const vk::DeviceInterface&					vkd,
 					 vk::VkDevice								device,
 					 vk::VkFence								fence,
-					 vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType,
+					 vk::VkExternalFenceHandleTypeFlagBits		externalType,
 					 NativeHandle&								nativeHandle)
 {
-	if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR
-		|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+	if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+		|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)
 	{
 		const vk::VkFenceGetFdInfoKHR	info	=
 		{
@@ -507,8 +584,8 @@ void getFenceNative (const vk::DeviceInterface&					vkd,
 		TCU_CHECK(fd >= 0);
 		nativeHandle = fd;
 	}
-	else if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-		|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+	else if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT
+		|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 	{
 		const vk::VkFenceGetWin32HandleInfoKHR	info	=
 		{
@@ -524,11 +601,11 @@ void getFenceNative (const vk::DeviceInterface&					vkd,
 
 		switch (externalType)
 		{
-			case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
+			case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
 				nativeHandle.setWin32Handle(NativeHandle::WIN32HANDLETYPE_NT, handle);
 				break;
 
-			case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+			case vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 				nativeHandle.setWin32Handle(NativeHandle::WIN32HANDLETYPE_KMT, handle);
 				break;
 
@@ -543,12 +620,12 @@ void getFenceNative (const vk::DeviceInterface&					vkd,
 void importFence (const vk::DeviceInterface&				vkd,
 				  const vk::VkDevice						device,
 				  const vk::VkFence							fence,
-				  vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType,
+				  vk::VkExternalFenceHandleTypeFlagBits		externalType,
 				  NativeHandle&								handle,
-				  vk::VkFenceImportFlagsKHR					flags)
+				  vk::VkFenceImportFlags					flags)
 {
-	if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR
-		|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+	if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT
+		|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)
 	{
 		const vk::VkImportFenceFdInfoKHR	importInfo	=
 		{
@@ -563,8 +640,8 @@ void importFence (const vk::DeviceInterface&				vkd,
 		VK_CHECK(vkd.importFenceFdKHR(device, &importInfo));
 		handle.disown();
 	}
-	else if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-			|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+	else if (externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT
+			|| externalType == vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 	{
 		const vk::VkImportFenceWin32HandleInfoKHR	importInfo	=
 		{
@@ -585,11 +662,11 @@ void importFence (const vk::DeviceInterface&				vkd,
 		DE_FATAL("Unknown fence external handle type");
 }
 
-vk::Move<vk::VkFence> createAndImportFence (const vk::DeviceInterface&					vkd,
-											const vk::VkDevice							device,
-											vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType,
-											NativeHandle&								handle,
-											vk::VkFenceImportFlagsKHR					flags)
+vk::Move<vk::VkFence> createAndImportFence (const vk::DeviceInterface&				vkd,
+											const vk::VkDevice						device,
+											vk::VkExternalFenceHandleTypeFlagBits	externalType,
+											NativeHandle&							handle,
+											vk::VkFenceImportFlags					flags)
 {
 	vk::Move<vk::VkFence>	fence	(createFence(vkd, device));
 
@@ -598,15 +675,15 @@ vk::Move<vk::VkFence> createAndImportFence (const vk::DeviceInterface&					vkd,
 	return fence;
 }
 
-vk::Move<vk::VkSemaphore> createExportableSemaphore (const vk::DeviceInterface&						vkd,
-													 vk::VkDevice									device,
-													 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType)
+vk::Move<vk::VkSemaphore> createExportableSemaphore (const vk::DeviceInterface&					vkd,
+													 vk::VkDevice								device,
+													 vk::VkExternalSemaphoreHandleTypeFlagBits	externalType)
 {
-	const vk::VkExportSemaphoreCreateInfoKHR	exportCreateInfo	=
+	const vk::VkExportSemaphoreCreateInfo	exportCreateInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO,
 		DE_NULL,
-		(vk::VkExternalSemaphoreHandleTypeFlagsKHR)externalType
+		(vk::VkExternalSemaphoreHandleTypeFlags)externalType
 	};
 	const vk::VkSemaphoreCreateInfo				createInfo			=
 	{
@@ -618,10 +695,10 @@ vk::Move<vk::VkSemaphore> createExportableSemaphore (const vk::DeviceInterface&	
 	return vk::createSemaphore(vkd, device, &createInfo);
 }
 
-int getSemaphoreFd (const vk::DeviceInterface&						vkd,
-					vk::VkDevice									device,
-					vk::VkSemaphore									semaphore,
-					vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType)
+int getSemaphoreFd (const vk::DeviceInterface&					vkd,
+					vk::VkDevice								device,
+					vk::VkSemaphore								semaphore,
+					vk::VkExternalSemaphoreHandleTypeFlagBits	externalType)
 {
 	const vk::VkSemaphoreGetFdInfoKHR	info	=
 	{
@@ -639,14 +716,14 @@ int getSemaphoreFd (const vk::DeviceInterface&						vkd,
 	return fd;
 }
 
-void getSemaphoreNative (const vk::DeviceInterface&						vkd,
-						 vk::VkDevice									device,
-						 vk::VkSemaphore								semaphore,
-						 vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType,
-						 NativeHandle&									nativeHandle)
+void getSemaphoreNative (const vk::DeviceInterface&					vkd,
+						 vk::VkDevice								device,
+						 vk::VkSemaphore							semaphore,
+						 vk::VkExternalSemaphoreHandleTypeFlagBits	externalType,
+						 NativeHandle&								nativeHandle)
 {
-	if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR
-		|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+	if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
+		|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
 	{
 		const vk::VkSemaphoreGetFdInfoKHR	info	=
 		{
@@ -662,8 +739,8 @@ void getSemaphoreNative (const vk::DeviceInterface&						vkd,
 		TCU_CHECK(fd >= 0);
 		nativeHandle = fd;
 	}
-	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-		|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
+		|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 	{
 		const vk::VkSemaphoreGetWin32HandleInfoKHR	info	=
 		{
@@ -679,11 +756,11 @@ void getSemaphoreNative (const vk::DeviceInterface&						vkd,
 
 		switch (externalType)
 		{
-			case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR:
+			case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT:
 				nativeHandle.setWin32Handle(NativeHandle::WIN32HANDLETYPE_NT, handle);
 				break;
 
-			case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR:
+			case vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT:
 				nativeHandle.setWin32Handle(NativeHandle::WIN32HANDLETYPE_KMT, handle);
 				break;
 
@@ -698,12 +775,12 @@ void getSemaphoreNative (const vk::DeviceInterface&						vkd,
 void importSemaphore (const vk::DeviceInterface&					vkd,
 					  const vk::VkDevice							device,
 					  const vk::VkSemaphore							semaphore,
-					  vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType,
+					  vk::VkExternalSemaphoreHandleTypeFlagBits		externalType,
 					  NativeHandle&									handle,
-					  vk::VkSemaphoreImportFlagsKHR					flags)
+					  vk::VkSemaphoreImportFlags					flags)
 {
-	if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR
-		|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+	if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT
+		|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)
 	{
 		const vk::VkImportSemaphoreFdInfoKHR	importInfo	=
 		{
@@ -718,8 +795,8 @@ void importSemaphore (const vk::DeviceInterface&					vkd,
 		VK_CHECK(vkd.importSemaphoreFdKHR(device, &importInfo));
 		handle.disown();
 	}
-	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-			|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+	else if (externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT
+			|| externalType == vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 	{
 		const vk::VkImportSemaphoreWin32HandleInfoKHR	importInfo	=
 		{
@@ -742,9 +819,9 @@ void importSemaphore (const vk::DeviceInterface&					vkd,
 
 vk::Move<vk::VkSemaphore> createAndImportSemaphore (const vk::DeviceInterface&						vkd,
 													const vk::VkDevice								device,
-													vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType,
+													vk::VkExternalSemaphoreHandleTypeFlagBits		externalType,
 													NativeHandle&									handle,
-													vk::VkSemaphoreImportFlagsKHR					flags)
+													vk::VkSemaphoreImportFlags						flags)
 {
 	vk::Move<vk::VkSemaphore>	semaphore	(createSemaphore(vkd, device));
 
@@ -756,24 +833,24 @@ vk::Move<vk::VkSemaphore> createAndImportSemaphore (const vk::DeviceInterface&		
 vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface&					vkd,
 													   vk::VkDevice									device,
 													   const vk::VkMemoryRequirements&				requirements,
-													   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+													   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													   vk::VkBuffer									buffer,
-													   deUint32&                                    exportedMemoryTypeIndex)
+													   deUint32&									exportedMemoryTypeIndex)
 {
 	exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
-	const vk::VkMemoryDedicatedAllocateInfoKHR	dedicatedInfo	=
+	const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
 		DE_NULL,
 
 		(vk::VkImage)0,
 		buffer
 	};
-	const vk::VkExportMemoryAllocateInfoKHR	exportInfo	=
+	const vk::VkExportMemoryAllocateInfo	exportInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
 		!!buffer ? &dedicatedInfo : DE_NULL,
-		(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
+		(vk::VkExternalMemoryHandleTypeFlags)externalType
 	};
 	const vk::VkMemoryAllocateInfo			info		=
 	{
@@ -788,24 +865,24 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface
 vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::DeviceInterface&					vkd,
 													   vk::VkDevice									device,
 													   const vk::VkMemoryRequirements&				requirements,
-													   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+													   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													   vk::VkImage									image,
-													   deUint32&                                    exportedMemoryTypeIndex)
+													   deUint32&									exportedMemoryTypeIndex)
 {
 	exportedMemoryTypeIndex = chooseMemoryType(requirements.memoryTypeBits);
-	const vk::VkMemoryDedicatedAllocateInfoKHR	dedicatedInfo	=
+	const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
 		DE_NULL,
 
 		image,
 		(vk::VkBuffer)0
 	};
-	const vk::VkExportMemoryAllocateInfoKHR	exportInfo	=
+	const vk::VkExportMemoryAllocateInfo	exportInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
 		!!image ? &dedicatedInfo : DE_NULL,
-		(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
+		(vk::VkExternalMemoryHandleTypeFlags)externalType
 	};
 	const vk::VkMemoryAllocateInfo			info		=
 	{
@@ -822,7 +899,7 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::InstanceInterfa
 													   const vk::DeviceInterface&					vkd,
 													   vk::VkDevice									device,
 													   const vk::VkMemoryRequirements&				requirements,
-													   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+													   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													   bool											hostVisible,
 													   vk::VkBuffer									buffer,
 													   deUint32&									exportedMemoryTypeIndex)
@@ -834,19 +911,19 @@ vk::Move<vk::VkDeviceMemory> allocateExportableMemory (const vk::InstanceInterfa
 		if (((requirements.memoryTypeBits & (1u << memoryTypeIndex)) != 0)
 			&& (((properties.memoryTypes[memoryTypeIndex].propertyFlags & vk::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0) == hostVisible))
 		{
-			const vk::VkMemoryDedicatedAllocateInfoKHR	dedicatedInfo	=
+			const vk::VkMemoryDedicatedAllocateInfo	dedicatedInfo	=
 			{
-				vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+				vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
 				DE_NULL,
 
 				(vk::VkImage)0,
 				buffer
 			};
-			const vk::VkExportMemoryAllocateInfoKHR	exportInfo	=
+			const vk::VkExportMemoryAllocateInfo	exportInfo	=
 			{
-				vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR,
+				vk::VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
 				!!buffer ? &dedicatedInfo : DE_NULL,
-				(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
+				(vk::VkExternalMemoryHandleTypeFlags)externalType
 			};
 			const vk::VkMemoryAllocateInfo			info		=
 			{
@@ -869,7 +946,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 												  vk::VkBuffer								buffer,
 												  vk::VkImage								image,
 												  const vk::VkMemoryRequirements&			requirements,
-												  vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+												  vk::VkExternalMemoryHandleTypeFlagBits	externalType,
 												  deUint32									memoryTypeIndex,
 												  NativeHandle&								handle)
 {
@@ -877,7 +954,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 
 	DE_ASSERT(!buffer || !image);
 
-	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR)
+	if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
 	{
 		const vk::VkImportMemoryFdInfoKHR			importInfo		=
 		{
@@ -886,9 +963,9 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			externalType,
 			handle.getFd()
 		};
-		const vk::VkMemoryDedicatedAllocateInfoKHR	dedicatedInfo	=
+		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo	=
 		{
-			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
 			&importInfo,
 			image,
 			buffer,
@@ -906,10 +983,10 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 
 		return memory;
 	}
-	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR
-			|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR)
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT
+			|| externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)
 	{
-		const vk::VkImportMemoryWin32HandleInfoKHR	importInfo =
+		const vk::VkImportMemoryWin32HandleInfoKHR	importInfo		=
 		{
 			vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR,
 			DE_NULL,
@@ -917,9 +994,9 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 			handle.getWin32Handle(),
 			DE_NULL
 		};
-		const vk::VkMemoryDedicatedAllocateInfoKHR	dedicatedInfo	=
+		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo	=
 		{
-			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
 			&importInfo,
 			image,
 			buffer,
@@ -937,6 +1014,39 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 
 		return memory;
 	}
+#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
+	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
+	{
+		AHardwareBuffer_Desc desc;
+		AHardwareBuffer_describe(static_cast<const AHardwareBuffer*>(handle.getAndroidHardwareBuffer().internal), &desc);
+
+		DE_ASSERT(desc.format == AHARDWAREBUFFER_FORMAT_BLOB || image != 0);
+
+		vk::VkImportAndroidHardwareBufferInfoANDROID	importInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+			DE_NULL,
+			handle.getAndroidHardwareBuffer()
+		};
+		const vk::VkMemoryDedicatedAllocateInfo		dedicatedInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+			&importInfo,
+			image,
+			buffer,
+		};
+		const vk::VkMemoryAllocateInfo					info =
+		{
+			vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+			(isDedicated ? (const void*)&dedicatedInfo : (const void*)&importInfo),
+			requirements.size,
+			(memoryTypeIndex == ~0U) ? chooseMemoryType(requirements.memoryTypeBits)  : memoryTypeIndex
+		};
+		vk::Move<vk::VkDeviceMemory> memory (vk::allocateMemory(vkd, device, &info));
+
+		return memory;
+	}
+#endif // (USE_ANDROID_O_HARDWARE_BUFFER)
 	else
 	{
 		DE_FATAL("Unknown external memory type");
@@ -947,7 +1057,7 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&					vkd,
 										   vk::VkDevice									device,
 										   const vk::VkMemoryRequirements&				requirements,
-										   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+										   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 										   deUint32										memoryTypeIndex,
 										   NativeHandle&								handle)
 {
@@ -958,7 +1068,7 @@ vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&		
 													vk::VkDevice								device,
 													vk::VkBuffer								buffer,
 													const vk::VkMemoryRequirements&				requirements,
-													vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+													vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													deUint32									memoryTypeIndex,
 													NativeHandle&								handle)
 {
@@ -969,7 +1079,7 @@ vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&		
 													vk::VkDevice								device,
 													vk::VkImage									image,
 													const vk::VkMemoryRequirements&				requirements,
-													vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+													vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 													deUint32									memoryTypeIndex,
 													NativeHandle&								handle)
 {
@@ -979,16 +1089,16 @@ vk::Move<vk::VkDeviceMemory> importDedicatedMemory (const vk::DeviceInterface&		
 vk::Move<vk::VkBuffer> createExternalBuffer (const vk::DeviceInterface&					vkd,
 											 vk::VkDevice								device,
 											 deUint32									queueFamilyIndex,
-											 vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+											 vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 											 vk::VkDeviceSize							size,
 											 vk::VkBufferCreateFlags					createFlags,
 											 vk::VkBufferUsageFlags						usageFlags)
 {
-	const vk::VkExternalMemoryBufferCreateInfoKHR		externalCreateInfo	=
+	const vk::VkExternalMemoryBufferCreateInfo			externalCreateInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
 		DE_NULL,
-		(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
+		(vk::VkExternalMemoryHandleTypeFlags)externalType
 	};
 	const vk::VkBufferCreateInfo						createInfo			=
 	{
@@ -1008,19 +1118,21 @@ vk::Move<vk::VkBuffer> createExternalBuffer (const vk::DeviceInterface&					vkd,
 vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 										   vk::VkDevice									device,
 										   deUint32										queueFamilyIndex,
-										   vk::VkExternalMemoryHandleTypeFlagBitsKHR	externalType,
+										   vk::VkExternalMemoryHandleTypeFlagBits		externalType,
 										   vk::VkFormat									format,
 										   deUint32										width,
 										   deUint32										height,
 										   vk::VkImageTiling							tiling,
 										   vk::VkImageCreateFlags						createFlags,
-										   vk::VkImageUsageFlags						usageFlags)
+										   vk::VkImageUsageFlags						usageFlags,
+										   deUint32 mipLevels,
+										   deUint32 arrayLayers)
 {
-	const vk::VkExternalMemoryImageCreateInfoKHR		externalCreateInfo	=
+	const vk::VkExternalMemoryImageCreateInfo		externalCreateInfo	=
 	{
-		vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR,
+		vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO,
 		DE_NULL,
-		(vk::VkExternalMemoryHandleTypeFlagsKHR)externalType
+		(vk::VkExternalMemoryHandleTypeFlags)externalType
 	};
 	const vk::VkImageCreateInfo						createInfo			=
 	{
@@ -1030,8 +1142,8 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 		vk::VK_IMAGE_TYPE_2D,
 		format,
 		{ width, height, 1u, },
-		1u,
-		1u,
+		mipLevels,
+		arrayLayers,
 		vk::VK_SAMPLE_COUNT_1_BIT,
 		tiling,
 		usageFlags,

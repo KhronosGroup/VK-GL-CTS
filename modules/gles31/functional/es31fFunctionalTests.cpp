@@ -104,12 +104,6 @@ namespace Functional
 class ShaderLibraryTest : public TestCaseGroup
 {
 public:
-	ShaderLibraryTest (Context& context, const char* name, const char* description)
-		: TestCaseGroup	(context, name, description)
-		, m_filename	(name + std::string(".test"))
-	{
-	}
-
 	ShaderLibraryTest (Context& context, const char* filename, const char* name, const char* description)
 		: TestCaseGroup	(context, name, description)
 		, m_filename	(filename)
@@ -119,7 +113,7 @@ public:
 	void init (void)
 	{
 		gls::ShaderLibrary			shaderLibrary(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
-		std::string					fileName	= "shaders/" + m_filename;
+		std::string					fileName	= m_filename;
 		std::vector<tcu::TestNode*>	children	= shaderLibrary.loadShaderFile(fileName.c_str());
 
 		for (int i = 0; i < (int)children.size(); i++)
@@ -128,6 +122,33 @@ public:
 
 private:
 	const std::string m_filename;
+};
+
+class ShaderLibraryGroup : public TestCaseGroup
+{
+public:
+	struct File
+	{
+		const char*		fileName;
+		const char*		testName;
+		const char*		description;
+	};
+
+	ShaderLibraryGroup (Context& context, const char* name, const char* description, int numFiles, const File* files)
+		: TestCaseGroup	(context, name, description)
+		, m_numFiles	(numFiles)
+		, m_files		(files)
+	{}
+
+	void init (void)
+	{
+		for (int ndx = 0; ndx < m_numFiles; ++ndx)
+			addChild(new ShaderLibraryTest(m_context, m_files[ndx].fileName, m_files[ndx].testName, m_files[ndx].description));
+	}
+
+private:
+	const int			m_numFiles;
+	const File* const	m_files;
 };
 
 class ShaderBuiltinVarTests : public TestCaseGroup
@@ -173,12 +194,27 @@ public:
 
 	void init (void)
 	{
-		addChild(new ShaderLibraryTest(m_context, "linkage_geometry.test", "geometry", "Geometry shader"));
-		addChild(new ShaderLibraryTest(m_context, "linkage_tessellation.test", "tessellation", "Tessellation shader"));
-		addChild(new ShaderLibraryTest(m_context, "linkage_tessellation_geometry.test", "tessellation_geometry", "Tessellation and geometry shader"));
-		addChild(new ShaderLibraryTest(m_context, "linkage_shader_storage_block.test", "shader_storage_block", "Shader storage blocks"));
-		addChild(new ShaderLibraryTest(m_context, "linkage_io_block.test", "io_block", "Shader io blocks"));
-		addChild(new ShaderLibraryTest(m_context, "linkage_uniform.test", "uniform", "Uniform linkage"));
+		static const ShaderLibraryGroup::File	s_filesES31[]	=
+		{
+			{ "shaders/es31/linkage_geometry.test",					"geometry",					"Geometry shader"					},
+			{ "shaders/es31/linkage_tessellation.test",				"tessellation",				"Tessellation shader"				},
+			{ "shaders/es31/linkage_tessellation_geometry.test",	"tessellation_geometry",	"Tessellation and geometry shader"	},
+			{ "shaders/es31/linkage_shader_storage_block.test",		"shader_storage_block",		"Shader storage blocks"				},
+			{ "shaders/es31/linkage_io_block.test",					"io_block",					"Shader io blocks"					},
+			{ "shaders/es31/linkage_uniform.test",					"uniform",					"Uniform linkage"					},
+		};
+		static const ShaderLibraryGroup::File	s_filesES32[]	=
+		{
+			{ "shaders/es32/linkage_geometry.test",					"geometry",					"Geometry shader"					},
+			{ "shaders/es32/linkage_tessellation.test",				"tessellation",				"Tessellation shader"				},
+			{ "shaders/es32/linkage_tessellation_geometry.test",	"tessellation_geometry",	"Tessellation and geometry shader"	},
+			{ "shaders/es32/linkage_shader_storage_block.test",		"shader_storage_block",		"Shader storage blocks"				},
+			{ "shaders/es32/linkage_io_block.test",					"io_block",					"Shader io blocks"					},
+			{ "shaders/es32/linkage_uniform.test",					"uniform",					"Uniform linkage"					},
+		};
+
+		addChild(new ShaderLibraryGroup(m_context,	"es31",		"GLSL ES 3.1 Linkage",	DE_LENGTH_OF_ARRAY(s_filesES31), s_filesES31));
+		addChild(new ShaderLibraryGroup(m_context,	"es32",		"GLSL ES 3.2 Linkage",	DE_LENGTH_OF_ARRAY(s_filesES32), s_filesES32));
 	}
 };
 
@@ -197,14 +233,56 @@ public:
 		addChild(new SampleVariableTests				(m_context));
 		addChild(new ShaderMultisampleInterpolationTests(m_context));
 		addChild(new OpaqueTypeIndexingTests			(m_context));
-		addChild(new ShaderLibraryTest					(m_context, "functions", "Function Tests"));
-		addChild(new ShaderLibraryTest					(m_context, "arrays", "Arrays Tests"));
-		addChild(new ShaderLibraryTest					(m_context, "arrays_of_arrays", "Arrays of Arrays Tests"));
+
+		{
+			static const ShaderLibraryGroup::File s_functionFiles[] =
+			{
+				{ "shaders/es31/functions.test",	"es31",		"GLSL ES 3.1 Function Tests"	},
+				{ "shaders/es32/functions.test",	"es32",		"GLSL ES 3.2 Function Tests"	},
+			};
+			addChild(new ShaderLibraryGroup(m_context, "functions", "Function Tests", DE_LENGTH_OF_ARRAY(s_functionFiles), s_functionFiles));
+		}
+
+		{
+			static const ShaderLibraryGroup::File s_arraysFiles[] =
+			{
+				{ "shaders/es31/arrays.test",	"es31",		"GLSL ES 3.1 Array Tests"	},
+				{ "shaders/es32/arrays.test",	"es32",		"GLSL ES 3.2 Array Tests"	},
+			};
+			addChild(new ShaderLibraryGroup(m_context, "arrays", "Array Tests", DE_LENGTH_OF_ARRAY(s_arraysFiles), s_arraysFiles));
+		}
+
+		{
+			static const ShaderLibraryGroup::File s_arraysOfArraysFiles[] =
+			{
+				{ "shaders/es31/arrays_of_arrays.test",		"es31",		"GLSL ES 3.1 Arrays of Arrays Tests"	},
+				{ "shaders/es32/arrays_of_arrays.test",		"es32",		"GLSL ES 3.2 Arrays of Arrays Tests"	},
+			};
+			addChild(new ShaderLibraryGroup(m_context, "arrays_of_arrays", "Arrays of Arras Tests", DE_LENGTH_OF_ARRAY(s_arraysOfArraysFiles), s_arraysOfArraysFiles));
+		}
+
 		addChild(new ShaderLinkageTests					(m_context));
 		addChild(new ShaderBuiltinConstantTests			(m_context));
 		addChild(new ShaderHelperInvocationTests		(m_context));
-		addChild(new ShaderLibraryTest					(m_context, "implicit_conversions", "GL_EXT_shader_implicit_conversions Tests"));
-		addChild(new ShaderLibraryTest					(m_context, "uniform_block", "Uniform block tests"));
+
+		{
+			static const ShaderLibraryGroup::File s_implicitConversionsFiles[] =
+			{
+				{ "shaders/es31/implicit_conversions.test",		"es31",		"GLSL ES 3.1 GL_EXT_shader_implicit_conversions Tests"	},
+				{ "shaders/es32/implicit_conversions.test",		"es32",		"GLSL ES 3.2 GL_EXT_shader_implicit_conversions Tests"	},
+			};
+			addChild(new ShaderLibraryGroup(m_context, "implicit_conversions", "GL_EXT_shader_implicit_conversions Tests", DE_LENGTH_OF_ARRAY(s_implicitConversionsFiles), s_implicitConversionsFiles));
+		}
+
+		{
+			static const ShaderLibraryGroup::File s_uniformBlockFiles[] =
+			{
+				{ "shaders/es31/uniform_block.test",	"es31",		"GLSL ES 3.1 Uniform block tests"	},
+				{ "shaders/es32/uniform_block.test",	"es32",		"GLSL ES 3.2 Uniform block tests"	},
+			};
+			addChild(new ShaderLibraryGroup(m_context, "uniform_block", "Uniform block tests", DE_LENGTH_OF_ARRAY(s_uniformBlockFiles), s_uniformBlockFiles));
+		}
+
 		addChild(new ShaderFramebufferFetchTests		(m_context));
 	}
 };

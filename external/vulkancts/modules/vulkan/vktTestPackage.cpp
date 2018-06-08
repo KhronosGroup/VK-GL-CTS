@@ -31,9 +31,10 @@
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkBinaryRegistry.hpp"
-#include "vkGlslToSpirV.hpp"
+#include "vkShaderToSpirV.hpp"
 #include "vkDebugReportUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkApiVersion.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -59,6 +60,7 @@
 #include "vktShaderRenderTextureGatherTests.hpp"
 #include "vktShaderBuiltinTests.hpp"
 #include "vktOpaqueTypeIndexingTests.hpp"
+#include "vktAtomicOperationTests.hpp"
 #include "vktUniformBlockTests.hpp"
 #include "vktDynamicStateTests.hpp"
 #include "vktSSBOLayoutTests.hpp"
@@ -76,7 +78,12 @@
 #include "vktFragmentOperationsTests.hpp"
 #include "vktTextureTests.hpp"
 #include "vktGeometryTests.hpp"
+#include "vktRobustnessTests.hpp"
+#include "vktMultiViewTests.hpp"
+#include "vktSubgroupsTests.hpp"
 #include "vktYCbCrTests.hpp"
+#include "vktProtectedMemTests.hpp"
+#include "vktDeviceGroupTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -85,6 +92,11 @@ namespace // compilation
 {
 
 vk::ProgramBinary* compileProgram (const vk::GlslSource& source, glu::ShaderProgramInfo* buildInfo)
+{
+	return vk::buildProgram(source, buildInfo);
+}
+
+vk::ProgramBinary* compileProgram (const vk::HlslSource& source, glu::ShaderProgramInfo* buildInfo)
 {
 	return vk::buildProgram(source, buildInfo);
 }
@@ -211,9 +223,14 @@ TestCaseExecutor::~TestCaseExecutor (void)
 
 void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePath)
 {
-	const TestCase*			vktCase		= dynamic_cast<TestCase*>(testCase);
-	tcu::TestLog&			log			= m_context.getTestContext().getLog();
-	vk::SourceCollections	sourceProgs;
+	const TestCase*				vktCase						= dynamic_cast<TestCase*>(testCase);
+	tcu::TestLog&				log							= m_context.getTestContext().getLog();
+	const deUint32				usedVulkanVersion			= m_context.getUsedApiVersion();
+	const vk::SpirvVersion		baselineSpirvVersion		= vk::getBaselineSpirvVersion(usedVulkanVersion);
+	vk::ShaderBuildOptions		defaultGlslBuildOptions		(baselineSpirvVersion, 0u);
+	vk::ShaderBuildOptions		defaultHlslBuildOptions		(baselineSpirvVersion, 0u);
+	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(baselineSpirvVersion);
+	vk::SourceCollections		sourceProgs					(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
 
 	DE_UNREF(casePath); // \todo [2015-03-13 pyry] Use this to identify ProgramCollection storage path
 
@@ -225,7 +242,31 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin(); progIter != sourceProgs.glslSources.end(); ++progIter)
 	{
-		vk::ProgramBinary* binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
+		if (progIter.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForGlsl(m_context.getUsedApiVersion()))
+			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
+
+		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
+
+		try
+		{
+			std::ostringstream disasm;
+
+			vk::disassembleProgram(*binProg, &disasm);
+
+			log << vk::SpirVAsmSource(disasm.str());
+		}
+		catch (const tcu::NotSupportedError& err)
+		{
+			log << err;
+		}
+	}
+
+	for (vk::HlslSourceCollection::Iterator progIter = sourceProgs.hlslSources.begin(); progIter != sourceProgs.hlslSources.end(); ++progIter)
+	{
+		if (progIter.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForGlsl(m_context.getUsedApiVersion()))
+			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
+
+		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::HlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection);
 
 		try
 		{
@@ -243,6 +284,9 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::SpirVAsmCollection::Iterator asmIterator = sourceProgs.spirvAsmSources.begin(); asmIterator != sourceProgs.spirvAsmSources.end(); ++asmIterator)
 	{
+		if (asmIterator.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForAsm(m_context.getUsedApiVersion()))
+			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
+
 		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection);
 	}
 
@@ -355,6 +399,7 @@ void createGlslTests (tcu::TestCaseGroup* glslTests)
 	// ShaderExecutor-based tests
 	glslTests->addChild(shaderexecutor::createBuiltinTests				(testCtx));
 	glslTests->addChild(shaderexecutor::createOpaqueTypeIndexingTests	(testCtx));
+	glslTests->addChild(shaderexecutor::createAtomicOperationTests		(testCtx));
 }
 
 // TestPackage
@@ -399,7 +444,12 @@ void TestPackage::init (void)
 	addChild(FragmentOperations::createTests(m_testCtx));
 	addChild(texture::createTests			(m_testCtx));
 	addChild(geometry::createTests			(m_testCtx));
+	addChild(robustness::createTests		(m_testCtx));
+	addChild(MultiView::createTests			(m_testCtx));
+	addChild(subgroups::createTests			(m_testCtx));
 	addChild(ycbcr::createTests				(m_testCtx));
+	addChild(ProtectedMem::createTests		(m_testCtx));
+	addChild(DeviceGroup::createTests		(m_testCtx));
 }
 
 } // vkt

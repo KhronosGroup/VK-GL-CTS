@@ -162,6 +162,9 @@ class BatchResultParser:
 
 	def parseTestCaseResult (self, name, log):
 		try:
+			# The XML parser has troubles with invalid characters deliberately included in the shaders.
+			# This line removes such characters before calling the parser
+			log = log.decode('utf-8','ignore').encode("utf-8")
 			doc = xml.dom.minidom.parseString(log)
 			resultItems = doc.getElementsByTagName('Result')
 			if len(resultItems) != 1:
@@ -170,7 +173,7 @@ class BatchResultParser:
 			statusCode		= resultItems[0].getAttributeNode('StatusCode').nodeValue
 			statusDetails	= getNodeText(resultItems[0])
 		except Exception as e:
-			statusCode		= TestStatusCode.INTERNAL_ERROR
+			statusCode		= StatusCode.INTERNAL_ERROR
 			statusDetails	= "XML parsing failed: %s" % str(e)
 
 		self.testCaseResults.append(TestCaseResult(name, statusCode, statusDetails, log))

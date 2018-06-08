@@ -998,9 +998,22 @@ PipelineCreateInfo::DynamicState::DynamicState (const std::vector<vk::VkDynamicS
 
 	if (!_dynamicStates.size())
 	{
-		for (size_t i = 0; i < vk::VK_DYNAMIC_STATE_LAST; ++i)
+		const vk::VkDynamicState dynamicState[] =
 		{
-			m_dynamicStates.push_back(static_cast<vk::VkDynamicState>(i));
+			vk::VK_DYNAMIC_STATE_VIEWPORT,
+			vk::VK_DYNAMIC_STATE_SCISSOR,
+			vk::VK_DYNAMIC_STATE_LINE_WIDTH,
+			vk::VK_DYNAMIC_STATE_DEPTH_BIAS,
+			vk::VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+			vk::VK_DYNAMIC_STATE_DEPTH_BOUNDS,
+			vk::VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
+			vk::VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,
+			vk::VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+		};
+
+		for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(dynamicState); ++i)
+		{
+			m_dynamicStates.push_back(dynamicState[i]);
 		}
 	}
 	else

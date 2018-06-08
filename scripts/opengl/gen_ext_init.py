@@ -22,32 +22,53 @@
 
 from src_util import *
 
+def getExtensionCommands (registry, iface, api, extension):
+	commands = []
+
+	# Build interface with just the single extension and no core APIs.
+	# Aliases will not be set in this iface so we will use it only for
+	# slicing the complete (hybrid) iface.
+	extIface = getInterface(registry, api, version=False, profile='core', extensionNames=[extension])
+	if not extIface.commands:
+		return commands
+
+	cmdMap = {}
+	for command in iface.commands:
+		cmdMap[command.name] = command
+
+	for extCommand in extIface.commands:
+		assert extCommand.name in cmdMap
+		commands.append(cmdMap[extCommand.name])
+
+	return commands
+
 def genExtensions (registry, iface, api):
-    for extName in EXTENSIONS:
-        extIface = getInterface(registry, api, version=False, profile='core', extensionNames=[extName])
-        if not extIface.commands:
-            continue
+	for extName in EXTENSIONS:
+		extCommands = getExtensionCommands(registry, iface, api, extName)
+		if len(extCommands) == 0:
+			continue # Not applicable for this api
 
-        yield ""
-        yield "if (de::contains(extSet, \"%s\"))" % extName
-        yield "{"
+		yield ""
+		yield "if (de::contains(extSet, \"%s\"))" % extName
+		yield "{"
 
-        def genInit (command):
-            coreName = getCoreName(command.name)
-            ifaceName = coreName if coreName in iface.commands else command.name
-            return "gl->%s\t= (%s)\tloader->get(\"%s\");" % (
-                getFunctionMemberName(ifaceName),
-                getFunctionTypeName(ifaceName),
-                command.name)
+		def genInit (command):
+			ifaceName = command.alias.name if command.alias else command.name
+			return "gl->%s\t= (%s)\tloader->get(\"%s\");" % (
+				getFunctionMemberName(ifaceName),
+				getFunctionTypeName(ifaceName),
+				command.name)
 
-        for line in indentLines(genInit(command) for command in extIface.commands):
-            yield "\t" + line
+		for line in indentLines(genInit(command) for command in extCommands):
+			yield "\t" + line
 
-        yield "}"
+		yield "}"
 
 def genExtInit (registry, iface):
-    writeInlFile(os.path.join(OPENGL_INC_DIR, "glwInitExtES.inl"), genExtensions(registry, iface, 'gles2'))
-    writeInlFile(os.path.join(OPENGL_INC_DIR, "glwInitExtGL.inl"), genExtensions(registry, iface, 'gl'))
+	nonStrippedIface = getHybridInterface(stripAliasedExtCommands = False)
+
+	writeInlFile(os.path.join(OPENGL_INC_DIR, "glwInitExtES.inl"), genExtensions(registry, nonStrippedIface, 'gles2'))
+	writeInlFile(os.path.join(OPENGL_INC_DIR, "glwInitExtGL.inl"), genExtensions(registry, nonStrippedIface, 'gl'))
 
 if __name__ == '__main__':
-    genExtInit(getGLRegistry(), getHybridInterface())
+	genExtInit(getGLRegistry(), getHybridInterface())

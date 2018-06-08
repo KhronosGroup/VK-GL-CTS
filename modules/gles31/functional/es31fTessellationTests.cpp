@@ -37,6 +37,7 @@
 #include "gluCallLogWrapper.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuRenderTarget.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuSurface.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
@@ -46,6 +47,7 @@
 #include "deRandom.hpp"
 #include "deStringUtil.hpp"
 #include "deSharedPtr.hpp"
+#include "deUniquePtr.hpp"
 #include "deString.h"
 #include "deMath.h"
 
@@ -1525,15 +1527,31 @@ static bool compareTriangleSets (const vector<Vec3>& coordsA, const vector<Vec3>
 	return compareTriangleSets(coordsA, coordsB, log, ConstantUnaryPredicate<const Vec3*, true>());
 }
 
-static void checkExtensionSupport (Context& context, const char* extName)
+static void checkGPUShader5Support (Context& context)
 {
-	if (!context.getContextInfo().isExtensionSupported(extName))
-		throw tcu::NotSupportedError(string(extName) + " not supported");
+	const bool supportsES32 = glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"), "GL_EXT_gpu_shader5 is not supported");
 }
 
 static void checkTessellationSupport (Context& context)
 {
-	checkExtensionSupport(context, "GL_EXT_tessellation_shader");
+	const bool supportsES32 = glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2));
+	TCU_CHECK_AND_THROW(NotSupportedError, supportsES32 || context.getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader"), "GL_EXT_tessellation_shader is not supported");
+}
+
+static std::string specializeShader(Context& context, const char* code)
+{
+	const glu::ContextType				contextType		= context.getRenderContext().getType();
+	const glu::GLSLVersion				glslVersion		= glu::getContextTypeGLSLVersion(contextType);
+	bool								supportsES32	= glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+
+	std::map<std::string, std::string>	specializationMap;
+
+	specializationMap["GLSL_VERSION_DECL"]				= glu::getGLSLVersionDeclaration(glslVersion);
+	specializationMap["GPU_SHADER5_REQUIRE"]			= supportsES32 ? "" : "#extension GL_EXT_gpu_shader5 : require";
+	specializationMap["TESSELLATION_SHADER_REQUIRE"]	= supportsES32 ? "" : "#extension GL_EXT_tessellation_shader : require";
+
+	return tcu::StringTemplate(code).specialize(specializationMap);
 }
 
 // Draw primitives with shared edges and check that no cracks are visible at the shared edges.
@@ -1576,12 +1594,11 @@ void CommonEdgeCase::init (void)
 	checkTessellationSupport(m_context);
 
 	if (m_caseType == CASETYPE_PRECISE)
-		checkExtensionSupport(m_context, "GL_EXT_gpu_shader5");
+		checkGPUShader5Support(m_context);
 
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "in highp vec2 in_v_position;\n"
 													 "in highp float in_v_tessParam;\n"
@@ -1593,11 +1610,11 @@ void CommonEdgeCase::init (void)
 													 "{\n"
 													 "	in_tc_position = in_v_position;\n"
 													 "	in_tc_tessParam = in_v_tessParam;\n"
-													 "}\n")
+												 "}\n");
 
-			<< glu::TessellationControlSource		("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
-													 + string(m_caseType == CASETYPE_PRECISE ? "#extension GL_EXT_gpu_shader5 : require\n" : "") +
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 + string(m_caseType == CASETYPE_PRECISE ? "${GPU_SHADER5_REQUIRE}\n" : "") +
 													 "\n"
 													 "layout (vertices = " + string(m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? "3" : m_primitiveType == TESSPRIMITIVETYPE_QUADS ? "4" : DE_NULL) + ") out;\n"
 													 "\n"
@@ -1624,11 +1641,11 @@ void CommonEdgeCase::init (void)
 														"	gl_TessLevelOuter[2] = 1.0 + 59.0 * 0.5 * (in_tc_tessParam[3] + in_tc_tessParam[1]);\n"
 														"	gl_TessLevelOuter[3] = 1.0 + 59.0 * 0.5 * (in_tc_tessParam[2] + in_tc_tessParam[3]);\n"
 													  : DE_NULL) +
-													 "}\n")
+												 "}\n");
 
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
-													 + string(m_caseType == CASETYPE_PRECISE ? "#extension GL_EXT_gpu_shader5 : require\n" : "") +
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
+												 + string(m_caseType == CASETYPE_PRECISE ? "${GPU_SHADER5_REQUIRE}\n" : "") +
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing) +
 													 "\n"
@@ -1672,9 +1689,9 @@ void CommonEdgeCase::init (void)
 													 "	pos += float(numBits&1u)*0.04;\n"
 													 "\n"
 													 "	gl_Position = vec4(pos, 0.0, 1.0);\n"
-													 "}\n")
+												 "}\n");
 
-			<< glu::FragmentSource					("#version 310 es\n"
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
@@ -1683,7 +1700,13 @@ void CommonEdgeCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 "	o_color = in_f_color;\n"
-													 "}\n")));
+												 "}\n");
+
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))));
 
 	m_testCtx.getLog() << *m_program;
 	if (!m_program->isOk())
@@ -1879,15 +1902,14 @@ void TessCoordCase::init (void)
 	checkTessellationSupport(m_context);
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
-													 "}\n")
+												 "}\n");
 
-			<< glu::TessellationControlSource		("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 "layout (vertices = 1) out;\n"
 													 "\n"
@@ -1908,10 +1930,10 @@ void TessCoordCase::init (void)
 													 "	gl_TessLevelOuter[1] = u_tessLevelOuter1;\n"
 													 "	gl_TessLevelOuter[2] = u_tessLevelOuter2;\n"
 													 "	gl_TessLevelOuter[3] = u_tessLevelOuter3;\n"
-													 "}\n")
+												 "}\n");
 
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, true) +
 													 "\n"
@@ -1921,17 +1943,22 @@ void TessCoordCase::init (void)
 													 "{\n"
 													 "	out_te_tessCoord = gl_TessCoord;\n"
 													 "	gl_Position = vec4(gl_TessCoord.xy*1.6 - 0.8, 0.0, 1.0);\n"
-													 "}\n")
+												 "}\n");
 
-			<< glu::FragmentSource					("#version 310 es\n"
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
 													 "	o_color = vec4(1.0);\n"
-													 "}\n")
+												 "}\n");
 
+       m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 			<< glu::TransformFeedbackVarying		("out_te_tessCoord")
 			<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)));
 
@@ -2114,15 +2141,13 @@ void FractionalSpacingModeCase::init (void)
 	checkTessellationSupport(m_context);
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
-													 "}\n")
-
-			<< glu::TessellationControlSource		("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 "layout (vertices = 1) out;\n"
 													 "\n"
@@ -2132,10 +2157,9 @@ void FractionalSpacingModeCase::init (void)
 													 "{\n"
 													 "	gl_TessLevelOuter[0] = 1.0;\n"
 													 "	gl_TessLevelOuter[1] = u_tessLevelOuter1;\n"
-													 "}\n")
-
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_ISOLINES, m_spacing, true) +
 													 "\n"
@@ -2145,17 +2169,21 @@ void FractionalSpacingModeCase::init (void)
 													 "{\n"
 													 "	out_te_tessCoord = gl_TessCoord.x;\n"
 													 "	gl_Position = vec4(gl_TessCoord.xy*1.6 - 0.8, 0.0, 1.0);\n"
-													 "}\n")
-
-			<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
 													 "	o_color = vec4(1.0);\n"
-													 "}\n")
+												 "}\n");
 
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 			<< glu::TransformFeedbackVarying		("out_te_tessCoord")
 			<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)));
 
@@ -2290,8 +2318,8 @@ void BasicVariousTessLevelsPosAttrCase::init (void)
 		glu::ProgramSources sources = makeSources(m_primitiveType, m_spacing, "in_tc_position");
 		DE_ASSERT(sources.sources[glu::SHADERTYPE_TESSELLATION_CONTROL].empty());
 
-		sources << glu::TessellationControlSource(	"#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+		std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+													 "${TESSELLATION_SHADER_REQUIRE}\n"
 													"\n"
 													"layout (vertices = " + string(m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? "3" : "4") + ") out;\n"
 													"\n"
@@ -2318,6 +2346,8 @@ void BasicVariousTessLevelsPosAttrCase::init (void)
 													"	gl_TessLevelOuter[2] = u_tessLevelOuter2;\n"
 													"	gl_TessLevelOuter[3] = u_tessLevelOuter3;\n"
 													"}\n");
+
+		sources << glu::TessellationControlSource(specializeShader(m_context, tessellationControlTemplate.c_str()));
 
 		m_program = SharedPtr<const ShaderProgram>(new glu::ShaderProgram(m_context.getRenderContext(), sources));
 	}
@@ -2445,14 +2475,13 @@ public:
 protected:
 	void init (void)
 	{
-		checkExtensionSupport(m_context, "GL_EXT_gpu_shader5");
+		checkGPUShader5Support(m_context);
 		BasicVariousTessLevelsPosAttrCase::init();
 	}
 
 	const glu::ProgramSources makeSources (TessPrimitiveType primitiveType, SpacingMode spacing, const char* vtxOutPosAttrName) const
 	{
-		return glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+		std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "in highp vec2 in_v_position;\n"
 													 "\n"
@@ -2461,11 +2490,10 @@ protected:
 													 "void main (void)\n"
 													 "{\n"
 													 "	" + vtxOutPosAttrName + " = in_v_position;\n"
-													 "}\n")
-
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
-													 "#extension GL_EXT_gpu_shader5 : require\n"
+													 "}\n");
+		std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+													 "${TESSELLATION_SHADER_REQUIRE}\n"
+													 "${GPU_SHADER5_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(primitiveType, spacing) +
 													 "\n"
@@ -2500,9 +2528,8 @@ protected:
 														"	pos += 0.75 * f * fromCenter / (length(fromCenter) + 0.3);\n"
 														"	gl_Position = vec4(pos, 0.0, 1.0);\n"
 													  : DE_NULL) +
-													 "}\n")
-
-			<< glu::FragmentSource					("#version 310 es\n"
+													 "}\n");
+		std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
@@ -2510,6 +2537,11 @@ protected:
 													 "{\n"
 													 "	o_color = vec4(1.0);\n"
 													 "}\n");
+
+		return glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()));
 	}
 };
 
@@ -2526,8 +2558,7 @@ public:
 protected:
 	const glu::ProgramSources makeSources (TessPrimitiveType primitiveType, SpacingMode spacing, const char* vtxOutPosAttrName) const
 	{
-		return glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+		std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "in highp vec2 in_v_position;\n"
 													 "\n"
@@ -2536,10 +2567,9 @@ protected:
 													 "void main (void)\n"
 													 "{\n"
 													 "	" + vtxOutPosAttrName + " = in_v_position;\n"
-													 "}\n")
-
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+													 "}\n");
+		std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+													 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(primitiveType, spacing) +
 													 "\n"
@@ -2582,9 +2612,8 @@ protected:
 														"	           : phase == 1 ? vec4(0.0, 1.0, 0.0, 1.0)\n"
 														"	           :              vec4(0.0, 0.0, 1.0, 1.0);\n"
 													  : DE_NULL) +
-													 "}\n")
-
-			<< glu::FragmentSource					("#version 310 es\n"
+													 "}\n");
+		std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
@@ -2594,6 +2623,11 @@ protected:
 													 "{\n"
 													 "	o_color = in_f_color;\n"
 													 "}\n");
+
+		return glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()));
 	}
 };
 
@@ -2612,8 +2646,7 @@ protected:
 		DE_ASSERT(primitiveType == TESSPRIMITIVETYPE_ISOLINES);
 		DE_UNREF(primitiveType);
 
-		return glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+		std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "in highp vec2 in_v_position;\n"
 													 "\n"
@@ -2622,10 +2655,9 @@ protected:
 													 "void main (void)\n"
 													 "{\n"
 													 "	" + vtxOutPosAttrName + " = in_v_position;\n"
-													 "}\n")
-
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+													 "}\n");
+		std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+													 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_ISOLINES, spacing) +
 													 "\n"
@@ -2654,9 +2686,8 @@ protected:
 													 "	in_f_color = phase == 0 ? vec4(1.0, 0.0, 0.0, 1.0)\n"
 													 "	           : phase == 1 ? vec4(0.0, 1.0, 0.0, 1.0)\n"
 													 "	           :              vec4(0.0, 0.0, 1.0, 1.0);\n"
-													 "}\n")
-
-			<< glu::FragmentSource					("#version 310 es\n"
+													 "}\n");
+		std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
@@ -2666,6 +2697,11 @@ protected:
 													 "{\n"
 													 "	o_color = in_f_color;\n"
 													 "}\n");
+
+		return glu::ProgramSources()
+				<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+				<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+				<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()));
 	}
 };
 
@@ -2699,15 +2735,13 @@ void WindingCase::init (void)
 	checkTessellationSupport(m_context);
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
-													 "}\n")
-
-			<< glu::TessellationControlSource		("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 "layout (vertices = 1) out;\n"
 													 "\n"
@@ -2720,26 +2754,30 @@ void WindingCase::init (void)
 													 "	gl_TessLevelOuter[1] = 5.0;\n"
 													 "	gl_TessLevelOuter[2] = 5.0;\n"
 													 "	gl_TessLevelOuter[3] = 5.0;\n"
-													 "}\n")
-
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(m_primitiveType, m_winding) +
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
 													 "	gl_Position = vec4(gl_TessCoord.xy*2.0 - 1.0, 0.0, 1.0);\n"
-													 "}\n")
-
-			<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
 													 "void main (void)\n"
 													 "{\n"
 													 "	o_color = vec4(1.0);\n"
-													 "}\n")));
+												 "}\n");
+
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))));
 
 	m_testCtx.getLog() << *m_program;
 	if (!m_program->isOk())
@@ -2887,8 +2925,7 @@ void PatchVertexCountCase::init (void)
 	const string inSizeStr		= de::toString(m_inputPatchSize);
 	const string outSizeStr		= de::toString(m_outputPatchSize);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "in highp float in_v_attr;\n"
 													 "\n"
@@ -2897,10 +2934,9 @@ void PatchVertexCountCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 "	in_tc_attr = in_v_attr;\n"
-													 "}\n")
-
-			<< glu::TessellationControlSource		("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 "layout (vertices = " + outSizeStr + ") out;\n"
 													 "\n"
@@ -2919,10 +2955,9 @@ void PatchVertexCountCase::init (void)
 													"	gl_TessLevelOuter[1] = 5.0;\n"
 													"	gl_TessLevelOuter[2] = 5.0;\n"
 													"	gl_TessLevelOuter[3] = 5.0;\n"
-													 "}\n")
-
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_QUADS) +
 													 "\n"
@@ -2936,9 +2971,8 @@ void PatchVertexCountCase::init (void)
 													 "	highp float y = gl_TessCoord.y - in_te_attr[int(round(gl_TessCoord.x*float(" + outSizeStr + "-1)))];\n"
 													 "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 													 "	in_f_color = vec4(1.0);\n"
-													 "}\n")
-
-			<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
@@ -2947,7 +2981,13 @@ void PatchVertexCountCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 "	o_color = in_f_color;\n"
-													 "}\n")));
+												 "}\n");
+
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))));
 
 	m_testCtx.getLog() << *m_program;
 	if (!m_program->isOk())
@@ -3119,8 +3159,7 @@ void PerPatchDataCase::init (void)
 	const string inSizeStr		= de::toString(INPUT_PATCH_SIZE);
 	const string outSizeStr		= de::toString(OUTPUT_PATCH_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "in highp float in_v_attr;\n"
 													 "\n"
@@ -3129,10 +3168,9 @@ void PerPatchDataCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 "	in_tc_attr = in_v_attr;\n"
-													 "}\n")
-
-			<< glu::TessellationControlSource		("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 "layout (vertices = " + outSizeStr + ") out;\n"
 													 "\n"
@@ -3157,10 +3195,9 @@ void PerPatchDataCase::init (void)
 													"	gl_TessLevelOuter[1] = 6.0;\n"
 													"	gl_TessLevelOuter[2] = 5.0;\n"
 													"	gl_TessLevelOuter[3] = 4.0;\n"
-													 "}\n")
-
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_QUADS) +
 													 "\n"
@@ -3190,9 +3227,8 @@ void PerPatchDataCase::init (void)
 													  : m_caseType == CASETYPE_TESS_LEVEL_OUTER3_TES	? "\tbool ok = abs(gl_TessLevelOuter[3] - 4.0) < 0.1f;\n"
 													  : DE_NULL) +
 													  "	in_f_color = ok ? vec4(1.0) : vec4(vec3(0.0), 1.0);\n"
-													 "}\n")
-
-			<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
@@ -3201,7 +3237,13 @@ void PerPatchDataCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 "	o_color = in_f_color;\n"
-													 "}\n")));
+												 "}\n");
+
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))));
 
 	m_testCtx.getLog() << *m_program;
 	if (!m_program->isOk())
@@ -3323,8 +3365,7 @@ void BarrierCase::init (void)
 
 	const string numVertsStr = de::toString(NUM_VERTICES);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-			<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "in highp float in_v_attr;\n"
 													 "\n"
@@ -3333,10 +3374,9 @@ void BarrierCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 "	in_tc_attr = in_v_attr;\n"
-													 "}\n")
-
-			<< glu::TessellationControlSource		("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 "layout (vertices = " + numVertsStr + ") out;\n"
 													 "\n"
@@ -3371,10 +3411,9 @@ void BarrierCase::init (void)
 													 "	gl_TessLevelOuter[1] = 32.0;\n"
 													 "	gl_TessLevelOuter[2] = 32.0;\n"
 													 "	gl_TessLevelOuter[3] = 32.0;\n"
-													 "}\n")
-
-			<< glu::TessellationEvaluationSource	("#version 310 es\n"
-													 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 													 "\n"
 													 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_QUADS) +
 													 "\n"
@@ -3389,9 +3428,8 @@ void BarrierCase::init (void)
 													 "	highp float y = gl_TessCoord.y - in_te_attr[int(round(gl_TessCoord.x*float(" + numVertsStr + "-1)))];\n"
 													 "	gl_Position = vec4(x, y, 0.0, 1.0);\n"
 													 "	in_f_blue = abs(in_te_patchAttr - float(" + numVertsStr + "-1));\n"
-													 "}\n")
-
-			<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 													 "\n"
 													 "layout (location = 0) out mediump vec4 o_color;\n"
 													 "\n"
@@ -3400,7 +3438,13 @@ void BarrierCase::init (void)
 													 "void main (void)\n"
 													 "{\n"
 													 "	o_color = vec4(1.0, 0.0, in_f_blue, 1.0);\n"
-													 "}\n")));
+												 "}\n");
+
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+			<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+			<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+			<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+			<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))));
 
 	m_testCtx.getLog() << *m_program;
 	if (!m_program->isOk())
@@ -3592,9 +3636,7 @@ void PrimitiveSetInvarianceCase::init (void)
 			const string	floatLit01 = de::floatToString(10.0f / (float)(constantExprCaseNdx + 10), 2);
 			const int		programNdx = (int)m_programs.size();
 
-			m_programs.push_back(Program(windings[windingCaseNdx],
-										 SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-					<< glu::VertexSource					("#version 310 es\n"
+			std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 															 "\n"
 															 "in highp float in_v_attr;\n"
 															 "out highp float in_tc_attr;\n"
@@ -3602,10 +3644,9 @@ void PrimitiveSetInvarianceCase::init (void)
 															 "void main (void)\n"
 															 "{\n"
 															 "	in_tc_attr = in_v_attr;\n"
-															 "}\n")
-
-					<< glu::TessellationControlSource		("#version 310 es\n"
-															 "#extension GL_EXT_tessellation_shader : require\n"
+														 "}\n");
+			std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+														 "${TESSELLATION_SHADER_REQUIRE}\n"
 															 "\n"
 															 "layout (vertices = " + de::toString(constantExprCaseNdx+1) + ") out;\n"
 															 "\n"
@@ -3624,10 +3665,9 @@ void PrimitiveSetInvarianceCase::init (void)
 															 "	gl_TessLevelOuter[1] = in_tc_attr[3];\n"
 															 "	gl_TessLevelOuter[2] = in_tc_attr[4];\n"
 															 "	gl_TessLevelOuter[3] = in_tc_attr[5];\n"
-															 "}\n")
-
-					<< glu::TessellationEvaluationSource	("#version 310 es\n"
-															 "#extension GL_EXT_tessellation_shader : require\n"
+														 "}\n");
+			std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+														 "${TESSELLATION_SHADER_REQUIRE}\n"
 															 "\n"
 															 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, windings[windingCaseNdx], m_usePointMode) +
 															 "\n"
@@ -3641,9 +3681,8 @@ void PrimitiveSetInvarianceCase::init (void)
 															 "	gl_Position = vec4(gl_TessCoord.xy*" + floatLit01 + " - in_te_positionOffset + float(gl_PrimitiveID)*0.1, 0.0, 1.0);\n"
 															 "	in_f_color = vec4(" + floatLit01 + ");\n"
 															 "	out_te_tessCoord = gl_TessCoord;\n"
-															 "}\n")
-
-					<< glu::FragmentSource					("#version 310 es\n"
+														 "}\n");
+			std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 															 "\n"
 															 "layout (location = 0) out mediump vec4 o_color;\n"
 															 "\n"
@@ -3652,8 +3691,14 @@ void PrimitiveSetInvarianceCase::init (void)
 															 "void main (void)\n"
 															 "{\n"
 															 "	o_color = in_f_color;\n"
-															 "}\n")
+														 "}\n");
 
+			m_programs.push_back(Program(windings[windingCaseNdx],
+										 SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+					<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+					<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+					<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+					<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 					<< glu::TransformFeedbackVarying		("out_te_tessCoord")
 					<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)))));
 
@@ -3889,9 +3934,7 @@ void InvariantOuterEdgeCase::init (void)
 			const int		programNdx		= (int)m_programs.size();
 			const string	floatLit01		= de::floatToString(10.0f / (float)(programNdx + 10), 2);
 
-			m_programs.push_back(Program(winding, usePointMode,
-										 SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-				<< glu::VertexSource					("#version 310 es\n"
+			std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 														 "\n"
 														 "in highp float in_v_attr;\n"
 														 "out highp float in_tc_attr;\n"
@@ -3899,10 +3942,9 @@ void InvariantOuterEdgeCase::init (void)
 														 "void main (void)\n"
 														 "{\n"
 														 "	in_tc_attr = in_v_attr;\n"
-														 "}\n")
-
-				<< glu::TessellationControlSource		("#version 310 es\n"
-														 "#extension GL_EXT_tessellation_shader : require\n"
+														 "}\n");
+			std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+														 "${TESSELLATION_SHADER_REQUIRE}\n"
 														 "\n"
 														 "layout (vertices = " + de::toString(programNdx+1) + ") out;\n"
 														 "\n"
@@ -3917,10 +3959,9 @@ void InvariantOuterEdgeCase::init (void)
 														 "	gl_TessLevelOuter[1] = in_tc_attr[3];\n"
 														 "	gl_TessLevelOuter[2] = in_tc_attr[4];\n"
 														 "	gl_TessLevelOuter[3] = in_tc_attr[5];\n"
-														 "}\n")
-
-				<< glu::TessellationEvaluationSource	("#version 310 es\n"
-														 "#extension GL_EXT_tessellation_shader : require\n"
+														 "}\n");
+			std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+														 "${TESSELLATION_SHADER_REQUIRE}\n"
 														 "\n"
 														 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, winding, usePointMode) +
 														 "\n"
@@ -3932,9 +3973,8 @@ void InvariantOuterEdgeCase::init (void)
 														 "	gl_Position = vec4(gl_TessCoord.xy*" + floatLit01 + " - float(gl_PrimitiveID)*0.05, 0.0, 1.0);\n"
 														 "	in_f_color = vec4(" + floatLit01 + ");\n"
 														 "	out_te_tessCoord = gl_TessCoord;\n"
-														 "}\n")
-
-				<< glu::FragmentSource					("#version 310 es\n"
+														 "}\n");
+			std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 														 "\n"
 														 "layout (location = 0) out mediump vec4 o_color;\n"
 														 "\n"
@@ -3943,8 +3983,14 @@ void InvariantOuterEdgeCase::init (void)
 														 "void main (void)\n"
 														 "{\n"
 														 "	o_color = in_f_color;\n"
-														 "}\n")
+														 "}\n");
 
+			m_programs.push_back(Program(winding, usePointMode,
+										 SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+				<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+				<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+				<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+				<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 				<< glu::TransformFeedbackVarying		("out_te_tessCoord")
 				<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)))));
 
@@ -4161,8 +4207,7 @@ void SymmetricOuterEdgeCase::init (void)
 	checkTessellationSupport(m_context);
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-		<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -4170,10 +4215,9 @@ void SymmetricOuterEdgeCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	in_tc_attr = in_v_attr;\n"
-												 "}\n")
-
-		<< glu::TessellationControlSource		("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 "layout (vertices = 1) out;\n"
 												 "\n"
@@ -4188,10 +4232,9 @@ void SymmetricOuterEdgeCase::init (void)
 												 "	gl_TessLevelOuter[1] = in_tc_attr[3];\n"
 												 "	gl_TessLevelOuter[2] = in_tc_attr[4];\n"
 												 "	gl_TessLevelOuter[3] = in_tc_attr[5];\n"
-												 "}\n")
-
-		<< glu::TessellationEvaluationSource	("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, m_winding, m_usePointMode) +
 												 "\n"
@@ -4226,9 +4269,8 @@ void SymmetricOuterEdgeCase::init (void)
 												 "\n"
 												 "	gl_Position = vec4(gl_TessCoord.xy, 0.0, 1.0);\n"
 												 "	in_f_color = vec4(1.0);\n"
-												 "}\n")
-
-		<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "layout (location = 0) out mediump vec4 o_color;\n"
 												 "\n"
@@ -4237,8 +4279,13 @@ void SymmetricOuterEdgeCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	o_color = in_f_color;\n"
-												 "}\n")
+												 "}\n");
 
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+		<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+		<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+		<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+		<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 		<< glu::TransformFeedbackVarying		("out_te_tessCoord_isMirrored")
 		<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)));
 
@@ -4445,8 +4492,7 @@ void OuterEdgeVertexSetIndexIndependenceCase::init (void)
 	checkTessellationSupport(m_context);
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-		<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -4454,10 +4500,9 @@ void OuterEdgeVertexSetIndexIndependenceCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	in_tc_attr = in_v_attr;\n"
-												 "}\n")
-
-		<< glu::TessellationControlSource		("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 "layout (vertices = 1) out;\n"
 												 "\n"
@@ -4472,10 +4517,9 @@ void OuterEdgeVertexSetIndexIndependenceCase::init (void)
 												 "	gl_TessLevelOuter[1] = in_tc_attr[3];\n"
 												 "	gl_TessLevelOuter[2] = in_tc_attr[4];\n"
 												 "	gl_TessLevelOuter[3] = in_tc_attr[5];\n"
-												 "}\n")
-
-		<< glu::TessellationEvaluationSource	("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, m_winding, m_usePointMode) +
 												 "\n"
@@ -4487,9 +4531,8 @@ void OuterEdgeVertexSetIndexIndependenceCase::init (void)
 												 "	out_te_tessCoord = gl_TessCoord;"
 												 "	gl_Position = vec4(gl_TessCoord.xy, 0.0, 1.0);\n"
 												 "	in_f_color = vec4(1.0);\n"
-												 "}\n")
-
-		<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "layout (location = 0) out mediump vec4 o_color;\n"
 												 "\n"
@@ -4498,8 +4541,13 @@ void OuterEdgeVertexSetIndexIndependenceCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	o_color = in_f_color;\n"
-												 "}\n")
+												 "}\n");
 
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+		<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+		<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+		<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+		<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 		<< glu::TransformFeedbackVarying		("out_te_tessCoord")
 		<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)));
 
@@ -4936,8 +4984,7 @@ void TessCoordComponentInvarianceCase::init (void)
 	checkTessellationSupport(m_context);
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-		<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -4945,10 +4992,9 @@ void TessCoordComponentInvarianceCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	in_tc_attr = in_v_attr;\n"
-												 "}\n")
-
-		<< glu::TessellationControlSource		("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 "layout (vertices = 1) out;\n"
 												 "\n"
@@ -4963,10 +5009,9 @@ void TessCoordComponentInvarianceCase::init (void)
 												 "	gl_TessLevelOuter[1] = in_tc_attr[3];\n"
 												 "	gl_TessLevelOuter[2] = in_tc_attr[4];\n"
 												 "	gl_TessLevelOuter[3] = in_tc_attr[5];\n"
-												 "}\n")
-
-		<< glu::TessellationEvaluationSource	("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, m_winding, m_usePointMode) +
 												 "\n"
@@ -4983,9 +5028,8 @@ void TessCoordComponentInvarianceCase::init (void)
 													"	out_te_output.z = 0.0f;\n") +
 												 "	gl_Position = vec4(gl_TessCoord.xy, 0.0, 1.0);\n"
 												 "	in_f_color = vec4(1.0);\n"
-												 "}\n")
-
-		<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "layout (location = 0) out mediump vec4 o_color;\n"
 												 "\n"
@@ -4994,8 +5038,13 @@ void TessCoordComponentInvarianceCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	o_color = in_f_color;\n"
-												 "}\n")
+												 "}\n");
 
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+		<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+		<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+		<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+		<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 		<< glu::TransformFeedbackVarying		("out_te_output")
 		<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)));
 
@@ -5187,8 +5236,7 @@ void PrimitiveDiscardCase::init (void)
 	checkTessellationSupport(m_context);
 	checkRenderTargetSize(m_context.getRenderTarget(), RENDER_SIZE);
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-		<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -5196,10 +5244,9 @@ void PrimitiveDiscardCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	in_tc_attr = in_v_attr;\n"
-												 "}\n")
-
-		<< glu::TessellationControlSource		("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 "layout (vertices = 1) out;\n"
 												 "\n"
@@ -5220,10 +5267,9 @@ void PrimitiveDiscardCase::init (void)
 												 "	gl_TessLevelOuter[1] = in_tc_attr[3];\n"
 												 "	gl_TessLevelOuter[2] = in_tc_attr[4];\n"
 												 "	gl_TessLevelOuter[3] = in_tc_attr[5];\n"
-												 "}\n")
-
-		<< glu::TessellationEvaluationSource	("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType, m_spacing, m_winding, m_usePointMode) +
 												 "\n"
@@ -5236,17 +5282,21 @@ void PrimitiveDiscardCase::init (void)
 												 "{\n"
 												 "	out_te_tessCoord = gl_TessCoord;\n"
 												 "	gl_Position = vec4(gl_TessCoord.xy*in_te_positionScale + in_te_positionOffset, 0.0, 1.0);\n"
-												 "}\n")
-
-		<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "layout (location = 0) out mediump vec4 o_color;\n"
 												 "\n"
 												 "void main (void)\n"
 												 "{\n"
 												 "	o_color = vec4(1.0);\n"
-												 "}\n")
+												 "}\n");
 
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+		<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+		<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+		<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+		<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 		<< glu::TransformFeedbackVarying		("out_te_tessCoord")
 		<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)));
 
@@ -6070,8 +6120,7 @@ void UserDefinedIOCase::init (void)
 		tesStatements += "\t}\n";
 	}
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-		<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "in highp float in_v_attr;\n"
 												 "out highp float in_tc_attr;\n"
@@ -6079,10 +6128,9 @@ void UserDefinedIOCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	in_tc_attr = in_v_attr;\n"
-												 "}\n")
-
-		<< glu::TessellationControlSource		("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 "layout (vertices = " + de::toString(int(NUM_OUTPUT_VERTICES)) + ") out;\n"
 												 "\n"
@@ -6105,10 +6153,9 @@ void UserDefinedIOCase::init (void)
 												 "	gl_TessLevelOuter[1] = in_tc_attr[3];\n"
 												 "	gl_TessLevelOuter[2] = in_tc_attr[4];\n"
 												 "	gl_TessLevelOuter[3] = in_tc_attr[5];\n"
-												 "}\n")
-
-		<< glu::TessellationEvaluationSource	("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(m_primitiveType) +
 												 "\n"
@@ -6134,9 +6181,8 @@ void UserDefinedIOCase::init (void)
 												 "	in_f_color = allOk ? vec4(0.0, 1.0, 0.0, 1.0)\n"
 												 "	                   : vec4(1.0, 0.0, 0.0, 1.0);\n"
 												 "	out_te_firstFailedInputIndex = firstFailedInputIndex;\n"
-												 "}\n")
-
-		<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "layout (location = 0) out mediump vec4 o_color;\n"
 												 "\n"
@@ -6145,8 +6191,13 @@ void UserDefinedIOCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	o_color = in_f_color;\n"
-												 "}\n")
+												 "}\n");
 
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+		<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+		<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+		<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+		<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))
 		<< glu::TransformFeedbackVarying		("out_te_firstFailedInputIndex")
 		<< glu::TransformFeedbackMode			(GL_INTERLEAVED_ATTRIBS)));
 
@@ -6296,8 +6347,7 @@ void GLPositionCase::init (void)
 	const string	tesIn1		= tcsToTES ? "gl_in[1].gl_Position" : "in_te_attr[1]";
 	const string	tesIn2		= tcsToTES ? "gl_in[2].gl_Position" : "in_te_attr[2]";
 
-	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
-		<< glu::VertexSource					("#version 310 es\n"
+	std::string vertexShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "in highp vec4 in_v_attr;\n"
 												 + string(!vsToTCS ? "out highp vec4 in_tc_attr;\n" : "") +
@@ -6305,10 +6355,9 @@ void GLPositionCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	" + (vsToTCS ? "gl_Position" : "in_tc_attr") + " = in_v_attr;\n"
-												 "}\n")
-
-		<< glu::TessellationControlSource		("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationControlTemplate		("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 "layout (vertices = 3) out;\n"
 												 "\n"
@@ -6328,10 +6377,9 @@ void GLPositionCase::init (void)
 												 "	gl_TessLevelOuter[1] = 5.0;\n"
 												 "	gl_TessLevelOuter[2] = 6.0;\n"
 												 "	gl_TessLevelOuter[3] = 7.0;\n"
-												 "}\n")
-
-		<< glu::TessellationEvaluationSource	("#version 310 es\n"
-												 "#extension GL_EXT_tessellation_shader : require\n"
+												 "}\n");
+	std::string tessellationEvaluationTemplate	("${GLSL_VERSION_DECL}\n"
+												 "${TESSELLATION_SHADER_REQUIRE}\n"
 												 "\n"
 												 + getTessellationEvaluationInLayoutString(TESSPRIMITIVETYPE_TRIANGLES) +
 												 "\n"
@@ -6349,9 +6397,8 @@ void GLPositionCase::init (void)
 												 "	                  " + tesIn2 + ".z + " + tesIn0 + ".w,\n"
 												 "	                  " + tesIn1 + ".z + " + tesIn2 + ".w,\n"
 												 "	                  1.0);\n"
-												 "}\n")
-
-		<< glu::FragmentSource					("#version 310 es\n"
+												 "}\n");
+	std::string fragmentShaderTemplate			("${GLSL_VERSION_DECL}\n"
 												 "\n"
 												 "layout (location = 0) out mediump vec4 o_color;\n"
 												 "\n"
@@ -6360,7 +6407,13 @@ void GLPositionCase::init (void)
 												 "void main (void)\n"
 												 "{\n"
 												 "	o_color = in_f_color;\n"
-												 "}\n")));
+												 "}\n");
+
+	m_program = SharedPtr<const ShaderProgram>(new ShaderProgram(m_context.getRenderContext(), glu::ProgramSources()
+		<< glu::VertexSource					(specializeShader(m_context, vertexShaderTemplate.c_str()))
+		<< glu::TessellationControlSource		(specializeShader(m_context, tessellationControlTemplate.c_str()))
+		<< glu::TessellationEvaluationSource	(specializeShader(m_context, tessellationEvaluationTemplate.c_str()))
+		<< glu::FragmentSource					(specializeShader(m_context, fragmentShaderTemplate.c_str()))));
 
 	m_testCtx.getLog() << *m_program;
 	if (!m_program->isOk())
@@ -6625,7 +6678,7 @@ TessProgramQueryCase::TessProgramQueryCase (Context& context, const char* name, 
 
 std::string TessProgramQueryCase::getVertexSource (void) const
 {
-	return	"#version 310 es\n"
+	return	"${GLSL_VERSION_DECL}\n"
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = vec4(float(gl_VertexID), float(gl_VertexID / 2), 0.0, 1.0);\n"
@@ -6634,7 +6687,7 @@ std::string TessProgramQueryCase::getVertexSource (void) const
 
 std::string TessProgramQueryCase::getFragmentSource (void) const
 {
-	return	"#version 310 es\n"
+	return	"${GLSL_VERSION_DECL}\n"
 			"layout (location = 0) out mediump vec4 o_color;\n"
 			"void main (void)\n"
 			"{\n"
@@ -6644,8 +6697,8 @@ std::string TessProgramQueryCase::getFragmentSource (void) const
 
 std::string TessProgramQueryCase::getTessCtrlSource (const char* globalLayouts) const
 {
-	return	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	return	"${GLSL_VERSION_DECL}\n"
+			"${TESSELLATION_SHADER_REQUIRE}\n"
 			+ std::string(globalLayouts) + ";\n"
 			"void main (void)\n"
 			"{\n"
@@ -6661,8 +6714,8 @@ std::string TessProgramQueryCase::getTessCtrlSource (const char* globalLayouts) 
 
 std::string TessProgramQueryCase::getTessEvalSource (const char* globalLayouts) const
 {
-	return	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	return	"${GLSL_VERSION_DECL}\n"
+			"${TESSELLATION_SHADER_REQUIRE}\n"
 			+ std::string(globalLayouts) + ";\n"
 			"void main (void)\n"
 			"{\n"
@@ -6691,10 +6744,10 @@ TessControlOutputVerticesCase::IterateResult TessControlOutputVerticesCase::iter
 	checkTessellationSupport(m_context);
 
 	glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
-																<< glu::VertexSource(getVertexSource())
-																<< glu::FragmentSource(getFragmentSource())
-																<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=4) out"))
-																<< glu::TessellationEvaluationSource(getTessEvalSource("layout(triangles) in")));
+																<< glu::VertexSource(specializeShader(m_context, getVertexSource().c_str()))
+																<< glu::FragmentSource(specializeShader(m_context, getFragmentSource().c_str()))
+																<< glu::TessellationControlSource(specializeShader(m_context, getTessCtrlSource("layout(vertices=4) out").c_str()))
+																<< glu::TessellationEvaluationSource(specializeShader(m_context, getTessEvalSource("layout(triangles) in").c_str())));
 
 	m_testCtx.getLog() << program;
 	if (!program.isOk())
@@ -6750,10 +6803,10 @@ TessGenModeQueryCase::IterateResult TessGenModeQueryCase::iterate (void)
 		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Type", s_modes[ndx].description);
 
 		glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
-																	<< glu::VertexSource(getVertexSource())
-																	<< glu::FragmentSource(getFragmentSource())
-																	<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=6) out"))
-																	<< glu::TessellationEvaluationSource(getTessEvalSource(s_modes[ndx].layout)));
+																	<< glu::VertexSource(specializeShader(m_context, getVertexSource().c_str()))
+																	<< glu::FragmentSource(specializeShader(m_context, getFragmentSource().c_str()))
+																	<< glu::TessellationControlSource(specializeShader(m_context, getTessCtrlSource("layout(vertices=6) out").c_str()))
+																	<< glu::TessellationEvaluationSource(specializeShader(m_context, getTessEvalSource(s_modes[ndx].layout).c_str())));
 
 		m_testCtx.getLog() << program;
 		if (!program.isOk())
@@ -6805,10 +6858,10 @@ TessGenSpacingQueryCase::IterateResult TessGenSpacingQueryCase::iterate (void)
 		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Type", s_modes[ndx].description);
 
 		glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
-																	<< glu::VertexSource(getVertexSource())
-																	<< glu::FragmentSource(getFragmentSource())
-																	<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=6) out"))
-																	<< glu::TessellationEvaluationSource(getTessEvalSource(s_modes[ndx].layout)));
+																	<< glu::VertexSource(specializeShader(m_context, getVertexSource().c_str()))
+																	<< glu::FragmentSource(specializeShader(m_context, getFragmentSource().c_str()))
+																	<< glu::TessellationControlSource(specializeShader(m_context, getTessCtrlSource("layout(vertices=6) out").c_str()))
+																	<< glu::TessellationEvaluationSource(specializeShader(m_context, getTessEvalSource(s_modes[ndx].layout).c_str())));
 
 		m_testCtx.getLog() << program;
 		if (!program.isOk())
@@ -6859,10 +6912,10 @@ TessGenVertexOrderQueryCase::IterateResult TessGenVertexOrderQueryCase::iterate 
 		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Type", s_modes[ndx].description);
 
 		glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
-																	<< glu::VertexSource(getVertexSource())
-																	<< glu::FragmentSource(getFragmentSource())
-																	<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=6) out"))
-																	<< glu::TessellationEvaluationSource(getTessEvalSource(s_modes[ndx].layout)));
+																	<< glu::VertexSource(specializeShader(m_context, getVertexSource().c_str()))
+																	<< glu::FragmentSource(specializeShader(m_context, getFragmentSource().c_str()))
+																	<< glu::TessellationControlSource(specializeShader(m_context, getTessCtrlSource("layout(vertices=6) out").c_str()))
+																	<< glu::TessellationEvaluationSource(specializeShader(m_context, getTessEvalSource(s_modes[ndx].layout).c_str())));
 
 		m_testCtx.getLog() << program;
 		if (!program.isOk())
@@ -6912,10 +6965,10 @@ TessGenPointModeQueryCase::IterateResult TessGenPointModeQueryCase::iterate (voi
 		const tcu::ScopedLogSection	section(m_testCtx.getLog(), "Type", s_modes[ndx].description);
 
 		glu::ShaderProgram program (m_context.getRenderContext(), glu::ProgramSources()
-																	<< glu::VertexSource(getVertexSource())
-																	<< glu::FragmentSource(getFragmentSource())
-																	<< glu::TessellationControlSource(getTessCtrlSource("layout(vertices=6) out"))
-																	<< glu::TessellationEvaluationSource(getTessEvalSource(s_modes[ndx].layout)));
+																	<< glu::VertexSource(specializeShader(m_context, getVertexSource().c_str()))
+																	<< glu::FragmentSource(specializeShader(m_context, getFragmentSource().c_str()))
+																	<< glu::TessellationControlSource(specializeShader(m_context, getTessCtrlSource("layout(vertices=6) out").c_str()))
+																	<< glu::TessellationEvaluationSource(specializeShader(m_context, getTessEvalSource(s_modes[ndx].layout).c_str())));
 
 		m_testCtx.getLog() << program;
 		if (!program.isOk())
@@ -6960,10 +7013,10 @@ ReferencedByTessellationQueryCase::IterateResult ReferencedByTessellationQueryCa
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::ShaderProgram		program	(m_context.getRenderContext(), glu::ProgramSources()
-																	<< glu::VertexSource(getVertexSource())
-																	<< glu::FragmentSource(getFragmentSource())
-																	<< glu::TessellationControlSource(getTessCtrlSource())
-																	<< glu::TessellationEvaluationSource(getTessEvalSource()));
+																	<< glu::VertexSource(specializeShader(m_context, getVertexSource().c_str()))
+																	<< glu::FragmentSource(specializeShader(m_context, getFragmentSource().c_str()))
+																	<< glu::TessellationControlSource(specializeShader(m_context, getTessCtrlSource().c_str()))
+																	<< glu::TessellationEvaluationSource(specializeShader(m_context, getTessEvalSource().c_str())));
 
 	gl.enableLogging(true);
 
@@ -7035,7 +7088,7 @@ ReferencedByTessellationQueryCase::IterateResult ReferencedByTessellationQueryCa
 
 std::string ReferencedByTessellationQueryCase::getVertexSource (void) const
 {
-	return	"#version 310 es\n"
+	return	"${GLSL_VERSION_DECL}\n"
 			"void main (void)\n"
 			"{\n"
 			"	gl_Position = vec4(float(gl_VertexID), float(gl_VertexID / 2), 0.0, 1.0);\n"
@@ -7044,7 +7097,7 @@ std::string ReferencedByTessellationQueryCase::getVertexSource (void) const
 
 std::string ReferencedByTessellationQueryCase::getFragmentSource (void) const
 {
-	return	"#version 310 es\n"
+	return	"${GLSL_VERSION_DECL}\n"
 			"layout (location = 0) out mediump vec4 o_color;\n"
 			"void main (void)\n"
 			"{\n"
@@ -7055,8 +7108,8 @@ std::string ReferencedByTessellationQueryCase::getFragmentSource (void) const
 std::string ReferencedByTessellationQueryCase::getTessCtrlSource (void) const
 {
 	std::ostringstream buf;
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${TESSELLATION_SHADER_REQUIRE}\n"
 			"layout(vertices = 3) out;\n"
 			"uniform highp vec4 " << ((m_isCtrlCase) ? ("u_referenced") : ("u_unreferenced")) << ";\n"
 			"void main (void)\n"
@@ -7076,8 +7129,8 @@ std::string ReferencedByTessellationQueryCase::getTessCtrlSource (void) const
 std::string ReferencedByTessellationQueryCase::getTessEvalSource (void) const
 {
 	std::ostringstream buf;
-	buf <<	"#version 310 es\n"
-			"#extension GL_EXT_tessellation_shader : require\n"
+	buf <<	"${GLSL_VERSION_DECL}\n"
+			"${TESSELLATION_SHADER_REQUIRE}\n"
 			"layout(triangles) in;\n"
 			"uniform highp vec4 " << ((m_isCtrlCase) ? ("u_unreferenced") : ("u_referenced")) << ";\n"
 			"void main (void)\n"
@@ -7113,8 +7166,8 @@ void IsPerPatchQueryCase::init (void)
 
 IsPerPatchQueryCase::IterateResult IsPerPatchQueryCase::iterate (void)
 {
-	static const char* const s_controlSource =	"#version 310 es\n"
-												"#extension GL_EXT_tessellation_shader : require\n"
+	static const char* const s_controlSource =	"${GLSL_VERSION_DECL}\n"
+												"${TESSELLATION_SHADER_REQUIRE}\n"
 												"layout(vertices = 3) out;\n"
 												"patch out highp vec4 v_perPatch;\n"
 												"out highp vec4 v_perVertex[];\n"
@@ -7133,7 +7186,7 @@ IsPerPatchQueryCase::IterateResult IsPerPatchQueryCase::iterate (void)
 	tcu::ResultCollector	result	(m_testCtx.getLog(), " // ERROR: ");
 	glu::CallLogWrapper		gl		(m_context.getRenderContext().getFunctions(), m_testCtx.getLog());
 	glu::ShaderProgram		program	(m_context.getRenderContext(), glu::ProgramSources()
-																	<< glu::TessellationControlSource(s_controlSource)
+																	<< glu::TessellationControlSource(specializeShader(m_context, s_controlSource))
 																	<< glu::ProgramSeparable(true));
 
 	gl.enableLogging(true);
@@ -7596,14 +7649,31 @@ void TessellationTests::init (void)
 		}
 
 		{
-			TestCaseGroup* const				negativeGroup	= new TestCaseGroup(m_context, "negative", "Negative cases");
-			gls::ShaderLibrary					shaderLibrary	(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
-			const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/tessellation_negative_user_defined_io.test");
+			de::MovePtr<TestCaseGroup>	negativeGroup	(new TestCaseGroup(m_context, "negative", "Negative cases"));
 
-			userDefinedIOGroup->addChild(negativeGroup);
+			{
+				de::MovePtr<TestCaseGroup>			es31Group		(new TestCaseGroup(m_context, "es31", "GLSL ES 3.1 Negative cases"));
+				gls::ShaderLibrary					shaderLibrary	(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+				const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/es31/tessellation_negative_user_defined_io.test");
 
-			for (int i = 0; i < (int)children.size(); i++)
-				negativeGroup->addChild(children[i]);
+				for (int i = 0; i < (int)children.size(); i++)
+					es31Group->addChild(children[i]);
+
+				negativeGroup->addChild(es31Group.release());
+			}
+
+			{
+				de::MovePtr<TestCaseGroup>			es32Group		(new TestCaseGroup(m_context, "es32", "GLSL ES 3.2 Negative cases"));
+				gls::ShaderLibrary					shaderLibrary	(m_testCtx, m_context.getRenderContext(), m_context.getContextInfo());
+				const std::vector<tcu::TestNode*>	children		= shaderLibrary.loadShaderFile("shaders/es32/tessellation_negative_user_defined_io.test");
+
+				for (int i = 0; i < (int)children.size(); i++)
+					es32Group->addChild(children[i]);
+
+				negativeGroup->addChild(es32Group.release());
+			}
+
+			userDefinedIOGroup->addChild(negativeGroup.release());
 		}
 	}
 }

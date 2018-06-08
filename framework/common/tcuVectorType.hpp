@@ -55,6 +55,10 @@ typedef Vector<bool, 2>		BVec2;
 typedef Vector<bool, 3>		BVec3;
 typedef Vector<bool, 4>		BVec4;
 
+typedef Vector<double, 2>   DVec2;
+typedef Vector<double, 3>   DVec3;
+typedef Vector<double, 4>   DVec4;
+
 } // tcu
 
 #endif // _TCUVECTORTYPE_HPP

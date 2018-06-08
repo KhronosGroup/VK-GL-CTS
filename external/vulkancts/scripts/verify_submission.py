@@ -21,229 +21,31 @@
 #-------------------------------------------------------------------------
 
 import os
-import re
 import sys
 
-from fnmatch import fnmatch
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts", "verify"))
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "scripts", "log"))
+from package import getPackageDescription
+from verify import *
+from message import *
 
-from build.common import readFile
-from log_parser import StatusCode, BatchResultParser
-
-ALLOWED_STATUS_CODES = set([
-		StatusCode.PASS,
-		StatusCode.NOT_SUPPORTED,
-		StatusCode.QUALITY_WARNING,
-		StatusCode.COMPATIBILITY_WARNING
-	])
-
-STATEMENT_PATTERN	= "STATEMENT-*"
-TEST_LOG_PATTERN	= "*.qpa"
-GIT_STATUS_PATTERN	= "git-status.txt"
-GIT_LOG_PATTERN		= "git-log.txt"
-PATCH_PATTERN		= "*.patch"
-
-class PackageDescription:
-	def __init__ (self, basePath, statement, testLogs, gitStatus, gitLog, patches, otherItems):
-		self.basePath		= basePath
-		self.statement		= statement
-		self.testLogs		= testLogs
-		self.gitStatus		= gitStatus
-		self.gitLog			= gitLog
-		self.patches		= patches
-		self.otherItems		= otherItems
-
-class ValidationMessage:
-	TYPE_ERROR		= 0
-	TYPE_WARNING	= 1
-
-	def __init__ (self, type, filename, message):
-		self.type		= type
-		self.filename	= filename
-		self.message	= message
-
-	def __str__ (self):
-		prefix = {self.TYPE_ERROR: "ERROR: ", self.TYPE_WARNING: "WARNING: "}
-		return prefix[self.type] + os.path.basename(self.filename) + ": " + self.message
-
-def error (filename, message):
-	return ValidationMessage(ValidationMessage.TYPE_ERROR, filename, message)
-
-def warning (filename, message):
-	return ValidationMessage(ValidationMessage.TYPE_WARNING, filename, message)
-
-def getPackageDescription (packagePath):
-	allItems	= os.listdir(packagePath)
-	statement	= None
-	testLogs	= []
-	gitStatus	= None
-	gitLog		= None
-	patches		= []
-	otherItems	= []
-
-	for item in allItems:
-		if fnmatch(item, STATEMENT_PATTERN):
-			assert statement == None
-			statement = item
-		elif fnmatch(item, TEST_LOG_PATTERN):
-			testLogs.append(item)
-		elif fnmatch(item, GIT_STATUS_PATTERN):
-			assert gitStatus == None
-			gitStatus = item
-		elif fnmatch(item, GIT_LOG_PATTERN):
-			assert gitLog == None
-			gitLog = item
-		elif fnmatch(item, PATCH_PATTERN):
-			patches.append(item)
-		else:
-			otherItems.append(item)
-
-	return PackageDescription(packagePath, statement, testLogs, gitStatus, gitLog, patches, otherItems)
-
-def readMustpass (filename):
-	f = open(filename, 'rb')
-	cases = []
-	for line in f:
-		s = line.strip()
-		if len(s) > 0:
-			cases.append(s)
-	return cases
-
-def readTestLog (filename):
-	parser = BatchResultParser()
-	return parser.parseFile(filename)
-
-def verifyTestLog (filename, mustpass):
-	results			= readTestLog(filename)
-	messages			= []
-	resultOrderOk	= True
-
-	# Mustpass case names must be unique
-	assert len(mustpass) == len(set(mustpass))
-
-	# Verify number of results
-	if len(results) != len(mustpass):
-		messages.append(error(filename, "Wrong number of test results, expected %d, found %d" % (len(mustpass), len(results))))
-
-	caseNameToResultNdx = {}
-	for ndx in xrange(len(results)):
-		result = results[ndx]
-		if not result in caseNameToResultNdx:
-			caseNameToResultNdx[result.name] = ndx
-		else:
-			messages.append(error(filename, "Multiple results for " + result.name))
-
-	# Verify that all results are present and valid
-	for ndx in xrange(len(mustpass)):
-		caseName = mustpass[ndx]
-
-		if caseName in caseNameToResultNdx:
-			resultNdx	= caseNameToResultNdx[caseName]
-			result		= results[resultNdx]
-
-			if resultNdx != ndx:
-				resultOrderOk = False
-
-			if not result.statusCode in ALLOWED_STATUS_CODES:
-				messages.append(error(filename, result.name + ": " + result.statusCode))
-		else:
-			messages.append(error(filename, "Missing result for " + caseName))
-
-	if len(results) == len(mustpass) and not resultOrderOk:
-		messages.append(error(filename, "Results are not in the expected order"))
-
-	return messages
-
-def beginsWith (str, prefix):
-	return str[:len(prefix)] == prefix
-
-def verifyStatement (package):
-	messages	= []
-
-	if package.statement != None:
-		statementPath	= os.path.join(package.basePath, package.statement)
-		statement		= readFile(statementPath)
-		hasVersion		= False
-		hasProduct		= False
-		hasCpu			= False
-		hasOs			= False
-
-		for line in statement.splitlines():
-			if beginsWith(line, "CONFORM_VERSION:"):
-				if hasVersion:
-					messages.append(error(statementPath, "Multiple CONFORM_VERSIONs"))
-				else:
-					hasVersion = True
-			elif beginsWith(line, "PRODUCT:"):
-				hasProduct = True # Multiple products allowed
-			elif beginsWith(line, "CPU:"):
-				if hasCpu:
-					messages.append(error(statementPath, "Multiple PRODUCTs"))
-				else:
-					hasCpu = True
-			elif beginsWith(line, "OS:"):
-				if hasOs:
-					messages.append(error(statementPath, "Multiple OSes"))
-				else:
-					hasOs = True
-
-		if not hasVersion:
-			messages.append(error(statementPath, "No CONFORM_VERSION"))
-		if not hasProduct:
-			messages.append(error(statementPath, "No PRODUCT"))
-		if not hasCpu:
-			messages.append(error(statementPath, "No CPU"))
-		if not hasOs:
-			messages.append(error(statementPath, "No OS"))
-	else:
-		messages.append(error(package.basePath, "Missing conformance statement file"))
-
-	return messages
-
-def verifyGitStatus (package):
+def verifyGitStatusFiles (package):
 	messages = []
 
-	if package.gitStatus != None:
-		statusPath	= os.path.join(package.basePath, package.gitStatus)
-		status		= readFile(statusPath)
+	if len(package.gitStatus) > 1:
+		messages.append(error(package.basePath, "Exactly one git status file must be present, found %s" % len(package.gitStatus)))
 
-		if status.find("nothing to commit, working directory clean") < 0 and status.find("nothing to commit, working tree clean") < 0:
-			messages.append(error(package.basePath, "Working directory is not clean"))
-	else:
-		messages.append(error(package.basePath, "Missing git-status.txt"))
+	messages += verifyGitStatus(package)
 
 	return messages
 
-def isGitLogEmpty (package):
-	assert package.gitLog != None
-
-	logPath	= os.path.join(package.basePath, package.gitLog)
-	log		= readFile(logPath)
-
-	return len(log.strip()) == 0
-
-def verifyGitLog (package):
+def verifyGitLogFiles (package):
 	messages = []
 
-	if package.gitLog != None:
-		if not isGitLogEmpty(package):
-			messages.append(warning(os.path.join(package.basePath, package.gitLog), "Log is not empty"))
-	else:
-		messages.append(error(package.basePath, "Missing git-log.txt"))
+	if len(package.gitLog) > 1:
+		messages.append(error(package.basePath, "Exactly one git log file must be present, found %s" % len(package.gitLog)))
 
-	return messages
-
-def verifyPatches (package):
-	messages	= []
-	hasPatches	= len(package.patches)
-	logEmpty	= package.gitLog and isGitLogEmpty(package)
-
-	if hasPatches and logEmpty:
-		messages.append(error(package.basePath, "Package includes patches but log is empty"))
-	elif not hasPatches and not logEmpty:
-		messages.append(error(package.basePath, "Test log is not empty but package doesn't contain patches"))
+	messages += verifyGitLog(package)
 
 	return messages
 
@@ -262,8 +64,8 @@ def verifyPackage (package, mustpass):
 	messages = []
 
 	messages += verifyStatement(package)
-	messages += verifyGitStatus(package)
-	messages += verifyGitLog(package)
+	messages += verifyGitStatusFiles(package)
+	messages += verifyGitLogFiles(package)
 	messages += verifyPatches(package)
 	messages += verifyTestLogs(package, mustpass)
 

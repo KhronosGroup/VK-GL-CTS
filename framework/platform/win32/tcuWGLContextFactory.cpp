@@ -73,6 +73,10 @@ public:
 	void							postIterate			(void);
 	const glw::Functions&			getFunctions		(void) const	{ return m_functions;			}
 
+	glw::GenericFuncType			getProcAddress		(const char* name) const;
+
+	void							makeCurrent			(void);
+
 private:
 									WGLContext			(const WGLContext& other);
 	WGLContext&						operator=			(const WGLContext& other);
@@ -108,7 +112,7 @@ WGLContext::WGLContext (HINSTANCE instance, const wgl::Core& wglCore, const glu:
 	if (pixelFormat < 0)
 		throw NotSupportedError("Compatible WGL pixel format not found");
 
-	m_context = new wgl::Context(&wglCore, deviceCtx, config.type, pixelFormat);
+	m_context = new wgl::Context(&wglCore, deviceCtx, config.type, pixelFormat, config.resetNotificationStrategy);
 
 	try
 	{
@@ -143,6 +147,16 @@ WGLContext::WGLContext (HINSTANCE instance, const wgl::Core& wglCore, const glu:
 WGLContext::~WGLContext (void)
 {
 	delete m_context;
+}
+
+glw::GenericFuncType WGLContext::getProcAddress (const char* name) const
+{
+	return m_context->getGLFunction(name);
+}
+
+void WGLContext::makeCurrent (void)
+{
+	m_context->makeCurrent();
 }
 
 void WGLContext::postIterate (void)

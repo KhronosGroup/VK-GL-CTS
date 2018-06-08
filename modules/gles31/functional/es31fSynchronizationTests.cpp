@@ -23,6 +23,7 @@
 
 #include "es31fSynchronizationTests.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuStringTemplate.hpp"
 #include "tcuSurface.hpp"
 #include "tcuRenderTarget.hpp"
 #include "gluRenderContext.hpp"
@@ -47,7 +48,6 @@ namespace Functional
 {
 namespace
 {
-
 
 static bool validateSortedAtomicRampAdditionValueChain (const std::vector<deUint32>& valueChain, deUint32 sumValue, int& invalidOperationNdx, deUint32& errorDelta, deUint32& errorExpected)
 {
@@ -110,6 +110,21 @@ void generateShuffledRamp (int numElements, std::vector<int>& ramp)
 		ramp[callNdx] = callNdx + 1;
 
 	rng.shuffle(ramp.begin(), ramp.end());
+}
+
+static std::string specializeShader(Context& context, const char* code)
+{
+	const glu::GLSLVersion				glslVersion			= glu::getContextTypeGLSLVersion(context.getRenderContext().getType());
+	std::map<std::string, std::string>	specializationMap;
+
+	specializationMap["GLSL_VERSION_DECL"] = glu::getGLSLVersionDeclaration(glslVersion);
+
+	if (glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+		specializationMap["SHADER_IMAGE_ATOMIC_REQUIRE"] = "";
+	else
+		specializationMap["SHADER_IMAGE_ATOMIC_REQUIRE"] = "#extension GL_OES_shader_image_atomic : require";
+
+	return tcu::StringTemplate(code).specialize(specializationMap);
 }
 
 class InterInvocationTestCase : public TestCase
@@ -188,11 +203,12 @@ InterInvocationTestCase::~InterInvocationTestCase (void)
 
 void InterInvocationTestCase::init (void)
 {
-	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
+	const glw::Functions&	gl				= m_context.getRenderContext().getFunctions();
+	const bool				supportsES32	= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	// requirements
 
-	if (m_useAtomic && m_storage == STORAGE_IMAGE && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+	if (m_useAtomic && m_storage == STORAGE_IMAGE && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
 		throw tcu::NotSupportedError("Test requires GL_OES_shader_image_atomic extension");
 
 	// program
@@ -457,8 +473,8 @@ std::string InvocationBasicCase::genShaderSource (void) const
 	const bool			useImageAtomics = m_useAtomic && m_storage == STORAGE_IMAGE;
 	std::ostringstream	buf;
 
-	buf << "#version 310 es\n"
-		<< ((useImageAtomics) ? ("#extension GL_OES_shader_image_atomic : require\n") : (""))
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< ((useImageAtomics) ? ("${SHADER_IMAGE_ATOMIC_REQUIRE}\n") : (""))
 		<< "layout (local_size_x=" << m_localWidth << ", local_size_y=" << m_localHeight << ") in;\n"
 		<< "layout(binding=0, std430) buffer Output\n"
 		<< "{\n"
@@ -498,7 +514,7 @@ std::string InvocationBasicCase::genShaderSource (void) const
 		<< "	sb_result.values[resultNdx] = (allOk) ? (1) : (0);\n"
 		<< "}\n";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 class InvocationWriteReadCase : public InvocationBasicCase
@@ -729,8 +745,8 @@ std::string InvocationAliasWriteCase::genShaderSource (void) const
 	const bool			useImageAtomics = m_useAtomic && m_storage == STORAGE_IMAGE;
 	std::ostringstream	buf;
 
-	buf << "#version 310 es\n"
-		<< ((useImageAtomics) ? ("#extension GL_OES_shader_image_atomic : require\n") : (""))
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< ((useImageAtomics) ? ("${SHADER_IMAGE_ATOMIC_REQUIRE}\n") : (""))
 		<< "layout (local_size_x=" << m_localWidth << ", local_size_y=" << m_localHeight << ") in;\n"
 		<< "layout(binding=0, std430) buffer Output\n"
 		<< "{\n"
@@ -840,7 +856,7 @@ std::string InvocationAliasWriteCase::genShaderSource (void) const
 		<< "	sb_result.values[resultNdx] = (allOk) ? (1) : (0);\n"
 		<< "}\n";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 namespace op
@@ -1137,11 +1153,12 @@ InterCallTestCase::~InterCallTestCase (void)
 
 void InterCallTestCase::init (void)
 {
-	int programFriendlyName = 0;
+	int			programFriendlyName = 0;
+	const bool	supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
 	// requirements
 
-	if (m_useAtomic && m_storage == STORAGE_IMAGE && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+	if (m_useAtomic && m_storage == STORAGE_IMAGE && !supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
 		throw tcu::NotSupportedError("Test requires GL_OES_shader_image_atomic extension");
 
 	// generate resources and validate command list
@@ -1720,8 +1737,8 @@ glu::ShaderProgram* InterCallTestCase::genWriteProgram (int seed)
 	const bool			useImageAtomics = m_useAtomic && m_storage == STORAGE_IMAGE;
 	std::ostringstream	buf;
 
-	buf << "#version 310 es\n"
-		<< ((useImageAtomics) ? ("#extension GL_OES_shader_image_atomic : require\n") : (""))
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< ((useImageAtomics) ? ("${SHADER_IMAGE_ATOMIC_REQUIRE}\n") : (""))
 		<< "layout (local_size_x = 1, local_size_y = 1) in;\n";
 
 	if (m_storage == STORAGE_BUFFER)
@@ -1781,7 +1798,7 @@ glu::ShaderProgram* InterCallTestCase::genWriteProgram (int seed)
 
 	buf << "}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(buf.str()));
+	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(specializeShader(m_context, buf.str().c_str())));
 }
 
 glu::ShaderProgram* InterCallTestCase::genReadProgram (int seed)
@@ -1789,8 +1806,8 @@ glu::ShaderProgram* InterCallTestCase::genReadProgram (int seed)
 	const bool			useImageAtomics = m_useAtomic && m_storage == STORAGE_IMAGE;
 	std::ostringstream	buf;
 
-	buf << "#version 310 es\n"
-		<< ((useImageAtomics) ? ("#extension GL_OES_shader_image_atomic : require\n") : (""))
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< ((useImageAtomics) ? ("${SHADER_IMAGE_ATOMIC_REQUIRE}\n") : (""))
 		<< "layout (local_size_x = 1, local_size_y = 1) in;\n";
 
 	if (m_storage == STORAGE_BUFFER)
@@ -1852,7 +1869,7 @@ glu::ShaderProgram* InterCallTestCase::genReadProgram (int seed)
 	buf << "	sb_result.resultOk[groupNdx] = (allOk) ? (1) : (0);\n"
 		<< "}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(buf.str()));
+	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(specializeShader(m_context, buf.str().c_str())));
 }
 
 glu::ShaderProgram* InterCallTestCase::genReadMultipleProgram (int seed0, int seed1)
@@ -1860,8 +1877,8 @@ glu::ShaderProgram* InterCallTestCase::genReadMultipleProgram (int seed0, int se
 	const bool			useImageAtomics = m_useAtomic && m_storage == STORAGE_IMAGE;
 	std::ostringstream	buf;
 
-	buf << "#version 310 es\n"
-		<< ((useImageAtomics) ? ("#extension GL_OES_shader_image_atomic : require\n") : (""))
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< ((useImageAtomics) ? ("${SHADER_IMAGE_ATOMIC_REQUIRE}\n") : (""))
 		<< "layout (local_size_x = 1, local_size_y = 1) in;\n";
 
 	if (m_storage == STORAGE_BUFFER)
@@ -1912,7 +1929,7 @@ glu::ShaderProgram* InterCallTestCase::genReadMultipleProgram (int seed0, int se
 	buf << "	sb_result.resultOk[groupNdx] = (allOk) ? (1) : (0);\n"
 		<< "}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(buf.str()));
+	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(specializeShader(m_context, buf.str().c_str())));
 }
 
 glu::ShaderProgram* InterCallTestCase::genWriteInterleavedProgram (int seed, bool evenOdd)
@@ -1920,8 +1937,8 @@ glu::ShaderProgram* InterCallTestCase::genWriteInterleavedProgram (int seed, boo
 	const bool			useImageAtomics = m_useAtomic && m_storage == STORAGE_IMAGE;
 	std::ostringstream	buf;
 
-	buf << "#version 310 es\n"
-		<< ((useImageAtomics) ? ("#extension GL_OES_shader_image_atomic : require\n") : (""))
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< ((useImageAtomics) ? ("${SHADER_IMAGE_ATOMIC_REQUIRE}\n") : (""))
 		<< "layout (local_size_x = 1, local_size_y = 1) in;\n";
 
 	if (m_storage == STORAGE_BUFFER)
@@ -1981,7 +1998,7 @@ glu::ShaderProgram* InterCallTestCase::genWriteInterleavedProgram (int seed, boo
 
 	buf << "}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(buf.str()));
+	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(specializeShader(m_context, buf.str().c_str())));
 }
 
 glu::ShaderProgram* InterCallTestCase::genReadInterleavedProgram (int seed0, int seed1)
@@ -1989,8 +2006,8 @@ glu::ShaderProgram* InterCallTestCase::genReadInterleavedProgram (int seed0, int
 	const bool			useImageAtomics = m_useAtomic && m_storage == STORAGE_IMAGE;
 	std::ostringstream	buf;
 
-	buf << "#version 310 es\n"
-		<< ((useImageAtomics) ? ("#extension GL_OES_shader_image_atomic : require\n") : (""))
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< ((useImageAtomics) ? ("${SHADER_IMAGE_ATOMIC_REQUIRE}\n") : (""))
 		<< "layout (local_size_x = 1, local_size_y = 1) in;\n";
 
 	if (m_storage == STORAGE_BUFFER)
@@ -2061,7 +2078,7 @@ glu::ShaderProgram* InterCallTestCase::genReadInterleavedProgram (int seed0, int
 	buf << "	sb_result.resultOk[groupNdx] = (allOk) ? (1) : (0);\n"
 		<< "}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(buf.str()));
+	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(specializeShader(m_context, buf.str().c_str())));
 }
 
 glu::ShaderProgram*	InterCallTestCase::genReadZeroProgram (void)
@@ -2069,8 +2086,8 @@ glu::ShaderProgram*	InterCallTestCase::genReadZeroProgram (void)
 	const bool			useImageAtomics = m_useAtomic && m_storage == STORAGE_IMAGE;
 	std::ostringstream	buf;
 
-	buf << "#version 310 es\n"
-		<< ((useImageAtomics) ? ("#extension GL_OES_shader_image_atomic : require\n") : (""))
+	buf << "${GLSL_VERSION_DECL}\n"
+		<< ((useImageAtomics) ? ("${SHADER_IMAGE_ATOMIC_REQUIRE}\n") : (""))
 		<< "layout (local_size_x = 1, local_size_y = 1) in;\n";
 
 	if (m_storage == STORAGE_BUFFER)
@@ -2118,7 +2135,7 @@ glu::ShaderProgram*	InterCallTestCase::genReadZeroProgram (void)
 	buf << "	sb_result.resultOk[groupNdx] = (allOk) ? (1) : (0);\n"
 		<< "}\n";
 
-	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(buf.str()));
+	return new glu::ShaderProgram(m_context.getRenderContext(), glu::ProgramSources() << glu::ComputeSource(specializeShader(m_context, buf.str().c_str())));
 }
 
 class SSBOConcurrentAtomicCase : public TestCase
@@ -2332,7 +2349,7 @@ std::string SSBOConcurrentAtomicCase::genComputeSource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
+	buf	<< "${GLSL_VERSION_DECL}\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 1, std430) writeonly buffer IntermediateResults\n"
 		<< "{\n"
@@ -2351,7 +2368,7 @@ std::string SSBOConcurrentAtomicCase::genComputeSource (void) const
 		<< "	sb_ires.values[invocationIndex] = atomicAdd(sb_work.values[invocationIndex], u_atomicDelta);\n"
 		<< "}";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 class ConcurrentAtomicCounterCase : public TestCase
@@ -2553,7 +2570,7 @@ std::string ConcurrentAtomicCounterCase::genComputeSource (bool evenOdd) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
+	buf	<< "${GLSL_VERSION_DECL}\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 1, std430) writeonly buffer IntermediateResults\n"
 		<< "{\n"
@@ -2570,7 +2587,7 @@ std::string ConcurrentAtomicCounterCase::genComputeSource (bool evenOdd) const
 		<< "		sb_ires.values[dataNdx] = atomicCounterIncrement(u_counter);\n"
 		<< "}";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 class ConcurrentImageAtomicCase : public TestCase
@@ -2620,8 +2637,9 @@ void ConcurrentImageAtomicCase::init (void)
 {
 	const glw::Functions&	gl					= m_context.getRenderContext().getFunctions();
 	std::vector<deUint32>	zeroData			(m_workSize * m_workSize, 0);
+	const bool				supportsES32		= glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2));
 
-	if (!m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
+	if (!supportsES32 && !m_context.getContextInfo().isExtensionSupported("GL_OES_shader_image_atomic"))
 		throw tcu::NotSupportedError("Test requires GL_OES_shader_image_atomic");
 
 	// gen image
@@ -2882,8 +2900,8 @@ std::string ConcurrentImageAtomicCase::genComputeSource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
-		<< "#extension GL_OES_shader_image_atomic : require\n"
+	buf	<< "${GLSL_VERSION_DECL}\n"
+		<< "${SHADER_IMAGE_ATOMIC_REQUIRE}\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 1, std430) writeonly buffer IntermediateResults\n"
@@ -2900,14 +2918,14 @@ std::string ConcurrentImageAtomicCase::genComputeSource (void) const
 		<< "	sb_ires.values[invocationIndex] = imageAtomicAdd(u_workImage, ivec2(gl_GlobalInvocationID.xy), u_atomicDelta);\n"
 		<< "}";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 std::string ConcurrentImageAtomicCase::genImageReadSource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
+	buf	<< "${GLSL_VERSION_DECL}\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 1, std430) writeonly buffer ImageValues\n"
@@ -2923,14 +2941,14 @@ std::string ConcurrentImageAtomicCase::genImageReadSource (void) const
 		<< "	sb_res.values[invocationIndex] = imageLoad(u_workImage, ivec2(gl_GlobalInvocationID.xy)).x;\n"
 		<< "}";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 std::string ConcurrentImageAtomicCase::genImageClearSource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
+	buf	<< "${GLSL_VERSION_DECL}\n"
 		<< "\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 2, r32ui) writeonly uniform highp uimage2D u_workImage;\n"
@@ -2940,7 +2958,7 @@ std::string ConcurrentImageAtomicCase::genImageClearSource (void) const
 		<< "	imageStore(u_workImage, ivec2(gl_GlobalInvocationID.xy), uvec4(0, 0, 0, 0));\n"
 		<< "}";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 class ConcurrentSSBOAtomicCounterMixedCase : public TestCase
@@ -3090,7 +3108,7 @@ std::string ConcurrentSSBOAtomicCounterMixedCase::genSSBOComputeSource (void) co
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
+	buf	<< "${GLSL_VERSION_DECL}\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "layout (binding = 1, std430) volatile buffer WorkBuffer\n"
 		<< "{\n"
@@ -3105,14 +3123,14 @@ std::string ConcurrentSSBOAtomicCounterMixedCase::genSSBOComputeSource (void) co
 		<< "	sb_work.dummy = atomicXor(sb_work.targetValue, mask);\n"
 		<< "}";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 std::string ConcurrentSSBOAtomicCounterMixedCase::genAtomicCounterComputeSource (void) const
 {
 	std::ostringstream buf;
 
-	buf	<< "#version 310 es\n"
+	buf	<< "${GLSL_VERSION_DECL}\n"
 		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
 		<< "\n"
 		<< "layout (binding = 2, offset = 0) uniform atomic_uint u_counter;\n"
@@ -3122,7 +3140,7 @@ std::string ConcurrentSSBOAtomicCounterMixedCase::genAtomicCounterComputeSource 
 		<< "	atomicCounterIncrement(u_counter);\n"
 		<< "}";
 
-	return buf.str();
+	return specializeShader(m_context, buf.str().c_str());
 }
 
 } // anonymous

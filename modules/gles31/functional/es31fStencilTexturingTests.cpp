@@ -487,12 +487,12 @@ static void stencilToUnorm8 (const tcu::TextureCube& src, tcu::TextureCube& dst)
 	}
 }
 
-static void checkDepthStencilFormatSupport (const glu::ContextInfo& ctxInfo, deUint32 format)
+static void checkDepthStencilFormatSupport (Context& context, deUint32 format)
 {
 	if (format == GL_STENCIL_INDEX8)
 	{
 		const char* reqExt = "GL_OES_texture_stencil8";
-		if (!ctxInfo.isExtensionSupported(reqExt))
+		if ((context.getRenderContext().getType().getAPI() != glu::ApiType::core(3,2)) && !context.getContextInfo().isExtensionSupported(reqExt))
 			throw tcu::NotSupportedError(glu::getTextureFormatStr(format).toString() + " requires " + reqExt);
 	}
 	else
@@ -533,7 +533,7 @@ public:
 		TextureLevel				readLevel			(TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT32), width, height);
 		TextureLevel				stencilOnlyLevel	(TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8), width, height);
 
-		checkDepthStencilFormatSupport(m_context.getContextInfo(), m_format);
+		checkDepthStencilFormatSupport(m_context, m_format);
 
 		renderTestPatternReference(uploadLevel);
 		renderTestPatternReference(stencilOnlyLevel);
@@ -588,7 +588,7 @@ public:
 		glu::Texture				depthStencilTex		(renderCtx);
 		TextureLevel				uploadLevel			(glu::mapGLInternalFormat(m_format), width, height, levels);
 
-		checkDepthStencilFormatSupport(m_context.getContextInfo(), m_format);
+		checkDepthStencilFormatSupport(m_context, m_format);
 
 		for (int levelNdx = 0; levelNdx < levels; levelNdx++)
 		{
@@ -675,7 +675,7 @@ public:
 		tcu::TextureCube			texData				(glu::mapGLInternalFormat(m_format), size);
 		tcu::TextureLevel			result				(TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8), renderWidth, renderHeight);
 
-		checkDepthStencilFormatSupport(m_context.getContextInfo(), m_format);
+		checkDepthStencilFormatSupport(m_context, m_format);
 
 		for (int faceNdx = 0; faceNdx < tcu::CUBEFACE_LAST; faceNdx++)
 		{
@@ -762,7 +762,7 @@ public:
 		TextureLevel				result			(TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT32), width, height);
 		TextureLevel				reference		(TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8), width, height);
 
-		checkDepthStencilFormatSupport(m_context.getContextInfo(), m_format);
+		checkDepthStencilFormatSupport(m_context, m_format);
 
 		gl.bindRenderbuffer(GL_RENDERBUFFER, *colorBuf);
 		gl.renderbufferStorage(GL_RENDERBUFFER, GL_R32UI, width, height);
@@ -820,7 +820,7 @@ public:
 		TextureLevel				result			(TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT32), width, height);
 		TextureLevel				reference		(TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8), width, height);
 
-		checkDepthStencilFormatSupport(m_context.getContextInfo(), m_format);
+		checkDepthStencilFormatSupport(m_context, m_format);
 
 		gl.bindRenderbuffer(GL_RENDERBUFFER, *colorBuf);
 		gl.renderbufferStorage(GL_RENDERBUFFER, GL_R32UI, width, height);
@@ -894,7 +894,7 @@ public:
 		TextureLevel				readLevel			(TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT32), width, height);
 		TextureLevel				stencilOnlyLevel	(TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8), width, height);
 
-		checkDepthStencilFormatSupport(m_context.getContextInfo(), m_format);
+		checkDepthStencilFormatSupport(m_context, m_format);
 
 		m_testCtx.getLog() << TestLog::Message << "NOTE: Texture compare mode has no effect when reading stencil values." << TestLog::EndMessage;
 
@@ -956,7 +956,7 @@ public:
 		TextureLevel				readLevel			(TextureFormat(TextureFormat::RGBA, TextureFormat::UNSIGNED_INT32), levelWidth, levelHeight);
 		TextureLevel				stencilOnlyLevel	(TextureFormat(TextureFormat::S, TextureFormat::UNSIGNED_INT8), levelWidth, levelHeight);
 
-		checkDepthStencilFormatSupport(m_context.getContextInfo(), m_format);
+		checkDepthStencilFormatSupport(m_context, m_format);
 
 		m_testCtx.getLog() << TestLog::Message << "GL_TEXTURE_BASE_LEVEL = " << levelNdx << TestLog::EndMessage;
 

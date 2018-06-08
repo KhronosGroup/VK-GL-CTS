@@ -26,7 +26,7 @@
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
 #include "vkSpirVProgram.hpp"
-#include "vkGlslProgram.hpp"
+#include "vkShaderProgram.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSTLUtil.hpp"
@@ -58,16 +58,22 @@ private:
 	const std::vector<deUint8>	m_binary;
 };
 
-template<typename Program>
+struct BinaryBuildOptions
+{
+};
+
+template<typename Program, typename BuildOptions>
 class ProgramCollection
 {
 public:
 								ProgramCollection	(void);
+								ProgramCollection	(const BuildOptions defaultBuildOptions);
 								~ProgramCollection	(void);
 
 	void						clear				(void);
 
 	Program&					add					(const std::string& name);
+	Program&					add					(const std::string& name, const BuildOptions* buildOptions);
 	void						add					(const std::string& name, de::MovePtr<Program>& program);
 
 	bool						contains			(const std::string& name) const;
@@ -98,74 +104,111 @@ public:
 	Iterator					begin				(void) const { return Iterator(m_programs.begin());	}
 	Iterator					end					(void) const { return Iterator(m_programs.end());	}
 
+	bool						empty				(void) const { return m_programs.empty();			}
+
 private:
 	typedef std::map<std::string, Program*>	ProgramMap;
 
 	ProgramMap					m_programs;
+	BuildOptions				m_defaultBuildOptions;
 };
 
-template<typename Program>
-ProgramCollection<Program>::ProgramCollection (void)
+template<typename Program, typename BuildOptions>
+ProgramCollection<Program, BuildOptions>::ProgramCollection (void)
 {
 }
 
-template<typename Program>
-ProgramCollection<Program>::~ProgramCollection (void)
+template<typename Program, typename BuildOptions>
+ProgramCollection<Program, BuildOptions>::ProgramCollection (const BuildOptions defaultBuildOptions)
+	: m_programs()
+	, m_defaultBuildOptions(defaultBuildOptions)
+{
+}
+
+template<typename Program, typename BuildOptions>
+ProgramCollection<Program, BuildOptions>::~ProgramCollection (void)
 {
 	clear();
 }
 
-template<typename Program>
-void ProgramCollection<Program>::clear (void)
+template<typename Program, typename BuildOptions>
+void ProgramCollection<Program, BuildOptions>::clear (void)
 {
 	for (typename ProgramMap::const_iterator i = m_programs.begin(); i != m_programs.end(); ++i)
 		delete i->second;
 	m_programs.clear();
 }
 
-template<typename Program>
-Program& ProgramCollection<Program>::add (const std::string& name)
+template<typename Program, typename BuildOptions>
+Program& ProgramCollection<Program, BuildOptions>::add (const std::string& name)
 {
 	DE_ASSERT(!contains(name));
 	de::MovePtr<Program> prog = de::newMovePtr<Program>();
+	prog->buildOptions = m_defaultBuildOptions;
 	m_programs[name] = prog.get();
 	prog.release();
 	return *m_programs[name];
 }
 
-template<typename Program>
-void ProgramCollection<Program>::add (const std::string& name, de::MovePtr<Program>& program)
+template<typename Program, typename BuildOptions>
+Program& ProgramCollection<Program, BuildOptions>::add (const std::string& name, const BuildOptions* buildOptions)
+{
+	Program& program = add(name);
+
+	if (buildOptions != DE_NULL)
+		program << *buildOptions;
+
+	return program;
+}
+
+template<typename Program, typename BuildOptions>
+void ProgramCollection<Program, BuildOptions>::add (const std::string& name, de::MovePtr<Program>& program)
 {
 	DE_ASSERT(!contains(name));
 	m_programs[name] = program.get();
 	program.release();
 }
 
-template<typename Program>
-bool ProgramCollection<Program>::contains (const std::string& name) const
+template<typename Program, typename BuildOptions>
+bool ProgramCollection<Program, BuildOptions>::contains (const std::string& name) const
 {
 	return de::contains(m_programs, name);
 }
 
-template<typename Program>
-const Program& ProgramCollection<Program>::get (const std::string& name) const
+template<typename Program, typename BuildOptions>
+const Program& ProgramCollection<Program, BuildOptions>::get (const std::string& name) const
 {
 	DE_ASSERT(contains(name));
 	return *m_programs.find(name)->second;
 }
 
-typedef ProgramCollection<GlslSource>		GlslSourceCollection;
-typedef ProgramCollection<SpirVAsmSource>	SpirVAsmCollection;
+typedef ProgramCollection<GlslSource, ShaderBuildOptions>		GlslSourceCollection;
+typedef ProgramCollection<HlslSource, ShaderBuildOptions>		HlslSourceCollection;
+typedef ProgramCollection<SpirVAsmSource, SpirVAsmBuildOptions>	SpirVAsmCollection;
 
 struct SourceCollections
 {
+	SourceCollections		(const deUint32					usedVulkanVersion_,
+							 const ShaderBuildOptions&		glslBuildOptions,
+							 const ShaderBuildOptions&		hlslBuildOptions,
+							 const SpirVAsmBuildOptions&	spirVAsmBuildOptions)
+							: usedVulkanVersion(usedVulkanVersion_)
+							, glslSources(glslBuildOptions)
+							, hlslSources(hlslBuildOptions)
+							, spirvAsmSources(spirVAsmBuildOptions)
+							{
+							}
+
+	deUint32				usedVulkanVersion;
 	GlslSourceCollection	glslSources;
+	HlslSourceCollection	hlslSources;
 	SpirVAsmCollection		spirvAsmSources;
 };
 
-typedef ProgramCollection<ProgramBinary>		BinaryCollection;
+typedef ProgramCollection<ProgramBinary, BinaryBuildOptions>	BinaryCollection;
 
 ProgramBinary*			buildProgram		(const GlslSource& program, glu::ShaderProgramInfo* buildInfo);
+ProgramBinary*			buildProgram		(const HlslSource& program, glu::ShaderProgramInfo* buildInfo);
 ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo);
 void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst);
 bool					validateProgram		(const ProgramBinary& program, std::ostream* dst);
@@ -174,6 +217,13 @@ Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface,
 
 glu::ShaderType			getGluShaderType	(VkShaderStageFlagBits shaderStage);
 VkShaderStageFlagBits	getVkShaderStage	(glu::ShaderType shaderType);
+
+vk::SpirvVersion		getMaxSpirvVersionForAsm	(const deUint32 vulkanVersion);
+vk::SpirvVersion		getMaxSpirvVersionForGlsl	(const deUint32 vulkanVersion);
+vk::SpirvVersion		getBaselineSpirvVersion		(const deUint32 vulkanVersion);
+SpirvVersion			extractSpirvVersion			(const ProgramBinary& binary);
+std::string				getSpirvVersionName			(const SpirvVersion spirvVersion);
+SpirvVersion&			operator++					(SpirvVersion& spirvVersion);
 
 } // vk
 

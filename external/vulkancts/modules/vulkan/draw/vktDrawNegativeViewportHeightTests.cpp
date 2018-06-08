@@ -31,6 +31,7 @@
 #include "vkPrograms.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuTextureUtil.hpp"
@@ -396,7 +397,7 @@ tcu::TestStatus NegativeViewportHeightTestInstance::iterate (void)
 {
 	// Check requirements
 
-	if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), std::string("VK_KHR_maintenance1")))
+	if(!isDeviceExtensionSupported(m_context.getUsedApiVersion(), m_context.getDeviceExtensions(), "VK_KHR_maintenance1"))
 		TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_maintenance1");
 
 	// Set up the viewport and draw

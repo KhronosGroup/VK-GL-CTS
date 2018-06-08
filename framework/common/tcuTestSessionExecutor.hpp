@@ -87,6 +87,7 @@ private:
 	TestContext&					m_testCtx;
 
 	DefaultHierarchyInflater		m_inflater;
+	de::MovePtr<CaseListFilter>		m_caseListFilter;
 	TestHierarchyIterator			m_iterator;
 
 	de::MovePtr<TestCaseExecutor>	m_caseExecutor;

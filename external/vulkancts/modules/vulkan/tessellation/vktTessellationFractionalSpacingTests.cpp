@@ -95,6 +95,14 @@ struct LineData
 			LineData (float lev, float len, int loc) : tessLevel(lev), additionalSegmentLength(len), additionalSegmentLocation(loc) {}
 };
 
+struct TestParams
+{
+	ShaderLanguage	shaderLanguage;
+	SpacingMode		spacingMode;
+
+					TestParams(ShaderLanguage sl, SpacingMode sm) : shaderLanguage(sl), spacingMode(sm) {}
+};
+
 /*--------------------------------------------------------------------*//*!
  * \brief Verify fractional spacing conditions for a single line
  *
@@ -361,74 +369,147 @@ std::vector<float> readFloatArray(const int count, const void* memory, const int
 {
 	std::vector<float> results(count);
 
-	const float* pFloatData = reinterpret_cast<const float*>(static_cast<const deUint8*>(memory) + offset);
-	deMemcpy(&results[0], pFloatData, sizeof(float) * count);
+	if (count != 0)
+	{
+		const float* pFloatData = reinterpret_cast<const float*>(static_cast<const deUint8*>(memory) + offset);
+		deMemcpy(&results[0], pFloatData, sizeof(float) * count);
+	}
 
 	return results;
 }
 
-void initPrograms (vk::SourceCollections& programCollection, const SpacingMode spacingMode)
+void initPrograms (vk::SourceCollections& programCollection, TestParams testParams)
 {
-	// Vertex shader: no inputs
+	if (testParams.shaderLanguage == SHADER_LANGUAGE_GLSL)
 	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "}\n";
+		// Vertex shader: no inputs
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "}\n";
 
-		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		}
+
+		// Tessellation control shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "\n"
+				<< "layout(vertices = 1) out;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 0, std430) readonly restrict buffer TessLevels {\n"
+				<< "    float outer1;\n"
+				<< "} sb_levels;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    gl_TessLevelOuter[0] = 1.0;\n"
+				<< "    gl_TessLevelOuter[1] = sb_levels.outer1;\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+		}
+
+		// Tessellation evaluation shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+				<< "#extension GL_EXT_tessellation_shader : require\n"
+				<< "\n"
+				<< "layout(" << getTessPrimitiveTypeShaderName(TESSPRIMITIVETYPE_ISOLINES) << ", "
+							 << getSpacingModeShaderName(testParams.spacingMode) << ", point_mode) in;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 1, std430) coherent restrict buffer Output {\n"
+				<< "    int   numInvocations;\n"
+				<< "    float tessCoord[];\n"
+				<< "} sb_out;\n"
+				<< "\n"
+				<< "void main (void)\n"
+				<< "{\n"
+				<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
+				<< "    sb_out.tessCoord[index] = gl_TessCoord.x;\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		}
 	}
-
-	// Tessellation control shader
+	else
 	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(vertices = 1) out;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 0, std430) readonly restrict buffer TessLevels {\n"
-			<< "    float outer1;\n"
-			<< "} sb_levels;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    gl_TessLevelOuter[0] = 1.0;\n"
-			<< "    gl_TessLevelOuter[1] = sb_levels.outer1;\n"
-			<< "}\n";
+		// Vertex shader - no inputs
+		{
+			std::ostringstream src;
+			src << "void main (void)\n"
+				<< "{\n"
+				<< "}\n";
 
-		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
-	}
+			programCollection.hlslSources.add("vert") << glu::VertexSource(src.str());
+		}
 
-	// Tessellation evaluation shader
-	{
-		std::ostringstream src;
-		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
-			<< "#extension GL_EXT_tessellation_shader : require\n"
-			<< "\n"
-			<< "layout(" << getTessPrimitiveTypeShaderName(TESSPRIMITIVETYPE_ISOLINES) << ", "
-						 << getSpacingModeShaderName(spacingMode) << ", point_mode) in;\n"
-			<< "\n"
-			<< "layout(set = 0, binding = 1, std430) coherent restrict buffer Output {\n"
-			<< "    int   numInvocations;\n"
-			<< "    float tessCoord[];\n"
-			<< "} sb_out;\n"
-			<< "\n"
-			<< "void main (void)\n"
-			<< "{\n"
-			<< "    int index = atomicAdd(sb_out.numInvocations, 1);\n"
-			<< "    sb_out.tessCoord[index] = gl_TessCoord.x;\n"
-			<< "}\n";
+		// Tessellation control shader
+		{
+			std::ostringstream src;
+			src << "struct HS_CONSTANT_OUT\n"
+				<< "{\n"
+				<< "    float tessLevelsOuter[2] : SV_TessFactor;\n"
+				<< "};\n"
+				<< "\n"
+				<< "tbuffer TessLevels : register(b0)\n"
+				<< "{\n"
+				<< "    float outer1;\n"
+				<< "}\n"
+				<< "\n"
+				<< "[domain(\"isoline\")]\n"
+				<< "[partitioning(\"" << getPartitioningShaderName(testParams.spacingMode) << "\")]\n"
+				<< "[outputtopology(\"point\")]\n"
+				<< "[outputcontrolpoints(1)]\n"
+				<< "[patchconstantfunc(\"PCF\")]\n"
+				<< "void main()\n"
+				<< "{\n"
+				<< "}\n"
+				<< "\n"
+				<< "HS_CONSTANT_OUT PCF()\n"
+				<< "{\n"
+				<< "    HS_CONSTANT_OUT output;\n"
+				<< "    output.tessLevelsOuter[0] = 1.0;\n"
+				<< "    output.tessLevelsOuter[1] = outer1;\n"
+				<< "    return output;\n"
+				<< "}\n";
 
-		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+			programCollection.hlslSources.add("tesc") << glu::TessellationControlSource(src.str());
+		}
+
+		// Tessellation evaluation shader
+		{
+			std::ostringstream src;
+
+			src	<< "struct OutputStruct\n"
+				<< "{\n"
+				<< "    int numInvocations;\n"
+				<< "    float tessCoord[];\n"
+				<< "};\n"
+				<< "globallycoherent RWStructuredBuffer <OutputStruct> Output : register(b1);\n"
+				<< "\n"
+				<< "void main(float2 tessCoords : SV_DOMAINLOCATION)\n"
+				<< "{\n"
+				<< "    int index;\n"
+				<< "    InterlockedAdd(Output[0].numInvocations, 1, index);\n"
+				<< "    Output[0].tessCoord[index] = tessCoords.x;\n"
+				<< "}\n";
+
+			programCollection.hlslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+		}
 	}
 }
 
-tcu::TestStatus test (Context& context, const SpacingMode spacingMode)
+tcu::TestStatus test (Context& context, TestParams testParams)
 {
-	DE_ASSERT(spacingMode == SPACINGMODE_FRACTIONAL_ODD || spacingMode == SPACINGMODE_FRACTIONAL_EVEN);
+	DE_ASSERT(testParams.spacingMode == SPACINGMODE_FRACTIONAL_ODD || testParams.spacingMode == SPACINGMODE_FRACTIONAL_EVEN);
+	DE_ASSERT(testParams.shaderLanguage == SHADER_LANGUAGE_GLSL || testParams.shaderLanguage == SHADER_LANGUAGE_HLSL);
 
 	requireFeatures(context.getInstanceInterface(), context.getPhysicalDevice(), FEATURE_TESSELLATION_SHADER | FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 
@@ -439,7 +520,7 @@ tcu::TestStatus test (Context& context, const SpacingMode spacingMode)
 	Allocator&				allocator			= context.getDefaultAllocator();
 
 	const std::vector<float>	tessLevelCases = genTessLevelCases();
-	const int					maxNumVertices = 1 + getClampedRoundedTessLevel(spacingMode, *std::max_element(tessLevelCases.begin(), tessLevelCases.end()));
+	const int					maxNumVertices = 1 + getClampedRoundedTessLevel(testParams.spacingMode, *std::max_element(tessLevelCases.begin(), tessLevelCases.end()));
 
 	// Result buffer: generated tess coords go here.
 
@@ -547,7 +628,7 @@ tcu::TestStatus test (Context& context, const SpacingMode spacingMode)
 			float additionalSegmentLength;
 			int   additionalSegmentLocation;
 
-			success = verifyFractionalSpacingSingle(log, spacingMode, tessLevelCases[tessLevelCaseNdx], resultTessCoords,
+			success = verifyFractionalSpacingSingle(log, testParams.spacingMode, tessLevelCases[tessLevelCaseNdx], resultTessCoords,
 													&additionalSegmentLength, &additionalSegmentLocation);
 
 			if (!success)
@@ -559,7 +640,7 @@ tcu::TestStatus test (Context& context, const SpacingMode spacingMode)
 	} // for tessLevelCaseNdx
 
 	if (success)
-		success = verifyFractionalSpacingMultiple(context.getTestContext().getLog(), spacingMode, tessLevelCases, additionalSegmentLengths, additionalSegmentLocations);
+		success = verifyFractionalSpacingMultiple(context.getTestContext().getLog(), testParams.spacingMode, tessLevelCases, additionalSegmentLengths, additionalSegmentLocations);
 
 	return (success ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Failure"));
 }
@@ -572,8 +653,10 @@ tcu::TestCaseGroup* createFractionalSpacingTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> group (new tcu::TestCaseGroup(testCtx, "fractional_spacing", "Test fractional spacing modes"));
 
-	addFunctionCaseWithPrograms(group.get(), "odd",  "", initPrograms, test, SPACINGMODE_FRACTIONAL_ODD);
-	addFunctionCaseWithPrograms(group.get(), "even", "", initPrograms, test, SPACINGMODE_FRACTIONAL_EVEN);
+	addFunctionCaseWithPrograms(group.get(), "glsl_odd",  "", initPrograms, test, TestParams(SHADER_LANGUAGE_GLSL, SPACINGMODE_FRACTIONAL_ODD));
+	addFunctionCaseWithPrograms(group.get(), "glsl_even", "", initPrograms, test, TestParams(SHADER_LANGUAGE_GLSL, SPACINGMODE_FRACTIONAL_EVEN));
+	addFunctionCaseWithPrograms(group.get(), "hlsl_odd",  "", initPrograms, test, TestParams(SHADER_LANGUAGE_HLSL, SPACINGMODE_FRACTIONAL_ODD));
+	addFunctionCaseWithPrograms(group.get(), "hlsl_even", "", initPrograms, test, TestParams(SHADER_LANGUAGE_HLSL, SPACINGMODE_FRACTIONAL_EVEN));
 
 	return group.release();
 }

@@ -1,0 +1,2 @@
+dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_nonms
+dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_ms

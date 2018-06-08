@@ -128,7 +128,9 @@ Texture2DSizeCase::IterateResult Texture2DSizeCase::iterate (void)
 	tcu::RGBA				threshold		= thresholdFormat.getColorThreshold() + tcu::RGBA(7,7,7,7);
 	deUint32				wrapS			= GL_CLAMP_TO_EDGE;
 	deUint32				wrapT			= GL_CLAMP_TO_EDGE;
-	deUint32				minFilter		= m_useMipmaps ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST;
+	// Do not minify with GL_NEAREST. A large POT texture with a small POT render target will produce
+	// indeterminate results.
+	deUint32				minFilter		= m_useMipmaps ? GL_NEAREST_MIPMAP_NEAREST : GL_LINEAR;
 	deUint32				magFilter		= GL_NEAREST;
 	vector<float>			texCoord;
 
@@ -274,7 +276,9 @@ bool TextureCubeSizeCase::testFace (tcu::CubeFace face)
 	tcu::RGBA				threshold		= thresholdFormat.getColorThreshold() + tcu::RGBA(7,7,7,7);
 	deUint32				wrapS			= GL_CLAMP_TO_EDGE;
 	deUint32				wrapT			= GL_CLAMP_TO_EDGE;
-	deUint32				minFilter		= m_useMipmaps ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST;
+	// Do not minify with GL_NEAREST. A large POT texture with a small POT render target will produce
+	// indeterminate results.
+	deUint32				minFilter		= m_useMipmaps ? GL_NEAREST_MIPMAP_NEAREST : GL_LINEAR;
 	deUint32				magFilter		= GL_NEAREST;
 	vector<float>			texCoord;
 
