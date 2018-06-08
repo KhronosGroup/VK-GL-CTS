@@ -685,7 +685,7 @@ void WideColorSurfaceTest::init (void)
 	if (numConfigs <= 0)
 	{
 		log << tcu::TestLog::Message << "No configs returned." << tcu::TestLog::EndMessage;
-		TCU_FAIL("No configs returned");
+		TCU_THROW(NotSupportedError, "No configs available with the requested attributes");
 	}
 
 	log << tcu::TestLog::Message << numConfigs << " configs returned" << tcu::TestLog::EndMessage;
