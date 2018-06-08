@@ -417,6 +417,9 @@ static tcu::TextureFormat::ChannelType mapGLChannelType (deUint32 dataType, bool
 		case GL_FLOAT_32_UNSIGNED_INT_24_8_REV:	return TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV;
 		case GL_UNSIGNED_INT_5_9_9_9_REV:		return TextureFormat::UNSIGNED_INT_999_E5_REV;
 
+		// GL_OES_texture_half_float
+		case GL_HALF_FLOAT_OES:					return TextureFormat::HALF_FLOAT;
+
 		default:
 			DE_ASSERT(false);
 			return TextureFormat::CHANNELTYPE_LAST;
