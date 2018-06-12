@@ -93,6 +93,14 @@ public:
 		VK_CHECK(vk.flushMappedMemoryRanges(dev, 1u, &range));
 	}
 
+	void								invalidate							(VkDeviceSize			offset,
+																			 VkDeviceSize			size)
+	{
+		const VkMappedMemoryRange		range								= makeMemoryRange(offset, size);
+		VK_CHECK(vk.invalidateMappedMemoryRanges(dev, 1u, &range));
+	}
+
+
 protected:
 	const DeviceInterface&				vk;
 	const VkDevice&						dev;
@@ -817,6 +825,8 @@ deBool									checkData							(VkDeviceMemory			memory,
 	MemoryMappingRAII					hostMemory							(vk, vkDevice, memory, 0u, params.bufferSize, 0u);
 	deUint8*							hostBuffer							= static_cast<deUint8*>(hostMemory.ptr());
 	SimpleRandomGenerator				random								(dataSeed);
+
+	hostMemory.invalidate(0u, params.bufferSize);
 
 	for (deUint32 i = 0u; i < params.bufferSize; ++i)
 	{
