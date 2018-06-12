@@ -708,9 +708,9 @@ tcu::TestCaseGroup*	createUpdateBufferTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> updateTests (new tcu::TestCaseGroup(testCtx, "update", "Update Buffer Tests"));
 
-	updateTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, FILL_BUFFER));
-	updateTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, FILL_BUFFER));
-	updateTests->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, FILL_BUFFER));
+	updateTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, UPDATE_BUFFER));
+	updateTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, UPDATE_BUFFER));
+	updateTests->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, UPDATE_BUFFER));
 
 	return updateTests.release();
 }
@@ -719,9 +719,9 @@ tcu::TestCaseGroup*	createCopyBufferTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup> copyTests (new tcu::TestCaseGroup(testCtx, "copy", "Copy Buffer Tests"));
 
-	copyTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, FILL_BUFFER));
-	copyTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, FILL_BUFFER));
-	copyTests->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, FILL_BUFFER));
+	copyTests->addChild(createFillUpdateCopyBufferFloatTests(testCtx, COPY_BUFFER));
+	copyTests->addChild(createFillUpdateCopyBufferIntegerTests(testCtx, COPY_BUFFER));
+	copyTests->addChild(createFillUpdateCopyBufferUnsignedTests(testCtx, COPY_BUFFER));
 
 	return copyTests.release();
 }
