@@ -3276,7 +3276,6 @@ dEQP-EGL.functional.reusable_sync.valid.get_type
 dEQP-EGL.functional.reusable_sync.valid.get_status
 dEQP-EGL.functional.reusable_sync.valid.get_status_signaled
 dEQP-EGL.functional.reusable_sync.valid.destroy
-dEQP-EGL.functional.reusable_sync.valid.wait_server
 dEQP-EGL.functional.reusable_sync.invalid.create_invalid_display
 dEQP-EGL.functional.reusable_sync.invalid.create_invalid_type
 dEQP-EGL.functional.reusable_sync.invalid.create_invalid_attribs
@@ -3290,7 +3289,6 @@ dEQP-EGL.functional.reusable_sync.invalid.destroy_invalid_display
 dEQP-EGL.functional.reusable_sync.invalid.destroy_invalid_sync
 dEQP-EGL.functional.reusable_sync.invalid.wait_server_invalid_display
 dEQP-EGL.functional.reusable_sync.invalid.wait_server_invalid_sync
-dEQP-EGL.functional.reusable_sync.invalid.wait_server_invalid_flag
 dEQP-EGL.functional.resize.surface_size.shrink
 dEQP-EGL.functional.resize.surface_size.grow
 dEQP-EGL.functional.resize.surface_size.stretch_width
