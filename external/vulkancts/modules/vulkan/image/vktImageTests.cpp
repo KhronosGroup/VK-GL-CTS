@@ -48,6 +48,7 @@ void createChildren (tcu::TestCaseGroup* imageTests)
 	imageTests->addChild(createImageLoadStoreTests(testCtx));
 	imageTests->addChild(createImageMultisampleLoadStoreTests(testCtx));
 	imageTests->addChild(createImageMutableTests(testCtx));
+	imageTests->addChild(createSwapchainImageMutableTests(testCtx));
 	imageTests->addChild(createImageFormatReinterpretTests(testCtx));
 	imageTests->addChild(createImageQualifiersTests(testCtx));
 	imageTests->addChild(createImageSizeTests(testCtx));

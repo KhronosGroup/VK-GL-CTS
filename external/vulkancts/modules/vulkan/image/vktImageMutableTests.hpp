@@ -35,6 +35,8 @@ namespace image
 
 tcu::TestCaseGroup*	createImageMutableTests	(tcu::TestContext& testCtx);
 
+tcu::TestCaseGroup*	createSwapchainImageMutableTests(tcu::TestContext& testCtx);
+
 } // image
 } // vkt
 
