@@ -291,6 +291,11 @@ if (DE_OS_IS_ANDROID)
 	add_library(deqp SHARED ${DEQP_SRCS})
 	target_link_libraries(deqp ${DEQP_LIBS})
 
+	# Separate out the debug information because it's enormous
+	add_custom_command(TARGET deqp POST_BUILD
+		COMMAND ${CMAKE_STRIP} --only-keep-debug -o $<TARGET_FILE:deqp>.debug $<TARGET_FILE:deqp>
+		COMMAND ${CMAKE_STRIP} -g $<TARGET_FILE:deqp>)
+
 	# Needed by OpenGL CTS that defines its own activity but depends on
 	# common Android support code.
 	target_include_directories(deqp PRIVATE framework/platform/android)
