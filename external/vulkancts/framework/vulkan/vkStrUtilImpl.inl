@@ -2003,8 +2003,9 @@ tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsK
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR,	"VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR"),
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,	"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR,			"VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,			"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,	"VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
