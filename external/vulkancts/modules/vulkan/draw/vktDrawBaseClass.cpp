@@ -140,7 +140,7 @@ void DrawTestsBaseClass::initialize (void)
 							   device,
 							   m_vertexBuffer->getBoundMemory().getMemory(),
 							   m_vertexBuffer->getBoundMemory().getOffset(),
-							   dataSize);
+							   VK_WHOLE_SIZE);
 
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
 	m_cmdPool	= vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
