@@ -2632,8 +2632,8 @@ bool checkExtension (vector<VkExtensionProperties>& properties, const char* exte
 tcu::TestStatus deviceFeatures2 (Context& context)
 {
 	const PlatformInterface&			vkp			= context.getPlatformInterface();
-	const VkInstance					instance	(context.getInstance());
-	const InstanceDriver				vki			(vkp, instance);
+	const Unique<VkInstance>			instance	(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
+	const InstanceDriver				vki			(vkp, *instance);
 	const vector<VkPhysicalDevice>		devices		= enumeratePhysicalDevices(vki, instance);
 	TestLog&							log			= context.getTestContext().getLog();
 
