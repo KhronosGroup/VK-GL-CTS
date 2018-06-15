@@ -602,7 +602,19 @@ void addTessCtrlTest (tcu::TestCaseGroup* group, const char* name, const std::ma
 // * Different bit patterns of NaNs are allowed.
 // * For the rest, require exactly the same bit pattern.
 bool compare16BitFloat (float original, deUint16 returned, RoundingModeFlags flags, tcu::TestLog& log);
-bool compare16BitFloat (deFloat16 returned, float original, RoundingModeFlags flags, tcu::TestLog& log);
+
+// Given the original 16-bit float value, computes the corresponding 32-bit
+// float value and compares with the returned 32-bit float value.
+// Returns true if they are considered as equal.
+//
+// The following equivalence criteria are respected:
+// * Positive and negative zeros are considered equivalent.
+// * Denormalized floats are allowed to be flushed to zeros, including
+//   * Inputted 16bit denormalized float
+//   * Generated 32bit denormalized float
+// * Different bit patterns of NaNs are allowed.
+// * For the rest, require exactly the same bit pattern.
+bool compare16BitFloat (deUint16 returned, float original, tcu::TestLog& log);
 
 // Compare the returned 32-bit float against its expected value.
 //
