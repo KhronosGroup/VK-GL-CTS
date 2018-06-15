@@ -283,6 +283,99 @@ Move<VkPipeline> makeGraphicsPipeline(const DeviceInterface&						vk,
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
+Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
+									   const VkDevice									device,
+									   const VkPipelineLayout							pipelineLayout,
+									   const VkShaderModule								vertexShaderModule,
+									   const VkShaderModule								tessellationControlShaderModule,
+									   const VkShaderModule								tessellationEvalShaderModule,
+									   const VkShaderModule								geometryShaderModule,
+									   const VkShaderModule								fragmentShaderModule,
+									   const VkRenderPass								renderPass,
+									   const deUint32									subpass,
+									   const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo,
+									   const VkPipelineInputAssemblyStateCreateInfo*	inputAssemblyStateCreateInfo,
+									   const VkPipelineTessellationStateCreateInfo*		tessStateCreateInfo,
+									   const VkPipelineViewportStateCreateInfo*			viewportStateCreateInfo,
+									   const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo,
+									   const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo,
+									   const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo,
+									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo,
+									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo)
+{
+	VkPipelineShaderStageCreateInfo					stageCreateInfo		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType
+		DE_NULL,												// const void*                         pNext
+		0u,														// VkPipelineShaderStageCreateFlags    flags
+		VK_SHADER_STAGE_VERTEX_BIT,								// VkShaderStageFlagBits               stage
+		DE_NULL,												// VkShaderModule                      module
+		"main",													// const char*                         pName
+		DE_NULL													// const VkSpecializationInfo*         pSpecializationInfo
+	};
+
+	std::vector<VkPipelineShaderStageCreateInfo>	pipelineShaderStageParams;
+
+	{
+		stageCreateInfo.stage	= VK_SHADER_STAGE_VERTEX_BIT;
+		stageCreateInfo.module	= vertexShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	if (tessellationControlShaderModule != DE_NULL)
+	{
+		stageCreateInfo.stage	= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+		stageCreateInfo.module	= tessellationControlShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	if (tessellationEvalShaderModule != DE_NULL)
+	{
+		stageCreateInfo.stage	= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+		stageCreateInfo.module	= tessellationEvalShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	if (geometryShaderModule != DE_NULL)
+	{
+		stageCreateInfo.stage	= VK_SHADER_STAGE_GEOMETRY_BIT;
+		stageCreateInfo.module	= geometryShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	if (fragmentShaderModule != DE_NULL)
+	{
+		stageCreateInfo.stage	= VK_SHADER_STAGE_FRAGMENT_BIT;
+		stageCreateInfo.module	= fragmentShaderModule;
+		pipelineShaderStageParams.push_back(stageCreateInfo);
+	}
+
+	const VkGraphicsPipelineCreateInfo				pipelineCreateInfo	=
+	{
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType
+		DE_NULL,											// const void*                                      pNext
+		0u,													// VkPipelineCreateFlags                            flags
+		(deUint32)pipelineShaderStageParams.size(),			// deUint32                                         stageCount
+		&pipelineShaderStageParams[0],						// const VkPipelineShaderStageCreateInfo*           pStages
+		vertexInputStateCreateInfo,							// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState
+		inputAssemblyStateCreateInfo,						// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState
+		tessStateCreateInfo,								// const VkPipelineTessellationStateCreateInfo*     pTessellationState
+		viewportStateCreateInfo,							// const VkPipelineViewportStateCreateInfo*         pViewportState
+		rasterizationStateCreateInfo,						// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState
+		multisampleStateCreateInfo,							// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState
+		depthStencilStateCreateInfo,						// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState
+		colorBlendStateCreateInfo,							// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState
+		dynamicStateCreateInfo,								// const VkPipelineDynamicStateCreateInfo*          pDynamicState
+		pipelineLayout,										// VkPipelineLayout                                 layout
+		renderPass,											// VkRenderPass                                     renderPass
+		subpass,											// deUint32                                         subpass
+		DE_NULL,											// VkPipeline                                       basePipelineHandle
+		0													// deInt32                                          basePipelineIndex;
+	};
+
+	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
+}
+
 Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 								   const VkDevice				device,
 								   const VkFormat				colorFormat,
