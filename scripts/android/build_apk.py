@@ -190,8 +190,8 @@ class Configuration:
 		if not NDKEnv.isHostOsSupported(self.env.ndk.hostOsName):
 			raise Exception("NDK '%s' is not supported on this machine" % self.env.ndk.hostOsName)
 
-		if self.env.ndk.version[0] < 15 and self.env.ndk.version[0] != 11:
-			raise Exception("Android NDK version %d is not supported; build requires NDK version 11c or >= 15" % (self.env.ndk.version[0]))
+		if self.env.ndk.version[0] < 15:
+			raise Exception("Android NDK version %d is not supported; build requires NDK version >= 15" % (self.env.ndk.version[0]))
 
 		if self.env.sdk.buildToolsVersion == (0,0,0):
 			raise Exception("No build tools directory found at %s" % os.path.join(self.env.sdk.path, "build-tools"))
@@ -329,12 +329,8 @@ def buildNativeLibrary (config, abiName):
 		return "r%d%s" % (version[0], minorVersionString)
 
 	def getBuildArgs (config, abiName):
-		if config.env.ndk.version[0] == 11:
-			toolchain = 'ndk-%s' % makeNDKVersionString((config.env.ndk.version[0], 0))
-		else:
-			toolchain = 'ndk-modern'
 		return ['-DDEQP_TARGET=android',
-				'-DDEQP_TARGET_TOOLCHAIN=%s' % toolchain,
+				'-DDEQP_TARGET_TOOLCHAIN=ndk-modern',
 				'-DCMAKE_C_FLAGS=-Werror',
 				'-DCMAKE_CXX_FLAGS=-Werror',
 				'-DANDROID_NDK_HOST_OS=%s' % config.env.ndk.hostOsName,
