@@ -29,6 +29,7 @@
 import os
 import re
 import sys
+import glob
 import string
 import shutil
 import argparse
@@ -168,7 +169,7 @@ class Environment:
 		self.ndk		= ndk
 
 class Configuration:
-	def __init__(self, env, buildPath, abis, nativeApi, nativeBuildType, gtfTarget, verbose):
+	def __init__(self, env, buildPath, abis, nativeApi, nativeBuildType, gtfTarget, verbose, layers):
 		self.env				= env
 		self.sourcePath			= DEQP_DIR
 		self.buildPath			= buildPath
@@ -178,6 +179,7 @@ class Configuration:
 		self.nativeBuildType	= nativeBuildType
 		self.gtfTarget			= gtfTarget
 		self.verbose			= verbose
+		self.layers				= layers
 		self.cmakeGenerator		= selectFirstAvailableGenerator([NINJA_GENERATOR, MAKEFILE_GENERATOR, NMAKE_GENERATOR])
 
 	def check (self):
@@ -709,6 +711,17 @@ class AddNativeLibsToAPK (BuildStep):
 			shutil.copyfile(libSrcPath, libAbsPath)
 			libFiles.append(libRelPath)
 
+			if config.layers:
+				layersGlob = os.path.join(config.layers, abi, "libVkLayer_*.so")
+				libVkLayers = glob.glob(layersGlob)
+				for layer in libVkLayers:
+					layerFilename = os.path.basename(layer)
+					layerRelPath = os.path.join("lib", abi, layerFilename)
+					layerAbsPath = os.path.join(pkgPath, layerRelPath)
+					shutil.copyfile(layer, layerAbsPath)
+					libFiles.append(layerRelPath)
+					print "Adding layer binary: %s" % (layer,)
+
 		shutil.copyfile(srcPath, dstPath)
 		addFilesToAPK(config, dstPath, pkgPath, libFiles)
 
@@ -884,6 +897,10 @@ def parseArgs ():
 		default='gles32',
 		choices=['gles32', 'gles31', 'gles3', 'gles2', 'gl'],
 		help="KC-CTS (GTF) target API (only used in openglcts target)")
+	parser.add_argument('--layers-path',
+		dest='layers',
+		default=None,
+		required=False)
 
 	args = parser.parse_args()
 
@@ -918,7 +935,8 @@ if __name__ == "__main__":
 	sdk			= SDKEnv(os.path.realpath(args.sdkPath))
 	buildPath	= os.path.realpath(args.buildRoot)
 	env			= Environment(sdk, ndk)
-	config		= Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget, verbose=args.verbose)
+	config		= Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget, verbose=args.verbose,
+						 layers=args.layers)
 
 	try:
 		config.check()
