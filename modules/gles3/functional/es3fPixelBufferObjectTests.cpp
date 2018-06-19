@@ -565,9 +565,19 @@ TestCase::IterateResult ReadPixelsTest::iterate(void)
 	bool isOk = false;
 
 	if (floatCompare)
-		isOk = tcu::floatThresholdCompare(m_log, "Result comparision", "Result of read pixels to memory compared with result of read pixels to buffer", readRefrence.getLevel(0), readResult, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_RESULT);
+	{
+		const tcu::IVec4	formatBitDepths	= tcu::getTextureFormatBitDepth(readFormat);
+		const float			redThreshold	= 2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().redBits,		formatBitDepths.x()));
+		const float			greenThreshold	= 2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().greenBits,	formatBitDepths.y()));
+		const float			blueThreshold	= 2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().blueBits,	formatBitDepths.z()));
+		const float			alphaThreshold	= 2.0f / (float)(1 << deMin32(m_context.getRenderTarget().getPixelFormat().alphaBits,	formatBitDepths.w()));
+
+		isOk = tcu::floatThresholdCompare(m_log, "Result comparision", "Result of read pixels to memory compared with result of read pixels to buffer", readRefrence.getLevel(0), readResult, tcu::Vec4(redThreshold, greenThreshold, blueThreshold, alphaThreshold), tcu::COMPARE_LOG_RESULT);
+	}
 	else
+	{
 		isOk = tcu::intThresholdCompare(m_log, "Result comparision", "Result of read pixels to memory compared with result of read pixels to buffer", readRefrence.getLevel(0), readResult, tcu::UVec4(0, 0, 0, 0), tcu::COMPARE_LOG_RESULT);
+	}
 
 	GLU_CHECK_CALL(glBindBuffer(GL_PIXEL_PACK_BUFFER, pixelBuffer));
 	GLU_CHECK_CALL(glUnmapBuffer(GL_PIXEL_PACK_BUFFER));
