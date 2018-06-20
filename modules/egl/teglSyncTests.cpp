@@ -1293,9 +1293,6 @@ void ReusableSyncTests::init (void)
 		// eglDestroySyncKHR tests
 		valid->addChild(new DestroySyncTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
 
-		// eglWaitSyncKHR tests
-		valid->addChild(new WaitSyncTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
-
 		addChild(valid);
 	}
 
@@ -1325,7 +1322,6 @@ void ReusableSyncTests::init (void)
 		// eglWaitSyncKHR tests
 		invalid->addChild(new WaitSyncInvalidDisplayTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
 		invalid->addChild(new WaitSyncInvalidSyncTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
-		invalid->addChild(new WaitSyncInvalidFlagTest(m_eglTestCtx, EGL_SYNC_REUSABLE_KHR));
 
 		addChild(invalid);
 	}
