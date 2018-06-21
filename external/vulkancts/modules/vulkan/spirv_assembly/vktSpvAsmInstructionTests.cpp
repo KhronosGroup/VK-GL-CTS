@@ -8128,6 +8128,7 @@ tcu::TestCaseGroup* createSConvertTests (tcu::TestContext& testCtx)
 		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64)
 		{
 			spec.extensions.push_back("VK_KHR_16bit_storage");
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 		}
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "Convert integers with OpSConvert.", spec, test->m_features));
@@ -8165,6 +8166,7 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 		if (test->m_features == COMPUTE_TEST_USES_INT16 || test->m_features == COMPUTE_TEST_USES_INT16_INT64)
 		{
 			spec.extensions.push_back("VK_KHR_16bit_storage");
+			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 		}
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, test->m_name.c_str(), "Convert integers with OpUConvert.", spec, test->m_features));
