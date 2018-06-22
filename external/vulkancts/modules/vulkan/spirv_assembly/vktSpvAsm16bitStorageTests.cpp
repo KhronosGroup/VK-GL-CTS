@@ -6659,7 +6659,7 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 
 		// ssbo64[] <- convert ssbo16[] to 64bit float
 		const StringTemplate testFun		(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -6769,7 +6769,7 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 
 		// ssbo64[] <- convert ssbo16[] to 64bit float
 		const StringTemplate testFun		(
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -6883,7 +6883,7 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 			"OpDecorate %ssbo16 Binding 0\n");
 
 		fragments["testfun"]				=
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -6998,7 +6998,7 @@ void addGraphics16BitStoragePushConstantFloat16To64Group (tcu::TestCaseGroup* te
 	getDefaultColors(defaultColors);
 
 	const StringTemplate	testFun		(
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 		"    %param = OpFunctionParameter %v4f32\n"
 
 		"%entry = OpLabel\n"
@@ -7421,7 +7421,7 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 			"${rounddecor}\n");
 
 		fragments["testfun"]				=
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -7517,7 +7517,7 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 
 		// ssbo16[] <- convert ssbo64[] to 16bit float
 		fragments["testfun"]				=
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"
@@ -7618,7 +7618,7 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 			"${rounddecor}\n");
 
 		fragments["testfun"]				=
-			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
 			"    %param = OpFunctionParameter %v4f32\n"
 
 			"%entry = OpLabel\n"

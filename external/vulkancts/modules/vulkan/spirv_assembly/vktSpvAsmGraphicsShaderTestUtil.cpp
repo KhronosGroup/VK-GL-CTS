@@ -3915,7 +3915,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 					if (!compare16BitFloat64(original[eleNdx], actual[eleNdx], instance.interfaces.getRoundingMode(), context.getTestContext().getLog()))
 						equal = false;
 			}
-			else if (outputType.elementType == NUMBERTYPE_FLOAT16 && inputType.elementType == NUMBERTYPE_FLOAT32)
+			else if (outputType.elementType == NUMBERTYPE_FLOAT16 && inputType.elementType != NUMBERTYPE_FLOAT64)
 			{
 				if (inputType.elementType == NUMBERTYPE_FLOAT16)
 				{
