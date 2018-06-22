@@ -1,0 +1,28 @@
+[compute shader]
+#version 450
+
+layout(std140, push_constant) uniform push_constants {
+        float in_value;
+};
+
+layout(std140, binding = 0) buffer ssbo {
+        float out_value;
+};
+
+void
+main()
+{
+        out_value = sqrt(in_value);
+}
+
+[test]
+# Allocate an ssbo big enough for a float at binding 0
+ssbo 0 4
+
+# Set the push constant as an input value
+uniform float 0 <INPUT>
+
+compute 1 1 1
+
+# Probe that we got the expected value
+probe ssbo float 0 0 == <OUTPUT>

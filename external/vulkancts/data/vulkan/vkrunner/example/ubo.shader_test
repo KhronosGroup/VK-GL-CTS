@@ -1,0 +1,54 @@
+[vertex shader]
+#version 450
+
+layout(location = 0) out vec4 color_out;
+layout(location = 0) in vec4 pos;
+
+layout(binding = 3, std140) uniform block {
+        vec4 color_in;
+        mat2 transform;
+        float offsets[4];
+};
+
+void
+main()
+{
+        gl_Position = vec4(transform * pos.xy, 0.0, 1.0);
+        color_out = color_in;
+
+        for (int i = 0; i < offsets.length(); i++)
+                color_out[i] += offsets[i];
+}
+
+[fragment shader]
+#version 450
+
+layout(location = 0) in vec4 color_in;
+layout(location = 0) out vec4 color_out;
+
+void
+main()
+{
+        color_out = color_in;
+}
+
+[test]
+clear
+
+uniform ubo 3 mat2 16 0.0 1.0 1.0 0.0
+
+# Sets the offset array. Arrays can be specified by listing multiple values
+uniform ubo 3 float 48 0.1 0.2 0.3 0.4
+
+# Note that we can’t update the ubo and then draw another square
+# without first probing because the command buffer isn’t flushed
+# until a probe. Otherwise it would end up just using the second
+# set of values in the ubo for both rectangles.
+
+uniform ubo 3 vec4 0 -0.1 0.8 -0.3 0.6
+draw rect -1 -1 1 2
+relative probe rect rgba (0.0, 0.0, 1.0, 0.5) (0.0, 1.0, 0.0, 1.0)
+
+uniform ubo 3 vec4 0 -0.1 0.6 -0.3 0.6
+draw rect 0 -1 1 2
+relative probe rect rgba (0.0, 0.5, 1.0, 0.5) (0.0, 0.8, 0.0, 1.0)

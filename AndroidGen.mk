@@ -355,6 +355,8 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
+	external/vulkancts/modules/vulkan/vkrunner/vktVkRunnerExampleTests.cpp \
+	external/vulkancts/modules/vulkan/vkrunner/vktVkRunnerTestCase.cpp \
 	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
 	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
 	external/vulkancts/modules/vulkan/vktTestCase.cpp \
@@ -1094,6 +1096,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/texture \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/util \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/vkrunner \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ycbcr \
 	$(deqp_dir)/framework/common \
