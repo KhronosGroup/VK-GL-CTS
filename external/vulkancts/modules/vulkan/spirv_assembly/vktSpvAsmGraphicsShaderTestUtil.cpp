@@ -2419,6 +2419,13 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		TCU_THROW(NotSupportedError, "Geometry not supported");
 	}
 
+	// Check all required extensions are supported
+	for (std::vector<std::string>::const_iterator i = instance.requiredDeviceExtensions.begin(); i != instance.requiredDeviceExtensions.end(); ++i)
+	{
+		if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), *i))
+			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
+	}
+
 	{
 		for (deUint32 featureNdx = 0; featureNdx < instance.requiredDeviceFeatures.size(); ++featureNdx)
 		{
