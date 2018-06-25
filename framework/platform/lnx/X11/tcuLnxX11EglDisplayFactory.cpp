@@ -81,17 +81,17 @@ public:
 
 	eglw::EGLBoolean copyBuffers (eglw::EGLDisplay dpy, eglw::EGLSurface surface, eglw::EGLNativePixmapType target) const
 	{
-		return ((eglX11CopyBuffersFunc)m_egl.copyBuffers)(dpy, surface, reinterpret_cast<EGLNativePixmapType>(target));
+		return (m_egl.copyBuffers)(dpy, surface, reinterpret_cast<EGLNativePixmapType*>(target));
 	}
 
 	eglw::EGLSurface createPixmapSurface (eglw::EGLDisplay dpy, eglw::EGLConfig config, eglw::EGLNativePixmapType pixmap, const eglw::EGLint *attrib_list) const
 	{
-		return ((eglX11CreatePixmapSurfaceFunc)m_egl.createPixmapSurface)(dpy, config, reinterpret_cast<EGLNativePixmapType>(pixmap), attrib_list);
+		return (m_egl.createPixmapSurface)(dpy, config, reinterpret_cast<EGLNativePixmapType*>(pixmap), attrib_list);
 	}
 
 	eglw::EGLSurface createWindowSurface (eglw::EGLDisplay dpy, eglw::EGLConfig config, eglw::EGLNativeWindowType win, const eglw::EGLint *attrib_list) const
 	{
-		return ((eglX11CreateWindowSurfaceFunc)m_egl.createWindowSurface)(dpy, config, reinterpret_cast<EGLNativeWindowType>(win), attrib_list);
+		return (m_egl.createWindowSurface)(dpy, config, reinterpret_cast<EGLNativeWindowType*>(win), attrib_list);
 	}
 
 	eglw::EGLDisplay getDisplay (eglw::EGLNativeDisplayType display_id) const

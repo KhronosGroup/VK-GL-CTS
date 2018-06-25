@@ -146,7 +146,7 @@ void populateBufferWithValues (void*				buffer,
 							   VkDeviceSize			size,
 							   const void* const	blob)
 {
-	populateBufferWithTestValues(buffer, size, *static_cast<const vk::VkFormat* const>(blob));
+	populateBufferWithTestValues(buffer, size, *static_cast<const vk::VkFormat*>(blob));
 }
 
 // An adapter function matching FillBufferProcPtr interface. Fills a buffer with 0xBABABABABABA... pattern. Used to fill up output buffers.

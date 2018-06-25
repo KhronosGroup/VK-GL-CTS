@@ -724,7 +724,7 @@ TessellationShaderVertexSpacing::_tess_edges TessellationShaderVertexSpacing::ge
 		for (unsigned int n_edge_ptr = 0; n_edge_ptr < n_edge_ptrs; ++n_edge_ptr)
 		{
 			const std::vector<_tess_coordinate_cartesian>& edge			   = *edge_ptrs[n_edge_ptr];
-			const unsigned int							   n_edge_vertices = (const unsigned int)edge.size();
+			const unsigned int							   n_edge_vertices = (unsigned int)edge.size();
 
 			for (unsigned int n_edge_vertex = 0; n_edge_vertex < n_edge_vertices; ++n_edge_vertex)
 			{
@@ -1126,7 +1126,7 @@ void TessellationShaderVertexSpacing::verifyEdges(const _tess_edges& edges, cons
 		/* Take two subsequent points if they are available. Vertex spacing has no meaning
 		 * in a world of degenerate edges, so skip the check if we have just encountered one.
 		 */
-		const unsigned int n_points = (const unsigned int)edge.points.size();
+		const unsigned int n_points = (unsigned int)edge.points.size();
 
 		if (n_points < 2)
 		{

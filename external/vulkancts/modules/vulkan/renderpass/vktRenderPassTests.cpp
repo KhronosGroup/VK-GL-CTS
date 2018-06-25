@@ -549,7 +549,8 @@ public:
 																	 const vector<AttachmentReference>&	colorAttachments,
 																	 const vector<AttachmentReference>&	resolveAttachments,
 																	 AttachmentReference				depthStencilAttachment,
-																	 const vector<deUint32>&			preserveAttachments)
+																	 const vector<deUint32>&			preserveAttachments,
+																	 bool								omitBlendState = false)
 		: m_pipelineBindPoint		(pipelineBindPoint)
 		, m_flags					(flags)
 		, m_inputAttachments		(inputAttachments)
@@ -557,6 +558,7 @@ public:
 		, m_resolveAttachments		(resolveAttachments)
 		, m_depthStencilAttachment	(depthStencilAttachment)
 		, m_preserveAttachments		(preserveAttachments)
+		, m_omitBlendState			(omitBlendState)
 	{
 	}
 
@@ -567,6 +569,7 @@ public:
 	const vector<AttachmentReference>&	getResolveAttachments		(void) const { return m_resolveAttachments;		}
 	const AttachmentReference&			getDepthStencilAttachment	(void) const { return m_depthStencilAttachment;	}
 	const vector<deUint32>&				getPreserveAttachments		(void) const { return m_preserveAttachments;	}
+	bool								getOmitBlendState			(void) const { return m_omitBlendState;			}
 
 private:
 	VkPipelineBindPoint					m_pipelineBindPoint;
@@ -578,6 +581,7 @@ private:
 	AttachmentReference					m_depthStencilAttachment;
 
 	vector<deUint32>					m_preserveAttachments;
+	bool								m_omitBlendState;
 };
 
 class SubpassDependency
@@ -1557,6 +1561,11 @@ VkImageAspectFlagBits getPrimaryImageAspect (tcu::TextureFormat::ChannelOrder or
 	}
 }
 
+deUint32 getAttachmentNdx (const vector<AttachmentReference>& colorAttachments, size_t ndx)
+{
+	return (colorAttachments[ndx].getAttachment() == VK_ATTACHMENT_UNUSED) ? (deUint32)ndx : colorAttachments[ndx].getAttachment();
+}
+
 class RenderQuad
 {
 public:
@@ -1653,6 +1662,7 @@ public:
 																	 deUint32							drawStartNdx,
 
 																	 bool								isSecondary_,
+																	 bool								omitBlendState_,
 
 																	 const UVec2&						viewportOffset,
 																	 const UVec2&						viewportSize,
@@ -1665,6 +1675,7 @@ public:
 		, m_subpassIndex		(subpassIndex)
 		, m_drawStartNdx		(drawStartNdx)
 		, m_isSecondary			(isSecondary_)
+		, m_omitBlendState		(omitBlendState_)
 		, m_flags				(renderPass.getSubpasses()[subpassIndex].getFlags())
 		, m_renderQuad			(renderQuad)
 		, m_colorClears			(colorClears)
@@ -1673,7 +1684,7 @@ public:
 		, m_inputAttachments	(renderPass.getSubpasses()[subpassIndex].getInputAttachments())
 	{
 		for (deUint32 attachmentNdx = 0; attachmentNdx < (deUint32)m_colorAttachments.size(); attachmentNdx++)
-			m_colorAttachmentInfo.push_back(renderPass.getAttachments()[m_colorAttachments[attachmentNdx].getAttachment()]);
+			m_colorAttachmentInfo.push_back(renderPass.getAttachments()[getAttachmentNdx(m_colorAttachments, attachmentNdx)]);
 
 		if (renderPass.getSubpasses()[subpassIndex].getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED)
 		{
@@ -1688,6 +1699,7 @@ public:
 	deUint32						getSubpassIndex					(void) const { return m_subpassIndex;		}
 	deUint32						getDrawStartNdx					(void) const { return m_drawStartNdx;		}
 	bool							isSecondary						(void) const { return m_isSecondary;		}
+	bool							getOmitBlendState				(void) const { return m_omitBlendState;		}
 
 	const Maybe<RenderQuad>&		getRenderQuad					(void) const { return m_renderQuad;			}
 	const vector<ColorClear>&		getColorClears					(void) const { return m_colorClears;		}
@@ -1713,6 +1725,7 @@ private:
 	deUint32						m_subpassIndex;
 	deUint32						m_drawStartNdx;
 	bool							m_isSecondary;
+	bool							m_omitBlendState;
 	VkSubpassDescriptionFlags		m_flags;
 
 	Maybe<RenderQuad>				m_renderQuad;
@@ -1736,19 +1749,19 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 										VkPipelineLayout			pipelineLayout,
 										const SubpassRenderInfo&	renderInfo)
 {
-	Maybe<VkSampleCountFlagBits>				rasterSamples;
-	vector<VkPipelineColorBlendAttachmentState>	attachmentBlendStates;
+	Maybe<VkSampleCountFlagBits>					rasterSamples;
+	vector<VkPipelineColorBlendAttachmentState>		attachmentBlendStates;
 
 	for (deUint32 attachmentNdx = 0; attachmentNdx < renderInfo.getColorAttachmentCount(); attachmentNdx++)
 	{
-		const Attachment&	attachment	= renderInfo.getColorAttachment(attachmentNdx);
+		const Attachment& attachment = renderInfo.getColorAttachment(attachmentNdx);
 
 		DE_ASSERT(!rasterSamples || *rasterSamples == attachment.getSamples());
 
 		rasterSamples = attachment.getSamples();
 
 		{
-			const VkPipelineColorBlendAttachmentState	attachmentBlendState =
+			const VkPipelineColorBlendAttachmentState attachmentBlendState =
 			{
 				VK_FALSE,																									// blendEnable
 				VK_BLEND_FACTOR_SRC_ALPHA,																					// srcBlendColor
@@ -1777,20 +1790,22 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 	if (!rasterSamples)
 		rasterSamples = VK_SAMPLE_COUNT_1_BIT;
 
-	const VkVertexInputBindingDescription vertexBinding =
+	const VkVertexInputBindingDescription			vertexBinding		=
 	{
 		0u,															// binding
 		(deUint32)sizeof(tcu::Vec2),								// strideInBytes
 		VK_VERTEX_INPUT_RATE_VERTEX,								// stepRate
 	};
-	const VkVertexInputAttributeDescription vertexAttrib =
+
+	const VkVertexInputAttributeDescription			vertexAttrib		=
 	{
 		0u,															// location
 		0u,															// binding
 		VK_FORMAT_R32G32_SFLOAT,									// format
 		0u,															// offsetInBytes
 	};
-	const VkPipelineVertexInputStateCreateInfo vertexInputState =
+
+	const VkPipelineVertexInputStateCreateInfo		vertexInputState	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	//	sType
 		DE_NULL,													//	pNext
@@ -1800,20 +1815,58 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		1u,															//	attributeCount
 		&vertexAttrib,												//	pVertexAttributeDescriptions
 	};
-	const VkViewport viewport =
+
+	const VkPipelineInputAssemblyStateCreateInfo	inputAssemblyState	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType
+		DE_NULL,														// const void*                                pNext
+		0u,																// VkPipelineInputAssemblyStateCreateFlags    flags
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// VkPrimitiveTopology                        topology
+		VK_FALSE														// VkBool32                                   primitiveRestartEnable
+	};
+
+	const VkViewport								viewport			=
 	{
 		(float)renderInfo.getViewportOffset().x(),	(float)renderInfo.getViewportOffset().y(),
 		(float)renderInfo.getViewportSize().x(),	(float)renderInfo.getViewportSize().y(),
 		0.0f, 1.0f
 	};
-	const std::vector<VkViewport> viewports (1, viewport);
-	const VkRect2D scissor =
+
+	const VkRect2D									scissor				=
 	{
 		{ (deInt32)renderInfo.getViewportOffset().x(),	(deInt32)renderInfo.getViewportOffset().y() },
 		{ renderInfo.getViewportSize().x(),				renderInfo.getViewportSize().y() }
 	};
-	const std::vector<VkRect2D> scissors (1, scissor);
-	const VkPipelineMultisampleStateCreateInfo multisampleState =
+
+	const VkPipelineViewportStateCreateInfo			viewportState		=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                             sType
+		DE_NULL,												// const void*                                 pNext
+		(VkPipelineViewportStateCreateFlags)0,					// VkPipelineViewportStateCreateFlags          flags
+		1u,														// deUint32                                    viewportCount
+		&viewport,												// const VkViewport*                           pViewports
+		1u,														// deUint32                                    scissorCount
+		&scissor												// const VkRect2D*                             pScissors
+	};
+
+	const VkPipelineRasterizationStateCreateInfo	rasterizationState	=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType
+		DE_NULL,													// const void*                                pNext
+		0u,															// VkPipelineRasterizationStateCreateFlags    flags
+		VK_FALSE,													// VkBool32                                   depthClampEnable
+		VK_FALSE,													// VkBool32                                   rasterizerDiscardEnable
+		VK_POLYGON_MODE_FILL,										// VkPolygonMode                              polygonMode
+		VK_CULL_MODE_NONE,											// VkCullModeFlags                            cullMode
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,							// VkFrontFace                                frontFace
+		VK_FALSE,													// VkBool32                                   depthBiasEnable
+		0.0f,														// float                                      depthBiasConstantFactor
+		0.0f,														// float                                      depthBiasClamp
+		0.0f,														// float                                      depthBiasSlopeFactor
+		1.0f														// float                                      lineWidth
+	};
+
+	const VkPipelineMultisampleStateCreateInfo		multisampleState	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,		// sType
 		DE_NULL,														// pNext
@@ -1826,16 +1879,19 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		VK_FALSE,														// alphaToOneEnable
 	};
 	const size_t	stencilIndex	= renderInfo.getSubpassIndex();
+
 	const VkBool32	writeDepth		= renderInfo.getDepthStencilAttachmentLayout()
 										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL
 									? VK_TRUE
 									: VK_FALSE;
+
 	const VkBool32	writeStencil	= renderInfo.getDepthStencilAttachmentLayout()
 										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 										&& *renderInfo.getDepthStencilAttachmentLayout() != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
 									? VK_TRUE
 									: VK_FALSE;
+
 	const VkPipelineDepthStencilStateCreateInfo depthStencilState =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// sType
@@ -1868,6 +1924,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		0.0f,														// minDepthBounds;
 		1.0f														// maxDepthBounds;
 	};
+
 	const VkPipelineColorBlendStateCreateInfo blendState =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,			// sType
@@ -1880,25 +1937,25 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		{ 0.0f, 0.0f, 0.0f, 0.0f }											// blendConst
 	};
 
-	return makeGraphicsPipeline(vk,										// const DeviceInterface&                        vk
-								device,									// const VkDevice                                device
-								pipelineLayout,							// const VkPipelineLayout                        pipelineLayout
-								vertexShaderModule,						// const VkShaderModule                          vertexShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationControlShaderModule
-								DE_NULL,								// const VkShaderModule                          tessellationEvalShaderModule
-								DE_NULL,								// const VkShaderModule                          geometryShaderModule
-								fragmentShaderModule,					// const VkShaderModule                          fragmentShaderModule
-								renderPass,								// const VkRenderPass                            renderPass
-								viewports,								// const std::vector<VkViewport>&                viewports
-								scissors,								// const std::vector<VkRect2D>&                  scissors
-								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,	// const VkPrimitiveTopology                     topology
-								renderInfo.getSubpassIndex(),			// const deUint32                                subpass
-								0u,										// const deUint32                                patchControlPoints
-								&vertexInputState,						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-								DE_NULL,								// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-								&multisampleState,						// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-								&depthStencilState,						// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
-								&blendState);							// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+	return makeGraphicsPipeline(vk,								// const DeviceInterface&                        vk
+								device,							// const VkDevice                                device
+								pipelineLayout,					// const VkPipelineLayout                        pipelineLayout
+								vertexShaderModule,				// const VkShaderModule                          vertexShaderModule
+								DE_NULL,						// const VkShaderModule                          tessellationControlShaderModule
+								DE_NULL,						// const VkShaderModule                          tessellationEvalShaderModule
+								DE_NULL,						// const VkShaderModule                          geometryShaderModule
+								fragmentShaderModule,			// const VkShaderModule                          fragmentShaderModule
+								renderPass,						// const VkRenderPass                            renderPass
+								renderInfo.getSubpassIndex(),	// const deUint32                                subpass
+								&vertexInputState,				// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+								&inputAssemblyState,			// const VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;
+								DE_NULL,						// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+								&viewportState,					// const VkPipelineViewportStateCreateInfo*      pViewportStat;
+								&rasterizationState,			// const VkPipelineRasterizationStateCreateInfo* pRasterizationState
+								&multisampleState,				// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+								&depthStencilState,				// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+								renderInfo.getOmitBlendState()
+									? DE_NULL : &blendState);	// const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
 }
 
 class SubpassRenderer
@@ -1925,7 +1982,12 @@ public:
 		vector<VkDescriptorSetLayoutBinding>	bindings;
 
 		for (deUint32 colorAttachmentNdx = 0; colorAttachmentNdx < renderInfo.getColorAttachmentCount();  colorAttachmentNdx++)
-			m_colorAttachmentImages.push_back(attachmentImages[renderInfo.getColorAttachmentIndex(colorAttachmentNdx)]);
+		{
+			const deUint32 attachmentNdx	= (renderInfo.getColorAttachmentIndex(colorAttachmentNdx) == VK_ATTACHMENT_UNUSED) ? colorAttachmentNdx
+											: renderInfo.getColorAttachmentIndex(colorAttachmentNdx);
+
+			m_colorAttachmentImages.push_back(attachmentImages[attachmentNdx]);
+		}
 
 		if (renderInfo.getDepthStencilAttachmentIndex())
 			m_depthStencilAttachmentImage = attachmentImages[*renderInfo.getDepthStencilAttachmentIndex()];
@@ -2990,9 +3052,9 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 		// Apply load op if attachment was used for the first time
 		for (size_t attachmentNdx = 0; attachmentNdx < colorAttachments.size(); attachmentNdx++)
 		{
-			const deUint32 attachmentIndex = colorAttachments[attachmentNdx].getAttachment();
+			const deUint32 attachmentIndex = getAttachmentNdx(colorAttachments, attachmentNdx);
 
-			if (!attachmentUsed[attachmentIndex])
+			if (!attachmentUsed[attachmentIndex] && colorAttachments[attachmentNdx].getAttachment() != VK_ATTACHMENT_UNUSED)
 			{
 				const Attachment&			attachment	= renderPassInfo.getAttachments()[attachmentIndex];
 				vector<PixelValue>&			reference	= referenceAttachments[attachmentIndex];
@@ -3100,6 +3162,10 @@ void renderReferenceValues (vector<vector<PixelValue> >&		referenceAttachments,
 				for (size_t attachmentRefNdx = drawStartNdx; attachmentRefNdx < subpass.getColorAttachments().size(); attachmentRefNdx++)
 				{
 					const deUint32				attachmentIndex	= subpass.getColorAttachments()[attachmentRefNdx].getAttachment();
+
+					if (attachmentIndex == VK_ATTACHMENT_UNUSED)
+						continue;
+
 					const Attachment&			attachment		= renderPassInfo.getAttachments()[attachmentIndex];
 					const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
 					const tcu::BVec4			channelMask		= tcu::getTextureFormatChannelMask(format);
@@ -3805,9 +3871,7 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 
 			for (size_t attachmentNdx = config.drawStartNdx; attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
 			{
-				const Attachment	attachment		= config.renderPass.getAttachments()[subpass.getColorAttachments()[attachmentNdx].getAttachment()];
-				std::string			attachmentType	= getAttachmentType(attachment.getFormat(), config.useFormatCompCount);
-
+				const std::string attachmentType = getAttachmentType(config.renderPass.getAttachments()[getAttachmentNdx(subpass.getColorAttachments(), attachmentNdx)].getFormat(), config.useFormatCompCount);
 				fragmentShader << "layout(location = " << attachmentNdx << ") out highp " << attachmentType << " o_color" << attachmentNdx << ";\n";
 			}
 
@@ -3818,10 +3882,14 @@ void createTestShaders (SourceCollections& dst, TestConfig config)
 				for (size_t attachmentNdx = config.drawStartNdx; attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
 				{
 					const deUint32				attachmentIndex	= subpass.getColorAttachments()[attachmentNdx].getAttachment();
+
+					if (attachmentIndex == VK_ATTACHMENT_UNUSED)
+						continue;
+
 					const Attachment			attachment		= config.renderPass.getAttachments()[attachmentIndex];
 					const tcu::TextureFormat	format			= mapVkFormat(attachment.getFormat());
 					const size_t				componentCount	= config.useFormatCompCount ? (size_t)tcu::getNumUsedChannels(format.order) : 4;
-					std::string					attachmentType	= getAttachmentType(attachment.getFormat(), config.useFormatCompCount);
+					const std::string			attachmentType	= getAttachmentType(attachment.getFormat(), config.useFormatCompCount);
 
 					fragmentShader << "\to_color" << attachmentNdx << " = " << attachmentType << "(" << attachmentType + "(";
 
@@ -4235,8 +4303,7 @@ void initializeSubpassClearValues (de::Random& rng, vector<vector<VkClearColorVa
 
 		for (size_t attachmentRefNdx = 0; attachmentRefNdx < colorAttachments.size(); attachmentRefNdx++)
 		{
-			const AttachmentReference&	attachmentRef	= colorAttachments[attachmentRefNdx];
-			const Attachment&			attachment		= renderPass.getAttachments()[attachmentRef.getAttachment()];
+			const Attachment& attachment = renderPass.getAttachments()[getAttachmentNdx(colorAttachments, attachmentRefNdx)];
 
 			clearValues[subpassNdx][attachmentRefNdx] = randomColorClearValue(attachment, rng, useFormatCompCount);
 		}
@@ -4343,6 +4410,7 @@ void initializeSubpassRenderInfo (vector<SubpassRenderInfo>& renderInfos, de::Ra
 		const Subpass&				subpass				= subpasses[subpassNdx];
 		const bool					subpassIsSecondary	= commandBuffer == TestConfig::COMMANDBUFFERTYPES_SECONDARY
 														|| (commandBuffer & TestConfig::COMMANDBUFFERTYPES_SECONDARY && !lastSubpassWasSecondary) ? true : false;
+		const bool					omitBlendState		= subpass.getOmitBlendState();
 		const UVec2					viewportSize		((config.renderSize * UVec2(2)) / UVec2(3));
 		const UVec2					viewportOffset		(config.renderPos.x() + (subpassNdx % 2) * (config.renderSize.x() / 3),
 														 config.renderPos.y() + ((subpassNdx / 2) % 2) * (config.renderSize.y() / 3));
@@ -4395,7 +4463,7 @@ void initializeSubpassRenderInfo (vector<SubpassRenderInfo>& renderInfos, de::Ra
 			renderQuad = tcu::just(RenderQuad(tcu::Vec2(x0, y0), tcu::Vec2(x1, y1)));
 		}
 
-		renderInfos.push_back(SubpassRenderInfo(renderPass, subpassNdx, config.drawStartNdx, subpassIsSecondary, viewportOffset, viewportSize, renderQuad, colorClears, depthStencilClear));
+		renderInfos.push_back(SubpassRenderInfo(renderPass, subpassNdx, config.drawStartNdx, subpassIsSecondary, omitBlendState, viewportOffset, viewportSize, renderQuad, colorClears, depthStencilClear));
 	}
 }
 
@@ -5883,6 +5951,56 @@ void addSimpleTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 										 testConfigExternal.renderPassType);
 
 		addFunctionCaseWithPrograms<TestConfig>(group, "no_attachments", "No attachments case.", createTestShaders, renderPassTest, testConfig);
+	}
+
+	// color_unused_omit_blend_state
+	{
+		vector<Subpass>		subpasses;
+
+		// First subpass: use color attachment, create pipeline with color blend state
+		subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+									0u,
+									vector<AttachmentReference>(),
+									vector<AttachmentReference>(1, AttachmentReference(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
+									vector<AttachmentReference>(),
+									AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+									vector<deUint32>(),
+									false));
+
+		// Second subpass: don't use color attachment, create pipeline without color blend state
+		subpasses.push_back(Subpass(VK_PIPELINE_BIND_POINT_GRAPHICS,
+									0u,
+									vector<AttachmentReference>(),
+									vector<AttachmentReference>(1, AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
+									vector<AttachmentReference>(),
+									AttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_GENERAL),
+									vector<deUint32>(),
+									true));
+
+		const RenderPass	renderPass	(vector<Attachment>(1, Attachment(VK_FORMAT_R8G8B8A8_UNORM,
+																		  VK_SAMPLE_COUNT_1_BIT,
+																		  VK_ATTACHMENT_LOAD_OP_CLEAR,
+																		  VK_ATTACHMENT_STORE_OP_STORE,
+																		  VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+																		  VK_ATTACHMENT_STORE_OP_DONT_CARE,
+																		  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																		  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)),
+										 subpasses,
+										 vector<SubpassDependency>());
+
+		const TestConfig	testConfig	(renderPass,
+										 TestConfig::RENDERTYPES_DRAW,
+										 TestConfig::COMMANDBUFFERTYPES_INLINE,
+										 TestConfig::IMAGEMEMORY_STRICT,
+										 targetSize,
+										 renderPos,
+										 renderSize,
+										 DE_FALSE,
+										 90239,
+										 0,
+										 testConfigExternal.allocationKind,
+										 testConfigExternal.renderPassType);
+		addFunctionCaseWithPrograms<TestConfig>(group, "color_unused_omit_blend_state", "Two unused color attachment case without blend state", createTestShaders, renderPassTest, testConfig);
 	}
 }
 

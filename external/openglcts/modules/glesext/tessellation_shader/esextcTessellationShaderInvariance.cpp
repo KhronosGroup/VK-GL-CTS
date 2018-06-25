@@ -2148,9 +2148,9 @@ void TessellationShaderInvarianceRule5Test::verifyResultData(const void** all_it
 	for (unsigned int n_iteration = 0; n_iteration < 2 /* quads, triangles */; ++n_iteration)
 	{
 		const unsigned int n_base_iteration =
-			(n_iteration == 0) ? 0 : (const unsigned int)m_test_triangles_iterations.size();
-		const unsigned int set_size = (n_iteration == 0) ? (const unsigned int)m_test_triangles_iterations.size() :
-														   (const unsigned int)m_test_quads_iterations.size();
+			(n_iteration == 0) ? 0 : (unsigned int)m_test_triangles_iterations.size();
+		const unsigned int set_size = (n_iteration == 0) ? (unsigned int)m_test_triangles_iterations.size() :
+														   (unsigned int)m_test_quads_iterations.size();
 		const _test_iterations& test_iterations =
 			(n_iteration == 0) ? m_test_triangles_iterations : m_test_quads_iterations;
 
@@ -2418,10 +2418,10 @@ void TessellationShaderInvarianceRule6Test::verifyResultData(const void** all_it
 	for (unsigned int n_iteration = 0; n_iteration < 2 /* quads, triangles */; ++n_iteration)
 	{
 		const unsigned int n_base_iteration =
-			(n_iteration == 0) ? 0 : (const unsigned int)m_test_triangles_iterations.size();
+			(n_iteration == 0) ? 0 : (unsigned int)m_test_triangles_iterations.size();
 
-		const unsigned int n_sets = (n_iteration == 0) ? (const unsigned int)m_test_triangles_iterations.size() :
-														 (const unsigned int)m_test_quads_iterations.size();
+		const unsigned int n_sets = (n_iteration == 0) ? (unsigned int)m_test_triangles_iterations.size() :
+														 (unsigned int)m_test_quads_iterations.size();
 
 		_tessellation_primitive_mode primitive_mode = (n_iteration == 0) ?
 														  TESSELLATION_SHADER_PRIMITIVE_MODE_TRIANGLES :
@@ -2580,7 +2580,7 @@ unsigned int TessellationShaderInvarianceRule7Test::getTestIterationIndex(
 	unsigned int			result  = 0xFFFFFFFF;
 	const _test_iterations& test_iterations =
 		(is_triangles_iteration) ? m_test_triangles_iterations : m_test_quads_iterations;
-	const unsigned int n_test_iterations = (const unsigned int)test_iterations.size();
+	const unsigned int n_test_iterations = (unsigned int)test_iterations.size();
 
 	for (unsigned int n_test_iteration = 0; n_test_iteration < n_test_iterations; ++n_test_iteration)
 	{
@@ -2851,7 +2851,7 @@ void TessellationShaderInvarianceRule7Test::verifyResultData(const void** all_it
 	{
 		bool			   is_triangles_iteration = (n_iteration == 0);
 		const unsigned int n_base_iteration =
-			(n_iteration == 0) ? 0 : (const unsigned int)m_test_triangles_iterations.size();
+			(n_iteration == 0) ? 0 : (unsigned int)m_test_triangles_iterations.size();
 		const unsigned int n_relevant_outer_tess_levels = (is_triangles_iteration) ? 3 : 4;
 
 		_tessellation_primitive_mode primitive_mode = (n_iteration == 0) ?

@@ -158,7 +158,7 @@ bool GetProgramivActiveUniformBlockMaxNameLengthTest::initTest()
 
 	/* Have the shaders compiled successfully? */
 	const glw::GLuint  shader_ids[] = { m_fs_id, m_vs_id };
-	const unsigned int n_shader_ids = static_cast<const unsigned int>(sizeof(shader_ids) / sizeof(shader_ids[0]));
+	const unsigned int n_shader_ids = static_cast<unsigned int>(sizeof(shader_ids) / sizeof(shader_ids[0]));
 
 	for (unsigned int n_shader_id = 0; n_shader_id < n_shader_ids; ++n_shader_id)
 	{
@@ -279,7 +279,7 @@ void InputVariablesCannotBeModifiedTest::deinit()
 	glw::GLuint*		  so_id_ptrs[] = {
 		&m_fs_id, &m_gs_id, &m_tc_id, &m_te_id, &m_vs_id,
 	};
-	const unsigned int n_so_id_ptrs = static_cast<const unsigned int>(sizeof(so_id_ptrs) / sizeof(so_id_ptrs[0]));
+	const unsigned int n_so_id_ptrs = static_cast<unsigned int>(sizeof(so_id_ptrs) / sizeof(so_id_ptrs[0]));
 
 	for (unsigned int n_so_id_ptr = 0; n_so_id_ptr < n_so_id_ptrs; ++n_so_id_ptr)
 	{
@@ -1518,7 +1518,7 @@ tcu::TestNode::IterateResult ParenthesisInLayoutQualifierIntegerValuesTest::iter
 										"#version 440 core\n",
 									cs_body_core };
 	const unsigned int n_cs_body_parts =
-		static_cast<const unsigned int>(sizeof(cs_body_parts) / sizeof(cs_body_parts[0]));
+		static_cast<unsigned int>(sizeof(cs_body_parts) / sizeof(cs_body_parts[0]));
 
 	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_compute_shader"))
 	{
@@ -1650,8 +1650,8 @@ void PerVertexValidationTest::destroyPOsAndSOs()
 	const glw::Functions& gl		   = m_context.getRenderContext().getFunctions();
 	glw::GLuint*		  po_id_ptrs[] = { &m_fs_po_id, &m_gs_po_id, &m_tc_po_id, &m_te_po_id, &m_vs_po_id };
 	glw::GLuint*		  so_id_ptrs[] = { &m_fs_id, &m_gs_id, &m_tc_id, &m_te_id, &m_vs_id };
-	const unsigned int	n_po_id_ptrs = static_cast<const unsigned int>(sizeof(po_id_ptrs) / sizeof(po_id_ptrs[0]));
-	const unsigned int	n_so_id_ptrs = static_cast<const unsigned int>(sizeof(so_id_ptrs) / sizeof(so_id_ptrs[0]));
+	const unsigned int	n_po_id_ptrs = static_cast<unsigned int>(sizeof(po_id_ptrs) / sizeof(po_id_ptrs[0]));
+	const unsigned int	n_so_id_ptrs = static_cast<unsigned int>(sizeof(so_id_ptrs) / sizeof(so_id_ptrs[0]));
 
 	for (unsigned int n_po_id = 0; n_po_id < n_po_id_ptrs; ++n_po_id)
 	{
@@ -2592,7 +2592,7 @@ bool PerVertexValidationTest::runPipelineObjectValidationTestMode(_test_iteratio
 		{ &vs_body, &m_vs_po_id, SHADER_STAGE_VERTEX, GL_VERTEX_SHADER_BIT, GL_VERTEX_SHADER },
 	};
 	const unsigned int n_shader_programs =
-		static_cast<const unsigned int>(sizeof(shader_programs) / sizeof(shader_programs[0]));
+		static_cast<unsigned int>(sizeof(shader_programs) / sizeof(shader_programs[0]));
 
 	/* Make sure the test iteration can actually be run under the running rendering context
 	 * version.
@@ -2776,7 +2776,7 @@ bool PerVertexValidationTest::runSeparateShaderTestMode(_test_iteration iteratio
 					{ &te_body, &m_te_id, SHADER_STAGE_TESSELLATION_EVALUATION, GL_TESS_EVALUATION_SHADER_BIT,
 					  GL_TESS_EVALUATION_SHADER },
 					{ &vs_body, &m_vs_id, SHADER_STAGE_VERTEX, GL_VERTEX_SHADER_BIT, GL_VERTEX_SHADER } };
-	const unsigned int n_shaders = static_cast<const unsigned int>(sizeof(shaders) / sizeof(shaders[0]));
+	const unsigned int n_shaders = static_cast<unsigned int>(sizeof(shaders) / sizeof(shaders[0]));
 
 	/* Retrieve iteration properties */
 	getTestIterationProperties(context_type, iteration, &min_context_type, &used_shader_stages, &gs_body, &tc_body,
@@ -5867,7 +5867,7 @@ tcu::TestNode::IterateResult SparseBuffersWithCopyOpsTest::iterate()
 					 copy_dst_page_offset += static_cast<int>(sizeof(m_reference_data)))
 				{
 					const int copy_src_page_offset =
-						static_cast<const int>(copy_dst_page_offset - sizeof(m_reference_data));
+						static_cast<int>(copy_dst_page_offset - sizeof(m_reference_data));
 
 					switch (n_test_case)
 					{
@@ -5912,7 +5912,7 @@ tcu::TestNode::IterateResult SparseBuffersWithCopyOpsTest::iterate()
 			for (unsigned int n_temp_copy = 0; n_temp_copy < m_result_data_storage_size / sizeof(m_reference_data);
 				 ++n_temp_copy)
 			{
-				const unsigned int cmp_offset = static_cast<const unsigned int>(n_temp_copy * sizeof(m_reference_data));
+				const unsigned int cmp_offset = static_cast<unsigned int>(n_temp_copy * sizeof(m_reference_data));
 
 				if (memcmp(mapped_data + cmp_offset, m_reference_data, sizeof(m_reference_data)) != 0)
 				{

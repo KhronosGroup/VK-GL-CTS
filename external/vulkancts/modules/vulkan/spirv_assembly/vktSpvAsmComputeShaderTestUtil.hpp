@@ -125,7 +125,7 @@ public:
 
 			for (size_t ndx = 0; ndx < m_numInputElements; ndx++)
 			{
-				deInt32* const bytesAsInt = reinterpret_cast<deInt32* const>(&bytes.front());
+				deInt32* const bytesAsInt = reinterpret_cast<deInt32*>(&bytes.front());
 
 				switch (m_opAtomic)
 				{
@@ -146,7 +146,7 @@ public:
 
 			if (m_opAtomic == OPATOMIC_COMPEX)
 			{
-				deInt32* const bytesAsInt = reinterpret_cast<deInt32* const>(&bytes.front());
+				deInt32* const bytesAsInt = reinterpret_cast<deInt32*>(&bytes.front());
 				for (size_t ndx = 0; ndx < m_numInputElements; ndx++)
 					bytesAsInt[ndx] = inputInts[ndx] % 2;
 			}

@@ -143,7 +143,7 @@ tcu::TestStatus runTest (Context&							context,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			*colorAttachmentImage, colorImageSubresourceRange);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
 			0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentLayoutBarrier);
 	}
 
@@ -201,6 +201,21 @@ tcu::TestStatus runTest (Context&							context,
 
 		return (ok ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Failure"));
 	}
+}
+
+//! Resize an image and fill with white color.
+void initializeWhiteReferenceImage (tcu::TextureLevel& image, const int width, const int height)
+{
+	DE_ASSERT(width > 0 && height > 0);
+
+	image.setStorage(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), width, height);
+	tcu::PixelBufferAccess access = image.getAccess();
+
+	const tcu::Vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+
+	for (int y = 0; y < height; ++y)
+	for (int x = 0; x < width; ++x)
+		access.setPixel(white, x, y);
 }
 
 namespace PatchVertexCount
@@ -460,21 +475,6 @@ void initPrograms (vk::SourceCollections& programCollection, const CaseDefinitio
 
 		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
 	}
-}
-
-//! Resize an image and fill with white color.
-void initializeWhiteReferenceImage (tcu::TextureLevel& image, const int width, const int height)
-{
-	DE_ASSERT(width > 0 && height > 0);
-
-	image.setStorage(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), width, height);
-	tcu::PixelBufferAccess access = image.getAccess();
-
-	const tcu::Vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
-
-	for (int y = 0; y < height; ++y)
-	for (int x = 0; x < width; ++x)
-		access.setPixel(white, x, y);
 }
 
 tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
@@ -777,6 +777,184 @@ tcu::TestStatus test (Context& context)
 
 } // Barrier ns
 
+namespace CrossInvocation
+{
+
+enum Constants
+{
+	OUTPUT_PATCH_SIZE	= 3,
+	INPUT_PATCH_SIZE	= 10
+};
+
+enum CaseType
+{
+	CASETYPE_PER_VERTEX,
+	CASETYPE_PER_PATCH
+};
+
+enum DataType
+{
+	DATATYPE_INT,
+	DATATYPE_UINT,
+	DATATYPE_FLOAT,
+	DATATYPE_VEC3,
+	DATATYPE_VEC4,
+	DATATYPE_MAT4X3
+};
+
+struct CaseDefinition
+{
+	CaseType	caseType;
+	DataType	dataType;
+};
+
+void initPrograms (vk::SourceCollections& programCollection, const CaseDefinition caseDef)
+{
+	static const std::string	typeStr[]		=
+	{
+		"int",
+		"uint",
+		"float",
+		"vec3",
+		"vec4",
+		"mat4x3"
+	};
+	const std::string			dataType		= typeStr[caseDef.dataType];
+	const int					varyingSize[]	= { 1, 1, 1, 1, 1, 4 };
+
+	// Vertex shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  highp float in_v_attr;\n"
+			<< "layout(location = 0) out highp float in_tc_attr;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    in_tc_attr = in_v_attr;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+	}
+
+	// Tessellation control shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+			<< "#extension GL_EXT_tessellation_shader : require\n"
+			<< "\n"
+			<< "layout(vertices = " << OUTPUT_PATCH_SIZE << ") out;\n"
+			<< "\n"
+			<< "layout(location = 0) in  highp float in_tc_attr[];\n"
+			<< "layout(location = 0) out highp float in_te_attr[];\n"
+			<< "\n";
+
+		if (caseDef.caseType == CASETYPE_PER_VERTEX)
+			src << "layout(location = 1) out mediump " << dataType << " in_te_data0[];\n"
+				<< "layout(location = " << varyingSize[caseDef.dataType] + 1 << ") out mediump " << dataType << " in_te_data1[];\n";
+		else
+			src << "layout(location = 1) patch out mediump " << dataType << " in_te_data0[" << OUTPUT_PATCH_SIZE << "];\n"
+				<< "layout(location = " << OUTPUT_PATCH_SIZE * varyingSize[caseDef.dataType] + 1 << ") patch out mediump " << dataType << " in_te_data1[" << OUTPUT_PATCH_SIZE << "];\n";
+
+		src	<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    " << dataType << " d = " << dataType << "(gl_InvocationID);\n"
+			<< "    in_te_data0[gl_InvocationID] = d;\n"
+			<< "    barrier();\n"
+			<< "    in_te_data1[gl_InvocationID] = d + in_te_data0[(gl_InvocationID + 1) % " << OUTPUT_PATCH_SIZE << "];\n"
+			<< "\n"
+			<< "    in_te_attr[gl_InvocationID] = in_tc_attr[gl_InvocationID];\n"
+			<< "\n"
+			<< "    gl_TessLevelInner[0] = 1.0;\n"
+			<< "    gl_TessLevelInner[1] = 1.0;\n"
+			<< "\n"
+			<< "    gl_TessLevelOuter[0] = 1.0;\n"
+			<< "    gl_TessLevelOuter[1] = 1.0;\n"
+			<< "    gl_TessLevelOuter[2] = 1.0;\n"
+			<< "    gl_TessLevelOuter[3] = 1.0;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("tesc") << glu::TessellationControlSource(src.str());
+	}
+
+	// Tessellation evaluation shader
+	{
+		const float xScale = 1.0f / 8.0f;
+
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+			<< "#extension GL_EXT_tessellation_shader : require\n"
+			<< "\n"
+			<< "layout(" << getTessPrimitiveTypeShaderName(TESSPRIMITIVETYPE_QUADS) << ") in;\n"
+			<< "\n"
+			<< "layout(location = 0) in  highp   float in_te_attr[];\n"
+			<< "layout(location = 0) out mediump vec4  in_f_color;\n"
+			<< "\n";
+
+		if (caseDef.caseType == CASETYPE_PER_VERTEX)
+			src << "layout(location = 1) in mediump " << dataType << " in_te_data0[];\n"
+				<< "layout(location = " << varyingSize[caseDef.dataType] + 1 << ") in mediump " << dataType << " in_te_data1[];\n";
+		else
+			src << "layout(location = 1) patch in mediump " << dataType << " in_te_data0[" << OUTPUT_PATCH_SIZE << "];\n"
+				<< "layout(location = " << OUTPUT_PATCH_SIZE * varyingSize[caseDef.dataType] + 1 << ") patch in mediump " << dataType << " in_te_data1[" << OUTPUT_PATCH_SIZE << "];\n";
+
+		src << "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    highp float x = (gl_TessCoord.x*float(" << xScale << ") + in_te_attr[0]) * 2.0 - 1.0;\n"
+			<< "    highp float y = gl_TessCoord.y*2.0 - 1.0;\n"
+			<< "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+			<< "    bool ok = true;\n"
+			<< "    for (int i = 0; i < " << OUTPUT_PATCH_SIZE << "; i++)\n"
+			<< "    {\n"
+			<< "         int ref = i + (i + 1) % " << OUTPUT_PATCH_SIZE << ";\n"
+			<< "         if (in_te_data1[i] != " << dataType << "(ref)) ok = false;\n"
+			<< "    }\n"
+			<< "    in_f_color = ok ? vec4(1.0) : vec4(vec3(0.0), 1.0);\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+	}
+
+	// Fragment shader
+	{
+		std::ostringstream src;
+		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in  mediump vec4 in_f_color;\n"
+			<< "layout(location = 0) out mediump vec4 o_color;\n"
+			<< "\n"
+			<< "void main (void)\n"
+			<< "{\n"
+			<< "    o_color = in_f_color;\n"
+			<< "}\n";
+
+		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+	}
+}
+
+tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
+{
+	DE_UNREF(caseDef);
+	// Input vertex attribute data
+	const int		   numPrimitives	= 8;
+	std::vector<float> vertexData		(INPUT_PATCH_SIZE * numPrimitives, 0.0f);
+	const VkDeviceSize vertexBufferSize = sizeof(float) * vertexData.size();
+
+	for (int i = 0; i < numPrimitives; ++i)
+		vertexData[INPUT_PATCH_SIZE * i] = static_cast<float>(i) / static_cast<float>(numPrimitives);
+
+	tcu::TextureLevel referenceImage;
+	initializeWhiteReferenceImage(referenceImage, RENDER_SIZE, RENDER_SIZE);
+
+	return runTest(context, numPrimitives, INPUT_PATCH_SIZE, OUTPUT_PATCH_SIZE,
+				   VK_FORMAT_R32_SFLOAT, &vertexData[0], vertexBufferSize, referenceImage.getAccess());
+}
+
+} // CrossInvocation ns
+
 } // anonymous
 
 //! These tests correspond to dEQP-GLES31.functional.tessellation.shader_input_output.*
@@ -853,6 +1031,43 @@ tcu::TestCaseGroup* createShaderInputOutputTests (tcu::TestContext& testCtx)
 
 	// Barrier
 	addFunctionCaseWithPrograms(group.get(), "barrier", "Basic barrier usage", Barrier::initPrograms, Barrier::test);
+
+	// Cross invocation communication
+	{
+		static const struct
+		{
+			CrossInvocation::CaseType	caseType;
+			std::string					name;
+		} caseTypes[] =
+		{
+			{ CrossInvocation::CASETYPE_PER_VERTEX,	 "cross_invocation_per_vertex"	},
+			{ CrossInvocation::CASETYPE_PER_PATCH,	 "cross_invocation_per_patch"	}
+		};
+
+		static const struct
+		{
+			CrossInvocation::DataType	dataType;
+			std::string					name;
+		} dataTypes[] =
+		{
+			{ CrossInvocation::DATATYPE_INT,	"int"		},
+			{ CrossInvocation::DATATYPE_UINT,	"uint"		},
+			{ CrossInvocation::DATATYPE_FLOAT,	"float"		},
+			{ CrossInvocation::DATATYPE_VEC3,	"vec3"		},
+			{ CrossInvocation::DATATYPE_VEC4,	"vec4"		},
+			{ CrossInvocation::DATATYPE_MAT4X3,	"mat4x3"	}
+		};
+
+		for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(caseTypes); ++caseNdx)
+			for (int dataTypeNdx = 0; dataTypeNdx < DE_LENGTH_OF_ARRAY(dataTypes); ++dataTypeNdx)
+			{
+				std::string						testName	= caseTypes[caseNdx].name + "_" + dataTypes[dataTypeNdx].name;
+				CrossInvocation::CaseDefinition	caseDef		= { caseTypes[caseNdx].caseType, dataTypes[dataTypeNdx].dataType };
+
+				addFunctionCaseWithPrograms(group.get(), testName, "Write output varyings from multiple invocations.",
+						CrossInvocation::initPrograms, CrossInvocation::test, caseDef);
+			}
+	}
 
 	return group.release();
 }

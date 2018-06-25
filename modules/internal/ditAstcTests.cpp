@@ -105,7 +105,7 @@ AstcCase::IterateResult AstcCase::iterate (void)
 	// Verify that can generate & decode data with all BlockTestType's
 	for (int blockTestTypeNdx = 0; blockTestTypeNdx < astc::BLOCK_TEST_TYPE_LAST; blockTestTypeNdx++)
 	{
-		const astc::BlockTestType	blockTestType	= (const astc::BlockTestType)blockTestTypeNdx;
+		const astc::BlockTestType	blockTestType	= (astc::BlockTestType)blockTestTypeNdx;
 
 		if (astc::isBlockTestTypeHDROnly(blockTestType) && isAstcSRGBFormat(m_format))
 			continue;

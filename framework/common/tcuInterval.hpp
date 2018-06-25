@@ -208,12 +208,12 @@ std::ostream&	operator<<	(std::ostream& os, const Interval& interval);
 	::tcu::Interval				VAR##_hi_;						\
 																\
 	{															\
-		::tcu::Interval&	(VAR) = VAR##_lo_;					\
+		::tcu::Interval&	VAR = VAR##_lo_;					\
 		::deSetRoundingMode(DE_ROUNDINGMODE_TO_NEGATIVE_INF);	\
 		SETLOW;													\
 	}															\
 	{															\
-		::tcu::Interval&	(VAR) = VAR##_hi_;					\
+		::tcu::Interval&	VAR = VAR##_hi_;					\
 		::deSetRoundingMode(DE_ROUNDINGMODE_TO_POSITIVE_INF);	\
 		SETHIGH;												\
 	}															\
@@ -240,13 +240,13 @@ std::ostream&	operator<<	(std::ostream& os, const Interval& interval);
 	else																\
 	{																	\
 		{																\
-			const double		(PARAM)	= VAR##_arg_.lo();				\
-			::tcu::Interval&	(VAR)	= VAR##_lo_;					\
+			const double		PARAM	= VAR##_arg_.lo();				\
+			::tcu::Interval&	VAR		= VAR##_lo_;					\
 			BODY;														\
 		}																\
 		{																\
-			const double		(PARAM)	= VAR##_arg_.hi();				\
-			::tcu::Interval&	(VAR)	= VAR##_hi_;					\
+			const double		PARAM	= VAR##_arg_.hi();				\
+			::tcu::Interval&	VAR		= VAR##_hi_;					\
 			BODY;														\
 		}																\
 		VAR##_dst_ = VAR##_lo_ | VAR##_hi_;								\
