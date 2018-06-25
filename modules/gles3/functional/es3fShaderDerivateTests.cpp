@@ -1060,10 +1060,13 @@ bool LinearDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, cons
 		const bool			isX			= m_func == DERIVATE_DFDX;
 		const float			div			= isX ? float(result.getWidth()) : float(result.getHeight());
 		const tcu::Vec4		scale		= isX ? xScale : yScale;
-		const tcu::Vec4		reference	= ((m_coordMax - m_coordMin) / div) * scale;
-		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_precision, m_coordMin*scale, m_coordMax*scale, reference);
+		tcu::Vec4			reference	= ((m_coordMax - m_coordMin) / div);
+		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_precision, m_coordMin, m_coordMax, reference);
 		const tcu::Vec4		threshold	= max(surfaceThreshold, opThreshold);
 		const int			numComps	= glu::getDataTypeFloatScalars(m_dataType);
+
+		/* adjust the reference value for the correct dfdx or dfdy sample adjacency */
+		reference	= reference * scale;
 
 		m_testCtx.getLog()
 			<< tcu::TestLog::Message
@@ -1355,10 +1358,13 @@ bool TextureDerivateCase::verify (const tcu::ConstPixelBufferAccess& result, con
 		const bool			isX			= m_func == DERIVATE_DFDX;
 		const float			div			= isX ? w : h;
 		const tcu::Vec4		scale		= isX ? xScale : yScale;
-		const tcu::Vec4		reference	= ((m_texValueMax - m_texValueMin) / div) * scale;
-		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_precision, m_texValueMin*scale, m_texValueMax*scale, reference);
+		tcu::Vec4			reference	= ((m_texValueMax - m_texValueMin) / div);
+		const tcu::Vec4		opThreshold	= getDerivateThreshold(m_precision, m_texValueMin, m_texValueMax, reference);
 		const tcu::Vec4		threshold	= max(surfaceThreshold, opThreshold);
 		const int			numComps	= glu::getDataTypeFloatScalars(m_dataType);
+
+		/* adjust the reference value for the correct dfdx or dfdy sample adjacency */
+		reference	= reference * scale;
 
 		m_testCtx.getLog()
 			<< tcu::TestLog::Message
