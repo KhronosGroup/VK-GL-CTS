@@ -496,6 +496,13 @@ VkImageUsageFlags getMatchingComputeImageUsageFlags (VkDescriptorType dType)
 
 tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 {
+	// Check all required extensions are supported
+	for (std::vector<std::string>::const_iterator i = m_shaderSpec.extensions.begin(); i != m_shaderSpec.extensions.end(); ++i)
+	{
+		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), *i))
+			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
+	}
+
 	const VkPhysicalDeviceFeatures&		features			= m_context.getDeviceFeatures();
 
 	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt16)
