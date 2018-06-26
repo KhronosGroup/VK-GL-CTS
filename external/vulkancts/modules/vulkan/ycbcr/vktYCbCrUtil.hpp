@@ -166,6 +166,10 @@ ChannelAccess			getChannelAccess			(ycbcr::MultiPlaneImageData&			data,
 													 int									channelNdx);
 bool					isYChromaSubsampled			(vk::VkFormat							format);
 bool					isXChromaSubsampled			(vk::VkFormat							format);
+bool					areLsb6BitsDontCare			(vk::VkFormat							srcFormat,
+													 vk::VkFormat							dstFormat);
+bool					areLsb4BitsDontCare			(vk::VkFormat							srcFormat,
+													 vk::VkFormat							dstFormat);
 
 tcu::UVec4				getYCbCrBitDepth			(vk::VkFormat							format);
 tcu::FloatFormat		getYCbCrFilteringPrecision	(vk::VkFormat							format);

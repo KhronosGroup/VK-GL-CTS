@@ -154,7 +154,7 @@ tcu::TestStatus DrawIndexed::iterate (void)
 	vk::flushMappedMemoryRange(m_vk, m_context.getDevice(),
 							   m_indexBuffer->getBoundMemory().getMemory(),
 							   m_indexBuffer->getBoundMemory().getOffset(),
-							   dataSize);
+							   VK_WHOLE_SIZE);
 
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
@@ -240,7 +240,7 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	vk::flushMappedMemoryRange(m_vk, m_context.getDevice(),
 							   m_indexBuffer->getBoundMemory().getMemory(),
 							   m_indexBuffer->getBoundMemory().getOffset(),
-							   dataSize);
+							   VK_WHOLE_SIZE);
 
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();

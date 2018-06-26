@@ -264,7 +264,7 @@ IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
 		{
 			indices[i] = static_cast<deUint32>(i);
 		}
-		vk::flushMappedMemoryRange(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory().getMemory(), m_indexBuffer->getBoundMemory().getOffset(), sizeof(deUint32) * indexBufferLength);
+		vk::flushMappedMemoryRange(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory().getMemory(), m_indexBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
 	}
 
 	// Check device for multidraw support:
@@ -471,7 +471,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 							   m_context.getDevice(),
 							   m_indirectBuffer->getBoundMemory().getMemory(),
 							   m_indirectBuffer->getBoundMemory().getOffset(),
-							   dataSize + m_offsetInBuffer);
+							   VK_WHOLE_SIZE);
 
 	if (m_testIndirectCountExt)
 	{
@@ -494,7 +494,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 								   m_context.getDevice(),
 								   m_indirectCountBuffer->getBoundMemory().getMemory(),
 								   m_indirectCountBuffer->getBoundMemory().getOffset(),
-								   m_offsetInCountBuffer + sizeof(m_drawCount));
+								   VK_WHOLE_SIZE);
 	}
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -794,7 +794,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 							   m_context.getDevice(),
 							   m_indirectBuffer->getBoundMemory().getMemory(),
 							   m_indirectBuffer->getBoundMemory().getOffset(),
-							   dataSize + m_offsetInBuffer);
+							   VK_WHOLE_SIZE);
 
 	if (m_testIndirectCountExt)
 	{
@@ -817,7 +817,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 								   m_context.getDevice(),
 								   m_indirectCountBuffer->getBoundMemory().getMemory(),
 								   m_indirectCountBuffer->getBoundMemory().getOffset(),
-								   m_offsetInCountBuffer + sizeof(m_drawCount));
+								   VK_WHOLE_SIZE);
 	}
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
