@@ -281,6 +281,10 @@ deUint32						findMatchingMemoryType				(const vk::InstanceInterface&		instance,
 																	 const vk::VkMemoryRequirements&	objectMemoryRequirements,
 																	 const vk::MemoryRequirement&		memoryRequirement);
 
+deUint32						getHeapIndexForMemoryType			(const vk::InstanceInterface&		instance,
+																	 const vk::VkPhysicalDevice			physicalDevice,
+																	 const deUint32						memoryType);
+
 bool							checkSparseSupportForImageType		(const vk::InstanceInterface&		instance,
 																	 const vk::VkPhysicalDevice			physicalDevice,
 																	 const ImageType					imageType);

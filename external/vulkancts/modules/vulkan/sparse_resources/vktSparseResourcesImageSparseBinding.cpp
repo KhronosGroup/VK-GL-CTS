@@ -199,7 +199,7 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		const VkMemoryRequirements imageSparseMemRequirements = getImageMemoryRequirements(deviceInterface, getDevice(), *imageSparse);
 
 		// Check if required image memory size does not exceed device limits
-		if (imageSparseMemRequirements.size > getPhysicalDeviceProperties(instance, physicalDevice).limits.sparseAddressSpaceSize)
+		if (imageSparseMemRequirements.size > getPhysicalDeviceProperties(instance, getPhysicalDevice(secondDeviceID)).limits.sparseAddressSpaceSize)
 			TCU_THROW(NotSupportedError, "Required memory size for sparse resource exceeds device limits");
 
 		DE_ASSERT((imageSparseMemRequirements.size % imageSparseMemRequirements.alignment) == 0);
@@ -207,10 +207,23 @@ tcu::TestStatus ImageSparseBindingInstance::iterate (void)
 		{
 			std::vector<VkSparseMemoryBind>	sparseMemoryBinds;
 			const deUint32					numSparseBinds	= static_cast<deUint32>(imageSparseMemRequirements.size / imageSparseMemRequirements.alignment);
-			const deUint32					memoryType		= findMatchingMemoryType(instance, physicalDevice, imageSparseMemRequirements, MemoryRequirement::Any);
+			const deUint32					memoryType		= findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID), imageSparseMemRequirements, MemoryRequirement::Any);
 
 			if (memoryType == NO_MATCH_FOUND)
 				return tcu::TestStatus::fail("No matching memory type found");
+
+			if (firstDeviceID != secondDeviceID)
+			{
+				VkPeerMemoryFeatureFlags	peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
+				const deUint32				heapIndex = getHeapIndexForMemoryType(instance, getPhysicalDevice(secondDeviceID), memoryType);
+				deviceInterface.getDeviceGroupPeerMemoryFeatures(getDevice(), heapIndex, firstDeviceID, secondDeviceID, &peerMemoryFeatureFlags);
+
+				if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT) == 0) ||
+					((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_DST_BIT) == 0))
+				{
+					TCU_THROW(NotSupportedError, "Peer memory does not support COPY_SRC and COPY_DST");
+				}
+			}
 
 			for (deUint32 sparseBindNdx = 0; sparseBindNdx < numSparseBinds; ++sparseBindNdx)
 			{

@@ -89,6 +89,8 @@ struct SparseAllocation
 	VkDeviceSize						resourceSize;		//!< buffer size in bytes
 	std::vector<AllocationSp>			allocations;		//!< actual allocated memory
 	std::vector<VkSparseMemoryBind>		memoryBinds;		//!< memory binds backing the resource
+	deUint32							memoryType;			//!< memory type (same for all allocations)
+	deUint32							heapIndex;			//!< memory heap index
 };
 
 //! Utility to lay out memory allocations for a sparse buffer, including holes and aliased regions.
@@ -106,7 +108,9 @@ public:
 	SparseAllocationBuilder&	addAliasedMemoryBind	(const deUint32 allocationNdx, const deUint32 chunkOffset, const deUint32 numChunks = 1u);
 	SparseAllocationBuilder&	addMemoryAllocation		(void);
 
-	MovePtr<SparseAllocation>	build					(const DeviceInterface&		vk,
+	MovePtr<SparseAllocation>	build					(const InstanceInterface&	instanceInterface,
+														 const VkPhysicalDevice		physicalDevice,
+														 const DeviceInterface&		vk,
 														 const VkDevice				device,
 														 Allocator&					allocator,
 														 VkBufferCreateInfo			referenceCreateInfo,		//!< buffer size is ignored in this info
@@ -199,17 +203,13 @@ SparseAllocationBuilder& SparseAllocationBuilder::addAliasedMemoryBind	(const de
 	return *this;
 }
 
-inline VkMemoryRequirements requirementsWithSize (VkMemoryRequirements requirements, const VkDeviceSize size)
-{
-	requirements.size = size;
-	return requirements;
-}
-
-MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&	vk,
-														  const VkDevice			device,
-														  Allocator&				allocator,
-														  VkBufferCreateInfo		referenceCreateInfo,
-														  const VkDeviceSize		minChunkSize) const
+MovePtr<SparseAllocation> SparseAllocationBuilder::build (const InstanceInterface&			instanceInterface,
+														  const VkPhysicalDevice			physicalDevice,
+														  const DeviceInterface&			vk,
+														  const VkDevice					device,
+														  Allocator&						allocator,
+														  VkBufferCreateInfo				referenceCreateInfo,
+														  const VkDeviceSize				minChunkSize) const
 {
 
 	MovePtr<SparseAllocation>	sparseAllocation			(new SparseAllocation());
@@ -218,11 +218,19 @@ MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&
 	const Unique<VkBuffer>		refBuffer					(createBuffer(vk, device, &referenceCreateInfo));
 	const VkMemoryRequirements	memoryRequirements			= getBufferMemoryRequirements(vk, device, *refBuffer);
 	const VkDeviceSize			chunkSize					= std::max(memoryRequirements.alignment, static_cast<VkDeviceSize>(deAlign64(minChunkSize, memoryRequirements.alignment)));
+	const deUint32				memoryTypeNdx				= findMatchingMemoryType(instanceInterface, physicalDevice, memoryRequirements, MemoryRequirement::Any);
+	VkMemoryAllocateInfo		allocInfo					=
+	{
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	//	VkStructureType			sType;
+		DE_NULL,								//	const void*				pNext;
+		memoryRequirements.size,				//	VkDeviceSize			allocationSize;
+		memoryTypeNdx,							//	deUint32				memoryTypeIndex;
+	};
 
 	for (std::vector<deUint32>::const_iterator numChunksIter = m_chunksPerAllocation.begin(); numChunksIter != m_chunksPerAllocation.end(); ++numChunksIter)
 	{
-		sparseAllocation->allocations.push_back(makeDeSharedPtr(
-			allocator.allocate(requirementsWithSize(memoryRequirements, *numChunksIter * chunkSize), MemoryRequirement::Any)));
+		allocInfo.allocationSize = *numChunksIter * chunkSize;
+		sparseAllocation->allocations.push_back(makeDeSharedPtr(allocator.allocate(allocInfo, (VkDeviceSize)0)));
 	}
 
 	for (std::vector<MemoryBind>::const_iterator memBindIter = m_memoryBinds.begin(); memBindIter != m_memoryBinds.end(); ++memBindIter)
@@ -242,6 +250,8 @@ MovePtr<SparseAllocation> SparseAllocationBuilder::build (const DeviceInterface&
 
 	sparseAllocation->resourceSize		= referenceCreateInfo.size;
 	sparseAllocation->numResourceChunks = m_resourceChunkNdx;
+	sparseAllocation->memoryType		= memoryTypeNdx;
+	sparseAllocation->heapIndex			= getHeapIndexForMemoryType(instanceInterface, physicalDevice, memoryTypeNdx);
 
 	return sparseAllocation;
 }
@@ -964,6 +974,7 @@ public:
 
 	tcu::TestStatus iterate (void)
 	{
+		const InstanceInterface&	instance			= m_context.getInstanceInterface();
 		const DeviceInterface&		vk					= getDeviceInterface();
 		MovePtr<SparseAllocation>	sparseAllocation;
 		Move<VkBuffer>				sparseBuffer;
@@ -986,7 +997,7 @@ public:
 				{
 					const UniquePtr<SparseAllocation> minAllocation(SparseAllocationBuilder()
 						.addMemoryBind()
-						.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize));
+						.build(instance, getPhysicalDevice(secondDeviceID), vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize));
 
 					numMaxChunks = deMaxu32(static_cast<deUint32>(m_context.getDeviceProperties().limits.maxUniformBufferRange / minAllocation->resourceSize), 1u);
 				}
@@ -995,7 +1006,7 @@ public:
 				{
 					sparseAllocation = SparseAllocationBuilder()
 						.addMemoryBind()
-						.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
+						.build(instance, getPhysicalDevice(secondDeviceID), vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
 				}
 				else
 				{
@@ -1014,8 +1025,20 @@ public:
 					if (m_aliased)
 						builder.addAliasedMemoryBind(0u, 0u);
 
-					sparseAllocation = builder.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
+					sparseAllocation = builder.build(instance, getPhysicalDevice(secondDeviceID), vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
 					DE_ASSERT(sparseAllocation->resourceSize <= m_context.getDeviceProperties().limits.maxUniformBufferRange);
+				}
+
+				if (firstDeviceID != secondDeviceID)
+				{
+					VkPeerMemoryFeatureFlags	peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
+					vk.getDeviceGroupPeerMemoryFeatures(getDevice(), sparseAllocation->heapIndex, firstDeviceID, secondDeviceID, &peerMemoryFeatureFlags);
+
+					if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_DST_BIT)    == 0) ||
+						((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT) == 0))
+					{
+						TCU_THROW(NotSupportedError, "Peer memory does not support COPY_DST and GENERIC_SRC");
+					}
 				}
 
 				// Create the buffer
@@ -1244,9 +1267,16 @@ class DrawGridTestInstance : public SparseBufferTestInstance
 public:
 	DrawGridTestInstance (Context& context, const TestFlags flags, const VkBufferUsageFlags usage, const VkDeviceSize minChunkSize)
 		: SparseBufferTestInstance	(context, flags)
+		, m_bufferUsage				(usage)
+		, m_minChunkSize			(minChunkSize)
 	{
-		const DeviceInterface&	vk							= getDeviceInterface();
-		VkBufferCreateInfo		referenceBufferCreateInfo	= getSparseBufferCreateInfo(usage);
+	}
+
+	void createResources (deUint32 memoryDeviceIndex)
+	{
+		const InstanceInterface&	instance					= m_context.getInstanceInterface();
+		const DeviceInterface&		vk							= getDeviceInterface();
+		VkBufferCreateInfo			referenceBufferCreateInfo	= getSparseBufferCreateInfo(m_bufferUsage);
 
 		{
 			// Allocate two chunks, each covering half of the viewport
@@ -1264,20 +1294,17 @@ public:
 			if (m_aliased)
 				builder.addAliasedMemoryBind(0u, 0u);
 
-			m_sparseAllocation	= builder.build(vk, getDevice(), getAllocator(), referenceBufferCreateInfo, minChunkSize);
+			m_sparseAllocation	= builder.build(instance, getPhysicalDevice(memoryDeviceIndex), vk, getDevice(), getAllocator(), referenceBufferCreateInfo, m_minChunkSize);
 		}
 
 		// Create the buffer
 		referenceBufferCreateInfo.size	= m_sparseAllocation->resourceSize;
 		m_sparseBuffer					= makeBuffer(vk, getDevice(), referenceBufferCreateInfo);
 
-
 		m_perDrawBufferOffset	= m_sparseAllocation->resourceSize / m_sparseAllocation->numResourceChunks;
 		m_stagingBufferSize		= 2 * m_perDrawBufferOffset;
 		m_stagingBuffer			= makeBuffer(vk, getDevice(), makeBufferCreateInfo(m_stagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT));
 		m_stagingBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_stagingBuffer, MemoryRequirement::HostVisible);
-
-
 	}
 
 	tcu::TestStatus iterate (void)
@@ -1288,6 +1315,20 @@ public:
 		{
 			const deUint32	firstDeviceID	= physDevID;
 			const deUint32	secondDeviceID	= (firstDeviceID + 1) % m_numPhysicalDevices;
+
+			createResources(secondDeviceID);
+
+			if (firstDeviceID != secondDeviceID)
+			{
+				VkPeerMemoryFeatureFlags	peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
+				vk.getDeviceGroupPeerMemoryFeatures(getDevice(), m_sparseAllocation->heapIndex, firstDeviceID, secondDeviceID, &peerMemoryFeatureFlags);
+
+				if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_DST_BIT)    == 0) ||
+					((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT) == 0))
+				{
+					TCU_THROW(NotSupportedError, "Peer memory does not support COPY_DST and GENERIC_SRC");
+				}
+			}
 
 			// Bind the memory
 			bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *m_sparseBuffer, *m_sparseAllocation, usingDeviceGroups(), firstDeviceID, secondDeviceID);
@@ -1343,6 +1384,9 @@ public:
 
 protected:
 	virtual void				initializeBuffers		(void) = 0;
+
+	const VkBufferUsageFlags	m_bufferUsage;
+	const VkDeviceSize			m_minChunkSize;
 
 	VkDeviceSize				m_perDrawBufferOffset;
 
