@@ -101,6 +101,15 @@ struct TestConfigRandom
 	}
 };
 
+template<typename T>
+T roundUpToNextMultiple (T value, T multiple)
+{
+	if (value % multiple == 0)
+		return value;
+	else
+		return value + multiple - (value % multiple);
+}
+
 vk::Move<VkInstance> createInstanceWithExtensions (const vk::PlatformInterface& vkp, deUint32 version, const std::vector<std::string>& enableExtensions)
 {
 	std::vector<std::string>					enableExtensionPtrs;
@@ -224,6 +233,7 @@ public:
 		, m_config				(config)
 		, m_result				(m_context.getTestContext().getLog())
 		, m_memoryTypeIndex		(0)
+		, m_memoryLimits		(getMemoryLimits(context.getTestContext().getPlatform().getVulkanPlatform()))
 	{
 		DE_ASSERT(!!m_config.memorySize != !!m_config.memoryPercentage);
 	}
@@ -234,6 +244,7 @@ private:
 	const TestConfig						m_config;
 	tcu::ResultCollector					m_result;
 	deUint32								m_memoryTypeIndex;
+	const PlatformMemoryLimits				m_memoryLimits;
 };
 
 
@@ -266,6 +277,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 		const VkMemoryHeap		memoryHeap		= m_memoryProperties.memoryHeaps[memoryType.heapIndex];
 
 		const VkDeviceSize		allocationSize	= (m_config.memorySize ? *m_config.memorySize : (VkDeviceSize)(*m_config.memoryPercentage * (float)memoryHeap.size));
+		const VkDeviceSize		roundedUpAllocationSize	 = roundUpToNextMultiple(allocationSize, m_memoryLimits.deviceMemoryAllocationGranularity);
 		vector<VkDeviceMemory>	memoryObjects	(m_config.memoryAllocationCount, (VkDeviceMemory)0);
 
 		log << TestLog::Message << "Memory type index: " << m_memoryTypeIndex << TestLog::EndMessage;
@@ -277,7 +289,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 			log << TestLog::Message << "Memory type: " << memoryType << TestLog::EndMessage;
 			log << TestLog::Message << "Memory heap: " << memoryHeap << TestLog::EndMessage;
 
-			if (allocationSize * m_config.memoryAllocationCount * 8 > memoryHeap.size)
+			if (roundedUpAllocationSize * m_config.memoryAllocationCount > memoryHeap.size)
 				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory.");
 
 #if (DE_PTR_SIZE == 4)
