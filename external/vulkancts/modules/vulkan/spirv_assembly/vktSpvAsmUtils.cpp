@@ -51,6 +51,74 @@ bool is8BitStorageFeaturesSupported (const Context& context, Extension8BitStorag
 	return true;
 }
 
+#define IS_CORE_FEATURE_AVAILABLE(CHECKED, AVAILABLE, FEATURE)	\
+	if ((CHECKED.FEATURE != DE_FALSE) && (AVAILABLE.FEATURE == DE_FALSE)) { *missingFeature = #FEATURE; return false; }
+
+bool isCoreFeaturesSupported (const Context&						context,
+							  const vk::VkPhysicalDeviceFeatures&	toCheck,
+							  const char**							missingFeature)
+{
+	const VkPhysicalDeviceFeatures&	availableFeatures	= context.getDeviceFeatures();
+
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, robustBufferAccess);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, fullDrawIndexUint32);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, imageCubeArray);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, independentBlend);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, geometryShader);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, tessellationShader);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sampleRateShading);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, dualSrcBlend);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, logicOp);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, multiDrawIndirect);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, drawIndirectFirstInstance);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, depthClamp);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, depthBiasClamp);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, fillModeNonSolid);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, depthBounds);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, wideLines);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, largePoints);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, alphaToOne);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, multiViewport);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, samplerAnisotropy);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, textureCompressionETC2);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, textureCompressionASTC_LDR);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, textureCompressionBC);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, occlusionQueryPrecise);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, pipelineStatisticsQuery);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, vertexPipelineStoresAndAtomics);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, fragmentStoresAndAtomics);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderTessellationAndGeometryPointSize);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderImageGatherExtended);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderStorageImageExtendedFormats);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderStorageImageMultisample);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderStorageImageReadWithoutFormat);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderStorageImageWriteWithoutFormat);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderUniformBufferArrayDynamicIndexing);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderSampledImageArrayDynamicIndexing);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderStorageBufferArrayDynamicIndexing);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderStorageImageArrayDynamicIndexing);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderClipDistance);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderCullDistance);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderFloat64);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderInt64);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderInt16);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderResourceResidency);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, shaderResourceMinLod);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseBinding);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseResidencyBuffer);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseResidencyImage2D);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseResidencyImage3D);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseResidency2Samples);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseResidency4Samples);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseResidency8Samples);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseResidency16Samples);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, sparseResidencyAliased);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, variableMultisampleRate);
+	IS_CORE_FEATURE_AVAILABLE(toCheck, availableFeatures, inheritedQueries);
+
+	return true;
+}
+
 bool is16BitStorageFeaturesSupported (const Context& context, Extension16BitStorageFeatures toCheck)
 {
 	const VkPhysicalDevice16BitStorageFeatures& extensionFeatures = context.get16BitStorageFeatures();

@@ -156,13 +156,13 @@ VulkanFeatures	get8BitStorageFeatures	(const char* cap)
 	return features;
 }
 
-bool computeCheckBuffers (const std::vector<BufferSp>&	originalInts,
+bool computeCheckBuffers (const std::vector<Resource>&	originalInts,
 						  const vector<AllocationSp>&	outputAllocs,
-						  const std::vector<BufferSp>&	/*expectedOutputs*/,
+						  const std::vector<Resource>&	/*expectedOutputs*/,
 						  tcu::TestLog&					/*log*/)
 {
 	std::vector<deUint8> result;
-	originalInts.front()->getBytes(result);
+	originalInts.front().getBytes(result);
 	return deMemCmp(&result[0], outputAllocs.front()->getHostPtr(), result.size()) == 0;
 }
 
@@ -745,50 +745,30 @@ bool compareStruct(const resultType* returned, const originType* original)
 }
 
 template<typename originType, typename resultType, ShaderTemplate funcOrigin, ShaderTemplate funcResult>
-bool computeCheckStruct (const std::vector<BufferSp>&	originalFloats,
+bool checkStruct (const std::vector<Resource>&	originalFloats,
+				  const vector<AllocationSp>&	outputAllocs,
+				  const std::vector<Resource>&	/* expectedOutputs */,
+				  tcu::TestLog&					/* log */)
+{
+	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
+	{
+		vector<deUint8>	originalBytes;
+		originalFloats[outputNdx].getBytes(originalBytes);
+
+		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
+		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
+
+		if(!compareStruct<originType, resultType, funcOrigin, funcResult>(returned, original))
+			return false;
+	}
+	return true;
+}
+
+template<typename originType, typename resultType, deUint32 compositCount>
+bool checkUniformsArray (const std::vector<Resource>&	originalFloats,
 						 const vector<AllocationSp>&	outputAllocs,
-						 const std::vector<BufferSp>&	/* expectedOutputs */,
-						 tcu::TestLog&					/*log*/)
-{
-	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
-	{
-		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx]->getBytes(originalBytes);
-
-		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
-		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
-
-		if(!compareStruct<originType, resultType, funcOrigin, funcResult>(returned, original))
-			return false;
-	}
-	return true;
-}
-
-template<typename originType, typename resultType, ShaderTemplate funcOrigin, ShaderTemplate funcResult>
-bool graphicsCheckStruct (const std::vector<Resource>&	originalFloats,
-							   const vector<AllocationSp>&	outputAllocs,
-							   const std::vector<Resource>&	/* expectedOutputs */,
-							   tcu::TestLog&				/* log */)
-{
-	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
-	{
-		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].second->getBytes(originalBytes);
-
-		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
-		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
-
-		if(!compareStruct<originType, resultType, funcOrigin, funcResult>(returned, original))
-			return false;
-	}
-	return true;
-}
-
-template<typename originType, typename resultType, deUint32 compositCount>
-bool computeCheckUniformsArray (const std::vector<BufferSp>&	originalFloats,
-								const vector<AllocationSp>&		outputAllocs,
-								const std::vector<BufferSp>&	/* expectedOutputs */,
-								tcu::TestLog&					/* log */)
+						 const std::vector<Resource>&	/* expectedOutputs */,
+						 tcu::TestLog&					/* log */)
 {
 	const deUint32	originTypeSize = static_cast<deUint32>(sizeof(originType));
 
@@ -797,41 +777,7 @@ bool computeCheckUniformsArray (const std::vector<BufferSp>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < static_cast<deUint32>(outputAllocs.size()); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx]->getBytes(originalBytes);
-		const int elemntsNumber = (static_cast<deUint32>(originalBytes.size()) / arrayStrideInBytesUniform) / compositCount;
-
-		const resultType*	returned = static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
-		const originType*	original = reinterpret_cast<const originType*>(&originalBytes.front());
-
-		for (int ndx = 0; ndx < elemntsNumber; ++ndx)
-		{
-			for (deUint32 ndxData = 0; ndxData < compositCount; ++ndxData)
-			{
-				if (static_cast<deInt8>(*original) != static_cast<deInt8>(*returned))
-					return false;
-				original++;
-				returned++;
-			}
-			original += arrayStrideInBytesUniform / originTypeSize - compositCount;
-		}
-	}
-	return true;
-}
-
-template<typename originType, typename resultType, deUint32 compositCount>
-bool graphicsCheckUniformsArray (const std::vector<Resource>&	originalFloats,
-								 const vector<AllocationSp>&	outputAllocs,
-								 const std::vector<Resource>&	/* expectedOutputs */,
-								 tcu::TestLog&					/* log */)
-{
-	const deUint32	originTypeSize = static_cast<deUint32>(sizeof(originType));
-
-	DE_ASSERT((originTypeSize * compositCount) <= arrayStrideInBytesUniform); // one element of array can't be bigger then 16B
-
-	for (deUint32 outputNdx = 0; outputNdx < static_cast<deUint32>(outputAllocs.size()); ++outputNdx)
-	{
-		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].second->getBytes(originalBytes);
+		originalFloats[outputNdx].getBytes(originalBytes);
 		const int elemntsNumber = (static_cast<int>(originalBytes.size()) / arrayStrideInBytesUniform) / compositCount;
 
 		const resultType*	returned = static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
@@ -853,10 +799,10 @@ bool graphicsCheckUniformsArray (const std::vector<Resource>&	originalFloats,
 }
 
 template<typename originType, typename resultType, int compositCount, int ndxConts>
-bool graphicsCheckUniformsArrayConstNdx(const std::vector<Resource>&	originalFloats,
-	const vector<AllocationSp>&	outputAllocs,
-	const std::vector<Resource>&	/* expectedOutputs */,
-	tcu::TestLog&					/* log */)
+bool checkUniformsArrayConstNdx (const std::vector<Resource>&	originalFloats,
+								 const vector<AllocationSp>&	outputAllocs,
+								 const std::vector<Resource>&	/* expectedOutputs */,
+								 tcu::TestLog&					/* log */)
 {
 	const deUint32	originTypeSize = static_cast<deUint32>(sizeof(originType));
 
@@ -865,7 +811,7 @@ bool graphicsCheckUniformsArrayConstNdx(const std::vector<Resource>&	originalFlo
 	for (deUint32 outputNdx = 0; outputNdx < static_cast<deUint32>(outputAllocs.size()); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].second->getBytes(originalBytes);
+		originalFloats[outputNdx].getBytes(originalBytes);
 		const int elemntsNumber = (static_cast<int>(originalBytes.size()) / arrayStrideInBytesUniform) / compositCount;
 
 		const resultType*	returned = static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
@@ -1223,10 +1169,9 @@ void addCompute8bitStorage32To8Group (tcu::TestCaseGroup* group)
 
 			spec.assembly			= shaderTemplate.specialize(specs);
 			spec.numWorkGroups		= IVec3(cTypes[tyIdx].count, 1, 1);
-			spec.inputTypes[0]		= CAPABILITIES[STORAGE_BUFFER_TEST].dtype;
 
-			spec.inputs.push_back(BufferSp(new Int32Buffer(inputs)));
-			spec.outputs.push_back(BufferSp(new Int8Buffer(outputs)));
+			spec.inputs.push_back(Resource(BufferSp(new Int32Buffer(inputs)), CAPABILITIES[STORAGE_BUFFER_TEST].dtype));
+			spec.outputs.push_back(Resource(BufferSp(new Int8Buffer(outputs))));
 			spec.extensions.push_back("VK_KHR_8bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name);
@@ -1374,19 +1319,18 @@ void addCompute8bitUniform8To32Group (tcu::TestCaseGroup* group)
 
 			spec.assembly			= shaderTemplate.specialize(specs);
 			spec.numWorkGroups		= IVec3(numElements / cTypes[tyIdx].componentsCount, 1, 1);
-			spec.inputTypes[0]		= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype;
 
-			spec.inputs.push_back(BufferSp(new Int8Buffer(inputs)));
-			spec.outputs.push_back(BufferSp(new Int32Buffer(outputs)));
+			spec.inputs.push_back(Resource(BufferSp(new Int8Buffer(inputs)), CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype));
+			spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(outputs))));
 
 			spec.extensions.push_back("VK_KHR_8bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
 
 			if (cTypes[tyIdx].componentsCount == 4)
-				spec.verifyIO = computeCheckUniformsArray<deInt8, deInt32, 4>;
+				spec.verifyIO = checkUniformsArray<deInt8, deInt32, 4>;
 			else
-				spec.verifyIO = computeCheckUniformsArray<deInt8, deInt32, 1>;
+				spec.verifyIO = checkUniformsArray<deInt8, deInt32, 1>;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 		}
@@ -1696,10 +1640,9 @@ void addCompute8bitStorage16To8Group (tcu::TestCaseGroup* group)
 
 			spec.assembly			= shaderTemplate.specialize(specs);
 			spec.numWorkGroups		= IVec3(cTypes[tyIdx].count, 1, 1);
-			spec.inputTypes[0]		= CAPABILITIES[STORAGE_BUFFER_TEST].dtype;
 
-			spec.inputs.push_back(BufferSp(new Int16Buffer(inputs)));
-			spec.outputs.push_back(BufferSp(new Int8Buffer(outputs)));
+			spec.inputs.push_back(Resource(BufferSp(new Int16Buffer(inputs)), CAPABILITIES[STORAGE_BUFFER_TEST].dtype));
+			spec.outputs.push_back(Resource(BufferSp(new Int8Buffer(outputs))));
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.extensions.push_back("VK_KHR_8bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -1852,19 +1795,18 @@ void addCompute8bitUniform8To16Group (tcu::TestCaseGroup* group)
 
 			spec.assembly			= shaderTemplate.specialize(specs);
 			spec.numWorkGroups		= IVec3(numElements / cTypes[tyIdx].componentsCount, 1, 1);
-			spec.inputTypes[0]		= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype;
 
-			spec.inputs.push_back(BufferSp(new Int8Buffer(inputs)));
-			spec.outputs.push_back(BufferSp(new Int16Buffer(outputs)));
+			spec.inputs.push_back(Resource(BufferSp(new Int8Buffer(inputs)), CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype));
+			spec.outputs.push_back(Resource(BufferSp(new Int16Buffer(outputs))));
 			spec.extensions.push_back("VK_KHR_8bit_storage");
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 			spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
 
 			if (cTypes[tyIdx].componentsCount == 4)
-				spec.verifyIO = computeCheckUniformsArray<deInt8, deInt16, 4>;
+				spec.verifyIO = checkUniformsArray<deInt8, deInt16, 4>;
 			else
-				spec.verifyIO = computeCheckUniformsArray<deInt8, deInt16, 1>;
+				spec.verifyIO = checkUniformsArray<deInt8, deInt16, 1>;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 		}
@@ -2326,10 +2268,9 @@ void addCompute8bitStorageUniform8StructTo32StructGroup (tcu::TestCaseGroup* gro
 
 		spec.assembly			= shaderTemplate.specialize(specs);
 		spec.numWorkGroups		= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
-		spec.verifyIO			= computeCheckStruct<deInt8, deInt32, SHADERTEMPLATE_STRIDE8BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
-		spec.inputTypes[0]		= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype;
-		spec.inputs.push_back(BufferSp(new Int8Buffer(in8DData)));
-		spec.outputs.push_back(BufferSp(new Int32Buffer(int32Data)));
+		spec.verifyIO			= checkStruct<deInt8, deInt32, SHADERTEMPLATE_STRIDE8BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
+		spec.inputs.push_back(Resource(BufferSp(new Int8Buffer(in8DData)), CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype));
+		spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(int32Data))));
 		spec.extensions.push_back("VK_KHR_8bit_storage");
 		spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
 
@@ -2550,11 +2491,10 @@ void addCompute8bitStorageUniform32StructTo8StructGroup (tcu::TestCaseGroup* gro
 
 		spec.assembly			= shaderTemplate.specialize(specs);
 		spec.numWorkGroups		= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
-		spec.verifyIO			= computeCheckStruct<deInt32, deInt8, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE8BIT_STD430>;
-		spec.inputTypes[0]		= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype;
+		spec.verifyIO			= checkStruct<deInt32, deInt8, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE8BIT_STD430>;
 
-		spec.inputs.push_back(BufferSp(new Int32Buffer(int32DData)));
-		spec.outputs.push_back(BufferSp(new Int8Buffer(int8Data)));
+		spec.inputs.push_back(Resource(BufferSp(new Int32Buffer(int32DData)), CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype));
+		spec.outputs.push_back(Resource(BufferSp(new Int8Buffer(int8Data))));
 		spec.extensions.push_back("VK_KHR_8bit_storage");
 		spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 		spec.requestedVulkanFeatures = get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name);
@@ -2784,10 +2724,9 @@ void addCompute8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 
 		spec.assembly					= shaderTemplate.specialize(specs);
 		spec.numWorkGroups				= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
-		spec.verifyIO					= isUniform ? computeCheckStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : computeCheckStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
-		spec.inputTypes[0]				= CAPABILITIES[capIdx].dtype;
-		spec.inputs.push_back			(BufferSp(new Int8Buffer(inData)));
-		spec.outputs.push_back			(BufferSp(new Int8Buffer(outData)));
+		spec.verifyIO					= isUniform ? checkStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : checkStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
+		spec.inputs.push_back			(Resource(BufferSp(new Int8Buffer(inData)), CAPABILITIES[capIdx].dtype));
+		spec.outputs.push_back			(Resource(BufferSp(new Int8Buffer(outData))));
 		spec.extensions.push_back		("VK_KHR_8bit_storage");
 		spec.extensions.push_back		("VK_KHR_storage_buffer_storage_class");
 		spec.requestedVulkanFeatures	= get8BitStorageFeatures(CAPABILITIES[capIdx].name);
@@ -2973,7 +2912,7 @@ void addGraphics8BitStorageUniformInt32To8Group (tcu::TestCaseGroup* testGroup)
 		vector<deInt32>	inputs = getInt32s(rnd, ((arrayStrideInBytesUniform / static_cast<deUint32>(sizeof(deInt32))) * numDataPoints) / categories[catIdx].numElements);
 
 		if ( 0 != (arrayStrideInBytesUniform - static_cast<deUint32>(sizeof(deInt32)) * categories[catIdx].numElements))
-			resources.verifyIO = graphicsCheckUniformsArray<deInt32, deInt8, 1>;
+			resources.verifyIO = checkUniformsArray<deInt32, deInt8, 1>;
 		else
 		{
 			resources.verifyIO = DE_NULL;
@@ -2981,8 +2920,8 @@ void addGraphics8BitStorageUniformInt32To8Group (tcu::TestCaseGroup* testGroup)
 				outputs[numNdx] = static_cast<deInt8>(0xffff & inputs[numNdx]);
 		}
 
-		resources.inputs.push_back(std::make_pair(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype, BufferSp(new Int32Buffer(inputs))));
-		resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int8Buffer(outputs))));
+		resources.inputs.push_back(Resource(BufferSp(new Int32Buffer(inputs)), CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype));
+		resources.outputs.push_back(Resource(BufferSp(new Int8Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 		for (deUint32 factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
 		{
@@ -3194,7 +3133,7 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 	{
 		resources.inputs.clear();
 		vector<deInt8>	inputs = getInt8s(rnd, (arrayStrideInBytesUniform / static_cast<deUint32>(sizeof(deInt8))) * (numDataPoints / categories[catIdx].numElements));
-		resources.inputs.push_back(std::make_pair(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype, BufferSp(new Int8Buffer(inputs))));
+		resources.inputs.push_back(Resource(BufferSp(new Int8Buffer(inputs)), CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype));
 		for (deUint32 factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
 			for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
 			{
@@ -3228,34 +3167,34 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 					name += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(outputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				if (useConstIdx)
 				{
 					switch(constantIndices[constIndexIdx].constantIndex)
 					{
 					case 0:
 						if (categories[catIdx].numElements == 2)
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt32, 2, 0>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt32, 2, 0>;
 						else
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt32, 1, 0>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt32, 1, 0>;
 						break;
 					case 4:
 						if (categories[catIdx].numElements == 2)
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt32, 2, 4>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt32, 2, 4>;
 						else
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt32, 1, 4>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt32, 1, 4>;
 						break;
 					case 5:
 						if (categories[catIdx].numElements == 2)
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt32, 2, 5>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt32, 2, 5>;
 						else
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt32, 1, 5>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt32, 1, 5>;
 						break;
 					case 6:
 						if (categories[catIdx].numElements == 2)
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt32, 2, 6>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt32, 2, 6>;
 						else
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt32, 1, 6>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt32, 1, 6>;
 						break;
 					default:
 						DE_FATAL("Impossible");
@@ -3265,9 +3204,9 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 				else
 				{
 					if (categories[catIdx].numElements == 2)
-						resources.verifyIO = graphicsCheckUniformsArray<deInt8, deInt32, 2>;
+						resources.verifyIO = checkUniformsArray<deInt8, deInt32, 2>;
 					else
-						resources.verifyIO = graphicsCheckUniformsArray<deInt8, deInt32, 1>;
+						resources.verifyIO = checkUniformsArray<deInt8, deInt32, 1>;
 				}
 
 				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name));
@@ -3423,7 +3362,7 @@ void addGraphics8BitStoragePushConstantInt8To32Group (tcu::TestCaseGroup* testGr
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -3466,7 +3405,7 @@ void addGraphics8BitStoragePushConstantInt8To32Group (tcu::TestCaseGroup* testGr
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -3538,7 +3477,7 @@ void addGraphics8BitStoragePushConstantInt8To32Group (tcu::TestCaseGroup* testGr
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -3582,7 +3521,7 @@ void addGraphics8BitStoragePushConstantInt8To32Group (tcu::TestCaseGroup* testGr
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -3778,18 +3717,18 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 		switch (categories[catIdx].numElements)
 		{
 		case 1:
-			resources.verifyIO = graphicsCheckUniformsArray<deInt16, deInt8, 1>;
+			resources.verifyIO = checkUniformsArray<deInt16, deInt8, 1>;
 			break;
 		case 4:
-			resources.verifyIO = graphicsCheckUniformsArray<deInt16, deInt8, 4>;
+			resources.verifyIO = checkUniformsArray<deInt16, deInt8, 4>;
 			break;
 		default:
 			DE_FATAL("Impossible");
 			break;
 		}
 
-		resources.inputs.push_back(std::make_pair(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype, BufferSp(new Int16Buffer(inputs))));
-		resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int8Buffer(outputs))));
+		resources.inputs.push_back(Resource(BufferSp(new Int16Buffer(inputs)), CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype));
+		resources.outputs.push_back(Resource(BufferSp(new Int8Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 		for (deUint32 factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
 		{
@@ -4007,7 +3946,7 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 	{
 		resources.inputs.clear();
 		vector<deInt8>	inputs = getInt8s(rnd, (arrayStrideInBytesUniform / static_cast<deUint32>(sizeof(deInt8))) * (numDataPoints / categories[catIdx].numElements));
-		resources.inputs.push_back(std::make_pair(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype, BufferSp(new Int8Buffer(inputs))));
+		resources.inputs.push_back(Resource(BufferSp(new Int8Buffer(inputs)), CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].dtype));
 		for (deUint32 factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
 			for (deUint32 constIndexIdx = 0; constIndexIdx < DE_LENGTH_OF_ARRAY(constantIndices); ++constIndexIdx)
 			{
@@ -4041,34 +3980,34 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 					name += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(outputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				if (useConstIdx)
 				{
 					switch (constantIndices[constIndexIdx].constantIndex)
 					{
 					case 0:
 						if (categories[catIdx].numElements == 2)
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt16, 2, 0>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt16, 2, 0>;
 						else
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt16, 1, 0>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt16, 1, 0>;
 						break;
 					case 4:
 						if (categories[catIdx].numElements == 2)
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt16, 2, 4>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt16, 2, 4>;
 						else
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt16, 1, 4>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt16, 1, 4>;
 						break;
 					case 5:
 						if (categories[catIdx].numElements == 2)
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt16, 2, 5>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt16, 2, 5>;
 						else
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt16, 1, 5>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt16, 1, 5>;
 						break;
 					case 6:
 						if (categories[catIdx].numElements == 2)
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt16, 2, 6>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt16, 2, 6>;
 						else
-							resources.verifyIO = graphicsCheckUniformsArrayConstNdx<deInt8, deInt16, 1, 6>;
+							resources.verifyIO = checkUniformsArrayConstNdx<deInt8, deInt16, 1, 6>;
 						break;
 					default:
 						DE_FATAL("Impossible");
@@ -4078,9 +4017,9 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 				else
 				{
 					if (categories[catIdx].numElements == 2)
-						resources.verifyIO = graphicsCheckUniformsArray<deInt8, deInt16, 2>;
+						resources.verifyIO = checkUniformsArray<deInt8, deInt16, 2>;
 					else
-						resources.verifyIO = graphicsCheckUniformsArray<deInt8, deInt16, 1>;
+						resources.verifyIO = checkUniformsArray<deInt8, deInt16, 1>;
 				}
 
 				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name));
@@ -4240,7 +4179,7 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(useConstIdx ? constIdxData : sOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(useConstIdx ? constIdxData : sOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -4283,7 +4222,7 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(useConstIdx ? constIdxData : uOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(useConstIdx ? constIdxData : uOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -4358,7 +4297,7 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(useConstIdx ? constIdxData : sOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(useConstIdx ? constIdxData : sOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -4403,7 +4342,7 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(useConstIdx ? constIdxData : uOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(useConstIdx ? constIdxData : uOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -4672,12 +4611,12 @@ void addGraphics8BitStorageUniformStruct8To32Group (tcu::TestCaseGroup* testGrou
 			fragments["pre_main"]				= preMain.specialize(specs);
 			fragments["testfun"]				= testFun.specialize(specs);
 
-			resources.inputs.push_back(std::make_pair(CAPABILITIES[capIdx].dtype, BufferSp(new Int8Buffer(i8Data))));
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(i32Data))));
+			resources.inputs.push_back(Resource(BufferSp(new Int8Buffer(i8Data)), CAPABILITIES[capIdx].dtype));
+			resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(i32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			if (isUniform)
-				resources.verifyIO = graphicsCheckStruct<deInt8, deInt32, SHADERTEMPLATE_STRIDE8BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
+				resources.verifyIO = checkStruct<deInt8, deInt32, SHADERTEMPLATE_STRIDE8BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
 			else
-				resources.verifyIO = graphicsCheckStruct<deInt8, deInt32, SHADERTEMPLATE_STRIDE8BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430>;
+				resources.verifyIO = checkStruct<deInt8, deInt32, SHADERTEMPLATE_STRIDE8BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430>;
 
 			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[capIdx].name));
 		}
@@ -4942,12 +4881,12 @@ void addGraphics8BitStorageUniformStruct32To8Group (tcu::TestCaseGroup* testGrou
 			fragments["pre_main"]			= preMain.specialize(specs);
 			fragments["testfun"]			= testFun.specialize(specs);
 
-			resources.inputs.push_back(std::make_pair( CAPABILITIES[capIdx].dtype, BufferSp(new Int32Buffer(i32Data))));
-			resources.outputs.push_back(std::make_pair(CAPABILITIES[STORAGE_BUFFER_TEST].dtype, BufferSp(new Int8Buffer(i8Data))));
+			resources.inputs.push_back(Resource(BufferSp(new Int32Buffer(i32Data)), CAPABILITIES[capIdx].dtype));
+			resources.outputs.push_back(Resource(BufferSp(new Int8Buffer(i8Data)), CAPABILITIES[STORAGE_BUFFER_TEST].dtype));
 			if (isUniform)
-				resources.verifyIO = graphicsCheckStruct<deInt32, deInt8, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE8BIT_STD430>;
+				resources.verifyIO = checkStruct<deInt32, deInt8, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE8BIT_STD430>;
 			else
-				resources.verifyIO = graphicsCheckStruct<deInt32, deInt8, SHADERTEMPLATE_STRIDE32BIT_STD430, SHADERTEMPLATE_STRIDE8BIT_STD430>;
+				resources.verifyIO = checkStruct<deInt32, deInt8, SHADERTEMPLATE_STRIDE32BIT_STD430, SHADERTEMPLATE_STRIDE8BIT_STD430>;
 
 			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get8BitStorageFeatures(CAPABILITIES[STORAGE_BUFFER_TEST].name));
 		}
@@ -5174,9 +5113,9 @@ void addGraphics8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		fragments["pre_main"]			= preMain.specialize(specs);
 		fragments["testfun"]			= testFun.specialize(specs);
 
-		resources.verifyIO				= isUniform ? graphicsCheckStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : graphicsCheckStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
-		resources.inputs.push_back(std::make_pair( CAPABILITIES[capIdx].dtype, BufferSp(new Int8Buffer(inData))));
-		resources.outputs.push_back(std::make_pair(CAPABILITIES[STORAGE_BUFFER_TEST].dtype, BufferSp(new Int8Buffer(outData))));
+		resources.verifyIO				= isUniform ? checkStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : checkStruct<deInt8, deInt8, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
+		resources.inputs.push_back(Resource(BufferSp(new Int8Buffer(inData)), CAPABILITIES[capIdx].dtype));
+		resources.outputs.push_back(Resource(BufferSp(new Int8Buffer(outData)), CAPABILITIES[STORAGE_BUFFER_TEST].dtype));
 
 		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, group, get8BitStorageFeatures(CAPABILITIES[capIdx].name));
 	}

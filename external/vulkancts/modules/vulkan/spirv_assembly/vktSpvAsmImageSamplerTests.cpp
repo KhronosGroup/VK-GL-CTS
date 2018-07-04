@@ -725,16 +725,15 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 				ComputeShaderSpec	spec;
 
 				spec.numWorkGroups	= IVec3(numDataPoints, 1, 1);
-				spec.inputTypes[0]	= getVkDescriptorType((DescriptorType)descNdx);
 
-				spec.inputs.push_back(BufferSp(new Vec4Buffer(inputData)));
+				spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
 
 				// Separate sampler for sampled images
 				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 				{
 					vector<tcu::Vec4> dummyData;
-					spec.inputTypes[1] = VK_DESCRIPTOR_TYPE_SAMPLER;
-					spec.inputs.push_back(BufferSp(new Vec4Buffer(dummyData)));
+					spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData))));
+					spec.inputs[1].setDescriptorType(VK_DESCRIPTOR_TYPE_SAMPLER);
 				}
 
 				// Second combined image sampler with different image data
@@ -743,8 +742,8 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 					for (size_t i = 0; i < inputData.size(); i++)
 						inputData[i] = tcu::Vec4(1.0f) - inputData[i];
 
-					spec.inputTypes[1] = getVkDescriptorType((DescriptorType)descNdx);
 					spec.inputs.push_back(BufferSp(new Vec4Buffer(inputData)));
+					spec.inputs[1].setDescriptorType(getVkDescriptorType((DescriptorType)descNdx));
 				}
 
 				// Shader is expected to pass the input image data to the output buffer
@@ -961,7 +960,7 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 	const deUint32				numDataPoints		= 64;
 	RGBA						defaultColors[4];
 
-	std::vector<deInt32>		noSpecConstants;
+	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsInterfaces			noInterfaces;
 	std::vector<std::string>	noFeatures;
@@ -989,13 +988,13 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 
 				GraphicsResources				resources;
 
-				resources.inputs.push_back(std::make_pair(getVkDescriptorType((DescriptorType)descNdx),	BufferSp(new Vec4Buffer(inputData))));
+				resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
 
 				// Separate sampler for sampled images
 				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 				{
 					vector<tcu::Vec4> dummyData;
-					resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_SAMPLER, BufferSp(new Vec4Buffer(dummyData))));
+					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData)), VK_DESCRIPTOR_TYPE_SAMPLER));
 				}
 
 				// Second combined image sampler with different image data
@@ -1004,11 +1003,11 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 					for (size_t i = 0; i < inputData.size(); i++)
 						inputData[i] = tcu::Vec4(1.0f) - inputData[i];
 
-					resources.inputs.push_back(std::make_pair(getVkDescriptorType((DescriptorType)descNdx), BufferSp(new Vec4Buffer(inputData))));
+					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
 				}
 
 				// Shader is expected to pass the input image data to output buffer
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			BufferSp(new Vec4Buffer(inputData))));
+				resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				getDefaultColors(defaultColors);
 
@@ -1052,7 +1051,7 @@ bool verifyDepthCompareResult (const std::vector<Resource>&		originalFloats,
 		return false;
 
 	vector<deUint8>	expectedBytes;
-	expectedOutputs[0].second->getBytes(expectedBytes);
+	expectedOutputs[0].getBytes(expectedBytes);
 
 	const float*	returnedAsFloat	= static_cast<const float*>(outputAllocs[0]->getHostPtr());
 	const float*	expectedAsFloat	= reinterpret_cast<const float*>(&expectedBytes.front());
@@ -1079,7 +1078,7 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 	RGBA						defaultColors[4];
 	vector<Vec4>				inputDataVec4;
 
-	std::vector<deInt32>		noSpecConstants;
+	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsInterfaces			noInterfaces;
 	std::vector<std::string>	noFeatures;
@@ -1123,13 +1122,13 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 				if (hasDpethComponent)
 					inputData.resize(numDataPoints / 4u);
 
-				resources.inputs.push_back(std::make_pair(getVkDescriptorType((DescriptorType)descNdx), BufferSp(new Vec4Buffer(inputData))));
+				resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
 
 				// Separate sampler for sampled images
 				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
 				{
 					vector<Vec4> dummyData;
-					resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_SAMPLER, BufferSp(new Vec4Buffer(dummyData))));
+					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData)), VK_DESCRIPTOR_TYPE_SAMPLER));
 				}
 
 				// Second combined image sampler with different image data
@@ -1138,11 +1137,11 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 					for (size_t i = 0; i < inputData.size(); i++)
 						inputData[i] = Vec4(1.0f) - inputData[i];
 
-					resources.inputs.push_back(std::make_pair(getVkDescriptorType((DescriptorType)descNdx), BufferSp(new Vec4Buffer(inputData))));
+					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
 				}
 
 				// Read image without depth reference: shader is expected to pass the input image data to output buffer
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Vec4Buffer(inputData))));
+				resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				// Read image with depth reference: shader is expected to pass the depth comparison result to output buffer
 				if (hasDpethComponent)

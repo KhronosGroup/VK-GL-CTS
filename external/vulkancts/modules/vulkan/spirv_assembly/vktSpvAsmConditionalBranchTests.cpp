@@ -119,7 +119,7 @@ void addComputeSameLabelsTest (tcu::TestCaseGroup* group)
 		spec.assembly			= shaderSource.specialize(specs);
 		spec.numWorkGroups		= IVec3(numItems, 1, 1);
 
-		spec.outputs.push_back(BufferSp(new Buffer<deUint32>(outputData)));
+		spec.outputs.push_back(Resource(BufferSp(new Buffer<deUint32>(outputData))));
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "Tests both labels pointing to a same branch.", spec));
 	}
@@ -136,7 +136,7 @@ void addGraphicsSameLabelsTest (tcu::TestCaseGroup* group)
 	for (deUint32 numIdx = 0; numIdx < numItems; ++numIdx)
 		outputData.push_back(numIdx);
 
-	resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Buffer<deUint32>(outputData))));
+	resources.outputs.push_back(Resource(BufferSp(new Buffer<deUint32>(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 	getDefaultColors(defaultColors);
 
