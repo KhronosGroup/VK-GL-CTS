@@ -56,8 +56,7 @@ typedef vk::Unique<vk::VkShaderModule>								ModuleHandleUp;
 typedef de::SharedPtr<ModuleHandleUp>								ModuleHandleSp;
 typedef std::pair<std::string, vk::VkShaderStageFlagBits>			EntryToStage;
 typedef std::map<std::string, std::vector<EntryToStage> >			ModuleMap;
-typedef std::map<vk::VkShaderStageFlagBits, std::vector<deInt32> >	StageToSpecConstantMap;
-typedef std::pair<vk::VkDescriptorType, BufferSp>					Resource;
+typedef std::map<vk::VkShaderStageFlagBits, SpecConstants >			StageToSpecConstantMap;
 
 enum NumberType
 {
@@ -78,11 +77,6 @@ typedef enum RoundingModeFlags_e
 	ROUNDINGMODE_RTZ = 0x2,	// Round to zero
 } RoundingModeFlags;
 
-typedef bool (*GraphicsVerifyIOFunc) (const std::vector<Resource>&		inputs,
-									  const std::vector<AllocationSp>&	outputAllocations,
-									  const std::vector<Resource>&		expectedOutputs,
-									  tcu::TestLog&						log);
-
 typedef bool (*GraphicsVerifyBinaryFunc) (const ProgramBinary&	binary);
 
 // Resources used by graphics-pipeline-based tests.
@@ -102,7 +96,7 @@ struct GraphicsResources
 	// be called. If true is returned, then the test case is assumed to
 	// have passed, if false is returned, then the test case is assumed
 	// to have failed.
-	GraphicsVerifyIOFunc		verifyIO;
+	VerifyIOFunc				verifyIO;
 	GraphicsVerifyBinaryFunc	verifyBinary;
 	SpirvVersion				spirvVersion;
 
@@ -291,6 +285,7 @@ struct InstanceContext
 	GraphicsInterfaces						interfaces;
 	qpTestResult							failResult;
 	std::string								failMessageTemplate;	//!< ${reason} in the template will be replaced with a detailed failure message
+	bool									renderFullSquare;		// Forces to render whole render area, though with background color
 
 	InstanceContext (const tcu::RGBA							(&inputs)[4],
 					 const tcu::RGBA							(&outputs)[4],
@@ -427,7 +422,7 @@ void createTestForStage (vk::VkShaderStageFlagBits					stage,
 						 const tcu::RGBA							(&inputColors)[4],
 						 const tcu::RGBA							(&outputColors)[4],
 						 const std::map<std::string, std::string>&	testCodeFragments,
-						 const std::vector<deInt32>&				specConstants,
+						 const SpecConstants&						specConstants,
 						 const PushConstants&						pushConstants,
 						 const GraphicsResources&					resources,
 						 const GraphicsInterfaces&					interfaces,
@@ -436,13 +431,14 @@ void createTestForStage (vk::VkShaderStageFlagBits					stage,
 						 VulkanFeatures								vulkanFeatures,
 						 tcu::TestCaseGroup*						tests,
 						 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
-						 const std::string&							failMessageTemplate = std::string());
+						 const std::string&							failMessageTemplate = std::string(),
+						 const bool									renderFullSquare	= false);
 
 void createTestsForAllStages (const std::string&						name,
 							  const tcu::RGBA							(&inputColors)[4],
 							  const tcu::RGBA							(&outputColors)[4],
 							  const std::map<std::string, std::string>&	testCodeFragments,
-							  const std::vector<deInt32>&				specConstants,
+							  const SpecConstants&						specConstants,
 							  const PushConstants&						pushConstants,
 							  const GraphicsResources&					resources,
 							  const GraphicsInterfaces&					interfaces,
@@ -461,7 +457,7 @@ inline void createTestsForAllStages (const std::string&							name,
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
 {
-	std::vector<deInt32>		noSpecConstants;
+	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsResources			noResources;
 	GraphicsInterfaces			noInterfaces;
@@ -478,7 +474,7 @@ inline void createTestsForAllStages (const std::string&							name,
 									 const tcu::RGBA							(&inputColors)[4],
 									 const tcu::RGBA							(&outputColors)[4],
 									 const std::map<std::string, std::string>&	testCodeFragments,
-									 const std::vector<deInt32>&				specConstants,
+									 const SpecConstants&						specConstants,
 									 tcu::TestCaseGroup*						tests,
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
@@ -506,7 +502,7 @@ inline void createTestsForAllStages (const std::string&							name,
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
 {
-	std::vector<deInt32>		noSpecConstants;
+	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsInterfaces			noInterfaces;
 	std::vector<std::string>	noFeatures;
@@ -529,7 +525,7 @@ inline void createTestsForAllStages (const std::string&							name,
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
 {
-	std::vector<deInt32>		noSpecConstants;
+	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsInterfaces			noInterfaces;
 
@@ -551,7 +547,7 @@ inline void createTestsForAllStages (const std::string& name,
 									 const std::string&							failMessageTemplate	= std::string())
 {
 	GraphicsResources			noResources;
-	std::vector<deInt32>		noSpecConstants;
+	SpecConstants				noSpecConstants;
 	std::vector<std::string>	noFeatures;
 	PushConstants				noPushConstants;
 
@@ -573,7 +569,7 @@ inline void createTestsForAllStages (const std::string& name,
 									 const qpTestResult							failResult			= QP_TEST_RESULT_FAIL,
 									 const std::string&							failMessageTemplate	= std::string())
 {
-	std::vector<deInt32>			noSpecConstants;
+	SpecConstants					noSpecConstants;
 	GraphicsInterfaces				noInterfaces;
 	std::vector<std::string>		noFeatures;
 

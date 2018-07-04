@@ -276,6 +276,7 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 	, interfaces					(interfaces_)
 	, failResult					(QP_TEST_RESULT_FAIL)
 	, failMessageTemplate			("${reason}")
+	, renderFullSquare				(false)
 {
 	inputColors[0]		= inputs[0];
 	inputColors[1]		= inputs[1];
@@ -303,6 +304,7 @@ InstanceContext::InstanceContext (const InstanceContext& other)
 	, interfaces					(other.interfaces)
 	, failResult					(other.failResult)
 	, failMessageTemplate			(other.failMessageTemplate)
+	, renderFullSquare				(other.renderFullSquare)
 {
 	inputColors[0]		= other.inputColors[0];
 	inputColors[1]		= other.inputColors[1];
@@ -2311,8 +2313,10 @@ bool compare64BitFloat (double expected, double returned, tcu::TestLog& log)
 
 Move<VkBuffer> createBufferForResource (const DeviceInterface& vk, const VkDevice vkDevice, const Resource& resource, deUint32 queueFamilyIndex)
 {
+	const vk::VkDescriptorType resourceType = resource.getDescriptorType();
+
 	vector<deUint8>	resourceBytes;
-	resource.second->getBytes(resourceBytes);
+	resource.getBytes(resourceBytes);
 
 	const VkBufferCreateInfo	resourceBufferParams	=
 	{
@@ -2320,7 +2324,7 @@ Move<VkBuffer> createBufferForResource (const DeviceInterface& vk, const VkDevic
 		DE_NULL,															// pNext
 		(VkBufferCreateFlags)0,												// flags
 		(VkDeviceSize)resourceBytes.size(),									// size
-		(VkBufferUsageFlags)getMatchingBufferUsageFlagBit(resource.first),	// usage
+		(VkBufferUsageFlags)getMatchingBufferUsageFlagBit(resourceType),	// usage
 		VK_SHARING_MODE_EXCLUSIVE,											// sharingMode
 		1u,																	// queueFamilyCount
 		&queueFamilyIndex,													// pQueueFamilyIndices
@@ -2343,7 +2347,7 @@ Move<VkImage> createImageForResource (const DeviceInterface& vk, const VkDevice 
 		1u,																	//	deUint32			arraySize;
 		VK_SAMPLE_COUNT_1_BIT,												//	deUint32			samples;
 		VK_IMAGE_TILING_OPTIMAL,											//	VkImageTiling		tiling;
-		getMatchingImageUsageFlags(resource.first),							//	VkImageUsageFlags	usage;
+		getMatchingImageUsageFlags(resource.getDescriptorType()),			//	VkImageUsageFlags	usage;
 		VK_SHARING_MODE_EXCLUSIVE,											//	VkSharingMode		sharingMode;
 		1u,																	//	deUint32			queueFamilyCount;
 		&queueFamilyIndex,													//	const deUint32*		pQueueFamilyIndices;
@@ -2467,6 +2471,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const deUint32								numResources			= static_cast<deUint32>(instance.resources.inputs.size() + instance.resources.outputs.size());
 	const bool									needInterface			= !instance.interfaces.empty();
 	const VkPhysicalDeviceFeatures&				features				= context.getDeviceFeatures();
+	const Vec4									defaulClearColor		(0.125f, 0.25f, 0.75f, 1.0f);
 
 	supportsGeometry		= features.geometryShader == VK_TRUE;
 	supportsTessellation	= features.tessellationShader == VK_TRUE;
@@ -2523,16 +2528,27 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		}
 	}
 
-	// 8bit storage features
+	// Core features
 	{
-		if (!is8BitStorageFeaturesSupported(context, instance.requestedFeatures.ext8BitStorage))
-			TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
+		const char* unsupportedFeature = DE_NULL;
+
+		if (!isCoreFeaturesSupported(context, instance.requestedFeatures.coreFeatures, &unsupportedFeature))
+			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
 	}
 
-	// 16bit storage features
+	// Extension features
 	{
-		if (!is16BitStorageFeaturesSupported(context, instance.requestedFeatures.ext16BitStorage))
-			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
+		// 16bit storage features
+		{
+			if (!is16BitStorageFeaturesSupported(context, instance.requestedFeatures.ext16BitStorage))
+				TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
+		}
+
+		// 8bit storage features
+		{
+			if (!is8BitStorageFeaturesSupported(context, instance.requestedFeatures.ext8BitStorage))
+				TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
+		}
 	}
 
 	// 64bit float feature
@@ -2571,27 +2587,60 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const Vec4								vertexData[]			=
 	{
 		// Upper left corner:
-		Vec4(-1.0f, -1.0f, 0.0f, 1.0f), instance.inputColors[0].toVec(),
-		Vec4(-0.5f, -1.0f, 0.0f, 1.0f), instance.inputColors[0].toVec(),
-		Vec4(-1.0f, -0.5f, 0.0f, 1.0f), instance.inputColors[0].toVec(),
+		Vec4(-1.0f, -1.0f, 0.0f, 1.0f), instance.inputColors[0].toVec(),	//1
+		Vec4(-0.5f, -1.0f, 0.0f, 1.0f), instance.inputColors[0].toVec(),	//2
+		Vec4(-1.0f, -0.5f, 0.0f, 1.0f), instance.inputColors[0].toVec(),	//3
 
 		// Upper right corner:
-		Vec4(+0.5f, -1.0f, 0.0f, 1.0f), instance.inputColors[1].toVec(),
-		Vec4(+1.0f, -1.0f, 0.0f, 1.0f), instance.inputColors[1].toVec(),
-		Vec4(+1.0f, -0.5f, 0.0f, 1.0f), instance.inputColors[1].toVec(),
+		Vec4(+0.5f, -1.0f, 0.0f, 1.0f), instance.inputColors[1].toVec(),	//4
+		Vec4(+1.0f, -1.0f, 0.0f, 1.0f), instance.inputColors[1].toVec(),	//5
+		Vec4(+1.0f, -0.5f, 0.0f, 1.0f), instance.inputColors[1].toVec(),	//6
 
 		// Lower left corner:
-		Vec4(-1.0f, +0.5f, 0.0f, 1.0f), instance.inputColors[2].toVec(),
-		Vec4(-0.5f, +1.0f, 0.0f, 1.0f), instance.inputColors[2].toVec(),
-		Vec4(-1.0f, +1.0f, 0.0f, 1.0f), instance.inputColors[2].toVec(),
+		Vec4(-1.0f, +0.5f, 0.0f, 1.0f), instance.inputColors[2].toVec(),	//7
+		Vec4(-0.5f, +1.0f, 0.0f, 1.0f), instance.inputColors[2].toVec(),	//8
+		Vec4(-1.0f, +1.0f, 0.0f, 1.0f), instance.inputColors[2].toVec(),	//9
 
 		// Lower right corner:
-		Vec4(+1.0f, +0.5f, 0.0f, 1.0f), instance.inputColors[3].toVec(),
-		Vec4(+1.0f, +1.0f, 0.0f, 1.0f), instance.inputColors[3].toVec(),
-		Vec4(+0.5f, +1.0f, 0.0f, 1.0f), instance.inputColors[3].toVec()
+		Vec4(+1.0f, +0.5f, 0.0f, 1.0f), instance.inputColors[3].toVec(),	//10
+		Vec4(+1.0f, +1.0f, 0.0f, 1.0f), instance.inputColors[3].toVec(),	//11
+		Vec4(+0.5f, +1.0f, 0.0f, 1.0f), instance.inputColors[3].toVec(),	//12
+
+		// The rest is used only renderFullSquare specified. Fills area already filled with clear color
+		// Left 1
+		Vec4(-1.0f, -0.5f, 0.0f, 1.0f), defaulClearColor,					//3
+		Vec4(-0.5f, -1.0f, 0.0f, 1.0f), defaulClearColor,					//2
+		Vec4(-1.0f, +0.5f, 0.0f, 1.0f), defaulClearColor,					//7
+
+		// Left 2
+		Vec4(-1.0f, +0.5f, 0.0f, 1.0f), defaulClearColor,					//7
+		Vec4(-0.5f, -1.0f, 0.0f, 1.0f), defaulClearColor,					//2
+		Vec4(-0.5f, +1.0f, 0.0f, 1.0f), defaulClearColor,					//8
+
+		// Left-Center
+		Vec4(-0.5f, +1.0f, 0.0f, 1.0f), defaulClearColor,					//8
+		Vec4(-0.5f, -1.0f, 0.0f, 1.0f), defaulClearColor,					//2
+		Vec4(+0.5f, -1.0f, 0.0f, 1.0f), defaulClearColor,					//4
+
+		// Right-Center
+		Vec4(+0.5f, -1.0f, 0.0f, 1.0f), defaulClearColor,					//4
+		Vec4(+0.5f, +1.0f, 0.0f, 1.0f), defaulClearColor,					//12
+		Vec4(-0.5f, +1.0f, 0.0f, 1.0f), defaulClearColor,					//8
+
+		// Right 2
+		Vec4(+0.5f, -1.0f, 0.0f, 1.0f), defaulClearColor,					//4
+		Vec4(+1.0f, -0.5f, 0.0f, 1.0f), defaulClearColor,					//6
+		Vec4(+0.5f, +1.0f, 0.0f, 1.0f), defaulClearColor,					//12
+
+		// Right 1
+		Vec4(+0.5f, +1.0f, 0.0f, 1.0f), defaulClearColor,					//12
+		Vec4(+1.0f, -0.5f, 0.0f, 1.0f), defaulClearColor,					//6
+		Vec4(+1.0f, +0.5f, 0.0f, 1.0f), defaulClearColor,					//10
 	};
+
 	const size_t							singleVertexDataSize	= 2 * sizeof(Vec4);
-	const size_t							vertexCount				= sizeof(vertexData) / singleVertexDataSize;
+	const size_t							vertexCount				= instance.renderFullSquare ? sizeof(vertexData) / singleVertexDataSize : 4*3;
+	const size_t							vertexDataSize			= vertexCount * singleVertexDataSize;
 
 	Move<VkBuffer>							vertexInputBuffer;
 	de::MovePtr<Allocation>					vertexInputMemory;
@@ -2606,7 +2655,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	//	VkStructureType		sType;
 		DE_NULL,								//	const void*			pNext;
 		0u,										//	VkBufferCreateFlags	flags;
-		(VkDeviceSize)sizeof(vertexData),		//	VkDeviceSize		size;
+		(VkDeviceSize)vertexDataSize,			//	VkDeviceSize		size;
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,		//	VkBufferUsageFlags	usage;
 		VK_SHARING_MODE_EXCLUSIVE,				//	VkSharingMode		sharingMode;
 		1u,										//	deUint32			queueFamilyCount;
@@ -2861,13 +2910,13 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			const Resource&	resource	= instance.resources.inputs[inputNdx];
 
-			const bool		hasImage	= (resource.first == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
-										  (resource.first == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
-										  (resource.first == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			const bool		hasImage	= (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-			const bool		hasSampler	= (resource.first == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
-										  (resource.first == VK_DESCRIPTOR_TYPE_SAMPLER)		||
-										  (resource.first == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			const bool		hasSampler	= (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER)			||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
 			// Resource is a buffer
 			if (!hasImage && !hasSampler)
@@ -2889,7 +2938,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 					};
 
 					vector<deUint8>					resourceBytes;
-					resource.second->getBytes(resourceBytes);
+					resource.getBytes(resourceBytes);
 
 					deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
 					VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
@@ -2918,7 +2967,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 					};
 
 					vector<deUint8>					resourceBytes;
-					resource.second->getBytes(resourceBytes);
+					resource.getBytes(resourceBytes);
 
 					deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
 					VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
@@ -2939,7 +2988,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			const VkDescriptorSetLayoutBinding	binding				=
 			{
 				inputNdx,											// binding
-				resource.first,										// descriptorType
+				resource.getDescriptorType(),						// descriptorType
 				1u,													// descriptorCount
 				VK_SHADER_STAGE_ALL_GRAPHICS,						// stageFlags
 				DE_NULL,											// pImmutableSamplers
@@ -2949,7 +2998,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Note: the following code doesn't check and unify descriptors of the same type.
 			const VkDescriptorPoolSize		poolSize				=
 			{
-				resource.first,										// type
+				resource.getDescriptorType(),						// type
 				1u,													// descriptorCount
 			};
 			poolSizes.push_back(poolSize);
@@ -2976,7 +3025,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				VK_WHOLE_SIZE,										//	VkDeviceSize	size;
 			};
 
-			resource.second->getBytes(resourceBytes);
+			resource.getBytes(resourceBytes);
 			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resourceBytes.size());
 			VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
 
@@ -2987,7 +3036,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			const VkDescriptorSetLayoutBinding	binding				=
 			{
 				numInResources  + outputNdx,						// binding
-				resource.first,										// descriptorType
+				resource.getDescriptorType(),						// descriptorType
 				1u,													// descriptorCount
 				VK_SHADER_STAGE_ALL_GRAPHICS,						// stageFlags
 				DE_NULL,											// pImmutableSamplers
@@ -2997,7 +3046,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Note: the following code doesn't check and unify descriptors of the same type.
 			const VkDescriptorPoolSize		poolSize				=
 			{
-				resource.first,										// type
+				resource.getDescriptorType(),						// type
 				1u,													// descriptorCount
 			};
 			poolSizes.push_back(poolSize);
@@ -3052,18 +3101,18 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		{
 			const Resource&	resource	= instance.resources.inputs[inputNdx];
 
-			const bool		hasImage	= (resource.first == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
-										  (resource.first == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
-										  (resource.first == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			const bool		hasImage	= (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
-			const bool		hasSampler	= (resource.first == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
-										  (resource.first == VK_DESCRIPTOR_TYPE_SAMPLER)		||
-										  (resource.first == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+			const bool		hasSampler	= (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER)			||
+										  (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
 			// Create image view and sampler
 			if (hasImage || hasSampler)
 			{
-				if (resource.first != VK_DESCRIPTOR_TYPE_SAMPLER)
+				if (resource.getDescriptorType() != VK_DESCRIPTOR_TYPE_SAMPLER)
 				{
 					const VkImageViewCreateInfo	imgViewParams	=
 					{
@@ -3123,7 +3172,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			}
 
 			// Create descriptor buffer and image infos
-			switch (resource.first)
+			switch (resource.getDescriptorType())
 			{
 				case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 				case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
@@ -3183,7 +3232,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				inputNdx,														// binding
 				0,																// dstArrayElement
 				1u,																// descriptorCount
-				instance.resources.inputs[inputNdx].first,						// descriptorType
+				instance.resources.inputs[inputNdx].getDescriptorType(),		// descriptorType
 				( (hasImage | hasSampler)	? &dImageInfos.back()	: DE_NULL),	// pImageInfo
 				(!(hasImage | hasSampler)	? &dBufferInfos.back()	: DE_NULL),	// pBufferInfo
 				DE_NULL,														// pTexelBufferView
@@ -3202,16 +3251,16 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			dBufferInfos.push_back(bufInfo);
 
 			const VkWriteDescriptorSet			writeSpec			= {
-				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,				// sType
-				DE_NULL,											// pNext
-				rawSet,												// dstSet
-				numInResources + outputNdx,							// binding
-				0,													// dstArrayElement
-				1u,													// descriptorCount
-				instance.resources.outputs[outputNdx].first,		// descriptorType
-				DE_NULL,											// pImageInfo
-				&dBufferInfos.back(),								// pBufferInfo
-				DE_NULL,											// pTexelBufferView
+				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,						// sType
+				DE_NULL,													// pNext
+				rawSet,														// dstSet
+				numInResources + outputNdx,									// binding
+				0,															// dstArrayElement
+				1u,															// descriptorCount
+				instance.resources.outputs[outputNdx].getDescriptorType(),	// descriptorType
+				DE_NULL,													// pImageInfo
+				&dBufferInfos.back(),										// pBufferInfo
+				DE_NULL,													// pTexelBufferView
 			};
 			writeSpecs.push_back(writeSpec);
 		}
@@ -3300,26 +3349,31 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 		if (stageIt != instance.specConstants.end())
 		{
-			const size_t						numSpecConstants	= stageIt->second.size();
+			const size_t						numSpecConstants	= stageIt->second.getValuesCount();
 			vector<VkSpecializationMapEntry>	entries;
 			VkSpecializationInfo				specInfo;
+			size_t								offset				= 0;
 
 			entries.resize(numSpecConstants);
 
-			// Only support 32-bit integers as spec constants now. And their constant IDs are numbered sequentially starting from 0.
+			// Constant IDs are numbered sequentially starting from 0.
 			for (size_t ndx = 0; ndx < numSpecConstants; ++ndx)
 			{
+				const size_t valueSize	= stageIt->second.getValueSize(ndx);
+
 				entries[ndx].constantID	= (deUint32)ndx;
-				entries[ndx].offset		= deUint32(ndx * sizeof(deInt32));
-				entries[ndx].size		= sizeof(deInt32);
+				entries[ndx].offset		= static_cast<deUint32>(offset);
+				entries[ndx].size		= valueSize;
+
+				offset					+= valueSize;
 			}
 
 			specConstantEntries.push_back(entries);
 
 			specInfo.mapEntryCount	= (deUint32)numSpecConstants;
 			specInfo.pMapEntries	= specConstantEntries.back().data();
-			specInfo.dataSize		= numSpecConstants * sizeof(deInt32);
-			specInfo.pData			= stageIt->second.data();
+			specInfo.dataSize		= offset;
+			specInfo.pData			= stageIt->second.getValuesBuffer();
 			specializationInfos.push_back(specInfo);
 
 			stageInfo->pSpecializationInfo = &specializationInfos.back();
@@ -3641,7 +3695,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	{
 		vector<VkClearValue>			clearValue;
-		clearValue.push_back(makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f));
+		clearValue.push_back(makeClearValueColorF32(defaulClearColor[0], defaulClearColor[1], defaulClearColor[2], defaulClearColor[3]));
 		if (needInterface)
 		{
 			clearValue.push_back(makeClearValueColorU32(0, 0, 0, 0));
@@ -3775,11 +3829,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			DE_NULL,								//	const void*		pNext;
 			vertexBufferMemory->getMemory(),		//	VkDeviceMemory	mem;
 			0,										//	VkDeviceSize	offset;
-			(VkDeviceSize)sizeof(vertexData),		//	VkDeviceSize	size;
+			(VkDeviceSize)vertexDataSize,			//	VkDeviceSize	size;
 		};
 		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
 
-		deMemcpy(vertexBufPtr, &vertexData[0], sizeof(vertexData));
+		deMemcpy(vertexBufPtr, &vertexData[0], vertexDataSize);
 		VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
 	}
 
@@ -4015,7 +4069,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	// Check the contents in output resources match with expected.
 	for (deUint32 outputNdx = 0; outputNdx < numOutResources; ++outputNdx)
 	{
-		const BufferSp& expected = instance.resources.outputs[outputNdx].second;
+		const BufferSp& expected = instance.resources.outputs[outputNdx].getBuffer();
 
 		if (instance.resources.verifyIO != DE_NULL)
 		{
@@ -4115,7 +4169,7 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 						 const RGBA					(&inputColors)[4],
 						 const RGBA					(&outputColors)[4],
 						 const map<string, string>&	testCodeFragments,
-						 const vector<deInt32>&		specConstants,
+						 const SpecConstants&		specConstants,
 						 const PushConstants&		pushConstants,
 						 const GraphicsResources&	resources,
 						 const GraphicsInterfaces&	interfaces,
@@ -4124,7 +4178,8 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 						 VulkanFeatures				vulkanFeatures,
 						 tcu::TestCaseGroup*		tests,
 						 const qpTestResult			failResult,
-						 const string&				failMessageTemplate)
+						 const string&				failMessageTemplate,
+						 const bool					renderFullSquare)
 {
 	const StageData&				stageData			= getStageData(stage);
 	DE_ASSERT(stageData.getPipelineFn || stageData.initProgramsFn);
@@ -4145,6 +4200,7 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 	if (!failMessageTemplate.empty())
 		ctx.failMessageTemplate = failMessageTemplate;
 
+	ctx.renderFullSquare = renderFullSquare;
 	addFunctionCaseWithPrograms<InstanceContext>(tests, name, "", stageData.initProgramsFn, runAndVerifyDefaultPipeline, ctx);
 }
 
@@ -4152,7 +4208,7 @@ void createTestsForAllStages (const std::string&			name,
 							  const RGBA					(&inputColors)[4],
 							  const RGBA					(&outputColors)[4],
 							  const map<string, string>&	testCodeFragments,
-							  const vector<deInt32>&		specConstants,
+							  const SpecConstants&			specConstants,
 							  const PushConstants&			pushConstants,
 							  const GraphicsResources&		resources,
 							  const GraphicsInterfaces&		interfaces,
@@ -4190,7 +4246,7 @@ void addTessCtrlTest (tcu::TestCaseGroup* group, const char* name, const map<str
 	getDefaultColors(defaultColors);
 
 	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, name,
-					   defaultColors, defaultColors, fragments, vector<deInt32>(), PushConstants(), GraphicsResources(),
+					   defaultColors, defaultColors, fragments, SpecConstants(), PushConstants(), GraphicsResources(),
 					   GraphicsInterfaces(), vector<string>(), vector<string>(), VulkanFeatures(), group);
 }
 
