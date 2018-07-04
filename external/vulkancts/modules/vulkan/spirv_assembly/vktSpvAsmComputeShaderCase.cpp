@@ -26,6 +26,8 @@
 #include "deSharedPtr.hpp"
 #include "deSTLUtil.hpp"
 
+#include "vktSpvAsmUtils.hpp"
+
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
@@ -292,11 +294,12 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface& vkdi, const Vk
 /*--------------------------------------------------------------------*//*!
  * \brief Create a compute pipeline based on the given shader
  *//*--------------------------------------------------------------------*/
-Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDevice& device, VkPipelineLayout pipelineLayout, VkShaderModule shader, const char* entryPoint, const vector<deUint32>& specConstants)
+Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDevice& device, VkPipelineLayout pipelineLayout, VkShaderModule shader, const char* entryPoint, const vkt::SpirVAssembly::SpecConstants& specConstants)
 {
-	const deUint32							numSpecConstants				= (deUint32)specConstants.size();
+	const deUint32							numSpecConstants				= (deUint32)specConstants.getValuesCount();
 	vector<VkSpecializationMapEntry>		entries;
 	VkSpecializationInfo					specInfo;
+	size_t									offset							= 0;
 
 	if (numSpecConstants != 0)
 	{
@@ -304,15 +307,19 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDev
 
 		for (deUint32 ndx = 0; ndx < numSpecConstants; ++ndx)
 		{
+			const size_t valueSize	= specConstants.getValueSize(ndx);
+
 			entries[ndx].constantID	= ndx;
-			entries[ndx].offset		= ndx * (deUint32)sizeof(deUint32);
-			entries[ndx].size		= sizeof(deUint32);
+			entries[ndx].offset		= static_cast<deUint32>(offset);
+			entries[ndx].size		= valueSize;
+
+			offset					+= valueSize;
 		}
 
 		specInfo.mapEntryCount		= numSpecConstants;
 		specInfo.pMapEntries		= &entries[0];
 		specInfo.dataSize			= numSpecConstants * sizeof(deUint32);
-		specInfo.pData				= specConstants.data();
+		specInfo.pData				= specConstants.getValuesBuffer();
 	}
 
 	const VkPipelineShaderStageCreateInfo	pipelineShaderStageCreateInfo	=
@@ -432,6 +439,15 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		TCU_THROW(NotSupportedError, "shaderFloat64 feature is not supported");
 	}
 
+	// Core features
+	{
+		const char* unsupportedFeature = DE_NULL;
+
+		if (!isCoreFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.coreFeatures, &unsupportedFeature))
+			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
+	}
+
+	// Extension features
 	{
 		// 8bit storage features
 		{
@@ -463,12 +479,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	for (deUint32 inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
 	{
-		if (m_shaderSpec.inputTypes.count(inputNdx) != 0)
-			descriptorTypes.push_back(m_shaderSpec.inputTypes.at(inputNdx));
-		else
-			descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-
-		const VkDescriptorType	descType	= descriptorTypes[inputNdx];
+		const VkDescriptorType	descType	= m_shaderSpec.inputs[inputNdx].getDescriptorType();
 
 		const bool				hasImage	= (descType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)	||
 											  (descType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)	||
@@ -478,10 +489,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 											  (descType == VK_DESCRIPTOR_TYPE_SAMPLER)			||
 											  (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
+		descriptorTypes.push_back(descType);
+
 		// Buffer
 		if (!hasImage && !hasSampler)
 		{
-			const BufferSp&		input			= m_shaderSpec.inputs[inputNdx];
+			const BufferSp&		input			= m_shaderSpec.inputs[inputNdx].getBuffer();
 			vector<deUint8>		inputBytes;
 
 			input->getBytes(inputBytes);
@@ -498,7 +511,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		// Image
 		else if (hasImage)
 		{
-			const BufferSp&				input			= m_shaderSpec.inputs[inputNdx];
+			const BufferSp&				input			= m_shaderSpec.inputs[inputNdx].getBuffer();
 			vector<deUint8>				inputBytes;
 
 			input->getBytes(inputBytes);
@@ -678,10 +691,12 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	for (deUint32 outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 	{
-		descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		DE_ASSERT(m_shaderSpec.outputs[outputNdx].getDescriptorType() == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+		descriptorTypes.push_back(m_shaderSpec.outputs[outputNdx].getDescriptorType());
 
 		AllocationMp		alloc;
-		const BufferSp&		output		= m_shaderSpec.outputs[outputNdx];
+		const BufferSp&		output		= m_shaderSpec.outputs[outputNdx].getBuffer();
 		vector<deUint8>		outputBytes;
 
 		output->getBytes(outputBytes);
@@ -738,7 +753,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Invalidate output memory ranges before checking on host.
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 	{
-		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.outputs[outputNdx]->getByteSize(), m_shaderSpec.coherentMemory);
+		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.outputs[outputNdx].getByteSize(), m_shaderSpec.coherentMemory);
 	}
 
 	// Check output.
@@ -751,7 +766,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	{
 		for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 		{
-			const BufferSp&	expectedOutput = m_shaderSpec.outputs[outputNdx];
+			const BufferSp&	expectedOutput = m_shaderSpec.outputs[outputNdx].getBuffer();;
 			vector<deUint8>	expectedBytes;
 
 			expectedOutput->getBytes(expectedBytes);

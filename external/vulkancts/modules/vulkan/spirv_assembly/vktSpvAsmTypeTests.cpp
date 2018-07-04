@@ -1378,14 +1378,14 @@ bool SpvAsmTypeTests<T>::verifyResult (const vector<Resource>&		inputs,
 	vector<deUint8>	inputBytes[4];
 	vector<deUint8>	expectedBytes;
 
-	expectedOutputs[0].second->getBytes(expectedBytes);
+	expectedOutputs[0].getBytes(expectedBytes);
 	const deUint32 count	= static_cast<deUint32>(expectedBytes.size() / sizeof(T));
 	const T* obtained		= static_cast<const T *>(outputAllocations[0]->getHostPtr());
 	const T* expected		= reinterpret_cast<const T*>(&expectedBytes.front());
 
 	for (deUint32 ndxCount = 0; ndxCount < inputs.size(); ndxCount++)
 	{
-		inputs[ndxCount].second->getBytes(inputBytes[ndxCount]);
+		inputs[ndxCount].getBytes(inputBytes[ndxCount]);
 		input[ndxCount]	= reinterpret_cast<const T*>(&inputBytes[ndxCount].front());
 	}
 
@@ -2146,8 +2146,7 @@ void SpvAsmTypeInt16Tests::getDataset (vector<deInt16>&	input,
 void SpvAsmTypeInt16Tests::pushResource (vector<Resource>&	resource,
 										 vector<deInt16>&	data)
 {
-	resource.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					   BufferSp(new Int16Buffer(data))));
+	resource.push_back(Resource(BufferSp(new Int16Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
 
 class SpvAsmTypeInt32Tests : public SpvAsmTypeTests<deInt32>
@@ -2198,8 +2197,7 @@ void SpvAsmTypeInt32Tests::getDataset (vector<deInt32>&	input,
 void SpvAsmTypeInt32Tests::pushResource (vector<Resource>&	resource,
 										 vector<deInt32>&	data)
 {
-	resource.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					  BufferSp(new Int32Buffer(data))));
+	resource.push_back(Resource(BufferSp(new Int32Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
 
 class SpvAsmTypeInt64Tests : public SpvAsmTypeTests<deInt64>
@@ -2250,8 +2248,7 @@ void SpvAsmTypeInt64Tests::getDataset (vector<deInt64>&	input,
 void SpvAsmTypeInt64Tests::pushResource	(vector<Resource>&	resource,
 										 vector<deInt64>&	data)
 {
-	resource.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					   BufferSp(new Int64Buffer(data))));
+	resource.push_back(Resource(BufferSp(new Int64Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
 
 class SpvAsmTypeUint16Tests : public SpvAsmTypeTests<deUint16>
@@ -2301,8 +2298,7 @@ void SpvAsmTypeUint16Tests::getDataset (vector<deUint16>&	input,
 void SpvAsmTypeUint16Tests::pushResource (vector<Resource>&	resource,
 										  vector<deUint16>&	data)
 {
-	resource.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					   BufferSp(new Uint16Buffer(data))));
+	resource.push_back(Resource(BufferSp(new Uint16Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
 
 class SpvAsmTypeUint32Tests : public SpvAsmTypeTests<deUint32>
@@ -2352,8 +2348,7 @@ void SpvAsmTypeUint32Tests::getDataset (vector<deUint32>&	input,
 void SpvAsmTypeUint32Tests::pushResource (vector<Resource>&	resource,
 										  vector<deUint32>&	data)
 {
-	resource.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					   BufferSp(new Uint32Buffer(data))));
+	resource.push_back(Resource(BufferSp(new Uint32Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
 
 class SpvAsmTypeUint64Tests : public SpvAsmTypeTests<deUint64>
@@ -2403,8 +2398,7 @@ void SpvAsmTypeUint64Tests::getDataset (vector<deUint64>&	input,
 void SpvAsmTypeUint64Tests::pushResource (vector<Resource>&	resource,
 										  vector<deUint64>&	data)
 {
-	resource.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					   BufferSp(new Uint64Buffer(data))));
+	resource.push_back(Resource(BufferSp(new Uint64Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
 
 template <class T>

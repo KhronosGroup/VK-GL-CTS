@@ -29,7 +29,7 @@ namespace SpirVAssembly
 {
 namespace
 {
-bool verifyOutputWithEpsilon (const std::vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, tcu::TestLog& log, const float epsilon)
+bool verifyOutputWithEpsilon (const std::vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, tcu::TestLog& log, const float epsilon)
 {
 	DE_ASSERT(outputAllocs.size() != 0);
 	DE_ASSERT(outputAllocs.size() == expectedOutputs.size());
@@ -37,7 +37,7 @@ bool verifyOutputWithEpsilon (const std::vector<AllocationSp>& outputAllocs, con
 	for (size_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		std::vector<deUint8>	expectedBytes;
-		expectedOutputs[outputNdx]->getBytes(expectedBytes);
+		expectedOutputs[outputNdx].getBytes(expectedBytes);
 
 		std::vector<float>	expectedFloats	(expectedBytes.size() / sizeof (float));
 		std::vector<float>	actualFloats	(expectedBytes.size() / sizeof (float));
@@ -123,7 +123,7 @@ const char* getComputeAsmInputOutputBufferTraits (void)
 		"OpMemberDecorate %buf 0 Offset 0\n";
 }
 
-bool verifyOutput (const std::vector<BufferSp>&, const std::vector<AllocationSp>& outputAllocs, const std::vector<BufferSp>& expectedOutputs, tcu::TestLog& log)
+bool verifyOutput (const std::vector<Resource>&, const std::vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, tcu::TestLog& log)
 {
 	const float	epsilon	= 0.001f;
 	return verifyOutputWithEpsilon(outputAllocs, expectedOutputs, log, epsilon);

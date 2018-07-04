@@ -754,7 +754,7 @@ void addGraphicsPointerParamToParamTest (tcu::TestCaseGroup* group)
 	getDefaultColors(defaultColors);
 	expectedOutput.push_back(7.0f);
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
-	resources.outputs.push_back(std::make_pair(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(expectedOutput))));
+	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 	createTestsForAllStages("global_to_param", defaultColors, defaultColors, fragments, resources, extensions, group, requiredFeatures);
 }
@@ -849,7 +849,7 @@ void addGraphicsPointerParamToGlobalTest (tcu::TestCaseGroup* group)
 	getDefaultColors(defaultColors);
 	expectedOutput.push_back(7.0f);
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
-	resources.outputs.push_back(std::make_pair(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(expectedOutput))));
+	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 	createTestsForAllStages("param_to_global", defaultColors, defaultColors, fragments, resources, extensions, group, requiredFeatures);
 }
@@ -957,7 +957,7 @@ void addGraphicsPointerBufferMemoryTest (tcu::TestCaseGroup* group)
 		expectedOutput.push_back(2.0f);
 
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
-	resources.outputs.push_back(std::make_pair(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(expectedOutput))));
+	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 	createTestsForAllStages("buffer_memory", defaultColors, defaultColors, fragments, resources, extensions, group, requiredFeatures);
 }
@@ -1066,7 +1066,7 @@ void addGraphicsPointerBufferMemoryVariablePointersTest (tcu::TestCaseGroup* gro
 
 	extensions.push_back("VK_KHR_variable_pointers");
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
-	resources.outputs.push_back(std::make_pair(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(expectedOutput))));
+	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 	createTestsForAllStages("buffer_memory_variable_pointers", defaultColors, defaultColors, fragments, resources, extensions, group, requiredFeatures);
 }

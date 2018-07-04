@@ -134,11 +134,10 @@ void addComputeUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 
 		spec.assembly			= shaderSource;
 		spec.numWorkGroups		= IVec3(numElements, 1, 1);
-		spec.inputTypes[0]		= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
-		spec.inputs.push_back(BufferSp(new Vec4Buffer(inputData)));
+		spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
 		// Shader is expected to pass the input data by treating the input vec4 as mat2x2
-		spec.outputs.push_back(BufferSp(new Vec4Buffer(inputData)));
+		spec.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData))));
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, "mat2x2", "Tests mat2x2 member in UBO struct without padding (treated as vec4).", spec));
 	}
@@ -152,7 +151,7 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 	RGBA						defaultColors[4];
 	GraphicsResources			resources;
 
-	std::vector<deInt32>		noSpecConstants;
+	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsInterfaces			noInterfaces;
 	std::vector<std::string>	noFeatures;
@@ -163,9 +162,9 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 	for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 		inputData[numIdx] = tcu::Vec4(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), rnd.getFloat());
 
-	resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, BufferSp(new Vec4Buffer(inputData))));
+	resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER));
 	// Shader is expected to pass the input data by treating the input vec4 as mat2x2
-	resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Vec4Buffer(inputData))));
+	resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 	getDefaultColors(defaultColors);
 
@@ -246,7 +245,7 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 
 		"                         OpFunctionEnd\n";
 
-	resources.inputs.back().first	= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	resources.inputs.back().setDescriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
 	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
