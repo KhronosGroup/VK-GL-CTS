@@ -158,6 +158,7 @@ vector<string> addCoreDeviceExtensions(const vector<string>& extensions, deUint3
 deUint32 getTargetInstanceVersion (const PlatformInterface& vkp)
 {
 	deUint32 version = pack(ApiVersion(1, 0, 0));
+
 	if (vkp.enumerateInstanceVersion(&version) != VK_SUCCESS)
 		TCU_THROW(InternalError, "Enumerate instance version error");
 	return version;

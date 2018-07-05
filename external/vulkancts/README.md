@@ -467,3 +467,18 @@ targets.
 
 Do not truncate the shader cache file at startup. No shader compilation will
 occur on repeated runs of the CTS.
+
+
+RenderDoc
+---------
+The RenderDoc (https://renderdoc.org/) graphics debugger may be used to debug
+Vulkan tests.
+
+Following command line option should be used when launching tests from
+RenderDoc UI:
+
+	--deqp-renderdoc=enable
+
+This causes the framework to interface with the debugger and mark each dEQP
+test case as a separate 'frame', just for the purpose of capturing. The frames
+are added using RenderDoc 'In-Application API', instead of swapchain operations.

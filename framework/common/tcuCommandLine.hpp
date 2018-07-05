@@ -226,6 +226,9 @@ public:
 	//! Enable optimizing of spir-v (--deqp-optimize-spirv)
 	bool							isSpirvOptimizationEnabled	(void) const;
 
+	//! Should we mark frames and enable WAs for RenderDoc (--deqp-renderdoc)
+	bool							isRenderDocEnabled			(void) const;
+
 	/*--------------------------------------------------------------------*//*!
 	 * \brief Creates case list filter
 	 * \param archive Resources

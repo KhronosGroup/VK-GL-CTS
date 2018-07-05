@@ -56,6 +56,8 @@ set(VKUTILNOSHADER_SRCS
 	vkYCbCrImageWithMemory.hpp
 	vkObjUtil.cpp
 	vkObjUtil.hpp
+	vkRenderDocUtil.hpp
+	vkRenderDocUtil.cpp
 	)
 
 set(VKUTIL_SRCS

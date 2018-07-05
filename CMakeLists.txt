@@ -95,6 +95,9 @@ if (NOT EXISTS ${SPIRV_INCLUDE_PATH})
 endif()
 include_directories(${SPIRV_INCLUDE_PATH})
 
+# RenderDoc API
+include_directories(external/renderdoc/src)
+
 include_directories(${PNG_INCLUDE_PATH})
 
 message(STATUS "DEQP_TARGET_NAME        = ${DEQP_TARGET_NAME}")

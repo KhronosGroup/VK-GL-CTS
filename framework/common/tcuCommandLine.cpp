@@ -94,6 +94,7 @@ DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,		std::string);
 DE_DECLARE_COMMAND_LINE_OPT(Optimization,				int);
 DE_DECLARE_COMMAND_LINE_OPT(OptimizeSpirv,				bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,		bool);
+DE_DECLARE_COMMAND_LINE_OPT(RenderDoc,					bool);
 
 static void parseIntList (const char* src, std::vector<int>* dst)
 {
@@ -187,7 +188,8 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<OptimizeSpirv>		(DE_NULL,	"deqp-optimize-spirv",			"Apply optimization to spir-v shaders as well",		s_enableNames,		"disable")
 		<< Option<ShaderCache>			(DE_NULL,	"deqp-shadercache",				"Enable or disable shader cache",					s_enableNames,		"enable")
 		<< Option<ShaderCacheFilename>	(DE_NULL,	"deqp-shadercache-filename",	"Write shader cache to given file",										"shadercache.bin")
-		<< Option<ShaderCacheTruncate>	(DE_NULL,	"deqp-shadercache-truncate",	"Truncate shader cache before running tests",		s_enableNames,		"enable");
+		<< Option<ShaderCacheTruncate>	(DE_NULL,	"deqp-shadercache-truncate",	"Truncate shader cache before running tests",		s_enableNames,		"enable")
+		<< Option<RenderDoc>			(DE_NULL,	"deqp-renderdoc",				"Enable RenderDoc frame markers and workarounds",	s_enableNames,		"disable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
@@ -806,6 +808,7 @@ const char*				CommandLine::getShaderCacheFilename			(void) const	{ return m_cmd
 bool					CommandLine::isShaderCacheTruncateEnabled	(void) const	{ return m_cmdLine.getOption<opt::ShaderCacheTruncate>();			}
 int						CommandLine::getOptimizationRecipe			(void) const	{ return m_cmdLine.getOption<opt::Optimization>();					}
 bool					CommandLine::isSpirvOptimizationEnabled		(void) const	{ return m_cmdLine.getOption<opt::OptimizeSpirv>();					}
+bool					CommandLine::isRenderDocEnabled				(void) const	{ return m_cmdLine.getOption<opt::RenderDoc>();						}
 
 const char* CommandLine::getGLContextType (void) const
 {
