@@ -25,7 +25,7 @@ else ()
 endif ()
 
 if (EXISTS ${SPIRV_TOOLS_ABS_PATH}/source/opcode.cpp AND
-	EXISTS ${SPIRV_HEADERS_ABS_PATH}/include/spirv/unified1/spirv.h)
+	EXISTS ${SPIRV_HEADERS_ABS_PATH}/include/spirv/1.0/spirv.h)
 	message(STATUS "spirv-tools found; building with DEQP_HAVE_SPIRV_TOOLS")
 	set(CMAKE_C_FLAGS ${DE_3RD_PARTY_C_FLAGS})
 	set(CMAKE_CXX_FLAGS ${DE_3RD_PARTY_CXX_FLAGS})

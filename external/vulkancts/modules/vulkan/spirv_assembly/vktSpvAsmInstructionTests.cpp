@@ -50,6 +50,7 @@
 #include "tcuStringTemplate.hpp"
 
 #include "vktSpvAsmCrossStageInterfaceTests.hpp"
+#include "vktSpvAsm8bitStorageTests.hpp"
 #include "vktSpvAsm16bitStorageTests.hpp"
 #include "vktSpvAsmUboMatrixPaddingTests.hpp"
 #include "vktSpvAsmConditionalBranchTests.hpp"
@@ -9441,6 +9442,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 		computeTests->addChild(computeAndroidTests.release());
 	}
+
+	computeTests->addChild(create8BitStorageComputeGroup(testCtx));
 	computeTests->addChild(create16BitStorageComputeGroup(testCtx));
 	computeTests->addChild(createUboMatrixPaddingComputeGroup(testCtx));
 	computeTests->addChild(createVariableInitComputeGroup(testCtx));
@@ -9486,6 +9489,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	}
 	graphicsTests->addChild(createOpNameTests(testCtx));
 
+	graphicsTests->addChild(create8BitStorageGraphicsGroup(testCtx));
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
 	graphicsTests->addChild(createUboMatrixPaddingGraphicsGroup(testCtx));
 	graphicsTests->addChild(createVariableInitGraphicsGroup(testCtx));
