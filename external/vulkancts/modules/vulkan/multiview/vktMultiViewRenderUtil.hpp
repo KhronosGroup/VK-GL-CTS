@@ -41,9 +41,16 @@ vk::Move<vk::VkImageView>			makeImageView					(const vk::DeviceInterface& vk, co
 vk::Move<vk::VkFramebuffer>			makeFramebuffer					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkRenderPass renderPass, const std::vector<vk::VkImageView>& attachments, const deUint32 width, const deUint32 height, const deUint32 layers);
 vk::Move<vk::VkPipelineLayout>		makePipelineLayout				(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout* pSetLayouts = DE_NULL);
 vk::Move<vk::VkDescriptorSetLayout>	makeDescriptorSetLayout			(const vk::DeviceInterface& vk, const vk::VkDevice device);
-vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkSampleCountFlagBits samples = vk::VK_SAMPLE_COUNT_1_BIT, const vk::VkAttachmentLoadOp colorLoadOp = vk::VK_ATTACHMENT_LOAD_OP_CLEAR, const vk::VkFormat dsFormat = vk::VK_FORMAT_UNDEFINED);
+
+template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
+vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkSampleCountFlagBits samples, const vk::VkAttachmentLoadOp colorLoadOp, const vk::VkFormat dsFormat);
+
+template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
 vk::Move<vk::VkRenderPass>			makeRenderPassWithAttachments	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks);
+
+template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
 vk::Move<vk::VkRenderPass>			makeRenderPassWithDepth			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkFormat dsFormat);
+
 void								beginSecondaryCommandBuffer		(const vk::DeviceInterface& vk, const vk::VkCommandBuffer commandBuffer, const vk::VkRenderPass renderPass, const deUint32 subpass, const vk::VkFramebuffer framebuffer);
 void								imageBarrier					(const vk::DeviceInterface& vk, const vk::VkCommandBuffer cmdBuffer, const vk::VkImage image, const vk::VkImageSubresourceRange subresourceRange, const vk::VkImageLayout oldLayout, const vk::VkImageLayout newLayout, const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask, const vk::VkPipelineStageFlags srcStageMask = vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, const vk::VkPipelineStageFlags dstStageMask = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 

@@ -251,6 +251,11 @@ template<> VkStructureType getStructureType<VkBindImageMemoryInfo> (void)
 	return VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevice8BitStorageFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevice16BitStorageFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
@@ -724,6 +729,41 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePushDescriptorProper
 template<> VkStructureType getStructureType<VkPresentRegionsKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAttachmentDescription2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAttachmentReference2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSubpassDescription2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSubpassDependency2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassCreateInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSubpassBeginInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSubpassEndInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkSharedPresentSurfaceCapabilitiesKHR> (void)

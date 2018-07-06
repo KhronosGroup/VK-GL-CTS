@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRenderPassSparseRenderTargetTests.hpp"
+#include "vktRenderPassTestsUtil.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -61,6 +62,13 @@ namespace vkt
 {
 namespace
 {
+using namespace renderpass;
+
+enum RenderPassType
+{
+	RENDERPASS_TYPE_LEGACY = 0,
+	RENDERPASS_TYPE_RENDERPASS2,
+};
 
 de::MovePtr<Allocation> createBufferMemory (const DeviceInterface&	vk,
 											VkDevice				device,
@@ -189,11 +197,81 @@ Move<VkBuffer> createBuffer (const DeviceInterface&		vkd,
 	return createBuffer(vkd, device, &createInfo);
 }
 
+template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
 Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkDevice				device,
 									 VkFormat				dstFormat)
 {
-	return makeRenderPass(vkd, device, dstFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+	const AttachmentRef		dstAttachmentRef		//  VkAttachmentReference										||  VkAttachmentReference2KHR
+	(
+													//																||  VkStructureType						sType;
+		DE_NULL,									//																||  const void*							pNext;
+		0u,											//  deUint32						attachment;					||  deUint32							attachment;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	//  VkImageLayout					layout;						||  VkImageLayout						layout;
+		0u											//																||  VkImageAspectFlags					aspectMask;
+	);
+	const AttachmentDesc	dstAttachment			//  VkAttachmentDescription										||  VkAttachmentDescription2KHR
+	(
+													//																||  VkStructureType						sType;
+		DE_NULL,									//																||  const void*							pNext;
+		0u,											//  VkAttachmentDescriptionFlags	flags;						||  VkAttachmentDescriptionFlags		flags;
+		dstFormat,									//  VkFormat						format;						||  VkFormat							format;
+		VK_SAMPLE_COUNT_1_BIT,						//  VkSampleCountFlagBits			samples;					||  VkSampleCountFlagBits				samples;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//  VkAttachmentLoadOp				loadOp;						||  VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,				//  VkAttachmentStoreOp				storeOp;					||  VkAttachmentStoreOp					storeOp;
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//  VkAttachmentLoadOp				stencilLoadOp;				||  VkAttachmentLoadOp					stencilLoadOp;
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,			//  VkAttachmentStoreOp				stencilStoreOp;				||  VkAttachmentStoreOp					stencilStoreOp;
+		VK_IMAGE_LAYOUT_UNDEFINED,					//  VkImageLayout					initialLayout;				||  VkImageLayout						initialLayout;
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	//  VkImageLayout					finalLayout;				||  VkImageLayout						finalLayout;
+	);
+	const SubpassDesc			subpass				//  VkSubpassDescription										||  VkSubpassDescription2KHR
+	(
+													//																||  VkStructureType						sType;
+		DE_NULL,									//																||  const void*							pNext;
+		(VkSubpassDescriptionFlags)0,				//  VkSubpassDescriptionFlags		flags;						||  VkSubpassDescriptionFlags			flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,			//  VkPipelineBindPoint				pipelineBindPoint;			||  VkPipelineBindPoint					pipelineBindPoint;
+		0u,											//																||  deUint32							viewMask;
+		0u,											//  deUint32						inputAttachmentCount;		||  deUint32							inputAttachmentCount;
+		DE_NULL,									//  const VkAttachmentReference*	pInputAttachments;			||  const VkAttachmentReference2KHR*	pInputAttachments;
+		1u,											//  deUint32						colorAttachmentCount;		||  deUint32							colorAttachmentCount;
+		&dstAttachmentRef,							//  const VkAttachmentReference*	pColorAttachments;			||  const VkAttachmentReference2KHR*	pColorAttachments;
+		DE_NULL,									//  const VkAttachmentReference*	pResolveAttachments;		||  const VkAttachmentReference2KHR*	pResolveAttachments;
+		DE_NULL,									//  const VkAttachmentReference*	pDepthStencilAttachment;	||  const VkAttachmentReference2KHR*	pDepthStencilAttachment;
+		0u,											//  deUint32						preserveAttachmentCount;	||  deUint32							preserveAttachmentCount;
+		DE_NULL										//  const deUint32*					pPreserveAttachments;		||  const deUint32*						pPreserveAttachments;
+	);
+	const RenderPassCreateInfo	renderPassCreator	//  VkRenderPassCreateInfo										||  VkRenderPassCreateInfo2KHR
+	(
+													//  VkStructureType					sType;						||  VkStructureType						sType;
+		DE_NULL,									//  const void*						pNext;						||  const void*							pNext;
+		(VkRenderPassCreateFlags)0u,				//  VkRenderPassCreateFlags			flags;						||  VkRenderPassCreateFlags				flags;
+		1u,											//  deUint32						attachmentCount;			||  deUint32							attachmentCount;
+		&dstAttachment,								//  const VkAttachmentDescription*	pAttachments;				||  const VkAttachmentDescription2KHR*	pAttachments;
+		1u,											//  deUint32						subpassCount;				||  deUint32							subpassCount;
+		&subpass,									//  const VkSubpassDescription*		pSubpasses;					||  const VkSubpassDescription2KHR*		pSubpasses;
+		0u,											//  deUint32						dependencyCount;			||  deUint32							dependencyCount;
+		DE_NULL,									//  const VkSubpassDependency*		pDependencies;				||  const VkSubpassDependency2KHR*		pDependencies;
+		0u,											//																||  deUint32							correlatedViewMaskCount;
+		DE_NULL										//																||  const deUint32*						pCorrelatedViewMasks;
+	);
+
+	return renderPassCreator.createRenderPass(vkd, device);
+}
+
+Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
+									 VkDevice				device,
+									 VkFormat				dstFormat,
+									 const RenderPassType	renderPassType)
+{
+	switch (renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:
+			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, dstFormat);
+		case RENDERPASS_TYPE_RENDERPASS2:
+			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, dstFormat);
+		default:
+			TCU_THROW(InternalError, "Impossible");
+	}
 }
 
 Move<VkFramebuffer> createFramebuffer (const DeviceInterface&	vkd,
@@ -284,15 +362,34 @@ Move<VkPipeline> createRenderPipeline (const DeviceInterface&							vkd,
 								&vertexInputState);						// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
 }
 
+struct TestConfig
+{
+				TestConfig		(VkFormat		format_,
+								 RenderPassType	renderPassType_)
+		: format			(format_)
+		, renderPassType	(renderPassType_)
+	{
+	}
+
+	VkFormat		format;
+	RenderPassType	renderPassType;
+};
+
 class SparseRenderTargetTestInstance : public TestInstance
 {
 public:
-											SparseRenderTargetTestInstance	(Context& context, VkFormat format);
+											SparseRenderTargetTestInstance	(Context& context, TestConfig testConfig);
 											~SparseRenderTargetTestInstance	(void);
 
-											tcu::TestStatus	iterate	(void);
+	tcu::TestStatus							iterate					(void);
+
+	template<typename RenderpassSubpass>
+	tcu::TestStatus							iterateInternal			(void);
 
 private:
+	const bool								m_extensionSupported;
+	const RenderPassType					m_renderPassType;
+
 	const deUint32							m_width;
 	const deUint32							m_height;
 	const VkFormat							m_format;
@@ -317,17 +414,19 @@ private:
 	tcu::ResultCollector					m_resultCollector;
 };
 
-SparseRenderTargetTestInstance::SparseRenderTargetTestInstance (Context& context, VkFormat format)
+SparseRenderTargetTestInstance::SparseRenderTargetTestInstance (Context& context, TestConfig testConfig)
 	: TestInstance				(context)
+	, m_extensionSupported		((testConfig.renderPassType == RENDERPASS_TYPE_RENDERPASS2) && context.requireDeviceExtension("VK_KHR_create_renderpass2"))
+	, m_renderPassType			(testConfig.renderPassType)
 	, m_width					(32u)
 	, m_height					(32u)
-	, m_format					(format)
+	, m_format					(testConfig.format)
 	, m_bindSemaphore			(createSemaphore(context.getDeviceInterface(), context.getDevice()))
 	, m_dstImage				(createSparseImageAndMemory(context.getDeviceInterface(), context.getDevice(), context.getPhysicalDevice(), context.getInstanceInterface(), context.getDefaultAllocator(), m_allocations, context.getUniversalQueueFamilyIndex(), context.getSparseQueue(), context.getSparseQueueFamilyIndex(), *m_bindSemaphore, m_format, m_width, m_height))
 	, m_dstImageView			(createImageView(context.getDeviceInterface(), context.getDevice(), *m_dstImage, m_format, VK_IMAGE_ASPECT_COLOR_BIT))
 	, m_dstBuffer				(createBuffer(context.getDeviceInterface(), context.getDevice(), m_format, m_width, m_height))
 	, m_dstBufferMemory			(createBufferMemory(context.getDeviceInterface(), context.getDevice(), context.getDefaultAllocator(), *m_dstBuffer))
-	, m_renderPass				(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format))
+	, m_renderPass				(createRenderPass(context.getDeviceInterface(), context.getDevice(), m_format, testConfig.renderPassType))
 	, m_framebuffer				(createFramebuffer(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_dstImageView, m_width, m_height))
 	, m_renderPipelineLayout	(createRenderPipelineLayout(context.getDeviceInterface(), context.getDevice()))
 	, m_renderPipeline			(createRenderPipeline(context.getDeviceInterface(), context.getDevice(), *m_renderPass, *m_renderPipelineLayout, context.getBinaryCollection(), m_width, m_height))
@@ -341,16 +440,51 @@ SparseRenderTargetTestInstance::~SparseRenderTargetTestInstance (void)
 
 tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 {
-	const DeviceInterface&			vkd				(m_context.getDeviceInterface());
-	const Unique<VkCommandBuffer>	commandBuffer	(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	switch (m_renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:
+			return iterateInternal<RenderpassSubpass1>();
+		case RENDERPASS_TYPE_RENDERPASS2:
+			return iterateInternal<RenderpassSubpass2>();
+		default:
+			TCU_THROW(InternalError, "Impossible");
+	}
+}
+
+template<typename RenderpassSubpass>
+tcu::TestStatus SparseRenderTargetTestInstance::iterateInternal (void)
+
+{
+	const DeviceInterface&								vkd					(m_context.getDeviceInterface());
+	const Unique<VkCommandBuffer>						commandBuffer		(allocateCommandBuffer(vkd, m_context.getDevice(), *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo		(DE_NULL);
 
 	beginCommandBuffer(vkd, *commandBuffer);
 
-	beginRenderPass(vkd, *commandBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_width, m_height));
+	{
+		const VkRenderPassBeginInfo beginInfo =
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+			DE_NULL,
+
+			*m_renderPass,
+			*m_framebuffer,
+
+			{
+				{ 0u, 0u },
+				{ m_width, m_height }
+			},
+
+			0u,
+			DE_NULL
+		};
+		RenderpassSubpass::cmdBeginRenderPass(vkd, *commandBuffer, &beginInfo, &subpassBeginInfo);
+	}
 
 	vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
 	vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
-	endRenderPass(vkd, *commandBuffer);
+	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
 	// Memory barrier between rendering and copy
 	{
@@ -526,9 +660,10 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterate (void)
 
 struct Programs
 {
-	void init (vk::SourceCollections& dst, VkFormat format) const
+	void init (vk::SourceCollections& dst, TestConfig testConfig) const
 	{
 		std::ostringstream				fragmentShader;
+		const VkFormat					format			(testConfig.format);
 		const tcu::TextureFormat		texFormat		(mapVkFormat(format));
 		const UVec4						bits			(tcu::getTextureFormatBitDepth(texFormat).cast<deUint32>());
 		const tcu::TextureChannelClass	channelClass	(tcu::getTextureChannelClass(texFormat.type));
@@ -598,7 +733,7 @@ std::string formatToName (VkFormat format)
 	return de::toLower(formatStr.substr(prefix.length()));
 }
 
-void initTests (tcu::TestCaseGroup* group)
+void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 {
 	static const VkFormat	formats[]	=
 	{
@@ -656,10 +791,11 @@ void initTests (tcu::TestCaseGroup* group)
 
 	for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 	{
-		const VkFormat	format		(formats[formatNdx]);
-		string			testName	(formatToName(format));
+		const VkFormat		format		(formats[formatNdx]);
+		const TestConfig	testConfig	(format, renderPassType);
+		string				testName	(formatToName(format));
 
-		group->addChild(new InstanceFactory1<SparseRenderTargetTestInstance, VkFormat, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), format));
+		group->addChild(new InstanceFactory1<SparseRenderTargetTestInstance, TestConfig, Programs>(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName.c_str(), testName.c_str(), testConfig));
 	}
 }
 
@@ -667,7 +803,11 @@ void initTests (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createRenderPassSparseRenderTargetTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests);
+	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERPASS_TYPE_LEGACY);
 }
 
+tcu::TestCaseGroup* createRenderPass2SparseRenderTargetTests (tcu::TestContext& testCtx)
+{
+	return createTestGroup(testCtx, "sparserendertarget", "Sparse render target tests", initTests, RENDERPASS_TYPE_RENDERPASS2);
+}
 } // vkt

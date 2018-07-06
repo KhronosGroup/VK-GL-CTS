@@ -734,6 +734,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_incremental_present",
 		"VK_KHR_shared_presentable_image",
 		"VK_KHR_storage_buffer_storage_class",
+		"VK_KHR_8bit_storage",
 		"VK_KHR_16bit_storage",
 		"VK_KHR_get_memory_requirements2",
 		"VK_KHR_external_memory",
@@ -2722,6 +2723,8 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 	log << TestLog::Message << extFeatures << TestLog::EndMessage;
 
+	vector<VkExtensionProperties>	properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
+	const bool khr_8bit_storage		= checkExtension(properties,"VK_KHR_8bit_storage");;
 	bool khr_16bit_storage			= true;
 	bool khr_multiview				= true;
 	bool deviceProtectedMemory		= true;
@@ -2729,7 +2732,6 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	bool variable_pointers			= true;
 	if (getPhysicalDeviceProperties(vki, physicalDevice).apiVersion < VK_API_VERSION_1_1)
 	{
-		vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 		khr_16bit_storage = checkExtension(properties,"VK_KHR_16bit_storage");
 		khr_multiview = checkExtension(properties,"VK_KHR_multiview");
 		deviceProtectedMemory = false;
@@ -2738,6 +2740,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	}
 
 	const int count = 2u;
+	VkPhysicalDevice8BitStorageFeaturesKHR				device8BitStorageFeatures[count];
 	VkPhysicalDevice16BitStorageFeatures				device16BitStorageFeatures[count];
 	VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures[count];
 	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
@@ -2746,11 +2749,15 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
+		deMemset(&device8BitStorageFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDevice8BitStorageFeaturesKHR));
 		deMemset(&device16BitStorageFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDevice16BitStorageFeatures));
 		deMemset(&deviceMultiviewFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
 		deMemset(&protectedMemoryFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
 		deMemset(&samplerYcbcrConversionFeatures[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
 		deMemset(&variablePointerFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
+
+		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
+		device8BitStorageFeatures[ndx].pNext = &device16BitStorageFeatures[ndx];
 
 		device16BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
 		device16BitStorageFeatures[ndx].pNext = &deviceMultiviewFeatures[ndx];
@@ -2769,9 +2776,18 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		extFeatures.pNext = &device16BitStorageFeatures[ndx];
+		extFeatures.pNext = &device8BitStorageFeatures[ndx];
 
 		vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+	}
+
+	if ( khr_8bit_storage &&
+		(device8BitStorageFeatures[0].storageBuffer8BitAccess				!= device8BitStorageFeatures[1].storageBuffer8BitAccess ||
+		device8BitStorageFeatures[0].uniformAndStorageBuffer8BitAccess		!= device8BitStorageFeatures[1].uniformAndStorageBuffer8BitAccess ||
+		device8BitStorageFeatures[0].storagePushConstant8					!= device8BitStorageFeatures[1].storagePushConstant8 )
+		)
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDevice8BitStorageFeatures");
 	}
 
 	if ( khr_16bit_storage &&
@@ -2810,6 +2826,8 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointerFeatures");
 	}
+	if (khr_8bit_storage)
+		log << TestLog::Message << device8BitStorageFeatures[0]		<< TestLog::EndMessage;
 	if (khr_16bit_storage)
 		log << TestLog::Message << toString(device16BitStorageFeatures[0])		<< TestLog::EndMessage;
 	if (khr_multiview)

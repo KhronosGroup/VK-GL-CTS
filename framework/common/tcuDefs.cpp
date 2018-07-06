@@ -124,6 +124,11 @@ NotSupportedError::NotSupportedError (const char* message, const char* expr, con
 {
 }
 
+NotSupportedError::NotSupportedError (const std::string& message, const char* expr, const char* file, int line)
+	: TestException(message.c_str(), expr, file, line, QP_TEST_RESULT_NOT_SUPPORTED)
+{
+}
+
 NotSupportedError::NotSupportedError (const std::string& message)
 	: TestException(message, QP_TEST_RESULT_NOT_SUPPORTED)
 {
