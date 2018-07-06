@@ -2634,7 +2634,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	const PlatformInterface&			vkp			= context.getPlatformInterface();
 	const Unique<VkInstance>			instance	(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver				vki			(vkp, *instance);
-	const vector<VkPhysicalDevice>		devices		= enumeratePhysicalDevices(vki, instance);
+	const vector<VkPhysicalDevice>		devices		= enumeratePhysicalDevices(vki, *instance);
 	TestLog&							log			= context.getTestContext().getLog();
 
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
