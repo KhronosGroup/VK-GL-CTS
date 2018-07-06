@@ -2695,8 +2695,8 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 {
 	const PlatformInterface&	vkp				= context.getPlatformInterface();
 	const VkPhysicalDevice		physicalDevice	= context.getPhysicalDevice();
-	const VkInstance			instance		(context.getInstance());
-	const InstanceDriver		vki				(vkp, instance);
+	const Unique<VkInstance>	instance		(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
+	const InstanceDriver		vki				(vkp, *instance);
 	TestLog&					log				= context.getTestContext().getLog();
 	VkPhysicalDeviceFeatures	coreFeatures;
 	VkPhysicalDeviceFeatures2	extFeatures;
