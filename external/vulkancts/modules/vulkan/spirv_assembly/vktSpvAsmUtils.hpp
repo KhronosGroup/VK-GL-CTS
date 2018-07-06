@@ -77,10 +77,7 @@ struct VulkanFeatures
 };
 
 // Returns true if the given 8bit storage extension features in `toCheck` are all supported.
-bool is8BitStorageFeaturesSupported (const deUint32 apiVersion,
-									  const vk::InstanceInterface&		vkInstance,
-									  vk::VkPhysicalDevice				device,
-									  const std::vector<std::string>&	instanceExtensions,
+bool is8BitStorageFeaturesSupported (const Context&						context,
 									  Extension8BitStorageFeatures		toCheck);
 
 // Returns true if the given 16bit storage extension features in `toCheck` are all supported.

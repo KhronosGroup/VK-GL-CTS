@@ -72,6 +72,8 @@ public:
 	const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&
 												getSamplerYCbCrConversionFeatures
 																				(void) const;
+	const vk::VkPhysicalDevice8BitStorageFeaturesKHR&
+												get8BitStorageFeatures			(void) const;
 	const vk::VkPhysicalDevice16BitStorageFeatures&
 												get16BitStorageFeatures			(void) const;
 	const vk::VkPhysicalDeviceVariablePointerFeatures&

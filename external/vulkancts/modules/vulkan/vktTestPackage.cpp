@@ -227,11 +227,10 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	const TestCase*				vktCase						= dynamic_cast<TestCase*>(testCase);
 	tcu::TestLog&				log							= m_context.getTestContext().getLog();
 	const deUint32				usedVulkanVersion			= m_context.getUsedApiVersion();
-	const vk::SpirvVersion		spirvVersionForGlsl			= vk::getSpirvVersionForGlsl(usedVulkanVersion);
-	const vk::SpirvVersion		spirvVersionForAsm			= vk::getSpirvVersionForAsm(usedVulkanVersion);
-	vk::ShaderBuildOptions		defaultGlslBuildOptions		(spirvVersionForGlsl, 0u);
-	vk::ShaderBuildOptions		defaultHlslBuildOptions		(spirvVersionForGlsl, 0u);
-	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(spirvVersionForAsm);
+	const vk::SpirvVersion		baselineSpirvVersion		= vk::getBaselineSpirvVersion(usedVulkanVersion);
+	vk::ShaderBuildOptions		defaultGlslBuildOptions		(baselineSpirvVersion, 0u);
+	vk::ShaderBuildOptions		defaultHlslBuildOptions		(baselineSpirvVersion, 0u);
+	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(baselineSpirvVersion);
 	vk::SourceCollections		sourceProgs					(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
 	const bool					doShaderLog					= log.isShaderLoggingEnabled();
 	const tcu::CommandLine&		commandLine					= m_context.getTestContext().getCommandLine();
@@ -248,7 +247,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin(); progIter != sourceProgs.glslSources.end(); ++progIter)
 	{
-		if (progIter.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForGlsl(m_context.getUsedApiVersion()))
+		if (progIter.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForGlsl(m_context.getUsedApiVersion()))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
 		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::GlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
@@ -259,7 +258,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 			{
 				std::ostringstream disasm;
 
-				vk::disassembleProgram(*binProg, &disasm, spirvVersionForGlsl);
+				vk::disassembleProgram(*binProg, &disasm);
 
 				log << vk::SpirVAsmSource(disasm.str());
 			}
@@ -272,7 +271,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::HlslSourceCollection::Iterator progIter = sourceProgs.hlslSources.begin(); progIter != sourceProgs.hlslSources.end(); ++progIter)
 	{
-		if (progIter.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForGlsl(m_context.getUsedApiVersion()))
+		if (progIter.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForGlsl(m_context.getUsedApiVersion()))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
 		const vk::ProgramBinary* const binProg = buildProgram<glu::ShaderProgramInfo, vk::HlslSourceCollection::Iterator>(casePath, progIter, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
@@ -283,7 +282,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 			{
 				std::ostringstream disasm;
 
-				vk::disassembleProgram(*binProg, &disasm, spirvVersionForGlsl);
+				vk::disassembleProgram(*binProg, &disasm);
 
 				log << vk::SpirVAsmSource(disasm.str());
 			}
@@ -296,7 +295,7 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 
 	for (vk::SpirVAsmCollection::Iterator asmIterator = sourceProgs.spirvAsmSources.begin(); asmIterator != sourceProgs.spirvAsmSources.end(); ++asmIterator)
 	{
-		if (asmIterator.getProgram().buildOptions.targetVersion > vk::getSpirvVersionForAsm(m_context.getUsedApiVersion()))
+		if (asmIterator.getProgram().buildOptions.targetVersion > vk::getMaxSpirvVersionForAsm(m_context.getUsedApiVersion()))
 			TCU_THROW(NotSupportedError, "Shader requires SPIR-V higher than available");
 
 		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);

@@ -134,15 +134,13 @@ public:
 
 private:
 	const deUint32	m_bufferSize;
-	const deUint32	m_useDeviceGroups;
 };
 
 BufferSparseResidencyInstance::BufferSparseResidencyInstance (Context&			context,
 															  const deUint32	bufferSize,
 															  const bool		useDeviceGroups)
-	: SparseResourcesBaseInstance	(context)
+	: SparseResourcesBaseInstance	(context, useDeviceGroups)
 	, m_bufferSize					(bufferSize)
-	, m_useDeviceGroups				(useDeviceGroups)
 {
 }
 
@@ -214,10 +212,23 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 
 		{
 			std::vector<VkSparseMemoryBind>		sparseMemoryBinds;
-			const deUint32						memoryType		= findMatchingMemoryType(instance, physicalDevice, bufferMemRequirements, MemoryRequirement::Any);
+			const deUint32						memoryType		= findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID), bufferMemRequirements, MemoryRequirement::Any);
 
 			if (memoryType == NO_MATCH_FOUND)
 				return tcu::TestStatus::fail("No matching memory type found");
+
+			if (firstDeviceID != secondDeviceID)
+			{
+				VkPeerMemoryFeatureFlags	peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
+				const deUint32				heapIndex = getHeapIndexForMemoryType(instance, getPhysicalDevice(secondDeviceID), memoryType);
+				deviceInterface.getDeviceGroupPeerMemoryFeatures(getDevice(), heapIndex, firstDeviceID, secondDeviceID, &peerMemoryFeatureFlags);
+
+				if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT)    == 0) ||
+					((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT) == 0))
+				{
+					TCU_THROW(NotSupportedError, "Peer memory does not support COPY_SRC and GENERIC_DST");
+				}
+			}
 
 			for (deUint32 sparseBindNdx = 0; sparseBindNdx < numSparseSlots; sparseBindNdx += 2)
 			{
@@ -240,7 +251,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 			const VkBindSparseInfo bindSparseInfo =
 			{
 				VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,						//VkStructureType							sType;
-				m_useDeviceGroups ? &devGroupBindSparseInfo : DE_NULL,	//const void*								pNext;
+				usingDeviceGroups() ? &devGroupBindSparseInfo : DE_NULL,//const void*								pNext;
 				0u,														//deUint32									waitSemaphoreCount;
 				DE_NULL,												//const VkSemaphore*						pWaitSemaphores;
 				1u,														//deUint32									bufferBindCount;
@@ -367,7 +378,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 
 		// Submit transfer commands for execution and wait for completion
 		submitCommandsAndWait(deviceInterface, getDevice(), computeQueue.queueHandle, *commandBuffer, 1u, &bufferMemoryBindSemaphore.get(),
-			waitStageBits, 0, DE_NULL, m_useDeviceGroups, firstDeviceID);
+			waitStageBits, 0, DE_NULL, usingDeviceGroups(), firstDeviceID);
 
 		// Retrieve data from output buffer to host memory
 		invalidateMappedMemoryRange(deviceInterface, getDevice(), outputBufferAlloc->getMemory(), outputBufferAlloc->getOffset(), m_bufferSize);

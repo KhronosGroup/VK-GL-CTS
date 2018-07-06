@@ -876,6 +876,15 @@ deUint32 findMatchingMemoryType (const InstanceInterface&		instance,
 	return NO_MATCH_FOUND;
 }
 
+deUint32 getHeapIndexForMemoryType (const InstanceInterface&	instance,
+									const VkPhysicalDevice		physicalDevice,
+									const deUint32				memoryType)
+{
+	const VkPhysicalDeviceMemoryProperties deviceMemoryProperties = getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+	DE_ASSERT(memoryType < deviceMemoryProperties.memoryTypeCount);
+	return deviceMemoryProperties.memoryTypes[memoryType].heapIndex;
+}
+
 bool checkSparseSupportForImageType (const InstanceInterface&	instance,
 									 const VkPhysicalDevice		physicalDevice,
 									 const ImageType			imageType)
