@@ -1,0 +1,2 @@
+#VK-GL-CTS issue 1141, 1190
+KHR-GL42.texture_view.view_classes
