@@ -198,7 +198,7 @@ void randomizeDrawOp (de::Random& rnd, DrawPrimitiveOp& drawOp, const bool alpha
 
 			// avoid generating narrow triangles
 			{
-				const int	maxAttempts	= 40;
+				const int	maxAttempts	= 100;
 				int			numAttempts	= 0;
 				tcu::Vec4&	p0			= drawOp.positions[triNdx*3 + 0];
 				tcu::Vec4&	p1			= drawOp.positions[triNdx*3 + 1];

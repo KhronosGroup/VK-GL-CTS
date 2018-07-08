@@ -139,14 +139,26 @@ bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostre
 	{
 		spv_const_binary_t	cbinary		= { binary, binarySizeInWords };
 		const spv_result_t	valid		= spvValidate(context, &cbinary, &diagnostic);
+		const bool			passed		= (valid == SPV_SUCCESS);
 
 		if (diagnostic)
-			*infoLog << diagnostic->error;
+		{
+			// Print the diagnostic whether validation passes or fails.
+			// In theory we could get a warning even in the pass case, but there are no cases
+			// like that now.
+			*infoLog << "Validation " << (passed ? "PASSED: " : "FAILED: ") << diagnostic->error << "\n";
+
+			spv_text text;
+			spvBinaryToText(context, binary, binarySizeInWords, SPV_BINARY_TO_TEXT_OPTION_FRIENDLY_NAMES | SPV_BINARY_TO_TEXT_OPTION_INDENT, &text, DE_NULL);
+
+			*infoLog << text->str << "\n";
+			spvTextDestroy(text);
+		}
 
 		spvDiagnosticDestroy(diagnostic);
 		spvContextDestroy(context);
 
-		return valid == SPV_SUCCESS;
+		return passed;
 	}
 	catch (...)
 	{

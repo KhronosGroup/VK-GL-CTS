@@ -352,12 +352,13 @@ public:
 		DE_ASSERT(m_program->buildStatus == Program::STATUS_PASSED);
 		DE_ASSERT(m_program->binary->getFormat() == vk::PROGRAM_FORMAT_SPIRV);
 
-		std::ostringstream			validationLog;
+		std::ostringstream			validationLogStream;
 
-		if (vk::validateProgram(*m_program->binary, &validationLog))
+		if (vk::validateProgram(*m_program->binary, &validationLogStream))
 			m_program->validationStatus = Program::STATUS_PASSED;
 		else
 			m_program->validationStatus = Program::STATUS_FAILED;
+		m_program->validationLog = validationLogStream.str();
 	}
 
 private:
