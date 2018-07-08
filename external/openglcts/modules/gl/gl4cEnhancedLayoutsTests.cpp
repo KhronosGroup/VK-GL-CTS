@@ -21569,10 +21569,11 @@ std::string XFBBlockStrideTest::getShaderSource(GLuint test_case_index, Utils::S
 							  "\n"
 							  "in  vec4 in_vs;\n"
 							  "out vec4 vs_tcs;\n"
+							  "out vec4 tes_gs;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    vs_tcs = tes_gs = in_vs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* vs_tested = "#version 430 core\n"
