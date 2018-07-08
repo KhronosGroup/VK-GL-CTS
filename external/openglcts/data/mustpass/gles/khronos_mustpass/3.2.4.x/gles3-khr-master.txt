@@ -3039,5 +3039,4 @@ KHR-GLES3.core.constant_expressions.array_normalize_vec4_vertex
 KHR-GLES3.core.constant_expressions.array_normalize_vec4_fragment
 KHR-GLES3.parallel_shader_compile.simple_queries
 KHR-GLES3.parallel_shader_compile.max_shader_compile_threads
-KHR-GLES3.parallel_shader_compile.compilation_completion_non_parallel
 KHR-GLES3.parallel_shader_compile.compilation_completion_parallel

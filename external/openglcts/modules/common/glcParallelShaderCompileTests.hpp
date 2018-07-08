@@ -68,22 +68,6 @@ private:
 };
 
 /** Test verifies if GetShaderiv and GetProgramiv queries returns value as expected
- *  for COMPLETION_STATUS <pname> and non parallel compilation.
- **/
-class CompilationCompletionNonParallelTest : public deqp::TestCase
-{
-public:
-	/* Public methods */
-	CompilationCompletionNonParallelTest(deqp::Context& context);
-
-	tcu::TestNode::IterateResult iterate();
-
-private:
-	/* Private methods */
-	/* Private members */
-};
-
-/** Test verifies if GetShaderiv and GetProgramiv queries returns value as expected
  *  for COMPLETION_STATUS <pname> and parallel compilation.
  **/
 class CompilationCompletionParallelTest : public deqp::TestCase

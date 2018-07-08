@@ -106,7 +106,7 @@ GLint SparseTextureUtils::getTargetDepth(GLint target)
 	GLint depth;
 
 	if (target == GL_TEXTURE_3D || target == GL_TEXTURE_1D_ARRAY || target == GL_TEXTURE_2D_ARRAY ||
-		target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY || target == GL_TEXTURE_CUBE_MAP)
+		target == GL_TEXTURE_2D_MULTISAMPLE_ARRAY || target == GL_TEXTURE_2D || target == GL_TEXTURE_RECTANGLE || target == GL_TEXTURE_CUBE_MAP)
 	{
 		depth = 1;
 	}
@@ -343,15 +343,8 @@ void TextureParameterQueriesTestCase::init()
 
 	if (!m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
 	{
-		mNotSupportedTargets.push_back(GL_TEXTURE_1D);
-		mNotSupportedTargets.push_back(GL_TEXTURE_1D_ARRAY);
 		mNotSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
 		mNotSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
-	}
-	else
-	{
-		mNotSupportedTargets.push_back(GL_TEXTURE_1D);
-		mNotSupportedTargets.push_back(GL_TEXTURE_1D_ARRAY);
 	}
 }
 
@@ -812,18 +805,12 @@ InternalFormatQueriesTestCase::InternalFormatQueriesTestCase(deqp::Context& cont
 /** Stub init method */
 void InternalFormatQueriesTestCase::init()
 {
-	mSupportedTargets.push_back(GL_TEXTURE_1D);
-	mSupportedTargets.push_back(GL_TEXTURE_1D_ARRAY);
 	mSupportedTargets.push_back(GL_TEXTURE_2D);
 	mSupportedTargets.push_back(GL_TEXTURE_2D_ARRAY);
 	mSupportedTargets.push_back(GL_TEXTURE_3D);
 	mSupportedTargets.push_back(GL_TEXTURE_CUBE_MAP);
 	mSupportedTargets.push_back(GL_TEXTURE_CUBE_MAP_ARRAY);
 	mSupportedTargets.push_back(GL_TEXTURE_RECTANGLE);
-	mSupportedTargets.push_back(GL_TEXTURE_BUFFER);
-	mSupportedTargets.push_back(GL_RENDERBUFFER);
-	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE);
-	mSupportedTargets.push_back(GL_TEXTURE_2D_MULTISAMPLE_ARRAY);
 
 	mSupportedInternalFormats.push_back(GL_R8);
 	mSupportedInternalFormats.push_back(GL_R8_SNORM);
@@ -1588,7 +1575,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 	{
 		if (pageSizeX > 1)
 		{
-			Texture::Storage(gl, target, 1, format, 1, height, depth);
+			Texture::Storage(gl, target, 1, format, pageSizeX + 1, height, depth);
 			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [wrong width]", gl.getError(), GL_INVALID_VALUE))
 			{
 				Texture::Delete(gl, texture);
@@ -1598,7 +1585,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 
 		if (pageSizeY > 1)
 		{
-			Texture::Storage(gl, target, 1, format, width, 1, depth);
+			Texture::Storage(gl, target, 1, format, width, pageSizeY + 1, depth);
 			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [wrong height]", gl.getError(), GL_INVALID_VALUE))
 			{
 				Texture::Delete(gl, texture);
@@ -1608,7 +1595,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageInvalidValueErrors(const F
 
 		if (pageSizeZ > 1)
 		{
-			Texture::Storage(gl, target, 1, format, width, height, SparseTextureUtils::getTargetDepth(target));
+			Texture::Storage(gl, target, 1, format, width, height, pageSizeZ + 1);
 			if (!SparseTextureUtils::verifyError(mLog, "TexStorage [wrong depth]", gl.getError(), GL_INVALID_VALUE))
 			{
 				Texture::Delete(gl, texture);
