@@ -34,3 +34,11 @@ endif ()
 
 set(DEQP_PLATFORM_LIBRARIES ${WAYLAND_LIBRARIES})
 include_directories(${WAYLAND_INCLUDE_DIR})
+
+# Search GLESv1
+find_package(GLES1)
+if (GLES1_FOUND)
+	set(DEQP_SUPPORT_GLES1 ON)
+	set(DEQP_GLES1_LIBRARIES ${GLES1_LIBRARIES})
+	include_directories(${GLES1_INCLUDE_DIR})
+endif ()
