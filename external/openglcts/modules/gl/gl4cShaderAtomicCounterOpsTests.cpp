@@ -295,7 +295,7 @@ void ShaderAtomicCounterOpsTestBase::ShaderPipeline::executeComputeShader(deqp::
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Uploading image data failed");
 
 	// bind image
-	gl.bindImageTexture(2, *outputTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32UI);
+	gl.bindImageTexture(2, *outputTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Image setup failed");
 
 	// dispatch compute
