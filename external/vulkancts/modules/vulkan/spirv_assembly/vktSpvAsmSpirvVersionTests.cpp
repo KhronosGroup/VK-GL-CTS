@@ -260,7 +260,7 @@ SpvAsmSpirvVersionsCase::SpvAsmSpirvVersionsCase (tcu::TestContext& testCtx, con
 
 void validateVulkanVersion (const deUint32 usedVulkanVersion, const SpirvVersion testedSpirvVersion)
 {
-	const SpirvVersion	usedSpirvVersionForAsm	= getSpirvVersionForAsm(usedVulkanVersion);
+	const SpirvVersion	usedSpirvVersionForAsm	= getMaxSpirvVersionForAsm(usedVulkanVersion);
 
 	if (testedSpirvVersion > usedSpirvVersionForAsm)
 		TCU_THROW(NotSupportedError, "Specified SPIR-V version is not supported by the device/instance");

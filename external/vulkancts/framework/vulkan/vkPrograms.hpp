@@ -210,19 +210,20 @@ typedef ProgramCollection<ProgramBinary, BinaryBuildOptions>	BinaryCollection;
 ProgramBinary*			buildProgram		(const GlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine);
 ProgramBinary*			buildProgram		(const HlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine);
 ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo, const tcu::CommandLine& commandLine);
-void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion);
-bool					validateProgram		(const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion);
+void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst);
+bool					validateProgram		(const ProgramBinary& program, std::ostream* dst);
 
 Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
 
 glu::ShaderType			getGluShaderType	(VkShaderStageFlagBits shaderStage);
 VkShaderStageFlagBits	getVkShaderStage	(glu::ShaderType shaderType);
 
-vk::SpirvVersion		getSpirvVersionForAsm	(const deUint32 vulkanVersion);
-vk::SpirvVersion		getSpirvVersionForGlsl	(const deUint32 vulkanVersion);
-SpirvVersion			extractSpirvVersion		(const ProgramBinary& binary);
-std::string				getSpirvVersionName		(const SpirvVersion spirvVersion);
-SpirvVersion&			operator++				(SpirvVersion& spirvVersion);
+vk::SpirvVersion		getMaxSpirvVersionForAsm	(const deUint32 vulkanVersion);
+vk::SpirvVersion		getMaxSpirvVersionForGlsl	(const deUint32 vulkanVersion);
+vk::SpirvVersion		getBaselineSpirvVersion		(const deUint32 vulkanVersion);
+SpirvVersion			extractSpirvVersion			(const ProgramBinary& binary);
+std::string				getSpirvVersionName			(const SpirvVersion spirvVersion);
+SpirvVersion&			operator++					(SpirvVersion& spirvVersion);
 
 } // vk
 

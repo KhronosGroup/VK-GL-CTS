@@ -106,12 +106,13 @@ bool compare16Bit (float original, deUint16 returned, RoundingModeFlags flags, t
 	return compare16BitFloat (original, returned, flags, log);
 }
 
-bool compare16Bit (deFloat16 returned, float original, RoundingModeFlags flags, tcu::TestLog& log)
+bool compare16Bit (deUint16 original, float returned, RoundingModeFlags flags, tcu::TestLog& log)
 {
-	return compare16BitFloat (original, returned, flags, log);
+	DE_UNREF(flags);
+	return compare16BitFloat (original, returned, log);
 }
 
-bool compare16Bit (deInt16 returned, deInt16 original, RoundingModeFlags flags, tcu::TestLog& log)
+bool compare16Bit (deInt16 original, deInt16 returned, RoundingModeFlags flags, tcu::TestLog& log)
 {
 	DE_UNREF(flags);
 	DE_UNREF(log);

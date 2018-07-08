@@ -33,11 +33,6 @@ endif ()
 if (DE_OS_IS_ANDROID)
 	# inline keyword in headers...
 	set_source_files_properties(deSocket.c COMPILE_FLAGS -std=c99)
-
-	# This is no longer needed on modern NDKs
-	if (DEQP_TARGET_TOOLCHAIN STREQUAL "ndk-r11")
-		set(DEUTIL_LIBS ${DEUTIL_LIBS} dl)
-	endif ()
 endif ()
 
 if (DE_OS_IS_WIN32)

@@ -772,14 +772,15 @@ ProgramBinary* assembleProgram (const SpirVAsmSource&, SpirVProgramInfo*, const 
 }
 #endif
 
- void disassembleProgram (const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion)
+void disassembleProgram (const ProgramBinary& program, std::ostream* dst)
 {
 	if (program.getFormat() == PROGRAM_FORMAT_SPIRV)
 	{
 		TCU_CHECK_INTERNAL(isSaneSpirVBinary(program));
 
 		if (isNativeSpirVBinaryEndianness())
-			disassembleSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst, spirvVersion);
+			disassembleSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst,
+							 extractSpirvVersion(program));
 		else
 			TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
 	}
@@ -787,7 +788,7 @@ ProgramBinary* assembleProgram (const SpirVAsmSource&, SpirVProgramInfo*, const 
 		TCU_THROW(NotSupportedError, "Unsupported program format");
 }
 
-bool validateProgram (const ProgramBinary& program, std::ostream* dst, SpirvVersion spirvVersion)
+bool validateProgram (const ProgramBinary& program, std::ostream* dst)
 {
 	if (program.getFormat() == PROGRAM_FORMAT_SPIRV)
 	{
@@ -798,7 +799,8 @@ bool validateProgram (const ProgramBinary& program, std::ostream* dst, SpirvVers
 		}
 
 		if (isNativeSpirVBinaryEndianness())
-			return validateSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst, spirvVersion);
+			return validateSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst,
+								 extractSpirvVersion(program));
 		else
 			TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
 	}
@@ -856,7 +858,14 @@ VkShaderStageFlagBits getVkShaderStage (glu::ShaderType shaderType)
 	return de::getSizedArrayElement<glu::SHADERTYPE_LAST>(s_shaderStages, shaderType);
 }
 
-vk::SpirvVersion getSpirvVersionForAsm (const deUint32 vulkanVersion)
+// Baseline version, to be used for shaders which don't specify a version
+vk::SpirvVersion getBaselineSpirvVersion (const deUint32 /* vulkanVersion */)
+{
+	return vk::SPIRV_VERSION_1_0;
+}
+
+// Max supported versions for each vulkan version
+vk::SpirvVersion getMaxSpirvVersionForAsm (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
 
@@ -871,7 +880,7 @@ vk::SpirvVersion getSpirvVersionForAsm (const deUint32 vulkanVersion)
 	return result;
 }
 
-vk::SpirvVersion getSpirvVersionForGlsl (const deUint32 vulkanVersion)
+vk::SpirvVersion getMaxSpirvVersionForGlsl (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
 
