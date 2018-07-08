@@ -91,10 +91,16 @@ bool isES2Renderable (const eglu::CandidateConfig& c)
 	return (c.get(EGL_RENDERABLE_TYPE) & EGL_OPENGL_ES2_BIT) == EGL_OPENGL_ES2_BIT;
 }
 
+bool supportsPBuffer (const eglu::CandidateConfig& c)
+{
+	return (c.get(EGL_SURFACE_TYPE) & EGL_PBUFFER_BIT) == EGL_PBUFFER_BIT;
+}
+
 eglw::EGLConfig getConfig (const eglw::Library& egl, eglw::EGLDisplay display)
 {
 	eglu::FilterList filters;
 	filters << isES2Renderable;
+	filters << supportsPBuffer;
 	return eglu::chooseSingleConfig(egl, display, filters);
 }
 
