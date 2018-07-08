@@ -7541,7 +7541,6 @@ KHR-GL45.sync.flush_commands
 KHR-GL45.incomplete_texture_access.sampler
 KHR-GL45.parallel_shader_compile.simple_queries
 KHR-GL45.parallel_shader_compile.max_shader_compile_threads
-KHR-GL45.parallel_shader_compile.compilation_completion_non_parallel
 KHR-GL45.parallel_shader_compile.compilation_completion_parallel
 KHR-GL45.post_depth_coverage_tests.PostDepthShader
 KHR-GL45.post_depth_coverage_tests.PostDepthSampleMask
