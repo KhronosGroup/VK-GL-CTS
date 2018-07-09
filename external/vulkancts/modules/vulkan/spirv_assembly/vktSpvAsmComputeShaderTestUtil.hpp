@@ -282,12 +282,13 @@ DE_STATIC_ASSERT(sizeof(tcu::Vec4) == 4 * sizeof(float));
 
 typedef Buffer<float>		Float32Buffer;
 typedef Buffer<deFloat16>	Float16Buffer;
-typedef Buffer<double>	    Float64Buffer;
+typedef Buffer<double>		Float64Buffer;
 typedef Buffer<deInt64>		Int64Buffer;
 typedef Buffer<deInt32>		Int32Buffer;
 typedef Buffer<deInt16>		Int16Buffer;
-typedef Buffer<deUint16>	Uint16Buffer;
 typedef Buffer<deInt8>		Int8Buffer;
+typedef Buffer<deUint8>		Uint8Buffer;
+typedef Buffer<deUint16>	Uint16Buffer;
 typedef Buffer<deUint32>	Uint32Buffer;
 typedef Buffer<deUint64>	Uint64Buffer;
 typedef Buffer<tcu::Vec4>	Vec4Buffer;
