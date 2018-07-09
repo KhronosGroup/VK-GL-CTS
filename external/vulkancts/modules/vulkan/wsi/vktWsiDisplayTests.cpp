@@ -1836,7 +1836,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPlanePr
 		TCU_FAIL("Failed to retrieve displays");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	displaySet = DisplaySet(displaysVector.begin(), displaysVector.end());
 
