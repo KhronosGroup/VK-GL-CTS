@@ -493,6 +493,71 @@ void submitDummySignal (const vk::DeviceInterface&	vkd,
 	VK_CHECK(vkd.queueSubmit(queue, 1, &submit, (vk::VkFence)0u));
 }
 
+void submitDummySignalAndGetSemaphoreNative (	const vk::DeviceInterface&						vk,
+												vk::VkDevice									device,
+												vk::VkQueue										queue,
+												deUint32										queueFamilyIndex,
+												vk::VkSemaphore									semaphore,
+												vk::VkExternalSemaphoreHandleTypeFlagBitsKHR	externalType,
+												NativeHandle&									nativeHandle)
+{
+	const vk::Unique<vk::VkCommandPool>		cmdPool(createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex, DE_NULL));
+	const vk::Unique<vk::VkCommandBuffer>	cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const vk::VkEventCreateInfo eventCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
+		DE_NULL,
+		0u
+	};
+
+	const vk::Unique<vk::VkEvent> event(createEvent(vk, device, &eventCreateInfo, DE_NULL));
+
+	const vk::VkCommandBufferBeginInfo cmdBufferBeginInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		DE_NULL,
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		DE_NULL,
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	/*
+		The submitDummySignal function calls vkQueueSubmit with an empty VkSubmitInfo structure and a
+		VkSemaphore to be signalled when the work is finished. Because there is no work in the submission, vkQueueSubmit
+		may signal the semaphore immediately. When a semaphore's file descriptor is obtained using vkGetFenceFdKHR, if the
+		handle type is VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR, vkGetFenceFdKHR is allowed to return -1 if the fence
+		is already signalled, instead of a file descriptor, . In order to make sure that a valid file descriptor is returned
+		we use vkCmdWaitEvents to make sure that vkQueueSubmit doesn't signal the fence.
+	*/
+	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
+	vk.endCommandBuffer(*cmdBuffer);
+
+	const vk::VkSubmitInfo submit =
+	{
+		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		DE_NULL,
+
+		0u,
+		DE_NULL,
+		DE_NULL,
+
+		1u,
+		&cmdBuffer.get(),
+
+		1u,
+		&semaphore
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1, &submit, (vk::VkFence)0u));
+
+	getSemaphoreNative(vk, device, semaphore, externalType, nativeHandle);
+
+	VK_CHECK(vk.setEvent(device, *event));
+
+	VK_CHECK(vk.queueWaitIdle(queue));
+}
+
 void submitDummyWait (const vk::DeviceInterface&	vkd,
 					  vk::VkQueue					queue,
 					  vk::VkSemaphore				semaphore)
@@ -538,6 +603,71 @@ void submitDummySignal (const vk::DeviceInterface&	vkd,
 	};
 
 	VK_CHECK(vkd.queueSubmit(queue, 1, &submit, fence));
+}
+
+void submitDummySignalAndGetFenceNative (	const vk::DeviceInterface&					vk,
+											vk::VkDevice								device,
+											vk::VkQueue									queue,
+											deUint32									queueFamilyIndex,
+											vk::VkFence									fence,
+											vk::VkExternalFenceHandleTypeFlagBitsKHR	externalType,
+											NativeHandle&								nativeHandle)
+{
+	const vk::Unique<vk::VkCommandPool>		cmdPool(createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex, DE_NULL));
+	const vk::Unique<vk::VkCommandBuffer>	cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const vk::VkEventCreateInfo eventCreateInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
+		DE_NULL,
+		0u
+	};
+
+	const vk::Unique<vk::VkEvent> event(createEvent(vk, device, &eventCreateInfo, DE_NULL));
+
+	const vk::VkCommandBufferBeginInfo cmdBufferBeginInfo =
+	{
+		vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		DE_NULL,
+		vk::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		DE_NULL,
+	};
+
+	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+	/*
+		The submitDummySignal function calls vkQueueSubmit with an empty VkSubmitInfo structure and a
+		VkFence to be signalled when the work is finished. Because there is no work in the submission, vkQueueSubmit
+		could signal the fence immediately. When a fence's file descriptor is obtained using vkGetFenceFdKHR, if the
+		handle type is VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR, vkGetFenceFdKHR is allowed to return -1 instead of a
+		file descriptor, if the fence is already signalled. In order to make sure that a valid file descriptor is returned
+		we use vkCmdWaitEvents to make sure that vkQueueSubmit doesn't signal the fence.
+	*/
+	vk.cmdWaitEvents(*cmdBuffer, 1, &event.get(), vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, DE_NULL, 0, DE_NULL, 0, DE_NULL);
+	vk.endCommandBuffer(*cmdBuffer);
+
+	const vk::VkSubmitInfo submit =
+	{
+		vk::VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		DE_NULL,
+
+		0u,
+		DE_NULL,
+		DE_NULL,
+
+		1u,
+		&cmdBuffer.get(),
+
+		0u,
+		DE_NULL
+	};
+
+	VK_CHECK(vk.queueSubmit(queue, 1, &submit, fence));
+
+	getFenceNative(vk, device, fence, externalType, nativeHandle);
+
+	VK_CHECK(vk.setEvent(device, *event));
+
+	VK_CHECK(vk.queueWaitIdle(queue));
 }
 
 tcu::TestStatus testSemaphoreQueries (Context& context, vk::VkExternalSemaphoreHandleTypeFlagBitsKHR externalType)
@@ -675,12 +805,12 @@ tcu::TestStatus testSemaphoreImportTwice (Context&					context,
 		const vk::DeviceDriver				vkd				(vki, *device);
 		const vk::VkQueue					queue			(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::Unique<vk::VkSemaphore>	semaphore		(createExportableSemaphore(vkd, *device, config.externalType));
+		NativeHandle						handleA;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *semaphore);
-
-		NativeHandle						handleA;
-		getSemaphoreNative(vkd, *device, *semaphore, config.externalType, handleA);
+			submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphore, config.externalType, handleA);
+		else
+			getSemaphoreNative(vkd, *device, *semaphore, config.externalType, handleA);
 
 		{
 			NativeHandle						handleB		(handleA);
@@ -723,12 +853,12 @@ tcu::TestStatus testSemaphoreImportReimport (Context&					context,
 		const vk::VkQueue					queue			(getQueue(vkd, *device, queueFamilyIndex));
 
 		const vk::Unique<vk::VkSemaphore>	semaphoreA		(createExportableSemaphore(vkd, *device, config.externalType));
+		NativeHandle						handleA;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *semaphoreA);
-
-		NativeHandle						handleA;
-		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handleA);
+			submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, handleA);
+		else
+			getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handleA);
 
 		NativeHandle						handleB		(handleA);
 		const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
@@ -768,13 +898,10 @@ tcu::TestStatus testSemaphoreSignalExportImportWait (Context&					context,
 		const vk::DeviceDriver				vkd					(vki, *device);
 		const vk::VkQueue					queue				(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::Unique<vk::VkSemaphore>	semaphoreA			(createExportableSemaphore(vkd, *device, config.externalType));
-
-		submitDummySignal(vkd, queue, *semaphoreA);
-
 		{
 			NativeHandle	handle;
 
-			getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
+			submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, handle);
 
 			{
 				const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
@@ -847,7 +974,7 @@ tcu::TestStatus testSemaphoreExportImportSignalWait (Context&					context,
 		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 		NativeHandle						handle;
 
-		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
+		submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, handle);
 
 		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
 
@@ -886,9 +1013,9 @@ tcu::TestStatus testSemaphoreSignalImport (Context&						context,
 		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *semaphoreA);
-
-		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
+			submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, handle);
+		else
+			getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
 
 		importSemaphore(vkd, *device, *semaphoreB, config.externalType, handle, flags);
 
@@ -931,9 +1058,9 @@ tcu::TestStatus testSemaphoreSignalWaitImport (Context&						context,
 		NativeHandle						handle;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *semaphoreA);
-
-		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
+			submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, handle);
+		else
+			getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
 
 		submitDummySignal(vkd, queue, *semaphoreB);
 		submitDummyWait(vkd, queue, *semaphoreB);
@@ -982,9 +1109,9 @@ tcu::TestStatus testSemaphoreMultipleExports (Context&					context,
 			NativeHandle handle;
 
 			if (transference == TRANSFERENCE_COPY)
-				submitDummySignal(vkd, queue, *semaphore);
-
-			getSemaphoreNative(vkd, *device, *semaphore, config.externalType, handle);
+				submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphore, config.externalType, handle);
+			else
+				getSemaphoreNative(vkd, *device, *semaphore, config.externalType, handle);
 		}
 
 		submitDummySignal(vkd, queue, *semaphore);
@@ -1018,9 +1145,9 @@ tcu::TestStatus testSemaphoreMultipleImports (Context&					context,
 		NativeHandle						handleA;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *semaphoreA);
-
-		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handleA);
+			submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, handleA);
+		else
+			getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handleA);
 
 		for (size_t importNdx = 0; importNdx < importCount; importNdx++)
 		{
@@ -1068,9 +1195,7 @@ tcu::TestStatus testSemaphoreTransference (Context&						context,
 		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 		NativeHandle						handle;
 
-		submitDummySignal(vkd, queue, *semaphoreA);
-
-		getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, handle);
+		submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, handle);
 
 		{
 			const vk::Unique<vk::VkSemaphore>	semaphoreB			(createAndImportSemaphore(vkd, *device, config.externalType, handle, flags));
@@ -1163,11 +1288,14 @@ tcu::TestStatus testSemaphoreFdDup (Context&					context,
 		TestLog&							log			= context.getTestContext().getLog();
 		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 
-		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *semaphoreA);
-
 		{
-			const NativeHandle	fd		(getSemaphoreFd(vkd, *device, *semaphoreA, config.externalType));
+			NativeHandle		fd;
+
+			if (transference == TRANSFERENCE_COPY)
+				submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, fd);
+			else
+				getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, fd);
+
 			NativeHandle		newFd	(dup(fd.getFd()));
 
 			if (newFd.getFd() < 0)
@@ -1224,15 +1352,20 @@ tcu::TestStatus testSemaphoreFdDup2 (Context&					context,
 		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createExportableSemaphore(vkd, *device, config.externalType));
 
-		if (transference == TRANSFERENCE_COPY)
 		{
-			submitDummySignal(vkd, queue, *semaphoreA);
-			submitDummySignal(vkd, queue, *semaphoreB);
-		}
+			NativeHandle		fd, secondFd;
 
-		{
-			const NativeHandle	fd			(getSemaphoreFd(vkd, *device, *semaphoreA, config.externalType));
-			NativeHandle		secondFd	(getSemaphoreFd(vkd, *device, *semaphoreB, config.externalType));
+			if (transference == TRANSFERENCE_COPY)
+			{
+				submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, fd);
+				submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreB, config.externalType, secondFd);
+			}
+			else
+			{
+				getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, fd);
+				getSemaphoreNative(vkd, *device, *semaphoreB, config.externalType, secondFd);
+			}
+
 			int					newFd		(dup2(fd.getFd(), secondFd.getFd()));
 
 			if (newFd < 0)
@@ -1288,16 +1421,21 @@ tcu::TestStatus testSemaphoreFdDup3 (Context&					context,
 		const vk::Unique<vk::VkSemaphore>	semaphoreA	(createExportableSemaphore(vkd, *device, config.externalType));
 		const vk::Unique<vk::VkSemaphore>	semaphoreB	(createExportableSemaphore(vkd, *device, config.externalType));
 
-		if (transference == TRANSFERENCE_COPY)
 		{
-			submitDummySignal(vkd, queue, *semaphoreA);
-			submitDummySignal(vkd, queue, *semaphoreB);
-		}
+			NativeHandle						fd, secondFd;
 
-		{
+			if (transference == TRANSFERENCE_COPY)
+			{
+				submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreA, config.externalType, fd);
+				submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphoreB, config.externalType, secondFd);
+			}
+			else
+			{
+				getSemaphoreNative(vkd, *device, *semaphoreA, config.externalType, fd);
+				getSemaphoreNative(vkd, *device, *semaphoreB, config.externalType, secondFd);
+			}
+
 			const vk::VkSemaphoreImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkSemaphoreImportFlagBitsKHR)0u;
-			const NativeHandle					fd			(getSemaphoreFd(vkd, *device, *semaphoreA, config.externalType));
-			NativeHandle						secondFd	(getSemaphoreFd(vkd, *device, *semaphoreB, config.externalType));
 			const int							newFd		(dup3(fd.getFd(), secondFd.getFd(), 0));
 
 			if (newFd < 0)
@@ -1351,11 +1489,12 @@ tcu::TestStatus testSemaphoreFdSendOverSocket (Context&						context,
 
 		TestLog&							log			= context.getTestContext().getLog();
 		const vk::Unique<vk::VkSemaphore>	semaphore	(createExportableSemaphore(vkd, *device, config.externalType));
+		NativeHandle						fd;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *semaphore);
-
-		const NativeHandle	fd	(getSemaphoreFd(vkd, *device, *semaphore, config.externalType));
+			submitDummySignalAndGetSemaphoreNative(vkd, *device, queue, queueFamilyIndex, *semaphore, config.externalType, fd);
+		else
+			getSemaphoreNative(vkd, *device, *semaphore, config.externalType, fd);
 
 		{
 			int sv[2];
@@ -1606,12 +1745,12 @@ tcu::TestStatus testFenceImportTwice (Context&				context,
 		const vk::DeviceDriver			vkd			(vki, *device);
 		const vk::VkQueue				queue		(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::Unique<vk::VkFence>	fence		(createExportableFence(vkd, *device, config.externalType));
+		NativeHandle					handleA;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *fence);
-
-		NativeHandle						handleA;
-		getFenceNative(vkd, *device, *fence, config.externalType, handleA);
+			submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fence, config.externalType, handleA);
+		else
+			getFenceNative(vkd, *device, *fence, config.externalType, handleA);
 
 		{
 			NativeHandle					handleB	(handleA);
@@ -1654,12 +1793,12 @@ tcu::TestStatus testFenceImportReimport (Context&				context,
 		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
 
 		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
+		NativeHandle					handleA;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *fenceA);
-
-		NativeHandle					handleA;
-		getFenceNative(vkd, *device, *fenceA, config.externalType, handleA);
+			submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, handleA);
+		else
+			getFenceNative(vkd, *device, *fenceA, config.externalType, handleA);
 
 		NativeHandle					handleB	(handleA);
 		const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
@@ -1700,12 +1839,10 @@ tcu::TestStatus testFenceSignalExportImportWait (Context&				context,
 		const vk::VkQueue				queue	(getQueue(vkd, *device, queueFamilyIndex));
 		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
 
-		submitDummySignal(vkd, queue, *fenceA);
-
 		{
 			NativeHandle	handle;
 
-			getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+			submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
 
 			{
 				const vk::VkFenceImportFlagsKHR	flags	= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
@@ -1817,9 +1954,9 @@ tcu::TestStatus testFenceSignalImport (Context&					context,
 		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *fenceA);
-
-		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+			submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
+		else
+			getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
 
 		importFence(vkd, *device, *fenceB, config.externalType, handle, flags);
 
@@ -1865,9 +2002,7 @@ tcu::TestStatus testFenceReset (Context&				context,
 		submitDummySignal(vkd, queue, *fenceB);
 		VK_CHECK(vkd.queueWaitIdle(queue));
 
-		submitDummySignal(vkd, queue, *fenceA);
-
-		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+		submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
 		{
 			NativeHandle					handleB	(handle);
 			importFence(vkd, *device, *fenceB, config.externalType, handleB, flags);
@@ -1931,9 +2066,9 @@ tcu::TestStatus testFenceSignalWaitImport (Context&					context,
 		NativeHandle					handle;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *fenceA);
-
-		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+			submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
+		else
+			getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
 
 		submitDummySignal(vkd, queue, *fenceB);
 		VK_CHECK(vkd.waitForFences(*device, 1u, &*fenceB, VK_TRUE, ~0ull));
@@ -1982,9 +2117,9 @@ tcu::TestStatus testFenceMultipleExports (Context&				context,
 			NativeHandle handle;
 
 			if (transference == TRANSFERENCE_COPY)
-				submitDummySignal(vkd, queue, *fence);
-
-			getFenceNative(vkd, *device, *fence, config.externalType, handle);
+				submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fence, config.externalType, handle);
+			else
+				getFenceNative(vkd, *device, *fence, config.externalType, handle);
 		}
 
 		submitDummySignal(vkd, queue, *fence);
@@ -2018,9 +2153,9 @@ tcu::TestStatus testFenceMultipleImports (Context&				context,
 		NativeHandle					handleA;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *fenceA);
-
-		getFenceNative(vkd, *device, *fenceA, config.externalType, handleA);
+			submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, handleA);
+		else
+			getFenceNative(vkd, *device, *fenceA, config.externalType, handleA);
 
 		for (size_t importNdx = 0; importNdx < importCount; importNdx++)
 		{
@@ -2068,9 +2203,7 @@ tcu::TestStatus testFenceTransference (Context&					context,
 		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
 		NativeHandle					handle;
 
-		submitDummySignal(vkd, queue, *fenceA);
-
-		getFenceNative(vkd, *device, *fenceA, config.externalType, handle);
+		submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, handle);
 
 		{
 			const vk::Unique<vk::VkFence>	fenceB	(createAndImportFence(vkd, *device, config.externalType, handle, flags));
@@ -2169,11 +2302,14 @@ tcu::TestStatus testFenceFdDup (Context&				context,
 		TestLog&						log		= context.getTestContext().getLog();
 		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
 
-		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *fenceA);
-
 		{
-			const NativeHandle	fd		(getFenceFd(vkd, *device, *fenceA, config.externalType));
+			NativeHandle		fd;
+
+			if (transference == TRANSFERENCE_COPY)
+				submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, fd);
+			else
+				getFenceNative(vkd, *device, *fenceA, config.externalType, fd);
+
 			NativeHandle		newFd	(dup(fd.getFd()));
 
 			if (newFd.getFd() < 0)
@@ -2230,15 +2366,20 @@ tcu::TestStatus testFenceFdDup2 (Context&				context,
 		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
 		const vk::Unique<vk::VkFence>	fenceB	(createExportableFence(vkd, *device, config.externalType));
 
-		if (transference == TRANSFERENCE_COPY)
 		{
-			submitDummySignal(vkd, queue, *fenceA);
-			submitDummySignal(vkd, queue, *fenceB);
-		}
+			NativeHandle		fd, secondFd;
 
-		{
-			const NativeHandle	fd			(getFenceFd(vkd, *device, *fenceA, config.externalType));
-			NativeHandle		secondFd	(getFenceFd(vkd, *device, *fenceB, config.externalType));
+			if (transference == TRANSFERENCE_COPY)
+			{
+				submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, fd);
+				submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceB, config.externalType, secondFd);
+			}
+			else
+			{
+				getFenceNative(vkd, *device, *fenceA, config.externalType, fd);
+				getFenceNative(vkd, *device, *fenceB, config.externalType, secondFd);
+			}
+
 			int					newFd		(dup2(fd.getFd(), secondFd.getFd()));
 
 			if (newFd < 0)
@@ -2294,16 +2435,21 @@ tcu::TestStatus testFenceFdDup3 (Context&				context,
 		const vk::Unique<vk::VkFence>	fenceA	(createExportableFence(vkd, *device, config.externalType));
 		const vk::Unique<vk::VkFence>	fenceB	(createExportableFence(vkd, *device, config.externalType));
 
-		if (transference == TRANSFERENCE_COPY)
 		{
-			submitDummySignal(vkd, queue, *fenceA);
-			submitDummySignal(vkd, queue, *fenceB);
-		}
+			NativeHandle					fd, secondFd;
 
-		{
+			if (transference == TRANSFERENCE_COPY)
+			{
+				submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceA, config.externalType, fd);
+				submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fenceB, config.externalType, secondFd);
+			}
+			else
+			{
+				getFenceNative(vkd, *device, *fenceA, config.externalType, fd);
+				getFenceNative(vkd, *device, *fenceB, config.externalType, secondFd);
+			}
+
 			const vk::VkFenceImportFlagsKHR	flags		= config.permanence == PERMANENCE_TEMPORARY ? vk::VK_FENCE_IMPORT_TEMPORARY_BIT_KHR : (vk::VkFenceImportFlagBitsKHR)0u;
-			const NativeHandle				fd			(getFenceFd(vkd, *device, *fenceA, config.externalType));
-			NativeHandle					secondFd	(getFenceFd(vkd, *device, *fenceB, config.externalType));
 			const int						newFd		(dup3(fd.getFd(), secondFd.getFd(), 0));
 
 			if (newFd < 0)
@@ -2357,11 +2503,12 @@ tcu::TestStatus testFenceFdSendOverSocket (Context&					context,
 
 		TestLog&						log		= context.getTestContext().getLog();
 		const vk::Unique<vk::VkFence>	fence	(createExportableFence(vkd, *device, config.externalType));
+		NativeHandle					fd;
 
 		if (transference == TRANSFERENCE_COPY)
-			submitDummySignal(vkd, queue, *fence);
-
-		const NativeHandle	fd	(getFenceFd(vkd, *device, *fence, config.externalType));
+			submitDummySignalAndGetFenceNative(vkd, *device, queue, queueFamilyIndex, *fence, config.externalType, fd);
+		else
+			getFenceNative(vkd, *device, *fence, config.externalType, fd);
 
 		{
 			int sv[2];
