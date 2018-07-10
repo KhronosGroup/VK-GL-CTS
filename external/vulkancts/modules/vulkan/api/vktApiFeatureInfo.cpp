@@ -768,6 +768,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_maintenance3",
 		"VK_KHR_draw_indirect_count",
 		"VK_KHR_create_renderpass2",
+		"VK_KHR_depth_stencil_resolve",
 		"VK_KHR_driver_properties",
 		"VK_KHR_swapchain_mutable_format",
 		"VK_KHR_shader_atomic_int64",
@@ -2839,6 +2840,19 @@ string toString(const VkPhysicalDevicePushDescriptorPropertiesKHR& value)
 	return s.str();
 }
 
+string toString(const VkPhysicalDeviceDepthStencilResolvePropertiesKHR& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceDepthStencilResolvePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tsupportedDepthResolveModes = " << value.supportedDepthResolveModes << '\n';
+	s << "\tsupportedStencilResolveModes = " << value.supportedStencilResolveModes << '\n';
+	s << "\tindependentResolveNone = " << value.independentResolveNone << '\n';
+	s << "\tindependentResolve = " << value.independentResolve << '\n';
+	s << '}';
+	return s.str();
+}
+
 bool checkExtension (vector<VkExtensionProperties>& properties, const char* extension)
 {
 	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
@@ -3285,6 +3299,29 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 
 		log << TestLog::Message << toString(floatControlsProperties[0]) << TestLog::EndMessage;
+	}
+
+	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_depth_stencil_resolve")))
+	{
+		VkPhysicalDeviceDepthStencilResolvePropertiesKHR  dsResolveProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			deMemset(&dsResolveProperties[ndx], 0xFF, sizeof(VkPhysicalDeviceDepthStencilResolvePropertiesKHR));
+			dsResolveProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+			dsResolveProperties[ndx].pNext = DE_NULL;
+
+			extProperties.pNext = &dsResolveProperties[ndx];
+
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+		}
+
+		if (deMemCmp(&dsResolveProperties[0], &dsResolveProperties[1], sizeof(VkPhysicalDeviceDepthStencilResolvePropertiesKHR)) != 0)
+		{
+			TCU_FAIL("Mismatch in VkPhysicalDeviceDepthStencilResolvePropertiesKHR");
+		}
+
+		log << TestLog::Message << toString(dsResolveProperties[0]) << TestLog::EndMessage;
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");

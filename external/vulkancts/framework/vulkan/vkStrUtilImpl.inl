@@ -352,6 +352,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR:					return "VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR";
 		default:																				return DE_NULL;
 	}
 }
@@ -2037,6 +2039,19 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR,						"VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR,					"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_BIT_KHR"),
 		tcu::Format::BitDesc(VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR,	"VK_DISPLAY_PLANE_ALPHA_PER_PIXEL_PREMULTIPLIED_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getResolveModeFlagsKHRStr (VkResolveModeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_NONE_KHR,				"VK_RESOLVE_MODE_NONE_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,	"VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_AVERAGE_BIT_KHR,		"VK_RESOLVE_MODE_AVERAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_MIN_BIT_KHR,			"VK_RESOLVE_MODE_MIN_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RESOLVE_MODE_MAX_BIT_KHR,			"VK_RESOLVE_MODE_MAX_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5439,6 +5454,31 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFloatControlsPr
 	s << "\tshaderRoundingModeRTZFloat16 = " << value.shaderRoundingModeRTZFloat16 << '\n';
 	s << "\tshaderRoundingModeRTZFloat32 = " << value.shaderRoundingModeRTZFloat32 << '\n';
 	s << "\tshaderRoundingModeRTZFloat64 = " << value.shaderRoundingModeRTZFloat64 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSubpassDescriptionDepthStencilResolveKHR& value)
+{
+	s << "VkSubpassDescriptionDepthStencilResolveKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthResolveMode = " << value.depthResolveMode << '\n';
+	s << "\tstencilResolveMode = " << value.stencilResolveMode << '\n';
+	s << "\tpDepthStencilResolveAttachment = " << value.pDepthStencilResolveAttachment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthStencilResolvePropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceDepthStencilResolvePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsupportedDepthResolveModes = " << getResolveModeFlagsKHRStr(value.supportedDepthResolveModes) << '\n';
+	s << "\tsupportedStencilResolveModes = " << getResolveModeFlagsKHRStr(value.supportedStencilResolveModes) << '\n';
+	s << "\tindependentResolveNone = " << value.independentResolveNone << '\n';
+	s << "\tindependentResolve = " << value.independentResolve << '\n';
 	s << '}';
 	return s;
 }
