@@ -758,7 +758,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_multiview",
 		"VK_KHR_maintenance3",
 		"VK_KHR_draw_indirect_count",
-		"VK_KHR_create_renderpass2"
+		"VK_KHR_create_renderpass2",
 		"VK_KHR_driver_properties",
 	};
 
