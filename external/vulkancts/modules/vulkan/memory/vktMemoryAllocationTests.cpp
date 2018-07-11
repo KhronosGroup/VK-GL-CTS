@@ -284,7 +284,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 			// For 32-bit binaries we cap the total host visible allocations to 1.5GB to
 			// avoid exhausting CPU virtual address space and throwing a false negative result.
 			if ((memoryType.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) &&
-				allocationSize * m_config.memoryAllocationCount >= 1610612736)
+				allocationSize * m_config.memoryAllocationCount * (m_subsetAllocationAllowed ? 1 : m_numPhysDevices) >= 1610612736)
 
 				log << TestLog::Message << "    Skipping: Not enough CPU virtual address space for all host visible allocations." << TestLog::EndMessage;
 			else
