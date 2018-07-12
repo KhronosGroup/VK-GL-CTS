@@ -257,7 +257,7 @@ VkDescriptorType getVkDescriptorType (DescriptorType descType)
 
 		default:
 			DE_FATAL("Unknown descriptor type");
-			return VK_DESCRIPTOR_TYPE_LAST;
+			return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
 	}
 }
 

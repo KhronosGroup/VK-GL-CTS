@@ -1121,3 +1121,48 @@ template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
 }
 
+template<> VkStructureType getStructureType<VkDescriptorSetLayoutBindingFlagsCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorIndexingFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorIndexingPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorSetVariableDescriptorCountAllocateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorSetVariableDescriptorCountLayoutSupportEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_LAYOUT_SUPPORT_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceInlineUniformBlockFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceInlineUniformBlockPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkWriteDescriptorSetInlineUniformBlockEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorPoolInlineUniformBlockCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT;
+}
+

@@ -171,13 +171,13 @@ DescriptorPoolBuilder& DescriptorPoolBuilder::addType (VkDescriptorType type, de
 	}
 }
 
-Move<VkDescriptorPool> DescriptorPoolBuilder::build (const DeviceInterface& vk, VkDevice device, VkDescriptorPoolCreateFlags flags, deUint32 maxSets) const
+Move<VkDescriptorPool> DescriptorPoolBuilder::build (const DeviceInterface& vk, VkDevice device, VkDescriptorPoolCreateFlags flags, deUint32 maxSets, const void *pNext) const
 {
 	const VkDescriptorPoolSize* const	typeCountPtr	= (m_counts.empty()) ? (DE_NULL) : (&m_counts[0]);
 	const VkDescriptorPoolCreateInfo	createInfo		=
 	{
 		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-		DE_NULL,
+		pNext,
 		flags,
 		maxSets,
 		(deUint32)m_counts.size(),		// poolSizeCount
