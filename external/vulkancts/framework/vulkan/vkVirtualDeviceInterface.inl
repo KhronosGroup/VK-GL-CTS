@@ -198,5 +198,6 @@ virtual VkResult			createValidationCacheEXT					(VkDevice device, const VkValida
 virtual void				destroyValidationCacheEXT					(VkDevice device, VkValidationCacheEXT validationCache, const VkAllocationCallbacks* pAllocator) const = 0;
 virtual VkResult			mergeValidationCachesEXT					(VkDevice device, VkValidationCacheEXT dstCache, deUint32 srcCacheCount, const VkValidationCacheEXT* pSrcCaches) const = 0;
 virtual VkResult			getValidationCacheDataEXT					(VkDevice device, VkValidationCacheEXT validationCache, deUintptr* pDataSize, void* pData) const = 0;
+virtual VkResult			getMemoryHostPointerPropertiesEXT			(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties) const = 0;
 virtual VkResult			getAndroidHardwareBufferPropertiesANDROID	(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const = 0;
 virtual VkResult			getMemoryAndroidHardwareBufferANDROID		(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const = 0;

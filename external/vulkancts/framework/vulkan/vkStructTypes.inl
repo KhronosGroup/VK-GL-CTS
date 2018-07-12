@@ -2953,6 +2953,28 @@ struct VkExternalFormatANDROID
 	deUint64		externalFormat;
 };
 
+struct VkImportMemoryHostPointerInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalMemoryHandleTypeFlagBits	handleType;
+	void*								pHostPointer;
+};
+
+struct VkMemoryHostPointerPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		memoryTypeBits;
+};
+
+struct VkPhysicalDeviceExternalMemoryHostPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	minImportedHostPointerAlignment;
+};
+
 struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
 {
 	VkStructureType	sType;
