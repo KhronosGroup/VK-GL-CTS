@@ -233,6 +233,7 @@ tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr					(VkExternalMemo
 tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsNVXStr			(VkIndirectCommandsLayoutUsageFlagsNVX value);
 tcu::Format::Bitfield<32>	getObjectEntryUsageFlagsNVXStr						(VkObjectEntryUsageFlagsNVX value);
 tcu::Format::Bitfield<32>	getSurfaceCounterFlagsEXTStr						(VkSurfaceCounterFlagsEXT value);
+tcu::Format::Bitfield<32>	getDescriptorBindingFlagsEXTStr						(VkDescriptorBindingFlagsEXT value);
 tcu::Format::Bitfield<32>	getInstanceCreateFlagsStr							(VkInstanceCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceCreateFlagsStr								(VkDeviceCreateFlags value);
 tcu::Format::Bitfield<32>	getMemoryMapFlagsStr								(VkMemoryMapFlags value);
@@ -593,3 +594,12 @@ std::ostream&	operator<<	(std::ostream& s, const VkAndroidHardwareBufferFormatPr
 std::ostream&	operator<<	(std::ostream& s, const VkImportAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutBindingFlagsCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorIndexingFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDescriptorIndexingPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetVariableDescriptorCountAllocateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetVariableDescriptorCountLayoutSupportEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceInlineUniformBlockFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceInlineUniformBlockPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetInlineUniformBlockEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDescriptorPoolInlineUniformBlockCreateInfoEXT& value);

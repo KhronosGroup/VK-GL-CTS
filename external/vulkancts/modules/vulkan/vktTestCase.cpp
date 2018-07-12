@@ -311,6 +311,8 @@ public:
 	VkPhysicalDevice8BitStorageFeaturesKHR			eightBitStorageFeatures;
 	VkPhysicalDevice16BitStorageFeatures			sixteenBitStorageFeatures;
 	VkPhysicalDeviceVariablePointerFeatures			variablePointerFeatures;
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT	descriptorIndexingFeatures;
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT	inlineUniformBlockFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -323,12 +325,16 @@ public:
 		deMemset(&eightBitStorageFeatures, 0, sizeof(eightBitStorageFeatures));
 		deMemset(&sixteenBitStorageFeatures, 0, sizeof(sixteenBitStorageFeatures));
 		deMemset(&variablePointerFeatures, 0, sizeof(variablePointerFeatures));
+		deMemset(&descriptorIndexingFeatures, 0, sizeof(descriptorIndexingFeatures));
+		deMemset(&inlineUniformBlockFeatures, 0, sizeof(inlineUniformBlockFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
 		eightBitStorageFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
 		sixteenBitStorageFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR;
 		variablePointerFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR;
+		descriptorIndexingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+		inlineUniformBlockFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
@@ -353,6 +359,16 @@ public:
 			{
 				*nextPtr	= &variablePointerFeatures;
 				nextPtr		= &variablePointerFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_descriptor_indexing"))
+			{
+				*nextPtr	= &descriptorIndexingFeatures;
+				nextPtr		= &descriptorIndexingFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_inline_uniform_block"))
+			{
+				*nextPtr	= &inlineUniformBlockFeatures;
+				nextPtr		= &inlineUniformBlockFeatures.pNext;
 			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);

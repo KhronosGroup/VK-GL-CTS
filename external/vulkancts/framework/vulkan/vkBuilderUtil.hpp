@@ -115,7 +115,7 @@ public:
 										DescriptorPoolBuilder	(void);
 
 	DescriptorPoolBuilder&				addType					(VkDescriptorType type, deUint32 numDescriptors = 1u);
-	Move<VkDescriptorPool>				build					(const DeviceInterface& vk, VkDevice device, VkDescriptorPoolCreateFlags flags, deUint32 maxSets) const;
+	Move<VkDescriptorPool>				build					(const DeviceInterface& vk, VkDevice device, VkDescriptorPoolCreateFlags flags, deUint32 maxSets, const void *pNext = DE_NULL) const;
 
 private:
 										DescriptorPoolBuilder	(const DescriptorPoolBuilder&); // delete

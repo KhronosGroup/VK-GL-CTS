@@ -318,6 +318,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID:											return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT:					return "VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT:			return "VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT:										return "VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT:						return "VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_PIPELINE_SAMPLE_LOCATIONS_STATE_CREATE_INFO_EXT";
@@ -331,6 +335,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV:				return "VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_MODULATION_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_VALIDATION_CACHE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_SHADER_MODULE_VALIDATION_CACHE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT:		return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_LAYOUT_SUPPORT_EXT:		return "VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_LAYOUT_SUPPORT_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR";
 		default:																				return DE_NULL;
@@ -965,18 +974,19 @@ const char* getDescriptorTypeName (VkDescriptorType value)
 {
 	switch (value)
 	{
-		case VK_DESCRIPTOR_TYPE_SAMPLER:				return "VK_DESCRIPTOR_TYPE_SAMPLER";
-		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	return "VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER";
-		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			return "VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE";
-		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			return "VK_DESCRIPTOR_TYPE_STORAGE_IMAGE";
-		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:	return "VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER";
-		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:	return "VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER";
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:			return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER";
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:			return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER";
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:	return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC";
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:	return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC";
-		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:		return "VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT";
-		default:										return DE_NULL;
+		case VK_DESCRIPTOR_TYPE_SAMPLER:					return "VK_DESCRIPTOR_TYPE_SAMPLER";
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:		return "VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER";
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:				return "VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE";
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:				return "VK_DESCRIPTOR_TYPE_STORAGE_IMAGE";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:		return "VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER";
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:		return "VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:				return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER";
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:				return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER";
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:		return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC";
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:		return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC";
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:			return "VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT";
+		case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT:	return "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT";
+		default:											return DE_NULL;
 	}
 }
 
@@ -1693,7 +1703,8 @@ tcu::Format::Bitfield<32> getDescriptorSetLayoutCreateFlagsStr (VkDescriptorSetL
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,			"VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT,	"VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1702,7 +1713,8 @@ tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreat
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,	"VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,		"VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT,	"VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2080,6 +2092,18 @@ tcu::Format::Bitfield<32> getSurfaceCounterFlagsEXTStr (VkSurfaceCounterFlagsEXT
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_SURFACE_COUNTER_VBLANK_EXT,	"VK_SURFACE_COUNTER_VBLANK_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getDescriptorBindingFlagsEXTStr (VkDescriptorBindingFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT,			"VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT,	"VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT,				"VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT"),
+		tcu::Format::BitDesc(VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT,	"VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -6213,6 +6237,145 @@ std::ostream& operator<< (std::ostream& s, const VkExternalFormatANDROID& value)
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorSetLayoutBindingFlagsCreateInfoEXT& value)
+{
+	s << "VkDescriptorSetLayoutBindingFlagsCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbindingCount = " << value.bindingCount << '\n';
+	s << "\tpBindingFlags = " << value.pBindingFlags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorIndexingFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDescriptorIndexingFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderInputAttachmentArrayDynamicIndexing = " << value.shaderInputAttachmentArrayDynamicIndexing << '\n';
+	s << "\tshaderUniformTexelBufferArrayDynamicIndexing = " << value.shaderUniformTexelBufferArrayDynamicIndexing << '\n';
+	s << "\tshaderStorageTexelBufferArrayDynamicIndexing = " << value.shaderStorageTexelBufferArrayDynamicIndexing << '\n';
+	s << "\tshaderUniformBufferArrayNonUniformIndexing = " << value.shaderUniformBufferArrayNonUniformIndexing << '\n';
+	s << "\tshaderSampledImageArrayNonUniformIndexing = " << value.shaderSampledImageArrayNonUniformIndexing << '\n';
+	s << "\tshaderStorageBufferArrayNonUniformIndexing = " << value.shaderStorageBufferArrayNonUniformIndexing << '\n';
+	s << "\tshaderStorageImageArrayNonUniformIndexing = " << value.shaderStorageImageArrayNonUniformIndexing << '\n';
+	s << "\tshaderInputAttachmentArrayNonUniformIndexing = " << value.shaderInputAttachmentArrayNonUniformIndexing << '\n';
+	s << "\tshaderUniformTexelBufferArrayNonUniformIndexing = " << value.shaderUniformTexelBufferArrayNonUniformIndexing << '\n';
+	s << "\tshaderStorageTexelBufferArrayNonUniformIndexing = " << value.shaderStorageTexelBufferArrayNonUniformIndexing << '\n';
+	s << "\tdescriptorBindingUniformBufferUpdateAfterBind = " << value.descriptorBindingUniformBufferUpdateAfterBind << '\n';
+	s << "\tdescriptorBindingSampledImageUpdateAfterBind = " << value.descriptorBindingSampledImageUpdateAfterBind << '\n';
+	s << "\tdescriptorBindingStorageImageUpdateAfterBind = " << value.descriptorBindingStorageImageUpdateAfterBind << '\n';
+	s << "\tdescriptorBindingStorageBufferUpdateAfterBind = " << value.descriptorBindingStorageBufferUpdateAfterBind << '\n';
+	s << "\tdescriptorBindingUniformTexelBufferUpdateAfterBind = " << value.descriptorBindingUniformTexelBufferUpdateAfterBind << '\n';
+	s << "\tdescriptorBindingStorageTexelBufferUpdateAfterBind = " << value.descriptorBindingStorageTexelBufferUpdateAfterBind << '\n';
+	s << "\tdescriptorBindingUpdateUnusedWhilePending = " << value.descriptorBindingUpdateUnusedWhilePending << '\n';
+	s << "\tdescriptorBindingPartiallyBound = " << value.descriptorBindingPartiallyBound << '\n';
+	s << "\tdescriptorBindingVariableDescriptorCount = " << value.descriptorBindingVariableDescriptorCount << '\n';
+	s << "\truntimeDescriptorArray = " << value.runtimeDescriptorArray << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDescriptorIndexingPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceDescriptorIndexingPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxUpdateAfterBindDescriptorsInAllPools = " << value.maxUpdateAfterBindDescriptorsInAllPools << '\n';
+	s << "\tshaderUniformBufferArrayNonUniformIndexingNative = " << value.shaderUniformBufferArrayNonUniformIndexingNative << '\n';
+	s << "\tshaderSampledImageArrayNonUniformIndexingNative = " << value.shaderSampledImageArrayNonUniformIndexingNative << '\n';
+	s << "\tshaderStorageBufferArrayNonUniformIndexingNative = " << value.shaderStorageBufferArrayNonUniformIndexingNative << '\n';
+	s << "\tshaderStorageImageArrayNonUniformIndexingNative = " << value.shaderStorageImageArrayNonUniformIndexingNative << '\n';
+	s << "\tshaderInputAttachmentArrayNonUniformIndexingNative = " << value.shaderInputAttachmentArrayNonUniformIndexingNative << '\n';
+	s << "\trobustBufferAccessUpdateAfterBind = " << value.robustBufferAccessUpdateAfterBind << '\n';
+	s << "\tquadDivergentImplicitLod = " << value.quadDivergentImplicitLod << '\n';
+	s << "\tmaxPerStageDescriptorUpdateAfterBindSamplers = " << value.maxPerStageDescriptorUpdateAfterBindSamplers << '\n';
+	s << "\tmaxPerStageDescriptorUpdateAfterBindUniformBuffers = " << value.maxPerStageDescriptorUpdateAfterBindUniformBuffers << '\n';
+	s << "\tmaxPerStageDescriptorUpdateAfterBindStorageBuffers = " << value.maxPerStageDescriptorUpdateAfterBindStorageBuffers << '\n';
+	s << "\tmaxPerStageDescriptorUpdateAfterBindSampledImages = " << value.maxPerStageDescriptorUpdateAfterBindSampledImages << '\n';
+	s << "\tmaxPerStageDescriptorUpdateAfterBindStorageImages = " << value.maxPerStageDescriptorUpdateAfterBindStorageImages << '\n';
+	s << "\tmaxPerStageDescriptorUpdateAfterBindInputAttachments = " << value.maxPerStageDescriptorUpdateAfterBindInputAttachments << '\n';
+	s << "\tmaxPerStageUpdateAfterBindResources = " << value.maxPerStageUpdateAfterBindResources << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindSamplers = " << value.maxDescriptorSetUpdateAfterBindSamplers << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindUniformBuffers = " << value.maxDescriptorSetUpdateAfterBindUniformBuffers << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindUniformBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindUniformBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindStorageBuffers = " << value.maxDescriptorSetUpdateAfterBindStorageBuffers << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindStorageBuffersDynamic = " << value.maxDescriptorSetUpdateAfterBindStorageBuffersDynamic << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindSampledImages = " << value.maxDescriptorSetUpdateAfterBindSampledImages << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindStorageImages = " << value.maxDescriptorSetUpdateAfterBindStorageImages << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindInputAttachments = " << value.maxDescriptorSetUpdateAfterBindInputAttachments << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorSetVariableDescriptorCountAllocateInfoEXT& value)
+{
+	s << "VkDescriptorSetVariableDescriptorCountAllocateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdescriptorSetCount = " << value.descriptorSetCount << '\n';
+	s << "\tpDescriptorCounts = " << value.pDescriptorCounts << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorSetVariableDescriptorCountLayoutSupportEXT& value)
+{
+	s << "VkDescriptorSetVariableDescriptorCountLayoutSupportEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxVariableDescriptorCount = " << value.maxVariableDescriptorCount << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceInlineUniformBlockFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceInlineUniformBlockFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tinlineUniformBlock = " << value.inlineUniformBlock << '\n';
+	s << "\tdescriptorBindingInlineUniformBlockUpdateAfterBind = " << value.descriptorBindingInlineUniformBlockUpdateAfterBind << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceInlineUniformBlockPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceInlineUniformBlockPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxInlineUniformBlockSize = " << value.maxInlineUniformBlockSize << '\n';
+	s << "\tmaxPerStageDescriptorInlineUniformBlocks = " << value.maxPerStageDescriptorInlineUniformBlocks << '\n';
+	s << "\tmaxPerStageDescriptorUpdateAfterBindInlineUniformBlocks = " << value.maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks << '\n';
+	s << "\tmaxDescriptorSetInlineUniformBlocks = " << value.maxDescriptorSetInlineUniformBlocks << '\n';
+	s << "\tmaxDescriptorSetUpdateAfterBindInlineUniformBlocks = " << value.maxDescriptorSetUpdateAfterBindInlineUniformBlocks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkWriteDescriptorSetInlineUniformBlockEXT& value)
+{
+	s << "VkWriteDescriptorSetInlineUniformBlockEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdataSize = " << value.dataSize << '\n';
+	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDescriptorPoolInlineUniformBlockCreateInfoEXT& value)
+{
+	s << "VkDescriptorPoolInlineUniformBlockCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxInlineUniformBlockBindings = " << value.maxInlineUniformBlockBindings << '\n';
 	s << '}';
 	return s;
 }
