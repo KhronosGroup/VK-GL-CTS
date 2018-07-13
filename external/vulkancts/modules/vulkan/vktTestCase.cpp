@@ -618,7 +618,7 @@ bool Context::requireDeviceCoreFeature (const DeviceCoreFeature requiredFeature)
 {
 	const vk::VkPhysicalDeviceFeatures& featuresAvailable		= getDeviceFeatures();
 	const vk::VkBool32*					featuresAvailableArray	= (vk::VkBool32*)(&featuresAvailable);
-	const deUint32						requiredFeatureIndex	= static_cast<const deUint32>(requiredFeature);
+	const deUint32						requiredFeatureIndex	= static_cast<deUint32>(requiredFeature);
 
 	DE_ASSERT(requiredFeatureIndex * sizeof(vk::VkBool32) < sizeof(featuresAvailable));
 	DE_ASSERT(deviceCoreFeaturesTable[requiredFeatureIndex].featureArrayIndex * sizeof(vk::VkBool32) == deviceCoreFeaturesTable[requiredFeatureIndex].featureArrayOffset);

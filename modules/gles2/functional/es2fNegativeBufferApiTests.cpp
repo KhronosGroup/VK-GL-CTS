@@ -340,7 +340,15 @@ void NegativeBufferApiTests::init (void)
 			expectError(GL_INVALID_ENUM);
 			m_log << TestLog::EndSection;
 
-			if (!m_context.getContextInfo().isExtensionSupported("GL_OES_fbo_render_mipmap"))
+			// Detect compatible GLES context by querying GL_MAJOR_VERSION.
+			// This query does not exist on GLES2 so succeeding query implies GLES3+ context.
+			bool isES3Compatible = false;
+			glw::GLint majorVersion = 0;
+			glGetIntegerv(GL_MAJOR_VERSION, &majorVersion);
+			if (glGetError() == GL_NO_ERROR)
+				isES3Compatible = true;
+
+			if (!(m_context.getContextInfo().isExtensionSupported("GL_OES_fbo_render_mipmap") || isES3Compatible))
 			{
 				m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if level is not 0.");
 				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2D, 3);

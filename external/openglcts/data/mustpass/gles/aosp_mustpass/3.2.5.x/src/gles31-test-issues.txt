@@ -31,3 +31,10 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexim
 
 # Bug 28813504
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.41
+
+#VK-GL-CTS 293
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawarrays_separate_grid_1000x1000_drawcount_5000
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawarrays_combined_grid_1000x1000_drawcount_5000
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_separate_grid_1000x1000_drawcount_5000
+dEQP-GLES31.functional.draw_indirect.compute_interop.large.drawelements_combined_grid_1000x1000_drawcount_5000
+

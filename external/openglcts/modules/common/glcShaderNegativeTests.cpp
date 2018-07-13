@@ -316,37 +316,10 @@ void ShaderNegativeTests::init(void)
 		};
 		unsigned int used_variables_variants_count = sizeof(used_variables_variants) / sizeof(ShaderVariants);
 
-		static const ShaderVariants unused_variables_variants[] = {
-			/* These variants should pass since the precision qualifiers match.
-			 * These variants require highp to be supported, so will not be run for GLSL_VERSION_100_ES.
-			 */
-			{ GLSL_VERSION_300_ES, "", "gl_Position = vec4(1.0);", "highp", "result = value;", true },
-			{ GLSL_VERSION_300_ES, "highp", "gl_Position = vec4(1.0);", "highp", "result = value;", true },
-
-			/* Use highp in vertex shaders, mediump in fragment shaders. Check variations as above.
-			 * These variants should fail since the precision qualifiers do not match, and matching is done
-			 * based on declaration - independent of static use.
-			 */
-			{ GLSL_VERSION_100_ES, "", "gl_Position = vec4(1.0);", "mediump", "result = value;", false },
-			{ GLSL_VERSION_100_ES, "highp", "gl_Position = vec4(1.0);", "mediump", "result = value;", false },
-
-			/* Use mediump in vertex shaders, highp in fragment shaders. Check variations as above.
-			 * These variations should fail for the same reason as above.
-			 */
-			{ GLSL_VERSION_300_ES, "mediump", "gl_Position = vec4(1.0);", "highp", "result = vec4(1.0);", false },
-			{ GLSL_VERSION_300_ES, "mediump", "gl_Position = vec4(1.0);", "highp", "result = value;", false },
-		};
-		unsigned int unused_variables_variants_count = sizeof(unused_variables_variants) / sizeof(ShaderVariants);
-
 		addChild(new ShaderUniformPrecisionLinkCase(
 			m_context, "used_uniform_precision_matching",
 			"Verify that linking fails if precision qualifiers on default uniform do not match",
 			used_variables_variants, used_variables_variants_count, m_glslVersion));
-
-		addChild(new ShaderUniformPrecisionLinkCase(
-			m_context, "unused_uniform_precision_matching",
-			"Verify that linking fails if precision qualifiers on default not used uniform do not match",
-			unused_variables_variants, unused_variables_variants_count, m_glslVersion));
 	}
 }
 

@@ -364,6 +364,11 @@ By default `VK_DEBUG_REPORT_INFORMATION_BIT_EXT` and `_DEBUG_BIT_EXT` messages
 are excluded from the log, but that can be customized by modifying
 `vkt::TestCaseExecutor::deinit()` in `vktTestPackage.cpp`.
 
+On the Android target, layers can be added to the APK during the build process
+by setting the `--layers-path` command line option to point into the NDK or to
+a locally-built layers tree. The layers are expected to be found under $abi/
+under the layers path.
+
 
 Cherry GUI
 ----------
