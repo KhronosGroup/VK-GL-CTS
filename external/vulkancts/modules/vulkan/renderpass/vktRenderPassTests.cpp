@@ -677,7 +677,7 @@ public:
 	const vector<Attachment>&							getAttachments	(void) const { return m_attachments;	}
 	const vector<Subpass>&								getSubpasses	(void) const { return m_subpasses;		}
 	const vector<SubpassDependency>&					getDependencies	(void) const { return m_dependencies;	}
-	const vector<VkInputAttachmentAspectReferenceKHR>	getInputAspects	(void) const { return m_inputAspects;	}
+	const vector<VkInputAttachmentAspectReferenceKHR>&	getInputAspects	(void) const { return m_inputAspects;	}
 
 private:
 	const vector<Attachment>							m_attachments;
@@ -5849,7 +5849,7 @@ void addFormatTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 					addFunctionCaseWithPrograms<TestConfig>(loadOpGroup.get(), renderTypes[renderTypeNdx].str, renderTypes[renderTypeNdx].str, createTestShaders, renderPassTest, TestConfig(renderPass, renderTypes[renderTypeNdx].types, TestConfig::COMMANDBUFFERTYPES_INLINE, TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, 90239, allocationKind));
 				}
 
-				if (isStencilAttachment && isDepthAttachment)
+				if (isStencilAttachment && isDepthAttachment && loadOp != VK_ATTACHMENT_LOAD_OP_CLEAR)
 				{
 					{
 						const RenderPass			renderPass			(vector<Attachment>(1, Attachment(vkFormat,
