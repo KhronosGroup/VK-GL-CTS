@@ -1724,8 +1724,15 @@ void TexelFetchTest::prepareTexture(const Functions& gl, bool is_source, glw::GL
 	Texture::Bind(gl, texture_id, target);
 	Texture::Storage(gl, target, n_levels, internal_format, width, height, 0);
 
-	/* Set samplers to NEAREST/NEAREST if required */
-	if (R32UI_MULTISAMPLE != m_test_case)
+	/* Set samplers to NEAREST/NEAREST if required. The results of texelFetch builtins
+	   are undefined if the computed level of detail is not the texture's base level and
+	   the texture's minification filter is NEAREST or LINEAR. */
+	if (R32UI_MIPMAP == m_test_case)
+	{
+		gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+		gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}
+	else if (R32UI_MULTISAMPLE != m_test_case)
 	{
 		gl.texParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		gl.texParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

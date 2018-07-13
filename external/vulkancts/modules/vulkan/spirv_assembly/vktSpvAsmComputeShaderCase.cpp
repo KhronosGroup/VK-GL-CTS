@@ -433,12 +433,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	}
 
 	{
-		const InstanceInterface&			vki					= m_context.getInstanceInterface();
-		const VkPhysicalDevice				physicalDevice		= m_context.getPhysicalDevice();
-
 		// 8bit storage features
 		{
-			if (!is8BitStorageFeaturesSupported(m_context.getUsedApiVersion(), vki, physicalDevice, m_context.getInstanceExtensions(), m_shaderSpec.requestedVulkanFeatures.ext8BitStorage))
+			if (!is8BitStorageFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.ext8BitStorage))
 				TCU_THROW(NotSupportedError, "Requested 8bit storage features not supported");
 		}
 

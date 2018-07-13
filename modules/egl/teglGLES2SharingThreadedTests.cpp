@@ -2142,7 +2142,7 @@ void GLES2SharingRandomTest::init (void)
 	const EGLint attribList[] =
 	{
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
-		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT,
+		EGL_SURFACE_TYPE,		EGL_PBUFFER_BIT,
 		EGL_ALPHA_SIZE,			1,
 		EGL_NONE
 	};
@@ -3032,7 +3032,7 @@ void GLES2ThreadedSharingTest::init (void)
 	const EGLint attribList[] =
 	{
 		EGL_RENDERABLE_TYPE,	EGL_OPENGL_ES2_BIT,
-		EGL_SURFACE_TYPE,		EGL_WINDOW_BIT,
+		EGL_SURFACE_TYPE,		EGL_PBUFFER_BIT,
 		EGL_ALPHA_SIZE,			1,
 		EGL_NONE
 	};

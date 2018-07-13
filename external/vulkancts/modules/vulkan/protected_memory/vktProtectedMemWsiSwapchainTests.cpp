@@ -293,10 +293,10 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			}
 
 			// If the implementation doesn't have a max image count, min+16 means we won't clamp.
-			// Limit it to how many protected images we estimate can be allocated, with one image
+			// Limit it to how many protected images we estimate can be allocated, with two images
 			// worth of slack for alignment, swapchain-specific constraints, etc.
 			const deUint32	maxImageCount		= de::min((capabilities.maxImageCount > 0) ? capabilities.maxImageCount : capabilities.minImageCount + 16u,
-														  deUint32(protectedHeapSize / memoryRequirements.size) - 1);
+														  deUint32(protectedHeapSize / memoryRequirements.size) - 2);
 			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, maxImageCount);
 			for (deUint32 imageCount = capabilities.minImageCount; imageCount <= maxImageCountToTest; ++imageCount)
 			{

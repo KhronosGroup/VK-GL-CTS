@@ -638,8 +638,8 @@ void FboApiTestGroup::init (void)
 
 	const glu::RenderContext& renderContext = m_context.getRenderContext();
 	bool  defaultFboIsZero	= renderContext.getDefaultFramebuffer() == 0;
-	bool  hasRenderToMipmap	= extensions.find("GL_OES_fbo_render_mipmap") != extensions.end();
 	bool  isES3Compatible	= gls::FboUtil::checkExtensionSupport(renderContext, "DEQP_gles3_core_compatible");
+	bool  hasRenderToMipmap	= isES3Compatible || extensions.find("GL_OES_fbo_render_mipmap") != extensions.end();
 
 	// Valid attachments
 	addChild(new FboApiCase(m_context, "valid_tex2d_attachments",					"Valid 2D texture attachments",							validTex2DAttachmentsTest));

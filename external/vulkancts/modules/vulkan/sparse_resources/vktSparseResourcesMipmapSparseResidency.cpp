@@ -229,10 +229,23 @@ tcu::TestStatus MipmapSparseResidencyInstance::iterate (void)
 			std::vector<VkSparseImageMemoryBind>	imageResidencyMemoryBinds;
 			std::vector<VkSparseMemoryBind>			imageMipTailMemoryBinds;
 
-			const deUint32							memoryType = findMatchingMemoryType(instance, physicalDevice, imageMemoryRequirements, MemoryRequirement::Any);
+			const deUint32							memoryType = findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID), imageMemoryRequirements, MemoryRequirement::Any);
 
 			if (memoryType == NO_MATCH_FOUND)
 				return tcu::TestStatus::fail("No matching memory type found");
+
+			if (firstDeviceID != secondDeviceID)
+			{
+				VkPeerMemoryFeatureFlags	peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
+				const deUint32				heapIndex = getHeapIndexForMemoryType(instance, getPhysicalDevice(secondDeviceID), memoryType);
+				deviceInterface.getDeviceGroupPeerMemoryFeatures(getDevice(), heapIndex, firstDeviceID, secondDeviceID, &peerMemoryFeatureFlags);
+
+				if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT) == 0) ||
+					((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_DST_BIT) == 0))
+				{
+					TCU_THROW(NotSupportedError, "Peer memory does not support COPY_SRC and COPY_DST");
+				}
+			}
 
 			// Bind memory for each layer
 			for (deUint32 layerNdx = 0; layerNdx < imageSparseInfo.arrayLayers; ++layerNdx)

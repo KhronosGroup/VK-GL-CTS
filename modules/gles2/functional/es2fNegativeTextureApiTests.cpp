@@ -1225,11 +1225,15 @@ void NegativeTextureApiTests::init (void)
 			getSupportedExtensions(GL_NUM_COMPRESSED_TEXTURE_FORMATS, GL_COMPRESSED_TEXTURE_FORMATS, compressedFormats);
 			if (!compressedFormats.empty())
 			{
+				GLuint texture;
+				glGenTextures(1, &texture);
+				glBindTexture(GL_TEXTURE_2D, texture);
 				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if the zero level array is stored in a compressed internal format.");
 				glCompressedTexImage2D(GL_TEXTURE_2D, 0, compressedFormats[0], 0, 0, 0, 0, 0);
 				glGenerateMipmap(GL_TEXTURE_2D);
 				expectError(GL_INVALID_OPERATION);
 				m_log << TestLog::EndSection;
+				glDeleteTextures(1, &texture);
 			}
 		});
 	ES2F_ADD_API_CASE(generatemipmap_incomplete_cube, "Invalid glGenerateMipmap() usage",

@@ -3277,7 +3277,6 @@ KHR-GLES3.core.internalformat.renderbuffer.rgb8
 KHR-GLES3.core.internalformat.renderbuffer.rgb5_a1
 KHR-GLES3.parallel_shader_compile.simple_queries
 KHR-GLES3.parallel_shader_compile.max_shader_compile_threads
-KHR-GLES3.parallel_shader_compile.compilation_completion_non_parallel
 KHR-GLES3.parallel_shader_compile.compilation_completion_parallel
 KHR-GLES3.packed_pixels.rectangle.initial_values
 KHR-GLES3.packed_pixels.rectangle.luminance

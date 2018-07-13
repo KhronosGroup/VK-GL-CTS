@@ -8323,6 +8323,8 @@ void TextureViewTestCoherency::checkProgramWriteCoherency(_texture_type texture_
 
 		gl.drawArrays(GL_TRIANGLE_STRIP, 0 /* first */, 4 /* count */);
 		GLU_EXPECT_NO_ERROR(gl.getError(), "glDrawArrays() call failed.");
+
+		gl.textureBarrier();
 	}
 
 	/* Determine which texture and which mip-map level we will need to sample
