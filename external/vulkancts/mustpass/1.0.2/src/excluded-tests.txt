@@ -335,3 +335,9 @@ dEQP-VK.glsl.builtin_var.fragcoord_msaa.*
 #VK-GL-CTS 657
 dEQP-VK.memory.requirements.dedicated_allocation.buffer.*
 dEQP-VK.memory.requirements.dedicated_allocation.image.*
+
+# VK-GL-CTS 1273
+dEQP-VK.tessellation.primitive_discard.triangles_fractional_odd_spacing_ccw_valid_levels
+dEQP-VK.tessellation.primitive_discard.triangles_fractional_odd_spacing_cw_valid_levels
+dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_ccw_valid_levels
+dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_cw_valid_levels
