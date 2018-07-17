@@ -225,7 +225,7 @@ private:
 
 SpvAsmComputeSpirvVersionsInstance::SpvAsmComputeSpirvVersionsInstance (Context& ctx, const TestParameters& testParameters)
 	: ComputeShaderSpec(getComputeShaderSpec(testParameters))
-	, SpvAsmComputeShaderInstance(ctx, *this, COMPUTE_TEST_USES_NONE)
+	, SpvAsmComputeShaderInstance(ctx, *this)
 	, m_testParameters(testParameters)
 {
 	if (m_testParameters.operation != OPERATION_COMPUTE)

@@ -32,18 +32,6 @@ namespace vkt
 {
 namespace SpirVAssembly
 {
-
-enum ComputeTestFeatures
-{
-	COMPUTE_TEST_USES_NONE,
-	COMPUTE_TEST_USES_INT16,
-	COMPUTE_TEST_USES_INT64,
-	COMPUTE_TEST_USES_INT16_INT64,
-	COMPUTE_TEST_USES_FLOAT64,
-	COMPUTE_TEST_USES_INT16_FLOAT64,
-	COMPUTE_TEST_USES_INT64_FLOAT64
-};
-
 /*--------------------------------------------------------------------*//*!
  * \brief Test instance for compute pipeline
  *
@@ -58,24 +46,22 @@ enum ComputeTestFeatures
 class SpvAsmComputeShaderInstance : public TestInstance
 {
 public:
-										SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features);
+										SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec);
 	tcu::TestStatus						iterate						(void);
 
 private:
 	const ComputeShaderSpec&			m_shaderSpec;
-	const ComputeTestFeatures			m_features;
 };
 
 class SpvAsmComputeShaderCase : public TestCase
 {
 public:
-						SpvAsmComputeShaderCase	(tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec, const ComputeTestFeatures features = COMPUTE_TEST_USES_NONE);
+						SpvAsmComputeShaderCase	(tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec);
 	void				initPrograms			(vk::SourceCollections& programCollection) const;
 	TestInstance*		createInstance			(Context& ctx) const;
 
 private:
 	ComputeShaderSpec	m_shaderSpec;
-	const ComputeTestFeatures	m_features;
 };
 
 } // SpirVAssembly

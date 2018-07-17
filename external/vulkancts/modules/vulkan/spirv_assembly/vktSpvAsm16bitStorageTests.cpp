@@ -1930,7 +1930,6 @@ void addCompute16bitStorageUniform16To32ChainAccessGroup (tcu::TestCaseGroup* gr
 				indexString += string("_") + de::toString(indices[indicesIdx].w());
 
 			const string				testNameBase	= string(CAPABILITIES[capIdx].name) + "_" + indexString + "_";
-			const ComputeTestFeatures	features		= COMPUTE_TEST_USES_NONE;
 
 			struct DataType
 			{
@@ -1983,7 +1982,7 @@ void addCompute16bitStorageUniform16To32ChainAccessGroup (tcu::TestCaseGroup* gr
 				spec.inputs.push_back(Resource(dataTypes[dataTypeIdx].inputs, CAPABILITIES[capIdx].dtype));
 				spec.outputs.push_back(Resource(dataTypes[dataTypeIdx].outputs));
 
-				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec, features));
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
 		}
 }
@@ -2296,7 +2295,6 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 	outputs.reserve(inputs.size());
 	for (deUint32 numNdx = 0; numNdx < inputs.size(); ++numNdx)
 		outputs.push_back(static_cast<deInt16>(0xffff & inputs[numNdx]));
-
 
 	extensions.push_back("VK_KHR_16bit_storage");
 	fragments["extension"]	= "OpExtension \"SPV_KHR_16bit_storage\"";
@@ -3648,6 +3646,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 				resources.verifyIO				= rndModes[rndModeIdx].f;
+
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 			}
 	}
@@ -7499,8 +7498,8 @@ void addCompute16bitStorageUniform64To16Group (tcu::TestCaseGroup* group)
 					spec.extensions.push_back("VK_KHR_16bit_storage");
 					spec.extensions.push_back("VK_KHR_shader_float16_int8");
 					spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-					const ComputeTestFeatures features = COMPUTE_TEST_USES_FLOAT64;
-					group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec, features));
+					spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 				}
 	}
 }
@@ -8233,9 +8232,9 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.extensions.push_back("VK_KHR_shader_float16_int8");
 				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-				const ComputeTestFeatures features = COMPUTE_TEST_USES_FLOAT64;
+				spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
 
-				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec, features));
+				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
 	}
 }
@@ -8399,9 +8398,9 @@ void addCompute16bitStoragePushConstant16To64Group (tcu::TestCaseGroup* group)
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.extensions.push_back("VK_KHR_shader_float16_int8");
 			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
-			const ComputeTestFeatures features = COMPUTE_TEST_USES_FLOAT64;
+			spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
 
-			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec, features));
+			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 		}
 	}
 }
