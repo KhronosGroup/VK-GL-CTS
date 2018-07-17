@@ -204,7 +204,7 @@ public:
 
 SpvAsmLoopControlDependencyLengthInstance::SpvAsmLoopControlDependencyLengthInstance (Context& ctx)
 	: ComputeShaderSpec(getComputeShaderSpec())
-	, SpvAsmComputeShaderInstance(ctx, *this, COMPUTE_TEST_USES_NONE)
+	, SpvAsmComputeShaderInstance(ctx, *this)
 {
 }
 

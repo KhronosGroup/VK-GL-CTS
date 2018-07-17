@@ -57,7 +57,6 @@ enum ChainOp
 	CHAIN_OP_LAST
 };
 static const int					idxSizes[]				= { 16, 32, 64 };
-static const ComputeTestFeatures	computeTestFeatures[]	= { COMPUTE_TEST_USES_INT16, COMPUTE_TEST_USES_NONE, COMPUTE_TEST_USES_INT64 };
 static const string					chainOpTestNames[]		= { "opaccesschain", "opinboundsaccesschain", "opptraccesschain" };
 
 struct InputData
@@ -96,7 +95,6 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 				map<string, string>			specs;
 				vector<float>				outputData;
 				ComputeShaderSpec			spec;
-				const ComputeTestFeatures	features		= computeTestFeatures[idxSizeIdx];
 				int							element			= 0;
 
 				// Index an input buffer containing 2D array of 4x4 matrices. The indices are read from another
@@ -268,7 +266,13 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 
 				spec.outputs.push_back(BufferSp(new Float32Buffer(outputData)));
 
-				structGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec, features));
+				if (idxSize == 16)
+					spec.requestedVulkanFeatures.coreFeatures.shaderInt16 = VK_TRUE;
+
+				if (idxSize == 64)
+					spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
+
+				structGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
 		}
 	}
