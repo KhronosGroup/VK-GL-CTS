@@ -309,7 +309,7 @@ MultiviewCase::IterateResult MultiviewCase::iterate()
 					failed = true;
 				}
 			}
-			else
+			else if (x > backbufferWidth / 2)
 			{
 				if (pixel.getRed() != 0 || pixel.getGreen() != 255 || pixel.getBlue() != 0)
 				{
