@@ -422,7 +422,7 @@ TestCase::IterateResult SwapBuffersWithDamageTest::iterate (void)
 
 			if (m_resizeType == RESIZETYPE_BEFORE_SWAP)
 			{
-				if (iterationNdx % 2 == 0)
+				if (currentFrameNdx % 2 == 0)
 					m_window->setSurfaceSize(IVec2(width*2, height/2));
 				else
 					m_window->setSurfaceSize(IVec2(height/2, width*2));
@@ -432,7 +432,7 @@ TestCase::IterateResult SwapBuffersWithDamageTest::iterate (void)
 
 			if (m_resizeType == RESIZETYPE_AFTER_SWAP)
 			{
-				if (iterationNdx % 2 == 0)
+				if (currentFrameNdx % 2 == 0)
 					m_window->setSurfaceSize(IVec2(width*2, height/2));
 				else
 					m_window->setSurfaceSize(IVec2(height/2, width*2));
@@ -504,7 +504,7 @@ TestCase::IterateResult SwapBuffersWithDamageAndPreserveBufferTest::iterate (voi
 
 			if (m_resizeType == RESIZETYPE_BEFORE_SWAP)
 			{
-				if (iterationNdx % 2 == 0)
+				if (frameNdx % 2 == 0)
 					m_window->setSurfaceSize(IVec2(width*2, height/2));
 				else
 					m_window->setSurfaceSize(IVec2(height/2, width*2));
@@ -514,7 +514,7 @@ TestCase::IterateResult SwapBuffersWithDamageAndPreserveBufferTest::iterate (voi
 
 			if (m_resizeType == RESIZETYPE_AFTER_SWAP)
 			{
-				if (iterationNdx % 2 == 0)
+				if (frameNdx % 2 == 0)
 					m_window->setSurfaceSize(IVec2(width*2, height/2));
 				else
 					m_window->setSurfaceSize(IVec2(height/2, width*2));
@@ -618,7 +618,7 @@ TestCase::IterateResult SwapBuffersWithDamageAndBufferAgeTest::iterate (void)
 
 			if (m_resizeType == RESIZETYPE_BEFORE_SWAP)
 			{
-				if (iterationNdx % 2 == 0)
+				if (frameNdx % 2 == 0)
 					m_window->setSurfaceSize(IVec2(width*2, height/2));
 				else
 					m_window->setSurfaceSize(IVec2(height/2, width*2));
@@ -628,7 +628,7 @@ TestCase::IterateResult SwapBuffersWithDamageAndBufferAgeTest::iterate (void)
 
 			if (m_resizeType == RESIZETYPE_AFTER_SWAP)
 			{
-				if (iterationNdx % 2 == 0)
+				if (frameNdx % 2 == 0)
 					m_window->setSurfaceSize(IVec2(width*2, height/2));
 				else
 					m_window->setSurfaceSize(IVec2(height/2, width*2));
