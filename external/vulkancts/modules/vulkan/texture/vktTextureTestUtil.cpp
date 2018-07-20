@@ -299,7 +299,7 @@ void initializePrograms(vk::SourceCollections& programCollection, glu::Precision
 
 TextureBinding::TextureBinding (Context& context)
 	: m_context				(context)
-	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT))
+	, m_queueFamilyIndex	(m_context.getUniversalQueueFamilyIndex())
 	, m_device				(createDevice())
 	, m_deviceInterface		(context.getInstanceInterface(), *m_device)
 	, m_allocator			(createAllocator())
@@ -308,7 +308,7 @@ TextureBinding::TextureBinding (Context& context)
 
 TextureBinding::TextureBinding (Context& context, const TestTextureSp& textureData, const TextureBinding::Type type, const TextureBinding::ImageBackingMode backingMode)
 	: m_context				(context)
-	, m_queueFamilyIndex	(findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_SPARSE_BINDING_BIT))
+	, m_queueFamilyIndex	((backingMode == IMAGE_BACKING_MODE_SPARSE) ? (findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(),  VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_SPARSE_BINDING_BIT)) : m_context.getUniversalQueueFamilyIndex())
 	, m_type				(type)
 	, m_backingMode			(backingMode)
 	, m_textureData			(textureData)
