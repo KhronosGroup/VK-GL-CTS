@@ -43,7 +43,7 @@ Building CTS
 ------------
 
 To build dEQP, you need first to download sources for zlib, libpng, glslang,
-and spirv-tools.
+spirv-headers, and spirv-tools.
 
 To download sources, run:
 
