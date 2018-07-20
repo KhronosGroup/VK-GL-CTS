@@ -1132,7 +1132,9 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 										   deUint32										height,
 										   vk::VkImageTiling							tiling,
 										   vk::VkImageCreateFlags						createFlags,
-										   vk::VkImageUsageFlags						usageFlags)
+										   vk::VkImageUsageFlags						usageFlags,
+										   deUint32										mipLevels,
+										   deUint32										arrayLayers)
 {
 	const vk::VkExternalMemoryImageCreateInfo		externalCreateInfo	=
 	{
@@ -1148,8 +1150,8 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 		vk::VK_IMAGE_TYPE_2D,
 		format,
 		{ width, height, 1u, },
-		1u,
-		1u,
+		mipLevels,
+		arrayLayers,
 		vk::VK_SAMPLE_COUNT_1_BIT,
 		tiling,
 		usageFlags,

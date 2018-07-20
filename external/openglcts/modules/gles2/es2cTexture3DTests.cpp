@@ -195,8 +195,12 @@ void Texture3DBase::verifyTestResult(const float* texCoords, const tcu::Surface&
 									 const ReferenceParams& refParams, bool isNearestOnly) const
 {
 	const tcu::PixelFormat pixelFormat = m_context.getRenderTarget().getPixelFormat();
-	const tcu::IVec4	   colorBits   = max(getBitsVec(pixelFormat) - (isNearestOnly ? 1 : 2),
-									 tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
+	const tcu::IVec4    refChannelBitDepth	= tcu::getTextureFormatBitDepth(reference.getFormat());
+	const tcu::IVec4    colorBits = max(tcu::IVec4(de::min(pixelFormat.redBits, refChannelBitDepth[0]),
+						de::min(pixelFormat.greenBits, refChannelBitDepth[1]),
+						de::min(pixelFormat.blueBits, refChannelBitDepth[2]),
+						de::min(pixelFormat.alphaBits, refChannelBitDepth[3])) - (isNearestOnly ? 1 : 2),
+						tcu::IVec4(0)); // 1 inaccurate bit if nearest only, 2 otherwise
 	tcu::LodPrecision	lodPrecision(18, 6);
 	tcu::LookupPrecision lookupPrecision;
 	lookupPrecision.colorThreshold = tcu::computeFixedPointThreshold(colorBits) / refParams.colorScale;
@@ -817,6 +821,25 @@ CopyTexSubImage3DCase::IterateResult CopyTexSubImage3DCase::iterate(void)
 	const tcu::TextureFormat	 textureFormat = texture.getRefTexture().getFormat();
 	const tcu::TextureFormatInfo formatInfo	= tcu::getTextureFormatInfo(textureFormat);
 
+	/* According to the spec, the component sizes of internalformat should exactly match the corresponding component sizes
+	   of the source buffer's effective internal format when call the glCopyTexSubImage3D function. Because the test format
+	   is GL_RGBA8, so we should create a new texture with the same format and attach it to a new fbo. */
+	glw::GLuint fbo = 0;
+	gl.genFramebuffers(1, &fbo);
+	gl.bindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glw::GLuint new_dst_to = 0;
+	gl.genTextures(1, &new_dst_to);
+	gl.bindTexture(GL_TEXTURE_2D, new_dst_to);
+
+	/* The longest edge of texture(32*64*8) is 64, so we create a texture with 64*64 dimension. */
+	gl.texImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	GLU_EXPECT_NO_ERROR(gl.getError(),
+						"Could not setup texture object for draw framebuffer color attachment.");
+
+	gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, new_dst_to, 0);
+
+	GLU_EXPECT_NO_ERROR(gl.getError(),
+						"Could not attach texture object to draw framebuffer color attachment.");
 	// Fill texture.
 	for (int levelNdx = 0; levelNdx < m_numLevels; levelNdx++)
 	{
@@ -877,6 +900,9 @@ CopyTexSubImage3DCase::IterateResult CopyTexSubImage3DCase::iterate(void)
 
 	// Compare rendered image to reference.
 	verifyTestResult(texCoord[0].getPtr(), rendered, texture.getRefTexture(), refParams, false);
+	gl.deleteTextures(1, &new_dst_to);
+	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
+	gl.deleteFramebuffers(1, &fbo);
 	return STOP;
 }
 
