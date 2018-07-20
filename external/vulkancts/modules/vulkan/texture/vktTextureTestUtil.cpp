@@ -1224,7 +1224,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 			VK_FALSE														// VkBool32									alphaToOneEnable;
 		};
 
-		VkSamplerCreateInfo							samplerCreateInfo					= mapSampler(params.sampler, m_textureBindings[texUnit]->getTestTexture().getTextureFormat(), params.minLod, params.maxLod);
+		VkSamplerCreateInfo							samplerCreateInfo					= mapSampler(params.sampler, m_textureBindings[texUnit]->getTestTexture().getTextureFormat(), params.minLod, params.maxLod, params.unnormal);
 
 		if (maxAnisotropy > 1.0f)
 		{
@@ -1485,12 +1485,12 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
  * \param magFilterMode	Magnification filter mode
  * \return Sampler description.
  *//*--------------------------------------------------------------------*/
-tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode wrapV, tcu::Sampler::WrapMode wrapW, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode)
+tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode wrapV, tcu::Sampler::WrapMode wrapW, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode, bool normalizedCoords)
 {
 	return tcu::Sampler(wrapU, wrapV, wrapW,
 						minFilterMode, magFilterMode,
 						0.0f /* lod threshold */,
-						true /* normalized coords */,
+						normalizedCoords /* normalized coords */,
 						tcu::Sampler::COMPAREMODE_NONE /* no compare */,
 						0 /* compare channel */,
 						tcu::Vec4(0.0f) /* border color, not used */);
@@ -1507,9 +1507,9 @@ tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode
  * \param minFilterMode	Magnification filter mode
  * \return Sampler description.
  *//*--------------------------------------------------------------------*/
-tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode wrapV, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode)
+tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode wrapV, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode, bool normalizedCoords)
 {
-	return createSampler(wrapU, wrapV, wrapU, minFilterMode, magFilterMode);
+	return createSampler(wrapU, wrapV, wrapU, minFilterMode, magFilterMode, normalizedCoords);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -1521,9 +1521,9 @@ tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode
  * \param minFilterMode	Minification filter mode
  * \return Sampler description.
  *//*--------------------------------------------------------------------*/
-tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode)
+tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode, bool normalizedCoords)
 {
-	return createSampler(wrapU, wrapU, wrapU, minFilterMode, magFilterMode);
+	return createSampler(wrapU, wrapU, wrapU, minFilterMode, magFilterMode, normalizedCoords);
 }
 
 TestTexture2DSp loadTexture2D (const tcu::Archive& archive, const std::vector<std::string>& filenames)
@@ -1657,6 +1657,7 @@ TextureCommonTestCaseParameters::TextureCommonTestCaseParameters (void)
 	, wrapS					(tcu::Sampler::REPEAT_GL)
 	, wrapT					(tcu::Sampler::REPEAT_GL)
 	, format				(VK_FORMAT_R8G8B8A8_UNORM)
+	, unnormal				(false)
 {
 }
 

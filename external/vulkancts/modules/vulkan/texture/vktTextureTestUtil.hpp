@@ -262,9 +262,9 @@ private:
 
 };
 
-tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode wrapV, tcu::Sampler::WrapMode wrapW, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode);
-tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode wrapV, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode);
-tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode);
+tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode wrapV, tcu::Sampler::WrapMode wrapW, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode, bool normalizedCoords = true);
+tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::WrapMode wrapV, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode, bool normalizedCoords = true);
+tcu::Sampler createSampler (tcu::Sampler::WrapMode wrapU, tcu::Sampler::FilterMode minFilterMode, tcu::Sampler::FilterMode magFilterMode, bool normalizedCoords = true);
 
 TestTexture2DSp loadTexture2D (const tcu::Archive& archive, const std::vector<std::string>& filenames);
 TestTextureCubeSp loadTextureCube (const tcu::Archive& archive, const std::vector<std::string>& filenames);
@@ -307,6 +307,8 @@ struct TextureCommonTestCaseParameters
 	vk::VkFormat				format;
 
 	std::vector<util::Program>	programs;
+
+	deBool						unnormal;
 };
 
 struct Texture2DTestCaseParameters : public TextureCommonTestCaseParameters
