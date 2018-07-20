@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
+ * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
  */
 glActiveShaderProgramFunc								activeShaderProgram;
 glActiveTextureFunc										activeTexture;
@@ -274,7 +274,6 @@ glGetFramebufferAttachmentParameterivFunc				getFramebufferAttachmentParameteriv
 glGetFramebufferParameterivFunc							getFramebufferParameteriv;
 glGetFramebufferParameterivEXTFunc						getFramebufferParameterivEXT;
 glGetGraphicsResetStatusFunc							getGraphicsResetStatus;
-glGetGraphicsResetStatusEXTFunc							getGraphicsResetStatusEXT;
 glGetInteger64i_vFunc									getInteger64i_v;
 glGetInteger64vFunc										getInteger64v;
 glGetIntegeri_vFunc										getIntegeri_v;

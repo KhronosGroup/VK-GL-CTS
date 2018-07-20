@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
+ * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
  */
 void					glActiveShaderProgram								(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture										(glw::GLenum texture);
@@ -156,7 +156,7 @@ void					glDeleteVertexArrays								(glw::GLsizei n, const glw::GLuint *arrays)
 void					glDepthBoundsEXT									(glw::GLclampd zmin, glw::GLclampd zmax);
 void					glDepthFunc											(glw::GLenum func);
 void					glDepthMask											(glw::GLboolean flag);
-void					glDepthRange										(glw::GLdouble near, glw::GLdouble far);
+void					glDepthRange										(glw::GLdouble n, glw::GLdouble f);
 void					glDepthRangeArrayfvOES								(glw::GLuint first, glw::GLsizei count, const glw::GLfloat *v);
 void					glDepthRangeArrayv									(glw::GLuint first, glw::GLsizei count, const glw::GLdouble *v);
 void					glDepthRangeIndexed									(glw::GLuint index, glw::GLdouble n, glw::GLdouble f);
@@ -274,7 +274,6 @@ void					glGetFramebufferAttachmentParameteriv				(glw::GLenum target, glw::GLen
 void					glGetFramebufferParameteriv							(glw::GLenum target, glw::GLenum pname, glw::GLint *params);
 void					glGetFramebufferParameterivEXT						(glw::GLuint framebuffer, glw::GLenum pname, glw::GLint *params);
 glw::GLenum				glGetGraphicsResetStatus							(void);
-glw::GLenum				glGetGraphicsResetStatusEXT							(void);
 void					glGetInteger64i_v									(glw::GLenum target, glw::GLuint index, glw::GLint64 *data);
 void					glGetInteger64v										(glw::GLenum pname, glw::GLint64 *data);
 void					glGetIntegeri_v										(glw::GLenum target, glw::GLuint index, glw::GLint *data);

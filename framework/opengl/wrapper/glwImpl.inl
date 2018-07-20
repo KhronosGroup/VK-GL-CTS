@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
+ * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -1228,12 +1228,12 @@ void glwDepthMask (GLboolean flag)
 	gl->depthMask(flag);
 }
 
-void glwDepthRange (GLdouble near, GLdouble far)
+void glwDepthRange (GLdouble n, GLdouble f)
 {
 	const glw::Functions* gl = glw::getCurrentThreadFunctions();
 	if (!gl)
 		return;
-	gl->depthRange(near, far);
+	gl->depthRange(n, f);
 }
 
 void glwDepthRangeArrayfvOES (GLuint first, GLsizei count, const GLfloat *v)
@@ -2170,14 +2170,6 @@ GLenum glwGetGraphicsResetStatus (void)
 	if (!gl)
 		return (GLenum)0;
 	return gl->getGraphicsResetStatus();
-}
-
-GLenum glwGetGraphicsResetStatusEXT (void)
-{
-	const glw::Functions* gl = glw::getCurrentThreadFunctions();
-	if (!gl)
-		return (GLenum)0;
-	return gl->getGraphicsResetStatusEXT();
 }
 
 void glwGetInteger64i_v (GLenum target, GLuint index, GLint64 *data)

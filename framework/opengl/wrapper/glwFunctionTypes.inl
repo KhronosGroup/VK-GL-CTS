@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
+ * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -156,7 +156,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glDeleteVertexArraysFunc)								(GLsi
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthBoundsEXTFunc)									(GLclampd zmin, GLclampd zmax);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthFuncFunc)											(GLenum func);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthMaskFunc)											(GLboolean flag);
-typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeFunc)										(GLdouble near, GLdouble far);
+typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeFunc)										(GLdouble n, GLdouble f);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeArrayfvOESFunc)								(GLuint first, GLsizei count, const GLfloat *v);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeArrayvFunc)									(GLuint first, GLsizei count, const GLdouble *v);
 typedef GLW_APICALL void			(GLW_APIENTRY* glDepthRangeIndexedFunc)									(GLuint index, GLdouble n, GLdouble f);
@@ -274,7 +274,6 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferAttachmentParameterivF
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivFunc)							(GLenum target, GLenum pname, GLint *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetFramebufferParameterivEXTFunc)						(GLuint framebuffer, GLenum pname, GLint *params);
 typedef GLW_APICALL GLenum			(GLW_APIENTRY* glGetGraphicsResetStatusFunc)							(void);
-typedef GLW_APICALL GLenum			(GLW_APIENTRY* glGetGraphicsResetStatusEXTFunc)							(void);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetInteger64i_vFunc)									(GLenum target, GLuint index, GLint64 *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetInteger64vFunc)										(GLenum pname, GLint64 *data);
 typedef GLW_APICALL void			(GLW_APIENTRY* glGetIntegeri_vFunc)										(GLenum target, GLuint index, GLint *data);

@@ -2448,6 +2448,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_angle_framebuffer_blit
 dEQP-EGL.functional.get_proc_address.extension.gl_angle_framebuffer_multisample
 dEQP-EGL.functional.get_proc_address.extension.gl_angle_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_angle_translated_shader_source
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_egl_image_storage
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_base_instance
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_blend_func_extended
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_buffer_storage
@@ -2477,12 +2478,12 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ext_semaphore
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_semaphore_fd
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_semaphore_win32
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_separate_shader_objects
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_shader_framebuffer_fetch_non_coherent
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_shader_pixel_local_storage2
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_sparse_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_tessellation_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_border_clamp
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_buffer
-dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_filter_minmax
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_view
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_win32_keyed_mutex
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_window_rectangles
