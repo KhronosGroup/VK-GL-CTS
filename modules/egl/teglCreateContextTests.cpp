@@ -40,7 +40,6 @@ using std::vector;
 using tcu::TestLog;
 using namespace eglw;
 
-static const EGLint s_glAttrs[]  = { EGL_CONTEXT_MAJOR_VERSION_KHR,	3, EGL_NONE };
 static const EGLint s_es1Attrs[] = { EGL_CONTEXT_CLIENT_VERSION,	1, EGL_NONE };
 static const EGLint s_es2Attrs[] = { EGL_CONTEXT_CLIENT_VERSION,	2, EGL_NONE };
 static const EGLint s_es3Attrs[] = { EGL_CONTEXT_MAJOR_VERSION_KHR,	3, EGL_NONE };
@@ -54,7 +53,7 @@ static const struct
 	const EGLint*	ctxAttrs;
 } s_apis[] =
 {
-	{ "OpenGL",			EGL_OPENGL_API,		EGL_OPENGL_BIT,			false,	s_glAttrs	},
+	{ "OpenGL",			EGL_OPENGL_API,		EGL_OPENGL_BIT,			false,	DE_NULL		},
 	{ "OpenGL ES 1",	EGL_OPENGL_ES_API,	EGL_OPENGL_ES_BIT,		true,	s_es1Attrs	},
 	{ "OpenGL ES 2",	EGL_OPENGL_ES_API,	EGL_OPENGL_ES2_BIT,		true,	s_es2Attrs	},
 	{ "OpenGL ES 3",	EGL_OPENGL_ES_API,	EGL_OPENGL_ES3_BIT_KHR,	false,	s_es3Attrs	},
