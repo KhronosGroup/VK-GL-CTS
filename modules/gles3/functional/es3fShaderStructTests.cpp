@@ -115,7 +115,7 @@ void ShaderStructCase::setupUniforms (int programID, const tcu::Vec4& constCoord
 		m_setupUniforms(m_renderCtx.getFunctions(), programID, constCoords);
 }
 
-static ShaderStructCase* createStructCase (Context& context, const char* name, const char* description, bool isVertexCase, bool usesTextures, ShaderEvalFunc evalFunc, SetupUniformsFunc setupUniforms, const LineStream& shaderSrc)
+static ShaderStructCase* createStructCase (Context& context, const char* name, const char* description, bool isVertexCase, bool usesTextures, ShaderEvalFunc evalFunc, SetupUniformsFunc setupUniforms, const LineStream& shaderSrc, const std::map<std::string, std::string>* additionalParams)
 {
 	static const char* defaultVertSrc =
 		"#version 300 es\n"
@@ -159,6 +159,8 @@ static ShaderStructCase* createStructCase (Context& context, const char* name, c
 		spParams["DST"]				= "o_color";
 		spParams["ASSIGN_POS"]		= "";
 	}
+	if (additionalParams)
+		spParams.insert(additionalParams->begin(), additionalParams->end());
 
 	if (isVertexCase)
 		return new ShaderStructCase(context, name, description, isVertexCase, usesTextures, evalFunc, setupUniforms, StringTemplate(shaderSrc.str()).specialize(spParams).c_str(), defaultFragSrc);
@@ -183,12 +185,15 @@ public:
 
 void LocalStructTests::init (void)
 {
-	#define LOCAL_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY)																	\
+	#define LOCAL_STRUCT_CASE_PARAMETERIZED(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY, PARAMS)												\
 		do {																																	\
 			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */						\
-			addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, false, &Eval_##NAME::eval, DE_NULL, SHADER_SRC));			\
-			addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, false,&Eval_##NAME::eval, DE_NULL, SHADER_SRC));		\
+			addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, false, &Eval_##NAME::eval, DE_NULL, SHADER_SRC, PARAMS));	\
+			addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, false,&Eval_##NAME::eval, DE_NULL, SHADER_SRC, PARAMS));\
 		} while (deGetFalse())
+
+	#define LOCAL_STRUCT_CASE(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY) \
+		LOCAL_STRUCT_CASE_PARAMETERIZED(NAME, DESCRIPTION, SHADER_SRC, EVAL_FUNC_BODY, DE_NULL)
 
 	LOCAL_STRUCT_CASE(basic, "Basic struct usage",
 		LineStream()
@@ -500,6 +505,63 @@ void LocalStructTests::init (void)
 			c.color.xyz() = c.coords.swizzle(0,1,2);
 		});
 
+	LineStream inoutSrc;
+	inoutSrc
+			<< "${HEADER}"
+			<< ""
+			<< "struct S {"
+			<< "	${PRECISION} vec3 red;"
+			<< "	${PRECISION} vec3 blue;"
+			<< "};"
+			<< ""
+			<< "void modify (inout S s)"
+			<< "{"
+			<< "	s.red += vec3(0.5, 0.0, 0.0);"
+			<< "	s.blue += vec3(0.0, 0.0, 0.5);"
+			<< "}"
+			<< ""
+			<< "void main (void)"
+			<< "{"
+			<< "	S s;"
+			<< "	s.red = vec3(0.5, 0.0, 0.0);"
+			<< "	s.blue = vec3(0.0, 0.0, 0.5);"
+			<< "	modify(s);"
+			<< "	${DST} = vec4(0.0, 0.0, 0.0, 1.0);"
+			<< "	if (s.red == vec3(1.0, 0.0, 0.0) && s.blue == vec3(0.0, 0.0, 1.0))"
+			<< "		${DST} = vec4(1.0, 1.0, 1.0, 1.0);"
+			<< "	${ASSIGN_POS}"
+			<< "}";
+
+
+	std::map<std::string, std::string> precisionParams;
+
+	precisionParams["PRECISION"] = "lowp";
+	LOCAL_STRUCT_CASE_PARAMETERIZED(
+		parameter_inout_lowp, "Struct with lowp members as an inout function parameter",
+		inoutSrc,
+		{
+			c.color.xyz() = tcu::Vec3(1.0, 1.0, 1.0);
+		},
+		&precisionParams);
+
+	precisionParams["PRECISION"] = "mediump";
+	LOCAL_STRUCT_CASE_PARAMETERIZED(
+		parameter_inout_mediump, "Struct with mediump members as an inout function parameter",
+		inoutSrc,
+		{
+			c.color.xyz() = tcu::Vec3(1.0, 1.0, 1.0);
+		},
+		&precisionParams);
+
+	precisionParams["PRECISION"] = "highp";
+	LOCAL_STRUCT_CASE_PARAMETERIZED(
+		parameter_inout_highp, "Struct with highp members as an inout function parameter",
+		inoutSrc,
+		{
+			c.color.xyz() = tcu::Vec3(1.0, 1.0, 1.0);
+		},
+		&precisionParams);
+
 	LOCAL_STRUCT_CASE(parameter_nested, "Nested struct as a function parameter",
 		LineStream()
 		<< "${HEADER}"
@@ -531,6 +593,58 @@ void LocalStructTests::init (void)
 		{
 			c.color.xyz() = c.coords.swizzle(0,1,2);
 		});
+
+	LineStream outSrc;
+	outSrc
+			<< "${HEADER}"
+			<< ""
+			<< "struct S {"
+			<< "	${PRECISION} vec3 red;"
+			<< "	${PRECISION} vec3 blue;"
+			<< "};"
+			<< ""
+			<< "void modify (out S s)"
+			<< "{"
+			<< "	s.red = vec3(1.0, 0.0, 0.0);"
+			<< "	s.blue = vec3(0.0, 0.0, 1.0);"
+			<< "}"
+			<< ""
+			<< "void main (void)"
+			<< "{"
+			<< "	S s;"
+			<< "	modify(s);"
+			<< "	${DST} = vec4(0.0, 0.0, 0.0, 1.0);"
+			<< "	if (s.red == vec3(1.0, 0.0, 0.0) && s.blue == vec3(0.0, 0.0, 1.0))"
+			<< "		${DST} = vec4(1.0, 1.0, 1.0, 1.0);"
+			<< "	${ASSIGN_POS}"
+			<< "}";
+
+	precisionParams["PRECISION"] = "lowp";
+	LOCAL_STRUCT_CASE_PARAMETERIZED(
+		parameter_out_lowp, "Struct with lowp members as an out function parameter",
+		outSrc,
+		{
+			c.color.xyz() = tcu::Vec3(1.0, 1.0, 1.0);
+		},
+		&precisionParams);
+
+	precisionParams["PRECISION"] = "mediump";
+	LOCAL_STRUCT_CASE_PARAMETERIZED(
+		parameter_out_mediump, "Struct with mediump members as an out function parameter",
+		outSrc,
+		{
+			c.color.xyz() = tcu::Vec3(1.0, 1.0, 1.0);
+		},
+		&precisionParams);
+
+	precisionParams["PRECISION"] = "highp";
+	LOCAL_STRUCT_CASE_PARAMETERIZED(
+		parameter_out_highp, "Struct with highp members as an out function parameter",
+		outSrc,
+		{
+			c.color.xyz() = tcu::Vec3(1.0, 1.0, 1.0);
+		},
+		&precisionParams);
 
 	LOCAL_STRUCT_CASE(return, "Struct as a return value",
 		LineStream()
@@ -1228,8 +1342,8 @@ void UniformStructTests::init (void)
 				 static void setUniforms (const glw::Functions& gl, deUint32 programID, const tcu::Vec4& constCoords) SET_UNIFORMS_BODY /* NOLINT(SET_UNIFORMS_BODY) */ \
 			};																																							\
 			struct Eval_##NAME { static void eval (ShaderEvalContext& c) EVAL_FUNC_BODY };	/* NOLINT(EVAL_FUNC_BODY) */												\
-			addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, TEXTURES, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC));		\
-			addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, TEXTURES, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC));		\
+			addChild(createStructCase(m_context, #NAME "_vertex", DESCRIPTION, true, TEXTURES, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC, DE_NULL));\
+			addChild(createStructCase(m_context, #NAME "_fragment", DESCRIPTION, false, TEXTURES, Eval_##NAME::eval, SetUniforms_##NAME::setUniforms, SHADER_SRC, DE_NULL));\
 		} while (deGetFalse())
 
 	UNIFORM_STRUCT_CASE(basic, "Basic struct usage", false,
