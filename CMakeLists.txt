@@ -89,7 +89,11 @@ add_subdirectory(external/glslang)
 add_subdirectory(external/spirv-tools)
 
 # spirv-headers
-include_directories(external/spirv-headers/src/include)
+set(SPIRV_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/spirv-headers/src/include")
+if (NOT EXISTS ${SPIRV_INCLUDE_PATH})
+	message(FATAL_ERROR "SPIR-V headers not found, please run external/fetch_sources.py")
+endif()
+include_directories(${SPIRV_INCLUDE_PATH})
 
 include_directories(${PNG_INCLUDE_PATH})
 

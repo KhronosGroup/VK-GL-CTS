@@ -228,6 +228,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderDerivateTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderDiscardTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderIndexingTests.cpp \
+	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderLimitTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderLoopTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderMatrixTests.cpp \
 	external/vulkancts/modules/vulkan/shaderrender/vktShaderRenderOperatorTests.cpp \

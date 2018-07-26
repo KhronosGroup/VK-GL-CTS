@@ -15462,18 +15462,20 @@ bool BuiltinFunctionTest::isResultEdgeCase(const functionObject& function_object
 	case FUNCTION_MOD:
 	case FUNCTION_MOD_AGAINST_SCALAR:
 	{
-		const glw::GLuint	arguments_stride  = function_object.getArgumentStride();
-		const glw::GLuint	vertex_offset	 = arguments_stride * vertex;
-		const glw::GLuint	argument_1_offset = function_object.getArgumentOffset(0);
-		const glw::GLuint	argument_2_offset = function_object.getArgumentOffset(1);
-		const glw::GLuint	argument_1_index  = argument_1_offset + vertex_offset;
-		const glw::GLuint	argument_2_index  = argument_2_offset + vertex_offset;
+		const glw::GLuint	arguments_stride   = function_object.getArgumentStride();
+		const glw::GLuint	vertex_offset	   = arguments_stride * vertex;
+		const glw::GLuint	argument_1_offset  = function_object.getArgumentOffset(0);
+		const glw::GLuint	argument_2_offset  = function_object.getArgumentOffset(1);
+		const glw::GLuint	argument_1_index   = argument_1_offset + vertex_offset;
+		const glw::GLuint	argument_2_index   = argument_2_offset + vertex_offset;
 		const glw::GLubyte*  argument_1_bytes  = &m_argument_data[argument_1_index];
 		const glw::GLubyte*  argument_2_bytes  = &m_argument_data[argument_2_index];
 		const glw::GLdouble* argument_1		   = reinterpret_cast<const glw::GLdouble*>(argument_1_bytes);
 		const glw::GLdouble* argument_2		   = reinterpret_cast<const glw::GLdouble*>(argument_2_bytes);
 		const glw::GLdouble* expected_result   = reinterpret_cast<const glw::GLdouble*>(expected_result_src);
+		const glw::GLdouble* actual_result	   = reinterpret_cast<const glw::GLdouble*>(result_src);
 		bool				 edge_case_present = false;
+		bool				 recheck		   = false;
 
 		// verify if there is a mod(a, a) case and prepare new expected result
 		const glw::GLuint		   n_components = Utils::getNumberOfComponentsForVariableType(result_type);
@@ -15481,19 +15483,20 @@ bool BuiltinFunctionTest::isResultEdgeCase(const functionObject& function_object
 		for (glw::GLuint component = 0; component < n_components; ++component)
 		{
 			glw::GLdouble expected_result_component = expected_result[component];
+			glw::GLdouble actual_result_component   = actual_result[component];
 			glw::GLdouble argument_1_component		= argument_1[component];
 			glw::GLdouble argument_2_component		= argument_2[(function_type == FUNCTION_MOD) ? component : 0];
 
 			// if coresponding components of arguments are equal and if component of first argument
 			// and component of result are equal then expected result must be corrected
 			edge_case_present = (m_epsilon > de::abs(argument_1_component - argument_2_component)) &&
-								(m_epsilon > de::abs(argument_1_component - expected_result_component));
-
+								(m_epsilon > de::abs(argument_1_component - actual_result_component));
+			recheck |= edge_case_present;
 			corrected_expected_result[component] = edge_case_present ? argument_1_component : expected_result_component;
 		}
 
 		// recheck test result with corrected expected result
-		return (edge_case_present && compare(result_type, &(corrected_expected_result[0]), result_src));
+		return (recheck && compare(result_type, &(corrected_expected_result[0]), result_src));
 	}
 	default:
 		return false;

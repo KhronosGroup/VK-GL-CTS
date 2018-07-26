@@ -312,7 +312,9 @@ vk::Move<vk::VkImage>			createExternalImage					(const vk::DeviceInterface&					
 																	 deUint32									height,
 																	 vk::VkImageTiling							tiling,
 																	 vk::VkImageCreateFlags						createFlags,
-																	 vk::VkImageUsageFlags						usageFlags);
+																	 vk::VkImageUsageFlags						usageFlags,
+																	 deUint32									mipLevels = 1u,
+																	 deUint32									arrayLayers = 1u);
 
 } // ExternalMemoryUtil
 } // vkt

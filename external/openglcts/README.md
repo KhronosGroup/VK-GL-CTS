@@ -212,7 +212,8 @@ add_definitions(-DHKEMBEDDEDFILESYSTEM)
 
 ### Building the Tests
 
-To build the framework, you need first to download sources for zlib, libpng.
+To build the framework, you need first to download sources for zlib, libpng, glslang,
+spirv-headers, and spirv-tools.
 
 To download sources, run:
 
