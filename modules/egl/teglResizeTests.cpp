@@ -347,6 +347,7 @@ IterateResult ChangeSurfaceSizeCase::iterate (void)
 {
 	const Library&			egl			= m_eglTestCtx.getLibrary();
 	ScopedCurrentContext	currentCtx	(egl, m_display, **m_surface, **m_surface, **m_context);
+	egl.swapBuffers(m_display, **m_surface);
 	IVec2					oldEglSize	= checkSurfaceSize(egl,
 														   m_display,
 														   **m_surface,
