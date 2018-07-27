@@ -61,6 +61,7 @@
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
 #include "vktSpvAsmVariablePointersTests.hpp"
 #include "vktSpvAsmVariableInitTests.hpp"
+#include "vktSpvAsmPointerParameterTests.hpp"
 #include "vktSpvAsmSpirvVersionTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktSpvAsmLoopDepLenTests.hpp"
@@ -9452,6 +9453,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	computeTests->addChild(createImageSamplerComputeGroup(testCtx));
 	computeTests->addChild(createOpNameGroup(testCtx));
+	computeTests->addChild(createPointerParameterComputeGroup(testCtx));
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
 	graphicsTests->addChild(createOpNopTests(testCtx));
@@ -9500,6 +9502,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpSConvert", "sconvert"));
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpUConvert", "uconvert"));
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpFConvert", "fconvert"));
+	graphicsTests->addChild(createPointerParameterGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
