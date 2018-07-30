@@ -1125,7 +1125,7 @@ Move<vk::VkPipeline> createPipeline (Context&					context,
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// sType
 		DE_NULL,															// pNext
 		(vk::VkPipelineRasterizationStateCreateFlags)0,
-		DE_TRUE,															// depthClipEnable
+		DE_FALSE,															// depthClipEnable
 		DE_FALSE,															// rasterizerDiscardEnable
 		vk::VK_POLYGON_MODE_FILL,											// fillMode
 		vk::VK_CULL_MODE_NONE,												// cullMode;

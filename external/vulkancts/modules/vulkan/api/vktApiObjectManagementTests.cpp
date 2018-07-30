@@ -1758,7 +1758,7 @@ struct GraphicsPipeline
 			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 			DE_NULL,
 			(VkPipelineRasterizationStateCreateFlags)0,
-			VK_TRUE,								// depthClampEnable
+			VK_FALSE,								// depthClampEnable
 			VK_FALSE,								// rasterizerDiscardEnable
 			VK_POLYGON_MODE_FILL,
 			VK_CULL_MODE_BACK_BIT,
