@@ -760,6 +760,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_draw_indirect_count",
 		"VK_KHR_create_renderpass2",
 		"VK_KHR_driver_properties",
+		"VK_KHR_swapchain_mutable_format",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
