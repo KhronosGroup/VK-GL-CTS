@@ -25,10 +25,13 @@
 #include "gluContextInfo.hpp"
 #include "glwEnums.hpp"
 #include "tcuMatrix.hpp"
+#include "tcuPlatform.hpp"
 #include "tcuRenderTarget.hpp"
 #include "tcuVectorUtil.hpp"
+#include "vkPlatform.hpp"
 #include <assert.h>
 #include <climits>
+#include <cmath>
 #include <cstdarg>
 #include <deque>
 #include <iomanip>
@@ -183,6 +186,48 @@ public:
 	{
 		const tcu::RenderTarget& renderTarget = m_context.getRenderContext().getRenderTarget();
 		return renderTarget.getHeight();
+	}
+
+	void scaleDimensionsToMemory(int& width, int& height, int devLayers, int sysLayers, int devBPP, int sysBPP)
+	{
+		vk::PlatformMemoryLimits memoryLimits;
+		m_context.getTestContext().getPlatform().getVulkanPlatform().getMemoryLimits(memoryLimits);
+		GLsizeiptr sysSpace		  = memoryLimits.totalSystemMemory;
+		GLsizeiptr devSpace		  = memoryLimits.totalDeviceLocalMemory;
+		int		   devInSysLayers = 0;
+
+		if (devSpace == 0)
+		{
+			devInSysLayers = devLayers;
+			devLayers	  = 0;
+		}
+
+		// Check if available memory is enough
+		GLsizeiptr pixelsPerLayer = width * height;
+		GLsizeiptr sysRequired	= pixelsPerLayer * ((sysBPP * sysLayers) + (devBPP * devInSysLayers));
+		GLsizeiptr devRequired	= pixelsPerLayer * devBPP * devLayers;
+		if ((sysRequired <= sysSpace) && (devRequired <= devSpace))
+		{
+			return;
+		}
+
+		// Scales the width and height such that the overall texture fits into
+		// the available space for both system and device.
+		GLdouble scale = sqrt(sysSpace / GLdouble(sysRequired));
+		if (devSpace != 0)
+		{
+			GLdouble devScale = sqrt(devSpace / GLdouble(devRequired));
+			scale			  = de::min(devScale, scale);
+		}
+		int newWidth  = int(width * scale);
+		int newHeight = int(height * scale);
+
+		m_context.getTestContext().getLog()
+			<< tcu::TestLog::Message << "Reducing surface dimensions to fit in memory, from " << width << "x" << height
+			<< " to " << newWidth << "x" << newHeight << "." << tcu::TestLog::EndMessage;
+
+		width  = newWidth;
+		height = newHeight;
 	}
 
 	inline bool ColorEqual(const vec4& c0, const vec4& c1, const vec4& epsilon)
@@ -5480,14 +5525,19 @@ class AdvancedSyncImageAccess2 : public ShaderImageLoadStoreBase
 		m_store_program = BuildProgram(glsl_vs, NULL, NULL, NULL, glsl_store_fs);
 		m_draw_program  = BuildProgram(glsl_vs, NULL, NULL, NULL, glsl_draw_fs);
 
+		int width  = getWindowWidth();
+		int height = getWindowHeight();
+		scaleDimensionsToMemory(width, height, 1, 1, 16, 16);
+
 		glGenTextures(1, &m_texture);
 		glBindTexture(GL_TEXTURE_2D, m_texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, getWindowWidth(), getWindowHeight(), 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		CreateFullViewportQuad(&m_vao, &m_vbo, NULL);
 
+		glViewport(0, 0, width, height);
 		glBindImageTexture(0, m_texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glUseProgram(m_store_program);
 		glUniform4f(glGetUniformLocation(m_store_program, "g_color"), 1.0f, 0.0f, 0.0f, 1.0f);
@@ -5504,7 +5554,7 @@ class AdvancedSyncImageAccess2 : public ShaderImageLoadStoreBase
 		glUseProgram(m_draw_program);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-		if (!ValidateReadBuffer(0, 0, getWindowWidth(), getWindowHeight(), vec4(0, 1, 0, 1)))
+		if (!ValidateReadBuffer(0, 0, width, height, vec4(0, 1, 0, 1)))
 		{
 			return ERROR;
 		}
@@ -5513,6 +5563,7 @@ class AdvancedSyncImageAccess2 : public ShaderImageLoadStoreBase
 
 	virtual long Cleanup()
 	{
+		glViewport(0, 0, getWindowWidth(), getWindowHeight());
 		glUseProgram(0);
 		glDeleteBuffers(1, &m_vbo);
 		glDeleteTextures(1, &m_texture);
@@ -5874,11 +5925,15 @@ class AdvancedMemoryOrder : public ShaderImageLoadStoreBase
 		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_buffer);
 		glBindTexture(GL_TEXTURE_BUFFER, 0);
 
-		std::vector<vec4> data(getWindowWidth() * getWindowHeight());
+		int width  = getWindowWidth();
+		int height = getWindowHeight();
+		scaleDimensionsToMemory(width, height, 1, 2, 16, 16);
+
+		std::vector<vec4> data(width * height);
 		glGenTextures(1, &m_texture);
 		glBindTexture(GL_TEXTURE_2D, m_texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, getWindowWidth(), getWindowHeight(), 0, GL_RGBA, GL_FLOAT, &data[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, &data[0]);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		glBindImageTexture(0, m_buffer_tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
@@ -5887,10 +5942,11 @@ class AdvancedMemoryOrder : public ShaderImageLoadStoreBase
 		CreateFullViewportQuad(&m_vao, &m_vbo, NULL);
 
 		glClear(GL_COLOR_BUFFER_BIT);
+		glViewport(0, 0, width, height);
 		glBindVertexArray(m_vao);
 		glDrawArraysInstancedBaseInstance(GL_TRIANGLE_STRIP, 0, 4, 1, 0);
 
-		if (!ValidateReadBuffer(0, 0, getWindowWidth(), getWindowHeight(), vec4(0, 1, 0, 1)))
+		if (!ValidateReadBuffer(0, 0, width, height, vec4(0, 1, 0, 1)))
 		{
 			return ERROR;
 		}
@@ -5899,6 +5955,7 @@ class AdvancedMemoryOrder : public ShaderImageLoadStoreBase
 
 	virtual long Cleanup()
 	{
+		glViewport(0, 0, getWindowWidth(), getWindowHeight());
 		glUseProgram(0);
 		glDeleteBuffers(1, &m_vbo);
 		glDeleteBuffers(1, &m_buffer);
@@ -5961,10 +6018,13 @@ class AdvancedSSOSimple : public ShaderImageLoadStoreBase
 		glUseProgramStages(m_pipeline[1], GL_VERTEX_SHADER_BIT, m_vsp);
 		glUseProgramStages(m_pipeline[1], GL_FRAGMENT_SHADER_BIT, m_fsp1);
 
+		int width  = getWindowWidth();
+		int height = getWindowHeight();
+		scaleDimensionsToMemory(width, height, 8, 8, 16, 16);
+
 		glBindTexture(GL_TEXTURE_2D_ARRAY, m_texture);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA32F, getWindowWidth(), getWindowHeight(), 8, 0, GL_RGBA, GL_FLOAT,
-					 NULL);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA32F, width, height, 8, 0, GL_RGBA, GL_FLOAT, NULL);
 
 		glBindImageTexture(0, m_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 		glBindImageTexture(1, m_texture, 0, GL_FALSE, 1, GL_READ_WRITE, GL_RGBA32F);
@@ -5977,22 +6037,23 @@ class AdvancedSSOSimple : public ShaderImageLoadStoreBase
 
 		glBindVertexArray(m_vao);
 
+		glViewport(0, 0, width, height);
 		glBindProgramPipeline(m_pipeline[0]);
 		glDrawArraysInstancedBaseInstance(GL_TRIANGLE_STRIP, 0, 4, 1, 0);
 
 		glBindProgramPipeline(m_pipeline[1]);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-		std::vector<vec4> data(getWindowWidth() * getWindowHeight() * 8);
+		std::vector<vec4> data(width * height * 8);
 		glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_FLOAT, &data[0]);
 
 		for (int layer = 0; layer < 8; ++layer)
 		{
-			for (int h = 0; h < getWindowHeight(); ++h)
+			for (int h = 0; h < height; ++h)
 			{
-				for (int w = 0; w < getWindowWidth(); ++w)
+				for (int w = 0; w < width; ++w)
 				{
-					const vec4 c = data[layer * getWindowWidth() * getWindowHeight() + h * getWindowWidth() + w];
+					const vec4 c = data[layer * width * height + h * width + w];
 					if (layer % 2)
 					{
 						if (!IsEqual(c, vec4(2.0f)))
@@ -6015,6 +6076,7 @@ class AdvancedSSOSimple : public ShaderImageLoadStoreBase
 
 	virtual long Cleanup()
 	{
+		glViewport(0, 0, getWindowWidth(), getWindowHeight());
 		glDeleteBuffers(1, &m_vbo);
 		glDeleteTextures(1, &m_texture);
 		glDeleteProgram(m_vsp);
@@ -6169,13 +6231,16 @@ class AdvancedSSOSubroutine : public ShaderImageLoadStoreBase
 
 	virtual long Run()
 	{
+		int width  = getWindowWidth();
+		int height = getWindowHeight();
+		scaleDimensionsToMemory(width, height, 3, 3, 16, 16);
+
 		glProgramUniform1i(m_program, glGetUniformLocation(m_program, "g_image0"), 1);
 		glProgramUniform1i(m_program, glGetUniformLocation(m_program, "g_image1"), 1);
 
 		glBindTexture(GL_TEXTURE_2D_ARRAY, m_texture);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA32F, getWindowWidth(), getWindowHeight(), 3, 0, GL_RGBA, GL_FLOAT,
-					 NULL);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA32F, width, height, 3, 0, GL_RGBA, GL_FLOAT, NULL);
 
 		glGetIntegerv(GL_DRAW_BUFFER, &m_draw_buffer);
 
@@ -6187,20 +6252,21 @@ class AdvancedSSOSubroutine : public ShaderImageLoadStoreBase
 		const GLuint indices[2] = { glGetSubroutineIndex(m_program, GL_FRAGMENT_SHADER, "Brush0"),
 									glGetSubroutineIndex(m_program, GL_FRAGMENT_SHADER, "Brush1") };
 
+		glViewport(0, 0, width, height);
 		glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &indices[0]);
 		glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 3, 1, 0);
 
-		std::vector<vec4> data(getWindowWidth() * getWindowHeight() * 3);
+		std::vector<vec4> data(width * height * 3);
 		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
 		glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_FLOAT, &data[0]);
 
 		for (int layer = 0; layer < 3; ++layer)
 		{
-			for (int h = 0; h < getWindowHeight(); ++h)
+			for (int h = 0; h < height; ++h)
 			{
-				for (int w = 0; w < getWindowWidth(); ++w)
+				for (int w = 0; w < width; ++w)
 				{
-					const vec4 c = data[layer * getWindowWidth() * getWindowHeight() + h * getWindowWidth() + w];
+					const vec4 c = data[layer * width * height + h * width + w];
 					if (layer == 0 && !IsEqual(c, vec4(1.0f, 0.0f, 0.0f, 1.0f)))
 					{
 						m_context.getTestContext().getLog()
@@ -6234,11 +6300,11 @@ class AdvancedSSOSubroutine : public ShaderImageLoadStoreBase
 
 		for (int layer = 0; layer < 3; ++layer)
 		{
-			for (int h = 0; h < getWindowHeight(); ++h)
+			for (int h = 0; h < height; ++h)
 			{
-				for (int w = 0; w < getWindowWidth(); ++w)
+				for (int w = 0; w < width; ++w)
 				{
-					const vec4 c = data[layer * getWindowWidth() * getWindowHeight() + h * getWindowWidth() + w];
+					const vec4 c = data[layer * width * height + h * width + w];
 					if (layer == 0 && !IsEqual(c, vec4(0.0f, 1.0f, 0.0f, 1.0f)))
 					{
 						m_context.getTestContext().getLog()
@@ -6268,6 +6334,7 @@ class AdvancedSSOSubroutine : public ShaderImageLoadStoreBase
 
 	virtual long Cleanup()
 	{
+		glViewport(0, 0, getWindowWidth(), getWindowHeight());
 		glDrawBuffer(m_draw_buffer);
 		glDeleteTextures(1, &m_texture);
 		glUseProgram(0);
@@ -6322,9 +6389,12 @@ class AdvancedSSOPerSample : public ShaderImageLoadStoreBase
 		m_store_fsp = BuildShaderProgram(GL_FRAGMENT_SHADER, glsl_store_fs);
 		m_load_fsp  = BuildShaderProgram(GL_FRAGMENT_SHADER, glsl_load_fs);
 
+		int width  = getWindowWidth();
+		int height = getWindowHeight();
+		scaleDimensionsToMemory(width, height, 1, 1, /* bpp*samples */ 16 * 4, 16);
+
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_texture);
-		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA32F, getWindowWidth(), getWindowHeight(),
-								GL_FALSE);
+		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA32F, width, height, GL_FALSE);
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 
 		glUseProgramStages(m_pipeline, GL_VERTEX_SHADER_BIT, m_vsp);
@@ -6333,6 +6403,7 @@ class AdvancedSSOPerSample : public ShaderImageLoadStoreBase
 		glBindImageTexture(0, m_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
 		glClear(GL_COLOR_BUFFER_BIT);
+		glViewport(0, 0, width, height);
 		glBindVertexArray(m_vao);
 		glBindProgramPipeline(m_pipeline);
 		glDrawElementsInstancedBaseInstance(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, 0, 1, 0);
@@ -6342,7 +6413,7 @@ class AdvancedSSOPerSample : public ShaderImageLoadStoreBase
 		glUseProgramStages(m_pipeline, GL_FRAGMENT_SHADER_BIT, m_load_fsp);
 		glDrawElementsInstancedBaseInstance(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, 0, 1, 0);
 
-		if (!ValidateReadBuffer(0, 0, getWindowWidth(), getWindowHeight(), vec4(0, 1, 0, 1)))
+		if (!ValidateReadBuffer(0, 0, width, height, vec4(0, 1, 0, 1)))
 		{
 			return ERROR;
 		}
@@ -6351,6 +6422,7 @@ class AdvancedSSOPerSample : public ShaderImageLoadStoreBase
 
 	virtual long Cleanup()
 	{
+		glViewport(0, 0, getWindowWidth(), getWindowHeight());
 		glDeleteBuffers(1, &m_vbo);
 		glDeleteBuffers(1, &m_ebo);
 		glDeleteTextures(1, &m_texture);
@@ -6391,18 +6463,22 @@ class AdvancedCopyImage : public ShaderImageLoadStoreBase
 
 	virtual long Run()
 	{
+		int width  = getWindowWidth();
+		int height = getWindowHeight();
+		scaleDimensionsToMemory(width, height, 2, 2, 16, 16);
+
 		glUseProgram(m_program);
 		glUniform1i(glGetUniformLocation(m_program, "g_input_image"), 0);
 		glUniform1i(glGetUniformLocation(m_program, "g_output_image"), 1);
 
-		std::vector<vec4> data(getWindowWidth() * getWindowHeight(), vec4(7.0f));
+		std::vector<vec4> data(width * height, vec4(7.0f));
 		glBindTexture(GL_TEXTURE_2D, m_texture[0]);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, getWindowWidth(), getWindowHeight(), 0, GL_RGBA, GL_FLOAT, &data[0]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, &data[0]);
 
 		glBindTexture(GL_TEXTURE_2D, m_texture[1]);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, getWindowWidth(), getWindowHeight(), 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
 
 		glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -6410,18 +6486,19 @@ class AdvancedCopyImage : public ShaderImageLoadStoreBase
 		glBindImageTexture(1, m_texture[1], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 		glClear(GL_COLOR_BUFFER_BIT);
+		glViewport(0, 0, width, height);
 		glBindVertexArray(m_vao);
 		glDrawElementsInstancedBaseInstance(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, 0, 1, 0);
 
-		std::vector<vec4> rdata(getWindowWidth() * getWindowHeight());
+		std::vector<vec4> rdata(width * height);
 		glBindTexture(GL_TEXTURE_2D, m_texture[1]);
 		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &rdata[0]);
 
-		for (int h = 0; h < getWindowHeight(); ++h)
+		for (int h = 0; h < height; ++h)
 		{
-			for (int w = 0; w < getWindowWidth(); ++w)
+			for (int w = 0; w < width; ++w)
 			{
-				if (!IsEqual(rdata[h * getWindowWidth() + w], vec4(7.0f)))
+				if (!IsEqual(rdata[h * width + w], vec4(7.0f)))
 				{
 					return ERROR;
 				}
@@ -6432,6 +6509,7 @@ class AdvancedCopyImage : public ShaderImageLoadStoreBase
 
 	virtual long Cleanup()
 	{
+		glViewport(0, 0, getWindowWidth(), getWindowHeight());
 		glUseProgram(0);
 		glDeleteBuffers(1, &m_vbo);
 		glDeleteBuffers(1, &m_ebo);
