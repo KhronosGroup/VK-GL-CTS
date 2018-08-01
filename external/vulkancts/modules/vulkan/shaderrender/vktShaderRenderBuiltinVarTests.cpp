@@ -317,6 +317,9 @@ BuiltinFragDepthCaseInstance::BuiltinFragDepthCaseInstance (Context& context, Vk
 
 		if (m_largeDepthEnable && !de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_EXT_depth_range_unrestricted"))
 			throw tcu::NotSupportedError("large_depth test variants require the VK_EXT_depth_range_unrestricted extension");
+
+		if (m_context.getDeviceFeatures().depthClamp == VK_FALSE && m_depthClampEnable)
+			throw tcu::NotSupportedError("Depthclamp is not supported.");
 	}
 	catch (const vk::Error& e)
 	{
