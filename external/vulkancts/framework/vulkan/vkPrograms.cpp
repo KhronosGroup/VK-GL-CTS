@@ -540,6 +540,7 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 	const SpirvVersion	spirvVersion		= program.buildOptions.targetVersion;
 	const bool			validateBinary		= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
+	std::string			cachekey;
 	std::string			shaderstring;
 	vk::ProgramBinary*	res					= 0;
 	const int			optimizationRecipe	= commandLine.getOptimizationRecipe();
@@ -547,21 +548,23 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 	if (commandLine.isShadercacheEnabled())
 	{
 		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
-		getCompileEnvironment(shaderstring);
-		getBuildOptions(shaderstring, program.buildOptions, optimizationRecipe);
+		getCompileEnvironment(cachekey);
+		getBuildOptions(cachekey, program.buildOptions, optimizationRecipe);
 
 		for (int i = 0; i < glu::SHADERTYPE_LAST; i++)
 		{
 			if (!program.sources[i].empty())
 			{
-				shaderstring += glu::getShaderTypeName((glu::ShaderType)i);
+				cachekey += glu::getShaderTypeName((glu::ShaderType)i);
 
 				for (std::vector<std::string>::const_iterator it = program.sources[i].begin(); it != program.sources[i].end(); ++it)
 					shaderstring += *it;
 			}
 		}
 
-		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
+		cachekey = cachekey + shaderstring;
+
+		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename());
 
 		if (res)
 		{
@@ -607,7 +610,7 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
-			shadercacheSave(res, shaderstring, commandLine.getShaderCacheFilename());
+			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename());
 	}
 	return res;
 }
@@ -617,6 +620,7 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 	const SpirvVersion	spirvVersion		= program.buildOptions.targetVersion;
 	const bool			validateBinary		= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
+	std::string			cachekey;
 	std::string			shaderstring;
 	vk::ProgramBinary*	res					= 0;
 	const int			optimizationRecipe	= commandLine.getOptimizationRecipe();
@@ -624,21 +628,23 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 	if (commandLine.isShadercacheEnabled())
 	{
 		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
-		getCompileEnvironment(shaderstring);
-		getBuildOptions(shaderstring, program.buildOptions, optimizationRecipe);
+		getCompileEnvironment(cachekey);
+		getBuildOptions(cachekey, program.buildOptions, optimizationRecipe);
 
 		for (int i = 0; i < glu::SHADERTYPE_LAST; i++)
 		{
 			if (!program.sources[i].empty())
 			{
-				shaderstring += glu::getShaderTypeName((glu::ShaderType)i);
+				cachekey += glu::getShaderTypeName((glu::ShaderType)i);
 
 				for (std::vector<std::string>::const_iterator it = program.sources[i].begin(); it != program.sources[i].end(); ++it)
 					shaderstring += *it;
 			}
 		}
 
-		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
+		cachekey = cachekey + shaderstring;
+
+		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename());
 
 		if (res)
 		{
@@ -684,7 +690,7 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
-			shadercacheSave(res, shaderstring, commandLine.getShaderCacheFilename());
+			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename());
 	}
 	return res;
 }
@@ -695,30 +701,30 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 	const bool			validateBinary		= VALIDATE_BINARIES;
 	vector<deUint32>	binary;
 	vk::ProgramBinary*	res					= 0;
-	std::string			shaderstring;
+	std::string			cachekey;
 	const int			optimizationRecipe	= commandLine.isSpirvOptimizationEnabled() ? commandLine.getOptimizationRecipe() : 0;
 
 	if (commandLine.isShadercacheEnabled())
 	{
 		shaderCacheFirstRunCheck(commandLine.getShaderCacheFilename(), commandLine.isShaderCacheTruncateEnabled());
-		getCompileEnvironment(shaderstring);
-		shaderstring += "Target Spir-V ";
-		shaderstring += getSpirvVersionName(spirvVersion);
-		shaderstring += "\n";
+		getCompileEnvironment(cachekey);
+		cachekey += "Target Spir-V ";
+		cachekey += getSpirvVersionName(spirvVersion);
+		cachekey += "\n";
 		if (optimizationRecipe != 0)
 		{
-			shaderstring += "Optimization recipe ";
-			shaderstring += optimizationRecipe;
-			shaderstring += "\n";
+			cachekey += "Optimization recipe ";
+			cachekey += optimizationRecipe;
+			cachekey += "\n";
 		}
 
-		shaderstring += program.source;
+		cachekey += program.source;
 
-		res = shadercacheLoad(shaderstring, commandLine.getShaderCacheFilename());
+		res = shadercacheLoad(cachekey, commandLine.getShaderCacheFilename());
 
 		if (res)
 		{
-			buildInfo->source			= shaderstring;
+			buildInfo->source			= program.source;
 			buildInfo->compileOk		= true;
 			buildInfo->compileTimeUs	= 0;
 			buildInfo->infoLog			= "Loaded from cache";
@@ -749,7 +755,7 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
-			shadercacheSave(res, shaderstring, commandLine.getShaderCacheFilename());
+			shadercacheSave(res, cachekey, commandLine.getShaderCacheFilename());
 	}
 	return res;
 }
