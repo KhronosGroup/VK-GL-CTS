@@ -654,11 +654,23 @@ public:
 
 			gl.useProgram(program.getProgram());
 
-			gl.viewport(viewportX, viewportY, width/2, height);
+			gl.frontFace(GL_CCW);
+
+			gl.viewport(viewportX, viewportY, width/2, height/2);
 			glu::draw(m_context.getRenderContext(), program.getProgram(), 1, &posBinding,
 					  glu::pr::Triangles(DE_LENGTH_OF_ARRAY(indicesCCW), &indicesCCW[0]));
 
-			gl.viewport(viewportX + width/2, viewportY, width-width/2, height);
+			gl.viewport(viewportX + width/2, viewportY, width-width/2, height/2);
+			glu::draw(m_context.getRenderContext(), program.getProgram(), 1, &posBinding,
+					  glu::pr::Triangles(DE_LENGTH_OF_ARRAY(indicesCW), &indicesCW[0]));
+
+			gl.frontFace(GL_CW);
+
+			gl.viewport(viewportX, viewportY + height/2, width/2, height-height/2);
+			glu::draw(m_context.getRenderContext(), program.getProgram(), 1, &posBinding,
+					  glu::pr::Triangles(DE_LENGTH_OF_ARRAY(indicesCCW), &indicesCCW[0]));
+
+			gl.viewport(viewportX + width/2, viewportY + height/2, width-width/2, height-height/2);
 			glu::draw(m_context.getRenderContext(), program.getProgram(), 1, &posBinding,
 					  glu::pr::Triangles(DE_LENGTH_OF_ARRAY(indicesCW), &indicesCW[0]));
 
@@ -667,13 +679,22 @@ public:
 		}
 
 		// Draw reference
-		for (int y = 0; y < refImg.getHeight(); y++)
 		{
-			for (int x = 0; x < refImg.getWidth()/2; x++)
-				refImg.setPixel(x, y, tcu::RGBA::green());
+			for(int y = 0; y < refImg.getHeight() / 2; y++)
+				for(int x = 0; x < refImg.getWidth() / 2; x++)
+					refImg.setPixel(x, y, tcu::RGBA::green());
 
-			for (int x = refImg.getWidth()/2; x < refImg.getWidth(); x++)
-				refImg.setPixel(x, y, tcu::RGBA::blue());
+			for(int y = 0; y < refImg.getHeight() / 2; y++)
+				for(int x = refImg.getWidth() / 2; x < refImg.getWidth(); x++)
+					refImg.setPixel(x, y, tcu::RGBA::blue());
+
+			for(int y = refImg.getHeight() / 2; y < refImg.getHeight(); y++)
+				for(int x = 0; x < refImg.getWidth() / 2; x++)
+					refImg.setPixel(x, y, tcu::RGBA::blue());
+
+			for(int y = refImg.getHeight() / 2; y < refImg.getHeight(); y++)
+				for(int x = refImg.getWidth() / 2; x < refImg.getWidth(); x++)
+					refImg.setPixel(x, y, tcu::RGBA::green());
 		}
 
 		// Compare
