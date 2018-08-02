@@ -86,7 +86,7 @@ bool isSaneSpirVBinary (const ProgramBinary& binary)
 
 	return true;
 }
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
+
 ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
 {
 	DE_ASSERT(!binary.empty());
@@ -96,7 +96,7 @@ ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
 	else
 		TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
 }
-#endif
+
 } // anonymous
 
 void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramInfo* buildInfo, const SpirvVersion spirvVersion)
