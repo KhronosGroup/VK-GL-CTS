@@ -462,6 +462,7 @@ struct TestParams
 	bool			useSingleMipLevel;	//!< only mip level 0, otherwise up to maxMipLevels
 	VkImageType		imageType;
 	VkFormat		imageFormat;
+	VkImageTiling	imageTiling;
 	VkExtent3D		imageExtent;
 	deUint32        imageLayerCount;
 	LayerRange      imageViewLayerRange;
@@ -479,7 +480,7 @@ public:
 
 	Move<VkCommandPool>					createCommandPool				(VkCommandPoolCreateFlags commandPoolCreateFlags) const;
 	Move<VkCommandBuffer>				allocatePrimaryCommandBuffer	(VkCommandPool commandPool) const;
-	Move<VkImage>						createImage						(VkImageType imageType, VkFormat format, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage) const;
+	Move<VkImage>						createImage						(VkImageType imageType, VkFormat format, VkImageTiling tiling, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage) const;
 	Move<VkImageView>					createImageView					(VkImage image, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspectMask, LayerRange layerRange) const;
 	Move<VkRenderPass>					createRenderPass				(VkFormat format) const;
 	Move<VkFramebuffer>					createFrameBuffer				(VkImageView imageView, VkRenderPass renderPass, deUint32 imageWidth, deUint32 imageHeight, deUint32 imageLayersCount) const;
@@ -502,7 +503,7 @@ protected:
 	VkImageViewType						getCorrespondingImageViewType	(VkImageType imageType, ViewType viewType) const;
 	VkImageUsageFlags					getImageUsageFlags				(VkFormat format) const;
 	VkImageAspectFlags					getImageAspectFlags				(VkFormat format) const;
-	bool								getIsAttachmentFormat			(VkFormat format) const;
+	bool								getIsAttachmentFormat			(VkFormat format, VkImageTiling tiling) const;
 	bool								getIsStencilFormat				(VkFormat format) const;
 	bool								getIsDepthFormat				(VkFormat format) const;
 	VkImageFormatProperties				getImageFormatProperties		(void) const;
@@ -542,7 +543,7 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 	, m_queue					(context.getUniversalQueue())
 	, m_queueFamilyIndex		(context.getUniversalQueueFamilyIndex())
 	, m_allocator				(context.getDefaultAllocator())
-	, m_isAttachmentFormat		(getIsAttachmentFormat(params.imageFormat))
+	, m_isAttachmentFormat		(getIsAttachmentFormat(params.imageFormat, params.imageTiling))
 	, m_imageUsageFlags			(getImageUsageFlags(params.imageFormat))
 	, m_imageAspectFlags		(getImageAspectFlags(params.imageFormat))
 	, m_imageFormatProperties	(getImageFormatProperties())
@@ -553,6 +554,7 @@ ImageClearingTestInstance::ImageClearingTestInstance (Context& context, const Te
 
 	, m_image					(createImage(params.imageType,
 											 params.imageFormat,
+											 params.imageTiling,
 											 params.imageExtent,
 											 params.imageLayerCount,
 											 m_imageUsageFlags))
@@ -625,11 +627,12 @@ VkImageAspectFlags ImageClearingTestInstance::getImageAspectFlags (VkFormat form
 	return imageAspectFlags;
 }
 
-bool ImageClearingTestInstance::getIsAttachmentFormat (VkFormat format) const
+bool ImageClearingTestInstance::getIsAttachmentFormat (VkFormat format, VkImageTiling tiling) const
 {
-	const VkFormatProperties props	= vk::getPhysicalDeviceFormatProperties(m_vki, m_context.getPhysicalDevice(), format);
+	const VkFormatProperties props		= vk::getPhysicalDeviceFormatProperties(m_vki, m_context.getPhysicalDevice(), format);
+	const VkFormatFeatureFlags features	= tiling == VK_IMAGE_TILING_OPTIMAL ? props.optimalTilingFeatures : props.linearTilingFeatures;
 
-	return (props.optimalTilingFeatures & (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) != 0;
+	return (features & (vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) != 0;
 }
 
 bool ImageClearingTestInstance::getIsStencilFormat (VkFormat format) const
@@ -656,7 +659,7 @@ VkImageFormatProperties ImageClearingTestInstance::getImageFormatProperties (voi
 {
 	VkImageFormatProperties properties;
 	const VkResult result = m_vki.getPhysicalDeviceImageFormatProperties(m_context.getPhysicalDevice(), m_params.imageFormat, m_params.imageType,
-																		 VK_IMAGE_TILING_OPTIMAL, m_imageUsageFlags, (VkImageCreateFlags)0, &properties);
+																		 m_params.imageTiling, m_imageUsageFlags, (VkImageCreateFlags)0, &properties);
 
 	if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
 		TCU_THROW(NotSupportedError, "Format not supported");
@@ -681,8 +684,11 @@ Move<VkCommandBuffer> ImageClearingTestInstance::allocatePrimaryCommandBuffer (V
 	return vk::allocateCommandBuffer(m_vkd, m_device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
-Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkFormat format, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage) const
+Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkFormat format, VkImageTiling tiling, VkExtent3D extent, deUint32 arrayLayerCount, VkImageUsageFlags usage) const
 {
+	if (arrayLayerCount > m_imageFormatProperties.maxArrayLayers)
+		TCU_THROW(NotSupportedError, "Device does not support enough image array layers");
+
 	const VkImageCreateInfo					imageCreateInfo			=
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType			sType;
@@ -694,7 +700,7 @@ Move<VkImage> ImageClearingTestInstance::createImage (VkImageType imageType, VkF
 		m_imageMipLevels,							// deUint32					mipLevels;
 		arrayLayerCount,							// deUint32					arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits	samples;
-		VK_IMAGE_TILING_OPTIMAL,					// VkImageTiling			tiling;
+		tiling,										// VkImageTiling			tiling;
 		usage,										// VkImageUsageFlags		usage;
 		VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode			sharingMode;
 		1u,											// deUint32					queueFamilyIndexCount;
@@ -1411,6 +1417,16 @@ const char* getImageTypeCaseName (VkImageType type)
 	return de::getSizedArrayElement<VK_IMAGE_TYPE_LAST>(s_names, type);
 }
 
+const char* getImageTilingCaseName (VkImageTiling tiling)
+{
+	const char* s_names[] =
+	{
+		"optimal",
+		"linear",
+	};
+	return de::getSizedArrayElement<VK_IMAGE_TILING_LAST>(s_names, tiling);
+}
+
 TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCaseGroup* imageClearingTests, AllocationKind allocationKind)
 {
 	de::MovePtr<TestCaseGroup>	colorImageClearTests					(new TestCaseGroup(testCtx, "clear_color_image", "Color Image Clear Tests"));
@@ -1671,6 +1687,13 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 		};
 		const size_t				numOfImageTypesToTest	= DE_LENGTH_OF_ARRAY(imageTypesToTest);
 
+		const VkImageTiling			imageTilingsToTest[] =
+		{
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_TILING_LINEAR,
+		};
+		const size_t				numOfImageTilingsToTest	= DE_LENGTH_OF_ARRAY(imageTilingsToTest);
+
 		const VkExtent3D			imageDimensionsByType[]	=
 		{
 			{ 256, 1, 1},
@@ -1682,43 +1705,50 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 		{
 			de::MovePtr<TestCaseGroup> imageTypeGroup(new TestCaseGroup(testCtx, getImageTypeCaseName(imageTypesToTest[imageTypeIndex]), ""));
 
-			for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
+			for (size_t	imageTilingIndex = 0; imageTilingIndex < numOfImageTilingsToTest; ++imageTilingIndex)
 			{
-				// 3D ARRAY images are not supported
-				if (imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount > 1u && imageTypesToTest[imageTypeIndex] == VK_IMAGE_TYPE_3D)
-					continue;
+				de::MovePtr<TestCaseGroup> imageTilingGroup(new TestCaseGroup(testCtx, getImageTilingCaseName(imageTilingsToTest[imageTilingIndex]), ""));
 
-				de::MovePtr<TestCaseGroup> imageLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
-
-				for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
+				for (size_t imageLayerParamsIndex = 0; imageLayerParamsIndex < numOfImageLayerParamsToTest; ++imageLayerParamsIndex)
 				{
-					const VkFormat		format			= colorImageFormatsToTest[imageFormatIndex];
-					const std::string	testCaseName	= getFormatCaseName(format);
-					const TestParams	testParams		=
+					// 3D ARRAY images are not supported
+					if (imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount > 1u && imageTypesToTest[imageTypeIndex] == VK_IMAGE_TYPE_3D)
+						continue;
+
+					de::MovePtr<TestCaseGroup> imageLayersGroup(new TestCaseGroup(testCtx, imageLayerParamsToTest[imageLayerParamsIndex].testName, ""));
+
+					for (size_t imageFormatIndex = 0; imageFormatIndex < numOfColorImageFormatsToTest; ++imageFormatIndex)
 					{
-						false,																// bool				useSingleMipLevel;
-						imageTypesToTest[imageTypeIndex],									// VkImageType		imageType;
-						format,																// VkFormat			imageFormat;
-						imageDimensionsByType[imageTypeIndex],								// VkExtent3D		imageExtent;
-						imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
+						const VkFormat		format			= colorImageFormatsToTest[imageFormatIndex];
+						const std::string	testCaseName	= getFormatCaseName(format);
+						const TestParams	testParams		=
 						{
-							0u,
-							imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
-						},																	// LayerRange		imageViewLayerRange;
-						makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),				// VkClearValue		initValue;
-						{
-							makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),				// VkClearValue		clearValue[0];
-							makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),				// VkClearValue		clearValue[1];
-						},
-						imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
-						allocationKind														// AllocationKind	allocationKind;
-					};
-					if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
-						imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
-					else
-						imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+							false,																// bool				useSingleMipLevel;
+							imageTypesToTest[imageTypeIndex],									// VkImageType		imageType;
+							format,																// VkFormat			imageFormat;
+							imageTilingsToTest[imageTilingIndex],								// VkImageTiling	imageTiling;
+							imageDimensionsByType[imageTypeIndex],								// VkExtent3D		imageExtent;
+							imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
+							{
+								0u,
+								imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount
+							},																	// LayerRange		imageViewLayerRange;
+							makeClearColorValue(format, 0.2f, 0.1f, 0.7f, 0.8f),				// VkClearValue		initValue;
+							{
+								makeClearColorValue(format, 0.1f, 0.5f, 0.3f, 0.9f),				// VkClearValue		clearValue[0];
+								makeClearColorValue(format, 0.3f, 0.6f, 0.2f, 0.7f),				// VkClearValue		clearValue[1];
+							},
+							imageLayerParamsToTest[imageLayerParamsIndex].clearLayerRange,		// LayerRange       clearLayerRange;
+							allocationKind														// AllocationKind	allocationKind;
+						};
+						if (!imageLayerParamsToTest[imageLayerParamsIndex].twoStep)
+							imageLayersGroup->addChild(new InstanceFactory1<ClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+						else
+							imageLayersGroup->addChild(new InstanceFactory1<TwoStepClearColorImageTestInstance, TestParams>(testCtx, NODETYPE_SELF_VALIDATE, testCaseName, "Clear Color Image", testParams));
+					}
+					imageTilingGroup->addChild(imageLayersGroup.release());
 				}
-				imageTypeGroup->addChild(imageLayersGroup.release());
+				imageTypeGroup->addChild(imageTilingGroup.release());
 			}
 			colorImageClearTests->addChild(imageTypeGroup.release());
 		}
@@ -1740,6 +1770,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 					true,																// bool				useSingleMipLevel;
 					VK_IMAGE_TYPE_2D,													// VkImageType		imageType;
 					format,																// VkFormat			format;
+					VK_IMAGE_TILING_OPTIMAL,											// VkImageTiling	tiling;
 					{ 256, 256, 1 },													// VkExtent3D		extent;
 					imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,		// deUint32         imageLayerCount;
 					{
@@ -1783,6 +1814,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 						true,															// bool				useSingleMipLevel;
 						VK_IMAGE_TYPE_2D,												// VkImageType		imageType;
 						format,															// VkFormat			format;
+						VK_IMAGE_TILING_OPTIMAL,										// VkImageTiling	tiling;
 						{ 256, 256, 1 },												// VkExtent3D		extent;
 						imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32         imageLayerCount;
 						imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange		imageViewLayerRange;
@@ -1823,6 +1855,7 @@ TestCaseGroup* createImageClearingTestsCommon (TestContext& testCtx, tcu::TestCa
 						true,															// bool				useSingleMipLevel;
 						VK_IMAGE_TYPE_2D,												// VkImageType		imageType;
 						format,															// VkFormat			format;
+						VK_IMAGE_TILING_OPTIMAL,										// VkImageTiling	tiling;
 						{ 256, 256, 1 },												// VkExtent3D		extent;
 						imageLayerParamsToTest[imageLayerParamsIndex].imageLayerCount,	// deUint32         imageLayerCount;
 						imageLayerParamsToTest[imageLayerParamsIndex].imageViewRange,	// LayerRange		imageViewLayerRange;
