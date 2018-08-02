@@ -1020,7 +1020,7 @@ void UploadDownloadExecutor::runSwapchain(Context& context, VkBuffer buffer, VkI
 		uploadCopy(context);
 		break;
 	default:
-		DE_ASSERT("Unsupported upload method");
+		DE_FATAL("Unsupported upload method");
 	}
 
 	switch (m_caseDef.download)
@@ -1035,7 +1035,7 @@ void UploadDownloadExecutor::runSwapchain(Context& context, VkBuffer buffer, VkI
 		downloadTexture(context, buffer);
 		break;
 	default:
-		DE_ASSERT("Unsupported download method");
+		DE_FATAL("Unsupported download method");
 	}
 
 	endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -2116,7 +2116,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 		break;
 	default:
-		DE_ASSERT("Invalid upload method");
+		DE_FATAL("Invalid upload method");
 		break;
 	}
 	switch (caseDef.download)
@@ -2131,7 +2131,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 		break;
 	default:
-		DE_ASSERT("Invalid download method");
+		DE_FATAL("Invalid download method");
 		break;
 	}
 
