@@ -1042,6 +1042,12 @@ static const char* s_GL_ANGLE_translated_shader_source[] =
 	"glGetTranslatedShaderSourceANGLE",
 };
 
+static const char* s_GL_EXT_EGL_image_storage[] =
+{
+	"glEGLImageTargetTexStorageEXT",
+	"glEGLImageTargetTextureStorageEXT",
+};
+
 static const char* s_GL_EXT_base_instance[] =
 {
 	"glDrawArraysInstancedBaseInstanceEXT",
@@ -1297,6 +1303,11 @@ static const char* s_GL_EXT_separate_shader_objects[] =
 	"glValidateProgramPipelineEXT",
 };
 
+static const char* s_GL_EXT_shader_framebuffer_fetch_non_coherent[] =
+{
+	"glFramebufferFetchBarrierEXT",
+};
+
 static const char* s_GL_EXT_shader_pixel_local_storage2[] =
 {
 	"glClearPixelLocalStorageuiEXT",
@@ -1330,11 +1341,6 @@ static const char* s_GL_EXT_texture_buffer[] =
 {
 	"glTexBufferEXT",
 	"glTexBufferRangeEXT",
-};
-
-static const char* s_GL_EXT_texture_filter_minmax[] =
-{
-	"glRasterSamplesEXT",
 };
 
 static const char* s_GL_EXT_texture_view[] =
@@ -1919,6 +1925,7 @@ static const struct
 	{ "GL_ANGLE_framebuffer_multisample",					DE_LENGTH_OF_ARRAY(s_GL_ANGLE_framebuffer_multisample),					s_GL_ANGLE_framebuffer_multisample					},
 	{ "GL_ANGLE_instanced_arrays",							DE_LENGTH_OF_ARRAY(s_GL_ANGLE_instanced_arrays),						s_GL_ANGLE_instanced_arrays							},
 	{ "GL_ANGLE_translated_shader_source",					DE_LENGTH_OF_ARRAY(s_GL_ANGLE_translated_shader_source),				s_GL_ANGLE_translated_shader_source					},
+	{ "GL_EXT_EGL_image_storage",							DE_LENGTH_OF_ARRAY(s_GL_EXT_EGL_image_storage),							s_GL_EXT_EGL_image_storage							},
 	{ "GL_EXT_base_instance",								DE_LENGTH_OF_ARRAY(s_GL_EXT_base_instance),								s_GL_EXT_base_instance								},
 	{ "GL_EXT_blend_func_extended",							DE_LENGTH_OF_ARRAY(s_GL_EXT_blend_func_extended),						s_GL_EXT_blend_func_extended						},
 	{ "GL_EXT_buffer_storage",								DE_LENGTH_OF_ARRAY(s_GL_EXT_buffer_storage),							s_GL_EXT_buffer_storage								},
@@ -1948,12 +1955,12 @@ static const struct
 	{ "GL_EXT_semaphore_fd",								DE_LENGTH_OF_ARRAY(s_GL_EXT_semaphore_fd),								s_GL_EXT_semaphore_fd								},
 	{ "GL_EXT_semaphore_win32",								DE_LENGTH_OF_ARRAY(s_GL_EXT_semaphore_win32),							s_GL_EXT_semaphore_win32							},
 	{ "GL_EXT_separate_shader_objects",						DE_LENGTH_OF_ARRAY(s_GL_EXT_separate_shader_objects),					s_GL_EXT_separate_shader_objects					},
+	{ "GL_EXT_shader_framebuffer_fetch_non_coherent",		DE_LENGTH_OF_ARRAY(s_GL_EXT_shader_framebuffer_fetch_non_coherent),		s_GL_EXT_shader_framebuffer_fetch_non_coherent		},
 	{ "GL_EXT_shader_pixel_local_storage2",					DE_LENGTH_OF_ARRAY(s_GL_EXT_shader_pixel_local_storage2),				s_GL_EXT_shader_pixel_local_storage2				},
 	{ "GL_EXT_sparse_texture",								DE_LENGTH_OF_ARRAY(s_GL_EXT_sparse_texture),							s_GL_EXT_sparse_texture								},
 	{ "GL_EXT_tessellation_shader",							DE_LENGTH_OF_ARRAY(s_GL_EXT_tessellation_shader),						s_GL_EXT_tessellation_shader						},
 	{ "GL_EXT_texture_border_clamp",						DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_border_clamp),						s_GL_EXT_texture_border_clamp						},
 	{ "GL_EXT_texture_buffer",								DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_buffer),							s_GL_EXT_texture_buffer								},
-	{ "GL_EXT_texture_filter_minmax",						DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_filter_minmax),						s_GL_EXT_texture_filter_minmax						},
 	{ "GL_EXT_texture_view",								DE_LENGTH_OF_ARRAY(s_GL_EXT_texture_view),								s_GL_EXT_texture_view								},
 	{ "GL_EXT_win32_keyed_mutex",							DE_LENGTH_OF_ARRAY(s_GL_EXT_win32_keyed_mutex),							s_GL_EXT_win32_keyed_mutex							},
 	{ "GL_EXT_window_rectangles",							DE_LENGTH_OF_ARRAY(s_GL_EXT_window_rectangles),							s_GL_EXT_window_rectangles							},
