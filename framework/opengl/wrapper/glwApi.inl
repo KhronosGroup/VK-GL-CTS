@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
+ * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
  */
 #define			glActiveShaderProgram								glwActiveShaderProgram
 #define			glActiveTexture										glwActiveTexture
@@ -274,7 +274,6 @@
 #define			glGetFramebufferParameteriv							glwGetFramebufferParameteriv
 #define			glGetFramebufferParameterivEXT						glwGetFramebufferParameterivEXT
 #define			glGetGraphicsResetStatus							glwGetGraphicsResetStatus
-#define			glGetGraphicsResetStatusEXT							glwGetGraphicsResetStatusEXT
 #define			glGetInteger64i_v									glwGetInteger64i_v
 #define			glGetInteger64v										glwGetInteger64v
 #define			glGetIntegeri_v										glwGetIntegeri_v
@@ -1061,7 +1060,7 @@ void			glwDeleteVertexArrays								(GLsizei n, const GLuint *arrays);
 void			glwDepthBoundsEXT									(GLclampd zmin, GLclampd zmax);
 void			glwDepthFunc										(GLenum func);
 void			glwDepthMask										(GLboolean flag);
-void			glwDepthRange										(GLdouble near, GLdouble far);
+void			glwDepthRange										(GLdouble n, GLdouble f);
 void			glwDepthRangeArrayfvOES								(GLuint first, GLsizei count, const GLfloat *v);
 void			glwDepthRangeArrayv									(GLuint first, GLsizei count, const GLdouble *v);
 void			glwDepthRangeIndexed								(GLuint index, GLdouble n, GLdouble f);
@@ -1179,7 +1178,6 @@ void			glwGetFramebufferAttachmentParameteriv				(GLenum target, GLenum attachme
 void			glwGetFramebufferParameteriv						(GLenum target, GLenum pname, GLint *params);
 void			glwGetFramebufferParameterivEXT						(GLuint framebuffer, GLenum pname, GLint *params);
 GLenum			glwGetGraphicsResetStatus							();
-GLenum			glwGetGraphicsResetStatusEXT						();
 void			glwGetInteger64i_v									(GLenum target, GLuint index, GLint64 *data);
 void			glwGetInteger64v									(GLenum pname, GLint64 *data);
 void			glwGetIntegeri_v									(GLenum target, GLuint index, GLint *data);

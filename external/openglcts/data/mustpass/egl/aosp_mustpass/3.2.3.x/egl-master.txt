@@ -2472,7 +2472,6 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ext_sparse_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_tessellation_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_border_clamp
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_buffer
-dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_filter_minmax
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_texture_view
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_window_rectangles
 dEQP-EGL.functional.get_proc_address.extension.gl_img_bindless_texture

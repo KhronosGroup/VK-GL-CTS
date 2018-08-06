@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
+ * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
  */
 
 void CallLogWrapper::glActiveShaderProgram (glw::GLuint pipeline, glw::GLuint program)
@@ -1096,11 +1096,11 @@ void CallLogWrapper::glDepthMask (glw::GLboolean flag)
 	m_gl.depthMask(flag);
 }
 
-void CallLogWrapper::glDepthRange (glw::GLdouble near, glw::GLdouble far)
+void CallLogWrapper::glDepthRange (glw::GLdouble n, glw::GLdouble f)
 {
 	if (m_enableLog)
-		m_log << TestLog::Message << "glDepthRange(" << near << ", " << far << ");" << TestLog::EndMessage;
-	m_gl.depthRange(near, far);
+		m_log << TestLog::Message << "glDepthRange(" << n << ", " << f << ");" << TestLog::EndMessage;
+	m_gl.depthRange(n, f);
 }
 
 void CallLogWrapper::glDepthRangeArrayfvOES (glw::GLuint first, glw::GLsizei count, const glw::GLfloat *v)
@@ -1973,16 +1973,6 @@ glw::GLenum CallLogWrapper::glGetGraphicsResetStatus (void)
 	if (m_enableLog)
 		m_log << TestLog::Message << "glGetGraphicsResetStatus(" << ");" << TestLog::EndMessage;
 	glw::GLenum returnValue = m_gl.getGraphicsResetStatus();
-	if (m_enableLog)
-		m_log << TestLog::Message << "// " << toHex(returnValue) << " returned" << TestLog::EndMessage;
-	return returnValue;
-}
-
-glw::GLenum CallLogWrapper::glGetGraphicsResetStatusEXT (void)
-{
-	if (m_enableLog)
-		m_log << TestLog::Message << "glGetGraphicsResetStatusEXT(" << ");" << TestLog::EndMessage;
-	glw::GLenum returnValue = m_gl.getGraphicsResetStatusEXT();
 	if (m_enableLog)
 		m_log << TestLog::Message << "// " << toHex(returnValue) << " returned" << TestLog::EndMessage;
 	return returnValue;
