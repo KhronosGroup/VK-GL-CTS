@@ -2679,13 +2679,12 @@ public:
 class AdvancedIterations : public VertexAttribBindingBase
 {
 
-	GLuint m_po, m_vao[2], m_xfo[2], m_buffer[2];
+	GLuint m_po, m_vao[2], m_buffer[2];
 
 	virtual long Setup()
 	{
 		m_po = 0;
 		glGenVertexArrays(2, m_vao);
-		glGenTransformFeedbacks(2, m_xfo);
 		glGenBuffers(2, m_buffer);
 		return NO_ERROR;
 	}
@@ -2696,7 +2695,6 @@ class AdvancedIterations : public VertexAttribBindingBase
 		glUseProgram(0);
 		glDeleteProgram(m_po);
 		glDeleteVertexArrays(2, m_vao);
-		glDeleteTransformFeedbacks(2, m_xfo);
 		glDeleteBuffers(2, m_buffer);
 		return NO_ERROR;
 	}
@@ -2743,20 +2741,13 @@ class AdvancedIterations : public VertexAttribBindingBase
 		glEnableVertexAttribArray(1);
 		glBindVertexBuffer(1, m_buffer[1], 0, 16);
 		glBindVertexArray(0);
-
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_xfo[0]);
-		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_buffer[1]);
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_xfo[1]);
-		glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_buffer[0]);
-		glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-
 		glEnable(GL_RASTERIZER_DISCARD);
 		glUseProgram(m_po);
 
 		for (int i = 0; i < 10; ++i)
 		{
 			glBindVertexArray(m_vao[i % 2]);
-			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_xfo[i % 2]);
+			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_buffer[(i + 1) % 2]);
 			glBeginTransformFeedback(GL_POINTS);
 			glDrawArrays(GL_POINTS, 0, 1);
 			glEndTransformFeedback();
@@ -2795,7 +2786,7 @@ class AdvancedIterations : public VertexAttribBindingBase
 		for (int i = 0; i < 10; ++i)
 		{
 			glBindVertexArray(m_vao[i % 2]);
-			glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, m_xfo[i % 2]);
+			glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_buffer[(i + 1) % 2]);
 			glBeginTransformFeedback(GL_POINTS);
 			glDrawArrays(GL_POINTS, 0, 1);
 			glEndTransformFeedback();
