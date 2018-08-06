@@ -30,6 +30,7 @@
 #include "vktTextureFilteringExplicitLodTests.hpp"
 #include "vktTextureShadowTests.hpp"
 #include "vktTextureFilteringAnisotropyTests.hpp"
+#include "vktTextureCompressedFormatTests.hpp"
 
 namespace vkt
 {
@@ -42,11 +43,12 @@ void createTextureTests (tcu::TestCaseGroup* textureTests)
 {
 	tcu::TestContext&	testCtx	= textureTests->getTestContext();
 
-	textureTests->addChild(createTextureFilteringTests		(testCtx));
-	textureTests->addChild(createTextureMipmappingTests		(testCtx));
-	textureTests->addChild(createExplicitLodTests			(testCtx));
-	textureTests->addChild(createTextureShadowTests			(testCtx));
-	textureTests->addChild(createFilteringAnisotropyTests	(testCtx));
+	textureTests->addChild(createTextureFilteringTests			(testCtx));
+	textureTests->addChild(createTextureMipmappingTests			(testCtx));
+	textureTests->addChild(createExplicitLodTests				(testCtx));
+	textureTests->addChild(createTextureShadowTests				(testCtx));
+	textureTests->addChild(createFilteringAnisotropyTests		(testCtx));
+	textureTests->addChild(createTextureCompressedFormatTests	(testCtx));
 }
 
 } // anonymous

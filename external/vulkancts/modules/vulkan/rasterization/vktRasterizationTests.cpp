@@ -2044,7 +2044,7 @@ private:
 
 tcu::TestStatus CullingTestInstance::iterate (void)
 {
-	DE_ASSERT(m_polygonMode < VK_POLYGON_MODE_LAST);
+	DE_ASSERT(m_polygonMode <= VK_POLYGON_MODE_POINT);
 
 	tcu::Surface									resultImage						(m_renderSize, m_renderSize);
 	std::vector<tcu::Vec4>							drawBuffer;

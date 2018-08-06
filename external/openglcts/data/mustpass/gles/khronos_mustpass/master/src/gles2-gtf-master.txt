@@ -1,0 +1,5 @@
+GTF-GLES2.gtf.GL.*
+GTF-GLES2.gtf.GL2ExtensionTests.*
+GTF-GLES2.gtf.GL2FixedTests.*
+GTF-GLES2.gtf.GL2Tests.*
+GTF-GLES2.gtf.GLCoverage.*

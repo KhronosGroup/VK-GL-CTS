@@ -147,9 +147,12 @@ bool graphicsCheck16BitFloats (const std::vector<Resource>&	originalFloats,
 
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
+		vector<deUint8>	originalBytes;
+		originalFloats[outputNdx].second->getBytes(originalBytes);
+
 		const deUint16*	returned	= static_cast<const deUint16*>(outputAllocs[outputNdx]->getHostPtr());
-		const float*	original	= static_cast<const float*>(originalFloats[outputNdx].second->data());
-		const deUint32	count		= static_cast<deUint32>(originalFloats[outputNdx].second->getNumBytes() / sizeof(float));
+		const float*	original	= reinterpret_cast<const float*>(&originalBytes.front());
+		const deUint32	count		= static_cast<deUint32>(originalBytes.size() / sizeof(float));
 
 		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
 			if (!compare16BitFloat(original[numNdx], returned[numNdx], RoundingMode, log))
@@ -170,9 +173,12 @@ bool computeCheck16BitFloats (const std::vector<BufferSp>&	originalFloats,
 
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
+		vector<deUint8>	originalBytes;
+		originalFloats[outputNdx]->getBytes(originalBytes);
+
 		const deUint16*	returned	= static_cast<const deUint16*>(outputAllocs[outputNdx]->getHostPtr());
-		const float*	original	= static_cast<const float*>(originalFloats[outputNdx]->data());
-		const deUint32	count		= static_cast<deUint32>(originalFloats[outputNdx]->getNumBytes() / sizeof(float));
+		const float*	original	= reinterpret_cast<const float*>(&originalBytes.front());
+		const deUint32	count		= static_cast<deUint32>(originalBytes.size() / sizeof(float));
 
 		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
 			if (!compare16BitFloat(original[numNdx], returned[numNdx], RoundingMode, log))
@@ -197,9 +203,12 @@ bool check32BitFloats (const std::vector<Resource>&		/* originalFloats */,
 
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
+		vector<deUint8>	expectedBytes;
+		expectedOutputs[outputNdx].second->getBytes(expectedBytes);
+
 		const float*	returnedAsFloat	= static_cast<const float*>(outputAllocs[outputNdx]->getHostPtr());
-		const float*	expectedAsFloat	= static_cast<const float*>(expectedOutputs[outputNdx].second->data());
-		const deUint32	count			= static_cast<deUint32>(expectedOutputs[outputNdx].second->getNumBytes() / sizeof(float));
+		const float*	expectedAsFloat	= reinterpret_cast<const float*>(&expectedBytes.front());
+		const deUint32	count			= static_cast<deUint32>(expectedBytes.size() / sizeof(float));
 
 		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
 			if (!compare32BitFloat(expectedAsFloat[numNdx], returnedAsFloat[numNdx], log))
@@ -220,9 +229,12 @@ bool check32BitFloats (const std::vector<BufferSp>&		/* originalFloats */,
 
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
+		vector<deUint8>	expectedBytes;
+		expectedOutputs[outputNdx]->getBytes(expectedBytes);
+
 		const float*	returnedAsFloat	= static_cast<const float*>(outputAllocs[outputNdx]->getHostPtr());
-		const float*	expectedAsFloat	= static_cast<const float*>(expectedOutputs[outputNdx]->data());
-		const deUint32	count			= static_cast<deUint32>(expectedOutputs[outputNdx]->getNumBytes() / sizeof(float));
+		const float*	expectedAsFloat	= reinterpret_cast<const float*>(&expectedBytes.front());
+		const deUint32	count			= static_cast<deUint32>(expectedBytes.size() / sizeof(float));
 
 		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
 			if (!compare32BitFloat(expectedAsFloat[numNdx], returnedAsFloat[numNdx], log))

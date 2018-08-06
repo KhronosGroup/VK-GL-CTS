@@ -1,9 +1,14 @@
 # dEQP cmake file
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 
 # dEQP Target.
 set(DEQP_TARGET "default" CACHE STRING "dEQP Target (default, android...)")
+
+if (DEFINED DEQP_TARGET_TOOLCHAIN)
+	# \note Toolchain must be included before project() command
+	include(targets/${DEQP_TARGET}/${DEQP_TARGET_TOOLCHAIN}.cmake NO_POLICY_SCOPE)
+endif ()
 
 project(dEQP-Core-${DEQP_TARGET})
 
@@ -25,6 +30,7 @@ set(DEQP_GLES1_LIBRARIES	)				# GLESv1 libraries
 set(DEQP_SUPPORT_VG			OFF)			# Is OpenVG supported
 set(DEQP_VG_LIBRARIES		)				# VG libraries
 
+set(DEQP_SUPPORT_WGL		OFF)
 set(DEQP_SUPPORT_GLX		OFF)			# Is GLX supported \todo [2016-10-12 pyry] X11 specific - move to framework/platform/
 
 set(DEQP_PLATFORM_LIBRARIES	)				# Other platform libraries
@@ -85,6 +91,8 @@ message(STATUS "DEQP_SUPPORT_GLES1      = ${DEQP_SUPPORT_GLES1}")
 message(STATUS "DEQP_GLES1_LIBRARIES    = ${DEQP_GLES1_LIBRARIES}")
 message(STATUS "DEQP_GLES2_LIBRARIES    = ${DEQP_GLES2_LIBRARIES}")
 message(STATUS "DEQP_GLES3_LIBRARIES    = ${DEQP_GLES3_LIBRARIES}")
+message(STATUS "DEQP_GLES31_LIBRARIES   = ${DEQP_GLES31_LIBRARIES}")
+message(STATUS "DEQP_GLES32_LIBRARIES   = ${DEQP_GLES32_LIBRARIES}")
 message(STATUS "DEQP_SUPPORT_VG         = ${DEQP_SUPPORT_VG}")
 message(STATUS "DEQP_VG_LIBRARIES       = ${DEQP_VG_LIBRARIES}")
 message(STATUS "DEQP_EGL_LIBRARIES      = ${DEQP_EGL_LIBRARIES}")
@@ -93,37 +101,42 @@ message(STATUS "DEQP_PLATFORM_LIBRARIES = ${DEQP_PLATFORM_LIBRARIES}")
 # Defines
 add_definitions(-DDEQP_TARGET_NAME="${DEQP_TARGET_NAME}")
 
+# Entry points loaded directly by linking to libGL*?
+if (DEFINED DEQP_GLES2_LIBRARIES)
+	add_definitions(-DDEQP_GLES2_DIRECT_LINK=1)
+endif ()
+
+if (DEFINED DEQP_GLES3_LIBRARIES)
+	add_definitions(-DDEQP_GLES3_DIRECT_LINK=1)
+endif ()
+
+if (DEFINED DEQP_GLES31_LIBRARIES)
+	add_definitions(-DDEQP_GLES31_DIRECT_LINK=1)
+endif ()
+
+if (DEFINED DEQP_GLES32_LIBRARIES)
+	add_definitions(-DDEQP_GLES32_DIRECT_LINK=1)
+endif ()
+
+if (DEFINED DEQP_EGL_LIBRARIES)
+	add_definitions(-DDEQP_EGL_DIRECT_LINK=1)
+endif ()
+
+# Legacy APIs that don't support run-time loading
 if (DEQP_SUPPORT_GLES1)
 	add_definitions(-DDEQP_SUPPORT_GLES1=1)
+
+	if (NOT DEFINED DEQP_GLES1_LIBRARIES)
+		message(FATAL_ERROR "Run-time loading of GLES1 is not supported (DEQP_GLES1_LIBRARIES is not set)")
+	endif ()
 endif ()
 
 if (DEQP_SUPPORT_VG)
 	add_definitions(-DDEQP_SUPPORT_VG=1)
-endif ()
 
-# Entry points loaded on run-time?
-if (NOT DEFINED DEQP_GLES2_LIBRARIES)
-	add_definitions(-DDEQP_GLES2_RUNTIME_LOAD=1)
-endif ()
-
-if (NOT DEFINED DEQP_GLES3_LIBRARIES)
-	add_definitions(-DDEQP_GLES3_RUNTIME_LOAD=1)
-endif ()
-
-if (NOT DEFINED DEQP_EGL_LIBRARIES)
-	add_definitions(-DDEQP_EGL_RUNTIME_LOAD=1)
-endif ()
-
-# OpenGL entry points are always loaded on run-time
-add_definitions(-DDEQP_OPENGL_RUNTIME_LOAD=1)
-
-# Legacy APIs that don't support run-time loading
-if (DEQP_SUPPORT_GLES1 AND NOT DEFINED DEQP_GLES1_LIBRARIES)
-	message(FATAL_ERROR "Run-time loading of GLES1 is not supported (DEQP_GLES1_LIBRARIES is not set)")
-endif ()
-
-if (DEQP_SUPPORT_VG AND NOT DEFINED DEQP_VG_LIBRARIES)
-	message(FATAL_ERROR "Run-time loading of VG is not supported (DEQP_VG_LIBRARIES is not set)")
+	if (NOT DEFINED DEQP_VG_LIBRARIES)
+		message(FATAL_ERROR "Run-time loading of VG is not supported (DEQP_VG_LIBRARIES is not set)")
+	endif ()
 endif ()
 
 if (DE_COMPILER_IS_MSC)
@@ -167,10 +180,6 @@ if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)
 	set(DEQP_MODULE_ENTRY_POINTS )
 endif ()
 
-if (DE_OS_IS_WIN32)
-	include_directories(framework/platform/win32)
-endif ()
-
 # Macro for adding targets for copying binaries (usually target libraries) to the target destination dir
 macro (target_copy_files target dep_name files)
 	if (NOT "${files}" STREQUAL "")
@@ -188,55 +197,62 @@ macro (target_copy_files target dep_name files)
 	endif ()
 endmacro (target_copy_files)
 
+set(MODULE_LIB_TARGET_POSTFIX	"-package")
+set(MODULE_DATA_TARGET_POSTFIX	"-data")
+
 # Macro for adding dEQP module
+# This adds 3 targets:
+#	${MODULE_NAME}-package:		Static library that contains all SRCS and links to LIBS
+#	${MODULE_NAME}-data:		Custom target that is used for data file copies
+#	${MODULE_NAME}:				Executable binary (if supported by the platform)
 macro (add_deqp_module MODULE_NAME SRCS LIBS ENTRY)
-	if (DE_OS_IS_ANDROID OR DE_OS_IS_IOS)
-		# Single-binary targets
-		add_library(${MODULE_NAME} STATIC ${SRCS})
-		target_link_libraries(${MODULE_NAME} ${LIBS})
 
-		set(DEQP_MODULE_LIBRARIES		${DEQP_MODULE_LIBRARIES} ${MODULE_NAME})
-		set(DEQP_MODULE_ENTRY_POINTS	${DEQP_MODULE_ENTRY_POINTS} "${CMAKE_CURRENT_SOURCE_DIR}/${ENTRY}")
+	# Library target
+	add_library("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" STATIC ${SRCS})
+	target_link_libraries("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" ${LIBS})
 
-		# Forward to parent scope
-		set(DEQP_MODULE_LIBRARIES		${DEQP_MODULE_LIBRARIES} PARENT_SCOPE)
-		set(DEQP_MODULE_ENTRY_POINTS	${DEQP_MODULE_ENTRY_POINTS} PARENT_SCOPE)
+	set(DEQP_MODULE_LIBRARIES		${DEQP_MODULE_LIBRARIES} "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
+	set(DEQP_MODULE_ENTRY_POINTS	${DEQP_MODULE_ENTRY_POINTS} "${CMAKE_CURRENT_SOURCE_DIR}/${ENTRY}")
 
-	else ()
-		# Separate binary per target
-		add_executable(${MODULE_NAME} ${CMAKE_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY} ${SRCS})
-		target_link_libraries(${MODULE_NAME} tcutil-platform ${LIBS})
+	# Forward to parent scope
+	set(DEQP_MODULE_LIBRARIES		${DEQP_MODULE_LIBRARIES} PARENT_SCOPE)
+	set(DEQP_MODULE_ENTRY_POINTS	${DEQP_MODULE_ENTRY_POINTS} PARENT_SCOPE)
+
+	if (NOT DE_OS_IS_ANDROID AND NOT DE_OS_IS_IOS)
+		# Executable target
+		add_executable(${MODULE_NAME} ${PROJECT_SOURCE_DIR}/framework/platform/tcuMain.cpp ${ENTRY})
+		target_link_libraries(${MODULE_NAME} tcutil-platform "${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}")
 		target_copy_files(${MODULE_NAME} platform-libs-${MODULE_NAME} "${DEQP_PLATFORM_COPY_LIBRARIES}")
 	endif ()
 
 	# Data file target
-	add_custom_target(${MODULE_NAME}-data)
-	add_dependencies(${MODULE_NAME} ${MODULE_NAME}-data)
+	add_custom_target("${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
+	add_dependencies("${MODULE_NAME}${MODULE_LIB_TARGET_POSTFIX}" "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}")
 endmacro (add_deqp_module)
 
 # Macro for adding data dirs to module
 macro (add_data_dir MODULE_NAME SRC_DIR DST_DIR)
-	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
-		add_custom_command(TARGET ${MODULE_NAME}-data POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/${DST_DIR})
+	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX)
+		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/${DST_DIR})
 
 	elseif (DE_OS_IS_ANDROID)
-		add_custom_command(TARGET ${MODULE_NAME}-data POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_BINARY_DIR}/assets/${DST_DIR})
+		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_BINARY_DIR}/assets/${DST_DIR})
 
 	elseif (DE_OS_IS_IOS)
-		add_custom_command(TARGET ${MODULE_NAME}-data POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_BINARY_DIR}/\${CONFIGURATION}\${EFFECTIVE_PLATFORM_NAME}/deqp.app/${DST_DIR})
+		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR} ${CMAKE_BINARY_DIR}/\${CONFIGURATION}\${EFFECTIVE_PLATFORM_NAME}/deqp.app/${DST_DIR})
 	endif ()
 endmacro (add_data_dir)
 
 # Macro for adding individual data files to module
 macro (add_data_file MODULE_NAME SRC_FILE DST_FILE)
-	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX)
-		add_custom_command(TARGET ${MODULE_NAME}-data POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${DST_FILE})
+	if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX OR DE_OS_IS_OSX OR DE_OS_IS_QNX)
+		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${DST_FILE})
 
 	elseif (DE_OS_IS_ANDROID)
-		add_custom_command(TARGET ${MODULE_NAME}-data POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_BINARY_DIR}/assets/${DST_FILE})
+		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_BINARY_DIR}/assets/${DST_FILE})
 
 	elseif (DE_OS_IS_IOS)
-		add_custom_command(TARGET ${MODULE_NAME}-data POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_BINARY_DIR}/\${CONFIGURATION}\${EFFECTIVE_PLATFORM_NAME}/deqp.app/${DST_FILE})
+		add_custom_command(TARGET "${MODULE_NAME}${MODULE_DATA_TARGET_POSTFIX}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE} ${CMAKE_BINARY_DIR}/\${CONFIGURATION}\${EFFECTIVE_PLATFORM_NAME}/deqp.app/${DST_FILE})
 	endif ()
 endmacro (add_data_file)
 
@@ -249,13 +265,32 @@ endif ()
 
 add_subdirectory(modules)
 add_subdirectory(external/vulkancts/modules/vulkan)
+add_subdirectory(external/openglcts)
 
 # Single-binary targets
 if (DE_OS_IS_ANDROID)
 	include_directories(executor)
 
-	add_library(deqp SHARED framework/platform/android/tcuAndroidMain.cpp framework/platform/android/tcuAndroidJNI.cpp framework/platform/android/tcuAndroidPlatformCapabilityQueryJNI.cpp framework/platform/android/tcuTestLogParserJNI.cpp ${DEQP_MODULE_ENTRY_POINTS})
-	target_link_libraries(deqp tcutil-platform xecore ${DEQP_MODULE_LIBRARIES})
+	set(DEQP_SRCS
+		framework/platform/android/tcuAndroidMain.cpp
+		framework/platform/android/tcuAndroidJNI.cpp
+		framework/platform/android/tcuAndroidPlatformCapabilityQueryJNI.cpp
+		framework/platform/android/tcuTestLogParserJNI.cpp
+		${DEQP_MODULE_ENTRY_POINTS}
+		)
+
+	set(DEQP_LIBS
+		tcutil-platform
+		xecore
+		${DEQP_MODULE_LIBRARIES}
+		)
+
+	add_library(deqp SHARED ${DEQP_SRCS})
+	target_link_libraries(deqp ${DEQP_LIBS})
+
+	# Needed by OpenGL CTS that defines its own activity but depends on
+	# common Android support code.
+	target_include_directories(deqp PRIVATE framework/platform/android)
 
 elseif (DE_OS_IS_IOS)
 	# Code sign identity

@@ -102,7 +102,6 @@ public:
 	void				checkPixelFloatSupport		(void);
 	void				checkColorSpaceSupport		(void);
 	void				checkDisplayP3Support		(void);
-	void				checkDisplayP3LinearSupport (void);
 	void				check1010102Support			(void);
 	void				checkFP16Support			(void);
 	void				checkSCRGBSupport			(void);
@@ -266,10 +265,6 @@ private:
 	ReferenceRenderer&	operator=				(const ReferenceRenderer&);
 };
 
-ReferenceRenderer::ReferenceRenderer (void)
-{
-}
-
 WideColorTest::WideColorTest (EglTestContext& eglTestCtx, const char* name, const char* description)
 	: TestCase				 (eglTestCtx, name, description)
 	, m_eglDisplay			 (EGL_NO_DISPLAY)
@@ -310,14 +305,6 @@ void WideColorTest::checkDisplayP3Support (void)
 
 	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_display_p3"))
 		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_display_p3 is not supported");
-}
-
-void WideColorTest::checkDisplayP3LinearSupport (void)
-{
-	const Library&	egl	= m_eglTestCtx.getLibrary();
-
-	if (!eglu::hasExtension(egl, m_eglDisplay, "EGL_EXT_gl_colorspace_display_p3_linear"))
-		TCU_THROW(NotSupportedError, "EGL_EXT_gl_colorspace_display_p3_linear is not supported");
 }
 
 void WideColorTest::checkSCRGBSupport (void)

@@ -28,6 +28,12 @@
 #include "deStringUtil.hpp"
 #include "tcuFormatUtil.hpp"
 #include "gluRenderConfig.hpp"
+#include "glwEnums.hpp"
+
+#include <map>
+#include <sstream>
+#include <iterator>
+#include <set>
 
 #include <WinGDI.h>
 
@@ -109,22 +115,26 @@
 #define WGL_NO_RESET_NOTIFICATION_ARB				0x8261
 #define WGL_LOSE_CONTEXT_ON_RESET_ARB				0x8252
 
+// WGL ARB_create_context_no_error
+#define WGL_CONTEXT_OPENGL_NO_ERROR_ARB				0x31B3
+
 DE_BEGIN_EXTERN_C
 
 // WGL core
-typedef HGLRC	(WINAPI* wglCreateContextFunc)				(HDC hdc);
-typedef BOOL	(WINAPI* wglDeleteContextFunc)				(HGLRC hglrc);
-typedef BOOL	(WINAPI* wglMakeCurrentFunc)				(HDC hdc, HGLRC hglrc);
-typedef PROC	(WINAPI* wglGetProcAddressFunc)				(LPCSTR lpszProc);
-typedef BOOL	(WINAPI* wglSwapLayerBuffersFunc)			(HDC dhc, UINT fuPlanes);
+typedef HGLRC		(WINAPI* wglCreateContextFunc)				(HDC hdc);
+typedef BOOL		(WINAPI* wglDeleteContextFunc)				(HGLRC hglrc);
+typedef BOOL		(WINAPI* wglMakeCurrentFunc)				(HDC hdc, HGLRC hglrc);
+typedef PROC		(WINAPI* wglGetProcAddressFunc)				(LPCSTR lpszProc);
+typedef BOOL		(WINAPI* wglSwapLayerBuffersFunc)			(HDC dhc, UINT fuPlanes);
 
 // WGL_ARB_pixel_format
-typedef BOOL	(WINAPI* wglGetPixelFormatAttribivARBFunc)	(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues);
-typedef BOOL	(WINAPI* wglGetPixelFormatAttribfvARBFunc)	(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, FLOAT *pfValues);
-typedef BOOL	(WINAPI* wglChoosePixelFormatARBFunc)		(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
+typedef BOOL		(WINAPI* wglGetPixelFormatAttribivARBFunc)	(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, int *piValues);
+typedef BOOL		(WINAPI* wglGetPixelFormatAttribfvARBFunc)	(HDC hdc, int iPixelFormat, int iLayerPlane, UINT nAttributes, const int *piAttributes, FLOAT *pfValues);
+typedef BOOL		(WINAPI* wglChoosePixelFormatARBFunc)		(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
 
 // WGL_ARB_create_context
-typedef HGLRC	(WINAPI* wglCreateContextAttribsARBFunc)	(HDC hdc, HGLRC hshareContext, const int* attribList);
+typedef HGLRC		(WINAPI* wglCreateContextAttribsARBFunc)	(HDC hdc, HGLRC hshareContext, const int* attribList);
+typedef const char*	(WINAPI* wglGetExtensionsStringARBFunc)		(HDC hdc);
 
 DE_END_EXTERN_C
 
@@ -151,6 +161,7 @@ struct Functions
 
 	// WGL_ARB_create_context
 	wglCreateContextAttribsARBFunc		createContextAttribsARB;
+	wglGetExtensionsStringARBFunc		getExtensionsStringARB;
 
 	Functions (void)
 		: createContext				(DE_NULL)
@@ -162,6 +173,7 @@ struct Functions
 		, getPixelFormatAttribfvARB	(DE_NULL)
 		, choosePixelFormatARB		(DE_NULL)
 		, createContextAttribsARB	(DE_NULL)
+		, getExtensionsStringARB	(DE_NULL)
 	{
 	}
 };
@@ -176,10 +188,12 @@ public:
 
 	const Functions&			getFunctions	(void) const	{ return m_functions;	}
 	const de::DynamicLibrary&	getGLLibrary	(void) const	{ return m_library;		}
+	bool						isWglExtensionSupported (const char* extName) const;
 
 private:
 	de::DynamicLibrary			m_library;
 	Functions					m_functions;
+	std::set<std::string>		m_extensions;
 };
 
 Library::Library (HINSTANCE instance)
@@ -233,6 +247,7 @@ Library::Library (HINSTANCE instance)
 
 	// WGL_ARB_create_context
 	m_functions.createContextAttribsARB		= (wglCreateContextAttribsARBFunc)m_functions.getProcAddress("wglCreateContextAttribsARB");
+	m_functions.getExtensionsStringARB		= (wglGetExtensionsStringARBFunc)m_functions.getProcAddress("wglGetExtensionsStringARB");
 
 	m_functions.makeCurrent(tmpWindow.getDeviceContext(), NULL);
 	m_functions.deleteContext(tmpCtx);
@@ -240,12 +255,23 @@ Library::Library (HINSTANCE instance)
 	if (!m_functions.getPixelFormatAttribivARB	||
 		!m_functions.getPixelFormatAttribfvARB	||
 		!m_functions.choosePixelFormatARB		||
-		!m_functions.createContextAttribsARB)
+		!m_functions.createContextAttribsARB	||
+		!m_functions.getExtensionsStringARB)
 		throw ResourceError("Failed to load WGL extension functions");
+
+	const char* extensions = m_functions.getExtensionsStringARB(tmpWindow.getDeviceContext());
+	std::istringstream extStream(extensions);
+	m_extensions = std::set<std::string>(std::istream_iterator<std::string>(extStream),
+										 std::istream_iterator<std::string>());
 }
 
 Library::~Library (void)
 {
+}
+
+bool Library::isWglExtensionSupported (const char* extName) const
+{
+	return m_extensions.find(extName) != m_extensions.end();
 }
 
 // Core
@@ -268,9 +294,8 @@ std::vector<int> Core::getPixelFormats (HDC deviceCtx) const
 	int values[DE_LENGTH_OF_ARRAY(attribs)];
 
 	if (!wgl.getPixelFormatAttribivARB(deviceCtx, 0, 0, DE_LENGTH_OF_ARRAY(attribs), &attribs[0], &values[0]))
-		throw ResourceError("Failed to query number of WGL pixel formats");
+		TCU_THROW(ResourceError, "Failed to query number of WGL pixel formats");
 
-	// \todo [2013-04-14 pyry] Do we need to filter values at all?
 	std::vector<int> pixelFormats(values[0]);
 	for (int i = 0; i < values[0]; i++)
 		pixelFormats[i] = i+1;
@@ -301,101 +326,172 @@ static PixelFormatInfo::PixelType translatePixelType (int type)
 	}
 }
 
+static void getPixelFormatAttribs (const Functions& wgl, HDC deviceCtx, int pixelFormat, int numAttribs, const int* attribs, std::map<int, int>* dst)
+{
+	std::vector<int>	values	(numAttribs);
+
+	if (!wgl.getPixelFormatAttribivARB(deviceCtx, pixelFormat, 0, numAttribs, &attribs[0], &values[0]))
+		TCU_THROW(ResourceError, "Pixel format query failed");
+
+	for (int ndx = 0; ndx < numAttribs; ++ndx)
+		(*dst)[attribs[ndx]] = values[ndx];
+}
+
 PixelFormatInfo Core::getPixelFormatInfo (HDC deviceCtx, int pixelFormat) const
 {
-	const Functions& wgl = m_library->getFunctions();
+	static const int	s_attribsToQuery[] =
+	{
+		WGL_DRAW_TO_WINDOW_ARB,
+		WGL_DRAW_TO_BITMAP_ARB,
+		WGL_ACCELERATION_ARB,
+		WGL_NEED_PALETTE_ARB,
+		WGL_NEED_SYSTEM_PALETTE_ARB,
+		WGL_NUMBER_OVERLAYS_ARB,
+		WGL_NUMBER_UNDERLAYS_ARB,
+		WGL_SUPPORT_OPENGL_ARB,
+		WGL_DOUBLE_BUFFER_ARB,
+		WGL_STEREO_ARB,
+		WGL_PIXEL_TYPE_ARB,
+		WGL_RED_BITS_ARB,
+		WGL_GREEN_BITS_ARB,
+		WGL_BLUE_BITS_ARB,
+		WGL_ALPHA_BITS_ARB,
+		WGL_ACCUM_BITS_ARB,
+		WGL_DEPTH_BITS_ARB,
+		WGL_STENCIL_BITS_ARB,
+		WGL_AUX_BUFFERS_ARB,
+		WGL_SAMPLE_BUFFERS_ARB,
+		WGL_SAMPLES_ARB,
+	};
+	const Functions&	wgl			= m_library->getFunctions();
+	std::map<int, int>	values;
 
-	int attribs	[14];
-	int values	[DE_LENGTH_OF_ARRAY(attribs)];
-	attribs[0]	= WGL_DRAW_TO_WINDOW_ARB;
-	attribs[1]	= WGL_DRAW_TO_BITMAP_ARB;
-	attribs[2]	= WGL_ACCELERATION_ARB;
-	attribs[3]	= WGL_SUPPORT_OPENGL_ARB;
-	attribs[4]	= WGL_DOUBLE_BUFFER_ARB;
-	attribs[5]	= WGL_PIXEL_TYPE_ARB;
-	attribs[6]	= WGL_RED_BITS_ARB;
-	attribs[7]	= WGL_GREEN_BITS_ARB;
-	attribs[8]	= WGL_BLUE_BITS_ARB;
-	attribs[9]	= WGL_ALPHA_BITS_ARB;
-	attribs[10]	= WGL_DEPTH_BITS_ARB;
-	attribs[11]	= WGL_STENCIL_BITS_ARB;
-	attribs[12]	= WGL_SAMPLE_BUFFERS_ARB;
-	attribs[13]	= WGL_SAMPLES_ARB;
-
-	deMemset(&values[0], 0, sizeof(values));
-	if (!wgl.getPixelFormatAttribivARB(deviceCtx, pixelFormat, 0, DE_LENGTH_OF_ARRAY(attribs), &attribs[0], &values[0]))
-		throw ResourceError("Pixel format query failed");
+	getPixelFormatAttribs(wgl, deviceCtx, pixelFormat, DE_LENGTH_OF_ARRAY(s_attribsToQuery), &s_attribsToQuery[0], &values);
 
 	// Translate values.
 	PixelFormatInfo info;
 
-	info.pixelFormat	= pixelFormat;
-	info.surfaceTypes	|= (values[0] ? PixelFormatInfo::SURFACE_WINDOW : 0);
-	info.surfaceTypes	|= (values[1] ? PixelFormatInfo::SURFACE_PIXMAP : 0);
-	info.acceleration	= translateAcceleration(values[2]);
-	info.supportOpenGL	= values[3] != 0;
-	info.doubleBuffer	= values[4] != 0;
-	info.pixelType		= translatePixelType(values[5]);
-	info.redBits		= values[6];
-	info.greenBits		= values[7];
-	info.blueBits		= values[8];
-	info.alphaBits		= values[9];
-	info.depthBits		= values[10];
-	info.stencilBits	= values[11];
-	info.sampleBuffers	= values[12];
-	info.samples		= values[13];
+	info.pixelFormat		= pixelFormat;
+	info.surfaceTypes		|= (values[WGL_DRAW_TO_WINDOW_ARB] ? PixelFormatInfo::SURFACE_WINDOW : 0);
+	info.surfaceTypes		|= (values[WGL_DRAW_TO_BITMAP_ARB] ? PixelFormatInfo::SURFACE_PIXMAP : 0);
+	info.acceleration		= translateAcceleration(values[2]);
+	info.needPalette		= values[WGL_NEED_PALETTE_ARB] != 0;
+	info.needSystemPalette	= values[WGL_NEED_SYSTEM_PALETTE_ARB] != 0;
+	info.numOverlays		= values[WGL_NUMBER_OVERLAYS_ARB] != 0;
+	info.numUnderlays		= values[WGL_NUMBER_UNDERLAYS_ARB] != 0;
+	info.supportOpenGL		= values[WGL_SUPPORT_OPENGL_ARB] != 0;
+	info.doubleBuffer		= values[WGL_DOUBLE_BUFFER_ARB] != 0;
+	info.stereo				= values[WGL_STEREO_ARB] != 0;
+	info.pixelType			= translatePixelType(values[WGL_PIXEL_TYPE_ARB]);
+	info.redBits			= values[WGL_RED_BITS_ARB];
+	info.greenBits			= values[WGL_GREEN_BITS_ARB];
+	info.blueBits			= values[WGL_BLUE_BITS_ARB];
+	info.alphaBits			= values[WGL_ALPHA_BITS_ARB];
+	info.accumBits			= values[WGL_ACCUM_BITS_ARB];
+	info.depthBits			= values[WGL_DEPTH_BITS_ARB];
+	info.stencilBits		= values[WGL_STENCIL_BITS_ARB];
+	info.numAuxBuffers		= values[WGL_AUX_BUFFERS_ARB];
+	info.sampleBuffers		= values[WGL_SAMPLE_BUFFERS_ARB];
+	info.samples			= values[WGL_SAMPLES_ARB];
 
 	return info;
 }
 
 // Context
 
-Context::Context (const Core* core, HDC deviceCtx, glu::ContextType ctxType, int pixelFormat)
+Context::Context (const Core*						core,
+				  HDC								deviceCtx,
+				  glu::ContextType					ctxType,
+				  int								pixelFormat,
+				  glu::ResetNotificationStrategy	resetNotificationStrategy)
 	: m_core		(core)
 	, m_deviceCtx	(deviceCtx)
 	, m_context		(0)
 {
-	const Functions& wgl = core->getLibrary()->getFunctions();
+	const Functions&		wgl				= core->getLibrary()->getFunctions();
+	std::vector<int>		attribList;
 
-	// Map context type & flags.
-	int	profileBit	= 0;
-	int	flags		= 0;
-
-	switch (ctxType.getProfile())
+	// Context version and profile
 	{
-		case glu::PROFILE_CORE:
-			profileBit = WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
-			break;
+		int	profileBit	= 0;
+		int minor		= ctxType.getMinorVersion();
+		int major		= ctxType.getMajorVersion();
 
-		case glu::PROFILE_ES:
-			profileBit = WGL_CONTEXT_ES_PROFILE_BIT_EXT;
-			break;
+		switch (ctxType.getProfile())
+		{
+			case glu::PROFILE_CORE:
+				profileBit = WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
+				if (major == 3 && minor < 3)
+					minor = 3;
+				break;
 
-		case glu::PROFILE_COMPATIBILITY:
-			profileBit = WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
-			break;
+			case glu::PROFILE_ES:
+				profileBit = WGL_CONTEXT_ES_PROFILE_BIT_EXT;
+				break;
 
-		default:
-			throw NotSupportedError("Unsupported context type for WGL");
+			case glu::PROFILE_COMPATIBILITY:
+				profileBit = WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
+				break;
+
+			default:
+				TCU_THROW(NotSupportedError, "Unsupported context type for WGL");
+		}
+
+		attribList.push_back(WGL_CONTEXT_MAJOR_VERSION_ARB);
+		attribList.push_back(major);
+		attribList.push_back(WGL_CONTEXT_MINOR_VERSION_ARB);
+		attribList.push_back(minor);
+		attribList.push_back(WGL_CONTEXT_PROFILE_MASK_ARB);
+		attribList.push_back(profileBit);
 	}
 
-	if ((ctxType.getFlags() & glu::CONTEXT_FORWARD_COMPATIBLE) != 0)
-		flags |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
-
-	if ((ctxType.getFlags() & glu::CONTEXT_DEBUG) != 0)
-		flags |= WGL_CONTEXT_DEBUG_BIT_ARB;
-
-	if ((ctxType.getFlags() & glu::CONTEXT_ROBUST) != 0)
-		flags |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;
-
-	const int attribList[] =
+	// Context flags
 	{
-		WGL_CONTEXT_MAJOR_VERSION_ARB,	ctxType.getMajorVersion(),
-		WGL_CONTEXT_MINOR_VERSION_ARB,	ctxType.getMinorVersion(),
-		WGL_CONTEXT_PROFILE_MASK_ARB,	profileBit,
-		WGL_CONTEXT_FLAGS_ARB,			flags,
-		0
-	};
+		int		flags	= 0;
+
+		if ((ctxType.getFlags() & glu::CONTEXT_FORWARD_COMPATIBLE) != 0)
+		{
+			if (glu::isContextTypeES(ctxType))
+				TCU_THROW(InternalError, "Only OpenGL core contexts can be forward-compatible");
+
+			flags |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
+		}
+
+		if ((ctxType.getFlags() & glu::CONTEXT_DEBUG) != 0)
+			flags |= WGL_CONTEXT_DEBUG_BIT_ARB;
+
+		if ((ctxType.getFlags() & glu::CONTEXT_ROBUST) != 0)
+			flags |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;
+
+		if ((ctxType.getFlags() & glu::CONTEXT_NO_ERROR) != 0)
+		{
+			if (core->getLibrary()->isWglExtensionSupported("WGL_ARB_create_context_no_error"))
+			{
+				attribList.push_back(WGL_CONTEXT_OPENGL_NO_ERROR_ARB);
+				attribList.push_back(1);
+			}
+			else
+				TCU_THROW(NotSupportedError, "WGL_ARB_create_context_no_error is required for creating no-error contexts");
+		}
+
+		if (flags != 0)
+		{
+			attribList.push_back(WGL_CONTEXT_FLAGS_ARB);
+			attribList.push_back(flags);
+		}
+	}
+
+	if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
+	{
+		attribList.push_back(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
+
+		if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
+			attribList.push_back(WGL_NO_RESET_NOTIFICATION_ARB);
+		else if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET)
+			attribList.push_back(WGL_LOSE_CONTEXT_ON_RESET_ARB);
+		else
+			TCU_THROW(InternalError, "Unknown reset notification strategy");
+	}
 
 	// Set pixel format
 	{
@@ -409,16 +505,19 @@ Context::Context (const Core* core, HDC deviceCtx, glu::ContextType ctxType, int
 			throw ResourceError("Failed to set pixel format");
 	}
 
+	// Terminate attribList
+	attribList.push_back(0);
+
 	// Create context
-	m_context = wgl.createContextAttribsARB(deviceCtx, NULL, attribList);
+	m_context = wgl.createContextAttribsARB(deviceCtx, (HGLRC)0, &attribList[0]);
 
 	if (!m_context)
-		throw ResourceError("Failed to create WGL context");
+		TCU_THROW(ResourceError, "Failed to create WGL context");
 
 	if (!wgl.makeCurrent(deviceCtx, m_context))
 	{
 		wgl.deleteContext(m_context);
-		throw ResourceError("wglMakeCurrent() failed");
+		TCU_THROW(ResourceError, "wglMakeCurrent() failed");
 	}
 }
 
@@ -444,11 +543,41 @@ FunctionPtr Context::getGLFunction (const char* name) const
 	return ptr;
 }
 
+void Context::makeCurrent (void)
+{
+	const Functions& wgl = m_core->getLibrary()->getFunctions();
+	if (!wgl.makeCurrent(m_deviceCtx, m_context))
+		TCU_THROW(ResourceError, "wglMakeCurrent() failed");
+}
+
 void Context::swapBuffers (void) const
 {
 	const Functions& wgl = m_core->getLibrary()->getFunctions();
 	if (!wgl.swapLayerBuffers(m_deviceCtx, WGL_SWAP_MAIN_PLANE))
-		throw ResourceError("wglSwapBuffers() failed");
+		TCU_THROW(ResourceError, "wglSwapBuffers() failed");
+}
+
+bool isSupportedByTests (const PixelFormatInfo& info)
+{
+	if (!info.supportOpenGL)
+		return false;
+
+	if (info.pixelType != wgl::PixelFormatInfo::PIXELTYPE_RGBA)
+		return false;
+
+	if ((info.surfaceTypes & wgl::PixelFormatInfo::SURFACE_WINDOW) == 0)
+		return false;
+
+	if (info.needPalette || info.needSystemPalette)
+		return false;
+
+	if (info.numOverlays != 0 || info.numUnderlays != 0)
+		return false;
+
+	if (info.stereo)
+		return false;
+
+	return true;
 }
 
 int choosePixelFormat (const Core& wgl, HDC deviceCtx, const glu::RenderConfig& config)
@@ -457,13 +586,10 @@ int choosePixelFormat (const Core& wgl, HDC deviceCtx, const glu::RenderConfig& 
 
 	for (std::vector<int>::const_iterator fmtIter = pixelFormats.begin(); fmtIter != pixelFormats.end(); ++fmtIter)
 	{
-		PixelFormatInfo info = wgl.getPixelFormatInfo(deviceCtx, *fmtIter);
+		const PixelFormatInfo info = wgl.getPixelFormatInfo(deviceCtx, *fmtIter);
 
-		// Base rules: Must be OpenGL-compatible, RGBA, double-buffered, and window-renderable
-		if (!info.supportOpenGL											||
-			!(info.pixelType == wgl::PixelFormatInfo::PIXELTYPE_RGBA)	||
-			!info.doubleBuffer											||
-			!(info.surfaceTypes & wgl::PixelFormatInfo::SURFACE_WINDOW))
+		// Skip formats that are fundamentally not compatible with current tests
+		if (!isSupportedByTests(info))
 			continue;
 
 		if (config.redBits != glu::RenderConfig::DONT_CARE &&

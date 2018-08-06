@@ -405,6 +405,15 @@ void resetStateES (const RenderContext& renderCtx, const ContextInfo& ctxInfo)
 			gl.readBuffer	(readBuffer);
 		}
 
+		if (contextSupports(type, ApiType::es(3, 1)) && defaultFbo != 0)
+		{
+			gl.framebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH,					0);
+			gl.framebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT,					0);
+			gl.framebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_SAMPLES,				0);
+			gl.framebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS,	GL_FALSE);
+			GLU_EXPECT_NO_ERROR(gl.getError(), "Framebuffer default state reset failed");
+		}
+
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Framebuffer state reset failed");
 	}
 
@@ -638,6 +647,19 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 
 	// Reset error state
 	resetErrors(gl);
+
+	// Primitives and vertices state
+	{
+		if (contextSupports(type, glu::ApiType::core(4, 0)))
+		{
+			const float defaultTessLevels[]						= { 1.0f, 1.0f, 1.0f, 1.0f };
+			gl.patchParameteri(GL_PATCH_VERTICES_EXT,			3);
+			gl.patchParameterfv(GL_PATCH_DEFAULT_INNER_LEVEL,	defaultTessLevels);
+			gl.patchParameterfv(GL_PATCH_DEFAULT_OUTER_LEVEL,	defaultTessLevels);
+		}
+
+		GLU_EXPECT_NO_ERROR(gl.getError(), "Primitives and vertices state reset failed");
+	}
 
 	// Vertex attrib array state.
 	{
@@ -986,13 +1008,30 @@ void resetStateGLCore (const RenderContext& renderCtx, const ContextInfo& ctxInf
 
 	// Framebuffer state.
 	{
-		// \todo [2013-04-05 pyry] Single-buffered rendering: use GL_FRONT
-		deUint32	framebuffer		= renderCtx.getDefaultFramebuffer();
-		deUint32	drawReadBuffer	= framebuffer == 0 ? GL_BACK : GL_COLOR_ATTACHMENT0;
+		const deUint32	framebuffer	= renderCtx.getDefaultFramebuffer();
 
-		gl.bindFramebuffer	(GL_FRAMEBUFFER, renderCtx.getDefaultFramebuffer());
-		gl.drawBuffer		(drawReadBuffer);
-		gl.readBuffer		(drawReadBuffer);
+		gl.bindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+		if (framebuffer == 0)
+		{
+			gl.drawBuffer(GL_BACK);
+			gl.readBuffer(GL_BACK);
+
+			// This is a workaround for supporting single-buffered configurations.
+			// Since there is no other place where we need to know if we are dealing
+			// with single-buffered config, it is not worthwhile to add additional
+			// state into RenderContext for that.
+			if (gl.getError() != GL_NO_ERROR)
+			{
+				gl.drawBuffer(GL_FRONT);
+				gl.readBuffer(GL_FRONT);
+			}
+		}
+		else
+		{
+			gl.drawBuffer(GL_COLOR_ATTACHMENT0);
+			gl.readBuffer(GL_COLOR_ATTACHMENT0);
+		}
 
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Framebuffer state reset failed");
 	}

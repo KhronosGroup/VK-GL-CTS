@@ -38,6 +38,9 @@ DE_BEGIN_EXTERN_C
 /* Enumeration values. */
 #include "glwEnums.inl"
 
+/* API Versions. */
+#include "glwVersions.inl"
+
 /* Functions. */
 #include "glwApi.inl"
 

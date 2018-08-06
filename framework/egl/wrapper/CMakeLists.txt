@@ -8,6 +8,9 @@ set(EGLWRAPPER_SRCS
 	eglwFunctions.cpp
 	eglwLibrary.hpp
 	eglwLibrary.cpp
+	eglwWrapper.hpp
+	eglwWrapper.cpp
+	eglw.h
 	)
 
 set(EGLWRAPPER_LIBS

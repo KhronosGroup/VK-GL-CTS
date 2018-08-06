@@ -24,10 +24,11 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureShadowTests.hpp
 	vktTextureFilteringAnisotropyTests.cpp
 	vktTextureFilteringAnisotropyTests.hpp
+	vktTextureCompressedFormatTests.cpp
+	vktTextureCompressedFormatTests.hpp
 	)
 
 set(DEQP_VK_TEXTURE_LIBS
-	deqp-vk-common
 	deqp-vk-shaderexecutor
 	tcutil
 	vkutil

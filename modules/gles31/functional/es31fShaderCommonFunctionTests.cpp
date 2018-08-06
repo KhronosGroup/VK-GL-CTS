@@ -1972,12 +1972,15 @@ public:
 		m_spec.inputs.push_back(Symbol("c", glu::VarType(baseType, precision)));
 		m_spec.outputs.push_back(Symbol("res", glu::VarType(baseType, precision)));
 		m_spec.source = "res = fma(a, b, c);";
-		m_spec.globalDeclarations = "#extension GL_EXT_gpu_shader5 : require\n";
+
+		if (!glu::contextSupports(context.getRenderContext().getType(), glu::ApiType::es(3, 2)))
+			m_spec.globalDeclarations = "#extension GL_EXT_gpu_shader5 : require\n";
 	}
 
 	void init (void)
 	{
-		if (!m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"))
+		if (!glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 2))
+				&& !m_context.getContextInfo().isExtensionSupported("GL_EXT_gpu_shader5"))
 			throw tcu::NotSupportedError("GL_EXT_gpu_shader5 not supported");
 
 		CommonFunctionCase::init();

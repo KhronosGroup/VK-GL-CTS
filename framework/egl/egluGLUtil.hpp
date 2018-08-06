@@ -25,6 +25,7 @@
 
 #include "egluDefs.hpp"
 #include "eglwDefs.hpp"
+#include "eglwEnums.hpp"
 
 #include "gluRenderConfig.hpp"
 #include "glwDefs.hpp"
@@ -39,8 +40,16 @@ namespace eglu
 
 glw::GLenum			getImageGLTarget		(eglw::EGLenum source);
 eglw::EGLint		apiRenderableType		(glu::ApiType apiType);
-eglw::EGLContext	createGLContext			(const eglw::Library& egl, eglw::EGLDisplay display, eglw::EGLConfig config, const glu::ContextType& contextType);
-eglw::EGLConfig		chooseConfig			(const eglw::Library& egl, eglw::EGLDisplay display, const glu::RenderConfig& config);
+
+eglw::EGLContext	createGLContext			(const eglw::Library&			egl,
+											 eglw::EGLDisplay				display,
+											 eglw::EGLConfig				config,
+											 const glu::ContextType&		contextType,
+											 glu::ResetNotificationStrategy	resetNotificationStrategy = glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED);
+
+eglw::EGLConfig		chooseConfig			(const eglw::Library&			egl,
+											 eglw::EGLDisplay				display,
+											 const glu::RenderConfig&		config);
 
 }
 

@@ -14,8 +14,6 @@ set(GLUTIL_SRCS
 	gluDefs.hpp
 	gluDrawUtil.cpp
 	gluDrawUtil.hpp
-	gluES3PlusWrapperContext.cpp
-	gluES3PlusWrapperContext.hpp
 	gluFboRenderContext.cpp
 	gluFboRenderContext.hpp
 	gluPixelTransfer.cpp

@@ -26,6 +26,7 @@
 #include "tcuRenderTarget.hpp"
 #include "glwInitFunctions.hpp"
 #include "deUniquePtr.hpp"
+#include "glwEnums.hpp"
 
 #include <sstream>
 #include <iterator>
@@ -33,6 +34,10 @@
 
 #define GLX_GLXEXT_PROTOTYPES
 #include <GL/glx.h>
+
+#ifndef GLX_CONTEXT_OPENGL_NO_ERROR_ARB
+#define GLX_CONTEXT_OPENGL_NO_ERROR_ARB 0x31B3
+#endif
 
 namespace tcu
 {
@@ -112,8 +117,9 @@ public:
 							GlxVisual			(GlxDisplay& display, GLXFBConfig fbConfig);
 	int						getAttrib			(int attribute);
 	Visual*					getXVisual			(void) { return m_visual; }
-	GLXContext				createContext		(const GlxContextFactory&	factory,
-												 const ContextType&			contextType);
+	GLXContext				createContext		(const GlxContextFactory&		factory,
+												 const ContextType&				contextType,
+												 glu::ResetNotificationStrategy	resetNotificationStrategy);
 	GLXWindow				createWindow		(::Window xWindow);
 	GlxDisplay&				getGlxDisplay		(void) { return m_display; }
 	::Display*				getXDisplay			(void) { return m_display.getXDisplay(); }
@@ -169,7 +175,7 @@ public:
 										~GlxRenderContext	(void);
 	virtual ContextType					getType				(void) const;
 	virtual void						postIterate			(void);
-	void								makeCurrent			(void);
+	virtual void						makeCurrent			(void);
 	void								clearCurrent		(void);
 	virtual const glw::Functions&		getFunctions		(void) const;
 	virtual const tcu::RenderTarget&	getRenderTarget		(void) const;
@@ -281,11 +287,12 @@ GlxVisual::GlxVisual (GlxDisplay& display, GLXFBConfig fbConfig)
 	, m_fbConfig	(fbConfig)
 {
 	XVisualInfo* visualInfo = glXGetVisualFromFBConfig(getXDisplay(), fbConfig);
-	if (visualInfo != DE_NULL)
-	{
-		m_visual = visualInfo->visual;
-		XFree(visualInfo);
-	}
+
+	if (!visualInfo)
+		TCU_THROW(ResourceError, "glXGetVisualFromFBConfig() returned NULL");
+
+	m_visual = visualInfo->visual;
+	XFree(visualInfo);
 }
 
 int GlxVisual::getAttrib (int attribute)
@@ -295,42 +302,97 @@ int GlxVisual::getAttrib (int attribute)
 	return fbvalue;
 }
 
-GLXContext GlxVisual::createContext (const GlxContextFactory&	factory,
-									 const ContextType&			contextType)
+GLXContext GlxVisual::createContext (const GlxContextFactory&		factory,
+									 const ContextType&				contextType,
+									 glu::ResetNotificationStrategy	resetNotificationStrategy)
 {
-	int				profileMask	= 0;
-	const ApiType	apiType		= contextType.getAPI();
+	std::vector<int>	attribs;
 
 	checkGlxVersion(m_display, 1, 4);
 	checkGlxExtension(m_display, "GLX_ARB_create_context");
 	checkGlxExtension(m_display, "GLX_ARB_create_context_profile");
 
-	switch (apiType.getProfile())
 	{
-		case glu::PROFILE_ES:
-			checkGlxExtension(m_display, "GLX_EXT_create_context_es2_profile");
-			profileMask = GLX_CONTEXT_ES2_PROFILE_BIT_EXT;
-			break;
-		case glu::PROFILE_CORE:
-			profileMask = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
-			break;
-		case glu::PROFILE_COMPATIBILITY:
-			profileMask = GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
-			break;
-		default:
-			DE_FATAL("Impossible context profile");
+		const ApiType	apiType		= contextType.getAPI();
+		int				profileMask	= 0;
+
+		switch (apiType.getProfile())
+		{
+			case glu::PROFILE_ES:
+				checkGlxExtension(m_display, "GLX_EXT_create_context_es2_profile");
+				profileMask = GLX_CONTEXT_ES2_PROFILE_BIT_EXT;
+				break;
+			case glu::PROFILE_CORE:
+				profileMask = GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
+				break;
+			case glu::PROFILE_COMPATIBILITY:
+				profileMask = GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
+				break;
+			default:
+				DE_FATAL("Impossible context profile");
+		}
+
+		attribs.push_back(GLX_CONTEXT_MAJOR_VERSION_ARB);
+		attribs.push_back(apiType.getMajorVersion());
+		attribs.push_back(GLX_CONTEXT_MINOR_VERSION_ARB);
+		attribs.push_back(apiType.getMinorVersion());
+		attribs.push_back(GLX_CONTEXT_PROFILE_MASK_ARB);
+		attribs.push_back(profileMask);
 	}
 
-	const int attribs[] =
+	// Context flags
 	{
-		GLX_CONTEXT_MAJOR_VERSION_ARB,	apiType.getMajorVersion(),
-		GLX_CONTEXT_MINOR_VERSION_ARB,	apiType.getMinorVersion(),
-		GLX_CONTEXT_FLAGS_ARB,			0,
-		GLX_CONTEXT_PROFILE_MASK_ARB,	profileMask,
-		None
-	};
+		int		flags	= 0;
+
+		if ((contextType.getFlags() & glu::CONTEXT_FORWARD_COMPATIBLE) != 0)
+		{
+			if (glu::isContextTypeES(contextType))
+				TCU_THROW(InternalError, "Only OpenGL core contexts can be forward-compatible");
+
+			flags |= GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
+		}
+
+		if ((contextType.getFlags() & glu::CONTEXT_DEBUG) != 0)
+			flags |= GLX_CONTEXT_DEBUG_BIT_ARB;
+
+		if ((contextType.getFlags() & glu::CONTEXT_ROBUST) != 0)
+			flags |= GLX_CONTEXT_ROBUST_ACCESS_BIT_ARB;
+
+		if ((contextType.getFlags() & glu::CONTEXT_NO_ERROR) != 0)
+		{
+			if (m_display.isGlxExtensionSupported("GLX_ARB_create_context_no_error"))
+			{
+				attribs.push_back(GLX_CONTEXT_OPENGL_NO_ERROR_ARB);
+				attribs.push_back(True);
+			}
+			else
+				TCU_THROW(NotSupportedError, "GLX_ARB_create_context_no_error is required for creating no-error contexts");
+		}
+
+		if (flags != 0)
+		{
+			attribs.push_back(GLX_CONTEXT_FLAGS_ARB);
+			attribs.push_back(flags);
+		}
+	}
+
+	if (resetNotificationStrategy != glu::RESET_NOTIFICATION_STRATEGY_NOT_SPECIFIED)
+	{
+		attribs.push_back(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB);
+
+		if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_NO_RESET_NOTIFICATION)
+			attribs.push_back(GLX_NO_RESET_NOTIFICATION_ARB);
+		else if (resetNotificationStrategy == glu::RESET_NOTIFICATION_STRATEGY_LOSE_CONTEXT_ON_RESET)
+			attribs.push_back(GLX_LOSE_CONTEXT_ON_RESET_ARB);
+		else
+			TCU_THROW(InternalError, "Unknown reset notification strategy");
+	}
+
+	// Terminate attrib list
+	attribs.push_back(None);
+
 	return TCU_CHECK_GLX(factory.m_glXCreateContextAttribsARB(
-							 getXDisplay(), m_fbConfig, DE_NULL, True, attribs));
+							 getXDisplay(), m_fbConfig, DE_NULL, True, &attribs[0]));
 }
 
 GLXWindow GlxVisual::createWindow (::Window xWindow)
@@ -547,17 +609,24 @@ static GlxVisual chooseVisual (GlxDisplay& display, const RenderConfig& cfg)
 
 	for (int i = 0; i < numElems; i++)
 	{
-		GlxVisual visual(display, fbConfigs[i]);
-
-		if (!configMatches(visual, cfg))
-			continue;
-
-		deUint64 cfgRank = configRank(visual);
-
-		if (cfgRank > maxRank)
+		try
 		{
-			maxRank		= cfgRank;
-			maxConfig	= fbConfigs[i];
+			GlxVisual visual(display, fbConfigs[i]);
+
+			if (!configMatches(visual, cfg))
+				continue;
+
+			deUint64 cfgRank = configRank(visual);
+
+			if (cfgRank > maxRank)
+			{
+				maxRank		= cfgRank;
+				maxConfig	= fbConfigs[i];
+			}
+		}
+		catch (const tcu::ResourceError&)
+		{
+			// Some drivers report invalid visuals. Ignore them.
 		}
 	}
 	XFree(fbConfigs);
@@ -618,7 +687,7 @@ GlxRenderContext::GlxRenderContext (const GlxContextFactory&	factory,
 	: m_glxDisplay		(factory.getEventState(), DE_NULL)
 	, m_glxVisual		(chooseVisual(m_glxDisplay, config))
 	, m_type			(config.type)
-	, m_GLXContext		(m_glxVisual.createContext(factory, config.type))
+	, m_GLXContext		(m_glxVisual.createContext(factory, config.type, config.resetNotificationStrategy))
 	, m_glxDrawable		(createDrawable(m_glxVisual, config))
 	, m_renderTarget	(m_glxDrawable->getWidth(), m_glxDrawable->getHeight(),
 						 PixelFormat(m_glxVisual.getAttrib(GLX_RED_SIZE),

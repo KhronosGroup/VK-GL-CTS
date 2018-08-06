@@ -124,6 +124,8 @@ void deAssertFail (const char* reason, const char* file, int line)
 	_assert(reason, file, line);
 #elif (DE_OS == DE_OS_UNIX)
 	__assert_fail(reason, file, (unsigned int)line, "Unknown function");
+#elif (DE_OS == DE_OS_QNX)
+    __assert(reason, file, (unsigned int)line, "Unknown function");
 #elif (DE_OS == DE_OS_SYMBIAN)
 	__assert("Unknown function", file, line, reason);
 #elif (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS)

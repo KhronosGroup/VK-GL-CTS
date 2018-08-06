@@ -1224,7 +1224,7 @@ bool executeSecondaryCmdBuffer (Context&						context,
 
 tcu::TestStatus trimCommandPoolTest (Context& context, const VkCommandBufferLevel cmdBufferLevel)
 {
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
 		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
 
 	const VkDevice							vkDevice				= context.getDevice();
@@ -1279,7 +1279,7 @@ tcu::TestStatus trimCommandPoolTest (Context& context, const VkCommandBufferLeve
 				vk.freeCommandBuffers(vkDevice, *cmdPool, static_cast<deUint32>(cmdBuffersPeak.size()), &cmdBuffersPeak[0]);
 			}
 
-			vk.trimCommandPoolKHR(vkDevice, *cmdPool, (VkCommandPoolTrimFlagsKHR)0);
+			vk.trimCommandPool(vkDevice, *cmdPool, (VkCommandPoolTrimFlags)0);
 
 			switch(cmdBufferLevel)
 			{

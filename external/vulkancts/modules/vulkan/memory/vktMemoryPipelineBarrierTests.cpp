@@ -986,14 +986,14 @@ Memory::Memory (const vk::InstanceInterface&	vki,
 class Context
 {
 public:
-													Context					(const vk::InstanceInterface&						vki,
-																			 const vk::DeviceInterface&							vkd,
-																			 vk::VkPhysicalDevice								physicalDevice,
-																			 vk::VkDevice										device,
-																			 vk::VkQueue										queue,
-																			 deUint32											queueFamilyIndex,
-																			 const vector<pair<deUint32, vk::VkQueue> >&		queues,
-																			 const vk::ProgramCollection<vk::ProgramBinary>&	binaryCollection)
+													Context					(const vk::InstanceInterface&					vki,
+																			 const vk::DeviceInterface&						vkd,
+																			 vk::VkPhysicalDevice							physicalDevice,
+																			 vk::VkDevice									device,
+																			 vk::VkQueue									queue,
+																			 deUint32										queueFamilyIndex,
+																			 const vector<pair<deUint32, vk::VkQueue> >&	queues,
+																			 const vk::BinaryCollection&					binaryCollection)
 		: m_vki					(vki)
 		, m_vkd					(vkd)
 		, m_physicalDevice		(physicalDevice)
@@ -1017,7 +1017,7 @@ public:
 	const vector<pair<deUint32, vk::VkQueue> >&		getQueues				(void) const { return m_queues; }
 	const vector<deUint32>							getQueueFamilies		(void) const { return m_queueFamilies; }
 	vk::VkCommandPool								getCommandPool			(void) const { return *m_commandPool; }
-	const vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_binaryCollection; }
+	const vk::BinaryCollection&						getBinaryCollection		(void) const { return m_binaryCollection; }
 
 private:
 	const vk::InstanceInterface&					m_vki;
@@ -1028,7 +1028,7 @@ private:
 	const deUint32									m_queueFamilyIndex;
 	const vector<pair<deUint32, vk::VkQueue> >		m_queues;
 	const vk::Unique<vk::VkCommandPool>				m_commandPool;
-	const vk::ProgramCollection<vk::ProgramBinary>&	m_binaryCollection;
+	const vk::BinaryCollection&						m_binaryCollection;
 	vector<deUint32>								m_queueFamilies;
 };
 
@@ -1044,7 +1044,7 @@ public:
 
 	const Memory&									getMemory				(void) const { return m_memory; }
 	const Context&									getContext				(void) const { return m_context; }
-	const vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection		(void) const { return m_context.getBinaryCollection(); }
+	const vk::BinaryCollection&						getBinaryCollection		(void) const { return m_context.getBinaryCollection(); }
 
 	void				setBuffer		(vk::Move<vk::VkBuffer>	buffer,
 										 vk::VkDeviceSize		size)
@@ -4187,9 +4187,9 @@ public:
 	{
 	}
 
-	const Memory&									getMemory					(void) const { return m_context.getMemory(); }
-	const Context&									getContext					(void) const { return m_context.getContext(); }
-	const vk::ProgramCollection<vk::ProgramBinary>&	getBinaryCollection			(void) const { return m_context.getBinaryCollection(); }
+	const Memory&				getMemory					(void) const { return m_context.getMemory(); }
+	const Context&				getContext					(void) const { return m_context.getContext(); }
+	const vk::BinaryCollection&	getBinaryCollection			(void) const { return m_context.getBinaryCollection(); }
 
 	vk::VkBuffer				getBuffer					(void) const { return m_context.getBuffer(); }
 	vk::VkDeviceSize			getBufferSize				(void) const { return m_context.getBufferSize(); }

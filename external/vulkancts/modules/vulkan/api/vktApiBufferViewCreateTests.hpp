@@ -33,7 +33,7 @@ namespace vkt
 namespace api
 {
 
-tcu::TestCaseGroup*		createBufferViewCreateTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createBufferViewCreateTests		(tcu::TestContext& testCtx);
 
 } // api
 } // vkt

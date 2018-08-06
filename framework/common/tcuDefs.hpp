@@ -78,6 +78,7 @@ class TestError : public TestException
 {
 public:
 					TestError			(const char* message, const char* expr, const char* file, int line);
+					TestError			(const std::string& message, const char* expr, const char* file, int line);
 					TestError			(const std::string& message);
 	virtual			~TestError			(void) throw() {}
 };

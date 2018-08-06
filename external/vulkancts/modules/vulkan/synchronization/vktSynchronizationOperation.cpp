@@ -561,7 +561,7 @@ public:
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
 	{
 		if (m_bufferOp == BUFFER_OP_FILL &&
-			!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_maintenance1"))
+			!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
 		{
 			return VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT;
 		}
@@ -3360,6 +3360,7 @@ public:
 				<< "void main (void)\n"
 				<< "{\n"
 				<< "    b_out.data[gl_VertexIndex] = v_in_data;\n"
+				<< "    gl_PointSize = 1.0f;\n"
 				<< "}\n";
 			programCollection.glslSources.add("input_vert") << glu::VertexSource(src.str());
 		}
@@ -3412,6 +3413,7 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 	, m_progCollection		(context.getBinaryCollection())
 	, m_pipelineCacheData	(pipelineCacheData)
 	, m_deviceExtensions	(context.getDeviceExtensions())
+	, m_usedApiVersion		(context.getUsedApiVersion())
 {
 }
 
@@ -3424,17 +3426,19 @@ OperationContext::OperationContext (Context& context, PipelineCacheData& pipelin
 	, m_progCollection		(context.getBinaryCollection())
 	, m_pipelineCacheData	(pipelineCacheData)
 	, m_deviceExtensions	(context.getDeviceExtensions())
+	, m_usedApiVersion		(context.getUsedApiVersion())
 {
 }
 
-OperationContext::OperationContext (const vk::InstanceInterface&				vki,
-									const vk::DeviceInterface&					vkd,
-									vk::VkPhysicalDevice						physicalDevice,
-									vk::VkDevice								device,
-									vk::Allocator&								allocator,
-									const std::vector<std::string>&				deviceExtensions,
-									vk::ProgramCollection<vk::ProgramBinary>&	programCollection,
-									PipelineCacheData&							pipelineCacheData)
+OperationContext::OperationContext (const deUint32					apiVersion,
+									const vk::InstanceInterface&	vki,
+									const vk::DeviceInterface&		vkd,
+									vk::VkPhysicalDevice			physicalDevice,
+									vk::VkDevice					device,
+									vk::Allocator&					allocator,
+									const std::vector<std::string>&	deviceExtensions,
+									vk::BinaryCollection&			programCollection,
+									PipelineCacheData&				pipelineCacheData)
 	: m_vki					(vki)
 	, m_vk					(vkd)
 	, m_physicalDevice		(physicalDevice)
@@ -3443,6 +3447,7 @@ OperationContext::OperationContext (const vk::InstanceInterface&				vki,
 	, m_progCollection		(programCollection)
 	, m_pipelineCacheData	(pipelineCacheData)
 	, m_deviceExtensions	(deviceExtensions)
+	, m_usedApiVersion		(apiVersion)
 {
 }
 

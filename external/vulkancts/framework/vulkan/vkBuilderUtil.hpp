@@ -41,6 +41,12 @@ public:
 																			 VkShaderStageFlags	stageFlags,
 																			 const VkSampler*	pImmutableSamplers);
 
+	DescriptorSetLayoutBuilder&					addIndexedBinding			(VkDescriptorType	descriptorType,
+																			 deUint32			descriptorCount,
+																			 VkShaderStageFlags	stageFlags,
+																			 deUint32			dstBinding,
+																			 const VkSampler*	pImmutableSamplers);
+
 	Move<VkDescriptorSetLayout>					build						(const DeviceInterface& vk, VkDevice device, VkDescriptorSetLayoutCreateFlags extraFlags = 0) const;
 
 	// helpers
@@ -49,6 +55,12 @@ public:
 																			 VkShaderStageFlags	stageFlags)
 	{
 		return addBinding(descriptorType, 1u, stageFlags, (VkSampler*)DE_NULL);
+	}
+	inline DescriptorSetLayoutBuilder&			addSingleIndexedBinding		(VkDescriptorType	descriptorType,
+																			 VkShaderStageFlags	stageFlags,
+																			 deUint32			dstBinding)
+	{
+		return addIndexedBinding(descriptorType, 1u, stageFlags, dstBinding, (VkSampler*)DE_NULL);
 	}
 	inline DescriptorSetLayoutBuilder&			addArrayBinding				(VkDescriptorType	descriptorType,
 																			 deUint32			descriptorCount,

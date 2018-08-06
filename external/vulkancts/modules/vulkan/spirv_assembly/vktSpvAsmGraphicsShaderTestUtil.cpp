@@ -474,6 +474,7 @@ string makeVertexShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_color \"color\"\n"
 		"OpName %BP_gl_VertexIndex \"gl_VertexIndex\"\n"
 		"OpName %BP_gl_InstanceIndex \"gl_InstanceIndex\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpMemberDecorate %BP_gl_PerVertex 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertex 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %BP_gl_PerVertex 2 BuiltIn ClipDistance\n"
@@ -577,6 +578,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpName %BP_gl_in \"gl_in\"\n"
 		"OpName %BP_gl_TessLevelOuter \"gl_TessLevelOuter\"\n"
 		"OpName %BP_gl_TessLevelInner \"gl_TessLevelInner\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_out_color Location 1\n"
 		"OpDecorate %BP_gl_InvocationID BuiltIn InvocationId\n"
 		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
@@ -719,6 +721,7 @@ string makeTessEvalShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_gl_in \"gl_in\"\n"
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 0 BuiltIn Position\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 1 BuiltIn PointSize\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 2 BuiltIn ClipDistance\n"
@@ -878,6 +881,7 @@ string makeGeometryShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_out_color \"out_color\"\n"
 		"OpName %BP_in_color \"in_color\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
 		"OpDecorate %BP_out_gl_position BuiltIn Position\n"
 		"OpMemberDecorate %BP_per_vertex_in 0 BuiltIn Position\n"
@@ -1000,6 +1004,7 @@ string makeFragmentShaderAssembly(const map<string, string>& fragments)
 		"OpName %BP_fragColor \"fragColor\"\n"
 		"OpName %BP_vtxColor \"vtxColor\"\n"
 		"OpName %test_code \"testfun(vf4;\"\n"
+		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_fragColor Location 0\n"
 		"OpDecorate %BP_vtxColor Location 1\n"
 		"OpDecorate %BP_gl_FragCoord BuiltIn FragCoord\n"
@@ -1262,114 +1267,174 @@ map<string, string> passthruFragments(void)
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Vertex shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomVertex(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomVertex (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType()));
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	} else {
 		map<string, string> passthru = passthruFragments();
 
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomVertex (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomVertex(dst, context, DE_NULL);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Tessellation control shader gets custom code from context, the rest are
 // pass-through.
-void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomTessControl(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("tessc") << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(context.testCodeFragments);
-		dst.spirvAsmSources.add("tesse") << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(passthruInterface(context.interfaces.getOutputType()));
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType()));
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
 
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-		dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(context.testCodeFragments);
-		dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << makeTessControlShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << makeTessEvalShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomTessControl (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomTessControl(dst, context, DE_NULL);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Tessellation evaluation shader gets custom code from context, the rest are
 // pass-through.
-void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomTessEval(vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("tessc") << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("tesse") << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType()));
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-		dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru);
-		dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+		dst.spirvAsmSources.add("vert",  spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions) << makeTessControlShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions) << makeTessEvalShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag",  spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomTessEval (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomTessEval(dst, context, DE_NULL);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Geometry shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomGeometry(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomGeometry (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("geom") << StringTemplate(makeGeometryShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType()));
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("geom", spirVAsmBuildOptions) << StringTemplate(makeGeometryShaderAssembly(fillInterfacePlaceholderTessEvalGeom())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(passthruInterface(context.interfaces.getOutputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-		dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(context.testCodeFragments);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("geom", spirVAsmBuildOptions) << makeGeometryShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomGeometry (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomGeometry(dst, context, DE_NULL);
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
 // Fragment shader gets custom code from context, the rest are pass-through.
-void addShaderCodeCustomFragment(vk::SourceCollections& dst, InstanceContext context)
+void addShaderCodeCustomFragment (vk::SourceCollections& dst, InstanceContext& context, const SpirVAsmBuildOptions* spirVAsmBuildOptions)
 {
+	SpirvVersion targetSpirvVersion;
+
+	if (spirVAsmBuildOptions == DE_NULL)
+		targetSpirvVersion = context.resources.spirvVersion;
+	else
+		targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+
 	if (!context.interfaces.empty())
 	{
 		// Inject boilerplate code to wire up additional input/output variables between stages.
 		// Just copy the contents in input variable to output variable in all stages except
 		// the customized stage.
-		dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType()));
-		dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(context.testCodeFragments);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert())).specialize(passthruInterface(context.interfaces.getInputType())) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag())).specialize(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
 	else
 	{
 		map<string, string> passthru = passthruFragments();
-		dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru);
-		dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(context.testCodeFragments);
+		dst.spirvAsmSources.add("vert", spirVAsmBuildOptions) << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(targetSpirvVersion);
+		dst.spirvAsmSources.add("frag", spirVAsmBuildOptions) << makeFragmentShaderAssembly(context.testCodeFragments) << SpirVAsmBuildOptions(targetSpirvVersion);
 	}
+}
+
+void addShaderCodeCustomFragment (vk::SourceCollections& dst, InstanceContext context)
+{
+	addShaderCodeCustomFragment(dst, context, DE_NULL);
 }
 
 void createCombinedModule(vk::SourceCollections& dst, InstanceContext)
@@ -2154,12 +2219,15 @@ bool compare32BitFloat (float expected, float returned, tcu::TestLog& log)
 
 Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice vkDevice, const Resource& resource, deUint32 queueFamilyIndex)
 {
+	vector<deUint8>	resourceBytes;
+	resource.second->getBytes(resourceBytes);
+
 	const VkBufferCreateInfo	resourceBufferParams	=
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,								// sType
 		DE_NULL,															// pNext
 		(VkBufferCreateFlags)0,												// flags
-		(VkDeviceSize)resource.second->getNumBytes(),						// size
+		(VkDeviceSize)resourceBytes.size(),									// size
 		(VkBufferUsageFlags)getMatchingBufferUsageFlagBit(resource.first),	// usage
 		VK_SHARING_MODE_EXCLUSIVE,											// sharingMode
 		1u,																	// queueFamilyCount
@@ -2171,6 +2239,11 @@ Move<VkBuffer> createBufferForResource(const DeviceInterface& vk, const VkDevice
 
 TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instance)
 {
+	if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getUsedApiVersion())
+	{
+		TCU_THROW(NotSupportedError, string("Vulkan higher than or equal to " + getVulkanName(getMinRequiredVulkanVersion(instance.resources.spirvVersion)) + " is required for this test to run").c_str());
+	}
+
 	const InstanceInterface&					vkInstance				= context.getInstanceInterface();
 	const VkPhysicalDevice						vkPhysicalDevice		= context.getPhysicalDevice();
 	const deUint32								queueFamilyIndex		= context.getUniversalQueueFamilyIndex();
@@ -2194,13 +2267,13 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	if (hasTessellation && !supportsTessellation)
 	{
-		throw tcu::NotSupportedError(std::string("Tessellation not supported"));
+		TCU_THROW(NotSupportedError, "Tessellation not supported");
 	}
 
 	if ((instance.requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT) &&
 		!supportsGeometry)
 	{
-		throw tcu::NotSupportedError(std::string("Geometry not supported"));
+		TCU_THROW(NotSupportedError, "Geometry not supported");
 	}
 
 	{
@@ -2211,24 +2284,29 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			if (feature == "shaderInt16")
 			{
 				if (features.shaderInt16 != VK_TRUE)
-					throw tcu::NotSupportedError(std::string("Device feature not supported: ") + feature);
+					TCU_THROW(NotSupportedError, "Device feature not supported: shaderInt16");
+			}
+			else if (feature == "shaderInt64")
+			{
+				if (features.shaderInt64 != VK_TRUE)
+					TCU_THROW(NotSupportedError, "Device feature not supported: shaderInt64");
 			}
 			else
 			{
-				throw tcu::InternalError(std::string("Unimplemented physical device feature: ") + feature);
+				TCU_THROW(InternalError, (std::string("Unimplemented physical device feature: ") + feature).c_str());
 			}
 		}
 	}
 
 	// 16bit storage features
 	{
-		if (!is16BitStorageFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext16BitStorage))
+		if (!is16BitStorageFeaturesSupported(context.getUsedApiVersion(), vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.ext16BitStorage))
 			TCU_THROW(NotSupportedError, "Requested 16bit storage features not supported");
 	}
 
 	// Variable Pointers features
 	{
-		if (!isVariablePointersFeaturesSupported(vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.extVariablePointers))
+		if (!isVariablePointersFeaturesSupported(context.getUsedApiVersion(), vkInstance, vkPhysicalDevice, context.getInstanceExtensions(), instance.requestedFeatures.extVariablePointers))
 			TCU_THROW(NotSupportedError, "Requested Variable Pointer features not supported");
 
 		if (instance.requestedFeatures.extVariablePointers)
@@ -2359,7 +2437,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		// Test instantialization only provides four data points, each
 		// for one triangle. So we need allocate space of three times of
 		// input buffer's size.
-		const deUint32							inputNumBytes			= deUint32(instance.interfaces.getInputBuffer()->getNumBytes() * 3);
+		vector<deUint8>							inputBufferBytes;
+		instance.interfaces.getInputBuffer()->getBytes(inputBufferBytes);
+
+		const deUint32							inputNumBytes			= deUint32(inputBufferBytes.size() * 3);
 		// Create an additional buffer and backing memory for one input variable.
 		const VkBufferCreateInfo				vertexInputParams		=
 		{
@@ -2546,6 +2627,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Create buffer and allocate memory.
 			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
 			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			vector<deUint8>					resourceBytes;
 
 			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
@@ -2559,7 +2641,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				VK_WHOLE_SIZE,										//	VkDeviceSize	size;
 			};
 
-			deMemcpy(resourceMemory->getHostPtr(), resource.second->data(), resource.second->getNumBytes());
+			resource.second->getBytes(resourceBytes);
+			deMemcpy(resourceMemory->getHostPtr(), &resourceBytes.front(), resourceBytes.size());
 			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 
 			inResourceMemories.push_back(AllocationSp(resourceMemory.release()));
@@ -2592,6 +2675,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			// Create buffer and allocate memory.
 			Move<VkBuffer>					resourceBuffer			= createBufferForResource(vk, *vkDevice, resource, queueFamilyIndex);
 			de::MovePtr<Allocation>			resourceMemory			= allocator.allocate(getBufferMemoryRequirements(vk, *vkDevice, *resourceBuffer), MemoryRequirement::HostVisible);
+			vector<deUint8>					resourceBytes;
 
 			VK_CHECK(vk.bindBufferMemory(*vkDevice, *resourceBuffer, resourceMemory->getMemory(), resourceMemory->getOffset()));
 
@@ -2605,7 +2689,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 				VK_WHOLE_SIZE,										//	VkDeviceSize	size;
 			};
 
-			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resource.second->getNumBytes());
+			resource.second->getBytes(resourceBytes);
+			deMemset((deUint8*)resourceMemory->getHostPtr(), 0xff, resourceBytes.size());
 			VK_CHECK(vk.flushMappedMemoryRanges(*vkDevice, 1u, &range));
 
 			outResourceMemories.push_back(AllocationSp(resourceMemory.release()));
@@ -2742,7 +2827,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	};
 	if (hasPushConstants)
 	{
-		pushConstantRange.size						= static_cast<deUint32>(instance.pushConstants.getBuffer()->getNumBytes());
+		vector<deUint8> pushConstantsBytes;
+		instance.pushConstants.getBuffer()->getBytes(pushConstantsBytes);
+
+		pushConstantRange.size						= static_cast<deUint32>(pushConstantsBytes.size());
 		pipelineLayoutParams.pushConstantRangeCount	= 1;
 		pipelineLayoutParams.pPushConstantRanges	= &pushConstantRange;
 	}
@@ -2759,6 +2847,35 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	// We need these vectors to make sure that information about specialization constants for each stage can outlive createGraphicsPipeline().
 	vector<vector<VkSpecializationMapEntry> >	specConstantEntries;
 	vector<VkSpecializationInfo>				specializationInfos;
+	if (DE_NULL != instance.resources.verifyBinary)
+	{
+		std::string shaderName;
+		switch(instance.customizedStages)
+		{
+		case	VK_SHADER_STAGE_VERTEX_BIT:
+			shaderName= "vert";
+			break;
+		case	VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+			shaderName= "tessc";
+			break;
+		case	VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+			shaderName= "tesse";
+			break;
+		case	VK_SHADER_STAGE_GEOMETRY_BIT:
+			shaderName= "geom";
+			break;
+		case	VK_SHADER_STAGE_FRAGMENT_BIT:
+			shaderName= "frag";
+			break;
+		default:
+			DE_ASSERT(0);
+			break;
+		}
+		const ProgramBinary& binary  = context.getBinaryCollection().get(shaderName);
+		if (!instance.resources.verifyBinary(binary))
+			return tcu::TestStatus::fail("Binary verification of SPIR-V in the test failed");
+
+	}
 	createPipelineShaderStages(vk, *vkDevice, instance, context, modules, shaderStageParams);
 
 	// And we don't want the reallocation of these vectors to invalidate pointers pointing to their contents.
@@ -2876,7 +2993,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	//	VkStructureType	sType;
 		DE_NULL,													//	const void*		pNext;
 		(VkPipelineRasterizationStateCreateFlags)0,
-		DE_TRUE,													//	deUint32		depthClipEnable;
+		DE_FALSE,													//	deUint32		depthClampEnable;
 		DE_FALSE,													//	deUint32		rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,										//	VkFillMode		fillMode;
 		VK_CULL_MODE_NONE,											//	VkCullMode		cullMode;
@@ -3178,8 +3295,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	}
 	if (hasPushConstants)
 	{
-		const deUint32	size	= static_cast<deUint32>(instance.pushConstants.getBuffer()->getNumBytes());
-		const void*		data	= instance.pushConstants.getBuffer()->data();
+		vector<deUint8> pushConstantsBytes;
+		instance.pushConstants.getBuffer()->getBytes(pushConstantsBytes);
+
+		const deUint32	size	= static_cast<deUint32>(pushConstantsBytes.size());
+		const void*		data	= &pushConstantsBytes.front();
 
 		vk.cmdPushConstants(*cmdBuf, *pipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS, 0, size, data);
 	}
@@ -3299,8 +3419,11 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	if (needInterface)
 	{
+		vector<deUint8> inputBufferBytes;
+		instance.interfaces.getInputBuffer()->getBytes(inputBufferBytes);
+
 		const deUint32				typNumBytes		= instance.interfaces.getInputType().getNumBytes();
-		const deUint32				bufNumBytes		= static_cast<deUint32>(instance.interfaces.getInputBuffer()->getNumBytes());
+		const deUint32				bufNumBytes		= static_cast<deUint32>(inputBufferBytes.size());
 
 		// Require that the test instantation provides four output values.
 		DE_ASSERT(bufNumBytes == 4 * typNumBytes);
@@ -3309,7 +3432,7 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		// we need to provide the same vertex attribute for the same triangle. That means, duplicate each
 		// value three times for all four values.
 
-		const deUint8*				provided		= static_cast<const deUint8*>(instance.interfaces.getInputBuffer()->data());
+		const deUint8*				provided		= static_cast<const deUint8*>(&inputBufferBytes.front());
 		vector<deUint8>				data;
 
 		data.reserve(3 * bufNumBytes);
@@ -3429,9 +3552,15 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	// Check that the contents in the ouput variable matches expected.
 	if (needInterface)
 	{
+		vector<deUint8>						inputBufferBytes;
+		vector<deUint8>						outputBufferBytes;
+
+		instance.interfaces.getInputBuffer()->getBytes(inputBufferBytes);
+		instance.interfaces.getOutputBuffer()->getBytes(outputBufferBytes);
+
 		const IFDataType&					outputType				= instance.interfaces.getOutputType();
-		const void*							inputData				= instance.interfaces.getInputBuffer()->data();
-		const void*							outputData				= instance.interfaces.getOutputBuffer()->data();
+		const void*							inputData				= &inputBufferBytes.front();
+		const void*							outputData				= &outputBufferBytes.front();
 		vector<std::pair<int, int> >		positions;
 		const tcu::ConstPixelBufferAccess	fragOutputBufferAccess	(outputType.getTextureFormat(), renderSize.x(), renderSize.y(), 1, fragOutputMemory->getHostPtr());
 
@@ -3521,7 +3650,10 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 		}
 		else
 		{
-			if (deMemCmp(expected->data(), outResourceMemories[outputNdx]->getHostPtr(), expected->getNumBytes()))
+			vector<deUint8> expectedBytes;
+			expected->getBytes(expectedBytes);
+
+			if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
 				return tcu::TestStatus::fail("Resource returned doesn't match bitwisely with expected");
 		}
 	}

@@ -24,7 +24,6 @@
 #include "gluRenderContext.hpp"
 #include "gluDefs.hpp"
 #include "gluRenderConfig.hpp"
-#include "gluES3PlusWrapperContext.hpp"
 #include "gluFboRenderContext.hpp"
 #include "gluPlatform.hpp"
 #include "gluStrUtil.hpp"
@@ -37,6 +36,20 @@
 
 namespace glu
 {
+
+// RenderContext
+
+glw::GenericFuncType RenderContext::getProcAddress (const char*) const
+{
+	return (glw::GenericFuncType)DE_NULL;
+}
+
+void RenderContext::makeCurrent (void)
+{
+	TCU_THROW(InternalError, "RenderContext::makeCurrent() is not implemented");
+}
+
+// Utilities
 
 inline bool versionGreaterOrEqual (ApiType a, ApiType b)
 {
@@ -117,22 +130,14 @@ static ContextFlags parseContextFlags (const std::string& flagsStr)
 	return flags;
 }
 
-RenderContext* createDefaultRenderContext (tcu::Platform& platform, const tcu::CommandLine& cmdLine, ApiType apiType)
+RenderContext* createRenderContext (tcu::Platform& platform, const tcu::CommandLine& cmdLine, const RenderConfig& config)
 {
 	const ContextFactoryRegistry&	registry		= platform.getGLPlatform().getContextFactoryRegistry();
-	RenderConfig					config;
 	const char*						factoryName		= cmdLine.getGLContextType();
 	const ContextFactory*			factory			= DE_NULL;
-	ContextFlags					ctxFlags		= ContextFlags(0);
 
 	if (registry.empty())
 		throw tcu::NotSupportedError("OpenGL is not supported", DE_NULL, __FILE__, __LINE__);
-
-	if (cmdLine.getGLContextFlags())
-		ctxFlags = parseContextFlags(cmdLine.getGLContextFlags());
-
-	config.type = glu::ContextType(apiType, ctxFlags);
-	parseRenderConfig(&config, cmdLine);
 
 	if (factoryName)
 	{
@@ -159,6 +164,20 @@ RenderContext* createDefaultRenderContext (tcu::Platform& platform, const tcu::C
 		return new FboRenderContext(*factory, config, cmdLine);
 	else
 		return factory->createContext(config, cmdLine);
+}
+
+RenderContext* createDefaultRenderContext (tcu::Platform& platform, const tcu::CommandLine& cmdLine, ApiType apiType)
+{
+	RenderConfig	config;
+	ContextFlags	ctxFlags	= ContextFlags(0);
+
+	if (cmdLine.getGLContextFlags())
+		ctxFlags = parseContextFlags(cmdLine.getGLContextFlags());
+
+	config.type = glu::ContextType(apiType, ctxFlags);
+	parseRenderConfig(&config, cmdLine);
+
+	return createRenderContext(platform, cmdLine, config);
 }
 
 static std::vector<std::string> getExtensions (const glw::Functions& gl, ApiType apiType)
@@ -237,6 +256,8 @@ void initCoreFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, 
 		{ ApiType::core(4,2),	glw::initGL42Core	},
 		{ ApiType::core(4,3),	glw::initGL43Core	},
 		{ ApiType::core(4,4),	glw::initGL44Core	},
+		{ ApiType::core(4,5),	glw::initGL45Core	},
+		{ ApiType::core(4,6),	glw::initGL46Core	},
 	};
 
 	for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_initFuncs); ndx++)
@@ -278,6 +299,26 @@ void initFunctions (glw::Functions* dst, const glw::FunctionLoader* loader, ApiT
 {
 	initCoreFunctions(dst, loader, apiType);
 	initExtensionFunctions(dst, loader, apiType);
+}
+
+const char* getApiTypeDescription (ApiType type)
+{
+	if (type == glu::ApiType::es(2, 0))			return "OpenGL ES 2";
+	else if (type == glu::ApiType::es(3, 0))	return "OpenGL ES 3";
+	else if (type == glu::ApiType::es(3, 1))	return "OpenGL ES 3.1";
+	else if (type == glu::ApiType::es(3, 2))	return "OpenGL ES 3.2";
+	else if (type == glu::ApiType::core(3, 0))	return "OpenGL 3.0 core";
+	else if (type == glu::ApiType::core(3, 1))	return "OpenGL 3.1 core";
+	else if (type == glu::ApiType::core(3, 2))	return "OpenGL 3.2 core";
+	else if (type == glu::ApiType::core(3, 3))	return "OpenGL 3.3 core";
+	else if (type == glu::ApiType::core(4, 0))	return "OpenGL 4.0 core";
+	else if (type == glu::ApiType::core(4, 1))	return "OpenGL 4.1 core";
+	else if (type == glu::ApiType::core(4, 2))	return "OpenGL 4.2 core";
+	else if (type == glu::ApiType::core(4, 3))	return "OpenGL 4.3 core";
+	else if (type == glu::ApiType::core(4, 4))	return "OpenGL 4.4 core";
+	else if (type == glu::ApiType::core(4, 5))	return "OpenGL 4.5 core";
+	else if (type == glu::ApiType::core(4, 6))	return "OpenGL 4.6 core";
+	else										return DE_NULL;
 }
 
 } // glu

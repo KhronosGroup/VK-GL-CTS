@@ -31,7 +31,7 @@ namespace vkt
 namespace sparse
 {
 
-void addBufferSparseResidencyTests(tcu::TestCaseGroup* group);
+void addBufferSparseResidencyTests(tcu::TestCaseGroup* group, const bool useDeviceGroups);
 
 } // sparse
 } // vkt

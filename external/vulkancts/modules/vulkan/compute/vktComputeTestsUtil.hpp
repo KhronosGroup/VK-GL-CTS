@@ -78,70 +78,79 @@ private:
 	Image&							operator=		(const Image&);
 };
 
-vk::Move<vk::VkCommandPool>			makeCommandPool				(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const deUint32						queueFamilyIndex);
+vk::Move<vk::VkCommandPool>			makeCommandPool				(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device,
+																 const deUint32								queueFamilyIndex);
 
-vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device);
+vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device);
 
-vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkDescriptorSetLayout	descriptorSetLayout);
+vk::Move<vk::VkPipelineLayout>	makePipelineLayout				(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device,
+																 const vk::VkDescriptorSetLayout			descriptorSetLayout);
 
-vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkPipelineLayout			pipelineLayout,
-																 const vk::VkShaderModule			shaderModule);
+vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device,
+																 const vk::VkPipelineLayout					pipelineLayout,
+																 const vk::VkShaderModule					shaderModule);
 
-vk::Move<vk::VkBufferView>		makeBufferView					(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkBuffer					buffer,
-																 const vk::VkFormat					format,
-																 const vk::VkDeviceSize				offset,
-																 const vk::VkDeviceSize				size);
+vk::Move<vk::VkPipeline>		makeComputePipeline				(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device,
+																 const vk::VkPipelineLayout					pipelineLayout,
+																 const vk::VkPipelineCreateFlags			pipelineFlags,
+																 const vk::VkShaderModule					shaderModule,
+																 const vk::VkPipelineShaderStageCreateFlags	shaderFlags);
 
-vk::Move<vk::VkImageView>		makeImageView					(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkImage					image,
-																 const vk::VkImageViewType			imageViewType,
-																 const vk::VkFormat					format,
-																 const vk::VkImageSubresourceRange	subresourceRange);
+vk::Move<vk::VkBufferView>		makeBufferView					(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device,
+																 const vk::VkBuffer							buffer,
+																 const vk::VkFormat							format,
+																 const vk::VkDeviceSize						offset,
+																 const vk::VkDeviceSize						size);
 
-vk::Move<vk::VkDescriptorSet>	makeDescriptorSet				(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkDescriptorPool			descriptorPool,
-																 const vk::VkDescriptorSetLayout	setLayout);
+vk::Move<vk::VkImageView>		makeImageView					(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device,
+																 const vk::VkImage							image,
+																 const vk::VkImageViewType					imageViewType,
+																 const vk::VkFormat							format,
+																 const vk::VkImageSubresourceRange			subresourceRange);
 
-vk::VkBufferCreateInfo			makeBufferCreateInfo			(const vk::VkDeviceSize				bufferSize,
-																 const vk::VkBufferUsageFlags		usage);
+vk::Move<vk::VkDescriptorSet>	makeDescriptorSet				(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device,
+																 const vk::VkDescriptorPool					descriptorPool,
+																 const vk::VkDescriptorSetLayout			setLayout);
 
-vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D				extent,
-																 const deUint32						arraySize);
+vk::VkBufferCreateInfo			makeBufferCreateInfo			(const vk::VkDeviceSize						bufferSize,
+																 const vk::VkBufferUsageFlags				usage);
 
-vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier			(const vk::VkAccessFlags			srcAccessMask,
-																 const vk::VkAccessFlags			dstAccessMask,
-																 const vk::VkBuffer					buffer,
-																 const vk::VkDeviceSize				offset,
-																 const vk::VkDeviceSize				bufferSizeBytes);
+vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D						extent,
+																 const deUint32								arraySize);
 
-vk::VkImageMemoryBarrier		makeImageMemoryBarrier			(const vk::VkAccessFlags			srcAccessMask,
-																 const vk::VkAccessFlags			dstAccessMask,
-																 const vk::VkImageLayout			oldLayout,
-																 const vk::VkImageLayout			newLayout,
-																 const vk::VkImage					image,
-																 const vk::VkImageSubresourceRange	subresourceRange);
+vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier			(const vk::VkAccessFlags					srcAccessMask,
+																 const vk::VkAccessFlags					dstAccessMask,
+																 const vk::VkBuffer							buffer,
+																 const vk::VkDeviceSize						offset,
+																 const vk::VkDeviceSize						bufferSizeBytes);
 
-void							beginCommandBuffer				(const vk::DeviceInterface&			vk,
-																 const vk::VkCommandBuffer			cmdBuffer);
+vk::VkImageMemoryBarrier		makeImageMemoryBarrier			(const vk::VkAccessFlags					srcAccessMask,
+																 const vk::VkAccessFlags					dstAccessMask,
+																 const vk::VkImageLayout					oldLayout,
+																 const vk::VkImageLayout					newLayout,
+																 const vk::VkImage							image,
+																 const vk::VkImageSubresourceRange			subresourceRange);
 
-void							endCommandBuffer				(const vk::DeviceInterface&			vk,
-																 const vk::VkCommandBuffer			cmdBuffer);
+void							beginCommandBuffer				(const vk::DeviceInterface&					vk,
+																 const vk::VkCommandBuffer					cmdBuffer);
 
-void							submitCommandsAndWait			(const vk::DeviceInterface&			vk,
-																 const vk::VkDevice					device,
-																 const vk::VkQueue					queue,
-																 const vk::VkCommandBuffer			cmdBuffer);
+void							endCommandBuffer				(const vk::DeviceInterface&					vk,
+																 const vk::VkCommandBuffer					cmdBuffer);
+
+void							submitCommandsAndWait			(const vk::DeviceInterface&					vk,
+																 const vk::VkDevice							device,
+																 const vk::VkQueue							queue,
+																 const vk::VkCommandBuffer					cmdBuffer,
+																 const bool									useDeviceGroups = false,
+																 const deUint32								deviceMask = 1);
 
 inline vk::VkExtent3D makeExtent3D (const tcu::IVec3& vec)
 {

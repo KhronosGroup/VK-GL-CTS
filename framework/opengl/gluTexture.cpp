@@ -283,6 +283,40 @@ Texture2D* Texture2D::create (const RenderContext& context, const ContextInfo& c
 	return Texture2D::create(context, contextInfo, archive, numLevels, &charPtrs[0]);
 }
 
+// ImmutableTexture2D
+
+ImmutableTexture2D::ImmutableTexture2D (const RenderContext& context, deUint32 sizedFormat, int width, int height)
+	: Texture2D(context, sizedFormat, width, height)
+{
+}
+
+void ImmutableTexture2D::upload (void)
+{
+	const glw::Functions& gl = m_context.getFunctions();
+
+	DE_ASSERT(!m_isCompressed);
+
+	TCU_CHECK(m_glTexture);
+	gl.bindTexture(GL_TEXTURE_2D, m_glTexture);
+	gl.pixelStorei(GL_UNPACK_ALIGNMENT, computePixelStore(m_refTexture.getFormat()));
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture upload failed");
+
+	TransferFormat transferFormat = getTransferFormat(m_refTexture.getFormat());
+
+	gl.texStorage2D(GL_TEXTURE_2D, m_refTexture.getNumLevels(), m_format, m_refTexture.getWidth(), m_refTexture.getHeight());
+	for (int levelNdx = 0; levelNdx < m_refTexture.getNumLevels(); levelNdx++)
+	{
+		if (m_refTexture.isLevelEmpty(levelNdx))
+			continue; // Don't upload.
+
+		tcu::ConstPixelBufferAccess access = m_refTexture.getLevel(levelNdx);
+		DE_ASSERT(access.getRowPitch() == access.getFormat().getPixelSize()*access.getWidth());
+		gl.texSubImage2D(GL_TEXTURE_2D, levelNdx, 0, 0, access.getWidth(), access.getHeight(),  transferFormat.format, transferFormat.dataType, access.getDataPtr());
+	}
+
+	GLU_EXPECT_NO_ERROR(gl.getError(), "Texture upload failed");
+}
+
 // TextureCube
 
 TextureCube::TextureCube (const RenderContext& context, const ContextInfo& contextInfo, int numLevels, const tcu::CompressedTexture* levels, const tcu::TexDecompressionParams& decompressionParams)

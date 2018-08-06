@@ -400,16 +400,16 @@ void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int 
 	const char*			resultPrefix	= "result";
 	const DataType		coordType		= getSamplerCoordType(m_samplerType);
 	const DataType		outType			= getSamplerOutputType(m_samplerType);
-	const bool			isES32			= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
 	std::ostringstream	global;
 	std::ostringstream	code;
 
 	spec->inputs.push_back(Symbol(coordsName, VarType(coordType, PRECISION_HIGHP)));
 
-	if (!isES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+	if (!supportsES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
-	if (!isES32
+	if (!supportsES32
 		&& (m_samplerType == TYPE_SAMPLER_CUBE_ARRAY
 			|| m_samplerType == TYPE_SAMPLER_CUBE_ARRAY_SHADOW
 			|| m_samplerType == TYPE_INT_SAMPLER_CUBE_ARRAY
@@ -456,7 +456,7 @@ void SamplerIndexingCase::getShaderSpec (ShaderSpec* spec, int numSamplers, int 
 		code << "], " << coordsName << (m_samplerType == TYPE_SAMPLER_CUBE_ARRAY_SHADOW ? ", 0.0" : "") << ");\n";
 	}
 
-	spec->version				= isES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
+	spec->version				= supportsES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
 	spec->globalDeclarations	= global.str();
 	spec->source				= code.str();
 }
@@ -786,11 +786,11 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 	const char*			resultPrefix	= "result";
 	const char*			interfaceName	= m_blockType == BLOCKTYPE_UNIFORM ? "uniform" : "buffer";
 	const char*			layout			= m_blockType == BLOCKTYPE_UNIFORM ? "std140" : "std430";
-	const bool			isES32			= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
 	std::ostringstream	global;
 	std::ostringstream	code;
 
-	if (!isES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+	if (!supportsES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
@@ -833,7 +833,7 @@ void BlockArrayIndexingCase::getShaderSpec (ShaderSpec* spec, int numInstances, 
 		code << "].value;\n";
 	}
 
-	spec->version				= isES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
+	spec->version				= supportsES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
 	spec->globalDeclarations	= global.str();
 	spec->source				= code.str();
 }
@@ -1016,11 +1016,11 @@ void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters
 {
 	const char*			indicesPrefix	= "index";
 	const char*			resultPrefix	= "result";
-	const bool			isES32			= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
+	const bool			supportsES32	= contextSupports(renderContext.getType(), glu::ApiType::es(3, 2));
 	std::ostringstream	global;
 	std::ostringstream	code;
 
-	if (!isES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
+	if (!supportsES32 && m_indexExprType != INDEX_EXPR_TYPE_CONST_LITERAL && m_indexExprType != INDEX_EXPR_TYPE_CONST_EXPRESSION)
 		global << "#extension GL_EXT_gpu_shader5 : require\n";
 
 	if (m_indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
@@ -1060,7 +1060,7 @@ void AtomicCounterIndexingCase::getShaderSpec (ShaderSpec* spec, int numCounters
 		code << "]);\n";
 	}
 
-	spec->version				= isES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
+	spec->version				= supportsES32 ? GLSL_VERSION_320_ES : GLSL_VERSION_310_ES;
 	spec->globalDeclarations	= global.str();
 	spec->source				= code.str();
 }

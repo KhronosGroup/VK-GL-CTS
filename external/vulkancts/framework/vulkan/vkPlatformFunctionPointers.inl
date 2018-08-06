@@ -5,3 +5,4 @@ CreateInstanceFunc							createInstance;
 GetInstanceProcAddrFunc						getInstanceProcAddr;
 EnumerateInstanceExtensionPropertiesFunc	enumerateInstanceExtensionProperties;
 EnumerateInstanceLayerPropertiesFunc		enumerateInstanceLayerProperties;
+EnumerateInstanceVersionFunc				enumerateInstanceVersion;

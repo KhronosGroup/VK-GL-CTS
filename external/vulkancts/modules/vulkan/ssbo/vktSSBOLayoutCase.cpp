@@ -2297,7 +2297,7 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 	if (usesRelaxedLayout(m_interface))
 	{
 		programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc)
-			<< vk::GlslBuildOptions(vk::SPIRV_VERSION_1_0, vk::GlslBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS);
+			<< vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS);
 	}
 	else
 		programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc);
@@ -2305,7 +2305,7 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 
 TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 {
-	if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), "VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
+	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_relaxed_block_layout") && usesRelaxedLayout(m_interface))
 		TCU_THROW(NotSupportedError, "VK_KHR_relaxed_block_layout not supported");
 	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData);
 }

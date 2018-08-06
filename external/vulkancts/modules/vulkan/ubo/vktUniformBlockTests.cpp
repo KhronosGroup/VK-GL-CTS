@@ -59,14 +59,18 @@ public:
 	}
 };
 
-static void createBlockBasicTypeCases (tcu::TestCaseGroup* group, tcu::TestContext& testCtx, const std::string& name, const VarType& type, deUint32 layoutFlags, int numInstances = 0)
+void createBlockBasicTypeCases (tcu::TestCaseGroup& group, tcu::TestContext& testCtx, const std::string& name, const VarType& type, deUint32 layoutFlags, int numInstances = 0)
 {
-	group->addChild(new BlockBasicTypeCase(testCtx, name + "_vertex",			"", type, layoutFlags|DECLARE_VERTEX,						numInstances, LOAD_FULL_MATRIX));
-	group->addChild(new BlockBasicTypeCase(testCtx, name + "_fragment",			"", type, layoutFlags|DECLARE_FRAGMENT,						numInstances, LOAD_FULL_MATRIX));
-	group->addChild(new BlockBasicTypeCase(testCtx, name + "_both",				"",	type, layoutFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,		numInstances, LOAD_FULL_MATRIX));
-	group->addChild(new BlockBasicTypeCase(testCtx, name + "_vertex_comp_access",		"", type, layoutFlags|DECLARE_VERTEX,				numInstances, LOAD_MATRIX_COMPONENTS));
-	group->addChild(new BlockBasicTypeCase(testCtx, name + "_fragment_comp_access",	"", type, layoutFlags|DECLARE_FRAGMENT,					numInstances, LOAD_MATRIX_COMPONENTS));
-	group->addChild(new BlockBasicTypeCase(testCtx, name + "_both_comp_access",		"",	type, layoutFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	numInstances, LOAD_MATRIX_COMPONENTS));
+	de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(group.getTestContext(), name.c_str(), ""));
+
+	typeGroup->addChild(new BlockBasicTypeCase(testCtx, "vertex",				"", type, layoutFlags|DECLARE_VERTEX,					numInstances, LOAD_FULL_MATRIX));
+	typeGroup->addChild(new BlockBasicTypeCase(testCtx, "fragment",				"", type, layoutFlags|DECLARE_FRAGMENT,					numInstances, LOAD_FULL_MATRIX));
+	typeGroup->addChild(new BlockBasicTypeCase(testCtx, "both",					"",	type, layoutFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	numInstances, LOAD_FULL_MATRIX));
+	typeGroup->addChild(new BlockBasicTypeCase(testCtx, "vertex_comp_access",	"", type, layoutFlags|DECLARE_VERTEX,					numInstances, LOAD_MATRIX_COMPONENTS));
+	typeGroup->addChild(new BlockBasicTypeCase(testCtx, "fragment_comp_access",	"", type, layoutFlags|DECLARE_FRAGMENT,					numInstances, LOAD_MATRIX_COMPONENTS));
+	typeGroup->addChild(new BlockBasicTypeCase(testCtx, "both_comp_access",		"",	type, layoutFlags|DECLARE_VERTEX|DECLARE_FRAGMENT,	numInstances, LOAD_MATRIX_COMPONENTS));
+
+	group.addChild(typeGroup.release());
 }
 
 class BlockSingleStructCase : public UniformBlockCase
@@ -435,27 +439,27 @@ void UniformBlockTests::init (void)
 
 		for (int layoutFlagNdx = 0; layoutFlagNdx < DE_LENGTH_OF_ARRAY(layoutFlags); layoutFlagNdx++)
 		{
-			tcu::TestCaseGroup* layoutGroup = new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, "");
-			nestedArrayGroup->addChild(layoutGroup);
+			de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, ""));
 
 			for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
 			{
 				const glu::DataType	type		= basicTypes[basicTypeNdx];
-				const char*			typeName	= glu::getDataTypeName(type);
+				const char* const	typeName	= glu::getDataTypeName(type);
 				const int			childSize	= 4;
 				const int			parentSize	= 3;
 				const VarType		childType	(VarType(type, glu::isDataTypeBoolOrBVec(type) ? 0 : PRECISION_HIGH), childSize);
 				const VarType		parentType	(childType, parentSize);
 
-				createBlockBasicTypeCases(layoutGroup, m_testCtx, typeName, parentType, layoutFlags[layoutFlagNdx].flags);
+				createBlockBasicTypeCases(*layoutGroup, m_testCtx, typeName, parentType, layoutFlags[layoutFlagNdx].flags);
 
 				if (glu::isDataTypeMatrix(type))
 				{
 					for (int matFlagNdx = 0; matFlagNdx < DE_LENGTH_OF_ARRAY(matrixFlags); matFlagNdx++)
-						createBlockBasicTypeCases(layoutGroup, m_testCtx, (std::string(matrixFlags[matFlagNdx].name) + "_" + typeName),
+						createBlockBasicTypeCases(*layoutGroup, m_testCtx, (std::string(matrixFlags[matFlagNdx].name) + "_" + typeName),
 												  parentType, layoutFlags[layoutFlagNdx].flags|matrixFlags[matFlagNdx].flags);
 				}
 			}
+			nestedArrayGroup->addChild(layoutGroup.release());
 		}
 	}
 
@@ -466,13 +470,12 @@ void UniformBlockTests::init (void)
 
 		for (int layoutFlagNdx = 0; layoutFlagNdx < DE_LENGTH_OF_ARRAY(layoutFlags); layoutFlagNdx++)
 		{
-			tcu::TestCaseGroup* layoutGroup = new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, "");
-			nestedArrayGroup->addChild(layoutGroup);
+			de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, ""));
 
 			for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
 			{
 				const glu::DataType	type		= basicTypes[basicTypeNdx];
-				const char*			typeName	= glu::getDataTypeName(type);
+				const char* const	typeName	= glu::getDataTypeName(type);
 				const int			childSize0	= 2;
 				const int			childSize1	= 4;
 				const int			parentSize	= 3;
@@ -480,15 +483,16 @@ void UniformBlockTests::init (void)
 				const VarType		childType1	(childType0, childSize1);
 				const VarType		parentType	(childType1, parentSize);
 
-				createBlockBasicTypeCases(layoutGroup, m_testCtx, typeName, parentType, layoutFlags[layoutFlagNdx].flags);
+				createBlockBasicTypeCases(*layoutGroup, m_testCtx, typeName, parentType, layoutFlags[layoutFlagNdx].flags);
 
 				if (glu::isDataTypeMatrix(type))
 				{
 					for (int matFlagNdx = 0; matFlagNdx < DE_LENGTH_OF_ARRAY(matrixFlags); matFlagNdx++)
-						createBlockBasicTypeCases(layoutGroup, m_testCtx, (std::string(matrixFlags[matFlagNdx].name) + "_" + typeName),
+						createBlockBasicTypeCases(*layoutGroup, m_testCtx, (std::string(matrixFlags[matFlagNdx].name) + "_" + typeName),
 												  parentType, layoutFlags[layoutFlagNdx].flags|matrixFlags[matFlagNdx].flags);
 				}
 			}
+			nestedArrayGroup->addChild(layoutGroup.release());
 		}
 	}
 
@@ -533,33 +537,43 @@ void UniformBlockTests::init (void)
 
 		for (int layoutFlagNdx = 0; layoutFlagNdx < DE_LENGTH_OF_ARRAY(layoutFlags); layoutFlagNdx++)
 		{
-			tcu::TestCaseGroup* layoutGroup = new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, "");
-			singleBasicTypeGroup->addChild(layoutGroup);
+			de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, ""));
 
 			for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
 			{
-				glu::DataType	type		= basicTypes[basicTypeNdx];
-				const char*		typeName	= glu::getDataTypeName(type);
+				glu::DataType		type = basicTypes[basicTypeNdx];
+				const char* const	typeName = glu::getDataTypeName(type);
 
 				if (glu::isDataTypeBoolOrBVec(type))
-					createBlockBasicTypeCases(layoutGroup, m_testCtx, typeName, VarType(type, 0), layoutFlags[layoutFlagNdx].flags);
-				else
-				{
-					for (int precNdx = 0; precNdx < DE_LENGTH_OF_ARRAY(precisionFlags); precNdx++)
-						createBlockBasicTypeCases(layoutGroup, m_testCtx, precisionFlags[precNdx].name + "_" + typeName,
-												  VarType(type, precisionFlags[precNdx].flags), layoutFlags[layoutFlagNdx].flags);
-				}
+					createBlockBasicTypeCases(*layoutGroup, m_testCtx, typeName, VarType(type, 0), layoutFlags[layoutFlagNdx].flags);
+			}
 
-				if (glu::isDataTypeMatrix(type))
+			for (int precNdx = 0; precNdx < DE_LENGTH_OF_ARRAY(precisionFlags); precNdx++)
+			{
+				de::MovePtr<tcu::TestCaseGroup>	precGroup(new tcu::TestCaseGroup(m_testCtx, precisionFlags[precNdx].name.c_str(), ""));
+
+				for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
 				{
-					for (int matFlagNdx = 0; matFlagNdx < DE_LENGTH_OF_ARRAY(matrixFlags); matFlagNdx++)
+					glu::DataType		type		= basicTypes[basicTypeNdx];
+					const char* const	typeName	= glu::getDataTypeName(type);
+
+					if (!glu::isDataTypeBoolOrBVec(type))
+						createBlockBasicTypeCases(*precGroup, m_testCtx, typeName,
+												  VarType(type, precisionFlags[precNdx].flags), layoutFlags[layoutFlagNdx].flags);
+
+					if (glu::isDataTypeMatrix(type))
 					{
-						for (int precNdx = 0; precNdx < DE_LENGTH_OF_ARRAY(precisionFlags); precNdx++)
-							createBlockBasicTypeCases(layoutGroup, m_testCtx, matrixFlags[matFlagNdx].name + "_" + precisionFlags[precNdx].name + "_" + typeName,
-													  VarType(type, precisionFlags[precNdx].flags), layoutFlags[layoutFlagNdx].flags|matrixFlags[matFlagNdx].flags);
+						for (int matFlagNdx = 0; matFlagNdx < DE_LENGTH_OF_ARRAY(matrixFlags); matFlagNdx++)
+						{
+							createBlockBasicTypeCases(*precGroup, m_testCtx, matrixFlags[matFlagNdx].name + "_" + typeName,
+													  VarType(type, precisionFlags[precNdx].flags), layoutFlags[layoutFlagNdx].flags | matrixFlags[matFlagNdx].flags);
+
+						}
 					}
 				}
+				layoutGroup->addChild(precGroup.release());
 			}
+			singleBasicTypeGroup->addChild(layoutGroup.release());
 		}
 	}
 
@@ -570,27 +584,27 @@ void UniformBlockTests::init (void)
 
 		for (int layoutFlagNdx = 0; layoutFlagNdx < DE_LENGTH_OF_ARRAY(layoutFlags); layoutFlagNdx++)
 		{
-			tcu::TestCaseGroup* layoutGroup = new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, "");
-			singleBasicArrayGroup->addChild(layoutGroup);
+			de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, ""));
 
 			for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
 			{
-				glu::DataType	type		= basicTypes[basicTypeNdx];
-				const char*		typeName	= glu::getDataTypeName(type);
-				const int		arraySize	= 3;
+				glu::DataType		type		= basicTypes[basicTypeNdx];
+				const char* const	typeName	= glu::getDataTypeName(type);
+				const int			arraySize	= 3;
 
-				createBlockBasicTypeCases(layoutGroup, m_testCtx, typeName,
+				createBlockBasicTypeCases(*layoutGroup, m_testCtx, typeName,
 										  VarType(VarType(type, glu::isDataTypeBoolOrBVec(type) ? 0 : PRECISION_HIGH), arraySize),
 										  layoutFlags[layoutFlagNdx].flags);
 
 				if (glu::isDataTypeMatrix(type))
 				{
 					for (int matFlagNdx = 0; matFlagNdx < DE_LENGTH_OF_ARRAY(matrixFlags); matFlagNdx++)
-						createBlockBasicTypeCases(layoutGroup, m_testCtx, matrixFlags[matFlagNdx].name + "_" + typeName,
+						createBlockBasicTypeCases(*layoutGroup, m_testCtx, matrixFlags[matFlagNdx].name + "_" + typeName,
 												  VarType(VarType(type, PRECISION_HIGH), arraySize),
 												  layoutFlags[layoutFlagNdx].flags|matrixFlags[matFlagNdx].flags);
 				}
 			}
+			singleBasicArrayGroup->addChild(layoutGroup.release());
 		}
 	}
 
@@ -737,27 +751,27 @@ void UniformBlockTests::init (void)
 
 		for (int layoutFlagNdx = 0; layoutFlagNdx < DE_LENGTH_OF_ARRAY(layoutFlags); layoutFlagNdx++)
 		{
-			tcu::TestCaseGroup* layoutGroup = new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, "");
-			instanceArrayBasicTypeGroup->addChild(layoutGroup);
+			de::MovePtr<tcu::TestCaseGroup> layoutGroup(new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name, ""));
 
 			for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
 			{
-				glu::DataType	type			= basicTypes[basicTypeNdx];
-				const char*		typeName		= glu::getDataTypeName(type);
-				const int		numInstances	= 3;
+				glu::DataType		type			= basicTypes[basicTypeNdx];
+				const char* const	typeName		= glu::getDataTypeName(type);
+				const int			numInstances	= 3;
 
-				createBlockBasicTypeCases(layoutGroup, m_testCtx, typeName,
+				createBlockBasicTypeCases(*layoutGroup, m_testCtx, typeName,
 										  VarType(type, glu::isDataTypeBoolOrBVec(type) ? 0 : PRECISION_HIGH),
 										  layoutFlags[layoutFlagNdx].flags, numInstances);
 
 				if (glu::isDataTypeMatrix(type))
 				{
 					for (int matFlagNdx = 0; matFlagNdx < DE_LENGTH_OF_ARRAY(matrixFlags); matFlagNdx++)
-						createBlockBasicTypeCases(layoutGroup, m_testCtx, matrixFlags[matFlagNdx].name + "_" + typeName,
+						createBlockBasicTypeCases(*layoutGroup, m_testCtx, matrixFlags[matFlagNdx].name + "_" + typeName,
 												  VarType(type, PRECISION_HIGH), layoutFlags[layoutFlagNdx].flags|matrixFlags[matFlagNdx].flags,
 												  numInstances);
 				}
 			}
+			instanceArrayBasicTypeGroup->addChild(layoutGroup.release());
 		}
 	}
 
