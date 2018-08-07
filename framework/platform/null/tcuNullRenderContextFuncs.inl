@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 97ab881f0ab9e03a59388214f9c36dfe4c206c76.
+ * Generated from Khronos GL API description (gl.xml) revision b7aee529f02340247e45621e9dbd054817d39c71.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -1461,10 +1461,10 @@ GLW_APICALL void GLW_APIENTRY glDepthMask (GLboolean flag)
 
 }
 
-GLW_APICALL void GLW_APIENTRY glDepthRange (GLdouble near, GLdouble far)
+GLW_APICALL void GLW_APIENTRY glDepthRange (GLdouble n, GLdouble f)
 {
-	DE_UNREF(near);
-	DE_UNREF(far);
+	DE_UNREF(n);
+	DE_UNREF(f);
 
 }
 
@@ -2326,12 +2326,6 @@ GLW_APICALL void GLW_APIENTRY glGetFramebufferParameterivEXT (GLuint framebuffer
 }
 
 GLW_APICALL GLenum GLW_APIENTRY glGetGraphicsResetStatus (void)
-{
-
-	return (GLenum)0;
-}
-
-GLW_APICALL GLenum GLW_APIENTRY glGetGraphicsResetStatusEXT (void)
 {
 
 	return (GLenum)0;

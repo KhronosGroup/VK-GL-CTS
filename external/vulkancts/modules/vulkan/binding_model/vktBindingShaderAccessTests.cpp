@@ -924,7 +924,7 @@ vk::Move<vk::VkPipeline> SingleCmdRenderInstance::createPipeline (vk::VkPipeline
 		vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		DE_NULL,
 		(vk::VkPipelineRasterizationStateCreateFlags)0,
-		VK_TRUE,									// depthClipEnable
+		VK_FALSE,									// depthClipEnable
 		VK_FALSE,									// rasterizerDiscardEnable
 		vk::VK_POLYGON_MODE_FILL,					// fillMode
 		vk::VK_CULL_MODE_NONE,						// cullMode
