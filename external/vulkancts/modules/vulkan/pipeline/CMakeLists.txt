@@ -21,6 +21,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineImageTests.hpp
 	vktPipelinePushConstantTests.cpp
 	vktPipelinePushConstantTests.hpp
+	vktPipelinePushDescriptorTests.cpp
+	vktPipelinePushDescriptorTests.hpp
 	vktPipelineSpecConstantTests.hpp
 	vktPipelineSpecConstantTests.cpp
 	vktPipelineSpecConstantUtil.hpp
