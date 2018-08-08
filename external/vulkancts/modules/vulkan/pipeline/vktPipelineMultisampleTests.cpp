@@ -1992,7 +1992,7 @@ void MultisampleRenderer::initialize (Context&									context,
 				{
 					0u,													// deUint32							srcSubpass
 					1u + static_cast<deUint32>(i),						// deUint32							dstSubpass
-					VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,					// VkPipelineStageFlags				srcStageMask
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,		// VkPipelineStageFlags				srcStageMask
 					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,				// VkPipelineStageFlags				dstStageMask
 					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,				// VkAccessFlags					srcAccessMask
 					VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,				// VkAccessFlags					dstAccessMask
