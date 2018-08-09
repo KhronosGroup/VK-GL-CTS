@@ -528,6 +528,8 @@ void ImageAccessTestInstance::uploadImage (vk::VkImage image, const tcu::Texture
 		const tcu::PixelBufferAccess		destAccess	(access.getFormat(), access.getSize(), stagingBuffer->getAllocation().getHostPtr());
 
 		tcu::copy(destAccess, access);
+
+		vk::flushMappedMemoryRange(vk, device, stagingBuffer->getAllocation().getMemory(), stagingBuffer->getAllocation().getOffset(), stagingBufferSize);
 	}
 
 	const vk::VkImageSubresourceRange	subresourceRange	=

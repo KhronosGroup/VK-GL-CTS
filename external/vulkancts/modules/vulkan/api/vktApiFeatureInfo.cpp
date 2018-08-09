@@ -1915,8 +1915,7 @@ tcu::TestStatus ycbcrFormatProperties (Context& context, VkFormat format)
 		{
 			const VkFormatFeatureFlags	required	= VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
 													| VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
-													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT
-													| VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT;
+													| VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 
 			if ((supported & required) != required)
 			{
@@ -2632,9 +2631,9 @@ bool checkExtension (vector<VkExtensionProperties>& properties, const char* exte
 tcu::TestStatus deviceFeatures2 (Context& context)
 {
 	const PlatformInterface&			vkp			= context.getPlatformInterface();
-	const VkInstance					instance	(context.getInstance());
-	const InstanceDriver				vki			(vkp, instance);
-	const vector<VkPhysicalDevice>		devices		= enumeratePhysicalDevices(vki, instance);
+	const Unique<VkInstance>			instance	(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
+	const InstanceDriver				vki			(vkp, *instance);
+	const vector<VkPhysicalDevice>		devices		= enumeratePhysicalDevices(vki, *instance);
 	TestLog&							log			= context.getTestContext().getLog();
 
 	for (size_t deviceNdx = 0; deviceNdx < devices.size(); ++deviceNdx)
