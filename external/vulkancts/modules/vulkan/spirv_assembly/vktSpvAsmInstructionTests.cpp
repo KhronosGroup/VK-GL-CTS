@@ -8247,11 +8247,18 @@ bool usesFloat64 (ConversionDataType from, ConversionDataType to)
 	return (from == DATA_TYPE_FLOAT_64 || to == DATA_TYPE_FLOAT_64);
 }
 
+bool usesFloat32 (ConversionDataType from, ConversionDataType to)
+{
+	return (from == DATA_TYPE_FLOAT_32 || to == DATA_TYPE_FLOAT_32);
+}
 
 ComputeTestFeatures getConversionUsedFeatures (ConversionDataType from, ConversionDataType to)
 {
 	if (usesInt16(from, to) && usesInt64(from, to))			return COMPUTE_TEST_USES_INT16_INT64;
 	else if (usesInt16(from, to) && usesInt32(from, to))	return COMPUTE_TEST_USES_NONE;
+	else if (usesInt16(from, to) && usesFloat64(from, to))	return COMPUTE_TEST_USES_INT16_FLOAT64;
+	else if (usesInt32(from, to) && usesFloat32(from, to))	return COMPUTE_TEST_USES_NONE;
+	else if (usesInt64(from, to) && usesFloat64(from, to))	return COMPUTE_TEST_USES_INT64_FLOAT64;
 	else if (usesInt16(from, to))							return COMPUTE_TEST_USES_INT16;			// This is not set for int16<-->int32 only conversions
 	else if (usesInt64(from, to))							return COMPUTE_TEST_USES_INT64;
 	else if (usesFloat64(from, to))							return COMPUTE_TEST_USES_FLOAT64;
@@ -8266,11 +8273,21 @@ vector<string> getFeatureStringVector (ComputeTestFeatures computeTestFeatures)
 		features.push_back("shaderInt16");
 		features.push_back("shaderInt64");
 	}
-	else if	(computeTestFeatures == COMPUTE_TEST_USES_INT16)		features.push_back("shaderInt16");
-	else if	(computeTestFeatures == COMPUTE_TEST_USES_INT64)		features.push_back("shaderInt64");
-	else if	(computeTestFeatures == COMPUTE_TEST_USES_FLOAT64)		features.push_back("shaderFloat64");
-	else if (computeTestFeatures == COMPUTE_TEST_USES_NONE)			{}
-	else															DE_ASSERT(false);
+	else if (computeTestFeatures == COMPUTE_TEST_USES_INT64_FLOAT64)
+	{
+		features.push_back("shaderInt64");
+		features.push_back("shaderFloat64");
+	}
+	else if (computeTestFeatures == COMPUTE_TEST_USES_INT16_FLOAT64)
+	{
+		features.push_back("shaderInt16");
+		features.push_back("shaderFloat64");
+	}
+	else if (computeTestFeatures == COMPUTE_TEST_USES_INT16)	features.push_back("shaderInt16");
+	else if (computeTestFeatures == COMPUTE_TEST_USES_INT64)	features.push_back("shaderInt64");
+	else if (computeTestFeatures == COMPUTE_TEST_USES_FLOAT64)	features.push_back("shaderFloat64");
+	else if (computeTestFeatures == COMPUTE_TEST_USES_NONE)		{}
+	else														DE_ASSERT(false);
 
 	return features;
 }
@@ -8294,32 +8311,32 @@ struct ConvertCase
 
 		if (m_features == COMPUTE_TEST_USES_INT16)
 		{
-			m_asmTypes["datatype_capabilities"]	  =		"OpCapability Int16\n"
+			m_asmTypes["datatype_capabilities"]		=	"OpCapability Int16\n"
 														"OpCapability StorageUniformBufferBlock16\n"
 														"OpCapability StorageUniform16\n";
-			m_asmTypes["datatype_additional_decl"] =	"%i16        = OpTypeInt 16 1\n"
+			m_asmTypes["datatype_additional_decl"]	=	"%i16        = OpTypeInt 16 1\n"
 														"%u16        = OpTypeInt 16 0\n"
 														"%i16vec2    = OpTypeVector %i16 2\n";
-			m_asmTypes["datatype_extensions"]	  =		"OpExtension \"SPV_KHR_16bit_storage\"\n";
+			m_asmTypes["datatype_extensions"]		=	"OpExtension \"SPV_KHR_16bit_storage\"\n";
 		}
 		else if (m_features == COMPUTE_TEST_USES_INT64)
 		{
-			m_asmTypes["datatype_capabilities"]	  =		"OpCapability Int64\n";
-			m_asmTypes["datatype_additional_decl"] =	"%i64        = OpTypeInt 64 1\n"
+			m_asmTypes["datatype_capabilities"]		=	"OpCapability Int64\n";
+			m_asmTypes["datatype_additional_decl"]	=	"%i64        = OpTypeInt 64 1\n"
 														"%u64        = OpTypeInt 64 0\n";
-			m_asmTypes["datatype_extensions"]	  =		"";
+			m_asmTypes["datatype_extensions"]		=	"";
 		}
 		else if (m_features == COMPUTE_TEST_USES_INT16_INT64)
 		{
-			m_asmTypes["datatype_capabilities"]	  =		"OpCapability Int16\n"
+			m_asmTypes["datatype_capabilities"]		=	"OpCapability Int16\n"
 														"OpCapability StorageUniformBufferBlock16\n"
 														"OpCapability StorageUniform16\n"
 														"OpCapability Int64\n";
-			m_asmTypes["datatype_additional_decl"] =	"%i16        = OpTypeInt 16 1\n"
+			m_asmTypes["datatype_additional_decl"]	=	"%i16        = OpTypeInt 16 1\n"
 														"%u16        = OpTypeInt 16 0\n"
 														"%i64        = OpTypeInt 64 1\n"
 														"%u64        = OpTypeInt 64 0\n";
-			m_asmTypes["datatype_extensions"]	  =		"OpExtension \"SPV_KHR_16bit_storage\"\n";
+			m_asmTypes["datatype_extensions"]		=	"OpExtension \"SPV_KHR_16bit_storage\"\n";
 		}
 		else if (m_features == COMPUTE_TEST_USES_FLOAT64)
 		{
@@ -8328,12 +8345,37 @@ struct ConvertCase
 		}
 		else if (usesInt16(from, to) && usesInt32(from, to))
 		{
-			m_asmTypes["datatype_capabilities"]	  =		"OpCapability StorageUniformBufferBlock16\n"
+			m_asmTypes["datatype_capabilities"]		=	"OpCapability StorageUniformBufferBlock16\n"
 														"OpCapability StorageUniform16\n";
-			m_asmTypes["datatype_additional_decl"] =	"%i16        = OpTypeInt 16 1\n"
+			m_asmTypes["datatype_additional_decl"]	=	"%i16        = OpTypeInt 16 1\n"
 														"%u16        = OpTypeInt 16 0\n"
 														"%i16vec2    = OpTypeVector %i16 2\n";
-			m_asmTypes["datatype_extensions"]	  =		"OpExtension \"SPV_KHR_16bit_storage\"\n";
+			m_asmTypes["datatype_extensions"]		=	"OpExtension \"SPV_KHR_16bit_storage\"\n";
+		}
+		else if (m_features == COMPUTE_TEST_USES_INT16_FLOAT64)
+		{
+			m_asmTypes["datatype_capabilities"]		=	"OpCapability Int16\n"
+														"OpCapability StorageUniform16\n"
+														"OpCapability Float64\n";
+			m_asmTypes["datatype_additional_decl"]	=	"%i16        = OpTypeInt 16 1\n"
+														"%u16        = OpTypeInt 16 0\n"
+														"%f64        = OpTypeFloat 64\n";
+			m_asmTypes["datatype_extensions"]		=	"OpExtension \"SPV_KHR_16bit_storage\"\n";
+		}
+		else if (m_features == COMPUTE_TEST_USES_INT64_FLOAT64)
+		{
+			m_asmTypes["datatype_capabilities"]		=	"OpCapability Int64\n"
+														"OpCapability Float64\n";
+			m_asmTypes["datatype_additional_decl"]	=	"%i64        = OpTypeInt 64 1\n"
+														"%u64        = OpTypeInt 64 0\n"
+														"%f64        = OpTypeFloat 64\n";
+			m_asmTypes["datatype_extensions"]		=	"";
+		}
+		else if (usesInt32(from, to) && usesFloat32(from, to))
+		{
+			m_asmTypes["datatype_capabilities"]		=	"";
+			m_asmTypes["datatype_additional_decl"]	=	"";
+			m_asmTypes["datatype_extensions"]		=	"";
 		}
 		else
 		{
@@ -8463,9 +8505,45 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 	}
 	else if (instruction == "OpFConvert")
 	{
-		// All hexadecimal values below represent 1024.0 as 32/64-bit IEEE 754 float
+		// All hexadecimal values below represent 1234.0 as 32/64-bit IEEE 754 float
 		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_FLOAT_64,			0x449a4000,							true,	0x4093480000000000));
 		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_FLOAT_32,			0x4093480000000000,					true,	0x449a4000));
+	}
+	else if (instruction == "OpConvertSToF")
+	{
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_32,			-1234,								true,	0xc49a4000));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_16,		DATA_TYPE_FLOAT_64,			-1234,								true,	0xc093480000000000));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_32,			-1234,								true,	0xc49a4000));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_32,		DATA_TYPE_FLOAT_64,			-1234,								true,	0xc093480000000000));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_32,			-1234,								true,	0xc49a4000));
+		testCases.push_back(ConvertCase(DATA_TYPE_SIGNED_64,		DATA_TYPE_FLOAT_64,			-1234,								true,	0xc093480000000000));
+	}
+	else if (instruction == "OpConvertFToS")
+	{
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_16,		0xc49a4000,							true,	-1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_32,		0xc49a4000,							true,	-1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_64,		0xc49a4000,							true,	-1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_16,		0xc093480000000000,					true,	-1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_32,		0xc093480000000000,					true,	-1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_64,		0xc093480000000000,					true,	-1234));
+	}
+	else if (instruction == "OpConvertUToF")
+	{
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_32,			1234,								true,	0x449a4000));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_16,		DATA_TYPE_FLOAT_64,			1234,								true,	0x4093480000000000));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_32,			1234,								true,	0x449a4000));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_32,		DATA_TYPE_FLOAT_64,			1234,								true,	0x4093480000000000));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_32,			1234,								true,	0x449a4000));
+		testCases.push_back(ConvertCase(DATA_TYPE_UNSIGNED_64,		DATA_TYPE_FLOAT_64,			1234,								true,	0x4093480000000000));
+	}
+	else if (instruction == "OpConvertFToU")
+	{
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_16,		0x449a4000,							true,	1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_32,		0x449a4000,							true,	1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_UNSIGNED_64,		0x449a4000,							true,	1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_16,		0x4093480000000000,					true,	1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_32,		0x4093480000000000,					true,	1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_UNSIGNED_64,		0x4093480000000000,					true,	1234));
 	}
 	else
 		DE_FATAL("Unknown instruction");
@@ -9540,8 +9618,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createNoContractionGroup(testCtx));
 	computeTests->addChild(createOpUndefGroup(testCtx));
 	computeTests->addChild(createOpUnreachableGroup(testCtx));
-	computeTests ->addChild(createOpQuantizeToF16Group(testCtx));
-	computeTests ->addChild(createOpFRemGroup(testCtx));
+	computeTests->addChild(createOpQuantizeToF16Group(testCtx));
+	computeTests->addChild(createOpFRemGroup(testCtx));
 	computeTests->addChild(createOpSRemComputeGroup(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSRemComputeGroup64(testCtx, QP_TEST_RESULT_PASS));
 	computeTests->addChild(createOpSModComputeGroup(testCtx, QP_TEST_RESULT_PASS));
@@ -9549,6 +9627,10 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpSConvert", "sconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpUConvert", "uconvert"));
 	computeTests->addChild(createConvertComputeTests(testCtx, "OpFConvert", "fconvert"));
+	computeTests->addChild(createConvertComputeTests(testCtx, "OpConvertSToF", "convertstof"));
+	computeTests->addChild(createConvertComputeTests(testCtx, "OpConvertFToS", "convertftos"));
+	computeTests->addChild(createConvertComputeTests(testCtx, "OpConvertUToF", "convertutof"));
+	computeTests->addChild(createConvertComputeTests(testCtx, "OpConvertFToU", "convertftou"));
 	computeTests->addChild(createOpCompositeInsertGroup(testCtx));
 	computeTests->addChild(createOpCompositeExtractGroup(testCtx));
 	computeTests->addChild(createOpInBoundsAccessChainGroup(testCtx));
@@ -9623,6 +9705,10 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpSConvert", "sconvert"));
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpUConvert", "uconvert"));
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpFConvert", "fconvert"));
+	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpConvertSToF", "convertstof"));
+	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpConvertFToS", "convertftos"));
+	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpConvertUToF", "convertutof"));
+	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpConvertFToU", "convertftou"));
 	graphicsTests->addChild(createPointerParameterGraphicsGroup(testCtx));
 
 	instructionTests->addChild(computeTests.release());
