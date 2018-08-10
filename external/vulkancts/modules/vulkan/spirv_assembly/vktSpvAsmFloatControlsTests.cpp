@@ -140,6 +140,9 @@ enum OperationId
 	O_CONV_FROM_FP16,
 	O_CONV_FROM_FP32,
 	O_CONV_FROM_FP64,
+	O_SCONST_CONV_FROM_FP32_TO_FP16,
+	O_SCONST_CONV_FROM_FP64_TO_FP32,
+	O_SCONST_CONV_FROM_FP64_TO_FP16,
 	O_RETURN_VAL,
 
 	// spir-v binary operations
@@ -158,20 +161,6 @@ enum OperationId
 	O_MAT_MUL_V,
 	O_MAT_MUL_M,
 	O_OUT_PROD,
-	O_SCONST_NEGATE,
-	O_SCONST_COMPOSITE,
-	O_SCONST_COMPOSITE_INS,
-	O_SCONST_ADD,
-	O_SCONST_SUB,
-	O_SCONST_MUL,
-	O_SCONST_DIV,
-	O_SCONST_REM,
-	O_SCONST_MOD,
-	O_SCONST_SELECT,
-	O_SCONST_SHUFFLE,
-	O_SCONST_CONV_FROM_FP16,
-	O_SCONST_CONV_FROM_FP32,
-	O_SCONST_CONV_FROM_FP64,
 	O_ORD_EQ,
 	O_UORD_EQ,
 	O_ORD_NEQ,
@@ -896,7 +885,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
 		{ O_NMAX,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
 		{ O_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
 		{ O_DIST,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED }
+		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 	};
 
 	const UnaryCase unaryOpFTZArr[] = {
@@ -1024,7 +1013,7 @@ TypeTestResults<float>::TypeTestResults()
 		{ O_NMAX,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
 		{ O_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
 		{ O_DIST,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED }
+		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 	};
 
 	const UnaryCase unaryOpFTZArr[] = {
@@ -1152,7 +1141,7 @@ TypeTestResults<double>::TypeTestResults()
 		{ O_NMAX,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
 		{ O_NCLAMP,		V_ONE,			V_ZERO,			V_INF,			V_ZERO },
 		{ O_DIST,		V_ONE,			V_ZERO,			V_INF,			V_UNUSED },
-		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED }
+		{ O_CROSS,		V_ZERO,			V_ZERO,			V_UNUSED,		V_UNUSED },
 	};
 
 	const UnaryCase unaryOpFTZArr[] = {
@@ -1252,6 +1241,8 @@ struct Operation
 	bool		isInputTypeRestricted;
 	FloatType	restrictedInputType;
 
+	// arguments for OpSpecConstant need to be specified also as constant
+	bool		isSpecConstant;
 
 	Operation()		{}
 
@@ -1265,10 +1256,12 @@ struct Operation
 		, commands(_commands)
 		, isInputTypeRestricted(false)
 		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
+		, isSpecConstant(false)
 	{}
 
-	// Extended constructor - used mostly by conversion operations
+	// Conversion operations constructor (used also by conversions done in SpecConstantOp)
 	Operation(const char* _name,
+			  bool specConstant,
 			  FloatType _inputType,
 			  const char* _constants,
 			  const char* _commands)
@@ -1280,20 +1273,8 @@ struct Operation
 		, commands(_commands)
 		, isInputTypeRestricted(true)
 		, restrictedInputType(_inputType)
+		, isSpecConstant(specConstant)
 	{}
-
-	// SpecConstant constructor - used by SpecConstant operations
-	Operation(const char* _name, bool specConstant, const char* _constants)
-		: name(_name)
-		, annotations("")
-		, types("")
-		, constants(_constants)
-		, commands("")
-		, isInputTypeRestricted(false)
-		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
-	{
-		(void)specConstant;
-	}
 
 	// Full constructor - used by few operations, that are more complex to test
 	Operation(const char* _name,
@@ -1310,6 +1291,7 @@ struct Operation
 		, commands(_commands)
 		, isInputTypeRestricted(false)
 		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
+		, isSpecConstant(false)
 	{}
 
 	// Full constructor - used by rounding override cases
@@ -1327,6 +1309,7 @@ struct Operation
 		, commands(_commands)
 		, isInputTypeRestricted(true)
 		, restrictedInputType(_inputType)
+		, isSpecConstant(false)
 	{}
 };
 
@@ -1450,9 +1433,28 @@ void TestCasesBuilder::init()
 
 	// conversion operations that are meant to be used only for single output type (defined by the second number in name)
 	const char* convertSource =				"%result             = OpFConvert %type_float %arg1\n";
-	mo[O_CONV_FROM_FP16]	= Op("conv_from_fp16", FP16, "", convertSource);
-	mo[O_CONV_FROM_FP32]	= Op("conv_from_fp32", FP32, "", convertSource);
-	mo[O_CONV_FROM_FP64]	= Op("conv_from_fp64", FP64, "", convertSource);
+	mo[O_CONV_FROM_FP16]	= Op("conv_from_fp16", false, FP16, "", convertSource);
+	mo[O_CONV_FROM_FP32]	= Op("conv_from_fp32", false, FP32, "", convertSource);
+	mo[O_CONV_FROM_FP64]	= Op("conv_from_fp64", false, FP64, "", convertSource);
+
+	// from all operands supported by OpSpecConstantOp we can only test FConvert opcode with literals as everything
+	// else requires Karnel capability (OpenCL); values of literals used in SPIR-V code must be equiwalent to
+	// V_CONV_FROM_FP32_ARG and V_CONV_FROM_FP64_ARG so we can use same expected rounded values as for regular OpFConvert
+	mo[O_SCONST_CONV_FROM_FP32_TO_FP16]
+						= Op("sconst_conv_from_fp32", true, FP32,
+											"%c_arg              = OpConstant %type_f32 1.22334445\n"
+											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
+											"");
+	mo[O_SCONST_CONV_FROM_FP64_TO_FP32]
+						= Op("sconst_conv_from_fp64", true, FP64,
+											"%c_arg              = OpConstant %type_f64 1.22334455\n"
+											"%result             = OpSpecConstantOp %type_f32 FConvert %c_arg\n",
+											"");
+	mo[O_SCONST_CONV_FROM_FP64_TO_FP16]
+						= Op("sconst_conv_from_fp64", true, FP64,
+											"%c_arg              = OpConstant %type_f64 1.22334445\n"
+											"%result             = OpSpecConstantOp %type_f16 FConvert %c_arg\n",
+											"");
 
 	mo[O_ADD]			= Op("add",			"%result             = OpFAdd %type_float %arg1 %arg2\n");
 	mo[O_SUB]			= Op("sub",			"%result             = OpFSub %type_float %arg1 %arg2\n");
@@ -1504,74 +1506,6 @@ void TestCasesBuilder::init()
 											"%mulMat             = OpOuterProduct %type_float_mat2x2 %vec1 %vec2\n"
 											"%extCol             = OpCompositeExtract %type_float_vec2 %mulMat 0\n"
 											"%result             = OpCompositeExtract %type_float %extCol 0\n");
-
-	// TODO: OpSpecConstantOp operations are not tested - arguemnts need to mapped to proper const values
-	mo[O_SCONST_NEGATE]	= Op("sconst_negate", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFNegate %c_arg1\n");
-	mo[O_SCONST_COMPOSITE]
-						= Op("composite", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_vec1             = OpCompositeConstruct %type_float_vec2 %c_arg1 %c_arg1\n"
-											"%result             = OpSpecConstantOp %type_float OpCompositeExtract %c_vec1 0\n");
-	mo[O_SCONST_COMPOSITE_INS]
-						= Op("comp_ins", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_vec1             = OpCompositeConstruct %type_float_vec2 %c_float_0 %c_float_0\n"
-											"%c_vec2             = OpSpecConstantOp %type_float_vec2 OpCompositeInsert %c_arg1 %c_vec1 0\n"
-											"%result             = OpSpecConstantOp %type_float OpCompositeExtract %vec2 0\n");
-	mo[O_SCONST_ADD]	= Op("sconst_add", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_arg2             = OpConstant %type_float ${arg2_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFAdd %c_arg1 %c_arg2\n");
-	mo[O_SCONST_SUB]	= Op("sconst_sub", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_arg2             = OpConstant %type_float ${arg2_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFSub %c_arg1 %c_arg2\n");
-	mo[O_SCONST_MUL]	= Op("sconst_mul", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_arg2             = OpConstant %type_float ${arg2_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFMul %c_arg1 %c_arg2\n");
-	mo[O_SCONST_DIV]	= Op("sconst_div", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_arg2             = OpConstant %type_float ${arg2_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFDiv %c_arg1 %c_arg2\n");
-	mo[O_SCONST_REM]	= Op("sconst_rem", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_arg2             = OpConstant %type_float ${arg2_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFRem %c_arg1 %c_arg2\n");
-	mo[O_SCONST_MOD]	= Op("sconst_mod", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_arg2             = OpConstant %type_float ${arg2_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFMod %c_arg1 %c_arg2\n");
-	mo[O_SCONST_SELECT]	= Op("sconst_select", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_arg2             = OpConstant %type_float ${arg2_value}\n"
-											"%c_comp             = OpConstant %type_bool 0\n"
-											"%result             = OpSpecConstantOp %type_float OpSelect %c_comp %arg1 %arg2\n");
-	mo[O_SCONST_SHUFFLE]
-						= Op("shuffle", true,
-											"%c_arg1             = OpConstant %type_float ${arg1_value}\n"
-											"%c_arg2             = OpConstant %type_float ${arg2_value}\n"
-											"%c_tmpVec1          = OpCompositeConstruct %type_float_vec2 %c_arg1 %c_arg1\n"
-											"%c_tmpVec2          = OpCompositeConstruct %type_float_vec2 %c_arg2 %c_arg2\n"
-											"%c_vec1             = OpSpecConstantOp %type_float_vec2 OpVectorShuffle %c_tmpVec1 %c_tmpVec2 0 2\n"
-											"%result             = OpSpecConstantOp %type_float OpCompositeExtract %c_vec1 0\n");
-	mo[O_SCONST_CONV_FROM_FP16]
-						= Op("conv_from_fp16",	FP16,
-											"%c_arg1             = OpConstant %type_f16 ${arg1_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFConvert %c_arg1\n",
-											"");
-	mo[O_SCONST_CONV_FROM_FP32]
-						= Op("conv_from_fp32",	FP32,
-											"%c_arg1             = OpConstant %type_f32 ${arg1_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFConvert %c_arg1\n",
-											"");
-	mo[O_SCONST_CONV_FROM_FP64]
-						= Op("conv_from_fp64",	FP64,
-											"%c_arg1             = OpConstant %type_f64 ${arg1_value}\n"
-											"%result             = OpSpecConstantOp %type_float OpFConvert %c_arg1\n",
-											"");
 
 	// comparison operations
 	mo[O_ORD_EQ]		= Op("ord_eq",		"%boolVal           = OpFOrdEqual %type_bool %arg1 %arg2\n"
@@ -1829,16 +1763,16 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	};
 
 	const ZINCase unaryOpZINPreserve[] = {
-		// operation		fp64	second arg		preserve zero	preserve szero		preserve inf	preserve sinf		preserve nan
-		{ O_RETURN_VAL,		true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_D_EXTRACT,		true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_D_INSERT,		true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_SHUFFLE,		true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_COMPOSITE,		true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_COMPOSITE_INS,	true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_COPY,			true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_TRANSPOSE,		true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
-		{ O_NEGATE,			true,	V_UNUSED,		V_MINUS_ZERO,	V_ZERO,				V_MINUS_INF,	V_INF,				V_NAN },
+		// operation				fp64	second arg		preserve zero	preserve szero		preserve inf	preserve sinf		preserve nan
+		{ O_RETURN_VAL,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ O_D_EXTRACT,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ O_D_INSERT,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ O_SHUFFLE,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ O_COMPOSITE,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ O_COMPOSITE_INS,			true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ O_COPY,					true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ O_TRANSPOSE,				true,	V_UNUSED,		V_ZERO,			V_MINUS_ZERO,		V_INF,			V_MINUS_INF,		V_NAN },
+		{ O_NEGATE,					true,	V_UNUSED,		V_MINUS_ZERO,	V_ZERO,				V_MINUS_INF,	V_INF,				V_NAN },
 	};
 
 	bool isFP64 = typeTestResults->floatType() == FP64;
@@ -1950,6 +1884,11 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
 			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
 
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp32", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp32", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP32_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP16, V_UNUSED, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
+
 			// verify that VkShaderFloatingPointRoundingModeKHR can be overridden for a given instruction by the FPRoundingMode decoration
 			testCases.push_back(OTC("rounding_rte_override", B_RTE_ROUNDING, O_ORTZ_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTZ_RESULT));
 			testCases.push_back(OTC("rounding_rtz_override", B_RTZ_ROUNDING, O_ORTE_ROUND, V_CONV_FROM_FP32_ARG, V_UNUSED, V_CONV_TO_FP16_RTE_RESULT));
@@ -1965,6 +1904,9 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 			// convert from fp64 to fp32
 			testCases.push_back(OTC("rounding_rte_conv_from_fp64", B_RTE_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
 			testCases.push_back(OTC("rounding_rtz_conv_from_fp64", B_RTZ_ROUNDING, O_CONV_FROM_FP64, V_CONV_FROM_FP64_ARG, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
+
+			testCases.push_back(OTC("rounding_rte_sconst_conv_from_fp64", B_RTE_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTE_RESULT));
+			testCases.push_back(OTC("rounding_rtz_sconst_conv_from_fp64", B_RTZ_ROUNDING, O_SCONST_CONV_FROM_FP64_TO_FP32, V_UNUSED, V_UNUSED, V_CONV_TO_FP32_RTZ_RESULT));
 		}
 		else
 		{
@@ -2283,6 +2225,9 @@ void TestGroupBuilderBase::specializeOperation(const TestCaseInfo&		testCaseInfo
 	specializedOperation.inFloatType		= inFloatType;
 	specializedOperation.inTypeSnippets		= inTypeSnippets;
 	specializedOperation.outTypeSnippets	= outTypeSnippets;
+
+	if (operation.isSpecConstant)
+		return;
 
 	// select way arguments are prepared
 	if (testCaseInfo.argumentsFromInput)
