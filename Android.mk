@@ -65,4 +65,4 @@ include $(BUILD_SHARED_LIBRARY)
 # Build the test APKs using their own makefiles
 # include $(call all-makefiles-under,$(LOCAL_PATH)/android)
 
-include $(LOCAL_PATH)/android/package/Android.mk $(LOCAL_PATH)/android/cts/Android.mk
+include $(LOCAL_PATH)/android/package/Android.mk
