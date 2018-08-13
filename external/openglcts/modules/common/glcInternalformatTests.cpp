@@ -882,6 +882,20 @@ tcu::TestNode::IterateResult CopyTexImageCase::iterate(void)
 		gl.deleteFramebuffers(1, &copyFboId);
 		if (copyFboColorTextureId)
 			gl.deleteTextures(1, &copyFboColorTextureId);
+		// Check the bits of each channel first, because according the GLES3.2 spec, the component sizes of internalformat
+		// must exactly match the corresponding component sizes of the source buffer's effective internal format.
+		if (glu::isContextTypeES(renderContext.getType()) && getTypeFromInternalFormat(textureInternalFormat) != GL_UNSIGNED_BYTE)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "Not supported: The component sizes of internalformat do not exactly "
+			<< "match the corresponding component sizes of the source buffer's effective internal format." << tcu::TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "The test format isn't renderable, and the component sizes of "
+			"internalformat do not exactly match the corresponding component sizes of the source buffer's effective internal format.");
+			gl.deleteFramebuffers(1, &mainFboId);
+			gl.deleteTextures(1, &mainFboColorTextureId);
+			gl.deleteTextures(1, &copiedTextureId);
+			gl.deleteTextures(1, &referenceTextureId);
+			return STOP;
+		}
 	}
 
 	// Copy attachment from copy FBO to tested texture (if copy FBO couldn't be created
