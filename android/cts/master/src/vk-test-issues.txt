@@ -25,3 +25,6 @@ dEQP-VK.pipeline.sampler.view_type.cube.format.r5g6b5_unorm_pack16.mag_filter.li
 # Issue 702: Tests use invalid conversion operations
 dEQP-VK.spirv_assembly.instruction.*.indexing.*u32*
 dEQP-VK.spirv_assembly.instruction.*.indexing.*s32*
+
+# b/112540895: Compile time is still unreasonable on low-end parts, revisit for Q
+dEQP-VK.ubo.random.all_shared_buffer.48
