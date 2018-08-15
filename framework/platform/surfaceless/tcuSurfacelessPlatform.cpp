@@ -98,7 +98,10 @@ public:
 	{
 		return m_driver;
 	}
-
+	const tcu::FunctionLibrary&		getFunctionLibrary		(void) const
+	{
+		return m_library;
+	}
 private:
 	const tcu::DynamicFunctionLibrary	m_library;
 	const vk::PlatformDriver			m_driver;
