@@ -779,7 +779,7 @@ void generateWork (TestContext& testContext)
 	rasterState.sType							= VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterState.pNext							= DE_NULL;
 	rasterState.flags							= 0;
-	rasterState.depthClampEnable				= VK_TRUE;
+	rasterState.depthClampEnable				= VK_FALSE;
 	rasterState.rasterizerDiscardEnable			= VK_FALSE;
 	rasterState.polygonMode						= VK_POLYGON_MODE_FILL;
 	rasterState.cullMode						= VK_CULL_MODE_NONE;

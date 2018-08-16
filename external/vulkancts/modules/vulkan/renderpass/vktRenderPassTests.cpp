@@ -1798,7 +1798,7 @@ Move<VkPipeline> createSubpassPipeline (const DeviceInterface&		vk,
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,		// sType
 		DE_NULL,														// pNext
 		(VkPipelineRasterizationStateCreateFlags)0u,
-		VK_TRUE,														// depthClipEnable
+		VK_FALSE,														// depthClipEnable
 		VK_FALSE,														// rasterizerDiscardEnable
 		VK_POLYGON_MODE_FILL,											// fillMode
 		VK_CULL_MODE_NONE,												// cullMode
