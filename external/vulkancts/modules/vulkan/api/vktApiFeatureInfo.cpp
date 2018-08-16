@@ -1669,7 +1669,7 @@ VkFormatFeatureFlags getRequiredOptimalExtendedTilingFeatures (Context& context,
 					vk.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &physicalDeviceProperties);
 				}
 
-				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxImageComponentMapping)
+				if (physicalDeviceSamplerMinMaxProperties.filterMinmaxSingleComponentFormats)
 				{
 					flags |= VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT_EXT;
 				}
