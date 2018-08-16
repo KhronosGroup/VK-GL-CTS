@@ -160,6 +160,8 @@ virtual void				cmdEndRenderPass2KHR							(VkCommandBuffer commandBuffer, const
 virtual VkResult			getSwapchainStatusKHR							(VkDevice device, VkSwapchainKHR swapchain) const;
 virtual VkResult			importFenceFdKHR								(VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo) const;
 virtual VkResult			getFenceFdKHR									(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const;
+virtual VkResult			acquireProfilingLockKHR							(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const;
+virtual void				releaseProfilingLockKHR							(VkDevice device) const;
 virtual void				cmdDrawIndirectCountKHR							(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
 virtual void				cmdDrawIndexedIndirectCountKHR					(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
 virtual VkResult			getSemaphoreCounterValueKHR						(VkDevice device, VkSemaphore semaphore, deUint64* pValue) const;

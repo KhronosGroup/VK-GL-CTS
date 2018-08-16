@@ -52,6 +52,11 @@ void getInstanceExtensionFunctions (deUint32 apiVersion, ::std::string extName, 
 	{
 		functions.push_back("vkGetPhysicalDeviceExternalFencePropertiesKHR");
 	}
+	else if (extName == "VK_KHR_performance_query")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR");
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR");
+	}
 	else if (extName == "VK_KHR_get_surface_capabilities2")
 	{
 		functions.push_back("vkGetPhysicalDeviceSurfaceCapabilities2KHR");
@@ -239,6 +244,11 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	{
 		functions.push_back("vkImportFenceFdKHR");
 		functions.push_back("vkGetFenceFdKHR");
+	}
+	else if (extName == "VK_KHR_performance_query")
+	{
+		functions.push_back("vkAcquireProfilingLockKHR");
+		functions.push_back("vkReleaseProfilingLockKHR");
 	}
 	else if (extName == "VK_KHR_get_memory_requirements2")
 	{
@@ -492,6 +502,7 @@ void getDeviceExtensionFunctions (deUint32 apiVersion, ::std::string extName, ::
 	"VK_KHR_external_memory_capabilities",
 	"VK_KHR_external_semaphore_capabilities",
 	"VK_KHR_external_fence_capabilities",
+	"VK_KHR_performance_query",
 	"VK_KHR_get_surface_capabilities2",
 	"VK_KHR_get_display_properties2",
 	"VK_EXT_debug_report",
