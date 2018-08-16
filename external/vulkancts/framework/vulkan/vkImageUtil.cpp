@@ -2260,6 +2260,90 @@ CompressedFormatParameters	compressedFormatParameters[VK_FORMAT_ASTC_12x12_SRGB_
 	{ VK_FORMAT_ASTC_12x12_SRGB_BLOCK,		16,	12,	12 }
 };
 
+deUint32 getFormatComponentWidth (const VkFormat format, const deUint32 componentNdx)
+{
+	const tcu::TextureFormat	tcuFormat		(mapVkFormat(format));
+	const deUint32				componentCount	(tcu::getNumUsedChannels(tcuFormat.order));
+
+	if (componentNdx >= componentCount)
+		DE_FATAL("Component index out of range");
+	else
+	{
+		switch (tcuFormat.type)
+		{
+			case tcu::TextureFormat::UNORM_INT8:
+			case tcu::TextureFormat::SNORM_INT8:
+			case tcu::TextureFormat::UNSIGNED_INT8:
+			case tcu::TextureFormat::SIGNED_INT8:
+				return 8;
+
+			case tcu::TextureFormat::UNORM_SHORT_12:
+				return 12;
+
+			case tcu::TextureFormat::UNORM_INT16:
+			case tcu::TextureFormat::SNORM_INT16:
+			case tcu::TextureFormat::UNSIGNED_INT16:
+			case tcu::TextureFormat::SIGNED_INT16:
+				return 16;
+
+			case tcu::TextureFormat::UNORM_INT24:
+			case tcu::TextureFormat::UNSIGNED_INT24:
+				return 24;
+
+			case tcu::TextureFormat::UNORM_INT32:
+			case tcu::TextureFormat::SNORM_INT32:
+			case tcu::TextureFormat::UNSIGNED_INT32:
+			case tcu::TextureFormat::SIGNED_INT32:
+				return 32;
+
+			case tcu::TextureFormat::FLOAT64:
+			return 64;
+
+			// Packed formats
+			case tcu::TextureFormat::UNORM_SHORT_4444:
+			case tcu::TextureFormat::UNSIGNED_SHORT_4444:
+			return 4;
+
+			case tcu::TextureFormat::UNORM_SHORT_565:
+			case tcu::TextureFormat::UNSIGNED_SHORT_565:
+				return (componentNdx == 1 ? 6 : 5);
+
+			case tcu::TextureFormat::UNSIGNED_INT_24_8:
+			case tcu::TextureFormat::UNSIGNED_INT_24_8_REV:
+			case tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV:
+				return (componentNdx == 0 ? 24 : 8);
+
+			case tcu::TextureFormat::UNORM_SHORT_1555:
+				return (componentNdx == 0 ? 1 : 5);
+
+			case tcu::TextureFormat::UNORM_INT_1010102_REV:
+			case tcu::TextureFormat::SNORM_INT_1010102_REV:
+			case tcu::TextureFormat::UNSIGNED_INT_1010102_REV:
+			case tcu::TextureFormat::SIGNED_INT_1010102_REV:
+				return (componentNdx == 3 ? 2 : 10);
+
+			default:
+				DE_FATAL("Format unimplemented");
+		}
+	}
+
+	return 0;
+}
+
+float getRepresentableDiffUnorm (const VkFormat format, const deUint32 componentNdx)
+{
+	const deUint32 size (getFormatComponentWidth(format, componentNdx));
+
+	return 1.0f / float((1 << (size)) - 1);
+}
+
+float getRepresentableDiffSnorm (const VkFormat format, const deUint32 componentNdx)
+{
+	const deUint32 size (getFormatComponentWidth(format, componentNdx));
+
+	return 1.0f / float((1 << (size - 1)) - 1);
+}
+
 deUint32 getBlockSizeInBytes (const VkFormat compressedFormat)
 {
 	deUint32 formatNdx = static_cast<deUint32>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
