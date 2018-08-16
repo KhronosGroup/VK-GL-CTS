@@ -821,6 +821,41 @@ template<> VkStructureType getStructureType<VkFenceGetFdInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceCounterFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceCounterPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceCounterKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceCounterDescriptionKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceQueryCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkAcquireProfilingLockInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceQuerySubmitInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceSurfaceInfo2KHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR;

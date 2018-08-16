@@ -2307,6 +2307,75 @@ struct VkFenceGetFdInfoKHR
 	VkExternalFenceHandleTypeFlagBits	handleType;
 };
 
+struct VkPhysicalDevicePerformanceCounterFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		performanceCounterQueryPools;
+	VkBool32		performanceCounterMultipleQueryPools;
+};
+
+struct VkPhysicalDevicePerformanceCounterPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		allowCommandBufferQueryCopies;
+};
+
+struct VkPerformanceCounterKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkPerformanceCounterUnitKHR		unit;
+	VkPerformanceCounterScopeKHR	scope;
+	VkPerformanceCounterStorageKHR	storage;
+	deUint8							uuid[VK_UUID_SIZE];
+};
+
+struct VkPerformanceCounterDescriptionKHR
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkPerformanceCounterDescriptionFlagsKHR	flags;
+	char									name[VK_MAX_DESCRIPTION_SIZE];
+	char									category[VK_MAX_DESCRIPTION_SIZE];
+	char									description[VK_MAX_DESCRIPTION_SIZE];
+};
+
+struct VkPerformanceQueryCreateInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		queueFamilyIndex;
+	deUint32		counterIndexCount;
+	const deUint32*	pCounterIndices;
+};
+
+union VkPerformanceCounterResultKHR
+{
+	deInt32		int32;
+	deInt64		int64;
+	deUint32	uint32;
+	deUint64	uint64;
+	float		float32;
+	double		float64;
+};
+
+struct VkAcquireProfilingLockInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkAcquireProfilingLockFlagsKHR	flags;
+	deUint64						timeout;
+};
+
+struct VkPerformanceQuerySubmitInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		counterPassIndex;
+};
+
 struct VkPhysicalDeviceSurfaceInfo2KHR
 {
 	VkStructureType	sType;

@@ -69,6 +69,11 @@ void getInstanceExtensionFunctions (::std::string extName, ::std::vector<const c
 		functions.push_back("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
 	else if (extName == "VK_KHR_external_fence_capabilities")
 		functions.push_back("vkGetPhysicalDeviceExternalFencePropertiesKHR");
+	else if (extName == "VK_KHR_performance_query")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR");
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR");
+	}
 	else if (extName == "VK_KHR_get_surface_capabilities2")
 	{
 		functions.push_back("vkGetPhysicalDeviceSurfaceCapabilities2KHR");
@@ -187,6 +192,11 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 		functions.push_back("vkImportFenceFdKHR");
 		functions.push_back("vkGetFenceFdKHR");
 	}
+	else if (extName == "VK_KHR_performance_query")
+	{
+		functions.push_back("vkAcquireProfilingLockKHR");
+		functions.push_back("vkReleaseProfilingLockKHR");
+	}
 	else if (extName == "VK_KHR_get_memory_requirements2")
 	{
 		functions.push_back("vkGetBufferMemoryRequirements2KHR");
@@ -297,6 +307,7 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	"VK_KHR_external_memory_capabilities",
 	"VK_KHR_external_semaphore_capabilities",
 	"VK_KHR_external_fence_capabilities",
+	"VK_KHR_performance_query",
 	"VK_KHR_get_surface_capabilities2",
 	"VK_KHR_get_display_properties2",
 	"VK_EXT_debug_report",

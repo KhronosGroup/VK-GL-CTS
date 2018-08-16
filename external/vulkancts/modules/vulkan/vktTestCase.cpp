@@ -328,6 +328,7 @@ public:
 	VkPhysicalDeviceImagelessFramebufferFeaturesKHR		imagelessFramebufferFeatures;
 	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
 	VkPhysicalDeviceHostQueryResetFeaturesEXT			hostQueryResetFeatures;
+	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -356,6 +357,7 @@ public:
 		deMemset(&imagelessFramebufferFeatures, 0, sizeof(imagelessFramebufferFeatures));
 		deMemset(&cooperativeMatrixFeatures, 0, sizeof(cooperativeMatrixFeatures));
 		deMemset(&hostQueryResetFeatures, 0, sizeof(hostQueryResetFeatures));
+		deMemset(&performanceCounterFeatures, 0, sizeof(performanceCounterFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -378,6 +380,7 @@ public:
 		imagelessFramebufferFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
 		cooperativeMatrixFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
 		hostQueryResetFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
+		performanceCounterFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -456,10 +459,15 @@ public:
 				*nextPtr	= &scalarBlockLayoutFeatures;
 				nextPtr		= &scalarBlockLayoutFeatures.pNext;
 			}
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_depth_clip_enable"))
+            if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_depth_clip_enable"))
+            {
+                *nextPtr = &depthClipEnableFeatures;
+                nextPtr = &depthClipEnableFeatures.pNext;
+            }
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_performance_query"))
 			{
-				*nextPtr	= &depthClipEnableFeatures;
-				nextPtr		= &depthClipEnableFeatures.pNext;
+				*nextPtr	= &performanceCounterFeatures;
+				nextPtr		= &performanceCounterFeatures.pNext;
 			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_uniform_buffer_standard_layout"))
 			{
@@ -533,9 +541,9 @@ public:
 	const VkPhysicalDeviceDepthClipEnableFeaturesEXT&		getDepthClipEnableFeatures			(void) const	{ return m_deviceFeatures.depthClipEnableFeatures;			}
 	const VkPhysicalDeviceBufferAddressFeaturesEXT&			getBufferDeviceAddressFeatures		(void) const	{ return m_deviceFeatures.bufferDeviceAddressFeatures;	}
 	const VkPhysicalDeviceImagelessFramebufferFeaturesKHR&	getImagelessFramebufferFeatures		(void) const	{ return m_deviceFeatures.imagelessFramebufferFeatures;		}
-
 	const VkPhysicalDeviceCooperativeMatrixFeaturesNV&		getCooperativeMatrixFeatures		(void) const	{ return m_deviceFeatures.cooperativeMatrixFeatures;	}
 	const VkPhysicalDeviceHostQueryResetFeaturesEXT&		getHostQueryResetFeatures			(void) const	{ return m_deviceFeatures.hostQueryResetFeatures;			}
+	const VkPhysicalDevicePerformanceCounterFeaturesKHR&	getPerformanceCounterFeatures		(void) const	{ return m_deviceFeatures.performanceCounterFeatures;		}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -691,6 +699,8 @@ const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
 										Context::getCooperativeMatrixFeatures	(void) const { return m_device->getCooperativeMatrixFeatures();	}
 const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&
 										Context::getHostQueryResetFeatures		(void) const { return m_device->getHostQueryResetFeatures();	}
+const vk::VkPhysicalDevicePerformanceCounterFeaturesKHR&
+										Context::getPerformanceCounterFeatures	(void) const { return m_device->getPerformanceCounterFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

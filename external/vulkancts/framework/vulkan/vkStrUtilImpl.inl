@@ -311,6 +311,13 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR:									return "VK_STRUCTURE_TYPE_FENCE_GET_WIN32_HANDLE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR:										return "VK_STRUCTURE_TYPE_IMPORT_FENCE_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR:											return "VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR:								return "VK_STRUCTURE_TYPE_PERFORMANCE_QUERY_SUBMIT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR:									return "VK_STRUCTURE_TYPE_ACQUIRE_PROFILING_LOCK_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR:											return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR:								return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR:										return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR";
 		case VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR:											return "VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR";
@@ -673,10 +680,11 @@ const char* getQueryTypeName (VkQueryType value)
 {
 	switch (value)
 	{
-		case VK_QUERY_TYPE_OCCLUSION:			return "VK_QUERY_TYPE_OCCLUSION";
-		case VK_QUERY_TYPE_PIPELINE_STATISTICS:	return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
-		case VK_QUERY_TYPE_TIMESTAMP:			return "VK_QUERY_TYPE_TIMESTAMP";
-		default:								return DE_NULL;
+		case VK_QUERY_TYPE_OCCLUSION:				return "VK_QUERY_TYPE_OCCLUSION";
+		case VK_QUERY_TYPE_PIPELINE_STATISTICS:		return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
+		case VK_QUERY_TYPE_TIMESTAMP:				return "VK_QUERY_TYPE_TIMESTAMP";
+		case VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR:	return "VK_QUERY_TYPE_PERFORMANCE_QUERY_KHR";
+		default:									return DE_NULL;
 	}
 }
 
@@ -1223,6 +1231,50 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
 		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
 		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+		default:											return DE_NULL;
+	}
+}
+
+const char* getPerformanceCounterUnitKHRName (VkPerformanceCounterUnitKHR value)
+{
+	switch (value)
+	{
+		case VK_PERFORMANCE_COUNTER_UNIT_GENERIC_KHR:			return "VK_PERFORMANCE_COUNTER_UNIT_GENERIC_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_PERCENTAGE_KHR:		return "VK_PERFORMANCE_COUNTER_UNIT_PERCENTAGE_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_NANOSECONDS_KHR:		return "VK_PERFORMANCE_COUNTER_UNIT_NANOSECONDS_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_BYTES_KHR:				return "VK_PERFORMANCE_COUNTER_UNIT_BYTES_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_BYTES_PER_SECOND_KHR:	return "VK_PERFORMANCE_COUNTER_UNIT_BYTES_PER_SECOND_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_KELVIN_KHR:			return "VK_PERFORMANCE_COUNTER_UNIT_KELVIN_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_WATTS_KHR:				return "VK_PERFORMANCE_COUNTER_UNIT_WATTS_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_VOLTS_KHR:				return "VK_PERFORMANCE_COUNTER_UNIT_VOLTS_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_AMPS_KHR:				return "VK_PERFORMANCE_COUNTER_UNIT_AMPS_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_HERTZ_KHR:				return "VK_PERFORMANCE_COUNTER_UNIT_HERTZ_KHR";
+		case VK_PERFORMANCE_COUNTER_UNIT_CYCLES_KHR:			return "VK_PERFORMANCE_COUNTER_UNIT_CYCLES_KHR";
+		default:												return DE_NULL;
+	}
+}
+
+const char* getPerformanceCounterScopeKHRName (VkPerformanceCounterScopeKHR value)
+{
+	switch (value)
+	{
+		case VK_QUERY_SCOPE_COMMAND_BUFFER_KHR:	return "VK_QUERY_SCOPE_COMMAND_BUFFER_KHR";
+		case VK_QUERY_SCOPE_RENDER_PASS_KHR:	return "VK_QUERY_SCOPE_RENDER_PASS_KHR";
+		case VK_QUERY_SCOPE_COMMAND_KHR:		return "VK_QUERY_SCOPE_COMMAND_KHR";
+		default:								return DE_NULL;
+	}
+}
+
+const char* getPerformanceCounterStorageKHRName (VkPerformanceCounterStorageKHR value)
+{
+	switch (value)
+	{
+		case VK_PERFORMANCE_COUNTER_STORAGE_INT32_KHR:		return "VK_PERFORMANCE_COUNTER_STORAGE_INT32_KHR";
+		case VK_PERFORMANCE_COUNTER_STORAGE_INT64_KHR:		return "VK_PERFORMANCE_COUNTER_STORAGE_INT64_KHR";
+		case VK_PERFORMANCE_COUNTER_STORAGE_UINT32_KHR:		return "VK_PERFORMANCE_COUNTER_STORAGE_UINT32_KHR";
+		case VK_PERFORMANCE_COUNTER_STORAGE_UINT64_KHR:		return "VK_PERFORMANCE_COUNTER_STORAGE_UINT64_KHR";
+		case VK_PERFORMANCE_COUNTER_STORAGE_FLOAT32_KHR:	return "VK_PERFORMANCE_COUNTER_STORAGE_FLOAT32_KHR";
+		case VK_PERFORMANCE_COUNTER_STORAGE_FLOAT64_KHR:	return "VK_PERFORMANCE_COUNTER_STORAGE_FLOAT64_KHR";
 		default:											return DE_NULL;
 	}
 }
@@ -2108,6 +2160,16 @@ tcu::Format::Bitfield<32> getDisplayPlaneAlphaFlagsKHRStr (VkDisplayPlaneAlphaFl
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getPerformanceCounterDescriptionFlagsKHRStr (VkPerformanceCounterDescriptionFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_PERFORMANCE_COUNTER_DESCRIPTION_PERFORMANCE_IMPACTING_KHR,	"VK_PERFORMANCE_COUNTER_DESCRIPTION_PERFORMANCE_IMPACTING_KHR"),
+		tcu::Format::BitDesc(VK_PERFORMANCE_COUNTER_DESCRIPTION_CONCURRENTLY_IMPACTED_KHR,	"VK_PERFORMANCE_COUNTER_DESCRIPTION_CONCURRENTLY_IMPACTED_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getResolveModeFlagsKHRStr (VkResolveModeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2375,6 +2437,11 @@ tcu::Format::Bitfield<32> getAndroidSurfaceCreateFlagsKHRStr (VkAndroidSurfaceCr
 }
 
 tcu::Format::Bitfield<32> getWin32SurfaceCreateFlagsKHRStr (VkWin32SurfaceCreateFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getAcquireProfilingLockFlagsKHRStr (VkAcquireProfilingLockFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -5434,6 +5501,99 @@ std::ostream& operator<< (std::ostream& s, const VkFenceGetFdInfoKHR& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tfence = " << value.fence << '\n';
 	s << "\thandleType = " << value.handleType << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCounterFeaturesKHR& value)
+{
+	s << "VkPhysicalDevicePerformanceCounterFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperformanceCounterQueryPools = " << value.performanceCounterQueryPools << '\n';
+	s << "\tperformanceCounterMultipleQueryPools = " << value.performanceCounterMultipleQueryPools << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCounterPropertiesKHR& value)
+{
+	s << "VkPhysicalDevicePerformanceCounterPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tallowCommandBufferQueryCopies = " << value.allowCommandBufferQueryCopies << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterKHR& value)
+{
+	s << "VkPerformanceCounterKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tunit = " << value.unit << '\n';
+	s << "\tscope = " << value.scope << '\n';
+	s << "\tstorage = " << value.storage << '\n';
+	s << "\tuuid = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.uuid)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.uuid))) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterDescriptionKHR& value)
+{
+	s << "VkPerformanceCounterDescriptionKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getPerformanceCounterDescriptionFlagsKHRStr(value.flags) << '\n';
+	s << "\tname = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.name)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.name))) << '\n';
+	s << "\tcategory = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.category)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.category))) << '\n';
+	s << "\tdescription = " << (const char*)value.description << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerformanceQueryCreateInfoKHR& value)
+{
+	s << "VkPerformanceQueryCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tqueueFamilyIndex = " << value.queueFamilyIndex << '\n';
+	s << "\tcounterIndexCount = " << value.counterIndexCount << '\n';
+	s << "\tpCounterIndices = " << value.pCounterIndices << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterResultKHR& value)
+{
+	s << "VkPerformanceCounterResultKHR = {\n";
+	s << "\tint32 = " << value.int32 << '\n';
+	s << "\tint64 = " << value.int64 << '\n';
+	s << "\tuint32 = " << value.uint32 << '\n';
+	s << "\tuint64 = " << value.uint64 << '\n';
+	s << "\tfloat32 = " << value.float32 << '\n';
+	s << "\tfloat64 = " << value.float64 << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAcquireProfilingLockInfoKHR& value)
+{
+	s << "VkAcquireProfilingLockInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getAcquireProfilingLockFlagsKHRStr(value.flags) << '\n';
+	s << "\ttimeout = " << value.timeout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerformanceQuerySubmitInfoKHR& value)
+{
+	s << "VkPerformanceQuerySubmitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcounterPassIndex = " << value.counterPassIndex << '\n';
 	s << '}';
 	return s;
 }

@@ -45,6 +45,9 @@ const char*	getChromaLocationName					(VkChromaLocation value);
 const char*	getDescriptorUpdateTemplateTypeName		(VkDescriptorUpdateTemplateType value);
 const char*	getColorSpaceKHRName					(VkColorSpaceKHR value);
 const char*	getPresentModeKHRName					(VkPresentModeKHR value);
+const char*	getPerformanceCounterUnitKHRName		(VkPerformanceCounterUnitKHR value);
+const char*	getPerformanceCounterScopeKHRName		(VkPerformanceCounterScopeKHR value);
+const char*	getPerformanceCounterStorageKHRName		(VkPerformanceCounterStorageKHR value);
 const char*	getDebugReportObjectTypeEXTName			(VkDebugReportObjectTypeEXT value);
 const char*	getRasterizationOrderAMDName			(VkRasterizationOrderAMD value);
 const char*	getValidationCheckEXTName				(VkValidationCheckEXT value);
@@ -106,6 +109,9 @@ inline tcu::Format::Enum<VkChromaLocation>					getChromaLocationStr					(VkChrom
 inline tcu::Format::Enum<VkDescriptorUpdateTemplateType>	getDescriptorUpdateTemplateTypeStr		(VkDescriptorUpdateTemplateType value)		{ return tcu::Format::Enum<VkDescriptorUpdateTemplateType>(getDescriptorUpdateTemplateTypeName, value);			}
 inline tcu::Format::Enum<VkColorSpaceKHR>					getColorSpaceKHRStr						(VkColorSpaceKHR value)						{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);										}
 inline tcu::Format::Enum<VkPresentModeKHR>					getPresentModeKHRStr					(VkPresentModeKHR value)					{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);										}
+inline tcu::Format::Enum<VkPerformanceCounterUnitKHR>		getPerformanceCounterUnitKHRStr			(VkPerformanceCounterUnitKHR value)			{ return tcu::Format::Enum<VkPerformanceCounterUnitKHR>(getPerformanceCounterUnitKHRName, value);				}
+inline tcu::Format::Enum<VkPerformanceCounterScopeKHR>		getPerformanceCounterScopeKHRStr		(VkPerformanceCounterScopeKHR value)		{ return tcu::Format::Enum<VkPerformanceCounterScopeKHR>(getPerformanceCounterScopeKHRName, value);				}
+inline tcu::Format::Enum<VkPerformanceCounterStorageKHR>	getPerformanceCounterStorageKHRStr		(VkPerformanceCounterStorageKHR value)		{ return tcu::Format::Enum<VkPerformanceCounterStorageKHR>(getPerformanceCounterStorageKHRName, value);			}
 inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>		getDebugReportObjectTypeEXTStr			(VkDebugReportObjectTypeEXT value)			{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);					}
 inline tcu::Format::Enum<VkRasterizationOrderAMD>			getRasterizationOrderAMDStr				(VkRasterizationOrderAMD value)				{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);						}
 inline tcu::Format::Enum<VkValidationCheckEXT>				getValidationCheckEXTStr				(VkValidationCheckEXT value)				{ return tcu::Format::Enum<VkValidationCheckEXT>(getValidationCheckEXTName, value);								}
@@ -167,6 +173,9 @@ inline std::ostream&	operator<<	(std::ostream& s, VkChromaLocation value)					{ 
 inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorUpdateTemplateType value)		{ return s << getDescriptorUpdateTemplateTypeStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)					{ return s << getColorSpaceKHRStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)					{ return s << getPresentModeKHRStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterUnitKHR value)		{ return s << getPerformanceCounterUnitKHRStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterScopeKHR value)		{ return s << getPerformanceCounterScopeKHRStr(value);		}
+inline std::ostream&	operator<<	(std::ostream& s, VkPerformanceCounterStorageKHR value)		{ return s << getPerformanceCounterStorageKHRStr(value);	}
 inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)			{ return s << getDebugReportObjectTypeEXTStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)			{ return s << getRasterizationOrderAMDStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationCheckEXT value)				{ return s << getValidationCheckEXTStr(value);				}
@@ -234,6 +243,7 @@ tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr							(VkCompositeAlphaFl
 tcu::Format::Bitfield<32>	getSwapchainCreateFlagsKHRStr							(VkSwapchainCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getDeviceGroupPresentModeFlagsKHRStr					(VkDeviceGroupPresentModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr							(VkDisplayPlaneAlphaFlagsKHR value);
+tcu::Format::Bitfield<32>	getPerformanceCounterDescriptionFlagsKHRStr				(VkPerformanceCounterDescriptionFlagsKHR value);
 tcu::Format::Bitfield<32>	getResolveModeFlagsKHRStr								(VkResolveModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr								(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr					(VkExternalMemoryHandleTypeFlagsNV value);
@@ -277,6 +287,7 @@ tcu::Format::Bitfield<32>	getWaylandSurfaceCreateFlagsKHRStr						(VkWaylandSurf
 tcu::Format::Bitfield<32>	getMirSurfaceCreateFlagsKHRStr							(VkMirSurfaceCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getAndroidSurfaceCreateFlagsKHRStr						(VkAndroidSurfaceCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getWin32SurfaceCreateFlagsKHRStr						(VkWin32SurfaceCreateFlagsKHR value);
+tcu::Format::Bitfield<32>	getAcquireProfilingLockFlagsKHRStr						(VkAcquireProfilingLockFlagsKHR value);
 tcu::Format::Bitfield<32>	getViSurfaceCreateFlagsNNStr							(VkViSurfaceCreateFlagsNN value);
 tcu::Format::Bitfield<32>	getPipelineViewportSwizzleStateCreateFlagsNVStr			(VkPipelineViewportSwizzleStateCreateFlagsNV value);
 tcu::Format::Bitfield<32>	getPipelineDiscardRectangleStateCreateFlagsEXTStr		(VkPipelineDiscardRectangleStateCreateFlagsEXT value);
@@ -523,6 +534,14 @@ std::ostream&	operator<<	(std::ostream& s, const VkExportFenceWin32HandleInfoKHR
 std::ostream&	operator<<	(std::ostream& s, const VkFenceGetWin32HandleInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportFenceFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFenceGetFdInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceCounterFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceCounterPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterDescriptionKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceQueryCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterResultKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAcquireProfilingLockInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceQuerySubmitInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSurfaceInfo2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilities2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormat2KHR& value);

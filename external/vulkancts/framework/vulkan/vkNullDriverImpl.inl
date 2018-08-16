@@ -1507,6 +1507,34 @@ VKAPI_ATTR VkResult VKAPI_CALL getFenceFdKHR (VkDevice device, const VkFenceGetF
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR (VkPhysicalDevice physicalDevice, deUint32 queueFamilyIndex, deUint32* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(pCounterCount);
+	DE_UNREF(pCounters);
+	DE_UNREF(pCounterDescriptions);
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR (VkPhysicalDevice physicalDevice, const VkPerformanceQueryCreateInfoKHR* pPerformanceQueryCreateInfo, deUint32* pNumPasses)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPerformanceQueryCreateInfo);
+	DE_UNREF(pNumPasses);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL acquireProfilingLockKHR (VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL releaseProfilingLockKHR (VkDevice device)
+{
+	DE_UNREF(device);
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceSurfaceCapabilities2KHR (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities)
 {
 	DE_UNREF(physicalDevice);
@@ -1907,84 +1935,86 @@ static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 
 static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 {
-	VK_NULL_FUNC_ENTRY(vkDestroyInstance,									destroyInstance),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,							enumeratePhysicalDevices),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,							getPhysicalDeviceFeatures),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,					getPhysicalDeviceFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,			getPhysicalDeviceImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,						getPhysicalDeviceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,			getPhysicalDeviceQueueFamilyProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,					getPhysicalDeviceMemoryProperties),
-	VK_NULL_FUNC_ENTRY(vkCreateDevice,										createDevice),
-	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,				enumerateDeviceExtensionProperties),
-	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,					enumerateDeviceLayerProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,		getPhysicalDeviceSparseImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,						enumeratePhysicalDeviceGroups),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2,						getPhysicalDeviceFeatures2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2,						getPhysicalDeviceProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2,				getPhysicalDeviceFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2,			getPhysicalDeviceImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2,			getPhysicalDeviceQueueFamilyProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2,				getPhysicalDeviceMemoryProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2,		getPhysicalDeviceSparseImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferProperties,			getPhysicalDeviceExternalBufferProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFenceProperties,			getPhysicalDeviceExternalFenceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphoreProperties,		getPhysicalDeviceExternalSemaphoreProperties),
-	VK_NULL_FUNC_ENTRY(vkDestroySurfaceKHR,									destroySurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,				getPhysicalDeviceSurfaceSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR,			getPhysicalDeviceSurfaceCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormatsKHR,				getPhysicalDeviceSurfaceFormatsKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,			getPhysicalDeviceSurfacePresentModesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHR,				getPhysicalDevicePresentRectanglesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,				getPhysicalDeviceDisplayPropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,		getPhysicalDeviceDisplayPlanePropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,				getDisplayPlaneSupportedDisplaysKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayModePropertiesKHR,						getDisplayModePropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDisplayModeKHR,								createDisplayModeKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilitiesKHR,					getDisplayPlaneCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDisplayPlaneSurfaceKHR,						createDisplayPlaneSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateXlibSurfaceKHR,								createXlibSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXlibPresentationSupportKHR,		getPhysicalDeviceXlibPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateXcbSurfaceKHR,								createXcbSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXcbPresentationSupportKHR,		getPhysicalDeviceXcbPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateWaylandSurfaceKHR,							createWaylandSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWaylandPresentationSupportKHR,	getPhysicalDeviceWaylandPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateMirSurfaceKHR,								createMirSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMirPresentationSupportKHR,		getPhysicalDeviceMirPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,							createAndroidSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,								createWin32SurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWin32PresentationSupportKHR,		getPhysicalDeviceWin32PresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2KHR,						getPhysicalDeviceFeatures2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2KHR,				getPhysicalDeviceFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2KHR,		getPhysicalDeviceImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2KHR,				getPhysicalDeviceMemoryProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2KHR,					getPhysicalDeviceProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2KHR,		getPhysicalDeviceQueueFamilyProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2KHR,	getPhysicalDeviceSparseImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroupsKHR,					enumeratePhysicalDeviceGroups),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHR,		getPhysicalDeviceExternalBufferProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR,	getPhysicalDeviceExternalSemaphoreProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFencePropertiesKHR,		getPhysicalDeviceExternalFenceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,			getPhysicalDeviceSurfaceCapabilities2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,				getPhysicalDeviceSurfaceFormats2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayProperties2KHR,			getPhysicalDeviceDisplayProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,		getPhysicalDeviceDisplayPlaneProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,						getDisplayModeProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,					getDisplayPlaneCapabilities2KHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,						createDebugReportCallbackEXT),
-	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,						destroyDebugReportCallbackEXT),
-	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,								debugReportMessageEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,	getPhysicalDeviceExternalImageFormatPropertiesNV),
-	VK_NULL_FUNC_ENTRY(vkCreateViSurfaceNN,									createViSurfaceNN),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX,	getPhysicalDeviceGeneratedCommandsPropertiesNVX),
-	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,									releaseDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkAcquireXlibDisplayEXT,								acquireXlibDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkGetRandROutputDisplayEXT,							getRandROutputDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2EXT,			getPhysicalDeviceSurfaceCapabilities2EXT),
-	VK_NULL_FUNC_ENTRY(vkCreateIOSSurfaceMVK,								createIOSSurfaceMVK),
-	VK_NULL_FUNC_ENTRY(vkCreateMacOSSurfaceMVK,								createMacOSSurfaceMVK),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,			getPhysicalDeviceMultisamplePropertiesEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,	getPhysicalDeviceCooperativeMatrixPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyInstance,												destroyInstance),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,										enumeratePhysicalDevices),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,										getPhysicalDeviceFeatures),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,								getPhysicalDeviceFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,						getPhysicalDeviceImageFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,									getPhysicalDeviceProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,						getPhysicalDeviceQueueFamilyProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,								getPhysicalDeviceMemoryProperties),
+	VK_NULL_FUNC_ENTRY(vkCreateDevice,													createDevice),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,							enumerateDeviceExtensionProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,								enumerateDeviceLayerProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,					getPhysicalDeviceSparseImageFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,									enumeratePhysicalDeviceGroups),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2,									getPhysicalDeviceFeatures2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2,									getPhysicalDeviceProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2,							getPhysicalDeviceFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2,						getPhysicalDeviceImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2,						getPhysicalDeviceQueueFamilyProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2,							getPhysicalDeviceMemoryProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2,					getPhysicalDeviceSparseImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferProperties,						getPhysicalDeviceExternalBufferProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFenceProperties,						getPhysicalDeviceExternalFenceProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphoreProperties,					getPhysicalDeviceExternalSemaphoreProperties),
+	VK_NULL_FUNC_ENTRY(vkDestroySurfaceKHR,												destroySurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,							getPhysicalDeviceSurfaceSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR,						getPhysicalDeviceSurfaceCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormatsKHR,							getPhysicalDeviceSurfaceFormatsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,						getPhysicalDeviceSurfacePresentModesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHR,							getPhysicalDevicePresentRectanglesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,							getPhysicalDeviceDisplayPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,					getPhysicalDeviceDisplayPlanePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,							getDisplayPlaneSupportedDisplaysKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayModePropertiesKHR,									getDisplayModePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDisplayModeKHR,											createDisplayModeKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilitiesKHR,								getDisplayPlaneCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDisplayPlaneSurfaceKHR,									createDisplayPlaneSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateXlibSurfaceKHR,											createXlibSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXlibPresentationSupportKHR,					getPhysicalDeviceXlibPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateXcbSurfaceKHR,											createXcbSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXcbPresentationSupportKHR,					getPhysicalDeviceXcbPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateWaylandSurfaceKHR,										createWaylandSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWaylandPresentationSupportKHR,				getPhysicalDeviceWaylandPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateMirSurfaceKHR,											createMirSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMirPresentationSupportKHR,					getPhysicalDeviceMirPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,										createAndroidSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,											createWin32SurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWin32PresentationSupportKHR,					getPhysicalDeviceWin32PresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2KHR,									getPhysicalDeviceFeatures2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2KHR,							getPhysicalDeviceFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2KHR,					getPhysicalDeviceImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2KHR,							getPhysicalDeviceMemoryProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2KHR,								getPhysicalDeviceProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2KHR,					getPhysicalDeviceQueueFamilyProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2KHR,				getPhysicalDeviceSparseImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroupsKHR,								enumeratePhysicalDeviceGroups),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferPropertiesKHR,					getPhysicalDeviceExternalBufferProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphorePropertiesKHR,				getPhysicalDeviceExternalSemaphoreProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFencePropertiesKHR,					getPhysicalDeviceExternalFenceProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR,	enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR,			getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,						getPhysicalDeviceSurfaceCapabilities2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,							getPhysicalDeviceSurfaceFormats2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayProperties2KHR,						getPhysicalDeviceDisplayProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,					getPhysicalDeviceDisplayPlaneProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,									getDisplayModeProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,								getDisplayPlaneCapabilities2KHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,									createDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,									destroyDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,											debugReportMessageEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,				getPhysicalDeviceExternalImageFormatPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkCreateViSurfaceNN,												createViSurfaceNN),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX,				getPhysicalDeviceGeneratedCommandsPropertiesNVX),
+	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,												releaseDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkAcquireXlibDisplayEXT,											acquireXlibDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkGetRandROutputDisplayEXT,										getRandROutputDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2EXT,						getPhysicalDeviceSurfaceCapabilities2EXT),
+	VK_NULL_FUNC_ENTRY(vkCreateIOSSurfaceMVK,											createIOSSurfaceMVK),
+	VK_NULL_FUNC_ENTRY(vkCreateMacOSSurfaceMVK,											createMacOSSurfaceMVK),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,						getPhysicalDeviceMultisamplePropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,				getPhysicalDeviceCooperativeMatrixPropertiesNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -2161,6 +2191,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetFenceWin32HandleKHR,					getFenceWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkImportFenceFdKHR,							importFenceFdKHR),
 	VK_NULL_FUNC_ENTRY(vkGetFenceFdKHR,								getFenceFdKHR),
+	VK_NULL_FUNC_ENTRY(vkAcquireProfilingLockKHR,					acquireProfilingLockKHR),
+	VK_NULL_FUNC_ENTRY(vkReleaseProfilingLockKHR,					releaseProfilingLockKHR),
 	VK_NULL_FUNC_ENTRY(vkGetBufferMemoryRequirements2KHR,			getBufferMemoryRequirements2),
 	VK_NULL_FUNC_ENTRY(vkGetImageMemoryRequirements2KHR,			getImageMemoryRequirements2),
 	VK_NULL_FUNC_ENTRY(vkGetImageSparseMemoryRequirements2KHR,		getImageSparseMemoryRequirements2),

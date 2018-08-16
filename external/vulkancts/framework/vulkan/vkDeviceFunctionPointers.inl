@@ -166,6 +166,8 @@ ImportFenceWin32HandleKHRFunc					importFenceWin32HandleKHR;
 GetFenceWin32HandleKHRFunc						getFenceWin32HandleKHR;
 ImportFenceFdKHRFunc							importFenceFdKHR;
 GetFenceFdKHRFunc								getFenceFdKHR;
+AcquireProfilingLockKHRFunc						acquireProfilingLockKHR;
+ReleaseProfilingLockKHRFunc						releaseProfilingLockKHR;
 DebugMarkerSetObjectTagEXTFunc					debugMarkerSetObjectTagEXT;
 DebugMarkerSetObjectNameEXTFunc					debugMarkerSetObjectNameEXT;
 CmdDebugMarkerBeginEXTFunc						cmdDebugMarkerBeginEXT;

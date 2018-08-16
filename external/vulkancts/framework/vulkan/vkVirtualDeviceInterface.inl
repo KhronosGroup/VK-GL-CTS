@@ -166,6 +166,8 @@ virtual VkResult			importFenceWin32HandleKHR					(VkDevice device, const VkImpor
 virtual VkResult			getFenceWin32HandleKHR						(VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;
 virtual VkResult			importFenceFdKHR							(VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo) const = 0;
 virtual VkResult			getFenceFdKHR								(VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const = 0;
+virtual VkResult			acquireProfilingLockKHR						(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const = 0;
+virtual void				releaseProfilingLockKHR						(VkDevice device) const = 0;
 virtual VkResult			debugMarkerSetObjectTagEXT					(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const = 0;
 virtual VkResult			debugMarkerSetObjectNameEXT					(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const = 0;
 virtual void				cmdDebugMarkerBeginEXT						(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;

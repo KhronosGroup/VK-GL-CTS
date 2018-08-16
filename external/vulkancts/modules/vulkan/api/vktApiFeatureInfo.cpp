@@ -760,6 +760,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_shader_atomic_int64",
 		"VK_KHR_vulkan_memory_model",
 		"VK_KHR_swapchain_mutable_format",
+		"VK_KHR_performance_query",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
@@ -2653,6 +2654,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	const bool khr_8bit_storage				= checkExtension(properties,"VK_KHR_8bit_storage");
 	const bool ext_conditional_rendering	= checkExtension(properties,"VK_EXT_conditional_rendering");
 	const bool scalar_block_layout			= checkExtension(properties,"VK_EXT_scalar_block_layout");
+	const bool performance_counter			= checkExtension(properties,"VK_KHR_performance_query");
 	bool khr_16bit_storage					= true;
 	bool khr_multiview						= true;
 	bool deviceProtectedMemory				= true;
@@ -2676,6 +2678,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
 	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures[count];
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures[count];
+	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -2687,6 +2690,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
 		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
 		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeaturesEXT));
+		deMemset(&performanceCounterFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDevicePerformanceCounterFeaturesKHR));
 
 		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
 		device8BitStorageFeatures[ndx].pNext = &deviceConditionalRenderingFeatures[ndx];
@@ -2710,7 +2714,10 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		variablePointerFeatures[ndx].pNext = &scalarBlockLayoutFeatures[ndx];
 
 		scalarBlockLayoutFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
-		scalarBlockLayoutFeatures[ndx].pNext = DE_NULL;
+		scalarBlockLayoutFeatures[ndx].pNext = &performanceCounterFeatures[ndx];
+
+		performanceCounterFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR;
+		performanceCounterFeatures[ndx].pNext = DE_NULL;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -2777,6 +2784,12 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceScalarBlockLayoutFeaturesEXT");
 	}
+	if (performance_counter &&
+		((performanceCounterFeatures[0].performanceCounterQueryPools != performanceCounterFeatures[1].performanceCounterQueryPools) ||
+		(performanceCounterFeatures[0].performanceCounterMultipleQueryPools != performanceCounterFeatures[1].performanceCounterMultipleQueryPools)))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDevicePerformanceCounterFeaturesKHR");
+	}
 	if (khr_8bit_storage)
 		log << TestLog::Message << device8BitStorageFeatures[0]		<< TestLog::EndMessage;
 	if (ext_conditional_rendering)
@@ -2793,10 +2806,11 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		log << TestLog::Message << variablePointerFeatures[0]			<< TestLog::EndMessage;
 	if (scalar_block_layout)
 		log << TestLog::Message << scalarBlockLayoutFeatures[0]			<< TestLog::EndMessage;
+	if (performance_counter)
+		log << TestLog::Message << performanceCounterFeatures[0]		<< TestLog::EndMessage;
 
 	return tcu::TestStatus::pass("Querying device features succeeded");
 }
-
 
 tcu::TestStatus deviceProperties2 (Context& context)
 {
@@ -3039,6 +3053,29 @@ tcu::TestStatus deviceProperties2 (Context& context)
 		}
 
 		log << TestLog::Message << dsResolveProperties[0] << TestLog::EndMessage;
+	}
+
+	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_performance_query")))
+	{
+		VkPhysicalDevicePerformanceCounterPropertiesKHR performanceCounterProperties[count];
+
+		for (int ndx = 0; ndx < count; ++ndx)
+		{
+			deMemset(&performanceCounterProperties[ndx], 0xFF, sizeof(VkPhysicalDevicePerformanceCounterPropertiesKHR));
+			performanceCounterProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_PROPERTIES_KHR;
+			performanceCounterProperties[ndx].pNext = DE_NULL;
+
+			extProperties.pNext = &performanceCounterProperties[ndx];
+
+			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
+		}
+
+		if (deMemCmp(&performanceCounterProperties[0], &performanceCounterProperties[1], sizeof(VkPhysicalDevicePerformanceCounterPropertiesKHR)) != 0)
+		{
+			TCU_FAIL("Mismatch in VkPhysicalDevicePerformanceCounterPropertiesKHR");
+		}
+
+		log << TestLog::Message << performanceCounterProperties[0] << TestLog::EndMessage;
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");
