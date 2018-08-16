@@ -711,6 +711,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_maintenance2",
 		"VK_KHR_image_format_list",
 		"VK_KHR_sampler_ycbcr_conversion",
+		"VK_KHR_draw_indirect_count"
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
