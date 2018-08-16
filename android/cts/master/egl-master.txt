@@ -2545,6 +2545,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_qcom_framebuffer_foveated
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_texture_foveated
 dEQP-EGL.functional.get_proc_address.extension.gl_qcom_shader_framebuffer_fetch_noncoherent
 dEQP-EGL.functional.get_proc_address.core.egl
+dEQP-EGL.functional.get_proc_address.core.egl15
 dEQP-EGL.functional.get_proc_address.core.gles
 dEQP-EGL.functional.get_proc_address.core.gles2
 dEQP-EGL.functional.get_proc_address.core.gles3

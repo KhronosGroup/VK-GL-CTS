@@ -42,6 +42,20 @@ static const char* s_EGL14[] =
 	"eglWaitNative",
 };
 
+static const char* s_EGL15[] =
+{
+	"eglClientWaitSync",
+	"eglCreateImage",
+	"eglCreatePlatformPixmapSurface",
+	"eglCreatePlatformWindowSurface",
+	"eglCreateSync",
+	"eglDestroyImage",
+	"eglDestroySync",
+	"eglGetPlatformDisplay",
+	"eglGetSyncAttrib",
+	"eglWaitSync",
+};
+
 static const char* s_GLES10[] =
 {
 	"glActiveTexture",
