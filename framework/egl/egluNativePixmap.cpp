@@ -47,6 +47,12 @@ void* NativePixmap::getPlatformExtension (void)
 	throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()", DE_NULL, __FILE__, __LINE__);
 }
 
+void* NativePixmap::getPlatformNative (void)
+{
+	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM) == 0);
+	throw tcu::NotSupportedError("eglu::NativePixmap doesn't support eglCreatePlatformPixmapSurface()", DE_NULL, __FILE__, __LINE__);
+}
+
 void NativePixmap::readPixels (tcu::TextureLevel*)
 {
 	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_READ_PIXELS) == 0);

@@ -116,11 +116,10 @@ void GetProcAddressCase::init (void)
 	{
 		m_supported = eglu::getClientExtensions(m_eglTestCtx.getLibrary());
 	}
-	catch (const eglu::Error& error)
+	catch (const tcu::NotSupportedError& error)
 	{
-		// EGL_BAD_DISPLAY is generated if client extensions are not supported.
-		if (error.getError() != EGL_BAD_DISPLAY)
-			throw;
+		// Ignore case where EGL client extensions are not supported
+		// that's okay for these tests.
 	}
 
 	DE_ASSERT(m_display == EGL_NO_DISPLAY);

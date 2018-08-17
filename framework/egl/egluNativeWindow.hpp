@@ -77,11 +77,12 @@ public:
 	{
 		CAPABILITY_CREATE_SURFACE_LEGACY				= (1<<0),	//!< EGL surface can be created with eglCreateWindowSurface()
 		CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION	= (1<<1),	//!< EGL surface can be created with eglCreatePlatformWindowSurfaceEXT()
-		CAPABILITY_GET_SURFACE_SIZE						= (1<<2),
-		CAPABILITY_SET_SURFACE_SIZE						= (1<<3),
-		CAPABILITY_GET_SCREEN_SIZE						= (1<<4),
-		CAPABILITY_READ_SCREEN_PIXELS					= (1<<5),
-		CAPABILITY_CHANGE_VISIBILITY					= (1<<6)
+		CAPABILITY_CREATE_SURFACE_PLATFORM				= (1<<2),	//!< EGL surface can be created with eglCreatePlatformWindowSurface()
+		CAPABILITY_GET_SURFACE_SIZE						= (1<<3),
+		CAPABILITY_SET_SURFACE_SIZE						= (1<<4),
+		CAPABILITY_GET_SCREEN_SIZE						= (1<<5),
+		CAPABILITY_READ_SCREEN_PIXELS					= (1<<6),
+		CAPABILITY_CHANGE_VISIBILITY					= (1<<7)
 	};
 
 	virtual								~NativeWindow					(void) {}
@@ -91,6 +92,9 @@ public:
 
 	//! Return native pointer that can be used with eglCreatePlatformWindowSurfaceEXT(). Default implementation throws tcu::NotSupportedError().
 	virtual void*						getPlatformExtension			(void);
+
+	//! Return native pointer that can be used with eglCreatePlatformWindowSurface(). Default implementation throws tcu::NotSupportedError().
+	virtual void*						getPlatformNative				(void);
 
 	// Process window events. Defaults to dummy implementation, that does nothing.
 	virtual void						processEvents					(void) {}

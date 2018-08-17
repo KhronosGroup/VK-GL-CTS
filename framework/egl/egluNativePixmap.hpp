@@ -44,14 +44,18 @@ public:
 	enum Capability
 	{
 		CAPABILITY_CREATE_SURFACE_LEGACY				= (1<<0),	//!< EGL surface can be created with eglCreatePixmapSurface()
-		CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION	= (1<<1),	//!< EGL surface can be created with eglCreatePlatformPixmapSurfaceEXT()
-		CAPABILITY_READ_PIXELS							= (1<<2)
+		CAPABILITY_CREATE_SURFACE_PLATFORM				= (1<<1),	//!< EGL surface can be created with eglCreatePlatformPixmapSurface()
+		CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION	= (1<<2),	//!< EGL surface can be created with eglCreatePlatformPixmapSurfaceEXT()
+		CAPABILITY_READ_PIXELS							= (1<<3)
 	};
 
 	virtual								~NativePixmap			(void) {}
 
 	//! Return EGLNativePixmapType that can be used with eglCreatePixmapSurface(). Default implementation throws tcu::NotSupportedError().
 	virtual eglw::EGLNativePixmapType	getLegacyNative			(void);
+
+	//! Return native pointer that can be used with eglCreatePlatformPixmapSurface(). Default implementation throws tcu::NotSupportedError().
+	virtual void*						getPlatformNative		(void);
 
 	//! Return native pointer that can be used with eglCreatePlatformPixmapSurfaceEXT(). Default implementation throws tcu::NotSupportedError().
 	virtual void*						getPlatformExtension	(void);
