@@ -2101,6 +2101,22 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * {@inheritDoc}
      */
     @Override
+    public Set<String> getIncludeFilters() {
+        return new HashSet<>(mIncludeFilters);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clearIncludeFilters() {
+        mIncludeFilters.clear();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void addExcludeFilter(String filter) {
         mExcludeFilters.add(filter);
     }
@@ -2111,6 +2127,22 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
     @Override
     public void addAllExcludeFilters(Set<String> filters) {
         mExcludeFilters.addAll(filters);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Set<String> getExcludeFilters() {
+        return new HashSet<>(mExcludeFilters);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clearExcludeFilters() {
+        mExcludeFilters.clear();
     }
 
     /**
