@@ -284,15 +284,15 @@ void terminateDisplay(const Library& egl, EGLDisplay display)
 //! Create EGL window surface using eglCreateWindowSurface() or eglCreatePlatformWindowSurfaceEXT()
 EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& window, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList)
 {
-	const Library&	egl							= nativeDisplay.getLibrary();
-	const bool		supportsLegacyCreate		= (window.getCapabilities() & NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) != 0;
-	const bool		supportsPlatformCreate		= (window.getCapabilities() & NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM) != 0;
-	bool			usePlatformExt				= false;
-	EGLSurface		surface						= EGL_NO_SURFACE;
+	const Library&	egl									= nativeDisplay.getLibrary();
+	const bool		supportsLegacyCreate				= (window.getCapabilities() & NativeWindow::CAPABILITY_CREATE_SURFACE_LEGACY) != 0;
+	const bool		supportsPlatformCreateExtension		= (window.getCapabilities() & NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) != 0;
+	bool			usePlatformExt						= false;
+	EGLSurface		surface								= EGL_NO_SURFACE;
 
-	TCU_CHECK_INTERNAL(supportsLegacyCreate || supportsPlatformCreate);
+	TCU_CHECK_INTERNAL(supportsLegacyCreate || supportsPlatformCreateExtension);
 
-	if (supportsPlatformCreate)
+	if (supportsPlatformCreateExtension)
 	{
 		const vector<string> platformExts = getClientExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
@@ -304,7 +304,7 @@ EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& wind
 	{
 		const vector<EGLint>	legacyAttribs	= toLegacyAttribList(attribList);
 
-		surface = egl.createPlatformWindowSurfaceEXT(display, config, window.getPlatformNative(), &legacyAttribs[0]);
+		surface = egl.createPlatformWindowSurfaceEXT(display, config, window.getPlatformExtension(), &legacyAttribs[0]);
 		EGLU_CHECK_MSG(egl, "eglCreatePlatformWindowSurfaceEXT()");
 		TCU_CHECK(surface != EGL_NO_SURFACE);
 	}
@@ -325,15 +325,15 @@ EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& wind
 //! Create EGL pixmap surface using eglCreatePixmapSurface() or eglCreatePlatformPixmapSurfaceEXT()
 EGLSurface createPixmapSurface (NativeDisplay& nativeDisplay, NativePixmap& pixmap, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList)
 {
-	const Library&	egl							= nativeDisplay.getLibrary();
-	const bool		supportsLegacyCreate		= (pixmap.getCapabilities() & NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) != 0;
-	const bool		supportsPlatformCreate		= (pixmap.getCapabilities() & NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM) != 0;
-	bool			usePlatformExt				= false;
-	EGLSurface		surface						= EGL_NO_SURFACE;
+	const Library&	egl									= nativeDisplay.getLibrary();
+	const bool		supportsLegacyCreate				= (pixmap.getCapabilities() & NativePixmap::CAPABILITY_CREATE_SURFACE_LEGACY) != 0;
+	const bool		supportsPlatformCreateExtension		= (pixmap.getCapabilities() & NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) != 0;
+	bool			usePlatformExt						= false;
+	EGLSurface		surface								= EGL_NO_SURFACE;
 
-	TCU_CHECK_INTERNAL(supportsLegacyCreate || supportsPlatformCreate);
+	TCU_CHECK_INTERNAL(supportsLegacyCreate || supportsPlatformCreateExtension);
 
-	if (supportsPlatformCreate)
+	if (supportsPlatformCreateExtension)
 	{
 		const vector<string> platformExts = getClientExtensions(egl);
 		usePlatformExt = de::contains(platformExts.begin(), platformExts.end(), string("EGL_EXT_platform_base")) &&
@@ -344,7 +344,7 @@ EGLSurface createPixmapSurface (NativeDisplay& nativeDisplay, NativePixmap& pixm
 	{
 		const vector<EGLint>	legacyAttribs	= toLegacyAttribList(attribList);
 
-		surface = egl.createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformNative(), &legacyAttribs[0]);
+		surface = egl.createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformExtension(), &legacyAttribs[0]);
 		EGLU_CHECK_MSG(egl, "eglCreatePlatformPixmapSurfaceEXT()");
 		TCU_CHECK(surface != EGL_NO_SURFACE);
 	}

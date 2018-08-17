@@ -43,9 +43,9 @@ class NativePixmap
 public:
 	enum Capability
 	{
-		CAPABILITY_CREATE_SURFACE_LEGACY	= (1<<0),	//!< EGL surface can be created with eglCreatePixmapSurface()
-		CAPABILITY_CREATE_SURFACE_PLATFORM	= (1<<1),	//!< EGL surface can be created with eglCreatePlatformPixmapSurface()
-		CAPABILITY_READ_PIXELS				= (1<<2)
+		CAPABILITY_CREATE_SURFACE_LEGACY				= (1<<0),	//!< EGL surface can be created with eglCreatePixmapSurface()
+		CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION	= (1<<1),	//!< EGL surface can be created with eglCreatePlatformPixmapSurfaceEXT()
+		CAPABILITY_READ_PIXELS							= (1<<2)
 	};
 
 	virtual								~NativePixmap			(void) {}
@@ -54,7 +54,7 @@ public:
 	virtual eglw::EGLNativePixmapType	getLegacyNative			(void);
 
 	//! Return native pointer that can be used with eglCreatePlatformPixmapSurfaceEXT(). Default implementation throws tcu::NotSupportedError().
-	virtual void*						getPlatformNative		(void);
+	virtual void*						getPlatformExtension	(void);
 
 	// Read pixels from pixmap. Default implementation throws tcu::NotSupportedError()
 	virtual void						readPixels				(tcu::TextureLevel* dst);

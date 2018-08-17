@@ -76,7 +76,7 @@ EGLSurface createWindowSurface (EGLDisplay display, EGLConfig config, eglu::Nati
 	{
 		checkEGLPlatformSupport(egl, nativeDisplay.getPlatformExtensionName());
 
-		surface = egl.createPlatformWindowSurfaceEXT(display, config, window.getPlatformNative(), DE_NULL);
+		surface = egl.createPlatformWindowSurfaceEXT(display, config, window.getPlatformExtension(), DE_NULL);
 		EGLU_CHECK_MSG(egl, "eglCreatePlatformWindowSurfaceEXT() failed");
 	}
 
@@ -97,7 +97,7 @@ EGLSurface createPixmapSurface (EGLDisplay display, EGLConfig config, eglu::Nati
 	{
 		checkEGLPlatformSupport(egl, nativeDisplay.getPlatformExtensionName());
 
-		surface = egl.createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformNative(), DE_NULL);
+		surface = egl.createPlatformPixmapSurfaceEXT(display, config, pixmap.getPlatformExtension(), DE_NULL);
 		EGLU_CHECK_MSG(egl, "eglCreatePlatformPixmapSurfaceEXT() failed");
 	}
 
@@ -129,7 +129,7 @@ public:
 		}
 		else
 		{
-			if ((windowFactory.getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
+			if ((windowFactory.getCapabilities() & eglu::NativeWindow::CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) == 0)
 				TCU_THROW(NotSupportedError, "Native window doesn't support eglCreatePlatformWindowSurfaceEXT()");
 		}
 
@@ -187,7 +187,7 @@ public:
 		}
 		else
 		{
-			if ((pixmapFactory.getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM) == 0)
+			if ((pixmapFactory.getCapabilities() & eglu::NativePixmap::CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) == 0)
 				TCU_THROW(NotSupportedError, "Native pixmap doesn't support eglCreatePlatformPixmapSurfaceEXT()");
 		}
 
