@@ -4764,7 +4764,7 @@ void createPipelineWithResources (const vk::DeviceInterface&							vkd,
 			DE_NULL,
 			0,
 
-			VK_TRUE,
+			VK_FALSE,
 			VK_FALSE,
 			vk::VK_POLYGON_MODE_FILL,
 			vk::VK_CULL_MODE_NONE,
