@@ -1276,7 +1276,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 				VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,			// sType
 				DE_NULL,															// pNext
 				0u,																	// flags
-				VK_TRUE,															// depthClampEnable
+				VK_FALSE,															// depthClampEnable
 				VK_FALSE,															// rasterizerDiscardEnable
 				m_fillModeNonSolid ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL,	// polygonMode
 				VK_CULL_MODE_NONE,													// cullMode
