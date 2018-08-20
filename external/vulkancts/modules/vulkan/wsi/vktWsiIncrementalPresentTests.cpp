@@ -971,21 +971,25 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 	const vk::VkBool32						clipped				= VK_FALSE;
 	vector<vk::VkSwapchainCreateInfoKHR>	createInfos;
 
+	const deUint32				currentWidth		= properties.currentExtent.width != 0xFFFFFFFFu
+												? properties.currentExtent.width
+												: de::min(1024u, properties.minImageExtent.width + ((properties.maxImageExtent.width - properties.minImageExtent.width) / 2));
+	const deUint32				currentHeight		= properties.currentExtent.height != 0xFFFFFFFFu
+												? properties.currentExtent.height
+												: de::min(1024u, properties.minImageExtent.height + ((properties.maxImageExtent.height - properties.minImageExtent.height) / 2));
+
 	const deUint32				imageWidth		= scaling == SCALING_NONE
-												? (properties.currentExtent.width != 0xFFFFFFFFu
-													? properties.currentExtent.width
-													: de::min(1024u, properties.minImageExtent.width + ((properties.maxImageExtent.width - properties.minImageExtent.width) / 2)))
+												? currentWidth
 												: (scaling == SCALING_UP
 													? de::max(31u, properties.minImageExtent.width)
-													: properties.maxImageExtent.width);
+													: de::min(deSmallestGreaterOrEquallPowerOfTwoU32(currentWidth+1), properties.maxImageExtent.width));
 	const deUint32				imageHeight		= scaling == SCALING_NONE
-												? (properties.currentExtent.height != 0xFFFFFFFFu
-													? properties.currentExtent.height
-													: de::min(1024u, properties.minImageExtent.height + ((properties.maxImageExtent.height - properties.minImageExtent.height) / 2)))
+												? currentHeight
 												: (scaling == SCALING_UP
 													? de::max(31u, properties.minImageExtent.height)
-													: properties.maxImageExtent.height);
+													: de::min(deSmallestGreaterOrEquallPowerOfTwoU32(currentHeight+1), properties.maxImageExtent.height));
 	const vk::VkExtent2D		imageSize		= { imageWidth, imageHeight };
+	const vk::VkExtent2D		dummySize		= { de::max(31u, properties.minImageExtent.width), de::max(31u, properties.minImageExtent.height) };
 
 	{
 		size_t presentModeNdx;
@@ -1039,6 +1043,31 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 				};
 
 				createInfos.push_back(createInfo);
+
+				// add an extra dummy swapchain
+				const vk::VkSwapchainCreateInfoKHR		dummyInfo		=
+				{
+					vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+					DE_NULL,
+					0u,
+					surface,
+					properties.minImageCount,
+					imageFormat,
+					imageColorSpace,
+					dummySize,
+					imageLayers,
+					imageUsage,
+					vk::VK_SHARING_MODE_EXCLUSIVE,
+					1u,
+					&queueFamilyIndex,
+					preTransform,
+					compositeAlpha,
+					presentMode,
+					clipped,
+					(vk::VkSwapchainKHR)0
+				};
+
+				createInfos.push_back(dummyInfo);
 			}
 		}
 	}
