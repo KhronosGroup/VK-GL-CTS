@@ -773,6 +773,7 @@ de::MovePtr<vk::YCbCrImageWithMemory>	createYcbcrImage2D	(ProtectedContext&				c
 #else
 	const deUint32				flags		= 0x0;
 	const vk::MemoryRequirement	memReq		= vk::MemoryRequirement::Any;
+	DE_UNREF(protectionMode);
 #endif
 
 	const vk::VkImageCreateInfo	params		=

@@ -38,6 +38,8 @@ set(DEQP_VK_PROTECTED_MEMORY_SRCS
 	vktProtectedMemWsiSwapchainTests.hpp
 	vktProtectedMemYCbCrConversionTests.cpp
 	vktProtectedMemYCbCrConversionTests.hpp
+	vktProtectedMemWorkgroupStorageTests.cpp
+	vktProtectedMemWorkgroupStorageTests.hpp
 	vktProtectedMemTests.cpp
 	vktProtectedMemTests.hpp
 	)
