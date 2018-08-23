@@ -4118,6 +4118,8 @@ KHR-GL43.texture_view.view_classes
 KHR-GL43.texture_view.coherency
 KHR-GL43.texture_view.base_and_max_levels
 KHR-GL43.texture_view.reference_counting
+KHR-GL43.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_vertex
+KHR-GL43.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_fragment
 KHR-GL43.arrays_of_arrays_gl.SizedDeclarationsPrimitive
 KHR-GL43.arrays_of_arrays_gl.SizedDeclarationsStructTypes1
 KHR-GL43.arrays_of_arrays_gl.SizedDeclarationsStructTypes2
