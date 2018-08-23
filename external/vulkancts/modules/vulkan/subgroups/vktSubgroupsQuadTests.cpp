@@ -725,8 +725,12 @@ namespace subgroups
 {
 tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "quad", "Subgroup quad category tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup arithmetic category tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup arithmetic category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup arithmetic category tests: framebuffer"));
 
 	const VkFormat formats[] =
 	{
@@ -778,7 +782,7 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 
 				{
 					const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format, direction};
-					addFunctionCaseWithPrograms(group.get(), name.str()+"_"+ getShaderStageName(caseDef.shaderStage), "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(computeGroup.get(), name.str(), "", supportedCheck, initPrograms, test, caseDef);
 				}
 
 				{
@@ -789,18 +793,25 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 						format,
 						direction
 					};
-					addFunctionCaseWithPrograms(group.get(), name.str()+"_graphic", "", supportedCheck, initPrograms, test, caseDef);
+					addFunctionCaseWithPrograms(graphicGroup.get(), name.str(), "", supportedCheck, initPrograms, test, caseDef);
 				}
 				for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 				{
 					const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format, direction};
-					addFunctionCaseWithPrograms(group.get(), name.str()+"_"+ getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
+					addFunctionCaseWithPrograms(framebufferGroup.get(), name.str()+"_"+ getShaderStageName(caseDef.shaderStage), "",
 												supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 				}
 
 			}
 		}
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "quad", "Subgroup quad category tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
 
 	return group.release();
 }

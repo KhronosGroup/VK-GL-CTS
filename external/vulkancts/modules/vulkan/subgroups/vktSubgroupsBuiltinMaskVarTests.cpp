@@ -1476,8 +1476,12 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 tcu::TestCaseGroup* createSubgroupsBuiltinMaskVarTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "builtin_mask_var", "Subgroup builtin mask variable tests"));
+de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup builtin mask category	tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup builtin mask category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup builtin mask category tests: framebuffer"));
 
 	const char* const all_stages_vars[] =
 	{
@@ -1504,28 +1508,34 @@ tcu::TestCaseGroup* createSubgroupsBuiltinMaskVarTests(tcu::TestContext& testCtx
 
 		{
 			const CaseDefinition caseDef = {"gl_" + var, VK_SHADER_STAGE_ALL_GRAPHICS};
-			addFunctionCaseWithPrograms(group.get(),
-										varLower + "_graphic" , "",
+			addFunctionCaseWithPrograms(graphicGroup.get(),
+										varLower, "",
 										supportedCheck, initPrograms, test, caseDef);
 		}
 
 		{
 			const CaseDefinition caseDef = {"gl_" + var, VK_SHADER_STAGE_COMPUTE_BIT};
-			addFunctionCaseWithPrograms(group.get(),
-										varLower + "_" +
-										getShaderStageName(caseDef.shaderStage), "",
+			addFunctionCaseWithPrograms(computeGroup.get(),
+										varLower, "",
 										supportedCheck, initPrograms, test, caseDef);
 		}
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDef = {"gl_" + var, stages[stageIndex]};
-			addFunctionCaseWithPrograms(group.get(),
+			addFunctionCaseWithPrograms(framebufferGroup.get(),
 						varLower + "_" +
-						getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
+						getShaderStageName(caseDef.shaderStage), "",
 						supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "builtin_mask_var", "Subgroup builtin mask variable tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
 
 	return group.release();
 }

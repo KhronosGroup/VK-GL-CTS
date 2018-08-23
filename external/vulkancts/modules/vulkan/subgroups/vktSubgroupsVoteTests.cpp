@@ -815,8 +815,15 @@ namespace subgroups
 {
 tcu::TestCaseGroup* createSubgroupsVoteTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "vote", "Subgroup vote category tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup arithmetic category tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup arithmetic category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup arithmetic category tests: framebuffer"));
+
+	de::MovePtr<tcu::TestCaseGroup> fragHelperGroup(new tcu::TestCaseGroup(
+		testCtx, "frag_helper", "Subgroup arithmetic category tests: fragment helper invocation"));
 
 	const VkShaderStageFlags stages[] =
 	{
@@ -855,36 +862,44 @@ tcu::TestCaseGroup* createSubgroupsVoteTests(tcu::TestContext& testCtx)
 
 			{
 				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format};
-				addFunctionCaseWithPrograms(group.get(),
-											op + "_" + subgroups::getFormatNameForGLSL(format) + "_" + getShaderStageName(caseDef.shaderStage),
+				addFunctionCaseWithPrograms(computeGroup.get(),
+											op + "_" + subgroups::getFormatNameForGLSL(format),
 											"", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			{
 				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, format};
-				addFunctionCaseWithPrograms(group.get(),
-											op + "_" + subgroups::getFormatNameForGLSL(format) + "_graphic",
+				addFunctionCaseWithPrograms(graphicGroup.get(),
+											op + "_" + subgroups::getFormatNameForGLSL(format),
 											"", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format};
-				addFunctionCaseWithPrograms(group.get(),
+				addFunctionCaseWithPrograms(framebufferGroup.get(),
 							op + "_" +
 							subgroups::getFormatNameForGLSL(format)
-							+ "_" + getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
+							+ "_" + getShaderStageName(caseDef.shaderStage), "",
 							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_FRAGMENT_BIT, format};
-			addFunctionCaseWithPrograms(group.get(),
+			addFunctionCaseWithPrograms(fragHelperGroup.get(),
 						op + "_" +
 						subgroups::getFormatNameForGLSL(format)
-						+ "_" + getShaderStageName(caseDef.shaderStage)+"_frag_helper", "",
+						+ "_" + getShaderStageName(caseDef.shaderStage), "",
 						supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "vote", "Subgroup vote category tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
+	group->addChild(fragHelperGroup.release());
 
 	return group.release();
 }

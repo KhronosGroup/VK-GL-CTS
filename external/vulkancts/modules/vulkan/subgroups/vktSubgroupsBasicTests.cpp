@@ -2141,8 +2141,13 @@ namespace subgroups
 {
 tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "basic", "Subgroup basic category tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup basic category tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup basic category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup basic category tests: framebuffer"));
+
 
 	const VkShaderStageFlags stages[] =
 	{
@@ -2159,8 +2164,7 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 
 		{
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT};
-			addFunctionCaseWithPrograms(group.get(),
-										op + "_" + getShaderStageName(caseDef.shaderStage), "",
+			addFunctionCaseWithPrograms(computeGroup.get(), op, "",
 										supportedCheck, initPrograms, test, caseDef);
 		}
 
@@ -2172,8 +2176,8 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 
 		{
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS};
-			addFunctionCaseWithPrograms(group.get(),
-										op + "_graphic", "",
+			addFunctionCaseWithPrograms(graphicGroup.get(),
+										op, "",
 										supportedCheck, initPrograms, test, caseDef);
 		}
 
@@ -2182,8 +2186,8 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 			for (int stageIndex = 1; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
-				addFunctionCaseWithPrograms(group.get(),
-							op + "_" + getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
+				addFunctionCaseWithPrograms(framebufferGroup.get(),
+							op + "_" + getShaderStageName(caseDef.shaderStage), "",
 							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 		}
@@ -2192,13 +2196,21 @@ tcu::TestCaseGroup* createSubgroupsBasicTests(tcu::TestContext& testCtx)
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDefFrag = {opTypeIndex, stages[stageIndex]};
-				addFunctionCaseWithPrograms(group.get(),
-							op + "_" + getShaderStageName(caseDefFrag.shaderStage)+"_framebuffer", "",
+				addFunctionCaseWithPrograms(framebufferGroup.get(),
+							op + "_" + getShaderStageName(caseDefFrag.shaderStage), "",
 							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDefFrag);
 			}
 		}
 
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "basic", "Subgroup basic category tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
+
 	return group.release();
 }
 

@@ -184,6 +184,15 @@ XlibWindow::XlibWindow (XlibDisplay& display, int width, int height, ::Visual* v
 							 depth, InputOutput, visual, mask, &swa);
 	TCU_CHECK(m_window);
 
+	/* Prevent the window from stealing input, since our windows are
+	 * non-interactive.
+	 */
+	XWMHints *hints = XAllocWMHints();
+	hints->flags |= InputHint;
+	hints->input = False;
+	XSetWMHints(dpy, m_window, hints);
+	XFree(hints);
+
 	Atom deleteAtom = m_display.getDeleteAtom();
 	XSetWMProtocols(dpy, m_window, &deleteAtom, 1);
 	XSync(dpy,false);

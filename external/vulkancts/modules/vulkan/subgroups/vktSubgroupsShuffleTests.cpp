@@ -807,8 +807,13 @@ namespace subgroups
 {
 tcu::TestCaseGroup* createSubgroupsShuffleTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "shuffle", "Subgroup shuffle category tests"));
+
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup shuffle category tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup shuffle category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup shuffle category tests: framebuffer"));
 
 	const VkFormat formats[] =
 	{
@@ -849,24 +854,30 @@ tcu::TestCaseGroup* createSubgroupsShuffleTests(tcu::TestContext& testCtx)
 					VK_SHADER_STAGE_ALL_GRAPHICS,
 					format
 				};
-				addFunctionCaseWithPrograms(group.get(), name + "_graphic", "",
-											supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			{
 				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format};
-				addFunctionCaseWithPrograms(group.get(), name + "_" + getShaderStageName(caseDef.shaderStage), "",
-											supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(computeGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format};
-				addFunctionCaseWithPrograms(group.get(), name + "_" + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "",
+				addFunctionCaseWithPrograms(framebufferGroup.get(), name + "_" + getShaderStageName(caseDef.shaderStage), "",
 											supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 		}
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "shuffle", "Subgroup shuffle category tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
+
 	return group.release();
 }
 

@@ -263,8 +263,8 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 				spec.assembly					= shaderSource.specialize(specs);
 				spec.numWorkGroups				= IVec3(numItems, 1, 1);
 				spec.requestedVulkanFeatures	= vulkanFeatures;
-				spec.inputTypes[0]				= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-				spec.inputTypes[1]				= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				spec.inputs[0].setDescriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+				spec.inputs[1].setDescriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
 				spec.outputs.push_back(BufferSp(new Float32Buffer(outputData)));
 
@@ -308,7 +308,7 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 				VulkanFeatures				vulkanFeatures;
 				vector<string>				extensions;
 				vector<string>				features;
-				vector<deInt32>				noSpecConstants;
+				SpecConstants				noSpecConstants;
 				PushConstants				noPushConstants;
 				GraphicsInterfaces			noInterfaces;
 				map<string, string>			specs;
@@ -422,8 +422,8 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 
 					"                     OpFunctionEnd\n");
 
-				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(inputData))));
-				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Buffer<UVec4>(indexSelectorData))));
+				resources.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				resources.inputs.push_back(Resource(BufferSp(new Buffer<UVec4>(indexSelectorData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				if (idxSize == 16)
 				{
@@ -481,7 +481,7 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 					outputData.push_back(inputData[element * sizeof(InputData) / 4 + vec.x() * (32 * 4 * 4) + vec.y() * 4 * 4 + vec.z() * 4 + vec.w()]);
 				}
 
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(outputData))));
+				resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["pre_main"]	= preMain.specialize(specs);
 				fragments["decoration"]	= decoration.specialize(specs);

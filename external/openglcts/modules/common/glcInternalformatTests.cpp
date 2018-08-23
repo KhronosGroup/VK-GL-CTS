@@ -1395,8 +1395,6 @@ void InternalformatTests::getESTestData(TestData& testData, glu::ContextType& co
 		TF(GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, GL_LUMINANCE_ALPHA),
 		TF(GL_LUMINANCE, GL_UNSIGNED_BYTE, GL_LUMINANCE),
 		TF(GL_ALPHA, GL_UNSIGNED_BYTE, GL_ALPHA),
-		TF(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB8, OES_rgb8_rgba8),
-		TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8, OES_rgb8_rgba8),
 		TF(GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGBA, EXT_texture_type_2_10_10_10_REV),
 		TF(GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGB10_A2, EXT_texture_type_2_10_10_10_REV),
 		TF(GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGB5_A1, EXT_texture_type_2_10_10_10_REV),
@@ -1420,8 +1418,6 @@ void InternalformatTests::getESTestData(TestData& testData, glu::ContextType& co
 		CF(GL_ALPHA),
 		CF(GL_LUMINANCE),
 		CF(GL_LUMINANCE_ALPHA),
-		CF(GL_RGBA8, OES_rgb8_rgba8),
-		CF(GL_RGB8, OES_rgb8_rgba8),
 	};
 
 	RenderbufferFormat commonRenderbufferFormats[] = {
@@ -1444,12 +1440,16 @@ void InternalformatTests::getESTestData(TestData& testData, glu::ContextType& co
 			TF(GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, GL_RGB5_A1),
 			TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB),
 			TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB565),
+			TF(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB8),
+			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8),
 		};
 
 		CopyTexImageFormat es3CopyTexImageFormats[] = {
 			CF(GL_RGBA4),
 			CF(GL_RGB5_A1),
-			CF(GL_RGB565)
+			CF(GL_RGB565),
+			CF(GL_RGBA8),
+			CF(GL_RGB8),
 		};
 
 		RenderbufferFormat es3RenderbufferFormats[] = {

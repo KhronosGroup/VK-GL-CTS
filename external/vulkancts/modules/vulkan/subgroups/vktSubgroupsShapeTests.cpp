@@ -605,8 +605,12 @@ namespace subgroups
 {
 tcu::TestCaseGroup* createSubgroupsShapeTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "shape", "Subgroup shape category tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup shape category tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup shape category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup shape category tests: framebuffer"));
 
 	const VkShaderStageFlags stages[] =
 	{
@@ -622,9 +626,8 @@ tcu::TestCaseGroup* createSubgroupsShapeTests(tcu::TestContext& testCtx)
 
 		{
 			const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT};
-			addFunctionCaseWithPrograms(group.get(),
-									op + "_" + getShaderStageName(caseDef.shaderStage), "",
-									supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(computeGroup.get(), op, "", supportedCheck, initPrograms, test, caseDef);
+
 		}
 
 		{
@@ -633,18 +636,25 @@ tcu::TestCaseGroup* createSubgroupsShapeTests(tcu::TestContext& testCtx)
 				opTypeIndex,
 				VK_SHADER_STAGE_ALL_GRAPHICS
 			};
-			addFunctionCaseWithPrograms(group.get(),
-									op + "_graphic", "",
+			addFunctionCaseWithPrograms(graphicGroup.get(),
+									op, "",
 									supportedCheck, initPrograms, test, caseDef);
 		}
 
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex]};
-			addFunctionCaseWithPrograms(group.get(),op + "_" + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "",
+			addFunctionCaseWithPrograms(framebufferGroup.get(),op + "_" + getShaderStageName(caseDef.shaderStage), "",
 										supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "shape", "Subgroup shape category tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
 
 	return group.release();
 }

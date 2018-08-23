@@ -1044,8 +1044,12 @@ namespace subgroups
 {
 tcu::TestCaseGroup* createSubgroupsBallotTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "ballot", "Subgroup ballot category tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup ballot category tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup ballot category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup ballot category tests: framebuffer"));
 
 	const VkShaderStageFlags stages[] =
 	{
@@ -1057,20 +1061,27 @@ tcu::TestCaseGroup* createSubgroupsBallotTests(tcu::TestContext& testCtx)
 
 	{
 		const CaseDefinition caseDef = {VK_SHADER_STAGE_COMPUTE_BIT};
-		addFunctionCaseWithPrograms(group.get(), getShaderStageName(caseDef.shaderStage), "", supportedCheck, initPrograms, test, caseDef);
+		addFunctionCaseWithPrograms(computeGroup.get(), getShaderStageName(caseDef.shaderStage), "", supportedCheck, initPrograms, test, caseDef);
 	}
 
 	{
 			const CaseDefinition caseDef = {VK_SHADER_STAGE_ALL_GRAPHICS};
-			addFunctionCaseWithPrograms(group.get(), "graphic", "", supportedCheck, initPrograms, test, caseDef);
+			addFunctionCaseWithPrograms(graphicGroup.get(), "graphic", "", supportedCheck, initPrograms, test, caseDef);
 	}
 
 	for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 	{
 		const CaseDefinition caseDef = {stages[stageIndex]};
-		addFunctionCaseWithPrograms(group.get(), getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
+		addFunctionCaseWithPrograms(framebufferGroup.get(), getShaderStageName(caseDef.shaderStage), "",
 					supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "ballot", "Subgroup ballot category tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
 
 	return group.release();
 }

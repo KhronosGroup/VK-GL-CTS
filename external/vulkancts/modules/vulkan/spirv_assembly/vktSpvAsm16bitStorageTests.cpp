@@ -193,11 +193,11 @@ bool graphicsCheck16BitFloats (const std::vector<Resource>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].second->getBytes(originalBytes);
+		originalFloats[outputNdx].getBytes(originalBytes);
 
 		const deUint16*	returned	= static_cast<const deUint16*>(outputAllocs[outputNdx]->getHostPtr());
 		const float*	original	= reinterpret_cast<const float*>(&originalBytes.front());
-		const deUint32	count		= static_cast<deUint32>(expectedOutputs[outputNdx].second->getByteSize() / sizeof(deUint16));
+		const deUint32	count		= static_cast<deUint32>(expectedOutputs[outputNdx].getByteSize() / sizeof(deUint16));
 		const deUint32	inputStride	= static_cast<deUint32>(originalBytes.size() / sizeof(float)) / count;
 
 		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
@@ -208,13 +208,13 @@ bool graphicsCheck16BitFloats (const std::vector<Resource>&	originalFloats,
 	return true;
 }
 
-bool computeCheckBuffersFloats (const std::vector<BufferSp>&	originalFloats,
+bool computeCheckBuffersFloats (const std::vector<Resource>&	originalFloats,
 								const vector<AllocationSp>&		outputAllocs,
-								const std::vector<BufferSp>&	/*expectedOutputs*/,
+								const std::vector<Resource>&	/*expectedOutputs*/,
 								tcu::TestLog&					/*log*/)
 {
 	std::vector<deUint8> result;
-	originalFloats.front()->getBytes(result);
+	originalFloats.front().getBytes(result);
 
 	const deUint16 * results = reinterpret_cast<const deUint16 *>(&result[0]);
 	const deUint16 * expected = reinterpret_cast<const deUint16 *>(outputAllocs.front()->getHostPtr());
@@ -234,9 +234,9 @@ bool computeCheckBuffersFloats (const std::vector<BufferSp>&	originalFloats,
 }
 
 template<RoundingModeFlags RoundingMode>
-bool computeCheck16BitFloats (const std::vector<BufferSp>&	originalFloats,
+bool computeCheck16BitFloats (const std::vector<Resource>&	originalFloats,
 							  const vector<AllocationSp>&	outputAllocs,
-							  const std::vector<BufferSp>&	expectedOutputs,
+							  const std::vector<Resource>&	expectedOutputs,
 							  tcu::TestLog&					log)
 {
 	if (outputAllocs.size() != originalFloats.size())
@@ -245,11 +245,11 @@ bool computeCheck16BitFloats (const std::vector<BufferSp>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx]->getBytes(originalBytes);
+		originalFloats[outputNdx].getBytes(originalBytes);
 
 		const deUint16*	returned	= static_cast<const deUint16*>(outputAllocs[outputNdx]->getHostPtr());
 		const float*	original	= reinterpret_cast<const float*>(&originalBytes.front());
-		const deUint32	count		= static_cast<deUint32>(expectedOutputs[outputNdx]->getByteSize() / sizeof(deUint16));
+		const deUint32	count		= static_cast<deUint32>(expectedOutputs[outputNdx].getByteSize() / sizeof(deUint16));
 		const deUint32	inputStride	= static_cast<deUint32>(originalBytes.size() / sizeof(float)) / count;
 
 		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
@@ -275,33 +275,7 @@ bool check32BitFloats (const std::vector<Resource>&		/* originalFloats */,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	expectedBytes;
-		expectedOutputs[outputNdx].second->getBytes(expectedBytes);
-
-		const float*	returnedAsFloat	= static_cast<const float*>(outputAllocs[outputNdx]->getHostPtr());
-		const float*	expectedAsFloat	= reinterpret_cast<const float*>(&expectedBytes.front());
-		const deUint32	count			= static_cast<deUint32>(expectedBytes.size() / sizeof(float));
-
-		for (deUint32 numNdx = 0; numNdx < count; ++numNdx)
-			if (!compare32BitFloat(expectedAsFloat[numNdx], returnedAsFloat[numNdx], log))
-				return false;
-	}
-
-	return true;
-}
-
-// Overload for compute pipeline
-bool check32BitFloats (const std::vector<BufferSp>&		/* originalFloats */,
-					   const std::vector<AllocationSp>& outputAllocs,
-					   const std::vector<BufferSp>&		expectedOutputs,
-					   tcu::TestLog&					log)
-{
-	if (outputAllocs.size() != expectedOutputs.size())
-		return false;
-
-	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
-	{
-		vector<deUint8>	expectedBytes;
-		expectedOutputs[outputNdx]->getBytes(expectedBytes);
+		expectedOutputs[outputNdx].getBytes(expectedBytes);
 
 		const float*	returnedAsFloat	= static_cast<const float*>(outputAllocs[outputNdx]->getHostPtr());
 		const float*	expectedAsFloat	= reinterpret_cast<const float*>(&expectedBytes.front());
@@ -1046,15 +1020,15 @@ bool compareStruct(const resultType* returned, const originType* original, tcu::
 }
 
 template<typename originType, typename resultType, ShaderTemplate funcOrigin, ShaderTemplate funcResult>
-bool computeCheckStruct (const std::vector<BufferSp>&	originalFloats,
+bool computeCheckStruct (const std::vector<Resource>&	originalFloats,
 						 const vector<AllocationSp>&	outputAllocs,
-						 const std::vector<BufferSp>&	/* expectedOutputs */,
+						 const std::vector<Resource>&	/* expectedOutputs */,
 						 tcu::TestLog&					log)
 {
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx]->getBytes(originalBytes);
+		originalFloats[outputNdx].getBytes(originalBytes);
 
 		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
 		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
@@ -1074,7 +1048,7 @@ bool graphicsCheckStruct (const std::vector<Resource>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < static_cast<deUint32>(outputAllocs.size()); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].second->getBytes(originalBytes);
+		originalFloats[outputNdx].getBytes(originalBytes);
 
 		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
 		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
@@ -1491,10 +1465,9 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 				spec.assembly			= shaderTemplate.specialize(specs);
 				spec.numWorkGroups		= IVec3(cTypes[capIdx][tyIdx].count, 1, 1);
 				spec.verifyIO			= check32BitFloats;
-				spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
 
-				spec.inputs.push_back(BufferSp(new Float16Buffer(float16Data)));
-				spec.outputs.push_back(BufferSp(new Float32Buffer(cTypes[capIdx][tyIdx].useConstantIndex ? float32DataConstIdx : float32Data)));
+				spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data)), CAPABILITIES[capIdx].dtype));
+				spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(cTypes[capIdx][tyIdx].useConstantIndex ? float32DataConstIdx : float32Data))));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -1626,15 +1599,14 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 
 				spec.assembly			= shaderTemplate.specialize(specs);
 				spec.numWorkGroups		= IVec3(cTypes[capIdx][tyIdx].count, 1, 1);
-				spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
 
-				spec.inputs.push_back(BufferSp(new Int16Buffer(inputs)));
+				spec.inputs.push_back(Resource(BufferSp(new Int16Buffer(inputs)), CAPABILITIES[capIdx].dtype));
 				if (cTypes[capIdx][tyIdx].useConstantIndex)
-					spec.outputs.push_back(BufferSp(new Int32Buffer(intDataConstIdx)));
+					spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(intDataConstIdx))));
 				else if (cTypes[capIdx][tyIdx].isSigned)
-					spec.outputs.push_back(BufferSp(new Int32Buffer(sOutputs)));
+					spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(sOutputs))));
 				else
-					spec.outputs.push_back(BufferSp(new Int32Buffer(uOutputs)));
+					spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(uOutputs))));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -1840,9 +1812,8 @@ void addCompute16bitStorageUniform16To32ChainAccessGroup (tcu::TestCaseGroup* gr
 				spec.numWorkGroups						= IVec3(1, 1, 1);
 				spec.extensions.push_back				("VK_KHR_16bit_storage");
 				spec.requestedVulkanFeatures			= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-				spec.inputTypes[0]						= CAPABILITIES[capIdx].dtype;
-				spec.inputs.push_back(dataTypes[dataTypeIdx].inputs);
-				spec.outputs.push_back(dataTypes[dataTypeIdx].outputs);
+				spec.inputs.push_back(Resource(dataTypes[dataTypeIdx].inputs, CAPABILITIES[capIdx].dtype));
+				spec.outputs.push_back(Resource(dataTypes[dataTypeIdx].outputs));
 
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec, features));
 			}
@@ -2012,7 +1983,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			spec.verifyIO			= check32BitFloats;
 			spec.pushConstants		= BufferSp(new Float16Buffer(float16Data));
 
-			spec.outputs.push_back(BufferSp(new Float32Buffer(cTypes[tyIdx].useConstantIndex ? float32DataConstIdx : float32Data)));
+			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(cTypes[tyIdx].useConstantIndex ? float32DataConstIdx : float32Data))));
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
@@ -2126,11 +2097,11 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 			spec.pushConstants		= BufferSp(new Int16Buffer(inputs));
 
 			if (cTypes[tyIdx].useConstantIndex)
-				spec.outputs.push_back(BufferSp(new Int32Buffer(intDataConstIdx)));
+				spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(intDataConstIdx))));
 			else if (cTypes[tyIdx].isSigned)
-				spec.outputs.push_back(BufferSp(new Int32Buffer(sOutputs)));
+				spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(sOutputs))));
 			else
-				spec.outputs.push_back(BufferSp(new Int32Buffer(uOutputs)));
+				spec.outputs.push_back(Resource(BufferSp(new Int32Buffer(uOutputs))));
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
 
@@ -2334,10 +2305,10 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 						inputsPadded.push_back(0);
 				}
 				GraphicsResources	resources;
-				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(inputsPadded))));
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(outputs))));
+				resources.inputs.push_back(Resource(BufferSp(new Int32Buffer(inputsPadded)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
 				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 			}
@@ -2345,8 +2316,8 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 	// Vector
 	{
 		GraphicsResources	resources;
-		resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(inputs))));
-		resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(outputs))));
+		resources.inputs.push_back(Resource(BufferSp(new Int32Buffer(inputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+		resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 		for (deUint32 capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
 			for (deUint32 factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
@@ -2367,7 +2338,7 @@ void addGraphics16BitStorageUniformInt32To16Group (tcu::TestCaseGroup* testGroup
 				fragments["capability"]			= capabilities.specialize(specs);
 				fragments["decoration"]			= vecDecoration.specialize(specs);
 
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
 				createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 			}
@@ -2448,8 +2419,8 @@ void addCompute16bitStorageUniform16To16Group (tcu::TestCaseGroup* group)
 	spec.numWorkGroups		= IVec3(numElements, numElements, 1);
 	spec.verifyIO			= computeCheckBuffersFloats;
 	spec.coherentMemory		= true;
-	spec.inputs.push_back(BufferSp(new Float16Buffer(float16Data)));
-	spec.outputs.push_back(BufferSp(new Float16Buffer(float16DummyData)));
+	spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data))));
+	spec.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16DummyData))));
 	spec.extensions.push_back("VK_KHR_16bit_storage");
 	spec.requestedVulkanFeatures = get16BitStorageFeatures("uniform_buffer_block");
 
@@ -2548,7 +2519,7 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 		{
 			const char*				name;
 			const char*				decor;
-			ComputeVerifyIOFunc		func;
+			VerifyIOFunc			func;
 		};
 
 		const RndMode		rndModes[]		=
@@ -2632,12 +2603,11 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 					spec.assembly			= shaderTemplate.specialize(specs);
 					spec.numWorkGroups		= IVec3(cTypes[capIdx][tyIdx].count, 1, 1);
 					spec.verifyIO			= rndModes[rndModeIdx].func;
-					spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
 
-					spec.inputs.push_back(BufferSp(new Float32Buffer(float32Data)));
+					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), CAPABILITIES[capIdx].dtype));
 					// We provided a custom verifyIO in the above in which inputs will be used for checking.
 					// So put dummy data in the expected values.
-					spec.outputs.push_back(BufferSp(new Float16Buffer(float16DummyData)));
+					spec.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16DummyData))));
 					spec.extensions.push_back("VK_KHR_16bit_storage");
 					spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -2726,10 +2696,9 @@ void addCompute16bitStorageUniform32To16Group (tcu::TestCaseGroup* group)
 
 				spec.assembly			= shaderTemplate.specialize(specs);
 				spec.numWorkGroups		= IVec3(cTypes[capIdx][tyIdx].count, 1, 1);
-				spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
 
-				spec.inputs.push_back(BufferSp(new Int32Buffer(inputs)));
-				spec.outputs.push_back(BufferSp(new Int16Buffer(outputs)));
+				spec.inputs.push_back(Resource(BufferSp(new Int32Buffer(inputs)), CAPABILITIES[capIdx].dtype));
+				spec.outputs.push_back(Resource(BufferSp(new Int16Buffer(outputs))));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -2941,11 +2910,10 @@ void addCompute16bitStorageUniform16StructTo32StructGroup (tcu::TestCaseGroup* g
 
 			spec.assembly			= shaderTemplate.specialize(specs);
 			spec.numWorkGroups		= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
-			spec.verifyIO			= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ?  computeCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430>
+			spec.verifyIO			= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? computeCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430>
 																										: computeCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
-			spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
-			spec.inputs.push_back(BufferSp(new Float16Buffer(float16DData)));
-			spec.outputs.push_back(BufferSp(new Float32Buffer(float32Data)));
+			spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16DData)), CAPABILITIES[capIdx].dtype));
+			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data))));
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -3160,10 +3128,9 @@ void addCompute16bitStorageUniform32StructTo16StructGroup (tcu::TestCaseGroup* g
 			spec.assembly			= shaderTemplate.specialize(specs);
 			spec.numWorkGroups		= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
 			spec.verifyIO			= (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? computeCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD430, SHADERTEMPLATE_STRIDE16BIT_STD430> : computeCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE16BIT_STD430>;
-			spec.inputTypes[0]		= CAPABILITIES[capIdx].dtype;
 
-			spec.inputs.push_back(BufferSp(new Float32Buffer(float32DData)));
-			spec.outputs.push_back(BufferSp(new Float16Buffer(float16Data)));
+			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(float32DData)), CAPABILITIES[capIdx].dtype));
+			spec.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data))));
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -3379,9 +3346,8 @@ void addCompute16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		spec.assembly					= shaderTemplate.specialize(specs);
 		spec.numWorkGroups				= IVec3(structData.structArraySize, structData.nestedArraySize, 1);
 		spec.verifyIO					= isUniform ? computeCheckStruct<deInt16, deInt16, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : computeCheckStruct<deInt16, deInt16, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
-		spec.inputTypes[0]				= CAPABILITIES[capIdx].dtype;
-		spec.inputs.push_back			(BufferSp(new Int16Buffer(inData)));
-		spec.outputs.push_back			(BufferSp(new Int16Buffer(outData)));
+		spec.inputs.push_back			(Resource(BufferSp(new Int16Buffer(inData)), CAPABILITIES[capIdx].dtype));
+		spec.outputs.push_back			(Resource(BufferSp(new Int16Buffer(outData))));
 		spec.extensions.push_back		("VK_KHR_16bit_storage");
 		spec.requestedVulkanFeatures	= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -3416,7 +3382,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 	{
 		const char*				name;
 		const char*				decor;
-		GraphicsVerifyIOFunc	f;
+		VerifyIOFunc			f;
 	};
 
 	getDefaultColors(defaultColors);
@@ -3500,9 +3466,9 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_scalar_float_" + rndModes[rndModeIdx].name;
 
 				GraphicsResources	resources;
-				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(arrayStrides[capIdx] == 4 ? float32Data : float32DataPadded))));
+				resources.inputs.push_back(Resource(BufferSp(new Float32Buffer(arrayStrides[capIdx] == 4 ? float32Data : float32DataPadded)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				// We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16DummyData))));
+				resources.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16DummyData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				specs["cap"]					= CAPABILITIES[capIdx].cap;
 				specs["indecor"]				= CAPABILITIES[capIdx].decor;
@@ -3512,18 +3478,17 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 				fragments["capability"]			= capabilities.specialize(specs);
 				fragments["decoration"]			= decoration.specialize(specs);
 
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 				resources.verifyIO				= rndModes[rndModeIdx].f;
-
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 			}
 	}
 
 	// Non-scalar cases can use the same resources.
 	GraphicsResources	resources;
-	resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+	resources.inputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	// We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
-	resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16DummyData))));
+	resources.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16DummyData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 	{  // vector cases
 		fragments["pre_main"]				=
@@ -3610,7 +3575,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 				fragments["capability"]			= capabilities.specialize(specs);
 				fragments["decoration"]			= decoration.specialize(specs);
 
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 				resources.verifyIO				= rndModes[rndModeIdx].f;
 
 
@@ -3723,7 +3688,7 @@ void addGraphics16BitStorageUniformFloat32To16Group (tcu::TestCaseGroup* testGro
 				fragments["capability"]			= capabilities.specialize(specs);
 				fragments["decoration"]			= decoration.specialize(specs);
 
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 				resources.verifyIO				= rndModes[rndModeIdx].f;
 
 
@@ -4602,7 +4567,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 				specs["arrayindex"] = "30";
 
 			resources.outputs.clear();
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data))));
+			resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 			fragments["pre_main"]		= preMain.specialize(specs);
 			fragments["testfun"]		= testFun.specialize(specs);
@@ -4671,7 +4636,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 				specs["arrayindex"] = "30";
 
 			resources.outputs.clear();
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data))));
+			resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 			fragments["pre_main"]	= preMain.specialize(specs);
 			fragments["testfun"]	= testFun.specialize(specs);
@@ -4755,7 +4720,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 			specs["store"] = store.specialize(specs);
 
 			resources.outputs.clear();
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data))));
+			resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(useConstIdx ? float32ConstIdxData : float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 			fragments["pre_main"]		= preMain.specialize(specs);
 			fragments["testfun"]		= testFun.specialize(specs);
@@ -4915,7 +4880,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -4958,7 +4923,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -5031,7 +4996,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(useConstIdx ? constIdxData : sOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -5075,7 +5040,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				resources.outputs.clear();
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs))));
+				resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(useConstIdx ? constIdxData : uOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 				fragments["testfun"]	= testFun.specialize(specs);
 				fragments["pre_main"]	= preMain.specialize(specs);
@@ -5332,7 +5297,7 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 							inputsPadded.push_back(0);
 					}
 
-					resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(inputsPadded))));
+					resources.inputs.push_back(Resource(BufferSp(new Int16Buffer(inputsPadded)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 					vector<deInt32>		constIdxOutputs;
 					if (useConstIdx)
@@ -5345,14 +5310,14 @@ void addGraphics16BitStorageUniformInt16To32Group (tcu::TestCaseGroup* testGroup
 						}
 					}
 
-					resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+					resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 					resources.outputs.clear();
 					if (useConstIdx)
-						resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(constIdxOutputs))));
+						resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(constIdxOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					else if (intFacts[factIdx].isSigned)
-						resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(sOutputs))));
+						resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(sOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					else
-						resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int32Buffer(uOutputs))));
+						resources.outputs.push_back(Resource(BufferSp(new Int32Buffer(uOutputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 					createTestsForAllStages(name, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 				}
@@ -5490,10 +5455,10 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 					float32Data.push_back(deFloat16To32(float16Data[useConstIdx ? constIdx : numIdx]));
 
-				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(inputData))));
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+				resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.verifyIO = check32BitFloats;
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
 				if (useConstIdx)
 					testName += string("_const_idx_") + de::toString(constIdx);
@@ -5608,10 +5573,10 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 					float32Data.push_back(deFloat16To32(float16Data[constantIndices[constIndexIdx].useConstantIndex ? (constantIndices[constIndexIdx].constantIndex * 2 + numIdx % 2) : numIdx]));
 
-				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(inputData))));
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+				resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.verifyIO = check32BitFloats;
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
 				if (constantIndices[constIndexIdx].useConstantIndex)
 					testName += string("_const_idx_") + de::toString(constantIndices[constIndexIdx].constantIndex);
@@ -5722,10 +5687,10 @@ void addGraphics16BitStorageUniformFloat16To32Group (tcu::TestCaseGroup* testGro
 				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 					float32Data.push_back(deFloat16To32(float16Data[numIdx]));
 
-				resources.inputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16Data))));
-				resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+				resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.verifyIO = check32BitFloats;
-				resources.inputs.back().first	= CAPABILITIES[capIdx].dtype;
+				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 		}
@@ -5956,8 +5921,8 @@ void addGraphics16BitStorageUniformStructFloat16To32Group (tcu::TestCaseGroup* t
 			fragments["decoration"]			= decoration.specialize(specs);
 			fragments["pre_main"]			= preMain.specialize(specs);
 
-			resources.inputs.push_back(std::make_pair(CAPABILITIES[capIdx].dtype, BufferSp(new Float16Buffer(float16Data))));
-			resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float32Buffer(float32Data))));
+			resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data)), CAPABILITIES[capIdx].dtype));
+			resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			resources.verifyIO = (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? graphicsCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD430, SHADERTEMPLATE_STRIDE32BIT_STD430> : graphicsCheckStruct<deFloat16, float, SHADERTEMPLATE_STRIDE16BIT_STD140, SHADERTEMPLATE_STRIDE32BIT_STD430>;
 
 			createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
@@ -6190,8 +6155,8 @@ void addGraphics16BitStorageUniformStructFloat32To16Group (tcu::TestCaseGroup* t
 		fragments["decoration"]			= decoration.specialize(specs);
 		fragments["pre_main"]			= preMain.specialize(specs);
 
-		resources.inputs.push_back(std::make_pair( CAPABILITIES[capIdx].dtype, BufferSp(new Float32Buffer(float32Data))));
-		resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Float16Buffer(float16Data))));
+		resources.inputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), CAPABILITIES[capIdx].dtype));
+		resources.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		resources.verifyIO				=  (VK_DESCRIPTOR_TYPE_STORAGE_BUFFER == CAPABILITIES[capIdx].dtype) ? graphicsCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD430, SHADERTEMPLATE_STRIDE16BIT_STD430> : graphicsCheckStruct<float, deFloat16, SHADERTEMPLATE_STRIDE32BIT_STD140, SHADERTEMPLATE_STRIDE16BIT_STD430>;
 
 		VulkanFeatures features;
@@ -6411,8 +6376,8 @@ void addGraphics16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		fragments["testfun"]			= testFun.specialize(specs);
 
 		resources.verifyIO				= isUniform ? graphicsCheckStruct<deInt16, deInt16, SHADERTEMPLATE_STRIDEMIX_STD140, SHADERTEMPLATE_STRIDEMIX_STD430> : graphicsCheckStruct<deInt16, deInt16, SHADERTEMPLATE_STRIDEMIX_STD430, SHADERTEMPLATE_STRIDEMIX_STD430>;
-		resources.inputs.push_back(std::make_pair( CAPABILITIES[capIdx].dtype, BufferSp(new Int16Buffer(inData))));
-		resources.outputs.push_back(std::make_pair(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, BufferSp(new Int16Buffer(outData))));
+		resources.inputs.push_back(Resource(BufferSp(new Int16Buffer(inData)), CAPABILITIES[capIdx].dtype));
+		resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(outData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
 		createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, group, get16BitStorageFeatures(CAPABILITIES[capIdx].name));
 	}
