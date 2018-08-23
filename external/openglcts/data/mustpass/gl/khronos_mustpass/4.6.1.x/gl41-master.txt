@@ -1498,6 +1498,8 @@ KHR-GL41.shaders.preprocessor.basic.token_pasting_1_vertex
 KHR-GL41.shaders.preprocessor.basic.token_pasting_1_fragment
 KHR-GL41.shaders.preprocessor.basic.token_pasting_2_vertex
 KHR-GL41.shaders.preprocessor.basic.token_pasting_2_fragment
+KHR-GL41.shaders.preprocessor.basic.stringification_vertex
+KHR-GL41.shaders.preprocessor.basic.stringification_fragment
 KHR-GL41.shaders.preprocessor.definitions.define_value_and_function_vertex
 KHR-GL41.shaders.preprocessor.definitions.define_value_and_function_fragment
 KHR-GL41.shaders.preprocessor.definitions.undefine_object_invalid_syntax_vertex
