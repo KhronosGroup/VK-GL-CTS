@@ -57,6 +57,7 @@ namespace
 
 enum Constants
 {
+	NUM_EXTRA_TESS_GEOM_INVOCATIONS = 4, // Need to set this value properly to allocate enough memory to store vertices data
 	NUM_TESS_LEVELS = 6,  // two inner and four outer levels
 };
 
@@ -590,7 +591,7 @@ BaseTestInstance::BaseTestInstance (Context& context, const CaseDefinition caseD
 	, m_vertexFormat						(VK_FORMAT_R32_SFLOAT)
 	, m_vertexStride						(tcu::getPixelSize(mapVkFormat(m_vertexFormat)))
 	, m_edgeDescriptions					(outerEdgeDescriptions(m_caseDef.primitiveType))
-	, m_maxNumPrimitivesInDrawCall			(computeMaxPrimitiveCount(m_numPatchesToDraw, caseDef.primitiveType, caseDef.spacingMode, caseDef.usePointMode, m_singleOuterEdgeLevels))
+	, m_maxNumPrimitivesInDrawCall			(NUM_EXTRA_TESS_GEOM_INVOCATIONS * computeMaxPrimitiveCount(m_numPatchesToDraw, caseDef.primitiveType, caseDef.spacingMode, caseDef.usePointMode, m_singleOuterEdgeLevels))
 	, m_vertexDataSizeBytes					(NUM_TESS_LEVELS * m_numPatchesToDraw * m_vertexStride)
 	, m_vertexBuffer						(m_context.getDeviceInterface(), m_context.getDevice(), m_context.getDefaultAllocator(),
 											makeBufferCreateInfo(m_vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible)
@@ -684,7 +685,7 @@ BaseTestInstance::DrawResult BaseTestInstance::draw (const deUint32 vertexCount,
 	DE_ASSERT(result.numPrimitives <= m_maxNumPrimitivesInDrawCall);
 
 	tcu::TestLog& log = m_context.getTestContext().getLog();
-	if (result.numPrimitives != result.refNumPrimitives)
+	if (result.numPrimitives < result.refNumPrimitives)
 	{
 		logPrimitiveCountError(log, m_numPatchesToDraw, result.numPrimitives, result.refNumPrimitives, patchTessLevels);
 		result.success = false;
@@ -752,8 +753,6 @@ tcu::TestStatus OuterEdgeDivisionTestInstance::iterate (void)
 			int primitiveNdx = 0;
 			for (int patchNdx = 0; patchNdx < m_numPatchesToDraw; ++patchNdx)
 			{
-				DE_ASSERT(primitiveNdx < result.numPrimitives);
-
 				const float* const	innerLevels	= &patchTessLevels[NUM_TESS_LEVELS*patchNdx + 0];
 				const float* const	outerLevels	= &patchTessLevels[NUM_TESS_LEVELS*patchNdx + 2];
 
@@ -1352,6 +1351,9 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 		}
 	}
 
+	// Allow for more primitievs in case tessellation/geometry has extra invocations
+	maxNumPrimitivesPerPatch *= NUM_EXTRA_TESS_GEOM_INVOCATIONS;
+
 	// Vertex input attributes buffer: to pass tessellation levels
 
 	const VkFormat     vertexFormat        = VK_FORMAT_R32_SFLOAT;
@@ -1477,9 +1479,9 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 					tcu::TestLog& log = m_context.getTestContext().getLog();
 
-					if (numPrimitives != refNumPrimitives)
+					if (numPrimitives < refNumPrimitives)
 					{
-						log << tcu::TestLog::Message << "Failure: got " << numPrimitives << " primitives, but expected " << refNumPrimitives << tcu::TestLog::EndMessage;
+						log << tcu::TestLog::Message << "Failure: got " << numPrimitives << " primitives, but expected at least" << refNumPrimitives << tcu::TestLog::EndMessage;
 
 						return tcu::TestStatus::fail("Invalid set of primitives");
 					}
