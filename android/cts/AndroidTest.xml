@@ -39,6 +39,14 @@
 		<option name="deqp-config-required" value="true"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
+		<option name="deqp-package" value="dEQP-GLES2"/>
+		<option name="deqp-caselist-file" value="gles2-master-risky.txt"/>
+		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
+		<option name="deqp-surface-type" value="window"/>
+		<option name="deqp-screen-rotation" value="unspecified"/>
+		<option name="runtime-hint" value="10m"/>
+	</test>
+	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
 		<option name="deqp-caselist-file" value="gles3-master.txt"/>
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
@@ -46,6 +54,14 @@
 		<option name="deqp-screen-rotation" value="unspecified"/>
 		<option name="runtime-hint" value="1h50m"/>
 		<option name="deqp-config-required" value="true"/>
+	</test>
+	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
+		<option name="deqp-package" value="dEQP-GLES3"/>
+		<option name="deqp-caselist-file" value="gles3-master-risky.txt"/>
+		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
+		<option name="deqp-surface-type" value="window"/>
+		<option name="deqp-screen-rotation" value="unspecified"/>
+		<option name="runtime-hint" value="10m"/>
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES3"/>
@@ -106,6 +122,14 @@
 	</test>
 	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
 		<option name="deqp-package" value="dEQP-GLES31"/>
+		<option name="deqp-caselist-file" value="gles31-master-risky.txt"/>
+		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
+		<option name="deqp-surface-type" value="window"/>
+		<option name="deqp-screen-rotation" value="unspecified"/>
+		<option name="runtime-hint" value="10m"/>
+	</test>
+	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
+		<option name="deqp-package" value="dEQP-GLES31"/>
 		<option name="deqp-caselist-file" value="gles31-rotate-portrait.txt"/>
 		<option name="deqp-gl-config-name" value="rgba8888d24s8ms0"/>
 		<option name="deqp-surface-type" value="window"/>
@@ -156,5 +180,10 @@
 		<option name="deqp-package" value="dEQP-VK"/>
 		<option name="deqp-caselist-file" value="vk-master.txt"/>
 		<option name="runtime-hint" value="2h29m"/>
+	</test>
+	<test class="com.drawelements.deqp.runner.DeqpTestRunner">
+		<option name="deqp-package" value="dEQP-VK"/>
+		<option name="deqp-caselist-file" value="vk-master-risky.txt"/>
+		<option name="runtime-hint" value="10m"/>
 	</test>
 </configuration>
