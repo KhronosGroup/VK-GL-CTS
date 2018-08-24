@@ -130,13 +130,13 @@ GLint SparseTextureUtils::getTargetDepth(GLint target)
 void SparseTextureUtils::getTexturePageSizes(const glw::Functions& gl, glw::GLint target, glw::GLint format,
 											 glw::GLint& pageSizeX, glw::GLint& pageSizeY, glw::GLint& pageSizeZ)
 {
-	gl.getInternalformativ(target, format, GL_VIRTUAL_PAGE_SIZE_X_ARB, sizeof(pageSizeX), &pageSizeX);
+	gl.getInternalformativ(target, format, GL_VIRTUAL_PAGE_SIZE_X_ARB, 1, &pageSizeX);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getInternalformativ error occurred for GL_VIRTUAL_PAGE_SIZE_X_ARB");
 
-	gl.getInternalformativ(target, format, GL_VIRTUAL_PAGE_SIZE_Y_ARB, sizeof(pageSizeY), &pageSizeY);
+	gl.getInternalformativ(target, format, GL_VIRTUAL_PAGE_SIZE_Y_ARB, 1, &pageSizeY);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getInternalformativ error occurred for GL_VIRTUAL_PAGE_SIZE_Y_ARB");
 
-	gl.getInternalformativ(target, format, GL_VIRTUAL_PAGE_SIZE_Z_ARB, sizeof(pageSizeZ), &pageSizeZ);
+	gl.getInternalformativ(target, format, GL_VIRTUAL_PAGE_SIZE_Z_ARB, 1, &pageSizeZ);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getInternalformativ error occurred for GL_VIRTUAL_PAGE_SIZE_Z_ARB");
 }
 
@@ -883,7 +883,7 @@ tcu::TestNode::IterateResult InternalFormatQueriesTestCase::iterate()
 			const GLint& format = *formIter;
 			GLint		 value;
 
-			gl.getInternalformativ(target, format, GL_NUM_VIRTUAL_PAGE_SIZES_ARB, sizeof(value), &value);
+			gl.getInternalformativ(target, format, GL_NUM_VIRTUAL_PAGE_SIZES_ARB, 1, &value);
 			GLU_EXPECT_NO_ERROR(gl.getError(), "getInternalformativ error occurred for GL_NUM_VIRTUAL_PAGE_SIZES_ARB");
 			if (value == 0)
 			{
@@ -1323,7 +1323,7 @@ bool SparseTextureAllocationTestCase::verifyTexStorageVirtualPageSizeIndexError(
 		return false;
 	}
 
-	gl.getInternalformativ(target, format, GL_NUM_VIRTUAL_PAGE_SIZES_ARB, sizeof(numPageSizes), &numPageSizes);
+	gl.getInternalformativ(target, format, GL_NUM_VIRTUAL_PAGE_SIZES_ARB, 1, &numPageSizes);
 	if (!SparseTextureUtils::verifyQueryError(mLog, "getInternalformativ", target, GL_NUM_VIRTUAL_PAGE_SIZES_ARB,
 											  gl.getError(), GL_NO_ERROR))
 	{

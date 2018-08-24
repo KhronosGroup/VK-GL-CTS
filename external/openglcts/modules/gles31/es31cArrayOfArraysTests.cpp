@@ -9181,6 +9181,13 @@ void SubroutineFunctionCalls1<API>::execute_dispatch_test(typename TestCaseBase<
 	}
 
 	/* Delete generated objects. */
+	gl.useProgram(0);
+	gl.bindTexture(GL_TEXTURE_2D, 0);
+	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	gl.deleteProgram(this->program_object_id);
+	this->program_object_id = 0;
+
 	gl.deleteTextures(1, &texture_object_id);
 	gl.deleteFramebuffers(1, &framebuffer_object_id);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "An error ocurred while deleting generated objects.");

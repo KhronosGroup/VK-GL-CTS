@@ -332,10 +332,11 @@ struct SamplerCaseData
 {
 	typedef ResultData (*CreateFnPtr)(const Functions& gl);
 
-	CreateFnPtr create;		   // pointer to function that will create texture
-	const char* name;		   // test case name
-	const char* opaqueType;	// sampler or image
-	const char* outAssignment; // operation that determines fragment color
+	CreateFnPtr	create;						// pointer to function that will create texture
+	const char*	name;						// test case name
+	const char*	opaqueType;					// sampler or image
+	const char*	outAssignment;				// operation that determines fragment color
+	const int	num_frag_image_uniforms;	// the number of required fragment image uniform
 };
 
 class SpecifiedLocationCase : public deqp::TestCase
@@ -352,7 +353,8 @@ private:
 
 	bool		m_isImageCase;
 	GLenum		m_imageFormat;
-	std::string m_imageFormatQualifier;
+	std::string	m_imageFormatQualifier;
+	int			m_num_frag_image_uniform;
 };
 
 SpecifiedLocationCase::SpecifiedLocationCase(deqp::Context& context, const SamplerCaseData& data)
@@ -389,6 +391,7 @@ SpecifiedLocationCase::SpecifiedLocationCase(deqp::Context& context, const Sampl
 		m_specializationMap["OPAQUE_TYPE_NAME"] = "sampler";
 		m_specializationMap["ACCESS"]			= "";
 	}
+	m_num_frag_image_uniform = data.num_frag_image_uniforms;
 }
 
 SpecifiedLocationCase::~SpecifiedLocationCase()
@@ -426,6 +429,10 @@ tcu::TestNode::IterateResult SpecifiedLocationCase::iterate(void)
 	glu::GLSLVersion	glslVersion   = glu::getContextTypeGLSLVersion(contextType);
 	const Functions&	gl			  = renderContext.getFunctions();
 	bool				contextTypeES = glu::isContextTypeES(contextType);
+	bool				contextES32	  = glu::contextSupports(contextType, glu::ApiType::es(3, 2));
+	if (contextTypeES && !contextES32 && !m_context.getContextInfo().isExtensionSupported("GL_ANDROID_extension_pack_es31a"))
+		if (m_context.getContextInfo().getInt(GL_MAX_FRAGMENT_IMAGE_UNIFORMS) < m_num_frag_image_uniform)
+			throw tcu::NotSupportedError("The number of required fragment image uniform is larger than GL_MAX_FRAGMENT_IMAGE_UNIFORMS");
 
 	const int expectedLocation = 2;
 	const int definedBinding   = 1;
@@ -595,46 +602,46 @@ void LayoutLocationTests::init(void)
 {
 	const SamplerCaseData commonArguments[] =
 	{
-		{ &create<GL_TEXTURE_2D, GL_RGBA8>,						"sampler_2d",				"sampler2D",			"texture(sampler, coords)" },
-		{ &create<GL_TEXTURE_3D, GL_RGBA8>,						"sampler_3d",				"sampler3D",			"texture(sampler, vec3(coords, 0.0))" },
-		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA8>,				"sampler_cube",				"samplerCube",			"texture(sampler, vec3(coords, 0.0))" },
-		{ &create<GL_TEXTURE_CUBE_MAP, GL_DEPTH_COMPONENT16>,	"sampler_cube_shadow",		"samplerCubeShadow",	"vec4(texture(sampler, vec4(coords, 0.0, 0.0)), 0.0, 0.0, 0.0)" },
-		{ &create<GL_TEXTURE_2D, GL_DEPTH_COMPONENT16>,			"sampler_2d_shadow",		"sampler2DShadow",		"vec4(texture(sampler, vec3(coords, 0.0)), 0.0, 0.0, 0.0)" },
-		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA8>,				"sampler_2d_array",			"sampler2DArray",		"texture(sampler, vec3(coords, 0.0))" },
-		{ &create<GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT16>,	"sampler_2d_array_shadow",	"sampler2DArrayShadow",	"vec4(texture(sampler, vec4(coords, 0.0, 0.0)), 0.0, 0.0, 0.0)" },
-		{ &create<GL_TEXTURE_2D, GL_RGBA32I>,					"isampler_2d",				"isampler2D",			"vec4(texture(sampler, coords))/255.0" },
-		{ &create<GL_TEXTURE_3D, GL_RGBA32I>,					"isampler_3d",				"isampler3D",			"vec4(texture(sampler, vec3(coords, 0.0)))/255.0" },
-		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA32I>,				"isampler_cube",			"isamplerCube",			"vec4(texture(sampler, vec3(coords, 0.0)))/255.0" },
-		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA32I>,				"isampler_2d_array",		"isampler2DArray",		"vec4(texture(sampler, vec3(coords, 0.0)))/255.0" },
-		{ &create<GL_TEXTURE_2D, GL_RGBA32UI>,					"usampler_2d",				"usampler2D",			"vec4(texture(sampler, coords))/255.0" },
-		{ &create<GL_TEXTURE_3D, GL_RGBA32UI>,					"usampler_3d",				"usampler3D",			"vec4(texture(sampler, vec3(coords, 0.0)))/255.0" },
-		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA32UI>,			"usampler_cube",			"usamplerCube",			"vec4(texture(sampler, vec3(coords, 0.0)))/255.0" },
-		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA32UI>,			"usampler_2d_array",		"usampler2DArray",		"vec4(texture(sampler, vec3(coords, 0.0)))/255.0" },
+		{ &create<GL_TEXTURE_2D, GL_RGBA8>,						"sampler_2d",				"sampler2D",			"texture(sampler, coords)",											0 },
+		{ &create<GL_TEXTURE_3D, GL_RGBA8>,						"sampler_3d",				"sampler3D",			"texture(sampler, vec3(coords, 0.0))",								0 },
+		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA8>,				"sampler_cube",				"samplerCube",			"texture(sampler, vec3(coords, 0.0))",								0 },
+		{ &create<GL_TEXTURE_CUBE_MAP, GL_DEPTH_COMPONENT16>,	"sampler_cube_shadow",		"samplerCubeShadow",	"vec4(texture(sampler, vec4(coords, 0.0, 0.0)), 0.0, 0.0, 0.0)",	0 },
+		{ &create<GL_TEXTURE_2D, GL_DEPTH_COMPONENT16>,			"sampler_2d_shadow",		"sampler2DShadow",		"vec4(texture(sampler, vec3(coords, 0.0)), 0.0, 0.0, 0.0)",			0 },
+		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA8>,				"sampler_2d_array",			"sampler2DArray",		"texture(sampler, vec3(coords, 0.0))",								0 },
+		{ &create<GL_TEXTURE_2D_ARRAY, GL_DEPTH_COMPONENT16>,	"sampler_2d_array_shadow",	"sampler2DArrayShadow",	"vec4(texture(sampler, vec4(coords, 0.0, 0.0)), 0.0, 0.0, 0.0)",	0 },
+		{ &create<GL_TEXTURE_2D, GL_RGBA32I>,					"isampler_2d",				"isampler2D",			"vec4(texture(sampler, coords))/255.0",								0 },
+		{ &create<GL_TEXTURE_3D, GL_RGBA32I>,					"isampler_3d",				"isampler3D",			"vec4(texture(sampler, vec3(coords, 0.0)))/255.0",					0 },
+		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA32I>,				"isampler_cube",			"isamplerCube",			"vec4(texture(sampler, vec3(coords, 0.0)))/255.0",					0 },
+		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA32I>,				"isampler_2d_array",		"isampler2DArray",		"vec4(texture(sampler, vec3(coords, 0.0)))/255.0",					0 },
+		{ &create<GL_TEXTURE_2D, GL_RGBA32UI>,					"usampler_2d",				"usampler2D",			"vec4(texture(sampler, coords))/255.0",								0 },
+		{ &create<GL_TEXTURE_3D, GL_RGBA32UI>,					"usampler_3d",				"usampler3D",			"vec4(texture(sampler, vec3(coords, 0.0)))/255.0",					0 },
+		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA32UI>,			"usampler_cube",			"usamplerCube",			"vec4(texture(sampler, vec3(coords, 0.0)))/255.0",					0 },
+		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA32UI>,			"usampler_2d_array",		"usampler2DArray",		"vec4(texture(sampler, vec3(coords, 0.0)))/255.0",					0 },
 
-		{ &create<GL_TEXTURE_2D, GL_RGBA8>,						"image_2d",					"image2D",				"imageLoad(image, ivec2(0, 0))" },
-		{ &create<GL_TEXTURE_2D, GL_RGBA32I>,					"iimage_2d",				"iimage2D",				"vec4(imageLoad(image, ivec2(0, 0)))/255.0" },
-		{ &create<GL_TEXTURE_2D, GL_RGBA32UI>,					"uimage_2d",				"uimage2D",				"vec4(imageLoad(image, ivec2(0, 0)))/255.0" },
-		{ &create<GL_TEXTURE_3D, GL_RGBA8>,						"image_3d",					"image3D",				"imageLoad(image, ivec3(0, 0, 0))" },
-		{ &create<GL_TEXTURE_3D, GL_RGBA32I>,					"iimage_3d",				"iimage3D",				"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0" },
-		{ &create<GL_TEXTURE_3D, GL_RGBA32UI>,					"uimage_3d",				"uimage3D",				"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0" },
-		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA8>,				"image_cube",				"imageCube",			"imageLoad(image, ivec3(0, 0, 0))" },
-		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA32I>,				"iimage_cube",				"iimageCube",			"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0" },
-		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA32UI>,			"uimage_cube",				"uimageCube",			"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0" },
-		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA8>,				"image_2d_array",			"image2DArray",			"imageLoad(image, ivec3(0, 0, 0))" },
-		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA32I>,				"iimage_2d_array",			"iimage2DArray",		"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0" },
-		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA32UI>,			"uimage_2d_array",			"uimage2DArray",		"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0" },
+		{ &create<GL_TEXTURE_2D, GL_RGBA8>,						"image_2d",					"image2D",				"imageLoad(image, ivec2(0, 0))",									1 },
+		{ &create<GL_TEXTURE_2D, GL_RGBA32I>,					"iimage_2d",				"iimage2D",				"vec4(imageLoad(image, ivec2(0, 0)))/255.0",						1 },
+		{ &create<GL_TEXTURE_2D, GL_RGBA32UI>,					"uimage_2d",				"uimage2D",				"vec4(imageLoad(image, ivec2(0, 0)))/255.0",						1 },
+		{ &create<GL_TEXTURE_3D, GL_RGBA8>,						"image_3d",					"image3D",				"imageLoad(image, ivec3(0, 0, 0))",									1 },
+		{ &create<GL_TEXTURE_3D, GL_RGBA32I>,					"iimage_3d",				"iimage3D",				"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0",						1 },
+		{ &create<GL_TEXTURE_3D, GL_RGBA32UI>,					"uimage_3d",				"uimage3D",				"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0",						1 },
+		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA8>,				"image_cube",				"imageCube",			"imageLoad(image, ivec3(0, 0, 0))",									1 },
+		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA32I>,				"iimage_cube",				"iimageCube",			"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0",						1 },
+		{ &create<GL_TEXTURE_CUBE_MAP, GL_RGBA32UI>,			"uimage_cube",				"uimageCube",			"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0",						1 },
+		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA8>,				"image_2d_array",			"image2DArray",			"imageLoad(image, ivec3(0, 0, 0))",									1 },
+		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA32I>,				"iimage_2d_array",			"iimage2DArray",		"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0",						1 },
+		{ &create<GL_TEXTURE_2D_ARRAY, GL_RGBA32UI>,			"uimage_2d_array",			"uimage2DArray",		"vec4(imageLoad(image, ivec3(0, 0, 0)))/255.0",						1 },
 	};
 
 	// Additional array containing entries for core gl
 	const SamplerCaseData coreArguments[] =
 	{
-		{ &create<GL_TEXTURE_BUFFER, GL_RGBA32F>,				"sampler_buffer",			"samplerBuffer",		"texelFetch(sampler, 1)" },
-		{ &create<GL_TEXTURE_BUFFER, GL_RGBA32I>,				"isampler_buffer",			"isamplerBuffer",		"vec4(texelFetch(sampler, 1))/255.0" },
-		{ &create<GL_TEXTURE_BUFFER, GL_RGBA32UI>,				"usampler_buffer",			"usamplerBuffer",		"vec4(texelFetch(sampler, 1))/255.0" },
-		{ &create<GL_TEXTURE_1D, GL_RGBA8>,						"sampler_1d",				"sampler1D",			"texture(sampler, coords.x)" },
-		{ &create<GL_TEXTURE_1D, GL_DEPTH_COMPONENT16>,			"sampler_1d_shadow",		"sampler1DShadow",		"vec4(texture(sampler, vec3(coords, 0.0)), 0.0, 0.0, 0.0)" },
-		{ &create<GL_TEXTURE_1D_ARRAY, GL_RGBA8>,				"sampler_1d_array",			"sampler1DArray",		"texture(sampler, coords, 0.0)" },
-		{ &create<GL_TEXTURE_1D_ARRAY, GL_DEPTH_COMPONENT16>,	"sampler_1d_array_shadow",	"sampler1DArrayShadow",	"vec4(texture(sampler, vec3(coords, 0.0)), 0.0, 0.0, 0.0)" },
+		{ &create<GL_TEXTURE_BUFFER, GL_RGBA32F>,				"sampler_buffer",			"samplerBuffer",		"texelFetch(sampler, 1)",											0 },
+		{ &create<GL_TEXTURE_BUFFER, GL_RGBA32I>,				"isampler_buffer",			"isamplerBuffer",		"vec4(texelFetch(sampler, 1))/255.0",								0 },
+		{ &create<GL_TEXTURE_BUFFER, GL_RGBA32UI>,				"usampler_buffer",			"usamplerBuffer",		"vec4(texelFetch(sampler, 1))/255.0",								0 },
+		{ &create<GL_TEXTURE_1D, GL_RGBA8>,						"sampler_1d",				"sampler1D",			"texture(sampler, coords.x)",										0 },
+		{ &create<GL_TEXTURE_1D, GL_DEPTH_COMPONENT16>,			"sampler_1d_shadow",		"sampler1DShadow",		"vec4(texture(sampler, vec3(coords, 0.0)), 0.0, 0.0, 0.0)",			0 },
+		{ &create<GL_TEXTURE_1D_ARRAY, GL_RGBA8>,				"sampler_1d_array",			"sampler1DArray",		"texture(sampler, coords, 0.0)",									0 },
+		{ &create<GL_TEXTURE_1D_ARRAY, GL_DEPTH_COMPONENT16>,	"sampler_1d_array_shadow",	"sampler1DArrayShadow",	"vec4(texture(sampler, vec3(coords, 0.0)), 0.0, 0.0, 0.0)",			0 },
 	};
 
 	for (int i = 0; i < DE_LENGTH_OF_ARRAY(commonArguments); ++i)
