@@ -4247,7 +4247,7 @@ void addGraphics16BitStorageInputOutputFloat16To16x2Group (tcu::TestCaseGroup* t
 {
 	map<string, string>		fragments;
 	RGBA					defaultColors[4];
-	vector<deInt32>			noSpecConstants;
+	SpecConstants			noSpecConstants;
 	PushConstants			noPushConstants;
 	vector<string>			extensions;
 	vector<string>			features;
@@ -4323,7 +4323,7 @@ void addGraphics16BitStorageInputOutputInt16To16x2Group (tcu::TestCaseGroup* tes
 {
 	map<string, string>		fragments;
 	RGBA					defaultColors[4];
-	vector<deInt32>			noSpecConstants;
+	SpecConstants			noSpecConstants;
 	PushConstants			noPushConstants;
 	vector<string>			extensions;
 	vector<string>			features;
