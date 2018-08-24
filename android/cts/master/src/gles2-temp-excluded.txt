@@ -1,0 +1,2 @@
+# Temporarily excluded for b/72496590
+dEQP-GLES2.functional.rasterization.limits.points
