@@ -586,8 +586,12 @@ namespace subgroups
 {
 tcu::TestCaseGroup* createSubgroupsBallotBroadcastTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "ballot_broadcast", "Subgroup ballot broadcast category tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup ballot broadcast category tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup ballot broadcast category tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup ballot broadcast category tests: framebuffer"));
 
 	const VkShaderStageFlags stages[] =
 	{
@@ -617,26 +621,33 @@ tcu::TestCaseGroup* createSubgroupsBallotBroadcastTests(tcu::TestContext& testCt
 		for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
 		{
 			const std::string op = de::toLower(getOpTypeName(opTypeIndex));
-			const std::string name = op + "_" + subgroups::getFormatNameForGLSL(format) + "_";
+			const std::string name = op + "_" + subgroups::getFormatNameForGLSL(format);
 
 			{
 				CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_COMPUTE_BIT, format};
-				addFunctionCaseWithPrograms(group.get(), name + getShaderStageName(caseDef.shaderStage), "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(computeGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			{
 				const CaseDefinition caseDef = {opTypeIndex, VK_SHADER_STAGE_ALL_GRAPHICS, format};
-				addFunctionCaseWithPrograms(group.get(), name + "graphic" , "", supportedCheck, initPrograms, test, caseDef);
+				addFunctionCaseWithPrograms(graphicGroup.get(), name, "", supportedCheck, initPrograms, test, caseDef);
 			}
 
 			for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 			{
 				const CaseDefinition caseDef = {opTypeIndex, stages[stageIndex], format};
-				addFunctionCaseWithPrograms(group.get(), name + getShaderStageName(caseDef.shaderStage) + "_framebuffer", "",
+				addFunctionCaseWithPrograms(framebufferGroup.get(), name + getShaderStageName(caseDef.shaderStage), "",
 							supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 			}
 		}
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "ballot_broadcast", "Subgroup ballot broadcast category tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
 	return group.release();
 }
 

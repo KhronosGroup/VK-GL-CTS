@@ -7697,6 +7697,7 @@ typedef struct VkAndroidHardwareBufferFormatPropertiesANDROID {
     VkFormat                         format;
     uint64_t                         externalFormat;
     VkFormatFeatureFlags             formatFeatures;
+    VkComponentMapping               samplerYcbcrConversionComponents;
     VkSamplerYcbcrModelConversion    suggestedYcbcrModel;
     VkSamplerYcbcrRange              suggestedYcbcrRange;
     VkChromaLocation                 suggestedXChromaOffset;

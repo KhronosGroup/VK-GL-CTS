@@ -6178,6 +6178,7 @@ std::ostream& operator<< (std::ostream& s, const VkAndroidHardwareBufferFormatPr
 	s << "\tformat = " << value.format << '\n';
 	s << "\texternalFormat = " << value.externalFormat << '\n';
 	s << "\tformatFeatures = " << getFormatFeatureFlagsStr(value.formatFeatures) << '\n';
+	s << "\tsamplerYcbcrConversionComponents = " << value.samplerYcbcrConversionComponents << '\n';
 	s << "\tsuggestedYcbcrModel = " << value.suggestedYcbcrModel << '\n';
 	s << "\tsuggestedYcbcrRange = " << value.suggestedYcbcrRange << '\n';
 	s << "\tsuggestedXChromaOffset = " << value.suggestedXChromaOffset << '\n';

@@ -2943,6 +2943,7 @@ struct VkAndroidHardwareBufferFormatPropertiesANDROID
 	VkFormat						format;
 	deUint64						externalFormat;
 	VkFormatFeatureFlags			formatFeatures;
+	VkComponentMapping				samplerYcbcrConversionComponents;
 	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
 	VkSamplerYcbcrRange				suggestedYcbcrRange;
 	VkChromaLocation				suggestedXChromaOffset;

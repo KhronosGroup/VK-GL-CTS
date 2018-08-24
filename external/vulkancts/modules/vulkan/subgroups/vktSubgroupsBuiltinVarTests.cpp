@@ -1676,8 +1676,12 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 tcu::TestCaseGroup* createSubgroupsBuiltinVarTests(tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
-			testCtx, "builtin_var", "Subgroup builtin variable tests"));
+	de::MovePtr<tcu::TestCaseGroup> graphicGroup(new tcu::TestCaseGroup(
+		testCtx, "graphics", "Subgroup builtin variable tests: graphics"));
+	de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(
+		testCtx, "compute", "Subgroup builtin variable tests: compute"));
+	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
+		testCtx, "framebuffer", "Subgroup builtin variable tests: framebuffer"));
 
 	const char* const all_stages_vars[] =
 	{
@@ -1699,7 +1703,6 @@ tcu::TestCaseGroup* createSubgroupsBuiltinVarTests(tcu::TestContext& testCtx)
 		VK_SHADER_STAGE_GEOMETRY_BIT,
 	};
 
-
 	for (int a = 0; a < DE_LENGTH_OF_ARRAY(all_stages_vars); ++a)
 	{
 		const std::string var = all_stages_vars[a];
@@ -1708,14 +1711,14 @@ tcu::TestCaseGroup* createSubgroupsBuiltinVarTests(tcu::TestContext& testCtx)
 		{
 			const CaseDefinition caseDef = { "gl_" + var, VK_SHADER_STAGE_ALL_GRAPHICS};
 
-			addFunctionCaseWithPrograms(group.get(),
-										varLower + "_graphic", "",
+			addFunctionCaseWithPrograms(graphicGroup.get(),
+										varLower, "",
 										supportedCheck, initPrograms, test, caseDef);
 		}
 
 		{
 			const CaseDefinition caseDef = {"gl_" + var, VK_SHADER_STAGE_COMPUTE_BIT};
-			addFunctionCaseWithPrograms(group.get(),
+			addFunctionCaseWithPrograms(computeGroup.get(),
 						varLower + "_" + getShaderStageName(caseDef.shaderStage), "",
 						supportedCheck, initPrograms, test, caseDef);
 		}
@@ -1723,8 +1726,8 @@ tcu::TestCaseGroup* createSubgroupsBuiltinVarTests(tcu::TestContext& testCtx)
 		for (int stageIndex = 0; stageIndex < DE_LENGTH_OF_ARRAY(stages); ++stageIndex)
 		{
 			const CaseDefinition caseDef = {"gl_" + var, stages[stageIndex]};
-			addFunctionCaseWithPrograms(group.get(),
-						varLower + "_" + getShaderStageName(caseDef.shaderStage)+"_framebuffer", "",
+			addFunctionCaseWithPrograms(framebufferGroup.get(),
+						varLower + "_" + getShaderStageName(caseDef.shaderStage), "",
 						supportedCheck, initFrameBufferPrograms, noSSBOtest, caseDef);
 		}
 	}
@@ -1735,10 +1738,16 @@ tcu::TestCaseGroup* createSubgroupsBuiltinVarTests(tcu::TestContext& testCtx)
 
 		const CaseDefinition caseDef = {"gl_" + var, VK_SHADER_STAGE_COMPUTE_BIT};
 
-		addFunctionCaseWithPrograms(group.get(), de::toLower(var) +
-									"_" + getShaderStageName(caseDef.shaderStage), "",
+		addFunctionCaseWithPrograms(computeGroup.get(), de::toLower(var), "",
 									supportedCheck, initPrograms, test, caseDef);
 	}
+
+	de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(
+		testCtx, "builtin_var", "Subgroup builtin variable tests"));
+
+	group->addChild(graphicGroup.release());
+	group->addChild(computeGroup.release());
+	group->addChild(framebufferGroup.release());
 
 	return group.release();
 }

@@ -3023,20 +3023,6 @@ void MultiViewDepthStencilTestInstance::readImage (VkImage image, const tcu::Pix
 
 	beginCommandBuffer (*m_device, *m_cmdBuffer);
 	{
-		VkImageSubresourceRange	subresourceRange	=
-		{
-			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,	// VkImageAspectFlags	aspectMask;
-			0u,															// deUint32				baseMipLevel;
-			1u,															// deUint32				mipLevels;
-			0u,															// deUint32				baseArraySlice;
-			m_parameters.extent.depth,									// deUint32				arraySize;
-		};
-
-		imageBarrier (*m_device, *m_cmdBuffer, image, subresourceRange,
-			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-
 		m_device->cmdCopyImageToBuffer(*m_cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1u, &copyRegion);
 		m_device->cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0u, DE_NULL);
 	}
@@ -3313,7 +3299,7 @@ void MultiViewDepthStencilTestInstance::afterDraw (void)
 	};
 
 	imageBarrier(*m_device, *m_cmdBuffer, m_dsAttachment->getImage(), dsSubresourceRange,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
 		VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 }
