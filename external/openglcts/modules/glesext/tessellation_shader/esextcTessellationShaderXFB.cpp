@@ -295,8 +295,9 @@ void TessellationShaderXFB::initTest()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() failed for fragment shader");
 
 	/* Create a fragment shader program */
-	glw::GLint		   link_status  = GL_FALSE;
-	const glw::GLchar* varying_name = "BLOCK_INOUT.value";
+	glw::GLint		   link_status			= GL_FALSE;
+	const glw::GLchar* varying_name			= "BLOCK_INOUT.value";
+	const glw::GLchar* varying_array_name	= "BLOCK_INOUT[0].value";
 
 	m_fs_program_id = createSeparableProgram(GL_FRAGMENT_SHADER, 1, /* n_strings */
 											 &fs_body, 0,			/* n_varyings */
@@ -383,10 +384,7 @@ void TessellationShaderXFB::initTest()
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glShaderSource() failed for tessellation control shader");
 
 	/* Test creating a tessellation control shader program with feedback.
-	 * For Desktop, if GL_NV_gpu_shader5 is available this will succeed, and
-	 * so we'll use it for our testing.
-	 * For ES, and for Desktop implementations that don't have
-	 * GL_NV_gpu_shader5, this will fail, and so we will create a different
+	 * For ES, this will fail, and so we will create a different
 	 * program without the feedback varyings that we can use for our testing.
 	 * (We can safely ignore the return value for the expected failure case.
 	 * In the event that the failure case incorrectly succeeds,
@@ -394,7 +392,7 @@ void TessellationShaderXFB::initTest()
 	 */
 
 	bool tc_feedback_valid;
-	if (!glu::isContextTypeES(m_context.getRenderContext().getType()) && isExtensionSupported("GL_NV_gpu_shader5"))
+	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
 	{
 		tc_feedback_valid = true;
 	}
@@ -406,7 +404,7 @@ void TessellationShaderXFB::initTest()
 	/* Create a tessellation control shader program */
 	m_tc_program_id = createSeparableProgram(m_glExtTokens.TESS_CONTROL_SHADER, 1, /* n_strings */
 											 &tc_body, 1,						   /* n_varyings */
-											 &varying_name,						   /* varyings */
+											 &varying_array_name,				   /* varyings */
 											 tc_feedback_valid);				   /* should_succeed */
 
 	if (!tc_feedback_valid)
