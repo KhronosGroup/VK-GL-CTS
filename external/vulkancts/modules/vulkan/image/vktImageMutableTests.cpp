@@ -778,7 +778,7 @@ VkImageUsageFlags getImageUsageForTestCase (const CaseDef& caseDef)
 		flags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		break;
 	default:
-		DE_ASSERT("Invalid upload method");
+		DE_FATAL("Invalid upload method");
 		break;
 	}
 
@@ -794,7 +794,7 @@ VkImageUsageFlags getImageUsageForTestCase (const CaseDef& caseDef)
 		flags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		break;
 	default:
-		DE_ASSERT("Invalid download method");
+		DE_FATAL("Invalid download method");
 		break;
 	}
 
@@ -965,7 +965,7 @@ void UploadDownloadExecutor::run(Context& context, VkBuffer buffer)
 		uploadCopy(context);
 		break;
 	default:
-		DE_ASSERT("Unsupported upload method");
+		DE_FATAL("Unsupported upload method");
 	}
 
 	switch (m_caseDef.download)
@@ -980,7 +980,7 @@ void UploadDownloadExecutor::run(Context& context, VkBuffer buffer)
 		downloadTexture(context, buffer);
 		break;
 	default:
-		DE_ASSERT("Unsupported download method");
+		DE_FATAL("Unsupported download method");
 	}
 
 	endCommandBuffer(m_vk, *m_cmdBuffer);
@@ -1508,8 +1508,14 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	case UPLOAD_STORE:
 		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 		break;
+	case UPLOAD_CLEAR:
+		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+		break;
+	case UPLOAD_COPY:
+		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+		break;
 	default:
-		DE_ASSERT("Invalid upload method");
+		DE_FATAL("Invalid upload method");
 		break;
 	}
 	switch (caseDef.download)
@@ -1523,8 +1529,11 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	case DOWNLOAD_LOAD:
 		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 		break;
+	case DOWNLOAD_COPY:
+		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+		break;
 	default:
-		DE_ASSERT("Invalid download method");
+		DE_FATAL("Invalid download method");
 		break;
 	}
 
@@ -1538,15 +1547,24 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	if ((viewFormatProps.optimalTilingFeatures & viewFormatFeatureFlags) != viewFormatFeatureFlags)
 		TCU_THROW(NotSupportedError, "View format doesn't support upload/download method");
 
+	const bool haveMaintenance2 = isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2");
+
 	// We don't use the base image for anything other than transfer
 	// operations so there are no features to check.  However, The Vulkan
 	// 1.0 spec does not allow us to create an image view with usage that
 	// is not supported by the main format.  With VK_KHR_maintenance2, we
 	// can do this via VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR.
 	if ((imageFormatProps.optimalTilingFeatures & viewFormatFeatureFlags) != viewFormatFeatureFlags &&
-		 !isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
+		!haveMaintenance2)
 	{
 		TCU_THROW(NotSupportedError, "Image format doesn't support upload/download method");
+	}
+
+	// If no format feature flags are supported, the format itself is not supported,
+	// and images of that format cannot be created.
+	if (imageFormatProps.optimalTilingFeatures == 0)
+	{
+		TCU_THROW(NotSupportedError, "Base image format is not supported");
 	}
 
 	// Create a color buffer for host-inspection of results
