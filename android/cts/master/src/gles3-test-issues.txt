@@ -149,25 +149,3 @@ dEQP-GLES3.functional.shaders.texture_functions.texturegrad.isamplercube_fragmen
 
 # Bug 26651667
 dEQP-GLES3.functional.draw.draw_elements_instanced.indices.buffer.index_byte
-
-# Bug 28767510
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.lowp_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.lowp_vertex.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.lowp_fragment.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.lowp_fragment.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_vertex.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.mediump_fragment.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.highp_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.dot.highp_fragment.vec3
-
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.lowp_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.lowp_vertex.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.lowp_fragment.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.lowp_fragment.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_vertex.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragment.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.mediump_fragment.vec4
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_vertex.vec3
-dEQP-GLES3.functional.shaders.builtin_functions.precision.reflect.highp_fragment.vec3
