@@ -204,7 +204,8 @@ LATE_SPECIAL_RECIPES	= [
 		]),
 	('spirv-binaries', [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
-					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "spirv-binaries")]),
+					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "spirv-binaries"),
+									"--dst-path", os.path.join(env.tmpDir, "spirv-binaries")]),
 		]),
 	('check-all', [
 			RunScript(os.path.join("scripts", "src_util", "check_all.py")),
