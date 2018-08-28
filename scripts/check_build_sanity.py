@@ -184,7 +184,16 @@ BUILD_TARGETS		= [
 		  ANY_VS_X64_GENERATOR),
 ]
 
-SPECIAL_RECIPES		= [
+EARLY_SPECIAL_RECIPES	= [
+	('gen-inl-files', [
+			RunScript(os.path.join("scripts", "gen_egl.py")),
+			RunScript(os.path.join("scripts", "opengl", "gen_all.py")),
+			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py")),
+			RunScript(os.path.join("scripts", "gen_android_mk.py")),
+		])
+]
+
+LATE_SPECIAL_RECIPES	= [
 	('android-mustpass', [
 			RunScript(os.path.join("scripts", "build_android_mustpass.py"),
 					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "android-mustpass")]),
@@ -197,11 +206,7 @@ SPECIAL_RECIPES		= [
 			RunScript(os.path.join("external", "vulkancts", "scripts", "build_spirv_binaries.py"),
 					  lambda env: ["--build-dir", os.path.join(env.tmpDir, "spirv-binaries")]),
 		]),
-	('gen-inl-files', [
-			RunScript(os.path.join("scripts", "gen_egl.py")),
-			RunScript(os.path.join("scripts", "opengl", "gen_all.py")),
-			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py")),
-			RunScript(os.path.join("scripts", "gen_android_mk.py")),
+	('check-all', [
 			RunScript(os.path.join("scripts", "src_util", "check_all.py")),
 		])
 ]
@@ -216,8 +221,7 @@ def getAllRecipe (recipes):
 	return ("all", allSteps)
 
 def getRecipes ():
-	recipes = getBuildRecipes()
-	recipes += SPECIAL_RECIPES
+	recipes = EARLY_SPECIAL_RECIPES + getBuildRecipes() + LATE_SPECIAL_RECIPES
 	return recipes
 
 def getRecipe (recipes, recipeName):
