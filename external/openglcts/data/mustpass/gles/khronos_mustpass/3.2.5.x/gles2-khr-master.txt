@@ -421,7 +421,7 @@ KHR-GLES2.core.internalformat.texture2d.rgba_unsigned_int_2_10_10_10_rev_rgb5_a1
 KHR-GLES2.core.internalformat.texture2d.rgb_unsigned_int_2_10_10_10_rev_rgb
 KHR-GLES2.core.internalformat.texture2d.depth_component_unsigned_short_depth_component
 KHR-GLES2.core.internalformat.texture2d.depth_component_unsigned_int_depth_component
-KHR-GLES2.core.internalformat.texture2d.depth_stencil_unsigned_int_24_8_depth24_stencil8
+KHR-GLES2.core.internalformat.texture2d.depth_stencil_unsigned_int_24_8_depth_stencil
 KHR-GLES2.core.internalformat.texture2d.rgb_half_float_rgb16f
 KHR-GLES2.core.internalformat.texture2d.rgba_half_float_rgba16f
 KHR-GLES2.core.internalformat.texture2d.rgb_half_float_rgb16f_linear
