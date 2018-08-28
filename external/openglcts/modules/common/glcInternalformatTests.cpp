@@ -559,16 +559,14 @@ void InternalformatCaseBase::convertUInt(tcu::Vec4 inColor, unsigned char* dst, 
 	}
 }
 
-void InternalformatCaseBase::convertUInt_24_8(tcu::Vec4 inColor, unsigned char* dst, int components)
+void InternalformatCaseBase::convertUInt_24_8(tcu::Vec4 inColor, unsigned char* dst, int)
 {
 	unsigned int* dstUint = reinterpret_cast<unsigned int*>(dst);
-	for (int i = 0; i < components; ++i)
-	{
-		dstUint[i] = static_cast<unsigned int>(inColor[i] * 4294967295u);
 
-		// Last 8 bits for stencil so clear those
-		dstUint[i] = dstUint[i] & 0xFFFFFF00;
-	}
+	unsigned int d = static_cast<unsigned int>(inColor[0] * 16777215u) << 8;
+	unsigned int s = static_cast<unsigned int>(inColor[1] * 255u);
+
+	dstUint[0] = (d & 0xFFFFFF00) | (s & 0xFF);
 }
 
 void InternalformatCaseBase::convertUShort_4_4_4_4(tcu::Vec4 inColor, unsigned char* dst, int)
