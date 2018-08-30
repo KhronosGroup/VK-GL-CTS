@@ -424,17 +424,17 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
 	}
 
-	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt16)
+	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64 || m_features == COMPUTE_TEST_USES_INT16_FLOAT64) && !features.shaderInt16)
 	{
 		TCU_THROW(NotSupportedError, "shaderInt16 feature is not supported");
 	}
 
-	if ((m_features == COMPUTE_TEST_USES_INT64 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt64)
+	if ((m_features == COMPUTE_TEST_USES_INT64 || m_features == COMPUTE_TEST_USES_INT16_INT64 || m_features == COMPUTE_TEST_USES_INT64_FLOAT64) && !features.shaderInt64)
 	{
 		TCU_THROW(NotSupportedError, "shaderInt64 feature is not supported");
 	}
 
-	if ((m_features == COMPUTE_TEST_USES_FLOAT64) && !features.shaderFloat64)
+	if ((m_features == COMPUTE_TEST_USES_FLOAT64 || m_features == COMPUTE_TEST_USES_INT16_FLOAT64 || m_features == COMPUTE_TEST_USES_INT64_FLOAT64) && !features.shaderFloat64)
 	{
 		TCU_THROW(NotSupportedError, "shaderFloat64 feature is not supported");
 	}

@@ -126,6 +126,7 @@ struct ReferenceParams : public RenderParams
 		, maxLod		(1000.0f)
 		, baseLevel		(0)
 		, maxLevel		(1000)
+		, unnormal		(false)
 	{
 	}
 
@@ -137,6 +138,7 @@ struct ReferenceParams : public RenderParams
 		, maxLod		(1000.0f)
 		, baseLevel		(0)
 		, maxLevel		(1000)
+		, unnormal		(false)
 	{
 	}
 
@@ -146,6 +148,7 @@ struct ReferenceParams : public RenderParams
 	float				maxLod;
 	int					baseLevel;
 	int					maxLevel;
+	bool				unnormal;
 };
 
 

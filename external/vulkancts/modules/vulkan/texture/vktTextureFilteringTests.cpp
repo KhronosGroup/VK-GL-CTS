@@ -205,11 +205,12 @@ tcu::TestStatus Texture2DFilteringTestInstance::iterate (void)
 
 	// Setup params for reference.
 
-	refParams.sampler		= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter);
+	refParams.sampler		= util::createSampler(m_testParameters.wrapS, m_testParameters.wrapT, m_testParameters.minFilter, m_testParameters.magFilter, !m_testParameters.unnormal);
 	refParams.samplerType	= getSamplerType(texFmt);
 	refParams.lodMode		= LODMODE_EXACT;
 	refParams.colorBias		= fmtInfo.lookupBias;
 	refParams.colorScale	= fmtInfo.lookupScale;
+	refParams.unnormal		= m_testParameters.unnormal;
 
 	// Compute texture coordinates.
 	log << TestLog::Message << "Texture coordinates: " << curCase.minCoord << " -> " << curCase.maxCoord << TestLog::EndMessage;
@@ -1106,6 +1107,82 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 		group2D->addChild(combinationsGroup.release());
 
 		textureFilteringTests->addChild(group2D.release());
+	}
+
+	// Unnormalized texture filtering.
+	{
+		de::MovePtr<tcu::TestCaseGroup>	groupUnnormal		(new tcu::TestCaseGroup(testCtx, "unnormal", "Unnormalized Texture Filtering"));
+
+		de::MovePtr<tcu::TestCaseGroup>	formatsGroup		(new tcu::TestCaseGroup(testCtx, "formats", "2D Texture Formats"));
+		de::MovePtr<tcu::TestCaseGroup>	sizesGroup			(new tcu::TestCaseGroup(testCtx, "sizes", "Texture Sizes"));
+
+		// Formats.
+		for (int fmtNdx = 0; fmtNdx < DE_LENGTH_OF_ARRAY(filterableFormatsByType); fmtNdx++)
+		{
+			const string					filterGroupName	= filterableFormatsByType[fmtNdx].name;
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
+			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); filterNdx++)
+			{
+				const Sampler::FilterMode	magFilter		= magFilterModes[filterNdx].mode;
+				const string				name			= magFilterModes[filterNdx].name;
+				Texture2DTestCaseParameters	testParameters;
+
+				testParameters.unnormal		= true;
+
+				testParameters.format		= filterableFormatsByType[fmtNdx].format;
+				testParameters.minFilter	= magFilter;
+				testParameters.magFilter	= magFilter;
+
+				testParameters.wrapS		= ((fmtNdx ^ filterNdx) & 1) ? Sampler::CLAMP_TO_EDGE : Sampler::CLAMP_TO_BORDER;
+				testParameters.wrapT		= ((fmtNdx ^ filterNdx) & 2) ? Sampler::CLAMP_TO_EDGE : Sampler::CLAMP_TO_BORDER;
+				testParameters.width		= 64;
+				testParameters.height		= 64;
+
+				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+				testParameters.programs.push_back(PROGRAM_2D_UINT);
+
+				// Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
+				if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
+				{
+					filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+				}
+			}
+			formatsGroup->addChild(filterGroup.release());
+		}
+
+		// Sizes.
+		for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
+		{
+			const string					filterGroupName = de::toString(sizes2D[sizeNdx].width) + "x" + de::toString(sizes2D[sizeNdx].height);
+			de::MovePtr<tcu::TestCaseGroup>	filterGroup		(new tcu::TestCaseGroup(testCtx, filterGroupName.c_str(), ""));
+
+			for (int filterNdx = 0; filterNdx < DE_LENGTH_OF_ARRAY(magFilterModes); filterNdx++)
+			{
+				const Sampler::FilterMode	magFilter		= magFilterModes[filterNdx].mode;
+				const string				name			= magFilterModes[filterNdx].name;
+				Texture2DTestCaseParameters	testParameters;
+
+				testParameters.unnormal		= true;
+				testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
+				testParameters.minFilter	= magFilter;
+				testParameters.magFilter	= magFilter;
+				testParameters.wrapS		= ((sizeNdx ^ filterNdx) & 1) ? Sampler::CLAMP_TO_EDGE : Sampler::CLAMP_TO_BORDER;
+				testParameters.wrapT		= ((sizeNdx ^ filterNdx) & 2) ? Sampler::CLAMP_TO_EDGE : Sampler::CLAMP_TO_BORDER;
+				testParameters.width		= sizes2D[sizeNdx].width;
+				testParameters.height		= sizes2D[sizeNdx].height;
+
+				testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+
+				filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), "", testParameters));
+			}
+			sizesGroup->addChild(filterGroup.release());
+		}
+
+		groupUnnormal->addChild(formatsGroup.release());
+		groupUnnormal->addChild(sizesGroup.release());
+
+		textureFilteringTests->addChild(groupUnnormal.release());
 	}
 
 	// Cube map texture filtering.

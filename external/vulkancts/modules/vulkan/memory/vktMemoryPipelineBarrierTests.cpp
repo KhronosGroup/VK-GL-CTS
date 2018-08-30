@@ -4524,6 +4524,114 @@ void SubmitRenderPass::verify (VerifyContext& context, size_t commandIndex)
 	}
 }
 
+class ExecuteSecondaryCommandBuffer : public CmdCommand
+{
+public:
+				ExecuteSecondaryCommandBuffer	(const vector<CmdCommand*>& commands);
+				~ExecuteSecondaryCommandBuffer	(void);
+	const char*	getName							(void) const { return "ExecuteSecondaryCommandBuffer"; }
+
+	void		logPrepare						(TestLog&, size_t) const;
+	void		logSubmit						(TestLog&, size_t) const;
+
+	void		prepare							(PrepareContext&);
+	void		submit							(SubmitContext&);
+
+	void		verify							(VerifyContext&, size_t);
+
+private:
+	vk::Move<vk::VkCommandBuffer>				m_commandBuffer;
+	vk::Move<vk::VkDeviceMemory>				m_colorTargetMemory;
+	de::MovePtr<vk::Allocation>					m_colorTargetMemory2;
+	vk::Move<vk::VkImage>						m_colorTarget;
+	vk::Move<vk::VkImageView>					m_colorTargetView;
+	vk::Move<vk::VkFramebuffer>					m_framebuffer;
+	vector<CmdCommand*>							m_commands;
+};
+
+ExecuteSecondaryCommandBuffer::ExecuteSecondaryCommandBuffer(const vector<CmdCommand*>& commands)
+	: m_commands		(commands)
+{
+}
+
+ExecuteSecondaryCommandBuffer::~ExecuteSecondaryCommandBuffer (void)
+{
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+		delete m_commands[cmdNdx];
+}
+
+void ExecuteSecondaryCommandBuffer::logPrepare (TestLog& log, size_t commandIndex) const
+{
+	const string				sectionName	(de::toString(commandIndex) + ":" + getName());
+	const tcu::ScopedLogSection	section		(log, sectionName, sectionName);
+
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+	{
+		CmdCommand& command = *m_commands[cmdNdx];
+		command.logPrepare(log, cmdNdx);
+	}
+}
+
+void ExecuteSecondaryCommandBuffer::logSubmit (TestLog& log, size_t commandIndex) const
+{
+	const string				sectionName	(de::toString(commandIndex) + ":" + getName());
+	const tcu::ScopedLogSection	section		(log, sectionName, sectionName);
+
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+	{
+		CmdCommand& command = *m_commands[cmdNdx];
+		command.logSubmit(log, cmdNdx);
+	}
+}
+
+void ExecuteSecondaryCommandBuffer::prepare (PrepareContext& context)
+{
+	const vk::DeviceInterface&		vkd				= context.getContext().getDeviceInterface();
+	const vk::VkDevice				device			= context.getContext().getDevice();
+	const vk::VkCommandPool			commandPool		= context.getContext().getCommandPool();
+
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+	{
+		CmdCommand& command = *m_commands[cmdNdx];
+
+		command.prepare(context);
+	}
+
+	m_commandBuffer = createBeginCommandBuffer(vkd, device, commandPool, vk::VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+	{
+		SubmitContext submitContext (context, *m_commandBuffer);
+
+		for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+		{
+			CmdCommand& command = *m_commands[cmdNdx];
+
+			command.submit(submitContext);
+		}
+
+		endCommandBuffer(vkd, *m_commandBuffer);
+	}
+}
+
+void ExecuteSecondaryCommandBuffer::submit (SubmitContext& context)
+{
+	const vk::DeviceInterface&		vkd				= context.getContext().getDeviceInterface();
+	const vk::VkCommandBuffer		commandBuffer	= context.getCommandBuffer();
+
+
+	{
+		vkd.cmdExecuteCommands(commandBuffer, 1, &m_commandBuffer.get());
+	}
+}
+
+void ExecuteSecondaryCommandBuffer::verify (VerifyContext& context, size_t commandIndex)
+{
+	const string				sectionName	(de::toString(commandIndex) + ":" + getName());
+	const tcu::ScopedLogSection	section		(context.getLog(), sectionName, sectionName);
+
+	for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+		m_commands[cmdNdx]->verify(context, cmdNdx);
+}
+
 struct PipelineResources
 {
 	vk::Move<vk::VkPipeline>			pipeline;
@@ -7132,6 +7240,11 @@ enum Op
 	OP_COMMAND_BUFFER_BEGIN,
 	OP_COMMAND_BUFFER_END,
 
+	// Secondary, non render pass command buffers
+	// Render pass secondary command buffers are not currently covered
+	OP_SECONDARY_COMMAND_BUFFER_BEGIN,
+	OP_SECONDARY_COMMAND_BUFFER_END,
+
 	// Buffer transfer operations
 	OP_BUFFER_FILL,
 	OP_BUFFER_UPDATE,
@@ -7194,6 +7307,7 @@ enum Stage
 {
 	STAGE_HOST,
 	STAGE_COMMAND_BUFFER,
+	STAGE_SECONDARY_COMMAND_BUFFER,
 
 	STAGE_RENDER_PASS
 };
@@ -7771,23 +7885,24 @@ vk::VkImageLayout getRandomNextLayout (de::Random&			rng,
 struct State
 {
 	State (Usage usage, deUint32 seed)
-		: stage					(STAGE_HOST)
-		, cache					(usageToStageFlags(usage), usageToAccessFlags(usage))
-		, rng					(seed)
-		, mapped				(false)
-		, hostInvalidated		(true)
-		, hostFlushed			(true)
-		, memoryDefined			(false)
-		, hasBuffer				(false)
-		, hasBoundBufferMemory	(false)
-		, hasImage				(false)
-		, hasBoundImageMemory	(false)
-		, imageLayout			(vk::VK_IMAGE_LAYOUT_UNDEFINED)
-		, imageDefined			(false)
-		, queueIdle				(true)
-		, deviceIdle			(true)
-		, commandBufferIsEmpty	(true)
-		, renderPassIsEmpty		(true)
+		: stage							(STAGE_HOST)
+		, cache							(usageToStageFlags(usage), usageToAccessFlags(usage))
+		, rng							(seed)
+		, mapped						(false)
+		, hostInvalidated				(true)
+		, hostFlushed					(true)
+		, memoryDefined					(false)
+		, hasBuffer						(false)
+		, hasBoundBufferMemory			(false)
+		, hasImage						(false)
+		, hasBoundImageMemory			(false)
+		, imageLayout					(vk::VK_IMAGE_LAYOUT_UNDEFINED)
+		, imageDefined					(false)
+		, queueIdle						(true)
+		, deviceIdle					(true)
+		, commandBufferIsEmpty			(true)
+		, primaryCommandBufferIsEmpty	(true)
+		, renderPassIsEmpty				(true)
 	{
 	}
 
@@ -7812,6 +7927,10 @@ struct State
 	bool				deviceIdle;
 
 	bool				commandBufferIsEmpty;
+
+	// a copy of commandBufferIsEmpty value, when secondary command buffer is in use
+	bool				primaryCommandBufferIsEmpty;
+
 	bool				renderPassIsEmpty;
 };
 
@@ -8016,10 +8135,80 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 			ops.push_back(OP_RENDERPASS_BEGIN);
 		}
 
+		ops.push_back(OP_SECONDARY_COMMAND_BUFFER_BEGIN);
+
 		// \note This depends on previous operations and has to be always the
 		// last command buffer operation check
 		if (ops.empty() || !state.commandBufferIsEmpty)
 			ops.push_back(OP_COMMAND_BUFFER_END);
+	}
+	else if (state.stage == STAGE_SECONDARY_COMMAND_BUFFER)
+	{
+		if (!state.cache.isClean())
+		{
+			ops.push_back(OP_PIPELINE_BARRIER_GLOBAL);
+
+			if (state.hasImage)
+				ops.push_back(OP_PIPELINE_BARRIER_IMAGE);
+
+			if (state.hasBuffer)
+				ops.push_back(OP_PIPELINE_BARRIER_BUFFER);
+		}
+
+		if (state.hasBoundBufferMemory)
+		{
+			if (usage & USAGE_TRANSFER_DST
+				&& state.cache.isValid(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT))
+			{
+				ops.push_back(OP_BUFFER_FILL);
+				ops.push_back(OP_BUFFER_UPDATE);
+				ops.push_back(OP_BUFFER_COPY_FROM_BUFFER);
+				ops.push_back(OP_BUFFER_COPY_FROM_IMAGE);
+			}
+
+			if (usage & USAGE_TRANSFER_SRC
+				&& state.memoryDefined
+				&& state.cache.isValid(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT))
+			{
+				ops.push_back(OP_BUFFER_COPY_TO_BUFFER);
+				ops.push_back(OP_BUFFER_COPY_TO_IMAGE);
+			}
+		}
+
+		if (state.hasBoundImageMemory
+			&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_UNDEFINED
+				|| getNumberOfSupportedLayouts(usage) > 1))
+		{
+			ops.push_back(OP_IMAGE_TRANSITION_LAYOUT);
+
+			{
+				if (usage & USAGE_TRANSFER_DST
+					&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
+						|| state.imageLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT))
+				{
+					ops.push_back(OP_IMAGE_COPY_FROM_BUFFER);
+					ops.push_back(OP_IMAGE_COPY_FROM_IMAGE);
+					ops.push_back(OP_IMAGE_BLIT_FROM_IMAGE);
+				}
+
+				if (usage & USAGE_TRANSFER_SRC
+					&& (state.imageLayout == vk::VK_IMAGE_LAYOUT_GENERAL
+						|| state.imageLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+					&& state.imageDefined
+					&& state.cache.isValid(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT))
+				{
+					ops.push_back(OP_IMAGE_COPY_TO_BUFFER);
+					ops.push_back(OP_IMAGE_COPY_TO_IMAGE);
+					ops.push_back(OP_IMAGE_BLIT_TO_IMAGE);
+				}
+			}
+		}
+
+		// \note This depends on previous operations and has to be always the
+		// last command buffer operation check
+		if (ops.empty() || !state.commandBufferIsEmpty)
+			ops.push_back(OP_SECONDARY_COMMAND_BUFFER_END);
 	}
 	else if (state.stage == STAGE_RENDER_PASS)
 	{
@@ -8288,7 +8477,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 
 		case OP_IMAGE_TRANSITION_LAYOUT:
 		{
-			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 			DE_ASSERT(state.hasImage);
 			DE_ASSERT(state.hasBoundImageMemory);
 
@@ -8362,10 +8551,23 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 			break;
 
 		case OP_COMMAND_BUFFER_END:
-			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 			state.stage = STAGE_HOST;
 			state.queueIdle = false;
 			state.deviceIdle = false;
+			break;
+
+		case OP_SECONDARY_COMMAND_BUFFER_BEGIN:
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
+			state.stage = STAGE_SECONDARY_COMMAND_BUFFER;
+			state.primaryCommandBufferIsEmpty = state.commandBufferIsEmpty;
+			state.commandBufferIsEmpty = true;
+			break;
+
+		case OP_SECONDARY_COMMAND_BUFFER_END:
+			DE_ASSERT(state.stage == STAGE_SECONDARY_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
+			state.stage = STAGE_COMMAND_BUFFER;
+			state.commandBufferIsEmpty = state.primaryCommandBufferIsEmpty;
 			break;
 
 		case OP_BUFFER_COPY_FROM_BUFFER:
@@ -8373,7 +8575,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 		case OP_BUFFER_UPDATE:
 		case OP_BUFFER_FILL:
 			state.rng.getUint32();
-			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 
 			if ((memory.getMemoryType().propertyFlags & vk::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
 				state.hostInvalidated = false;
@@ -8387,7 +8589,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 
 		case OP_BUFFER_COPY_TO_BUFFER:
 		case OP_BUFFER_COPY_TO_IMAGE:
-			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 
 			state.commandBufferIsEmpty = false;
 			state.cache.perform(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT);
@@ -8399,7 +8601,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 		case OP_IMAGE_COPY_FROM_BUFFER:
 		case OP_IMAGE_COPY_FROM_IMAGE:
 			state.rng.getUint32();
-			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 
 			if ((memory.getMemoryType().propertyFlags & vk::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
 				state.hostInvalidated = false;
@@ -8415,7 +8617,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 			// Fall through
 		case OP_IMAGE_COPY_TO_BUFFER:
 		case OP_IMAGE_COPY_TO_IMAGE:
-			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 
 			state.commandBufferIsEmpty = false;
 			state.cache.perform(vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT);
@@ -8425,7 +8627,7 @@ void applyOp (State& state, const Memory& memory, Op op, Usage usage)
 		case OP_PIPELINE_BARRIER_BUFFER:
 		case OP_PIPELINE_BARRIER_IMAGE:
 		{
-			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 
 			vk::VkPipelineStageFlags	dirtySrcStages;
 			vk::VkAccessFlags			dirtySrcAccesses;
@@ -8613,7 +8815,7 @@ de::MovePtr<CmdCommand> createCmdCommand (de::Random&	rng,
 
 		case OP_IMAGE_TRANSITION_LAYOUT:
 		{
-			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER);
+			DE_ASSERT(state.stage == STAGE_COMMAND_BUFFER || state.stage == STAGE_SECONDARY_COMMAND_BUFFER);
 			DE_ASSERT(state.hasImage);
 			DE_ASSERT(state.hasBoundImageMemory);
 
@@ -8809,6 +9011,56 @@ de::MovePtr<CmdCommand> createRenderPassCommands (const Memory&	memory,
 	}
 }
 
+de::MovePtr<CmdCommand> createSecondaryCmdCommands (const Memory&	memory,
+												    de::Random&		nextOpRng,
+												    State&			state,
+												    Usage			usage,
+												    size_t&			opNdx,
+												    size_t			opCount)
+{
+	vector<CmdCommand*>	commands;
+
+	try
+	{
+		for (; opNdx < opCount; opNdx++)
+		{
+			vector<Op>	ops;
+
+			getAvailableOps(state, memory.getSupportBuffers(), memory.getSupportImages(), usage, ops);
+
+			DE_ASSERT(!ops.empty());
+
+			{
+				const Op op = nextOpRng.choose<Op>(ops.begin(), ops.end());
+
+				if (op == OP_SECONDARY_COMMAND_BUFFER_END)
+				{
+					break;
+				}
+				else
+				{
+					de::Random	rng(state.rng);
+
+					commands.push_back(createCmdCommand(rng, state, op, usage).release());
+					applyOp(state, memory, op, usage);
+
+					DE_ASSERT(state.rng == rng);
+				}
+			}
+		}
+
+		applyOp(state, memory, OP_SECONDARY_COMMAND_BUFFER_END, usage);
+		return de::MovePtr<CmdCommand>(new ExecuteSecondaryCommandBuffer(commands));
+	}
+	catch (...)
+	{
+		for (size_t commandNdx = 0; commandNdx < commands.size(); commandNdx++)
+			delete commands[commandNdx];
+
+		throw;
+	}
+}
+
 de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 										de::Random&		nextOpRng,
 										State&			state,
@@ -8842,6 +9094,11 @@ de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 					{
 						applyOp(state, memory, op, usage);
 						commands.push_back(createRenderPassCommands(memory, nextOpRng, state, usage, opNdx, opCount).release());
+					}
+					else if (op == OP_SECONDARY_COMMAND_BUFFER_BEGIN)
+					{
+						applyOp(state, memory, op, usage);
+						commands.push_back(createSecondaryCmdCommands(memory, nextOpRng, state, usage, opNdx, opCount).release());
 					}
 					else
 					{

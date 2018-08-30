@@ -24,6 +24,8 @@
 
 #include "vktDrawInstancedTests.hpp"
 
+#include <climits>
+
 #include "deSharedPtr.hpp"
 #include "rrRenderer.hpp"
 #include "tcuImageCompare.hpp"
@@ -33,6 +35,7 @@
 #include "vkPrograms.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkQueryUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
 #include "vktDrawImageObjectUtil.hpp"
@@ -63,6 +66,9 @@ struct TestParams
 
 	DrawFunction			function;
 	vk::VkPrimitiveTopology	topology;
+
+	deBool					testAttribDivisor;
+	deUint32				attribDivisor;
 };
 
 struct VertexPositionAndColor
@@ -99,6 +105,10 @@ std::ostream & operator<<(std::ostream & str, TestParams const & v)
 	}
 
 	string << "_" << de::toString(v.topology);
+
+	if (v.testAttribDivisor)
+		string << "_attrib_divisor_" << v.attribDivisor;
+
 	return str << string.str();
 }
 
@@ -163,9 +173,9 @@ public:
 		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
 		{
 			const int		instanceNdx		= packets[packetNdx]->instanceNdx + m_firstInstance;
-			const tcu::Vec4	position		= rr::readVertexAttribFloat(inputs[0], instanceNdx,	packets[packetNdx]->vertexNdx);
-			const tcu::Vec4	color			= rr::readVertexAttribFloat(inputs[1], instanceNdx,	packets[packetNdx]->vertexNdx);
-			const tcu::Vec4	color2			= rr::readVertexAttribFloat(inputs[2], instanceNdx, packets[packetNdx]->vertexNdx);
+			const tcu::Vec4	position		= rr::readVertexAttribFloat(inputs[0], packets[packetNdx]->instanceNdx,	packets[packetNdx]->vertexNdx, m_firstInstance);
+			const tcu::Vec4	color			= rr::readVertexAttribFloat(inputs[1], packets[packetNdx]->instanceNdx,	packets[packetNdx]->vertexNdx, m_firstInstance);
+			const tcu::Vec4	color2			= rr::readVertexAttribFloat(inputs[2], packets[packetNdx]->instanceNdx, packets[packetNdx]->vertexNdx, m_firstInstance);
 			packets[packetNdx]->position	= position + tcu::Vec4((float)(packets[packetNdx]->instanceNdx * 2.0 / m_numInstances), 0.0, 0.0, 0.0);
 			packets[packetNdx]->outputs[0]	= color + tcu::Vec4((float)instanceNdx / (float)m_numInstances, 0.0, 0.0, 1.0) + color2;
 		}
@@ -209,7 +219,7 @@ public:
 	virtual	tcu::TestStatus						iterate					(void);
 
 private:
-	void										prepareVertexData		(int instanceCount, int firstInstance);
+	void										prepareVertexData		(int instanceCount, int firstInstance, int instanceDivisor);
 
 	const TestParams							m_params;
 	const vk::DeviceInterface&					m_vk;
@@ -276,6 +286,19 @@ public:
 
 	TestInstance* createInstance (Context& context) const
 	{
+		if (m_params.testAttribDivisor)
+		{
+			const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& vertexAttributeDivisorFeatures = context.getVertexAttributeDivisorFeatures();
+			if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_vertex_attribute_divisor"))
+				TCU_THROW(NotSupportedError, "Implementation does not support VK_EXT_vertex_attribute_divisor");
+
+			if (m_params.attribDivisor != 1 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor)
+				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisor");
+
+			if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
+				TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
+		}
+
 		return new InstancedDrawInstance(context, m_params);
 	}
 
@@ -395,6 +418,14 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
 															  DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),
 															  vertexInputAttributeDescriptions);
 
+	const vk::VkVertexInputBindingDivisorDescriptionEXT vertexInputBindingDivisorDescription =
+	{
+		1u,
+		m_params.attribDivisor,
+	};
+	if (m_params.testAttribDivisor)
+		m_vertexInputState.addDivisors(1, &vertexInputBindingDivisorDescription);
+
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
 	m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
 
@@ -447,7 +478,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			const deUint32				prepareCount			= de::max(instanceCount, 1u);
 			const deUint32				firstInstance			= firstInstanceIndices[firstInstanceIndexNdx];
 
-			prepareVertexData(prepareCount, firstInstance);
+			prepareVertexData(prepareCount, firstInstance, m_params.testAttribDivisor ? m_params.attribDivisor : 1);
 			const de::SharedPtr<Buffer>	vertexBuffer			= createAndUploadBuffer(m_data, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 			const de::SharedPtr<Buffer>	instancedVertexBuffer	= createAndUploadBuffer(m_instancedColor, m_vk, m_context, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 			de::SharedPtr<Buffer>		indexBuffer;
@@ -579,7 +610,8 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			{
 				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &vetrices[0]),
 				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &colors[0]),
-				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 1, &m_instancedColor[0])
+				// The reference renderer treats a divisor of 0 as meaning per-vertex.  Use INT_MAX instead; it should work just as well.
+				rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), m_params.testAttribDivisor ? (m_params.attribDivisor == 0 ? INT_MAX : m_params.attribDivisor) : 1, &m_instancedColor[0])
 			};
 
 			if (m_params.function == TestParams::FUNCTION_DRAW || m_params.function == TestParams::FUNCTION_DRAW_INDIRECT)
@@ -630,7 +662,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 	return tcu::TestStatus(res, qpGetTestResultName(res));
 }
 
-void InstancedDrawInstance::prepareVertexData(int instanceCount, int firstInstance)
+void InstancedDrawInstance::prepareVertexData(int instanceCount, int firstInstance, int instanceDivisor)
 {
 	m_data.clear();
 	m_indexes.clear();
@@ -695,9 +727,10 @@ void InstancedDrawInstance::prepareVertexData(int instanceCount, int firstInstan
 		}
 	}
 
+	const int colorCount = instanceDivisor == 0 ? 1 : (instanceCount + firstInstance + instanceDivisor - 1) / instanceDivisor;
 	for (int i = 0; i < instanceCount + firstInstance; i++)
 	{
-		m_instancedColor.push_back(tcu::Vec4(0.0, (float)(1.0 - i * 1.0 / (instanceCount + firstInstance)) / 2, 0.0, 1.0));
+		m_instancedColor.push_back(tcu::Vec4(0.0, (float)(1.0 - i * 1.0 / colorCount) / 2, 0.0, 1.0));
 	}
 }
 
@@ -723,17 +756,31 @@ InstancedTests::InstancedTests(tcu::TestContext& testCtx)
 		TestParams::FUNCTION_DRAW_INDEXED_INDIRECT,
 	};
 
+	static const deUint32 divisors[] = { 0, 1, 2, 4, 20 };
+
 	for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(topologies); topologyNdx++)
 	{
 		for (int functionNdx = 0; functionNdx < DE_LENGTH_OF_ARRAY(functions); functionNdx++)
 		{
-			TestParams param;
-			param.function = functions[functionNdx];
-			param.topology = topologies[topologyNdx];
+			for (int testAttribDivisor = 0; testAttribDivisor < 2; testAttribDivisor++)
+			{
+				for (int divisorNdx = 0; divisorNdx < DE_LENGTH_OF_ARRAY(divisors); divisorNdx++)
+				{
+					// If we don't have VK_EXT_vertex_attribute_divisor, we only get a divisor or 1.
+					if (!testAttribDivisor && divisors[divisorNdx] != 1)
+						continue;
 
-			std::string testName = de::toString(param);
+					TestParams param;
+					param.function = functions[functionNdx];
+					param.topology = topologies[topologyNdx];
+					param.testAttribDivisor = testAttribDivisor ? DE_TRUE : DE_FALSE;
+					param.attribDivisor = divisors[divisorNdx];
 
-			addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+					std::string testName = de::toString(param);
+
+					addChild(new InstancedDrawCase(m_testCtx, de::toLower(testName), "Instanced drawing test", param));
+				}
+			}
 		}
 	}
 }

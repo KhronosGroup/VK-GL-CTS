@@ -308,6 +308,11 @@ public:
 						  const vk::VkVertexInputBindingDescription*	pVertexBindingDescriptions		= NULL,
 						  deUint32										vertexAttributeDescriptionCount	= 0,
 						  const vk::VkVertexInputAttributeDescription*	pVertexAttributeDescriptions	= NULL);
+
+		VertexInputState& addDivisors (deUint32												vertexBindingDivisorCount = 0,
+									   const vk::VkVertexInputBindingDivisorDescriptionEXT*	pVertexBindingDivisors = NULL);
+
+		vk::VkPipelineVertexInputDivisorStateCreateInfoEXT m_divisorState;
 	};
 
 	class InputAssemblerState : public vk::VkPipelineInputAssemblyStateCreateInfo

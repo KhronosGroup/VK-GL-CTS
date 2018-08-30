@@ -148,30 +148,30 @@ struct VertexAttrib
 bool		isValidVertexAttrib		(const VertexAttrib& vertexAttrib);
 // \todo [2013-04-01 pyry] Queries: isReadFloatValid(), isReadIntValid() ...
 
-void		readVertexAttrib		(tcu::Vec4& dst, const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx);
-void		readVertexAttrib		(tcu::IVec4& dst, const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx);
-void		readVertexAttrib		(tcu::UVec4& dst, const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx);
+void		readVertexAttrib		(tcu::Vec4& dst, const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx, const int baseInstanceNdx = 0);
+void		readVertexAttrib		(tcu::IVec4& dst, const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx, const int baseInstanceNdx = 0);
+void		readVertexAttrib		(tcu::UVec4& dst, const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx, const int baseInstanceNdx = 0);
 
 // Helpers that return by value (trivial for compiler to optimize).
 
-inline tcu::Vec4 readVertexAttribFloat (const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx)
+inline tcu::Vec4 readVertexAttribFloat (const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx, const int baseInstanceNdx = 0)
 {
 	tcu::Vec4 v;
-	readVertexAttrib(v, vertexAttrib, instanceNdx, vertexNdx);
+	readVertexAttrib(v, vertexAttrib, instanceNdx, vertexNdx, baseInstanceNdx);
 	return v;
 }
 
-inline tcu::IVec4 readVertexAttribInt (const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx)
+inline tcu::IVec4 readVertexAttribInt (const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx, const int baseInstanceNdx = 0)
 {
 	tcu::IVec4 v;
-	readVertexAttrib(v, vertexAttrib, instanceNdx, vertexNdx);
+	readVertexAttrib(v, vertexAttrib, instanceNdx, vertexNdx, baseInstanceNdx);
 	return v;
 }
 
-inline tcu::UVec4 readVertexAttribUint (const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx)
+inline tcu::UVec4 readVertexAttribUint (const VertexAttrib& vertexAttrib, const int instanceNdx, const int vertexNdx, const int baseInstanceNdx = 0)
 {
 	tcu::UVec4 v;
-	readVertexAttrib(v, vertexAttrib, instanceNdx, vertexNdx);
+	readVertexAttrib(v, vertexAttrib, instanceNdx, vertexNdx, baseInstanceNdx);
 	return v;
 }
 

@@ -306,14 +306,15 @@ bool isPhysicalDeviceFeatures2Supported (const deUint32 version, const vector<st
 class DeviceFeatures
 {
 public:
-	VkPhysicalDeviceFeatures2						coreFeatures;
-	VkPhysicalDeviceSamplerYcbcrConversionFeatures	samplerYCbCrConversionFeatures;
-	VkPhysicalDevice8BitStorageFeaturesKHR			eightBitStorageFeatures;
-	VkPhysicalDevice16BitStorageFeatures			sixteenBitStorageFeatures;
-	VkPhysicalDeviceVariablePointerFeatures			variablePointerFeatures;
-	VkPhysicalDeviceDescriptorIndexingFeaturesEXT	descriptorIndexingFeatures;
-	VkPhysicalDeviceInlineUniformBlockFeaturesEXT	inlineUniformBlockFeatures;
-	VkPhysicalDeviceFloat16Int8FeaturesKHR			float16Int8Features;
+	VkPhysicalDeviceFeatures2							coreFeatures;
+	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYCbCrConversionFeatures;
+	VkPhysicalDevice8BitStorageFeaturesKHR				eightBitStorageFeatures;
+	VkPhysicalDevice16BitStorageFeatures				sixteenBitStorageFeatures;
+	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures;
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT		descriptorIndexingFeatures;
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT		inlineUniformBlockFeatures;
+	VkPhysicalDeviceFloat16Int8FeaturesKHR				float16Int8Features;
+	VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT	vertexAttributeDivisorFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -329,6 +330,7 @@ public:
 		deMemset(&descriptorIndexingFeatures, 0, sizeof(descriptorIndexingFeatures));
 		deMemset(&inlineUniformBlockFeatures, 0, sizeof(inlineUniformBlockFeatures));
 		deMemset(&float16Int8Features, 0, sizeof(float16Int8Features));
+		deMemset(&vertexAttributeDivisorFeatures, 0, sizeof(vertexAttributeDivisorFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -338,6 +340,7 @@ public:
 		descriptorIndexingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
 		inlineUniformBlockFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
 		float16Int8Features.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+		vertexAttributeDivisorFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
@@ -378,6 +381,11 @@ public:
 				*nextPtr	= &float16Int8Features;
 				nextPtr		= &float16Int8Features.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_vertex_attribute_divisor"))
+			{
+				*nextPtr	= &vertexAttributeDivisorFeatures;
+				nextPtr		= &vertexAttributeDivisorFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -411,6 +419,7 @@ public:
 	const VkPhysicalDevice16BitStorageFeatures&				get16BitStorageFeatures				(void) const	{ return m_deviceFeatures.sixteenBitStorageFeatures;		}
 	const VkPhysicalDeviceVariablePointerFeatures&			getVariablePointerFeatures			(void) const	{ return m_deviceFeatures.variablePointerFeatures;			}
 	const VkPhysicalDeviceFloat16Int8FeaturesKHR&			getFloat16Int8Features				(void) const	{ return m_deviceFeatures.float16Int8Features;				}
+	const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&	getVertexAttributeDivisorFeatures	(void) const	{ return m_deviceFeatures.vertexAttributeDivisorFeatures;	}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -539,6 +548,8 @@ const vk::VkPhysicalDeviceVariablePointerFeatures&
 										Context::getVariablePointerFeatures		(void) const { return m_device->getVariablePointerFeatures();	}
 const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
 										Context::getFloat16Int8Features			(void) const { return m_device->getFloat16Int8Features();		}
+const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&
+										Context::getVertexAttributeDivisorFeatures	(void) const { return m_device->getVertexAttributeDivisorFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

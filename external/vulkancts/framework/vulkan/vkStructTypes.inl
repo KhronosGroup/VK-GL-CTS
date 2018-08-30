@@ -2979,6 +2979,35 @@ struct VkExternalFormatANDROID
 	deUint64		externalFormat;
 };
 
+struct VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxVertexAttribDivisor;
+};
+
+struct VkVertexInputBindingDivisorDescriptionEXT
+{
+	deUint32	binding;
+	deUint32	divisor;
+};
+
+struct VkPipelineVertexInputDivisorStateCreateInfoEXT
+{
+	VkStructureType										sType;
+	const void*											pNext;
+	deUint32											vertexBindingDivisorCount;
+	const VkVertexInputBindingDivisorDescriptionEXT*	pVertexBindingDivisors;
+};
+
+struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		vertexAttributeInstanceRateDivisor;
+	VkBool32		vertexAttributeInstanceRateZeroDivisor;
+};
+
 struct VkDescriptorSetLayoutBindingFlagsCreateInfoEXT
 {
 	VkStructureType						sType;
