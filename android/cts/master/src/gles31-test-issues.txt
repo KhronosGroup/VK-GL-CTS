@@ -36,16 +36,3 @@ dEQP-GLES31.functional.debug.negative_coverage.get_error.texture.compressedtexim
 
 # Bug 28813504
 dEQP-GLES31.functional.ubo.random.all_per_block_buffers.41
-
-# Bug 28767510
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.lowp_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.lowp_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.mediump_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.mediump_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.dot.highp_compute.vec3
-
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.lowp_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec3
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.mediump_compute.vec4
-dEQP-GLES31.functional.shaders.builtin_functions.precision.reflect.highp_compute.vec3
