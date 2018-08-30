@@ -254,6 +254,33 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 	TestLog&								log					= m_context.getTestContext().getLog();
 	const VkDevice							device				= getDevice();
 	const DeviceInterface&					vkd					= getDeviceInterface();
+	VkMemoryRequirements					memReqs;
+	const deUint32							queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+	VkBufferCreateFlags						createFlags			= (vk::VkBufferCreateFlagBits)0u;
+	VkBufferUsageFlags						usageFlags			= vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	VkSharingMode							sharingMode			= vk::VK_SHARING_MODE_EXCLUSIVE;
+	Move<VkBuffer>							buffer;
+
+	if ((m_memoryProperties.memoryTypes[m_memoryTypeIndex].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT) == vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+	{
+		createFlags |= vk::VK_BUFFER_CREATE_PROTECTED_BIT;
+	}
+
+	// Create a minimal buffer first to get the supported memory types
+	VkBufferCreateInfo				bufferParams					=
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,                       // VkStructureType          sType;
+		DE_NULL,                                                    // const void*              pNext;
+		createFlags,                                                // VkBufferCreateFlags      flags;
+		1u,                                                         // VkDeviceSize             size;
+		usageFlags,                                                 // VkBufferUsageFlags       usage;
+		sharingMode,                                                // VkSharingMode            sharingMode;
+		1u,                                                         // uint32_t                 queueFamilyIndexCount;
+		&queueFamilyIndex,                                          // const uint32_t*          pQueueFamilyIndices;
+	};
+
+	buffer = createBuffer(vkd, device, &bufferParams);
+	vkd.getBufferMemoryRequirements(device, *buffer, &memReqs);
 
 	DE_ASSERT(m_config.memoryAllocationCount <= MAX_ALLOCATION_COUNT);
 
@@ -277,7 +304,7 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 		const VkMemoryType		memoryType		= m_memoryProperties.memoryTypes[m_memoryTypeIndex];
 		const VkMemoryHeap		memoryHeap		= m_memoryProperties.memoryHeaps[memoryType.heapIndex];
 
-		const VkDeviceSize		allocationSize	= (m_config.memorySize ? *m_config.memorySize : (VkDeviceSize)(*m_config.memoryPercentage * (float)memoryHeap.size));
+		const VkDeviceSize		allocationSize	= (m_config.memorySize ? memReqs.size : (VkDeviceSize)(*m_config.memoryPercentage * (float)memoryHeap.size));
 		const VkDeviceSize		roundedUpAllocationSize	 = roundUpToNextMultiple(allocationSize, m_memoryLimits.deviceMemoryAllocationGranularity);
 		vector<VkDeviceMemory>	memoryObjects	(m_config.memoryAllocationCount, (VkDeviceMemory)0);
 
