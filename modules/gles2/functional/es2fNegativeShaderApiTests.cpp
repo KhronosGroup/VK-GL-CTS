@@ -167,21 +167,21 @@ void NegativeShaderApiTests::init (void)
 				m_log << TestLog::Section("", "GL_INVALID_VALUE is generated if n or length is negative.");
 				shaders[0] = glCreateShader(GL_VERTEX_SHADER);
 				glShaderBinary(-1, &shaders[0], binaryFormats[0], 0, 0);
-				expectError(GL_INVALID_VALUE);
+				expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
 				glShaderBinary(1, &shaders[0], binaryFormats[0], 0, -1);
-				expectError(GL_INVALID_VALUE);
+				expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
 				m_log << TestLog::EndSection;
 
 				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if any value in shaders is not a shader object.");
 				glShaderBinary(1, &program, binaryFormats[0], 0, 0);
-				expectError(GL_INVALID_OPERATION);
+				expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
 				m_log << TestLog::EndSection;
 
 				m_log << TestLog::Section("", "GL_INVALID_OPERATION is generated if there is more than one vertex shader object handle or more than one fragment shader object handle in shaders.");
 				shaders[0] = glCreateShader(GL_VERTEX_SHADER);
 				shaders[1] = glCreateShader(GL_VERTEX_SHADER);
 				glShaderBinary(2, &shaders[0], binaryFormats[0], 0, 1);
-				expectError(GL_INVALID_OPERATION);
+				expectError(GL_INVALID_OPERATION, GL_INVALID_VALUE);
 				m_log << TestLog::EndSection;
 			}
 

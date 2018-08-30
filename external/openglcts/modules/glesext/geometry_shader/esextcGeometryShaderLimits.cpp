@@ -1190,7 +1190,6 @@ void GeometryShaderLimitsRenderingBase::deinit()
 	/* Reset OpenGL ES state */
 	gl.useProgram(0);
 	gl.bindVertexArray(0);
-	gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0 /* texture */, 0 /* level */);
 	gl.bindTexture(GL_TEXTURE_2D, 0);
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	if (!glu::isContextTypeES(m_context.getRenderContext().getType()))
@@ -2752,7 +2751,6 @@ void GeometryShaderMaxInvocationsTest::deinit()
 	/* Reset OpenGL ES state */
 	gl.useProgram(0);
 	gl.bindVertexArray(0);
-	gl.framebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0 /* texture */, 0 /* level */);
 	gl.bindTexture(GL_TEXTURE_2D, 0);
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 
