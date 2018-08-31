@@ -776,7 +776,7 @@ public:
 		for (int i = 0; i < DE_LENGTH_OF_ARRAY(s_modes); i++)
 		{
 			addChild(new BlendTest(m_context, m_glslVersion, s_modes[i], m_useAllQualifier,
-								   DE_LENGTH_OF_ARRAY(s_common) / 8, s_common));
+								   DE_LENGTH_OF_ARRAY(s_common) / 8, s_common, DE_LENGTH_OF_ARRAY(s_rgb10a2) / 8, s_rgb10a2));
 		}
 	}
 
@@ -788,7 +788,7 @@ private:
 	{
 	public:
 		BlendTest(deqp::Context& context, glu::GLSLVersion glslVersion, glw::GLenum mode, bool useAllQualifier,
-				  int numColors, const glw::GLfloat* colors)
+				  int numColors, const glw::GLfloat* colors, int numSpecificColors, const glw::GLfloat* specificColors)
 			: TestCase(context, (std::string(GetModeStr(mode)) + (useAllQualifier ? "_all_qualifier" : "")).c_str(),
 					   "Test new blend modes for correctness.")
 			, m_glslVersion(glslVersion)
@@ -796,6 +796,9 @@ private:
 			, m_useAllQualifier(useAllQualifier)
 			, m_numColors(numColors)
 			, m_colors(colors)
+			, m_numSpecificColors(numSpecificColors)
+			, m_specificColors(specificColors)
+			, m_useRGB10A2Data(GL_FALSE)
 		{
 		}
 
@@ -810,9 +813,13 @@ private:
 		bool				m_useAllQualifier;
 		int					m_numColors;
 		const glw::GLfloat* m_colors;
+		int					m_numSpecificColors;
+		const glw::GLfloat*	m_specificColors;
+		bool				m_useRGB10A2Data;
 	};
 
 	static const glw::GLfloat s_common[46 * 8];
+	static const glw::GLfloat s_rgb10a2[42 * 8];
 };
 
 // Alpha values for pre-multiplied colors.
@@ -871,6 +878,58 @@ const glw::GLfloat BlendTestCaseGroup::s_common[] = {
 	A3 * 0.250f, A3 * 0.125f, A3 * 0.000f, A3 * 1.00f, A3 * 0.000f, A3 * 0.000f, A3 * 0.000f, A3 * 1.00f,
 };
 
+// Some data in the s_common array are invalid for BlendHSLHue and BlendHSLSaturation function when the render target
+// format is GL_RGB10A2. These data will lead to undefine behavior(divide 0). Remove those data and create a new array
+// to test this format and the blend functions.
+const glw::GLfloat BlendTestCaseGroup::s_rgb10a2[] = {
+	// Test that pre-multiplied is converted correctly.
+	// Should not test invalid premultiplied colours (1, 1, 1, 0).
+	1.000f, 0.750f, 0.500f, 1.00f, 0.000f, 0.000f, 0.000f, 0.00f, 0.250f, 0.125f, 0.000f, 1.00f, 0.000f, 0.000f, 0.000f,
+	0.00f,
+
+	// Test clamping.
+	1.000f, 0.750f, 0.500f, 1.00f, -0.125f, -0.125f, -0.125f, 1.00f, 0.250f, 0.125f, 0.000f, 1.00f, -0.125f, -0.125f,
+	-0.125f, 1.00f, 1.000f, 0.750f, 0.500f, 1.00f, 1.125f, 1.125f, 1.125f, 1.00f, 0.250f, 0.125f, 0.000f, 1.00f, 1.125f,
+	1.125f, 1.125f, 1.00f,
+
+	// Cobinations that test other branches of blend equations.
+	1.000f, 0.750f, 0.500f, 1.00f, 1.000f, 1.000f, 1.000f, 1.00f, 0.250f, 0.125f, 0.000f, 1.00f, 1.000f, 1.000f, 1.000f,
+	1.00f, 1.000f, 0.750f, 0.500f, 1.00f, 0.500f, 0.500f, 0.500f, 1.00f, 0.250f, 0.125f, 0.000f, 1.00f, 0.500f, 0.500f,
+	0.500f, 1.00f, 1.000f, 0.750f, 0.500f, 1.00f, 0.250f, 0.250f, 0.250f, 1.00f, 0.250f, 0.125f, 0.000f, 1.00f, 0.250f,
+	0.250f, 0.250f, 1.00f, 1.000f, 0.750f, 0.500f, 1.00f, 0.125f, 0.125f, 0.125f, 1.00f, 0.250f, 0.125f, 0.000f, 1.00f,
+	0.125f, 0.125f, 0.125f, 1.00f, 1.000f, 0.750f, 0.500f, 1.00f, 0.000f, 0.000f, 0.000f, 1.00f, 0.250f, 0.125f, 0.000f,
+	1.00f, 0.000f, 0.000f, 0.000f, 1.00f,
+
+	// Above block with few different pre-multiplied alpha values.
+	A1 * 1.000f, A1 * 0.750f, A1 * 0.500f, A1 * 1.00f, A1 * 0.500f, A1 * 0.500f, A1 * 0.500f, A1 * 1.00f, A1 * 0.250f,
+	A1 * 0.125f, A1 * 0.000f, A1 * 1.00f, A1 * 0.500f, A1 * 0.500f, A1 * 0.500f, A1 * 1.00f, A1 * 1.000f, A1 * 0.750f,
+	A1 * 0.500f, A1 * 1.00f, A1 * 0.250f, A1 * 0.250f, A1 * 0.250f, A1 * 1.00f, A1 * 0.250f, A1 * 0.125f, A1 * 0.000f,
+	A1 * 1.00f, A1 * 0.250f, A1 * 0.250f, A1 * 0.250f, A1 * 1.00f, A1 * 1.000f, A1 * 0.750f, A1 * 0.500f, A1 * 1.00f,
+	A1 * 0.125f, A1 * 0.125f, A1 * 0.125f, A1 * 1.00f, A1 * 0.250f, A1 * 0.125f, A1 * 0.000f, A1 * 1.00f, A1 * 0.125f,
+	A1 * 0.125f, A1 * 0.125f, A1 * 1.00f, A1 * 1.000f, A1 * 0.750f, A1 * 0.500f, A1 * 1.00f, A1 * 0.000f, A1 * 0.000f,
+	A1 * 0.000f, A1 * 1.00f, A1 * 0.250f, A1 * 0.125f, A1 * 0.000f, A1 * 1.00f, A1 * 0.000f, A1 * 0.000f, A1 * 0.000f,
+	A1 * 1.00f,
+
+	A2 * 1.000f, A2 * 0.750f, A2 * 0.500f, A2 * 1.00f, A2 * 0.500f, A2 * 0.500f, A2 * 0.500f, A2 * 1.00f, A2 * 0.250f,
+	A2 * 0.125f, A2 * 0.000f, A2 * 1.00f, A2 * 0.500f, A2 * 0.500f, A2 * 0.500f, A2 * 1.00f, A2 * 1.000f, A2 * 0.750f,
+	A2 * 0.500f, A2 * 1.00f, A2 * 0.250f, A2 * 0.250f, A2 * 0.250f, A2 * 1.00f, A2 * 0.250f, A2 * 0.125f, A2 * 0.000f,
+	A2 * 1.00f, A2 * 0.250f, A2 * 0.250f, A2 * 0.250f, A2 * 1.00f, A2 * 1.000f, A2 * 0.750f, A2 * 0.500f, A2 * 1.00f,
+	A2 * 0.125f, A2 * 0.125f, A2 * 0.125f, A2 * 1.00f, A2 * 0.250f, A2 * 0.125f, A2 * 0.000f, A2 * 1.00f, A2 * 0.125f,
+	A2 * 0.125f, A2 * 0.125f, A2 * 1.00f, A2 * 1.000f, A2 * 0.750f, A2 * 0.500f, A2 * 1.00f, A2 * 0.000f, A2 * 0.000f,
+	A2 * 0.000f, A2 * 1.00f, A2 * 0.250f, A2 * 0.125f, A2 * 0.000f, A2 * 1.00f, A2 * 0.000f, A2 * 0.000f, A2 * 0.000f,
+	A2 * 1.00f,
+
+	A3 * 1.000f, A3 * 0.750f, A3 * 0.500f, A3 * 1.00f, A3 * 1.000f, A3 * 1.000f, A3 * 1.000f, A3 * 1.00f, A3 * 0.250f,
+	A3 * 0.125f, A3 * 0.000f, A3 * 1.00f, A3 * 1.000f, A3 * 1.000f, A3 * 1.000f, A3 * 1.00f, A3 * 1.000f, A3 * 0.750f,
+	A3 * 0.500f, A3 * 1.00f, A3 * 0.500f, A3 * 0.500f, A3 * 0.500f, A3 * 1.00f, A3 * 0.250f, A3 * 0.125f, A3 * 0.000f,
+	A3 * 1.00f, A3 * 0.500f, A3 * 0.500f, A3 * 0.500f, A3 * 1.00f, A3 * 1.000f, A3 * 0.750f, A3 * 0.500f, A3 * 1.00f,
+	A3 * 0.250f, A3 * 0.250f, A3 * 0.250f, A3 * 1.00f, A3 * 0.250f, A3 * 0.125f, A3 * 0.000f, A3 * 1.00f, A3 * 0.250f,
+	A3 * 0.250f, A3 * 0.250f, A3 * 1.00f, A3 * 1.000f, A3 * 0.750f, A3 * 0.500f, A3 * 1.00f, A3 * 0.125f, A3 * 0.125f,
+	A3 * 0.125f, A3 * 1.00f, A3 * 0.250f, A3 * 0.125f, A3 * 0.000f, A3 * 1.00f, A3 * 0.125f, A3 * 0.125f, A3 * 0.125f,
+	A3 * 1.00f, A3 * 1.000f, A3 * 0.750f, A3 * 0.500f, A3 * 1.00f, A3 * 0.000f, A3 * 0.000f, A3 * 0.000f, A3 * 1.00f,
+	A3 * 0.250f, A3 * 0.125f, A3 * 0.000f, A3 * 1.00f, A3 * 0.000f, A3 * 0.000f, A3 * 0.000f, A3 * 1.00f,
+};
+
 static tcu::Vec4 MaskChannels(const tcu::PixelFormat& pf, const tcu::Vec4& v)
 {
 	return tcu::Vec4(pf.redBits > 0 ? v[0] : 0.f, pf.greenBits > 0 ? v[1] : 0.f, pf.blueBits > 0 ? v[2] : 0.f,
@@ -893,11 +952,11 @@ static tcu::Vec4 QuantizeChannels(const tcu::PixelFormat& pf, const tcu::Vec4& v
 
 void BlendTestCaseGroup::BlendTest::getTestColors(int index, tcu::Vec4& src, tcu::Vec4& dst) const
 {
-	DE_ASSERT(0 <= index && index < m_numColors);
+	DE_ASSERT(0 <= index && index < (m_useRGB10A2Data ? m_numSpecificColors : m_numColors));
 
-	const tcu::RenderTarget& rt = m_context.getRenderContext().getRenderTarget();
-	const tcu::PixelFormat&  pf = rt.getPixelFormat();
-	const glw::GLfloat*		 s  = m_colors + 8 * index;
+	const tcu::RenderTarget&	rt = m_context.getRenderContext().getRenderTarget();
+	const tcu::PixelFormat&		pf = rt.getPixelFormat();
+	const glw::GLfloat*			s  = (m_useRGB10A2Data ? m_specificColors : m_colors) + 8 * index;
 
 	src = MaskChannels(pf, tcu::Vec4(s[0], s[1], s[2], s[3]));
 	dst = MaskChannels(pf, tcu::Vec4(s[4], s[5], s[6], s[7]));
@@ -930,6 +989,12 @@ BlendTestCaseGroup::BlendTest::IterateResult BlendTestCaseGroup::BlendTest::iter
 		return STOP;
 	}
 
+	if ((GetBlendFunc(m_mode) == BlendHSLHue || GetBlendFunc(m_mode) == BlendHSLSaturation)
+		&& (pf.redBits == 10 && pf.greenBits == 10 && pf.blueBits == 10 && pf.alphaBits == 2))
+	{
+		m_useRGB10A2Data = GL_TRUE;
+	}
+
 	// Setup program.
 	std::string frgSrc =
 		GetSolidShader(m_useAllQualifier ? "blend_support_all_equations" : GetLayoutQualifierStr(m_mode),
@@ -956,7 +1021,7 @@ BlendTestCaseGroup::BlendTest::IterateResult BlendTestCaseGroup::BlendTest::iter
 	bool needBarrier = !IsExtensionSupported(m_context, "GL_KHR_blend_equation_advanced_coherent");
 
 	// Render loop.
-	for (int colorIndex = 0; colorIndex < m_numColors; colorIndex++)
+	for (int colorIndex = 0; colorIndex < (m_useRGB10A2Data ? m_numSpecificColors : m_numColors); colorIndex++)
 	{
 		tcu::Vec4 srcCol, dstCol;
 		getTestColors(colorIndex, srcCol, dstCol);
@@ -993,7 +1058,7 @@ BlendTestCaseGroup::BlendTest::IterateResult BlendTestCaseGroup::BlendTest::iter
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Read pixels failed");
 
 	bool pass = true;
-	for (int colorIndex = 0; colorIndex < m_numColors; colorIndex++)
+	for (int colorIndex = 0; colorIndex < (m_useRGB10A2Data ? m_numSpecificColors : m_numColors); colorIndex++)
 	{
 		tcu::Vec4 srcCol, dstCol;
 		getTestColors(colorIndex, srcCol, dstCol);
