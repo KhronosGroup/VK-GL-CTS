@@ -1597,6 +1597,14 @@ bool RectangleTest::isFormatValid(const PixelFormat& format, const PixelType& ty
 				return true;
 			}
 
+			if ((sampler == SAMPLER_NORM) && (type.type == GL_BYTE) && (format.format == GL_RGBA) &&
+				((internalformat.sizedFormat == GL_R8_SNORM) || (internalformat.sizedFormat == GL_RG8_SNORM) ||
+				 (internalformat.sizedFormat == GL_RGBA8_SNORM)) &&
+				contextInfo.isExtensionSupported("GL_EXT_render_snorm"))
+			{
+				return true;
+			}
+
 			GLint implementType;
 			GLint implementFormat;
 			gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implementType);
