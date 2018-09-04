@@ -202,7 +202,8 @@ vector<Vertex4Tex4> createTexQuads (deUint32 numQuads, float size)
 	return vertices;
 }
 
-static const tcu::Vec4 testColors[] =
+static const tcu::Vec4 defaultTestColors[] =
+
 {
 	tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f),
 	tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f)
@@ -387,7 +388,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 
 	// Create buffers. One color value in each buffer.
 	{
-		for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(testColors); bufIdx++)
+		for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(defaultTestColors); bufIdx++)
 		{
 			const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
@@ -407,7 +408,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 			m_bufferAllocs.push_back(AllocationSp(m_allocator.allocate(getBufferMemoryRequirements(m_vkd, *m_device, **m_buffers[bufIdx]), MemoryRequirement::HostVisible).release()));
 			VK_CHECK(m_vkd.bindBufferMemory(*m_device, **m_buffers[bufIdx], m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset()));
 
-			deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &testColors[bufIdx], 16u);
+			deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &defaultTestColors[bufIdx], 16u);
 			flushAlloc(m_vkd, *m_device, *m_bufferAllocs[bufIdx]);
 		}
 	}
@@ -574,7 +575,7 @@ tcu::TestStatus PushDescriptorBufferGraphicsTestInstance::verifyImage (void)
 	{
 		for (deUint32 quadIdx = 0; quadIdx < m_params.numCalls; quadIdx++)
 			for (deUint32 vertexIdx = 0; vertexIdx < 6; vertexIdx++)
-				m_vertices[quadIdx * 6 + vertexIdx].color.xyzw() = testColors[quadIdx];
+				m_vertices[quadIdx * 6 + vertexIdx].color.xyzw() = defaultTestColors[quadIdx];
 
 		refRenderer.draw(rr::RenderState(refRenderer.getViewportState()), rr::PRIMITIVETYPE_TRIANGLES, m_vertices);
 	}
@@ -700,6 +701,7 @@ private:
 	Move<VkPipeline>			m_computePipeline;
 	Move<VkCommandPool>			m_cmdPool;
 	Move<VkCommandBuffer>		m_cmdBuffer;
+	std::vector<tcu::Vec4>		m_testColors;
 };
 
 PushDescriptorBufferComputeTestInstance::PushDescriptorBufferComputeTestInstance (Context& context, const TestParams& params)
@@ -768,9 +770,25 @@ void PushDescriptorBufferComputeTestInstance::init (void)
 		m_pipelineLayout = createPipelineLayout(m_vkd, *m_device, &pipelineLayoutParams);
 	}
 
+	// Fill the test colors table
+	m_testColors.resize(m_params.numCalls);
+	for (deUint32 colorIdx = 0; colorIdx < m_params.numCalls; colorIdx++)
+	{
+		if (colorIdx < DE_LENGTH_OF_ARRAY(defaultTestColors))
+			m_testColors[colorIdx] = defaultTestColors[colorIdx];
+		else
+		{
+			const float mix = static_cast<float>(colorIdx) / static_cast<float>(m_params.numCalls - 1);
+
+			// interpolate between first and last color, require these colors to be different
+			DE_ASSERT(defaultTestColors[0] != defaultTestColors[DE_LENGTH_OF_ARRAY(defaultTestColors) - 1]);
+			m_testColors[colorIdx] = defaultTestColors[0] * mix + defaultTestColors[DE_LENGTH_OF_ARRAY(defaultTestColors) - 1] * (1.0f - mix);
+		}
+	}
+
 	// Create buffers. One color value in each buffer.
 	{
-		for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(testColors); bufIdx++)
+		for (deUint32 bufIdx = 0; bufIdx <  m_params.numCalls; bufIdx++)
 		{
 			const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
@@ -790,7 +808,7 @@ void PushDescriptorBufferComputeTestInstance::init (void)
 			m_bufferAllocs.push_back(AllocationSp(m_allocator.allocate(getBufferMemoryRequirements(m_vkd, *m_device, **m_buffers[bufIdx]), MemoryRequirement::HostVisible).release()));
 			VK_CHECK(m_vkd.bindBufferMemory(*m_device, **m_buffers[bufIdx], m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset()));
 
-			deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &testColors[bufIdx], 16u);
+			deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &m_testColors[bufIdx], 16u);
 			flushAlloc(m_vkd, *m_device, *m_bufferAllocs[bufIdx]);
 		}
 	}
@@ -802,7 +820,7 @@ void PushDescriptorBufferComputeTestInstance::init (void)
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
 			0u,										// VkBufferCreateFlags	flags
-			32u,									// VkDeviceSize			size;
+			16u * m_params.numCalls,				// VkDeviceSize			size;
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
 			1u,										// deUint32				queueFamilyCount;
@@ -927,7 +945,7 @@ tcu::TestStatus PushDescriptorBufferComputeTestInstance::verifyOutput (void)
 	invalidateAlloc(m_vkd, *m_device, *m_outputBufferAlloc);
 
 	// Verify result
-	if (deMemCmp((void*)testColors, m_outputBufferAlloc->getHostPtr(), (size_t)(16u * m_params.numCalls)))
+	if (deMemCmp((void*)&m_testColors[0], m_outputBufferAlloc->getHostPtr(), (size_t)(16u * m_params.numCalls)))
 	{
 		return tcu::TestStatus::fail("Output mismatch");
 	}
@@ -2719,7 +2737,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 	}
 
 	// Create buffers
-	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(testColors); bufIdx++)
+	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(defaultTestColors); bufIdx++)
 	{
 		const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ? VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 
@@ -2739,12 +2757,12 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 		m_bufferAllocs.push_back(AllocationSp(m_allocator.allocate(getBufferMemoryRequirements(m_vkd, *m_device, **m_buffers[bufIdx]), MemoryRequirement::HostVisible).release()));
 		VK_CHECK(m_vkd.bindBufferMemory(*m_device, **m_buffers[bufIdx], m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset()));
 
-		deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &testColors[bufIdx], 16u);
+		deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &defaultTestColors[bufIdx], 16u);
 		flushMappedMemoryRange(m_vkd, *m_device, m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset(), 16u);
 	}
 
 	// Create buffer views
-	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(testColors); bufIdx++)
+	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(defaultTestColors); bufIdx++)
 	{
 		const VkBufferViewCreateInfo bufferViewParams =
 		{
@@ -2977,7 +2995,7 @@ tcu::TestStatus PushDescriptorTexelBufferGraphicsTestInstance::verifyImage (void
 	{
 		for (deUint32 quadIdx = 0; quadIdx < m_params.numCalls; quadIdx++)
 			for (deUint32 vertexIdx = 0; vertexIdx < 6; vertexIdx++)
-				m_vertices[quadIdx * 6 + vertexIdx].color.xyzw() = testColors[quadIdx];
+				m_vertices[quadIdx * 6 + vertexIdx].color.xyzw() = defaultTestColors[quadIdx];
 
 		refRenderer.draw(rr::RenderState(refRenderer.getViewportState()), rr::PRIMITIVETYPE_TRIANGLES, m_vertices);
 	}
@@ -3144,7 +3162,7 @@ PushDescriptorTexelBufferComputeTestInstance::PushDescriptorTexelBufferComputeTe
 void PushDescriptorTexelBufferComputeTestInstance::init (void)
 {
 	// Create buffers
-	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(testColors); bufIdx++)
+	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(defaultTestColors); bufIdx++)
 	{
 		const VkBufferUsageFlags	usageFlags			= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER ? VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 
@@ -3164,12 +3182,12 @@ void PushDescriptorTexelBufferComputeTestInstance::init (void)
 		m_bufferAllocs.push_back(AllocationSp(m_allocator.allocate(getBufferMemoryRequirements(m_vkd, *m_device, **m_buffers[bufIdx]), MemoryRequirement::HostVisible).release()));
 		VK_CHECK(m_vkd.bindBufferMemory(*m_device, **m_buffers[bufIdx], m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset()));
 
-		deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &testColors[bufIdx], 16u);
+		deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &defaultTestColors[bufIdx], 16u);
 		flushMappedMemoryRange(m_vkd, *m_device, m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset(), 16u);
 	}
 
 	// Create buffer views
-	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(testColors); bufIdx++)
+	for (deUint32 bufIdx = 0; bufIdx < DE_LENGTH_OF_ARRAY(defaultTestColors); bufIdx++)
 	{
 		const VkBufferViewCreateInfo bufferViewParams =
 		{
@@ -4121,6 +4139,7 @@ tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx)
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			0u, 2u },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			1u, 2u },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			3u, 2u },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			1u, 128u },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	0u, 1u },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	0u, 2u },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1u, 2u },
@@ -4164,13 +4183,15 @@ tcu::TestCaseGroup* createPushDescriptorTests (tcu::TestContext& testCtx)
 		{
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
 				testName += "_uniform_buffer";
-				graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				if (params[testIdx].numCalls <= 2)
+					graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
 				computeTests->addChild(new PushDescriptorBufferComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
 				break;
 
 			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
 				testName += "_storage_buffer";
-				graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
+				if (params[testIdx].numCalls <= 2)
+					graphicsTests->addChild(new PushDescriptorBufferGraphicsTest(testCtx, testName.c_str(), "", params[testIdx]));
 				computeTests->addChild(new PushDescriptorBufferComputeTest(testCtx, testName.c_str(), "", params[testIdx]));
 				break;
 
