@@ -191,6 +191,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleResolveTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTestsUtil.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessBufferAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp \

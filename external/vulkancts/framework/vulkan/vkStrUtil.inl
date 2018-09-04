@@ -494,6 +494,13 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorP
 std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAttachmentDescription2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAttachmentReference2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubpassDescription2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubpassDependency2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassCreateInfo2KHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubpassBeginInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubpassEndInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSharedPresentSurfaceCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportFenceWin32HandleInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExportFenceWin32HandleInfoKHR& value);
