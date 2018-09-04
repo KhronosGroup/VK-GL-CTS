@@ -93,12 +93,6 @@ enum
 	MAX_COLOR_ATTACHMENT_COUNT = 4u
 };
 
-enum RenderPassType
-{
-	RENDERPASS_TYPE_LEGACY = 0,
-	RENDERPASS_TYPE_RENDERPASS2,
-};
-
 template<typename T>
 de::SharedPtr<T> safeSharedPtr (T* ptr)
 {

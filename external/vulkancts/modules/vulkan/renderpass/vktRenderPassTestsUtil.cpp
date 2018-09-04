@@ -23,7 +23,10 @@
 
 #include "vktRenderPassTestsUtil.hpp"
 #include "tcuTestCase.hpp"
+#include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
+
+#include <vector>
 
 using namespace vk;
 
@@ -364,7 +367,432 @@ void RenderpassSubpass2::cmdEndRenderPass (const DeviceInterface&	vk,
 	vk.cmdEndRenderPass2KHR(cmdBuffer, pSubpassEndInfo);
 }
 
+// For internal to RP/RP2 conversions
+
+AttachmentReference::AttachmentReference (deUint32				attachment,
+										  VkImageLayout			layout,
+										  VkImageAspectFlags	aspectMask)
+
+	:m_attachment	(attachment)
+	,m_layout		(layout)
+	,m_aspectMask	(aspectMask)
+{
+}
+
+deUint32 AttachmentReference::getAttachment (void) const
+{
+	return m_attachment;
+}
+
+VkImageLayout AttachmentReference::getImageLayout (void) const
+{
+	return m_layout;
+}
+
+VkImageAspectFlags AttachmentReference::getAspectMask (void) const
+{
+	return m_aspectMask;
+}
+
+void AttachmentReference::setImageLayout (VkImageLayout layout)
+{
+	m_layout = layout;
+}
+
+Subpass::Subpass (VkPipelineBindPoint						pipelineBindPoint,
+				  VkSubpassDescriptionFlags					flags,
+				  const std::vector<AttachmentReference>&	inputAttachments,
+				  const std::vector<AttachmentReference>&	colorAttachments,
+				  const std::vector<AttachmentReference>&	resolveAttachments,
+				  AttachmentReference						depthStencilAttachment,
+				  const std::vector<deUint32>&				preserveAttachments,
+				  bool										omitBlendState)
+
+	:m_pipelineBindPoint		(pipelineBindPoint)
+	,m_flags					(flags)
+	,m_inputAttachments			(inputAttachments)
+	,m_colorAttachments			(colorAttachments)
+	,m_resolveAttachments		(resolveAttachments)
+	,m_depthStencilAttachment	(depthStencilAttachment)
+	,m_preserveAttachments		(preserveAttachments)
+	,m_omitBlendState			(omitBlendState)
+{
+}
+
+VkPipelineBindPoint Subpass::getPipelineBindPoint (void) const
+{
+	return m_pipelineBindPoint;
+}
+
+VkSubpassDescriptionFlags Subpass::getFlags (void) const
+{
+	return m_flags;
+}
+
+const std::vector<AttachmentReference>& Subpass::getInputAttachments (void) const
+{
+	return m_inputAttachments;
+}
+
+const std::vector<AttachmentReference>& Subpass::getColorAttachments (void) const
+{
+	return m_colorAttachments;
+}
+
+const std::vector<AttachmentReference>& Subpass::getResolveAttachments (void) const
+{
+	return m_resolveAttachments;
+}
+
+const AttachmentReference& Subpass::getDepthStencilAttachment (void) const
+{
+	return m_depthStencilAttachment;
+}
+
+const std::vector<deUint32>& Subpass::getPreserveAttachments (void) const
+{
+	return m_preserveAttachments;
+}
+
+bool Subpass::getOmitBlendState (void) const
+{
+	return m_omitBlendState;
+}
+
+SubpassDependency::SubpassDependency (deUint32				srcPass,
+									  deUint32				dstPass,
+
+									  VkPipelineStageFlags	srcStageMask,
+									  VkPipelineStageFlags	dstStageMask,
+
+									  VkAccessFlags			srcAccessMask,
+									  VkAccessFlags			dstAccessMask,
+
+									  VkDependencyFlags		flags)
+
+	: m_srcPass			(srcPass)
+	, m_dstPass			(dstPass)
+
+	, m_srcStageMask	(srcStageMask)
+	, m_dstStageMask	(dstStageMask)
+
+	, m_srcAccessMask	(srcAccessMask)
+	, m_dstAccessMask	(dstAccessMask)
+	, m_flags			(flags)
+{
+}
+
+deUint32 SubpassDependency::getSrcPass (void) const
+{
+	return m_srcPass;
+}
+
+deUint32 SubpassDependency::getDstPass (void) const
+{
+	return m_dstPass;
+}
+
+VkPipelineStageFlags SubpassDependency::getSrcStageMask (void) const
+{
+	return m_srcStageMask;
+}
+
+VkPipelineStageFlags SubpassDependency::getDstStageMask (void) const
+{
+	return m_dstStageMask;
+}
+
+VkAccessFlags SubpassDependency::getSrcAccessMask (void) const
+{
+	return m_srcAccessMask;
+}
+
+VkAccessFlags SubpassDependency::getDstAccessMask (void) const
+{
+	return m_dstAccessMask;
+}
+
+VkDependencyFlags SubpassDependency::getFlags (void) const
+{
+	return m_flags;
+}
+
+Attachment::Attachment (VkFormat				format,
+						VkSampleCountFlagBits	samples,
+
+						VkAttachmentLoadOp		loadOp,
+						VkAttachmentStoreOp		storeOp,
+
+						VkAttachmentLoadOp		stencilLoadOp,
+						VkAttachmentStoreOp		stencilStoreOp,
+
+						VkImageLayout			initialLayout,
+						VkImageLayout			finalLayout)
+
+	: m_format			(format)
+	, m_samples			(samples)
+	, m_loadOp			(loadOp)
+	, m_storeOp			(storeOp)
+	, m_stencilLoadOp	(stencilLoadOp)
+	, m_stencilStoreOp	(stencilStoreOp)
+	, m_initialLayout	(initialLayout)
+	, m_finalLayout		(finalLayout)
+{
+}
+
+VkFormat Attachment::getFormat (void) const
+{
+	return m_format;
+}
+
+VkSampleCountFlagBits Attachment::getSamples (void) const
+{
+	return m_samples;
+}
+
+VkAttachmentLoadOp Attachment::getLoadOp (void) const
+{
+	return m_loadOp;
+}
+
+VkAttachmentStoreOp Attachment::getStoreOp (void) const
+{
+	return m_storeOp;
+}
+
+VkAttachmentLoadOp Attachment::getStencilLoadOp (void) const
+{
+	return m_stencilLoadOp;
+}
+
+VkAttachmentStoreOp Attachment::getStencilStoreOp (void) const
+{
+	return m_stencilStoreOp;
+}
+
+VkImageLayout Attachment::getInitialLayout (void) const
+{
+	return m_initialLayout;
+}
+
+VkImageLayout Attachment::getFinalLayout (void) const
+{
+	return m_finalLayout;
+}
+
+RenderPass::RenderPass (const std::vector<Attachment>&						attachments,
+						const std::vector<Subpass>&							subpasses,
+						const std::vector<SubpassDependency>&				dependencies,
+						const std::vector<VkInputAttachmentAspectReference>	inputAspects)
+
+	: m_attachments		(attachments)
+	, m_subpasses		(subpasses)
+	, m_dependencies	(dependencies)
+	, m_inputAspects	(inputAspects)
+{
+}
+
+const std::vector<Attachment>& RenderPass::getAttachments (void) const
+{
+	return m_attachments;
+}
+
+const std::vector<Subpass>& RenderPass::getSubpasses (void) const
+{
+	return m_subpasses;
+}
+
+const std::vector<SubpassDependency>& RenderPass::getDependencies (void) const
+{
+	return m_dependencies;
+}
+
+const std::vector<VkInputAttachmentAspectReference>& RenderPass::getInputAspects (void) const
+{
+	return m_inputAspects;
+}
+
+template <typename AttachmentDesc>
+AttachmentDesc createAttachmentDescription (const Attachment& attachment)
+{
+	const AttachmentDesc attachmentDescription	//  VkAttachmentDescription							||  VkAttachmentDescription2KHR
+	(
+												//													||  VkStructureType					sType;
+		DE_NULL,								//													||  const void*						pNext;
+		0u,										//  VkAttachmentDescriptionFlags	flags;			||  VkAttachmentDescriptionFlags	flags;
+		attachment.getFormat(),					//  VkFormat						format;			||  VkFormat						format;
+		attachment.getSamples(),				//  VkSampleCountFlagBits			samples;		||  VkSampleCountFlagBits			samples;
+		attachment.getLoadOp(),					//  VkAttachmentLoadOp				loadOp;			||  VkAttachmentLoadOp				loadOp;
+		attachment.getStoreOp(),				//  VkAttachmentStoreOp				storeOp;		||  VkAttachmentStoreOp				storeOp;
+		attachment.getStencilLoadOp(),			//  VkAttachmentLoadOp				stencilLoadOp;	||  VkAttachmentLoadOp				stencilLoadOp;
+		attachment.getStencilStoreOp(),			//  VkAttachmentStoreOp				stencilStoreOp;	||  VkAttachmentStoreOp				stencilStoreOp;
+		attachment.getInitialLayout(),			//  VkImageLayout					initialLayout;	||  VkImageLayout					initialLayout;
+		attachment.getFinalLayout()				//  VkImageLayout					finalLayout;	||  VkImageLayout					finalLayout;
+	);
+
+	return attachmentDescription;
+}
+
+template <typename AttachmentRef>
+AttachmentRef createAttachmentReference (const AttachmentReference& referenceInfo)
+{
+	const AttachmentRef	reference		//  VkAttachmentReference				||  VkAttachmentReference2KHR
+	(
+										//										||  VkStructureType				sType;
+		DE_NULL,						//										||  const void*					pNext;
+		referenceInfo.getAttachment(),	//  deUint32				attachment;	||  deUint32					attachment;
+		referenceInfo.getImageLayout(),	//  VkImageLayout			layout;		||  VkImageLayout				layout;
+		referenceInfo.getAspectMask()	//										||  VkImageAspectFlags			aspectMask;
+	);
+
+	return reference;
+}
+
+template <typename SubpassDesc, typename AttachmentRef>
+SubpassDesc createSubpassDescription (const Subpass&				subpass,
+									  std::vector<AttachmentRef>*	attachmentReferenceLists,
+									  std::vector<deUint32>*		preserveAttachmentReferences)
+{
+	std::vector<AttachmentRef>&	inputAttachmentReferences			= attachmentReferenceLists[0];
+	std::vector<AttachmentRef>&	colorAttachmentReferences			= attachmentReferenceLists[1];
+	std::vector<AttachmentRef>&	resolveAttachmentReferences			= attachmentReferenceLists[2];
+	std::vector<AttachmentRef>&	depthStencilAttachmentReferences	= attachmentReferenceLists[3];
+
+	for (size_t attachmentNdx = 0; attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
+		colorAttachmentReferences.push_back(createAttachmentReference<AttachmentRef>(subpass.getColorAttachments()[attachmentNdx]));
+
+	for (size_t attachmentNdx = 0; attachmentNdx < subpass.getInputAttachments().size(); attachmentNdx++)
+		inputAttachmentReferences.push_back(createAttachmentReference<AttachmentRef>(subpass.getInputAttachments()[attachmentNdx]));
+
+	for (size_t attachmentNdx = 0; attachmentNdx < subpass.getResolveAttachments().size(); attachmentNdx++)
+		resolveAttachmentReferences.push_back(createAttachmentReference<AttachmentRef>(subpass.getResolveAttachments()[attachmentNdx]));
+
+	depthStencilAttachmentReferences.push_back(createAttachmentReference<AttachmentRef>(subpass.getDepthStencilAttachment()));
+
+	for (size_t attachmentNdx = 0; attachmentNdx < subpass.getPreserveAttachments().size(); attachmentNdx++)
+		preserveAttachmentReferences->push_back(subpass.getPreserveAttachments()[attachmentNdx]);
+
+	DE_ASSERT(resolveAttachmentReferences.empty() || colorAttachmentReferences.size() == resolveAttachmentReferences.size());
+
+	{
+		const SubpassDesc subpassDescription														//  VkSubpassDescription										||  VkSubpassDescription2KHR
+		(
+																									//																||  VkStructureType						sType;
+			DE_NULL,																				//																||  const void*							pNext;
+			subpass.getFlags(),																		//  VkSubpassDescriptionFlags		flags;						||  VkSubpassDescriptionFlags			flags;
+			subpass.getPipelineBindPoint(),															//  VkPipelineBindPoint				pipelineBindPoint;			||  VkPipelineBindPoint					pipelineBindPoint;
+			0u,																						//																||  deUint32							viewMask;
+			(deUint32)inputAttachmentReferences.size(),												//  deUint32						inputAttachmentCount;		||  deUint32							inputAttachmentCount;
+			inputAttachmentReferences.empty() ? DE_NULL : &inputAttachmentReferences[0],			//  const VkAttachmentReference*	pInputAttachments;			||  const VkAttachmentReference2KHR*	pInputAttachments;
+			(deUint32)colorAttachmentReferences.size(),												//  deUint32						colorAttachmentCount;		||  deUint32							colorAttachmentCount;
+			colorAttachmentReferences.empty() ? DE_NULL :  &colorAttachmentReferences[0],			//  const VkAttachmentReference*	pColorAttachments;			||  const VkAttachmentReference2KHR*	pColorAttachments;
+			resolveAttachmentReferences.empty() ? DE_NULL : &resolveAttachmentReferences[0],		//  const VkAttachmentReference*	pResolveAttachments;		||  const VkAttachmentReference2KHR*	pResolveAttachments;
+			&depthStencilAttachmentReferences[0],													//  const VkAttachmentReference*	pDepthStencilAttachment;	||  const VkAttachmentReference2KHR*	pDepthStencilAttachment;
+			(deUint32)preserveAttachmentReferences->size(),											//  deUint32						preserveAttachmentCount;	||  deUint32							preserveAttachmentCount;
+			preserveAttachmentReferences->empty() ? DE_NULL : &(*preserveAttachmentReferences)[0]	//  const deUint32*					pPreserveAttachments;		||  const deUint32*						pPreserveAttachments;
+		);
+
+		return subpassDescription;
+	}
+}
+
+template <typename SubpassDep>
+SubpassDep createSubpassDependency (const SubpassDependency& dependencyInfo)
+{
+	const SubpassDep dependency				//  VkSubpassDependency						||  VkSubpassDependency2KHR
+	(
+											//											||	VkStructureType				sType
+		DE_NULL,							//											||	const void*					pNext
+		dependencyInfo.getSrcPass(),		//  deUint32				srcSubpass		||	deUint32					srcSubpass
+		dependencyInfo.getDstPass(),		//  deUint32				dstSubpass		||	deUint32					dstSubpass
+		dependencyInfo.getSrcStageMask(),	//  VkPipelineStageFlags	srcStageMask	||	VkPipelineStageFlags		srcStageMask
+		dependencyInfo.getDstStageMask(),	//  VkPipelineStageFlags	dstStageMask	||	VkPipelineStageFlags		dstStageMask
+		dependencyInfo.getSrcAccessMask(),	//  VkAccessFlags			srcAccessMask	||	VkAccessFlags				srcAccessMask
+		dependencyInfo.getDstAccessMask(),	//  VkAccessFlags			dstAccessMask	||	VkAccessFlags				dstAccessMask
+		dependencyInfo.getFlags(),			//  VkDependencyFlags		dependencyFlags	||	VkDependencyFlags			dependencyFlags
+		0u									//	deInt32					viewOffset		||	deInt32						viewOffset
+	);
+
+	return dependency;
+}
+
+de::MovePtr<VkRenderPassInputAttachmentAspectCreateInfo> createRenderPassInputAttachmentAspectCreateInfo (const RenderPass& renderPassInfo)
+{
+	de::MovePtr<VkRenderPassInputAttachmentAspectCreateInfo> result (DE_NULL);
+
+	if (!renderPassInfo.getInputAspects().empty())
+	{
+		const VkRenderPassInputAttachmentAspectCreateInfo	inputAspectCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO,
+			DE_NULL,
+
+			(deUint32)renderPassInfo.getInputAspects().size(),
+			renderPassInfo.getInputAspects().data(),
+		};
+
+		result = de::MovePtr<VkRenderPassInputAttachmentAspectCreateInfo>(new VkRenderPassInputAttachmentAspectCreateInfo(inputAspectCreateInfo));
+	}
+
+	return result;
+}
+
+template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
+Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
+									 VkDevice				device,
+									 const RenderPass&		renderPassInfo)
+{
+	const size_t												perSubpassAttachmentReferenceLists = 4;
+	std::vector<AttachmentDesc>									attachments;
+	std::vector<SubpassDesc>									subpasses;
+	std::vector<SubpassDep>										dependencies;
+	std::vector<std::vector<AttachmentRef> >					attachmentReferenceLists(renderPassInfo.getSubpasses().size() * perSubpassAttachmentReferenceLists);
+	std::vector<std::vector<deUint32> >							preserveAttachments(renderPassInfo.getSubpasses().size());
+	de::MovePtr<VkRenderPassInputAttachmentAspectCreateInfo>	inputAspectCreateInfo(createRenderPassInputAttachmentAspectCreateInfo(renderPassInfo));
+
+	for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
+		attachments.push_back(createAttachmentDescription<AttachmentDesc>(renderPassInfo.getAttachments()[attachmentNdx]));
+
+	for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); subpassNdx++)
+		subpasses.push_back(createSubpassDescription<SubpassDesc>(renderPassInfo.getSubpasses()[subpassNdx], &(attachmentReferenceLists[subpassNdx * perSubpassAttachmentReferenceLists]), &preserveAttachments[subpassNdx]));
+
+	for (size_t depNdx = 0; depNdx < renderPassInfo.getDependencies().size(); depNdx++)
+		dependencies.push_back(createSubpassDependency<SubpassDep>(renderPassInfo.getDependencies()[depNdx]));
+
+	const RenderPassCreateInfo	renderPassCreator				//  VkRenderPassCreateInfo								||  VkRenderPassCreateInfo2KHR
+	(
+																//  VkStructureType					sType;				||  VkStructureType						sType;
+		inputAspectCreateInfo.get(),							//  const void*						pNext;				||  const void*							pNext;
+		(VkRenderPassCreateFlags)0u,							//  VkRenderPassCreateFlags			flags;				||  VkRenderPassCreateFlags				flags;
+		(deUint32)attachments.size(),							//  deUint32						attachmentCount;	||  deUint32							attachmentCount;
+		(attachments.empty() ? DE_NULL : &attachments[0]),		//  const VkAttachmentDescription*	pAttachments;		||  const VkAttachmentDescription2KHR*	pAttachments;
+		(deUint32)subpasses.size(),								//  deUint32						subpassCount;		||  deUint32							subpassCount;
+		(subpasses.empty() ? DE_NULL : &subpasses[0]),			//  const VkSubpassDescription*		pSubpasses;			||  const VkSubpassDescription2KHR*		pSubpasses;
+		(deUint32)dependencies.size(),							//  deUint32						dependencyCount;	||  deUint32							dependencyCount;
+		(dependencies.empty() ? DE_NULL : &dependencies[0]),	//  const VkSubpassDependency*		pDependencies;		||  const VkSubpassDependency2KHR*		pDependencies;
+		0u,														//														||  deUint32							correlatedViewMaskCount;
+		DE_NULL													//														||  const deUint32*						pCorrelatedViewMasks;
+	);
+
+	return renderPassCreator.createRenderPass(vk, device);
+}
+
+Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
+									 VkDevice				device,
+									 const RenderPass&		renderPassInfo,
+									 const RenderPassType	renderPassType)
+{
+	switch (renderPassType)
+	{
+		case RENDERPASS_TYPE_LEGACY:
+			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, device, renderPassInfo);
+		case RENDERPASS_TYPE_RENDERPASS2:
+			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, device, renderPassInfo);
+		default:
+			TCU_THROW(InternalError, "Impossible");
+	}
+}
+
 } // renderpass
 
 } // vkt
-
