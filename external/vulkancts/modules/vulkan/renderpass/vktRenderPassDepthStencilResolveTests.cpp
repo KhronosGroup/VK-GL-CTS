@@ -91,33 +91,13 @@ enum VerifyBuffer
 
 struct TestConfig
 {
-	TestConfig(VkFormat format_,
-			   deUint32 width_,
-			   deUint32 height_,
-			   deUint32 depth_,
-			   VkImageAspectFlags aspectFlag_,
-			   deUint32 sampleCount_,
-			   VkResolveModeFlagBitsKHR depthResolveMode_,
-			   VkResolveModeFlagBitsKHR stencilResolveMode_,
-			   VerifyBuffer verifyBuffer_,
-			   float expectedValue_)
-		: format(format_)
-		, width(width_)
-		, height(height_)
-		, depth(depth_)
-		, aspectFlag(aspectFlag_)
-		, sampleCount(sampleCount_)
-		, depthResolveMode(depthResolveMode_)
-		, stencilResolveMode(stencilResolveMode_)
-		, verifyBuffer(verifyBuffer_)
-		, expectedValue(expectedValue_)
-	{
-	}
-
 	VkFormat					format;
 	deUint32					width;
 	deUint32					height;
-	deUint32					depth;
+	deUint32					imageLayers;
+	deUint32					viewLayers;
+	deUint32					resolveBaseLayer;
+	VkRect2D					renderArea;
 	VkImageAspectFlags			aspectFlag;
 	deUint32					sampleCount;
 	VkResolveModeFlagBitsKHR	depthResolveMode;
@@ -126,45 +106,57 @@ struct TestConfig
 	float						expectedValue;
 };
 
-class DepthStencilRenderPassTestInstance : public TestInstance
+float get16bitDepthComponent(deUint8* pixelPtr)
+{
+	deUint16* value = reinterpret_cast<deUint16*>(pixelPtr);
+	return static_cast<float>(*value) / 65535.0f;
+}
+
+float get24bitDepthComponent(deUint8* pixelPtr)
+{
+	const bool littleEndian = (DE_ENDIANNESS == DE_LITTLE_ENDIAN);
+	deUint32 value = (((deUint32)pixelPtr[0]) << (!littleEndian * 16u)) |
+						(((deUint32)pixelPtr[1]) <<  8u) |
+						(((deUint32)pixelPtr[2]) << ( littleEndian * 16u));
+	return static_cast<float>(value) / 16777215.0f;
+}
+
+float get32bitDepthComponent(deUint8* pixelPtr)
+{
+	return *(reinterpret_cast<float*>(pixelPtr));
+}
+
+class DepthStencilResolveTest : public TestInstance
 {
 public:
-								DepthStencilRenderPassTestInstance	(Context& context, TestConfig config);
-								~DepthStencilRenderPassTestInstance	(void);
+								DepthStencilResolveTest		(Context& context, TestConfig config);
+	virtual						~DepthStencilResolveTest	(void);
 
-	tcu::TestStatus				iterate (void);
+	virtual tcu::TestStatus		iterate (void);
 
-private:
+protected:
 	bool						isFeaturesSupported				(void);
+	VkSampleCountFlagBits		sampleCountBitFromSampleCount	(deUint32 count) const;
+
 	VkImageSp					createImage						(deUint32 sampleCount, VkImageUsageFlags additionalUsage = 0u);
-	VkImageViewSp				createImageView					(VkImageSp image);
 	AllocationSp				createImageMemory				(VkImageSp image);
-	Move<VkRenderPass>			createRenderPass				(void);
-	Move<VkFramebuffer>			createFramebuffer				(void);
-	Move<VkPipelineLayout>		createRenderPipelineLayout		(void);
-	Move<VkPipeline>			createRenderPipeline			(void);
+	VkImageViewSp				createImageView					(VkImageSp image, deUint32 baseArrayLayer);
 	AllocationSp				createBufferMemory				(void);
 	VkBufferSp					createBuffer					(void);
 
-	VkSampleCountFlagBits		sampleCountBitFromSampleCount	(deUint32 count) const;
+	Move<VkRenderPass>			createRenderPass				(void);
+	Move<VkFramebuffer>			createFramebuffer				(VkRenderPass renderPass, VkImageViewSp multisampleImageView, VkImageViewSp singlesampleImageView);
+	Move<VkPipelineLayout>		createRenderPipelineLayout		(void);
+	Move<VkPipeline>			createRenderPipeline			(VkRenderPass renderPass, VkPipelineLayout renderPipelineLayout);
 
 	void						submit							(void);
-	bool						verify							(void);
+	bool						verifyDepth						(void);
+	bool						verifyStencil					(void);
 
-private:
-	const VkFormat					m_format;
-	const VkImageAspectFlags		m_aspectFlag;
-	const VkResolveModeFlagBitsKHR	m_depthResolveMode;
-	const VkResolveModeFlagBitsKHR	m_stencilResolveMode;
-	VerifyBuffer					m_verifyBuffer;
-	float							m_expectedValue;
-
-	const deUint32					m_sampleCount;
-	const deUint32					m_width;
-	const deUint32					m_height;
-	const deUint32					m_depth;
-
+protected:
+	const TestConfig				m_config;
 	const bool						m_featureSupported;
+
 	const InstanceInterface&		m_vki;
 	const DeviceInterface&			m_vkd;
 	VkDevice						m_device;
@@ -173,69 +165,62 @@ private:
 	VkImageSp						m_multisampleImage;
 	AllocationSp					m_multisampleImageMemory;
 	VkImageViewSp					m_multisampleImageView;
-
 	VkImageSp						m_singlesampleImage;
 	AllocationSp					m_singlesampleImageMemory;
 	VkImageViewSp					m_singlesampleImageView;
-
-	const Unique<VkRenderPass>		m_renderPass;
-	const Unique<VkFramebuffer>		m_framebuffer;
-
-	const Unique<VkPipelineLayout>	m_renderPipelineLayout;
-	const Unique<VkPipeline>		m_renderPipeline;
-
 	VkBufferSp						m_buffer;
 	AllocationSp					m_bufferMemory;
 
+	Unique<VkRenderPass>			m_renderPass;
+	Unique<VkFramebuffer>			m_framebuffer;
+	Unique<VkPipelineLayout>		m_renderPipelineLayout;
+	Unique<VkPipeline>				m_renderPipeline;
+
 	const Unique<VkCommandPool>		m_commandPool;
+	VkClearDepthStencilValue		m_clearValue;
 };
 
-DepthStencilRenderPassTestInstance::DepthStencilRenderPassTestInstance (Context& context, TestConfig config)
+DepthStencilResolveTest::DepthStencilResolveTest (Context& context, TestConfig config)
 	: TestInstance				(context)
-	, m_format					(config.format)
-	, m_aspectFlag				(config.aspectFlag)
-	, m_depthResolveMode		(config.depthResolveMode)
-	, m_stencilResolveMode		(config.stencilResolveMode)
-	, m_verifyBuffer			(config.verifyBuffer)
-	, m_expectedValue			(config.expectedValue)
-	, m_sampleCount				(config.sampleCount)
-	, m_width					(config.width)
-	, m_height					(config.height)
-	, m_depth					(config.depth)
+	, m_config					(config)
 	, m_featureSupported		(isFeaturesSupported())
 	, m_vki						(context.getInstanceInterface())
 	, m_vkd						(context.getDeviceInterface())
 	, m_device					(context.getDevice())
 	, m_physicalDevice			(context.getPhysicalDevice())
 
-	, m_multisampleImage		(createImage(m_sampleCount))
+	, m_multisampleImage		(createImage(m_config.sampleCount))
 	, m_multisampleImageMemory	(createImageMemory(m_multisampleImage))
-	, m_multisampleImageView	(createImageView(m_multisampleImage))
+	, m_multisampleImageView	(createImageView(m_multisampleImage, 0u))
 
 	, m_singlesampleImage		(createImage(1, VK_IMAGE_USAGE_TRANSFER_SRC_BIT))
 	, m_singlesampleImageMemory	(createImageMemory(m_singlesampleImage))
-	, m_singlesampleImageView	(createImageView(m_singlesampleImage))
-
-	, m_renderPass				(createRenderPass())
-	, m_framebuffer				(createFramebuffer())
-
-	, m_renderPipelineLayout	(createRenderPipelineLayout())
-	, m_renderPipeline			(createRenderPipeline())
+	, m_singlesampleImageView	(createImageView(m_singlesampleImage, m_config.resolveBaseLayer))
 
 	, m_buffer					(createBuffer())
 	, m_bufferMemory			(createBufferMemory())
 
+	, m_renderPass				(createRenderPass())
+	, m_framebuffer				(createFramebuffer(*m_renderPass, m_multisampleImageView, m_singlesampleImageView))
+	, m_renderPipelineLayout	(createRenderPipelineLayout())
+	, m_renderPipeline			(createRenderPipeline(*m_renderPass, *m_renderPipelineLayout))
+
+
 	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
+	m_clearValue.depth		= 0.0f;
+	m_clearValue.stencil	= 0x0;
 }
 
-DepthStencilRenderPassTestInstance::~DepthStencilRenderPassTestInstance (void)
+DepthStencilResolveTest::~DepthStencilResolveTest (void)
 {
 }
 
-bool DepthStencilRenderPassTestInstance::isFeaturesSupported()
+bool DepthStencilResolveTest::isFeaturesSupported()
 {
 	m_context.requireDeviceExtension("VK_KHR_depth_stencil_resolve");
+	if (m_config.imageLayers > 1)
+		m_context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
 
 	VkPhysicalDeviceDepthStencilResolvePropertiesKHR dsResolveProperties;
 	deMemset(&dsResolveProperties, 0, sizeof(VkPhysicalDeviceDepthStencilResolvePropertiesKHR));
@@ -252,11 +237,13 @@ bool DepthStencilRenderPassTestInstance::isFeaturesSupported()
 	instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
 
 	// check if both modes are supported
-	if ((m_depthResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
-		!(m_depthResolveMode & dsResolveProperties.supportedDepthResolveModes))
+	VkResolveModeFlagBitsKHR depthResolveMode		= m_config.depthResolveMode;
+	VkResolveModeFlagBitsKHR stencilResolveMode		= m_config.stencilResolveMode;
+	if ((depthResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
+		!(depthResolveMode & dsResolveProperties.supportedDepthResolveModes))
 		TCU_THROW(NotSupportedError, "Depth resolve mode not supported");
-	if ((m_stencilResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
-		!(m_stencilResolveMode & dsResolveProperties.supportedStencilResolveModes))
+	if ((stencilResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
+		!(stencilResolveMode & dsResolveProperties.supportedStencilResolveModes))
 		TCU_THROW(NotSupportedError, "Stencil resolve mode not supported");
 
 	// check if the implementation supports setting the depth and stencil resolve
@@ -264,33 +251,51 @@ bool DepthStencilRenderPassTestInstance::isFeaturesSupported()
 	if (dsResolveProperties.independentResolveNone)
 	{
 		if ((!dsResolveProperties.independentResolve) &&
-			(m_depthResolveMode != m_stencilResolveMode) &&
-			(m_depthResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
-			(m_stencilResolveMode != VK_RESOLVE_MODE_NONE_KHR))
+			(depthResolveMode != stencilResolveMode) &&
+			(depthResolveMode != VK_RESOLVE_MODE_NONE_KHR) &&
+			(stencilResolveMode != VK_RESOLVE_MODE_NONE_KHR))
 			TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
 	}
-	else if (m_depthResolveMode != m_stencilResolveMode)
+	else if (depthResolveMode != stencilResolveMode)
 	{
 		// when independentResolveNone is VK_FALSE then both modes must be the same
 		TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
 	}
 
 	// check if the implementation supports all combinations of the supported depth and stencil resolve modes
-	if (!dsResolveProperties.independentResolve && (m_depthResolveMode != m_stencilResolveMode))
+	if (!dsResolveProperties.independentResolve && (depthResolveMode != stencilResolveMode))
 		TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
 
 	return true;
 }
 
-VkImageSp DepthStencilRenderPassTestInstance::createImage (deUint32 sampleCount, VkImageUsageFlags additionalUsage)
+VkSampleCountFlagBits DepthStencilResolveTest::sampleCountBitFromSampleCount (deUint32 count) const
 {
-	const tcu::TextureFormat	format(mapVkFormat(m_format));
+	switch (count)
+	{
+		case 1:  return VK_SAMPLE_COUNT_1_BIT;
+		case 2:  return VK_SAMPLE_COUNT_2_BIT;
+		case 4:  return VK_SAMPLE_COUNT_4_BIT;
+		case 8:  return VK_SAMPLE_COUNT_8_BIT;
+		case 16: return VK_SAMPLE_COUNT_16_BIT;
+		case 32: return VK_SAMPLE_COUNT_32_BIT;
+		case 64: return VK_SAMPLE_COUNT_64_BIT;
+
+		default:
+			DE_FATAL("Invalid sample count");
+			return (VkSampleCountFlagBits)0x0;
+	}
+}
+
+VkImageSp DepthStencilResolveTest::createImage (deUint32 sampleCount, VkImageUsageFlags additionalUsage)
+{
+	const tcu::TextureFormat	format(mapVkFormat(m_config.format));
 	const VkImageTiling			imageTiling(VK_IMAGE_TILING_OPTIMAL);
 	VkSampleCountFlagBits		sampleCountBit(sampleCountBitFromSampleCount(sampleCount));
 	VkImageUsageFlags			usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | additionalUsage;
 
 	VkImageFormatProperties imageFormatProperties;
-	if (m_vki.getPhysicalDeviceImageFormatProperties(m_physicalDevice, m_format, VK_IMAGE_TYPE_2D, imageTiling,
+	if (m_vki.getPhysicalDeviceImageFormatProperties(m_physicalDevice, m_config.format, VK_IMAGE_TYPE_2D, imageTiling,
 													 usage, 0u, &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
 	{
 		TCU_THROW(NotSupportedError, "Format not supported");
@@ -299,12 +304,16 @@ VkImageSp DepthStencilRenderPassTestInstance::createImage (deUint32 sampleCount,
 	{
 		TCU_THROW(NotSupportedError, "Sample count not supported");
 	}
+	if (imageFormatProperties.maxArrayLayers < m_config.imageLayers)
+	{
+		TCU_THROW(NotSupportedError, "Layers count not supported");
+	}
 
 	const VkExtent3D imageExtent =
 	{
-		m_width,
-		m_height,
-		m_depth
+		m_config.width,
+		m_config.height,
+		1u
 	};
 
 	if (!(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order)))
@@ -312,8 +321,8 @@ VkImageSp DepthStencilRenderPassTestInstance::createImage (deUint32 sampleCount,
 
 	if (imageFormatProperties.maxExtent.width < imageExtent.width
 		|| imageFormatProperties.maxExtent.height < imageExtent.height
-		|| imageFormatProperties.maxExtent.depth < imageExtent.depth
-		|| ((imageFormatProperties.sampleCounts & sampleCountBit) == 0))
+		|| ((imageFormatProperties.sampleCounts & sampleCountBit) == 0)
+		|| imageFormatProperties.maxArrayLayers < m_config.imageLayers)
 	{
 		TCU_THROW(NotSupportedError, "Image type not supported");
 	}
@@ -324,10 +333,10 @@ VkImageSp DepthStencilRenderPassTestInstance::createImage (deUint32 sampleCount,
 		DE_NULL,
 		0u,
 		VK_IMAGE_TYPE_2D,
-		m_format,
+		m_config.format,
 		imageExtent,
 		1u,
-		1u,
+		m_config.imageLayers,
 		sampleCountBit,
 		imageTiling,
 		usage,
@@ -340,7 +349,7 @@ VkImageSp DepthStencilRenderPassTestInstance::createImage (deUint32 sampleCount,
 	return safeSharedPtr(new Unique<VkImage>(vk::createImage(m_vkd, m_device, &pCreateInfo)));
 }
 
-AllocationSp DepthStencilRenderPassTestInstance::createImageMemory (VkImageSp image)
+AllocationSp DepthStencilResolveTest::createImageMemory (VkImageSp image)
 {
 	Allocator& allocator = m_context.getDefaultAllocator();
 
@@ -349,15 +358,15 @@ AllocationSp DepthStencilRenderPassTestInstance::createImageMemory (VkImageSp im
 	return safeSharedPtr(allocation.release());
 }
 
-VkImageViewSp DepthStencilRenderPassTestInstance::createImageView (VkImageSp image)
+VkImageViewSp DepthStencilResolveTest::createImageView (VkImageSp image, deUint32 baseArrayLayer)
 {
-	const VkImageSubresourceRange	range =
+	const VkImageSubresourceRange range =
 	{
-		m_aspectFlag,
+		m_config.aspectFlag,
 		0u,
 		1u,
-		0u,
-		1u
+		baseArrayLayer,
+		m_config.viewLayers
 	};
 
 	const VkImageViewCreateInfo pCreateInfo =
@@ -366,24 +375,24 @@ VkImageViewSp DepthStencilRenderPassTestInstance::createImageView (VkImageSp ima
 		DE_NULL,
 		0u,
 		**image,
-		VK_IMAGE_VIEW_TYPE_2D,
-		m_format,
+		(m_config.viewLayers > 1) ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
+		m_config.format,
 		makeComponentMappingRGBA(),
 		range,
 	};
 	return safeSharedPtr(new Unique<VkImageView>(vk::createImageView(m_vkd, m_device, &pCreateInfo)));
 }
 
-Move<VkRenderPass> DepthStencilRenderPassTestInstance::createRenderPass (void)
+Move<VkRenderPass> DepthStencilResolveTest::createRenderPass (void)
 {
-	const VkSampleCountFlagBits samples(sampleCountBitFromSampleCount(m_sampleCount));
+	const VkSampleCountFlagBits samples(sampleCountBitFromSampleCount(m_config.sampleCount));
 
 	const AttachmentDescription2 multisampleAttachment		// VkAttachmentDescription2KHR
 	(
 															// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
 		0u,													// VkAttachmentDescriptionFlags		flags;
-		m_format,											// VkFormat							format;
+		m_config.format,									// VkFormat							format;
 		samples,											// VkSampleCountFlagBits			samples;
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				storeOp;
@@ -406,7 +415,7 @@ Move<VkRenderPass> DepthStencilRenderPassTestInstance::createRenderPass (void)
 															// VkStructureType					sType;
 		DE_NULL,											// const void*						pNext;
 		0u,													// VkAttachmentDescriptionFlags		flags;
-		m_format,											// VkFormat							format;
+		m_config.format,									// VkFormat							format;
 		VK_SAMPLE_COUNT_1_BIT,								// VkSampleCountFlagBits			samples;
 		VK_ATTACHMENT_LOAD_OP_CLEAR,						// VkAttachmentLoadOp				loadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
@@ -432,8 +441,8 @@ Move<VkRenderPass> DepthStencilRenderPassTestInstance::createRenderPass (void)
 	{
 		VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR,
 		DE_NULL,																// const void*						pNext;
-		m_depthResolveMode,														// VkResolveModeFlagBitsKHR			depthResolveMode;
-		m_stencilResolveMode,													// VkResolveModeFlagBitsKHR			stencilResolveMode;
+		m_config.depthResolveMode,												// VkResolveModeFlagBitsKHR			depthResolveMode;
+		m_config.stencilResolveMode,											// VkResolveModeFlagBitsKHR			stencilResolveMode;
 		&singlesampleAttachmentRef												// VkAttachmentReference2KHR		pDepthStencilResolveAttachment;
 	};
 
@@ -472,11 +481,11 @@ Move<VkRenderPass> DepthStencilRenderPassTestInstance::createRenderPass (void)
 	return renderPassCreator.createRenderPass(m_vkd, m_device);
 }
 
-Move<VkFramebuffer> DepthStencilRenderPassTestInstance::createFramebuffer (void)
+Move<VkFramebuffer> DepthStencilResolveTest::createFramebuffer (VkRenderPass renderPass, VkImageViewSp multisampleImageView, VkImageViewSp singlesampleImageView)
 {
 	std::vector<VkImageView> attachments;
-	attachments.push_back(**m_multisampleImageView);
-	attachments.push_back(**m_singlesampleImageView);
+	attachments.push_back(**multisampleImageView);
+	attachments.push_back(**singlesampleImageView);
 
 	const VkFramebufferCreateInfo createInfo =
 	{
@@ -484,27 +493,35 @@ Move<VkFramebuffer> DepthStencilRenderPassTestInstance::createFramebuffer (void)
 		DE_NULL,
 		0u,
 
-		*m_renderPass,
+		renderPass,
 		(deUint32)attachments.size(),
 		&attachments[0],
 
-		m_width,
-		m_height,
-		1u
+		m_config.width,
+		m_config.height,
+		m_config.viewLayers
 	};
 
 	return vk::createFramebuffer(m_vkd, m_device, &createInfo);
 }
 
-Move<VkPipelineLayout> DepthStencilRenderPassTestInstance::createRenderPipelineLayout (void)
+Move<VkPipelineLayout> DepthStencilResolveTest::createRenderPipelineLayout (void)
 {
-	const VkPushConstantRange pushConstant =
+	VkPushConstantRange pushConstant =
 	{
 		VK_SHADER_STAGE_FRAGMENT_BIT,
 		0u,
 		4u
 	};
-	bool constantNeeded = (m_verifyBuffer == VB_STENCIL);
+
+	deUint32				pushConstantRangeCount	= 0u;
+	VkPushConstantRange*	pPushConstantRanges		= DE_NULL;
+	if (m_config.verifyBuffer == VB_STENCIL)
+	{
+		pushConstantRangeCount	= 1u;
+		pPushConstantRanges		= &pushConstant;
+	}
+
 	const VkPipelineLayoutCreateInfo createInfo	=
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -514,20 +531,21 @@ Move<VkPipelineLayout> DepthStencilRenderPassTestInstance::createRenderPipelineL
 		0u,
 		DE_NULL,
 
-		constantNeeded ? 1u : 0u,
-		constantNeeded ? &pushConstant : DE_NULL
+		pushConstantRangeCount,
+		pPushConstantRanges
 	};
 
 	return vk::createPipelineLayout(m_vkd, m_device, &createInfo);
 }
 
-Move<VkPipeline> DepthStencilRenderPassTestInstance::createRenderPipeline (void)
+Move<VkPipeline> DepthStencilResolveTest::createRenderPipeline (VkRenderPass renderPass, VkPipelineLayout renderPipelineLayout)
 {
-	const bool testingStencil = (m_verifyBuffer == VB_STENCIL);
+	const bool testingStencil = (m_config.verifyBuffer == VB_STENCIL);
 	const vk::BinaryCollection& binaryCollection = m_context.getBinaryCollection();
 
-	const Unique<VkShaderModule> vertexShaderModule(createShaderModule(m_vkd, m_device, binaryCollection.get("quad-vert"), 0u));
-	const Unique<VkShaderModule> fragmentShaderModule(createShaderModule(m_vkd, m_device, binaryCollection.get("quad-frag"), 0u));
+	const Unique<VkShaderModule>	vertexShaderModule		(createShaderModule(m_vkd, m_device, binaryCollection.get("quad-vert"), 0u));
+	const Unique<VkShaderModule>	fragmentShaderModule	(createShaderModule(m_vkd, m_device, binaryCollection.get("quad-frag"), 0u));
+	const Move<VkShaderModule>		geometryShaderModule	(m_config.imageLayers == 1 ? Move<VkShaderModule>() : createShaderModule(m_vkd, m_device, binaryCollection.get("quad-geom"), 0u));
 
 	const VkPipelineVertexInputStateCreateInfo vertexInputState =
 	{
@@ -541,9 +559,9 @@ Move<VkPipeline> DepthStencilRenderPassTestInstance::createRenderPipeline (void)
 		0u,
 		DE_NULL
 	};
-	const tcu::UVec2				renderArea	(m_width, m_height);
-	const std::vector<VkViewport>	viewports	(1, makeViewport(renderArea));
-	const std::vector<VkRect2D>		scissors	(1, makeRect2D(renderArea));
+	const tcu::UVec2				view		(m_config.width, m_config.height);
+	const std::vector<VkViewport>	viewports	(1, makeViewport(view));
+	const std::vector<VkRect2D>		scissors	(1, m_config.renderArea);
 
 	const VkPipelineMultisampleStateCreateInfo multisampleState =
 	{
@@ -551,7 +569,7 @@ Move<VkPipeline> DepthStencilRenderPassTestInstance::createRenderPipeline (void)
 		DE_NULL,
 		(VkPipelineMultisampleStateCreateFlags)0u,
 
-		sampleCountBitFromSampleCount(m_sampleCount),
+		sampleCountBitFromSampleCount(m_config.sampleCount),
 		VK_FALSE,
 		0.0f,
 		DE_NULL,
@@ -604,13 +622,13 @@ Move<VkPipeline> DepthStencilRenderPassTestInstance::createRenderPipeline (void)
 
 	return makeGraphicsPipeline(m_vkd,															// const DeviceInterface&                        vk
 								m_device,														// const VkDevice                                device
-								*m_renderPipelineLayout,										// const VkPipelineLayout                        pipelineLayout
+								renderPipelineLayout,											// const VkPipelineLayout                        pipelineLayout
 								*vertexShaderModule,											// const VkShaderModule                          vertexShaderModule
 								DE_NULL,														// const VkShaderModule                          tessellationControlShaderModule
 								DE_NULL,														// const VkShaderModule                          tessellationEvalShaderModule
-								DE_NULL,														// const VkShaderModule                          geometryShaderModule
+								m_config.imageLayers == 1 ? DE_NULL : *geometryShaderModule,	// const VkShaderModule                          geometryShaderModule
 								*fragmentShaderModule,											// const VkShaderModule                          fragmentShaderModule
-								*m_renderPass,													// const VkRenderPass                            renderPass
+								renderPass,														// const VkRenderPass                            renderPass
 								viewports,														// const std::vector<VkViewport>&                viewports
 								scissors,														// const std::vector<VkRect2D>&                  scissors
 								VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,							// const VkPrimitiveTopology                     topology
@@ -624,7 +642,7 @@ Move<VkPipeline> DepthStencilRenderPassTestInstance::createRenderPipeline (void)
 								testingStencil ? &dynamicStateCreateInfo : DE_NULL);			// const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
 }
 
-AllocationSp DepthStencilRenderPassTestInstance::createBufferMemory (void)
+AllocationSp DepthStencilResolveTest::createBufferMemory (void)
 {
 	Allocator&				allocator = m_context.getDefaultAllocator();
 	de::MovePtr<Allocation> allocation(allocator.allocate(getBufferMemoryRequirements(m_vkd, m_device, **m_buffer), MemoryRequirement::HostVisible));
@@ -632,10 +650,10 @@ AllocationSp DepthStencilRenderPassTestInstance::createBufferMemory (void)
 	return safeSharedPtr(allocation.release());
 }
 
-VkBufferSp DepthStencilRenderPassTestInstance::createBuffer (void)
+VkBufferSp DepthStencilResolveTest::createBuffer (void)
 {
 	const VkBufferUsageFlags	bufferUsage			(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-	const tcu::TextureFormat	textureFormat		(mapVkFormat(m_format));
+	const tcu::TextureFormat	textureFormat		(mapVkFormat(m_config.format));
 	const VkDeviceSize			pixelSize			(textureFormat.getPixelSize());
 	const VkBufferCreateInfo	createInfo			=
 	{
@@ -643,7 +661,7 @@ VkBufferSp DepthStencilRenderPassTestInstance::createBuffer (void)
 		DE_NULL,
 		0u,
 
-		m_width * m_height * pixelSize,
+		m_config.width * m_config.height * m_config.imageLayers * pixelSize,
 		bufferUsage,
 
 		VK_SHARING_MODE_EXCLUSIVE,
@@ -653,25 +671,7 @@ VkBufferSp DepthStencilRenderPassTestInstance::createBuffer (void)
 	return safeSharedPtr(new Unique<VkBuffer>(vk::createBuffer(m_vkd, m_device, &createInfo)));
 }
 
-VkSampleCountFlagBits DepthStencilRenderPassTestInstance::sampleCountBitFromSampleCount (deUint32 count) const
-{
-	switch (count)
-	{
-		case 1:  return VK_SAMPLE_COUNT_1_BIT;
-		case 2:  return VK_SAMPLE_COUNT_2_BIT;
-		case 4:  return VK_SAMPLE_COUNT_4_BIT;
-		case 8:  return VK_SAMPLE_COUNT_8_BIT;
-		case 16: return VK_SAMPLE_COUNT_16_BIT;
-		case 32: return VK_SAMPLE_COUNT_32_BIT;
-		case 64: return VK_SAMPLE_COUNT_64_BIT;
-
-		default:
-			DE_FATAL("Invalid sample count");
-			return (VkSampleCountFlagBits)0x0;
-	}
-}
-
-void DepthStencilRenderPassTestInstance::submit (void)
+void DepthStencilResolveTest::submit (void)
 {
 	const DeviceInterface&						vkd					(m_context.getDeviceInterface());
 	const VkDevice								device				(m_context.getDevice());
@@ -683,8 +683,8 @@ void DepthStencilRenderPassTestInstance::submit (void)
 
 	{
 		VkClearValue clearValues[2];
-		clearValues[0].depthStencil = makeClearDepthStencilValue(0.0f, 0x0);
-		clearValues[1].depthStencil = clearValues[0].depthStencil;
+		clearValues[0].depthStencil = m_clearValue;
+		clearValues[1].depthStencil = m_clearValue;
 
 		const VkRenderPassBeginInfo beginInfo =
 		{
@@ -696,7 +696,7 @@ void DepthStencilRenderPassTestInstance::submit (void)
 
 			{
 				{ 0u, 0u },
-				{ m_width, m_height }
+				{ m_config.width, m_config.height }
 			},
 
 			2u,
@@ -706,7 +706,8 @@ void DepthStencilRenderPassTestInstance::submit (void)
 	}
 
 	// Render
-	if (m_verifyBuffer == VB_DEPTH)
+	bool testingDepth = (m_config.verifyBuffer == VB_DEPTH);
+	if (testingDepth)
 	{
 		vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
 		vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
@@ -722,7 +723,7 @@ void DepthStencilRenderPassTestInstance::submit (void)
 			vkd.cmdPushConstants(*commandBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(sampleID), &sampleID);
 			vkd.cmdSetStencilReference(*commandBuffer, VK_STENCIL_FRONT_AND_BACK, stencilReference);
 			vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
-			sampleID = deInt32(m_sampleCount) - 1;
+			sampleID = deInt32(m_config.sampleCount) - 1;
 		}
 	}
 
@@ -746,11 +747,11 @@ void DepthStencilRenderPassTestInstance::submit (void)
 
 			**m_singlesampleImage,
 			{
-				m_aspectFlag,
+				m_config.aspectFlag,
 				0u,
 				1u,
 				0u,
-				1u
+				m_config.viewLayers
 			}
 		};
 
@@ -764,13 +765,13 @@ void DepthStencilRenderPassTestInstance::submit (void)
 		0u,
 		0u,
 		{
-			(m_verifyBuffer == VB_DEPTH) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT,
+			testingDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT,
 			0u,
 			0u,
-			1u,
+			m_config.viewLayers,
 		},
 		{ 0u, 0u, 0u },
-		{ m_width, m_height, 1u }
+		{ m_config.width, m_config.height, 1u }
 	};
 
 	vkd.cmdCopyImageToBuffer(*commandBuffer, **m_singlesampleImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_buffer, 1u, &region);
@@ -801,108 +802,190 @@ void DepthStencilRenderPassTestInstance::submit (void)
 	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *commandBuffer);
 }
 
-bool DepthStencilRenderPassTestInstance::verify (void)
+bool DepthStencilResolveTest::verifyDepth (void)
 {
-	deUint8*	pixelPtr	= static_cast<deUint8*>(m_bufferMemory->getHostPtr());
-	float		epsilon		= 0.002f;
+	deUint32			layerSize	= m_config.width * m_config.height;
+	deUint32			valuesCount	= layerSize * m_config.viewLayers;
+	deUint8*			pixelPtr	= static_cast<deUint8*>(m_bufferMemory->getHostPtr());
 
-	if (m_verifyBuffer == VB_DEPTH)
+	// depth data in buffer is tightly packed, ConstPixelBufferAccess
+	// coludn't be used for depth value extraction as it cant interpret
+	// formats containing just depth component
+
+	typedef float (*DepthComponentGetterFn)(deUint8*);
+	VkFormat				format				= m_config.format;
+	DepthComponentGetterFn	getDepthComponent	= &get16bitDepthComponent;
+	deUint32				pixelStep			= 2;
+	float					epsilon				= 0.002f;
+
+	if ((format == VK_FORMAT_X8_D24_UNORM_PACK32) ||
+		(format == VK_FORMAT_D24_UNORM_S8_UINT))
 	{
-		float depth = 0.0f;
-		for (deUint32 y = 0; y < m_height; y++)
-		{
-			for (deUint32 x = 0; x < m_width; x++)
-			{
-				// depth data in buffer is tightly packed, ConstPixelBufferAccess
-				// coludn't be used for depth value extraction as it cant interpret
-				// formats containing just depth component
-				switch (m_format)
-				{
-				case VK_FORMAT_D16_UNORM:
-				case VK_FORMAT_D16_UNORM_S8_UINT:
-				{
-					deUint16* value = reinterpret_cast<deUint16*>(pixelPtr);
-					depth = (static_cast<float>(*value)) / 65535.0f;
-					pixelPtr += 2;
-					break;
-				}
-				case VK_FORMAT_X8_D24_UNORM_PACK32:
-				case VK_FORMAT_D24_UNORM_S8_UINT:
-				{
-#if (DE_ENDIANNESS == DE_LITTLE_ENDIAN)
-					deUint32 value = (((deUint32)pixelPtr[0]) <<  0u) |
-									 (((deUint32)pixelPtr[1]) <<  8u) |
-									 (((deUint32)pixelPtr[2]) << 16u);
-#else
-					deUint32 value = (((deUint32)pixelPtr[0]) << 16u) |
-									 (((deUint32)pixelPtr[1]) <<  8u) |
-									 (((deUint32)pixelPtr[2]) <<  0u);
-#endif
-					depth = static_cast<float>(value) / 16777215.0f;
-					pixelPtr += 4;
-					break;
-				}
-				case VK_FORMAT_D32_SFLOAT:
-				case VK_FORMAT_D32_SFLOAT_S8_UINT:
-					depth = *(reinterpret_cast<float*>(pixelPtr));
-					pixelPtr += 4;
-					break;
-				default:
-					DE_ASSERT(true);
-				}
+		getDepthComponent	= &get24bitDepthComponent;
+		pixelStep			= 4;
+	}
+	else if ((format == VK_FORMAT_D32_SFLOAT) ||
+				(format == VK_FORMAT_D32_SFLOAT_S8_UINT))
+	{
+		getDepthComponent	= &get32bitDepthComponent;
+		pixelStep			= 4;
+	}
 
-				float error = deFloatAbs(depth-m_expectedValue);
-				if (error > epsilon)
-				{
-					m_context.getTestContext().getLog() << TestLog::Message
-						<< "At (" << x << ", " << y << ") depth value is: " << depth
-						<< " expected: " << m_expectedValue << TestLog::EndMessage;
-					return false;
-				}
+	for (deUint32 valueIndex = 0; valueIndex < valuesCount; valueIndex++)
+	{
+		float depth = (*getDepthComponent)(pixelPtr);
+		pixelPtr += pixelStep;
+
+		// check if pixel data is outside of render area
+		deInt32 layerIndex		= valueIndex / layerSize;
+		deInt32 inLayerIndex	= valueIndex % layerSize;
+		deInt32 x				= inLayerIndex % m_config.width;
+		deInt32 y				= (inLayerIndex - x) / m_config.width;
+		deInt32 x1				= m_config.renderArea.offset.x;
+		deInt32 y1				= m_config.renderArea.offset.y;
+		deInt32 x2				= x1 + m_config.renderArea.extent.width;
+		deInt32 y2				= y1 + m_config.renderArea.extent.height;
+		if ((x < x1) || (x > x2) || (y < y1) || (y > y2))
+		{
+			// verify that outside of render area there are clear values
+			float error = deFloatAbs(depth - m_clearValue.depth);
+			if (error > std::numeric_limits<float>::epsilon())
+			{
+				m_context.getTestContext().getLog()
+				<< TestLog::Message << "(" << x << ", " << y
+				<< ", layer: " << layerIndex << ") is outside of render area but depth value is: "
+				<< depth << " (expected " << m_clearValue.depth << ")" << TestLog::EndMessage;
+				return false;
 			}
+
+			// value is correct, go to next one
+			continue;
+		}
+
+		float error = deFloatAbs(depth - m_config.expectedValue);
+		if (error > epsilon)
+		{
+			m_context.getTestContext().getLog() << TestLog::Message
+				<< "At (" << x << ", " << y << ", layer: " << layerIndex
+				<< ") depth value is: " << depth << " expected: "
+				<< m_config.expectedValue << TestLog::EndMessage;
+			return false;
 		}
 	}
-	else
-	{
-		// when stencil is tested we are discarding invocations and
-		// because of that depth and stencil need to be tested separately
-
-		deUint8 expectedValue = static_cast<deUint8>(m_expectedValue);
-		for (deUint32 y = 0; y < m_height; y++)
-		{
-			for (deUint32 x = 0; x < m_width; x++)
-			{
-				deUint8 stencil = *pixelPtr++;
-				if (stencil != expectedValue)
-				{
-					m_context.getTestContext().getLog() << TestLog::Message
-						<< "At (" << x << ", " << y << ") stencil value is: "
-						<< static_cast<deUint32>(stencil)
-						<< " expected: " << static_cast<deUint32>(expectedValue)
-						<< TestLog::EndMessage;
-					return false;
-				}
-			}
-		}
-		m_context.getTestContext().getLog() << TestLog::Message
-			<< "Stencil value is "
-			<< static_cast<deUint32>(expectedValue)
-			<< TestLog::EndMessage;
-	}
+	m_context.getTestContext().getLog() << TestLog::Message
+		<< "Depth value is " << m_config.expectedValue
+		<< TestLog::EndMessage;
 
 	return true;
 }
 
-tcu::TestStatus DepthStencilRenderPassTestInstance::iterate (void)
+bool DepthStencilResolveTest::verifyStencil (void)
+{
+	deUint32			layerSize	= m_config.width * m_config.height;
+	deUint32			valuesCount	= layerSize * m_config.viewLayers;
+	deUint8*			pixelPtr	= static_cast<deUint8*>(m_bufferMemory->getHostPtr());
+
+	// when stencil is tested we are discarding invocations and
+	// because of that depth and stencil need to be tested separately
+
+	deUint8 expectedValue = static_cast<deUint8>(m_config.expectedValue);
+	for (deUint32 valueIndex = 0; valueIndex < valuesCount; valueIndex++)
+	{
+		deUint8 stencil			= *pixelPtr++;
+		deInt32 layerIndex		= valueIndex / layerSize;
+		deInt32 inLayerIndex	= valueIndex % layerSize;
+		deInt32 x				= inLayerIndex % m_config.width;
+		deInt32 y				= (inLayerIndex - x) / m_config.width;
+		deInt32 x1				= m_config.renderArea.offset.x;
+		deInt32 y1				= m_config.renderArea.offset.y;
+		deInt32 x2				= x1 + m_config.renderArea.extent.width;
+		deInt32 y2				= y1 + m_config.renderArea.extent.height;
+		if ((x < x1) || (x > x2) || (y < y1) || (y > y2))
+		{
+			if (stencil != m_clearValue.stencil)
+			{
+				m_context.getTestContext().getLog()
+				<< TestLog::Message << "(" << x << ", " << y << ", layer: " << layerIndex
+				<< ") is outside of render area but stencil value is: "
+				<< stencil << " (expected " << m_clearValue.stencil << ")" << TestLog::EndMessage;
+				return false;
+			}
+
+			// value is correct, go to next one
+			continue;
+		}
+
+		if (stencil != expectedValue)
+		{
+			m_context.getTestContext().getLog() << TestLog::Message
+				<< "At (" << x << ", " << y << ", layer: " << layerIndex
+				<< ") stencil value is: " << static_cast<deUint32>(stencil)
+				<< " expected: " << static_cast<deUint32>(expectedValue)
+				<< TestLog::EndMessage;
+			return false;
+		}
+	}
+	m_context.getTestContext().getLog() << TestLog::Message
+		<< "Stencil value is "
+		<< static_cast<deUint32>(expectedValue)
+		<< TestLog::EndMessage;
+
+	return true;
+}
+
+tcu::TestStatus DepthStencilResolveTest::iterate (void)
 {
 	submit();
-	return verify() ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Fail");
+
+	bool result = false;
+	if (m_config.verifyBuffer == VB_DEPTH)
+		result = verifyDepth();
+	else
+		result = verifyStencil();
+
+	if (result)
+		return tcu::TestStatus::pass("Pass");
+	return tcu::TestStatus::fail("Fail");
 }
 
 struct Programs
 {
 	void init (vk::SourceCollections& dst, TestConfig config) const
 	{
+		// geometry shader is only needed in multi-layer framebuffer resolve tests
+		if (config.imageLayers > 1)
+		{
+			const deUint32 layerCount = 3;
+
+			std::ostringstream src;
+			src << "#version 450\n"
+				<< "highp float;\n"
+				<< "\n"
+				<< "layout(triangles) in;\n"
+				<< "layout(triangle_strip, max_vertices = " << 3 * 2 * layerCount << ") out;\n"
+				<< "\n"
+				<< "in gl_PerVertex {\n"
+				<< "    vec4 gl_Position;\n"
+				<< "} gl_in[];\n"
+				<< "\n"
+				<< "out gl_PerVertex {\n"
+				<< "    vec4 gl_Position;\n"
+				<< "};\n"
+				<< "\n"
+				<< "void main (void) {\n"
+				<< "    for (int layerNdx = 0; layerNdx < " << layerCount << "; ++layerNdx) {\n"
+				<< "        for(int vertexNdx = 0; vertexNdx < gl_in.length(); vertexNdx++) {\n"
+				<< "            gl_Position = gl_in[vertexNdx].gl_Position;\n"
+				<< "            gl_Layer    = layerNdx;\n"
+				<< "            EmitVertex();\n"
+				<< "        };\n"
+				<< "        EndPrimitive();\n"
+				<< "    };\n"
+				<< "}\n";
+
+			dst.glslSources.add("quad-geom") << glu::GeometrySource(src.str());
+		}
+
 		dst.glslSources.add("quad-vert") << glu::VertexSource(
 			"#version 450\n"
 			"out gl_PerVertex {\n"
@@ -952,6 +1035,8 @@ struct Programs
 
 void initTests (tcu::TestCaseGroup* group)
 {
+	typedef InstanceFactory1<DepthStencilResolveTest, TestConfig, Programs> DSResolveTestInstance;
+
 	struct FormatData
 	{
 		VkFormat		format;
@@ -983,17 +1068,27 @@ void initTests (tcu::TestCaseGroup* group)
 		{ VK_RESOLVE_MODE_MIN_BIT_KHR,			"min" },
 		{ VK_RESOLVE_MODE_MAX_BIT_KHR,			"max" },
 	};
+
 	struct ImageTestData
 	{
 		const char*		groupName;
 		deUint32		width;
 		deUint32		height;
-		deUint32		depth;
+		deUint32		imageLayers;
+		VkRect2D		renderArea;
 	};
+
+	// NOTE: tests cant be executed for 1D and 3D images:
+	// 1D images are not tested because acording to specyfication sampleCounts
+	// will be set to VK_SAMPLE_COUNT_1_BIT when type is not VK_IMAGE_TYPE_2D
+	// 3D images are not tested because VkFramebufferCreateInfo specification
+	// states that: each element of pAttachments that is a 2D or 2D array image
+	// view taken from a 3D image must not be a depth/stencil format
 	ImageTestData imagesTestData[] =
 	{
-		{ "image_2d_32_32", 32, 32, 1 },
-		{ "image_2d_49_13", 49, 13, 1 },
+		{ "image_2d_32_32",	32, 32, 1, {{ 0,  0}, {32, 32}} },
+		{ "image_2d_49_13",	49, 13, 1, {{10, 15}, {20, 13}} },
+		{ "image_2d_5_1",	 5,  1, 1, {{ 0,  0}, { 5,  1}} },
 	};
 	const deUint32 sampleCounts[] =
 	{
@@ -1074,22 +1169,28 @@ void initTests (tcu::TestCaseGroup* group)
 
 						std::string baseName = "depth_" + dResolve.name + "_stencil_" + sResolve.name;
 
-						typedef InstanceFactory1<DepthStencilRenderPassTestInstance, TestConfig, Programs> DSResolveTestInstance;
 						if (hasDepth)
 						{
 							std::string	name			= baseName + "_testing_depth";
 							const char*	testName		= name.c_str();
 							float		expectedValue	= depthExpectedValue[depthResolveModeNdx][sampleCountNdx];
-							const TestConfig testConfig(format,
-														imageData.width,
-														imageData.height,
-														imageData.depth,
-														aspectFlags,
-														sampleCount,
-														dResolve.flag,
-														sResolve.flag,
-														VB_DEPTH,
-														expectedValue);
+
+							const TestConfig testConfig =
+							{
+								format,
+								imageData.width,
+								imageData.height,
+								1u,
+								1u,
+								0u,
+								imageData.renderArea,
+								aspectFlags,
+								sampleCount,
+								dResolve.flag,
+								sResolve.flag,
+								VB_DEPTH,
+								expectedValue
+							};
 							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 						}
 						if (hasStencil)
@@ -1097,16 +1198,23 @@ void initTests (tcu::TestCaseGroup* group)
 							std::string	name			= baseName + "_testing_stencil";
 							const char*	testName		= name.c_str();
 							float		expectedValue	= stencilExpectedValue[stencilResolveModeNdx][sampleCountNdx];
-							const TestConfig testConfig(format,
-														imageData.width,
-														imageData.height,
-														imageData.depth,
-														aspectFlags,
-														sampleCount,
-														dResolve.flag,
-														sResolve.flag,
-														VB_STENCIL,
-														expectedValue);
+
+							const TestConfig testConfig =
+							{
+								format,
+								imageData.width,
+								imageData.height,
+								1u,
+								1u,
+								0u,
+								imageData.renderArea,
+								aspectFlags,
+								sampleCount,
+								dResolve.flag,
+								sResolve.flag,
+								VB_STENCIL,
+								expectedValue
+							};
 							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 						}
 					}
@@ -1115,6 +1223,104 @@ void initTests (tcu::TestCaseGroup* group)
 				sampleGroup->addChild(formatGroup.release());
 			}
 
+			imageGroup->addChild(sampleGroup.release());
+		}
+
+		group->addChild(imageGroup.release());
+	}
+
+	{
+		// layered texture tests are done for all stencil modes and depth modes - not all combinations
+		// Test checks if all layer are resolved in multi-layered framebuffer and if we can have a framebuffer
+		// which starts at a layer other than zero. Both parts are tested together by rendering to layers
+		// 4-6 and resolving to layers 1-3.
+		ImageTestData layeredTextureTestData =
+		{
+			"image_2d_16_64_6", 16, 64, 6, {{ 10,  10}, {6, 54}}
+		};
+
+		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, layeredTextureTestData.groupName, layeredTextureTestData.groupName));
+
+		for (size_t sampleCountNdx = 0; sampleCountNdx < DE_LENGTH_OF_ARRAY(sampleCounts); sampleCountNdx++)
+		{
+			const deUint32		sampleCount	(sampleCounts[sampleCountNdx]);
+			const std::string	sampleName	("samples_" + de::toString(sampleCount));
+
+			// create test group for sample count
+			de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sampleName.c_str(), sampleName.c_str()));
+
+			// iterate over depth/stencil formats
+			for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+			{
+				const FormatData&			formatData	= formats[formatNdx];
+				VkFormat					format		= formatData.format;
+				const char*					formatName	= formatData.name;
+				const bool					hasDepth	= formatData.hasDepth;
+				const bool					hasStencil	= formatData.hasStencil;
+				VkImageAspectFlags			aspectFlags	= (hasDepth * VK_IMAGE_ASPECT_DEPTH_BIT) |
+														  (hasStencil * VK_IMAGE_ASPECT_STENCIL_BIT);
+
+				// create test group for format
+				de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName, formatName));
+
+				for (size_t resolveModeNdx = 0; resolveModeNdx < DE_LENGTH_OF_ARRAY(resolveModes); resolveModeNdx++)
+				{
+					ResolveModeData& mode = resolveModes[resolveModeNdx];
+
+					if (hasDepth)
+					{
+						std::string	name			= "depth_" + mode.name;
+						const char*	testName		= name.c_str();
+						float		expectedValue	= depthExpectedValue[resolveModeNdx][sampleCountNdx];
+						const TestConfig testConfig =
+						{
+							format,
+							layeredTextureTestData.width,
+							layeredTextureTestData.height,
+							layeredTextureTestData.imageLayers,
+							3u,
+							0u,
+							layeredTextureTestData.renderArea,
+							aspectFlags,
+							sampleCount,
+							mode.flag,
+							VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
+							VB_DEPTH,
+							expectedValue
+						};
+						formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+					}
+
+					// there is no average resolve mode for stencil - go to next iteration
+					if (mode.flag == VK_RESOLVE_MODE_AVERAGE_BIT_KHR)
+						continue;
+
+					if (hasStencil)
+					{
+						std::string	name			= "stencil_" + mode.name;
+						const char*	testName		= name.c_str();
+						float		expectedValue	= stencilExpectedValue[resolveModeNdx][sampleCountNdx];
+						const TestConfig testConfig =
+						{
+							format,
+							layeredTextureTestData.width,
+							layeredTextureTestData.height,
+							layeredTextureTestData.imageLayers,
+							3u,
+							0u,
+							layeredTextureTestData.renderArea,
+							aspectFlags,
+							sampleCount,
+							VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
+							mode.flag,
+							VB_STENCIL,
+							expectedValue
+						};
+						formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
+					}
+				}
+				sampleGroup->addChild(formatGroup.release());
+			}
 			imageGroup->addChild(sampleGroup.release());
 		}
 
