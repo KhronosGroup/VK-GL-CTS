@@ -226,6 +226,10 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdPushDescriptorSetWithTemplateKHRFunc
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateDescriptorUpdateTemplateKHRFunc)					(VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate);
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyDescriptorUpdateTemplateKHRFunc)				(VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR void					(VKAPI_CALL* UpdateDescriptorSetWithTemplateKHRFunc)				(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateRenderPass2KHRFunc)								(VkDevice device, const VkRenderPassCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginRenderPass2KHRFunc)							(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfoKHR* pSubpassBeginInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdNextSubpass2KHRFunc)								(VkCommandBuffer commandBuffer, const VkSubpassBeginInfoKHR* pSubpassBeginInfo, const VkSubpassEndInfoKHR* pSubpassEndInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderPass2KHRFunc)								(VkCommandBuffer commandBuffer, const VkSubpassEndInfoKHR* pSubpassEndInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainStatusKHRFunc)								(VkDevice device, VkSwapchainKHR swapchain);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetPhysicalDeviceExternalFencePropertiesKHRFunc)		(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo, VkExternalFenceProperties* pExternalFenceProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceWin32HandleKHRFunc)							(VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo);
