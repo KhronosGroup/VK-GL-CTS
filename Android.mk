@@ -30,6 +30,7 @@ deqp_compile_flags := \
 	-Werror \
 	-Wconversion \
 	-fwrapv \
+	-Wno-implicit-fallthrough \
 	-Wno-sign-conversion
 
 LOCAL_SHARED_LIBRARIES := \
