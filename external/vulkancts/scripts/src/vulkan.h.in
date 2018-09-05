@@ -335,6 +335,13 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT = 1000099000,
     VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT = 1000099001,
     VK_STRUCTURE_TYPE_HDR_METADATA_EXT = 1000105000,
+    VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR = 1000109000,
+    VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR = 1000109001,
+    VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR = 1000109002,
+    VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2_KHR = 1000109003,
+    VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2_KHR = 1000109004,
+    VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO_KHR = 1000109005,
+    VK_STRUCTURE_TYPE_SUBPASS_END_INFO_KHR = 1000109006,
     VK_STRUCTURE_TYPE_SHARED_PRESENT_SURFACE_CAPABILITIES_KHR = 1000111000,
     VK_STRUCTURE_TYPE_IMPORT_FENCE_WIN32_HANDLE_INFO_KHR = 1000114000,
     VK_STRUCTURE_TYPE_EXPORT_FENCE_WIN32_HANDLE_INFO_KHR = 1000114001,
@@ -5571,6 +5578,114 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplateKHR(
     VkDescriptorSet                             descriptorSet,
     VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
     const void*                                 pData);
+#endif
+
+#define VK_KHR_create_renderpass2 1
+#define VK_KHR_CREATE_RENDERPASS_2_SPEC_VERSION 1
+#define VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME "VK_KHR_create_renderpass2"
+
+typedef struct VkAttachmentDescription2KHR {
+    VkStructureType                 sType;
+    const void*                     pNext;
+    VkAttachmentDescriptionFlags    flags;
+    VkFormat                        format;
+    VkSampleCountFlagBits           samples;
+    VkAttachmentLoadOp              loadOp;
+    VkAttachmentStoreOp             storeOp;
+    VkAttachmentLoadOp              stencilLoadOp;
+    VkAttachmentStoreOp             stencilStoreOp;
+    VkImageLayout                   initialLayout;
+    VkImageLayout                   finalLayout;
+} VkAttachmentDescription2KHR;
+
+typedef struct VkAttachmentReference2KHR {
+    VkStructureType       sType;
+    const void*           pNext;
+    uint32_t              attachment;
+    VkImageLayout         layout;
+    VkImageAspectFlags    aspectMask;
+} VkAttachmentReference2KHR;
+
+typedef struct VkSubpassDescription2KHR {
+    VkStructureType                     sType;
+    const void*                         pNext;
+    VkSubpassDescriptionFlags           flags;
+    VkPipelineBindPoint                 pipelineBindPoint;
+    uint32_t                            viewMask;
+    uint32_t                            inputAttachmentCount;
+    const VkAttachmentReference2KHR*    pInputAttachments;
+    uint32_t                            colorAttachmentCount;
+    const VkAttachmentReference2KHR*    pColorAttachments;
+    const VkAttachmentReference2KHR*    pResolveAttachments;
+    const VkAttachmentReference2KHR*    pDepthStencilAttachment;
+    uint32_t                            preserveAttachmentCount;
+    const uint32_t*                     pPreserveAttachments;
+} VkSubpassDescription2KHR;
+
+typedef struct VkSubpassDependency2KHR {
+    VkStructureType         sType;
+    const void*             pNext;
+    uint32_t                srcSubpass;
+    uint32_t                dstSubpass;
+    VkPipelineStageFlags    srcStageMask;
+    VkPipelineStageFlags    dstStageMask;
+    VkAccessFlags           srcAccessMask;
+    VkAccessFlags           dstAccessMask;
+    VkDependencyFlags       dependencyFlags;
+    int32_t                 viewOffset;
+} VkSubpassDependency2KHR;
+
+typedef struct VkRenderPassCreateInfo2KHR {
+    VkStructureType                       sType;
+    const void*                           pNext;
+    VkRenderPassCreateFlags               flags;
+    uint32_t                              attachmentCount;
+    const VkAttachmentDescription2KHR*    pAttachments;
+    uint32_t                              subpassCount;
+    const VkSubpassDescription2KHR*       pSubpasses;
+    uint32_t                              dependencyCount;
+    const VkSubpassDependency2KHR*        pDependencies;
+    uint32_t                              correlatedViewMaskCount;
+    const uint32_t*                       pCorrelatedViewMasks;
+} VkRenderPassCreateInfo2KHR;
+
+typedef struct VkSubpassBeginInfoKHR {
+    VkStructureType      sType;
+    const void*          pNext;
+    VkSubpassContents    contents;
+} VkSubpassBeginInfoKHR;
+
+typedef struct VkSubpassEndInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+} VkSubpassEndInfoKHR;
+
+
+typedef VkResult (VKAPI_PTR *PFN_vkCreateRenderPass2KHR)(VkDevice device, const VkRenderPassCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass);
+typedef void (VKAPI_PTR *PFN_vkCmdBeginRenderPass2KHR)(VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo*      pRenderPassBegin, const VkSubpassBeginInfoKHR*      pSubpassBeginInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdNextSubpass2KHR)(VkCommandBuffer commandBuffer, const VkSubpassBeginInfoKHR*      pSubpassBeginInfo, const VkSubpassEndInfoKHR*        pSubpassEndInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdEndRenderPass2KHR)(VkCommandBuffer commandBuffer, const VkSubpassEndInfoKHR*        pSubpassEndInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateRenderPass2KHR(
+    VkDevice                                    device,
+    const VkRenderPassCreateInfo2KHR*           pCreateInfo,
+    const VkAllocationCallbacks*                pAllocator,
+    VkRenderPass*                               pRenderPass);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdBeginRenderPass2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkRenderPassBeginInfo*                pRenderPassBegin,
+    const VkSubpassBeginInfoKHR*                pSubpassBeginInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdNextSubpass2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkSubpassBeginInfoKHR*                pSubpassBeginInfo,
+    const VkSubpassEndInfoKHR*                  pSubpassEndInfo);
+
+VKAPI_ATTR void VKAPI_CALL vkCmdEndRenderPass2KHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkSubpassEndInfoKHR*                  pSubpassEndInfo);
 #endif
 
 #define VK_KHR_shared_presentable_image 1
