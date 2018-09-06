@@ -50,3 +50,10 @@ dEQP-VK.wsi.android.surface.query_devgroup_*
 
 #VK-GL-CTS 749
 dEQP-VK.glsl.builtin.precision.atan2.mediump_compute.*
+
+#VK-GL-CTS 1273
+dEQP-VK.tessellation.primitive_discard.triangles_fractional_odd_spacing_ccw_valid_levels
+dEQP-VK.tessellation.primitive_discard.triangles_fractional_odd_spacing_cw_valid_levels
+dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_ccw_valid_levels
+dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_cw_valid_levels
+
