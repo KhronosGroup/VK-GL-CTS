@@ -1358,7 +1358,7 @@ bool TessellationShaderUtils::isOuterEdgeVertex(_tessellation_primitive_mode pri
 
 	default:
 	{
-		DE_ASSERT("Unrecognized primitive mode");
+		DE_FATAL("Unrecognized primitive mode");
 	}
 	}
 
