@@ -856,7 +856,7 @@ private:
 
 		if (conversion != CONVERTED && denorm)
 		{
-			if (resBits == 0)
+			if (resBits == 0 || (ref < 0 && resBits == 0x80000000UL))
 			{
 				conversion = ZERO_FLUSHED;
 				return DE_TRUE;
