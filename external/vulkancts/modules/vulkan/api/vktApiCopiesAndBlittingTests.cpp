@@ -2606,13 +2606,8 @@ public:
 			TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
 		}
 
-		if (m_params.filter == VK_FILTER_LINEAR)
-		{
-			if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-				TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
-			if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-				TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
-		}
+		if (m_params.filter == VK_FILTER_LINEAR && !(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
 	}
 
 private:
@@ -3286,13 +3281,8 @@ public:
 			TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
 		}
 
-		if (m_params.filter == VK_FILTER_LINEAR)
-		{
-			if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-				TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
-			if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
-				TCU_THROW(NotSupportedError, "Destination format feature sampled image filter linear not supported");
-		}
+		if (m_params.filter == VK_FILTER_LINEAR && !(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
 	}
 
 private:
