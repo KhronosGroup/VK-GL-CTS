@@ -64,12 +64,11 @@ struct CaseDefinition
 bool lessThanOneInnerLevelsDefined (const CaseDefinition& caseDef)
 {
 	// From Vulkan API specification:
-	// >> When tessellating triangles or quads in point mode with fractional odd spacing, the tessellator
+	// >> When tessellating triangles or quads (with/without point mode) with fractional odd spacing, the tessellator
 	// >> ***may*** produce interior vertices that are positioned on the edge of the patch if an inner
 	// >> tessellation level is less than or equal to one.
 	return !((caseDef.primitiveType == vkt::tessellation::TESSPRIMITIVETYPE_QUADS      ||
 			  caseDef.primitiveType == vkt::tessellation::TESSPRIMITIVETYPE_TRIANGLES) &&
-			 caseDef.usePointMode                                                     &&
 			 caseDef.spacingMode == vkt::tessellation::SPACINGMODE_FRACTIONAL_ODD);
 }
 
