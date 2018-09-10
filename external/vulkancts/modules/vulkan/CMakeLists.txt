@@ -30,6 +30,7 @@ add_subdirectory(multiview)
 add_subdirectory(subgroups)
 add_subdirectory(ycbcr)
 add_subdirectory(protected_memory)
+add_subdirectory(memory_model)
 
 include_directories(
 	api
@@ -62,6 +63,7 @@ include_directories(
 	subgroups
 	ycbcr
 	protected_memory
+	memory_model
 	)
 
 set(DEQP_VK_SRCS
@@ -120,6 +122,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-subgroups
 	deqp-vk-ycbcr
 	deqp-vk-protected-memory
+	deqp-vk-memory-model
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

@@ -595,3 +595,4 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttribute
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputBindingDivisorDescriptionEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineVertexInputDivisorStateCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR& value);

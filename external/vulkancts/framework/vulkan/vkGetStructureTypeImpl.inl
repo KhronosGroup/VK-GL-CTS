@@ -1136,3 +1136,8 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeDivis
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceVulkanMemoryModelFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR;
+}
+
