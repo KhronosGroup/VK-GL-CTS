@@ -60,6 +60,7 @@ using tcu::IVec4;
 using tcu::UVec2;
 using tcu::UVec4;
 using tcu::Vec2;
+using tcu::Vec3;
 using tcu::Vec4;
 
 using tcu::Maybe;
@@ -110,6 +111,31 @@ de::SharedPtr<T> safeSharedPtr (T* ptr)
 		delete ptr;
 		throw;
 	}
+}
+
+tcu::Vec4 getFormatThreshold (VkFormat format)
+{
+	const tcu::TextureFormat	tcuFormat		(mapVkFormat(format));
+	const deUint32				componentCount	(tcu::getNumUsedChannels(tcuFormat.order));
+
+	if (isSnormFormat(format))
+	{
+		return Vec4((componentCount >= 1) ? 1.5f * getRepresentableDiffSnorm(format, 0) : 0.0f,
+					(componentCount >= 2) ? 1.5f * getRepresentableDiffSnorm(format, 1) : 0.0f,
+					(componentCount >= 3) ? 1.5f * getRepresentableDiffSnorm(format, 2) : 0.0f,
+					(componentCount == 4) ? 1.5f * getRepresentableDiffSnorm(format, 3) : 0.0f);
+	}
+	else if (isUnormFormat(format))
+	{
+		return Vec4((componentCount >= 1) ? 1.5f * getRepresentableDiffUnorm(format, 0) : 0.0f,
+					(componentCount >= 2) ? 1.5f * getRepresentableDiffUnorm(format, 1) : 0.0f,
+					(componentCount >= 3) ? 1.5f * getRepresentableDiffUnorm(format, 2) : 0.0f,
+					(componentCount == 4) ? 1.5f * getRepresentableDiffUnorm(format, 3) : 0.0f);
+	}
+	else if (isFloatFormat(format))
+		return Vec4(0.00001f);
+	else
+		return Vec4(0.001f);
 }
 
 void bindBufferMemory (const DeviceInterface& vk, VkDevice device, VkBuffer buffer, VkDeviceMemory mem, VkDeviceSize memOffset)
@@ -1079,6 +1105,9 @@ void MultisampleRenderPassTestInstance::submit (void)
 	endCommandBuffer(vkd, *commandBuffer);
 
 	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *commandBuffer);
+
+	for (size_t memoryBufferNdx = 0; memoryBufferNdx < m_bufferMemory.size(); memoryBufferNdx++)
+		invalidateMappedMemoryRange(vkd, device, m_bufferMemory[memoryBufferNdx]->getMemory(), 0u, VK_WHOLE_SIZE);
 }
 
 void MultisampleRenderPassTestInstance::submitSwitch (RenderPassType renderPassType)
@@ -1183,8 +1212,7 @@ void MultisampleRenderPassTestInstance::verify (void)
 
 				{
 					const Vec4 old = m_sum.getAccess().getPixel(x, y, z);
-
-					m_sum.getAccess().setPixel(old + firstColor, x, y, z);
+					m_sum.getAccess().setPixel(old + (tcu::isSRGB(format) ? tcu::sRGBToLinear(firstColor) : firstColor), x, y, z);
 				}
 			}
 
@@ -1460,13 +1488,13 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 	{
 		const tcu::TextureFormat		format			(mapVkFormat(m_format));
 		const tcu::TextureChannelClass	channelClass	(tcu::getTextureChannelClass(format.type));
+		const Vec4						threshold		(getFormatThreshold(m_format));
 		tcu::TestLog&					log				(m_context.getTestContext().getLog());
 
 		if (channelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT
 				|| channelClass == tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT
 				|| channelClass == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
 		{
-			const float			threshold		= 0.05f;
 			const int			componentCount	(tcu::getNumUsedChannels(format.order));
 			const Vec4			errorColor		(1.0f, 0.0f, 0.0f, 1.0f);
 			const Vec4			okColor			(0.0f, 1.0f, 0.0f, 1.0f);
@@ -1505,10 +1533,10 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 				m_sum.getAccess().setPixel(average, x, y, z);
 				errorMask.getAccess().setPixel(okColor, x, y, z);
 
-				if (diff[0] > threshold
-						|| diff[1] > threshold
-						|| diff[2] > threshold
-						|| diff[3] > threshold)
+				if (diff[0] > threshold.x()
+						|| diff[1] > threshold.y()
+						|| diff[2] > threshold.z()
+						|| diff[3] > threshold.w())
 				{
 					isOk	= false;
 					maxDiff	= tcu::max(maxDiff, diff);
@@ -1520,9 +1548,31 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterate (void)
 
 			if (!isOk)
 			{
+				std::stringstream	message;
+
 				m_context.getTestContext().getLog() << tcu::LogImage("ErrorMask", "ErrorMask", errorMask.getAccess());
 
-				log << TestLog::Message << "Average resolved values differ from expected average values by more than " << threshold << " max per component diff " << maxDiff << TestLog::EndMessage;
+				message << "Average resolved values differ from expected average values by more than ";
+
+				switch (componentCount)
+				{
+					case 1:
+						message << threshold.x();
+						break;
+					case 2:
+						message << "vec2" << Vec2(threshold.x(), threshold.y());
+						break;
+					case 3:
+						message << "vec3" << Vec3(threshold.x(), threshold.y(), threshold.z());
+						break;
+					default:
+						message << "vec4" << threshold;
+				}
+
+				message << ". Max diff " << maxDiff;
+				log << TestLog::Message << message.str() <<  TestLog::EndMessage;
+
+				m_resultCollector.fail("Average resolved values differ from expected average values");
 			}
 		}
 

@@ -925,7 +925,7 @@ tcu::TestCaseGroup* createMultisampleInterpolationTests (tcu::TestContext& testC
 
 	const deUint32 samplesElemCount = static_cast<deUint32>(sizeof(imageSamples) / sizeof(vk::VkSampleCountFlagBits));
 
-	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, "sample_interpolate_at_single_sample_", ""));
+	de::MovePtr<tcu::TestCaseGroup> caseGroup(new tcu::TestCaseGroup(testCtx, "sample_interpolate_at_single_sample", ""));
 
 	for (deUint32 imageSizeNdx = 0u; imageSizeNdx < sizesElemCount; ++imageSizeNdx)
 	{

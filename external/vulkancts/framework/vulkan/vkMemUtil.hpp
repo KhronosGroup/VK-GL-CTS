@@ -80,6 +80,8 @@ public:
 	static const MemoryRequirement	Coherent;
 	static const MemoryRequirement	LazilyAllocated;
 	static const MemoryRequirement	Protected;
+	static const MemoryRequirement	Local;
+	static const MemoryRequirement	Cached;
 
 	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
 	{
@@ -106,6 +108,8 @@ private:
 		FLAG_COHERENT			= 1u << 1u,
 		FLAG_LAZY_ALLOCATION	= 1u << 2u,
 		FLAG_PROTECTED			= 1u << 3u,
+		FLAG_LOCAL				= 1u << 4u,
+		FLAG_CACHED				= 1u << 5u,
 	};
 };
 

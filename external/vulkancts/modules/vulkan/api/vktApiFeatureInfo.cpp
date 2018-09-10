@@ -832,6 +832,48 @@ tcu::TestStatus enumerateInstanceExtensions (Context& context)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus testNoKhxExtensions (Context& context)
+{
+	VkPhysicalDevice			physicalDevice	= context.getPhysicalDevice();
+	const PlatformInterface&	vkp				= context.getPlatformInterface();
+	const InstanceInterface&	vki				= context.getInstanceInterface();
+
+	tcu::ResultCollector		results(context.getTestContext().getLog());
+	bool						testSucceeded = true;
+	deUint32					instanceExtensionsCount;
+	deUint32					deviceExtensionsCount;
+
+	// grab number of instance and device extensions
+	vkp.enumerateInstanceExtensionProperties(DE_NULL, &instanceExtensionsCount, DE_NULL);
+	vki.enumerateDeviceExtensionProperties(physicalDevice, DE_NULL, &deviceExtensionsCount, DE_NULL);
+	vector<VkExtensionProperties> extensionsProperties(instanceExtensionsCount + deviceExtensionsCount);
+
+	// grab instance and device extensions into single vector
+	if (instanceExtensionsCount)
+		vkp.enumerateInstanceExtensionProperties(DE_NULL, &instanceExtensionsCount, &extensionsProperties[0]);
+	if (deviceExtensionsCount)
+		vki.enumerateDeviceExtensionProperties(physicalDevice, DE_NULL, &deviceExtensionsCount, &extensionsProperties[instanceExtensionsCount]);
+
+	// iterate over all extensions and verify their names
+	vector<VkExtensionProperties>::const_iterator extension = extensionsProperties.begin();
+	while (extension != extensionsProperties.end())
+	{
+		// KHX author ID is no longer used, all KHX extensions have been promoted to KHR status
+		std::string extensionName(extension->extensionName);
+		bool caseFailed = de::beginsWith(extensionName, "VK_KHX_");
+		if (caseFailed)
+		{
+			results.fail("Invalid extension name " + extensionName);
+			testSucceeded = false;
+		}
+		++extension;
+	}
+
+	if (testSucceeded)
+		return tcu::TestStatus::pass("No extensions begining with \"VK_KHX\"");
+	return tcu::TestStatus::fail("One or more extensions begins with \"VK_KHX\"");
+}
+
 tcu::TestStatus enumerateDeviceLayers (Context& context)
 {
 	TestLog&						log			= context.getTestContext().getLog();
@@ -3494,8 +3536,7 @@ void checkExtensions (tcu::ResultCollector& results, const set<string>& allowedE
 	for (vector<VkExtensionProperties>::const_iterator extension = reportedExtensions.begin(); extension != reportedExtensions.end(); ++extension)
 	{
 		const string	extensionName	(extension->extensionName);
-		const bool		mustBeKnown		= de::beginsWith(extensionName, "VK_KHX_")		||
-										  de::beginsWith(extensionName, "VK_GOOGLE_")	||
+		const bool		mustBeKnown		= de::beginsWith(extensionName, "VK_GOOGLE_")	||
 										  de::beginsWith(extensionName, "VK_ANDROID_");
 
 		if (mustBeKnown && !de::contains(allowedExtensions, extensionName))
@@ -3640,6 +3681,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(deviceInfoTests.get(), "memory_properties",			"Memory properties",		deviceMemoryProperties);
 		addFunctionCase(deviceInfoTests.get(), "layers",					"Layers",					enumerateDeviceLayers);
 		addFunctionCase(deviceInfoTests.get(), "extensions",				"Extensions",				enumerateDeviceExtensions);
+		addFunctionCase(deviceInfoTests.get(), "no_khx_extensions",			"KHX extensions",			testNoKhxExtensions);
 
 		infoTests->addChild(deviceInfoTests.release());
 	}

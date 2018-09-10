@@ -67,6 +67,9 @@ VkSamplerCreateInfo			mapSampler					(const tcu::Sampler& sampler, const tcu::Te
 
 void						imageUtilSelfTest			(void);
 
+float						getRepresentableDiffUnorm	(const VkFormat format, const deUint32 componentNdx);
+float						getRepresentableDiffSnorm	(const VkFormat format, const deUint32 componentNdx);
+deUint32					getFormatComponentWidth		(const VkFormat format, const deUint32 componentNdx);
 deUint32					getBlockSizeInBytes			(const VkFormat compressedFormat);
 deUint32					getBlockWidth				(const VkFormat compressedFormat);
 deUint32					getBlockHeight				(const VkFormat compressedFormat);
