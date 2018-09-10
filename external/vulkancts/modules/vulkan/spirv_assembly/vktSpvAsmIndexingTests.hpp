@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief SPIR-V Assembly Tests for indexing with different bit sizes.
+ * \brief SPIR-V Assembly Tests for indexing with access chain operations.
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
