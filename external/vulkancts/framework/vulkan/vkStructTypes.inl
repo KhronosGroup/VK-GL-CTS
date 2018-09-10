@@ -2982,6 +2982,14 @@ struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
 	VkBool32		vertexAttributeInstanceRateZeroDivisor;
 };
 
+struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		vulkanMemoryModel;
+	VkBool32		vulkanMemoryModelDeviceScope;
+};
+
 
 
 

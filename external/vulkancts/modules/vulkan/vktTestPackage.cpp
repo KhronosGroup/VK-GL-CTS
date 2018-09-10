@@ -85,6 +85,7 @@
 #include "vktYCbCrTests.hpp"
 #include "vktProtectedMemTests.hpp"
 #include "vktDeviceGroupTests.hpp"
+#include "vktMemoryModelTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -483,6 +484,7 @@ void TestPackage::init (void)
 	addChild(ycbcr::createTests				(m_testCtx));
 	addChild(ProtectedMem::createTests		(m_testCtx));
 	addChild(DeviceGroup::createTests		(m_testCtx));
+	addChild(MemoryModel::createTests		(m_testCtx));
 }
 
 } // vkt
