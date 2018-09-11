@@ -899,9 +899,9 @@ bool VertexAccessInstance::isValueWithinVertexBufferOrZero(void* vertexBuffer, V
 		deUint32		encodedValue;
 
 		if (isAlpha)
-			encodedValue = deMin32(deUint32(normValue * 0x3u), 0x3u);
+			encodedValue = deMin32(deUint32(deFloatRound(normValue * 0x3u)), 0x3u);
 		else
-			encodedValue = deMin32(deUint32(normValue * 0x3FFu), 0x3FFu);
+			encodedValue = deMin32(deUint32(deFloatRound(normValue * 0x3FFu)), 0x3FFu);
 
 		if (encodedValue == 0)
 			return true;
