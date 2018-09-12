@@ -316,6 +316,9 @@ bool GLES2ImageApi::GLES2Action::invoke (ImageApi& api, MovePtr<UniqueImage>& im
 bool GLES2ImageApi::Create::invokeGLES2 (GLES2ImageApi& api, MovePtr<UniqueImage>& image, tcu::Texture2D& ref) const
 {
 	de::UniquePtr<ClientBuffer>	buffer	(m_imgSource->createBuffer(api.m_gl, &ref));
+
+	GLU_CHECK_GLW_CALL(api.m_gl, finish());
+
 	image = api.createImage(*m_imgSource, *buffer);
 	return true;
 }
