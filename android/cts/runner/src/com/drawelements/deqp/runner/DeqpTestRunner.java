@@ -38,7 +38,6 @@ import com.android.tradefed.testtype.IDeviceTest;
 import com.android.tradefed.testtype.IRemoteTest;
 import com.android.tradefed.testtype.IRuntimeHintProvider;
 import com.android.tradefed.testtype.IShardableTest;
-import com.android.tradefed.testtype.IStrictShardableTest;
 import com.android.tradefed.testtype.ITestCollector;
 import com.android.tradefed.testtype.ITestFilterReceiver;
 import com.android.tradefed.util.AbiUtils;
@@ -77,7 +76,7 @@ import java.util.regex.Pattern;
 @OptionClass(alias="deqp-test-runner")
 public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         ITestFilterReceiver, IAbiReceiver, IShardableTest, ITestCollector,
-        IRuntimeHintProvider, IStrictShardableTest {
+        IRuntimeHintProvider {
     private static final String DEQP_ONDEVICE_APK = "com.drawelements.deqp.apk";
     private static final String DEQP_ONDEVICE_PKG = "com.drawelements.deqp";
     private static final String INCOMPLETE_LOG_MESSAGE = "Crash: Incomplete test log";
@@ -2222,51 +2221,6 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
         updateRuntimeHint(iterationSet.size(), runners);
         CLog.i("Split deqp tests into %d shards", runners.size());
         return runners;
-    }
-
-    /**
-     * This sharding should be deterministic for the same input and independent.
-     * Through this API, each shard could be executed on different machine.
-     */
-    @Override
-    public IRemoteTest getTestShard(int shardCount, int shardIndex) {
-        // TODO: refactor getTestshard and split to share some logic.
-        if (mTestInstances == null) {
-            loadTests();
-        }
-
-        List<IRemoteTest> runners = new ArrayList<>();
-        // NOTE: Use linked hash map to keep the insertion order in iteration
-        Map<TestDescription, Set<BatchRunConfiguration>> currentSet = new LinkedHashMap<>();
-        Map<TestDescription, Set<BatchRunConfiguration>> iterationSet = this.mTestInstances;
-
-        int batchLimit = iterationSet.keySet().size() / shardCount;
-        int i = 1;
-        // Go through tests, split
-        for (TestDescription test: iterationSet.keySet()) {
-            currentSet.put(test, iterationSet.get(test));
-            if (currentSet.size() >= batchLimit && i < shardCount) {
-                runners.add(new DeqpTestRunner(this, currentSet));
-                i++;
-                // NOTE: Use linked hash map to keep the insertion order in iteration
-                currentSet = new LinkedHashMap<>();
-            }
-        }
-        runners.add(new DeqpTestRunner(this, currentSet));
-
-        // Compute new runtime hints
-        updateRuntimeHint(iterationSet.size(), runners);
-
-        // If too many shards were requested, we complete with placeholder.
-        if (runners.size() < shardCount) {
-            for (int j = runners.size(); j < shardCount; j++) {
-                runners.add(new DeqpTestRunner(this,
-                        new LinkedHashMap<TestDescription, Set<BatchRunConfiguration>>()));
-            }
-        }
-
-        CLog.i("Split deqp tests into %d shards, return shard: %s", runners.size(), shardIndex);
-        return runners.get(shardIndex);
     }
 
     /**
