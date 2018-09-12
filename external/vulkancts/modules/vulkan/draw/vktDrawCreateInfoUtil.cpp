@@ -713,6 +713,20 @@ PipelineCreateInfo::VertexInputState::VertexInputState (deUint32										_verte
 	pVertexAttributeDescriptions	= _pVertexAttributeDescriptions;
 }
 
+PipelineCreateInfo::VertexInputState& PipelineCreateInfo::VertexInputState::addDivisors (deUint32												_vertexBindingDivisorCount,
+																						 const vk::VkVertexInputBindingDivisorDescriptionEXT*	_pVertexBindingDivisors)
+{
+	m_divisorState.sType = vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT;
+	m_divisorState.vertexBindingDivisorCount = _vertexBindingDivisorCount;
+	m_divisorState.pVertexBindingDivisors = _pVertexBindingDivisors;
+
+	// Link it into the chainadd
+	m_divisorState.pNext = this->pNext;
+	pNext = &m_divisorState;
+
+	return *this;
+}
+
 PipelineCreateInfo::InputAssemblerState::InputAssemblerState (vk::VkPrimitiveTopology	_topology,
 															  vk::VkBool32				_primitiveRestartEnable)
 {

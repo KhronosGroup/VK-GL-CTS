@@ -141,7 +141,7 @@ tcu::TestStatus testEarlyDestroy (Context& context, bool usePipelineCache)
 		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType;
 		DE_NULL,													// const void*                                pNext;
 		0u,															// VkPipelineRasterizationStateCreateFlags    flags;
-		VK_TRUE,													// VkBool32                                   depthClampEnable;
+		VK_FALSE,													// VkBool32                                   depthClampEnable;
 		VK_TRUE,													// VkBool32                                   rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,										// VkPolygonMode                              polygonMode;
 		VK_CULL_MODE_BACK_BIT,										// VkCullModeFlags                            cullMode;

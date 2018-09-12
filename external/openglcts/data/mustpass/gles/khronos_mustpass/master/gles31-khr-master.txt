@@ -2274,7 +2274,7 @@ KHR-GLES31.core.internalformat.texture2d.rgba_unsigned_int_2_10_10_10_rev_rgb5_a
 KHR-GLES31.core.internalformat.texture2d.rgb_unsigned_int_2_10_10_10_rev_rgb
 KHR-GLES31.core.internalformat.texture2d.depth_component_unsigned_short_depth_component
 KHR-GLES31.core.internalformat.texture2d.depth_component_unsigned_int_depth_component
-KHR-GLES31.core.internalformat.texture2d.depth_stencil_unsigned_int_24_8_depth24_stencil8
+KHR-GLES31.core.internalformat.texture2d.depth_stencil_unsigned_int_24_8_depth_stencil
 KHR-GLES31.core.internalformat.texture2d.rgb_half_float_rgb16f
 KHR-GLES31.core.internalformat.texture2d.rgba_half_float_rgba16f
 KHR-GLES31.core.internalformat.texture2d.rgb_half_float_rgb16f_linear
@@ -2293,6 +2293,7 @@ KHR-GLES31.core.internalformat.texture2d.rgb_unsigned_short_5_6_5_rgb
 KHR-GLES31.core.internalformat.texture2d.rgb_unsigned_short_5_6_5_rgb565
 KHR-GLES31.core.internalformat.texture2d.rgb_unsigned_byte_rgb8
 KHR-GLES31.core.internalformat.texture2d.rgba_unsigned_byte_rgba8
+KHR-GLES31.core.internalformat.texture2d.depth_stencil_unsigned_int_24_8_depth24_stencil8
 KHR-GLES31.core.internalformat.copy_tex_image.rgb
 KHR-GLES31.core.internalformat.copy_tex_image.rgba
 KHR-GLES31.core.internalformat.copy_tex_image.alpha

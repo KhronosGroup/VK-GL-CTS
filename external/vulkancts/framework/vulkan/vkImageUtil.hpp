@@ -63,10 +63,13 @@ VkSamplerAddressMode		mapWrapMode					(tcu::Sampler::WrapMode wrapMode);
 VkCompareOp					mapCompareMode				(tcu::Sampler::CompareMode mode);
 VkFormat					mapTextureFormat			(const tcu::TextureFormat& format);
 VkFormat					mapCompressedTextureFormat	(const tcu::CompressedTexFormat format);
-VkSamplerCreateInfo			mapSampler					(const tcu::Sampler& sampler, const tcu::TextureFormat& format, float minLod = 0.0f, float maxLod = 1000.0f);
+VkSamplerCreateInfo			mapSampler					(const tcu::Sampler& sampler, const tcu::TextureFormat& format, float minLod = 0.0f, float maxLod = 1000.0f, bool unnormal = false);
 
 void						imageUtilSelfTest			(void);
 
+float						getRepresentableDiffUnorm	(const VkFormat format, const deUint32 componentNdx);
+float						getRepresentableDiffSnorm	(const VkFormat format, const deUint32 componentNdx);
+deUint32					getFormatComponentWidth		(const VkFormat format, const deUint32 componentNdx);
 deUint32					getBlockSizeInBytes			(const VkFormat compressedFormat);
 deUint32					getBlockWidth				(const VkFormat compressedFormat);
 deUint32					getBlockHeight				(const VkFormat compressedFormat);

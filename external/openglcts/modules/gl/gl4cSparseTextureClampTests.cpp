@@ -445,6 +445,9 @@ bool SparseTextureClampLookupResidencyTestCase::verifyLookupTextureData(const Fu
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
 
+	gl.deleteFramebuffers(1, &fbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteFramebuffers");
+
 	Texture::Delete(gl, verifyTexture);
 
 	return result;
@@ -946,6 +949,9 @@ bool SparseTextureClampLookupColorTestCase::verifyLookupTextureData(const Functi
 
 	gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer");
+
+	gl.deleteFramebuffers(1, &fbo);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteFramebuffers");
 
 	Texture::Delete(gl, verifyTexture);
 

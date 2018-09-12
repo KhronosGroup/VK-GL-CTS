@@ -44,6 +44,7 @@
 #include "vktApiMaintenance3Check.hpp"
 #include "vktApiDescriptorSetTests.hpp"
 #include "vktApiPipelineTests.hpp"
+#include "vktApiMemoryRequirementInvarianceTests.hpp"
 
 namespace vkt
 {
@@ -65,25 +66,26 @@ void createApiTests (tcu::TestCaseGroup* apiTests)
 {
 	tcu::TestContext&	testCtx		= apiTests->getTestContext();
 
-	apiTests->addChild(createVersionSanityCheckTests	(testCtx));
-	apiTests->addChild(createSmokeTests					(testCtx));
-	apiTests->addChild(api::createFeatureInfoTests		(testCtx));
-	apiTests->addChild(createDeviceInitializationTests	(testCtx));
-	apiTests->addChild(createObjectManagementTests		(testCtx));
-	apiTests->addChild(createBufferTests				(testCtx));
-	apiTests->addChild(createTestGroup					(testCtx, "buffer_view",	"BufferView tests",		createBufferViewTests));
-	apiTests->addChild(createCommandBuffersTests		(testCtx));
-	apiTests->addChild(createCopiesAndBlittingTests		(testCtx));
-	apiTests->addChild(createImageClearingTests			(testCtx));
-	apiTests->addChild(createFillAndUpdateBufferTests	(testCtx));
-	apiTests->addChild(createDescriptorPoolTests		(testCtx));
-	apiTests->addChild(createNullHandleTests			(testCtx));
-	apiTests->addChild(createGranularityQueryTests		(testCtx));
-	apiTests->addChild(createMemoryCommitmentTests		(testCtx));
-	apiTests->addChild(createExternalMemoryTests		(testCtx));
-	apiTests->addChild(createMaintenance3Tests			(testCtx));
-	apiTests->addChild(createDescriptorSetTests			(testCtx));
-	apiTests->addChild(createPipelineTests				(testCtx));
+	apiTests->addChild(createVersionSanityCheckTests			(testCtx));
+	apiTests->addChild(createSmokeTests							(testCtx));
+	apiTests->addChild(api::createFeatureInfoTests				(testCtx));
+	apiTests->addChild(createDeviceInitializationTests			(testCtx));
+	apiTests->addChild(createObjectManagementTests				(testCtx));
+	apiTests->addChild(createBufferTests						(testCtx));
+	apiTests->addChild(createTestGroup							(testCtx, "buffer_view",	"BufferView tests",		createBufferViewTests));
+	apiTests->addChild(createCommandBuffersTests				(testCtx));
+	apiTests->addChild(createCopiesAndBlittingTests				(testCtx));
+	apiTests->addChild(createImageClearingTests					(testCtx));
+	apiTests->addChild(createFillAndUpdateBufferTests			(testCtx));
+	apiTests->addChild(createDescriptorPoolTests				(testCtx));
+	apiTests->addChild(createNullHandleTests					(testCtx));
+	apiTests->addChild(createGranularityQueryTests				(testCtx));
+	apiTests->addChild(createMemoryCommitmentTests				(testCtx));
+	apiTests->addChild(createExternalMemoryTests				(testCtx));
+	apiTests->addChild(createMaintenance3Tests					(testCtx));
+	apiTests->addChild(createDescriptorSetTests					(testCtx));
+	apiTests->addChild(createPipelineTests						(testCtx));
+	apiTests->addChild(createMemoryRequirementInvarianceTests	(testCtx));
 }
 
 } // anonymous

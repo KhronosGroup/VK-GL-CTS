@@ -334,7 +334,10 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
 		{
 			specializationMap["SAMPLED_TYPE"]	= "vec4";
 			specializationMap["SAMPLER"]		 = "sampler2D";
-			specializationMap["CALCULATE_COLOR"] = "v";
+			if (format == GL_DEPTH_STENCIL)
+				specializationMap["CALCULATE_COLOR"] = "vec4(v.r, 0.0, 0.0, 1.0)";
+			else
+				specializationMap["CALCULATE_COLOR"] = "v";
 		}
 	}
 	else
@@ -357,7 +360,7 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
 			 "  gl_FragColor = ${CALCULATE_COLOR};\n"
 			 "}\n";
 
-		if (internalFormat == GL_DEPTH_COMPONENT)
+		if ((internalFormat == GL_DEPTH_COMPONENT) || (internalFormat == GL_DEPTH_STENCIL))
 			specializationMap["CALCULATE_COLOR"] = "vec4(color.r, 0.0, 0.0, 1.0)";
 		else
 			specializationMap["CALCULATE_COLOR"] = "color";
@@ -882,6 +885,20 @@ tcu::TestNode::IterateResult CopyTexImageCase::iterate(void)
 		gl.deleteFramebuffers(1, &copyFboId);
 		if (copyFboColorTextureId)
 			gl.deleteTextures(1, &copyFboColorTextureId);
+		// Check the bits of each channel first, because according the GLES3.2 spec, the component sizes of internalformat
+		// must exactly match the corresponding component sizes of the source buffer's effective internal format.
+		if (glu::isContextTypeES(renderContext.getType()) && getTypeFromInternalFormat(textureInternalFormat) != GL_UNSIGNED_BYTE)
+		{
+			m_testCtx.getLog() << tcu::TestLog::Message << "Not supported: The component sizes of internalformat do not exactly "
+			<< "match the corresponding component sizes of the source buffer's effective internal format." << tcu::TestLog::EndMessage;
+			m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "The test format isn't renderable, and the component sizes of "
+			"internalformat do not exactly match the corresponding component sizes of the source buffer's effective internal format.");
+			gl.deleteFramebuffers(1, &mainFboId);
+			gl.deleteTextures(1, &mainFboColorTextureId);
+			gl.deleteTextures(1, &copiedTextureId);
+			gl.deleteTextures(1, &referenceTextureId);
+			return STOP;
+		}
 	}
 
 	// Copy attachment from copy FBO to tested texture (if copy FBO couldn't be created
@@ -1401,7 +1418,7 @@ void InternalformatTests::getESTestData(TestData& testData, glu::ContextType& co
 		TF(GL_RGB, GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGB, EXT_texture_type_2_10_10_10_REV),
 		TF(GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, GL_DEPTH_COMPONENT, OES_depth_texture),
 		TF(GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, GL_DEPTH_COMPONENT, OES_depth_texture),
-		TF(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8, OES_packed_depth_stencil),
+		TF(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH_STENCIL, OES_packed_depth_stencil, OES_depth_texture),
 		TF(GL_RGB, GL_HALF_FLOAT, GL_RGB16F, OES_texture_half_float),
 		TF(GL_RGBA, GL_HALF_FLOAT, GL_RGBA16F, OES_texture_half_float),
 		TF(GL_RGB, GL_HALF_FLOAT, GL_RGB16F, OES_texture_half_float_linear, DE_NULL, GL_LINEAR, GL_LINEAR),
@@ -1442,6 +1459,7 @@ void InternalformatTests::getESTestData(TestData& testData, glu::ContextType& co
 			TF(GL_RGB, GL_UNSIGNED_SHORT_5_6_5, GL_RGB565),
 			TF(GL_RGB, GL_UNSIGNED_BYTE, GL_RGB8),
 			TF(GL_RGBA, GL_UNSIGNED_BYTE, GL_RGBA8),
+			TF(GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, GL_DEPTH24_STENCIL8),
 		};
 
 		CopyTexImageFormat es3CopyTexImageFormats[] = {

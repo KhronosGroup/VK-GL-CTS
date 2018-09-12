@@ -556,3 +556,11 @@ inline VkSampleLocationEXT makeSampleLocationEXT (float x, float y)
 	res.y	= y;
 	return res;
 }
+
+inline VkVertexInputBindingDivisorDescriptionEXT makeVertexInputBindingDivisorDescriptionEXT (deUint32 binding, deUint32 divisor)
+{
+	VkVertexInputBindingDivisorDescriptionEXT res;
+	res.binding	= binding;
+	res.divisor	= divisor;
+	return res;
+}

@@ -4067,6 +4067,7 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 			spec["convert"]			= "OpFConvert";
 			spec["scale"]			= "%x = OpCopyObject %f32 %dataIn0_converted\n%y = OpCopyObject %f32 %dataIn1_converted\n";
 			spec["colorConstruct"]	= "OpCompositeConstruct %v4f32 %x %y %c_f32_1 %c_f32_1";
+			spec["interpolation0"]	= spec["interpolation1"] = "";
 			break;
 
 		case DATATYPE_VEC2:
@@ -4074,6 +4075,7 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 			spec["convert"]			= "OpFConvert";
 			spec["scale"]			= "%xy = OpCopyObject %v2f32 %dataIn0_converted\n%zw = OpCopyObject %v2f32 %dataIn1_converted\n";
 			spec["colorConstruct"]	= "OpCompositeConstruct %v4f32 %xy %zw";
+			spec["interpolation0"]	= spec["interpolation1"] = "";
 			break;
 
 		case DATATYPE_INT:
@@ -4081,6 +4083,8 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 			spec["convert"]			= "OpSConvert";
 			spec["scale"]			= "%x_unscaled = OpConvertSToF %f32 %dataIn0_converted\n%x = OpFDiv %f32 %x_unscaled %scale_f32\n%y_unscaled = OpConvertSToF %f32 %dataIn1_converted\n%y = OpFDiv %f32 %y_unscaled %scale_f32\n";
 			spec["colorConstruct"]	= "OpCompositeConstruct %v4f32 %x %y %c_f32_1 %c_f32_1";
+			spec["interpolation0"]	= "OpDecorate %dataIn0 Flat";
+			spec["interpolation1"]	= "OpDecorate %dataIn1 Flat";
 			break;
 
 		case DATATYPE_UINT:
@@ -4088,6 +4092,8 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 			spec["convert"]			= "OpUConvert";
 			spec["scale"]			= "%x_unscaled = OpConvertUToF %f32 %dataIn0_converted\n%x = OpFDiv %f32 %x_unscaled %scale_f32\n%y_unscaled = OpConvertUToF %f32 %dataIn1_converted\n%y = OpFDiv %f32 %y_unscaled %scale_f32\n";
 			spec["colorConstruct"]	= "OpCompositeConstruct %v4f32 %x %y %c_f32_1 %c_f32_1";
+			spec["interpolation0"]	= "OpDecorate %dataIn0 Flat";
+			spec["interpolation1"]	= "OpDecorate %dataIn1 Flat";
 			break;
 
 		case DATATYPE_IVEC2:
@@ -4095,6 +4101,8 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 			spec["convert"]			= "OpSConvert";
 			spec["scale"]			= "%xy_unscaled = OpConvertSToF %v2f32 %dataIn0_converted\n%xy = OpFDiv %v2f32 %xy_unscaled %scale_v2f32\n%zw_unscaled = OpConvertSToF %v2f32 %dataIn1_converted\n%zw = OpFDiv %v2f32 %zw_unscaled %scale_v2f32\n";
 			spec["colorConstruct"]	= "OpCompositeConstruct %v4f32 %xy %zw";
+			spec["interpolation0"]	= "OpDecorate %dataIn0 Flat";
+			spec["interpolation1"]	= "OpDecorate %dataIn1 Flat";
 			break;
 
 		case DATATYPE_UVEC2:
@@ -4102,6 +4110,8 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 			spec["convert"]			= "OpUConvert";
 			spec["scale"]			= "%xy_unscaled = OpConvertUToF %v2f32 %dataIn0_converted\n%xy = OpFDiv %v2f32 %xy_unscaled %scale_v2f32\n%zw_unscaled = OpConvertUToF %v2f32 %dataIn1_converted\n%zw = OpFDiv %v2f32 %zw_unscaled %scale_v2f32\n";
 			spec["colorConstruct"]	= "OpCompositeConstruct %v4f32 %xy %zw";
+			spec["interpolation0"]	= "OpDecorate %dataIn0 Flat";
+			spec["interpolation1"]	= "OpDecorate %dataIn1 Flat";
 			break;
 
 		default:
@@ -4192,6 +4202,8 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 		"                             OpDecorate %vtxColor Location 1\n"
 		"                             OpDecorate %dataIn0 Location 2\n"
 		"                             OpDecorate %dataIn1 Location 3\n"
+		"                             ${interpolation0}\n"
+		"                             ${interpolation1}\n"
 		"                             OpDecorate %fragColor Location 0\n"
 		"                             OpDecorate %dataOut Location 1\n"
 		"                     %void = OpTypeVoid\n"

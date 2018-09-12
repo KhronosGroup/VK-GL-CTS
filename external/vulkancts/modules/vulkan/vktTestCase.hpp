@@ -78,6 +78,8 @@ public:
 												get16BitStorageFeatures			(void) const;
 	const vk::VkPhysicalDeviceVariablePointerFeatures&
 												getVariablePointerFeatures		(void) const;
+	const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&
+												getVertexAttributeDivisorFeatures	(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;
