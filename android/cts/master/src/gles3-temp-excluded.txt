@@ -1,4 +1,1 @@
-# Temporarily excluded for b/72385186
-dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_ms
-dEQP-GLES3.functional.fbo.msaa.renderbuffer_resize.ms_to_nonms
-
+# Tests to be temporarily skipped for Android CI, but still enforced in CTS.
