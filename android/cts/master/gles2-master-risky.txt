@@ -1,1 +1,1 @@
-dEQP-GLES2.functional.rasterization.limits.points
+
