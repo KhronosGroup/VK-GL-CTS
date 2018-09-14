@@ -226,7 +226,7 @@ bool graphicsCheck16BitFloats64 (const std::vector<Resource>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].getBytes(originalBytes);
+		originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
 
 		const deUint16*	returned	= static_cast<const deUint16*>(outputAllocs[outputNdx]->getHostPtr());
 		const double*	original	= reinterpret_cast<const double*>(&originalBytes.front());
@@ -304,7 +304,7 @@ bool computeCheck16BitFloats64 (const std::vector<Resource>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].getBytes(originalBytes);
+		originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
 
 		const deUint16*	returned	= static_cast<const deUint16*>(outputAllocs[outputNdx]->getHostPtr());
 		const double*	original	= reinterpret_cast<const double*>(&originalBytes.front());
@@ -333,7 +333,7 @@ bool check64BitFloats (const std::vector<Resource>&		/* originalFloats */,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	expectedBytes;
-		expectedOutputs[outputNdx].getBytes(expectedBytes);
+		expectedOutputs[outputNdx].getBuffer()->getPackedBytes(expectedBytes);
 
 		const double*	returnedAsDouble	= static_cast<const double*>(outputAllocs[outputNdx]->getHostPtr());
 		const double*	expectedAsDouble	= reinterpret_cast<const double*>(&expectedBytes.front());
@@ -7092,7 +7092,7 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 
 		const StringTemplate decoration		(
 			"OpDecorate %ra_f64 ArrayStride 8\n"
-			"OpDecorate %ra_f16 ArrayStride 2\n"
+			"OpDecorate %ra_f16 ArrayStride ${stride16}\n"
 			"OpMemberDecorate %SSBO64 0 Offset 0\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
 			"OpDecorate %SSBO64 BufferBlock\n"
@@ -7147,10 +7147,13 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_scalar_float";
 				bool				useConstIdx	= constantIndices[constIndexIdx].useConstantIndex;
 				deUint32			constIdx	= constantIndices[constIndexIdx].constantIndex;
+				const bool			isUBO		= CAPABILITIES[capIdx].dtype == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 				specs["cap"]					= CAPABILITIES[capIdx].cap;
 				specs["indecor"]				= CAPABILITIES[capIdx].decor;
 				specs["constarrayidx"]			= de::toString(constIdx);
+				specs["stride16"]				= isUBO ? "16" : "2";
+
 				if (useConstIdx)
 					specs["arrayindex"] = "c_i32_ci";
 				else
@@ -7166,7 +7169,7 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 					float64Data.push_back(deFloat16To64(float16Data[useConstIdx ? constIdx : numIdx]));
 
-				resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data, isUBO ? 14 : 0)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.outputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.verifyIO = check64BitFloats;
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
@@ -7202,7 +7205,7 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 
 		const StringTemplate decoration		(
 			"OpDecorate %ra_v2f64 ArrayStride 16\n"
-			"OpDecorate %ra_v2f16 ArrayStride 4\n"
+			"OpDecorate %ra_v2f16 ArrayStride ${stride16}\n"
 			"OpMemberDecorate %SSBO64 0 Offset 0\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
 			"OpDecorate %SSBO64 BufferBlock\n"
@@ -7257,10 +7260,13 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_vector_float";
 				bool				useConstIdx	= constantIndices[constIndexIdx].useConstantIndex;
 				deUint32			constIdx	= constantIndices[constIndexIdx].constantIndex;
+				const bool			isUBO		= CAPABILITIES[capIdx].dtype == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 				specs["cap"]					= CAPABILITIES[capIdx].cap;
 				specs["indecor"]				= CAPABILITIES[capIdx].decor;
 				specs["constarrayidx"]			= de::toString(constIdx);
+				specs["stride16"]				= isUBO ? "16" : "4";
+
 				if (useConstIdx)
 					specs["arrayindex"] = "c_i32_ci";
 				else
@@ -7276,7 +7282,7 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 					float64Data.push_back(deFloat16To64(float16Data[constantIndices[constIndexIdx].useConstantIndex ? (constantIndices[constIndexIdx].constantIndex * 2 + numIdx % 2) : numIdx]));
 
-				resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data, isUBO ? 12 : 0)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.outputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.verifyIO = check64BitFloats;
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
@@ -7634,7 +7640,7 @@ void addCompute16bitStorageUniform64To16Group (tcu::TestCaseGroup* group)
 		"OpExecutionMode %main LocalSize 1 1 1\n"
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		"${stride}"
+		"${stride}\n"
 
 		"OpMemberDecorate %SSBO64 0 Offset 0\n"
 		"OpMemberDecorate %SSBO16 0 Offset 0\n"
@@ -7728,15 +7734,19 @@ void addCompute16bitStorageUniform64To16Group (tcu::TestCaseGroup* group)
 			const char*	name;
 			const char*	base64;
 			const char*	base16;
-			const char*	stride;
+			const char*	strideStr;
+			const char* stride64UBO;
+			unsigned	padding64UBO;
+			const char* stride64SSBO;
+			unsigned	padding64SSBO;
 			unsigned	count;
 		};
 
 		const CompositeType	cTypes[]	=
 		{
-			{"scalar",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride 2\n",				numElements},
-			{"vector",	"v4f64",	"v4f16",	"OpDecorate %v4f64arr ArrayStride 32\nOpDecorate %v4f16arr ArrayStride 8\n",		numElements / 4},
-			{"matrix",	"v4f64",	"v4f16",	"OpDecorate %m2v4f64arr ArrayStride 64\nOpDecorate %m2v4f16arr ArrayStride 16\n",	numElements / 8},
+			{"scalar",	"f64",		"f16",		"OpDecorate %f16arr ArrayStride 2\nOpDecorate %f64arr ArrayStride ",			"16",	8,	"8",	0,	numElements},
+			{"vector",	"v4f64",	"v4f16",	"OpDecorate %v4f16arr ArrayStride 8\nOpDecorate %v4f64arr ArrayStride ",		"32",	0,	"32",	0,	numElements / 4},
+			{"matrix",	"v4f64",	"v4f16",	"OpDecorate %m2v4f16arr ArrayStride 16\nOpDecorate %m2v4f64arr ArrayStride ",	"64",	0,	"64",	0,	numElements / 8},
 		};
 
 		vector<double>		float64Data			= getFloat64s(rnd, numElements);
@@ -7749,15 +7759,21 @@ void addCompute16bitStorageUniform64To16Group (tcu::TestCaseGroup* group)
 					ComputeShaderSpec		spec;
 					map<string, string>		specs;
 					string					testName	= string(CAPABILITIES[capIdx].name) + "_" + cTypes[tyIdx].name + "_float_" + rndModes[rndModeIdx].name;
+					const bool				isUBO		= CAPABILITIES[capIdx].dtype == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 					specs["capability"]		= CAPABILITIES[capIdx].cap;
 					specs["storage"]		= CAPABILITIES[capIdx].decor;
-					specs["stride"]			= cTypes[tyIdx].stride;
+					specs["stride"]			= cTypes[tyIdx].strideStr;
 					specs["base64"]			= cTypes[tyIdx].base64;
 					specs["base16"]			= cTypes[tyIdx].base16;
 					specs["rounding"]		= rndModes[rndModeIdx].decor;
 					specs["types"]			= floatTypes;
 					specs["convert"]		= "OpFConvert";
+
+					if (isUBO)
+						specs["stride"] += cTypes[tyIdx].stride64UBO;
+					else
+						specs["stride"] += cTypes[tyIdx].stride64SSBO;
 
 					if (deStringEqual(cTypes[tyIdx].name, "matrix"))
 					{
@@ -7789,8 +7805,9 @@ void addCompute16bitStorageUniform64To16Group (tcu::TestCaseGroup* group)
 					spec.assembly			= shaderTemplate.specialize(specs);
 					spec.numWorkGroups		= IVec3(cTypes[tyIdx].count, 1, 1);
 					spec.verifyIO			= rndModes[rndModeIdx].func;
+					const unsigned padding	= isUBO ? cTypes[tyIdx].padding64UBO : cTypes[tyIdx].padding64SSBO;
 
-					spec.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), CAPABILITIES[capIdx].dtype));
+					spec.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data, padding)), CAPABILITIES[capIdx].dtype));
 					// We provided a custom verifyIO in the above in which inputs will be used for checking.
 					// So put dummy data in the expected values.
 					spec.outputs.push_back(BufferSp(new Float16Buffer(float16DummyData)));
@@ -7817,7 +7834,6 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 															 "OpCapability Float16\n"
 															 "OpCapability ${cap}\n");
 
-	resources.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	// We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
 	resources.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16DummyData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
@@ -7852,7 +7868,7 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 			"   %ssbo16 = OpVariable %up_SSBO16 Uniform\n";
 
 		const StringTemplate decoration		(
-			"OpDecorate %ra_f64 ArrayStride 8\n"
+			"OpDecorate %ra_f64 ArrayStride ${stride64}\n"
 			"OpDecorate %ra_f16 ArrayStride 2\n"
 			"OpMemberDecorate %SSBO64 0 Offset 0\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
@@ -7911,15 +7927,19 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 			{
 				map<string, string>	specs;
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_scalar_float_" + rndModes[rndModeIdx].name;
+				const bool			isUBO		= CAPABILITIES[capIdx].dtype == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 				specs["cap"]					= CAPABILITIES[capIdx].cap;
 				specs["indecor"]				= CAPABILITIES[capIdx].decor;
 				specs["rounddecor"]				= rndModes[rndModeIdx].decor;
+				specs["stride64"]				= isUBO ? "16" : "8";
 
 				fragments["capability"]			= capabilities.specialize(specs);
 				fragments["decoration"]			= decoration.specialize(specs);
 
-				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
+				resources.inputs.clear();
+				resources.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data, isUBO ? 8 : 0)), CAPABILITIES[capIdx].dtype));
+
 				resources.verifyIO				= rndModes[rndModeIdx].f;
 				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 				features.coreFeatures.shaderFloat64 = DE_TRUE;
@@ -8015,7 +8035,8 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 				fragments["capability"]			= capabilities.specialize(specs);
 				fragments["decoration"]			= decoration.specialize(specs);
 
-				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
+				resources.inputs.clear();
+				resources.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), CAPABILITIES[capIdx].dtype));
 				resources.verifyIO				= rndModes[rndModeIdx].f;
 				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 				features.coreFeatures.shaderFloat64 = DE_TRUE;
@@ -8131,7 +8152,8 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 				fragments["capability"]			= capabilities.specialize(specs);
 				fragments["decoration"]			= decoration.specialize(specs);
 
-				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
+				resources.inputs.clear();
+				resources.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), CAPABILITIES[capIdx].dtype));
 				resources.verifyIO				= rndModes[rndModeIdx].f;
 				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 				features.coreFeatures.shaderFloat64 = DE_TRUE;
@@ -8298,7 +8320,7 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 		"OpExecutionMode %main LocalSize 1 1 1\n"
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		"${stride}"
+		"${stride}\n"
 
 		"OpMemberDecorate %SSBO64 0 Offset 0\n"
 		"OpMemberDecorate %SSBO16 0 Offset 0\n"
@@ -8377,7 +8399,11 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 			const char*	name;
 			const char*	base64;
 			const char*	base16;
-			const char*	stride;
+			const char*	strideStr;
+			const char* stride16UBO;
+			unsigned	padding16UBO;
+			const char* stride16SSBO;
+			unsigned	padding16SSBO;
 			bool		useConstantIndex;
 			unsigned	constantIndex;
 			unsigned	count;
@@ -8385,11 +8411,11 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 
 		const CompositeType	cTypes[]	=
 		{
-			{"scalar",				"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride 2\n",				false,	0,	numElements},
-			{"scalar_const_idx_5",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride 2\n",				true,	5,	numElements},
-			{"scalar_const_idx_8",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride 2\n",				true,	8,	numElements},
-			{"vector",				"v2f64",	"v2f16",	"OpDecorate %v2f64arr ArrayStride 16\nOpDecorate %v2f16arr ArrayStride 4\n",		false,	0,	numElements / 2},
-			{"matrix",				"v2f64",	"v2f16",	"OpDecorate %m4v2f64arr ArrayStride 64\nOpDecorate %m4v2f16arr ArrayStride 16\n",	false,	0,	numElements / 8},
+			{"scalar",				"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	false,	0,	numElements},
+			{"scalar_const_idx_5",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	true,	5,	numElements},
+			{"scalar_const_idx_8",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	true,	8,	numElements},
+			{"vector",				"v2f64",	"v2f16",	"OpDecorate %v2f64arr ArrayStride 16\nOpDecorate %v2f16arr ArrayStride ",		"16",	12,	"4",	0,	false,	0,	numElements / 2},
+			{"matrix",				"v2f64",	"v2f16",	"OpDecorate %m4v2f64arr ArrayStride 64\nOpDecorate %m4v2f16arr ArrayStride ",	"16",	0, "16",	0,	false,	0,	numElements / 8},
 		};
 
 		vector<deFloat16>	float16Data			= getFloat16s(rnd, numElements);
@@ -8405,15 +8431,22 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 				ComputeShaderSpec		spec;
 				map<string, string>		specs;
 				string					testName	= string(CAPABILITIES[capIdx].name) + "_" + cTypes[tyIdx].name + "_float";
+				const bool				isUBO		= CAPABILITIES[capIdx].dtype == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
 				specs["capability"]		= CAPABILITIES[capIdx].cap;
 				specs["storage"]		= CAPABILITIES[capIdx].decor;
-				specs["stride"]			= cTypes[tyIdx].stride;
+				specs["stride"]			= cTypes[tyIdx].strideStr;
 				specs["base64"]			= cTypes[tyIdx].base64;
 				specs["base16"]			= cTypes[tyIdx].base16;
 				specs["types"]			= floatTypes;
 				specs["convert"]		= "OpFConvert";
 				specs["constarrayidx"]	= de::toString(cTypes[tyIdx].constantIndex);
+
+				if (isUBO)
+					specs["stride"] += cTypes[tyIdx].stride16UBO;
+				else
+					specs["stride"] += cTypes[tyIdx].stride16SSBO;
+
 				if (cTypes[tyIdx].useConstantIndex)
 					specs["arrayindex"] = "c_i32_ci";
 				else
@@ -8464,8 +8497,9 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 				spec.assembly			= shaderTemplate.specialize(specs);
 				spec.numWorkGroups		= IVec3(cTypes[tyIdx].count, 1, 1);
 				spec.verifyIO			= check64BitFloats;
+				const unsigned padding	= isUBO ? cTypes[tyIdx].padding16UBO : cTypes[tyIdx].padding16SSBO;
 
-				spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data)), CAPABILITIES[capIdx].dtype));
+				spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data, padding)), CAPABILITIES[capIdx].dtype));
 				spec.outputs.push_back(Resource(BufferSp(new Float64Buffer(cTypes[tyIdx].useConstantIndex ? float64DataConstIdx : float64Data))));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.extensions.push_back("VK_KHR_shader_float16_int8");
