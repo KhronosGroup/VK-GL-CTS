@@ -24,7 +24,7 @@
 		<activity android:name="android.app.NativeActivity"
 				  android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
 				  android:label="dEQP Test Process"
-				  android:configChanges="keyboardHidden|orientation|screenSize"
+				  android:configChanges="keyboardHidden|orientation|screenSize|screenLayout"
 				  android:exported="true"
 				  android:process=":testercore">
 			<meta-data android:name="android.app.lib_name"
