@@ -142,6 +142,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/image/vktImageTranscodingSupportTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryAllocationTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryBindingTests.cpp \
+	external/vulkancts/modules/vulkan/memory/vktMemoryExternalMemoryHostTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryMappingTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryPipelineBarrierTests.cpp \
 	external/vulkancts/modules/vulkan/memory/vktMemoryRequirementsTests.cpp \
@@ -213,6 +214,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassSparseRenderTargetTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTests.cpp \
 	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktRenderPassUnusedAttachmentTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustBufferAccessWithVariablePointersTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessBufferAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \

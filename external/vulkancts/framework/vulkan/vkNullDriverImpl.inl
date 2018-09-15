@@ -1845,6 +1845,15 @@ VKAPI_ATTR VkResult VKAPI_CALL getValidationCacheDataEXT (VkDevice device, VkVal
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryHostPointerPropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(handleType);
+	DE_UNREF(pHostPointer);
+	DE_UNREF(pMemoryHostPointerProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
 {
 	DE_UNREF(device);
@@ -2157,6 +2166,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkDestroyValidationCacheEXT,					destroyValidationCacheEXT),
 	VK_NULL_FUNC_ENTRY(vkMergeValidationCachesEXT,					mergeValidationCachesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetValidationCacheDataEXT,					getValidationCacheDataEXT),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryHostPointerPropertiesEXT,			getMemoryHostPointerPropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetAndroidHardwareBufferPropertiesANDROID,	getAndroidHardwareBufferPropertiesANDROID),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryAndroidHardwareBufferANDROID,		getMemoryAndroidHardwareBufferANDROID),
 };

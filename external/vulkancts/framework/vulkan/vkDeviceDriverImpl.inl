@@ -987,6 +987,11 @@ VkResult DeviceDriver::getValidationCacheDataEXT (VkDevice device, VkValidationC
 	return m_vk.getValidationCacheDataEXT(device, validationCache, pDataSize, pData);
 }
 
+VkResult DeviceDriver::getMemoryHostPointerPropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties) const
+{
+	return m_vk.getMemoryHostPointerPropertiesEXT(device, handleType, pHostPointer, pMemoryHostPointerProperties);
+}
+
 VkResult DeviceDriver::getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const
 {
 	return m_vk.getAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);

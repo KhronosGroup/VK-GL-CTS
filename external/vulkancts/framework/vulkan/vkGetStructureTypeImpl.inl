@@ -1136,6 +1136,21 @@ template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
 }
 
+template<> VkStructureType getStructureType<VkImportMemoryHostPointerInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMemoryHostPointerPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalMemoryHostPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT;

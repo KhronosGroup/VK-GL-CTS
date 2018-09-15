@@ -198,5 +198,6 @@ CreateValidationCacheEXTFunc					createValidationCacheEXT;
 DestroyValidationCacheEXTFunc					destroyValidationCacheEXT;
 MergeValidationCachesEXTFunc					mergeValidationCachesEXT;
 GetValidationCacheDataEXTFunc					getValidationCacheDataEXT;
+GetMemoryHostPointerPropertiesEXTFunc			getMemoryHostPointerPropertiesEXT;
 GetAndroidHardwareBufferPropertiesANDROIDFunc	getAndroidHardwareBufferPropertiesANDROID;
 GetMemoryAndroidHardwareBufferANDROIDFunc		getMemoryAndroidHardwareBufferANDROID;

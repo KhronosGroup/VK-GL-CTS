@@ -28,6 +28,7 @@
 #include "vktMemoryPipelineBarrierTests.hpp"
 #include "vktMemoryRequirementsTests.hpp"
 #include "vktMemoryBindingTests.hpp"
+#include "vktMemoryExternalMemoryHostTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -42,12 +43,13 @@ void createChildren (tcu::TestCaseGroup* memoryTests)
 {
 	tcu::TestContext&	testCtx		= memoryTests->getTestContext();
 
-	memoryTests->addChild(createAllocationTests				(testCtx));
-	memoryTests->addChild(createDeviceGroupAllocationTests	(testCtx));
-	memoryTests->addChild(createMappingTests				(testCtx));
-	memoryTests->addChild(createPipelineBarrierTests		(testCtx));
-	memoryTests->addChild(createRequirementsTests			(testCtx));
-	memoryTests->addChild(createMemoryBindingTests			(testCtx));
+	memoryTests->addChild(createAllocationTests					(testCtx));
+	memoryTests->addChild(createDeviceGroupAllocationTests		(testCtx));
+	memoryTests->addChild(createMappingTests					(testCtx));
+	memoryTests->addChild(createPipelineBarrierTests			(testCtx));
+	memoryTests->addChild(createRequirementsTests				(testCtx));
+	memoryTests->addChild(createMemoryBindingTests				(testCtx));
+	memoryTests->addChild(createMemoryExternalMemoryHostTests	(testCtx));
 }
 
 } // anonymous

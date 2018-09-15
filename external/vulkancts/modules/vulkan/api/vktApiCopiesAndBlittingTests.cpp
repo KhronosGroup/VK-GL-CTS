@@ -244,6 +244,12 @@ inline deUint32 getArraySize(const ImageParms& parms)
 	return (parms.imageType == VK_IMAGE_TYPE_2D) ? parms.extent.depth : 1u;
 }
 
+inline VkImageCreateFlags getCreateFlags(const ImageParms& parms)
+{
+	return parms.imageType == VK_IMAGE_TYPE_2D && parms.extent.depth % 6 == 0 ?
+		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+}
+
 inline VkExtent3D getExtent3D(const ImageParms& parms, deUint32 mipLevel = 0u)
 {
 	const bool			isCompressed	= isCompressedFormat(parms.format);
@@ -839,7 +845,7 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.src.image),		// VkImageCreateFlags	flags;
 			m_params.src.image.imageType,			// VkImageType			imageType;
 			m_params.src.image.format,				// VkFormat				format;
 			getExtent3D(m_params.src.image),		// VkExtent3D			extent;
@@ -866,7 +872,7 @@ CopyImageToImage::CopyImageToImage (Context& context, TestParams params)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.dst.image),		// VkImageCreateFlags	flags;
 			m_params.dst.image.imageType,			// VkImageType			imageType;
 			m_params.dst.image.format,				// VkFormat				format;
 			getExtent3D(m_params.dst.image),		// VkExtent3D			extent;
@@ -1384,7 +1390,7 @@ CopyImageToBuffer::CopyImageToBuffer (Context& context, TestParams testParams)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.src.image),		// VkImageCreateFlags	flags;
 			m_params.src.image.imageType,			// VkImageType			imageType;
 			m_params.src.image.format,				// VkFormat				format;
 			getExtent3D(m_params.src.image),		// VkExtent3D			extent;
@@ -1605,7 +1611,7 @@ CopyBufferToImage::CopyBufferToImage (Context& context, TestParams testParams)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.dst.image),		// VkImageCreateFlags	flags;
 			m_params.dst.image.imageType,			// VkImageType			imageType;
 			m_params.dst.image.format,				// VkFormat				format;
 			getExtent3D(m_params.dst.image),		// VkExtent3D			extent;
@@ -1779,7 +1785,7 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.src.image),		// VkImageCreateFlags	flags;
 			m_params.src.image.imageType,			// VkImageType			imageType;
 			m_params.src.image.format,				// VkFormat				format;
 			getExtent3D(m_params.src.image),		// VkExtent3D			extent;
@@ -1806,7 +1812,7 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.dst.image),		// VkImageCreateFlags	flags;
 			m_params.dst.image.imageType,			// VkImageType			imageType;
 			m_params.dst.image.format,				// VkFormat				format;
 			getExtent3D(m_params.dst.image),		// VkExtent3D			extent;
@@ -2651,7 +2657,7 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.src.image),		// VkImageCreateFlags	flags;
 			m_params.src.image.imageType,			// VkImageType			imageType;
 			m_params.src.image.format,				// VkFormat				format;
 			getExtent3D(m_params.src.image),		// VkExtent3D			extent;
@@ -2678,7 +2684,7 @@ BlittingMipmaps::BlittingMipmaps (Context& context, TestParams params)
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.dst.image),		// VkImageCreateFlags	flags;
 			m_params.dst.image.imageType,			// VkImageType			imageType;
 			m_params.dst.image.format,				// VkFormat				format;
 			getExtent3D(m_params.dst.image),		// VkExtent3D			extent;
@@ -3356,7 +3362,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,									// VkStructureType			sType;
 			DE_NULL,																// const void*				pNext;
-			0u,																		// VkImageCreateFlags		flags;
+			getCreateFlags(m_params.src.image),										// VkImageCreateFlags		flags;
 			m_params.src.image.imageType,											// VkImageType				imageType;
 			m_params.src.image.format,												// VkFormat					format;
 			getExtent3D(m_params.src.image),										// VkExtent3D				extent;
@@ -3411,7 +3417,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,	// VkStructureType		sType;
 			DE_NULL,								// const void*			pNext;
-			0u,										// VkImageCreateFlags	flags;
+			getCreateFlags(m_params.dst.image),		// VkImageCreateFlags	flags;
 			m_params.dst.image.imageType,			// VkImageType			imageType;
 			m_params.dst.image.format,				// VkFormat				format;
 			getExtent3D(m_params.dst.image),		// VkExtent3D			extent;
@@ -6701,9 +6707,9 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 		{ compatibleFormatsSrgb,	false	},
 	};
 
-	const int	numOfColorImageFormatsToTest		= DE_LENGTH_OF_ARRAY(colorImageFormatsToTestBlit);
+	const int	numOfColorImageFormatsToTest	= DE_LENGTH_OF_ARRAY(colorImageFormatsToTestBlit);
 
-	const int	layerCountsToTest[]					=
+	const int	layerCountsToTest[]				=
 	{
 		1,
 		6
@@ -6807,9 +6813,9 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 		{ compatibleFormatsSrgb,	false	},
 	};
 
-	const int	numOfColorImageFormatsToTest		= DE_LENGTH_OF_ARRAY(colorImageFormatsToTestBlit);
+	const int	numOfColorImageFormatsToTest	= DE_LENGTH_OF_ARRAY(colorImageFormatsToTestBlit);
 
-	const int	layerCountsToTest[]					=
+	const int	layerCountsToTest[]				=
 	{
 		1,
 		6

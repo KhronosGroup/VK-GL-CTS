@@ -228,5 +228,6 @@ m_vk.createValidationCacheEXT					= (CreateValidationCacheEXTFunc)					GET_PROC_
 m_vk.destroyValidationCacheEXT					= (DestroyValidationCacheEXTFunc)					GET_PROC_ADDR("vkDestroyValidationCacheEXT");
 m_vk.mergeValidationCachesEXT					= (MergeValidationCachesEXTFunc)					GET_PROC_ADDR("vkMergeValidationCachesEXT");
 m_vk.getValidationCacheDataEXT					= (GetValidationCacheDataEXTFunc)					GET_PROC_ADDR("vkGetValidationCacheDataEXT");
+m_vk.getMemoryHostPointerPropertiesEXT			= (GetMemoryHostPointerPropertiesEXTFunc)			GET_PROC_ADDR("vkGetMemoryHostPointerPropertiesEXT");
 m_vk.getAndroidHardwareBufferPropertiesANDROID	= (GetAndroidHardwareBufferPropertiesANDROIDFunc)	GET_PROC_ADDR("vkGetAndroidHardwareBufferPropertiesANDROID");
 m_vk.getMemoryAndroidHardwareBufferANDROID		= (GetMemoryAndroidHardwareBufferANDROIDFunc)		GET_PROC_ADDR("vkGetMemoryAndroidHardwareBufferANDROID");
