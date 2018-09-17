@@ -246,6 +246,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_IMAGE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV:						return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_BUFFER_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV:					return "VK_STRUCTURE_TYPE_DEDICATED_ALLOCATION_MEMORY_ALLOCATE_INFO_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_STREAM_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_STREAM_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD:						return "VK_STRUCTURE_TYPE_TEXTURE_LOD_GATHER_FORMAT_PROPERTIES_AMD";
 		case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV:									return "VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_NV";
@@ -669,10 +672,11 @@ const char* getQueryTypeName (VkQueryType value)
 {
 	switch (value)
 	{
-		case VK_QUERY_TYPE_OCCLUSION:			return "VK_QUERY_TYPE_OCCLUSION";
-		case VK_QUERY_TYPE_PIPELINE_STATISTICS:	return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
-		case VK_QUERY_TYPE_TIMESTAMP:			return "VK_QUERY_TYPE_TIMESTAMP";
-		default:								return DE_NULL;
+		case VK_QUERY_TYPE_OCCLUSION:						return "VK_QUERY_TYPE_OCCLUSION";
+		case VK_QUERY_TYPE_PIPELINE_STATISTICS:				return "VK_QUERY_TYPE_PIPELINE_STATISTICS";
+		case VK_QUERY_TYPE_TIMESTAMP:						return "VK_QUERY_TYPE_TIMESTAMP";
+		case VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT:	return "VK_QUERY_TYPE_TRANSFORM_FEEDBACK_STREAM_EXT";
+		default:											return DE_NULL;
 	}
 }
 
@@ -1596,6 +1600,7 @@ tcu::Format::Bitfield<32> getPipelineStageFlagsStr (VkPipelineStageFlags value)
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_HOST_BIT,							"VK_PIPELINE_STAGE_HOST_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,					"VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,					"VK_PIPELINE_STAGE_ALL_COMMANDS_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,			"VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX,				"VK_PIPELINE_STAGE_COMMAND_PROCESS_BIT_NVX"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT,		"VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT"),
 	};
@@ -1694,17 +1699,19 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,				"VK_BUFFER_USAGE_TRANSFER_SRC_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_DST_BIT,				"VK_BUFFER_USAGE_TRANSFER_DST_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,		"VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,		"VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,			"VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,			"VK_BUFFER_USAGE_STORAGE_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDEX_BUFFER_BIT,				"VK_BUFFER_USAGE_INDEX_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,				"VK_BUFFER_USAGE_VERTEX_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,			"VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT,	"VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT,	"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,							"VK_BUFFER_USAGE_TRANSFER_SRC_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_DST_BIT,							"VK_BUFFER_USAGE_TRANSFER_DST_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,					"VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,					"VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,						"VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,						"VK_BUFFER_USAGE_STORAGE_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDEX_BUFFER_BIT,							"VK_BUFFER_USAGE_INDEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,							"VK_BUFFER_USAGE_VERTEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,						"VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT,			"VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT,	"VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT,				"VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT,				"VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1822,6 +1829,9 @@ tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 		tcu::Format::BitDesc(VK_ACCESS_HOST_WRITE_BIT,								"VK_ACCESS_HOST_WRITE_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_READ_BIT,								"VK_ACCESS_MEMORY_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_WRITE_BIT,							"VK_ACCESS_MEMORY_WRITE_BIT"),
+		tcu::Format::BitDesc(VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,			"VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT,		"VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT"),
+		tcu::Format::BitDesc(VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT,	"VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT,			"VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX,				"VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX"),
 		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX,				"VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX"),
@@ -2367,6 +2377,11 @@ tcu::Format::Bitfield<32> getAndroidSurfaceCreateFlagsKHRStr (VkAndroidSurfaceCr
 }
 
 tcu::Format::Bitfield<32> getWin32SurfaceCreateFlagsKHRStr (VkWin32SurfaceCreateFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getPipelineRasterizationStateStreamCreateFlagsEXTStr (VkPipelineRasterizationStateStreamCreateFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -5645,6 +5660,47 @@ std::ostream& operator<< (std::ostream& s, const VkDedicatedAllocationMemoryAllo
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\timage = " << value.image << '\n';
 	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTransformFeedbackFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceTransformFeedbackFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttransformFeedback = " << value.transformFeedback << '\n';
+	s << "\tgeometryStreams = " << value.geometryStreams << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTransformFeedbackPropertiesEXT& value)
+{
+	s << "VkPhysicalDeviceTransformFeedbackPropertiesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxTransformFeedbackStreams = " << value.maxTransformFeedbackStreams << '\n';
+	s << "\tmaxTransformFeedbackBuffers = " << value.maxTransformFeedbackBuffers << '\n';
+	s << "\tmaxTransformFeedbackBufferSize = " << value.maxTransformFeedbackBufferSize << '\n';
+	s << "\tmaxTransformFeedbackStreamDataSize = " << value.maxTransformFeedbackStreamDataSize << '\n';
+	s << "\tmaxTransformFeedbackBufferDataSize = " << value.maxTransformFeedbackBufferDataSize << '\n';
+	s << "\tmaxTransformFeedbackBufferDataStride = " << value.maxTransformFeedbackBufferDataStride << '\n';
+	s << "\ttransformFeedbackQueries = " << value.transformFeedbackQueries << '\n';
+	s << "\ttransformFeedbackStreamsLinesTriangles = " << value.transformFeedbackStreamsLinesTriangles << '\n';
+	s << "\ttransformFeedbackRasterizationStreamSelect = " << value.transformFeedbackRasterizationStreamSelect << '\n';
+	s << "\ttransformFeedbackDraw = " << value.transformFeedbackDraw << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationStateStreamCreateInfoEXT& value)
+{
+	s << "VkPipelineRasterizationStateStreamCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getPipelineRasterizationStateStreamCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\trasterizationStream = " << value.rasterizationStream << '\n';
 	s << '}';
 	return s;
 }

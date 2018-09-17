@@ -326,6 +326,7 @@ public:
 	VkPhysicalDeviceBufferDeviceAddressFeaturesEXT		bufferDeviceAddressFeatures;
 	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
 	VkPhysicalDeviceHostQueryResetFeaturesEXT			hostQueryResetFeatures;
+	VkPhysicalDeviceTransformFeedbackFeaturesEXT		transformFeedbackFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -352,6 +353,7 @@ public:
 		deMemset(&bufferDeviceAddressFeatures, 0, sizeof(bufferDeviceAddressFeatures));
 		deMemset(&cooperativeMatrixFeatures, 0, sizeof(cooperativeMatrixFeatures));
 		deMemset(&hostQueryResetFeatures, 0, sizeof(hostQueryResetFeatures));
+		deMemset(&transformFeedbackFeatures, 0, sizeof(transformFeedbackFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -372,6 +374,7 @@ public:
 		bufferDeviceAddressFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
 		cooperativeMatrixFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
 		hostQueryResetFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
+		transformFeedbackFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -470,6 +473,11 @@ public:
 				*nextPtr	= &hostQueryResetFeatures;
 				nextPtr		= &hostQueryResetFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_transform_feedback"))
+			{
+				*nextPtr	= &transformFeedbackFeatures;
+				nextPtr		= &transformFeedbackFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -512,6 +520,8 @@ public:
 	const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&	getBufferDeviceAddressFeatures		(void) const	{ return m_deviceFeatures.bufferDeviceAddressFeatures;	}
 	const VkPhysicalDeviceCooperativeMatrixFeaturesNV&		getCooperativeMatrixFeatures		(void) const	{ return m_deviceFeatures.cooperativeMatrixFeatures;	}
 	const VkPhysicalDeviceHostQueryResetFeaturesEXT&		getHostQueryResetFeatures			(void) const	{ return m_deviceFeatures.hostQueryResetFeatures;			}
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		getTransformFeedbackFeatures		(void) const	{ return m_deviceFeatures.transformFeedbackFeatures;		}
+
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -663,6 +673,8 @@ const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
 										Context::getCooperativeMatrixFeatures	(void) const { return m_device->getCooperativeMatrixFeatures();	}
 const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&
 										Context::getHostQueryResetFeatures		(void) const { return m_device->getHostQueryResetFeatures();	}
+const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&
+										Context::getTransformFeedbackFeatures	(void) const { return m_device->getTransformFeedbackFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

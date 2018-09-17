@@ -32,6 +32,7 @@ add_subdirectory(subgroups)
 add_subdirectory(ycbcr)
 add_subdirectory(protected_memory)
 add_subdirectory(memory_model)
+add_subdirectory(transform_feedback)
 add_subdirectory(util)
 add_subdirectory(amber)
 
@@ -68,6 +69,7 @@ include_directories(
 	ycbcr
 	protected_memory
 	memory_model
+	transform_feedback
 	util
 	amber
 	)
@@ -125,6 +127,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-protected-memory
 	deqp-vk-memory-model
 	deqp-vk-amber
+	deqp-vk-transform-feedback
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

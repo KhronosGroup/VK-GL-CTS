@@ -277,6 +277,7 @@ tcu::Format::Bitfield<32>	getWaylandSurfaceCreateFlagsKHRStr						(VkWaylandSurf
 tcu::Format::Bitfield<32>	getMirSurfaceCreateFlagsKHRStr							(VkMirSurfaceCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getAndroidSurfaceCreateFlagsKHRStr						(VkAndroidSurfaceCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getWin32SurfaceCreateFlagsKHRStr						(VkWin32SurfaceCreateFlagsKHR value);
+tcu::Format::Bitfield<32>	getPipelineRasterizationStateStreamCreateFlagsEXTStr	(VkPipelineRasterizationStateStreamCreateFlagsEXT value);
 tcu::Format::Bitfield<32>	getViSurfaceCreateFlagsNNStr							(VkViSurfaceCreateFlagsNN value);
 tcu::Format::Bitfield<32>	getPipelineViewportSwizzleStateCreateFlagsNVStr			(VkPipelineViewportSwizzleStateCreateFlagsNV value);
 tcu::Format::Bitfield<32>	getPipelineDiscardRectangleStateCreateFlagsEXTStr		(VkPipelineDiscardRectangleStateCreateFlagsEXT value);
@@ -542,6 +543,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerMarkerInfoEXT& val
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationImageCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationBufferCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDedicatedAllocationMemoryAllocateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTransformFeedbackFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceTransformFeedbackPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateStreamCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTextureLODGatherFormatPropertiesAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalImageFormatPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryImageCreateInfoNV& value);
