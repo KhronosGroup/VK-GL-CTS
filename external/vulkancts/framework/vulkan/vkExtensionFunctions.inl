@@ -223,6 +223,15 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 		functions.push_back("vkCmdDebugMarkerEndEXT");
 		functions.push_back("vkCmdDebugMarkerInsertEXT");
 	}
+	else if (extName == "VK_EXT_transform_feedback")
+	{
+		functions.push_back("vkCmdBindTransformFeedbackBuffersEXT");
+		functions.push_back("vkCmdBeginTransformFeedbackEXT");
+		functions.push_back("vkCmdEndTransformFeedbackEXT");
+		functions.push_back("vkCmdBeginQueryIndexedEXT");
+		functions.push_back("vkCmdEndQueryIndexedEXT");
+		functions.push_back("vkCmdDrawIndirectByteCountEXT");
+	}
 	else if (extName == "VK_AMD_draw_indirect_count")
 	{
 		functions.push_back("vkCmdDrawIndirectCountAMD");
@@ -342,6 +351,7 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	"VK_KHR_bind_memory2",
 	"VK_KHR_maintenance3",
 	"VK_EXT_debug_marker",
+	"VK_EXT_transform_feedback",
 	"VK_AMD_draw_indirect_count",
 	"VK_KHR_draw_indirect_count",
 	"VK_NV_external_memory_win32",

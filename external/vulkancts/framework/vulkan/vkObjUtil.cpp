@@ -453,15 +453,15 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
 
 	const VkRenderPassCreateInfo			renderPassInfo						=
 	{
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType
-		DE_NULL,									// const void*                       pNext
-		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags           flags
-		(deUint32)attachmentDescriptions.size(),	// deUint32                          attachmentCount
-		&attachmentDescriptions[0],					// const VkAttachmentDescription*    pAttachments
-		1u,											// deUint32                          subpassCount
-		&subpassDescription,						// const VkSubpassDescription*       pSubpasses
-		0u,											// deUint32                          dependencyCount
-		DE_NULL										// const VkSubpassDependency*        pDependencies
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,									// VkStructureType                   sType
+		DE_NULL,																	// const void*                       pNext
+		(VkRenderPassCreateFlags)0,													// VkRenderPassCreateFlags           flags
+		(deUint32)attachmentDescriptions.size(),									// deUint32                          attachmentCount
+		attachmentDescriptions.size() > 0 ? &attachmentDescriptions[0] : DE_NULL,	// const VkAttachmentDescription*    pAttachments
+		1u,																			// deUint32                          subpassCount
+		&subpassDescription,														// const VkSubpassDescription*       pSubpasses
+		0u,																			// deUint32                          dependencyCount
+		DE_NULL																		// const VkSubpassDependency*        pDependencies
 	};
 
 	return createRenderPass(vk, device, &renderPassInfo, allocationCallbacks);

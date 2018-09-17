@@ -102,6 +102,8 @@ public:
 												getCooperativeMatrixFeatures	(void) const;
 	const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&
 												getHostQueryResetFeatures		(void) const;
+	const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&
+												getTransformFeedbackFeatures	(void) const;
 	const vk::VkPhysicalDevicePerformanceCounterFeaturesKHR&
 												getPerformanceCounterFeatures	(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;

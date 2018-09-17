@@ -32,6 +32,7 @@ add_subdirectory(subgroups)
 add_subdirectory(ycbcr)
 add_subdirectory(protected_memory)
 add_subdirectory(memory_model)
+add_subdirectory(transform_feedback)
 add_subdirectory(util)
 add_subdirectory(amber)
 add_subdirectory(imageless_framebuffer)
@@ -69,6 +70,7 @@ include_directories(
 	ycbcr
 	protected_memory
 	memory_model
+	transform_feedback
 	util
 	amber
 	imageless_framebuffer
@@ -128,6 +130,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-memory-model
 	deqp-vk-amber
 	deqp-vk-imageless-framebuffer
+	deqp-vk-transform-feedback
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

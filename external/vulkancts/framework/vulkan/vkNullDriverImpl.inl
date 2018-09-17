@@ -1628,6 +1628,62 @@ VKAPI_ATTR void VKAPI_CALL cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffe
 	DE_UNREF(pMarkerInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer commandBuffer, deUint32 firstBinding, deUint32 bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstBinding);
+	DE_UNREF(bindingCount);
+	DE_UNREF(pBuffers);
+	DE_UNREF(pOffsets);
+	DE_UNREF(pSizes);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBeginTransformFeedbackEXT (VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstCounterBuffer);
+	DE_UNREF(counterBufferCount);
+	DE_UNREF(pCounterBuffers);
+	DE_UNREF(pCounterBufferOffsets);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndTransformFeedbackEXT (VkCommandBuffer commandBuffer, deUint32 firstCounterBuffer, deUint32 counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(firstCounterBuffer);
+	DE_UNREF(counterBufferCount);
+	DE_UNREF(pCounterBuffers);
+	DE_UNREF(pCounterBufferOffsets);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdBeginQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, VkQueryControlFlags flags, deUint32 index)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(queryPool);
+	DE_UNREF(query);
+	DE_UNREF(flags);
+	DE_UNREF(index);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, deUint32 query, deUint32 index)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(queryPool);
+	DE_UNREF(query);
+	DE_UNREF(index);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, deUint32 instanceCount, deUint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, deUint32 counterOffset, deUint32 vertexStride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(instanceCount);
+	DE_UNREF(firstInstance);
+	DE_UNREF(counterBuffer);
+	DE_UNREF(counterBufferOffset);
+	DE_UNREF(counterOffset);
+	DE_UNREF(vertexStride);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdDrawIndirectCountAMD (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride)
 {
 	DE_UNREF(commandBuffer);
@@ -2206,6 +2262,12 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,					cmdDebugMarkerBeginEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,						cmdDebugMarkerEndEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,					cmdDebugMarkerInsertEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBindTransformFeedbackBuffersEXT,		cmdBindTransformFeedbackBuffersEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginTransformFeedbackEXT,				cmdBeginTransformFeedbackEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndTransformFeedbackEXT,				cmdEndTransformFeedbackEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginQueryIndexedEXT,					cmdBeginQueryIndexedEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndQueryIndexedEXT,						cmdEndQueryIndexedEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectByteCountEXT,				cmdDrawIndirectByteCountEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountAMD,					cmdDrawIndirectCountAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountAMD,			cmdDrawIndexedIndirectCountAMD),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountKHR,					cmdDrawIndirectCountKHR),

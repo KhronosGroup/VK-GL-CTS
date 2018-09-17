@@ -367,6 +367,11 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/texture/vktTextureSwizzleTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureTestUtil.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureTests.cpp \
+	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackFuzzLayoutCase.cpp \
+	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackFuzzLayoutTests.cpp \
+	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackRandomLayoutCase.cpp \
+	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackSimpleTests.cpp \
+	external/vulkancts/modules/vulkan/transform_feedback/vktTransformFeedbackTests.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktRandomUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockCase.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
@@ -1111,6 +1116,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/synchronization \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/tessellation \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/texture \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/transform_feedback \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/util \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \

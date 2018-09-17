@@ -2574,6 +2574,38 @@ struct VkDedicatedAllocationMemoryAllocateInfoNV
 	VkBuffer		buffer;
 };
 
+struct VkPhysicalDeviceTransformFeedbackFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		transformFeedback;
+	VkBool32		geometryStreams;
+};
+
+struct VkPhysicalDeviceTransformFeedbackPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxTransformFeedbackStreams;
+	deUint32		maxTransformFeedbackBuffers;
+	VkDeviceSize	maxTransformFeedbackBufferSize;
+	deUint32		maxTransformFeedbackStreamDataSize;
+	deUint32		maxTransformFeedbackBufferDataSize;
+	deUint32		maxTransformFeedbackBufferDataStride;
+	VkBool32		transformFeedbackQueries;
+	VkBool32		transformFeedbackStreamsLinesTriangles;
+	VkBool32		transformFeedbackRasterizationStreamSelect;
+	VkBool32		transformFeedbackDraw;
+};
+
+struct VkPipelineRasterizationStateStreamCreateInfoEXT
+{
+	VkStructureType										sType;
+	const void*											pNext;
+	VkPipelineRasterizationStateStreamCreateFlagsEXT	flags;
+	deUint32											rasterizationStream;
+};
+
 struct VkTextureLODGatherFormatPropertiesAMD
 {
 	VkStructureType	sType;

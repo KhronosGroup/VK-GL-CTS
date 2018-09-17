@@ -328,6 +328,7 @@ public:
 	VkPhysicalDeviceImagelessFramebufferFeaturesKHR		imagelessFramebufferFeatures;
 	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
 	VkPhysicalDeviceHostQueryResetFeaturesEXT			hostQueryResetFeatures;
+	VkPhysicalDeviceTransformFeedbackFeaturesEXT		transformFeedbackFeatures;
 	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
@@ -357,6 +358,7 @@ public:
 		deMemset(&imagelessFramebufferFeatures, 0, sizeof(imagelessFramebufferFeatures));
 		deMemset(&cooperativeMatrixFeatures, 0, sizeof(cooperativeMatrixFeatures));
 		deMemset(&hostQueryResetFeatures, 0, sizeof(hostQueryResetFeatures));
+		deMemset(&transformFeedbackFeatures, 0, sizeof(transformFeedbackFeatures));
 		deMemset(&performanceCounterFeatures, 0, sizeof(performanceCounterFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -380,6 +382,7 @@ public:
 		imagelessFramebufferFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
 		cooperativeMatrixFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
 		hostQueryResetFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT;
+		transformFeedbackFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT;
 		performanceCounterFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTER_FEATURES_KHR;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
@@ -494,6 +497,11 @@ public:
 				*nextPtr	= &hostQueryResetFeatures;
 				nextPtr		= &hostQueryResetFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_transform_feedback"))
+			{
+				*nextPtr	= &transformFeedbackFeatures;
+				nextPtr		= &transformFeedbackFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -543,7 +551,9 @@ public:
 	const VkPhysicalDeviceImagelessFramebufferFeaturesKHR&	getImagelessFramebufferFeatures		(void) const	{ return m_deviceFeatures.imagelessFramebufferFeatures;		}
 	const VkPhysicalDeviceCooperativeMatrixFeaturesNV&		getCooperativeMatrixFeatures		(void) const	{ return m_deviceFeatures.cooperativeMatrixFeatures;	}
 	const VkPhysicalDeviceHostQueryResetFeaturesEXT&		getHostQueryResetFeatures			(void) const	{ return m_deviceFeatures.hostQueryResetFeatures;			}
+	const VkPhysicalDeviceTransformFeedbackFeaturesEXT&		getTransformFeedbackFeatures		(void) const	{ return m_deviceFeatures.transformFeedbackFeatures;		}
 	const VkPhysicalDevicePerformanceCounterFeaturesKHR&	getPerformanceCounterFeatures		(void) const	{ return m_deviceFeatures.performanceCounterFeatures;		}
+
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -699,6 +709,8 @@ const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
 										Context::getCooperativeMatrixFeatures	(void) const { return m_device->getCooperativeMatrixFeatures();	}
 const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&
 										Context::getHostQueryResetFeatures		(void) const { return m_device->getHostQueryResetFeatures();	}
+const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&
+										Context::getTransformFeedbackFeatures	(void) const { return m_device->getTransformFeedbackFeatures();	}
 const vk::VkPhysicalDevicePerformanceCounterFeaturesKHR&
 										Context::getPerformanceCounterFeatures	(void) const { return m_device->getPerformanceCounterFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
