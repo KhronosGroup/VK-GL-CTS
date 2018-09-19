@@ -1183,12 +1183,48 @@ public:
 														 const TestParams				params)
 								: vkt::TestCase	(testCtx, name, description)
 								, m_params		(params)
-							{}
+	{}
 
 	virtual TestInstance*	createInstance				(Context&						context) const
-							{
-								return new CopyImageToImage(context, m_params);
-							}
+	{
+		return new CopyImageToImage(context, m_params);
+	}
+
+	virtual void			checkSupport				(Context&						context) const
+	{
+		if (m_params.allocationKind == ALLOCATION_KIND_DEDICATED)
+		{
+			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_dedicated_allocation"))
+				TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
+		}
+
+		if ((m_params.dst.image.imageType == VK_IMAGE_TYPE_3D && m_params.src.image.imageType == VK_IMAGE_TYPE_2D) ||
+			(m_params.dst.image.imageType == VK_IMAGE_TYPE_2D && m_params.src.image.imageType == VK_IMAGE_TYPE_3D))
+		{
+			if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1"))
+				TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+		}
+
+		VkImageFormatProperties properties;
+		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.src.image.format,
+																					m_params.src.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
+			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
+																					m_params.dst.image.format,
+																					m_params.dst.image.imageType,
+																					VK_IMAGE_TILING_OPTIMAL,
+																					VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+																					0,
+																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
+		{
+			TCU_THROW(NotSupportedError, "Format not supported");
+		}
+	}
+
 private:
 	TestParams				m_params;
 };
