@@ -105,6 +105,11 @@ static void checkBuildClientAPISupport (EGLint requiredAPIs)
 {
 	const EGLint	builtClientAPIs		= getBuildClientAPIMask();
 
+#if !defined(DEQP_SUPPORT_GLES1)
+    if (requiredAPIs & EGL_OPENGL_ES_BIT)
+        TCU_THROW(NotSupportedError, "Test case requires ES1.1 API not supported in current build");
+    else
+#endif
 	if ((requiredAPIs & builtClientAPIs) != requiredAPIs)
 		TCU_THROW(InternalError, "Test case requires client API not supported in current build");
 }
