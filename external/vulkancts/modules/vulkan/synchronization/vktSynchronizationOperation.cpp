@@ -118,7 +118,7 @@ public:
 				const Allocation& alloc = m_vertexBuffer->getAllocation();
 
 				deMemcpy(alloc.getHostPtr(), &m_vertexData[0], static_cast<std::size_t>(vertexDataSizeBytes));
-				flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+				flushAlloc(vk, device, alloc);
 			}
 		}
 
@@ -136,7 +136,7 @@ public:
 				for (deUint32 i = 0; i < numIndices; ++i)
 					pData[i] = i;
 
-				flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), indexBufferSizeBytes);
+				flushAlloc(vk, device, alloc);
 			}
 		}
 	}
@@ -212,7 +212,7 @@ Data getHostBufferData (const OperationContext& context, const Buffer& hostBuffe
 		static_cast<deUint8*>(alloc.getHostPtr()),		// const deUint8*	data;
 	};
 
-	invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), size);
+	invalidateAlloc(vk, device, alloc);
 
 	return data;
 }
@@ -608,7 +608,7 @@ public:
 		else
 			fillPattern(alloc.getHostPtr(), m_resource.getBuffer().size);
 
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_resource.getBuffer().size);
+		flushAlloc(vk, device, alloc);
 	}
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
@@ -712,7 +712,7 @@ public:
 			deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(m_bufferSize));
 		else
 			fillPattern(alloc.getHostPtr(), m_bufferSize);
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_bufferSize);
+		flushAlloc(vk, device, alloc);
 
 		// Staging image
 		m_image = de::MovePtr<Image>(new Image(
@@ -1093,7 +1093,7 @@ public:
 			pIndirectCommand->y = 1u;
 			pIndirectCommand->z	= 1u;
 
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeof(VkDispatchIndirectCommand));
+			flushAlloc(vk, device, alloc);
 		}
 
 		const Unique<VkShaderModule> shaderModule(createShaderModule(vk, device, context.getBinaryCollection().get(shaderPrefix + "comp"), (VkShaderModuleCreateFlags)0));
@@ -1158,7 +1158,7 @@ public:
 				deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(m_resource.getBuffer().size));
 			else
 				fillPattern(alloc.getHostPtr(), m_resource.getBuffer().size);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_resource.getBuffer().size);
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Prepare descriptors
@@ -1293,7 +1293,7 @@ public:
 				deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(m_hostBufferSizeBytes));
 			else
 				fillPattern(alloc.getHostPtr(), m_hostBufferSizeBytes);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_hostBufferSizeBytes);
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Image resources
@@ -1780,7 +1780,7 @@ public:
 
 		const Allocation& alloc = m_hostBuffer->getAllocation();
 		fillPattern(alloc.getHostPtr(), m_bufferSize);
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_bufferSize);
+		flushAlloc(vk, device, alloc);
 	}
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
@@ -1979,7 +1979,7 @@ public:
 
 		const Allocation& alloc = m_hostBuffer->getAllocation();
 		fillPattern(alloc.getHostPtr(), m_resource.getBuffer().size);
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_resource.getBuffer().size);
+		flushAlloc(vk, device, alloc);
 
 		// Source data image
 		m_image = de::MovePtr<Image>(new Image(
@@ -2058,7 +2058,7 @@ public:
 
 		const Allocation& alloc = m_hostBuffer->getAllocation();
 		deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(m_bufferSize));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_bufferSize);
+		flushAlloc(vk, device, alloc);
 	}
 
 	void recordCommands (const VkCommandBuffer cmdBuffer)
@@ -2287,7 +2287,7 @@ public:
 			pIndirectCommand->firstVertex	= 0u;
 			pIndirectCommand->firstInstance	= 0u;
 
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeof(VkDrawIndirectCommand));
+			flushAlloc(vk, device, alloc);
 		}
 		else if (m_drawCall == DRAW_CALL_DRAW_INDEXED_INDIRECT)
 		{
@@ -2303,7 +2303,7 @@ public:
 			pIndirectCommand->vertexOffset	= 0u;
 			pIndirectCommand->firstInstance	= 0u;
 
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeof(VkDrawIndexedIndirectCommand));
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Resource image is the color attachment
@@ -2830,7 +2830,7 @@ public:
 		{
 			const Allocation& alloc = m_hostBuffer->getAllocation();
 			deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(m_hostBufferSizeBytes));
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), static_cast<size_t>(m_hostBufferSizeBytes));
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Prepare descriptors
@@ -3132,7 +3132,7 @@ public:
 		{
 			const Allocation& alloc = m_outputBuffer->getAllocation();
 			deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(dataSizeBytes));
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), dataSizeBytes);
+			flushAlloc(vk, device, alloc);
 		}
 
 		m_descriptorSetLayout = DescriptorSetLayoutBuilder()

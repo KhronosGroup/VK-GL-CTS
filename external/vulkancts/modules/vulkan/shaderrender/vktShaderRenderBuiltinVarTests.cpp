@@ -1447,7 +1447,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
 
-		invalidateMappedMemoryRange(vk, device, sampleLocationBufferAllocation->getMemory(), sampleLocationBufferAllocation->getOffset(), VK_WHOLE_SIZE);
+		invalidateAlloc(vk, device, *sampleLocationBufferAllocation);
 	}
 
 	// Validate result

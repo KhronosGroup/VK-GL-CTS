@@ -71,6 +71,9 @@ private:
 	void* const				m_hostPtr;
 };
 
+void	flushAlloc		(const DeviceInterface& vkd, VkDevice device, const Allocation& alloc);
+void	invalidateAlloc	(const DeviceInterface& vkd, VkDevice device, const Allocation& alloc);
+
 //! Memory allocation requirements
 class MemoryRequirement
 {

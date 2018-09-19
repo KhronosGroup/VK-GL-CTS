@@ -756,7 +756,7 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 		m_vertices          = createOverlappingQuads();
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferMemory->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferMemory->getMemory(), m_vertexBufferMemory->getOffset(), 1024u);
+		flushAlloc(vk, vkDevice, *m_vertexBufferMemory);
 	}
 
 	// Create render pass
@@ -1128,7 +1128,7 @@ void ComputeCacheTestInstance::buildBuffers (void)
 		for (deUint32 component = 0u; component < 4u; component++)
 			pVec[ndx][component]= (float)(ndx * (component + 1u));
 	}
-	flushMappedMemoryRange(vk, vkDevice, m_inputBufferAlloc->getMemory(), m_inputBufferAlloc->getOffset(), size);
+	flushAlloc(vk, vkDevice, *m_inputBufferAlloc);
 
 	// Clear the output buffer
 	for (deUint32 ndx = 0; ndx < PIPELINE_CACHE_NDX_COUNT; ndx++)
@@ -1140,7 +1140,7 @@ void ComputeCacheTestInstance::buildBuffers (void)
 		for (deUint32 i = 0; i < (size / sizeof(tcu::Vec4)); i++)
 			pVec[i] = tcu::Vec4(0.0f);
 
-		flushMappedMemoryRange(vk, vkDevice, m_outputBufferAlloc[ndx]->getMemory(), m_outputBufferAlloc[ndx]->getOffset(), size);
+		flushAlloc(vk, vkDevice, *m_outputBufferAlloc[ndx]);
 	}
 }
 
@@ -1293,17 +1293,9 @@ tcu::TestStatus ComputeCacheTestInstance::verifyTestResult (void)
 	const VkDevice          vkDevice         = m_context.getDevice();
 
 	// Read the content of output buffers
-	invalidateMappedMemoryRange(vk,
-								vkDevice,
-								m_outputBufferAlloc[PIPELINE_CACHE_NDX_NO_CACHE]->getMemory(),
-								m_outputBufferAlloc[PIPELINE_CACHE_NDX_NO_CACHE]->getOffset(),
-								sizeof(tcu::Vec4) * 128u);
+	invalidateAlloc(vk, vkDevice, *m_outputBufferAlloc[PIPELINE_CACHE_NDX_NO_CACHE]);
 
-	invalidateMappedMemoryRange(vk,
-								vkDevice,
-								m_outputBufferAlloc[PIPELINE_CACHE_NDX_CACHED]->getMemory(),
-								m_outputBufferAlloc[PIPELINE_CACHE_NDX_CACHED]->getOffset(),
-								sizeof(tcu::Vec4) * 128u);
+	invalidateAlloc(vk, vkDevice, *m_outputBufferAlloc[PIPELINE_CACHE_NDX_CACHED]);
 	// Compare the content
 	deUint8* bufNoCache = reinterpret_cast<deUint8*>(m_outputBufferAlloc[PIPELINE_CACHE_NDX_NO_CACHE]->getHostPtr());
 	deUint8* bufCached  = reinterpret_cast<deUint8*>(m_outputBufferAlloc[PIPELINE_CACHE_NDX_CACHED]->getHostPtr());

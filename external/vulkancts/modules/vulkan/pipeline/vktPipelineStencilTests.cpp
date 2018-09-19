@@ -581,17 +581,7 @@ StencilTestInstance::StencilTestInstance (Context&					context,
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-
-		const VkMappedMemoryRange flushRange =
-		{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// VkStructureType	sType;
-				DE_NULL,								// const void*		pNext;
-				m_vertexBufferAlloc->getMemory(),		// VkDeviceMemory	memory;
-				m_vertexBufferAlloc->getOffset(),		// VkDeviceSize		offset;
-				vertexBufferParams.size					// VkDeviceSize		size;
-		};
-
-		vk.flushMappedMemoryRanges(vkDevice, 1, &flushRange);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool

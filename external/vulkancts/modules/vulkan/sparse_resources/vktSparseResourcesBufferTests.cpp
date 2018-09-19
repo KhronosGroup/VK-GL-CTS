@@ -720,7 +720,7 @@ public:
 		m_colorBufferAlloc				= bindBuffer(vk, getDevice(), getAllocator(), *m_colorBuffer, MemoryRequirement::HostVisible);
 
 		deMemset(m_colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(m_colorBufferSize));
-		flushMappedMemoryRange(vk, getDevice(), m_colorBufferAlloc->getMemory(), m_colorBufferAlloc->getOffset(), m_colorBufferSize);
+		flushAlloc(vk, getDevice(), *m_colorBufferAlloc);
 	}
 
 protected:
@@ -769,7 +769,7 @@ protected:
 
 	bool isResultImageCorrect (void) const
 	{
-		invalidateMappedMemoryRange(getDeviceInterface(), getDevice(), m_colorBufferAlloc->getMemory(), 0ull, m_colorBufferSize);
+		invalidateAlloc(getDeviceInterface(), getDevice(), *m_colorBufferAlloc);
 
 		const tcu::ConstPixelBufferAccess resultImage (mapVkFormat(m_colorFormat), m_renderSize.x(), m_renderSize.y(), 1u, m_colorBufferAlloc->getHostPtr());
 
@@ -995,7 +995,7 @@ public:
 					for (deUint32 i = 0; i < numBufferEntries; ++i)
 						pData[i] = IVec4(3*i ^ 127, 0, 0, 0);
 
-					flushMappedMemoryRange(vk, getDevice(), stagingBufferAlloc->getMemory(), stagingBufferAlloc->getOffset(), stagingBufferSize);
+					flushAlloc(vk, getDevice(), *stagingBufferAlloc);
 
 					const VkBufferCopy copyRegion =
 					{
@@ -1060,7 +1060,7 @@ public:
 				m_vertexBufferAlloc	= bindBuffer(vk, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 				deMemcpy(m_vertexBufferAlloc->getHostPtr(), &vertexData[0], vertexBufferSize);
-				flushMappedMemoryRange(vk, getDevice(), m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferSize);
+				flushAlloc(vk, getDevice(), *m_vertexBufferAlloc);
 			}
 
 			// Draw
@@ -1263,7 +1263,7 @@ public:
 
 			// Upload to the sparse buffer
 			{
-				flushMappedMemoryRange(vk, getDevice(), m_stagingBufferAlloc->getMemory(), m_stagingBufferAlloc->getOffset(), m_stagingBufferSize);
+				flushAlloc(vk, getDevice(), *m_stagingBufferAlloc);
 
 				VkDeviceSize	firstChunkOffset	= 0ull;
 				VkDeviceSize	secondChunkOffset	= m_perDrawBufferOffset;
@@ -1415,7 +1415,7 @@ public:
 
 			generateGrid(m_vertexBufferAlloc->getHostPtr(), step, -1.0f, -1.0f, GRID_SIZE, GRID_SIZE);
 
-			flushMappedMemoryRange(vk, getDevice(), m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferSize);
+			flushAlloc(vk, getDevice(), *m_vertexBufferAlloc);
 		}
 
 		// Sparse index buffer
@@ -1477,7 +1477,7 @@ public:
 
 		{
 			generateGrid(m_vertexBufferAlloc->getHostPtr(), 2.0f, -1.0f, -1.0f, 1, 1);
-			flushMappedMemoryRange(vk, getDevice(), m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferSize);
+			flushAlloc(vk, getDevice(), *m_vertexBufferAlloc);
 		}
 
 		// Indirect buffer

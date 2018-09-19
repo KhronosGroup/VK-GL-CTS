@@ -1448,8 +1448,7 @@ void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBO
 
 	if (subgroups::SSBOData::InitializeNone != data.initializeType)
 	{
-		flushMappedMemoryRange(context.getDeviceInterface(),
-							   context.getDevice(), alloc.getMemory(), alloc.getOffset(), size);
+		flushAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
 	}
 }
 
@@ -1647,7 +1646,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 		}
 
 		deMemcpy(alloc.getHostPtr(), &data[0], data.size() * sizeof(tcu::Vec4));
-		vk::flushMappedMemoryRange(context.getDeviceInterface(), context.getDevice(), alloc.getMemory(), alloc.getOffset(), vertexBufferSize);
+		flushAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
 	}
 
 	for (deUint32 width = 1u; width < maxWidth; ++width)
@@ -1723,7 +1722,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
-			invalidateMappedMemoryRange(context.getDeviceInterface(), context.getDevice(), allocResult.getMemory(), allocResult.getOffset(), imageResultSize);
+			invalidateAlloc(context.getDeviceInterface(), context.getDevice(), allocResult);
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
@@ -1863,7 +1862,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 		}
 
 		deMemcpy(alloc.getHostPtr(), &data[0], maxWidth * sizeof(tcu::Vec4));
-		vk::flushMappedMemoryRange(context.getDeviceInterface(), context.getDevice(), alloc.getMemory(), alloc.getOffset(), vertexBufferSize);
+		flushAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
 	}
 
 	for (deUint32 width = 1u; width < maxWidth; width++)
@@ -1947,7 +1946,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
-			invalidateMappedMemoryRange(context.getDeviceInterface(), context.getDevice(), allocResult.getMemory(), allocResult.getOffset(), imageResultSize);
+			invalidateAlloc(context.getDeviceInterface(), context.getDevice(), allocResult);
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
@@ -2159,7 +2158,6 @@ tcu::TestStatus vkt::subgroups::allStages(
 		const Unique<VkCommandBuffer>	cmdBuffer				(makeCommandBuffer(context, *cmdPool));
 		unsigned						totalIterations			= 0u;
 		unsigned						failedIterations		= 0u;
-		const VkDeviceSize				resultImageSizeInBytes	= maxWidth * 1 * getFormatSizeInBytes(format);
 		Image							resultImage				(context, maxWidth, 1, format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 		const Unique<VkFramebuffer>		framebuffer				(makeFramebuffer(context, *renderPass, resultImage.getImageView(), maxWidth, 1));
 		const VkViewport				viewport				= makeViewport(maxWidth, 1u);
@@ -2240,9 +2238,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 				if (!inputBuffers[ndx]->isImage())
 				{
 					const Allocation& resultAlloc = inputBuffers[ndx]->getAllocation();
-					invalidateMappedMemoryRange(context.getDeviceInterface(),
-												context.getDevice(), resultAlloc.getMemory(),
-												resultAlloc.getOffset(), inputBuffers[ndx]->getAsBuffer()->getSize());
+					invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
 					// we always have our result data first
 					datas.push_back(resultAlloc.getHostPtr());
 				}
@@ -2253,9 +2249,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 					if ((stagesVector[ndx] & extraDatas[datasNdx].stages) && (!inputBuffers[index]->isImage()))
 					{
 						const Allocation& resultAlloc = inputBuffers[index]->getAllocation();
-						invalidateMappedMemoryRange(context.getDeviceInterface(),
-													context.getDevice(), resultAlloc.getMemory(),
-													resultAlloc.getOffset(), inputBuffers[index]->getAsBuffer()->getSize());
+						invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
 						// we always have our result data first
 						datas.push_back(resultAlloc.getHostPtr());
 					}
@@ -2268,9 +2262,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 			{
 				std::vector<const void*> datas;
 				const Allocation& resultAlloc = imageBufferResult.getAllocation();
-				invalidateMappedMemoryRange(context.getDeviceInterface(),
-											context.getDevice(), resultAlloc.getMemory(),
-											resultAlloc.getOffset(), resultImageSizeInBytes);
+				invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
 
 				// we always have our result data first
 				datas.push_back(resultAlloc.getHostPtr());
@@ -2281,9 +2273,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 					if (VK_SHADER_STAGE_FRAGMENT_BIT & extraDatas[datasNdx].stages && (!inputBuffers[index]->isImage()))
 					{
 						const Allocation& alloc = inputBuffers[index]->getAllocation();
-						invalidateMappedMemoryRange(context.getDeviceInterface(),
-													context.getDevice(), alloc.getMemory(),
-													alloc.getOffset(), inputBuffers[index]->getAsBuffer()->getSize());
+						invalidateAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
 						// we always have our result data first
 						datas.push_back(alloc.getHostPtr());
 					}
@@ -2439,7 +2429,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 		}
 
 		deMemcpy(alloc.getHostPtr(), &data[0], maxWidth * sizeof(tcu::Vec4));
-		vk::flushMappedMemoryRange(context.getDeviceInterface(), context.getDevice(), alloc.getMemory(), alloc.getOffset(), vertexBufferSize);
+		flushAlloc(context.getDeviceInterface(), context.getDevice(), alloc);
 	}
 
 	for (deUint32 width = 1u; width < maxWidth; width++)
@@ -2523,7 +2513,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 
 		{
 			const Allocation& allocResult = imageBufferResult.getAllocation();
-			invalidateMappedMemoryRange(context.getDeviceInterface(), context.getDevice(), allocResult.getMemory(), allocResult.getOffset(), imageResultSize);
+			invalidateAlloc(context.getDeviceInterface(), context.getDevice(), allocResult);
 
 			std::vector<const void*> datas;
 			datas.push_back(allocResult.getHostPtr());
@@ -2739,9 +2729,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 			std::vector<const void*> datas;
 			{
 				const Allocation& resultAlloc = resultBuffer.getAllocation();
-				invalidateMappedMemoryRange(context.getDeviceInterface(),
-											context.getDevice(), resultAlloc.getMemory(),
-											resultAlloc.getOffset(), resultImageSizeInBytes);
+				invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
 
 				// we always have our result data first
 				datas.push_back(resultAlloc.getHostPtr());
@@ -2947,9 +2935,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 
 		{
 			const Allocation& resultAlloc = resultBuffer.getAllocation();
-			invalidateMappedMemoryRange(context.getDeviceInterface(),
-										context.getDevice(), resultAlloc.getMemory(),
-										resultAlloc.getOffset(), resultBufferSizeInBytes);
+			invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
 
 			// we always have our result data first
 			datas.push_back(resultAlloc.getHostPtr());
@@ -2959,13 +2945,8 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		{
 			if (!inputBuffers[i]->isImage())
 			{
-				vk::VkDeviceSize size =
-					getFormatSizeInBytes(inputs[i].format) *
-					inputs[i].numElements;
 				const Allocation& resultAlloc = inputBuffers[i]->getAllocation();
-				invalidateMappedMemoryRange(context.getDeviceInterface(),
-											context.getDevice(), resultAlloc.getMemory(),
-											resultAlloc.getOffset(), size);
+				invalidateAlloc(context.getDeviceInterface(), context.getDevice(), resultAlloc);
 
 				// we always have our result data first
 				datas.push_back(resultAlloc.getHostPtr());

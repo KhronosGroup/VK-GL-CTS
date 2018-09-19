@@ -254,7 +254,7 @@ tcu::TestStatus SharedVarTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& bufferAllocation = buffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, bufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
 
@@ -425,7 +425,7 @@ tcu::TestStatus SharedVarAtomicOpTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& bufferAllocation = buffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, bufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
 
@@ -598,7 +598,7 @@ tcu::TestStatus SSBOLocalBarrierTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& bufferAllocation = buffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, bufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
 
@@ -728,7 +728,7 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate (void)
 		for (deUint32 i = 0; i < imageArea; ++i)
 			*bufferPtr++ = rnd.getUint32();
 
-		flushMappedMemoryRange(vk, device, stagingBufferAllocation.getMemory(), stagingBufferAllocation.getOffset(), bufferSizeBytes);
+		flushAlloc(vk, device, stagingBufferAllocation);
 	}
 
 	// Create a buffer to store shader output
@@ -813,7 +813,7 @@ tcu::TestStatus CopyImageToSSBOTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, outputBufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
 	const deUint32* refBufferPtr = static_cast<deUint32*>(stagingBuffer.getAllocation().getHostPtr());
@@ -938,7 +938,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 		for (deUint32 i = 0; i < imageArea; ++i)
 			*bufferPtr++ = rnd.getUint32();
 
-		flushMappedMemoryRange(vk, device, inputBufferAllocation.getMemory(), inputBufferAllocation.getOffset(), bufferSizeBytes);
+		flushAlloc(vk, device, inputBufferAllocation);
 	}
 
 	// Create a buffer to store shader output (copied from image data)
@@ -1023,7 +1023,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, outputBufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
 	const deUint32* refBufferPtr = static_cast<deUint32*>(inputBuffer.getAllocation().getHostPtr());
@@ -1225,7 +1225,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 		for (deUint32 i = 0; i < m_numValues; ++i)
 			bufferPtr[i].x() = rnd.getUint32();
 
-		flushMappedMemoryRange(vk, device, inputBufferAllocation.getMemory(), inputBufferAllocation.getOffset(), bufferSizeBytes);
+		flushAlloc(vk, device, inputBufferAllocation);
 	}
 
 	// Create an output buffer
@@ -1288,7 +1288,7 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, outputBufferAllocation);
 
 	const tcu::UVec4* bufferPtr = static_cast<tcu::UVec4*>(outputBufferAllocation.getHostPtr());
 	const tcu::UVec4* refBufferPtr = static_cast<tcu::UVec4*>(inputBuffer.getAllocation().getHostPtr());
@@ -1424,7 +1424,7 @@ tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate (void)
 		for (deUint32 i = 0; i < m_numValues; ++i)
 			inputData[i] = *bufferPtr++ = rnd.getUint32();
 
-		flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+		flushAlloc(vk, device, bufferAllocation);
 	}
 
 	// Create descriptor set
@@ -1479,7 +1479,7 @@ tcu::TestStatus InvertSSBOInPlaceTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& bufferAllocation = buffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, bufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
 
@@ -1671,7 +1671,7 @@ tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate (void)
 	// Validate the results
 	{
 		const Allocation& buffer0Allocation = buffer0.getAllocation();
-		invalidateMappedMemoryRange(vk, device, buffer0Allocation.getMemory(), buffer0Allocation.getOffset(), bufferSizeBytes);
+		invalidateAlloc(vk, device, buffer0Allocation);
 		const deUint32* buffer0Ptr = static_cast<deUint32*>(buffer0Allocation.getHostPtr());
 
 		for (deUint32 ndx = 0; ndx < m_numValues; ++ndx)
@@ -1689,7 +1689,7 @@ tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate (void)
 	}
 	{
 		const Allocation& buffer1Allocation = buffer1.getAllocation();
-		invalidateMappedMemoryRange(vk, device, buffer1Allocation.getMemory(), buffer1Allocation.getOffset(), bufferSizeBytes);
+		invalidateAlloc(vk, device, buffer1Allocation);
 		const deUint32* buffer1Ptr = static_cast<deUint32*>(buffer1Allocation.getHostPtr());
 
 		for (deUint32 ndx = 0; ndx < m_numValues; ++ndx)
@@ -1811,7 +1811,7 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 		const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
 		deUint32* outputBufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
 		*outputBufferPtr = 0;
-		flushMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+		flushAlloc(vk, device, outputBufferAllocation);
 	}
 
 	// Create a uniform buffer (to pass uniform constants)
@@ -1827,7 +1827,7 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 		deUint32* uniformBufferPtr = static_cast<deUint32*>(uniformBufferAllocation.getHostPtr());
 		uniformBufferPtr[0] = baseValue;
 
-		flushMappedMemoryRange(vk, device, uniformBufferAllocation.getMemory(), uniformBufferAllocation.getOffset(), uniformBufferSizeBytes);
+		flushAlloc(vk, device, uniformBufferAllocation);
 	}
 
 	// Create descriptor set
@@ -1901,7 +1901,7 @@ tcu::TestStatus SSBOBarrierTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+	invalidateAlloc(vk, device, outputBufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
 	const deUint32	res = *bufferPtr;
@@ -2028,7 +2028,7 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 		for (deUint32 i = 0; i < numInputValues; ++i)
 			*bufferPtr++ = rnd.getUint32();
 
-		flushMappedMemoryRange(vk, device, inputBufferAllocation.getMemory(), inputBufferAllocation.getOffset(), inputBufferSizeBytes);
+		flushAlloc(vk, device, inputBufferAllocation);
 	}
 
 	// Create a buffer to store shader output (copied from image data)
@@ -2114,7 +2114,7 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+	invalidateAlloc(vk, device, outputBufferAllocation);
 
 	const deUint32* bufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
 	const deUint32* refBufferPtr = static_cast<deUint32*>(inputBuffer.getAllocation().getHostPtr());
@@ -2237,7 +2237,7 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 		const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
 		deUint32* outputBufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
 		*outputBufferPtr = 0;
-		flushMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+		flushAlloc(vk, device, outputBufferAllocation);
 	}
 
 	// Create a uniform buffer (to pass uniform constants)
@@ -2253,7 +2253,7 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 		deUint32* uniformBufferPtr = static_cast<deUint32*>(uniformBufferAllocation.getHostPtr());
 		uniformBufferPtr[0] = baseValue;
 
-		flushMappedMemoryRange(vk, device, uniformBufferAllocation.getMemory(), uniformBufferAllocation.getOffset(), uniformBufferSizeBytes);
+		flushAlloc(vk, device, uniformBufferAllocation);
 	}
 
 	// Create descriptor set
@@ -2336,7 +2336,7 @@ tcu::TestStatus ImageBarrierTestInstance::iterate (void)
 	// Validate the results
 
 	const Allocation& outputBufferAllocation = outputBuffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outputBufferSizeBytes);
+	invalidateAlloc(vk, device, outputBufferAllocation);
 
 	const int		numValues = multiplyComponents(m_imageSize);
 	const deUint32* bufferPtr = static_cast<deUint32*>(outputBufferAllocation.getHostPtr());
@@ -2618,7 +2618,7 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 		uniformInputData[0] = *bufferPtr++ = m_workSize.x();
 		uniformInputData[1] = *bufferPtr++ = m_workSize.y();
 		uniformInputData[2] = *bufferPtr++ = m_workSize.z();
-		flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), uniformBufferSizeBytes);
+		flushAlloc(vk, device, bufferAllocation);
 	}
 
 	{
@@ -2628,7 +2628,7 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 		for (deUint32 i = 0; i < m_numValues; ++i)
 			inputData[i] = *bufferPtr++ = rnd.getUint32();
 
-		flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+		flushAlloc(vk, device, bufferAllocation);
 	}
 
 	// Create descriptor set
@@ -2712,7 +2712,7 @@ tcu::TestStatus DispatchBaseTestInstance::iterate (void)
 
 	// Validate the results
 	const Allocation& bufferAllocation = buffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+	invalidateAlloc(vk, device, bufferAllocation);
 	const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
 
 	for (deUint32 ndx = 0; ndx < m_numValues; ++ndx)
@@ -2896,7 +2896,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 		for (deUint32 i = 0; i < uniformBufSize; ++i)
 			uniformInputData[i] = *bufferPtr++ = rnd.getUint32() / 10; // divide to prevent overflow in addition
 
-		flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), uniformBufferSizeBytes);
+		flushAlloc(vk, device, bufferAllocation);
 	}
 
 	// Create descriptor set
@@ -2940,7 +2940,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 			const Allocation& bufferAllocation = uniformBuffer.getAllocation();
 			deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
 			constantValPerLoop = *bufferPtr = rnd.getUint32() / 10;  // divide to prevent overflow in addition
-			flushMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), sizeof(constantValPerLoop));
+			flushAlloc(vk, device, bufferAllocation);
 		}
 		beginCommandBuffer(vk, *cmdBuffer);
 
@@ -2983,7 +2983,7 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer, true, deviceMask);
 
 			const Allocation& bufferAllocation = checkBuffer.getAllocation();
-			invalidateMappedMemoryRange(vk, device, bufferAllocation.getMemory(), bufferAllocation.getOffset(), bufferSizeBytes);
+			invalidateAlloc(vk, device, bufferAllocation);
 			const deUint32* bufferPtr = static_cast<deUint32*>(bufferAllocation.getHostPtr());
 
 			for (deUint32 ndx = 0; ndx < m_numValues; ++ndx)

@@ -454,7 +454,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 
 		deMemcpy(inputBufferAlloc->getHostPtr(), &referenceData[0], imageSizeInBytes);
 
-		flushMappedMemoryRange(deviceInterface, getDevice(), inputBufferAlloc->getMemory(), inputBufferAlloc->getOffset(), imageSizeInBytes);
+		flushAlloc(deviceInterface, getDevice(), *inputBufferAlloc);
 
 		{
 			const VkBufferMemoryBarrier inputBufferBarrier = makeBufferMemoryBarrier
@@ -623,7 +623,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate (void)
 								0, DE_NULL, m_useDeviceGroups, firstDeviceID);
 
 		// Retrieve data from buffer to host memory
-		invalidateMappedMemoryRange(deviceInterface, getDevice(), outputBufferAlloc->getMemory(), outputBufferAlloc->getOffset(), imageSizeInBytes);
+		invalidateAlloc(deviceInterface, getDevice(), *outputBufferAlloc);
 
 		const deUint8* outputData = static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
 

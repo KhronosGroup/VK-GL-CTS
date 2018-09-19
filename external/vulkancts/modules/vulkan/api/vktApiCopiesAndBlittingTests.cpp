@@ -452,7 +452,7 @@ void CopiesAndBlittingTestInstance::uploadBuffer (tcu::ConstPixelBufferAccess bu
 
 	// Write buffer data
 	deMemcpy(bufferAlloc.getHostPtr(), bufferAccess.getDataPtr(), bufferSize);
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc.getMemory(), bufferAlloc.getOffset(), bufferSize);
+	flushAlloc(vk, vkDevice, bufferAlloc);
 }
 
 void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBufferAccess& imageAccess, const VkImage& image, const ImageParms& parms, const deUint32 mipLevels)
@@ -576,7 +576,7 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 
 	// Write buffer data
 	deMemcpy(bufferAlloc->getHostPtr(), imageAccess.getDataPtr(), bufferSize);
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
+	flushAlloc(vk, vkDevice, *bufferAlloc);
 
 	// Copy buffer to image
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -692,7 +692,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 		VK_CHECK(vk.bindBufferMemory(device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 
 		deMemset(bufferAlloc->getHostPtr(), 0, static_cast<size_t>(pixelDataSize));
-		flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+		flushAlloc(vk, device, *bufferAlloc);
 	}
 
 	// Barriers for copying image to buffer
@@ -776,7 +776,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
 
 	// Read buffer data
-	invalidateMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+	invalidateAlloc(vk, device, *bufferAlloc);
 	tcu::copy(dst, tcu::ConstPixelBufferAccess(dst.getFormat(), dst.getSize(), bufferAlloc->getHostPtr()));
 }
 
@@ -1319,7 +1319,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
-	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset(), m_params.dst.buffer.size);
+	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 
 	return checkTestResult(resultLevel->getAccess());
@@ -1500,7 +1500,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(m_textureFormat, (int)m_params.dst.buffer.size, 1));
-	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset(), m_bufferSize);
+	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 
 	return checkTestResult(resultLevel->getAccess());
@@ -3553,7 +3553,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 		// Load vertices into vertex buffer.
 		deMemcpy(vertexBufferAlloc->getHostPtr(), vertices.data(), (size_t)vertexDataSize);
-		flushMappedMemoryRange(vk, vkDevice, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexDataSize);
+		flushAlloc(vk, vkDevice, *vertexBufferAlloc);
 	}
 
 	{

@@ -293,7 +293,7 @@ tcu::TestStatus CrossStageTestInstance::iterate (void)
 	// Init host buffer data
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, allocationVertex->getMemory(), allocationVertex->getOffset()));
 	deMemcpy(allocationVertex->getHostPtr(), m_data.data(), static_cast<size_t>(vertexDataSize));
-	flushMappedMemoryRange(vk, vkDevice, allocationVertex->getMemory(), allocationVertex->getOffset(), static_cast<size_t>(vertexDataSize));
+	flushAlloc(vk, vkDevice, *allocationVertex);
 
 	Move<VkRenderPass>						renderPass				= makeRenderPass (vk, vkDevice, m_colorFormat);
 	Move<VkFramebuffer>						frameBuffer				= makeFramebuffer (vk, vkDevice, *renderPass, *colorAttachmentView, m_extent.width, m_extent.height);
@@ -625,7 +625,7 @@ bool CrossStageTestInstance::checkImage (VkImage image, VkCommandBuffer cmdBuffe
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 
 		deMemset(bufferAlloc->getHostPtr(), 0, static_cast<size_t>(pixelDataSize));
-		flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+		flushAlloc(vk, vkDevice, *bufferAlloc);
 	}
 
 	const VkBufferMemoryBarrier	bufferBarrier	=
@@ -678,7 +678,7 @@ bool CrossStageTestInstance::checkImage (VkImage image, VkCommandBuffer cmdBuffe
 	submitCommandsAndWait(vk, vkDevice, m_context.getUniversalQueue(), cmdBuffer);
 
 	// Read buffer data
-	invalidateMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+	invalidateAlloc(vk, vkDevice, *bufferAlloc);
 	tcu::copy(dst, tcu::ConstPixelBufferAccess(dst.getFormat(), dst.getSize(), bufferAlloc->getHostPtr()));
 
 	if (tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", description.c_str(), referenceFrame.getLevel(0), dst, tcu::Vec4(0.05f), tcu::COMPARE_LOG_EVERYTHING))

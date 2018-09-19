@@ -367,7 +367,7 @@ void PushConstantGraphicsTestInstance::init (void)
 
 		const tcu::Vec4						value					= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), &value, 16u);
-		flushMappedMemoryRange(vk, vkDevice, m_uniformBufferAlloc->getMemory(), m_uniformBufferAlloc->getOffset(), 16u);
+		invalidateAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
 		// create and update descriptor set
 		const VkDescriptorSetAllocateInfo	allocInfo				=
@@ -525,7 +525,7 @@ void PushConstantGraphicsTestInstance::init (void)
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		invalidateAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool
@@ -1858,7 +1858,7 @@ tcu::TestStatus PushConstantComputeTestInstance::iterate (void)
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
-	invalidateMappedMemoryRange(vk, vkDevice, m_outBufferAlloc->getMemory(), m_outBufferAlloc->getOffset(), (size_t)(sizeof(tcu::Vec4) * 8));
+	invalidateAlloc(vk, vkDevice, *m_outBufferAlloc);
 
 	// verify result
 	std::vector<tcu::Vec4>	expectValue(8, tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
