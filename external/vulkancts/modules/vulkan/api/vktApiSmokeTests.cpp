@@ -159,7 +159,7 @@ void createTriangleAsmProgs (SourceCollections& dst)
 		"%1 =	OpExtInstImport \"GLSL.std.450\"\n"
 		"		OpMemoryModel Logical GLSL450\n"
 		"		OpEntryPoint Fragment %4 \"main\" %10\n"
-		"		OpExecutionMode %4 OriginLowerLeft\n"
+		"		OpExecutionMode %4 OriginUpperLeft\n"
 		"		OpSource ESSL 300\n"
 		"		OpName %4 \"main\"\n"
 		"		OpName %10 \"o_color\"\n"
