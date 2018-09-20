@@ -212,11 +212,11 @@ public:
 		// Use half the number of elements for inout to cause overlap between atomic operations.
 		// Each inout element at index i will have two atomic operations using input from
 		// indices i and i + NUM_ELEMENTS / 2.
-		deInt32		index;
 		T			inout[NUM_ELEMENTS / 2];
 		T			input[NUM_ELEMENTS];
 		T			compare[NUM_ELEMENTS];
 		T			output[NUM_ELEMENTS];
+		deInt32		index;
 	};
 
 	virtual void setBuffer(void* ptr)
@@ -671,11 +671,11 @@ void AtomicOperationCase::createShaderSpec (void)
 		"${EXTENSIONS}\n"
 		"layout (set = ${SETIDX}, binding = 0) buffer AtomicBuffer\n"
 		"{\n"
-		"    int index;\n"
 		"    ${DATATYPE} inoutValues[${N}/2];\n"
 		"    ${DATATYPE} inputValues[${N}];\n"
 		"    ${DATATYPE} compareValues[${N}];\n"
 		"    ${DATATYPE} outputValues[${N}];\n"
+		"    int index;\n"
 		"} buf;\n");
 
 	std::map<std::string, std::string> specializations;
