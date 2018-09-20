@@ -1460,8 +1460,11 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 
 		for (deUint32 sampleNdx = 0; sampleNdx < m_sampleCount; sampleNdx++)
 		{
+			Allocation *dstBufMem = m_dstBufferMemory[sampleNdx].get();
+			invalidateMappedMemoryRange(vkd, device, dstBufMem->getMemory(), dstBufMem->getOffset(), VK_WHOLE_SIZE);
+
 			const std::string					name		("Sample" + de::toString(sampleNdx));
-			const void* const					ptr			(m_dstBufferMemory[sampleNdx]->getHostPtr());
+			const void* const					ptr			(dstBufMem->getHostPtr());
 			const tcu::ConstPixelBufferAccess	access		(format, m_width, m_height, 1, ptr);
 			tcu::TextureLevel					reference	(format, m_width, m_height);
 
