@@ -336,11 +336,11 @@ ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
 
 } // anonymous
 
-void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramInfo* buildInfo, const SpirvVersion spirvVersion)
+void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramInfo* buildInfo, deUint32 vulkanVersion, const SpirvVersion spirvVersion, const bool relaxedLayout)
 {
 	std::ostringstream validationLog;
 
-	if (!validateSpirV(binary.size(), &binary[0], &validationLog, spirvVersion))
+	if (!validateSpirV(binary.size(), &binary[0], &validationLog, vulkanVersion, spirvVersion, relaxedLayout))
 	{
 		buildInfo->program.linkOk	 = false;
 		buildInfo->program.infoLog	+= "\n" + validationLog.str();
@@ -603,7 +603,10 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 		}
 
 		if (validateBinary)
-			validateCompiledBinary(binary, buildInfo, spirvVersion);
+		{
+			const bool relaxedLayout = program.buildOptions.flags & ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS;
+			validateCompiledBinary(binary, buildInfo, program.buildOptions.vulkanVersion, spirvVersion, relaxedLayout);
+		}
 
 		if (optimizationRecipe != 0)
 			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
@@ -683,7 +686,10 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 		}
 
 		if (validateBinary)
-			validateCompiledBinary(binary, buildInfo, spirvVersion);
+		{
+			const bool relaxedLayout = program.buildOptions.flags & ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS;
+			validateCompiledBinary(binary, buildInfo, program.buildOptions.vulkanVersion, spirvVersion, relaxedLayout);
+		}
 
 		if (optimizationRecipe != 0)
 			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
@@ -740,8 +746,9 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 		if (validateBinary)
 		{
 			std::ostringstream	validationLog;
+			const bool			relaxedLayout	= false;
 
-			if (!validateSpirV(binary.size(), &binary[0], &validationLog, spirvVersion))
+			if (!validateSpirV(binary.size(), &binary[0], &validationLog, program.buildOptions.vulkanVersion, spirvVersion, relaxedLayout))
 			{
 				buildInfo->compileOk = false;
 				buildInfo->infoLog += "\n" + validationLog.str();
@@ -794,7 +801,7 @@ void disassembleProgram (const ProgramBinary& program, std::ostream* dst)
 		TCU_THROW(NotSupportedError, "Unsupported program format");
 }
 
-bool validateProgram (const ProgramBinary& program, std::ostream* dst)
+bool validateProgram (const ProgramBinary& program, std::ostream* dst, deUint32 vulkanVersion, bool relaxedLayout)
 {
 	if (program.getFormat() == PROGRAM_FORMAT_SPIRV)
 	{
@@ -806,7 +813,7 @@ bool validateProgram (const ProgramBinary& program, std::ostream* dst)
 
 		if (isNativeSpirVBinaryEndianness())
 			return validateSpirV(program.getSize()/sizeof(deUint32), (const deUint32*)program.getBinary(), dst,
-								 extractSpirvVersion(program));
+								 vulkanVersion, extractSpirvVersion(program), relaxedLayout);
 		else
 			TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
 	}

@@ -321,8 +321,8 @@ struct CaseDefinition
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(vk::SPIRV_VERSION_1_3, 0u);
-	const vk::SpirVAsmBuildOptions	buildOptionsSpr	(vk::SPIRV_VERSION_1_3);
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+	const vk::SpirVAsmBuildOptions	buildOptionsSpr	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3);
 
 	{
 		/*
@@ -978,7 +978,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "}\n";
 
 		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else
 	{
@@ -1088,7 +1088,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"OpStore %54 %34\n"
 				"OpReturn\n"
 				"OpFunctionEnd\n";
-				programCollection.spirvAsmSources.add("vert") << vertex << SpirVAsmBuildOptions(SPIRV_VERSION_1_3);
+				programCollection.spirvAsmSources.add("vert") << vertex << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
 		}
 
 		{
@@ -1217,7 +1217,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"OpStore %60 %58\n"
 				"OpReturn\n"
 				"OpFunctionEnd\n";
-				programCollection.spirvAsmSources.add("tesc") << tesc << SpirVAsmBuildOptions(SPIRV_VERSION_1_3);
+				programCollection.spirvAsmSources.add("tesc") << tesc << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
 		}
 
 		{
@@ -1344,7 +1344,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"OpStore %66 %64\n"
 				"OpReturn\n"
 				"OpFunctionEnd\n";
-				programCollection.spirvAsmSources.add("tese") << tese << SpirVAsmBuildOptions(SPIRV_VERSION_1_3);
+				programCollection.spirvAsmSources.add("tese") << tese << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
 		}
 
 		{
@@ -1450,7 +1450,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"OpEndPrimitive\n"
 			"OpReturn\n"
 			"OpFunctionEnd\n";
-			addGeometryShadersFromTemplate(geometry, SpirVAsmBuildOptions(SPIRV_VERSION_1_3), programCollection.spirvAsmSources);
+			addGeometryShadersFromTemplate(geometry, SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3), programCollection.spirvAsmSources);
 		}
 
 		{
@@ -1503,7 +1503,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"OpReturn\n"
 			"OpFunctionEnd\n";
 
-			programCollection.spirvAsmSources.add("fragment") << fragment << SpirVAsmBuildOptions(SPIRV_VERSION_1_3);
+			programCollection.spirvAsmSources.add("fragment") << fragment << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
 		}
 
 		subgroups::addNoSubgroupShader(programCollection);

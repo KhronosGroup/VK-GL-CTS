@@ -143,7 +143,7 @@ struct CaseDefinition
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(vk::SPIRV_VERSION_1_3, 0u);
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 	std::string			swapTable[OPTYPE_LAST];
 
 	subgroups::setFragmentShaderFrameBuffer(programCollection);
@@ -415,7 +415,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "}\n";
 
 		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else
 	{
@@ -466,7 +466,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
 				"}\n";
 			programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 		}
 
 		{
@@ -505,7 +505,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 				"}\n";
 			programCollection.glslSources.add("tesc")
-					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 		}
 
 		{
@@ -540,7 +540,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
 			programCollection.glslSources.add("tese")
-					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 		}
 
 		{
@@ -576,7 +576,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
 				"}\n";
-			subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u),
+			subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
 													  programCollection.glslSources);
 		}
 
@@ -605,7 +605,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  }\n"
 				"}\n";
 			programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 		}
 		subgroups::addNoSubgroupShader(programCollection);
 	}

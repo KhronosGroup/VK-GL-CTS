@@ -268,7 +268,7 @@ void validateVulkanVersion (const deUint32 usedVulkanVersion, const SpirvVersion
 
 void SpvAsmSpirvVersionsCase::initPrograms (SourceCollections& programCollection) const
 {
-	const SpirVAsmBuildOptions	spirVAsmBuildOptions	(m_testParameters.spirvVersion);
+	const SpirVAsmBuildOptions	spirVAsmBuildOptions	(programCollection.usedVulkanVersion, m_testParameters.spirvVersion);
 
 	validateVulkanVersion(programCollection.usedVulkanVersion, m_testParameters.spirvVersion);
 
