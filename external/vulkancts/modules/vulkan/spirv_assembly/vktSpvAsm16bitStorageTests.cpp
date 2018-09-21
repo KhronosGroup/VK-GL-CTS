@@ -4058,6 +4058,7 @@ void addGraphics16BitStorageInputOutputFloat16To16Group (tcu::TestCaseGroup* tes
 void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, TestDefinition def)
 {
 	SpirvVersion			targetSpirvVersion	= def.instanceContext.resources.spirvVersion;
+	const deUint32			vulkanVersion		= dst.usedVulkanVersion;
 	map<string, string>		spec;
 
 	switch(def.dataType)
@@ -4246,8 +4247,8 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 		"                             OpReturn\n"
 		"                             OpFunctionEnd\n");
 
-	dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader.specialize(spec) << SpirVAsmBuildOptions(targetSpirvVersion);
-	dst.spirvAsmSources.add("frag", DE_NULL) << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(targetSpirvVersion);
+	dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+	dst.spirvAsmSources.add("frag", DE_NULL) << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
 TestStatus runAndVerifyDefaultPipeline (Context& context, TestDefinition testDef)

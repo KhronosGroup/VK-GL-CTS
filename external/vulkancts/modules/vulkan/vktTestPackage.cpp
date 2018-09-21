@@ -229,9 +229,9 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 	tcu::TestLog&				log							= m_context.getTestContext().getLog();
 	const deUint32				usedVulkanVersion			= m_context.getUsedApiVersion();
 	const vk::SpirvVersion		baselineSpirvVersion		= vk::getBaselineSpirvVersion(usedVulkanVersion);
-	vk::ShaderBuildOptions		defaultGlslBuildOptions		(baselineSpirvVersion, 0u);
-	vk::ShaderBuildOptions		defaultHlslBuildOptions		(baselineSpirvVersion, 0u);
-	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(baselineSpirvVersion);
+	vk::ShaderBuildOptions		defaultGlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
+	vk::ShaderBuildOptions		defaultHlslBuildOptions		(usedVulkanVersion, baselineSpirvVersion, 0u);
+	vk::SpirVAsmBuildOptions	defaultSpirvAsmBuildOptions	(usedVulkanVersion, baselineSpirvVersion);
 	vk::SourceCollections		sourceProgs					(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions, defaultSpirvAsmBuildOptions);
 	const bool					doShaderLog					= log.isShaderLoggingEnabled();
 	const tcu::CommandLine&		commandLine					= m_context.getTestContext().getCommandLine();
