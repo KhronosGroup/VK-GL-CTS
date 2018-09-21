@@ -673,11 +673,13 @@ void initImagePrograms (SourceCollections& programCollection, const bool multisa
 			<< "\n"
 			<< "out gl_PerVertex {\n"
 			<< "	vec4 gl_Position;\n"
+			<< "	float gl_PointSize;\n"
 			<< "};\n"
 			<< "\n"
 			<< "void main(void)\n"
 			<< "{\n"
 			<< "	gl_Position	= in_position;\n"
+			<< "	gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
