@@ -117,12 +117,8 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 		DE_FATAL("Coherent memory must be host-visible");
 	if ((m_flags & FLAG_HOST_VISIBLE) && (m_flags & FLAG_LAZY_ALLOCATION))
 		DE_FATAL("Lazily allocated memory cannot be mappable");
-	if ((m_flags & FLAG_LAZY_ALLOCATION) && !(m_flags & FLAG_LOCAL))
-		DE_FATAL("Lazily allocated memory must be device local");
 	if ((m_flags & FLAG_PROTECTED) && (m_flags & FLAG_HOST_VISIBLE))
 		DE_FATAL("Protected memory cannot be mappable");
-	if ((m_flags & FLAG_CACHED) && !(m_flags & FLAG_HOST_VISIBLE))
-		DE_FATAL("Cached memory must be host visible");
 
 	// host-visible
 	if ((m_flags & FLAG_HOST_VISIBLE) && !(heapFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
