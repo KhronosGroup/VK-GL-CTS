@@ -475,8 +475,6 @@ string makeVertexShaderAssembly (const map<string, string>& fragments)
 {
 	static const char vertexShaderBoilerplate[] =
 		"OpCapability Shader\n"
-		"OpCapability ClipDistance\n"
-		"OpCapability CullDistance\n"
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -559,8 +557,6 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 {
 	static const char tessControlShaderBoilerplate[] =
 		"OpCapability Tessellation\n"
-		"OpCapability ClipDistance\n"
-		"OpCapability CullDistance\n"
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -683,8 +679,6 @@ string makeTessEvalShaderAssembly (const map<string, string>& fragments)
 {
 	static const char tessEvalBoilerplate[] =
 		"OpCapability Tessellation\n"
-		"OpCapability ClipDistance\n"
-		"OpCapability CullDistance\n"
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -833,8 +827,6 @@ string makeGeometryShaderAssembly (const map<string, string>& fragments)
 {
 	static const char geometryShaderBoilerplate[] =
 		"OpCapability Geometry\n"
-		"OpCapability ClipDistance\n"
-		"OpCapability CullDistance\n"
 		"${capability:opt}\n"
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -1412,8 +1404,6 @@ void createCombinedModule (vk::SourceCollections& dst, InstanceContext)
 	// \todo [2015-12-07 awoloszyn] Make tessellation / geometry conditional
 	dst.spirvAsmSources.add("module") <<
 		"OpCapability Shader\n"
-		"OpCapability ClipDistance\n"
-		"OpCapability CullDistance\n"
 		"OpCapability Geometry\n"
 		"OpCapability Tessellation\n"
 		"OpMemoryModel Logical GLSL450\n"
@@ -1721,8 +1711,6 @@ void createMultipleEntries (vk::SourceCollections& dst, InstanceContext)
 
 	dst.spirvAsmSources.add("geom") <<
 		"OpCapability Geometry\n"
-		"OpCapability ClipDistance\n"
-		"OpCapability CullDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Geometry %geom1_main \"geom1\" %out_gl_position %gl_in %out_color %in_color\n"
 		"OpEntryPoint Geometry %geom2_main \"geom2\" %out_gl_position %gl_in %out_color %in_color\n"
@@ -1900,8 +1888,6 @@ void createMultipleEntries (vk::SourceCollections& dst, InstanceContext)
 
 	dst.spirvAsmSources.add("tesse") <<
 		"OpCapability Tessellation\n"
-		"OpCapability ClipDistance\n"
-		"OpCapability CullDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint TessellationEvaluation %tesse1_main \"tesse1\" %stream %gl_tessCoord %in_position %out_color %in_color \n"
 		"OpEntryPoint TessellationEvaluation %tesse2_main \"tesse2\" %stream %gl_tessCoord %in_position %out_color %in_color \n"
