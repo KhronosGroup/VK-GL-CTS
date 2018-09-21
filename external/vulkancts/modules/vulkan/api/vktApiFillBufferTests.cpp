@@ -147,7 +147,7 @@ tcu::TestStatus						FillBufferTestInstance::iterate		(void)
 		VK_QUEUE_FAMILY_IGNORED,										// deUint32					dstQueueFamilyIndex;
 		*m_destination,													// VkBuffer					buffer;
 		m_params.dstOffset,												// VkDeviceSize				offset;
-		m_params.dstSize												// VkDeviceSize				size;
+		VK_WHOLE_SIZE												// VkDeviceSize				size;
 	};
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
