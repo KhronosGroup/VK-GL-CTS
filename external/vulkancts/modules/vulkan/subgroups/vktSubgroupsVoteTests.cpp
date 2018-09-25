@@ -219,7 +219,7 @@ struct CaseDefinition
 
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions buildOptions	(vk::SPIRV_VERSION_1_3, 0u);
+	const vk::ShaderBuildOptions buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 
 	if (VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage)
 		subgroups::setFragmentShaderFrameBuffer(programCollection);
@@ -233,7 +233,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			"  gl_Position = vec4(uv * 4.0f -2.0f, 0.0f, 1.0f);\n"
 			"  gl_PointSize = 1.0f;\n"
 			"}\n";
-		programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
 		subgroups::setVertexShaderFrameBuffer(programCollection);
@@ -288,7 +288,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
 
-		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSrc.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else if (VK_SHADER_STAGE_GEOMETRY_BIT == caseDef.shaderStage)
 	{
@@ -429,7 +429,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		<< "}\n";
 
 		programCollection.glslSources.add("fragment")
-			<< glu::FragmentSource(fragmentSource.str())<< vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+			<< glu::FragmentSource(fragmentSource.str())<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else
 	{
@@ -501,7 +501,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		src << "}\n";
 
 		programCollection.glslSources.add("comp")
-				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+				<< glu::ComputeSource(src.str()) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 	}
 	else
 	{
@@ -559,7 +559,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  gl_PointSize = 1.0f;\n"
 				"}\n";
 			programCollection.glslSources.add("vert")
-				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+				<< glu::VertexSource(vertex) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 		}
 
 		{
@@ -589,7 +589,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"}\n";
 
 			programCollection.glslSources.add("tesc")
-					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+					<< glu::TessellationControlSource(tesc) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 		}
 
 		{
@@ -615,7 +615,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"}\n";
 
 			programCollection.glslSources.add("tese")
-					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+					<< glu::TessellationEvaluationSource(tese) << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 		}
 
 		{
@@ -642,7 +642,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  EndPrimitive();\n"
 				"}\n";
 
-			subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u),
+			subgroups::addGeometryShadersFromTemplate(geometry, vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u),
 													  programCollection.glslSources);
 		}
 
@@ -689,7 +689,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"}\n";
 
 			programCollection.glslSources.add("fragment")
-				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_3, 0u);
+				<< glu::FragmentSource(fragment)<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
 		}
 
 		subgroups::addNoSubgroupShader(programCollection);

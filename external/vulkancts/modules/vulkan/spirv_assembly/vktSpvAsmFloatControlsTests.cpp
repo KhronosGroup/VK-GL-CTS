@@ -2540,8 +2540,8 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 	// be implemented as a method because of how addFunctionCaseWithPrograms
 	// was implemented
 
-	SpirvVersion targetSpirvVersion;
-	targetSpirvVersion = context.resources.spirvVersion;
+	SpirvVersion	targetSpirvVersion	= context.resources.spirvVersion;
+	const deUint32	vulkanVersion		= dst.usedVulkanVersion;
 
 	static const string vertexTemplate =
 		"OpCapability Shader\n"
@@ -2720,10 +2720,10 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 
 	dst.spirvAsmSources.add("vert", DE_NULL)
 		<< StringTemplate(vertexTemplate).specialize(context.testCodeFragments)
-		<< SpirVAsmBuildOptions(targetSpirvVersion);
+		<< SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 	dst.spirvAsmSources.add("frag", DE_NULL)
 		<< StringTemplate(fragmentTemplate).specialize(context.testCodeFragments)
-		<< SpirVAsmBuildOptions(targetSpirvVersion);
+		<< SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
 // GraphicsTestGroupBuilder iterates over all test cases and creates test for both

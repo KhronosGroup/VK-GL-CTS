@@ -2326,7 +2326,7 @@ std::string ComputeShaderExecutor::generateComputeShader (const ShaderSpec& spec
 void ComputeShaderExecutor::generateSources (const ShaderSpec& shaderSpec, SourceCollections& programCollection)
 {
 	if(shaderSpec.spirVShader)
-		programCollection.spirvAsmSources.add("compute") << SpirVAsmBuildOptions(SPIRV_VERSION_1_3) << generateComputeShader(shaderSpec);
+		programCollection.spirvAsmSources.add("compute") << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3) << generateComputeShader(shaderSpec);
 	else
 		programCollection.glslSources.add("compute") << glu::ComputeSource(generateComputeShader(shaderSpec)) << shaderSpec.buildOptions;
 }

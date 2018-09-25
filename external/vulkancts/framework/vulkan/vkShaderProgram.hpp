@@ -44,16 +44,19 @@ struct ShaderBuildOptions
 		FLAG_ALLOW_RELAXED_OFFSETS				= (1u<<1)	// allow block offsets to follow VK_KHR_relaxed_block_layout
 	};
 
+	deUint32		vulkanVersion;
 	SpirvVersion	targetVersion;
 	deUint32		flags;
 
-	ShaderBuildOptions (SpirvVersion targetVersion_, deUint32 flags_)
-		: targetVersion	(targetVersion_)
+	ShaderBuildOptions (deUint32 vulkanVersion_, SpirvVersion targetVersion_, deUint32 flags_)
+		: vulkanVersion	(vulkanVersion_)
+		, targetVersion	(targetVersion_)
 		, flags			(flags_)
 	{}
 
 	ShaderBuildOptions (void)
-		: targetVersion	(SPIRV_VERSION_1_0)
+		: vulkanVersion	(VK_MAKE_VERSION(1, 0, 0))
+		, targetVersion	(SPIRV_VERSION_1_0)
 		, flags			(0u)
 	{}
 };

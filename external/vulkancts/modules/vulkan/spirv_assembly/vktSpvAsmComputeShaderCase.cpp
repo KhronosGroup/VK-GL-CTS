@@ -363,7 +363,7 @@ SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, con
 
 void SpvAsmComputeShaderCase::initPrograms (SourceCollections& programCollection) const
 {
-	programCollection.spirvAsmSources.add("compute") << m_shaderSpec.assembly.c_str() << SpirVAsmBuildOptions(m_shaderSpec.spirvVersion);
+	programCollection.spirvAsmSources.add("compute") << m_shaderSpec.assembly.c_str() << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, m_shaderSpec.spirvVersion);
 }
 
 TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const

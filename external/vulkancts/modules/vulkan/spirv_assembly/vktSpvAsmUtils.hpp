@@ -133,6 +133,7 @@ public:
 	virtual				~BufferInterface	(void)				{}
 
 	virtual void		getBytes			(std::vector<deUint8>& bytes) const = 0;
+	virtual void		getPackedBytes		(std::vector<deUint8>& bytes) const = 0;
 	virtual size_t		getByteSize			(void) const = 0;
 };
 

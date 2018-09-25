@@ -394,8 +394,9 @@ void addShaderCodeOutput(vk::SourceCollections& dst, InstanceContext& context, s
 
 	spec["type"] = type;
 
-	dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader.specialize(spec) << SpirVAsmBuildOptions(targetSpirvVersion);
-	dst.spirvAsmSources.add("frag", DE_NULL) << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(targetSpirvVersion);
+	const deUint32 vulkanVersion = dst.usedVulkanVersion;
+	dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+	dst.spirvAsmSources.add("frag", DE_NULL) << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
 void addShaderCodeOutputFloat (vk::SourceCollections& dst, InstanceContext context)
@@ -540,8 +541,9 @@ void addShaderCodeOutputStruct (vk::SourceCollections& dst, InstanceContext cont
 		"                            OpReturn\n"
 		"                            OpFunctionEnd\n";
 
-	dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader << SpirVAsmBuildOptions(targetSpirvVersion);
-	dst.spirvAsmSources.add("frag", DE_NULL) << fragmentShader << SpirVAsmBuildOptions(targetSpirvVersion);
+	const deUint32 vulkanVersion = dst.usedVulkanVersion;
+	dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+	dst.spirvAsmSources.add("frag", DE_NULL) << fragmentShader << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
 void addGraphicsVariableInitOutputTest (tcu::TestCaseGroup* group)

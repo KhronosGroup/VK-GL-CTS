@@ -2413,7 +2413,7 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 	if (usesRelaxedLayout(m_interface))
 	{
 		programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc)
-			<< vk::ShaderBuildOptions(vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS);
+			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS);
 	}
 	else
 		programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc);

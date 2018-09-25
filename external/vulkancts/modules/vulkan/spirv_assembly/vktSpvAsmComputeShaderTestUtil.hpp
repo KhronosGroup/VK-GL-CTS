@@ -137,6 +137,11 @@ public:
 			DE_FATAL("Unknown buffer type");
 	}
 
+	void getPackedBytes (std::vector<deUint8>& bytes) const
+	{
+		return getBytes(bytes);
+	}
+
 	size_t getByteSize (void) const
 	{
 		switch (m_type)
@@ -258,24 +263,49 @@ template<typename E>
 class Buffer : public BufferInterface
 {
 public:
-						Buffer				(const std::vector<E>& elements)
-							: m_elements(elements)
-						{}
+	Buffer	(const std::vector<E>& elements, deUint32 padding = 0 /* in bytes */)
+			: m_elements(elements)
+			, m_padding(padding)
+			{}
 
 	void getBytes (std::vector<deUint8>& bytes) const
 	{
-		const size_t size = m_elements.size() * sizeof(E);
+		const size_t	count			= m_elements.size();
+		const size_t	perSegmentSize	= sizeof(E) + m_padding;
+		const size_t	size			= count * perSegmentSize;
+
 		bytes.resize(size);
+
+		if (m_padding == 0)
+		{
+			deMemcpy(&bytes.front(), &m_elements.front(), size);
+		}
+		else
+		{
+			deMemset(&bytes.front(), 0xff, size);
+
+			for (deUint32 elementIdx = 0; elementIdx < count; ++elementIdx)
+				deMemcpy(&bytes[elementIdx * perSegmentSize], &m_elements[elementIdx], sizeof(E));
+		}
+	}
+
+	void getPackedBytes (std::vector<deUint8>& bytes) const
+	{
+		const size_t size = m_elements.size() * sizeof(E);
+
+		bytes.resize(size);
+
 		deMemcpy(&bytes.front(), &m_elements.front(), size);
 	}
 
 	size_t getByteSize (void) const
 	{
-		return m_elements.size() * sizeof(E);
+		return m_elements.size() * (sizeof(E) + m_padding);
 	}
 
 private:
 	std::vector<E>		m_elements;
+	deUint32			m_padding;
 };
 
 DE_STATIC_ASSERT(sizeof(tcu::Vec4) == 4 * sizeof(float));
