@@ -567,6 +567,8 @@ DE_DECLARE_COMMAND_LINE_OPT(VulkanVersion,			deUint32);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCache,			bool);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheFilename,	std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ShaderCacheTruncate,	bool);
+DE_DECLARE_COMMAND_LINE_OPT(SpirvOptimize,			bool);
+DE_DECLARE_COMMAND_LINE_OPT(SpirvOptimizationRecipe,std::string);
 
 static const de::cmdline::NamedValue<bool> s_enableNames[] =
 {
@@ -593,7 +595,9 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<opt::VulkanVersion>("t", "target-vulkan-version", "Target Vulkan version", s_vulkanVersion, "1.1")
 		<< Option<opt::ShaderCache>("s", "shadercache", "Enable or disable shader cache", s_enableNames, "enable")
 		<< Option<opt::ShaderCacheFilename>("r", "shadercache-filename", "Write shader cache to given file", "shadercache.bin")
-		<< Option<opt::ShaderCacheTruncate>("x", "shadercache-truncate", "Truncate shader cache before running", s_enableNames, "enable");
+		<< Option<opt::ShaderCacheTruncate>("x", "shadercache-truncate", "Truncate shader cache before running", s_enableNames, "enable")
+		<< Option<opt::SpirvOptimize>("o", "deqp-optimize-spirv", "Enable optimization for SPIR-V", s_enableNames, "disable")
+		<< Option<opt::SpirvOptimizationRecipe>("p","deqp-optimization-recipe", "Shader optimization recipe");
 }
 
 } // opt
@@ -646,6 +650,21 @@ int main (int argc, const char* argv[])
 				deqpArgv.push_back("enable");
 			else
 				deqpArgv.push_back("disable");
+		}
+
+		if (cmdLine.hasOption<opt::SpirvOptimize>())
+		{
+            deqpArgv.push_back("--deqp-optimize-spirv");
+			if (cmdLine.getOption<opt::SpirvOptimize>())
+				deqpArgv.push_back("enable");
+			 else
+				deqpArgv.push_back("disable");
+		}
+
+		if (cmdLine.hasOption<opt::SpirvOptimizationRecipe>())
+		{
+			deqpArgv.push_back("--deqp-optimization-recipe");
+			deqpArgv.push_back(cmdLine.getOption<opt::SpirvOptimizationRecipe>().c_str());
 		}
 
 		if (!deqpCmdLine.parse((int)deqpArgv.size(), &deqpArgv[0]))
