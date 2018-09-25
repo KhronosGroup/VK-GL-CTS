@@ -52,6 +52,7 @@
 #include "tcuSurface.hpp"
 
 #include <vector>
+
 using namespace vk;
 namespace vkt
 {
@@ -112,6 +113,7 @@ struct TestParameters
 	VkImageUsageFlags	uncompressedImageUsage;
 	bool				useMipmaps;
 	VkFormat			formatForVerify;
+	bool				formatIsASTC;
 };
 
 template<typename T>
@@ -128,6 +130,93 @@ inline SharedPtr<MovePtr<T> > makeVkSharedPtr (MovePtr<T> movePtr)
 
 const deUint32 SINGLE_LEVEL = 1u;
 const deUint32 SINGLE_LAYER = 1u;
+
+enum BinaryCompareMode
+{
+	COMPARE_MODE_NORMAL,
+	COMPARE_MODE_ALLOW_ASTC_ERROR_COLOUR_WARNING,
+};
+
+enum BinaryCompareResult
+{
+	COMPARE_RESULT_OK,
+	COMPARE_RESULT_ASTC_QUALITY_WARNING,
+	COMPARE_RESULT_FAILED,
+};
+
+const deUint32 ASTC_LDR_ERROR_COLOUR = 0xFFFF00FF;
+const deUint32 ASTC_HDR_ERROR_COLOUR = 0x00000000;
+
+static BinaryCompareResult BinaryCompare(const void				*reference,
+										 const void				*result,
+										 VkDeviceSize			sizeInBytes,
+										 VkFormat				formatForVerify,
+										 BinaryCompareMode		mode)
+{
+	DE_UNREF(formatForVerify);
+
+	// Compare quickly using deMemCmp
+	if (deMemCmp(reference, result, (size_t)sizeInBytes) == 0)
+	{
+		return COMPARE_RESULT_OK;
+	}
+	// If deMemCmp indicated a mismatch, we can re-check with a manual comparison of
+	// the ref and res images that allows for ASTC error colour mismatches if the ASTC
+	// comparison mode was selected. This slows down the affected ASTC tests if you
+	// didn't pass in the first comparison, but means in the general case the
+	// comparion is still fast.
+	else if (mode == COMPARE_MODE_ALLOW_ASTC_ERROR_COLOUR_WARNING)
+	{
+		bool bWarn = false;
+		bool bFail = false;
+		const deUint32 *pui32RefVal = (deUint32*)reference;
+		const deUint32 *pui32ResVal = (deUint32*)result;
+
+		DE_ASSERT(formatForVerify == VK_FORMAT_R8G8B8A8_UNORM);
+		size_t numPixels = (size_t)(sizeInBytes / 4) /* bytes */;
+		for (size_t i = 0; i < numPixels; i++)
+		{
+			const deUint32 ref = *pui32RefVal++;
+			const deUint32 res = *pui32ResVal++;
+
+			if (ref != res)
+			{
+				// QualityWarning !1231: If the astc pixel was the ASTC LDR error colour
+				// and the result image has the HDR error colour (or vice versa as the test
+				// cases below sometimes reverse the operands) then issue a quality warning
+				// instead of a failure.
+				if ((ref == ASTC_LDR_ERROR_COLOUR && res == ASTC_HDR_ERROR_COLOUR) ||
+					(ref == ASTC_HDR_ERROR_COLOUR && res == ASTC_LDR_ERROR_COLOUR))
+				{
+					bWarn = true;
+				}
+				else
+				{
+					bFail = true;
+				}
+			}
+		}
+
+		if (!bFail)
+		{
+			return (bWarn)
+				? (COMPARE_RESULT_ASTC_QUALITY_WARNING)
+				: (COMPARE_RESULT_OK);
+		}
+	}
+
+	return COMPARE_RESULT_FAILED;
+}
+
+static bool FormatIsASTC(VkFormat format)
+{
+	return deInRange32(format, VK_FORMAT_ASTC_4x4_UNORM_BLOCK, VK_FORMAT_ASTC_12x12_SRGB_BLOCK);
+}
+
+static TestStatus TestStatusASTCQualityWarning()
+{
+	return TestStatus(QP_TEST_RESULT_QUALITY_WARNING, "ASTC HDR error colour output instead of LDR error colour");
+}
 
 class BasicTranscodingTestInstance : public TestInstance
 {
@@ -153,6 +242,10 @@ protected:
 	const deUint32			m_blockHeight;
 	const deUint32			m_levelCount;
 	const UVec3				m_layerSize;
+
+	// Detected error colour mismatch while verifying image. Output
+	// the ASTC quality warning instead of a pass
+	bool					m_bASTCErrorColourMismatch;
 
 private:
 	deUint32				findMipMapLevelCount			();
@@ -194,6 +287,7 @@ BasicTranscodingTestInstance::BasicTranscodingTestInstance (Context& context, co
 	, m_blockHeight	(getBlockHeight(m_parameters.formatCompressed))
 	, m_levelCount	(findMipMapLevelCount())
 	, m_layerSize	(getLayerSize(m_parameters.imageType, m_parameters.size))
+	, m_bASTCErrorColourMismatch(false)
 {
 	DE_ASSERT(deLog2Floor32(m_parameters.size.x()) == deLog2Floor32(m_parameters.size.y()));
 }
@@ -543,6 +637,13 @@ TestStatus BasicComputeTestInstance::iterate (void)
 	};
 	if (!decompressImage(*cmdBuffer, imageData, mipMapSizes))
 			return TestStatus::fail("Fail");
+
+	if (m_bASTCErrorColourMismatch)
+	{
+		DE_ASSERT(m_parameters.formatIsASTC);
+		return TestStatusASTCQualityWarning();
+	}
+
 	return TestStatus::pass("Pass");
 }
 
@@ -908,7 +1009,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 			DE_NULL,															// const void*				pNext;
 			0u,																	// VkImageCreateFlags		flags;
 			VK_IMAGE_TYPE_2D,													// VkImageType				imageType;
-			VK_FORMAT_R8G8B8A8_UNORM,											// VkFormat					format;
+			m_parameters.formatForVerify,										// VkFormat					format;
 			extentCompressed,													// VkExtent3D				extent;
 			1u,																	// deUint32					mipLevels;
 			1u,																	// deUint32					arrayLayers;
@@ -977,7 +1078,7 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		Move<VkDescriptorSet>			descriptorSet			= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
 		const Unique<VkPipelineLayout>	pipelineLayout			(makePipelineLayout(vk, device, *descriptorSetLayout));
 		const Unique<VkPipeline>		pipeline				(makeComputePipeline(vk, device, *pipelineLayout, *shaderModule));
-		const VkDeviceSize				bufferSize				= getImageSizeBytes(IVec3((int)extentCompressed.width, (int)extentCompressed.height, (int)extentCompressed.depth), VK_FORMAT_R8G8B8A8_UNORM);
+		const VkDeviceSize				bufferSize				= getImageSizeBytes(IVec3((int)extentCompressed.width, (int)extentCompressed.height, (int)extentCompressed.depth), m_parameters.formatForVerify);
 		Buffer							resultBuffer			(vk, device, allocator,
 																	makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible);
 		Buffer							referenceBuffer			(vk, device, allocator,
@@ -1163,13 +1264,28 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 		invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), bufferSize);
 		invalidateMappedMemoryRange(vk, device, referenceAlloc.getMemory(), referenceAlloc.getOffset(), bufferSize);
 
-		if (deMemCmp(resultAlloc.getHostPtr(), referenceAlloc.getHostPtr(), (size_t)bufferSize) != 0)
+		BinaryCompareMode compareMode =
+			(m_parameters.formatIsASTC)
+				?(COMPARE_MODE_ALLOW_ASTC_ERROR_COLOUR_WARNING)
+				:(COMPARE_MODE_NORMAL);
+
+		BinaryCompareResult res = BinaryCompare(referenceAlloc.getHostPtr(),
+												resultAlloc.getHostPtr(),
+												(size_t)bufferSize,
+												m_parameters.formatForVerify,
+												compareMode);
+
+		if (res == COMPARE_RESULT_FAILED)
 		{
 			ConstPixelBufferAccess	resultPixels		(mapVkFormat(decompressedImageInfo.format), decompressedImageInfo.extent.width, decompressedImageInfo.extent.height, decompressedImageInfo.extent.depth, resultAlloc.getHostPtr());
 			ConstPixelBufferAccess	referencePixels		(mapVkFormat(decompressedImageInfo.format), decompressedImageInfo.extent.width, decompressedImageInfo.extent.height, decompressedImageInfo.extent.depth, referenceAlloc.getHostPtr());
 
 			if(!fuzzyCompare(m_context.getTestContext().getLog(), "Image Comparison", "Image Comparison", resultPixels, referencePixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING))
 				return false;
+		}
+		else if (res == COMPARE_RESULT_ASTC_QUALITY_WARNING)
+		{
+			m_bASTCErrorColourMismatch = true;
 		}
 	}
 
@@ -1420,6 +1536,12 @@ TestStatus GraphicsAttachmentsTestInstance::iterate (void)
 				if (!verifyDecompression(*m_dstData[levelNdx][layerNdx], m_compressedImage, levelNdx, layerNdx, m_compressedImageResVec[levelNdx]))
 					return TestStatus::fail("Images difference detected");
 			}
+
+	if (m_bASTCErrorColourMismatch)
+	{
+		DE_ASSERT(m_parameters.formatIsASTC);
+		return TestStatusASTCQualityWarning();
+	}
 
 	return TestStatus::pass("Pass");
 }
@@ -2007,7 +2129,18 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 		const Allocation&	resDstBufferAlloc	= resDstBuffer->getAllocation();
 		invalidateMappedMemoryRange(vk, device, resDstBufferAlloc.getMemory(), resDstBufferAlloc.getOffset(), dstBufferSize);
 
-		if (deMemCmp(refDstBufferAlloc.getHostPtr(), resDstBufferAlloc.getHostPtr(), (size_t)dstBufferSize) != 0)
+		BinaryCompareMode compareMode =
+			(m_parameters.formatIsASTC)
+				?(COMPARE_MODE_ALLOW_ASTC_ERROR_COLOUR_WARNING)
+				:(COMPARE_MODE_NORMAL);
+
+		BinaryCompareResult res = BinaryCompare(refDstBufferAlloc.getHostPtr(),
+												resDstBufferAlloc.getHostPtr(),
+												dstBufferSize,
+												m_parameters.formatForVerify,
+												compareMode);
+
+		if (res == COMPARE_RESULT_FAILED)
 		{
 			// Do fuzzy to log error mask
 			invalidateMappedMemoryRange(vk, device, resDstBufferAlloc.getMemory(), resDstBufferAlloc.getOffset(), dstBufferSize);
@@ -2024,6 +2157,10 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 				tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ImageComparison", comment.c_str(), resPixels, refPixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING);
 
 			return false;
+		}
+		else if (res == COMPARE_RESULT_ASTC_QUALITY_WARNING)
+		{
+			m_bASTCErrorColourMismatch = true;
 		}
 	}
 
@@ -2609,7 +2746,7 @@ TestInstance* TexelViewCompatibleCase::createInstance (Context& context) const
 			!physicalDeviceFeatures.textureCompressionETC2)
 			TCU_THROW(NotSupportedError, "textureCompressionETC2 not supported");
 
-		if (deInRange32(m_parameters.formatCompressed, VK_FORMAT_ASTC_4x4_UNORM_BLOCK, VK_FORMAT_ASTC_12x12_SRGB_BLOCK) &&
+		if (m_parameters.formatIsASTC &&
 			!physicalDeviceFeatures.textureCompressionASTC_LDR)
 			TCU_THROW(NotSupportedError, "textureCompressionASTC_LDR not supported");
 
@@ -2916,7 +3053,8 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 								compressedImageViewUsageFlags[operationNdx],
 								uncompressedImageUsageFlags[operationNdx],
 								mipmapTest,
-								VK_FORMAT_R8G8B8A8_UNORM
+								VK_FORMAT_R8G8B8A8_UNORM,
+								FormatIsASTC(formatCompressed)
 							};
 
 							compressedFormatGroup->addChild(new TexelViewCompatibleCase(testCtx, uncompressedFormatGroupName, "", parameters));

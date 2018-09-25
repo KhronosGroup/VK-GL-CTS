@@ -235,7 +235,7 @@ string ComputeBuiltinVarCase::genBuiltinVarSource (const string& varName, glu::D
 					<< "	sb_out.result[offset].x = " << varName << ".x;\n";
 				break;
 			default:
-				DE_ASSERT("Illegal data type");
+				DE_FATAL("Illegal data type");
 				break;
 		}
 	} else {
@@ -433,7 +433,7 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 			resultBufferStride = sizeof(tcu::UVec4);
 			break;
 		default:
-			DE_ASSERT("Illegal data type");
+			DE_FATAL("Illegal data type");
 	}
 
 	const deUint32				resultBufferSize	= numInvocations * resultBufferStride;

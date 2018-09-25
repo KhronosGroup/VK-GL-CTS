@@ -199,7 +199,7 @@ bool graphicsCheck16BitFloats (const std::vector<Resource>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].getBytes(originalBytes);
+		originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
 
 		const deUint16*	returned	= static_cast<const deUint16*>(outputAllocs[outputNdx]->getHostPtr());
 		const float*	original	= reinterpret_cast<const float*>(&originalBytes.front());
@@ -220,7 +220,7 @@ bool computeCheckBuffersFloats (const std::vector<Resource>&	originalFloats,
 								tcu::TestLog&					/*log*/)
 {
 	std::vector<deUint8> result;
-	originalFloats.front().getBytes(result);
+	originalFloats.front().getBuffer()->getPackedBytes(result);
 
 	const deUint16 * results = reinterpret_cast<const deUint16 *>(&result[0]);
 	const deUint16 * expected = reinterpret_cast<const deUint16 *>(outputAllocs.front()->getHostPtr());
@@ -251,7 +251,7 @@ bool computeCheck16BitFloats (const std::vector<Resource>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].getBytes(originalBytes);
+		originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
 
 		const deUint16*	returned	= static_cast<const deUint16*>(outputAllocs[outputNdx]->getHostPtr());
 		const float*	original	= reinterpret_cast<const float*>(&originalBytes.front());
@@ -281,7 +281,7 @@ bool check32BitFloats (const std::vector<Resource>&		/* originalFloats */,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	expectedBytes;
-		expectedOutputs[outputNdx].getBytes(expectedBytes);
+		expectedOutputs[outputNdx].getBuffer()->getPackedBytes(expectedBytes);
 
 		const float*	returnedAsFloat	= static_cast<const float*>(outputAllocs[outputNdx]->getHostPtr());
 		const float*	expectedAsFloat	= reinterpret_cast<const float*>(&expectedBytes.front());
@@ -1034,7 +1034,7 @@ bool computeCheckStruct (const std::vector<Resource>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].getBytes(originalBytes);
+		originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
 
 		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
 		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
@@ -1054,7 +1054,7 @@ bool graphicsCheckStruct (const std::vector<Resource>&	originalFloats,
 	for (deUint32 outputNdx = 0; outputNdx < static_cast<deUint32>(outputAllocs.size()); ++outputNdx)
 	{
 		vector<deUint8>	originalBytes;
-		originalFloats[outputNdx].getBytes(originalBytes);
+		originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
 
 		const resultType*	returned	= static_cast<const resultType*>(outputAllocs[outputNdx]->getHostPtr());
 		const originType*	original	= reinterpret_cast<const originType*>(&originalBytes.front());
@@ -4058,6 +4058,7 @@ void addGraphics16BitStorageInputOutputFloat16To16Group (tcu::TestCaseGroup* tes
 void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, TestDefinition def)
 {
 	SpirvVersion			targetSpirvVersion	= def.instanceContext.resources.spirvVersion;
+	const deUint32			vulkanVersion		= dst.usedVulkanVersion;
 	map<string, string>		spec;
 
 	switch(def.dataType)
@@ -4246,8 +4247,8 @@ void addShaderCode16BitStorageInputOutput16To16x2 (vk::SourceCollections& dst, T
 		"                             OpReturn\n"
 		"                             OpFunctionEnd\n");
 
-	dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader.specialize(spec) << SpirVAsmBuildOptions(targetSpirvVersion);
-	dst.spirvAsmSources.add("frag", DE_NULL) << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(targetSpirvVersion);
+	dst.spirvAsmSources.add("vert", DE_NULL) << vertexShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+	dst.spirvAsmSources.add("frag", DE_NULL) << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
 TestStatus runAndVerifyDefaultPipeline (Context& context, TestDefinition testDef)

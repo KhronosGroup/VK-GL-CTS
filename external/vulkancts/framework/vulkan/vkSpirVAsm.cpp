@@ -39,6 +39,20 @@ using std::vector;
 
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
 
+// Convert a Vulkan version number to a SPIRV-Tools target environment enum.
+static spv_target_env mapVulkanVersionToSpirvToolsEnv(deUint32 vulkanVersion)
+{
+	switch (vulkanVersion)
+	{
+		case VK_MAKE_VERSION(1, 0, 0): return SPV_ENV_VULKAN_1_0;
+		case VK_MAKE_VERSION(1, 1, 0): return SPV_ENV_VULKAN_1_1;
+		default:
+			break;
+	}
+	TCU_THROW(InternalError, "Unexpected Vulkan Version version requested");
+	return SPV_ENV_VULKAN_1_0;
+}
+
 static spv_target_env mapTargetSpvEnvironment(SpirvVersion spirvVersion)
 {
 	spv_target_env result = SPV_ENV_UNIVERSAL_1_0;
@@ -130,16 +144,20 @@ void disassembleSpirV (size_t binarySizeInWords, const deUint32* binary, std::os
 	}
 }
 
-bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog, SpirvVersion spirvVersion)
+bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog, deUint32 vulkanVersion, SpirvVersion, bool relaxedLayout)
 {
-	const spv_context	context		= spvContextCreate(mapTargetSpvEnvironment(spirvVersion));
+	const spv_context	context		= spvContextCreate(mapVulkanVersionToSpirvToolsEnv(vulkanVersion));
 	spv_diagnostic		diagnostic	= DE_NULL;
 
 	try
 	{
-		spv_const_binary_t	cbinary		= { binary, binarySizeInWords };
-		const spv_result_t	valid		= spvValidate(context, &cbinary, &diagnostic);
-		const bool			passed		= (valid == SPV_SUCCESS);
+		spv_const_binary_t		cbinary	= { binary, binarySizeInWords };
+
+		spv_validator_options	options	= spvValidatorOptionsCreate();
+		spvValidatorOptionsSetRelaxBlockLayout(options, relaxedLayout);
+
+		const spv_result_t		valid	= spvValidateWithOptions(context, options, &cbinary, &diagnostic);
+		const bool				passed	= (valid == SPV_SUCCESS);
 
 		if (diagnostic)
 		{
@@ -155,6 +173,7 @@ bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostre
 			spvTextDestroy(text);
 		}
 
+		spvValidatorOptionsDestroy(options);
 		spvDiagnosticDestroy(diagnostic);
 		spvContextDestroy(context);
 

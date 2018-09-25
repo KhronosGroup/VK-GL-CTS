@@ -306,12 +306,14 @@ bool isPhysicalDeviceFeatures2Supported (const deUint32 version, const vector<st
 class DeviceFeatures
 {
 public:
-	VkPhysicalDeviceFeatures2						coreFeatures;
-	VkPhysicalDeviceSamplerYcbcrConversionFeatures	samplerYCbCrConversionFeatures;
-	VkPhysicalDevice8BitStorageFeaturesKHR			eightBitStorageFeatures;
-	VkPhysicalDevice16BitStorageFeatures			sixteenBitStorageFeatures;
-	VkPhysicalDeviceVariablePointerFeatures			variablePointerFeatures;
+	VkPhysicalDeviceFeatures2							coreFeatures;
+	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYCbCrConversionFeatures;
+	VkPhysicalDevice8BitStorageFeaturesKHR				eightBitStorageFeatures;
+	VkPhysicalDevice16BitStorageFeatures				sixteenBitStorageFeatures;
+	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures;
 	VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT	vertexAttributeDivisorFeatures;
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT		descriptorIndexingFeatures;
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT		inlineUniformBlockFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -325,6 +327,8 @@ public:
 		deMemset(&sixteenBitStorageFeatures, 0, sizeof(sixteenBitStorageFeatures));
 		deMemset(&variablePointerFeatures, 0, sizeof(variablePointerFeatures));
 		deMemset(&vertexAttributeDivisorFeatures, 0, sizeof(vertexAttributeDivisorFeatures));
+		deMemset(&descriptorIndexingFeatures, 0, sizeof(descriptorIndexingFeatures));
+		deMemset(&inlineUniformBlockFeatures, 0, sizeof(inlineUniformBlockFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -332,6 +336,8 @@ public:
 		sixteenBitStorageFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR;
 		variablePointerFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR;
 		vertexAttributeDivisorFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
+		descriptorIndexingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+		inlineUniformBlockFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
@@ -361,6 +367,16 @@ public:
 			{
 				*nextPtr	= &vertexAttributeDivisorFeatures;
 				nextPtr		= &vertexAttributeDivisorFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_descriptor_indexing"))
+			{
+				*nextPtr	= &descriptorIndexingFeatures;
+				nextPtr		= &descriptorIndexingFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_inline_uniform_block"))
+			{
+				*nextPtr	= &inlineUniformBlockFeatures;
+				nextPtr		= &inlineUniformBlockFeatures.pNext;
 			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);

@@ -161,35 +161,103 @@ enum
 	NUM_ELEMENTS = 32
 };
 
-class AtomicOperationCaseInstance : public TestInstance
+enum DataType
+{
+	DATA_TYPE_INT32 = 0,
+	DATA_TYPE_UINT32,
+	DATA_TYPE_INT64,
+	DATA_TYPE_UINT64,
+
+	DATA_TYPE_LAST
+};
+
+std::string dataType2Str(DataType type)
+{
+	static const char* const s_names[] =
+	{
+		"int",
+		"uint",
+		"int64_t",
+		"uint64_t",
+	};
+	return de::getSizedArrayElement<DATA_TYPE_LAST>(s_names, type);
+}
+
+class BufferInterface
 {
 public:
-									AtomicOperationCaseInstance		(Context&			context,
-																	 const ShaderSpec&	shaderSpec,
-																	 glu::ShaderType	shaderType,
-																	 bool				sign,
-																	 AtomicOperation	atomicOp);
-	virtual							~AtomicOperationCaseInstance	(void);
+	virtual void setBuffer(void* ptr) = 0;
 
-	virtual tcu::TestStatus			iterate							(void);
+	virtual size_t bufferSize() = 0;
 
-private:
-	const ShaderSpec&				m_shaderSpec;
-	glu::ShaderType					m_shaderType;
-	bool							m_sign;
-	AtomicOperation					m_atomicOp;
+	virtual void fillWithTestData(de::Random &rnd) = 0;
 
-	struct BufferInterface
+	virtual void checkResults(tcu::ResultCollector& resultCollector) = 0;
+
+	virtual ~BufferInterface() {};
+};
+
+template<typename dataTypeT>
+class TestBuffer : public BufferInterface
+{
+public:
+
+	TestBuffer(AtomicOperation	atomicOp)
+		: m_atomicOp(atomicOp)
+	{}
+
+	template<typename T>
+	struct BufferData
 	{
 		// Use half the number of elements for inout to cause overlap between atomic operations.
 		// Each inout element at index i will have two atomic operations using input from
 		// indices i and i + NUM_ELEMENTS / 2.
 		deInt32		index;
-		deUint32	inout[NUM_ELEMENTS / 2];
-		deUint32	input[NUM_ELEMENTS];
-		deUint32	compare[NUM_ELEMENTS];
-		deUint32	output[NUM_ELEMENTS];
+		T			inout[NUM_ELEMENTS / 2];
+		T			input[NUM_ELEMENTS];
+		T			compare[NUM_ELEMENTS];
+		T			output[NUM_ELEMENTS];
 	};
+
+	virtual void setBuffer(void* ptr)
+	{
+		m_ptr = static_cast<BufferData<dataTypeT>*>(ptr);
+	}
+
+	virtual size_t bufferSize()
+	{
+		return sizeof(BufferData<dataTypeT>);
+	}
+
+	virtual void fillWithTestData(de::Random &rnd)
+	{
+		dataTypeT pattern;
+		deMemset(&pattern, 0xcd, sizeof(dataTypeT));
+
+		for (int i = 0; i < NUM_ELEMENTS / 2; i++)
+		{
+			m_ptr->inout[i] = static_cast<dataTypeT>(rnd.getUint64());
+			// The first half of compare elements match with every even index.
+			// The second half matches with odd indices. This causes the
+			// overlapping operations to only select one.
+			m_ptr->compare[i] = m_ptr->inout[i] + (i % 2);
+			m_ptr->compare[i + NUM_ELEMENTS / 2] = m_ptr->inout[i] + 1 - (i % 2);
+		}
+		for (int i = 0; i < NUM_ELEMENTS; i++)
+		{
+			m_ptr->input[i] = static_cast<dataTypeT>(rnd.getUint64());
+			m_ptr->output[i] = pattern;
+		}
+		m_ptr->index = 0;
+
+		// Take a copy to be used when calculating expected values.
+		m_original = *m_ptr;
+	}
+
+	virtual void checkResults(tcu::ResultCollector&	resultCollector)
+	{
+		checkOperation(m_original, *m_ptr, resultCollector);
+	}
 
 	template<typename T>
 	struct Expected
@@ -204,7 +272,7 @@ private:
 			m_output[1] = output1;
 		}
 
-		bool compare (deUint32 inout, deUint32 output0, deUint32 output1)
+		bool compare (T inout, T output0, T output1)
 		{
 			return (deMemCmp((const void*)&m_inout, (const void*)&inout, sizeof(inout)) == 0
 					&& deMemCmp((const void*)&m_output[0], (const void*)&output0, sizeof(output0)) == 0
@@ -212,35 +280,41 @@ private:
 		}
 	};
 
-	template<typename T> void checkOperation	(const BufferInterface&	original,
-												 const BufferInterface&	result,
-												 tcu::ResultCollector&	resultCollector);
+	void checkOperation	(const BufferData<dataTypeT>&	original,
+						 const BufferData<dataTypeT>&	result,
+						 tcu::ResultCollector&			resultCollector);
+
+	const AtomicOperation	m_atomicOp;
+
+	BufferData<dataTypeT>* m_ptr;
+	BufferData<dataTypeT>  m_original;
 
 };
 
-AtomicOperationCaseInstance::AtomicOperationCaseInstance (Context&			context,
-														  const ShaderSpec&	shaderSpec,
-														  glu::ShaderType	shaderType,
-														  bool				sign,
-														  AtomicOperation	atomicOp)
-	: TestInstance	(context)
-	, m_shaderSpec	(shaderSpec)
-	, m_shaderType	(shaderType)
-	, m_sign		(sign)
-	, m_atomicOp	(atomicOp)
+static BufferInterface* createTestBuffer(DataType type, AtomicOperation atomicOp)
 {
-}
-
-AtomicOperationCaseInstance::~AtomicOperationCaseInstance (void)
-{
+	switch (type)
+	{
+	case DATA_TYPE_INT32:
+		return new TestBuffer<deInt32>(atomicOp);
+	case DATA_TYPE_UINT32:
+		return new TestBuffer<deUint32>(atomicOp);
+	case DATA_TYPE_INT64:
+		return new TestBuffer<deInt64>(atomicOp);
+	case DATA_TYPE_UINT64:
+		return new TestBuffer<deUint64>(atomicOp);
+	default:
+		DE_ASSERT(false);
+		return DE_NULL;
+	}
 }
 
 // Use template to handle both signed and unsigned cases. SPIR-V should
 // have separate operations for both.
 template<typename T>
-void AtomicOperationCaseInstance::checkOperation (const BufferInterface&	original,
-												  const BufferInterface&	result,
-												  tcu::ResultCollector&		resultCollector)
+void TestBuffer<T>::checkOperation (const BufferData<T>&	original,
+									const BufferData<T>&	result,
+									tcu::ResultCollector&	resultCollector)
 {
 	// originalInout = original inout
 	// input0 = input at index i
@@ -338,9 +412,10 @@ void AtomicOperationCaseInstance::checkOperation (const BufferInterface&	origina
 				break;
 		};
 
-		const deUint32 resIo		= result.inout[elementNdx];
-		const deUint32 resOutput0	= result.output[elementNdx];
-		const deUint32 resOutput1	= result.output[elementNdx + NUM_ELEMENTS / 2];
+		const T resIo			= result.inout[elementNdx];
+		const T resOutput0	= result.output[elementNdx];
+		const T resOutput1	= result.output[elementNdx + NUM_ELEMENTS / 2];
+
 
 		if (!exp[0].compare(resIo, resOutput0, resOutput1) && !exp[1].compare(resIo, resOutput0, resOutput1))
 		{
@@ -360,53 +435,92 @@ void AtomicOperationCaseInstance::checkOperation (const BufferInterface&	origina
 	}
 }
 
-tcu::TestStatus AtomicOperationCaseInstance::iterate (void)
+
+class AtomicOperationCaseInstance : public TestInstance
+{
+public:
+									AtomicOperationCaseInstance		(Context&			context,
+																	 const ShaderSpec&	shaderSpec,
+																	 glu::ShaderType	shaderType,
+																	 DataType			dataType,
+																	 AtomicOperation	atomicOp);
+
+	virtual tcu::TestStatus			iterate							(void);
+
+private:
+	const ShaderSpec&				m_shaderSpec;
+	glu::ShaderType					m_shaderType;
+	const DataType					m_dataType;
+	AtomicOperation					m_atomicOp;
+
+};
+
+AtomicOperationCaseInstance::AtomicOperationCaseInstance (Context&				context,
+														  const ShaderSpec&		shaderSpec,
+														  glu::ShaderType		shaderType,
+														  DataType				dataType,
+														  AtomicOperation		atomicOp)
+	: TestInstance	(context)
+	, m_shaderSpec	(shaderSpec)
+	, m_shaderType	(shaderType)
+	, m_dataType	(dataType)
+	, m_atomicOp	(atomicOp)
+{
+	if ((m_dataType == DATA_TYPE_INT64) || (m_dataType == DATA_TYPE_UINT64))
+	{
+		if (!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_atomic_int64"))
+			TCU_THROW(NotSupportedError, "Missing extension: VK_KHR_shader_atomic_int64");
+
+		VkPhysicalDeviceShaderAtomicInt64FeaturesKHR shaderAtomicInt64Features;
+		deMemset(&shaderAtomicInt64Features, 0x0, sizeof(VkPhysicalDeviceShaderAtomicInt64FeaturesKHR));
+		shaderAtomicInt64Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR;
+		shaderAtomicInt64Features.pNext = DE_NULL;
+
+		VkPhysicalDeviceFeatures2 features;
+		deMemset(&features, 0x0, sizeof(VkPhysicalDeviceFeatures2));
+		features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features.pNext = &shaderAtomicInt64Features;
+
+		context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
+
+		if (shaderAtomicInt64Features.shaderBufferInt64Atomics == VK_FALSE)
+		{
+			TCU_THROW(NotSupportedError, "VkShaderAtomicInt64: 64-bit unsigned and signed integer atomic operations not supported");
+		}
+	}
+}
+
+tcu::TestStatus AtomicOperationCaseInstance::iterate(void)
 {
 	//Check stores and atomic operation support.
 	switch (m_shaderType)
 	{
-		case glu::SHADERTYPE_VERTEX:
-		case glu::SHADERTYPE_TESSELLATION_CONTROL:
-		case glu::SHADERTYPE_TESSELLATION_EVALUATION:
-		case glu::SHADERTYPE_GEOMETRY:
-			if(!m_context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
-				TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in Vertex, Tessellation, and Geometry shader.");
-			break;
-		case glu::SHADERTYPE_FRAGMENT:
-			if(!m_context.getDeviceFeatures().fragmentStoresAndAtomics)
-				TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in fragment shader.");
-			break;
-		case glu::SHADERTYPE_COMPUTE:
-			break;
-		default:
-			DE_FATAL("Unsupported shader type");
+	case glu::SHADERTYPE_VERTEX:
+	case glu::SHADERTYPE_TESSELLATION_CONTROL:
+	case glu::SHADERTYPE_TESSELLATION_EVALUATION:
+	case glu::SHADERTYPE_GEOMETRY:
+		if (!m_context.getDeviceFeatures().vertexPipelineStoresAndAtomics)
+			TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in Vertex, Tessellation, and Geometry shader.");
+		break;
+	case glu::SHADERTYPE_FRAGMENT:
+		if (!m_context.getDeviceFeatures().fragmentStoresAndAtomics)
+			TCU_THROW(NotSupportedError, "Stores and atomic operations are not supported in fragment shader.");
+		break;
+	case glu::SHADERTYPE_COMPUTE:
+		break;
+	default:
+		DE_FATAL("Unsupported shader type");
 	}
 
-	tcu::TestLog&				log			= m_context.getTestContext().getLog();
-	const DeviceInterface&		vkd			= m_context.getDeviceInterface();
-	const VkDevice				device		= m_context.getDevice();
-	de::Random					rnd			(0x62a15e34);
-	Buffer						buffer		(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, sizeof(BufferInterface));
-	BufferInterface*			ptr			= (BufferInterface*)buffer.getHostPtr();
+	de::UniquePtr<BufferInterface>	testBuffer	(createTestBuffer(m_dataType, m_atomicOp));
+	tcu::TestLog&					log			= m_context.getTestContext().getLog();
+	const DeviceInterface&			vkd			= m_context.getDeviceInterface();
+	const VkDevice					device		= m_context.getDevice();
+	de::Random						rnd			(0x62a15e34);
+	Buffer							buffer		(m_context, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, testBuffer->bufferSize());
 
-	for (int i = 0; i < NUM_ELEMENTS / 2; i++)
-	{
-		ptr->inout[i] = rnd.getUint32();
-		// The first half of compare elements match with every even index.
-		// The second half matches with odd indices. This causes the
-		// overlapping operations to only select one.
-		ptr->compare[i] = ptr->inout[i] + (i % 2);
-		ptr->compare[i + NUM_ELEMENTS / 2] = ptr->inout[i] + 1 - (i % 2);
-	}
-	for (int i = 0; i < NUM_ELEMENTS; i++)
-	{
-		ptr->input[i] = rnd.getUint32();
-		ptr->output[i] = 0xcdcdcdcd;
-	}
-	ptr->index = 0;
-
-	// Take a copy to be used when calculating expected values.
-	BufferInterface original = *ptr;
+	testBuffer->setBuffer(buffer.getHostPtr());
+	testBuffer->fillWithTestData(rnd);
 
 	buffer.flush();
 
@@ -496,10 +610,7 @@ tcu::TestStatus AtomicOperationCaseInstance::iterate (void)
 	tcu::ResultCollector resultCollector(log);
 
 	// Check the results of the atomic operation
-	if (m_sign)
-		checkOperation<deInt32>(original, *ptr, resultCollector);
-	else
-		checkOperation<deUint32>(original, *ptr, resultCollector);
+	testBuffer->checkResults(resultCollector);
 
 	return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
 }
@@ -511,7 +622,7 @@ public:
 													 const char*			name,
 													 const char*			description,
 													 glu::ShaderType		type,
-													 bool					sign,
+													 DataType				dataType,
 													 AtomicOperation		atomicOp);
 	virtual					~AtomicOperationCase	(void);
 
@@ -526,7 +637,7 @@ private:
 	void					createShaderSpec();
 	ShaderSpec				m_shaderSpec;
 	const glu::ShaderType	m_shaderType;
-	const bool				m_sign;
+	const DataType			m_dataType;
 	const AtomicOperation	m_atomicOp;
 };
 
@@ -534,11 +645,11 @@ AtomicOperationCase::AtomicOperationCase (tcu::TestContext&	testCtx,
 										  const char*		name,
 										  const char*		description,
 										  glu::ShaderType	shaderType,
-										  bool				sign,
+										  DataType			dataType,
 										  AtomicOperation	atomicOp)
 	: TestCase			(testCtx, name, description)
 	, m_shaderType		(shaderType)
-	, m_sign			(sign)
+	, m_dataType		(dataType)
 	, m_atomicOp		(atomicOp)
 {
 	createShaderSpec();
@@ -551,23 +662,33 @@ AtomicOperationCase::~AtomicOperationCase (void)
 
 TestInstance* AtomicOperationCase::createInstance (Context& ctx) const
 {
-	return new AtomicOperationCaseInstance(ctx, m_shaderSpec, m_shaderType, m_sign, m_atomicOp);
+	return new AtomicOperationCaseInstance(ctx, m_shaderSpec, m_shaderType, m_dataType, m_atomicOp);
 }
 
 void AtomicOperationCase::createShaderSpec (void)
 {
 	const tcu::StringTemplate shaderTemplateGlobal(
-		"layout (set = ${SETIDX}, binding = 0, std430) buffer AtomicBuffer\n"
+		"${EXTENSIONS}\n"
+		"layout (set = ${SETIDX}, binding = 0) buffer AtomicBuffer\n"
 		"{\n"
-		"    highp int index;\n"
-		"    highp ${DATATYPE} inoutValues[${N}/2];\n"
-		"    highp ${DATATYPE} inputValues[${N}];\n"
-		"    highp ${DATATYPE} compareValues[${N}];\n"
-		"    highp ${DATATYPE} outputValues[${N}];\n"
+		"    int index;\n"
+		"    ${DATATYPE} inoutValues[${N}/2];\n"
+		"    ${DATATYPE} inputValues[${N}];\n"
+		"    ${DATATYPE} compareValues[${N}];\n"
+		"    ${DATATYPE} outputValues[${N}];\n"
 		"} buf;\n");
 
 	std::map<std::string, std::string> specializations;
-	specializations["DATATYPE"] = m_sign ? "int" : "uint";
+	if ((m_dataType == DATA_TYPE_INT64) || (m_dataType == DATA_TYPE_UINT64))
+	{
+		specializations["EXTENSIONS"] = "#extension GL_ARB_gpu_shader_int64 : enable\n"
+										"#extension GL_EXT_shader_atomic_int64 : enable\n";
+	}
+	else
+	{
+		specializations["EXTENSIONS"] = "";
+	}
+	specializations["DATATYPE"] = dataType2Str(m_dataType);
 	specializations["ATOMICOP"] = atomicOp2Str(m_atomicOp);
 	specializations["SETIDX"] = de::toString((int)EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX);
 	specializations["N"] = de::toString((int)NUM_ELEMENTS);
@@ -580,6 +701,7 @@ void AtomicOperationCase::createShaderSpec (void)
 	m_shaderSpec.outputs.push_back(Symbol("outData", glu::VarType(glu::TYPE_UINT, glu::PRECISION_HIGHP)));
 	m_shaderSpec.globalDeclarations = shaderTemplateGlobal.specialize(specializations);
 	m_shaderSpec.source = shaderTemplateSrc.specialize(specializations);
+	m_shaderSpec.glslVersion = glu::GLSL_VERSION_450;
 }
 
 void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
@@ -602,13 +724,15 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 
 	static const struct
 	{
-		bool			value;
+		DataType		dataType;
 		const char*		name;
 		const char*		description;
 	} dataSign[] =
 	{
-		{ true,		"signed",	"Tests using signed data (int)"		},
-		{ false,	"unsigned",	"Tests using unsigned data (uint)"	}
+		{ DATA_TYPE_INT32,	"signed",			"Tests using signed data (int)"				},
+		{ DATA_TYPE_UINT32,	"unsigned",			"Tests using unsigned data (uint)"			},
+		{ DATA_TYPE_INT64,	"signed64bit",		"Tests using 64 bit signed data (int64)"	},
+		{ DATA_TYPE_UINT64,	"unsigned64bit",	"Tests using 64 bit unsigned data (uint64)"	}
 	};
 
 	static const struct
@@ -635,7 +759,7 @@ void addAtomicOperationTests (tcu::TestCaseGroup* atomicOperationTestsGroup)
 			{
 				const std::string description = std::string("Tests atomic operation ") + atomicOp2Str(atomicOp[opNdx].value) + std::string(".");
 				std::string name = std::string(atomicOp[opNdx].name) + "_" + std::string(dataSign[signNdx].name) + "_" + std::string(shaderTypes[shaderTypeNdx].name);
-				atomicOperationTestsGroup->addChild(new AtomicOperationCase(testCtx, name.c_str(), description.c_str(), shaderTypes[shaderTypeNdx].type, dataSign[signNdx].value, atomicOp[opNdx].value));
+				atomicOperationTestsGroup->addChild(new AtomicOperationCase(testCtx, name.c_str(), description.c_str(), shaderTypes[shaderTypeNdx].type, dataSign[signNdx].dataType, atomicOp[opNdx].value));
 			}
 		}
 	}

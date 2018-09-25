@@ -15,6 +15,8 @@ set(DEQP_VK_MEMORY_SRCS
 	vktMemoryRequirementsTests.hpp
 	vktMemoryBindingTests.cpp
 	vktMemoryBindingTests.hpp
+	vktMemoryExternalMemoryHostTests.cpp
+	vktMemoryExternalMemoryHostTests.hpp
 	)
 
 set(DEQP_VK_MEMORY_LIBS

@@ -295,5 +295,6 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateValidationCacheEXTFunc)							
 typedef VKAPI_ATTR void					(VKAPI_CALL* DestroyValidationCacheEXTFunc)							(VkDevice device, VkValidationCacheEXT validationCache, const VkAllocationCallbacks* pAllocator);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* MergeValidationCachesEXTFunc)							(VkDevice device, VkValidationCacheEXT dstCache, deUint32 srcCacheCount, const VkValidationCacheEXT* pSrcCaches);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetValidationCacheDataEXTFunc)							(VkDevice device, VkValidationCacheEXT validationCache, deUintptr* pDataSize, void* pData);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryHostPointerPropertiesEXTFunc)					(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetAndroidHardwareBufferPropertiesANDROIDFunc)			(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryAndroidHardwareBufferANDROIDFunc)				(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer);

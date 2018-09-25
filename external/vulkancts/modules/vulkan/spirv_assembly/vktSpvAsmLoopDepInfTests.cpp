@@ -204,7 +204,7 @@ void SpvAsmLoopControlDependencyInfiniteCase::initPrograms (SourceCollections& p
 
 	getComputeSourceCode(comp);
 
-	programCollection.spirvAsmSources.add("compute") << SpirVAsmBuildOptions(SPIRV_VERSION_1_3) << comp;
+	programCollection.spirvAsmSources.add("compute") << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3) << comp;
 }
 
 TestInstance* SpvAsmLoopControlDependencyInfiniteCase::createInstance (Context& context) const

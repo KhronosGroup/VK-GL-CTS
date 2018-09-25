@@ -28,6 +28,8 @@
 #include "vktApiMaintenance3Check.hpp"
 #include "vktTestCase.hpp"
 
+#define VK_DESCRIPTOR_TYPE_LAST (VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1)
+
 using namespace vk;
 
 namespace vkt
