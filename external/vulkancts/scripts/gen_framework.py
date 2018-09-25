@@ -46,6 +46,8 @@ DEFINITIONS			= [
 	("VK_API_VERSION_1_1",					"deUint32"),
 	("VK_MAX_PHYSICAL_DEVICE_NAME_SIZE",	"size_t"),
 	("VK_MAX_EXTENSION_NAME_SIZE",			"size_t"),
+	("VK_MAX_DRIVER_NAME_SIZE_KHR",			"size_t"),
+	("VK_MAX_DRIVER_INFO_SIZE_KHR",			"size_t"),
 	("VK_UUID_SIZE",						"size_t"),
 	("VK_LUID_SIZE",						"size_t"),
 	("VK_MAX_MEMORY_TYPES",					"size_t"),
@@ -128,6 +130,7 @@ def prefixName (prefix, name):
 	name = name.replace("WIN_32_", "WIN32_")
 	name = name.replace("8_BIT_", "8BIT_")
 	name = name.replace("16_BIT_", "16BIT_")
+	name = name.replace("INT_64_", "INT64_")
 	name = name.replace("D_3_D_12_", "D3D12_")
 	name = name.replace("IOSSURFACE_", "IOS_SURFACE_")
 	name = name.replace("MAC_OS", "MACOS_")

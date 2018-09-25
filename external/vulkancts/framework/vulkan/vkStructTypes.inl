@@ -2328,6 +2328,24 @@ struct VkImageFormatListCreateInfoKHR
 	const VkFormat*	pViewFormats;
 };
 
+struct VkConformanceVersionKHR
+{
+	deUint8	major;
+	deUint8	minor;
+	deUint8	subminor;
+	deUint8	patch;
+};
+
+struct VkPhysicalDeviceDriverPropertiesKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	deUint32				driverID;
+	char					driverName[VK_MAX_DRIVER_NAME_SIZE_KHR];
+	char					driverInfo[VK_MAX_DRIVER_INFO_SIZE_KHR];
+	VkConformanceVersionKHR	conformanceVersion;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;
@@ -3002,6 +3020,126 @@ struct VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
 	void*			pNext;
 	VkBool32		vertexAttributeInstanceRateDivisor;
 	VkBool32		vertexAttributeInstanceRateZeroDivisor;
+};
+
+struct VkDescriptorSetLayoutBindingFlagsCreateInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	deUint32							bindingCount;
+	const VkDescriptorBindingFlagsEXT*	pBindingFlags;
+};
+
+struct VkPhysicalDeviceDescriptorIndexingFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderInputAttachmentArrayDynamicIndexing;
+	VkBool32		shaderUniformTexelBufferArrayDynamicIndexing;
+	VkBool32		shaderStorageTexelBufferArrayDynamicIndexing;
+	VkBool32		shaderUniformBufferArrayNonUniformIndexing;
+	VkBool32		shaderSampledImageArrayNonUniformIndexing;
+	VkBool32		shaderStorageBufferArrayNonUniformIndexing;
+	VkBool32		shaderStorageImageArrayNonUniformIndexing;
+	VkBool32		shaderInputAttachmentArrayNonUniformIndexing;
+	VkBool32		shaderUniformTexelBufferArrayNonUniformIndexing;
+	VkBool32		shaderStorageTexelBufferArrayNonUniformIndexing;
+	VkBool32		descriptorBindingUniformBufferUpdateAfterBind;
+	VkBool32		descriptorBindingSampledImageUpdateAfterBind;
+	VkBool32		descriptorBindingStorageImageUpdateAfterBind;
+	VkBool32		descriptorBindingStorageBufferUpdateAfterBind;
+	VkBool32		descriptorBindingUniformTexelBufferUpdateAfterBind;
+	VkBool32		descriptorBindingStorageTexelBufferUpdateAfterBind;
+	VkBool32		descriptorBindingUpdateUnusedWhilePending;
+	VkBool32		descriptorBindingPartiallyBound;
+	VkBool32		descriptorBindingVariableDescriptorCount;
+	VkBool32		runtimeDescriptorArray;
+};
+
+struct VkPhysicalDeviceDescriptorIndexingPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxUpdateAfterBindDescriptorsInAllPools;
+	VkBool32		shaderUniformBufferArrayNonUniformIndexingNative;
+	VkBool32		shaderSampledImageArrayNonUniformIndexingNative;
+	VkBool32		shaderStorageBufferArrayNonUniformIndexingNative;
+	VkBool32		shaderStorageImageArrayNonUniformIndexingNative;
+	VkBool32		shaderInputAttachmentArrayNonUniformIndexingNative;
+	VkBool32		robustBufferAccessUpdateAfterBind;
+	VkBool32		quadDivergentImplicitLod;
+	deUint32		maxPerStageDescriptorUpdateAfterBindSamplers;
+	deUint32		maxPerStageDescriptorUpdateAfterBindUniformBuffers;
+	deUint32		maxPerStageDescriptorUpdateAfterBindStorageBuffers;
+	deUint32		maxPerStageDescriptorUpdateAfterBindSampledImages;
+	deUint32		maxPerStageDescriptorUpdateAfterBindStorageImages;
+	deUint32		maxPerStageDescriptorUpdateAfterBindInputAttachments;
+	deUint32		maxPerStageUpdateAfterBindResources;
+	deUint32		maxDescriptorSetUpdateAfterBindSamplers;
+	deUint32		maxDescriptorSetUpdateAfterBindUniformBuffers;
+	deUint32		maxDescriptorSetUpdateAfterBindUniformBuffersDynamic;
+	deUint32		maxDescriptorSetUpdateAfterBindStorageBuffers;
+	deUint32		maxDescriptorSetUpdateAfterBindStorageBuffersDynamic;
+	deUint32		maxDescriptorSetUpdateAfterBindSampledImages;
+	deUint32		maxDescriptorSetUpdateAfterBindStorageImages;
+	deUint32		maxDescriptorSetUpdateAfterBindInputAttachments;
+};
+
+struct VkDescriptorSetVariableDescriptorCountAllocateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		descriptorSetCount;
+	const deUint32*	pDescriptorCounts;
+};
+
+struct VkDescriptorSetVariableDescriptorCountLayoutSupportEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxVariableDescriptorCount;
+};
+
+struct VkPhysicalDeviceInlineUniformBlockFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		inlineUniformBlock;
+	VkBool32		descriptorBindingInlineUniformBlockUpdateAfterBind;
+};
+
+struct VkPhysicalDeviceInlineUniformBlockPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint32		maxInlineUniformBlockSize;
+	deUint32		maxPerStageDescriptorInlineUniformBlocks;
+	deUint32		maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks;
+	deUint32		maxDescriptorSetInlineUniformBlocks;
+	deUint32		maxDescriptorSetUpdateAfterBindInlineUniformBlocks;
+};
+
+struct VkWriteDescriptorSetInlineUniformBlockEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		dataSize;
+	const void*		pData;
+};
+
+struct VkDescriptorPoolInlineUniformBlockCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		maxInlineUniformBlockBindings;
+};
+
+struct VkPhysicalDeviceShaderAtomicInt64FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderBufferInt64Atomics;
+	VkBool32		shaderSharedInt64Atomics;
 };
 
 

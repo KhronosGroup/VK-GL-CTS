@@ -51,6 +51,8 @@
 
 #include <limits>
 
+#define VK_DESCRIPTOR_TYPE_LAST (VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT + 1)
+
 namespace vkt
 {
 namespace api

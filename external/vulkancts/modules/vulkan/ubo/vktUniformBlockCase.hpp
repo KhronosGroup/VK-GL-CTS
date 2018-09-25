@@ -59,7 +59,10 @@ enum UniformFlags
 
 	UNUSED_VERTEX		= (1<<11),	//!< Uniform or struct member is not read in vertex shader.
 	UNUSED_FRAGMENT		= (1<<12),	//!< Uniform or struct member is not read in fragment shader.
-	UNUSED_BOTH			= UNUSED_VERTEX|UNUSED_FRAGMENT
+	UNUSED_BOTH			= UNUSED_VERTEX|UNUSED_FRAGMENT,
+
+	LAYOUT_16BIT_STORAGE= (1<<13),  //!< Support VK_KHR_16bit_storage extension
+	LAYOUT_8BIT_STORAGE	= (1<<14),  //!< Support VK_KHR_8bit_storage extension
 };
 
 enum MatrixLoadFlags
