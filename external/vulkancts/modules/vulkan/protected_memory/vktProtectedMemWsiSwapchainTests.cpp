@@ -277,7 +277,9 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 			// Determine the maximum memory heap space available for protected images
 			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
 			vk::VkDeviceSize						protectedHeapSize	= 0;
+			vk::VkDeviceSize						maxMemoryUsage		= 0;
 			deUint32								protectedHeapMask	= 0;
+
 			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
 			{
 				deUint32 heapIndex	= memoryProperties.memoryTypes[memType].heapIndex;
@@ -286,15 +288,18 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 					(protectedHeapMask & (1u << heapIndex)) == 0)
 				{
 					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
+					maxMemoryUsage    = protectedHeapSize / 4 ; /* Use at maximum 25% of heap */
 					protectedHeapMask |= 1u << heapIndex;
 				}
 			}
 
 			// If the implementation doesn't have a max image count, min+16 means we won't clamp.
-			// Limit it to how many protected images we estimate can be allocated, with two images
-			// worth of slack for alignment, swapchain-specific constraints, etc.
+			// Limit it to how many protected images we estimate can be allocated - 25% of heap size
 			const deUint32	maxImageCount		= de::min((capabilities.maxImageCount > 0) ? capabilities.maxImageCount : capabilities.minImageCount + 16u,
-														  deUint32(protectedHeapSize / memoryRequirements.size) - 2);
+														  deUint32(maxMemoryUsage / memoryRequirements.size));
+			if (maxImageCount < capabilities.minImageCount)
+				TCU_THROW(NotSupportedError, "Memory heap doesn't have enough memory!.");
+
 			const deUint32	maxImageCountToTest	= de::clamp(16u, capabilities.minImageCount, maxImageCount);
 			for (deUint32 imageCount = capabilities.minImageCount; imageCount <= maxImageCountToTest; ++imageCount)
 			{
@@ -328,30 +333,154 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 				{ 117, 998 },
 			};
 
+			const vk::DeviceInterface&				vkd					= context.getDeviceInterface();
+			vk::VkDevice							device				= context.getDevice();
+			vk::VkPhysicalDeviceMemoryProperties	memoryProperties	= vk::getPhysicalDeviceMemoryProperties(context.getInstanceDriver(), context.getPhysicalDevice());
+			vk::VkDeviceSize						protectedHeapSize	= 0;
+			vk::VkDeviceSize						maxMemoryUsage		= 0;
+
+			for (deUint32 memType = 0; memType < memoryProperties.memoryTypeCount; memType++)
+			{
+				deUint32 heapIndex	= memoryProperties.memoryTypes[memType].heapIndex;
+				if (memoryProperties.memoryTypes[memType].propertyFlags & vk::VK_MEMORY_PROPERTY_PROTECTED_BIT)
+				{
+					protectedHeapSize = de::max(protectedHeapSize, memoryProperties.memoryHeaps[heapIndex].size);
+					maxMemoryUsage    = protectedHeapSize / 4 ; /* Use at maximum 25% of heap */
+				}
+			}
+
 			if (platformProperties.swapchainExtent == vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE ||
 				platformProperties.swapchainExtent == vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_SCALED_TO_WINDOW_SIZE)
 			{
 				for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_testSizes); ++ndx)
 				{
-					cases.push_back(baseParameters);
-					cases.back().imageExtent.width	= de::clamp(s_testSizes[ndx].width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-					cases.back().imageExtent.height	= de::clamp(s_testSizes[ndx].height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+					vk::VkMemoryRequirements memoryRequirements;
+					{
+						const vk::VkImageCreateInfo imageInfo =
+						{
+							vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+							DE_NULL,
+							vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+							vk::VK_IMAGE_TYPE_2D,
+							baseParameters.imageFormat,
+							{
+								s_testSizes[ndx].width,
+								s_testSizes[ndx].height,
+								1,
+							},
+							1,	// mipLevels
+							baseParameters.imageArrayLayers,
+							vk::VK_SAMPLE_COUNT_1_BIT,
+							vk::VK_IMAGE_TILING_OPTIMAL,
+							baseParameters.imageUsage,
+							baseParameters.imageSharingMode,
+							baseParameters.queueFamilyIndexCount,
+							baseParameters.pQueueFamilyIndices,
+							vk::VK_IMAGE_LAYOUT_UNDEFINED
+						};
+
+						vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
+
+						memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
+					}
+
+					// Check for the image size requirement based on double/triple buffering
+					if (memoryRequirements.size  * capabilities.minImageCount < maxMemoryUsage)
+					{
+						cases.push_back(baseParameters);
+						cases.back().imageExtent.width	= de::clamp(s_testSizes[ndx].width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+						cases.back().imageExtent.height	= de::clamp(s_testSizes[ndx].height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+					}
 				}
 			}
 
 			if (platformProperties.swapchainExtent != vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_SETS_WINDOW_SIZE)
 			{
-				cases.push_back(baseParameters);
-				cases.back().imageExtent = capabilities.currentExtent;
+				vk::VkMemoryRequirements memoryRequirements;
+				{
+					const vk::VkImageCreateInfo imageInfo =
+					{
+						vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+						DE_NULL,
+						vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+						vk::VK_IMAGE_TYPE_2D,
+						baseParameters.imageFormat,
+						{
+							capabilities.currentExtent.width,
+							capabilities.currentExtent.height,
+							1,
+						},
+						1,	// mipLevels
+						baseParameters.imageArrayLayers,
+						vk::VK_SAMPLE_COUNT_1_BIT,
+						vk::VK_IMAGE_TILING_OPTIMAL,
+						baseParameters.imageUsage,
+						baseParameters.imageSharingMode,
+						baseParameters.queueFamilyIndexCount,
+						baseParameters.pQueueFamilyIndices,
+						vk::VK_IMAGE_LAYOUT_UNDEFINED
+					};
+
+					vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
+
+					memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
+				}
+
+				// Check for the image size requirement based on double/triple buffering
+				if (memoryRequirements.size  * capabilities.minImageCount < maxMemoryUsage)
+				{
+					cases.push_back(baseParameters);
+					cases.back().imageExtent = capabilities.currentExtent;
+				}
 			}
 
 			if (platformProperties.swapchainExtent != vk::wsi::PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE)
 			{
-				cases.push_back(baseParameters);
-				cases.back().imageExtent = capabilities.minImageExtent;
+				static const vk::VkExtent2D	s_testExtentSizes[]	=
+				{
+					{ capabilities.minImageExtent.width, capabilities.minImageExtent.height },
+					{ capabilities.maxImageExtent.width, capabilities.maxImageExtent.height },
+				};
 
-				cases.push_back(baseParameters);
-				cases.back().imageExtent = capabilities.maxImageExtent;
+				for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(s_testExtentSizes); ++ndx)
+				{
+					vk::VkMemoryRequirements memoryRequirements;
+					{
+						const vk::VkImageCreateInfo	imageInfo =
+						{
+							vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+							DE_NULL,
+							vk::VK_IMAGE_CREATE_PROTECTED_BIT,
+							vk::VK_IMAGE_TYPE_2D,
+							baseParameters.imageFormat,
+							{
+								s_testExtentSizes[ndx].width,
+								s_testExtentSizes[ndx].height,
+								1,
+							},
+							1,	// mipLevels
+							baseParameters.imageArrayLayers,
+							vk::VK_SAMPLE_COUNT_1_BIT,
+							vk::VK_IMAGE_TILING_OPTIMAL,
+							baseParameters.imageUsage,
+							baseParameters.imageSharingMode,
+							baseParameters.queueFamilyIndexCount,
+							baseParameters.pQueueFamilyIndices,
+							vk::VK_IMAGE_LAYOUT_UNDEFINED
+						};
+
+						vk::Move<vk::VkImage> image = vk::createImage(vkd, device, &imageInfo);
+
+						memoryRequirements = vk::getImageMemoryRequirements(vkd, device, *image);
+					}
+
+					// Check for the image size requirement based on double/triple buffering
+					if (memoryRequirements.size  * capabilities.minImageCount < maxMemoryUsage)
+					{
+						cases.push_back(baseParameters);
+						cases.back().imageExtent =s_testExtentSizes[ndx];
+					}
+				}
 			}
 
 			break;
