@@ -70,6 +70,36 @@ ProgramBinary::ProgramBinary (ProgramFormat format, size_t binarySize, const deU
 namespace
 {
 
+bool isNativeSpirVBinaryEndianness (void)
+{
+#if (DE_ENDIANNESS == SPIRV_BINARY_ENDIANNESS)
+	return true;
+#else
+	return false;
+#endif
+}
+
+bool isSaneSpirVBinary (const ProgramBinary& binary)
+{
+	const deUint32	spirvMagicWord	= 0x07230203;
+	const deUint32	spirvMagicBytes	= isNativeSpirVBinaryEndianness()
+									? spirvMagicWord
+									: deReverseBytes32(spirvMagicWord);
+
+	DE_ASSERT(binary.getFormat() == PROGRAM_FORMAT_SPIRV);
+
+	if (binary.getSize() % sizeof(deUint32) != 0)
+		return false;
+
+	if (binary.getSize() < sizeof(deUint32))
+		return false;
+
+	if (*(const deUint32*)binary.getBinary() != spirvMagicBytes)
+		return false;
+
+	return true;
+}
+
 #if defined(DEQP_HAVE_SPIRV_TOOLS)
 
 void optimizeCompiledBinary (vector<deUint32>& binary, int optimizationRecipe, const SpirvVersion spirvVersion)
@@ -291,39 +321,6 @@ void optimizeCompiledBinary (vector<deUint32>& binary, int optimizationRecipe, c
 		TCU_THROW(InternalError, "Optimizer call failed");
 }
 
-#endif // defined(DEQP_HAVE_SPIRV_TOOLS)
-
-
-bool isNativeSpirVBinaryEndianness (void)
-{
-#if (DE_ENDIANNESS == SPIRV_BINARY_ENDIANNESS)
-	return true;
-#else
-	return false;
-#endif
-}
-
-bool isSaneSpirVBinary (const ProgramBinary& binary)
-{
-	const deUint32	spirvMagicWord	= 0x07230203;
-	const deUint32	spirvMagicBytes	= isNativeSpirVBinaryEndianness()
-									? spirvMagicWord
-									: deReverseBytes32(spirvMagicWord);
-
-	DE_ASSERT(binary.getFormat() == PROGRAM_FORMAT_SPIRV);
-
-	if (binary.getSize() % sizeof(deUint32) != 0)
-		return false;
-
-	if (binary.getSize() < sizeof(deUint32))
-		return false;
-
-	if (*(const deUint32*)binary.getBinary() != spirvMagicBytes)
-		return false;
-
-	return true;
-}
-
 ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
 {
 	DE_ASSERT(!binary.empty());
@@ -334,7 +331,11 @@ ProgramBinary* createProgramBinaryFromSpirV (const vector<deUint32>& binary)
 		TCU_THROW(InternalError, "SPIR-V endianness translation not supported");
 }
 
+#endif // defined(DEQP_HAVE_SPIRV_TOOLS)
+
 } // anonymous
+
+#if defined(DEQP_HAVE_SPIRV_TOOLS)
 
 void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramInfo* buildInfo, deUint32 vulkanVersion, const SpirvVersion spirvVersion, const bool relaxedLayout)
 {
@@ -348,9 +349,6 @@ void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramIn
 		TCU_THROW(InternalError, "Validation failed for compiled SPIR-V binary");
 	}
 }
-
-
-#if defined(DEQP_HAVE_SPIRV_TOOLS)
 
 de::Mutex							cacheFileMutex;
 map<deUint32, vector<deUint32> >	cacheFileIndex;
