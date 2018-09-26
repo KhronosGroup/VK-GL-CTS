@@ -391,16 +391,6 @@ public:
 				*nextPtr	= &vertexAttributeDivisorFeatures;
 				nextPtr		= &vertexAttributeDivisorFeatures.pNext;
 			}
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_descriptor_indexing"))
-			{
-				*nextPtr	= &descriptorIndexingFeatures;
-				nextPtr		= &descriptorIndexingFeatures.pNext;
-			}
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_inline_uniform_block"))
-			{
-				*nextPtr	= &inlineUniformBlockFeatures;
-				nextPtr		= &inlineUniformBlockFeatures.pNext;
-			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
