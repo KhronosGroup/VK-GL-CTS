@@ -1,6 +1,8 @@
 # vk - Vulkan utilites
+# Split into two libraries - one that depends on spirv/glslang libraries
+# which have long build times, and one that can build in parallel with those.
 
-set(VKUTIL_SRCS
+set(VKUTILNOSHADER_SRCS
 	vkApiVersion.cpp
 	vkApiVersion.hpp
 	vkBuilderUtil.cpp
@@ -15,8 +17,6 @@ set(VKUTIL_SRCS
 	vkRefUtil.hpp
 	vkPlatform.cpp
 	vkPlatform.hpp
-	vkPrograms.cpp
-	vkPrograms.hpp
 	vkStrUtil.cpp
 	vkStrUtil.hpp
 	vkQueryUtil.cpp
@@ -25,12 +25,6 @@ set(VKUTIL_SRCS
 	vkMemUtil.hpp
 	vkDeviceUtil.cpp
 	vkDeviceUtil.hpp
-	vkShaderToSpirV.cpp
-	vkShaderToSpirV.hpp
-	vkSpirVAsm.hpp
-	vkSpirVAsm.cpp
-	vkSpirVProgram.hpp
-	vkSpirVProgram.cpp
 	vkBinaryRegistry.cpp
 	vkBinaryRegistry.hpp
 	vkNullDriver.cpp
@@ -63,9 +57,26 @@ set(VKUTIL_SRCS
 	vkObjUtil.hpp
 	)
 
+set(VKUTIL_SRCS
+	vkPrograms.cpp
+	vkPrograms.hpp
+	vkShaderToSpirV.cpp
+	vkShaderToSpirV.hpp
+	vkSpirVAsm.hpp
+	vkSpirVAsm.cpp
+	vkSpirVProgram.hpp
+	vkSpirVProgram.cpp
+	)
+
+set(VKUTILNOSHADER_LIBS
+	glutil
+	tcutil
+	)
+
 set(VKUTIL_LIBS
 	glutil
 	tcutil
+	vkutilnoshader
 	)
 
 if (DEQP_HAVE_GLSLANG)
@@ -98,6 +109,9 @@ if(DEQP_HAVE_SPIRV_TOOLS)
 	add_definitions(-DDEQP_HAVE_SPIRV_TOOLS=1)
 	set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-Tools SPIRV-Tools-opt)
 endif()
+
+add_library(vkutilnoshader STATIC ${VKUTILNOSHADER_SRCS})
+target_link_libraries(vkutilnoshader ${VKUTILNOSHADER_LIBS})
 
 add_library(vkutil STATIC ${VKUTIL_SRCS})
 target_link_libraries(vkutil ${VKUTIL_LIBS})

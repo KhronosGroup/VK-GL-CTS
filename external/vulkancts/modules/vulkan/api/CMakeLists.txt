@@ -1,6 +1,9 @@
 # API layer tests
 
-include_directories(..)
+include_directories(
+	..
+	../util
+	)
 
 set(DEQP_VK_API_SRCS
 	vktApiVersionCheck.cpp
@@ -58,10 +61,9 @@ set(DEQP_VK_API_SRCS
 	)
 
 set(DEQP_VK_API_LIBS
-	deqp-vk-package
+	deqp-vk-util
 	tcutil
 	vkutil
-	deqp-vk-package
 	)
 
 add_library(deqp-vk-api STATIC ${DEQP_VK_API_SRCS})
