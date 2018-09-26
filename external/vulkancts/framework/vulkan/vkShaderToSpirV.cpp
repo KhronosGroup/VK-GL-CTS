@@ -84,7 +84,7 @@ void prepareGlslang (void)
 
 // Fail compilation if more members are added to TLimits or TBuiltInResource
 struct LimitsSizeHelper_s			{ bool m0, m1, m2, m3, m4, m5, m6, m7, m8; };
-struct BuiltInResourceSizeHelper_s	{ int m[83]; LimitsSizeHelper_s l; };
+struct BuiltInResourceSizeHelper_s	{ int m[92]; LimitsSizeHelper_s l; };
 
 DE_STATIC_ASSERT(sizeof(TLimits)			== sizeof(LimitsSizeHelper_s));
 DE_STATIC_ASSERT(sizeof(TBuiltInResource)	== sizeof(BuiltInResourceSizeHelper_s));
@@ -189,6 +189,15 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxCullDistances							= 8;
 	builtin->maxCombinedClipAndCullDistances			= 8;
 	builtin->maxSamples									= 4;
+	builtin->maxMeshOutputVerticesNV					= 256;
+	builtin->maxMeshOutputPrimitivesNV					= 256;
+	builtin->maxMeshWorkGroupSizeX_NV					= 32;
+	builtin->maxMeshWorkGroupSizeY_NV					= 1;
+	builtin->maxMeshWorkGroupSizeZ_NV					= 1;
+	builtin->maxTaskWorkGroupSizeX_NV					= 32;
+	builtin->maxTaskWorkGroupSizeY_NV					= 1;
+	builtin->maxTaskWorkGroupSizeZ_NV					= 1;
+	builtin->maxMeshViewCountNV							= 4;
 };
 
 int getNumShaderStages (const std::vector<std::string>* sources)
@@ -243,7 +252,7 @@ EShMessages getCompileFlags (const ShaderBuildOptions& buildOpts, const ShaderLa
 
 bool compileShaderToSpirV (const std::vector<std::string>* sources, const ShaderBuildOptions& buildOptions, const ShaderLanguage shaderLanguage, std::vector<deUint32>* dst, glu::ShaderProgramInfo* buildInfo)
 {
-	TBuiltInResource	builtinRes;
+	TBuiltInResource	builtinRes = {0};
 	const EShMessages	compileFlags	= getCompileFlags(buildOptions, shaderLanguage);
 
 	if (buildOptions.targetVersion >= SPIRV_VERSION_LAST)
