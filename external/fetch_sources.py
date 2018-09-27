@@ -252,7 +252,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		None,
-		"90a12b3d4d1d589b3d61c194f983eb9c22459226",
+		"1225324ae2450623e62621b91b380644f84c16d1",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
