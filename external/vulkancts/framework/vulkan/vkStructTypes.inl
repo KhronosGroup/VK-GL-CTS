@@ -3099,6 +3099,13 @@ struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR
 	VkBool32		vulkanMemoryModelDeviceScope;
 };
 
+struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		scalarBlockLayout;
+};
+
 
 
 

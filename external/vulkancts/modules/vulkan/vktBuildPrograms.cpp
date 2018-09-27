@@ -201,25 +201,19 @@ struct Program
 	Status					validationStatus;
 	std::string				validationLog;
 
-	deUint32				vulkanVersion;	// Target Vulkan environment.
-	vk::SpirvVersion		spirvVersion;
-	bool					relaxedLayout;	// Uses VK_KHR_relaxed_block_layout?
+	vk::SpirvValidatorOptions	validatorOptions;
 
-	explicit				Program		(const vk::ProgramIdentifier& id_, deUint32 vulkanVersion_, const vk::SpirvVersion spirvVersion_, const bool relaxedLayout_)
+	explicit				Program		(const vk::ProgramIdentifier& id_, const vk::SpirvValidatorOptions& valOptions_)
 								: id				(id_)
 								, buildStatus		(STATUS_NOT_COMPLETED)
 								, validationStatus	(STATUS_NOT_COMPLETED)
-								, vulkanVersion		(vulkanVersion_)
-								, spirvVersion		(spirvVersion_)
-								, relaxedLayout		(relaxedLayout_)
+								, validatorOptions	(valOptions_)
 							{}
 							Program		(void)
 								: id				("", "")
 								, buildStatus		(STATUS_NOT_COMPLETED)
 								, validationStatus	(STATUS_NOT_COMPLETED)
-								, vulkanVersion		(VK_MAKE_VERSION(1, 0, 0))
-								, spirvVersion		(vk::SPIRV_VERSION_LAST)
-								, relaxedLayout		(false)
+								, validatorOptions()
 							{}
 };
 
@@ -274,7 +268,7 @@ public:
 			DE_ASSERT(m_commandLine != DE_NULL);
 			m_program->binary			= ProgramBinarySp(vk::buildProgram(m_source, &buildInfo, *m_commandLine));
 			m_program->buildStatus		= Program::STATUS_PASSED;
-			m_program->relaxedLayout	= m_source.buildOptions.flags & vk::ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS;
+			m_program->validatorOptions	= m_source.buildOptions.getSpirvValidatorOptions();
 		}
 		catch (const tcu::Exception&)
 		{
@@ -361,7 +355,7 @@ public:
 
 		std::ostringstream			validationLogStream;
 
-		if (vk::validateProgram(*m_program->binary, &validationLogStream, m_program->vulkanVersion, m_program->relaxedLayout))
+		if (vk::validateProgram(*m_program->binary, &validationLogStream, m_program->validatorOptions))
 			m_program->validationStatus = Program::STATUS_PASSED;
 		else
 			m_program->validationStatus = Program::STATUS_FAILED;
@@ -455,8 +449,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
 							continue;
 
-						const bool relaxedLayout = progIter.getProgram().buildOptions.flags & vk::ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS;
-						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.vulkanVersion, progIter.getProgram().buildOptions.targetVersion, relaxedLayout));
+						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
 						buildGlslTasks.pushBack(BuildHighLevelShaderTask<vk::GlslSource>(progIter.getProgram(), &programs.back()));
 						buildGlslTasks.back().setCommandline(testCtx.getCommandLine());
 						executor.submit(&buildGlslTasks.back());
@@ -470,8 +463,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
 							continue;
 
-						const bool relaxedLayout = progIter.getProgram().buildOptions.flags & vk::ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS;
-						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.vulkanVersion, progIter.getProgram().buildOptions.targetVersion, relaxedLayout));
+						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
 						buildHlslTasks.pushBack(BuildHighLevelShaderTask<vk::HlslSource>(progIter.getProgram(), &programs.back()));
 						buildHlslTasks.back().setCommandline(testCtx.getCommandLine());
 						executor.submit(&buildHlslTasks.back());
@@ -485,7 +477,7 @@ BuildStats buildPrograms (tcu::TestContext&			testCtx,
 						if (progIter.getProgram().buildOptions.targetVersion > maxSpirvVersion)
 							continue;
 
-						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.vulkanVersion, progIter.getProgram().buildOptions.targetVersion, false));
+						programs.pushBack(Program(vk::ProgramIdentifier(casePath, progIter.getName()), progIter.getProgram().buildOptions.getSpirvValidatorOptions()));
 						buildSpirvAsmTasks.pushBack(BuildSpirVAsmTask(progIter.getProgram(), &programs.back()));
 						buildSpirvAsmTasks.back().setCommandline(testCtx.getCommandLine());
 						executor.submit(&buildSpirvAsmTasks.back());

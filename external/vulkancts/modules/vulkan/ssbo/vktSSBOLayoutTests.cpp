@@ -74,6 +74,7 @@ enum FeatureBits
 	FEATURE_RELAXED_LAYOUT		= (1<<13),
 	FEATURE_16BIT_STORAGE		= (1<<14),
 	FEATURE_8BIT_STORAGE		= (1<<15),
+	FEATURE_SCALAR_LAYOUT		= (1<<16),
 };
 
 class RandomSSBOLayoutCase : public SSBOLayoutCase
@@ -157,6 +158,9 @@ void RandomSSBOLayoutCase::generateBlock (de::Random& rnd, deUint32 layoutFlags)
 
 	if (m_features & FEATURE_8BIT_STORAGE)
 		layoutFlags |= LAYOUT_8BIT_STORAGE;
+
+	if (m_features & FEATURE_SCALAR_LAYOUT)
+		layoutFlagCandidates.push_back(LAYOUT_SCALAR);
 
 	DE_ASSERT(!layoutFlagCandidates.empty());
 
@@ -361,15 +365,12 @@ public:
 	BlockBasicTypeCase (tcu::TestContext& testCtx, const char* name, const char* description, const VarType& type, deUint32 layoutFlags, int numInstances, MatrixLoadFlags matrixLoadFlag)
 		: SSBOLayoutCase(testCtx, name, description, BUFFERMODE_PER_BLOCK, matrixLoadFlag)
 	{
-		BufferBlock& block = m_interface.allocBlock("Block");
-		block.addMember(BufferVar("var", type, ACCESS_READ|ACCESS_WRITE));
-
 		VarType tempType = type;
 		while (tempType.isArrayType())
-        {
+		{
 			tempType = tempType.getElementType();
 		}
-        if (getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_UINT16 ||
+		if (getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_UINT16 ||
 			getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_INT16 ||
 			getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_FLOAT16)
 		{
@@ -380,6 +381,15 @@ public:
 		{
 			layoutFlags |= LAYOUT_8BIT_STORAGE;
 		}
+
+		BufferBlock& block = m_interface.allocBlock("Block");
+		// For scalar layout tests with non-scalar types, add a scalar padding variable
+		// before "var", to make var only be scalar aligned.
+		if ((layoutFlags & LAYOUT_SCALAR) && !(type.isBasicType() && isDataTypeScalar(type.getBasicType()))) {
+			block.addMember(BufferVar("padding", VarType(getDataTypeScalarType(tempType.getBasicType()), glu::PRECISION_LAST), ACCESS_READ|ACCESS_WRITE));
+		}
+		block.addMember(BufferVar("var", type, ACCESS_READ|ACCESS_WRITE));
+
 		block.setFlags(layoutFlags);
 
 		if (numInstances > 0)
@@ -403,7 +413,7 @@ public:
 
 		VarType tempType = elementType;
 		while (tempType.isArrayType())
-        {
+		{
 			tempType = tempType.getElementType();
 		}
 		if (getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_UINT16 ||
@@ -1094,6 +1104,7 @@ void SSBOLayoutTests::init (void)
 	{
 		{ "std140",	LAYOUT_STD140 },
 		{ "std430",	LAYOUT_STD430 },
+		{ "scalar",	LAYOUT_SCALAR },
 	};
 
 	static const struct
@@ -1667,14 +1678,15 @@ void SSBOLayoutTests::init (void)
 		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_VARS;
 		const deUint32	unsized			= FEATURE_UNSIZED_ARRAYS;
 		const deUint32	matFlags		= FEATURE_MATRIX_LAYOUT;
-		const deUint32	allButRelaxed	= ~FEATURE_RELAXED_LAYOUT & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE;
+		const deUint32	allButRelaxed	= ~FEATURE_RELAXED_LAYOUT & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE & ~FEATURE_SCALAR_LAYOUT;
 		const deUint32	allRelaxed		= FEATURE_VECTORS|FEATURE_RELAXED_LAYOUT|FEATURE_INSTANCE_ARRAYS;
+		const deUint32	allScalar		= ~FEATURE_RELAXED_LAYOUT & ~allStdLayouts & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE;
 
 		tcu::TestCaseGroup* randomGroup = new tcu::TestCaseGroup(m_testCtx, "random", "Random Uniform Block cases");
 		addChild(randomGroup);
 
 		for (int i = 0; i < 3; ++i)
-        {
+		{
 
 			tcu::TestCaseGroup* group = randomGroup;
 			if (i == 1)
@@ -1707,7 +1719,8 @@ void SSBOLayoutTests::init (void)
 			createRandomCaseGroup(group, m_testCtx, "all_shared_buffer",		"All random features, shared buffer",		SSBOLayoutCase::BUFFERMODE_SINGLE,		use8BitStorage|use16BitStorage|allButRelaxed,	50, 250);
 
 			createRandomCaseGroup(group, m_testCtx, "relaxed",			"VK_KHR_relaxed_block_layout",				SSBOLayoutCase::BUFFERMODE_SINGLE,		use8BitStorage|use16BitStorage|allRelaxed, 100, deInt32Hash(313));
-        }
+			createRandomCaseGroup(group, m_testCtx, "scalar",			"VK_EXT_scalar_block_layout",				SSBOLayoutCase::BUFFERMODE_SINGLE,		use8BitStorage|use16BitStorage|allScalar, 100, deInt32Hash(313));
+		}
 	}
 }
 
