@@ -45,15 +45,12 @@ public:
 	BlockBasicTypeCase (tcu::TestContext& testCtx, const std::string& name, const std::string& description, const VarType& type, deUint32 layoutFlags, int numInstances, MatrixLoadFlags matrixLoadFlag)
 		: UniformBlockCase(testCtx, name, description, BUFFERMODE_PER_BLOCK, matrixLoadFlag)
 	{
-		UniformBlock& block = m_interface.allocBlock("Block");
-		block.addUniform(Uniform("var", type, 0));
-
 		VarType tempType = type;
 		while (tempType.isArrayType())
-        {
+		{
 			tempType = tempType.getElementType();
 		}
-        if (getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_UINT16 ||
+		if (getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_UINT16 ||
 			getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_INT16 ||
 			getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_FLOAT16)
 		{
@@ -64,6 +61,14 @@ public:
 		{
 			layoutFlags |= LAYOUT_8BIT_STORAGE;
 		}
+
+		UniformBlock& block = m_interface.allocBlock("Block");
+		// For scalar layout tests with non-scalar types, add a scalar padding variable
+		// before "var", to make var only be scalar aligned.
+		if ((layoutFlags & LAYOUT_SCALAR) && !isDataTypeScalar(type.getBasicType())) {
+			block.addUniform(Uniform("padding", VarType(getDataTypeScalarType(tempType.getBasicType()), 0), 0));
+		}
+		block.addUniform(Uniform("var", type, 0));
 
 		block.setFlags(layoutFlags);
 
@@ -447,7 +452,9 @@ void UniformBlockTests::init (void)
 		deUint32			flags;
 	} layoutFlags[] =
 	{
-		{ "std140",		LAYOUT_STD140	}
+		{ "std140",		LAYOUT_STD140	},
+		{ "std430",		LAYOUT_STD430	},
+		{ "scalar",		LAYOUT_SCALAR	}
 	};
 
 	static const struct
@@ -898,12 +905,13 @@ void UniformBlockTests::init (void)
 		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_UNIFORMS;
 		const deUint32	matFlags		= FEATURE_MATRIX_LAYOUT;
 		const deUint32	allFeatures		= ~FEATURE_OUT_OF_ORDER_OFFSETS & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE;  // OOO offsets handled in a dedicated case group
+		const deUint32	allScalar		= ~allLayouts & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE;
 
 		tcu::TestCaseGroup* randomGroup = new tcu::TestCaseGroup(m_testCtx, "random", "Random Uniform Block cases");
 		addChild(randomGroup);
 
 		for (int i = 0; i < 3; ++i)
-        {
+		{
 
 			tcu::TestCaseGroup* group = randomGroup;
 			if (i == 1)
@@ -935,6 +943,7 @@ void UniformBlockTests::init (void)
 			createRandomCaseGroup(group, m_testCtx, "all_shared_buffer",		"All random features, shared buffer",		UniformBlockCase::BUFFERMODE_SINGLE,	use8BitStorage|use16BitStorage|allFeatures,	50, 250);
 
 			createRandomCaseGroup(group, m_testCtx, "all_out_of_order_offsets",	"All random features, out of order member offsets",		UniformBlockCase::BUFFERMODE_PER_BLOCK,	use8BitStorage|use16BitStorage|allFeatures | FEATURE_OUT_OF_ORDER_OFFSETS,	50, 300);
+			createRandomCaseGroup(group, m_testCtx, "scalar",					"VK_EXT_scalar_block_layout",				UniformBlockCase::BUFFERMODE_SINGLE,	use8BitStorage|use16BitStorage|allScalar, 100, deInt32Hash(313));
 		}
 	}
 }

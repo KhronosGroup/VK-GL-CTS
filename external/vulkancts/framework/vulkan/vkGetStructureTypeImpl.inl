@@ -1246,3 +1246,8 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVulkanMemoryModelFea
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceScalarBlockLayoutFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
+}
+

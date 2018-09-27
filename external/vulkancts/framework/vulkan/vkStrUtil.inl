@@ -621,3 +621,4 @@ std::ostream&	operator<<	(std::ostream& s, const VkWriteDescriptorSetInlineUnifo
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorPoolInlineUniformBlockCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicInt64FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT& value);

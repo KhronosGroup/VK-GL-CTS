@@ -113,6 +113,12 @@ void RandomUniformBlockCase::generateBlock (de::Random& rnd, deUint32 layoutFlag
 	if (m_features & FEATURE_STD140_LAYOUT)
 		layoutFlagCandidates.push_back(LAYOUT_STD140);
 
+	if (m_features & FEATURE_STD430_LAYOUT)
+		layoutFlagCandidates.push_back(LAYOUT_STD430);
+
+	if (m_features & FEATURE_SCALAR_LAYOUT)
+		layoutFlagCandidates.push_back(LAYOUT_SCALAR);
+
 	if (m_features & FEATURE_16BIT_STORAGE)
 		layoutFlags |= LAYOUT_16BIT_STORAGE;
 

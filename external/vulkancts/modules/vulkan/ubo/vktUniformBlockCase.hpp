@@ -51,18 +51,20 @@ enum UniformFlags
 	LAYOUT_ROW_MAJOR	= (1<<6),
 	LAYOUT_COLUMN_MAJOR	= (1<<7),	//!< \note Lack of both flags means column-major matrix.
 	LAYOUT_OFFSET		= (1<<8),
-	LAYOUT_MASK			= LAYOUT_SHARED|LAYOUT_PACKED|LAYOUT_STD140|LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR|LAYOUT_OFFSET,
+	LAYOUT_STD430		= (1<<9),
+	LAYOUT_SCALAR		= (1<<10),
+	LAYOUT_MASK			= LAYOUT_SHARED|LAYOUT_PACKED|LAYOUT_STD140|LAYOUT_STD430|LAYOUT_SCALAR|LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR|LAYOUT_OFFSET,
 
-	DECLARE_VERTEX		= (1<<9),
-	DECLARE_FRAGMENT	= (1<<10),
+	DECLARE_VERTEX		= (1<<11),
+	DECLARE_FRAGMENT	= (1<<12),
 	DECLARE_BOTH		= DECLARE_VERTEX|DECLARE_FRAGMENT,
 
-	UNUSED_VERTEX		= (1<<11),	//!< Uniform or struct member is not read in vertex shader.
-	UNUSED_FRAGMENT		= (1<<12),	//!< Uniform or struct member is not read in fragment shader.
+	UNUSED_VERTEX		= (1<<13),	//!< Uniform or struct member is not read in vertex shader.
+	UNUSED_FRAGMENT		= (1<<14),	//!< Uniform or struct member is not read in fragment shader.
 	UNUSED_BOTH			= UNUSED_VERTEX|UNUSED_FRAGMENT,
 
-	LAYOUT_16BIT_STORAGE= (1<<13),  //!< Support VK_KHR_16bit_storage extension
-	LAYOUT_8BIT_STORAGE	= (1<<14),  //!< Support VK_KHR_8bit_storage extension
+	LAYOUT_16BIT_STORAGE= (1<<15),  //!< Support VK_KHR_16bit_storage extension
+	LAYOUT_8BIT_STORAGE	= (1<<16),  //!< Support VK_KHR_8bit_storage extension
 };
 
 enum MatrixLoadFlags
@@ -94,6 +96,7 @@ public:
 	int					getArraySize	(void) const	{ return m_data.array.size;			}
 
 	const StructType&	getStruct		(void) const	{ return *m_data.structPtr;			}
+	const StructType*	getStructPtr	(void) const	{ DE_ASSERT(isStructType()); return m_data.structPtr;			}
 
 	VarType&			operator=		(const VarType& other);
 
@@ -265,10 +268,13 @@ struct UniformLayoutEntry
 	UniformLayoutEntry (void)
 		: type			(glu::TYPE_LAST)
 		, size			(0)
-		, blockLayoutNdx(-1)
+		, blockNdx		(-1)
 		, offset		(-1)
+		, arraySize		(-1)
 		, arrayStride	(-1)
 		, matrixStride	(-1)
+		, topLevelArraySize		(-1)
+		, topLevelArrayStride	(-1)
 		, isRowMajor	(false)
 		, instanceNdx	(0)
 	{
@@ -277,10 +283,13 @@ struct UniformLayoutEntry
 	std::string			name;
 	glu::DataType		type;
 	int					size;
-	int					blockLayoutNdx;
+	int					blockNdx;
 	int					offset;
+	int					arraySize;
 	int					arrayStride;
 	int					matrixStride;
+	int					topLevelArraySize;
+	int					topLevelArrayStride;
 	bool				isRowMajor;
 	int					instanceNdx;
 };

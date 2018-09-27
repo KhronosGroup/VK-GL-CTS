@@ -88,6 +88,8 @@ public:
 												getShaderAtomicInt64Features	(void) const;
 	const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&
 												getConditionalRenderingFeatures	(void) const;
+	const vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&
+												getScalarBlockLayoutFeatures	(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;
