@@ -34,6 +34,7 @@
 #include "tcuSurface.hpp"
 
 #include "vkDefs.hpp"
+#include "vkTypeUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "gluShaderProgram.hpp"
@@ -143,7 +144,8 @@ public:
 	};
 													TextureBinding				(Context& context);
 													TextureBinding				(Context& context, const TestTextureSp& textureData, const Type type,
-																				 const ImageBackingMode backingMode = IMAGE_BACKING_MODE_REGULAR);
+																				 const ImageBackingMode backingMode = IMAGE_BACKING_MODE_REGULAR,
+																				 const vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA());
 	vk::VkImage										getImage					(void) { return *m_textureImage; }
 	vk::VkImageView									getImageView				(void) { return *m_textureImageView; }
 	Type											getType						(void) { return m_type; }
@@ -164,6 +166,7 @@ private:
 	de::MovePtr<vk::Allocation>						m_textureImageMemory;
 	vk::Move<vk::VkImageView>						m_textureImageView;
 	std::vector<de::SharedPtr<vk::Allocation> >		m_allocations;
+	vk::VkComponentMapping							m_componentMapping;
 };
 
 typedef de::SharedPtr<TextureBinding>	TextureBindingSp;
@@ -171,7 +174,7 @@ typedef de::SharedPtr<TextureBinding>	TextureBindingSp;
 class TextureRenderer
 {
 public:
-										TextureRenderer				(Context& context, vk::VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight);
+										TextureRenderer				(Context& context, vk::VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, vk::VkComponentMapping componentMapping = vk::makeComponentMappingRGBA());
 										~TextureRenderer			(void);
 
 	void								renderQuad					(tcu::Surface& result, int texUnit, const float* texCoord, glu::TextureTestUtil::TextureType texType);
@@ -255,6 +258,8 @@ protected:
 	float								m_viewportOffsetY;
 	float								m_viewportWidth;
 	float								m_viewportHeight;
+
+	vk::VkComponentMapping				m_componentMapping;
 
 private:
 	vk::Move<vk::VkDescriptorSet>		makeDescriptorSet			(const vk::VkDescriptorPool descriptorPool, const vk::VkDescriptorSetLayout setLayout) const;
