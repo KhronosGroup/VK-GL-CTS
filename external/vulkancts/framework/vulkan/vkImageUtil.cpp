@@ -2771,23 +2771,17 @@ tcu::UVec3 alignedDivide (const VkExtent3D& extent, const VkExtent3D& divisor)
 }
 
 void copyBufferToImage (const DeviceInterface&					vk,
-						VkDevice								device,
-						VkQueue									queue,
-						deUint32								queueFamilyIndex,
+						const VkCommandBuffer&					cmdBuffer,
 						const VkBuffer&							buffer,
-						deUint32								bufferSize,
+						VkDeviceSize							bufferSize,
 						const std::vector<VkBufferImageCopy>&	copyRegions,
-						const VkSemaphore*						waitSemaphore,
 						VkImageAspectFlags						imageAspectFlags,
 						deUint32								mipLevels,
 						deUint32								arrayLayers,
 						VkImage									destImage,
-						VkImageLayout							destImageLayout)
+						VkImageLayout							destImageLayout,
+						VkPipelineStageFlags					destImageDstStageFlags)
 {
-	Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	Move<VkFence>			fence		= createFence(vk, device);
-
 	// Barriers for copying buffer to image
 	const VkBufferMemoryBarrier preBufferBarrier =
 	{
@@ -2842,6 +2836,31 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		}
 	};
 
+	// Copy buffer to image
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
+	vk.cmdCopyBufferToImage(cmdBuffer, buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
+	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, destImageDstStageFlags, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+}
+
+void copyBufferToImage (const DeviceInterface&					vk,
+						VkDevice								device,
+						VkQueue									queue,
+						deUint32								queueFamilyIndex,
+						const VkBuffer&							buffer,
+						VkDeviceSize							bufferSize,
+						const std::vector<VkBufferImageCopy>&	copyRegions,
+						const VkSemaphore*						waitSemaphore,
+						VkImageAspectFlags						imageAspectFlags,
+						deUint32								mipLevels,
+						deUint32								arrayLayers,
+						VkImage									destImage,
+						VkImageLayout							destImageLayout,
+						VkPipelineStageFlags					destImageDstStageFlags)
+{
+	Move<VkCommandPool>		cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	Move<VkCommandBuffer>	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	Move<VkFence>			fence		= createFence(vk, device);
+
 	const VkCommandBufferBeginInfo cmdBufferBeginInfo =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,	// VkStructureType					sType;
@@ -2850,11 +2869,8 @@ void copyBufferToImage (const DeviceInterface&					vk,
 		(const VkCommandBufferInheritanceInfo*)DE_NULL,
 	};
 
-	// Copy buffer to image
 	VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
-	vk.cmdCopyBufferToImage(*cmdBuffer, buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)copyRegions.size(), copyRegions.data());
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+	copyBufferToImage(vk, *cmdBuffer, buffer, bufferSize, copyRegions, imageAspectFlags, mipLevels, arrayLayers, destImage, destImageLayout, destImageDstStageFlags);
 	VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 
 	const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;

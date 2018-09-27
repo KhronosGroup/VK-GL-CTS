@@ -144,21 +144,35 @@ tcu::UVec3						alignedDivide					(const VkExtent3D&				extent,
 																 const VkExtent3D&				divisor);
 
 /*--------------------------------------------------------------------*//*!
- * Copies buffer data into an image.
+ * Copies buffer data into an image. The buffer is expected to be
+ * in a state after host write.
 *//*--------------------------------------------------------------------*/
 void							copyBufferToImage				(const DeviceInterface&						vk,
 																 vk::VkDevice								device,
 																 vk::VkQueue								queue,
 																 deUint32									queueFamilyIndex,
 																 const vk::VkBuffer&						buffer,
-																 deUint32									bufferSize,
+																 vk::VkDeviceSize							bufferSize,
 																 const std::vector<vk::VkBufferImageCopy>&	copyRegions,
 																 const vk::VkSemaphore*						waitSemaphore,
 																 vk::VkImageAspectFlags						imageAspectFlags,
 																 deUint32									mipLevels,
 																 deUint32									arrayLayers,
 																 vk::VkImage								destImage,
-																 VkImageLayout								destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+																 VkImageLayout								destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+																 VkPipelineStageFlags						destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+void							copyBufferToImage				(const DeviceInterface&					vk,
+																 const VkCommandBuffer&					cmdBuffer,
+																 const VkBuffer&						buffer,
+																 vk::VkDeviceSize						bufferSize,
+																 const std::vector<VkBufferImageCopy>&	copyRegions,
+																 VkImageAspectFlags						imageAspectFlags,
+																 deUint32								mipLevels,
+																 deUint32								arrayLayers,
+																 VkImage								destImage,
+																 VkImageLayout							destImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+																 VkPipelineStageFlags					destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 /*--------------------------------------------------------------------*//*!
  * Checks if the physical device supports creation of the specified
