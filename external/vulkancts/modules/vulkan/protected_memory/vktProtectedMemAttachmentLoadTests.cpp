@@ -181,6 +181,7 @@ tcu::TestStatus AttachmentLoadTestInstance::iterate()
 	vk.cmdEndRenderPass(*cmdBuffer);
 
 	{
+		// Image validator reads image in compute shader
 		const vk::VkImageMemoryBarrier	endImgBarrier		=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType
@@ -201,8 +202,8 @@ tcu::TestStatus AttachmentLoadTestInstance::iterate()
 			}
 		};
 		vk.cmdPipelineBarrier(*cmdBuffer,
-								vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 								vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+								vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 								(vk::VkDependencyFlags)0,
 								0, (const vk::VkMemoryBarrier*)DE_NULL,
 								0, (const vk::VkBufferMemoryBarrier*)DE_NULL,

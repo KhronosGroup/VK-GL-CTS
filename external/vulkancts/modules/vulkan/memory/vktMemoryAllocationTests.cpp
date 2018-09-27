@@ -485,7 +485,7 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance (Context& context, Test
 	{
 		m_heaps[heapNdx].heap			= m_memoryProperties.memoryHeaps[heapNdx];
 		m_heaps[heapNdx].memoryUsage	= 0;
-		m_heaps[heapNdx].maxMemoryUsage	= m_heaps[heapNdx].heap.size / 2; /* Use at maximum 50% of heap */
+		m_heaps[heapNdx].maxMemoryUsage	= m_heaps[heapNdx].heap.size / 8; /* Use at maximum 12.5% of heap */
 
 		m_heaps[heapNdx].objects.reserve(100);
 	}

@@ -192,25 +192,6 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 	switch (m_cmdType) {
 		case FILL_BUFFER:
 			{
-				const vk::VkBufferMemoryBarrier startFillBufferBarrier =
-				{
-					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType		sType
-					DE_NULL,										// const void*			pNext
-					0,												// VkAccessFlags		srcAccessMask
-					vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		dstAccessMask
-					queueFamilyIndex,								// uint32_t				srcQueueFamilyIndex
-					queueFamilyIndex,								// uint32_t				dstQueueFamilyIndex
-					**dstBuffer,									// VkBuffer				buffer
-					0u,												// VkDeviceSize			offset
-					VK_WHOLE_SIZE,									// VkDeviceSize			size
-				};
-				vk.cmdPipelineBarrier(targetCmdBuffer,
-									  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-									  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-									  (vk::VkDependencyFlags) 0,
-									  0, (const vk::VkMemoryBarrier *) DE_NULL,
-									  1, &startFillBufferBarrier,
-									  0, (const vk::VkImageMemoryBarrier *) DE_NULL);
 				// Fill buffer
 				vk.cmdFillBuffer(targetCmdBuffer, **dstBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
 				break;
@@ -218,25 +199,6 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 
 		case UPDATE_BUFFER:
 			{
-				const vk::VkBufferMemoryBarrier startUpdateBufferBarrier =
-				{
-					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType		sType
-					DE_NULL,										// const void*			pNext
-					0,												// VkAccessFlags		srcAccessMask
-					vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		dstAccessMask
-					queueFamilyIndex,								// uint32_t				srcQueueFamilyIndex
-					queueFamilyIndex,								// uint32_t				dstQueueFamilyIndex
-					**dstBuffer,									// VkBuffer				buffer
-					0u,												// VkDeviceSize			offset
-					VK_WHOLE_SIZE,									// VkDeviceSize			size
-				};
-				vk.cmdPipelineBarrier(targetCmdBuffer,
-									  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-									  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-									  (vk::VkDependencyFlags) 0,
-									  0, (const vk::VkMemoryBarrier *) DE_NULL,
-									  1, &startUpdateBufferBarrier,
-									  0, (const vk::VkImageMemoryBarrier *) DE_NULL);
 				// Update buffer
 				deUint32 data[BUFFER_SIZE];
 				for (size_t ndx = 0; ndx < BUFFER_SIZE; ndx++)
@@ -247,30 +209,9 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 
 		case COPY_BUFFER:
 			{
-				// Start src buffer barrier
-				const vk::VkBufferMemoryBarrier startBufferBarrier =
-				{
-					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType		sType
-					DE_NULL,										// const void*			pNext
-					0,												// VkAccessFlags		srcAccessMask
-					vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		dstAccessMask
-					queueFamilyIndex,								// uint32_t				srcQueueFamilyIndex
-					queueFamilyIndex,								// uint32_t				dstQueueFamilyIndex
-					**srcBuffer,									// VkBuffer				buffer
-					0u,												// VkDeviceSize			offset
-					VK_WHOLE_SIZE,									// VkDeviceSize			size
-				};
-				vk.cmdPipelineBarrier(targetCmdBuffer,
-									  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-									  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-									  (vk::VkDependencyFlags) 0,
-									  0, (const vk::VkMemoryBarrier *) DE_NULL,
-									  1, &startBufferBarrier,
-									  0, (const vk::VkImageMemoryBarrier *) DE_NULL);
 				vk.cmdFillBuffer(targetCmdBuffer, **srcBuffer, 0u, VK_WHOLE_SIZE, m_fillValue);
 
-				// Barrier to change accessMask to transfer read bit for source buffer
-				const vk::VkBufferMemoryBarrier startCopyBufferBarrier	=
+				const vk::VkBufferMemoryBarrier copyBufferBarrier	=
 				{
 					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType		sType
 					DE_NULL,											// const void*			pNext
@@ -283,32 +224,14 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 					VK_WHOLE_SIZE,										// VkDeviceSize			size
 				};
 
-				// Image barrier for destination buffer
-				const vk::VkBufferMemoryBarrier	dstBufferBarrier		=
-				{
-					vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType		sType
-					DE_NULL,											// const void*			pNext
-					0,													// VkAccessFlags		srcAccessMask
-					vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags		dstAccessMask
-					queueFamilyIndex,									// uint32_t				srcQueueFamilyIndex
-					queueFamilyIndex,									// uint32_t				dstQueueFamilyIndex
-					**dstBuffer,										// VkBuffer				buffer
-					0u,													// VkDeviceSize			offset
-					VK_WHOLE_SIZE,										// VkDeviceSize			size
-				};
-
-				const vk::VkBufferMemoryBarrier memoryBarriers[2] =
-				{
-					startCopyBufferBarrier,
-					dstBufferBarrier
-				};
 				vk.cmdPipelineBarrier(targetCmdBuffer,
-									  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-									  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+									  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+									  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
 									  (vk::VkDependencyFlags)0,
 									  0, (const vk::VkMemoryBarrier*)DE_NULL,
-									  2, memoryBarriers,
+									  1, &copyBufferBarrier,
 									  0, (const vk::VkImageMemoryBarrier*)DE_NULL);
+
 				// Copy buffer
 				const vk::VkBufferCopy				copyBufferRegion		=
 				{
@@ -326,6 +249,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 	}
 
 	{
+		// Buffer validator reads buffer in compute shader
 		const vk::VkBufferMemoryBarrier	endBufferBarrier		=
 		{
 			vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType		sType
@@ -339,8 +263,8 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
 			VK_WHOLE_SIZE,										// VkDeviceSize			size
 		};
 		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+							  vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  1, &endBufferBarrier,
