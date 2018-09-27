@@ -190,6 +190,8 @@ KHR-GL41.texture_repeat_mode.depth24_stencil8_11x131_1_mirrored_repeat
 KHR-GL41.texture_repeat_mode.depth24_stencil8_11x131_2_clamp_to_edge
 KHR-GL41.texture_repeat_mode.depth24_stencil8_11x131_2_repeat
 KHR-GL41.texture_repeat_mode.depth24_stencil8_11x131_2_mirrored_repeat
+KHR-GL41.shaders30.declarations.declarations.redeclare_gl_FragColor
+KHR-GL41.shaders30.declarations.declarations.redeclare_gl_FragData
 KHR-GL41.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL41.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL41.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp
@@ -1498,6 +1500,8 @@ KHR-GL41.shaders.preprocessor.basic.token_pasting_1_vertex
 KHR-GL41.shaders.preprocessor.basic.token_pasting_1_fragment
 KHR-GL41.shaders.preprocessor.basic.token_pasting_2_vertex
 KHR-GL41.shaders.preprocessor.basic.token_pasting_2_fragment
+KHR-GL41.shaders.preprocessor.basic.stringification_vertex
+KHR-GL41.shaders.preprocessor.basic.stringification_fragment
 KHR-GL41.shaders.preprocessor.definitions.define_value_and_function_vertex
 KHR-GL41.shaders.preprocessor.definitions.define_value_and_function_fragment
 KHR-GL41.shaders.preprocessor.definitions.undefine_object_invalid_syntax_vertex

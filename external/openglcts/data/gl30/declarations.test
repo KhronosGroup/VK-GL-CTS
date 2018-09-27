@@ -1,0 +1,45 @@
+group declarations "Declarations"
+
+	case redeclare_gl_FragColor
+		version 130
+		expect compile_fail
+		vertex ""
+			#version 130
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 130
+			out vec4 gl_FragColor;
+			void main()
+			{
+				gl_FragColor = vec4(1.0);
+			}
+		""
+	end
+
+	case redeclare_gl_FragData
+		version 130
+		expect compile_fail
+		vertex ""
+			#version 130
+			${VERTEX_DECLARATIONS}
+			void main()
+			{
+				${VERTEX_OUTPUT}
+			}
+		""
+		fragment ""
+			#version 130
+			out vec4 gl_FragData[];
+			void main()
+			{
+				gl_FragData[0] = vec4(1.0, 1.0, 1.0, 1.0);
+			}
+		""
+	end
+
+end # invalid_declarations

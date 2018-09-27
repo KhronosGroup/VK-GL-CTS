@@ -218,6 +218,10 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 	}
 
 	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features);
+	if (m_data.stage == STAGE_VERTEX && !features.features.vertexPipelineStoresAndAtomics)
+	{
+		return TCU_THROW(NotSupportedError, "Vertex pipeline stores and atomics not supported");
+	}
 
 	if ((m_data.indexType == INDEX_TYPE_PUSHCONSTANT ||
 		 m_data.indexType == INDEX_TYPE_DEPENDENT ||

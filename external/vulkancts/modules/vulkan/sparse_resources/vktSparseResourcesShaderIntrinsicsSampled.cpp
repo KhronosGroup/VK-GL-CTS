@@ -736,7 +736,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 			fullImageSubresourceRange
 		);
 
-		deviceInterface.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageShaderAccessBarriers);
+		deviceInterface.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 3u, imageShaderAccessBarriers);
 	}
 
 	imageSparseViews.resize(imageSparseInfo.mipLevels);

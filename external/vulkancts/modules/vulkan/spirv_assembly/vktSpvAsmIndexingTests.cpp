@@ -18,7 +18,7 @@
  *
  *//*!
  * \file
- * \brief SPIR-V Assembly Tests for indexing with different bit sizes.
+ * \brief SPIR-V Assembly Tests for indexing with access chain operations.
  *//*--------------------------------------------------------------------*/
 
 #include "vktSpvAsmIndexingTests.hpp"
@@ -217,9 +217,9 @@ void addComputeIndexingStructTests (tcu::TestCaseGroup* group)
 						specs["accesschain"]			= "OpPtrAccessChain %_ptr_StorageBuffer_float %inputFirstElement %idx_1 %idx_0 %i0 %i1 %i2 %i3\n";
 						specs["inputdecoration"]		= "Block";
 						specs["inputstorageclass"]		= "StorageBuffer";
-						specs["variablepointercaps"]		= "OpCapability VariablePointersStorageBuffer";
+						specs["variablepointercaps"]	= "OpCapability VariablePointersStorageBuffer";
 						specs["ptr_buffer_float"]		= "%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float";
-						specs["extensions"]			= "OpExtension \"SPV_KHR_variable_pointers\"\n                             "
+						specs["extensions"]				= "OpExtension \"SPV_KHR_variable_pointers\"\n                             "
 														  "OpExtension \"SPV_KHR_storage_buffer_storage_class\"";
 						element = 1;
 						vulkanFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
@@ -563,6 +563,167 @@ void addGraphicsOutputComponentIndexingTests (tcu::TestCaseGroup* testGroup)
 	createTestsForAllStages("component", defaultColors, defaultColors, fragments, interfaces, noExtensions, testGroup);
 }
 
+void addComputeIndexingNon16BaseAlignmentTests (tcu::TestCaseGroup* group)
+{
+	tcu::TestContext&				testCtx					= group->getTestContext();
+	de::MovePtr<tcu::TestCaseGroup> non16BaseAlignmentGroup	(new tcu::TestCaseGroup(testCtx, "non16basealignment", "Tests for indexing array with base alignment less than 16."));
+	de::Random						rnd						(deStringHash(group->getName()));
+	const int						floatArraySize			= 18;
+	const int						numFloatArrays			= 32;
+
+	const int						numInputFloats			= floatArraySize * numFloatArrays;
+	const int						numOutputFloats			= numFloatArrays;
+	vector<float>					inputData;
+	VulkanFeatures					vulkanFeatures;
+	vector<float>					outputData;
+	ComputeShaderSpec				spec;
+	const ChainOp					chainOps[]				= { CHAIN_OP_ACCESS_CHAIN, CHAIN_OP_PTR_ACCESS_CHAIN };
+
+	// Input is the following structure:
+	//
+	// struct
+	// {
+	//     struct
+	//     {
+	//         float f[18];
+	//     } struct1[];
+	// } struct 0;
+	//
+	// Each instance calculates a sum of f[0]..f[17] and outputs the result into float array.
+	string							shaderStr				=
+			"                             OpCapability Shader\n"
+			"                             ${variablepointercaps:opt}\n"
+			"                             ${extensions:opt}\n"
+			"                        %1 = OpExtInstImport \"GLSL.std.450\"\n"
+			"                             OpMemoryModel Logical GLSL450\n"
+			"                             OpEntryPoint GLCompute %main \"main\" %gl_GlobalInvocationID\n"
+			"                             OpExecutionMode %main LocalSize 1 1 1\n"
+			"                             OpSource GLSL 430\n"
+			"                             OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId\n"
+			"                             OpDecorate %input_array ArrayStride 4\n"
+			"                             OpDecorate %output_array ArrayStride 4\n";
+	shaderStr +=
+			"                             OpDecorate %runtimearr_struct1 ArrayStride " + de::toString(floatArraySize * 4) + "\n";
+	shaderStr +=
+			"                             OpDecorate %_ptr_struct1_sb ArrayStride " + de::toString(floatArraySize * 4) + "\n";
+	shaderStr +=
+			"                             OpMemberDecorate %Output 0 Offset 0\n"
+			"                             OpDecorate %Output Block\n"
+			"                             OpDecorate %dataOutput DescriptorSet 0\n"
+			"                             OpDecorate %dataOutput Binding 1\n"
+			"                             OpMemberDecorate %struct0 0 Offset 0\n"
+			"                             OpMemberDecorate %struct1 0 Offset 0\n"
+			"                             OpDecorate %struct0 Block\n"
+			"                             OpDecorate %dataInput DescriptorSet 0\n"
+			"                             OpDecorate %dataInput Binding 0\n"
+			"                     %void = OpTypeVoid\n"
+			"                        %3 = OpTypeFunction %void\n"
+			"                      %u32 = OpTypeInt 32 0\n"
+			"                      %i32 = OpTypeInt 32 1\n"
+			"     %_ptr_Function_uint32 = OpTypePointer Function %u32\n"
+			"                 %v3uint32 = OpTypeVector %u32 3\n"
+			"      %_ptr_Input_v3uint32 = OpTypePointer Input %v3uint32\n"
+			"    %gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint32 Input\n"
+			"        %_ptr_Input_uint32 = OpTypePointer Input %u32\n"
+			"                    %float = OpTypeFloat 32\n";
+	for (deUint32 floatIdx = 0; floatIdx < floatArraySize + 1; ++floatIdx)
+		shaderStr += string("%uint_") + de::toString(floatIdx) + " = OpConstant %u32 " + de::toString(floatIdx) + "\n";
+	shaderStr +=
+			"                  %uint_" + de::toString(numFloatArrays) + " = OpConstant %u32 " + de::toString(numFloatArrays) + "\n";
+	shaderStr +=
+			"              %input_array = OpTypeArray %float %uint_" + de::toString(floatArraySize) + "\n";
+	shaderStr +=
+			"             %output_array = OpTypeArray %float %uint_" + de::toString(numFloatArrays) + "\n";
+	shaderStr +=
+			"                   %Output = OpTypeStruct %output_array\n"
+			"           %_ptr_sb_Output = OpTypePointer StorageBuffer %Output\n"
+			"               %dataOutput = OpVariable %_ptr_sb_Output StorageBuffer\n"
+			"                  %struct1 = OpTypeStruct %input_array\n"
+			"       %runtimearr_struct1 = OpTypeRuntimeArray %struct1\n"
+			"                  %struct0 = OpTypeStruct %runtimearr_struct1\n"
+			"          %_ptr_struct0_sb = OpTypePointer StorageBuffer %struct0\n"
+			"          %_ptr_struct1_sb = OpTypePointer StorageBuffer %struct1\n"
+			"            %_ptr_float_sb = OpTypePointer StorageBuffer %float\n"
+			"                %dataInput = OpVariable %_ptr_struct0_sb StorageBuffer\n"
+			"                     %main = OpFunction %void None %3\n"
+			"                    %entry = OpLabel\n"
+			"                     %base = OpAccessChain %_ptr_struct1_sb %dataInput %uint_0 %uint_0\n"
+			"                %invid_ptr = OpAccessChain %_ptr_Input_uint32 %gl_GlobalInvocationID %uint_0\n"
+			"                    %invid = OpLoad %u32 %invid_ptr\n";
+	for (deUint32 floatIdx = 0; floatIdx < floatArraySize; ++floatIdx)
+	{
+		shaderStr += string("%dataPtr") + de::toString(floatIdx) + " = ${chainop} %invid %uint_0 %uint_" + de::toString(floatIdx) + "\n";
+		if (floatIdx == 0)
+		{
+			shaderStr += "%acc0 = OpLoad %float %dataPtr0\n";
+		}
+		else
+		{
+			shaderStr += string("%tmp") + de::toString(floatIdx) + " = OpLoad %float %dataPtr" + de::toString(floatIdx) + "\n";
+			shaderStr += string("%acc") + de::toString(floatIdx) + " = OpFAdd %float %tmp" + de::toString(floatIdx) + " %acc" + de::toString(floatIdx - 1) + "\n";
+		}
+	}
+	shaderStr +=
+			"                   %outPtr = OpAccessChain %_ptr_float_sb %dataOutput %uint_0 %invid\n";
+	shaderStr +=
+			"                             OpStore %outPtr %acc" + de::toString(floatArraySize - 1) + "\n";
+	shaderStr +=
+			"                             OpReturn\n"
+			"                             OpFunctionEnd\n";
+
+	vulkanFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+	spec.extensions.push_back("VK_KHR_variable_pointers");
+
+	inputData.reserve(numInputFloats);
+	for (deUint32 numIdx = 0; numIdx < numInputFloats; ++numIdx)
+		inputData.push_back(rnd.getFloat());
+
+	spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+
+	outputData.reserve(numOutputFloats);
+	for (deUint32 outputIdx = 0; outputIdx < numOutputFloats; ++outputIdx)
+	{
+		float f = 0.0f;
+		for (deUint32 arrIdx = 0; arrIdx < floatArraySize; ++arrIdx)
+			f += inputData[outputIdx * floatArraySize + arrIdx];
+		outputData.push_back(f);
+	}
+
+	spec.numWorkGroups				= IVec3(numFloatArrays, 1, 1);
+	spec.requestedVulkanFeatures	= vulkanFeatures;
+	spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+
+	for (int chainOpIdx = 0; chainOpIdx < DE_LENGTH_OF_ARRAY(chainOps); ++chainOpIdx)
+	{
+		const ChainOp		chainOp		= chainOps[chainOpIdx];
+		const string		testName	= chainOpTestNames[chainOp];
+		map<string, string>	specs;
+
+		specs["variablepointercaps"]	= "OpCapability VariablePointersStorageBuffer";
+		specs["extensions"]				= "OpExtension \"SPV_KHR_variable_pointers\"\n                             "
+										  "OpExtension \"SPV_KHR_storage_buffer_storage_class\"";
+		switch(chainOp)
+		{
+			case CHAIN_OP_ACCESS_CHAIN:
+				specs["chainop"] = "OpAccessChain %_ptr_float_sb %dataInput %uint_0 %uint_0";
+				specs["chainop"] = "OpAccessChain %_ptr_float_sb %dataInput %uint_0";
+				break;
+			case CHAIN_OP_PTR_ACCESS_CHAIN:
+				specs["chainop"] = "OpPtrAccessChain %_ptr_float_sb %base";
+				break;
+			default:
+				DE_FATAL("Unexpected chain op");
+				break;
+		}
+
+		spec.assembly					= StringTemplate(shaderStr).specialize(specs);
+
+		non16BaseAlignmentGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
+	}
+
+	group->addChild(non16BaseAlignmentGroup.release());
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createIndexingComputeGroup (tcu::TestContext& testCtx)
@@ -571,6 +732,7 @@ tcu::TestCaseGroup* createIndexingComputeGroup (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> inputGroup		(new tcu::TestCaseGroup(testCtx, "input", "Tests for indexing input data."));
 
 	addComputeIndexingStructTests(inputGroup.get());
+	addComputeIndexingNon16BaseAlignmentTests(inputGroup.get());
 
 	indexingGroup->addChild(inputGroup.release());
 
