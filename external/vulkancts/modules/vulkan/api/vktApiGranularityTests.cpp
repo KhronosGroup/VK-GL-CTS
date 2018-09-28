@@ -146,7 +146,7 @@ void GranularityInstance::initAttachmentDescriptions (void)
 		VK_ATTACHMENT_LOAD_OP_DONT_CARE,	// VkAttachmentLoadOp			stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_DONT_CARE,	// VkAttachmentStoreOp			stencilStoreOp;
 		VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout				initialLayout;
-		VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout				finalLayout;
+		VK_IMAGE_LAYOUT_GENERAL,			// VkImageLayout				finalLayout;
 	};
 
 	for (std::vector<AttachmentInfo>::const_iterator it = m_attachments.begin(); it != m_attachments.end(); ++it)

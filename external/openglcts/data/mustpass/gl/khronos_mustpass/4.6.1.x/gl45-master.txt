@@ -190,6 +190,8 @@ KHR-GL45.texture_repeat_mode.depth24_stencil8_11x131_1_mirrored_repeat
 KHR-GL45.texture_repeat_mode.depth24_stencil8_11x131_2_clamp_to_edge
 KHR-GL45.texture_repeat_mode.depth24_stencil8_11x131_2_repeat
 KHR-GL45.texture_repeat_mode.depth24_stencil8_11x131_2_mirrored_repeat
+KHR-GL45.shaders30.declarations.declarations.redeclare_gl_FragColor
+KHR-GL45.shaders30.declarations.declarations.redeclare_gl_FragData
 KHR-GL45.CommonBugs.CommonBug_GetProgramivActiveUniformBlockMaxNameLength
 KHR-GL45.CommonBugs.CommonBug_InputVariablesCannotBeModified
 KHR-GL45.CommonBugs.CommonBug_InvalidUseCasesForAllNotFuncsAndExclMarkOp
@@ -1498,6 +1500,8 @@ KHR-GL45.shaders.preprocessor.basic.token_pasting_1_vertex
 KHR-GL45.shaders.preprocessor.basic.token_pasting_1_fragment
 KHR-GL45.shaders.preprocessor.basic.token_pasting_2_vertex
 KHR-GL45.shaders.preprocessor.basic.token_pasting_2_fragment
+KHR-GL45.shaders.preprocessor.basic.stringification_vertex
+KHR-GL45.shaders.preprocessor.basic.stringification_fragment
 KHR-GL45.shaders.preprocessor.definitions.define_value_and_function_vertex
 KHR-GL45.shaders.preprocessor.definitions.define_value_and_function_fragment
 KHR-GL45.shaders.preprocessor.definitions.undefine_object_invalid_syntax_vertex
@@ -4117,6 +4121,8 @@ KHR-GL45.texture_view.view_classes
 KHR-GL45.texture_view.coherency
 KHR-GL45.texture_view.base_and_max_levels
 KHR-GL45.texture_view.reference_counting
+KHR-GL45.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_vertex
+KHR-GL45.shaders42.declarations.declarations.layout_qualifier_on_image_function_parameter_fragment
 KHR-GL45.arrays_of_arrays_gl.SizedDeclarationsPrimitive
 KHR-GL45.arrays_of_arrays_gl.SizedDeclarationsStructTypes1
 KHR-GL45.arrays_of_arrays_gl.SizedDeclarationsStructTypes2

@@ -123,6 +123,19 @@ tcu::TestNode::IterateResult TestCaseWrapper::iterate(tcu::TestCase* testCase)
 
 // GL30TestPackage
 
+class GL30ShaderTests : public glcts::TestCaseGroup
+{
+public:
+	GL30ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders30", "Shading Language Tests")
+	{
+	}
+
+	void init(void)
+	{
+		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "gl30/declarations.test"));
+	}
+};
+
 GL30TestPackage::GL30TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
 								 glu::ContextType renderContextType)
 	: TestPackage(testCtx, packageName, packageName, renderContextType, "gl_cts/data/")
@@ -146,6 +159,7 @@ void GL30TestPackage::init(void)
 		addChild(new gl3cts::GLSLnoperspectiveTests(getContext()));
 		addChild(new gl3cts::TransformFeedback::Tests(getContext()));
 		addChild(new glcts::TextureRepeatModeTests(getContext()));
+		addChild(new GL30ShaderTests(getContext()));
 	}
 	catch (...)
 	{

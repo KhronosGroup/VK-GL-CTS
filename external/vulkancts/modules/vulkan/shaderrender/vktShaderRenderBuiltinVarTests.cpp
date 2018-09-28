@@ -826,7 +826,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		};
 
 		beginCommandBuffer(vk, *transferCmdBuffer);
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_HOST_BIT,
+		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_HOST_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
 				0, (const VkBufferMemoryBarrier*)DE_NULL,
@@ -1331,7 +1331,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 		};
 
 		beginCommandBuffer(vk, *transferCmdBuffer);
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 				(VkDependencyFlags)0,
 				0, (const VkMemoryBarrier*)DE_NULL,
 				0, (const VkBufferMemoryBarrier*)DE_NULL,

@@ -1,0 +1,22 @@
+group declarations "Declarations"
+
+	case layout_qualifier_on_image_function_parameter
+		version 420
+		expect compile_fail
+		both ""
+			#version 420
+			${DECLARATIONS}
+			layout( r32i ) uniform iimage2D img;
+			void bad(layout( r32i ) iimage2D img)
+			{
+				imageStore(img, ivec2( 0, 0 ), ivec4( 1, 0, 0, 0 ));
+			}
+			void main()
+			{
+				bad(img);
+				${OUTPUT}
+			}
+		""
+	end
+
+end # invalid_declarations

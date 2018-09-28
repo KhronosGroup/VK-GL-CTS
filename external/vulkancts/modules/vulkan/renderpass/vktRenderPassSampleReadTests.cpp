@@ -966,6 +966,8 @@ tcu::TestStatus SampleReadTestInstance::iterateInternal (void)
 	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *commandBuffer);
 
 	{
+		invalidateMappedMemoryRange(vkd, device, m_dstBufferMemory->getMemory(), m_dstBufferMemory->getOffset(), VK_WHOLE_SIZE);
+
 		const tcu::TextureFormat			format		(mapVkFormat(VK_FORMAT_R32_UINT));
 		const void* const					ptr			(m_dstBufferMemory->getHostPtr());
 		const tcu::ConstPixelBufferAccess	access		(format, m_width, m_height, 1, ptr);

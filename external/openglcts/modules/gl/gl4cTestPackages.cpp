@@ -177,6 +177,19 @@ void GL41TestPackage::init(void)
 
 // GL42TestPackage
 
+class GL42ShaderTests : public deqp::TestCaseGroup
+{
+public:
+	GL42ShaderTests(deqp::Context& context) : TestCaseGroup(context, "shaders42", "Shading Language Tests")
+	{
+	}
+
+	void init(void)
+	{
+		addChild(new deqp::ShaderLibraryGroup(m_context, "declarations", "Declaration Tests", "gl42/declarations.test"));
+	}
+};
+
 GL42TestPackage::GL42TestPackage(tcu::TestContext& testCtx, const char* packageName, const char* description,
 								 glu::ContextType renderContextType)
 	: GL41TestPackage(testCtx, packageName, packageName, renderContextType)
@@ -200,6 +213,7 @@ void GL42TestPackage::init(void)
 		addChild(new gl4cts::ShaderImageLoadStoreTests(getContext()));
 		addChild(new gl4cts::ShadingLanguage420PackTests(getContext()));
 		addChild(new gl4cts::TextureViewTests(getContext()));
+		addChild(new GL42ShaderTests(getContext()));
 	}
 	catch (...)
 	{

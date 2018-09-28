@@ -282,6 +282,20 @@ inline VkSampleLocationsInfoEXT makeSampleLocationsInfo (const MultisamplePixelG
 	return info;
 }
 
+inline VkSampleLocationsInfoEXT makeEmptySampleLocationsInfo ()
+{
+	const VkSampleLocationsInfoEXT info =
+	{
+		VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT,				// VkStructureType               sType;
+		DE_NULL,													// const void*                   pNext;
+		(VkSampleCountFlagBits)0,									// VkSampleCountFlagBits         sampleLocationsPerPixel;
+		makeExtent2D(0,0),											// VkExtent2D                    sampleLocationGridSize;
+		0,															// uint32_t                      sampleLocationsCount;
+		DE_NULL,													// const VkSampleLocationEXT*    pSampleLocations;
+	};
+	return info;
+}
+
 void logPixelGrid (tcu::TestLog& log, const VkPhysicalDeviceSampleLocationsPropertiesEXT& sampleLocationsProperties, const MultisamplePixelGrid& pixelGrid)
 {
 	log << tcu::TestLog::Section("pixelGrid", "Multisample pixel grid configuration:")
@@ -1600,7 +1614,7 @@ protected:
 
 			pipeline = makeGraphicsPipelineSinglePassColor(
 				vk, device, dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule, viewport, scissor,
-				m_params.numSamples, /*use sample locations*/ true, VkSampleLocationsInfoEXT(), vertexInputConfig, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+				m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(), vertexInputConfig, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 		}
 		else
 		{
@@ -2467,7 +2481,7 @@ protected:
 			{
 				pipeline[passNdx] = makeGraphicsPipeline(
 					vk, device, dynamicState, *pipelineLayout, rt[passNdx].getRenderPass(), *vertexModule, *fragmentModule,
-					/*subpass index*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, VkSampleLocationsInfoEXT(),
+					/*subpass index*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
 					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
 			}
 		}
@@ -2842,7 +2856,7 @@ protected:
 			{
 				pipeline[passNdx] = makeGraphicsPipeline(
 					vk, device, dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
-					/*subpass*/ passNdx, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, VkSampleLocationsInfoEXT(),
+					/*subpass*/ passNdx, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
 					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
 			}
 		}
@@ -3008,7 +3022,7 @@ protected:
 			{
 				pipeline[passNdx] = makeGraphicsPipeline(
 					vk, device, dynamicState, *pipelineLayout, rt.getRenderPass(), *vertexModule, *fragmentModule,
-					/*subpass*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, VkSampleLocationsInfoEXT(),
+					/*subpass*/ 0u, viewport, scissor, m_params.numSamples, /*use sample locations*/ true, makeEmptySampleLocationsInfo(),
 					useDepth(), useStencil(), VERTEX_INPUT_VEC4_VEC4, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, stencilOpStateDrawOnce());
 			}
 		}
