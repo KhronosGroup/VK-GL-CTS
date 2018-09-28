@@ -531,7 +531,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 	//	shared struct
 	//	{
 	//		vec4 arr0[16];
-	//		vec4 arr1[];
+	//		vec4 arr1[16];
 	//	} sharedData;
 	//
 	//	void func0(vec4* f0[16], uint i)
@@ -539,7 +539,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 	//		f0[i] = vec4(i);
 	//	}
 	//
-	//	void func1(vec4* f1[], uint i)
+	//	void func1(vec4* f1[16], uint i)
 	//	{
 	//		f1[i] = vec4(i+5);
 	//	}
@@ -590,11 +590,9 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 			"    %arr_vec4_16_sb_ptr = OpTypePointer StorageBuffer %arr_vec4_16\n"
 			"    %arr_vec4_rt_sb_ptr = OpTypePointer StorageBuffer %arr_vec4_rt\n"
 			"    %arr_vec4_16_wg_ptr = OpTypePointer Workgroup %arr_vec4_16\n"
-			"    %arr_vec4_rt_wg_ptr = OpTypePointer Workgroup %arr_vec4_rt\n"
-			"            %func0_decl = OpTypeFunction %void %arr_vec4_16_wg_ptr %_ptr_Function_uint\n"
-			"            %func1_decl = OpTypeFunction %void %arr_vec4_rt_wg_ptr %_ptr_Function_uint\n"
+			"             %func_decl = OpTypeFunction %void %arr_vec4_16_wg_ptr %_ptr_Function_uint\n"
 			"                %Output = OpTypeStruct %arr_vec4_16 %arr_vec4_rt\n"
-			"                %struct = OpTypeStruct %arr_vec4_16 %arr_vec4_rt\n"
+			"                %struct = OpTypeStruct %arr_vec4_16 %arr_vec4_16\n"
 			"        %_ptr_sb_struct = OpTypePointer StorageBuffer %Output\n"
 			"        %_ptr_wg_struct = OpTypePointer Workgroup %struct\n"
 			"            %dataOutput = OpVariable %_ptr_sb_struct StorageBuffer\n"
@@ -616,7 +614,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 			"                   %idx = OpVariable %_ptr_Function_uint Function\n"
 			"                          OpStore %idx %inv_id\n"
 			"                  %ptr0 = OpAccessChain %arr_vec4_16_wg_ptr %sharedData %int_0\n"
-			"                  %ptr1 = OpAccessChain %arr_vec4_rt_wg_ptr %sharedData %int_1\n"
+			"                  %ptr1 = OpAccessChain %arr_vec4_16_wg_ptr %sharedData %int_1\n"
 			"                  %ret0 = OpFunctionCall %void %func0 %ptr0 %idx\n"
 			"                  %ret1 = OpFunctionCall %void %func1 %ptr1 %idx\n"
 			"                          OpControlBarrier %uint_2 %uint_2 %uint_264\n"
@@ -632,7 +630,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 			"                          OpStore %outPtr1 %shared_arr0_data\n"
 			"                          OpReturn\n"
 			"                          OpFunctionEnd\n"
-			"                 %func0 = OpFunction %void None %func0_decl\n"
+			"                 %func0 = OpFunction %void None %func_decl\n"
 			"                    %f0 = OpFunctionParameter %arr_vec4_16_wg_ptr\n"
 			"                    %i0 = OpFunctionParameter %_ptr_Function_uint\n"
 			"           %func0_entry = OpLabel\n"
@@ -643,8 +641,8 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 			"                          OpStore %out_ptr0 %outData0\n"
 			"                          OpReturn\n"
 			"                          OpFunctionEnd\n"
-			"                 %func1 = OpFunction %void None %func1_decl\n"
-			"                    %f1 = OpFunctionParameter %arr_vec4_rt_wg_ptr\n"
+			"                 %func1 = OpFunction %void None %func_decl\n"
+			"                    %f1 = OpFunctionParameter %arr_vec4_16_wg_ptr\n"
 			"                    %i1 = OpFunctionParameter %_ptr_Function_uint\n"
 			"           %func1_entry = OpLabel\n"
 			"                  %idx1 = OpLoad %uint %i1\n"
