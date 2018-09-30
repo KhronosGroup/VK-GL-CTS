@@ -468,10 +468,15 @@ private:
 
 };
 
+static deUint32 sanitizeApiVersion(deUint32 v)
+{
+	return VK_MAKE_VERSION( VK_VERSION_MAJOR(v), VK_VERSION_MINOR(v), 0 );
+}
+
 DefaultDevice::DefaultDevice (const PlatformInterface& vkPlatform, const tcu::CommandLine& cmdLine)
 	: m_availableInstanceVersion	(getTargetInstanceVersion(vkPlatform))
 	, m_deviceVersions				(determineDeviceVersions(vkPlatform, m_availableInstanceVersion, cmdLine))
-	, m_usedApiVersion				(deMinu32(m_availableInstanceVersion, m_deviceVersions.first))
+	, m_usedApiVersion				(sanitizeApiVersion(deMinu32(m_availableInstanceVersion, m_deviceVersions.first)))
 
 	, m_instanceExtensions			(addCoreInstanceExtensions(filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, DE_NULL)), m_usedApiVersion))
 	, m_instance					(createInstance(vkPlatform, m_usedApiVersion, m_instanceExtensions, cmdLine))
