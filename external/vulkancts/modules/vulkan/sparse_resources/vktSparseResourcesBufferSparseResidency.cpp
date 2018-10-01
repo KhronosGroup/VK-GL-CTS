@@ -381,7 +381,7 @@ tcu::TestStatus BufferSparseResidencyInstance::iterate (void)
 			waitStageBits, 0, DE_NULL, usingDeviceGroups(), firstDeviceID);
 
 		// Retrieve data from output buffer to host memory
-		invalidateMappedMemoryRange(deviceInterface, getDevice(), outputBufferAlloc->getMemory(), outputBufferAlloc->getOffset(), m_bufferSize);
+		invalidateAlloc(deviceInterface, getDevice(), *outputBufferAlloc);
 
 		const deUint8* outputData = static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
 

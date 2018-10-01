@@ -1217,7 +1217,7 @@ void UploadDownloadExecutor::uploadCopy(Context& context)
 		layerOffset += layerSize;
 	}
 
-	flushMappedMemoryRange(m_vk, m_device, m_uCopy.colorBufferAlloc->getMemory(), m_uCopy.colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+	flushAlloc(m_vk, m_device, *(m_uCopy.colorBufferAlloc));
 
 	// Prepare buffer and image for copy
 	const VkBufferMemoryBarrier	bufferInitBarrier	=
@@ -1302,7 +1302,7 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 		m_uDraw.vertexBuffer						= makeBuffer(m_vk, m_device, vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 		m_uDraw.vertexBufferAlloc					= bindBuffer(m_vk, m_device, m_allocator, *m_uDraw.vertexBuffer, MemoryRequirement::HostVisible);
 		deMemcpy(m_uDraw.vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
-		flushMappedMemoryRange(m_vk, m_device, m_uDraw.vertexBufferAlloc->getMemory(), m_uDraw.vertexBufferAlloc->getOffset(), vertexBufferSize);
+		flushAlloc(m_vk, m_device, *(m_uDraw.vertexBufferAlloc));
 	}
 
 	// Create attachments and pipelines for each image layer
@@ -1685,7 +1685,7 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	const Unique<VkBuffer>		colorBuffer			(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>	colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 	deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
-	flushMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+	flushAlloc(vk, device, *colorBufferAlloc);
 
 	// Execute the test
 	UploadDownloadExecutor executor(context, caseDef);
@@ -1693,7 +1693,7 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 
 	// Verify results
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 
 		// For verification purposes, we use the format of the upload to generate the expected image
 		const VkFormat						format			= caseDef.upload == UPLOAD_CLEAR || caseDef.upload == UPLOAD_COPY ? caseDef.imageFormat : caseDef.viewFormat;

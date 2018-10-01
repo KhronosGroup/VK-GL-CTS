@@ -728,7 +728,7 @@ void ShaderRenderCaseInstance::setupUniformData (deUint32 bindingLocation, size_
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
 	deMemcpy(alloc->getHostPtr(), dataPtr, size);
-	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), size);
+	flushAlloc(vk, vkDevice, *alloc);
 
 	de::MovePtr<BufferUniform> uniformInfo(new BufferUniform());
 	uniformInfo->type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -799,7 +799,7 @@ void ShaderRenderCaseInstance::addAttribute (deUint32		bindingLocation,
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
 	deMemcpy(alloc->getHostPtr(), dataPtr, (size_t)inputSize);
-	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize);
+	flushAlloc(vk, vkDevice, *alloc);
 
 	m_vertexBuffers.push_back(VkBufferSp(new vk::Unique<VkBuffer>(buffer)));
 	m_vertexBufferAllocs.push_back(AllocationSp(alloc.release()));
@@ -1047,7 +1047,7 @@ void ShaderRenderCaseInstance::uploadImage (const tcu::TextureFormat&			texForma
 		}
 	}
 
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
+	flushAlloc(vk, vkDevice, *bufferAlloc);
 
 	copyBufferToImage(vk, vkDevice, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, mipLevels, arrayLayers, destImage);
 }
@@ -2177,7 +2177,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		// Load vertice indices into buffer
 		deMemcpy(indexBufferAlloc->getHostPtr(), indices, (size_t)indexBufferSize);
-		flushMappedMemoryRange(vk, vkDevice, indexBufferAlloc->getMemory(), indexBufferAlloc->getOffset(), indexBufferSize);
+		flushAlloc(vk, vkDevice, *indexBufferAlloc);
 	}
 
 	// Create command pool
@@ -2351,7 +2351,7 @@ void ShaderRenderCaseInstance::render (deUint32				numVertices,
 
 		submitCommandsAndWait(vk, vkDevice, queue, resultCmdBuffer.get());
 
-		invalidateMappedMemoryRange(vk, vkDevice, readImageBufferMemory->getMemory(), readImageBufferMemory->getOffset(), imageSizeBytes);
+		invalidateAlloc(vk, vkDevice, *readImageBufferMemory);
 
 		const tcu::ConstPixelBufferAccess				resultAccess				(resultFormat, m_renderSize.x(), m_renderSize.y(), 1, readImageBufferMemory->getHostPtr());
 

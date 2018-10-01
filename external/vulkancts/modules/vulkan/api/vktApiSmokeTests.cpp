@@ -606,20 +606,8 @@ tcu::TestStatus renderTriangleTest (Context& context)
 	endCommandBuffer(vk, *cmdBuf);
 
 	// Upload vertex data
-	{
-		const VkMappedMemoryRange	range			=
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
-			DE_NULL,								// pNext
-			vertexBufferMemory->getMemory(),		// memory
-			0,										// offset
-			(VkDeviceSize)sizeof(vertices),			// size
-		};
-		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
-
-		deMemcpy(vertexBufPtr, &vertices[0], sizeof(vertices));
-		VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
-	}
+	deMemcpy(vertexBufferMemory->getHostPtr(), &vertices[0], sizeof(vertices));
+	flushAlloc(vk, vkDevice, *vertexBufferMemory);
 
 	// Submit & wait for completion
 	submitCommandsAndWait(vk, vkDevice, queue, cmdBuf.get());
@@ -989,20 +977,8 @@ tcu::TestStatus renderTriangleUnusedResolveAttachmentTest (Context& context)
 	endCommandBuffer(vk, *cmdBuf);
 
 	// Upload vertex data
-	{
-		const VkMappedMemoryRange	range			=
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
-			DE_NULL,								// pNext
-			vertexBufferMemory->getMemory(),		// memory
-			0,										// offset
-			(VkDeviceSize)sizeof(vertices),			// size
-		};
-		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
-
-		deMemcpy(vertexBufPtr, &vertices[0], sizeof(vertices));
-		VK_CHECK(vk.flushMappedMemoryRanges(vkDevice, 1u, &range));
-	}
+	deMemcpy(vertexBufferMemory->getHostPtr(), &vertices[0], sizeof(vertices));
+	flushAlloc(vk, vkDevice, *vertexBufferMemory);
 
 	// Submit & wait for completion
 	submitCommandsAndWait(vk, vkDevice, queue, cmdBuf.get());

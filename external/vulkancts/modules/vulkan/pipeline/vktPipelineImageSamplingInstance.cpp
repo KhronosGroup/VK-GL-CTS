@@ -694,7 +694,7 @@ ImageSamplingInstance::ImageSamplingInstance (Context&							context,
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), &m_vertices[0], (size_t)vertexBufferSize);
-		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool

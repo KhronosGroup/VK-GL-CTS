@@ -1226,7 +1226,7 @@ void writeValuesToMem (Context& context, const vk::Allocation& dst, const ValueB
 	copyToLayout(dst.getHostPtr(), layout, values, arrayNdx);
 
 	// \note Buffers are not allocated with coherency / uncached requirement so we need to manually flush CPU write caches
-	flushMappedMemoryRange(context.getDeviceInterface(), context.getDevice(), dst.getMemory(), dst.getOffset(), (vk::VkDeviceSize)layout.size);
+	flushAlloc(context.getDeviceInterface(), context.getDevice(), dst);
 }
 
 class ShaderCaseInstance : public TestInstance
@@ -1374,7 +1374,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 		deMemcpy((deUint8*)m_posNdxMem->getHostPtr() + POSITIONS_OFFSET,	&s_positions[0],	sizeof(s_positions));
 		deMemcpy((deUint8*)m_posNdxMem->getHostPtr() + INDICES_OFFSET,		&s_indices[0],		sizeof(s_indices));
 
-		flushMappedMemoryRange(m_context.getDeviceInterface(), context.getDevice(), m_posNdxMem->getMemory(), m_posNdxMem->getOffset(), sizeof(s_positions)+sizeof(s_indices));
+		flushAlloc(m_context.getDeviceInterface(), context.getDevice(), *m_posNdxMem);
 	}
 
 	if (!m_spec.values.uniforms.empty())

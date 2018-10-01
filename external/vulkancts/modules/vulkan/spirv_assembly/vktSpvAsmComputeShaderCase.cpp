@@ -155,7 +155,7 @@ void setMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation*
 	deMemcpy((deUint8*)hostPtr, data, numBytes);
 
 	if (!coherent)
-		flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
+		flushAlloc(vkdi, device, *destAlloc);
 }
 
 void fillMemoryWithValue (const DeviceInterface& vkdi, const VkDevice& device, Allocation* destAlloc, size_t numBytes, deUint8 value, bool coherent = false)
@@ -165,13 +165,13 @@ void fillMemoryWithValue (const DeviceInterface& vkdi, const VkDevice& device, A
 	deMemset((deUint8*)hostPtr, value, numBytes);
 
 	if (!coherent)
-		flushMappedMemoryRange(vkdi, device, destAlloc->getMemory(), destAlloc->getOffset(), numBytes);
+		flushAlloc(vkdi, device, *destAlloc);
 }
 
-void invalidateMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* srcAlloc, size_t numBytes, bool coherent = false)
+void invalidateMemory (const DeviceInterface& vkdi, const VkDevice& device, Allocation* srcAlloc, bool coherent = false)
 {
 	if (!coherent)
-		invalidateMappedMemoryRange(vkdi, device, srcAlloc->getMemory(), srcAlloc->getOffset(), numBytes);
+		invalidateAlloc(vkdi, device, *srcAlloc);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -745,7 +745,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Invalidate output memory ranges before checking on host.
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
 	{
-		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.outputs[outputNdx].getByteSize(), m_shaderSpec.coherentMemory);
+		invalidateMemory(vkdi, device, outputAllocs[outputNdx].get(), m_shaderSpec.coherentMemory);
 	}
 
 	// Check output.

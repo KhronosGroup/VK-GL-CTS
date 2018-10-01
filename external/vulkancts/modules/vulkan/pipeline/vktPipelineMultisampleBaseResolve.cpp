@@ -211,7 +211,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 
 	uploadVertexData(vertexBufferAllocation, vertexDataDesc);
 
-	flushMappedMemoryRange(deviceInterface, device, vertexBufferAllocation.getMemory(), vertexBufferAllocation.getOffset(), VK_WHOLE_SIZE);
+	flushAlloc(deviceInterface, device, vertexBufferAllocation);
 
 	const VkVertexInputBindingDescription vertexBinding =
 	{
@@ -382,7 +382,7 @@ tcu::TestStatus MSInstanceBaseResolve::iterate (void)
 	// Retrieve data from buffer to host memory
 	const Allocation& bufferRSAllocation = bufferRS->getAllocation();
 
-	invalidateMappedMemoryRange(deviceInterface, device, bufferRSAllocation.getMemory(), bufferRSAllocation.getOffset(), VK_WHOLE_SIZE);
+	invalidateAlloc(deviceInterface, device, bufferRSAllocation);
 
 	const tcu::ConstPixelBufferAccess bufferRSData (m_imageFormat,
 													imageRSInfo.extent.width,

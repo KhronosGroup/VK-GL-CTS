@@ -99,6 +99,16 @@ Allocation::~Allocation (void)
 {
 }
 
+void flushAlloc (const DeviceInterface& vkd, VkDevice device, const Allocation& alloc)
+{
+	flushMappedMemoryRange(vkd, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+}
+
+void invalidateAlloc (const DeviceInterface& vkd, VkDevice device, const Allocation& alloc)
+{
+	invalidateMappedMemoryRange(vkd, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+}
+
 // MemoryRequirement
 
 const MemoryRequirement MemoryRequirement::Any				= MemoryRequirement(0x0u);

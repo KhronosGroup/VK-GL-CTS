@@ -134,8 +134,7 @@ protected:
 																			 const Buffer&				indirectBuffer);
 
 	deBool							verifyResultBuffer						(const Buffer&				resultBuffer,
-																			 const vk::VkDeviceSize		resultBlockSize,
-																			 const vk::VkDeviceSize		resultBufferSize) const;
+																			 const vk::VkDeviceSize		resultBlockSize) const;
 
 	Context&						m_context;
 	const std::string				m_name;
@@ -196,7 +195,7 @@ void IndirectDispatchInstanceBufferUpload::fillIndirectBufferData (const vk::VkC
 		dstPtr[2] = cmdIter->m_numWorkGroups[2];
 	}
 
-	vk::flushMappedMemoryRange(m_device_interface, m_device, alloc.getMemory(), alloc.getOffset(), m_bufferSize);
+	vk::flushAlloc(m_device_interface, m_device, alloc);
 }
 
 tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
@@ -239,7 +238,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 			*(deUint32*)(dstPtr + RESULT_BLOCK_NUM_PASSED_OFFSET) = 0;
 		}
 
-		vk::flushMappedMemoryRange(m_device_interface, m_device, alloc.getMemory(), alloc.getOffset(), resultBufferSize);
+		vk::flushAlloc(m_device_interface, m_device, alloc);
 	}
 
 	// Create verify compute shader
@@ -321,19 +320,18 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	submitCommandsAndWait(m_device_interface, m_device, m_queue, *cmdBuffer);
 
 	// Check if result buffer contains valid values
-	if (verifyResultBuffer(resultBuffer, resultBlockSize, resultBufferSize))
+	if (verifyResultBuffer(resultBuffer, resultBlockSize))
 		return tcu::TestStatus(QP_TEST_RESULT_PASS, "Pass");
 	else
 		return tcu::TestStatus(QP_TEST_RESULT_FAIL, "Invalid values in result buffer");
 }
 
 deBool IndirectDispatchInstanceBufferUpload::verifyResultBuffer (const Buffer&			resultBuffer,
-																 const vk::VkDeviceSize	resultBlockSize,
-																 const vk::VkDeviceSize	resultBufferSize) const
+																 const vk::VkDeviceSize	resultBlockSize) const
 {
 	deBool allOk = true;
 	const vk::Allocation& alloc = resultBuffer.getAllocation();
-	vk::invalidateMappedMemoryRange(m_device_interface, m_device, alloc.getMemory(), alloc.getOffset(), resultBufferSize);
+	vk::invalidateAlloc(m_device_interface, m_device, alloc);
 
 	const deUint8* const resultDataPtr = reinterpret_cast<deUint8*>(alloc.getHostPtr());
 

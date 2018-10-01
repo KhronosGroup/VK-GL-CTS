@@ -379,8 +379,6 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 
 		deMemcpy(bufCurPtr, pba[level].getDataPtr(), copySize);
 
-	    flushMappedMemoryRange(vkd, dev, bufMem->getMemory(), bufMem->getOffset() + (bufCurPtr - bufMapPtr), copySize);
-
 		const VkImageSubresourceLayers curSubresource =
 		{
 			VK_IMAGE_ASPECT_COLOR_BIT,
@@ -403,6 +401,8 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 
 		bufCurPtr += copySize;
 	}
+
+	flushAlloc(vkd, dev, *bufMem);
 
 	beginCommandBuffer(vkd, copyBuffer.get());
 

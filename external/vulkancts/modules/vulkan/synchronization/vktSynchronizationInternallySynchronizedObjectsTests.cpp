@@ -294,7 +294,7 @@ TestStatus executeComputePipeline (const Context& context, const VkPipeline& pip
 		{
 			const Allocation& alloc = resultBuffer.getAllocation();
 			deMemset(alloc.getHostPtr(), 0, BUFFER_SIZE);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), BUFFER_SIZE);
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Start recording commands
@@ -330,7 +330,7 @@ TestStatus executeComputePipeline (const Context& context, const VkPipeline& pip
 
 		{
 			const Allocation& resultAlloc = resultBuffer.getAllocation();
-			invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), BUFFER_SIZE);
+			invalidateAlloc(vk, device, resultAlloc);
 
 			const deInt32*	ptr = reinterpret_cast<deInt32*>(resultAlloc.getHostPtr());
 			for (deInt32 ndx = 0; ndx < BUFFER_ELEMENT_COUNT; ++ndx)
@@ -382,7 +382,7 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 		{
 			const Allocation& alloc = resultBuffer.getAllocation();
 			deMemset(alloc.getHostPtr(), 0, BUFFER_SIZE);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), BUFFER_SIZE);
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Start recording commands
@@ -424,7 +424,7 @@ TestStatus executeGraphicPipeline (const Context& context, const VkPipeline& pip
 
 		{
 			const Allocation& resultAlloc = resultBuffer.getAllocation();
-			invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), BUFFER_SIZE);
+			invalidateAlloc(vk, device, resultAlloc);
 
 			const deInt32*	ptr = reinterpret_cast<deInt32*>(resultAlloc.getHostPtr());
 			for (deInt32 ndx = 0; ndx < BUFFER_ELEMENT_COUNT; ++ndx)

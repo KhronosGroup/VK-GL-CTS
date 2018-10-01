@@ -783,7 +783,7 @@ void FragmentOutExecutor::addAttribute (deUint32 bindingLocation, VkFormat forma
 	VK_CHECK(vk.bindBufferMemory(vkDevice, *buffer, alloc->getMemory(), alloc->getOffset()));
 
 	deMemcpy(alloc->getHostPtr(), dataPtr, (size_t)inputSize);
-	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), inputSize);
+	flushAlloc(vk, vkDevice, *alloc);
 
 	m_vertexBuffers.push_back(de::SharedPtr<Unique<VkBuffer> >(new Unique<VkBuffer>(buffer)));
 	m_vertexBufferAllocs.push_back(AllocationSp(alloc.release()));
@@ -1345,16 +1345,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 					submitCommandsAndWait(vk, vkDevice, queue, copyCmdBuffer.get());
 				}
 
-				const VkMappedMemoryRange range =
-				{
-					VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// VkStructureType	sType;
-					DE_NULL,								// const void*		pNext;
-					readImageBufferMemory->getMemory(),		// VkDeviceMemory	mem;
-					0,										// VkDeviceSize		offset;
-					imageSizeBytes,							// VkDeviceSize		size;
-				};
-
-				VK_CHECK(vk.invalidateMappedMemoryRanges(vkDevice, 1u, &range));
+				invalidateAlloc(vk, vkDevice, *readImageBufferMemory);
 
 				tmpBuf.setStorage(readFormat, renderSize.x(), renderSize.y());
 
@@ -1814,7 +1805,7 @@ void BufferIoExecutor::uploadInputBuffer (const void* const* inputPtrs, int numV
 		copyToBuffer(varType, layout, numValues, inputPtrs[inputNdx], m_inputAlloc->getHostPtr());
 	}
 
-	flushMappedMemoryRange(vk, vkDevice, m_inputAlloc->getMemory(), m_inputAlloc->getOffset(), inputBufferSize);
+	flushAlloc(vk, vkDevice, *m_inputAlloc);
 }
 
 void BufferIoExecutor::readOutputBuffer (void* const* outputPtrs, int numValues)
@@ -1822,12 +1813,9 @@ void BufferIoExecutor::readOutputBuffer (void* const* outputPtrs, int numValues)
 	const VkDevice			vkDevice			= m_context.getDevice();
 	const DeviceInterface&	vk					= m_context.getDeviceInterface();
 
-	const deUint32			outputStride		= getLayoutStride(m_outputLayout);
-	const int				outputBufferSize	= numValues * outputStride;
+	DE_ASSERT(numValues > 0); // At least some outputs are required.
 
-	DE_ASSERT(outputBufferSize > 0); // At least some outputs are required.
-
-	invalidateMappedMemoryRange(vk, vkDevice, m_outputAlloc->getMemory(), m_outputAlloc->getOffset(), outputBufferSize);
+	invalidateAlloc(vk, vkDevice, *m_outputAlloc);
 
 	DE_ASSERT(m_shaderSpec.outputs.size() == m_outputLayout.size());
 	for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)

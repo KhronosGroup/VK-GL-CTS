@@ -648,7 +648,7 @@ const VkDescriptorSet* MSInstanceSampleMaskPattern::createMSPassDescSet (const I
 
 	deMemcpy(m_buffer->getAllocation().getHostPtr(), &m_sampleMask, sizeof(VkSampleMask));
 
-	flushMappedMemoryRange(deviceInterface, device, m_buffer->getAllocation().getMemory(), m_buffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
+	flushAlloc(deviceInterface, device, m_buffer->getAllocation());
 
 	const VkDescriptorBufferInfo descBufferInfo = makeDescriptorBufferInfo(**m_buffer, 0u, sizeof(VkSampleMask));
 

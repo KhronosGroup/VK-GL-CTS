@@ -184,17 +184,9 @@ void createVulkanBuffer (const DeviceInterface& vkd, VkDevice device, Allocator&
 	if (bufferParameters.memory != DE_NULL)
 	{
 		VkMemoryBarrier				barrier;
-		VkMappedMemoryRange			range;
-
-		deMemset(&range, 0xcd, sizeof(range));
-		range.sType		= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		range.pNext		= DE_NULL;
-		range.memory	= buffer.allocation->getMemory();
-		range.offset	= buffer.allocation->getOffset();
-		range.size		= bufferParameters.size;
 
 		deMemcpy(buffer.allocation->getHostPtr(), bufferParameters.memory, (size_t)bufferParameters.size);
-		VK_CHECK(vkd.flushMappedMemoryRanges(device, 1, &range));
+		flushAlloc(vkd, device, *buffer.allocation);
 
 		deMemset(&barrier, 0xcd, sizeof(barrier));
 		barrier.sType			= VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -990,7 +982,6 @@ tcu::TestStatus testFences (Context& context)
 	VkResult					fenceStatus;
 	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), context.getDefaultAllocator());
 	VkSubmitInfo				submitInfo;
-	VkMappedMemoryRange			range;
 	void*						resultImage;
 
 	const tcu::Vec4				vertices[]			=
@@ -1069,12 +1060,7 @@ tcu::TestStatus testFences (Context& context)
 		return tcu::TestStatus::fail("Fence in incorrect state");
 	}
 
-	range.sType			= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	range.pNext			= DE_NULL;
-	range.memory		= testContext.renderReadBuffer->getMemory();
-	range.offset		= 0;
-	range.size			= testContext.renderSize;
-	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device, 1, &range));
+	invalidateAlloc(deviceInterface, device, *testContext.renderReadBuffer);
 	resultImage = testContext.renderReadBuffer->getHostPtr();
 
 	log << TestLog::Image(	"result",
@@ -1111,7 +1097,6 @@ tcu::TestStatus testSemaphores (Context& context)
 	TestContext					testContext2		(deviceInterface, device.get(), queueFamilyIdx, context.getBinaryCollection(), allocator);
 	Unique<VkSemaphore>			semaphore			(createSemaphore(deviceInterface, *device));
 	VkSubmitInfo				submitInfo[2];
-	VkMappedMemoryRange			range;
 	void*						resultImage;
 	const VkPipelineStageFlags	waitDstStageMask	= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
@@ -1168,12 +1153,7 @@ tcu::TestStatus testSemaphores (Context& context)
 		return tcu::TestStatus::fail("failed to wait for a set fence");
 	}
 
-	range.sType			= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	range.pNext			= DE_NULL;
-	range.memory		= testContext1.renderReadBuffer->getMemory();
-	range.offset		= 0;
-	range.size			= testContext1.renderSize;
-	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device.get(), 1, &range));
+	invalidateAlloc(deviceInterface, device.get(), *testContext1.renderReadBuffer);
 	resultImage = testContext1.renderReadBuffer->getHostPtr();
 
 	log << TestLog::Image(	"result",
@@ -1194,12 +1174,7 @@ tcu::TestStatus testSemaphores (Context& context)
 		return tcu::TestStatus::fail("failed to wait for a set fence");
 	}
 
-	range.sType			= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	range.pNext			= DE_NULL;
-	range.memory		= testContext2.renderReadBuffer->getMemory();
-	range.offset		= 0;
-	range.size			= testContext2.renderSize;
-	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device.get(), 1, &range));
+	invalidateAlloc(deviceInterface, device.get(), *testContext2.renderReadBuffer);
 	resultImage = testContext2.renderReadBuffer->getHostPtr();
 
 	log << TestLog::Image(	"result",
@@ -1227,7 +1202,6 @@ tcu::TestStatus testEvents (Context& context)
 	TestContext					testContext			(deviceInterface, device, queueFamilyIdx, context.getBinaryCollection(), allocator);
 	Unique<VkEvent>				event				(createEvent(deviceInterface, device));
 	VkSubmitInfo				submitInfo;
-	VkMappedMemoryRange			range;
 	void*						resultImage;
 
 	const tcu::Vec4		vertices1[]			=
@@ -1285,12 +1259,7 @@ tcu::TestStatus testEvents (Context& context)
 		return tcu::TestStatus::fail("failed to proceed after event set from host");
 	}
 
-	range.sType			= VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	range.pNext			= DE_NULL;
-	range.memory		= testContext.renderReadBuffer->getMemory();
-	range.offset		= 0;
-	range.size			= testContext.renderSize;
-	VK_CHECK(deviceInterface.invalidateMappedMemoryRanges(device, 1, &range));
+	invalidateAlloc(deviceInterface, device, *testContext.renderReadBuffer);
 	resultImage = testContext.renderReadBuffer->getHostPtr();
 
 	log << TestLog::Image(	"result",

@@ -392,7 +392,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 			VK_CHECK(m_vkd.bindBufferMemory(*m_device, **m_buffers[bufIdx], m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset()));
 
 			deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &testColors[bufIdx], 16u);
-			flushMappedMemoryRange(m_vkd, *m_device, m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset(), 16u);
+			flushAlloc(m_vkd, *m_device, *m_bufferAllocs[bufIdx]);
 		}
 	}
 
@@ -481,7 +481,7 @@ void PushDescriptorBufferGraphicsTestInstance::init (void)
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(m_vkd, *m_device, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		flushAlloc(m_vkd, *m_device, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool
@@ -775,7 +775,7 @@ void PushDescriptorBufferComputeTestInstance::init (void)
 			VK_CHECK(m_vkd.bindBufferMemory(*m_device, **m_buffers[bufIdx], m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset()));
 
 			deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &testColors[bufIdx], 16u);
-			flushMappedMemoryRange(m_vkd, *m_device, m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset(), 16u);
+			flushAlloc(m_vkd, *m_device, *m_bufferAllocs[bufIdx]);
 		}
 	}
 
@@ -908,7 +908,7 @@ tcu::TestStatus PushDescriptorBufferComputeTestInstance::iterate (void)
 
 tcu::TestStatus PushDescriptorBufferComputeTestInstance::verifyOutput (void)
 {
-	invalidateMappedMemoryRange(m_vkd, *m_device, m_outputBufferAlloc->getMemory(), m_outputBufferAlloc->getOffset(), (size_t)32u);
+	invalidateAlloc(m_vkd, *m_device, *m_outputBufferAlloc);
 
 	// Verify result
 	if (deMemCmp((void*)testColors, m_outputBufferAlloc->getHostPtr(), (size_t)(16u * m_params.numCalls)))
