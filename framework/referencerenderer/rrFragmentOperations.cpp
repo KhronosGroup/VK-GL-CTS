@@ -599,8 +599,6 @@ Vec3 setLumSat (const Vec3& cbase, const Vec3& csat, const Vec3& clum)
 
 	if (sbase > 0.0f)
 		color = (cbase - minbase) * ssat / sbase;
-	else
-		color = color;
 
 	return setLum(color, clum);
 }
