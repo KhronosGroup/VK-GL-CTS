@@ -872,9 +872,10 @@ deUint8 WideColorSurfaceTest::expectedUint8 (float reference)
 	}
 	else
 	{
-		// Apply sRGB transfer function when colorspace is sRGB and pixel component
-		// size is 8 bits (which is why we are here in expectedUint8).
-		if (m_colorSpace == EGL_GL_COLORSPACE_SRGB_KHR)
+		// Apply sRGB transfer function when colorspace is sRGB or Display P3 and
+		// pixel component size is 8 bits (which is why we are here in expectedUint8).
+		if (m_colorSpace == EGL_GL_COLORSPACE_SRGB_KHR ||
+				m_colorSpace == EGL_GL_COLORSPACE_DISPLAY_P3_EXT)
 		{
 			float srgbReference;
 
