@@ -1741,10 +1741,10 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 	// Upload attrbiutes data
 	{
 		deMemcpy(positionsAlloc->getHostPtr(), positions, sizeof(positions));
-		flushMappedMemoryRange(vk, device, positionsAlloc->getMemory(), positionsAlloc->getOffset(), sizeof(positions));
+		flushAlloc(vk, device, *positionsAlloc);
 
 		deMemcpy(indicesAlloc->getHostPtr(), indices, sizeof(indices));
-		flushMappedMemoryRange(vk, device, indicesAlloc->getMemory(), indicesAlloc->getOffset(), sizeof(indices));
+		flushAlloc(vk, device, *indicesAlloc);
 	}
 
 	vk::Unique<VkImage>					colorImage			(createImage2D(m_context,
@@ -1976,8 +1976,7 @@ tcu::TestStatus UniformBlockCaseInstance::iterate (void)
 	{
 		const tcu::TextureFormat textureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
 		const tcu::ConstPixelBufferAccess imgAccess(textureFormat, RENDER_WIDTH, RENDER_HEIGHT, 1, readImageAlloc->getHostPtr());
-		const vk::VkDeviceSize bufferSize = RENDER_WIDTH * RENDER_HEIGHT * 4;
-		invalidateMappedMemoryRange(vk, device, readImageAlloc->getMemory(), readImageAlloc->getOffset(), bufferSize);
+		invalidateAlloc(vk, device, *readImageAlloc);
 
 		tcu::copy(surface.getAccess(), imgAccess);
 	}
@@ -2027,7 +2026,7 @@ vk::VkDescriptorBufferInfo UniformBlockCaseInstance::addUniformData (deUint32 si
 	de::MovePtr<Allocation>			alloc	= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
 
 	deMemcpy(alloc->getHostPtr(), dataPtr, size);
-	flushMappedMemoryRange(vk, vkDevice, alloc->getMemory(), alloc->getOffset(), size);
+	flushAlloc(vk, vkDevice, *alloc);
 
 	const VkDescriptorBufferInfo			descriptor			=
 	{

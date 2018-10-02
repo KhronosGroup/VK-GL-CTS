@@ -75,7 +75,7 @@ Move<VkBuffer> createDataBuffer (vkt::Context&				context,
 	deMemset((deUint8 *)mapPtr + offset + initDataSize, uninitData,
 		(size_t)bufferSize - (size_t)offset - initDataSize);
 
-	flushMappedMemoryRange(vki, device, allocation->getMemory(), allocation->getOffset(), bufferSize);
+	flushAlloc(vki, device, *allocation);
 
 	*outAllocation = allocation;
 	return buffer;
@@ -123,7 +123,7 @@ Move<VkBuffer> createColorDataBuffer (deUint32 offset,
 	deMemset((deUint8 *) mapPtr + offset + 2 * sizeof(tcu::Vec4), 0x5A,
 			 (size_t) bufferSize - (size_t) offset - 2 * sizeof(tcu::Vec4));
 
-	flushMappedMemoryRange(vki, device, allocation->getMemory(), allocation->getOffset(), bufferSize);
+	flushAlloc(vki, device, *allocation);
 
 	*outAllocation = allocation;
 	return buffer;

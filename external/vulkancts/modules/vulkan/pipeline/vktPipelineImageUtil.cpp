@@ -318,7 +318,7 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
 	// Read buffer data
-	invalidateMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), VK_WHOLE_SIZE);
+	invalidateAlloc(vk, device, *bufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), bufferAlloc->getHostPtr()));
 
 	return resultLevel;
@@ -391,7 +391,7 @@ void uploadTestTextureInternal (const DeviceInterface&	vk,
 			}
 		}
 
-		flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		flushAlloc(vk, device, *bufferAlloc);
 	}
 
 	copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, imageAspectFlags, srcTexture.getNumLevels(), srcTexture.getArraySize(), destImage);
@@ -484,7 +484,7 @@ void uploadTestTextureInternalSparse (const DeviceInterface&					vk,
 			}
 		}
 
-		flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		flushAlloc(vk, device, *bufferAlloc);
 	}
 
 	copyBufferToImage(vk, device, universalQueue, universalQueueFamilyIndex, *buffer, bufferSize, copyRegions, &(*imageMemoryBindSemaphore), imageAspectFlags, imageCreateInfo.mipLevels, imageCreateInfo.arrayLayers, destImage);

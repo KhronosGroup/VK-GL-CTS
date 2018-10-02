@@ -1276,26 +1276,8 @@ InputAssemblyInstance::InputAssemblyInstance (Context&							context,
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
 
-		// Flush memory
-		const VkMappedMemoryRange flushMemoryRanges[] =
-		{
-			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// VkStructureType	sType;
-				DE_NULL,								// const void*		pNext;
-				m_indexBufferAlloc->getMemory(),		// VkDeviceMemory	memory;
-				m_indexBufferAlloc->getOffset(),		// VkDeviceSize		offset;
-				indexBufferParams.size					// VkDeviceSize		size;
-			},
-			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// VkStructureType	sType;
-				DE_NULL,								// const void*		pNext;
-				m_vertexBufferAlloc->getMemory(),		// VkDeviceMemory	memory;
-				m_vertexBufferAlloc->getOffset(),		// VkDeviceSize		offset;
-				vertexBufferParams.size					// VkDeviceSize		size;
-			},
-		};
-
-		vk.flushMappedMemoryRanges(vkDevice, 2, flushMemoryRanges);
+		flushAlloc(vk, vkDevice, *m_indexBufferAlloc);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool

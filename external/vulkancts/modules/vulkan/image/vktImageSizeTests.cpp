@@ -323,7 +323,7 @@ tcu::TestStatus SizeTestInstance::iterate (void)
 	// Compare the result.
 
 	const Allocation& bufferAlloc = m_resultBuffer->getAllocation();
-	invalidateMappedMemoryRange(vk, device, bufferAlloc.getMemory(), bufferAlloc.getOffset(), m_resultBufferSizeBytes);
+	invalidateAlloc(vk, device, bufferAlloc);
 
 	const tcu::IVec3 resultSize = readIVec3(bufferAlloc.getHostPtr());
 	const tcu::IVec3 expectedSize = getExpectedImageSizeResult(m_texture);

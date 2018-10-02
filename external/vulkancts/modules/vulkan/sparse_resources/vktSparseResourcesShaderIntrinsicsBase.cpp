@@ -518,7 +518,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 	}
 
 	deMemcpy(inputBufferAlloc->getHostPtr(), &referenceData[0], imageSparseSizeInBytes);
-	flushMappedMemoryRange(deviceInterface, getDevice(), inputBufferAlloc->getMemory(), inputBufferAlloc->getOffset(), imageSparseSizeInBytes);
+	flushAlloc(deviceInterface, getDevice(), *inputBufferAlloc);
 
 	{
 		// Prepare input buffer for data transfer operation
@@ -621,7 +621,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 	deviceInterface.queueWaitIdle(sparseQueue.queueHandle);
 
 	// Retrieve data from residency buffer to host memory
-	invalidateMappedMemoryRange(deviceInterface, getDevice(), bufferResidencyAlloc->getMemory(), bufferResidencyAlloc->getOffset(), imageResidencySizeInBytes);
+	invalidateAlloc(deviceInterface, getDevice(), *bufferResidencyAlloc);
 
 	const deUint32* bufferResidencyData = static_cast<const deUint32*>(bufferResidencyAlloc->getHostPtr());
 
@@ -638,7 +638,7 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 	}
 
 	// Retrieve data from texels buffer to host memory
-	invalidateMappedMemoryRange(deviceInterface, getDevice(), bufferTexelsAlloc->getMemory(), bufferTexelsAlloc->getOffset(), imageSparseSizeInBytes);
+	invalidateAlloc(deviceInterface, getDevice(), *bufferTexelsAlloc);
 
 	const deUint8* bufferTexelsData = static_cast<const deUint8*>(bufferTexelsAlloc->getHostPtr());
 

@@ -2719,7 +2719,7 @@ void MultisampleRenderer::initialize (Context&									context,
 				pDst += pVertices[i].size();
 			}
 		}
-		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool

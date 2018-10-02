@@ -445,7 +445,7 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	{
 		const Allocation& alloc = uniformBuffer.getAllocation();
 		memcpy(alloc.getHostPtr(), &stride, sizeOfUniformBuffer);
-		flushMappedMemoryRange(m_vki, m_device, alloc.getMemory(), alloc.getOffset(), sizeOfUniformBuffer);
+		flushAlloc(m_vki, m_device, alloc);
 	}
 
 	// Create descriptorSetLayout
@@ -504,7 +504,7 @@ tcu::TestStatus	ComputeBuiltinVarInstance::iterate (void)
 	submitCommandsAndWait(m_vki, m_device, m_queue, *cmdBuffer);
 
 	const Allocation& resultAlloc = resultBuffer.getAllocation();
-	invalidateMappedMemoryRange(m_vki, m_device, resultAlloc.getMemory(), resultAlloc.getOffset(), resultBufferSize);
+	invalidateAlloc(m_vki, m_device, resultAlloc);
 
 	const deUint8*	 ptr = reinterpret_cast<deUint8*>(resultAlloc.getHostPtr());
 

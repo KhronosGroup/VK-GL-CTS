@@ -900,7 +900,7 @@ void BasicGraphicsTestInstance::buildVertexBuffer(void)
 		m_vertices          = createOverlappingQuads();
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), 1024u);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 }
 
@@ -1286,7 +1286,7 @@ AdvGraphicsTestInstance::AdvGraphicsTestInstance(Context&              context,
 	};
 	// Load data into indirect draw buffer
 	deMemcpy(m_indirectBufferAlloc->getHostPtr(), indirectCmds, m_draw_count * sizeof(VkDrawIndirectCommand));
-	flushMappedMemoryRange(vk, vkDevice, m_indirectBufferAlloc->getMemory(), m_indirectBufferAlloc->getOffset(), 32u);
+	flushAlloc(vk, vkDevice, *m_indirectBufferAlloc);
 
 }
 
@@ -1428,7 +1428,7 @@ BasicComputeTestInstance::BasicComputeTestInstance(Context&              context
 			pVec[ndx][component]= (float)(ndx * (component + 1u));
 		}
 	}
-	flushMappedMemoryRange(vk, vkDevice, m_inputBufAlloc->getMemory(), m_inputBufAlloc->getOffset(), size);
+	flushAlloc(vk, vkDevice, *m_inputBufAlloc);
 
 	m_outputBuf = createBufferAndBindMemory(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, &m_outputBufAlloc);
 
@@ -1637,7 +1637,7 @@ TransferTestInstance::TransferTestInstance(Context&              context,
 	// Init the source buffer memory
 	char* pBuf = reinterpret_cast<char*>(m_srcBufferAlloc->getHostPtr());
 	memset(pBuf, 0xFF, sizeof(char)*(size_t)m_bufSize);
-	flushMappedMemoryRange(vk, vkDevice, m_srcBufferAlloc->getMemory(), m_srcBufferAlloc->getOffset(), m_bufSize);
+	flushAlloc(vk, vkDevice, *m_srcBufferAlloc);
 
 	// Create dst buffer
 	m_dstBuffer = createBufferAndBindMemory(m_bufSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, &m_dstBufferAlloc);

@@ -349,6 +349,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR";
 		default:																				return DE_NULL;
 	}
 }
@@ -6467,6 +6468,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicInt
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderBufferInt64Atomics = " << value.shaderBufferInt64Atomics << '\n';
 	s << "\tshaderSharedInt64Atomics = " << value.shaderSharedInt64Atomics << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceVulkanMemoryModelFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvulkanMemoryModel = " << value.vulkanMemoryModel << '\n';
+	s << "\tvulkanMemoryModelDeviceScope = " << value.vulkanMemoryModelDeviceScope << '\n';
 	s << '}';
 	return s;
 }

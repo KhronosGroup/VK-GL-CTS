@@ -262,7 +262,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		BufferSuballocation().createTestBuffer(uniformSize, VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT, m_context, memAlloc, m_uniformBuffer, MemoryRequirement::HostVisible, m_uniformBufferAlloc);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
-		flushMappedMemoryRange(vk, vkDevice, m_uniformBufferAlloc->getMemory(), m_uniformBufferAlloc->getOffset(), uniformSize);
+		flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
 		const VkBufferViewCreateInfo	viewInfo						=
 		{
@@ -378,7 +378,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), (size_t)vertexDataSize);
-		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexDataSize);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool
@@ -484,7 +484,7 @@ tcu::TestStatus BufferViewTestInstance::checkResult						(deInt8						factor)
 	const tcu::TextureFormat			tcuFormat						= mapVkFormat(m_colorFormat);
 	de::MovePtr<tcu::TextureLevel>		resultLevel						(new tcu::TextureLevel(tcuFormat, m_renderSize.x(), m_renderSize.y()));
 
-	invalidateMappedMemoryRange(vk, vkDevice, m_resultBufferAlloc->getMemory(), m_resultBufferAlloc->getOffset(), m_pixelDataSize);
+	invalidateAlloc(vk, vkDevice, *m_resultBufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_resultBufferAlloc->getHostPtr()));
 
 	tcu::ConstPixelBufferAccess			pixelBuffer						= resultLevel->getAccess();
@@ -523,7 +523,7 @@ tcu::TestStatus BufferViewTestInstance::iterate							(void)
 
 	generateBuffer(uniformData, m_testCase.bufferSize, factor);
 	deMemcpy(m_uniformBufferAlloc->getHostPtr(), uniformData.data(), (size_t)uniformSize);
-	flushMappedMemoryRange(vk, vkDevice, m_uniformBufferAlloc->getMemory(), m_uniformBufferAlloc->getOffset(), uniformSize);
+	flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
 	submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 

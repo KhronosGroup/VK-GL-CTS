@@ -979,7 +979,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 
 	{
 		deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
-		flushMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		flushAlloc(vk, device, *colorBufferAlloc);
 	}
 
 	const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
@@ -1029,7 +1029,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 		vertexBufferAlloc	= bindBuffer(vki, vk, physDevice, device, *vertexBuffer, MemoryRequirement::HostVisible, allocator, caseDef.allocationKind);
 
 		deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
-		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
+		flushAlloc(vk, device, *vertexBufferAlloc);
 	}
 
 	// Prepare color image upfront for rendering to individual slices.  3D slices aren't separate subresources, so they shouldn't be transitioned
@@ -1198,7 +1198,7 @@ tcu::TestStatus testWithSizeReduction (Context& context, const CaseDef& caseDef)
 
 	// Verify results
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 
 		const tcu::TextureFormat			format			= mapVkFormat(caseDef.colorFormat);
 		const int							checkDepth		= maxLayersOrDepth(checkSize);
@@ -1405,7 +1405,7 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 
 	{
 		deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
-		flushMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		flushAlloc(vk, device, *colorBufferAlloc);
 	}
 
 	const Unique<VkShaderModule>	vertexModule		(createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u));
@@ -1447,7 +1447,7 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 		vertexBufferAlloc	= bindBuffer(vki, vk, physDevice, device, *vertexBuffer, MemoryRequirement::HostVisible, allocator, caseDef.allocationKind);
 
 		deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
-		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
+		flushAlloc(vk, device, *vertexBufferAlloc);
 	}
 
 	// Prepare images
@@ -1601,7 +1601,7 @@ tcu::TestStatus testRenderToMipMaps (Context& context, const CaseDef caseDef)
 
 	// Verify results (per mip level)
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 
 		const tcu::TextureFormat			format			= mapVkFormat(caseDef.colorFormat);
 

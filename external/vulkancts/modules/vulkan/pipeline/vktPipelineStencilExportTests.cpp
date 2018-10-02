@@ -503,7 +503,7 @@ tcu::TestStatus testStencilExportReplace (Context& context)
 
 	// Zero color buffer.
 	deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
-	flushMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), colorBufferSize);
+	flushAlloc(vk, device, *colorBufferAlloc);
 
 	// Draw two subpasses: first write the stencil data, then use that data when writing color.
 	//
@@ -618,7 +618,7 @@ tcu::TestStatus testStencilExportReplace (Context& context)
 
 	// Compare the resulting color buffer.
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), 0ull, colorBufferSize);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 		const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, colorBufferAlloc->getHostPtr());
 
 		tcu::TextureLevel					referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, 1 << 4, clearColor, Vec4(0, 0, 1, 1));

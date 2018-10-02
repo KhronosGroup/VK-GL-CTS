@@ -1183,7 +1183,7 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 			VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset()));
 
 			writeVertexInputData((deUint8*)vertexBufferAlloc->getHostPtr(), bindingDescriptions[bindingNdx], bindingOffsets[bindingNdx], attributeDescriptions);
-			flushMappedMemoryRange(vk, vkDevice, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+			flushAlloc(vk, vkDevice, *vertexBufferAlloc);
 
 			m_vertexBuffers.push_back(vertexBuffer.disown());
 			m_vertexBufferAllocs.push_back(vertexBufferAlloc.release());

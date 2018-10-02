@@ -3690,18 +3690,9 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 
 	// Upload vertex data
 	{
-		const VkMappedMemoryRange	range			=
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
-			DE_NULL,								//	const void*		pNext;
-			vertexBufferMemory->getMemory(),		//	VkDeviceMemory	mem;
-			0,										//	VkDeviceSize	offset;
-			(VkDeviceSize)vertexDataSize,			//	VkDeviceSize	size;
-		};
-		void*						vertexBufPtr	= vertexBufferMemory->getHostPtr();
-
+		void* vertexBufPtr = vertexBufferMemory->getHostPtr();
 		deMemcpy(vertexBufPtr, &vertexData[0], vertexDataSize);
-		VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+		flushAlloc(vk, device, *vertexBufferMemory);
 	}
 
 	if (needInterface)
@@ -3750,19 +3741,8 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 	const tcu::ConstPixelBufferAccess pixelBuffer(tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8),
 												  renderSize.x(), renderSize.y(), 1, imagePtr);
 	// Log image
-	{
-		const VkMappedMemoryRange	range		=
-		{
-			VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	//	VkStructureType	sType;
-			DE_NULL,								//	const void*		pNext;
-			readImageBufferMemory->getMemory(),		//	VkDeviceMemory	mem;
-			0,										//	VkDeviceSize	offset;
-			imageSizeBytes,							//	VkDeviceSize	size;
-		};
-
-		VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1u, &range));
-		context.getTestContext().getLog() << TestLog::Image("Result", "Result", pixelBuffer);
-	}
+	invalidateAlloc(vk, device, *readImageBufferMemory);
+	context.getTestContext().getLog() << TestLog::Image("Result", "Result", pixelBuffer);
 
 	if (needInterface)
 	{

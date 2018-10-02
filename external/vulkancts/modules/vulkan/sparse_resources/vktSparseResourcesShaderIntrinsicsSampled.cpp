@@ -555,7 +555,7 @@ void SparseShaderIntrinsicsInstanceSampledBase::recordCommands (const VkCommandB
 	m_vertexBufferAlloc	= bindBuffer(deviceInterface, getDevice(), getAllocator(), *m_vertexBuffer, MemoryRequirement::HostVisible);
 
 	deMemcpy(m_vertexBufferAlloc->getHostPtr(), &vertexData[0], static_cast<std::size_t>(vertexDataSizeInBytes));
-	flushMappedMemoryRange(deviceInterface, getDevice(), m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexDataSizeInBytes);
+	flushAlloc(deviceInterface, getDevice(), *m_vertexBufferAlloc);
 
 	// Create render pass
 	const VkAttachmentDescription texelsAttachmentDescription =

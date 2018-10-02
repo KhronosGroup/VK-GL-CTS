@@ -71,6 +71,9 @@ private:
 	void* const				m_hostPtr;
 };
 
+void	flushAlloc		(const DeviceInterface& vkd, VkDevice device, const Allocation& alloc);
+void	invalidateAlloc	(const DeviceInterface& vkd, VkDevice device, const Allocation& alloc);
+
 //! Memory allocation requirements
 class MemoryRequirement
 {
@@ -82,6 +85,7 @@ public:
 	static const MemoryRequirement	Protected;
 	static const MemoryRequirement	Local;
 	static const MemoryRequirement	Cached;
+	static const MemoryRequirement	NonLocal;
 
 	inline MemoryRequirement		operator|			(MemoryRequirement requirement) const
 	{
@@ -110,6 +114,7 @@ private:
 		FLAG_PROTECTED			= 1u << 3u,
 		FLAG_LOCAL				= 1u << 4u,
 		FLAG_CACHED				= 1u << 5u,
+		FLAG_NON_LOCAL			= 1u << 6u,
 	};
 };
 

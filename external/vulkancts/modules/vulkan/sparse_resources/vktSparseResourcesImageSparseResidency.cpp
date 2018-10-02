@@ -583,7 +583,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 			0, DE_NULL, m_useDeviceGroups, firstDeviceID);
 
 		// Retrieve data from buffer to host memory
-		invalidateMappedMemoryRange(deviceInterface, getDevice(), outputBufferAlloc->getMemory(), outputBufferAlloc->getOffset(), imageSizeInBytes);
+		invalidateAlloc(deviceInterface, getDevice(), *outputBufferAlloc);
 
 		const deUint8* outputData = static_cast<const deUint8*>(outputBufferAlloc->getHostPtr());
 		const tcu::ConstPixelBufferAccess pixelBuffer = tcu::ConstPixelBufferAccess(m_format, gridSize.x(), gridSize.y(), gridSize.z(), outputData);

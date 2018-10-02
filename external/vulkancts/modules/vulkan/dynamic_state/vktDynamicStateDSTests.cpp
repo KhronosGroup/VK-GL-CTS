@@ -279,10 +279,7 @@ protected:
 		deUint8* ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
 		deMemcpy(ptr, &m_data[0], (size_t)dataSize);
 
-		vk::flushMappedMemoryRange(m_vk, device,
-			m_vertexBuffer->getBoundMemory().getMemory(),
-			m_vertexBuffer->getBoundMemory().getOffset(),
-			dataSize);
+		vk::flushAlloc(m_vk, device, m_vertexBuffer->getBoundMemory());
 
 		const CmdPoolCreateInfo cmdPoolCreateInfo(m_context.getUniversalQueueFamilyIndex());
 		m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
@@ -668,10 +665,7 @@ tcu::TestStatus DepthBoundsTestInstance::iterate (void)
 	deUint8* ptr = reinterpret_cast<unsigned char *>(stageBuffer->getBoundMemory().getHostPtr());
 	deMemcpy(ptr, depthData.getLevel(0).getDataPtr(), (size_t)dataSize);
 
-	vk::flushMappedMemoryRange(m_vk, device,
-		stageBuffer->getBoundMemory().getMemory(),
-		stageBuffer->getBoundMemory().getOffset(),
-		dataSize);
+	vk::flushAlloc(m_vk, device, stageBuffer->getBoundMemory());
 
 	beginCommandBuffer(m_vk, *m_cmdBuffer, 0u);
 

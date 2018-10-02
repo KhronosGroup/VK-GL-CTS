@@ -98,10 +98,7 @@ void DynamicStateBaseClass::initialize (void)
 	deUint8* ptr = reinterpret_cast<unsigned char *>(m_vertexBuffer->getBoundMemory().getHostPtr());
 	deMemcpy(ptr, &m_data[0], (size_t)dataSize);
 
-	vk::flushMappedMemoryRange(m_vk, device,
-		m_vertexBuffer->getBoundMemory().getMemory(),
-		m_vertexBuffer->getBoundMemory().getOffset(),
-		dataSize);
+	vk::flushAlloc(m_vk, device, m_vertexBuffer->getBoundMemory());
 
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
 	m_cmdPool = vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);

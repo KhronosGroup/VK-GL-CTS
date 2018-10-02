@@ -142,6 +142,7 @@ struct ImageParms
 	VkImageType		imageType;
 	VkFormat		format;
 	VkExtent3D		extent;
+	VkImageTiling	tiling;
 	VkImageLayout	operationLayout;
 };
 
@@ -451,7 +452,7 @@ void CopiesAndBlittingTestInstance::uploadBuffer (tcu::ConstPixelBufferAccess bu
 
 	// Write buffer data
 	deMemcpy(bufferAlloc.getHostPtr(), bufferAccess.getDataPtr(), bufferSize);
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc.getMemory(), bufferAlloc.getOffset(), bufferSize);
+	flushAlloc(vk, vkDevice, bufferAlloc);
 }
 
 void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBufferAccess& imageAccess, const VkImage& image, const ImageParms& parms, const deUint32 mipLevels)
@@ -575,7 +576,7 @@ void CopiesAndBlittingTestInstance::uploadImageAspect (const tcu::ConstPixelBuff
 
 	// Write buffer data
 	deMemcpy(bufferAlloc->getHostPtr(), imageAccess.getDataPtr(), bufferSize);
-	flushMappedMemoryRange(vk, vkDevice, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
+	flushAlloc(vk, vkDevice, *bufferAlloc);
 
 	// Copy buffer to image
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -691,7 +692,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 		VK_CHECK(vk.bindBufferMemory(device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 
 		deMemset(bufferAlloc->getHostPtr(), 0, static_cast<size_t>(pixelDataSize));
-		flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+		flushAlloc(vk, device, *bufferAlloc);
 	}
 
 	// Barriers for copying image to buffer
@@ -775,7 +776,7 @@ void CopiesAndBlittingTestInstance::readImageAspect (vk::VkImage					image,
 	submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
 
 	// Read buffer data
-	invalidateMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+	invalidateAlloc(vk, device, *bufferAlloc);
 	tcu::copy(dst, tcu::ConstPixelBufferAccess(dst.getFormat(), dst.getSize(), bufferAlloc->getHostPtr()));
 }
 
@@ -1318,7 +1319,7 @@ tcu::TestStatus CopyBufferToBuffer::iterate (void)
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(mapVkFormat(VK_FORMAT_R32_UINT), dstLevelWidth, 1));
-	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset(), m_params.dst.buffer.size);
+	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 
 	return checkTestResult(resultLevel->getAccess());
@@ -1499,7 +1500,7 @@ tcu::TestStatus CopyImageToBuffer::iterate (void)
 
 	// Read buffer data
 	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(m_textureFormat, (int)m_params.dst.buffer.size, 1));
-	invalidateMappedMemoryRange(vk, vkDevice, m_destinationBufferAlloc->getMemory(), m_destinationBufferAlloc->getOffset(), m_bufferSize);
+	invalidateAlloc(vk, vkDevice, *m_destinationBufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), m_destinationBufferAlloc->getHostPtr()));
 
 	return checkTestResult(resultLevel->getAccess());
@@ -1792,7 +1793,7 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 			1u,										// deUint32				mipLevels;
 			getArraySize(m_params.src.image),		// deUint32				arraySize;
 			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
-			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
+			m_params.src.image.tiling,				// VkImageTiling		tiling;
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
@@ -1819,7 +1820,7 @@ BlittingImages::BlittingImages (Context& context, TestParams params)
 			1u,										// deUint32				mipLevels;
 			getArraySize(m_params.dst.image),		// deUint32				arraySize;
 			VK_SAMPLE_COUNT_1_BIT,					// deUint32				samples;
-			VK_IMAGE_TILING_OPTIMAL,				// VkImageTiling		tiling;
+			m_params.dst.image.tiling,				// VkImageTiling		tiling;
 			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 				VK_IMAGE_USAGE_TRANSFER_DST_BIT,	// VkImageUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
@@ -2577,14 +2578,14 @@ public:
 		if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
 																					m_params.src.image.format,
 																					VK_IMAGE_TYPE_2D,
-																					VK_IMAGE_TILING_OPTIMAL,
+																					m_params.src.image.tiling,
 																					VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 																					0,
 																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED) ||
 			(context.getInstanceInterface().getPhysicalDeviceImageFormatProperties (context.getPhysicalDevice(),
 																					m_params.dst.image.format,
 																					VK_IMAGE_TYPE_2D,
-																					VK_IMAGE_TILING_OPTIMAL,
+																					m_params.dst.image.tiling,
 																					VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 																					0,
 																					&properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
@@ -2594,19 +2595,21 @@ public:
 
 		VkFormatProperties srcFormatProperties;
 		context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.src.image.format, &srcFormatProperties);
-		if (!(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
+		VkFormatFeatureFlags srcFormatFeatures = m_params.src.image.tiling == VK_IMAGE_TILING_LINEAR ? srcFormatProperties.linearTilingFeatures : srcFormatProperties.optimalTilingFeatures;
+		if (!(srcFormatFeatures & VK_FORMAT_FEATURE_BLIT_SRC_BIT))
 		{
 			TCU_THROW(NotSupportedError, "Format feature blit source not supported");
 		}
 
 		VkFormatProperties dstFormatProperties;
 		context.getInstanceInterface().getPhysicalDeviceFormatProperties(context.getPhysicalDevice(), m_params.dst.image.format, &dstFormatProperties);
-		if (!(dstFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
+		VkFormatFeatureFlags dstFormatFeatures = m_params.dst.image.tiling == VK_IMAGE_TILING_LINEAR ? dstFormatProperties.linearTilingFeatures : dstFormatProperties.optimalTilingFeatures;
+		if (!(dstFormatFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT))
 		{
 			TCU_THROW(NotSupportedError, "Format feature blit destination not supported");
 		}
 
-		if (m_params.filter == VK_FILTER_LINEAR && !(srcFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+		if (m_params.filter == VK_FILTER_LINEAR && !(srcFormatFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
 			TCU_THROW(NotSupportedError, "Source format feature sampled image filter linear not supported");
 	}
 
@@ -3550,7 +3553,7 @@ ResolveImageToImage::ResolveImageToImage (Context& context, TestParams params, c
 
 		// Load vertices into vertex buffer.
 		deMemcpy(vertexBufferAlloc->getHostPtr(), vertices.data(), (size_t)vertexDataSize);
-		flushMappedMemoryRange(vk, vkDevice, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexDataSize);
+		flushAlloc(vk, vkDevice, *vertexBufferAlloc);
 	}
 
 	{
@@ -4033,10 +4036,12 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UINT;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UINT;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -4064,10 +4069,12 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UINT;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_R32_UINT;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -4095,10 +4102,12 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UINT;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UINT;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -4126,10 +4135,12 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_D32_SFLOAT;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_D32_SFLOAT;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -4164,10 +4175,12 @@ void addImageToImageSimpleTests (tcu::TestCaseGroup* group, AllocationKind alloc
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_S8_UINT;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_S8_UINT;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -4568,8 +4581,10 @@ void addImageToImageAllFormatsColorTests (tcu::TestCaseGroup* group, AllocationK
 {
 	TestParams	params;
 	params.src.image.imageType	= VK_IMAGE_TYPE_2D;
+	params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.extent		= defaultExtent;
 	params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
+	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.extent		= defaultExtent;
 	params.allocationKind		= allocationKind;
 
@@ -4668,6 +4683,8 @@ void addImageToImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, Allo
 		params.dst.image.extent				= defaultExtent;
 		params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
 		params.dst.image.format				= params.src.image.format;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
 		const VkImageSubresourceLayers		defaultDepthSourceLayer		= { VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u };
@@ -4733,11 +4750,13 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params3DTo2D.src.image.extent			= defaultHalfExtent;
 		params3DTo2D.src.image.extent.depth		= slicesLayers;
+		params3DTo2D.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params3DTo2D.dst.image.imageType		= VK_IMAGE_TYPE_2D;
 		params3DTo2D.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params3DTo2D.dst.image.extent			= defaultHalfExtent;
 		params3DTo2D.dst.image.extent.depth		= slicesLayers;
+		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params3DTo2D.allocationKind				= allocationKind;
 
@@ -4783,11 +4802,13 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params2DTo3D.src.image.extent			= defaultHalfExtent;
 		params2DTo3D.src.image.extent.depth		= slicesLayers;
+		params2DTo3D.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params2DTo3D.dst.image.imageType		= VK_IMAGE_TYPE_3D;
 		params2DTo3D.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params2DTo3D.dst.image.extent			= defaultHalfExtent;
 		params2DTo3D.dst.image.extent.depth		= slicesLayers;
+		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params2DTo3D.allocationKind				= allocationKind;
 
@@ -4834,11 +4855,13 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params3DTo2D.src.image.extent			= defaultHalfExtent;
 		params3DTo2D.src.image.extent.depth		= slicesLayers;
+		params3DTo2D.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params3DTo2D.dst.image.imageType		= VK_IMAGE_TYPE_2D;
 		params3DTo2D.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params3DTo2D.dst.image.extent			= defaultHalfExtent;
 		params3DTo2D.dst.image.extent.depth		= slicesLayers;
+		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params3DTo2D.allocationKind				= allocationKind;
 
@@ -4883,11 +4906,13 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params2DTo3D.src.image.extent			= defaultHalfExtent;
 		params2DTo3D.src.image.extent.depth		= slicesLayers;
+		params2DTo3D.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params2DTo3D.dst.image.imageType		= VK_IMAGE_TYPE_3D;
 		params2DTo3D.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params2DTo3D.dst.image.extent			= defaultHalfExtent;
 		params2DTo3D.dst.image.extent.depth		= slicesLayers;
+		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params2DTo3D.allocationKind				= allocationKind;
 
@@ -4933,11 +4958,13 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params3DTo2D.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params3DTo2D.src.image.extent			= defaultHalfExtent;
 		params3DTo2D.src.image.extent.depth		= slicesLayers;
+		params3DTo2D.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params3DTo2D.dst.image.imageType		= VK_IMAGE_TYPE_2D;
 		params3DTo2D.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params3DTo2D.dst.image.extent			= defaultHalfExtent;
 		params3DTo2D.dst.image.extent.depth		= slicesLayers;
+		params3DTo2D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params3DTo2D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params3DTo2D.allocationKind				= allocationKind;
 
@@ -4990,11 +5017,13 @@ void addImageToImage3dImagesTests (tcu::TestCaseGroup* group, AllocationKind all
 		params2DTo3D.src.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params2DTo3D.src.image.extent			= defaultHalfExtent;
 		params2DTo3D.src.image.extent.depth		= slicesLayers;
+		params2DTo3D.src.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params2DTo3D.dst.image.imageType		= VK_IMAGE_TYPE_3D;
 		params2DTo3D.dst.image.format			= VK_FORMAT_R8G8B8A8_UINT;
 		params2DTo3D.dst.image.extent			= defaultHalfExtent;
 		params2DTo3D.dst.image.extent.depth		= slicesLayers;
+		params2DTo3D.dst.image.tiling			= VK_IMAGE_TILING_OPTIMAL;
 		params2DTo3D.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params2DTo3D.allocationKind				= allocationKind;
 
@@ -5058,6 +5087,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
 		params.allocationKind				= allocationKind;
@@ -5084,6 +5114,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
 		params.allocationKind				= allocationKind;
@@ -5110,6 +5141,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= defaultSize * defaultSize;
 		params.allocationKind				= allocationKind;
@@ -5149,6 +5181,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize;
 		params.allocationKind				= allocationKind;
@@ -5175,6 +5208,7 @@ void addImageToBufferTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		params.dst.buffer.size				= (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultFourthSize;
 		params.allocationKind				= allocationKind;
@@ -5207,6 +5241,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UINT;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -5233,6 +5268,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -5262,6 +5298,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -5288,6 +5325,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -5314,6 +5352,7 @@ void addBufferToImageTests (tcu::TestCaseGroup* group, AllocationKind allocation
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 		params.dst.image.extent				= defaultExtent;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
@@ -5413,9 +5452,11 @@ void addBlittingImageSimpleWholeTests (tcu::TestCaseGroup* group, AllocationKind
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -5482,9 +5523,11 @@ void addBlittingImageSimpleMirrorXYTests (tcu::TestCaseGroup* group, AllocationK
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -5551,9 +5594,11 @@ void addBlittingImageSimpleMirrorXTests (tcu::TestCaseGroup* group, AllocationKi
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -5620,9 +5665,11 @@ void addBlittingImageSimpleMirrorYTests (tcu::TestCaseGroup* group, AllocationKi
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -5689,9 +5736,11 @@ void addBlittingImageSimpleMirrorSubregionsTests (tcu::TestCaseGroup* group, All
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -5824,9 +5873,11 @@ void addBlittingImageSimpleScalingWhole1Tests (tcu::TestCaseGroup* group, Alloca
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultHalfExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -5893,9 +5944,11 @@ void addBlittingImageSimpleScalingWhole2Tests (tcu::TestCaseGroup* group, Alloca
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultHalfExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -5962,9 +6015,11 @@ void addBlittingImageSimpleScalingAndOffsetTests (tcu::TestCaseGroup* group, All
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -6031,9 +6086,11 @@ void addBlittingImageSimpleWithoutScalingPartialTests (tcu::TestCaseGroup* group
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -6132,15 +6189,86 @@ bool isAllowedBlittingAllFormatsColorSrcFormatTests(const BlitColorTestParams& t
 	return result;
 }
 
+const VkFormat	linearOtherImageFormatsToTest[]	=
+{
+	// From compatibleFormats8Bit
+	VK_FORMAT_R4G4_UNORM_PACK8,
+	VK_FORMAT_R8_SRGB,
+
+	// From compatibleFormats16Bit
+	VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+	VK_FORMAT_R16_SFLOAT,
+
+	// From compatibleFormats24Bit
+	VK_FORMAT_R8G8B8_UNORM,
+	VK_FORMAT_B8G8R8_SRGB,
+
+	// From compatibleFormats32Bit
+	VK_FORMAT_R8G8B8A8_UNORM,
+	VK_FORMAT_R32_SFLOAT,
+
+	// From compatibleFormats48Bit
+	VK_FORMAT_R16G16B16_UNORM,
+	VK_FORMAT_R16G16B16_SFLOAT,
+
+	// From compatibleFormats64Bit
+	VK_FORMAT_R16G16B16A16_UNORM,
+	VK_FORMAT_R64_SFLOAT,
+
+	// From compatibleFormats96Bit
+	VK_FORMAT_R32G32B32_UINT,
+	VK_FORMAT_R32G32B32_SFLOAT,
+
+	// From compatibleFormats128Bit
+	VK_FORMAT_R32G32B32A32_UINT,
+	VK_FORMAT_R64G64_SFLOAT,
+
+	// From compatibleFormats192Bit
+	VK_FORMAT_R64G64B64_UINT,
+	VK_FORMAT_R64G64B64_SFLOAT,
+
+	// From compatibleFormats256Bit
+	VK_FORMAT_R64G64B64A64_UINT,
+	VK_FORMAT_R64G64B64A64_SFLOAT,
+};
+
+std::string getBlitImageTilingLayoutCaseName (VkImageTiling tiling, VkImageLayout layout)
+{
+	switch (tiling)
+	{
+		case VK_IMAGE_TILING_OPTIMAL:
+			return getImageLayoutCaseName(layout);
+		case VK_IMAGE_TILING_LINEAR:
+			return "linear";
+		default:
+			DE_ASSERT(false);
+			return "";
+	}
+}
 
 void addBlittingImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup* group, BlitColorTestParams testParams)
 {
 	tcu::TestContext& testCtx				= group->getTestContext();
 
+	FormatSet linearOtherImageFormatsToTestSet;
+	const int numOfOtherImageFormatsToTestFilter = DE_LENGTH_OF_ARRAY(linearOtherImageFormatsToTest);
+	for (int otherImageFormatsIndex = 0; otherImageFormatsIndex < numOfOtherImageFormatsToTestFilter; ++otherImageFormatsIndex)
+		linearOtherImageFormatsToTestSet.insert(linearOtherImageFormatsToTest[otherImageFormatsIndex]);
+
+	const VkImageTiling blitSrcTilings[]	=
+	{
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_TILING_LINEAR,
+	};
 	const VkImageLayout blitSrcLayouts[]	=
 	{
 		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		VK_IMAGE_LAYOUT_GENERAL
+	};
+	const VkImageTiling blitDstTilings[]	=
+	{
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_TILING_LINEAR,
 	};
 	const VkImageLayout blitDstLayouts[]	=
 	{
@@ -6148,24 +6276,47 @@ void addBlittingImageAllFormatsColorSrcFormatDstFormatTests (tcu::TestCaseGroup*
 		VK_IMAGE_LAYOUT_GENERAL
 	};
 
-	for (int srcLayoutNdx = 0u; srcLayoutNdx < DE_LENGTH_OF_ARRAY(blitSrcLayouts); ++srcLayoutNdx)
+	for (int srcTilingNdx = 0u; srcTilingNdx < DE_LENGTH_OF_ARRAY(blitSrcTilings); ++srcTilingNdx)
 	{
-		testParams.params.src.image.operationLayout = blitSrcLayouts[srcLayoutNdx];
-		for (int dstLayoutNdx = 0u; dstLayoutNdx < DE_LENGTH_OF_ARRAY(blitDstLayouts); ++dstLayoutNdx)
+		testParams.params.src.image.tiling = blitSrcTilings[srcTilingNdx];
+
+		for (int srcLayoutNdx = 0u; srcLayoutNdx < DE_LENGTH_OF_ARRAY(blitSrcLayouts); ++srcLayoutNdx)
 		{
-			testParams.params.dst.image.operationLayout = blitDstLayouts[dstLayoutNdx];
+			testParams.params.src.image.operationLayout = blitSrcLayouts[srcLayoutNdx];
 
-			testParams.params.filter			= VK_FILTER_NEAREST;
-			const std::string testName			= getImageLayoutCaseName(testParams.params.src.image.operationLayout) + "_" +
-												  getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
-			const std::string description		= "Blit from layout " + getImageLayoutCaseName(testParams.params.src.image.operationLayout) +
-												  " to " + getImageLayoutCaseName(testParams.params.dst.image.operationLayout);
-			group->addChild(new BlitImageTestCase(testCtx, testName + "_nearest", description, testParams.params));
+			// Don't bother testing VK_IMAGE_TILING_LINEAR + VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL as it's likely to be the same as VK_IMAGE_LAYOUT_GENERAL
+			if (testParams.params.src.image.tiling == VK_IMAGE_TILING_LINEAR && testParams.params.src.image.operationLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+				continue;
 
-			if (!testParams.onlyNearest)
+			for (int dstTilingNdx = 0u; dstTilingNdx < DE_LENGTH_OF_ARRAY(blitDstTilings); ++dstTilingNdx)
 			{
-				testParams.params.filter		= VK_FILTER_LINEAR;
-				group->addChild(new BlitImageTestCase(testCtx, testName + "_linear", description, testParams.params));
+				testParams.params.dst.image.tiling = blitDstTilings[dstTilingNdx];
+
+				for (int dstLayoutNdx = 0u; dstLayoutNdx < DE_LENGTH_OF_ARRAY(blitDstLayouts); ++dstLayoutNdx)
+				{
+					testParams.params.dst.image.operationLayout = blitDstLayouts[dstLayoutNdx];
+
+					// Don't bother testing VK_IMAGE_TILING_LINEAR + VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL as it's likely to be the same as VK_IMAGE_LAYOUT_GENERAL
+					if (testParams.params.dst.image.tiling == VK_IMAGE_TILING_LINEAR && testParams.params.dst.image.operationLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+						continue;
+
+					if ((testParams.params.dst.image.tiling == VK_IMAGE_TILING_LINEAR && !de::contains(linearOtherImageFormatsToTestSet, testParams.params.src.image.format)) ||
+					    (testParams.params.src.image.tiling == VK_IMAGE_TILING_LINEAR && !de::contains(linearOtherImageFormatsToTestSet, testParams.params.dst.image.format)))
+						continue;
+
+					testParams.params.filter			= VK_FILTER_NEAREST;
+					const std::string testName			= getBlitImageTilingLayoutCaseName(testParams.params.src.image.tiling, testParams.params.src.image.operationLayout) + "_" +
+														  getBlitImageTilingLayoutCaseName(testParams.params.dst.image.tiling, testParams.params.dst.image.operationLayout);
+					const std::string description		= "Blit from layout " + getBlitImageTilingLayoutCaseName(testParams.params.src.image.tiling, testParams.params.src.image.operationLayout) +
+														  " to " + getBlitImageTilingLayoutCaseName(testParams.params.dst.image.tiling, testParams.params.dst.image.operationLayout);
+					group->addChild(new BlitImageTestCase(testCtx, testName + "_nearest", description, testParams.params));
+
+					if (!testParams.onlyNearest)
+					{
+						testParams.params.filter		= VK_FILTER_LINEAR;
+						group->addChild(new BlitImageTestCase(testCtx, testName + "_linear", description, testParams.params));
+					}
+				}
 			}
 		}
 	}
@@ -6422,8 +6573,10 @@ void addBlittingImageAllFormatsColorTests (tcu::TestCaseGroup* group, Allocation
 	TestParams	params;
 	params.src.image.imageType	= VK_IMAGE_TYPE_2D;
 	params.src.image.extent		= defaultExtent;
+	params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent		= defaultExtent;
+	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.allocationKind		= allocationKind;
 
 	CopyRegion	region;
@@ -6548,10 +6701,12 @@ void addBlittingImageAllFormatsDepthStencilTests (tcu::TestCaseGroup* group, All
 		TestParams	params;
 		params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.src.image.extent				= defaultExtent;
+		params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.src.image.format				= depthAndStencilFormats[compatibleFormatsIndex];
 		params.dst.image.extent				= defaultExtent;
 		params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 		params.dst.image.format				= params.src.image.format;
+		params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 		params.allocationKind				= allocationKind;
 
 		bool hasDepth	= tcu::hasDepthComponent(mapVkFormat(params.src.image.format).order);
@@ -6708,8 +6863,10 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests (tcu::TestCaseGroup* group, 
 	TestParams	params;
 	params.src.image.imageType	= VK_IMAGE_TYPE_2D;
 	params.src.image.extent		= defaultExtent;
+	params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent		= defaultExtent;
+	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.allocationKind		= allocationKind;
 	params.mipLevels			= deLog2Floor32(deMinu32(defaultExtent.width, defaultExtent.height)) + 1u;
 	params.singleCommand		= DE_TRUE;
@@ -6814,8 +6971,10 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests (tcu::TestCaseGroup* gro
 	TestParams	params;
 	params.src.image.imageType	= VK_IMAGE_TYPE_2D;
 	params.src.image.extent		= defaultExtent;
+	params.src.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.imageType	= VK_IMAGE_TYPE_2D;
 	params.dst.image.extent		= defaultExtent;
+	params.dst.image.tiling		= VK_IMAGE_TILING_OPTIMAL;
 	params.allocationKind		= allocationKind;
 	params.mipLevels			= deLog2Floor32(deMinu32(defaultExtent.width, defaultExtent.height)) + 1u;
 	params.singleCommand		= DE_FALSE;
@@ -6981,10 +7140,12 @@ void addResolveImageWholeTests (tcu::TestCaseGroup* group, AllocationKind alloca
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= resolveExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.dst.image.extent				= resolveExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -7024,10 +7185,12 @@ void addResolveImagePartialTests (tcu::TestCaseGroup* group, AllocationKind allo
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= resolveExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.dst.image.extent				= resolveExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -7067,10 +7230,12 @@ void addResolveImageWithRegionsTests (tcu::TestCaseGroup* group, AllocationKind 
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= resolveExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.dst.image.extent				= resolveExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -7114,10 +7279,12 @@ void addResolveImageWholeCopyBeforeResolvingTests (tcu::TestCaseGroup* group, Al
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.dst.image.extent				= defaultExtent;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -7158,11 +7325,13 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.src.image.extent				= defaultExtent;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
 	params.dst.image.extent				= defaultExtent;
 	params.dst.image.extent.depth		= 5u;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 
@@ -7204,9 +7373,11 @@ void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKin
 	TestParams			params;
 	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+	params.src.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
 	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+	params.dst.image.tiling				= VK_IMAGE_TILING_OPTIMAL;
 	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 	params.allocationKind				= allocationKind;
 

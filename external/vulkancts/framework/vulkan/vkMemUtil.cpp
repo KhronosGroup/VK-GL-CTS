@@ -99,6 +99,16 @@ Allocation::~Allocation (void)
 {
 }
 
+void flushAlloc (const DeviceInterface& vkd, VkDevice device, const Allocation& alloc)
+{
+	flushMappedMemoryRange(vkd, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+}
+
+void invalidateAlloc (const DeviceInterface& vkd, VkDevice device, const Allocation& alloc)
+{
+	invalidateMappedMemoryRange(vkd, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+}
+
 // MemoryRequirement
 
 const MemoryRequirement MemoryRequirement::Any				= MemoryRequirement(0x0u);
@@ -108,7 +118,7 @@ const MemoryRequirement MemoryRequirement::LazilyAllocated	= MemoryRequirement(M
 const MemoryRequirement MemoryRequirement::Protected		= MemoryRequirement(MemoryRequirement::FLAG_PROTECTED);
 const MemoryRequirement MemoryRequirement::Local			= MemoryRequirement(MemoryRequirement::FLAG_LOCAL);
 const MemoryRequirement MemoryRequirement::Cached			= MemoryRequirement(MemoryRequirement::FLAG_CACHED);
-
+const MemoryRequirement MemoryRequirement::NonLocal			= MemoryRequirement(MemoryRequirement::FLAG_NON_LOCAL);
 
 bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 {
@@ -142,6 +152,10 @@ bool MemoryRequirement::matchesHeap (VkMemoryPropertyFlags heapFlags) const
 
 	// cached
 	if ((m_flags & FLAG_CACHED) && !(heapFlags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT))
+		return false;
+
+	// non-local
+	if ((m_flags & FLAG_NON_LOCAL) && (heapFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
 		return false;
 
 	return true;

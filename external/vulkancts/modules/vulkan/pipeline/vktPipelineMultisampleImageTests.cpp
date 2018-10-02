@@ -521,7 +521,7 @@ void checkImageFormatRequirements (const InstanceInterface&		vki,
 void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize bufferSize)
 {
 	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(bufferSize));
-	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bufferSize);
+	flushAlloc(vk, device, alloc);
 }
 
 //! The default foreground color.
@@ -788,7 +788,7 @@ void renderMultisampledImage (Context& context, const CaseDef& caseDef, const Vk
 
 		{
 			deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
-			flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
+			flushAlloc(vk, device, *vertexBufferAlloc);
 		}
 
 		const Unique<VkShaderModule>	vertexModule	(createShaderModule			(vk, device, context.getBinaryCollection().get("vert"), 0u));
@@ -964,7 +964,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 		{
 			deMemcpy(vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(vertexBufferSize));
-			flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSize);
+			flushAlloc(vk, device, *vertexBufferAlloc);
 		}
 
 		// Descriptors
@@ -1092,7 +1092,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		// Verify result
 
 		{
-			invalidateMappedMemoryRange(vk, device, checksumBufferAlloc->getMemory(), 0ull, checksumBufferSize);
+			invalidateAlloc(vk, device, *checksumBufferAlloc);
 
 			const tcu::ConstPixelBufferAccess access(mapVkFormat(checksumFormat), caseDef.renderSize.x(), caseDef.renderSize.y(), 1, checksumBufferAlloc->getHostPtr());
 			const int numExpectedChecksum = getNumSamples(caseDef.numSamples) * caseDef.numLayers;
@@ -1440,8 +1440,8 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 	// Verify
 	{
-		invalidateMappedMemoryRange(vk, device, resolveImageOneBufferAlloc->getMemory(), resolveImageOneBufferAlloc->getOffset(), resolveBufferSize);
-		invalidateMappedMemoryRange(vk, device, resolveImageTwoBufferAlloc->getMemory(), resolveImageTwoBufferAlloc->getOffset(), resolveBufferSize);
+		invalidateAlloc(vk, device, *resolveImageOneBufferAlloc);
+		invalidateAlloc(vk, device, *resolveImageTwoBufferAlloc);
 
 		const tcu::PixelBufferAccess		layeredImageOne	(mapVkFormat(caseDef.colorFormat), caseDef.renderSize.x(), caseDef.renderSize.y(), caseDef.numLayers, resolveImageOneBufferAlloc->getHostPtr());
 		const tcu::ConstPixelBufferAccess	layeredImageTwo	(mapVkFormat(caseDef.colorFormat), caseDef.renderSize.x(), caseDef.renderSize.y(), caseDef.numLayers, resolveImageTwoBufferAlloc->getHostPtr());

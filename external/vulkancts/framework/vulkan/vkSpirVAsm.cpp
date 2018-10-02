@@ -200,7 +200,7 @@ void disassembleSpirV (size_t, const deUint32*, std::ostream*, SpirvVersion)
 	TCU_THROW(NotSupportedError, "SPIR-V disassembling not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }
 
-bool validateSpirV (size_t, const deUint32*, std::ostream*, SpirvVersion)
+bool validateSpirV (size_t, const deUint32*, std::ostream*, deUint32, SpirvVersion, bool)
 {
 	TCU_THROW(NotSupportedError, "SPIR-V validation not supported (DEQP_HAVE_SPIRV_TOOLS not defined)");
 }

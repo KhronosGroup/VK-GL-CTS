@@ -374,7 +374,7 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 		{
 			const Allocation& alloc = m_colorAttachmentBuffer->getAllocation();
 			deMemset(alloc.getHostPtr(), 0, (size_t)bitmapSize);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bitmapSize);
+			flushAlloc(vk, device, alloc);
 		}
 	}
 
@@ -386,7 +386,7 @@ VulkanDrawContext::VulkanDrawContext ( Context&				context,
 
 		const Allocation& alloc = m_vertexBuffer->getAllocation();
 		deMemcpy(alloc.getHostPtr(), &m_drawCallData.vertices[0], (size_t)bufferSize);
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), bufferSize);
+		flushAlloc(vk, device, alloc);
 	}
 
 	// bind descriptor sets
@@ -783,7 +783,7 @@ tcu::ConstPixelBufferAccess VulkanDrawContext::getColorPixels (void) const
 	const VkDevice			device		= m_context.getDevice();
 
 	const Allocation& alloc = m_colorAttachmentBuffer->getAllocation();
-	invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), VK_WHOLE_SIZE);
+	invalidateAlloc(vk, device, alloc);
 
 	return tcu::ConstPixelBufferAccess(mapVkFormat(m_drawState.colorFormat), m_drawState.renderSize.x(), m_drawState.renderSize.y(), 1u, alloc.getHostPtr());
 }

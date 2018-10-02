@@ -978,7 +978,7 @@ de::MovePtr<TextureLevelPyramid> ImageClearingTestInstance::readImage (VkImageAs
 	endCommandBuffer();
 	submitCommandBuffer();
 
-	invalidateMappedMemoryRange(m_vkd, m_device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), imageTotalSize);
+	invalidateAlloc(m_vkd, m_device, *bufferAlloc);
 
 	{
 		deUint32 offset = 0u;
