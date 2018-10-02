@@ -655,9 +655,9 @@ tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters
 				else if (numPassingAllocs == maxAllocs)
 					results.addResult(QP_TEST_RESULT_QUALITY_WARNING, "Creating swapchain did not succeed, callback limit exceeded");
 			}
-		}
 
-		context.getTestContext().touchWatchdog();
+			context.getTestContext().touchWatchdog();
+		}
 	}
 
 	if (!validateAndLog(log, allocationRecorder, 0u))
