@@ -3856,6 +3856,17 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 	const vk::DeviceDriver						  vkd					(vkp, *instance, *device);
 	TestLog&									  log				  = context.getTestContext().getLog();
 
+	vk::VkPhysicalDeviceProtectedMemoryFeatures		protectedFeatures;
+	protectedFeatures.sType				= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
+	protectedFeatures.pNext				= DE_NULL;
+	protectedFeatures.protectedMemory	= VK_FALSE;
+
+	vk::VkPhysicalDeviceFeatures2					deviceFeatures;
+	deviceFeatures.sType		= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	deviceFeatures.pNext		= &protectedFeatures;
+
+	vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
+
 	const vk::VkImageUsageFlagBits				  usageFlags[]		  =
 	{
 		vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -3898,6 +3909,9 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 		{
 			const size_t	bit	= numOfUsageFlags + createFlagNdx;
 			if ((combo & (1u << bit)) == 0)
+				continue;
+			if (((createFlags[createFlagNdx] & vk::VK_IMAGE_CREATE_PROTECTED_BIT) == vk::VK_IMAGE_CREATE_PROTECTED_BIT ) &&
+				(protectedFeatures.protectedMemory == VK_FALSE))
 				continue;
 			createFlag |= createFlags[createFlagNdx];
 			requiredAhbUsage |= ahbApi->vkCreateToAhbUsage(createFlags[createFlagNdx]);
