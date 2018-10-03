@@ -179,7 +179,7 @@ void SharedPtr_selfTest (void)
 		SharedPtr<Object> ptrA;
 		SharedPtr<Object> ptrB;
 		ptrB = ptrA;
-		ptrB = ptrB;
+		ptrB = *&ptrB;
 	}
 
 	// Basic test.
@@ -235,7 +235,7 @@ void SharedPtr_selfTest (void)
 			SharedPtr<Object> ptr(new Object(exists));
 			DE_TEST_ASSERT(exists);
 			DE_TEST_ASSERT(ptr.get() != DE_NULL);
-			ptr = ptr;
+			ptr = *&ptr;
 		}
 		DE_TEST_ASSERT(!exists);
 	}
