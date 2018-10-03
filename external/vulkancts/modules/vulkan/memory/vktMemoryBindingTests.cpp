@@ -87,17 +87,15 @@ public:
 		return hostPtr;
 	}
 
-	void								flush								(VkDeviceSize			offset,
-																			 VkDeviceSize			size)
+	void								flush								()
 	{
-		const VkMappedMemoryRange		range								= makeMemoryRange(offset, size);
+		const VkMappedMemoryRange		range								= makeMemoryRange(0, VK_WHOLE_SIZE);
 		VK_CHECK(vk.flushMappedMemoryRanges(dev, 1u, &range));
 	}
 
-	void								invalidate							(VkDeviceSize			offset,
-																			 VkDeviceSize			size)
+	void								invalidate							()
 	{
-		const VkMappedMemoryRange		range								= makeMemoryRange(offset, size);
+		const VkMappedMemoryRange		range								= makeMemoryRange(0, VK_WHOLE_SIZE);
 		VK_CHECK(vk.invalidateMappedMemoryRanges(dev, 1u, &range));
 	}
 
@@ -725,7 +723,7 @@ void									readUpResource						(Move<VkImage>&			source,
 	};
 
 	beginCommandBuffer(vk, *cmdBuffer);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
 	vk.cmdCopyImageToBuffer(*cmdBuffer, *source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *target, 1, (&copyRegion));
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 1, &postImageBarrier);
 	endCommandBuffer(vk, *cmdBuffer);
@@ -769,7 +767,7 @@ void									pushData							(VkDeviceMemory			memory,
 	{
 		hostBuffer[i] = static_cast<deUint8>(random.getNext() & 0xFFu);
 	}
-	hostMemory.flush(0u, params.bufferSize);
+	hostMemory.flush();
 }
 
 deBool									checkData							(VkDeviceMemory			memory,
@@ -783,7 +781,7 @@ deBool									checkData							(VkDeviceMemory			memory,
 	deUint8*							hostBuffer							= static_cast<deUint8*>(hostMemory.ptr());
 	SimpleRandomGenerator				random								(dataSeed);
 
-	hostMemory.invalidate(0u, params.bufferSize);
+	hostMemory.invalidate();
 
 	for (deUint32 i = 0u; i < params.bufferSize; ++i)
 	{
