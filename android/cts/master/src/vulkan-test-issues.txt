@@ -44,3 +44,8 @@ dEQP-VK.pipeline.blend.format.r5g5b5a1_unorm_pack16.states.color_sa_z_sub_alpha_
 
 # Bug: 28594488
 dEQP-VK.ssbo.layout.random.all_shared_buffer.5
+
+# Bug: https://b.corp.google.com/issues/113541746#comment17
+# Fixed by commit 8e6e8fd31fe4c4f162db07c632da345c0e17cc7d, which updates glslang.
+dEQP-VK.image.qualifiers.coherent.*
+dEQP-VK.image.qualifiers.volatile.*
