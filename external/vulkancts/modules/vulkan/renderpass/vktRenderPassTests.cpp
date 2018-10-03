@@ -2342,20 +2342,20 @@ public:
 				const bool					hasStencil	= hasStencilComponent(format.order);
 				const VkImageMemoryBarrier	barrier		=
 				{
-					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// sType;
-					DE_NULL,										// pNext;
+					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			                // sType;
+					DE_NULL,										                // pNext;
 
-					VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,	// srcAccessMask
-					VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// dstAccessMask
+					VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,	                // srcAccessMask
+					VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			                // dstAccessMask
 
-					VK_IMAGE_LAYOUT_GENERAL,						// oldLayout
-					VK_IMAGE_LAYOUT_GENERAL,						// newLayout;
+					m_renderInfo.getInputAttachmentLayout(inputAttachmentNdx),      // oldLayout
+					m_renderInfo.getInputAttachmentLayout(inputAttachmentNdx),      // newLayout;
 
-					VK_QUEUE_FAMILY_IGNORED,						// srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,						// destQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,						                // srcQueueFamilyIndex;
+					VK_QUEUE_FAMILY_IGNORED,						                // destQueueFamilyIndex;
 
-					m_depthStencilAttachmentImage,					// image;
-					{												// subresourceRange;
+					m_depthStencilAttachmentImage,					                // image;
+					{												                // subresourceRange;
 						(hasDepth ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
 							| (hasStencil ? (VkImageAspectFlags)VK_IMAGE_ASPECT_STENCIL_BIT : 0u),	// aspect;
 						0,															// baseMipLevel;
@@ -3634,31 +3634,13 @@ bool logAndVerifyImages (TestLog&											log,
 			if (tcu::hasDepthComponent(format.order) && tcu::hasStencilComponent(format.order))
 			{
 				const tcu::TextureFormat	depthFormat			= getDepthCopyFormat(attachment.getFormat());
-				const VkDeviceSize			depthBufferSize		= targetSize.x() * targetSize.y() * depthFormat.getPixelSize();
 				void* const					depthPtr			= attachmentResources[attachmentNdx]->getResultMemory().getHostPtr();
 
 				const tcu::TextureFormat	stencilFormat		= getStencilCopyFormat(attachment.getFormat());
-				const VkDeviceSize			stencilBufferSize	= targetSize.x() * targetSize.y() * stencilFormat.getPixelSize();
 				void* const					stencilPtr			= attachmentResources[attachmentNdx]->getSecondaryResultMemory().getHostPtr();
 
-				const VkMappedMemoryRange	ranges[]			=
-				{
-					{
-						VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,								// sType;
-						DE_NULL,															// pNext;
-						attachmentResources[attachmentNdx]->getResultMemory().getMemory(),	// mem;
-						attachmentResources[attachmentNdx]->getResultMemory().getOffset(),	// offset;
-						depthBufferSize														// size;
-					},
-					{
-						VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,										// sType;
-						DE_NULL,																	// pNext;
-						attachmentResources[attachmentNdx]->getSecondaryResultMemory().getMemory(),	// mem;
-						attachmentResources[attachmentNdx]->getSecondaryResultMemory().getOffset(),	// offset;
-						stencilBufferSize															// size;
-					}
-				};
-				VK_CHECK(vk.invalidateMappedMemoryRanges(device, 2u, ranges));
+				invalidateAlloc(vk, device, attachmentResources[attachmentNdx]->getResultMemory());
+				invalidateAlloc(vk, device, attachmentResources[attachmentNdx]->getSecondaryResultMemory());
 
 				{
 					const ConstPixelBufferAccess	depthAccess			(depthFormat, targetSize.x(), targetSize.y(), 1, depthPtr);
@@ -3688,18 +3670,9 @@ bool logAndVerifyImages (TestLog&											log,
 			}
 			else
 			{
-				const VkDeviceSize			bufferSize	= targetSize.x() * targetSize.y() * format.getPixelSize();
-				void* const					ptr			= attachmentResources[attachmentNdx]->getResultMemory().getHostPtr();
+				void* const	ptr	= attachmentResources[attachmentNdx]->getResultMemory().getHostPtr();
 
-				const VkMappedMemoryRange	range		=
-				{
-					VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,								// sType;
-					DE_NULL,															// pNext;
-					attachmentResources[attachmentNdx]->getResultMemory().getMemory(),	// mem;
-					attachmentResources[attachmentNdx]->getResultMemory().getOffset(),	// offset;
-					bufferSize															// size;
-				};
-				VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1u, &range));
+				invalidateAlloc(vk, device, attachmentResources[attachmentNdx]->getResultMemory());
 
 				if (tcu::hasDepthComponent(format.order))
 				{
@@ -6734,10 +6707,10 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 																	vk::VK_DEPENDENCY_BY_REGION_BIT));
 
 									deps.push_back(SubpassDependency(1, 1,
-																	vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+																	vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 																	vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 
-																	vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																	vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 																	vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,
 																	vk::VK_DEPENDENCY_BY_REGION_BIT));
 
@@ -6815,7 +6788,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 																vector<deUint32>()));
 
 									deps.push_back(SubpassDependency(0, 1,
-																	vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+																	vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 																	vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 
 																	vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
