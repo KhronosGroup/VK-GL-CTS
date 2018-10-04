@@ -5129,37 +5129,112 @@ tcu::TestCaseGroup* createSelectionControlGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
-tcu::TestCaseGroup* createOpNameGroup(tcu::TestContext& testCtx)
+void getOpNameAbuseCases (vector<CaseParameter> &abuseCases)
+{
+	// Generate a long name.
+	std::string longname;
+	longname.resize(65535, 'k'); // max string literal, spir-v 2.17
+
+	// Some bad names, abusing utf-8 encoding. This may also cause problems
+	// with the logs.
+	// 1. Various illegal code points in utf-8
+	std::string utf8illegal =
+		"Illegal bytes in UTF-8: "
+		"\xc0 \xc1 \xf5 \xf6 \xf7 \xf8 \xf9 \xfa \xfb \xfc \xfd \xfe \xff"
+		"illegal surrogates: \xed\xad\xbf \xed\xbe\x80";
+
+	// 2. Zero encoded as overlong, not exactly legal but often supported to differentiate from terminating zero
+	std::string utf8nul = "UTF-8 encoded nul \xC0\x80 (should not end name)";
+
+	// 3. Some overlong encodings
+	std::string utf8overlong =
+		"UTF-8 overlong \xF0\x82\x82\xAC \xfc\x83\xbf\xbf\xbf\xbf \xf8\x87\xbf\xbf\xbf "
+		"\xf0\x8f\xbf\xbf";
+
+	// 4. Internet "zalgo" meme "bleeding text"
+	std::string utf8zalgo =
+		"\x56\xcc\xb5\xcc\x85\xcc\x94\xcc\x88\xcd\x8a\xcc\x91\xcc\x88\xcd\x91\xcc\x83\xcd\x82"
+		"\xcc\x83\xcd\x90\xcc\x8a\xcc\x92\xcc\x92\xcd\x8b\xcc\x94\xcd\x9d\xcc\x98\xcc\xab\xcc"
+		"\xae\xcc\xa9\xcc\xad\xcc\x97\xcc\xb0\x75\xcc\xb6\xcc\xbe\xcc\x80\xcc\x82\xcc\x84\xcd"
+		"\x84\xcc\x90\xcd\x86\xcc\x9a\xcd\x84\xcc\x9b\xcd\x86\xcd\x92\xcc\x9a\xcd\x99\xcd\x99"
+		"\xcc\xbb\xcc\x98\xcd\x8e\xcd\x88\xcd\x9a\xcc\xa6\xcc\x9c\xcc\xab\xcc\x99\xcd\x94\xcd"
+		"\x99\xcd\x95\xcc\xa5\xcc\xab\xcd\x89\x6c\xcc\xb8\xcc\x8e\xcc\x8b\xcc\x8b\xcc\x9a\xcc"
+		"\x8e\xcd\x9d\xcc\x80\xcc\xa1\xcc\xad\xcd\x9c\xcc\xba\xcc\x96\xcc\xb3\xcc\xa2\xcd\x8e"
+		"\xcc\xa2\xcd\x96\x6b\xcc\xb8\xcc\x84\xcd\x81\xcc\xbf\xcc\x8d\xcc\x89\xcc\x85\xcc\x92"
+		"\xcc\x84\xcc\x90\xcd\x81\xcc\x93\xcd\x90\xcd\x92\xcd\x9d\xcc\x84\xcd\x98\xcd\x9d\xcd"
+		"\xa0\xcd\x91\xcc\x94\xcc\xb9\xcd\x93\xcc\xa5\xcd\x87\xcc\xad\xcc\xa7\xcd\x96\xcd\x99"
+		"\xcc\x9d\xcc\xbc\xcd\x96\xcd\x93\xcc\x9d\xcc\x99\xcc\xa8\xcc\xb1\xcd\x85\xcc\xba\xcc"
+		"\xa7\x61\xcc\xb8\xcc\x8e\xcc\x81\xcd\x90\xcd\x84\xcd\x8c\xcc\x8c\xcc\x85\xcd\x86\xcc"
+		"\x84\xcd\x84\xcc\x90\xcc\x84\xcc\x8d\xcd\x99\xcd\x8d\xcc\xb0\xcc\xa3\xcc\xa6\xcd\x89"
+		"\xcd\x8d\xcd\x87\xcc\x98\xcd\x8d\xcc\xa4\xcd\x9a\xcd\x8e\xcc\xab\xcc\xb9\xcc\xac\xcc"
+		"\xa2\xcd\x87\xcc\xa0\xcc\xb3\xcd\x89\xcc\xb9\xcc\xa7\xcc\xa6\xcd\x89\xcd\x95\x6e\xcc"
+		"\xb8\xcd\x8a\xcc\x8a\xcd\x82\xcc\x9b\xcd\x81\xcd\x90\xcc\x85\xcc\x9b\xcd\x80\xcd\x91"
+		"\xcd\x9b\xcc\x81\xcd\x81\xcc\x9a\xcc\xb3\xcd\x9c\xcc\x9e\xcc\x9d\xcd\x99\xcc\xa2\xcd"
+		"\x93\xcd\x96\xcc\x97\xff";
+
+	// General name abuses
+	abuseCases.push_back(CaseParameter("_has_very_long_name", longname));
+	abuseCases.push_back(CaseParameter("_utf8_illegal", utf8illegal));
+	abuseCases.push_back(CaseParameter("_utf8_nul", utf8nul));
+	abuseCases.push_back(CaseParameter("_utf8_overlong", utf8overlong));
+	abuseCases.push_back(CaseParameter("_utf8_zalgo", utf8zalgo));
+
+	// GL keywords
+	abuseCases.push_back(CaseParameter("_is_gl_Position", "gl_Position"));
+	abuseCases.push_back(CaseParameter("_is_gl_InstanceID", "gl_InstanceID"));
+	abuseCases.push_back(CaseParameter("_is_gl_PrimitiveID", "gl_PrimitiveID"));
+	abuseCases.push_back(CaseParameter("_is_gl_TessCoord", "gl_TessCoord"));
+	abuseCases.push_back(CaseParameter("_is_gl_PerVertex", "gl_PerVertex"));
+	abuseCases.push_back(CaseParameter("_is_gl_InvocationID", "gl_InvocationID"));
+	abuseCases.push_back(CaseParameter("_is_gl_PointSize", "gl_PointSize"));
+	abuseCases.push_back(CaseParameter("_is_gl_PointCoord", "gl_PointCoord"));
+	abuseCases.push_back(CaseParameter("_is_gl_Layer", "gl_Layer"));
+	abuseCases.push_back(CaseParameter("_is_gl_FragDepth", "gl_FragDepth"));
+	abuseCases.push_back(CaseParameter("_is_gl_NumWorkGroups", "gl_NumWorkGroups"));
+	abuseCases.push_back(CaseParameter("_is_gl_WorkGroupID", "gl_WorkGroupID"));
+	abuseCases.push_back(CaseParameter("_is_gl_LocalInvocationID", "gl_LocalInvocationID"));
+	abuseCases.push_back(CaseParameter("_is_gl_GlobalInvocationID", "gl_GlobalInvocationID"));
+	abuseCases.push_back(CaseParameter("_is_gl_MaxVertexAttribs", "gl_MaxVertexAttribs"));
+	abuseCases.push_back(CaseParameter("_is_gl_MaxViewports", "gl_MaxViewports"));
+	abuseCases.push_back(CaseParameter("_is_gl_MaxComputeWorkGroupCount", "gl_MaxComputeWorkGroupCount"));
+	abuseCases.push_back(CaseParameter("_is_mat3", "mat3"));
+	abuseCases.push_back(CaseParameter("_is_volatile", "volatile"));
+	abuseCases.push_back(CaseParameter("_is_inout", "inout"));
+	abuseCases.push_back(CaseParameter("_is_isampler3d", "isampler3d"));
+}
+
+tcu::TestCaseGroup* createOpNameGroup (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opname", "Tests OpName cases"));
 	de::MovePtr<tcu::TestCaseGroup>	entryMainGroup	(new tcu::TestCaseGroup(testCtx, "entry_main", "OpName tests with entry main"));
 	de::MovePtr<tcu::TestCaseGroup>	entryNotGroup	(new tcu::TestCaseGroup(testCtx, "entry_rdc", "OpName tests with entry rdc"));
+	de::MovePtr<tcu::TestCaseGroup>	abuseGroup		(new tcu::TestCaseGroup(testCtx, "abuse", "OpName abuse tests"));
 	vector<CaseParameter>			cases;
+	vector<CaseParameter>			abuseCases;
 	vector<string>					testFunc;
 	de::Random						rnd				(deStringHash(group->getName()));
-	const int						numElements		= 100;
+	const int						numElements		= 128;
 	vector<float>					inputFloats		(numElements, 0);
 	vector<float>					outputFloats	(numElements, 0);
+
+	getOpNameAbuseCases(abuseCases);
 
 	fillRandomScalars(rnd, -100.0f, 100.0f, &inputFloats[0], numElements);
 
 	for(size_t ndx = 0; ndx < numElements; ++ndx)
 		outputFloats[ndx] = -inputFloats[ndx];
 
-	const StringTemplate shaderTemplate (
+	const string commonShaderHeader =
 		"OpCapability Shader\n"
 		"OpMemoryModel Logical GLSL450\n"
-		"OpEntryPoint GLCompute %main \"${ENTRY}\" %id\n"
-		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n";
 
-		"OpName %${FUNC_ID} \"${NAME}\"\n"
-
+	const string commonShaderFooter =
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
 		+ string(getComputeAsmInputOutputBufferTraits())
-
 		+ string(getComputeAsmCommonTypes())
-
 		+ string(getComputeAsmInputOutputBuffer()) +
 
 		"%id        = OpVariable %uvec3ptr Input\n"
@@ -5183,13 +5258,126 @@ tcu::TestCaseGroup* createOpNameGroup(tcu::TestContext& testCtx)
 		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
 		"             OpStore %outloc %neg\n"
 
-
 		"             OpReturn\n"
-		"             OpFunctionEnd\n");
+		"             OpFunctionEnd\n";
+
+	const StringTemplate shaderTemplate (
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"${ENTRY}\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpName %${ID} \"${NAME}\"\n" +
+		commonShaderFooter);
+
+	const std::string multipleNames =
+		commonShaderHeader +
+		"OpName %main \"to_be\"\n"
+		"OpName %id   \"or_not\"\n"
+		"OpName %main \"to_be\"\n"
+		"OpName %main \"makes_no\"\n"
+		"OpName %func \"difference\"\n"
+		"OpName %5    \"to_me\"\n" +
+		commonShaderFooter;
+
+	{
+		ComputeShaderSpec	spec;
+
+		spec.assembly		= multipleNames;
+		spec.numWorkGroups	= IVec3(numElements, 1, 1);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+		abuseGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "main_has_multiple_names", "multiple_names", spec));
+	}
+
+	const std::string everythingNamed =
+		commonShaderHeader +
+		"OpName %main   \"name1\"\n"
+		"OpName %id     \"name2\"\n"
+		"OpName %zero   \"name3\"\n"
+		"OpName %entry  \"name4\"\n"
+		"OpName %func   \"name5\"\n"
+		"OpName %5      \"name6\"\n"
+		"OpName %7      \"name7\"\n"
+		"OpName %idval  \"name8\"\n"
+		"OpName %inloc  \"name9\"\n"
+		"OpName %inval  \"name10\"\n"
+		"OpName %neg    \"name11\"\n"
+		"OpName %outloc \"name12\"\n"+
+		commonShaderFooter;
+	{
+		ComputeShaderSpec	spec;
+
+		spec.assembly		= everythingNamed;
+		spec.numWorkGroups	= IVec3(numElements, 1, 1);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+		abuseGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "everything_named", "everything_named", spec));
+	}
+
+	const std::string everythingNamedTheSame =
+		commonShaderHeader +
+		"OpName %main   \"the_same\"\n"
+		"OpName %id     \"the_same\"\n"
+		"OpName %zero   \"the_same\"\n"
+		"OpName %entry  \"the_same\"\n"
+		"OpName %func   \"the_same\"\n"
+		"OpName %5      \"the_same\"\n"
+		"OpName %7      \"the_same\"\n"
+		"OpName %idval  \"the_same\"\n"
+		"OpName %inloc  \"the_same\"\n"
+		"OpName %inval  \"the_same\"\n"
+		"OpName %neg    \"the_same\"\n"
+		"OpName %outloc \"the_same\"\n"+
+		commonShaderFooter;
+	{
+		ComputeShaderSpec	spec;
+
+		spec.assembly		= everythingNamedTheSame;
+		spec.numWorkGroups	= IVec3(numElements, 1, 1);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+		abuseGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "everything_named_the_same", "everything_named_the_same", spec));
+	}
+
+	// main_is_...
+	for (size_t ndx = 0; ndx < abuseCases.size(); ++ndx)
+	{
+		map<string, string>	specializations;
+		ComputeShaderSpec	spec;
+
+		specializations["ENTRY"]	= "main";
+		specializations["ID"]		= "main";
+		specializations["NAME"]		= abuseCases[ndx].param;
+		spec.assembly				= shaderTemplate.specialize(specializations);
+		spec.numWorkGroups			= IVec3(numElements, 1, 1);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+		abuseGroup->addChild(new SpvAsmComputeShaderCase(testCtx, (std::string("main") + abuseCases[ndx].name).c_str(), abuseCases[ndx].name, spec));
+	}
+
+	// x_is_....
+	for (size_t ndx = 0; ndx < abuseCases.size(); ++ndx)
+	{
+		map<string, string>	specializations;
+		ComputeShaderSpec	spec;
+
+		specializations["ENTRY"]	= "main";
+		specializations["ID"]		= "x";
+		specializations["NAME"]		= abuseCases[ndx].param;
+		spec.assembly				= shaderTemplate.specialize(specializations);
+		spec.numWorkGroups			= IVec3(numElements, 1, 1);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+		abuseGroup->addChild(new SpvAsmComputeShaderCase(testCtx, (std::string("x") + abuseCases[ndx].name).c_str(), abuseCases[ndx].name, spec));
+	}
 
 	cases.push_back(CaseParameter("_is_main", "main"));
 	cases.push_back(CaseParameter("_is_not_main", "not_main"));
-
 	testFunc.push_back("main");
 	testFunc.push_back("func");
 
@@ -5197,14 +5385,14 @@ tcu::TestCaseGroup* createOpNameGroup(tcu::TestContext& testCtx)
 	{
 		for(size_t ndx = 0; ndx < cases.size(); ++ndx)
 		{
-			map<string, string>     specializations;
-			ComputeShaderSpec       spec;
+			map<string, string>	specializations;
+			ComputeShaderSpec	spec;
 
-			specializations["ENTRY"] = "main";
-			specializations["FUNC_ID"] = testFunc[fNdx];
-			specializations["NAME"] = cases[ndx].param;
-			spec.assembly = shaderTemplate.specialize(specializations);
-			spec.numWorkGroups = IVec3(numElements, 1, 1);
+			specializations["ENTRY"]	= "main";
+			specializations["ID"]		= testFunc[fNdx];
+			specializations["NAME"]		= cases[ndx].param;
+			spec.assembly				= shaderTemplate.specialize(specializations);
+			spec.numWorkGroups			= IVec3(numElements, 1, 1);
 			spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 			spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
 
@@ -5221,14 +5409,14 @@ tcu::TestCaseGroup* createOpNameGroup(tcu::TestContext& testCtx)
 			map<string, string>     specializations;
 			ComputeShaderSpec       spec;
 
-			specializations["ENTRY"] = "rdc";
-			specializations["FUNC_ID"] = testFunc[fNdx];
-			specializations["NAME"] = cases[ndx].param;
-			spec.assembly = shaderTemplate.specialize(specializations);
-			spec.numWorkGroups = IVec3(numElements, 1, 1);
+			specializations["ENTRY"]	= "rdc";
+			specializations["ID"]		= testFunc[fNdx];
+			specializations["NAME"]		= cases[ndx].param;
+			spec.assembly				= shaderTemplate.specialize(specializations);
+			spec.numWorkGroups			= IVec3(numElements, 1, 1);
+			spec.entryPoint				= "rdc";
 			spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
 			spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
-			spec.entryPoint = "rdc";
 
 			entryNotGroup->addChild(new SpvAsmComputeShaderCase(testCtx, (testFunc[fNdx] + cases[ndx].name).c_str(), cases[ndx].name, spec));
 		}
@@ -5236,6 +5424,124 @@ tcu::TestCaseGroup* createOpNameGroup(tcu::TestContext& testCtx)
 
 	group->addChild(entryMainGroup.release());
 	group->addChild(entryNotGroup.release());
+	group->addChild(abuseGroup.release());
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createOpMemberNameGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group(new tcu::TestCaseGroup(testCtx, "opmembername", "Tests OpMemberName cases"));
+	de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "abuse", "OpMemberName abuse tests"));
+	vector<CaseParameter>			abuseCases;
+	vector<string>					testFunc;
+	de::Random						rnd(deStringHash(group->getName()));
+	const int						numElements = 128;
+	vector<float>					inputFloats(numElements, 0);
+	vector<float>					outputFloats(numElements, 0);
+
+	getOpNameAbuseCases(abuseCases);
+
+	fillRandomScalars(rnd, -100.0f, 100.0f, &inputFloats[0], numElements);
+
+	for (size_t ndx = 0; ndx < numElements; ++ndx)
+		outputFloats[ndx] = -inputFloats[ndx];
+
+	const string commonShaderHeader =
+		"OpCapability Shader\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n";
+
+	const string commonShaderFooter =
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits())
+		+ string(getComputeAsmCommonTypes())
+		+ string(getComputeAsmInputOutputBuffer()) +
+
+		"%u3str     = OpTypeStruct %u32 %u32 %u32\n"
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"%zero      = OpConstant %i32 0\n"
+
+		"%main      = OpFunction %void None %voidf\n"
+		"%entry     = OpLabel\n"
+
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x0        = OpCompositeExtract %u32 %idval 0\n"
+
+		"%idstr     = OpCompositeConstruct %u3str %x0 %x0 %x0\n"
+		"%x         = OpCompositeExtract %u32 %idstr 0\n"
+
+		"%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+		"%inval     = OpLoad %f32 %inloc\n"
+		"%neg       = OpFNegate %f32 %inval\n"
+		"%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+		"             OpStore %outloc %neg\n"
+
+		"             OpReturn\n"
+		"             OpFunctionEnd\n";
+
+	const StringTemplate shaderTemplate(
+		commonShaderHeader +
+		"OpMemberName %u3str 0 \"${NAME}\"\n" +
+		commonShaderFooter);
+
+	const std::string multipleNames =
+		commonShaderHeader +
+		"OpMemberName %u3str 0 \"to_be\"\n"
+		"OpMemberName %u3str 1 \"or_not\"\n"
+		"OpMemberName %u3str 0 \"to_be\"\n"
+		"OpMemberName %u3str 2 \"makes_no\"\n"
+		"OpMemberName %u3str 0 \"difference\"\n"
+		"OpMemberName %u3str 0 \"to_me\"\n" +
+		commonShaderFooter;
+	{
+		ComputeShaderSpec	spec;
+
+		spec.assembly = multipleNames;
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+		abuseGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "u3str_x_has_multiple_names", "multiple_names", spec));
+	}
+
+	const std::string everythingNamedTheSame =
+		commonShaderHeader +
+		"OpMemberName %u3str 0 \"the_same\"\n"
+		"OpMemberName %u3str 1 \"the_same\"\n"
+		"OpMemberName %u3str 2 \"the_same\"\n" +
+		commonShaderFooter;
+
+	{
+		ComputeShaderSpec	spec;
+
+		spec.assembly = everythingNamedTheSame;
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+		abuseGroup->addChild(new SpvAsmComputeShaderCase(testCtx, "everything_named_the_same", "everything_named_the_same", spec));
+	}
+
+	// u3str_x_is_....
+	for (size_t ndx = 0; ndx < abuseCases.size(); ++ndx)
+	{
+		map<string, string>	specializations;
+		ComputeShaderSpec	spec;
+
+		specializations["NAME"] = abuseCases[ndx].param;
+		spec.assembly = shaderTemplate.specialize(specializations);
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputFloats)));
+
+		abuseGroup->addChild(new SpvAsmComputeShaderCase(testCtx, (std::string("u3str_x") + abuseCases[ndx].name).c_str(), abuseCases[ndx].name, spec));
+	}
+
+	group->addChild(abuseGroup.release());
 
 	return group.release();
 }
@@ -7748,7 +8054,6 @@ tcu::TestCaseGroup* createBarrierTests(tcu::TestContext& testCtx)
 		"%then = OpLabel\n"
 		"OpControlBarrier %Workgroup %Workgroup %WorkgroupAcquireRelease\n"
 		"OpBranch %exit\n"
-
 		"%exit = OpLabel\n"
 		"%ret = OpPhi %v4f32 %param1 %then %wrong_branch_alert %else\n"
 		"OpReturnValue %ret\n"
@@ -9556,29 +9861,189 @@ tcu::TestCaseGroup* createOpNopTests (tcu::TestContext& testCtx)
 
 tcu::TestCaseGroup* createOpNameTests (tcu::TestContext& testCtx)
 {
-	de::MovePtr<tcu::TestCaseGroup>	testGroup (new tcu::TestCaseGroup(testCtx, "opname","Test OpName"));
+	de::MovePtr<tcu::TestCaseGroup>	testGroup	(new tcu::TestCaseGroup(testCtx, "opname","Test OpName"));
 	RGBA							defaultColors[4];
 	map<string, string>				opNameFragments;
 
 	getDefaultColors(defaultColors);
 
-	opNameFragments["debug"]		=
-		"OpName %BP_main \"not_main\"";
-
-	opNameFragments["testfun"]		=
-		"%test_code = OpFunction %v4f32 None %v4f32_v4f32_function\n"
-		"%param1 = OpFunctionParameter %v4f32\n"
+	opNameFragments["testfun"] =
+		"%test_code  = OpFunction %v4f32 None %v4f32_v4f32_function\n"
+		"%param1     = OpFunctionParameter %v4f32\n"
 		"%label_func = OpLabel\n"
-		"%a = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
-		"%b = OpFAdd %f32 %a %a\n"
-		"%c = OpFSub %f32 %b %a\n"
-		"%ret = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
+		"%a          = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b          = OpFAdd %f32 %a %a\n"
+		"%c          = OpFSub %f32 %b %a\n"
+		"%ret        = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
 		"OpReturnValue %ret\n"
 		"OpFunctionEnd\n";
+
+	opNameFragments["debug"] =
+		"OpName %BP_main \"not_main\"";
 
 	createTestsForAllStages("opname", defaultColors, defaultColors, opNameFragments, testGroup.get());
 
 	return testGroup.release();
+}
+
+tcu::TestCaseGroup* createOpNameAbuseTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "opname_abuse", "OpName abuse tests"));
+	vector<CaseParameter>			abuseCases;
+	RGBA							defaultColors[4];
+	map<string, string>				opNameFragments;
+
+	getOpNameAbuseCases(abuseCases);
+	getDefaultColors(defaultColors);
+
+	opNameFragments["testfun"] =
+		"%test_code  = OpFunction %v4f32 None %v4f32_v4f32_function\n"
+		"%param1     = OpFunctionParameter %v4f32\n"
+		"%label_func = OpLabel\n"
+		"%a          = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b          = OpFAdd %f32 %a %a\n"
+		"%c          = OpFSub %f32 %b %a\n"
+		"%ret        = OpVectorInsertDynamic %v4f32 %param1 %c %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+
+	for (unsigned int i = 0; i < abuseCases.size(); i++)
+	{
+		string casename;
+		casename = string("main") + abuseCases[i].name;
+
+		opNameFragments["debug"] =
+			"OpName %BP_main \"" + abuseCases[i].param + "\"";
+
+		createTestsForAllStages(casename, defaultColors, defaultColors, opNameFragments, abuseGroup.get());
+	}
+
+	for (unsigned int i = 0; i < abuseCases.size(); i++)
+	{
+		string casename;
+		casename = string("b") + abuseCases[i].name;
+
+		opNameFragments["debug"] =
+			"OpName %b \"" + abuseCases[i].param + "\"";
+
+		createTestsForAllStages(casename, defaultColors, defaultColors, opNameFragments, abuseGroup.get());
+	}
+
+	{
+		opNameFragments["debug"] =
+			"OpName %test_code \"name1\"\n"
+			"OpName %param1    \"name2\"\n"
+			"OpName %a         \"name3\"\n"
+			"OpName %b         \"name4\"\n"
+			"OpName %c         \"name5\"\n"
+			"OpName %ret       \"name6\"\n";
+
+		createTestsForAllStages("everything_named", defaultColors, defaultColors, opNameFragments, abuseGroup.get());
+	}
+
+	{
+		opNameFragments["debug"] =
+			"OpName %test_code \"the_same\"\n"
+			"OpName %param1    \"the_same\"\n"
+			"OpName %a         \"the_same\"\n"
+			"OpName %b         \"the_same\"\n"
+			"OpName %c         \"the_same\"\n"
+			"OpName %ret       \"the_same\"\n";
+
+		createTestsForAllStages("everything_named_the_same", defaultColors, defaultColors, opNameFragments, abuseGroup.get());
+	}
+
+	{
+		opNameFragments["debug"] =
+			"OpName %BP_main \"to_be\"\n"
+			"OpName %BP_main \"or_not\"\n"
+			"OpName %BP_main \"to_be\"\n";
+
+		createTestsForAllStages("main_has_multiple_names", defaultColors, defaultColors, opNameFragments, abuseGroup.get());
+	}
+
+	{
+		opNameFragments["debug"] =
+			"OpName %b \"to_be\"\n"
+			"OpName %b \"or_not\"\n"
+			"OpName %b \"to_be\"\n";
+
+		createTestsForAllStages("b_has_multiple_names", defaultColors, defaultColors, opNameFragments, abuseGroup.get());
+	}
+
+	return abuseGroup.release();
+}
+
+
+tcu::TestCaseGroup* createOpMemberNameAbuseTests (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "opmembername_abuse", "OpName abuse tests"));
+	vector<CaseParameter>			abuseCases;
+	RGBA							defaultColors[4];
+	map<string, string>				opMemberNameFragments;
+
+	getOpNameAbuseCases(abuseCases);
+	getDefaultColors(defaultColors);
+
+	opMemberNameFragments["pre_main"] =
+		"%f3str = OpTypeStruct %f32 %f32 %f32\n";
+
+	opMemberNameFragments["testfun"] =
+		"%test_code  = OpFunction %v4f32 None %v4f32_v4f32_function\n"
+		"%param1     = OpFunctionParameter %v4f32\n"
+		"%label_func = OpLabel\n"
+		"%a          = OpVectorExtractDynamic %f32 %param1 %c_i32_0\n"
+		"%b          = OpFAdd %f32 %a %a\n"
+		"%c          = OpFSub %f32 %b %a\n"
+		"%cstr       = OpCompositeConstruct %f3str %c %c %c\n"
+		"%d          = OpCompositeExtract %f32 %cstr 0\n"
+		"%ret        = OpVectorInsertDynamic %v4f32 %param1 %d %c_i32_0\n"
+		"OpReturnValue %ret\n"
+		"OpFunctionEnd\n";
+
+	for (unsigned int i = 0; i < abuseCases.size(); i++)
+	{
+		string casename;
+		casename = string("f3str_x") + abuseCases[i].name;
+
+		opMemberNameFragments["debug"] =
+			"OpMemberName %f3str 0 \"" + abuseCases[i].param + "\"";
+
+		createTestsForAllStages(casename, defaultColors, defaultColors, opMemberNameFragments, abuseGroup.get());
+	}
+
+	{
+		opMemberNameFragments["debug"] =
+			"OpMemberName %f3str 0 \"name1\"\n"
+			"OpMemberName %f3str 1 \"name2\"\n"
+			"OpMemberName %f3str 2 \"name3\"\n";
+
+		createTestsForAllStages("everything_named", defaultColors, defaultColors, opMemberNameFragments, abuseGroup.get());
+	}
+
+	{
+		opMemberNameFragments["debug"] =
+			"OpMemberName %f3str 0 \"the_same\"\n"
+			"OpMemberName %f3str 1 \"the_same\"\n"
+			"OpMemberName %f3str 2 \"the_same\"\n";
+
+		createTestsForAllStages("everything_named_the_same", defaultColors, defaultColors, opMemberNameFragments, abuseGroup.get());
+	}
+
+	{
+		opMemberNameFragments["debug"] =
+			"OpMemberName %f3str 0 \"to_be\"\n"
+			"OpMemberName %f3str 1 \"or_not\"\n"
+			"OpMemberName %f3str 0 \"to_be\"\n"
+			"OpMemberName %f3str 2 \"makes_no\"\n"
+			"OpMemberName %f3str 0 \"difference\"\n"
+			"OpMemberName %f3str 0 \"to_me\"\n";
+
+
+		createTestsForAllStages("f3str_x_has_multiple_names", defaultColors, defaultColors, opMemberNameFragments, abuseGroup.get());
+	}
+
+	return abuseGroup.release();
 }
 
 tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
@@ -9656,6 +10121,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createVariablePointersComputeGroup(testCtx));
 	computeTests->addChild(createImageSamplerComputeGroup(testCtx));
 	computeTests->addChild(createOpNameGroup(testCtx));
+	computeTests->addChild(createOpMemberNameGroup(testCtx));
 	computeTests->addChild(createPointerParameterComputeGroup(testCtx));
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
@@ -9693,6 +10159,8 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 		graphicsTests->addChild(graphicsAndroidTests.release());
 	}
 	graphicsTests->addChild(createOpNameTests(testCtx));
+	graphicsTests->addChild(createOpNameAbuseTests(testCtx));
+	graphicsTests->addChild(createOpMemberNameAbuseTests(testCtx));
 
 	graphicsTests->addChild(create8BitStorageGraphicsGroup(testCtx));
 	graphicsTests->addChild(create16BitStorageGraphicsGroup(testCtx));
