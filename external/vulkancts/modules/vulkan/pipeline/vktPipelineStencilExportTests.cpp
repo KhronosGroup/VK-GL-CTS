@@ -556,61 +556,7 @@ tcu::TestStatus testStencilExportReplace (Context& context)
 
 		endRenderPass(vk, *cmdBuffer);
 
-		// Prepare color image for copy
-		{
-			const VkImageMemoryBarrier barriers[] =
-			{
-				{
-					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
-					DE_NULL,													// const void*				pNext;
-					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkAccessFlags			outputMask;
-					VK_ACCESS_TRANSFER_READ_BIT,								// VkAccessFlags			inputMask;
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			oldLayout;
-					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,						// VkImageLayout			newLayout;
-					VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
-					*colorImage,												// VkImage					image;
-					colorSubresourceRange,										// VkImageSubresourceRange	subresourceRange;
-				},
-			};
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
-		}
-
-		// Color image -> host buffer
-		{
-			const VkBufferImageCopy region =
-			{
-				0ull,																		// VkDeviceSize                bufferOffset;
-				0u,																			// uint32_t                    bufferRowLength;
-				0u,																			// uint32_t                    bufferImageHeight;
-				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),			// VkImageSubresourceLayers    imageSubresource;
-				makeOffset3D(0, 0, 0),														// VkOffset3D                  imageOffset;
-				makeExtent3D(renderSize.x(), renderSize.y(), 1u),							// VkExtent3D                  imageExtent;
-			};
-			vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u, &region);
-		}
-
-		// Buffer write barrier.
-		{
-			const VkBufferMemoryBarrier barriers[] =
-			{
-				{
-					VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType    sType;
-					DE_NULL,										// const void*        pNext;
-					VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags      srcAccessMask;
-					VK_ACCESS_HOST_READ_BIT,						// VkAccessFlags      dstAccessMask;
-					VK_QUEUE_FAMILY_IGNORED,						// uint32_t           srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,						// uint32_t           dstQueueFamilyIndex;
-					*colorBuffer,									// VkBuffer           buffer;
-					0ull,											// VkDeviceSize       offset;
-					VK_WHOLE_SIZE,									// VkDeviceSize       size;
-				},
-			};
-
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
-				0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers, DE_NULL, 0u);
-		}
+		copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, tcu::IVec2(renderSize.x(), renderSize.y()));
 
 		VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);

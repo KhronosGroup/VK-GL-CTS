@@ -175,6 +175,19 @@ void							copyBufferToImage				(const DeviceInterface&					vk,
 																 VkPipelineStageFlags					destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 /*--------------------------------------------------------------------*//*!
+ * Copies image data into a buffer. The buffer is expected to be
+ * read by the host.
+*//*--------------------------------------------------------------------*/
+void							copyImageToBuffer				(const DeviceInterface&		vk,
+																 vk::VkCommandBuffer		cmdBuffer,
+																 vk::VkImage				image,
+																 vk::VkBuffer				buffer,
+																 tcu::IVec2					size,
+																 vk::VkAccessFlags			srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+																 vk::VkImageLayout			oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+																 deUint32					numLayers = 1u);
+
+/*--------------------------------------------------------------------*//*!
  * Checks if the physical device supports creation of the specified
  * image format.
  *//*--------------------------------------------------------------------*/

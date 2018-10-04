@@ -1374,49 +1374,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 	// Copy Image
 	{
-		const VkBufferMemoryBarrier			bufferBarrier			=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags		srcAccessMask;
-			VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags		dstAccessMask;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32				srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32				destQueueFamilyIndex;
-			*m_resultBuffer,							// VkBuffer				buffer;
-			0u,											// VkDeviceSize			offset;
-			m_resultBufferSize							// VkDeviceSize			size;
-		};
-
-		const VkBufferImageCopy				copyRegion				=
-		{
-			0u,											// VkDeviceSize				bufferOffset;
-			m_renderWidth,								// deUint32					bufferRowLength;
-			m_renderHeight,								// deUint32					bufferImageHeight;
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,
-				0u,
-				1u
-			},											// VkImageSubresourceCopy	imageSubresource;
-			{ 0, 0, 0 },								// VkOffset3D				imageOffset;
-			{ m_renderWidth, m_renderHeight, 1u }		// VkExtent3D				imageExtent;
-		};
-
-		addImageTransitionBarrier(*commandBuffer,
-								  m_multisampling ? *m_resolvedImage : *m_image,
-								  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,		// VkPipelineStageFlags		srcStageMask
-								  VK_PIPELINE_STAGE_TRANSFER_BIT,						// VkPipelineStageFlags		dstStageMask
-								  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,					// VkAccessFlags			srcAccessMask
-								  VK_ACCESS_TRANSFER_READ_BIT,							// VkAccessFlags			dstAccessMask
-								  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,				// VkImageLayout			oldLayout;
-								  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);				// VkImageLayout			newLayout;
-
-		if (m_multisampling)
-			vkd.cmdCopyImageToBuffer(*commandBuffer, *m_resolvedImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
-		else
-			vkd.cmdCopyImageToBuffer(*commandBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
-
-		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+		copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? *m_resolvedImage : *m_image, *m_resultBuffer, tcu::IVec2(m_renderWidth, m_renderHeight), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 		addImageTransitionBarrier(*commandBuffer,
 								  m_multisampling ? *m_resolvedImage : *m_image,

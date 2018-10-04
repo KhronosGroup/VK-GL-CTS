@@ -969,14 +969,6 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 			*image, subresourceRange);
 
-		const VkImageMemoryBarrier imagePreCopyBarrier = makeImageMemoryBarrier(
-			VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			*image, subresourceRange);
-
-		const VkBufferMemoryBarrier outputBufferPostCopyBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, bufferSizeBytes);
-
-		const VkBufferImageCopy copyParams = makeBufferImageCopy(m_imageSize);
 		const tcu::IVec2 workSize = m_imageSize / m_localSize;
 
 		// Prepare the command buffer
@@ -994,9 +986,7 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate (void)
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
 		vk.cmdDispatch(*cmdBuffer, workSize.x(), workSize.y(), 1u);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imagePreCopyBarrier);
-		vk.cmdCopyImageToBuffer(*cmdBuffer, *image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outputBuffer, 1u, &copyParams);
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &outputBufferPostCopyBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+		copyImageToBuffer(vk, *cmdBuffer, *image, *outputBuffer, m_imageSize, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
 
 		endCommandBuffer(vk, *cmdBuffer);
 
@@ -2061,15 +2051,6 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
 			*image, subresourceRange);
 
-		const VkImageMemoryBarrier imagePreCopyBarrier = makeImageMemoryBarrier(
-			VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			*image, subresourceRange);
-
-		const VkBufferMemoryBarrier outputBufferPostCopyBarrier = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, outputBufferSizeBytes);
-
-		const VkBufferImageCopy copyParams = makeBufferImageCopy(m_imageSize);
-
 		// Prepare the command buffer
 
 		const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
@@ -2085,9 +2066,7 @@ tcu::TestStatus ImageAtomicOpTestInstance::iterate (void)
 		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &inputBufferPostHostWriteBarrier, 1, &imageLayoutBarrier);
 		vk.cmdDispatch(*cmdBuffer, m_imageSize.x(), m_imageSize.y(), 1u);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imagePreCopyBarrier);
-		vk.cmdCopyImageToBuffer(*cmdBuffer, *image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *outputBuffer, 1u, &copyParams);
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &outputBufferPostCopyBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+		copyImageToBuffer(vk, *cmdBuffer, *image, *outputBuffer, m_imageSize, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
 
 		endCommandBuffer(vk, *cmdBuffer);
 

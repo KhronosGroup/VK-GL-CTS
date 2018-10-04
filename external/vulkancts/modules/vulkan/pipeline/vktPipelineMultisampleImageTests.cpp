@@ -1030,61 +1030,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 		vk.cmdDraw(*cmdBuffer, static_cast<deUint32>(vertices.size()), 1u, 0u, 0u);
 		endRenderPass(vk, *cmdBuffer);
 
-		// Prepare checksum image for copy
-		{
-			const VkImageMemoryBarrier barriers[] =
-			{
-				{
-					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
-					DE_NULL,													// const void*				pNext;
-					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkAccessFlags			outputMask;
-					VK_ACCESS_TRANSFER_READ_BIT,								// VkAccessFlags			inputMask;
-					VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			oldLayout;
-					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,						// VkImageLayout			newLayout;
-					VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
-					*checksumImage,												// VkImage					image;
-					makeColorSubresourceRange(0, 1),							// VkImageSubresourceRange	subresourceRange;
-				},
-			};
-
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
-		}
-		// Checksum image -> host buffer
-		{
-			const VkBufferImageCopy region =
-			{
-				0ull,																		// VkDeviceSize                bufferOffset;
-				0u,																			// uint32_t                    bufferRowLength;
-				0u,																			// uint32_t                    bufferImageHeight;
-				makeColorSubresourceLayers(0, 1),											// VkImageSubresourceLayers    imageSubresource;
-				makeOffset3D(0, 0, 0),														// VkOffset3D                  imageOffset;
-				makeExtent3D(caseDef.renderSize.x(), caseDef.renderSize.y(), 1u),			// VkExtent3D                  imageExtent;
-			};
-
-			vk.cmdCopyImageToBuffer(*cmdBuffer, *checksumImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *checksumBuffer, 1u, &region);
-		}
-		// Buffer write barrier
-		{
-			const VkBufferMemoryBarrier barriers[] =
-			{
-				{
-					VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType    sType;
-					DE_NULL,										// const void*        pNext;
-					VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags      srcAccessMask;
-					VK_ACCESS_HOST_READ_BIT,						// VkAccessFlags      dstAccessMask;
-					VK_QUEUE_FAMILY_IGNORED,						// uint32_t           srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,						// uint32_t           dstQueueFamilyIndex;
-					*checksumBuffer,								// VkBuffer           buffer;
-					0ull,											// VkDeviceSize       offset;
-					checksumBufferSize,								// VkDeviceSize       size;
-				},
-			};
-
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
-				0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers, DE_NULL, 0u);
-		}
+		copyImageToBuffer(vk, *cmdBuffer, *checksumImage, *checksumBuffer, caseDef.renderSize);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1296,41 +1242,8 @@ void renderAndResolve (Context& context, const CaseDef& caseDef, const VkBuffer 
 
 			vk.cmdResolveImage(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resolveImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &resolveRegion);
 		}
-		// Prepare resolve image for copy
-		{
-			const VkImageMemoryBarrier barriers[] =
-			{
-				{
-					VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
-					DE_NULL,													// const void*				pNext;
-					VK_ACCESS_TRANSFER_WRITE_BIT,								// VkAccessFlags			outputMask;
-					VK_ACCESS_TRANSFER_READ_BIT,								// VkAccessFlags			inputMask;
-					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,						// VkImageLayout			oldLayout;
-					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,						// VkImageLayout			newLayout;
-					VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
-					VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
-					*resolveImage,												// VkImage					image;
-					makeColorSubresourceRange(0, caseDef.numLayers),			// VkImageSubresourceRange	subresourceRange;
-				},
-			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
-		}
-		// Copy resolved image to host-readable buffer
-		{
-			const VkBufferImageCopy copyRegion =
-			{
-				0ull,																// VkDeviceSize                bufferOffset;
-				0u,																	// uint32_t                    bufferRowLength;
-				0u,																	// uint32_t                    bufferImageHeight;
-				makeColorSubresourceLayers(0, caseDef.numLayers),					// VkImageSubresourceLayers    imageSubresource;
-				makeOffset3D(0, 0, 0),												// VkOffset3D                  imageOffset;
-				makeExtent3D(caseDef.renderSize.x(), caseDef.renderSize.y(), 1u),	// VkExtent3D                  imageExtent;
-			};
-
-			vk.cmdCopyImageToBuffer(*cmdBuffer, *resolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resolveBuffer, 1u, &copyRegion);
-		}
+		copyImageToBuffer(vk, *cmdBuffer, *resolveImage, resolveBuffer, caseDef.renderSize, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, caseDef.numLayers);
 
 		endCommandBuffer(vk, *cmdBuffer);
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
