@@ -9815,6 +9815,7 @@ tcu::TestCaseGroup* createOpConstantFloat16Tests(tcu::TestContext& testCtx)
 	outputColors[3] = RGBA(127, 127, 255, 255);
 
 	extensions.push_back("VK_KHR_16bit_storage");
+	extensions.push_back("VK_KHR_shader_float16_int8");
 
 	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameConstantsCode); ++testNdx)
 	{
