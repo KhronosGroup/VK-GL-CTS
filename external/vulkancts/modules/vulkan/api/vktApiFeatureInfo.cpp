@@ -2421,8 +2421,12 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 	return flags;
 }
 
-bool isValidImageCreateFlagCombination (VkImageCreateFlags)
+bool isValidImageCreateFlagCombination (VkImageCreateFlags createFlags)
 {
+	// If create flags contains VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT or VK_IMAGE_CREATE_SPARSE_ALIASED_BIT, it must also contain VK_IMAGE_CREATE_SPARSE_BINDING_BIT
+	if ((createFlags & (VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT)) != 0 && (createFlags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) == 0)
+		return false;
+
 	return true;
 }
 
@@ -2458,9 +2462,6 @@ bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	device
 	DE_ASSERT(deviceFeatures.sparseBinding || (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)) == 0);
 	DE_ASSERT(deviceFeatures.sparseResidencyAliased || (createFlags & VK_IMAGE_CREATE_SPARSE_ALIASED_BIT) == 0);
 
-	if (isYCbCrFormat(format) && (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)))
-		return false;
-
 	if (createFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
 	{
 		if (isCompressedFormat(format))
@@ -2469,7 +2470,14 @@ bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	device
 		if (isDepthStencilFormat(format))
 			return false;
 
-		if (!deIsPowerOfTwo32(mapVkFormat(format).getPixelSize()))
+		deUint32 elementSize;
+
+		if (isYCbCrFormat(format))
+			elementSize = getYCbCrFormatElementSize(format);
+		else
+			elementSize = mapVkFormat(format).getPixelSize();
+
+		if (!deIsPowerOfTwo32(elementSize))
 			return false;
 
 		switch (imageType)
