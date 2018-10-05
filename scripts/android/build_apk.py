@@ -169,7 +169,7 @@ class Environment:
 		self.ndk		= ndk
 
 class Configuration:
-	def __init__(self, env, buildPath, abis, nativeApi, nativeBuildType, gtfTarget, verbose, layers):
+	def __init__(self, env, buildPath, abis, nativeApi, nativeBuildType, gtfTarget, verbose, layers, angle):
 		self.env				= env
 		self.sourcePath			= DEQP_DIR
 		self.buildPath			= buildPath
@@ -180,6 +180,7 @@ class Configuration:
 		self.gtfTarget			= gtfTarget
 		self.verbose			= verbose
 		self.layers				= layers
+		self.angle				= angle
 		self.cmakeGenerator		= selectFirstAvailableGenerator([NINJA_GENERATOR, MAKEFILE_GENERATOR, NMAKE_GENERATOR])
 
 	def check (self):
@@ -331,7 +332,7 @@ def buildNativeLibrary (config, abiName):
 		return "r%d%s" % (version[0], minorVersionString)
 
 	def getBuildArgs (config, abiName):
-		return ['-DDEQP_TARGET=android',
+		args = ['-DDEQP_TARGET=android',
 				'-DDEQP_TARGET_TOOLCHAIN=ndk-modern',
 				'-DCMAKE_C_FLAGS=-Werror',
 				'-DCMAKE_CXX_FLAGS=-Werror',
@@ -340,6 +341,11 @@ def buildNativeLibrary (config, abiName):
 				'-DANDROID_ABI=%s' % abiName,
 				'-DDE_ANDROID_API=%s' % config.nativeApi,
 				'-DGLCTS_GTF_TARGET=%s' % config.gtfTarget]
+
+		if config.angle is not None:
+			args.append('-DANGLE_LIBS=%s' % os.path.join(config.angle, abiName))
+
+		return args
 
 	nativeBuildPath	= getNativeBuildPath(config, abiName)
 	buildConfig		= BuildConfig(nativeBuildPath, config.nativeBuildType, getBuildArgs(config, abiName))
@@ -722,6 +728,17 @@ class AddNativeLibsToAPK (BuildStep):
 					libFiles.append(layerRelPath)
 					print "Adding layer binary: %s" % (layer,)
 
+			if config.angle:
+				angleGlob = os.path.join(config.angle, abi, "lib*_angle.so")
+				libAngle = glob.glob(angleGlob)
+				for lib in libAngle:
+					libFilename = os.path.basename(lib)
+					libRelPath = os.path.join("lib", abi, libFilename)
+					libAbsPath = os.path.join(pkgPath, libRelPath)
+					shutil.copyfile(lib, libAbsPath)
+					libFiles.append(libRelPath)
+					print "Adding ANGLE binary: %s" % (lib,)
+
 		shutil.copyfile(srcPath, dstPath)
 		addFilesToAPK(config, dstPath, pkgPath, libFiles)
 
@@ -901,6 +918,10 @@ def parseArgs ():
 		dest='layers',
 		default=None,
 		required=False)
+	parser.add_argument('--angle-path',
+		dest='angle',
+		default=None,
+		required=False)
 
 	args = parser.parse_args()
 
@@ -936,7 +957,7 @@ if __name__ == "__main__":
 	buildPath	= os.path.realpath(args.buildRoot)
 	env			= Environment(sdk, ndk)
 	config		= Configuration(env, buildPath, abis=args.abis, nativeApi=args.nativeApi, nativeBuildType=args.nativeBuildType, gtfTarget=args.gtfTarget, verbose=args.verbose,
-						 layers=args.layers)
+						 layers=args.layers, angle=args.angle)
 
 	try:
 		config.check()

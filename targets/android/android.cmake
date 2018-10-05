@@ -23,17 +23,36 @@ message("*** Using Android")
 set(DEQP_TARGET_NAME	"Android")
 set(DEQP_SUPPORT_GLES1	ON)
 
+# Necessary for find_library() to search within ANGLE_LIBS
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY_OLD ${CMAKE_FIND_ROOT_PATH_MODE_LIBRARY})
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+
 # GLESv1 lib
-find_library(GLES1_LIBRARY GLESv1_CM PATHS /usr/lib)
+if (IS_DIRECTORY ${ANGLE_LIBS})
+	find_library(GLES1_LIBRARY NAMES GLESv1_CM_angle PATHS ${ANGLE_LIBS} NO_DEFAULT_PATH)
+
+else()
+	find_library(GLES1_LIBRARY GLESv1_CM PATHS /usr/lib)
+endif()
 set(DEQP_GLES1_LIBRARIES ${GLES1_LIBRARY})
 
 # GLESv2 lib
-find_library(GLES2_LIBRARY GLESv2 PATHS /usr/lib)
+if (IS_DIRECTORY ${ANGLE_LIBS})
+	find_library(GLES2_LIBRARY NAMES GLESv2_angle PATHS ${ANGLE_LIBS} NO_DEFAULT_PATH)
+else()
+	find_library(GLES2_LIBRARY GLESv2 PATHS /usr/lib)
+endif()
 set(DEQP_GLES2_LIBRARIES ${GLES2_LIBRARY})
 
 # EGL lib
-find_library(EGL_LIBRARY EGL PATHS /usr/lib)
+if (IS_DIRECTORY ${ANGLE_LIBS})
+	find_library(EGL_LIBRARY NAMES EGL_angle PATHS ${ANGLE_LIBS} NO_DEFAULT_PATH)
+else()
+	find_library(EGL_LIBRARY EGL PATHS /usr/lib)
+endif()
 set(DEQP_EGL_LIBRARIES ${EGL_LIBRARY})
+
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ${CMAKE_FIND_ROOT_PATH_MODE_LIBRARY_OLD})
 
 # Platform libs
 find_library(LOG_LIBRARY NAMES log PATHS /usr/lib)
