@@ -147,11 +147,13 @@ struct BindingCaseParameters
 	VkDeviceSize						bufferSize;
 	VkExtent3D							imageSize;
 	deUint32							targetsCount;
+	VkImageCreateFlags					imageCreateFlags;
 };
 
 BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 																			 deUint32				width,
-																			 deUint32				height)
+																			 deUint32				height,
+																			 VkImageCreateFlags		imageCreateFlags)
 {
 	BindingCaseParameters				params;
 	deMemset(&params, 0, sizeof(BindingCaseParameters));
@@ -161,13 +163,15 @@ BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 	params.bufferSize = params.imageSize.width * params.imageSize.height * params.imageSize.depth * sizeof(deUint32);
 	params.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	params.targetsCount = targetsCount;
+	params.imageCreateFlags = imageCreateFlags;
 	return params;
 }
 
 BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 																			 VkBufferUsageFlags		usage,
 																			 VkSharingMode			sharing,
-																			 VkDeviceSize			bufferSize)
+																			 VkDeviceSize			bufferSize,
+																			 VkImageCreateFlags		imageCreateFlags)
 {
 	BindingCaseParameters				params								=
 	{
@@ -176,7 +180,8 @@ BindingCaseParameters					makeBindingCaseParameters			(deUint32				targetsCount,
 		sharing,															// VkSharingMode		sharing;
 		bufferSize,															// VkDeviceSize			bufferSize;
 		{0u, 0u, 0u},														// VkExtent3D			imageSize;
-		targetsCount														// deUint32				targetsCount;
+		targetsCount,														// deUint32				targetsCount;
+		imageCreateFlags,													// VkImageCreateFlags	imageCreateFlags
 	};
 	return params;
 }
@@ -187,7 +192,7 @@ VkImageCreateInfo						makeImageCreateInfo					(BindingCaseParameters&	params)
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,								// VkStructureType		sType;
 		DE_NULL,															// const void*			pNext;
-		0u,																	// VkImageCreateFlags	flags;
+		params.imageCreateFlags,											// VkImageCreateFlags	flags;
 		VK_IMAGE_TYPE_2D,													// VkImageType			imageType;
 		VK_FORMAT_R8G8B8A8_UINT,											// VkFormat				format;
 		params.imageSize,													// VkExtent3D			extent;
@@ -731,6 +736,40 @@ void									readUpResource						(Move<VkImage>&			source,
 	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
 }
 
+
+template <typename TTarget>
+void									layoutTransitionResource			(Move<TTarget>&			target,
+																			 Context&				ctx);
+
+template <>
+void									layoutTransitionResource			(Move<VkBuffer>&		target,
+																			 Context&				ctx)
+{
+	DE_UNREF(target);
+	DE_UNREF(ctx);
+}
+
+template <>
+void									layoutTransitionResource<VkImage>	(Move<VkImage>&			target,
+																			 Context&				ctx)
+{
+	const DeviceInterface&				vk									= ctx.getDeviceInterface();
+	const VkDevice						vkDevice							= ctx.getDevice();
+	const VkQueue						queue								= ctx.getUniversalQueue();
+
+	const VkImageMemoryBarrier			preImageBarrier						= makeMemoryBarrierInfo(*target, 0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	Move<VkCommandPool>					commandPool							= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, 0);
+	Move<VkCommandBuffer>				cmdBuffer							= createCommandBuffer(vk, vkDevice, *commandPool);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &preImageBarrier);
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);
+}
+
+
 void									createBuffer						(Move<VkBuffer>&		buffer,
 																			 Move<VkDeviceMemory>&	memory,
 																			 Context&				ctx,
@@ -888,6 +927,8 @@ public:
 		deBool							passed								= DE_TRUE;
 		for (deUint32 i = 0; passed && i < m_params.targetsCount; ++i)
 		{
+			// Do a layout transition on alias 1 before we transition and write to alias 0
+			layoutTransitionResource(*(targets[1][i]), m_context);
 			fillUpResource(srcBuffer, *(targets[0][i]), m_context, m_params);
 			readUpResource(*(targets[1][i]), dstBuffer, m_context, m_params);
 			passed = checkData(*dstMemory, 2, m_context, m_params);
@@ -944,13 +985,14 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 	for (deUint32 sizeNdx = 0u; sizeNdx < DE_LENGTH_OF_ARRAY(allocationSizes); ++sizeNdx )
 	{
 		const VkDeviceSize				bufferSize							= allocationSizes[sizeNdx];
-		const BindingCaseParameters		params								= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize);
+		const BindingCaseParameters		params								= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, 0u);
+		const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_SHARING_MODE_EXCLUSIVE, bufferSize, VK_IMAGE_CREATE_ALIAS_BIT);
 		std::ostringstream				testName;
 
 		testName << "buffer_" << bufferSize;
 		regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", params));
 		regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkBuffer, DE_TRUE> >(testCtx, testName.str(), " ", params));
-		aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", params));
+		aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkBuffer, DE_FALSE> >(testCtx, testName.str(), " ", aliasparams));
 	}
 
 	const deUint32						imageSizes[]						= {	8, 33, 257	};
@@ -960,13 +1002,14 @@ tcu::TestCaseGroup* createMemoryBindingTests (tcu::TestContext& testCtx)
 	{
 		const deUint32					width								= imageSizes[widthNdx];
 		const deUint32					height								= imageSizes[heightNdx];
-		const BindingCaseParameters		regularparams						= makeBindingCaseParameters(10, width, height);
+		const BindingCaseParameters		regularparams						= makeBindingCaseParameters(10, width, height, 0u);
+		const BindingCaseParameters		aliasparams							= makeBindingCaseParameters(10, width, height, VK_IMAGE_CREATE_ALIAS_BIT);
 		std::ostringstream				testName;
 
 		testName << "image_" << width << '_' << height;
 		regular_suballocated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", regularparams));
 		regular_dedicated->addChild(new MemoryBindingTest<MemoryBindingInstance<VkImage, DE_TRUE> >(testCtx, testName.str(), "", regularparams));
-		aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", regularparams));
+		aliasing_suballocated->addChild(new MemoryBindingTest<AliasedMemoryBindingInstance<VkImage, DE_FALSE> >(testCtx, testName.str(), " ", aliasparams));
 	}
 
 	regular->addChild(regular_suballocated.release());
