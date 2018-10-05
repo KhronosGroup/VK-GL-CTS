@@ -967,7 +967,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 																	vk::VkPresentModeKHR					presentMode)
 {
 	const deUint32							imageLayers			= 1u;
-	const vk::VkImageUsageFlags				imageUsage			= properties.supportedUsageFlags;
+	const vk::VkImageUsageFlags				imageUsage			= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	const vk::VkBool32						clipped				= VK_FALSE;
 	vector<vk::VkSwapchainCreateInfoKHR>	createInfos;
 
