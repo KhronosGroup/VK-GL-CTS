@@ -1501,8 +1501,8 @@ AndroidHardwareBufferExternalApi* AndroidHardwareBufferExternalApi::getInstance(
 		static AndroidHardwareBufferExternalApi28 api28Instance;
 		return &api28Instance;
 	}
-	else
-#  elif defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__)
+#  endif
+#  if defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__)
 	if (sdkVersion >= __ANDROID_API_O__ )
 	{
 		static AndroidHardwareBufferExternalApi26 api26Instance;
