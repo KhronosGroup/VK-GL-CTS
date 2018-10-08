@@ -8483,9 +8483,9 @@ const string getTypeName (ConversionDataType type)
 	return "";
 }
 
-const string getTestName (ConversionDataType from, ConversionDataType to)
+const string getTestName (ConversionDataType from, ConversionDataType to, deUint32 caseNumber)
 {
-	return getTypeName(from) + "_to_" + getTypeName(to);
+	return getTypeName(from) + "_to_" + getTypeName(to) + (caseNumber != 0 ? (string("_") + de::toString(caseNumber)) : string(""));
 }
 
 const string getAsmTypeName (ConversionDataType type)
@@ -8599,11 +8599,11 @@ vector<string> getFeatureStringVector (ComputeTestFeatures computeTestFeatures)
 
 struct ConvertCase
 {
-	ConvertCase (ConversionDataType from, ConversionDataType to, deInt64 number, bool separateOutput = false, deInt64 outputNumber = 0)
+	ConvertCase (ConversionDataType from, ConversionDataType to, deInt64 number, bool separateOutput = false, deInt64 outputNumber = 0, deUint32 caseNumber = 0)
 	: m_fromType		(from)
 	, m_toType			(to)
 	, m_features		(getConversionUsedFeatures(from, to))
-	, m_name			(getTestName(from, to))
+	, m_name			(getTestName(from, to, caseNumber))
 	, m_inputBuffer		(getBuffer(from, number))
 	{
 		m_asmTypes["inputType"]		= getAsmTypeName(from);
@@ -8826,6 +8826,8 @@ void createConvertCases (vector<ConvertCase>& testCases, const string& instructi
 	else if (instruction == "OpConvertFToS")
 	{
 		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_16,		0xc49a4000,							true,	-1234));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_16,		0x453b9000,							true,	 3001, 1));
+		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_16,		0xc53b9000,							true,	-3001, 2));
 		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_32,		0xc49a4000,							true,	-1234));
 		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_32,			DATA_TYPE_SIGNED_64,		0xc49a4000,							true,	-1234));
 		testCases.push_back(ConvertCase(DATA_TYPE_FLOAT_64,			DATA_TYPE_SIGNED_16,		0xc093480000000000,					true,	-1234));
