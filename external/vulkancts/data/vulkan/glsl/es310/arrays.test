@@ -125,6 +125,7 @@ group constructor "Array constructors"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -149,6 +150,7 @@ group constructor "Array constructors"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -304,6 +306,7 @@ group constructor "Array constructors"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -412,6 +415,7 @@ group constructor "Array constructors"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -513,6 +517,7 @@ group return "Arrays as return value"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -784,6 +789,7 @@ group return "Arrays as return value"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -905,6 +911,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -1191,6 +1198,7 @@ group unnamed_parameter "Array type as unnamed parameter of a function prototype
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -1299,6 +1307,7 @@ group declaration "Declaring arrays"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -1413,6 +1422,7 @@ group declaration "Declaring arrays"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -1520,6 +1530,7 @@ group declaration "Declaring arrays"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -1612,6 +1623,7 @@ group declaration "Declaring arrays"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -1661,6 +1673,7 @@ group declaration "Declaring arrays"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
@@ -1742,6 +1755,7 @@ group length "Array length method"
 
 		both ""
 			#version 310 es
+			precision highp int;
 			precision highp float;
 			${DECLARATIONS}
 
