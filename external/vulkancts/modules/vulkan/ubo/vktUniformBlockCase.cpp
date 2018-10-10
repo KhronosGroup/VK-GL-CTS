@@ -246,6 +246,16 @@ UniformBlock& ShaderInterface::allocBlock (const std::string& name)
 	return *m_uniformBlocks.back();
 }
 
+bool ShaderInterface::usesBlockLayout (UniformFlags layoutFlag) const
+{
+	for (int i = 0, num_blocks = getNumUniformBlocks() ; i < num_blocks ; i++)
+	{
+		if (m_uniformBlocks[i]->getFlags() & layoutFlag)
+			return true;
+	}
+	return false;
+}
+
 namespace // Utilities
 {
 
@@ -2093,8 +2103,19 @@ void UniformBlockCase::initPrograms (vk::SourceCollections& programCollection) c
 	DE_ASSERT(!m_vertShaderSource.empty());
 	DE_ASSERT(!m_fragShaderSource.empty());
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource);
-	programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource);
+	vk::ShaderBuildOptions::Flags flags = vk::ShaderBuildOptions::Flags(0);
+	// TODO(dneto): If these tests ever use LAYOUT_RELAXED, then add support
+	// here as well.
+	if (usesBlockLayout(UniformFlags(LAYOUT_SCALAR | LAYOUT_STD430)))
+	{
+		flags = vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS;
+	}
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource)
+	<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
+
+	programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource)
+	<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
 }
 
 TestInstance* UniformBlockCase::createInstance (Context& context) const

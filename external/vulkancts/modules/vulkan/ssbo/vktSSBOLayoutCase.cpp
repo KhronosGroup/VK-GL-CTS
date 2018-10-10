@@ -2415,7 +2415,13 @@ void SSBOLayoutCase::initPrograms (vk::SourceCollections& programCollection) con
 {
 	DE_ASSERT(!m_computeShaderSrc.empty());
 
-	if (usesRelaxedLayout(m_interface))
+	// Valid scalar layouts are a superset of valid relaxed layouts.  So check scalar layout first.
+	if (usesScalarLayout(m_interface))
+	{
+		programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc)
+			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
+	}
+	else if (usesRelaxedLayout(m_interface))
 	{
 		programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc)
 			<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0, vk::ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS);

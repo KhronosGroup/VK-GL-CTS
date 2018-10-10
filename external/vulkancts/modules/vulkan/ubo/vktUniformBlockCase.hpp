@@ -235,6 +235,7 @@ public:
 
 	int							getNumUniformBlocks		(void) const	{ return (int)m_uniformBlocks.size();	}
 	const UniformBlock&			getUniformBlock			(int ndx) const	{ return *m_uniformBlocks[ndx];			}
+	bool						usesBlockLayout			(UniformFlags layoutFlag) const;
 
 private:
 	std::vector<StructTypeSP>		m_structs;
@@ -315,6 +316,7 @@ public:
 
 	virtual	void				initPrograms				(vk::SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance				(Context& context) const;
+	bool						usesBlockLayout				(UniformFlags layoutFlag) const { return m_interface.usesBlockLayout(layoutFlag); }
 
 protected:
 	void						init						(void);
