@@ -51,6 +51,7 @@ set(VKUTILNOSHADER_SRCS
 	vkImageWithMemory.hpp
 	vkShaderProgram.cpp
 	vkShaderProgram.hpp
+	vkValidatorOptions.hpp
 	vkYCbCrImageWithMemory.cpp
 	vkYCbCrImageWithMemory.hpp
 	vkObjUtil.cpp

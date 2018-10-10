@@ -57,6 +57,8 @@ enum FeatureBits
 	FEATURE_OUT_OF_ORDER_OFFSETS	= (1<<17),
 	FEATURE_16BIT_STORAGE			= (1<<18),
 	FEATURE_8BIT_STORAGE			= (1<<19),
+	FEATURE_STD430_LAYOUT			= (1<<20),
+	FEATURE_SCALAR_LAYOUT			= (1<<21),
 };
 
 class RandomUniformBlockCase : public UniformBlockCase

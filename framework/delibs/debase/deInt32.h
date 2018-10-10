@@ -715,6 +715,20 @@ DE_INLINE deInt32 deSignExtendTo32 (deInt32 value, int numBits)
 		return value;
 }
 
+DE_INLINE int deIntIsPow2(int powerOf2)
+{
+	if (powerOf2 <= 0)
+		return 0;
+	return (powerOf2 & (powerOf2 - (int)1)) == (int)0;
+}
+
+DE_INLINE int deIntRoundToPow2(int number, int powerOf2)
+{
+	DE_ASSERT(deIntIsPow2(powerOf2));
+	return (number + (int)powerOf2 - (int)1) & (int)(~(powerOf2 - 1));
+}
+
+
 DE_END_EXTERN_C
 
 #endif /* _DEINT32_H */

@@ -2842,6 +2842,16 @@ string toString(const VkPhysicalDevicePushDescriptorPropertiesKHR& value)
 	return s.str();
 }
 
+string toString(const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT& value)
+{
+	std::ostringstream	s;
+	s << "VkPhysicalDeviceScalarBlockLayoutFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tscalarBlockLayout = " << value.scalarBlockLayout << '\n';
+	s << '}';
+	return s.str();
+}
+
 bool checkExtension (vector<VkExtensionProperties>& properties, const char* extension)
 {
 	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
@@ -2883,6 +2893,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	vector<VkExtensionProperties>	properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 	const bool khr_8bit_storage				= checkExtension(properties,"VK_KHR_8bit_storage");
 	const bool ext_conditional_rendering	= checkExtension(properties,"VK_EXT_conditional_rendering");
+	const bool scalar_block_layout			= checkExtension(properties,"VK_EXT_scalar_block_layout");
 	bool khr_16bit_storage					= true;
 	bool khr_multiview						= true;
 	bool deviceProtectedMemory				= true;
@@ -2905,6 +2916,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
 	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures[count];
+	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -2915,6 +2927,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deMemset(&protectedMemoryFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
 		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
 		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
+		deMemset(&scalarBlockLayoutFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeaturesEXT));
 
 		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
 		device8BitStorageFeatures[ndx].pNext = &deviceConditionalRenderingFeatures[ndx];
@@ -2932,10 +2945,13 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		protectedMemoryFeatures[ndx].pNext = &samplerYcbcrConversionFeatures[ndx];
 
 		samplerYcbcrConversionFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
-		samplerYcbcrConversionFeatures[ndx].pNext = &variablePointerFeatures[ndx].sType;
+		samplerYcbcrConversionFeatures[ndx].pNext = &variablePointerFeatures[ndx];
 
 		variablePointerFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
-		variablePointerFeatures[ndx].pNext = DE_NULL;
+		variablePointerFeatures[ndx].pNext = &scalarBlockLayoutFeatures[ndx];
+
+		scalarBlockLayoutFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
+		scalarBlockLayoutFeatures[ndx].pNext = DE_NULL;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -2997,6 +3013,11 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointerFeatures");
 	}
+	if (scalar_block_layout &&
+		(scalarBlockLayoutFeatures[0].scalarBlockLayout	!= scalarBlockLayoutFeatures[1].scalarBlockLayout))
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceScalarBlockLayoutFeaturesEXT");
+	}
 	if (khr_8bit_storage)
 		log << TestLog::Message << device8BitStorageFeatures[0]		<< TestLog::EndMessage;
 	if (ext_conditional_rendering)
@@ -3009,8 +3030,10 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		log << TestLog::Message << toString(protectedMemoryFeatures[0])			<< TestLog::EndMessage;
 	if (sampler_ycbcr_conversion)
 		log << TestLog::Message << toString(samplerYcbcrConversionFeatures[0])	<< TestLog::EndMessage;
-	if(variable_pointers)
+	if (variable_pointers)
 		log << TestLog::Message << toString(variablePointerFeatures[0])			<< TestLog::EndMessage;
+	if (scalar_block_layout)
+		log << TestLog::Message << toString(scalarBlockLayoutFeatures[0])		<< TestLog::EndMessage;
 
 	return tcu::TestStatus::pass("Querying device features succeeded");
 }

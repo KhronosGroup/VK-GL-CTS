@@ -38,7 +38,7 @@ bool	assembleSpirV		(const SpirVAsmSource* program, std::vector<deUint32>* dst, 
 void	disassembleSpirV	(size_t binarySizeInWords, const deUint32* binary, std::ostream* dst, SpirvVersion spirvVersion);
 
 //! Validate SPIR-V binary, returning true if validation succeeds. Will fail with NotSupportedError if compiler is not available.
-bool	validateSpirV		(size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog, deUint32 vulkanVersion, SpirvVersion spirvVersion, bool relaxedLayout);
+bool	validateSpirV		(size_t binarySizeInWords, const deUint32* binary, std::ostream* infoLog, const SpirvValidatorOptions&);
 
 } // vk
 

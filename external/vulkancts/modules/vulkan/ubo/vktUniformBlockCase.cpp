@@ -170,7 +170,7 @@ std::ostream& operator<< (std::ostream& stream, const UniformLayoutEntry& entry)
 {
 	stream << entry.name << " { type = " << glu::getDataTypeName(entry.type)
 		   << ", size = " << entry.size
-		   << ", blockNdx = " << entry.blockLayoutNdx
+		   << ", blockNdx = " << entry.blockNdx
 		   << ", offset = " << entry.offset
 		   << ", arrayStride = " << entry.arrayStride
 		   << ", matrixStride = " << entry.matrixStride
@@ -183,7 +183,7 @@ int UniformLayout::getUniformLayoutIndex (int blockNdx, const std::string& name)
 {
 	for (int ndx = 0; ndx < (int)uniforms.size(); ndx++)
 	{
-		if (blocks[uniforms[ndx].blockLayoutNdx].blockDeclarationNdx == blockNdx &&
+		if (blocks[uniforms[ndx].blockNdx].blockDeclarationNdx == blockNdx &&
 			uniforms[ndx].name == name)
 			return ndx;
 	}
@@ -246,6 +246,16 @@ UniformBlock& ShaderInterface::allocBlock (const std::string& name)
 	return *m_uniformBlocks.back();
 }
 
+bool ShaderInterface::usesBlockLayout (UniformFlags layoutFlag) const
+{
+	for (int i = 0, num_blocks = getNumUniformBlocks() ; i < num_blocks ; i++)
+	{
+		if (m_uniformBlocks[i]->getFlags() & layoutFlag)
+			return true;
+	}
+	return false;
+}
+
 namespace // Utilities
 {
 
@@ -281,6 +291,8 @@ std::ostream& operator<< (std::ostream& str, const LayoutFlagsFmt& fmt)
 	} bitDesc[] =
 	{
 		{ LAYOUT_STD140,		"std140"		},
+		{ LAYOUT_STD430,		"std430"		},
+		{ LAYOUT_SCALAR,		"scalar"		},
 		{ LAYOUT_ROW_MAJOR,		"row_major"		},
 		{ LAYOUT_COLUMN_MAJOR,	"column_major"	},
 		{ LAYOUT_OFFSET,		"offset"		},
@@ -388,24 +400,14 @@ deInt32 getminUniformBufferOffsetAlignment (Context &ctx)
 	return (deInt32)align;
 }
 
-int getDataTypeArrayStride (glu::DataType type)
-{
-	DE_ASSERT(!glu::isDataTypeMatrix(type));
-
-	const int baseStride	= getDataTypeByteSize(type);
-	const int vec4Alignment	= (int)sizeof(deUint32)*4;
-
-	DE_ASSERT(baseStride <= vec4Alignment);
-	return de::max(baseStride, vec4Alignment); // Really? See rule 4.
-}
-
 static inline int deRoundUp32 (int a, int b)
 {
 	int d = a/b;
 	return d*b == a ? a : (d+1)*b;
 }
 
-int computeStd140BaseAlignment (const VarType& type)
+
+int computeStd140BaseAlignment (const VarType& type, deUint32 layoutFlags)
 {
 	const int vec4Alignment = (int)sizeof(deUint32)*4;
 
@@ -415,21 +417,22 @@ int computeStd140BaseAlignment (const VarType& type)
 
 		if (glu::isDataTypeMatrix(basicType))
 		{
-			bool	isRowMajor	= !!(type.getFlags() & LAYOUT_ROW_MAJOR);
-			int		vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
-											 : glu::getDataTypeMatrixNumRows(basicType);
+			const bool	isRowMajor	= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			const int	vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
+												 : glu::getDataTypeMatrixNumRows(basicType);
+			const int	vecAlign	= deAlign32(getDataTypeByteAlignment(glu::getDataTypeFloatVec(vecSize)), vec4Alignment);
 
-			return getDataTypeArrayStride(glu::getDataTypeFloatVec(vecSize));
+			return vecAlign;
 		}
 		else
 			return getDataTypeByteAlignment(basicType);
 	}
 	else if (type.isArrayType())
 	{
-		int elemAlignment = computeStd140BaseAlignment(type.getElementType());
+		int elemAlignment = computeStd140BaseAlignment(type.getElementType(), layoutFlags);
 
 		// Round up to alignment of vec4
-		return deRoundUp32(elemAlignment, vec4Alignment);
+		return deAlign32(elemAlignment, vec4Alignment);
 	}
 	else
 	{
@@ -437,16 +440,107 @@ int computeStd140BaseAlignment (const VarType& type)
 
 		int maxBaseAlignment = 0;
 
-		for (StructType::ConstIterator memberIter = type.getStruct().begin(); memberIter != type.getStruct().end(); memberIter++)
-			maxBaseAlignment = de::max(maxBaseAlignment, computeStd140BaseAlignment(memberIter->getType()));
+		for (StructType::ConstIterator memberIter = type.getStructPtr()->begin(); memberIter != type.getStructPtr()->end(); memberIter++)
+			maxBaseAlignment = de::max(maxBaseAlignment, computeStd140BaseAlignment(memberIter->getType(), layoutFlags));
 
-		return deRoundUp32(maxBaseAlignment, vec4Alignment);
+		return deAlign32(maxBaseAlignment, vec4Alignment);
+	}
+}
+
+int computeStd430BaseAlignment (const VarType& type, deUint32 layoutFlags)
+{
+	// Otherwise identical to std140 except that alignment of structures and arrays
+	// are not rounded up to alignment of vec4.
+
+	if (type.isBasicType())
+	{
+		glu::DataType basicType = type.getBasicType();
+
+		if (glu::isDataTypeMatrix(basicType))
+		{
+			const bool	isRowMajor	= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			const int	vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
+												 : glu::getDataTypeMatrixNumRows(basicType);
+			const int	vecAlign	= getDataTypeByteAlignment(glu::getDataTypeFloatVec(vecSize));
+			return vecAlign;
+		}
+		else
+			return getDataTypeByteAlignment(basicType);
+	}
+	else if (type.isArrayType())
+	{
+		return computeStd430BaseAlignment(type.getElementType(), layoutFlags);
+	}
+	else
+	{
+		DE_ASSERT(type.isStructType());
+
+		int maxBaseAlignment = 0;
+
+		for (StructType::ConstIterator memberIter = type.getStructPtr()->begin(); memberIter != type.getStructPtr()->end(); memberIter++)
+			maxBaseAlignment = de::max(maxBaseAlignment, computeStd430BaseAlignment(memberIter->getType(), layoutFlags));
+
+		return maxBaseAlignment;
+	}
+}
+
+int computeRelaxedBlockBaseAlignment (const VarType& type, deUint32 layoutFlags)
+{
+	if (type.isBasicType())
+	{
+		glu::DataType basicType = type.getBasicType();
+
+		if (glu::isDataTypeVector(basicType))
+			return getDataTypeByteAlignment(glu::getDataTypeScalarType(basicType));
+
+		if (glu::isDataTypeMatrix(basicType))
+		{
+			const bool	isRowMajor	= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			const int	vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
+												 : glu::getDataTypeMatrixNumRows(basicType);
+			const int	vecAlign	= getDataTypeByteAlignment(glu::getDataTypeFloatVec(vecSize));
+			return vecAlign;
+		}
+		else
+			return getDataTypeByteAlignment(basicType);
+	}
+	else if (type.isArrayType())
+		return computeStd430BaseAlignment(type.getElementType(), layoutFlags);
+	else
+	{
+		DE_ASSERT(type.isStructType());
+
+		int maxBaseAlignment = 0;
+		for (StructType::ConstIterator memberIter = type.getStructPtr()->begin(); memberIter != type.getStructPtr()->end(); memberIter++)
+			maxBaseAlignment = de::max(maxBaseAlignment, computeRelaxedBlockBaseAlignment(memberIter->getType(), layoutFlags));
+
+		return maxBaseAlignment;
+	}
+}
+
+int computeScalarBlockAlignment (const VarType& type, deUint32 layoutFlags)
+{
+	if (type.isBasicType())
+	{
+		return getDataTypeByteAlignment(glu::getDataTypeScalarType(type.getBasicType()));
+	}
+	else if (type.isArrayType())
+		return computeScalarBlockAlignment(type.getElementType(), layoutFlags);
+	else
+	{
+		DE_ASSERT(type.isStructType());
+
+		int maxBaseAlignment = 0;
+		for (StructType::ConstIterator memberIter = type.getStructPtr()->begin(); memberIter != type.getStructPtr()->end(); memberIter++)
+			maxBaseAlignment = de::max(maxBaseAlignment, computeScalarBlockAlignment(memberIter->getType(), layoutFlags));
+
+		return maxBaseAlignment;
 	}
 }
 
 inline deUint32 mergeLayoutFlags (deUint32 prevFlags, deUint32 newFlags)
 {
-	const deUint32	packingMask		= LAYOUT_STD140;
+	const deUint32	packingMask		= LAYOUT_STD140|LAYOUT_STD430|LAYOUT_SCALAR;
 	const deUint32	matrixMask		= LAYOUT_ROW_MAJOR|LAYOUT_COLUMN_MAJOR;
 
 	deUint32 mergedFlags = 0;
@@ -457,42 +551,64 @@ inline deUint32 mergeLayoutFlags (deUint32 prevFlags, deUint32 newFlags)
 	return mergedFlags;
 }
 
-void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx, const std::string& curPrefix, const VarType& type, deUint32 layoutFlags)
+//! Appends all child elements to layout, returns value that should be appended to offset.
+int computeReferenceLayout (
+	UniformLayout&		layout,
+	int					curBlockNdx,
+	int					baseOffset,
+	const std::string&	curPrefix,
+	const VarType&		type,
+	deUint32			layoutFlags)
 {
-	int baseAlignment = computeStd140BaseAlignment(type);
-
-	curOffset = deAlign32(curOffset, baseAlignment);
+	// HACK to make code match SSBO tests
+	const int LAYOUT_RELAXED = 0;
+	// Reference layout uses std140 rules by default. std430 rules are
+	// choosen only for blocks that have std140 layout.
+	const int	baseAlignment		= (layoutFlags & LAYOUT_SCALAR)  != 0 ? computeScalarBlockAlignment(type, layoutFlags)			:
+									  (layoutFlags & LAYOUT_STD430)  != 0 ? computeStd430BaseAlignment(type, layoutFlags)		:
+									  (layoutFlags & LAYOUT_RELAXED) != 0 ? computeRelaxedBlockBaseAlignment(type, layoutFlags)	:
+									  computeStd140BaseAlignment(type, layoutFlags);
+	int			curOffset			= deAlign32(baseOffset, baseAlignment);
+	const int	topLevelArraySize	= 1; // Default values
+	const int	topLevelArrayStride	= 0;
 
 	if (type.isBasicType())
 	{
-		glu::DataType		basicType	= type.getBasicType();
-		UniformLayoutEntry	entry;
+		const glu::DataType		basicType	= type.getBasicType();
+		UniformLayoutEntry		entry;
 
-		entry.name			= curPrefix;
-		entry.type			= basicType;
-		entry.size			= 1;
-		entry.arrayStride	= 0;
-		entry.matrixStride	= 0;
-		entry.blockLayoutNdx= curBlockNdx;
+		entry.name					= curPrefix;
+		entry.type					= basicType;
+		entry.arraySize				= 1;
+		entry.arrayStride			= 0;
+		entry.matrixStride			= 0;
+		entry.topLevelArraySize		= topLevelArraySize;
+		entry.topLevelArrayStride	= topLevelArrayStride;
+		entry.blockNdx				= curBlockNdx;
 
 		if (glu::isDataTypeMatrix(basicType))
 		{
 			// Array of vectors as specified in rules 5 & 7.
-			bool	isRowMajor	= !!(layoutFlags & LAYOUT_ROW_MAJOR);
-			int		vecSize		= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
-											 : glu::getDataTypeMatrixNumRows(basicType);
-			int		numVecs		= isRowMajor ? glu::getDataTypeMatrixNumRows(basicType)
-											 : glu::getDataTypeMatrixNumColumns(basicType);
-			int		stride		= getDataTypeArrayStride(glu::getDataTypeFloatVec(vecSize));
+			const bool	isRowMajor			= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			const int	vecSize				= isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType)
+														 : glu::getDataTypeMatrixNumRows(basicType);
+			const glu::DataType	vecType		= glu::getDataTypeFloatVec(vecSize);
+			const int	numVecs				= isRowMajor ? glu::getDataTypeMatrixNumRows(basicType)
+														 : glu::getDataTypeMatrixNumColumns(basicType);
+			const int	vecStride			= (layoutFlags & LAYOUT_SCALAR) ? getDataTypeByteSize(vecType) : baseAlignment;
 
 			entry.offset		= curOffset;
-			entry.matrixStride	= stride;
+			entry.matrixStride	= vecStride;
 			entry.isRowMajor	= isRowMajor;
 
-			curOffset += numVecs*stride;
+			curOffset += numVecs*entry.matrixStride;
 		}
 		else
 		{
+			if (!(layoutFlags & LAYOUT_SCALAR) && (layoutFlags & LAYOUT_RELAXED) &&
+				glu::isDataTypeVector(basicType) && (getDataTypeByteSize(basicType) <= 16 ? curOffset / 16 != (curOffset +  getDataTypeByteSize(basicType) - 1) / 16 : curOffset % 16 != 0))
+				curOffset = deIntRoundToPow2(curOffset, 16);
+
 			// Scalar or vector.
 			entry.offset = curOffset;
 
@@ -508,17 +624,19 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 		if (elemType.isBasicType() && !glu::isDataTypeMatrix(elemType.getBasicType()))
 		{
 			// Array of scalars or vectors.
-			glu::DataType		elemBasicType	= elemType.getBasicType();
-			UniformLayoutEntry	entry;
-			int					stride			= getDataTypeArrayStride(elemBasicType);
+			const glu::DataType		elemBasicType	= elemType.getBasicType();
+			const int				stride			= (layoutFlags & LAYOUT_SCALAR) ? getDataTypeByteSize(elemBasicType) : baseAlignment;
+			UniformLayoutEntry		entry;
 
-			entry.name			= curPrefix + "[0]"; // Array uniforms are always postfixed with [0]
-			entry.type			= elemBasicType;
-			entry.blockLayoutNdx= curBlockNdx;
-			entry.offset		= curOffset;
-			entry.size			= type.getArraySize();
-			entry.arrayStride	= stride;
-			entry.matrixStride	= 0;
+			entry.name					= curPrefix + "[0]"; // Array variables are always postfixed with [0]
+			entry.type					= elemBasicType;
+			entry.blockNdx				= curBlockNdx;
+			entry.offset				= curOffset;
+			entry.arraySize				= type.getArraySize();
+			entry.arrayStride			= stride;
+			entry.matrixStride			= 0;
+			entry.topLevelArraySize		= topLevelArraySize;
+			entry.topLevelArrayStride	= topLevelArrayStride;
 
 			curOffset += stride*type.getArraySize();
 
@@ -527,25 +645,28 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 		else if (elemType.isBasicType() && glu::isDataTypeMatrix(elemType.getBasicType()))
 		{
 			// Array of matrices.
-			glu::DataType		elemBasicType	= elemType.getBasicType();
-			bool				isRowMajor		= !!(layoutFlags & LAYOUT_ROW_MAJOR);
-			int					vecSize			= isRowMajor ? glu::getDataTypeMatrixNumColumns(elemBasicType)
-															 : glu::getDataTypeMatrixNumRows(elemBasicType);
-			int					numVecs			= isRowMajor ? glu::getDataTypeMatrixNumRows(elemBasicType)
-															 : glu::getDataTypeMatrixNumColumns(elemBasicType);
-			int					stride			= getDataTypeArrayStride(glu::getDataTypeFloatVec(vecSize));
-			UniformLayoutEntry	entry;
+			const glu::DataType			elemBasicType	= elemType.getBasicType();
+			const bool					isRowMajor		= !!(layoutFlags & LAYOUT_ROW_MAJOR);
+			const int					vecSize			= isRowMajor ? glu::getDataTypeMatrixNumColumns(elemBasicType)
+																	 : glu::getDataTypeMatrixNumRows(elemBasicType);
+			const glu::DataType			vecType			= glu::getDataTypeFloatVec(vecSize);
+			const int					numVecs			= isRowMajor ? glu::getDataTypeMatrixNumRows(elemBasicType)
+																	 : glu::getDataTypeMatrixNumColumns(elemBasicType);
+			const int					vecStride		= (layoutFlags & LAYOUT_SCALAR) ? getDataTypeByteSize(vecType) : baseAlignment;
+			UniformLayoutEntry			entry;
 
-			entry.name			= curPrefix + "[0]"; // Array uniforms are always postfixed with [0]
-			entry.type			= elemBasicType;
-			entry.blockLayoutNdx= curBlockNdx;
-			entry.offset		= curOffset;
-			entry.size			= type.getArraySize();
-			entry.arrayStride	= stride*numVecs;
-			entry.matrixStride	= stride;
-			entry.isRowMajor	= isRowMajor;
+			entry.name					= curPrefix + "[0]"; // Array variables are always postfixed with [0]
+			entry.type					= elemBasicType;
+			entry.blockNdx				= curBlockNdx;
+			entry.offset				= curOffset;
+			entry.arraySize				= type.getArraySize();
+			entry.arrayStride			= vecStride*numVecs;
+			entry.matrixStride			= vecStride;
+			entry.isRowMajor			= isRowMajor;
+			entry.topLevelArraySize		= topLevelArraySize;
+			entry.topLevelArrayStride	= topLevelArrayStride;
 
-			curOffset += numVecs*type.getArraySize()*stride;
+			curOffset += entry.arrayStride*type.getArraySize();
 
 			layout.uniforms.push_back(entry);
 		}
@@ -554,21 +675,24 @@ void computeStd140Layout (UniformLayout& layout, int& curOffset, int curBlockNdx
 			DE_ASSERT(elemType.isStructType() || elemType.isArrayType());
 
 			for (int elemNdx = 0; elemNdx < type.getArraySize(); elemNdx++)
-				computeStd140Layout(layout, curOffset, curBlockNdx, curPrefix + "[" + de::toString(elemNdx) + "]", type.getElementType(), layoutFlags);
+				curOffset += computeReferenceLayout(layout, curBlockNdx, curOffset, curPrefix + "[" + de::toString(elemNdx) + "]", type.getElementType(), layoutFlags);
 		}
 	}
 	else
 	{
 		DE_ASSERT(type.isStructType());
 
-		for (StructType::ConstIterator memberIter = type.getStruct().begin(); memberIter != type.getStruct().end(); memberIter++)
-			computeStd140Layout(layout, curOffset, curBlockNdx, curPrefix + "." + memberIter->getName(), memberIter->getType(), layoutFlags);
+		for (StructType::ConstIterator memberIter = type.getStructPtr()->begin(); memberIter != type.getStructPtr()->end(); memberIter++)
+			curOffset += computeReferenceLayout(layout, curBlockNdx, curOffset, curPrefix + "." + memberIter->getName(), memberIter->getType(), layoutFlags);
 
-		curOffset = deAlign32(curOffset, baseAlignment);
+		if (!(layoutFlags & LAYOUT_SCALAR))
+			curOffset = deAlign32(curOffset, baseAlignment);
 	}
+
+	return curOffset-baseOffset;
 }
 
-void computeStd140Layout (UniformLayout& layout, const ShaderInterface& interface)
+void computeReferenceLayout (UniformLayout& layout, const ShaderInterface& interface)
 {
 	int numUniformBlocks = interface.getNumUniformBlocks();
 
@@ -584,7 +708,7 @@ void computeStd140Layout (UniformLayout& layout, const ShaderInterface& interfac
 		for (UniformBlock::ConstIterator uniformIter = block.begin(); uniformIter != block.end(); uniformIter++)
 		{
 			const Uniform& uniform = *uniformIter;
-			computeStd140Layout(layout, curOffset, activeBlockNdx, blockPrefix + uniform.getName(), uniform.getType(), mergeLayoutFlags(block.getFlags(), uniform.getFlags()));
+			curOffset += computeReferenceLayout(layout, activeBlockNdx, curOffset, blockPrefix + uniform.getName(), uniform.getType(), mergeLayoutFlags(block.getFlags(), uniform.getFlags()));
 		}
 
 		int	uniformIndicesEnd	= (int)layout.uniforms.size();
@@ -841,6 +965,17 @@ bool uses8BitStorage (const ShaderInterface& interface)
 	return false;
 }
 
+bool usesScalarOrStd430Layout (const ShaderInterface& interface)
+{
+	// If any of blocks has LAYOUT_SCALAR or LAYOUT_STD430 flags
+	for (int ndx = 0; ndx < interface.getNumUniformBlocks(); ++ndx)
+	{
+		if (interface.getUniformBlock(ndx).getFlags() & (LAYOUT_SCALAR | LAYOUT_STD430))
+			return true;
+	}
+	return false;
+}
+
 struct Indent
 {
 	int level;
@@ -1036,7 +1171,7 @@ private:
 glu::DataType getPromoteType(glu::DataType type)
 {
 	switch (type)
-    {
+	{
 	case glu::TYPE_UINT8:			return glu::TYPE_UINT;
 	case glu::TYPE_UINT8_VEC2:		return glu::TYPE_UINT_VEC2;
 	case glu::TYPE_UINT8_VEC3:		return glu::TYPE_UINT_VEC3;
@@ -1329,7 +1464,7 @@ void generateSingleCompare (std::ostringstream&			src,
 		const char* castName = "";
 		glu::DataType promoteType = getPromoteType(elementType);
 		if (elementType != promoteType)
-        {
+		{
 			castName = glu::getDataTypeName(promoteType);
 		}
 
@@ -1371,7 +1506,7 @@ void generateCompareSrc (std::ostringstream&	src,
 		const char* castName = "";
 		glu::DataType promoteType = getPromoteType(elementType);
 		if (elementType != promoteType)
-        {
+		{
 			castName = glu::getDataTypeName(promoteType);
 		}
 
@@ -1472,6 +1607,7 @@ std::string generateVertexShader (const ShaderInterface& interface, const Unifor
 	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
 	src << "#extension GL_EXT_shader_16bit_storage : enable\n";
 	src << "#extension GL_EXT_shader_8bit_storage : enable\n";
+	src << "#extension GL_EXT_scalar_block_layout : enable\n";
 
 	src << "layout(location = 0) in highp vec4 a_position;\n";
 	src << "layout(location = 0) out mediump float v_vtxResult;\n";
@@ -1514,6 +1650,7 @@ std::string generateFragmentShader (const ShaderInterface& interface, const Unif
 	src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
 	src << "#extension GL_EXT_shader_16bit_storage : enable\n";
 	src << "#extension GL_EXT_shader_8bit_storage : enable\n";
+	src << "#extension GL_EXT_scalar_block_layout : enable\n";
 
 	src << "layout(location = 0) in mediump float v_vtxResult;\n";
 	src << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";
@@ -2093,8 +2230,19 @@ void UniformBlockCase::initPrograms (vk::SourceCollections& programCollection) c
 	DE_ASSERT(!m_vertShaderSource.empty());
 	DE_ASSERT(!m_fragShaderSource.empty());
 
-	programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource);
-	programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource);
+	vk::ShaderBuildOptions::Flags flags = vk::ShaderBuildOptions::Flags(0);
+	// TODO(dneto): If these tests ever use LAYOUT_RELAXED, then add support
+	// here as well.
+	if (usesBlockLayout(UniformFlags(LAYOUT_SCALAR | LAYOUT_STD430)))
+	{
+		flags = vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS;
+	}
+
+	programCollection.glslSources.add("vert") << glu::VertexSource(m_vertShaderSource)
+	<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
+
+	programCollection.glslSources.add("frag") << glu::FragmentSource(m_fragShaderSource)
+	<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
 }
 
 TestInstance* UniformBlockCase::createInstance (Context& context) const
@@ -2103,6 +2251,8 @@ TestInstance* UniformBlockCase::createInstance (Context& context) const
 		TCU_THROW(NotSupportedError, "uniformAndStorageBuffer16BitAccess not supported");
 	if (!context.get8BitStorageFeatures().uniformAndStorageBuffer8BitAccess && uses8BitStorage(m_interface))
 		TCU_THROW(NotSupportedError, "uniformAndStorageBuffer8BitAccess not supported");
+	if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesScalarOrStd430Layout(m_interface))
+		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
 
 	return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers);
 }
@@ -2112,7 +2262,7 @@ void UniformBlockCase::init (void)
 	const int vec4Alignment = (int)sizeof(deUint32)*4;
 
 	// Compute reference layout.
-	computeStd140Layout(m_uniformLayout, m_interface);
+	computeReferenceLayout(m_uniformLayout, m_interface);
 
 	// Assign storage for reference values.
 	{
