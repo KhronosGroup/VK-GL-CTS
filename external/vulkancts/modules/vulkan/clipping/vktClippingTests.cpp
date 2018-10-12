@@ -270,6 +270,32 @@ int countPixels (const tcu::ConstPixelBufferAccess pixels, const Vec4& color, co
 	return countPixels(pixels, IVec2(), IVec2(pixels.getWidth(), pixels.getHeight()), color, colorThreshold);
 }
 
+//! Check for correct cull and clip distance values. Middle bar should contain clip distance with linear values between 0 and 1. Cull distance is always 0.5 when enabled.
+bool checkFragColors (const tcu::ConstPixelBufferAccess pixels, IVec2 clipRegion, int barIdx, bool hasCullDistance)
+{
+	for (int y = 0; y < pixels.getHeight(); ++y)
+	for (int x = 0; x < pixels.getWidth(); ++x)
+	{
+		if (x < clipRegion.x() && y < clipRegion.y())
+			continue;
+
+		const tcu::Vec4	color					= pixels.getPixel(x, y);
+		const int		barWidth				= pixels.getWidth() / 8;
+		const bool		insideBar				= x >= barWidth * barIdx && x < barWidth * (barIdx + 1);
+		const float		expectedClipDistance	= insideBar ? (((((float)y + 0.5f) / (float)pixels.getHeight()) - 0.5f) * 2.0f) : 0.0f;
+		const float		expectedCullDistance	= 0.5f;
+		const float		clipDistance			= color.y();
+		const float		cullDistance			= color.z();
+
+		if (fabs(clipDistance - expectedClipDistance) > 0.01f)
+			return false;
+		if (hasCullDistance && fabs(cullDistance - expectedCullDistance) > 0.01f)
+			return false;
+	}
+
+	return true;
+}
+
 //! Clipping against the default clip volume.
 namespace ClipVolume
 {
@@ -821,19 +847,22 @@ struct CaseDefinition
 	const bool					enableGeometry;
 	const int					numClipDistances;
 	const int					numCullDistances;
+	const bool					readInFragmentShader;
 
 	CaseDefinition (const VkPrimitiveTopology	topology_,
 					const int					numClipDistances_,
 					const int					numCullDistances_,
 					const bool					enableTessellation_,
 					const bool					enableGeometry_,
-					const bool					dynamicIndexing_)
-		: topology					(topology_)
-		, dynamicIndexing			(dynamicIndexing_)
-		, enableTessellation		(enableTessellation_)
-		, enableGeometry			(enableGeometry_)
-		, numClipDistances			(numClipDistances_)
-		, numCullDistances			(numCullDistances_)
+					const bool					dynamicIndexing_,
+					const bool					readInFragmentShader_)
+		: topology				(topology_)
+		, dynamicIndexing		(dynamicIndexing_)
+		, enableTessellation	(enableTessellation_)
+		, enableGeometry		(enableGeometry_)
+		, numClipDistances		(numClipDistances_)
+		, numCullDistances		(numCullDistances_)
+		, readInFragmentShader	(readInFragmentShader_)
 	{
 	}
 };
@@ -878,14 +907,14 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 					<< "        gl_ClipDistance[i] = (barNdx == i ? v_position.y : 0.0);\n";
 			if (caseDef.numCullDistances > 0)
 				src << "    for (int i = 0; i < " << caseDef.numCullDistances << "; ++i)\n"
-					<< "        gl_CullDistance[i] = 0.0;\n";
+					<< "        gl_CullDistance[i] = 0.5;\n";
 		}
 		else
 		{
 			for (int i = 0; i < caseDef.numClipDistances; ++i)
 				src << "    gl_ClipDistance[" << i << "] = (barNdx == " << i << " ? v_position.y : 0.0);\n";
 			for (int i = 0; i < caseDef.numCullDistances; ++i)
-				src << "    gl_CullDistance[" << i << "] = 0.0;\n";		// don't cull anything
+				src << "    gl_CullDistance[" << i << "] = 0.5;\n";		// don't cull anything
 		}
 		src	<< "}\n";
 
@@ -1045,12 +1074,31 @@ void initPrograms (SourceCollections& programCollection, const CaseDefinition ca
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 			<< "\n"
 			<< "layout(location = 0) in flat vec4 in_color;\n"
-			<< "layout(location = 0) out vec4 o_color;\n"
-			<< "\n"
+			<< "layout(location = 0) out vec4 o_color;\n";
+		if (caseDef.readInFragmentShader)
+		{
+			if (caseDef.numClipDistances > 0)
+				src << "in float gl_ClipDistance[" << caseDef.numClipDistances << "];\n";
+			if (caseDef.numCullDistances > 0)
+				src << "in float gl_CullDistance[" << caseDef.numCullDistances << "];\n";
+		}
+		src << "\n"
 			<< "void main (void)\n"
-			<< "{\n"
-			<< "    o_color = vec4(in_color.rgb + vec3(0.0, 0.0, 0.5), 1.0);\n"  // mix with a constant color in case variable wasn't passed correctly through stages
-			<< "}\n";
+			<< "{\n";
+
+		if (caseDef.readInFragmentShader)
+		{
+			src << "    o_color = vec4(in_color.r, "
+				<< (caseDef.numClipDistances > 0 ? std::string("gl_ClipDistance[") + de::toString(caseDef.numClipDistances / 2) + "], " : "0.0, ")
+				<< (caseDef.numCullDistances > 0 ? std::string("gl_CullDistance[") + de::toString(caseDef.numCullDistances / 2) + "], " : "0.0, ")
+				<< " 1.0);\n";
+		}
+		else
+		{
+			src << "    o_color = vec4(in_color.rgb + vec3(0.0, 0.0, 0.5), 1.0);\n";  // mix with a constant color in case variable wasn't passed correctly through stages
+		}
+
+		src << "}\n";
 
 		programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
 	}
@@ -1134,14 +1182,15 @@ tcu::TestStatus testClipDistance (Context& context, const CaseDefinition caseDef
 	drawContext.draw();
 
 	// Count black pixels in the whole image.
-	const int numBlackPixels		= countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
-	const IVec2	clipRegion			= IVec2(caseDef.numClipDistances * RENDER_SIZE / numBars, RENDER_SIZE / 2);
-	const int expectedClippedPixels	= clipRegion.x() * clipRegion.y();
+	const int	numBlackPixels			= countPixels(drawContext.getColorPixels(), Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
+	const IVec2	clipRegion				= IVec2(caseDef.numClipDistances * RENDER_SIZE / numBars, RENDER_SIZE / 2);
+	const int	expectedClippedPixels	= clipRegion.x() * clipRegion.y();
 	// Make sure the bottom half has no black pixels (possible if image became corrupted).
-	const int guardPixels			= countPixels(drawContext.getColorPixels(), IVec2(0, RENDER_SIZE/2), clipRegion, Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
+	const int	guardPixels				= countPixels(drawContext.getColorPixels(), IVec2(0, RENDER_SIZE/2), clipRegion, Vec4(0.0f, 0.0f, 0.0f, 1.0f), Vec4());
+	const bool	fragColorsOk			= caseDef.readInFragmentShader ? checkFragColors(drawContext.getColorPixels(), clipRegion, caseDef.numClipDistances / 2, caseDef.numCullDistances > 0) : true;
 
-	return (numBlackPixels == expectedClippedPixels && guardPixels == 0 ? tcu::TestStatus::pass("OK")
-																		: tcu::TestStatus::fail("Rendered image(s) are incorrect"));
+	return (numBlackPixels == expectedClippedPixels && guardPixels == 0 && fragColorsOk ? tcu::TestStatus::pass("OK")
+																						: tcu::TestStatus::fail("Rendered image(s) are incorrect"));
 }
 
 } // ClipDistance ns
@@ -1361,6 +1410,17 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 				{ "clip_cull_distance",	"use ClipDistance and CullDistance at the same time",	true  },
 			};
 
+			static const struct
+			{
+				const char* const	name;
+				bool				readInFragmentShader;
+			} fragmentShaderReads[] =
+			{
+
+				{ "",						false	},
+				{ "_fragmentshader_read",	true	}
+			};
+
 			const deUint32 flagTessellation = 1u << 0;
 			const deUint32 flagGeometry		= 1u << 1;
 
@@ -1381,16 +1441,17 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 					MovePtr<tcu::TestCaseGroup>	shaderGroup(new tcu::TestCaseGroup(testCtx, shaderGroupName.c_str(), ""));
 
 					for (int numClipPlanes = 1; numClipPlanes <= MAX_CLIP_DISTANCES; ++numClipPlanes)
+					for (int fragmentShaderReadNdx = 0; fragmentShaderReadNdx < DE_LENGTH_OF_ARRAY(fragmentShaderReads); ++fragmentShaderReadNdx)
 					{
 						const int					numCullPlanes	= (caseGroups[groupNdx].useCullDistance
 																		? std::min(static_cast<int>(MAX_CULL_DISTANCES), MAX_COMBINED_CLIP_AND_CULL_DISTANCES - numClipPlanes)
 																		: 0);
-						const std::string			caseName		= de::toString(numClipPlanes) + (numCullPlanes > 0 ? "_" + de::toString(numCullPlanes) : "");
+						const std::string			caseName		= de::toString(numClipPlanes) + (numCullPlanes > 0 ? "_" + de::toString(numCullPlanes) : "") + de::toString(fragmentShaderReads[fragmentShaderReadNdx].name);
 						const VkPrimitiveTopology	topology		= (useTessellation ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 						addFunctionCaseWithPrograms<CaseDefinition>(
 							shaderGroup.get(), caseName, caseGroups[groupNdx].description, initPrograms, testClipDistance,
-							CaseDefinition(topology, numClipPlanes, numCullPlanes, useTessellation, useGeometry, dynamicIndexing));
+							CaseDefinition(topology, numClipPlanes, numCullPlanes, useTessellation, useGeometry, dynamicIndexing, fragmentShaderReads[fragmentShaderReadNdx].readInFragmentShader));
 					}
 					mainGroup->addChild(shaderGroup.release());
 				}

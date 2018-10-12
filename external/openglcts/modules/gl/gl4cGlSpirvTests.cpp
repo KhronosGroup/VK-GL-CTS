@@ -509,7 +509,7 @@ bool compareUintColors(const GLuint inColor, const GLuint refColor, const int ep
 	int a2 = ((refColor >> 24) & 0xFF);
 
 	if (r1 >= r2 - epsilon && r1 <= r2 + epsilon && g1 >= g2 - epsilon && g1 <= g2 + epsilon && b1 >= b2 - epsilon &&
-		b1 <= b2 + epsilon)
+		b1 <= b2 + epsilon && a1 >= a2 - epsilon && a1 <= a2 + epsilon)
 	{
 		return true;
 	}
@@ -940,7 +940,7 @@ tcu::TestNode::IterateResult SpirvShaderBinaryMultipleShaderObjectsTest::iterate
 	gl.bufferData(GL_ARRAY_BUFFER, 9 * sizeof(GLfloat), (GLvoid*)vertices, GL_DYNAMIC_DRAW);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glBufferData");
 
-#if DEQP_HAVE_SPIRV_TOOLS
+#if defined DEQP_HAVE_SPIRV_TOOLS
 	ShaderBinary binary;
 	binary << SHADERTYPE_VERTEX << "mainv";
 	binary << SHADERTYPE_FRAGMENT << "mainf";
@@ -2839,7 +2839,7 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 #else  // DEQP_HAVE_GLSLANG
 				tcu::Archive&   archive = m_testCtx.getArchive();
 				ProgramBinaries binaries;
-				for (int s = 0; s < m_validations[v].shaders.size(); ++s)
+				for (int s = 0; s < (signed)m_validations[v].shaders.size(); ++s)
 				{
 					std::stringstream ss;
 					ss << "spirv/spirv_validation_builtin_variable_decorations/shader_" << v << "_" << s << ".nspv";
@@ -2950,6 +2950,8 @@ tcu::TestNode::IterateResult SpirvValidationBuiltInVariableDecorationsTest::iter
 
 bool SpirvValidationBuiltInVariableDecorationsTest::validComputeFunc(ValidationOutputVec& outputs)
 {
+	DE_UNREF(outputs);
+
 	const Functions& gl = m_context.getRenderContext().getFunctions();
 
 	GLuint textures[5];
@@ -3061,11 +3063,8 @@ bool SpirvValidationBuiltInVariableDecorationsTest::validComputeFunc(ValidationO
 		}
 	}
 
-	if (textures)
-	{
-		gl.deleteTextures(5, textures);
-		GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteTextures");
-	}
+	gl.deleteTextures(5, textures);
+	GLU_EXPECT_NO_ERROR(gl.getError(), "glDeleteTextures");
 
 	return result;
 }
@@ -3728,39 +3727,41 @@ void SpirvValidationCapabilitiesTest::init()
 
 	if (m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture2"))
 	{
-		ShaderStage computeStageExt("GL_ARB_sparse_texture2");
-		computeStageExt.source = ComputeSource("#version 450\n"
-											   "\n"
-											   "#extension GL_ARB_sparse_texture2 : require\n"
-											   "\n"
-											   "layout (location = 0) uniform sampler2D tex;\n"
-											   "\n"
-											   "void main()\n"
-											   "{\n"
-											   "    vec2 p = vec2(0.0);\n"
-											   "\n"
-											   "    vec4 spCol;\n"
-											   "    sparseTextureARB(tex, p, spCol);\n"
-											   "}\n");
+		{
+			ShaderStage computeStageExt("GL_ARB_sparse_texture2");
+			computeStageExt.source = ComputeSource("#version 450\n"
+												"\n"
+												"#extension GL_ARB_sparse_texture2 : require\n"
+												"\n"
+												"layout (location = 0) uniform sampler2D tex;\n"
+												"\n"
+												"void main()\n"
+												"{\n"
+												"    vec2 p = vec2(0.0);\n"
+												"\n"
+												"    vec4 spCol;\n"
+												"    sparseTextureARB(tex, p, spCol);\n"
+												"}\n");
 
-		computeStageExt.caps.push_back("SparseResidency");
+			computeStageExt.caps.push_back("SparseResidency");
 
-		Pipeline extPipeline;
-		extPipeline.push_back(computeStageExt);
+			Pipeline extPipeline;
+			extPipeline.push_back(computeStageExt);
 
-		m_pipelines.push_back(extPipeline);
+			m_pipelines.push_back(extPipeline);
+		}
 
 		if (m_context.getContextInfo().isExtensionSupported("GL_ARB_sparse_texture_clamp"))
 		{
 			ShaderStage vertexStageExt("GL_ARB_sparse_texture_clamp_vert");
 			vertexStageExt.source = VertexSource("#version 450\n"
-												 "\n"
-												 "layout (location = 0) in vec4 pos;\n"
-												 "\n"
-												 "void main()\n"
-												 "{\n"
-												 "    gl_Position = pos;\n"
-												 "}\n");
+												"\n"
+												"layout (location = 0) in vec4 pos;\n"
+												"\n"
+												"void main()\n"
+												"{\n"
+												"    gl_Position = pos;\n"
+												"}\n");
 
 			ShaderStage fragmentStageExt("GL_ARB_sparse_texture_clamp_frag");
 			fragmentStageExt.source = FragmentSource("#version 450\n"
@@ -3825,8 +3826,6 @@ void SpirvValidationCapabilitiesTest::deinit()
 tcu::TestNode::IterateResult SpirvValidationCapabilitiesTest::iterate()
 {
 	const Functions& gl = m_context.getRenderContext().getFunctions();
-
-	bool result = true;
 
 	for (int p = 0; p < (signed)m_pipelines.size(); ++p)
 	{

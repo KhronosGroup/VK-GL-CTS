@@ -15,6 +15,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktRenderPassSampleReadTests.hpp
 	vktRenderPassSparseRenderTargetTests.cpp
 	vktRenderPassSparseRenderTargetTests.hpp
+	vktRenderPassSubpassDependencyTests.cpp
+	vktRenderPassSubpassDependencyTests.hpp
 	vktRenderPassUnusedAttachmentTests.cpp
 	vktRenderPassUnusedAttachmentTests.hpp
 	)

@@ -28,6 +28,7 @@
 #include "vktRenderPassMultisampleResolveTests.hpp"
 #include "vktRenderPassSampleReadTests.hpp"
 #include "vktRenderPassSparseRenderTargetTests.hpp"
+#include "vktRenderPassSubpassDependencyTests.hpp"
 #include "vktRenderPassUnusedAttachmentTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
@@ -102,12 +103,6 @@ enum AllocationKind
 {
 	ALLOCATION_KIND_SUBALLOCATED,
 	ALLOCATION_KIND_DEDICATED,
-};
-
-enum RenderPassType
-{
-	RENDERPASS_TYPE_LEGACY = 0,
-	RENDERPASS_TYPE_RENDERPASS2,
 };
 
 struct TestConfigExternal
@@ -6999,6 +6994,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassMultisampleTests(testCtx) : createRenderPass2MultisampleTests(testCtx));
 	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassMultisampleResolveTests(testCtx) : createRenderPass2MultisampleResolveTests(testCtx));
+	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSubpassDependencyTests(testCtx) : createRenderPass2SubpassDependencyTests(testCtx));
 
 	renderpassTests->addChild(suballocationTestGroup.release());
 	renderpassTests->addChild(dedicatedAllocationTestGroup.release());
@@ -7007,6 +7003,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	{
 		renderpassTests->addChild(createRenderPassMultisampleTests(testCtx));
 		renderpassTests->addChild(createRenderPassMultisampleResolveTests(testCtx));
+		renderpassTests->addChild(createRenderPassSubpassDependencyTests(testCtx));
 	}
 
 	renderpassTests->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSampleReadTests(testCtx) : createRenderPass2SampleReadTests(testCtx));

@@ -375,7 +375,7 @@ de::MovePtr<tcu::TextureLevel> CommandBufferRenderPassTestEnvironment::readColor
 	submitPrimaryCommandBuffer();
 
 	// Read buffer data
-	invalidateMappedMemoryRange(m_vkd, m_device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), pixelDataSize);
+	invalidateAlloc(m_vkd, m_device, *bufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), bufferAlloc->getHostPtr()));
 
 	return resultLevel;
@@ -1793,7 +1793,7 @@ tcu::TestStatus simultaneousUsePrimaryBufferTest(Context& context)
 	VK_CHECK(vk.resetEvent(vkDevice, *eventOne));
 
 	// record primary command buffer
-	beginCommandBuffer(vk, *primCmdBuf, 0u);
+	beginCommandBuffer(vk, *primCmdBuf, VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 	{
 		// wait for event
 		vk.cmdWaitEvents(*primCmdBuf, 1u, &eventOne.get(), VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0u, DE_NULL, 0u, DE_NULL, 0u, DE_NULL);

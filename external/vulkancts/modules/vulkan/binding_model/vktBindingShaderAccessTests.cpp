@@ -706,7 +706,7 @@ void SingleTargetRenderInstance::readRenderTarget (tcu::TextureLevel& dst)
 	dst.setStorage(m_targetFormat, m_targetSize.x(), m_targetSize.y());
 
 	// copy data
-	invalidateMappedMemoryRange(m_vki, m_device, bufferMemory->getMemory(), bufferMemory->getOffset(), pixelDataSize);
+	invalidateAlloc(m_vki, m_device, *bufferMemory);
 	tcu::copy(dst, tcu::ConstPixelBufferAccess(dst.getFormat(), dst.getSize(), bufferMemory->getHostPtr()));
 }
 
@@ -1511,7 +1511,7 @@ vk::Move<vk::VkBuffer> BufferRenderInstance::createSourceBuffer (const vk::Devic
 		deMemcpy((deUint8*)mapPtr + postGuardOffset, &postGuardValue, sizeof(float));
 	deMemset((deUint8*)mapPtr + offset + sizeof(s_colors) / 2, 0x5A, (size_t)bufferSize - (size_t)offset - sizeof(s_colors) / 2); // fill with interesting pattern that produces valid floats
 
-	flushMappedMemoryRange(vki, device, bufferMemory->getMemory(), bufferMemory->getOffset(), bufferSize);
+	flushAlloc(vki, device, *bufferMemory);
 
 	// Flushed host-visible memory is automatically made available to the GPU, no barrier is needed.
 
@@ -2039,7 +2039,7 @@ ComputeInstanceResultBuffer::ComputeInstanceResultBuffer (const vk::DeviceInterf
 
 void ComputeInstanceResultBuffer::readResultContentsTo (tcu::Vec4 (*results)[4]) const
 {
-	invalidateMappedMemoryRange(m_vki, m_device, m_bufferMem->getMemory(), m_bufferMem->getOffset(), sizeof(*results));
+	invalidateAlloc(m_vki, m_device, *m_bufferMem);
 	deMemcpy(*results, m_bufferMem->getHostPtr(), sizeof(*results));
 }
 
@@ -2067,7 +2067,7 @@ vk::Move<vk::VkBuffer> ComputeInstanceResultBuffer::createResultBuffer (const vk
 	for (size_t offset = 0; offset < DATA_SIZE; offset += sizeof(float))
 		deMemcpy(((deUint8*)mapPtr) + offset, &clearValue, sizeof(float));
 
-	flushMappedMemoryRange(vki, device, allocation->getMemory(), allocation->getOffset(), (vk::VkDeviceSize)DATA_SIZE);
+	flushAlloc(vki, device, *allocation);
 
 	*outAllocation = allocation;
 	return buffer;
@@ -2480,7 +2480,7 @@ vk::Move<vk::VkBuffer> BufferComputeInstance::createColorDataBuffer (deUint32 of
 	deMemcpy((deUint8*)mapPtr + offset + sizeof(tcu::Vec4), value2.getPtr(), sizeof(tcu::Vec4));
 	deMemset((deUint8*)mapPtr + offset + 2 * sizeof(tcu::Vec4), 0x5A, (size_t)bufferSize - (size_t)offset - 2 * sizeof(tcu::Vec4));
 
-	flushMappedMemoryRange(m_vki, m_device, allocation->getMemory(), allocation->getOffset(), bufferSize);
+	flushAlloc(m_vki, m_device, *allocation);
 
 	*outAllocation = allocation;
 	return buffer;
@@ -4013,7 +4013,7 @@ void ImageInstanceImages::uploadImage (const vk::DeviceInterface&		vki,
 
 	// copy data to buffer
 	writeTextureLevelPyramidData(dataBufferMemory->getHostPtr(), dataBufferSize, data, viewType , &copySlices);
-	flushMappedMemoryRange(vki, device, dataBufferMemory->getMemory(), dataBufferMemory->getOffset(), dataBufferSize);
+	flushAlloc(vki, device, *dataBufferMemory);
 
 	// record command buffer
 	beginCommandBuffer(vki, *cmd);
@@ -7938,7 +7938,7 @@ void TexelBufferInstanceBuffers::populateSourceBuffer (const tcu::PixelBufferAcc
 void TexelBufferInstanceBuffers::uploadData (const vk::DeviceInterface& vki, vk::VkDevice device, const vk::Allocation& memory, const de::ArrayBuffer<deUint8>& data)
 {
 	deMemcpy(memory.getHostPtr(), data.getPtr(), data.size());
-	flushMappedMemoryRange(vki, device, memory.getMemory(), memory.getOffset(), data.size());
+	flushAlloc(vki, device, memory);
 }
 
 int TexelBufferInstanceBuffers::getFetchPos (int fetchPosNdx)

@@ -62,12 +62,6 @@ namespace
 {
 using namespace renderpass;
 
-enum RenderPassType
-{
-	RENDERPASS_TYPE_LEGACY = 0,
-	RENDERPASS_TYPE_RENDERPASS2,
-};
-
 de::MovePtr<Allocation> createBufferMemory (const DeviceInterface&	vk,
 											VkDevice				device,
 											Allocator&				allocator,

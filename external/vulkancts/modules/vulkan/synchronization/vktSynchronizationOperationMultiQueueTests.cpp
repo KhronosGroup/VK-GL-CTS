@@ -240,11 +240,6 @@ void createBarrierMultiQueue (const DeviceInterface&	vk,
 		{
 			barrier.srcQueueFamilyIndex = writeFamily;
 			barrier.dstQueueFamilyIndex = readFamily;
-			if (secondQueue)
-			{
-				barrier.oldLayout		= barrier.newLayout;
-				barrier.srcAccessMask	= 0u;
-			}
 			vk.cmdPipelineBarrier(cmdBuffer, secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT) : writeSync.stageMask,
 					!secondQueue ? VkPipelineStageFlags(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT) : readSync.stageMask, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL,
 					0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &barrier);

@@ -782,10 +782,9 @@ void ImageMemoryRequirementsOriginal::addFunctionTestCase (tcu::TestCaseGroup*		
 	addFunctionCase(group, name, desc, testEntryPoint, arg0);
 }
 
-void ImageMemoryRequirementsOriginal::preTestChecks (Context&					,
-													 const InstanceInterface&	vki,
-													 const VkPhysicalDevice		physDevice,
-													 const VkImageCreateFlags	createFlags)
+static void CheckImageFlagFeatures (const InstanceInterface&	vki,
+									const VkPhysicalDevice		physDevice,
+									const VkImageCreateFlags	createFlags)
 {
 	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physDevice);
 
@@ -797,6 +796,14 @@ void ImageMemoryRequirementsOriginal::preTestChecks (Context&					,
 
 	if ((createFlags & VK_IMAGE_CREATE_SPARSE_ALIASED_BIT) && !features.sparseResidencyAliased)
 		TCU_THROW(NotSupportedError, "Feature not supported: sparseResidencyAliased");
+}
+
+void ImageMemoryRequirementsOriginal::preTestChecks (Context&					,
+													 const InstanceInterface&	vki,
+													 const VkPhysicalDevice		physDevice,
+													 const VkImageCreateFlags	createFlags)
+{
+   CheckImageFlagFeatures(vki, physDevice, createFlags);
 }
 
 void ImageMemoryRequirementsOriginal::updateMemoryRequirements	(const DeviceInterface&		vk,
@@ -911,6 +918,9 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const deUint32 apiVersio
 	if (info.flags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
 	{
 		DE_ASSERT(info.tiling == VK_IMAGE_TILING_OPTIMAL);
+
+		if (info.imageType == VK_IMAGE_TYPE_1D)
+			return false;
 
 		if (info.imageType == VK_IMAGE_TYPE_2D && !features.sparseResidencyImage2D)
 			return false;
@@ -1573,7 +1583,8 @@ bool isMultiplaneImageSupported (const InstanceInterface&	vki,
 								 const VkPhysicalDevice		physicalDevice,
 								 const VkImageCreateInfo&	info)
 {
-	if ((info.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) && info.imageType != VK_IMAGE_TYPE_2D)
+	// cubemap requires arrayLayers > 1, which multiplane doesn't support
+	if (info.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
 		return false;
 
 	if ((info.usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) &&
@@ -1651,10 +1662,13 @@ tcu::TestStatus testMultiplaneImages (Context& context, ImageTestParams params)
 			TCU_THROW(NotSupportedError, std::string(extensionName + " is not supported").c_str());
 	}
 
-	const DeviceInterface&					vk					= context.getDeviceInterface();
 	const InstanceInterface&				vki					= context.getInstanceInterface();
-	const VkDevice							device				= context.getDevice();
 	const VkPhysicalDevice					physicalDevice		= context.getPhysicalDevice();
+
+	CheckImageFlagFeatures(vki, physicalDevice, params.flags);
+
+	const DeviceInterface&					vk					= context.getDeviceInterface();
+	const VkDevice							device				= context.getDevice();
 	const VkImageCreateFlags				sparseFlags			= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
 	const VkImageUsageFlags					transientFlags		= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
 	const VkPhysicalDeviceMemoryProperties	memoryProperties	= getPhysicalDeviceMemoryProperties(vki, physicalDevice);
