@@ -297,7 +297,6 @@ void TessellationShaderXFB::initTest()
 	/* Create a fragment shader program */
 	glw::GLint		   link_status			= GL_FALSE;
 	const glw::GLchar* varying_name			= "BLOCK_INOUT.value";
-	const glw::GLchar* varying_array_name	= "BLOCK_INOUT[0].value";
 
 	m_fs_program_id = createSeparableProgram(GL_FRAGMENT_SHADER, 1, /* n_strings */
 											 &fs_body, 0,			/* n_varyings */
@@ -404,7 +403,7 @@ void TessellationShaderXFB::initTest()
 	/* Create a tessellation control shader program */
 	m_tc_program_id = createSeparableProgram(m_glExtTokens.TESS_CONTROL_SHADER, 1, /* n_strings */
 											 &tc_body, 1,						   /* n_varyings */
-											 &varying_array_name,				   /* varyings */
+											 &varying_name,						   /* varyings */
 											 tc_feedback_valid);				   /* should_succeed */
 
 	if (!tc_feedback_valid)
