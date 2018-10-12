@@ -3355,6 +3355,28 @@ struct VkPhysicalDevicePCIBusInfoPropertiesEXT
 	deUint32		pciFunction;
 };
 
+struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	heapBudget[VK_MAX_MEMORY_HEAPS];
+	VkDeviceSize	heapUsage[VK_MAX_MEMORY_HEAPS];
+};
+
+struct VkPhysicalDeviceMemoryPriorityFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		memoryPriority;
+};
+
+struct VkMemoryPriorityAllocateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	float			priority;
+};
+
 
 
 

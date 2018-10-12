@@ -1539,6 +1539,65 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	return tcu::TestStatus::pass("Querying deviceGroup peer memory features succeeded");
 }
 
+tcu::TestStatus deviceMemoryBudgetProperties (Context& context)
+{
+	TestLog&							log			= context.getTestContext().getLog();
+	deUint8								buffer[sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT) + GUARD_SIZE];
+
+	if (!vk::isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_EXT_memory_budget"))
+		TCU_THROW(NotSupportedError, "VK_EXT_memory_budget is not supported");
+
+	VkPhysicalDeviceMemoryBudgetPropertiesEXT *budgetProps = reinterpret_cast<VkPhysicalDeviceMemoryBudgetPropertiesEXT *>(buffer);
+	deMemset(buffer, GUARD_VALUE, sizeof(buffer));
+
+	budgetProps->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
+	budgetProps->pNext = DE_NULL;
+
+	VkPhysicalDeviceMemoryProperties2	memProps;
+	deMemset(&memProps, 0, sizeof(memProps));
+	memProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2;
+	memProps.pNext = budgetProps;
+
+	context.getInstanceInterface().getPhysicalDeviceMemoryProperties2(context.getPhysicalDevice(), &memProps);
+
+	log << TestLog::Message << "device = " << context.getPhysicalDevice() << TestLog::EndMessage
+		<< TestLog::Message << *budgetProps << TestLog::EndMessage;
+
+	for (deInt32 ndx = 0; ndx < GUARD_SIZE; ndx++)
+	{
+		if (buffer[ndx + sizeof(VkPhysicalDeviceMemoryBudgetPropertiesEXT)] != GUARD_VALUE)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Guard offset " << ndx << " not valid" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties buffer overflow");
+		}
+	}
+
+	for (deUint32 i = 0; i < memProps.memoryProperties.memoryHeapCount; ++i)
+	{
+		if (budgetProps->heapBudget[i] == 0)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Supported heaps must report nonzero budget" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid heap budget (zero)");
+		}
+		if (budgetProps->heapBudget[i] > memProps.memoryProperties.memoryHeaps[i].size)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Heap budget must be less than or equal to heap size" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid heap budget (too large)");
+		}
+	}
+
+	for (deUint32 i = memProps.memoryProperties.memoryHeapCount; i < VK_MAX_MEMORY_HEAPS; ++i)
+	{
+		if (budgetProps->heapBudget[i] != 0 || budgetProps->heapUsage[i] != 0)
+		{
+			log << TestLog::Message << "deviceMemoryBudgetProperties - Unused heaps must report budget/usage of zero" << TestLog::EndMessage;
+			return tcu::TestStatus::fail("deviceMemoryBudgetProperties invalid unused heaps");
+		}
+	}
+
+	return tcu::TestStatus::pass("Querying memory budget properties succeeded");
+}
+
 VkFormatFeatureFlags getRequiredOptimalTilingFeatures (VkFormat format)
 {
 	struct Formatpair
@@ -3621,6 +3680,7 @@ tcu::TestCaseGroup* createFeatureInfoTests (tcu::TestContext& testCtx)
 		addFunctionCase(deviceInfoTests.get(), "layers",					"Layers",					enumerateDeviceLayers);
 		addFunctionCase(deviceInfoTests.get(), "extensions",				"Extensions",				enumerateDeviceExtensions);
 		addFunctionCase(deviceInfoTests.get(), "no_khx_extensions",			"KHX extensions",			testNoKhxExtensions);
+		addFunctionCase(deviceInfoTests.get(), "memory_budget",				"Memory budget",			deviceMemoryBudgetProperties);
 
 		infoTests->addChild(deviceInfoTests.release());
 	}
