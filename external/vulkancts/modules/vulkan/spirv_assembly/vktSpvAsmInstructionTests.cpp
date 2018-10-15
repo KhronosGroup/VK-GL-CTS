@@ -16069,8 +16069,8 @@ void createFloat16ArithmeticFuncTest (tcu::TestContext& testCtx, tcu::TestCaseGr
 		"    %entry = OpLabel\n"
 
 		"        %i = OpVariable %fp_i32 Function\n"
-		"             OpStore %i %c_i32_0\n"
 		"${arg_infunc_vars}"
+		"             OpStore %i %c_i32_0\n"
 		"             OpBranch %loop\n"
 
 		"     %loop = OpLabel\n"

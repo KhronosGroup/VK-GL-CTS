@@ -1231,6 +1231,7 @@ struct Operation
 	const char*	annotations;
 	const char*	types;
 	const char*	constants;
+	const char*	variables;
 	const char*	commands;
 
 	// conversion operations operate on one float type and produce float
@@ -1251,6 +1252,7 @@ struct Operation
 		, annotations("")
 		, types("")
 		, constants("")
+		, variables("")
 		, commands(_commands)
 		, isInputTypeRestricted(false)
 		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
@@ -1267,6 +1269,7 @@ struct Operation
 		, annotations("")
 		, types("")
 		, constants(_constants)
+		, variables("")
 		, commands(_commands)
 		, isInputTypeRestricted(true)
 		, restrictedInputType(_inputType)
@@ -1278,11 +1281,13 @@ struct Operation
 			  const char* _annotations,
 			  const char* _types,
 			  const char* _constants,
+			  const char* _variables,
 			  const char* _commands)
 		: name(_name)
 		, annotations(_annotations)
 		, types(_types)
 		, constants(_constants)
+		, variables(_variables)
 		, commands(_commands)
 		, isInputTypeRestricted(false)
 		, restrictedInputType(FP16)		// not used as isInputTypeRestricted is false
@@ -1300,6 +1305,7 @@ struct Operation
 		, annotations(_annotations)
 		, types(_types)
 		, constants(_constants)
+		, variables("")
 		, commands(_commands)
 		, isInputTypeRestricted(true)
 		, restrictedInputType(_inputType)
@@ -1347,6 +1353,7 @@ struct SpecializedOperation
 	string annotations;
 	string types;
 	string arguments;
+	string variables;
 	string commands;
 
 	FloatType		inFloatType;
@@ -1421,6 +1428,7 @@ void TestCasesBuilder::init()
 											"%entry = OpLabel\n"
 											"OpReturnValue %param\n"
 											"OpFunctionEnd\n",
+											"",
 											"%result             = OpFunctionCall %type_float %test_fun %arg1\n");
 
 	// conversion operations that are meant to be used only for single output type (defined by the second number in name)
@@ -1572,27 +1580,33 @@ void TestCasesBuilder::init()
 	mo[O_LOG2]			= Op("log2",		"%result             = OpExtInst %type_float %std450 Log2 %arg1\n");
 	mo[O_SQRT]			= Op("sqrt",		"%result             = OpExtInst %type_float %std450 Sqrt %arg1\n");
 	mo[O_INV_SQRT]		= Op("inv_sqrt",	"%result             = OpExtInst %type_float %std450 InverseSqrt %arg1\n");
-	mo[O_MODF]			= Op("modf",		"%tmpVarPtr          = OpVariable %type_float_fptr Function\n"
+	mo[O_MODF]			= Op("modf",		"",
+											"",
+											"",
+											"%tmpVarPtr          = OpVariable %type_float_fptr Function\n",
 											"%result             = OpExtInst %type_float %std450 Modf %arg1 %tmpVarPtr\n");
 	mo[O_MODF_ST]		= Op("modf_st",		"OpMemberDecorate %struct_ff 0 Offset ${float_width}\n"
 											"OpMemberDecorate %struct_ff 1 Offset ${float_width}\n",
 											"%struct_ff          = OpTypeStruct %type_float %type_float\n"
 											"%struct_ff_fptr     = OpTypePointer Function %struct_ff\n",
 											"",
+											"%tmpStructPtr       = OpVariable %struct_ff_fptr Function\n",
 											"%tmpStruct          = OpExtInst %struct_ff %std450 ModfStruct %arg1\n"
-											"%tmpStructPtr       = OpVariable %struct_ff_fptr Function\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
 											"%result             = OpLoad %type_float %tmpLoc\n");
-	mo[O_FREXP]			= Op("frexp",		"%tmpVarPtr          = OpVariable %type_i32_fptr Function\n"
+	mo[O_FREXP]			= Op("frexp",		"",
+											"",
+											"",
+											"%tmpVarPtr          = OpVariable %type_i32_fptr Function\n",
 											"%result             = OpExtInst %type_float %std450 Frexp %arg1 %tmpVarPtr\n");
 	mo[O_FREXP_ST]		= Op("frexp_st",	"OpMemberDecorate %struct_fi 0 Offset ${float_width}\n"
 											"OpMemberDecorate %struct_fi 1 Offset 32\n",
 											"%struct_fi          = OpTypeStruct %type_float %type_i32\n"
 											"%struct_fi_fptr     = OpTypePointer Function %struct_fi\n",
 											"",
+											"%tmpStructPtr       = OpVariable %struct_fi_fptr Function\n",
 											"%tmpStruct          = OpExtInst %struct_fi %std450 FrexpStruct %arg1\n"
-											"%tmpStructPtr       = OpVariable %struct_fi_fptr Function\n"
 											"                      OpStore %tmpStructPtr %tmpStruct\n"
 											"%tmpLoc             = OpAccessChain %type_float_fptr %tmpStructPtr %c_i32_0\n"
 											"%result             = OpLoad %type_float %tmpLoc\n");
@@ -1624,6 +1638,7 @@ void TestCasesBuilder::init()
 											"",
 											"%c_fp32_denorm_fp16 = OpConstant %type_f32 6.01e-5\n"		// fp32 representation of fp16 denorm value
 											"%c_ref              = OpConstant %type_u32 66061296\n",
+											"",
 											"%srcVec             = OpCompositeConstruct %type_f32_vec2 %c_fp32_denorm_fp16 %c_fp32_denorm_fp16\n"
 											"%packedInt          = OpExtInst %type_u32 %std450 PackHalf2x16 %srcVec\n"
 											"%boolVal            = OpIEqual %type_bool %c_ref %packedInt\n"
@@ -1634,6 +1649,7 @@ void TestCasesBuilder::init()
 	mo[O_UPH_DENORM]	= Op("uph_denorm",	"",
 											"",
 											"%c_u32_2_16_pack    = OpConstant %type_u32 66061296\n", // == packHalf2x16(vec2(denorm))
+											"",
 											"%tmpVec             = OpExtInst %type_f32_vec2 %std450 UnpackHalf2x16 %c_u32_2_16_pack\n"
 											"%result             = OpCompositeExtract %type_f32 %tmpVec 0\n");
 
@@ -1643,6 +1659,7 @@ void TestCasesBuilder::init()
 											"",
 											"%c_p1               = OpConstant %type_u32 0\n"
 											"%c_p2               = OpConstant %type_u32 262144\n",		// == UnpackDouble2x32(denorm)
+											"",
 											"%srcVec             = OpCompositeConstruct %type_u32_vec2 %c_p1 %c_p2\n"
 											"%result             = OpExtInst %type_f64 %std450 PackDouble2x32 %srcVec\n");
 
@@ -1658,11 +1675,13 @@ void TestCasesBuilder::init()
 											unpackDouble2x32Types,
 											"%c_p1               = OpConstant %type_u32 0\n"
 											"%c_p2               = OpConstant %type_u32 0\n",
+											"",
 											unpackDouble2x32Source);
 	mo[O_UPD_DENORM_PRESERVE]	= Op("upd_denorm",	"",
 											unpackDouble2x32Types,
 											"%c_p1               = OpConstant %type_u32 1008\n"
 											"%c_p2               = OpConstant %type_u32 0\n",
+											"",
 											unpackDouble2x32Source);
 
 	mo[O_ORTE_ROUND]	= Op("orte_round",	FP32,
@@ -2200,6 +2219,7 @@ void TestGroupBuilderBase::specializeOperation(const TestCaseInfo&		testCaseInfo
 	specializedOperation.constans		= replace(operation.constants, typeToken, inTypePrefix);
 	specializedOperation.annotations	= replace(operation.annotations, widthToken, outTypeSnippets->bitWidth);
 	specializedOperation.types			= replace(operation.types, typeToken, outTypePrefix);
+	specializedOperation.variables		= replace(operation.variables, typeToken, outTypePrefix);
 	specializedOperation.commands		= replace(operation.commands, typeToken, outTypePrefix);
 
 	specializedOperation.inFloatType		= inFloatType;
@@ -2381,6 +2401,8 @@ void ComputeTestGroupBuilder::init()
 		"%main                 = OpFunction %type_void None %type_voidf\n"
 		"%label                = OpLabel\n"
 
+		"${variables}"
+
 		// depending on test case arguments are either read from input ssbo
 		// or generated in spir-v code - in later case shader input is not used
 		"${arguments}"
@@ -2496,6 +2518,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const TestCaseInfo& testCaseInfo,
 	specializations["constants"]		= constants + specOpData.constans;
 	specializations["io_definitions"]	= ioDefinitions;
 	specializations["arguments"]		= specOpData.arguments;
+	specializations["variables"]		= specOpData.variables;
 	specializations["commands"]			= specOpData.commands;
 	specializations["save_result"]		= outTypeSnippets->storeResultsSnippet;
 
@@ -2617,6 +2640,9 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 
 		"%main                 = OpFunction %type_void None %type_voidf\n"
 		"%label                = OpLabel\n"
+
+		"${vert_variables}"
+
 		"%position             = OpLoad %type_f32_vec4 %BP_position\n"
 		"%gl_pos               = OpAccessChain %type_f32_vec4_optr %BP_stream %c_i32_0\n"
 		"OpStore %gl_pos %position\n"
@@ -2699,6 +2725,8 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 
 		"%main                 = OpFunction %type_void None %type_voidf\n"
 		"%label                = OpLabel\n"
+
+		"${frag_variables}"
 
 		// just pass vertex color - rendered image is not important in our case
 		"%vertex_color         = OpLoad %type_f32_vec4 %BP_vertex_color\n"
@@ -2894,6 +2922,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	string fragIODefinitions;
 	string vertArguments;
 	string fragArguments;
+	string vertVariables;
+	string fragVariables;
 	string vertCommands;
 	string fragCommands;
 	string vertProcessResult;
@@ -2948,6 +2978,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 		fragIODefinitions		= outTypeSnippets->outputDefinitionsSnippet + outTypeSnippets->inputVaryingsSnippet;
 		vertArguments			= specOpData.arguments;
 		fragArguments			= "";
+		vertVariables			= specOpData.variables;
+		fragVariables			= "";
 		vertCommands			= specOpData.commands;
 		fragCommands			= "";
 		vertProcessResult		= outTypeSnippets->storeVertexResultSnippet;
@@ -3000,6 +3032,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 							  outTypeSnippets->outputDefinitionsSnippet + dummyFragVarying;
 		vertArguments		= "";
 		fragArguments		= specOpData.arguments;
+		vertVariables		= "";
+		fragVariables		= specOpData.variables;
 		vertCommands		= "";
 		fragCommands		= specOpData.commands;
 		vertProcessResult	= "";
@@ -3015,6 +3049,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	specializations["vert_constants"]		= vertConstants;
 	specializations["vert_io_definitions"]	= vertIODefinitions;
 	specializations["vert_arguments"]		= vertArguments;
+	specializations["vert_variables"]		= vertVariables;
 	specializations["vert_commands"]		= vertCommands;
 	specializations["vert_process_result"]	= vertProcessResult;
 	specializations["frag_capabilities"]	= fragCapabilities;
@@ -3025,6 +3060,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	specializations["frag_constants"]		= fragConstants;
 	specializations["frag_io_definitions"]	= fragIODefinitions;
 	specializations["frag_arguments"]		= fragArguments;
+	specializations["frag_variables"]		= fragVariables;
 	specializations["frag_commands"]		= fragCommands;
 	specializations["frag_process_result"]	= fragProcessResult;
 
