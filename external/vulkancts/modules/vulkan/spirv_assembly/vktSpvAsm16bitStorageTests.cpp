@@ -3272,10 +3272,10 @@ void addCompute16bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		"%id      = OpVariable %uvec3ptr Input\n"
 		"%main    = OpFunction %void None %voidf\n"
 		"%label   = OpLabel\n"
+		"%ndxArrz = OpVariable %fp_i32  Function\n"
 		"%idval   = OpLoad %uvec3 %id\n"
 		"%x       = OpCompositeExtract %u32 %idval 0\n"
 		"%y       = OpCompositeExtract %u32 %idval 1\n"
-		"%ndxArrz = OpVariable %fp_i32  Function\n"
 		"\n"//strutOut.b16 = strutIn.b16
 		"%inP1  = OpAccessChain %i16${inPtr} %ssboIN %zero %x %zero\n"
 		"%inV1  = OpLoad %i16 %inP1\n"
