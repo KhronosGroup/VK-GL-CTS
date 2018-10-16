@@ -375,7 +375,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_buffer, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset()));
 
 		deMemcpy(m_bufferAlloc->getHostPtr(), hostBuffer.data(), (size_t)bufferSize);
-		flushMappedMemoryRange(vk, vkDevice, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset(), bufferSize);
+		flushAlloc(vk, vkDevice, *m_bufferAlloc);
 	}
 
 	// Create descriptor pool
@@ -513,7 +513,7 @@ void DynamicOffsetGraphicsTestInstance::init (void)
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool
@@ -666,7 +666,7 @@ TestInstance* DynamicOffsetGraphicsTest::createInstance (Context& context) const
 void DynamicOffsetGraphicsTest::initPrograms (SourceCollections& sourceCollections) const
 {
 	const deUint32	numBindings	= m_params.numDynamicBindings + m_params.numNonDynamicBindings;
-	const string	bufferType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "buffer";
+	const string	bufferType	= m_params.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ? "uniform" : "readonly buffer";
 	string			inputBlocks;
 	string			inputSum;
 
@@ -839,7 +839,7 @@ void DynamicOffsetComputeTestInstance::init (void)
 		VK_CHECK(vk.bindBufferMemory(vkDevice, *m_buffer, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset()));
 
 		deMemcpy(m_bufferAlloc->getHostPtr(), hostBuffer.data(), (size_t)bufferSize);
-		flushMappedMemoryRange(vk, vkDevice, m_bufferAlloc->getMemory(), m_bufferAlloc->getOffset(), bufferSize);
+		flushAlloc(vk, vkDevice, *m_bufferAlloc);
 	}
 
 	// Create output buffer
@@ -1047,7 +1047,7 @@ tcu::TestStatus DynamicOffsetComputeTestInstance::verifyOutput (void)
 		refColors[i] = refColor;
 	}
 
-	invalidateMappedMemoryRange(vk, vkDevice, m_outputBufferAlloc->getMemory(), m_outputBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+	invalidateAlloc(vk, vkDevice, *m_outputBufferAlloc);
 
 	// Grab the output results using offset alignment
 	for (deUint32 i = 0; i < numOutputColors; i++)
