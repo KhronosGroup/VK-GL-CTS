@@ -2921,9 +2921,15 @@ tcu::TestStatus testMemoryImportTwice (Context& context, MemoryTestConfig config
 	getMemoryNative(vkd, *device, *memory, config.externalType, handleA);
 
 	{
+		const vk::Unique<vk::VkBuffer>			bufferA	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 		NativeHandle							handleB	(handleA);
-		const vk::Unique<vk::VkDeviceMemory>	memoryA	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handleA));
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handleB));
+		const vk::Unique<vk::VkDeviceMemory>	memoryA	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *bufferA, requirements, config.externalType, exportedMemoryTypeIndex, handleA)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handleA));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *bufferB, requirements, config.externalType, exportedMemoryTypeIndex, handleB)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handleB));
 
 		if (config.hostVisible)
 		{
@@ -2970,8 +2976,11 @@ tcu::TestStatus testMemoryMultimpleImports (Context& context, MemoryTestConfig c
 
 	for (size_t ndx = 0; ndx < count; ndx++)
 	{
+		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
 		NativeHandle							handleB	(handleA);
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handleB));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *bufferB, requirements, config.externalType, exportedMemoryTypeIndex, handleB)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handleB));
 	}
 
 	return tcu::TestStatus::pass("Pass");
@@ -3046,7 +3055,10 @@ tcu::TestStatus testMemoryFdDup (Context& context, MemoryTestConfig config)
 		TCU_CHECK_MSG(newFd.getFd() >= 0, "Failed to call dup() for memorys fd");
 
 		{
-			const vk::Unique<vk::VkDeviceMemory>	newMemory	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, newFd));
+			const vk::Unique<vk::VkBuffer>			newBuffer	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+			const vk::Unique<vk::VkDeviceMemory>	newMemory	(config.dedicated
+																 ? importDedicatedMemory(vkd, *device, *newBuffer, requirements, config.externalType, exportedMemoryTypeIndex, newFd)
+																 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, newFd));
 
 			if (config.hostVisible)
 			{
@@ -3108,7 +3120,10 @@ tcu::TestStatus testMemoryFdDup2 (Context& context, MemoryTestConfig config)
 		TCU_CHECK_MSG(newFd >= 0, "Failed to call dup2() for memorys fd");
 
 		{
-			const vk::Unique<vk::VkDeviceMemory>	newMemory	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, secondFd));
+			const vk::Unique<vk::VkBuffer>			newBuffer	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+			const vk::Unique<vk::VkDeviceMemory>	newMemory	(config.dedicated
+																 ? importDedicatedMemory(vkd, *device, *newBuffer, requirements, config.externalType, exportedMemoryTypeIndex, secondFd)
+																 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, secondFd));
 
 			if (config.hostVisible)
 			{
@@ -3170,7 +3185,10 @@ tcu::TestStatus testMemoryFdDup3 (Context& context, MemoryTestConfig config)
 		TCU_CHECK_MSG(newFd >= 0, "Failed to call dup3() for memorys fd");
 
 		{
-			const vk::Unique<vk::VkDeviceMemory>	newMemory	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, secondFd));
+			const vk::Unique<vk::VkBuffer>			newBuffer	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+			const vk::Unique<vk::VkDeviceMemory>	newMemory	(config.dedicated
+																 ? importDedicatedMemory(vkd, *device, *newBuffer, requirements, config.externalType, exportedMemoryTypeIndex, secondFd)
+																 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, secondFd));
 
 			if (config.hostVisible)
 			{
@@ -3308,7 +3326,10 @@ tcu::TestStatus testMemoryFdSendOverSocket (Context& context, MemoryTestConfig c
 						TCU_CHECK_MSG(newFd.getFd() >= 0, "Didn't receive valid fd from socket");
 
 						{
-							const vk::Unique<vk::VkDeviceMemory> newMemory (importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, newFd));
+							const vk::Unique<vk::VkBuffer>			newBuffer	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+							const vk::Unique<vk::VkDeviceMemory>	newMemory	(config.dedicated
+																				 ? importDedicatedMemory(vkd, *device, *newBuffer, requirements, config.externalType, exportedMemoryTypeIndex, newFd)
+																				 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, newFd));
 
 							if (config.hostVisible)
 							{
@@ -3374,8 +3395,10 @@ tcu::TestStatus testBufferBindExportImportBind (Context&				context,
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *bufferB, requirements, config.externalType, exportedMemoryTypeIndex, handle)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 
 		VK_CHECK(vkd.bindBufferMemory(*device, *bufferB, *memoryB, 0u));
 	}
@@ -3409,8 +3432,10 @@ tcu::TestStatus testBufferExportBindImportBind (Context&				context,
 	VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *bufferB, requirements, config.externalType, exportedMemoryTypeIndex, handle)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 
 		VK_CHECK(vkd.bindBufferMemory(*device, *bufferB, *memoryB, 0u));
 	}
@@ -3443,8 +3468,10 @@ tcu::TestStatus testBufferExportImportBindBind (Context&				context,
 	getMemoryNative(vkd, *device, *memoryA, config.externalType, handle);
 
 	{
-		const vk::Unique<vk::VkDeviceMemory>	memoryB	(importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 		const vk::Unique<vk::VkBuffer>			bufferB	(createExternalBuffer(vkd, *device, queueFamilyIndex, config.externalType, bufferSize, 0u, usage));
+		const vk::Unique<vk::VkDeviceMemory>	memoryB	(config.dedicated
+														 ? importDedicatedMemory(vkd, *device, *bufferB, requirements, config.externalType, exportedMemoryTypeIndex, handle)
+														 : importMemory(vkd, *device, requirements, config.externalType, exportedMemoryTypeIndex, handle));
 
 		VK_CHECK(vkd.bindBufferMemory(*device, *bufferA, *memoryA, 0u));
 		VK_CHECK(vkd.bindBufferMemory(*device, *bufferB, *memoryB, 0u));
