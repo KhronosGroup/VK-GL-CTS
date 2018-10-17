@@ -2311,7 +2311,7 @@ public:
 		DE_UNREF(ctx);
 		if (iargs.a.hasNaN() || iargs.b.hasNaN())
 		{
-			return 0x3E0; // one of the floats is NaN, constant result
+			return TCU_NAN; // one of the floats is NaN: block analysis
 		}
 
 		int operationFlag = 1;
