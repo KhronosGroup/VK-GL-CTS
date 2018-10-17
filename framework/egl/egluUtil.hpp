@@ -77,6 +77,7 @@ tcu::IVec2						getSurfaceResolution		(const eglw::Library& egl, eglw::EGLDispla
 
 eglw::EGLDisplay				getDisplay					(NativeDisplay& nativeDisplay);
 eglw::EGLDisplay				getAndInitDisplay			(NativeDisplay& nativeDisplay, Version* version = DE_NULL);
+void							terminateDisplay			(const eglw::Library& egl, eglw::EGLDisplay display);
 eglw::EGLSurface				createWindowSurface			(NativeDisplay& nativeDisplay, NativeWindow& window, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList);
 eglw::EGLSurface				createPixmapSurface			(NativeDisplay& nativeDisplay, NativePixmap& pixmap, eglw::EGLDisplay display, eglw::EGLConfig config, const eglw::EGLAttrib* attribList);
 

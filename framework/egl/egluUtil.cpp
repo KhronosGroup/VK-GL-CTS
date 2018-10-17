@@ -276,6 +276,11 @@ EGLDisplay getAndInitDisplay (NativeDisplay& nativeDisplay, Version* version)
 	return display;
 }
 
+void terminateDisplay(const Library& egl, EGLDisplay display)
+{
+	EGLU_CHECK_CALL(egl, terminate(display));
+}
+
 //! Create EGL window surface using eglCreateWindowSurface() or eglCreatePlatformWindowSurfaceEXT()
 EGLSurface createWindowSurface (NativeDisplay& nativeDisplay, NativeWindow& window, EGLDisplay display, EGLConfig config, const EGLAttrib* attribList)
 {
