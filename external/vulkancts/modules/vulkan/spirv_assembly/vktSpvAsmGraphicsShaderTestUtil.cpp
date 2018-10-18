@@ -584,6 +584,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpDecorate %BP_gl_TessLevelInner BuiltIn TessLevelInner\n"
 		"${IF_decoration:opt}\n"
 		"${decoration:opt}\n"
+		"${decoration_tessc:opt}\n"
 		SPIRV_ASSEMBLY_TYPES
 		SPIRV_ASSEMBLY_CONSTANTS
 		SPIRV_ASSEMBLY_ARRAYS
@@ -1162,6 +1163,7 @@ map<string, string> fillInterfacePlaceholderTessCtrl (void)
 	fragments["extension"]					= "${extension:opt}";
 	fragments["debug"]						= "${debug:opt}";
 	fragments["decoration"]					= "${decoration:opt}";
+	fragments["decoration_tessc"]			= "${decoration_tessc:opt}";
 	fragments["pre_main"]					= "${pre_main:opt}";
 	fragments["testfun"]					= "${testfun}";
 	fragments["interface_op_func"]			= "${interface_op_func}";

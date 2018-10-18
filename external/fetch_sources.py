@@ -258,12 +258,12 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		None,
-		"1225324ae2450623e62621b91b380644f84c16d1",
+		"eea449a1e82ab6a860b68f9b0a23f0432fe9939f",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"5ff3c3da3b374a03a5eff96544fcd6678ed575c1",
+		"e9405d0b443a1849fa55b7bfeaceda586a1c37af",
 		"glslang",
 		removeTags = ['master-tot']),
 	GitRepo(

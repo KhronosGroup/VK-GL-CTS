@@ -3723,20 +3723,32 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 	{
 		const char*				name;
 		const char*				decor;
+		const char*				decor_tessc;
 		RoundingModeFlags		flags;
 	};
 
 	const RndMode		rndModes[]		=
 	{
-		{"rtz",						"OpDecorate %ret  FPRoundingMode RTZ",	ROUNDINGMODE_RTZ},
-		{"rte",						"OpDecorate %ret  FPRoundingMode RTE",	ROUNDINGMODE_RTE},
-		{"unspecified_rnd_mode",	"",										RoundingModeFlags(ROUNDINGMODE_RTE | ROUNDINGMODE_RTZ)},
+		{"rtz",
+		 "OpDecorate %ret0  FPRoundingMode RTZ\n",
+		 "OpDecorate %ret1  FPRoundingMode RTZ\n"
+		 "OpDecorate %ret2  FPRoundingMode RTZ\n",
+		 ROUNDINGMODE_RTZ},
+		{"rte",
+		 "OpDecorate %ret0  FPRoundingMode RTE\n",
+		 "OpDecorate %ret1  FPRoundingMode RTE\n"
+		 "OpDecorate %ret2  FPRoundingMode RTE\n",
+		  ROUNDINGMODE_RTE},
+		{"unspecified_rnd_mode",	"",		"",			RoundingModeFlags(ROUNDINGMODE_RTE | ROUNDINGMODE_RTZ)},
 	};
 
 	struct Case
 	{
 		const char*	name;
 		const char*	interfaceOpFunc;
+		const char* postInterfaceOp;
+		const char* postInterfaceOpGeom;
+		const char* postInterfaceOpTessc;
 		const char*	preMain;
 		const char*	inputType;
 		const char*	outputType;
@@ -3748,13 +3760,25 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 	{
 		{ // Scalar cases
 			"scalar",
-
+		  // Passthrough interface_op_func
 			"%interface_op_func = OpFunction %f16 None %f16_f32_function\n"
 			"        %io_param1 = OpFunctionParameter %f32\n"
 			"            %entry = OpLabel\n"
-			"			   %ret = OpFConvert %f16 %io_param1\n"
-			"                     OpReturnValue %ret\n"
+			"                     OpReturnValue %f16_0\n"
 			"                     OpFunctionEnd\n",
+
+			"             %ret0 = OpFConvert %f16 %IF_input_val\n"
+			"                OpStore %IF_output %ret0\n",
+
+			"             %ret0 = OpFConvert %f16 %IF_input_val0\n"
+			"                OpStore %IF_output %ret0\n",
+
+			"             %ret0 = OpFConvert %f16 %IF_input_val0\n"
+			"                OpStore %IF_output_ptr0 %ret0\n"
+			"             %ret1 = OpFConvert %f16 %IF_input_val1\n"
+			"                OpStore %IF_output_ptr1 %ret1\n"
+			"             %ret2 = OpFConvert %f16 %IF_input_val2\n"
+			"                OpStore %IF_output_ptr2 %ret2\n",
 
 			"             %f16 = OpTypeFloat 16\n"
 			"          %op_f16 = OpTypePointer Output %f16\n"
@@ -3762,7 +3786,8 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 			"        %op_a3f16 = OpTypePointer Output %a3f16\n"
 			"%f16_f32_function = OpTypeFunction %f16 %f32\n"
 			"           %a3f32 = OpTypeArray %f32 %c_i32_3\n"
-			"        %ip_a3f32 = OpTypePointer Input %a3f32\n",
+			"        %ip_a3f32 = OpTypePointer Input %a3f32\n"
+			"           %f16_0 = OpConstant %f16 0\n",
 
 			"f32",
 			"f16",
@@ -3775,9 +3800,21 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 			"%interface_op_func = OpFunction %v2f16 None %v2f16_v2f32_function\n"
 			"        %io_param1 = OpFunctionParameter %v2f32\n"
 			"            %entry = OpLabel\n"
-			"			   %ret = OpFConvert %v2f16 %io_param1\n"
-			"                     OpReturnValue %ret\n"
+			"                     OpReturnValue %v2f16_0\n"
 			"                     OpFunctionEnd\n",
+
+			"             %ret0 = OpFConvert %v2f16 %IF_input_val\n"
+			"                OpStore %IF_output %ret0\n",
+
+			"             %ret0 = OpFConvert %v2f16 %IF_input_val0\n"
+			"                OpStore %IF_output %ret0\n",
+
+			"             %ret0 = OpFConvert %v2f16 %IF_input_val0\n"
+			"                OpStore %IF_output_ptr0 %ret0\n"
+			"             %ret1 = OpFConvert %v2f16 %IF_input_val1\n"
+			"                OpStore %IF_output_ptr1 %ret1\n"
+			"             %ret2 = OpFConvert %v2f16 %IF_input_val2\n"
+			"                OpStore %IF_output_ptr2 %ret2\n",
 
 			"                 %f16 = OpTypeFloat 16\n"
 			"               %v2f16 = OpTypeVector %f16 2\n"
@@ -3786,7 +3823,9 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 			"          %op_a3v2f16 = OpTypePointer Output %a3v2f16\n"
 			"%v2f16_v2f32_function = OpTypeFunction %v2f16 %v2f32\n"
 			"             %a3v2f32 = OpTypeArray %v2f32 %c_i32_3\n"
-			"          %ip_a3v2f32 = OpTypePointer Input %a3v2f32\n",
+			"          %ip_a3v2f32 = OpTypePointer Input %a3v2f32\n"
+			"               %f16_0 = OpConstant %f16 0\n"
+			"             %v2f16_0 = OpConstantComposite %v2f16 %f16_0 %f16_0\n",
 
 			"v2f32",
 			"v2f16",
@@ -3801,12 +3840,18 @@ void addGraphics16BitStorageInputOutputFloat32To16Group (tcu::TestCaseGroup* tes
 	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
 		for (deUint32 rndModeIdx = 0; rndModeIdx < DE_LENGTH_OF_ARRAY(rndModes); ++rndModeIdx)
 		{
-			fragments["interface_op_func"]	= cases[caseIdx].interfaceOpFunc;
-			fragments["pre_main"]			= cases[caseIdx].preMain;
-			fragments["decoration"]			= rndModes[rndModeIdx].decor;
+			fragments["interface_op_func"]			= cases[caseIdx].interfaceOpFunc;
+			fragments["post_interface_op_frag"]		= cases[caseIdx].postInterfaceOp;
+			fragments["post_interface_op_vert"]		= cases[caseIdx].postInterfaceOp;
+			fragments["post_interface_op_geom"]		= cases[caseIdx].postInterfaceOpGeom;
+			fragments["post_interface_op_tesse"]	= cases[caseIdx].postInterfaceOpGeom;
+			fragments["post_interface_op_tessc"]	= cases[caseIdx].postInterfaceOpTessc;
+			fragments["pre_main"]					= cases[caseIdx].preMain;
+			fragments["decoration"]					= rndModes[rndModeIdx].decor;
+			fragments["decoration_tessc"]			= rndModes[rndModeIdx].decor_tessc;
 
-			fragments["input_type"]			= cases[caseIdx].inputType;
-			fragments["output_type"]		= cases[caseIdx].outputType;
+			fragments["input_type"]					= cases[caseIdx].inputType;
+			fragments["output_type"]				= cases[caseIdx].outputType;
 
 			GraphicsInterfaces	interfaces;
 			const deUint32		numPerCase	= cases[caseIdx].numPerCase;
