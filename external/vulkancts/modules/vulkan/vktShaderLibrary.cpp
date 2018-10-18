@@ -1314,7 +1314,7 @@ ShaderCaseInstance::ShaderCaseInstance (Context& context, const ShaderCaseSpecif
 	, m_uniformMem			(m_uniformLayout.size > 0 ? allocateAndBindMemory(context, *m_uniformBuffer, vk::MemoryRequirement::HostVisible) : MovePtr<vk::Allocation>())
 
 	, m_rtFormat			(getRenderTargetFormat(spec.outputFormat))
-	, m_outputCount			((deUint32)m_spec.values.outputs.size() == 0 ? 1 : (deUint32)m_spec.values.outputs.size())
+	, m_outputCount			(((deUint32)m_spec.values.outputs.size() == 0 || m_spec.outputType == glu::sl::OUTPUT_RESULT) ? 1 : (deUint32)m_spec.values.outputs.size())
 	, m_rtImage				()
 	, m_rtMem				()
 	, m_rtView				()

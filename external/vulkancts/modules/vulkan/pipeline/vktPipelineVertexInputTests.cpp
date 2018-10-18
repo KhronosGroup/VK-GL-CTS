@@ -163,6 +163,12 @@ public:
 										//   Sequential only makes a difference if ONE_TO_MANY mapping is used (more than one attribute in a binding).
 	};
 
+	enum LayoutSkip
+	{
+		LAYOUT_SKIP_ENABLED,	//!< Skip one location slot after each attribute
+		LAYOUT_SKIP_DISABLED	//!< Consume locations sequentially
+	};
+
 	struct AttributeInfo
 	{
 		GlslType				glslType;
@@ -185,7 +191,8 @@ public:
 																		 const std::string&					description,
 																		 const std::vector<AttributeInfo>&	attributeInfos,
 																		 BindingMapping						bindingMapping,
-																		 AttributeLayout					attributeLayout);
+																		 AttributeLayout					attributeLayout,
+																		 LayoutSkip							layoutSkip = LAYOUT_SKIP_DISABLED);
 
 	virtual									~VertexInputTest			(void) {}
 	virtual void							initPrograms				(SourceCollections& programCollection) const;
@@ -203,6 +210,7 @@ private:
 	const std::vector<AttributeInfo>		m_attributeInfos;
 	const BindingMapping					m_bindingMapping;
 	const AttributeLayout					m_attributeLayout;
+	const LayoutSkip						m_layoutSkip;
 	const bool								m_queryMaxAttributes;
 	bool									m_usesDoubleType;
 	mutable size_t							m_maxAttributes;
@@ -294,12 +302,14 @@ VertexInputTest::VertexInputTest (tcu::TestContext&						testContext,
 								  const std::string&					description,
 								  const std::vector<AttributeInfo>&		attributeInfos,
 								  BindingMapping						bindingMapping,
-								  AttributeLayout						attributeLayout)
+								  AttributeLayout						attributeLayout,
+								  LayoutSkip							layoutSkip)
 
 	: vkt::TestCase			(testContext, name, description)
 	, m_attributeInfos		(attributeInfos)
 	, m_bindingMapping		(bindingMapping)
 	, m_attributeLayout		(attributeLayout)
+	, m_layoutSkip			(layoutSkip)
 	, m_queryMaxAttributes	(attributeInfos.size() == 0)
 	, m_maxAttributes		(16)
 {
@@ -489,6 +499,9 @@ TestInstance* VertexInputTest::createInstance (Context& context) const
 
 		if (m_attributeLayout == ATTRIBUTE_LAYOUT_SEQUENTIAL)
 			bindingDescriptions[attributeBinding].stride = attributeMaxSizes[attributeBinding];
+
+		if (m_layoutSkip == LAYOUT_SKIP_ENABLED)
+			attributeLocation++;
 	}
 
 	// Make sure the stride results in aligned access
@@ -567,6 +580,9 @@ std::string VertexInputTest::getGlslInputDeclarations (void) const
 
 			glslInputs << "layout(location = " << location << ") in " << glslTypeDesc.name << " attr" << attributeNdx << ";\n";
 			location += glslTypeDesc.vertexInputCount;
+
+			if (m_layoutSkip == LAYOUT_SKIP_ENABLED)
+				location++;
 		}
 	}
 
@@ -1752,7 +1768,7 @@ void createSingleAttributeTests (tcu::TestCaseGroup* singleAttributeTests)
 }
 
 // Create all unique GlslType combinations recursively
-void createMultipleAttributeCases (deUint32 depth, deUint32 firstNdx, CompatibleFormats* compatibleFormats, de::Random& randomFunc, tcu::TestCaseGroup& testGroup, VertexInputTest::BindingMapping bindingMapping, VertexInputTest::AttributeLayout attributeLayout, const std::vector<VertexInputTest::AttributeInfo>& attributeInfos = std::vector<VertexInputTest::AttributeInfo>(0))
+void createMultipleAttributeCases (deUint32 depth, deUint32 firstNdx, CompatibleFormats* compatibleFormats, de::Random& randomFunc, tcu::TestCaseGroup& testGroup, VertexInputTest::BindingMapping bindingMapping, VertexInputTest::AttributeLayout attributeLayout, VertexInputTest::LayoutSkip layoutSkip, const std::vector<VertexInputTest::AttributeInfo>& attributeInfos = std::vector<VertexInputTest::AttributeInfo>(0))
 {
 	tcu::TestContext& testCtx = testGroup.getTestContext();
 
@@ -1783,7 +1799,7 @@ void createMultipleAttributeCases (deUint32 depth, deUint32 firstNdx, Compatible
 			const std::string caseName = VertexInputTest::s_glslTypeDescriptions[currentNdx].name;
 			const std::string caseDesc = getAttributeInfosDescription(newAttributeInfos);
 
-			testGroup.addChild(new VertexInputTest(testCtx, caseName, caseDesc, newAttributeInfos, bindingMapping, attributeLayout));
+			testGroup.addChild(new VertexInputTest(testCtx, caseName, caseDesc, newAttributeInfos, bindingMapping, attributeLayout, layoutSkip));
 		}
 		// Add test group
 		else
@@ -1791,7 +1807,7 @@ void createMultipleAttributeCases (deUint32 depth, deUint32 firstNdx, Compatible
 			const std::string				name			= VertexInputTest::s_glslTypeDescriptions[currentNdx].name;
 			de::MovePtr<tcu::TestCaseGroup>	newTestGroup	(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
 
-			createMultipleAttributeCases(depth - 1u, currentNdx + 1u, compatibleFormats, randomFunc, *newTestGroup, bindingMapping, attributeLayout, newAttributeInfos);
+			createMultipleAttributeCases(depth - 1u, currentNdx + 1u, compatibleFormats, randomFunc, *newTestGroup, bindingMapping, attributeLayout, layoutSkip, newAttributeInfos);
 			testGroup.addChild(newTestGroup.release());
 		}
 	}
@@ -1844,6 +1860,12 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests)
 		VK_FORMAT_R32G32B32A32_SFLOAT
 	};
 
+	const VertexInputTest::LayoutSkip layoutSkips[] =
+	{
+		VertexInputTest::LAYOUT_SKIP_DISABLED,
+		VertexInputTest::LAYOUT_SKIP_ENABLED
+	};
+
 	// Find compatible VK formats for each GLSL vertex type
 	CompatibleFormats compatibleFormats[VertexInputTest::GLSL_TYPE_COUNT];
 	{
@@ -1859,22 +1881,45 @@ void createMultipleAttributeTests (tcu::TestCaseGroup* multipleAttributeTests)
 
 	de::Random                      randomFunc(102030);
 	tcu::TestContext&				testCtx = multipleAttributeTests->getTestContext();
-	de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-	de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
-	de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes_sequential", ""));
 
-	createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToOneAttributeTests,			VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,	VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED);
-	createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToManyAttributeTests,			VertexInputTest::BINDING_MAPPING_ONE_TO_MANY,	VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED);
-	createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToManySequentialAttributeTests,	VertexInputTest::BINDING_MAPPING_ONE_TO_MANY,	VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL);
+	for (deUint32 layoutSkipNdx = 0; layoutSkipNdx < DE_LENGTH_OF_ARRAY(layoutSkips); layoutSkipNdx++)
+	{
+		const VertexInputTest::LayoutSkip layoutSkip = layoutSkips[layoutSkipNdx];
+		de::MovePtr<tcu::TestCaseGroup> oneToOneAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
+		de::MovePtr<tcu::TestCaseGroup> oneToManyAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes", ""));
+		de::MovePtr<tcu::TestCaseGroup> oneToManySequentialAttributeTests(new tcu::TestCaseGroup(testCtx, "attributes_sequential", ""));
 
-	de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
-	bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
-	multipleAttributeTests->addChild(bindingOneToOneTests.release());
+		createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToOneAttributeTests,			VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,	VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED, layoutSkip);
+		createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToManyAttributeTests,			VertexInputTest::BINDING_MAPPING_ONE_TO_MANY,	VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED, layoutSkip);
+		createMultipleAttributeCases(2u, 0u, compatibleFormats, randomFunc, *oneToManySequentialAttributeTests,	VertexInputTest::BINDING_MAPPING_ONE_TO_MANY,	VertexInputTest::ATTRIBUTE_LAYOUT_SEQUENTIAL, layoutSkip);
 
-	de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
-	bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
-	bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
-	multipleAttributeTests->addChild(bindingOneToManyTests.release());
+		if (layoutSkip == VertexInputTest::LAYOUT_SKIP_ENABLED)
+		{
+			de::MovePtr<tcu::TestCaseGroup> layoutSkipTests(new tcu::TestCaseGroup(testCtx, "layout_skip", "Skip one layout after each attribute"));
+
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
+			layoutSkipTests->addChild(bindingOneToOneTests.release());
+
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+			bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
+			bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
+			layoutSkipTests->addChild(bindingOneToManyTests.release());
+			multipleAttributeTests->addChild(layoutSkipTests.release());
+		}
+		else
+		{
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToOneTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_one", "Each attribute uses a unique binding"));
+			bindingOneToOneTests->addChild(oneToOneAttributeTests.release());
+			multipleAttributeTests->addChild(bindingOneToOneTests.release());
+
+			de::MovePtr<tcu::TestCaseGroup> bindingOneToManyTests(new tcu::TestCaseGroup(testCtx, "binding_one_to_many", "Attributes share the same binding"));
+			bindingOneToManyTests->addChild(oneToManyAttributeTests.release());
+			bindingOneToManyTests->addChild(oneToManySequentialAttributeTests.release());
+			multipleAttributeTests->addChild(bindingOneToManyTests.release());
+		}
+	}
+
 }
 
 void createMaxAttributeTests (tcu::TestCaseGroup* maxAttributeTests)
