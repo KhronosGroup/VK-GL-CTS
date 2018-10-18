@@ -1191,7 +1191,7 @@ typename Traits<T>::IVal Expr<T>::evaluate (const EvalContext& ctx) const
 											 tcu::MAYBE,
 											 tcu::YES,
 											 tcu::MAYBE);
-	EvalContext					newCtx		(ctx.format, ctx.basicType,
+	EvalContext					newCtx		(ctx.format, ctx.floatPrecision,
 											 ctx.env, ctx.callDepth + 1);
 	const IVal					ret			= this->doEvaluate(newCtx);
 
@@ -4292,6 +4292,34 @@ ExprP<float> clamp(const ExprP<float>& x, const ExprP<float>& minVal, const Expr
 {
 	return app<Clamp< Signature<float, float, float, float> > >(x, minVal, maxVal);
 }
+
+template <class T>
+class NanIfGreaterOrEqual : public FloatFunc2<T>
+{
+public:
+	string	getName		(void) const { return "nanIfGreaterOrEqual"; }
+
+	double	applyExact	(double edge0, double edge1) const
+	{
+		return (edge0 >= edge1) ? TCU_NAN : 0.0;
+	}
+
+	double	precision	(const EvalContext&, double, double edge0, double edge1) const
+	{
+		return (edge0 >= edge1) ? TCU_NAN : 0.0;
+	}
+};
+
+ExprP<deFloat16> nanIfGreaterOrEqual(const ExprP<deFloat16>& edge0, const ExprP<deFloat16>& edge1)
+{
+	return app<NanIfGreaterOrEqual< Signature<deFloat16, deFloat16, deFloat16> > >(edge0, edge1);
+}
+
+ExprP<float> nanIfGreaterOrEqual(const ExprP<float>& edge0, const ExprP<float>& edge1)
+{
+	return app<NanIfGreaterOrEqual< Signature<float, float, float> > >(edge0, edge1);
+}
+
 DEFINE_DERIVED_FLOAT3(Mix, mix, x, y, a, alternatives((x * (constant(1.0f) - a)) + y * a,
 													  x + (y - x) * a));
 
@@ -4328,9 +4356,9 @@ ExprP<SmoothStep< Signature<float, float, float, float> >::Ret>	SmoothStep< Sign
 	const ExprP<float>&		edge0	= args.a;
 	const ExprP<float>&		edge1	= args.b;
 	const ExprP<float>&		x		= args.c;
-	const ExprP<float>			tExpr	= clamp((x - edge0) / (edge1 - edge0),
-										constant(0.0f), constant(1.0f));
-	const ExprP<float>			t		= bindExpression("t", ctx, tExpr);
+	const ExprP<float>		tExpr	= clamp((x - edge0) / (edge1 - edge0), constant(0.0f), constant(1.0f))
+									+ nanIfGreaterOrEqual(edge0, edge1); // force NaN (and non-analyzable result) for cases edge0 >= edge1
+	const ExprP<float>		t		= bindExpression("t", ctx, tExpr);
 
 	return (t * t * (constant(3.0f) - constant(2.0f) * t));
 }
@@ -4342,7 +4370,8 @@ ExprP<SmoothStep< Signature<deFloat16, deFloat16, deFloat16, deFloat16> >::TRet>
 	const ExprP<deFloat16>&		edge1	= args.b;
 	const ExprP<deFloat16>&		x		= args.c;
 	const ExprP<deFloat16>		tExpr	= clamp(( x - edge0 ) / ( edge1 - edge0 ),
-											constant((deFloat16)FLOAT16_0_0), constant((deFloat16)FLOAT16_1_0));
+											constant((deFloat16)FLOAT16_0_0), constant((deFloat16)FLOAT16_1_0))
+										+ nanIfGreaterOrEqual(edge0, edge1); // force NaN (and non-analyzable result) for cases edge0 >= edge1
 	const ExprP<deFloat16>		t		= bindExpression("t", ctx, tExpr);
 
 	return (t * t * (constant((deFloat16)FLOAT16_3_0) - constant((deFloat16)FLOAT16_2_0) * t));

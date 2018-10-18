@@ -1,7 +1,5 @@
 # Issue 217: Built-in function precision test issues
 dEQP-VK.glsl.builtin.precision.dot.highp_compute.*
-dEQP-VK.glsl.builtin.precision.smoothstep.mediump_compute.*
-dEQP-VK.glsl.builtin.precision.smoothstep.highp_compute.*
 dEQP-VK.glsl.builtin.precision.atan2.highp_compute.*
 dEQP-VK.glsl.builtin.precision.acosh.highp_compute.*
 dEQP-VK.glsl.builtin.precision.atanh.highp_compute.*
