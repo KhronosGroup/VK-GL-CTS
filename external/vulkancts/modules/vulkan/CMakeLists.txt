@@ -31,6 +31,7 @@ add_subdirectory(subgroups)
 add_subdirectory(ycbcr)
 add_subdirectory(protected_memory)
 add_subdirectory(memory_model)
+add_subdirectory(util)
 
 include_directories(
 	api
@@ -64,6 +65,7 @@ include_directories(
 	ycbcr
 	protected_memory
 	memory_model
+	util
 	)
 
 set(DEQP_VK_SRCS
@@ -80,12 +82,6 @@ set(DEQP_VK_SRCS
 	vktTestGroupUtil.hpp
 	vktInfoTests.cpp
 	vktInfoTests.hpp
-	vktDrawUtil.cpp
-	vktDrawUtil.hpp
-	vktExternalMemoryUtil.cpp
-	vktExternalMemoryUtil.hpp
-	vktDrawUtil.cpp
-	vktDrawUtil.hpp
 	)
 
 set(DEQP_VK_LIBS

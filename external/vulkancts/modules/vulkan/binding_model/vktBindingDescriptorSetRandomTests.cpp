@@ -42,12 +42,13 @@
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
-#include "vktDrawUtil.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vktTestCase.hpp"
 
 #include "deDefs.h"
 #include "deMath.h"
 #include "deRandom.h"
+#include "deSharedPtr.hpp"
 #include "deString.h"
 
 #include "tcuTestCase.hpp"
