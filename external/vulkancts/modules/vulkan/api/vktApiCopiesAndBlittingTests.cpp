@@ -1988,11 +1988,25 @@ bool BlittingImages::checkLinearFilteredResult (const tcu::ConstPixelBufferAcces
 												const tcu::ConstPixelBufferAccess&	unclampedExpected,
 												const tcu::TextureFormat&			srcFormat)
 {
-	tcu::TestLog&				log			(m_context.getTestContext().getLog());
-	const tcu::TextureFormat	dstFormat	= result.getFormat();
-	bool						isOk		= false;
+	tcu::TestLog&					log				(m_context.getTestContext().getLog());
+	const tcu::TextureFormat		dstFormat		= result.getFormat();
+	const tcu::TextureChannelClass	dstChannelClass = tcu::getTextureChannelClass(dstFormat.type);
+	const tcu::TextureChannelClass	srcChannelClass = tcu::getTextureChannelClass(srcFormat.type);
+	bool							isOk			= false;
 
 	log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
+
+	// if either of srcImage or dstImage was created with a signed/unsigned integer VkFormat,
+	// the other must also have been created with a signed/unsigned integer VkFormat
+	bool dstImageIsIntClass = dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+							  dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	bool srcImageIsIntClass = srcChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+							  srcChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	if (dstImageIsIntClass != srcImageIsIntClass)
+	{
+		log << tcu::TestLog::EndSection;
+		return false;
+	}
 
 	if (isFloatFormat(dstFormat))
 	{
@@ -2221,7 +2235,9 @@ bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAcce
 {
 	tcu::TestLog&					log				(m_context.getTestContext().getLog());
 	const tcu::TextureFormat		dstFormat		= result.getFormat();
+	const tcu::TextureFormat		srcFormat		= source.getFormat();
 	const tcu::TextureChannelClass	dstChannelClass = tcu::getTextureChannelClass(dstFormat.type);
+	const tcu::TextureChannelClass	srcChannelClass = tcu::getTextureChannelClass(srcFormat.type);
 
 	tcu::TextureLevel		errorMaskStorage	(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), result.getWidth(), result.getHeight());
 	tcu::PixelBufferAccess	errorMask			= errorMaskStorage.getAccess();
@@ -2231,8 +2247,16 @@ bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAcce
 
 	tcu::clear(errorMask, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0));
 
-	if (dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
-		dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+	// if either of srcImage or dstImage was created with a signed/unsigned integer VkFormat,
+	// the other must also have been created with a signed/unsigned integer VkFormat
+	bool dstImageIsIntClass = dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+							  dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	bool srcImageIsIntClass = srcChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+							  srcChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	if (dstImageIsIntClass != srcImageIsIntClass)
+		return false;
+
+	if (dstImageIsIntClass)
 	{
 		ok = intNearestBlitCompare(source, result, errorMask, m_params.regions);
 	}
