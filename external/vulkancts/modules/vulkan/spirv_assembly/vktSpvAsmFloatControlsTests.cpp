@@ -2634,7 +2634,7 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 
 		// set of default constants per float type is placed here,
 		// operation tests can also define additional constants;
-		// note that O_RETURN_VAL defines function here and becouse
+		// note that O_RETURN_VAL defines function here and because
 		// of that this token needs to be directly before main function
 		"${vert_constants}"
 
@@ -2719,7 +2719,7 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 
 		// set of default constants per float type is placed here,
 		// operation tests can also define additional constants;
-		// note that O_RETURN_VAL defines function here and becouse
+		// note that O_RETURN_VAL defines function here and because
 		// of that this token needs to be directly before main function
 		"${frag_constants}"
 
@@ -2800,6 +2800,13 @@ void GraphicsTestGroupBuilder::createTests(TestCaseGroup* group, FloatType float
 
 		// skip cases with undefined output
 		if (testCase.expectedOutput == V_UNUSED)
+			continue;
+
+		// FPRoundingMode decoration can be applied only to conversion instruction that is used as the object
+		// argument of an OpStore storing through a pointer to a 16-bit floating-point object in Uniform, or
+		// PushConstant, or Input, or Output Storage Classes. SSBO writes are not commonly supported
+		// in VS so this test case needs to be skiped for vertex stage.
+		if ((testCase.operationId == O_ORTZ_ROUND) || (testCase.operationId == O_ORTE_ROUND))
 			continue;
 
 		TestCaseInfo testCaseInfo =
