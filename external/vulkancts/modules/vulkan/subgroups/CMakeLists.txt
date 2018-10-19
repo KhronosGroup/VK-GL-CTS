@@ -38,5 +38,7 @@ set(DEQP_VK_SUBGROUPS_LIBS
   vkutil
   )
 
+PCH(DEQP_VK_SUBGROUPS_SRCS ../pch.cpp)
+
 add_library(deqp-vk-subgroups STATIC ${DEQP_VK_SUBGROUPS_SRCS})
 target_link_libraries(deqp-vk-subgroups ${DEQP_VK_SUBGROUPS_LIBS})

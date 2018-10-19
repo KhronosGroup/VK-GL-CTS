@@ -155,6 +155,22 @@ if (DE_COMPILER_IS_MSC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_SCL_SECURE_NO_WARNINGS")
 endif ()
 
+# Precompiled header macro. Parameters are source file list and filename for pch cpp file.
+macro(PCH SRCS PCHCPP)
+  if(MSVC)
+    if (CMAKE_GENERATOR MATCHES "^Visual Studio")
+      set(PCH_NAME "$(IntDir)\\pch.pch")
+    else()
+      set(PCH_NAME "pch.pch")
+    endif()
+    # make source files use/depend on PCH_NAME
+    set_source_files_properties(${${SRCS}} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fp${PCH_NAME}" OBJECT_DEPENDS "${PCH_NAME}")
+    # make PCHCPP file compile and generate PCH_NAME
+    set_source_files_properties(${PCHCPP} PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fp${PCH_NAME}" OBJECT_OUTPUTS "${PCH_NAME}")
+    list(APPEND ${SRCS} "${PCHCPP}")
+  endif()
+endmacro(PCH)
+
 # delibs projects
 add_subdirectory(framework/delibs/debase)
 add_subdirectory(framework/delibs/depool)

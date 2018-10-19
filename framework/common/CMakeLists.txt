@@ -102,5 +102,7 @@ set(TCUTIL_LIBS
 	${PNG_LIBRARY}
 	)
 
+PCH(TCUTIL_SRCS ../pch.cpp)
+
 add_library(tcutil STATIC ${TCUTIL_SRCS})
 target_link_libraries(tcutil ${TCUTIL_LIBS} ${DEQP_PLATFORM_LIBRARIES})

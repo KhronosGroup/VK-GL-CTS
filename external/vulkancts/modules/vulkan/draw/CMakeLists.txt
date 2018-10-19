@@ -41,5 +41,7 @@ set(DEQP_VK_DRAW_LIBS
 	vkutil
 )
 
+PCH(DEQP_VK_DRAW_SRCS ../pch.cpp)
+
 add_library(deqp-vk-draw STATIC ${DEQP_VK_DRAW_SRCS})
 target_link_libraries(deqp-vk-draw ${DEQP_VK_DRAW_LIBS})

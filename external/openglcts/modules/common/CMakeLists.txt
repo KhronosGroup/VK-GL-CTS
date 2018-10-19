@@ -5,10 +5,6 @@ if (DEQP_SUPPORT_WGL)
 	add_definitions(-DGLCTS_SUPPORT_WGL=1)
 endif ()
 
-include_directories(
-	${PROJECT_SOURCE_DIR}/modules/glshared
-	)
-
 set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.cpp
 	glcAggressiveShaderOptimizationsTests.hpp
@@ -118,6 +114,8 @@ set(GLCTS_COMMON_LIBS
 	tcutil
 	eglutil
 	)
+
+PCH(GLCTS_COMMON_SRCS ../pch.cpp)
 
 add_library(glcts-common STATIC ${GLCTS_COMMON_SRCS})
 target_link_libraries(glcts-common ${GLCTS_COMMON_LIBS})

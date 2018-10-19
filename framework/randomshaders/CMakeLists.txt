@@ -48,6 +48,8 @@ set(RSG_SRCS
 	rsgVariableValue.hpp
 	)
 
+PCH(RSG_SRCS ../pch.cpp)
+
 add_library(randomshaders STATIC ${RSG_SRCS})
 target_link_libraries(randomshaders tcutil)
 

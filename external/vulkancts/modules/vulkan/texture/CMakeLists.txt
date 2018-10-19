@@ -36,5 +36,7 @@ set(DEQP_VK_TEXTURE_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_TEXTURE_SRCS ../pch.cpp)
+
 add_library(deqp-vk-texture STATIC ${DEQP_VK_TEXTURE_SRCS})
 target_link_libraries(deqp-vk-texture ${DEQP_VK_TEXTURE_LIBS})

@@ -110,6 +110,9 @@ if(DEQP_HAVE_SPIRV_TOOLS)
 	set(VKUTIL_LIBS ${VKUTIL_LIBS} SPIRV-Tools SPIRV-Tools-opt)
 endif()
 
+PCH(VKUTILNOSHADER_SRCS ../../modules/vulkan/pch.cpp)
+PCH(VKUTIL_SRCS ../../modules/vulkan/pch.cpp)
+
 add_library(vkutilnoshader STATIC ${VKUTILNOSHADER_SRCS})
 target_link_libraries(vkutilnoshader ${VKUTILNOSHADER_LIBS})
 

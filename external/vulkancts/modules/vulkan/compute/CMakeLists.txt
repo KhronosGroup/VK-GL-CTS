@@ -18,5 +18,7 @@ set(DEQP_VK_COMPUTE_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_COMPUTE_SRCS ../pch.cpp)
+
 add_library(deqp-vk-compute STATIC ${DEQP_VK_COMPUTE_SRCS})
 target_link_libraries(deqp-vk-compute ${DEQP_VK_COMPUTE_LIBS})

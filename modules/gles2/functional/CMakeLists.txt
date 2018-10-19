@@ -163,5 +163,7 @@ set(DEQP_GLES2_FUNCTIONAL_SRCS
 	es2fDebugMarkerTests.hpp
 	)
 
+PCH(DEQP_GLES2_FUNCTIONAL_SRCS ../../pch.cpp)
+
 add_library(deqp-gles2-functional STATIC ${DEQP_GLES2_FUNCTIONAL_SRCS})
 target_link_libraries(deqp-gles2-functional deqp-gl-shared glutil glutil-sglr tcutil referencerenderer ${DEQP_GLES2_LIBRARIES})

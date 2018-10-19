@@ -125,6 +125,8 @@ if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 endif ()
 
+PCH(DEQP_VK_SRCS pch.cpp)
+
 add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" vktTestPackageEntry.cpp)
 
 add_data_dir(deqp-vk ../../data/vulkan	vulkan)

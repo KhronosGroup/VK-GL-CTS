@@ -50,5 +50,7 @@ set(DEQP_VK_SPIRV_ASSEMBLY_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_SPIRV_ASSEMBLY_SRCS ../pch.cpp)
+
 add_library(deqp-vk-spirv-assembly STATIC ${DEQP_VK_SPIRV_ASSEMBLY_SRCS})
 target_link_libraries(deqp-vk-spirv-assembly ${DEQP_VK_SPIRV_ASSEMBLY_LIBS})

@@ -15,5 +15,7 @@ set(DEQP_GLES2_STRESS_SRCS
 	es2sDrawTests.cpp
 	)
 
+PCH(DEQP_GLES2_STRESS_SRCS ../../pch.cpp)
+
 add_library(deqp-gles2-stress STATIC ${DEQP_GLES2_STRESS_SRCS})
 target_link_libraries(deqp-gles2-stress deqp-gl-shared glutil tcutil ${DEQP_GLES2_LIBRARIES})

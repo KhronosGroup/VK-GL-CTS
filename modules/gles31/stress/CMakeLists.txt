@@ -11,5 +11,7 @@ set(DEQP_GLES31_STRESS_SRCS
 	es31sTessellationGeometryInteractionTests.hpp
 	)
 
+PCH(DEQP_GLES31_STRESS_SRCS ../../pch.cpp)
+
 add_library(deqp-gles31-stress STATIC ${DEQP_GLES31_STRESS_SRCS})
 target_link_libraries(deqp-gles31-stress deqp-gl-shared glutil tcutil ${DEQP_GLES31_LIBRARIES})

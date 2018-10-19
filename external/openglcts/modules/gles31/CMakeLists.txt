@@ -63,5 +63,7 @@ set(GLCTS_ES31_LIBS
 	tcutil
 	)
 
+PCH(GLCTS_ES31_SRCS ../pch.cpp)
+
 add_library(glcts-es31 STATIC ${GLCTS_ES31_SRCS} ${GLCTS_DEQP_GLES31_SRCS})
 target_link_libraries(glcts-es31 ${GLCTS_ES31_LIBS})
