@@ -1355,7 +1355,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	// Need atleast 2 devices for peer memory features
 	numPhysicalDevices = deviceGroupProps[devGroupIdx].physicalDeviceCount;
 	if (numPhysicalDevices < 2)
-		TCU_THROW(NotSupportedError, "Need a device Group with atleast 2 physical devices.");
+		TCU_THROW(NotSupportedError, "Need a device Group with at least 2 physical devices.");
 
 	// Create device groups
 	const VkDeviceGroupDeviceCreateInfo						deviceGroupInfo =
