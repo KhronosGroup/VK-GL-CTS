@@ -3798,6 +3798,7 @@ void ResolveImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess s
 	VkOffset3D dstOffset	= region.imageResolve.dstOffset;
 			dstOffset.z		= region.imageResolve.dstSubresource.baseArrayLayer;
 	VkExtent3D extent		= region.imageResolve.extent;
+			extent.depth		= region.imageResolve.srcSubresource.layerCount;
 
 	const tcu::ConstPixelBufferAccess	srcSubRegion		= getSubregion (src, srcOffset.x, srcOffset.y, srcOffset.z, extent.width, extent.height, extent.depth);
 	// CopyImage acts like a memcpy. Replace the destination format with the srcformat to use a memcpy.
@@ -7367,6 +7368,49 @@ void addResolveImageWholeArrayImageTests (tcu::TestCaseGroup* group, AllocationK
 	}
 }
 
+void addResolveImageWholeArrayImageSingleRegionTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
+{
+	TestParams	params;
+	params.src.image.imageType			= VK_IMAGE_TYPE_2D;
+	params.src.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+	params.src.image.extent				= defaultExtent;
+	params.src.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	params.dst.image.imageType			= VK_IMAGE_TYPE_2D;
+	params.dst.image.format				= VK_FORMAT_R8G8B8A8_UNORM;
+	params.dst.image.extent				= defaultExtent;
+	params.dst.image.extent.depth		= 5u;
+	params.dst.image.operationLayout	= VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	params.allocationKind				= allocationKind;
+
+	const VkImageSubresourceLayers	sourceLayer	=
+	{
+		VK_IMAGE_ASPECT_COLOR_BIT,		// VkImageAspectFlags	aspectMask;
+		0u,								// uint32_t				mipLevel;
+		0,						// uint32_t				baseArrayLayer;
+		params.dst.image.extent.depth			// uint32_t				layerCount;
+	};
+
+	const VkImageResolve			testResolve	=
+	{
+		sourceLayer,		// VkImageSubresourceLayers	srcSubresource;
+		{0, 0, 0},			// VkOffset3D				srcOffset;
+		sourceLayer,		// VkImageSubresourceLayers	dstSubresource;
+		{0, 0, 0},			// VkOffset3D				dstOffset;
+		defaultExtent,		// VkExtent3D				extent;
+	};
+
+	CopyRegion	imageResolve;
+	imageResolve.imageResolve	= testResolve;
+	params.regions.push_back(imageResolve);
+
+	for (int samplesIndex = 0; samplesIndex < DE_LENGTH_OF_ARRAY(samples); ++samplesIndex)
+	{
+		params.samples					= samples[samplesIndex];
+		const std::string description	= "With " + getSampleCountCaseName(samples[samplesIndex]);
+		group->addChild(new ResolveImageToImageTestCase(group->getTestContext(), getSampleCountCaseName(samples[samplesIndex]), description, params, COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE));
+	}
+}
+
 void addResolveImageDiffImageSizeTests (tcu::TestCaseGroup* group, AllocationKind allocationKind)
 {
 	tcu::TestContext&	testCtx			= group->getTestContext();
@@ -7450,6 +7494,7 @@ void addResolveImageTests (tcu::TestCaseGroup* group, AllocationKind allocationK
 	addTestGroup(group, "with_regions", "Resolve from image to image (with regions)", addResolveImageWithRegionsTests, allocationKind);
 	addTestGroup(group, "whole_copy_before_resolving", "Resolve from image to image (whole copy before resolving)", addResolveImageWholeCopyBeforeResolvingTests, allocationKind);
 	addTestGroup(group, "whole_array_image", "Resolve from image to image (whole array image)", addResolveImageWholeArrayImageTests, allocationKind);
+	addTestGroup(group, "whole_array_image_one_region", "Resolve from image to image (whole array image with single region)", addResolveImageWholeArrayImageSingleRegionTests, allocationKind);
 	addTestGroup(group, "diff_image_size", "Resolve from image to image of different size", addResolveImageDiffImageSizeTests, allocationKind);
 }
 

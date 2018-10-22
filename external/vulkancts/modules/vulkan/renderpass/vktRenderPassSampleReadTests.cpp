@@ -62,12 +62,6 @@ namespace
 {
 using namespace renderpass;
 
-enum RenderPassType
-{
-	RENDERPASS_TYPE_LEGACY = 0,
-	RENDERPASS_TYPE_RENDERPASS2,
-};
-
 de::MovePtr<Allocation> createBufferMemory (const DeviceInterface&	vk,
 											VkDevice				device,
 											Allocator&				allocator,
@@ -966,7 +960,7 @@ tcu::TestStatus SampleReadTestInstance::iterateInternal (void)
 	submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *commandBuffer);
 
 	{
-		invalidateMappedMemoryRange(vkd, device, m_dstBufferMemory->getMemory(), m_dstBufferMemory->getOffset(), VK_WHOLE_SIZE);
+		invalidateAlloc(vkd, device, *m_dstBufferMemory);
 
 		const tcu::TextureFormat			format		(mapVkFormat(VK_FORMAT_R32_UINT));
 		const void* const					ptr			(m_dstBufferMemory->getHostPtr());

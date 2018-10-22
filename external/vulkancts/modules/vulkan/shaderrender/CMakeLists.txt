@@ -1,5 +1,6 @@
 include_directories(
 	..
+	../util
 	)
 
 set(DEQP_VK_SHADERRENDER_SRCS

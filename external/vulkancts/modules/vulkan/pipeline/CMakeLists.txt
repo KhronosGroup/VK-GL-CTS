@@ -13,6 +13,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineDepthTests.hpp
 	vktPipelineDerivativeTests.cpp
 	vktPipelineDerivativeTests.hpp
+	vktPipelineDynamicOffsetTests.cpp
+	vktPipelineDynamicOffsetTests.hpp
 	vktPipelineEarlyDestroyTests.cpp
 	vktPipelineEarlyDestroyTests.hpp
 	vktPipelineImageSamplingInstance.cpp

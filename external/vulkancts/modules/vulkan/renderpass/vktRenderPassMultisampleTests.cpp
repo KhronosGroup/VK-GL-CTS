@@ -91,12 +91,6 @@ enum
 	MAX_COLOR_ATTACHMENT_COUNT = 4u
 };
 
-enum RenderPassType
-{
-	RENDERPASS_TYPE_LEGACY = 0,
-	RENDERPASS_TYPE_RENDERPASS2,
-};
-
 template<typename T>
 de::SharedPtr<T> safeSharedPtr (T* ptr)
 {
@@ -1461,7 +1455,7 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 		for (deUint32 sampleNdx = 0; sampleNdx < m_sampleCount; sampleNdx++)
 		{
 			Allocation *dstBufMem = m_dstBufferMemory[sampleNdx].get();
-			invalidateMappedMemoryRange(vkd, device, dstBufMem->getMemory(), dstBufMem->getOffset(), VK_WHOLE_SIZE);
+			invalidateAlloc(vkd, device, *dstBufMem);
 
 			const std::string					name		("Sample" + de::toString(sampleNdx));
 			const void* const					ptr			(dstBufMem->getHostPtr());

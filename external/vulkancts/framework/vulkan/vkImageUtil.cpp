@@ -3136,4 +3136,19 @@ bool checkSparseImageFormatSupport (const VkPhysicalDevice		physicalDevice,
 	return (sparseImageFormatPropVec.size() != 0);
 }
 
+deUint32 getYCbCrFormatElementSize (VkFormat format)
+{
+	const PlanarFormatDescription	desc		= getYCbCrPlanarFormatDescription(format);
+	deInt32							totalSize	= 0;
+
+	for (deUint32 planeNdx = 0; planeNdx < desc.numPlanes; ++planeNdx)
+	{
+		const deInt32 elementSize = desc.planes[planeNdx].elementSizeBytes;
+
+		totalSize = deAlign32(totalSize, elementSize);
+		totalSize += elementSize;
+	}
+	return totalSize;
+}
+
 } // vk

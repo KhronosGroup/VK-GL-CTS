@@ -2475,7 +2475,7 @@ class BasicSharedStruct : public ComputeShaderBase
 	{
 		const char* const glsl_cs = NL
 			"layout(local_size_x = 128) in;" NL "layout(std430) buffer Output {" NL "  vec4 g_output[256];" NL "};" NL
-			"struct SubData {" NL "  mat2x4 data;" NL "};" NL "struct Data {" NL "  uint index;" NL "  vec3 data0;" NL
+			"struct SubData {" NL "  mat2x4 data;" NL "};" NL "struct Data {" NL "  vec3 data0;" NL "  uint index;" NL
 			"  SubData data1;" NL "};" NL "shared Data g_shared_data[256];" NL "shared int g_shared_buf[2];" NL
 			"void main() {" NL "  if (gl_LocalInvocationID.x == 0u) {" NL "    g_shared_buf[1] = 1;" NL
 			"    g_shared_buf[1u + gl_LocalInvocationID.x] = 0;" NL "    g_shared_buf[0] = 128;" NL

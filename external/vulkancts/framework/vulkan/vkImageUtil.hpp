@@ -183,6 +183,11 @@ void							allocateAndBindSparseImage		(const vk::DeviceInterface&						vk,
 																 tcu::TextureFormat								format,
 																 vk::VkImage									destImage);
 
+/*--------------------------------------------------------------------*//*!
+ * Returns the element size of the given YCbCr format.
+ *//*--------------------------------------------------------------------*/
+deUint32						getYCbCrFormatElementSize		(VkFormat format);
+
 } // vk
 
 #endif // _VKIMAGEUTIL_HPP

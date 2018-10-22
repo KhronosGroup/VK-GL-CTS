@@ -919,6 +919,9 @@ bool ImageMemoryRequirementsOriginal::isImageSupported (const deUint32 apiVersio
 	{
 		DE_ASSERT(info.tiling == VK_IMAGE_TILING_OPTIMAL);
 
+		if (info.imageType == VK_IMAGE_TYPE_1D)
+			return false;
+
 		if (info.imageType == VK_IMAGE_TYPE_2D && !features.sparseResidencyImage2D)
 			return false;
 		if (info.imageType == VK_IMAGE_TYPE_3D && !features.sparseResidencyImage3D)
@@ -1580,7 +1583,8 @@ bool isMultiplaneImageSupported (const InstanceInterface&	vki,
 								 const VkPhysicalDevice		physicalDevice,
 								 const VkImageCreateInfo&	info)
 {
-	if ((info.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) && info.imageType != VK_IMAGE_TYPE_2D)
+	// cubemap requires arrayLayers > 1, which multiplane doesn't support
+	if (info.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT)
 		return false;
 
 	if ((info.usage & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT) &&

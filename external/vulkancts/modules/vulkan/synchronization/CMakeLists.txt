@@ -1,4 +1,7 @@
-include_directories(..)
+include_directories(
+	..
+	../util
+	)
 
 set(DEQP_VK_SYNCHRONIZATION_SRCS
 	vktSynchronizationTests.cpp

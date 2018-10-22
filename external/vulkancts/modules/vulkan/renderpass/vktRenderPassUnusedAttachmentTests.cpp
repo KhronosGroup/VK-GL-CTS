@@ -533,13 +533,13 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 
 		const VkSubpassDependency		subpassDependency				=
 		{
-			0u,										// uint32_t					srcSubpass;
-			1u,										// uint32_t					dstSubpass;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// VkPipelineStageFlags		srcStageMask;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// VkPipelineStageFlags		dstStageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,	// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,	// VkAccessFlags			dstAccessMask;
-			VK_DEPENDENCY_VIEW_LOCAL_BIT			// VkDependencyFlags		dependencyFlags;
+			0u,												// uint32_t					srcSubpass;
+			1u,												// uint32_t					dstSubpass;
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags		srcStageMask;
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags		dstStageMask;
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask;
+			VK_DEPENDENCY_VIEW_LOCAL_BIT					// VkDependencyFlags		dependencyFlags;
 		};
 
 		const VkRenderPassCreateInfo	renderPassInfo					=
@@ -798,7 +798,7 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 
 		// Upload vertex data
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(vk, vkDevice, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool
