@@ -6966,7 +6966,13 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 				for (deUint32 numIdx = 0; numIdx < numDataPoints; ++numIdx)
 					float64Data.push_back(deFloat16To64(float16Data[constantIndices[constIndexIdx].useConstantIndex ? (constantIndices[constIndexIdx].constantIndex * 2 + numIdx % 2) : numIdx]));
 
-				resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data, isUBO ? 12 : 0)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+				vector<tcu::Vector<deFloat16, 2> >	float16Vec2Data(float16Data.size() / 2);
+				for (size_t elemIdx = 0; elemIdx < float16Data.size(); elemIdx++)
+				{
+					float16Vec2Data[elemIdx / 2][elemIdx % 2] = float16Data[elemIdx];
+				}
+				typedef Buffer<tcu::Vector<deFloat16, 2> > Float16Vec2Buffer;
+				resources.inputs.push_back(Resource(BufferSp(new Float16Vec2Buffer(float16Vec2Data, isUBO ? 12 : 0)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.outputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				resources.verifyIO = check64BitFloats;
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
@@ -8122,28 +8128,37 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 			"%v2f16arr  = OpTypeArray %v2f16 %c_i32_64\n"
 			"%v2f64arr  = OpTypeArray %v2f64 %c_i32_64\n";
 
+		enum DataType
+		{
+			SCALAR,
+			VEC2,
+			MAT2X2,
+		};
+
+
 		struct CompositeType
 		{
 			const char*	name;
 			const char*	base64;
 			const char*	base16;
 			const char*	strideStr;
-			const char* stride16UBO;
+			const char*	stride16UBO;
 			unsigned	padding16UBO;
-			const char* stride16SSBO;
+			const char*	stride16SSBO;
 			unsigned	padding16SSBO;
 			bool		useConstantIndex;
 			unsigned	constantIndex;
 			unsigned	count;
+			DataType	dataType;
 		};
 
-		const CompositeType	cTypes[]	=
+		const CompositeType	cTypes[] =
 		{
-			{"scalar",				"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	false,	0,	numElements},
-			{"scalar_const_idx_5",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	true,	5,	numElements},
-			{"scalar_const_idx_8",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	true,	8,	numElements},
-			{"vector",				"v2f64",	"v2f16",	"OpDecorate %v2f64arr ArrayStride 16\nOpDecorate %v2f16arr ArrayStride ",		"16",	12,	"4",	0,	false,	0,	numElements / 2},
-			{"matrix",				"v2f64",	"v2f16",	"OpDecorate %m4v2f64arr ArrayStride 64\nOpDecorate %m4v2f16arr ArrayStride ",	"16",	0, "16",	0,	false,	0,	numElements / 8},
+			{"scalar",				"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	false,	0,	numElements		, SCALAR },
+			{"scalar_const_idx_5",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	true,	5,	numElements		, SCALAR },
+			{"scalar_const_idx_8",	"f64",		"f16",		"OpDecorate %f64arr ArrayStride 8\nOpDecorate %f16arr ArrayStride ",			"16",	14,	"2",	0,	true,	8,	numElements		, SCALAR },
+			{"vector",				"v2f64",	"v2f16",	"OpDecorate %v2f64arr ArrayStride 16\nOpDecorate %v2f16arr ArrayStride ",		"16",	12,	"4",	0,	false,	0,	numElements / 2	, VEC2 },
+			{"matrix",				"v2f64",	"v2f16",	"OpDecorate %m4v2f64arr ArrayStride 64\nOpDecorate %m4v2f16arr ArrayStride ",	"16",	0, "16",	0,	false,	0,	numElements / 8	, MAT2X2 }
 		};
 
 		vector<deFloat16>	float16Data			= getFloat16s(rnd, numElements);
@@ -8227,7 +8242,22 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 				spec.verifyIO			= check64BitFloats;
 				const unsigned padding	= isUBO ? cTypes[tyIdx].padding16UBO : cTypes[tyIdx].padding16SSBO;
 
-				spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data, padding)), CAPABILITIES[capIdx].dtype));
+				if (cTypes[tyIdx].dataType == SCALAR || cTypes[tyIdx].dataType == MAT2X2)
+				{
+					DE_ASSERT(cTypes[tyIdx].dataType != MAT2X2 || padding == 0);
+					spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data, padding)), CAPABILITIES[capIdx].dtype));
+				}
+				else if (cTypes[tyIdx].dataType == VEC2)
+				{
+					vector<tcu::Vector<deFloat16, 2> >	float16Vec2Data(numElements / 2);
+					for (size_t elemIdx = 0; elemIdx < numElements; elemIdx++)
+					{
+						float16Vec2Data[elemIdx / 2][elemIdx % 2] = float16Data[elemIdx];
+					}
+
+					typedef Buffer<tcu::Vector<deFloat16, 2> > Float16Vec2Buffer;
+					spec.inputs.push_back(Resource(BufferSp(new Float16Vec2Buffer(float16Vec2Data, padding)), CAPABILITIES[capIdx].dtype));
+				}
 				spec.outputs.push_back(Resource(BufferSp(new Float64Buffer(cTypes[tyIdx].useConstantIndex ? float64DataConstIdx : float64Data))));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.extensions.push_back("VK_KHR_shader_float16_int8");
