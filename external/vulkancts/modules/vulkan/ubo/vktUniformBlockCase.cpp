@@ -2176,6 +2176,8 @@ TestInstance* UniformBlockCase::createInstance (Context& context) const
 
 void UniformBlockCase::init (void)
 {
+	const int vec4Alignment = (int)sizeof(deUint32)*4;
+
 	// Compute reference layout.
 	computeStd140Layout(m_uniformLayout, m_interface);
 
@@ -2183,7 +2185,10 @@ void UniformBlockCase::init (void)
 	{
 		int totalSize = 0;
 		for (std::vector<BlockLayoutEntry>::const_iterator blockIter = m_uniformLayout.blocks.begin(); blockIter != m_uniformLayout.blocks.end(); blockIter++)
-			totalSize += blockIter->size;
+		{
+			// Include enough space for alignment of individual blocks
+			totalSize += deRoundUp32(blockIter->size, vec4Alignment);
+		}
 		m_data.resize(totalSize);
 
 		// Pointers for each block.
@@ -2191,7 +2196,9 @@ void UniformBlockCase::init (void)
 		for (int blockNdx = 0; blockNdx < (int)m_uniformLayout.blocks.size(); blockNdx++)
 		{
 			m_blockPointers[blockNdx] = &m_data[0] + curOffset;
-			curOffset += m_uniformLayout.blocks[blockNdx].size;
+
+			// Ensure each new block starts fully aligned to avoid unaligned host accesses
+			curOffset += deRoundUp32(m_uniformLayout.blocks[blockNdx].size, vec4Alignment);
 		}
 	}
 
