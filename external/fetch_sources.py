@@ -258,7 +258,7 @@ PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/spirv-tools.git",
 		"git@gitlab.khronos.org:spirv/spirv-tools.git",
-		"c120a6d06f5aa93c8527862c903d2b9605ef0190",
+		"9859326f90f65d32ea5da5e567ebe704e9070fd5",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
@@ -269,7 +269,7 @@ PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
 		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-		"bb81abe5bc55c93055a1b2041b86515650456483",
+		"4c363b4dcfe635817dcc76f02c3a919ade261b76",
 		"spirv-headers"),
 ]
 
