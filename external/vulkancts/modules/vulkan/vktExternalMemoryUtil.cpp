@@ -1201,6 +1201,11 @@ bool AndroidHardwareBufferExternalApi::supportsAhb()
 	return (checkAnbApiBuild() >= __ANDROID_API_O__);
 }
 
+bool AndroidHardwareBufferExternalApi::supportsCubeMap()
+{
+	return (checkAnbApiBuild() >= 28);
+}
+
 AndroidHardwareBufferExternalApi::AndroidHardwareBufferExternalApi()
 {
 	deInt32 sdkVersion = checkAnbApiBuild();
