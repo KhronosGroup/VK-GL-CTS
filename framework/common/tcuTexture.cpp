@@ -3230,6 +3230,14 @@ Texture2D::Texture2D (const TextureFormat& format, int width, int height)
 {
 }
 
+Texture2D::Texture2D (const TextureFormat& format, int width, int height, int mipmaps)
+	: TextureLevelPyramid	(format, mipmaps)
+	, m_width				(width)
+	, m_height				(height)
+	, m_view				(getNumLevels(), getLevels())
+{
+}
+
 Texture2D::Texture2D (const Texture2D& other)
 	: TextureLevelPyramid	(other)
 	, m_width				(other.m_width)

@@ -1066,6 +1066,15 @@ TestTexture2D::TestTexture2D (const tcu::TextureFormat& format, int width, int h
 	TestTexture::populateLevels(getLevelsVector(m_texture));
 }
 
+TestTexture2D::TestTexture2D (const tcu::TextureFormat& format, int width, int height, int miplevels)
+	: TestTexture(format, width, height, 1)
+	, m_texture(format, width, height, miplevels)
+{
+	allocateLevels(m_texture);
+	TestTexture::populateLevels(getLevelsVector(m_texture));
+}
+
+
 TestTexture2D::TestTexture2D (const tcu::CompressedTexFormat& format, int width, int height)
 	: TestTexture	(format, width, height, 1)
 	, m_texture		(tcu::getUncompressedFormat(format), width, height)

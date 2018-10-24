@@ -113,7 +113,7 @@ Texture2DFilteringTestInstance::Texture2DFilteringTestInstance (Context& context
 	, m_renderer			(context, testParameters.sampleCount, TEX2D_VIEWPORT_WIDTH, TEX2D_VIEWPORT_HEIGHT)
 	, m_caseNdx				(0)
 {
-	const bool						mipmaps		= true;
+	const bool						mipmaps		= m_testParameters.mipmaps;
 	const int						numLevels	= mipmaps ? deLog2Floor32(de::max(m_testParameters.width, m_testParameters.height))+1 : 1;
 	const tcu::TextureFormatInfo	fmtInfo		= tcu::getTextureFormatInfo(vk::mapVkFormat(m_testParameters.format));
 	const tcu::Vec4					cBias		= fmtInfo.valueMin;
@@ -127,7 +127,10 @@ Texture2DFilteringTestInstance::Texture2DFilteringTestInstance (Context& context
 	// Create 2 textures.
 	m_textures.reserve(2);
 	for (int ndx = 0; ndx < 2; ndx++)
-		m_textures.push_back(TestTexture2DSp(new pipeline::TestTexture2D(vk::mapVkFormat(m_testParameters.format), m_testParameters.width, m_testParameters.height)));
+		if (mipmaps)
+			m_textures.push_back(TestTexture2DSp(new pipeline::TestTexture2D(vk::mapVkFormat(m_testParameters.format), m_testParameters.width, m_testParameters.height)));
+		else
+			m_textures.push_back(TestTexture2DSp(new pipeline::TestTexture2D(vk::mapVkFormat(m_testParameters.format), m_testParameters.width, m_testParameters.height, 1)));
 
 	// Fill first gradient texture.
 	for (int levelNdx = 0; levelNdx < numLevels; levelNdx++)
@@ -1019,6 +1022,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.format		= filterableFormatsByType[fmtNdx].format;
 				testParameters.minFilter	= minFilter;
 				testParameters.magFilter	= isMipmap ? Sampler::LINEAR : minFilter;
+				testParameters.mipmaps		= true;
 
 				testParameters.wrapS		= Sampler::REPEAT_GL;
 				testParameters.wrapT		= Sampler::REPEAT_GL;
@@ -1053,6 +1057,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
 				testParameters.minFilter	= minFilter;
 				testParameters.magFilter	= isMipmap ? Sampler::LINEAR : minFilter;
+				testParameters.mipmaps		= true;
+
 				testParameters.wrapS		= Sampler::REPEAT_GL;
 				testParameters.wrapT		= Sampler::REPEAT_GL;
 				testParameters.width		= sizes2D[sizeNdx].width;
@@ -1086,6 +1092,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 						testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
 						testParameters.minFilter	= minFilterModes[minFilterNdx].mode;
 						testParameters.magFilter	= magFilterModes[magFilterNdx].mode;
+						testParameters.mipmaps		= true;
+
 						testParameters.wrapS		= wrapModes[wrapSNdx].mode;
 						testParameters.wrapT		= wrapModes[wrapTNdx].mode;
 						testParameters.width		= 63;
@@ -1133,6 +1141,7 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.format		= filterableFormatsByType[fmtNdx].format;
 				testParameters.minFilter	= magFilter;
 				testParameters.magFilter	= magFilter;
+				testParameters.mipmaps		= false;
 
 				testParameters.wrapS		= ((fmtNdx ^ filterNdx) & 1) ? Sampler::CLAMP_TO_EDGE : Sampler::CLAMP_TO_BORDER;
 				testParameters.wrapT		= ((fmtNdx ^ filterNdx) & 2) ? Sampler::CLAMP_TO_EDGE : Sampler::CLAMP_TO_BORDER;
@@ -1167,6 +1176,8 @@ void populateTextureFilteringTests (tcu::TestCaseGroup* textureFilteringTests)
 				testParameters.format		= VK_FORMAT_R8G8B8A8_UNORM;
 				testParameters.minFilter	= magFilter;
 				testParameters.magFilter	= magFilter;
+				testParameters.mipmaps		= false;
+
 				testParameters.wrapS		= ((sizeNdx ^ filterNdx) & 1) ? Sampler::CLAMP_TO_EDGE : Sampler::CLAMP_TO_BORDER;
 				testParameters.wrapT		= ((sizeNdx ^ filterNdx) & 2) ? Sampler::CLAMP_TO_EDGE : Sampler::CLAMP_TO_BORDER;
 				testParameters.width		= sizes2D[sizeNdx].width;
