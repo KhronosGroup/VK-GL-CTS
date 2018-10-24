@@ -1171,6 +1171,9 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 	clearValues[1].color.float32[2] = 0.0f;
 	clearValues[1].color.float32[3] = 1.0f;
 
+	const VkImageLayout	textureImageLayout	= (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
+											  VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
 	// Clear textures
 	for (deUint32 texIdx = 0; texIdx < 2; texIdx++)
 	{
@@ -1201,14 +1204,14 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 			}
 		};
 
-		const VkImageMemoryBarrier postImageBarrier =
+		const VkImageMemoryBarrier	postImageBarrier	=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
 			DE_NULL,									// const void*				pNext;
 			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_SHADER_READ_BIT,					// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,	// VkImageLayout			newLayout;
+			textureImageLayout,							// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 			**m_textureImages[texIdx],					// VkImage					image;
@@ -1590,7 +1593,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 			{
 				samplers[quadNdx],							// VkSampler		sampler;
 				imageViews[quadNdx],						// VkImageView		imageView;
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout	imageLayout;
+				textureImageLayout							// VkImageLayout	imageLayout;
 			};
 
 			VkWriteDescriptorSet	writeDescriptorSet	=
@@ -1965,6 +1968,9 @@ void PushDescriptorImageComputeTestInstance::init (void)
 	clearValues[1].color.float32[2] = 0.0f;
 	clearValues[1].color.float32[3] = 1.0f;
 
+	const VkImageLayout	textureImageLayout = (m_params.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) ?
+											  VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
 	// Clear textures
 	for (deUint32 texIdx = 0; texIdx < 2; texIdx++)
 	{
@@ -2002,7 +2008,7 @@ void PushDescriptorImageComputeTestInstance::init (void)
 			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
 			VK_ACCESS_SHADER_READ_BIT,					// VkAccessFlags			dstAccessMask;
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,	// VkImageLayout			newLayout;
+			textureImageLayout,							// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
 			**m_textureImages[texIdx],					// VkImage					image;
@@ -2282,9 +2288,9 @@ void PushDescriptorImageComputeTestInstance::init (void)
 
 			const VkDescriptorImageInfo	descriptorImageInfo	=
 			{
-				samplers[dispatchNdx],						// VkSampler		sampler;
-				imageViews[dispatchNdx],					// VkImageView		imageView;
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout	imageLayout;
+				samplers[dispatchNdx],					// VkSampler		sampler;
+				imageViews[dispatchNdx],				// VkImageView		imageView;
+				textureImageLayout						// VkImageLayout	imageLayout;
 			};
 
 			VkWriteDescriptorSet	writeDescriptorSet		=
