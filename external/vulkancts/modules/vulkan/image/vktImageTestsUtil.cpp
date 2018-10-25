@@ -776,6 +776,10 @@ std::string getShaderImageFormatQualifier (const tcu::TextureFormat& format)
 		case tcu::TextureFormat::RG:	orderPart = "rg";	break;
 		case tcu::TextureFormat::RGB:	orderPart = "rgb";	break;
 		case tcu::TextureFormat::RGBA:	orderPart = "rgba";	break;
+		case tcu::TextureFormat::sRGBA:	orderPart = "rgba";	break;
+
+		case tcu::TextureFormat::BGRA:
+		case tcu::TextureFormat::sBGRA:	orderPart = "rgba";	break;
 
 		default:
 			DE_ASSERT(false);

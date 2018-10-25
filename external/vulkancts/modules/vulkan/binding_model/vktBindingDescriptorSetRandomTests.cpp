@@ -1008,6 +1008,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 		}
 	}
 
+	flushMappedMemoryRange(vk, device, buffer->getAllocation().getMemory(), buffer->getAllocation().getOffset(), VK_WHOLE_SIZE);
 
 	const VkQueue					queue					= m_context.getUniversalQueue();
 	Move<VkCommandPool>				cmdPool					= createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());

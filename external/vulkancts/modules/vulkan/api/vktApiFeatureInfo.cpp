@@ -770,6 +770,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_driver_properties",
 		"VK_KHR_shader_atomic_int64",
 		"VK_KHR_vulkan_memory_model",
+		"VK_KHR_swapchain_mutable_format",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
@@ -1475,7 +1476,7 @@ tcu::TestStatus deviceGroupPeerMemoryFeatures (Context& context)
 	// Need atleast 2 devices for peer memory features
 	numPhysicalDevices = deviceGroupProps[devGroupIdx].physicalDeviceCount;
 	if (numPhysicalDevices < 2)
-		TCU_THROW(NotSupportedError, "Need a device Group with atleast 2 physical devices.");
+		TCU_THROW(NotSupportedError, "Need a device Group with at least 2 physical devices.");
 
 	// Create device groups
 	const VkDeviceGroupDeviceCreateInfo						deviceGroupInfo =

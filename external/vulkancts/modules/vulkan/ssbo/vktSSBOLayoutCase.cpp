@@ -1966,11 +1966,15 @@ void initRefDataStorage (const ShaderInterface& interface, const BufferLayout& l
 {
 	DE_ASSERT(storage.data.empty() && storage.pointers.empty());
 
-	const vector<int>	bufferSizes = computeBufferSizes(interface, layout);
-	int					totalSize	= 0;
+	const vector<int>	bufferSizes		= computeBufferSizes(interface, layout);
+	int					totalSize		= 0;
+	const int			vec4Alignment	= (int)sizeof(deUint32)*4;
 
 	for (vector<int>::const_iterator sizeIter = bufferSizes.begin(); sizeIter != bufferSizes.end(); ++sizeIter)
-		totalSize += *sizeIter;
+	{
+		// Include enough space for alignment of individual blocks
+		totalSize += deRoundUp32(*sizeIter, vec4Alignment);
+	}
 
 	storage.data.resize(totalSize);
 
@@ -1991,7 +1995,8 @@ void initRefDataStorage (const ShaderInterface& interface, const BufferLayout& l
 
 			storage.pointers[blockNdx] = getBlockDataPtr(layout, blockLayout, basePtr + curOffset, bufferSize);
 
-			curOffset += bufferSize;
+			// Ensure each new block starts fully aligned to avoid unaligned host accesses
+			curOffset += deRoundUp32(bufferSize, vec4Alignment);
 		}
 	}
 }
