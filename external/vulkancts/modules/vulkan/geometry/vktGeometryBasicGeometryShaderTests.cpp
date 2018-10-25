@@ -219,14 +219,14 @@ void uploadImage (Context&								context,
 	{
 		const tcu::PixelBufferAccess	destAccess	(access.getFormat(), access.getSize(), bufferAlloc->getHostPtr());
 		tcu::copy(destAccess, access);
-		flushMappedMemoryRange(vk, device, bufferAlloc->getMemory(), bufferAlloc->getOffset(), bufferSize);
+		flushAlloc(vk, device, *bufferAlloc);
 	}
 
 	// Copy buffer to image
 	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
 	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegions);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
@@ -416,7 +416,7 @@ void VaryingOutputCountTestInstance::bindDescriptorSets (const DeviceInterface& 
 		VK_CHECK(vk.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
 		{
 			deMemcpy(m_allocation->getHostPtr(), &emitCount[0], sizeof(emitCount));
-			flushMappedMemoryRange(vk, device, m_allocation->getMemory(), m_allocation->getOffset(), sizeof(emitCount));
+			flushAlloc(vk, device, *m_allocation);
 
 			const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*m_buffer, 0ull, sizeof(emitCount));
 
@@ -614,7 +614,7 @@ void BuiltinVariableRenderTestInstance::createIndicesBuffer (void)
 	VK_CHECK(vk.bindBufferMemory(device, *m_indicesBuffer, m_allocation->getMemory(), m_allocation->getOffset()));
 	// Load indices into buffer
 	deMemcpy(m_allocation->getHostPtr(), &m_indices[0], (size_t)indexBufferSize);
-	flushMappedMemoryRange(vk, device, m_allocation->getMemory(), m_allocation->getOffset(), indexBufferSize);
+	flushAlloc(vk, device, *m_allocation);
 }
 
 void BuiltinVariableRenderTestInstance::drawCommand (const VkCommandBuffer&	cmdBuffer)
