@@ -234,6 +234,7 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 	const char *scopeStr;
 	switch (m_data.scope)
 	{
+	default: DE_ASSERT(0); // fall through
 	case SCOPE_DEVICE:		scopeStr = "gl_ScopeDevice"; break;
 	case SCOPE_QUEUEFAMILY:	scopeStr = "gl_ScopeQueueFamily"; break;
 	case SCOPE_WORKGROUP:	scopeStr = "gl_ScopeWorkgroup"; break;
