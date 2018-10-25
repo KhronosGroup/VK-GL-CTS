@@ -494,17 +494,9 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			stagingVertexBufferMemory = memAlloc.allocate(getBufferMemoryRequirements(vk, *m_deviceGroup, *stagingVertexBuffer), MemoryRequirement::HostVisible);
 			VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *stagingVertexBuffer, stagingVertexBufferMemory->getMemory(), stagingVertexBufferMemory->getOffset()));
 
-			const VkMappedMemoryRange	range	=
-			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
-				DE_NULL,								// pNext
-				stagingVertexBufferMemory->getMemory(),	// memory
-				0u,										// offset
-				(VkDeviceSize)verticesSize,				// size
-			};
 			void*	vertexBufPtr	= stagingVertexBufferMemory->getHostPtr();
 			deMemcpy(vertexBufPtr, &vertices[0], verticesSize);
-			VK_CHECK(vk.flushMappedMemoryRanges(*m_deviceGroup, 1u, &range));
+			flushAlloc(vk, *m_deviceGroup, *stagingVertexBufferMemory);
 		}
 
 		{
@@ -574,17 +566,9 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			stagingIndexBufferMemory = memAlloc.allocate(getBufferMemoryRequirements(vk, *m_deviceGroup, *stagingIndexBuffer), MemoryRequirement::HostVisible);
 			VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *stagingIndexBuffer, stagingIndexBufferMemory->getMemory(), stagingIndexBufferMemory->getOffset()));
 
-			const VkMappedMemoryRange	range	=
-			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
-				DE_NULL,								// pNext
-				stagingIndexBufferMemory->getMemory(),	// memory
-				0u,										// offset
-				(VkDeviceSize)indicesSize,				// size
-			};
 			void*	indexBufPtr	= stagingIndexBufferMemory->getHostPtr();
 			deMemcpy(indexBufPtr, &indices[0], indicesSize);
-			VK_CHECK(vk.flushMappedMemoryRanges(*m_deviceGroup, 1u, &range));
+			flushAlloc(vk, *m_deviceGroup, *stagingIndexBufferMemory);
 		}
 
 		{
@@ -654,17 +638,9 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			stagingUniformBufferMemory = memAlloc.allocate(getBufferMemoryRequirements(vk, *m_deviceGroup, *stagingUniformBuffer), MemoryRequirement::HostVisible);
 			VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *stagingUniformBuffer, stagingUniformBufferMemory->getMemory(), stagingUniformBufferMemory->getOffset()));
 
-			const VkMappedMemoryRange	range	=
-			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
-				DE_NULL,								// pNext
-				stagingUniformBufferMemory->getMemory(),// memory
-				0u,										// offset
-				(VkDeviceSize)sizeof(drawColor),		// size
-			};
 			void*	uniformBufPtr	= stagingUniformBufferMemory->getHostPtr();
 			deMemcpy(uniformBufPtr, &drawColor[0], sizeof(drawColor));
-			VK_CHECK(vk.flushMappedMemoryRanges(*m_deviceGroup, 1u, &range));
+			flushAlloc(vk, *m_deviceGroup, *stagingUniformBufferMemory);
 		}
 
 		{
@@ -733,17 +709,9 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			stagingSboBufferMemory = memAlloc.allocate(getBufferMemoryRequirements(vk, *m_deviceGroup, *stagingSboBuffer), MemoryRequirement::HostVisible);
 			VK_CHECK(vk.bindBufferMemory(*m_deviceGroup, *stagingSboBuffer, stagingSboBufferMemory->getMemory(), stagingSboBufferMemory->getOffset()));
 
-			const VkMappedMemoryRange	range	=
-			{
-				VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
-				DE_NULL,								// pNext
-				stagingSboBufferMemory->getMemory(),	// memory
-				0u,										// offset
-				(VkDeviceSize)sizeof(tessLevel),		// size
-			};
 			void*	sboBufPtr	= stagingSboBufferMemory->getHostPtr();
 			deMemcpy(sboBufPtr, &tessLevel, sizeof(tessLevel));
-			VK_CHECK(vk.flushMappedMemoryRanges(*m_deviceGroup, 1u, &range));
+			flushAlloc(vk, *m_deviceGroup, *stagingSboBufferMemory);
 		}
 
 		{
@@ -1296,7 +1264,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &stagingUboBufferUpdateBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 			VkBufferCopy	uboBufferCopy	= { 0u, 0u, sizeof(drawColor) };
 			vk.cmdCopyBuffer(*cmdBuffer, stagingUniformBuffer.get(), uniformBuffer.get(), 1u, &uboBufferCopy);
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &uboUpdateBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &uboUpdateBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
 
 			if (m_drawTessellatedSphere)
 			{
@@ -1664,16 +1632,8 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			if (m_drawTessellatedSphere)
 			{
 				const tcu::TextureFormat			tcuFormat = vk::mapVkFormat(colorFormat);
-				const VkMappedMemoryRange			range =
-				{
-					VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
-					DE_NULL,								// pNext
-					readImageBufferMemory->getMemory(),		// memory
-					0,										// offset
-					imageSizeBytes,							// size
-				};
 				const tcu::ConstPixelBufferAccess	resultAccess(tcuFormat, renderSize.x(), renderSize.y(), 1, readImageBufferMemory->getHostPtr());
-				VK_CHECK(vk.invalidateMappedMemoryRanges(*m_deviceGroup, 1u, &range));
+				invalidateAlloc(vk, *m_deviceGroup, *readImageBufferMemory);
 
 				tcu::TextureLevel referenceImage;
 				string refImage = m_fillModeNonSolid ? "vulkan/data/device_group/sphere.png" : "vulkan/data/device_group/spherefilled.png";
@@ -1684,16 +1644,8 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 			else
 			{
 				const tcu::TextureFormat			tcuFormat = vk::mapVkFormat(colorFormat);
-				const VkMappedMemoryRange			range =
-				{
-					VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,	// sType
-					DE_NULL,								// pNext
-					readImageBufferMemory->getMemory(),		// memory
-					0,										// offset
-					imageSizeBytes,							// size
-				};
 				const tcu::ConstPixelBufferAccess	resultAccess(tcuFormat, renderSize.x(), renderSize.y(), 1, readImageBufferMemory->getHostPtr());
-				VK_CHECK(vk.invalidateMappedMemoryRanges(*m_deviceGroup, 1u, &range));
+				invalidateAlloc(vk, *m_deviceGroup, *readImageBufferMemory);
 
 				// Render reference and compare
 				{

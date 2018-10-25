@@ -9579,7 +9579,7 @@ struct AddPrograms
 				const char* const vertexShader =
 					"#version 310 es\n"
 					"precision highp float;\n"
-					"layout(set=0, binding=0) buffer Block\n"
+					"readonly layout(set=0, binding=0) buffer Block\n"
 					"{\n"
 					"\thighp uvec4 values[];\n"
 					"} block;\n"
