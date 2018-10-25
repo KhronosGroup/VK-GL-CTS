@@ -6983,7 +6983,7 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	renderpassTests->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSampleReadTests(testCtx) : createRenderPass2SampleReadTests(testCtx));
 	renderpassTests->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSparseRenderTargetTests(testCtx) : createRenderPass2SparseRenderTargetTests(testCtx));
 
-	renderpassTests->addChild(createRenderPassUnusedAttachmentTests(testCtx));
+	renderpassTests->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderPassType));
 
 	return renderpassTests.release();
 }
