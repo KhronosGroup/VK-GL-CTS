@@ -304,11 +304,12 @@ TextureBinding::TextureBinding (Context& context)
 {
 }
 
-TextureBinding::TextureBinding (Context& context, const TestTextureSp& textureData, const TextureBinding::Type type, const TextureBinding::ImageBackingMode backingMode)
+TextureBinding::TextureBinding (Context& context, const TestTextureSp& textureData, const TextureBinding::Type type, const TextureBinding::ImageBackingMode backingMode, const VkComponentMapping componentMapping)
 	: m_context				(context)
 	, m_type				(type)
 	, m_backingMode			(backingMode)
 	, m_textureData			(textureData)
+	, m_componentMapping	(componentMapping)
 {
 	updateTextureData(m_textureData, m_type);
 }
@@ -440,7 +441,7 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 		*m_textureImage,								// VkImage					image;
 		imageViewType,									// VkImageViewType			viewType;
 		format,											// VkFormat					format;
-		makeComponentMappingRGBA(),						// VkComponentMapping		components;
+		m_componentMapping,								// VkComponentMapping		components;
 		{
 			aspectMask,									// VkImageAspectFlags	aspectMask;
 			baseLevel,									// deUint32				baseMipLevel;
@@ -456,7 +457,7 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 const deUint16		TextureRenderer::s_vertexIndices[6] = { 0, 1, 2, 2, 1, 3 };
 const VkDeviceSize	TextureRenderer::s_vertexIndexBufferSize = sizeof(TextureRenderer::s_vertexIndices);
 
-TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight)
+TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sampleCount, deUint32 renderWidth, deUint32 renderHeight, VkComponentMapping componentMapping)
 	: m_context					(context)
 	, m_log						(context.getTestContext().getLog())
 	, m_renderWidth				(renderWidth)
@@ -471,6 +472,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 	, m_viewportOffsetY			(0.0f)
 	, m_viewportWidth			((float)renderWidth)
 	, m_viewportHeight			((float)renderHeight)
+	, m_componentMapping		(componentMapping)
 {
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const VkDevice								vkDevice				= m_context.getDevice();
@@ -624,7 +626,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 				0u,													// VkAttachmentDescriptionFlags		flags;
 				m_imageFormat,										// VkFormat							format;
 				m_sampleCount,										// VkSampleCountFlagBits			samples;
-				VK_ATTACHMENT_LOAD_OP_LOAD,												// VkAttachmentLoadOp				loadOp;
+				VK_ATTACHMENT_LOAD_OP_LOAD,							// VkAttachmentLoadOp				loadOp;
 				VK_ATTACHMENT_STORE_OP_STORE,						// VkAttachmentStoreOp				storeOp;
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,					// VkAttachmentLoadOp				stencilLoadOp;
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,					// VkAttachmentStoreOp				stencilStoreOp;
@@ -683,7 +685,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 			DE_NULL,											// const VkSubpassDependency*		pDependencies;
 		};
 
-		m_renderPass =  createRenderPass(vkd, vkDevice, &renderPassCreateInfo, DE_NULL);
+		m_renderPass = createRenderPass(vkd, vkDevice, &renderPassCreateInfo, DE_NULL);
 	}
 
 	// Vertex index buffer
@@ -838,22 +840,22 @@ void TextureRenderer::clearImage(VkImage image)
 
 void TextureRenderer::add2DTexture (const TestTexture2DSp& texture, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D, backingMode)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D, backingMode, m_componentMapping)));
 }
 
 void TextureRenderer::addCubeTexture (const TestTextureCubeSp& texture, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_CUBE_MAP, backingMode)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_CUBE_MAP, backingMode, m_componentMapping)));
 }
 
 void TextureRenderer::add2DArrayTexture (const TestTexture2DArraySp& texture, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D_ARRAY, backingMode)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_2D_ARRAY, backingMode, m_componentMapping)));
 }
 
 void TextureRenderer::add3DTexture (const TestTexture3DSp& texture, TextureBinding::ImageBackingMode backingMode)
 {
-	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_3D, backingMode)));
+	m_textureBindings.push_back(TextureBindingSp(new TextureBinding(m_context, texture, TextureBinding::TYPE_3D, backingMode, m_componentMapping)));
 }
 
 const pipeline::TestTexture2D& TextureRenderer::get2DTexture (int textureIndex) const
@@ -957,7 +959,6 @@ void TextureRenderer::addImageTransitionBarrier(VkCommandBuffer commandBuffer, V
 
 	vkd.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, 0, 0, DE_NULL, 0, DE_NULL, 1, &imageBarrier);
 }
-
 
 void TextureRenderer::renderQuad (tcu::Surface& result, int texUnit, const float* texCoord, TextureType texType)
 {
@@ -1253,7 +1254,6 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 											.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, &sampler.get())
 											.build(vkd, vkDevice);
 
-
 		descriptorSet[0] = makeDescriptorSet(*m_descriptorPool, *descriptorSetLayout[0]);
 		descriptorSet[1] = makeDescriptorSet(*m_descriptorPool, *descriptorSetLayout[1]);
 
@@ -1350,7 +1350,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 		// Load vertices into vertex buffer
 		deMemcpy(vertexBufferMemory->getHostPtr(), position, positionDataSize);
-		deMemcpy(reinterpret_cast<deUint8*>(vertexBufferMemory->getHostPtr()) +  positionDataSize, texCoord, textureCoordDataSize);
+		deMemcpy(reinterpret_cast<deUint8*>(vertexBufferMemory->getHostPtr()) + positionDataSize, texCoord, textureCoordDataSize);
 		flushMappedMemoryRange(vkd, vkDevice, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset(), VK_WHOLE_SIZE);
 	}
 

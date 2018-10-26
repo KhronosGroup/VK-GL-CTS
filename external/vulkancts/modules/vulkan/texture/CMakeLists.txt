@@ -26,6 +26,8 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureFilteringAnisotropyTests.hpp
 	vktTextureCompressedFormatTests.cpp
 	vktTextureCompressedFormatTests.hpp
+	vktTextureSwizzleTests.cpp
+	vktTextureSwizzleTests.hpp
 	)
 
 set(DEQP_VK_TEXTURE_LIBS

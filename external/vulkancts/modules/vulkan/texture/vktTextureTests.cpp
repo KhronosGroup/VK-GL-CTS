@@ -31,6 +31,7 @@
 #include "vktTextureShadowTests.hpp"
 #include "vktTextureFilteringAnisotropyTests.hpp"
 #include "vktTextureCompressedFormatTests.hpp"
+#include "vktTextureSwizzleTests.hpp"
 
 namespace vkt
 {
@@ -49,6 +50,7 @@ void createTextureTests (tcu::TestCaseGroup* textureTests)
 	textureTests->addChild(createTextureShadowTests				(testCtx));
 	textureTests->addChild(createFilteringAnisotropyTests		(testCtx));
 	textureTests->addChild(createTextureCompressedFormatTests	(testCtx));
+	textureTests->addChild(createTextureSwizzleTests			(testCtx));
 }
 
 } // anonymous
