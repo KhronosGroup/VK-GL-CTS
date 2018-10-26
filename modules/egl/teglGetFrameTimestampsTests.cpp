@@ -636,7 +636,7 @@ void GetFrameTimestampTest::executeForConfig (EGLDisplay display, EGLConfig conf
 			check_lt<EGLnsecsANDROID>(m_result, 1000000, frame.compositeInterval, "Reported refresh rate greater than 1kHz.");
 			check_lt<EGLnsecsANDROID>(m_result, frame.compositeInterval, 1000000000, "Reported refresh rate less than 1Hz.");
 			check_lt<EGLnsecsANDROID>(m_result, 0, frame.compositeToPresentLatency, "Composite to present latency must be greater than 0.");
-			check_lt(m_result, frame.compositeToPresentLatency, frame.compositeInterval * 3, "Composite to present latency is more than 3 vsyncs.");
+			check_lt(m_result, frame.compositeToPresentLatency, frame.compositeInterval * 4, "Composite to present latency is more than 4 vsyncs.");
 			const EGLnsecsANDROID minDeadline = now;
 			check_lt(m_result, minDeadline, frame.compositeDeadline, "Next composite deadline is in the past.");
 			const EGLnsecsANDROID maxDeadline = now + frame.compositeInterval * 2;
