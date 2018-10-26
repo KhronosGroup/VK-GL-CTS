@@ -1173,8 +1173,16 @@ void initTests (tcu::TestCaseGroup* group)
 						if ((dResolve.flag == VK_RESOLVE_MODE_NONE_KHR) && (sResolve.flag == VK_RESOLVE_MODE_NONE_KHR))
 							continue;
 
-						// if there is no depth or stencil component then resolve mode for both should be same
-						if ((!hasDepth || !hasStencil) && (dResolve.flag != sResolve.flag))
+						// If there is no depth, the depth resolve mode should be NONE, or
+						// match the stencil resolve mode.
+						if (!hasDepth && (dResolve.flag != VK_RESOLVE_MODE_NONE_KHR) &&
+							(dResolve.flag != sResolve.flag))
+							continue;
+
+						// If there is no stencil, the stencil resmove mode should be NONE, or
+						// match the depth resolve mode.
+						if (!hasStencil && (sResolve.flag != VK_RESOLVE_MODE_NONE_KHR) &&
+							(dResolve.flag != sResolve.flag))
 							continue;
 
 						std::string baseName = "depth_" + dResolve.name + "_stencil_" + sResolve.name;
