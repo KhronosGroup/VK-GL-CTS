@@ -86,7 +86,7 @@ de::SharedPtr<T> safeSharedPtr (T* ptr)
 enum VerifyBuffer
 {
 	VB_DEPTH = 0,
-	VB_STENCIL,
+	VB_STENCIL
 };
 
 struct TestConfig
@@ -103,7 +103,9 @@ struct TestConfig
 	VkResolveModeFlagBitsKHR	depthResolveMode;
 	VkResolveModeFlagBitsKHR	stencilResolveMode;
 	VerifyBuffer				verifyBuffer;
-	float						expectedValue;
+	VkClearDepthStencilValue	clearValue;
+	float						depthExpectedValue;
+	deUint8						stencilExpectedValue;
 };
 
 float get16bitDepthComponent(deUint8* pixelPtr)
@@ -177,7 +179,6 @@ protected:
 	Unique<VkPipeline>				m_renderPipeline;
 
 	const Unique<VkCommandPool>		m_commandPool;
-	VkClearDepthStencilValue		m_clearValue;
 };
 
 DepthStencilResolveTest::DepthStencilResolveTest (Context& context, TestConfig config)
@@ -208,8 +209,6 @@ DepthStencilResolveTest::DepthStencilResolveTest (Context& context, TestConfig c
 
 	, m_commandPool				(createCommandPool(context.getDeviceInterface(), context.getDevice(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
 {
-	m_clearValue.depth		= 0.0f;
-	m_clearValue.stencil	= 0x0;
 }
 
 DepthStencilResolveTest::~DepthStencilResolveTest (void)
@@ -683,8 +682,8 @@ void DepthStencilResolveTest::submit (void)
 
 	{
 		VkClearValue clearValues[2];
-		clearValues[0].depthStencil = m_clearValue;
-		clearValues[1].depthStencil = m_clearValue;
+		clearValues[0].depthStencil = m_config.clearValue;
+		clearValues[1].depthStencil = m_config.clearValue;
 
 		const VkRenderPassBeginInfo beginInfo =
 		{
@@ -714,16 +713,17 @@ void DepthStencilResolveTest::submit (void)
 	}
 	else
 	{
-		// For stencil we do two passes to have different value for just first and last sample
-		deInt32 sampleID = 0;
-		for (deUint32 renderPass = 0 ; renderPass < 2 ; renderPass++)
+		// For stencil we can set reference value for just one sample at a time
+		// so we need to do as many passes as there are samples, first half
+		// of samples is initialized with 1 and second half with 255
+		const deUint32 halfOfSamples = m_config.sampleCount >> 1;
+		for (deUint32 renderPass = 0 ; renderPass < m_config.sampleCount ; renderPass++)
 		{
-			deUint32 stencilReference = renderPass + 1;
+			deUint32 stencilReference = 1 + 254 * (renderPass >= halfOfSamples);
 			vkd.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
-			vkd.cmdPushConstants(*commandBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(sampleID), &sampleID);
+			vkd.cmdPushConstants(*commandBuffer, *m_renderPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u, sizeof(renderPass), &renderPass);
 			vkd.cmdSetStencilReference(*commandBuffer, VK_STENCIL_FRONT_AND_BACK, stencilReference);
 			vkd.cmdDraw(*commandBuffer, 6u, 1u, 0u, 0u);
-			sampleID = deInt32(m_config.sampleCount) - 1;
 		}
 	}
 
@@ -808,6 +808,10 @@ bool DepthStencilResolveTest::verifyDepth (void)
 	deUint32			valuesCount	= layerSize * m_config.viewLayers;
 	deUint8*			pixelPtr	= static_cast<deUint8*>(m_bufferMemory->getHostPtr());
 
+	float expectedValue = m_config.depthExpectedValue;
+	if (m_config.depthResolveMode == VK_RESOLVE_MODE_NONE_KHR)
+		expectedValue = m_config.clearValue.depth;
+
 	// depth data in buffer is tightly packed, ConstPixelBufferAccess
 	// coludn't be used for depth value extraction as it cant interpret
 	// formats containing just depth component
@@ -845,16 +849,16 @@ bool DepthStencilResolveTest::verifyDepth (void)
 		deInt32 y1				= m_config.renderArea.offset.y;
 		deInt32 x2				= x1 + m_config.renderArea.extent.width;
 		deInt32 y2				= y1 + m_config.renderArea.extent.height;
-		if ((x < x1) || (x > x2) || (y < y1) || (y > y2))
+		if ((x < x1) || (x >= x2) || (y < y1) || (y >= y2))
 		{
 			// verify that outside of render area there are clear values
-			float error = deFloatAbs(depth - m_clearValue.depth);
-			if (error > std::numeric_limits<float>::epsilon())
+			float error = deFloatAbs(depth - m_config.clearValue.depth);
+			if (error > epsilon)
 			{
 				m_context.getTestContext().getLog()
 				<< TestLog::Message << "(" << x << ", " << y
 				<< ", layer: " << layerIndex << ") is outside of render area but depth value is: "
-				<< depth << " (expected " << m_clearValue.depth << ")" << TestLog::EndMessage;
+				<< depth << " (expected " << m_config.clearValue.depth << ")" << TestLog::EndMessage;
 				return false;
 			}
 
@@ -862,18 +866,18 @@ bool DepthStencilResolveTest::verifyDepth (void)
 			continue;
 		}
 
-		float error = deFloatAbs(depth - m_config.expectedValue);
+		float error = deFloatAbs(depth - expectedValue);
 		if (error > epsilon)
 		{
 			m_context.getTestContext().getLog() << TestLog::Message
 				<< "At (" << x << ", " << y << ", layer: " << layerIndex
 				<< ") depth value is: " << depth << " expected: "
-				<< m_config.expectedValue << TestLog::EndMessage;
+				<< expectedValue << TestLog::EndMessage;
 			return false;
 		}
 	}
 	m_context.getTestContext().getLog() << TestLog::Message
-		<< "Depth value is " << m_config.expectedValue
+		<< "Depth value is " << expectedValue
 		<< TestLog::EndMessage;
 
 	return true;
@@ -888,7 +892,10 @@ bool DepthStencilResolveTest::verifyStencil (void)
 	// when stencil is tested we are discarding invocations and
 	// because of that depth and stencil need to be tested separately
 
-	deUint8 expectedValue = static_cast<deUint8>(m_config.expectedValue);
+	deUint8 expectedValue = m_config.stencilExpectedValue;
+	if (m_config.stencilResolveMode == VK_RESOLVE_MODE_NONE_KHR)
+		expectedValue = static_cast<deUint8>(m_config.clearValue.stencil);
+
 	for (deUint32 valueIndex = 0; valueIndex < valuesCount; valueIndex++)
 	{
 		deUint8 stencil			= *pixelPtr++;
@@ -900,14 +907,14 @@ bool DepthStencilResolveTest::verifyStencil (void)
 		deInt32 y1				= m_config.renderArea.offset.y;
 		deInt32 x2				= x1 + m_config.renderArea.extent.width;
 		deInt32 y2				= y1 + m_config.renderArea.extent.height;
-		if ((x < x1) || (x > x2) || (y < y1) || (y > y2))
+		if ((x < x1) || (x >= x2) || (y < y1) || (y >= y2))
 		{
-			if (stencil != m_clearValue.stencil)
+			if (stencil != m_config.clearValue.stencil)
 			{
 				m_context.getTestContext().getLog()
 				<< TestLog::Message << "(" << x << ", " << y << ", layer: " << layerIndex
 				<< ") is outside of render area but stencil value is: "
-				<< stencil << " (expected " << m_clearValue.stencil << ")" << TestLog::EndMessage;
+				<< stencil << " (expected " << m_config.clearValue.stencil << ")" << TestLog::EndMessage;
 				return false;
 			}
 
@@ -1071,11 +1078,12 @@ void initTests (tcu::TestCaseGroup* group)
 
 	struct ImageTestData
 	{
-		const char*		groupName;
-		deUint32		width;
-		deUint32		height;
-		deUint32		imageLayers;
-		VkRect2D		renderArea;
+		const char*					groupName;
+		deUint32					width;
+		deUint32					height;
+		deUint32					imageLayers;
+		VkRect2D					renderArea;
+		VkClearDepthStencilValue	clearValue;
 	};
 
 	// NOTE: tests cant be executed for 1D and 3D images:
@@ -1086,9 +1094,11 @@ void initTests (tcu::TestCaseGroup* group)
 	// view taken from a 3D image must not be a depth/stencil format
 	ImageTestData imagesTestData[] =
 	{
-		{ "image_2d_32_32",	32, 32, 1, {{ 0,  0}, {32, 32}} },
-		{ "image_2d_49_13",	49, 13, 1, {{10, 15}, {20, 13}} },
-		{ "image_2d_5_1",	 5,  1, 1, {{ 0,  0}, { 5,  1}} },
+		{ "image_2d_32_32",	32, 32, 1, {{ 0,  0}, {32, 32}}, {0.000f, 0x00} },
+		{ "image_2d_8_32",	 8, 32, 1, {{ 1,  1}, { 6, 30}}, {0.123f, 0x01} },
+		{ "image_2d_49_13",	49, 13, 1, {{10,  5}, {20,  8}}, {1.000f, 0x05} },
+		{ "image_2d_5_1",	 5,  1, 1, {{ 0,  0}, { 5,  1}}, {0.500f, 0x00} },
+		{ "image_2d_17_1",	17,  1, 1, {{ 1,  0}, {15,  1}}, {0.789f, 0xfa} },
 	};
 	const deUint32 sampleCounts[] =
 	{
@@ -1097,20 +1107,20 @@ void initTests (tcu::TestCaseGroup* group)
 	const float depthExpectedValue[][6] =
 	{
 		// 2 samples	4			8			16			32			64
-		{ 0.0f,			0.0f,		0.0f,		0.0f,		0.0f,		0.0f },		// RESOLVE_MODE_NONE
+		{ 0.0f,			0.0f,		0.0f,		0.0f,		0.0f,		0.0f },		// RESOLVE_MODE_NONE - expect clear value
 		{ 0.04f,		0.04f,		0.04f,		0.04f,		0.04f,		0.04f },	// RESOLVE_MODE_SAMPLE_ZERO_BIT
 		{ 0.03f,		0.135f,		0.135f,		0.135f,		0.135f,		0.135f },	// RESOLVE_MODE_AVERAGE_BIT
 		{ 0.02f,		0.02f,		0.02f,		0.02f,		0.02f,		0.02f },	// RESOLVE_MODE_MIN_BIT
 		{ 0.04f,		0.32f,		0.32f,		0.32f,		0.32f,		0.32f },	// RESOLVE_MODE_MAX_BIT
 	};
-	const float stencilExpectedValue[][6] =
+	const deUint8 stencilExpectedValue[][6] =
 	{
-		// 2 samples	4			8	,		16			32			64
-		{ 0.0f,			0.0f,		0.0f,		0.0f,		0.0f,		0.0f },		// RESOLVE_MODE_NONE
-		{ 1.0f,			1.0f,		1.0f,		1.0f,		1.0f,		1.0f },		// RESOLVE_MODE_SAMPLE_ZERO_BIT
-		{ 0.0f,			0.0f,		0.0f,		0.0f,		0.0f,		0.0f },		// RESOLVE_MODE_AVERAGE_BIT - not supported
-		{ 1.0f,			0.0f,		0.0f,		0.0f,		0.0f,		0.0f },		// RESOLVE_MODE_MIN_BIT
-		{ 2.0f,			2.0f,		2.0f,		2.0f,		2.0f,		2.0f },		// RESOLVE_MODE_MAX_BIT
+		// 2 samples	4		8		16		32		64
+		{ 0u,			0u,		0u,		0u,		0u,		0u },	// RESOLVE_MODE_NONE - expect clear value
+		{ 1u,			1u,		1u,		1u,		1u,		1u },	// RESOLVE_MODE_SAMPLE_ZERO_BIT
+		{ 0u,			0u,		0u,		0u,		0u,		0u },	// RESOLVE_MODE_AVERAGE_BIT - not supported
+		{ 1u,			1u,		1u,		1u,		1u,		1u },	// RESOLVE_MODE_MIN_BIT
+		{ 255u,			255u,	255u,	255u,	255u,	255u },	// RESOLVE_MODE_MAX_BIT
 	};
 
 	tcu::TestContext& testCtx(group->getTestContext());
@@ -1189,7 +1199,9 @@ void initTests (tcu::TestCaseGroup* group)
 								dResolve.flag,
 								sResolve.flag,
 								VB_DEPTH,
-								expectedValue
+								imageData.clearValue,
+								expectedValue,
+								0u
 							};
 							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 						}
@@ -1197,7 +1209,7 @@ void initTests (tcu::TestCaseGroup* group)
 						{
 							std::string	name			= baseName + "_testing_stencil";
 							const char*	testName		= name.c_str();
-							float		expectedValue	= stencilExpectedValue[stencilResolveModeNdx][sampleCountNdx];
+							deUint8		expectedValue	= stencilExpectedValue[stencilResolveModeNdx][sampleCountNdx];
 
 							const TestConfig testConfig =
 							{
@@ -1213,6 +1225,8 @@ void initTests (tcu::TestCaseGroup* group)
 								dResolve.flag,
 								sResolve.flag,
 								VB_STENCIL,
+								imageData.clearValue,
+								0.0f,
 								expectedValue
 							};
 							formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
@@ -1236,7 +1250,7 @@ void initTests (tcu::TestCaseGroup* group)
 		// 4-6 and resolving to layers 1-3.
 		ImageTestData layeredTextureTestData =
 		{
-			"image_2d_16_64_6", 16, 64, 6, {{ 10,  10}, {6, 54}}
+			"image_2d_16_64_6", 16, 64, 6, {{ 10,  10}, {6, 54}}, {1.0f, 0x0}
 		};
 
 		de::MovePtr<tcu::TestCaseGroup> imageGroup(new tcu::TestCaseGroup(testCtx, layeredTextureTestData.groupName, layeredTextureTestData.groupName));
@@ -1286,7 +1300,9 @@ void initTests (tcu::TestCaseGroup* group)
 							mode.flag,
 							VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
 							VB_DEPTH,
-							expectedValue
+							layeredTextureTestData.clearValue,
+							expectedValue,
+							0u
 						};
 						formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
 					}
@@ -1299,7 +1315,7 @@ void initTests (tcu::TestCaseGroup* group)
 					{
 						std::string	name			= "stencil_" + mode.name;
 						const char*	testName		= name.c_str();
-						float		expectedValue	= stencilExpectedValue[resolveModeNdx][sampleCountNdx];
+						deUint8		expectedValue	= stencilExpectedValue[resolveModeNdx][sampleCountNdx];
 						const TestConfig testConfig =
 						{
 							format,
@@ -1314,6 +1330,8 @@ void initTests (tcu::TestCaseGroup* group)
 							VK_RESOLVE_MODE_SAMPLE_ZERO_BIT_KHR,
 							mode.flag,
 							VB_STENCIL,
+							layeredTextureTestData.clearValue,
+							0.0f,
 							expectedValue
 						};
 						formatGroup->addChild(new DSResolveTestInstance(testCtx, tcu::NODETYPE_SELF_VALIDATE, testName, testName, testConfig));
