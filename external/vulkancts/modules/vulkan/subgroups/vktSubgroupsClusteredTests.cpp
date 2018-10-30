@@ -369,16 +369,9 @@ struct CaseDefinition
 	VkFormat			format;
 };
 
-void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
+std::string getBodySource(CaseDefinition caseDef)
 {
-	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	std::ostringstream				bdy;
-
-	subgroups::setFragmentShaderFrameBuffer(programCollection);
-
-	if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
-		subgroups::setVertexShaderFrameBuffer(programCollection);
-
+	std::ostringstream bdy;
 	bdy << "  bool tempResult = true;\n";
 
 	for (deUint32 i = 1; i <= subgroups::maxSupportedSubgroupSize(); i *= 2)
@@ -411,6 +404,19 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "    }\n"
 			<< "  }\n";
 	}
+	return bdy.str();
+}
+
+void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
+{
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+
+	subgroups::setFragmentShaderFrameBuffer(programCollection);
+
+	if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
+		subgroups::setVertexShaderFrameBuffer(programCollection);
+
+	std::string bdy = getBodySource(caseDef);
 
 	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
@@ -428,7 +434,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy.str()
+			<< bdy
 			<< "  out_color = float(tempResult ? 1 : 0);\n"
 			<< "  gl_Position = in_position;\n"
 			<< "  gl_PointSize = 1.0f;\n"
@@ -454,7 +460,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy.str()
+			<< bdy
 			<< "  out_color = tempResult ? 1.0 : 0.0;\n"
 			<< "  gl_Position = gl_in[0].gl_Position;\n"
 			<< "  EmitVertex();\n"
@@ -486,7 +492,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "    gl_TessLevelOuter[1] = 1.0f;\n"
 			<< "  }\n"
 			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy.str()
+			<< bdy
 			<< "  out_color[gl_InvocationID] = tempResult ? 1.0 : 0.0;\n"
 			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 			<< "}\n";
@@ -512,7 +518,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy.str()
+			<< bdy
 			<< "  out_color = tempResult ? 1.0 : 0.0;\n"
 			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
 			<< "}\n";
@@ -529,40 +535,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	std::ostringstream bdy;
-
-	bdy << "  bool tempResult = true;\n";
-
-	for (deUint32 i = 1; i <= subgroups::maxSupportedSubgroupSize(); i *= 2)
-	{
-		bdy	<< "  {\n"
-			<< "    const uint clusterSize = " << i << ";\n"
-			<< "    if (clusterSize <= gl_SubgroupSize)\n"
-			<< "    {\n"
-			<< "      " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-			<< getOpTypeName(caseDef.opType) + "(data[gl_SubgroupInvocationID], clusterSize);\n"
-			<< "      for (uint clusterOffset = 0; clusterOffset < gl_SubgroupSize; clusterOffset += clusterSize)\n"
-			<< "      {\n"
-			<< "        " << subgroups::getFormatNameForGLSL(caseDef.format) << " ref = "
-			<< getIdentity(caseDef.opType, caseDef.format) << ";\n"
-			<< "        for (uint index = clusterOffset; index < (clusterOffset + clusterSize); index++)\n"
-			<< "        {\n"
-			<< "          if (subgroupBallotBitExtract(mask, index))\n"
-			<< "          {\n"
-			<< "            ref = " << getOpTypeOperation(caseDef.opType, caseDef.format, "ref", "data[index]") << ";\n"
-			<< "          }\n"
-			<< "        }\n"
-			<< "        if ((clusterOffset <= gl_SubgroupInvocationID) && (gl_SubgroupInvocationID < (clusterOffset + clusterSize)))\n"
-			<< "        {\n"
-			<< "          if (!" << getCompare(caseDef.opType, caseDef.format, "ref", "op") << ")\n"
-			<< "          {\n"
-			<< "            tempResult = false;\n"
-			<< "          }\n"
-			<< "        }\n"
-			<< "      }\n"
-			<< "    }\n"
-			<< "  }\n";
-	}
+	std::string bdy = getBodySource(caseDef);
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
@@ -589,7 +562,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
 			"gl_GlobalInvocationID.x;\n"
 			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< bdy.str()
+			<< bdy
 			<< "  result[offset] = tempResult ? 1 : 0;\n"
 			<< "}\n";
 
@@ -615,7 +588,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"void main (void)\n"
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
-				+ bdy.str() +
+				+ bdy +
 				"  result[gl_VertexIndex] = tempResult ? 1 : 0;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
@@ -644,7 +617,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"void main (void)\n"
 			"{\n"
 			"  uvec4 mask = subgroupBallot(true);\n"
-			+ bdy.str() +
+			+ bdy +
 			"  result[gl_PrimitiveID] = tempResult ? 1 : 0;\n"
 			"  if (gl_InvocationID == 0)\n"
 			"  {\n"
@@ -676,7 +649,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"void main (void)\n"
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
-				+ bdy.str() +
+				+ bdy +
 				"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempResult ? 1 : 0;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
@@ -704,7 +677,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"void main (void)\n"
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
-				+ bdy.str() +
+				+ bdy +
 				"  result[gl_PrimitiveIDIn] = tempResult ? 1 : 0;\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
 				"  EmitVertex();\n"
@@ -726,7 +699,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"void main (void)\n"
 				"{\n"
 				"  uvec4 mask = subgroupBallot(true);\n"
-				+ bdy.str() +
+				+ bdy +
 				"  result = tempResult ? 1 : 0;\n"
 				"}\n";
 			programCollection.glslSources.add("fragment")
