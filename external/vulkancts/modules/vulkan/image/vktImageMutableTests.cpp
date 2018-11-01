@@ -132,10 +132,10 @@ static const Vec4	COLOR_TABLE_FLOAT[COLOR_TABLE_SIZE]	=
 // format.
 static const IVec4	COLOR_TABLE_INT[COLOR_TABLE_SIZE]	=
 {
-	IVec4(112,  60,	101,  41),
-	IVec4( 60, 101,	 41, 112),
-	IVec4( 41, 112,	 60, 101),
-	IVec4(101,  41,	112,  60),
+	IVec4(0x70707070, 0x3C3C3C3C, 0x65656565, 0x29292929),
+	IVec4(0x3C3C3C3C, 0x65656565, 0x29292929, 0x70707070),
+	IVec4(0x29292929, 0x70707070, 0x3C3C3C3C, 0x65656565),
+	IVec4(0x65656565, 0x29292929, 0x70707070, 0x3C3C3C3C),
 };
 
 // Reference clear colors created from the color table values
@@ -147,19 +147,60 @@ static const VkClearValue REFERENCE_CLEAR_COLOR_FLOAT[COLOR_TABLE_SIZE]	=
 	makeClearValueColorF32(COLOR_TABLE_FLOAT[3].x(), COLOR_TABLE_FLOAT[3].y(), COLOR_TABLE_FLOAT[3].z(), COLOR_TABLE_FLOAT[3].w()),
 };
 
-static const VkClearValue REFERENCE_CLEAR_COLOR_INT[COLOR_TABLE_SIZE]	=
-{
-	makeClearValueColorI32(COLOR_TABLE_INT[0].x(), COLOR_TABLE_INT[0].y(), COLOR_TABLE_INT[0].z(), COLOR_TABLE_INT[0].w()),
-	makeClearValueColorI32(COLOR_TABLE_INT[1].x(), COLOR_TABLE_INT[1].y(), COLOR_TABLE_INT[1].z(), COLOR_TABLE_INT[1].w()),
-	makeClearValueColorI32(COLOR_TABLE_INT[2].x(), COLOR_TABLE_INT[2].y(), COLOR_TABLE_INT[2].z(), COLOR_TABLE_INT[2].w()),
-	makeClearValueColorI32(COLOR_TABLE_INT[3].x(), COLOR_TABLE_INT[3].y(), COLOR_TABLE_INT[3].z(), COLOR_TABLE_INT[3].w()),
-};
-
 static const Texture s_textures[] =
 {
 	Texture(IMAGE_TYPE_2D,			tcu::IVec3(32, 32, 1),	1),
 	Texture(IMAGE_TYPE_2D_ARRAY,	tcu::IVec3(32, 32, 1),	4),
 };
+
+static VkClearValue getClearValueInt(const CaseDef& caseDef, deUint32 colorTableIndex)
+{
+	VkClearValue		clearValue;
+	deUint32			channelMask	= 0;
+
+	if (caseDef.upload == UPLOAD_DRAW)
+	{
+		// We use this mask to get small color values in the vertex buffer and
+		// avoid possible round off errors from int-to-float conversions.
+		channelMask = 0xFFu;
+	}
+	else
+	{
+		VkFormat			format;
+		tcu::TextureFormat	tcuFormat;
+
+		// Select a mask such that no integer-based color values end up
+		// reinterpreted as NaN/Inf/denorm values.
+		if (caseDef.upload == UPLOAD_CLEAR || caseDef.upload == UPLOAD_COPY)
+			format = caseDef.imageFormat;
+		else
+			format = caseDef.viewFormat;
+
+		tcuFormat = mapVkFormat(format);
+
+		switch (getChannelSize(tcuFormat.type))
+		{
+			case 1: // 8-bit
+				channelMask = 0xFFu;
+				break;
+			case 2: // 16-bit
+				channelMask = 0xFFFFu;
+				break;
+			case 4: // 32-bit
+				channelMask = 0xFFFFFFFFu;
+				break;
+			default:
+				DE_ASSERT(0);
+		}
+	}
+
+	clearValue.color.int32[0] = COLOR_TABLE_INT[colorTableIndex].x() & channelMask;
+	clearValue.color.int32[1] = COLOR_TABLE_INT[colorTableIndex].y() & channelMask;
+	clearValue.color.int32[2] = COLOR_TABLE_INT[colorTableIndex].z() & channelMask;
+	clearValue.color.int32[3] = COLOR_TABLE_INT[colorTableIndex].w() & channelMask;
+
+	return clearValue;
+}
 
 VkImageType getImageType (const ImageType textureImageType)
 {
@@ -371,7 +412,11 @@ void initPrograms (SourceCollections& programCollection, const CaseDef caseDef)
 		for (deUint32 idx = 0; idx < COLOR_TABLE_SIZE; idx++)
 		{
 			if (isIntegerFormat)
-				src << "     " << colorTypeStr << "(" << COLOR_TABLE_INT[idx].x() << ", " << COLOR_TABLE_INT[idx].y() << ", " << COLOR_TABLE_INT[idx].z() << ", " << COLOR_TABLE_INT[idx].w() << ")";
+			{
+				const VkClearValue	clearValue	= getClearValueInt(caseDef, idx);
+
+				src << "     " << colorTypeStr << "(" << clearValue.color.int32[0] << ", " << clearValue.color.int32[1] << ", " << clearValue.color.int32[2] << ", " << clearValue.color.int32[3] << ")";
+			}
 			else
 				src << "     " << colorTypeStr << "(" << COLOR_TABLE_FLOAT[idx].x() << ", " << COLOR_TABLE_FLOAT[idx].y() << ", " << COLOR_TABLE_FLOAT[idx].z() << ", " << COLOR_TABLE_FLOAT[idx].w() << ")";
 			if (idx < COLOR_TABLE_SIZE - 1)
@@ -776,7 +821,19 @@ vector<Vec4> genVertexData (const CaseDef& caseDef)
 	for (deUint32 z = 0; z < caseDef.numLayers; z++)
 	{
 		const deUint32	colorIdx	= z % COLOR_TABLE_SIZE;
-		const Vec4		color		= isIntegerFormat ? COLOR_TABLE_INT[colorIdx].cast<float>() : COLOR_TABLE_FLOAT[colorIdx];
+		Vec4			color;
+
+		if (isIntegerFormat)
+		{
+			const VkClearValue	clearValue	= getClearValueInt(caseDef, colorIdx);
+			const IVec4			colorInt	(clearValue.color.int32[0], clearValue.color.int32[1], clearValue.color.int32[2], clearValue.color.int32[3]);
+
+			color = colorInt.cast<float>();
+		}
+		else
+		{
+			color = COLOR_TABLE_FLOAT[colorIdx];
+		}
 
 		vectorData.push_back(Vec4(-1.0f, -1.0f, 0.0f, 1.0f));
 		vectorData.push_back(color);
@@ -804,7 +861,12 @@ void generateExpectedImage(const tcu::PixelBufferAccess& image, const CaseDef& c
 		for (int x = 0; x < size.x(); x++)
 		{
 			if (isIntegerFormat)
-					image.setPixel(COLOR_TABLE_INT[colorIdx], x, y, z);
+			{
+				const VkClearValue	clearValue	= getClearValueInt(caseDef, colorIdx);
+				const IVec4			colorInt	(clearValue.color.int32[0], clearValue.color.int32[1], clearValue.color.int32[2], clearValue.color.int32[3]);
+
+				image.setPixel(colorInt, x, y, z);
+			}
 			else
 				if(isSRGBConversionRequired(caseDef))
 					image.setPixel(tcu::linearToSRGB(COLOR_TABLE_FLOAT[colorIdx]), x, y, z);
@@ -1125,7 +1187,7 @@ void UploadDownloadExecutor::uploadClear(Context& context)
 	{
 		const VkImageSubresourceRange	layerSubresourceRange	= makeColorSubresourceRange(layer, 1u);
 		const deUint32					colorIdx				= layer % COLOR_TABLE_SIZE;
-		const VkClearColorValue			clearColor				= m_imageIsIntegerFormat ? REFERENCE_CLEAR_COLOR_INT[colorIdx].color : REFERENCE_CLEAR_COLOR_FLOAT[colorIdx].color;
+		const VkClearColorValue			clearColor				= m_imageIsIntegerFormat ? getClearValueInt(m_caseDef, colorIdx).color : REFERENCE_CLEAR_COLOR_FLOAT[colorIdx].color;
 		m_vk.cmdClearColorImage(*m_cmdBuffer, m_image, requiredImageLayout, &clearColor, 1u, &layerSubresourceRange);
 	}
 
@@ -1211,7 +1273,12 @@ void UploadDownloadExecutor::uploadCopy(Context& context)
 		tcu::PixelBufferAccess	imageAccess	= tcu::PixelBufferAccess(tcuFormat, m_caseDef.size.x(), m_caseDef.size.y(), 1u, (deUint8*) m_uCopy.colorBufferAlloc->getHostPtr() + layerOffset);
 		const deUint32			colorIdx	= layer % COLOR_TABLE_SIZE;
 		if (m_imageIsIntegerFormat)
-			tcu::clear(imageAccess, COLOR_TABLE_INT[colorIdx]);
+		{
+			const VkClearValue	clearValue	= getClearValueInt(m_caseDef, colorIdx);
+			const IVec4			colorInt	(clearValue.color.int32[0], clearValue.color.int32[1], clearValue.color.int32[2], clearValue.color.int32[3]);
+
+			tcu::clear(imageAccess, colorInt);
+		}
 		else
 			tcu::clear(imageAccess, COLOR_TABLE_FLOAT[colorIdx]);
 		layerOffset += layerSize;
@@ -1333,7 +1400,7 @@ void UploadDownloadExecutor::uploadDraw(Context& context)
 	// Create command buffer
 	{
 		{
-			vector<VkClearValue>	clearValues		(m_caseDef.numLayers, m_viewIsIntegerFormat ? REFERENCE_CLEAR_COLOR_INT[0] : REFERENCE_CLEAR_COLOR_FLOAT[0]);
+			vector<VkClearValue>	clearValues		(m_caseDef.numLayers, m_viewIsIntegerFormat ? getClearValueInt(m_caseDef, 0) : REFERENCE_CLEAR_COLOR_FLOAT[0]);
 
 			beginRenderPass(m_vk, *m_cmdBuffer, *m_uDraw.renderPass, *m_uDraw.framebuffer, makeRect2D(0, 0, m_caseDef.size.x(), m_caseDef.size.y()), (deUint32)clearValues.size(), &clearValues[0]);
 		}
