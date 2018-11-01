@@ -367,7 +367,7 @@ void PushConstantGraphicsTestInstance::init (void)
 
 		const tcu::Vec4						value					= tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		deMemcpy(m_uniformBufferAlloc->getHostPtr(), &value, 16u);
-		invalidateAlloc(vk, vkDevice, *m_uniformBufferAlloc);
+		flushAlloc(vk, vkDevice, *m_uniformBufferAlloc);
 
 		// create and update descriptor set
 		const VkDescriptorSetAllocateInfo	allocInfo				=
@@ -525,7 +525,7 @@ void PushConstantGraphicsTestInstance::init (void)
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		invalidateAlloc(vk, vkDevice, *m_vertexBufferAlloc);
+		flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool
