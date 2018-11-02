@@ -7631,20 +7631,69 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 	RGBA								invertedColors[4];
 	de::MovePtr<tcu::TestCaseGroup>		moduleTests			(new tcu::TestCaseGroup(testCtx, "module", "Multiple entry points into shaders"));
 
-	const ShaderElement					combinedPipeline[]	=
-	{
-		ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
-		ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
-		ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
-		ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
-		ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
-	};
-
 	getDefaultColors(defaultColors);
 	getInvertedDefaultColors(invertedColors);
-	addFunctionCaseWithPrograms<InstanceContext>(
-			moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline,
-			createInstanceContext(combinedPipeline, map<string, string>()));
+
+	// Combined module tests
+	{
+		// Shader stages: vertex and fragment
+		{
+			const ShaderElement combinedPipeline[]	=
+			{
+				ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+			};
+
+			addFunctionCaseWithPrograms<InstanceContext>(
+				moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline,
+				createInstanceContext(combinedPipeline, map<string, string>()));
+		}
+
+		// Shader stages: vertex, geometry and fragment
+		{
+			const ShaderElement combinedPipeline[]	=
+			{
+				ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+			};
+
+			addFunctionCaseWithPrograms<InstanceContext>(
+				moduleTests.get(), "same_module_geom", "", createCombinedModule, runAndVerifyDefaultPipeline,
+				createInstanceContext(combinedPipeline, map<string, string>()));
+		}
+
+		// Shader stages: vertex, tessellation control, tessellation evaluation and fragment
+		{
+			const ShaderElement combinedPipeline[]	=
+			{
+				ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+			};
+
+			addFunctionCaseWithPrograms<InstanceContext>(
+				moduleTests.get(), "same_module_tessc_tesse", "", createCombinedModule, runAndVerifyDefaultPipeline,
+				createInstanceContext(combinedPipeline, map<string, string>()));
+		}
+
+		// Shader stages: vertex, tessellation control, tessellation evaluation, geometry and fragment
+		{
+			const ShaderElement combinedPipeline[]	=
+			{
+				ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+			};
+
+			addFunctionCaseWithPrograms<InstanceContext>(
+				moduleTests.get(), "same_module_tessc_tesse_geom", "", createCombinedModule, runAndVerifyDefaultPipeline,
+				createInstanceContext(combinedPipeline, map<string, string>()));
+		}
+	}
 
 	const char* numbers[] =
 	{
