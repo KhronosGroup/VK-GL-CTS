@@ -1666,6 +1666,17 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryWin32HandleNV (VkDevice device, VkDevice
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBeginConditionalRenderingEXT (VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pConditionalRenderingBegin);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndConditionalRenderingEXT (VkCommandBuffer commandBuffer)
+{
+	DE_UNREF(commandBuffer);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdProcessCommandsNVX (VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -2144,6 +2155,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndirectCountKHR,					cmdDrawIndirectCountKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdDrawIndexedIndirectCountKHR,			cmdDrawIndexedIndirectCountKHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,					getMemoryWin32HandleNV),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginConditionalRenderingEXT,			cmdBeginConditionalRenderingEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndConditionalRenderingEXT,				cmdEndConditionalRenderingEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdProcessCommandsNVX,						cmdProcessCommandsNVX),
 	VK_NULL_FUNC_ENTRY(vkCmdReserveSpaceForCommandsNVX,				cmdReserveSpaceForCommandsNVX),
 	VK_NULL_FUNC_ENTRY(vkCreateIndirectCommandsLayoutNVX,			createIndirectCommandsLayoutNVX),
