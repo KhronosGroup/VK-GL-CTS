@@ -176,6 +176,8 @@ virtual void				cmdDrawIndexedIndirectCountAMD				(VkCommandBuffer commandBuffer
 virtual void				cmdDrawIndirectCountKHR						(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
 virtual void				cmdDrawIndexedIndirectCountKHR				(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, deUint32 maxDrawCount, deUint32 stride) const;
 virtual VkResult			getMemoryWin32HandleNV						(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle) const;
+virtual void				cmdBeginConditionalRenderingEXT				(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin) const;
+virtual void				cmdEndConditionalRenderingEXT				(VkCommandBuffer commandBuffer) const;
 virtual void				cmdProcessCommandsNVX						(VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) const;
 virtual void				cmdReserveSpaceForCommandsNVX				(VkCommandBuffer commandBuffer, const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo) const;
 virtual VkResult			createIndirectCommandsLayoutNVX				(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout) const;

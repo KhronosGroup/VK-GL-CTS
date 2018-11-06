@@ -68,6 +68,7 @@
 #include "vktQueryPoolTests.hpp"
 #include "vktDrawTests.hpp"
 #include "vktComputeTests.hpp"
+#include "vktConditionalTests.hpp"
 #include "vktImageTests.hpp"
 #include "vktInfoTests.hpp"
 #include "vktWsiTests.hpp"
@@ -485,6 +486,7 @@ void TestPackage::init (void)
 	addChild(ProtectedMem::createTests		(m_testCtx));
 	addChild(DeviceGroup::createTests		(m_testCtx));
 	addChild(MemoryModel::createTests		(m_testCtx));
+	addChild(conditional::createTests		(m_testCtx));
 }
 
 } // vkt
