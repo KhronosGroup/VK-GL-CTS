@@ -11,6 +11,7 @@ add_subdirectory(ubo)
 add_subdirectory(dynamic_state)
 add_subdirectory(ssbo)
 add_subdirectory(query_pool)
+add_subdirectory(conditional_rendering)
 add_subdirectory(draw)
 add_subdirectory(device_group)
 add_subdirectory(compute)
@@ -45,6 +46,7 @@ include_directories(
 	dynamic_state
 	ssbo
 	query_pool
+	conditional_rendering
 	draw
 	device_group
 	compute
@@ -99,6 +101,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-dynamic-state
 	deqp-vk-ssbo
 	deqp-vk-query-pool
+	deqp-vk-conditional-rendering
 	deqp-vk-draw
 	deqp-vk-device-group
 	deqp-vk-compute
