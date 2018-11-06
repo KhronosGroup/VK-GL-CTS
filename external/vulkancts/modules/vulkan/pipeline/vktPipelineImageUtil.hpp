@@ -208,6 +208,7 @@ private:
 
 public:
 												TestTexture2D		(const tcu::TextureFormat& format, int width, int height);
+												TestTexture2D		(const tcu::TextureFormat& format, int width, int height, int miplevels);
 												TestTexture2D		(const tcu::CompressedTexFormat& format, int width, int height);
 	virtual										~TestTexture2D		(void);
 

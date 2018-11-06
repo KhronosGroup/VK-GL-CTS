@@ -23,5 +23,7 @@ set(DEQP_GLES3_STRESS_SRCS
 	es3sLongRunningShaderTests.hpp
 	)
 
+PCH(DEQP_GLES3_STRESS_SRCS ../../pch.cpp)
+
 add_library(deqp-gles3-stress STATIC ${DEQP_GLES3_STRESS_SRCS})
 target_link_libraries(deqp-gles3-stress deqp-gl-shared glutil tcutil ${DEQP_GLES3_LIBRARIES})

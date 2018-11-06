@@ -9,6 +9,7 @@ include_directories(
 	gles32
 	glesext
 	.
+	${PROJECT_SOURCE_DIR}/modules/glshared
 	)
 
 if (DEQP_GTF_AVAILABLE)

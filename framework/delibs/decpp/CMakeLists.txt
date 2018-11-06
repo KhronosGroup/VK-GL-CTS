@@ -70,5 +70,7 @@ set(DECPP_LIBS
 	deutil
 	)
 
+PCH(DECPP_SRCS pch.cpp)
+
 add_library(decpp STATIC ${DECPP_SRCS})
 target_link_libraries(decpp ${DECPP_LIBS})

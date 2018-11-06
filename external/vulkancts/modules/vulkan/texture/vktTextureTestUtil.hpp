@@ -321,6 +321,7 @@ struct Texture2DTestCaseParameters : public TextureCommonTestCaseParameters
 								Texture2DTestCaseParameters		(void);
 	int							width;
 	int							height;
+	bool						mipmaps;
 };
 
 struct TextureCubeTestCaseParameters : public TextureCommonTestCaseParameters

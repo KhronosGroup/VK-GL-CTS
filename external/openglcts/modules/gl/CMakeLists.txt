@@ -159,5 +159,7 @@ if (DEQP_GTF_AVAILABLE)
 	list(APPEND GLCTS_GL_LIBS glcts-gtf)
 endif ()
 
+PCH(GLCTS_GL_SRCS ../pch.cpp)
+
 add_library(glcts-gl STATIC ${GLCTS_GL_SRCS})
 target_link_libraries(glcts-gl ${GLCTS_GL_LIBS})

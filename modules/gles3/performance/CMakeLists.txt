@@ -35,5 +35,7 @@ set(DEQP_GLES3_PERFORMANCE_SRCS
 	es3pDepthTests.cpp
 	)
 
+PCH(DEQP_GLES3_PERFORMANCE_SRCS ../../pch.cpp)
+
 add_library(deqp-gles3-performance STATIC ${DEQP_GLES3_PERFORMANCE_SRCS})
 target_link_libraries(deqp-gles3-performance deqp-gl-shared glutil tcutil ${DEQP_GLES3_LIBRARIES})

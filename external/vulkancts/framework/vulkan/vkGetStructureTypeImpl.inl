@@ -946,6 +946,21 @@ template<> VkStructureType getStructureType<VkViSurfaceCreateInfoNN> (void)
 	return VK_STRUCTURE_TYPE_VI_SURFACE_CREATE_INFO_NN;
 }
 
+template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceConditionalRenderingFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCommandBufferInheritanceConditionalRenderingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkDeviceGeneratedCommandsFeaturesNVX> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_GENERATED_COMMANDS_FEATURES_NVX;

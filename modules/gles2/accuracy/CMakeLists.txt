@@ -11,5 +11,7 @@ set(DEQP_GLES2_ACCURACY_SRCS
 	es2aVaryingInterpolationTests.hpp
 	)
 
+PCH(DEQP_GLES2_ACCURACY_SRCS ../../pch.cpp)
+
 add_library(deqp-gles2-accuracy STATIC ${DEQP_GLES2_ACCURACY_SRCS})
 target_link_libraries(deqp-gles2-accuracy deqp-gl-shared glutil tcutil ${DEQP_GLES2_LIBRARIES})

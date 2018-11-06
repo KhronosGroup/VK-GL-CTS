@@ -16,5 +16,7 @@ set(DEQP_VK_MULTI_VIEW_LIBS
 	vkutil
 )
 
+PCH(DEQP_VK_MULTI_VIEW_SRCS ../pch.cpp)
+
 add_library(deqp-vk-multiview STATIC ${DEQP_VK_MULTI_VIEW_SRCS})
 target_link_libraries(deqp-vk-multiview ${DEQP_VK_MULTI_VIEW_LIBS})

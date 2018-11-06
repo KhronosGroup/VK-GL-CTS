@@ -231,6 +231,7 @@ tcu::Format::Bitfield<32>	getResolveModeFlagsKHRStr							(VkResolveModeFlagsKHR
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr							(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr				(VkExternalMemoryHandleTypeFlagsNV value);
 tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr					(VkExternalMemoryFeatureFlagsNV value);
+tcu::Format::Bitfield<32>	getConditionalRenderingFlagsEXTStr					(VkConditionalRenderingFlagsEXT value);
 tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsNVXStr			(VkIndirectCommandsLayoutUsageFlagsNVX value);
 tcu::Format::Bitfield<32>	getObjectEntryUsageFlagsNVXStr						(VkObjectEntryUsageFlagsNVX value);
 tcu::Format::Bitfield<32>	getSurfaceCounterFlagsEXTStr						(VkSurfaceCounterFlagsEXT value);
@@ -542,6 +543,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkExportMemoryWin32HandleInfoNV
 std::ostream&	operator<<	(std::ostream& s, const VkWin32KeyedMutexAcquireReleaseInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkViSurfaceCreateInfoNN& value);
+std::ostream&	operator<<	(std::ostream& s, const VkConditionalRenderingBeginInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceConditionalRenderingFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCommandBufferInheritanceConditionalRenderingInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGeneratedCommandsFeaturesNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGeneratedCommandsLimitsNVX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkIndirectCommandsTokenNVX& value);

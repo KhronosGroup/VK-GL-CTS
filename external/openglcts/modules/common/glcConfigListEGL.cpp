@@ -152,6 +152,7 @@ static void getDefaultEglConfigList(tcu::Platform& eglPlatform, glu::ApiType typ
 															   isFloatType ? EXCLUDEREASON_FLOAT : EXCLUDEREASON_YUV));
 		}
 	}
+	eglu::terminateDisplay(library, display);
 }
 
 void getConfigListEGL(tcu::Platform& platform, glu::ApiType type, ConfigList& configList)

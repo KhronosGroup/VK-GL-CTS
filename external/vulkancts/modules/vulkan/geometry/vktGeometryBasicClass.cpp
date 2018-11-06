@@ -126,7 +126,7 @@ tcu::TestStatus GeometryExpanderRenderTestInstance::iterate (void)
 			pData[ndx].pos = m_vertexPosData[ndx];
 			pData[ndx].color = m_vertexAttrData[ndx];
 		}
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+		flushAlloc(vk, device, alloc);
 		// No barrier needed, flushed memory is automatically visible
 	}
 
@@ -140,7 +140,7 @@ tcu::TestStatus GeometryExpanderRenderTestInstance::iterate (void)
 				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				*colorAttachmentImage, colorSubRange);
 
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
+		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
 						0u, DE_NULL, 0u, DE_NULL, 1u, &colorAttachmentLayoutBarrier);
 	}
 

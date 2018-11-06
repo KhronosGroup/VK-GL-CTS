@@ -36,5 +36,7 @@ set(DEQP_VK_SYNCHRONIZATION_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_SYNCHRONIZATION_SRCS ../pch.cpp)
+
 add_library(deqp-vk-synchronization STATIC ${DEQP_VK_SYNCHRONIZATION_SRCS})
 target_link_libraries(deqp-vk-synchronization ${DEQP_VK_SYNCHRONIZATION_LIBS})

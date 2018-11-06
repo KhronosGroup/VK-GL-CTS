@@ -35,5 +35,7 @@ set(DEQP_GLES2_PERFORMANCE_SRCS
 	es2pShaderCompilationCases.cpp
 	)
 
+PCH(DEQP_GLES2_PERFORMANCE_SRCS ../../pch.cpp)
+
 add_library(deqp-gles2-performance STATIC ${DEQP_GLES2_PERFORMANCE_SRCS})
 target_link_libraries(deqp-gles2-performance deqp-gl-shared glutil tcutil ${DEQP_GLES2_LIBRARIES})

@@ -877,6 +877,16 @@ VkResult DeviceDriver::getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory m
 	return m_vk.getMemoryWin32HandleNV(device, memory, handleType, pHandle);
 }
 
+void DeviceDriver::cmdBeginConditionalRenderingEXT (VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin) const
+{
+	m_vk.cmdBeginConditionalRenderingEXT(commandBuffer, pConditionalRenderingBegin);
+}
+
+void DeviceDriver::cmdEndConditionalRenderingEXT (VkCommandBuffer commandBuffer) const
+{
+	m_vk.cmdEndConditionalRenderingEXT(commandBuffer);
+}
+
 void DeviceDriver::cmdProcessCommandsNVX (VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo) const
 {
 	m_vk.cmdProcessCommandsNVX(commandBuffer, pProcessCommandsInfo);

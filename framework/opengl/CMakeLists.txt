@@ -61,5 +61,7 @@ set(GLUTIL_LIBS
 	glwrapper
 	)
 
+PCH(GLUTIL_SRCS ../pch.cpp)
+
 add_library(glutil STATIC ${GLUTIL_SRCS})
 target_link_libraries(glutil ${GLUTIL_LIBS})

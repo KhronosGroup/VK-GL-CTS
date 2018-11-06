@@ -26,5 +26,7 @@ set(DEQP_VK_GEOMETRY_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_GEOMETRY_SRCS ../pch.cpp)
+
 add_library(deqp-vk-geometry STATIC ${DEQP_VK_GEOMETRY_SRCS})
 target_link_libraries(deqp-vk-geometry ${DEQP_VK_GEOMETRY_LIBS})

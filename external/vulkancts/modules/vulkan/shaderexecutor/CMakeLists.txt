@@ -24,5 +24,7 @@ set(DEQP_VK_SHADEREXECUTOR_LIBS
 	vkutil
 )
 
+PCH(DEQP_VK_SHADEREXECUTOR_SRCS ../pch.cpp)
+
 add_library(deqp-vk-shaderexecutor STATIC ${DEQP_VK_SHADEREXECUTOR_SRCS})
 target_link_libraries(deqp-vk-shaderexecutor ${DEQP_VK_SHADEREXECUTOR_LIBS})

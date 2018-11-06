@@ -2536,6 +2536,30 @@ struct VkViSurfaceCreateInfoNN
 	void*						window;
 };
 
+struct VkConditionalRenderingBeginInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkBuffer						buffer;
+	VkDeviceSize					offset;
+	VkConditionalRenderingFlagsEXT	flags;
+};
+
+struct VkPhysicalDeviceConditionalRenderingFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		conditionalRendering;
+	VkBool32		inheritedConditionalRendering;
+};
+
+struct VkCommandBufferInheritanceConditionalRenderingInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		conditionalRenderingEnable;
+};
+
 struct VkDeviceGeneratedCommandsFeaturesNVX
 {
 	VkStructureType	sType;

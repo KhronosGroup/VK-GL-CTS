@@ -88,6 +88,8 @@ set(DEQP_VK_PIPELINE_LIBS
 	referencerenderer
 	)
 
+PCH(DEQP_VK_PIPELINE_SRCS ../pch.cpp)
+
 add_library(deqp-vk-pipeline STATIC ${DEQP_VK_PIPELINE_SRCS})
 target_link_libraries(deqp-vk-pipeline ${DEQP_VK_PIPELINE_LIBS})
 
