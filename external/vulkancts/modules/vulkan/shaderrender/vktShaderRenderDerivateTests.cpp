@@ -32,6 +32,7 @@
 #include "vktShaderRenderDerivateTests.hpp"
 #include "vktShaderRender.hpp"
 #include "vkImageUtil.hpp"
+#include "vkQueryUtil.hpp"
 
 #include "gluTextureUtil.hpp"
 
@@ -524,18 +525,20 @@ struct DerivateCaseDefinition
 {
 	DerivateCaseDefinition (void)
 	{
-		func				= DERIVATE_LAST;
-		dataType			= glu::TYPE_LAST;
-		precision			= glu::PRECISION_LAST;
-		coordDataType		= glu::TYPE_LAST;
-		coordPrecision		= glu::PRECISION_LAST;
-		surfaceType			= SURFACETYPE_UNORM_FBO;
-		numSamples			= 0;
+		func					= DERIVATE_LAST;
+		dataType				= glu::TYPE_LAST;
+		precision				= glu::PRECISION_LAST;
+		inNonUniformControlFlow	= false;
+		coordDataType			= glu::TYPE_LAST;
+		coordPrecision			= glu::PRECISION_LAST;
+		surfaceType				= SURFACETYPE_UNORM_FBO;
+		numSamples				= 0;
 	}
 
 	DerivateFunc			func;
 	glu::DataType			dataType;
 	glu::Precision			precision;
+	bool					inNonUniformControlFlow;
 
 	glu::DataType			coordDataType;
 	glu::Precision			coordPrecision;
@@ -675,6 +678,29 @@ tcu::TestStatus TriangleDerivateCaseInstance::iterate (void)
 	const deUint32				numTriangles	= 2;
 	const deUint16				indices[]		= { 0, 2, 1, 2, 3, 1 };
 	tcu::TextureLevel			resultImage;
+
+	if (m_definitions.inNonUniformControlFlow)
+	{
+		if (!m_context.contextSupports(vk::ApiVersion(1, 1, 0)))
+			throw tcu::NotSupportedError("Derivatives in dynamic control flow requires Vulkan 1.1");
+
+		vk::VkPhysicalDeviceSubgroupProperties subgroupProperties;
+		deMemset(&subgroupProperties, 0, sizeof(subgroupProperties));
+		subgroupProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+
+		vk::VkPhysicalDeviceProperties2 properties2;
+		deMemset(&properties2, 0, sizeof(properties2));
+		properties2.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		properties2.pNext = &subgroupProperties;
+
+		m_context.getInstanceInterface().getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &properties2);
+
+		if (subgroupProperties.subgroupSize < 4)
+			throw tcu::NotSupportedError("Derivatives in dynamic control flow requires subgroupSize >= 4");
+
+		if ((subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT) == 0)
+			throw tcu::NotSupportedError("Derivative dynamic control flow tests require VK_SUBGROUP_FEATURE_BALLOT_BIT");
+	}
 
 	setup();
 
@@ -1058,6 +1084,7 @@ public:
 														 DerivateFunc			func,
 														 glu::DataType			type,
 														 glu::Precision			precision,
+														 bool					inNonUniformControlFlow,
 														 SurfaceType			surfaceType,
 														 int					numSamples,
 														 const std::string&		fragmentSrcTmpl,
@@ -1077,6 +1104,7 @@ LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 										DerivateFunc			func,
 										glu::DataType			type,
 										glu::Precision			precision,
+										bool					inNonUniformControlFlow,
 										SurfaceType				surfaceType,
 										int						numSamples,
 										const std::string&		fragmentSrcTmpl,
@@ -1084,13 +1112,14 @@ LinearDerivateCase::LinearDerivateCase (tcu::TestContext&		testCtx,
 	: TriangleDerivateCase	(testCtx, name, description, new LinearDerivateUniformSetup(false, usedDefaultUniform))
 	, m_fragmentTmpl		(fragmentSrcTmpl)
 {
-	m_definitions.func				= func;
-	m_definitions.dataType			= type;
-	m_definitions.precision			= precision;
-	m_definitions.coordDataType		= m_definitions.dataType;
-	m_definitions.coordPrecision	= m_definitions.precision;
-	m_definitions.surfaceType		= surfaceType;
-	m_definitions.numSamples		= numSamples;
+	m_definitions.func						= func;
+	m_definitions.dataType					= type;
+	m_definitions.precision					= precision;
+	m_definitions.inNonUniformControlFlow	= inNonUniformControlFlow;
+	m_definitions.coordDataType				= m_definitions.dataType;
+	m_definitions.coordPrecision			= m_definitions.precision;
+	m_definitions.surfaceType				= surfaceType;
+	m_definitions.numSamples				= numSamples;
 }
 
 LinearDerivateCase::~LinearDerivateCase (void)
@@ -1105,6 +1134,9 @@ TestInstance* LinearDerivateCase::createInstance (Context& context) const
 
 void LinearDerivateCase::initPrograms (vk::SourceCollections& programCollection) const
 {
+	const SpirvVersion				spirvVersion = m_definitions.inNonUniformControlFlow ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0;
+	const vk::ShaderBuildOptions	buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
+
 	const tcu::UVec2	viewportSize	(VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
 	const float			w				= float(viewportSize.x());
 	const float			h				= float(viewportSize.y());
@@ -1134,7 +1166,7 @@ void LinearDerivateCase::initPrograms (vk::SourceCollections& programCollection)
 
 	std::string fragmentSrc = tcu::StringTemplate(m_fragmentTmpl).specialize(fragmentParams);
 	programCollection.glslSources.add("vert") << glu::VertexSource(genVertexSource(m_definitions.coordDataType, m_definitions.coordPrecision));
-	programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSrc);
+	programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSrc) << buildOptions;
 
 	switch (m_definitions.precision)
 	{
@@ -1543,6 +1575,7 @@ void ShaderDerivateTests::init (void)
 		const char*			description;
 		const char*			source;
 		BaseUniformType		usedDefaultUniform;
+		bool				inNonUniformControlFlow;
 	} s_linearDerivateCases[] =
 	{
 		{
@@ -1560,7 +1593,8 @@ void ShaderDerivateTests::init (void)
 			"	o_color = ${CAST_TO_OUTPUT};\n"
 			"}\n",
 
-			U_LAST
+			U_LAST,
+			false
 		},
 		{
 			"in_function",
@@ -1583,7 +1617,8 @@ void ShaderDerivateTests::init (void)
 			"	o_color = ${CAST_TO_OUTPUT};\n"
 			"}\n",
 
-			U_LAST
+			U_LAST,
+			false
 		},
 		{
 			"static_if",
@@ -1604,7 +1639,8 @@ void ShaderDerivateTests::init (void)
 			"	o_color = ${CAST_TO_OUTPUT};\n"
 			"}\n",
 
-			U_LAST
+			U_LAST,
+			false
 		},
 		{
 			"static_loop",
@@ -1624,7 +1660,8 @@ void ShaderDerivateTests::init (void)
 			"	o_color = ${CAST_TO_OUTPUT};\n"
 			"}\n",
 
-			U_LAST
+			U_LAST,
+			false
 		},
 		{
 			"static_switch",
@@ -1646,7 +1683,8 @@ void ShaderDerivateTests::init (void)
 			"	o_color = ${CAST_TO_OUTPUT};\n"
 			"}\n",
 
-			U_LAST
+			U_LAST,
+			false
 		},
 		{
 			"uniform_if",
@@ -1668,7 +1706,8 @@ void ShaderDerivateTests::init (void)
 			"	o_color = ${CAST_TO_OUTPUT};\n"
 			"}\n",
 
-			UB_TRUE
+			UB_TRUE,
+			false
 		},
 		{
 			"uniform_loop",
@@ -1689,7 +1728,8 @@ void ShaderDerivateTests::init (void)
 			"	o_color = ${CAST_TO_OUTPUT};\n"
 			"}\n",
 
-			UI_TWO
+			UI_TWO,
+			false
 		},
 		{
 			"uniform_switch",
@@ -1712,7 +1752,92 @@ void ShaderDerivateTests::init (void)
 			"	o_color = ${CAST_TO_OUTPUT};\n"
 			"}\n",
 
-			UI_ONE
+			UI_ONE,
+			false
+		},
+		{
+			"dynamic_if",
+			"Derivate of linearly interpolated value in static if",
+
+			"#version 450\n"
+			"#extension GL_KHR_shader_subgroup_ballot : require\n"
+			"layout(location = 0) in ${PRECISION} ${DATATYPE} v_coord;\n"
+			"layout(location = 0) out ${OUTPUT_PREC} ${OUTPUT_TYPE} o_color;\n"
+			"layout(binding = 0, std140) uniform Scale { ${PRECISION} ${DATATYPE} u_scale; };\n"
+			"layout(binding = 1, std140) uniform Bias { ${PRECISION} ${DATATYPE} u_bias; };\n"
+			"layout(binding = 2, std140) uniform Ui_one { int ui_one; };\n"
+			"void main (void)\n"
+			"{\n"
+			"	${PRECISION} ${DATATYPE} res;\n"
+			"	bool non_uniform = ((uint(gl_FragCoord.x * 0.4) + uint(gl_FragCoord.y * 0.3)) & 2) != 0;\n"
+			"	uvec4 quad_ballot = uvec4(0);\n"
+			"	quad_ballot[gl_SubgroupInvocationID >> 5] = 0xf << (gl_SubgroupInvocationID & 0x1c);\n"
+			"	bool quad_uniform = (subgroupBallot(non_uniform) & quad_ballot) == quad_ballot;\n"
+			"	if (quad_uniform)\n"
+			"		res = ${FUNC}(v_coord) * u_scale + u_bias;\n"
+			"	else\n"
+			"		res = ${FUNC}(v_coord * float(ui_one)) * u_scale + u_bias;\n"
+			"	o_color = ${CAST_TO_OUTPUT};\n"
+			"}\n",
+
+			UI_ONE,
+			true
+		},
+		{
+			"dynamic_loop",
+			"Derivate of linearly interpolated value in uniform loop",
+
+			"#version 450\n"
+			"#extension GL_KHR_shader_subgroup_ballot : require\n"
+			"layout(location = 0) in ${PRECISION} ${DATATYPE} v_coord;\n"
+			"layout(location = 0) out ${OUTPUT_PREC} ${OUTPUT_TYPE} o_color;\n"
+			"layout(binding = 0, std140) uniform Scale { ${PRECISION} ${DATATYPE} u_scale; };\n"
+			"layout(binding = 1, std140) uniform Bias { ${PRECISION} ${DATATYPE} u_bias; };\n"
+			"layout(binding = 2, std140) uniform Ui_one { int ui_one; };\n"
+			"void main (void)\n"
+			"{\n"
+			"	${PRECISION} ${DATATYPE} res = ${DATATYPE}(0.0);\n"
+			"	bool non_uniform = ((uint(gl_FragCoord.x * 0.4) + uint(gl_FragCoord.y * 0.3)) & 2) != 0;\n"
+			"	uvec4 quad_ballot = uvec4(0);\n"
+			"	quad_ballot[gl_SubgroupInvocationID >> 5] = 0xf << (gl_SubgroupInvocationID & 0x1c);\n"
+			"	bool quad_uniform = (subgroupBallot(non_uniform) & quad_ballot) == quad_ballot;\n"
+			"	for (int i = 0; i < ui_one + int(quad_uniform); i++)\n"
+			"		res = ${FUNC}(v_coord * float(i - int(quad_uniform) + 1));\n"
+			"	res = res * u_scale + u_bias;\n"
+			"	o_color = ${CAST_TO_OUTPUT};\n"
+			"}\n",
+
+			UI_ONE,
+			true
+		},
+		{
+			"dynamic_switch",
+			"Derivate of linearly interpolated value in uniform switch",
+
+			"#version 450\n"
+			"#extension GL_KHR_shader_subgroup_ballot : require\n"
+			"layout(location = 0) in ${PRECISION} ${DATATYPE} v_coord;\n"
+			"layout(location = 0) out ${OUTPUT_PREC} ${OUTPUT_TYPE} o_color;\n"
+			"layout(binding = 0, std140) uniform Scale { ${PRECISION} ${DATATYPE} u_scale; };\n"
+			"layout(binding = 1, std140) uniform Bias { ${PRECISION} ${DATATYPE} u_bias; };\n"
+			"layout(binding = 2, std140) uniform Ui_one { int ui_one; };\n"
+			"void main (void)\n"
+			"{\n"
+			"	${PRECISION} ${DATATYPE} res;\n"
+			"	bool non_uniform = ((uint(gl_FragCoord.x * 0.4) + uint(gl_FragCoord.y * 0.3)) & 2) != 0;\n"
+			"	uvec4 quad_ballot = uvec4(0);\n"
+			"	quad_ballot[gl_SubgroupInvocationID >> 5] = 0xf << (gl_SubgroupInvocationID & 0x1c);\n"
+			"	bool quad_uniform = (subgroupBallot(non_uniform) & quad_ballot) == quad_ballot;\n"
+			"	switch (int(quad_uniform))\n"
+			"	{\n"
+			"		case 0:	res = ${FUNC}(v_coord) * u_scale + u_bias;	break;\n"
+			"		case 1:	res = ${FUNC}(v_coord * float(ui_one)) * u_scale + u_bias;	break;\n"
+			"	}\n"
+			"	o_color = ${CAST_TO_OUTPUT};\n"
+			"}\n",
+
+			UI_ONE,
+			true
 		},
 	};
 
@@ -1781,7 +1906,7 @@ void ShaderDerivateTests::init (void)
 
 					caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-					linearCaseGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, surfaceType, numSamples, source, s_linearDerivateCases[caseNdx].usedDefaultUniform));
+					linearCaseGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, s_linearDerivateCases[caseNdx].inNonUniformControlFlow, surfaceType, numSamples, source, s_linearDerivateCases[caseNdx].usedDefaultUniform));
 				}
 			}
 
@@ -1809,7 +1934,7 @@ void ShaderDerivateTests::init (void)
 
 					caseName << glu::getDataTypeName(dataType) << "_" << glu::getPrecisionName(precision);
 
-					fboGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, surfaceType, numSamples, source, U_LAST));
+					fboGroup->addChild(new LinearDerivateCase(m_testCtx, caseName.str(), "", function, dataType, precision, false, surfaceType, numSamples, source, U_LAST));
 				}
 			}
 
