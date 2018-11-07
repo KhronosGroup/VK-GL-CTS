@@ -355,3 +355,10 @@ dEQP-VK.wsi.android.incremental_present.scale_down.*
 # previously-passing implementations.
 dEQP-VK.draw.indirect_draw.sequential.indirect_draw_first_instance.*
 dEQP-VK.draw.indirect_draw.indexed.indirect_draw_first_instance.*
+
+# VK-GL-CTS 1273
+# Added new tests. Exclude them for existing releases
+dEQP-VK.tessellation.primitive_discard.triangles_fractional_odd_spacing_ccw_valid_levels
+dEQP-VK.tessellation.primitive_discard.triangles_fractional_odd_spacing_cw_valid_levels
+dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_ccw_valid_levels
+dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_cw_valid_levels
