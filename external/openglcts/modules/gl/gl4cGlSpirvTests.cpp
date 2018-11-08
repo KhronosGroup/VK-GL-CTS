@@ -190,6 +190,15 @@ void getDefaultBuiltInResources(TBuiltInResource* builtin)
 	builtin->maxCullDistances						   = 8;
 	builtin->maxCombinedClipAndCullDistances		   = 8;
 	builtin->maxSamples								   = 4;
+	builtin->maxMeshOutputVerticesNV				   = 256;
+	builtin->maxMeshOutputPrimitivesNV				   = 256;
+	builtin->maxMeshWorkGroupSizeX_NV				   = 32;
+	builtin->maxMeshWorkGroupSizeY_NV				   = 1;
+	builtin->maxMeshWorkGroupSizeZ_NV				   = 1;
+	builtin->maxTaskWorkGroupSizeX_NV				   = 32;
+	builtin->maxTaskWorkGroupSizeY_NV				   = 1;
+	builtin->maxTaskWorkGroupSizeZ_NV				   = 1;
+	builtin->maxMeshViewCountNV						   = 4;
 };
 
 bool compileGlslToSpirV(tcu::TestLog& log, std::string source, glu::ShaderType type, ShaderBinaryDataType* dst)
