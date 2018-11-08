@@ -6149,7 +6149,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 								{
 									const VkInputAttachmentAspectReference inputAspect =
 									{
-										0u,
+										1u,
 										0u,
 										VK_IMAGE_ASPECT_COLOR_BIT
 									};
@@ -6225,7 +6225,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 								{
 									const VkInputAttachmentAspectReference inputAspect =
 									{
-										0u,
+										1u,
 										0u,
 										VK_IMAGE_ASPECT_COLOR_BIT
 									};
@@ -6477,7 +6477,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 								{
 									const VkInputAttachmentAspectReference inputAspect =
 									{
-										0u,
+										1u,
 										0u,
 										(isDepthAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
 											| (isStencilAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_STENCIL_BIT : 0u)
@@ -6555,7 +6555,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 								{
 									const VkInputAttachmentAspectReference inputAspect =
 									{
-										0u,
+										1u,
 										0u,
 
 										(isDepthAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
@@ -6639,7 +6639,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 									{
 										const VkInputAttachmentAspectReference inputAspect =
 										{
-											0u,
+											1u,
 											0u,
 
 											(isDepthAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
@@ -6718,7 +6718,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 									{
 										const VkInputAttachmentAspectReference inputAspect =
 										{
-											0u,
+											1u,
 											0u,
 
 											(isDepthAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
@@ -6799,7 +6799,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 									{
 										const VkInputAttachmentAspectReference inputAspect =
 										{
-											0u,
+											1u,
 											0u,
 
 											(isDepthAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
@@ -6879,7 +6879,7 @@ void addFormatTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 									{
 										const VkInputAttachmentAspectReference inputAspect =
 										{
-											0u,
+											1u,
 											0u,
 
 											(isDepthAttachment ? (VkImageAspectFlags)VK_IMAGE_ASPECT_DEPTH_BIT : 0u)
