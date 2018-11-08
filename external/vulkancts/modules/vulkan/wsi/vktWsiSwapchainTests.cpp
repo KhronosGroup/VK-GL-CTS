@@ -561,6 +561,7 @@ vector<VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (Type								ws
 
 tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 {
+	tcu::TestLog&							log			= context.getTestContext().getLog();
 	const InstanceHelper					instHelper	(context, params.wsiType);
 	const NativeObjects						native		(context, instHelper.supportedExtensions, params.wsiType);
 	const Unique<VkSurfaceKHR>				surface		(createSurface(instHelper.vki, *instHelper.instance, params.wsiType, *native.display, *native.window));
@@ -569,21 +570,55 @@ tcu::TestStatus createSwapchainTest (Context& context, TestParameters params)
 
 	for (size_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
 	{
+		std::ostringstream subcase;
+		subcase << "Sub-case " << (caseNdx+1) << " / " << cases.size() << ": ";
+
 		VkSwapchainCreateInfoKHR	curParams	= cases[caseNdx];
 
 		curParams.surface				= *surface;
 		curParams.queueFamilyIndexCount	= 1u;
 		curParams.pQueueFamilyIndices	= &devHelper.queueFamilyIndex;
 
-		context.getTestContext().getLog()
-			<< TestLog::Message << "Sub-case " << (caseNdx+1) << " / " << cases.size() << ": " << curParams << TestLog::EndMessage;
+		log << TestLog::Message << subcase.str() << curParams << TestLog::EndMessage;
 
-		{
-			const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams));
+		// The Vulkan 1.1.87 spec contains the following VU for VkSwapchainCreateInfoKHR:
+		//
+		//     * imageFormat, imageUsage, imageExtent, and imageArrayLayers must be supported for VK_IMAGE_TYPE_2D
+		//     VK_IMAGE_TILING_OPTIMAL images as reported by vkGetPhysicalDeviceImageFormatProperties.
+		VkImageFormatProperties properties;
+		const VkResult propertiesResult = instHelper.vki.getPhysicalDeviceImageFormatProperties(devHelper.physicalDevice,
+																								curParams.imageFormat,
+																								VK_IMAGE_TYPE_2D,
+																								VK_IMAGE_TILING_OPTIMAL,
+																								curParams.imageUsage,
+																								0, // flags
+																								&properties);
+
+		log << TestLog::Message << subcase.str()
+			<< "vkGetPhysicalDeviceImageFormatProperties => "
+			<< getResultStr(propertiesResult) << TestLog::EndMessage;
+
+		switch (propertiesResult) {
+		case VK_SUCCESS:
+			{
+				const Unique<VkSwapchainKHR>	swapchain	(createSwapchainKHR(devHelper.vkd, *devHelper.device, &curParams));
+			}
+			log << TestLog::Message << subcase.str()
+				<< "Creating swapchain succeeeded" << TestLog::EndMessage;
+			break;
+		case VK_ERROR_FORMAT_NOT_SUPPORTED:
+			log << TestLog::Message << subcase.str()
+				<< "Skip because vkGetPhysicalDeviceImageFormatProperties returned VK_ERROR_FORMAT_NOT_SUPPORTED" << TestLog::EndMessage;
+			break;
+		default:
+			log << TestLog::Message << subcase.str()
+				<< "Fail because vkGetPhysicalDeviceImageFormatProperties returned "
+				<< getResultStr(propertiesResult) << TestLog::EndMessage;
+			return tcu::TestStatus::fail("Unexpected result from vkGetPhysicalDeviceImageFormatProperties");
 		}
 	}
 
-	return tcu::TestStatus::pass("Creating swapchain succeeded");
+	return tcu::TestStatus::pass("No sub-case failed");
 }
 
 tcu::TestStatus createSwapchainSimulateOOMTest (Context& context, TestParameters params)
