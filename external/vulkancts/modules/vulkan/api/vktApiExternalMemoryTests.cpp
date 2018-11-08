@@ -3822,13 +3822,21 @@ de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk:
 	return fenceGroup;
 }
 
-bool ValidateAHardwareBuffer(vk::VkFormat format, deUint64 requiredAhbUsage, const vk::DeviceDriver& vkd, const vk::VkDevice& device)
+bool ValidateAHardwareBuffer(vk::VkFormat format, deUint64 requiredAhbUsage, const vk::DeviceDriver& vkd, const vk::VkDevice& device, vk::VkImageCreateFlags createFlag)
 {
+	DE_UNREF(createFlag);
+
 	AndroidHardwareBufferExternalApi* ahbApi = AndroidHardwareBufferExternalApi::getInstance();
 	if (!ahbApi)
 	{
 		TCU_THROW(NotSupportedError, "Platform doesn't support Android Hardware Buffer handles");
 	}
+
+#if (DE_OS == DE_OS_ANDROID)
+	// If CubeMap create flag is used and AHB doesn't support CubeMap return false.
+	if(!AndroidHardwareBufferExternalApi::supportsCubeMap() && (createFlag & vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT))
+		return false;
+#endif
 
 	vk::pt::AndroidHardwareBufferPtr ahb = ahbApi->allocate(64u, 64u, 1u, ahbApi->vkFormatToAhbFormat(format), requiredAhbUsage);
 	if (ahb.internal == DE_NULL)
@@ -3949,7 +3957,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 			continue;
 
 		// Only test a combination if AHardwareBuffer can be successfully allocated for it.
-		if (!ValidateAHardwareBuffer(format, requiredAhbUsage, vkd, *device))
+		if (!ValidateAHardwareBuffer(format, requiredAhbUsage, vkd, *device, createFlag))
 			continue;
 
 		bool foundAnyUsableTiling = false;

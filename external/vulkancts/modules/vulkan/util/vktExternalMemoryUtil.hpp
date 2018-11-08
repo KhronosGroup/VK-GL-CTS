@@ -84,6 +84,9 @@ public:
 	/* Is AndroidHardwareBuffer supported? */
 	static bool supportsAhb();
 
+	/* Are Cube maps supported on current api level? */
+	static bool supportsCubeMap();
+
 	/**
 	 * Allocates a buffer that backs an AHardwareBuffer using the passed parameter as follows:
 	 * width;      - width in pixels
