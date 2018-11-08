@@ -2342,53 +2342,9 @@ void copyBufferToImage (const DeviceInterface& vk, const VkDevice& device, const
 	};
 
 	// Copy buffer to image
-
-	const VkImageMemoryBarrier		imageBarriers[]		=
-	{
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			DE_NULL,									// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-			image,										// VkImage					image;
-			{											// VkImageSubresourceRange	subresourceRange;
-				aspect,							// VkImageAspectFlags	aspectMask;
-				0u,								// deUint32				baseMipLevel;
-				1u,								// deUint32				mipLevels;
-				0u,								// deUint32				baseArraySlice;
-				1u								// deUint32				arraySize;
-			}
-		},
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-			DE_NULL,									// const void*				pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_SHADER_READ_BIT,					// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-			image,										// VkImage					image;
-			{											// VkImageSubresourceRange	subresourceRange;
-				aspect,							// VkImageAspectFlags	aspectMask;
-				0u,								// deUint32				baseMipLevel;
-				1u,								// deUint32				mipLevels;
-				0u,								// deUint32				baseArraySlice;
-				1u								// deUint32				arraySize;
-			}
-		},
-	};
-
 	beginCommandBuffer(vk, cmdBuffer);
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
-		0u, DE_NULL, 1u, &imageBarriers[0]);
-	vk.cmdCopyBufferToImage(cmdBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
-	vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL,
-		0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarriers[1]);
+
+	copyBufferToImage(vk, cmdBuffer, buffer, VK_WHOLE_SIZE, vector<VkBufferImageCopy>(1, copyRegion), aspect, 1u, 1u, image, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
 	endCommandBuffer(vk, cmdBuffer);
 

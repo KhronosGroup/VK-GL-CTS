@@ -124,80 +124,8 @@ void uploadImage (Context&								context,
 		VK_CHECK(vk.bindBufferMemory(device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
 	}
 
-	// Create command pool and buffer
-	{
-		cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-
-		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			*cmdPool,										// VkCommandPool			commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel		level;
-			1u,												// deUint32					bufferCount;
-		};
-		cmdBuffer = allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo);
-	}
-
-	// Create fence
-	fence = createFence(vk, device);
-
-	// Barriers for copying buffer to image
-	const VkBufferMemoryBarrier preBufferBarrier =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		VK_ACCESS_HOST_WRITE_BIT,					// VkAccessFlags	srcAccessMask;
-		VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
-		*buffer,									// VkBuffer			buffer;
-		0u,											// VkDeviceSize		offset;
-		bufferSize									// VkDeviceSize		size;
-	};
-
-	const VkImageMemoryBarrier preImageBarrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		0u,											// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-		destImage,									// VkImage					image;
-		{											// VkImageSubresourceRange	subresourceRange;
-			aspectMask,								// VkImageAspect	aspect;
-			0u,										// deUint32			baseMipLevel;
-			1u,										// deUint32			mipLevels;
-			0u,										// deUint32			baseArraySlice;
-			1u										// deUint32			arraySize;
-		}
-	};
-
-	const VkImageMemoryBarrier postImageBarrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType;
-		DE_NULL,									// const void*				pNext;
-		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
-		VK_ACCESS_SHADER_READ_BIT,					// VkAccessFlags			dstAccessMask;
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,		// VkImageLayout			oldLayout;
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,	// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-		destImage,									// VkImage					image;
-		{											// VkImageSubresourceRange	subresourceRange;
-			aspectMask,								// VkImageAspect	aspect;
-			0u,										// deUint32			baseMipLevel;
-			1u,										// deUint32			mipLevels;
-			0u,										// deUint32			baseArraySlice;
-			1u										// deUint32			arraySize;
-		}
-	};
-
 	// Get copy regions and write buffer data
-	const VkBufferImageCopy			copyRegions	=
+	const VkBufferImageCopy			copyRegion	=
 	{
 		0u,								// VkDeviceSize				bufferOffset;
 		(deUint32)access.getWidth(),	// deUint32					bufferRowLength;
@@ -216,6 +144,8 @@ void uploadImage (Context&								context,
 		}
 	};
 
+	vector<VkBufferImageCopy>		copyRegions	(1, copyRegion);
+
 	{
 		const tcu::PixelBufferAccess	destAccess	(access.getFormat(), access.getSize(), bufferAlloc->getHostPtr());
 		tcu::copy(destAccess, access);
@@ -223,13 +153,7 @@ void uploadImage (Context&								context,
 	}
 
 	// Copy buffer to image
-	beginCommandBuffer(vk, *cmdBuffer);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &preBufferBarrier, 1, &preImageBarrier);
-	vk.cmdCopyBufferToImage(*cmdBuffer, *buffer, destImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegions);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
-	endCommandBuffer(vk, *cmdBuffer);
-
-	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+	copyBufferToImage(vk, device, queue, queueFamilyIndex, *buffer, bufferSize, copyRegions, DE_NULL, aspectMask, 1, 1, destImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 }
 
 class GeometryOutputCountTestInstance : public GeometryExpanderRenderTestInstance

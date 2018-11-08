@@ -421,58 +421,7 @@ BufferViewTestInstance::BufferViewTestInstance							(Context&					context,
 		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), vertexBufferOffset);
 		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
 		endRenderPass(vk, *m_cmdBuffer);
-
-		const VkImageMemoryBarrier		imageBarrier					=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,						// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,						// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_TRANSFER_READ_BIT,								// VkAccessFlags			dstAccessMask;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,					// VkImageLayout			oldLayout;
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,						// VkImageLayout			newLayout;
-			VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
-			*m_colorImage,												// VkImage					image;
-			{															// VkImageSubresourceRange	subresourceRange;
-				VK_IMAGE_ASPECT_COLOR_BIT,								// VkImageAspectFlags		aspectMask;
-				0u,														// deUint32					baseMipLevel;
-				1u,														// deUint32					mipLevels;
-				0u,														// deUint32					baseArraySlice;
-				1u														// deUint32					arraySize;
-			}
-		};
-
-		const VkBufferMemoryBarrier		bufferBarrier					=
-		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,					// VkStructureType			sType;
-			DE_NULL,													// const void*				pNext;
-			VK_ACCESS_TRANSFER_WRITE_BIT,								// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_HOST_READ_BIT,									// VkAccessFlags			dstAccessMask;
-			VK_QUEUE_FAMILY_IGNORED,									// deUint32					srcQueueFamilyIndex;
-			VK_QUEUE_FAMILY_IGNORED,									// deUint32					destQueueFamilyIndex;
-			*m_resultBuffer,											// VkBuffer					buffer;
-			0u,															// VkDeviceSize				offset;
-			m_pixelDataSize												// VkDeviceSize				size;
-		};
-
-		const VkBufferImageCopy			copyRegion						=
-		{
-			0u,															// VkDeviceSize				bufferOffset;
-			(deUint32)m_renderSize.x(),									// deUint32					bufferRowLength;
-			(deUint32)m_renderSize.y(),									// deUint32					bufferImageHeight;
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u },					// VkImageSubresourceCopy	imageSubresource;
-			{ 0, 0, 0 },												// VkOffset3D				imageOffset;
-			{
-				(deUint32)m_renderSize.x(),
-				(deUint32)m_renderSize.y(),
-				1u
-			}															// VkExtent3D				imageExtent;
-		};
-
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &imageBarrier);
-		vk.cmdCopyImageToBuffer(*m_cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &copyRegion);
-		vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &bufferBarrier, 0, (const VkImageMemoryBarrier*)DE_NULL);
-
+		copyImageToBuffer(vk, *m_cmdBuffer, *m_colorImage, *m_resultBuffer, m_renderSize);
 		endCommandBuffer(vk, *m_cmdBuffer);
 	}
 }

@@ -658,39 +658,7 @@ void ExternalMemoryHostRenderImageTestInstance::draw ()
 
 void ExternalMemoryHostRenderImageTestInstance::copyResultImagetoBuffer ()
 {
-	const struct VkImageSubresourceRange subRangeColor =
-	{
-		VK_IMAGE_ASPECT_COLOR_BIT,  // VkImageAspectFlags  aspectMask
-		0u,                         // deUint32            baseMipLevel
-		1u,                         // deUint32            mipLevels
-		0u,                         // deUint32            baseArrayLayer
-		1u,                         // deUint32            arraySize
-	};
-	const VkImageMemoryBarrier			imageBarrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType
-		DE_NULL,										// const void*				pNext
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask
-		VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessFlags			dstAccessMask
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout			oldLayout
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout			newLayout
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					dstQueueFamilyIndex
-		*m_image,										// VkImage					image
-		subRangeColor									// VkImageSubresourceRange	subresourceRange
-	};
-	m_vkd.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, DE_FALSE, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageBarrier);
-
-	const VkBufferImageCopy				region_all =
-	{
-		0,												// VkDeviceSize					bufferOffset
-		0,												// deUint32						bufferRowLength
-		0,												// deUint32						bufferImageHeight
-		{ vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },		// VkImageSubresourceLayers		imageSubresource
-		{ 0, 0, 0 },									// VkOffset3D					imageOffset
-		{ 100, 100, 1 } };								// VkExtent3D					imageExtent
-
-	m_vkd.cmdCopyImageToBuffer(*m_cmdBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_resultBuffer, 1, &region_all);
+	copyImageToBuffer(m_vkd, *m_cmdBuffer, *m_image, *m_resultBuffer, tcu::IVec2(100, 100));
 }
 
 void ExternalMemoryHostRenderImageTestInstance::prepareReferenceImage (tcu::PixelBufferAccess& reference)

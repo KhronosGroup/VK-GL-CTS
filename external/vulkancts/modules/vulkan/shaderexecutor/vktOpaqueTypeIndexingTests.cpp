@@ -576,8 +576,6 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 	flushMappedMemoryRange(vkd, device, alloc->getMemory(), alloc->getOffset(), VK_WHOLE_SIZE);
 
 	{
-		const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, context.getUniversalQueueFamilyIndex()));
-		const Unique<VkCommandBuffer>	cmdBuf			(allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 		const VkImageAspectFlags		imageAspect		= (VkImageAspectFlags)(format.order == tcu::TextureFormat::D ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
 		const VkBufferImageCopy			copyInfo		=
 		{
@@ -593,70 +591,8 @@ TestImage::TestImage (Context& context, TextureType texType, tcu::TextureFormat 
 			{ 0u, 0u, 0u },
 			{ 1u, 1u, 1u }
 		};
-		const VkImageMemoryBarrier		preCopyBarrier	=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-			(VkAccessFlags)0u,
-			(VkAccessFlags)VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-			*m_image,
-			{
-				imageAspect,
-				0u,
-				1u,
-				0u,
-				numLayers
-			}
-		};
-		const VkImageMemoryBarrier		postCopyBarrier	=
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-			(VkAccessFlags)VK_ACCESS_TRANSFER_WRITE_BIT,
-			(VkAccessFlags)VK_ACCESS_SHADER_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-			*m_image,
-			{
-				imageAspect,
-				0u,
-				1u,
-				0u,
-				numLayers
-			}
-		};
 
-		beginCommandBuffer(vkd, *cmdBuf);
-		vkd.cmdPipelineBarrier(*cmdBuf,
-							   (VkPipelineStageFlags)VK_PIPELINE_STAGE_HOST_BIT,
-							   (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
-							   (VkDependencyFlags)0u,
-							   0u,
-							   (const VkMemoryBarrier*)DE_NULL,
-							   0u,
-							   (const VkBufferMemoryBarrier*)DE_NULL,
-							   1u,
-							   &preCopyBarrier);
-		vkd.cmdCopyBufferToImage(*cmdBuf, *stagingBuffer, *m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyInfo);
-		vkd.cmdPipelineBarrier(*cmdBuf,
-							   (VkPipelineStageFlags)VK_PIPELINE_STAGE_TRANSFER_BIT,
-							   (VkPipelineStageFlags)VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-							   (VkDependencyFlags)0u,
-							   0u,
-							   (const VkMemoryBarrier*)DE_NULL,
-							   0u,
-							   (const VkBufferMemoryBarrier*)DE_NULL,
-							   1u,
-							   &postCopyBarrier);
-		endCommandBuffer(vkd, *cmdBuf);
-
-		submitCommandsAndWait(vkd, device, context.getUniversalQueue(), cmdBuf.get());
+		copyBufferToImage(vkd, device, context.getUniversalQueue(), context.getUniversalQueueFamilyIndex(), *stagingBuffer, stagingBufferSize, vector<VkBufferImageCopy>(1, copyInfo), DE_NULL, imageAspect, 1u, numLayers, *m_image);
 	}
 }
 
