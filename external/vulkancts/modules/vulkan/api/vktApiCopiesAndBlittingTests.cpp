@@ -1972,11 +1972,25 @@ bool BlittingImages::checkLinearFilteredResult (const tcu::ConstPixelBufferAcces
 												const tcu::ConstPixelBufferAccess&	unclampedExpected,
 												const tcu::TextureFormat&			srcFormat)
 {
-	tcu::TestLog&				log			(m_context.getTestContext().getLog());
-	const tcu::TextureFormat	dstFormat	= result.getFormat();
-	bool						isOk		= false;
+	tcu::TestLog&					log				(m_context.getTestContext().getLog());
+	const tcu::TextureFormat		dstFormat		= result.getFormat();
+	const tcu::TextureChannelClass	dstChannelClass = tcu::getTextureChannelClass(dstFormat.type);
+	const tcu::TextureChannelClass	srcChannelClass = tcu::getTextureChannelClass(srcFormat.type);
+	bool							isOk			= false;
 
 	log << tcu::TestLog::Section("ClampedSourceImage", "Region with clamped edges on source image.");
+
+	// if either of srcImage or dstImage was created with a signed/unsigned integer VkFormat,
+	// the other must also have been created with a signed/unsigned integer VkFormat
+	bool dstImageIsIntClass = dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+							  dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	bool srcImageIsIntClass = srcChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+							  srcChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	if (dstImageIsIntClass != srcImageIsIntClass)
+	{
+		log << tcu::TestLog::EndSection;
+		return false;
+	}
 
 	if (isFloatFormat(dstFormat))
 	{
@@ -2210,7 +2224,9 @@ bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAcce
 {
 	tcu::TestLog&					log				(m_context.getTestContext().getLog());
 	const tcu::TextureFormat		dstFormat		= result.getFormat();
+	const tcu::TextureFormat		srcFormat		= source.getFormat();
 	const tcu::TextureChannelClass	dstChannelClass = tcu::getTextureChannelClass(dstFormat.type);
+	const tcu::TextureChannelClass	srcChannelClass = tcu::getTextureChannelClass(srcFormat.type);
 
 	tcu::TextureLevel		errorMaskStorage	(tcu::TextureFormat(tcu::TextureFormat::RGB, tcu::TextureFormat::UNORM_INT8), result.getWidth(), result.getHeight());
 	tcu::PixelBufferAccess	errorMask			= errorMaskStorage.getAccess();
@@ -2220,8 +2236,16 @@ bool BlittingImages::checkNearestFilteredResult (const tcu::ConstPixelBufferAcce
 
 	tcu::clear(errorMask, tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0));
 
-	if (dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
-		dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER)
+	// if either of srcImage or dstImage was created with a signed/unsigned integer VkFormat,
+	// the other must also have been created with a signed/unsigned integer VkFormat
+	bool dstImageIsIntClass = dstChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+							  dstChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	bool srcImageIsIntClass = srcChannelClass == tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER ||
+							  srcChannelClass == tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER;
+	if (dstImageIsIntClass != srcImageIsIntClass)
+		return false;
+
+	if (dstImageIsIntClass)
 	{
 		ok = intNearestBlitCompare(source, result, errorMask, m_params.regions);
 	}
@@ -3304,7 +3328,7 @@ public:
 	virtual tcu::TestStatus						iterate						(void);
 protected:
 	virtual tcu::TestStatus						checkTestResult				(tcu::ConstPixelBufferAccess result = tcu::ConstPixelBufferAccess());
-	void										copyMSImageToMSImage		(void);
+	void										copyMSImageToMSImage		(deUint32 copyArraySize);
 private:
 	Move<VkImage>								m_multisampledImage;
 	de::MovePtr<Allocation>						m_multisampledImageAlloc;
@@ -3681,11 +3705,17 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	generateBuffer(m_sourceTextureLevel->getAccess(), m_params.src.image.extent.width, m_params.src.image.extent.height, m_params.dst.image.extent.depth, FILL_MODE_MULTISAMPLE);
 	generateExpectedResult();
 
+	VkImage		sourceImage		= m_multisampledImage.get();
+	deUint32	sourceArraySize	= getArraySize(m_params.src.image);
+
 	switch (m_options)
 	{
-		case COPY_MS_IMAGE_TO_MS_IMAGE:
 		case COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE:
-			copyMSImageToMSImage();
+			// Duplicate the multisampled image to a multisampled image array
+			sourceArraySize	= getArraySize(m_params.dst.image);
+		case COPY_MS_IMAGE_TO_MS_IMAGE:
+			copyMSImageToMSImage(sourceArraySize);
+			sourceImage	= m_multisampledCopyImage.get();
 			break;
 		default:
 			break;
@@ -3711,13 +3741,13 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex;
 			VK_QUEUE_FAMILY_IGNORED,					// deUint32					dstQueueFamilyIndex;
-			m_multisampledImage.get(),					// VkImage					image;
+			sourceImage,								// VkImage					image;
 			{											// VkImageSubresourceRange	subresourceRange;
 				getAspectFlags(srcTcuFormat),		// VkImageAspectFlags	aspectMask;
 				0u,									// deUint32				baseMipLevel;
 				1u,									// deUint32				mipLevels;
 				0u,									// deUint32				baseArraySlice;
-				getArraySize(m_params.src.image)	// deUint32				arraySize;
+				sourceArraySize						// deUint32				arraySize;
 			}
 		},
 		// destination image
@@ -3763,7 +3793,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, DE_LENGTH_OF_ARRAY(imageBarriers), imageBarriers);
-	vk.cmdResolveImage(*m_cmdBuffer, m_multisampledImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), imageResolves.data());
+	vk.cmdResolveImage(*m_cmdBuffer, sourceImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_destination.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (deUint32)m_params.regions.size(), imageResolves.data());
 	vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &postImageBarrier);
 	endCommandBuffer(vk, *m_cmdBuffer);
 	submitCommandsAndWait(vk, vkDevice, queue, *m_cmdBuffer);
@@ -3808,7 +3838,7 @@ void ResolveImageToImage::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess s
 	tcu::copy(dstSubRegion, srcSubRegion);
 }
 
-void ResolveImageToImage::copyMSImageToMSImage (void)
+void ResolveImageToImage::copyMSImageToMSImage (deUint32 copyArraySize)
 {
 	const DeviceInterface&			vk					= m_context.getDeviceInterface();
 	const VkDevice					vkDevice			= m_context.getDevice();
@@ -3816,7 +3846,7 @@ void ResolveImageToImage::copyMSImageToMSImage (void)
 	const tcu::TextureFormat		srcTcuFormat		= mapVkFormat(m_params.src.image.format);
 	std::vector<VkImageCopy>		imageCopies;
 
-	for (deUint32 layerNdx = 0; layerNdx < getArraySize(m_params.dst.image); ++layerNdx)
+	for (deUint32 layerNdx = 0; layerNdx < copyArraySize; ++layerNdx)
 	{
 		const VkImageSubresourceLayers	sourceSubresourceLayers	=
 		{
@@ -3882,7 +3912,7 @@ void ResolveImageToImage::copyMSImageToMSImage (void)
 				0u,									// deUint32				baseMipLevel;
 				1u,									// deUint32				mipLevels;
 				0u,									// deUint32				baseArraySlice;
-				getArraySize(m_params.dst.image)	// deUint32				arraySize;
+				copyArraySize						// deUint32				arraySize;
 			}
 		},
 	};
@@ -3904,7 +3934,7 @@ void ResolveImageToImage::copyMSImageToMSImage (void)
 			0u,									// deUint32				baseMipLevel;
 			1u,									// deUint32				mipLevels;
 			0u,									// deUint32				baseArraySlice;
-			getArraySize(m_params.dst.image)	// deUint32				arraySize;
+			copyArraySize						// deUint32				arraySize;
 		}
 	};
 
@@ -3915,8 +3945,6 @@ void ResolveImageToImage::copyMSImageToMSImage (void)
 	endCommandBuffer(vk, *m_cmdBuffer);
 
 	submitCommandsAndWait (vk, vkDevice, queue, *m_cmdBuffer);
-
-	m_multisampledImage = m_multisampledCopyImage;
 }
 
 class ResolveImageToImageTestCase : public vkt::TestCase

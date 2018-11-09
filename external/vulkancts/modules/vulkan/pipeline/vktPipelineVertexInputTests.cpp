@@ -1178,12 +1178,17 @@ VertexInputInstance::VertexInputInstance (Context&												context,
 
 	// Create vertex buffer
 	{
+		// calculate buffer size
+		// 32 is maximal attribute size (4*sizeof(double)),
+		// 8 maximal vertex count used in writeVertexInputData
+		VkDeviceSize bufferSize = 32 * 8 * attributeDescriptions.size();
+
 		const VkBufferCreateInfo vertexBufferParams =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
 			DE_NULL,									// const void*			pNext;
 			0u,											// VkBufferCreateFlags	flags;
-			4096u,										// VkDeviceSize			size;
+			bufferSize,									// VkDeviceSize			size;
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			// VkBufferUsageFlags	usage;
 			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
 			1u,											// deUint32				queueFamilyIndexCount;
