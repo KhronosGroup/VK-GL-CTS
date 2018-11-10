@@ -114,6 +114,8 @@ struct CaseDef
 	SyncType syncType;
 	Stage stage;
 	DataType dataType;
+	bool transitive;
+	bool transitiveVis;
 };
 
 class MemoryModelTestInstance : public TestInstance
@@ -148,6 +150,7 @@ class MemoryModelTestCase : public TestCase
 								MemoryModelTestCase		(tcu::TestContext& context, const char* name, const char* desc, const CaseDef data);
 								~MemoryModelTestCase	(void);
 	virtual	void				initPrograms		(SourceCollections& programCollection) const;
+	virtual	void				initProgramsTransitive(SourceCollections& programCollection) const;
 	virtual TestInstance*		createInstance		(Context& context) const;
 	virtual void				checkSupport		(Context& context) const;
 
@@ -219,11 +222,21 @@ void MemoryModelTestCase::checkSupport(Context& context) const
 			TCU_THROW(NotSupportedError, "64-bit integer shared atomics not supported");
 		}
 	}
+	if (m_data.transitive &&
+		!context.getVulkanMemoryModelFeatures().vulkanMemoryModelAvailabilityVisibilityChains)
+		TCU_THROW(NotSupportedError, "vulkanMemoryModelAvailabilityVisibilityChains not supported");
 }
 
 
 void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	if (m_data.transitive)
+	{
+		initProgramsTransitive(programCollection);
+		return;
+	}
+	DE_ASSERT(!m_data.transitiveVis);
+
 	Scope invocationMapping = m_data.scope;
 	if ((m_data.scope == SCOPE_DEVICE || m_data.scope == SCOPE_QUEUEFAMILY) &&
 		(m_data.payloadSC == SC_WORKGROUP || m_data.guardSC == SC_WORKGROUP))
@@ -659,6 +672,192 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 		programCollection.glslSources.add("test") << glu::FragmentSource(css.str()) << buildOptions;
 		break;
 	}
+}
+
+
+void MemoryModelTestCase::initProgramsTransitive (SourceCollections& programCollection) const
+{
+	Scope invocationMapping = m_data.scope;
+
+	const char *typeStr = m_data.dataType == DATA_TYPE_UINT64 ? "uint64_t" : "uint";
+
+	// Construct storageSemantics strings. Both release and acquire
+	// always have the payload storage class. They only include the
+	// guard storage class if they're using FENCE for that side of the
+	// sync.
+	std::stringstream storageSemanticsPayload;
+	switch (m_data.payloadSC)
+	{
+	default: DE_ASSERT(0); // fall through
+	case SC_BUFFER:		storageSemanticsPayload << "gl_StorageSemanticsBuffer"; break;
+	case SC_IMAGE:		storageSemanticsPayload << "gl_StorageSemanticsImage"; break;
+	}
+	std::stringstream storageSemanticsGuard;
+	switch (m_data.guardSC)
+	{
+	default: DE_ASSERT(0); // fall through
+	case SC_BUFFER:		storageSemanticsGuard << "gl_StorageSemanticsBuffer"; break;
+	case SC_IMAGE:		storageSemanticsGuard << "gl_StorageSemanticsImage"; break;
+	}
+	std::stringstream storageSemanticsAll;
+	storageSemanticsAll << storageSemanticsPayload.str() << " | " << storageSemanticsGuard.str();
+
+	std::stringstream css;
+	css << "#version 450 core\n";
+	css << "#pragma use_vulkan_memory_model\n";
+	css <<
+		"#extension GL_KHR_shader_subgroup_basic : enable\n"
+		"#extension GL_KHR_shader_subgroup_shuffle : enable\n"
+		"#extension GL_KHR_shader_subgroup_ballot : enable\n"
+		"#extension GL_KHR_memory_scope_semantics : enable\n"
+		"#extension GL_ARB_gpu_shader_int64 : enable\n"
+		"// DIM/NUM_WORKGROUP_EACH_DIM overriden by spec constants\n"
+		"layout(constant_id = 0) const int DIM = 1;\n"
+		"layout(constant_id = 1) const int NUM_WORKGROUP_EACH_DIM = 1;\n"
+		"shared bool sharedSkip;\n";
+
+	css << "layout(local_size_x_id = 0, local_size_y_id = 0, local_size_z = 1) in;\n";
+
+	const char *memqual = "";
+	const char *semAvail = "";
+	const char *semVis = "";
+	if (m_data.coherent)
+	{
+		memqual = "workgroupcoherent";
+	}
+	else
+	{
+		memqual = "nonprivate";
+		semAvail = " | gl_SemanticsMakeAvailable";
+		semVis = " | gl_SemanticsMakeVisible";
+	}
+
+	// Declare payload, guard, and fail resources
+	switch (m_data.payloadSC)
+	{
+	default: DE_ASSERT(0); // fall through
+	case SC_BUFFER:		css << "layout(set=0, binding=0) " << memqual << " buffer Payload { " << typeStr << " x[]; } payload;\n"; break;
+	case SC_IMAGE:		css << "layout(set=0, binding=0, r32ui) uniform " << memqual << " uimage2D payload;\n"; break;
+	}
+	// The guard variable is only accessed with atomics and need not be declared coherent.
+	switch (m_data.guardSC)
+	{
+	default: DE_ASSERT(0); // fall through
+	case SC_BUFFER:		css << "layout(set=0, binding=1) buffer Guard { " << typeStr << " x[]; } guard;\n"; break;
+	case SC_IMAGE:		css << "layout(set=0, binding=1, r32ui) uniform uimage2D guard;\n"; break;
+	}
+
+	css << "layout(set=0, binding=2) buffer Fail { uint x[]; } fail;\n";
+
+	css <<
+		"void main()\n"
+		"{\n"
+		"   bool pass = true;\n"
+		"   bool skip = false;\n"
+		"   sharedSkip = false;\n";
+
+	// Compute coordinates based on the storage class and scope.
+	switch (invocationMapping)
+	{
+	default: DE_ASSERT(0); // fall through
+	case SCOPE_DEVICE:
+		css <<
+		"   ivec2 globalId          = ivec2(gl_GlobalInvocationID.xy);\n"
+		"   ivec2 partnerGlobalId   = ivec2(DIM*NUM_WORKGROUP_EACH_DIM-1) - ivec2(gl_GlobalInvocationID.xy);\n"
+		"   uint bufferCoord        = globalId.y * DIM*NUM_WORKGROUP_EACH_DIM + globalId.x;\n"
+		"   uint partnerBufferCoord = partnerGlobalId.y * DIM*NUM_WORKGROUP_EACH_DIM + partnerGlobalId.x;\n"
+		"   ivec2 imageCoord        = globalId;\n"
+		"   ivec2 partnerImageCoord = partnerGlobalId;\n"
+		"   ivec2 globalId00          = ivec2(DIM) * ivec2(gl_WorkGroupID.xy);\n"
+		"   ivec2 partnerGlobalId00   = ivec2(DIM) * (ivec2(NUM_WORKGROUP_EACH_DIM-1) - ivec2(gl_WorkGroupID.xy));\n"
+		"   uint bufferCoord00        = globalId00.y * DIM*NUM_WORKGROUP_EACH_DIM + globalId00.x;\n"
+		"   uint partnerBufferCoord00 = partnerGlobalId00.y * DIM*NUM_WORKGROUP_EACH_DIM + partnerGlobalId00.x;\n"
+		"   ivec2 imageCoord00        = globalId00;\n"
+		"   ivec2 partnerImageCoord00 = partnerGlobalId00;\n";
+		break;
+	}
+
+	// Store payload
+	switch (m_data.payloadSC)
+	{
+	default: DE_ASSERT(0); // fall through
+	case SC_BUFFER:		css << "   payload.x[bufferCoord] = bufferCoord + (payload.x[partnerBufferCoord]>>31);\n"; break;
+	case SC_IMAGE:		css << "   imageStore(payload, imageCoord, uvec4(bufferCoord + (imageLoad(payload, partnerImageCoord).x>>31), 0, 0, 0));\n"; break;
+	}
+
+	// Sync to other threads in the workgroup
+	css << "   controlBarrier(gl_ScopeWorkgroup, "
+							 "gl_ScopeWorkgroup, " <<
+							  storageSemanticsPayload.str() << " | gl_StorageSemanticsShared, "
+							 "gl_SemanticsAcquireRelease" << semAvail << ");\n";
+
+	// Device-scope release/availability in invocation(0,0)
+	css << "   if (all(equal(gl_LocalInvocationID.xy, ivec2(0,0)))) {\n";
+	if (m_data.syncType == ST_ATOMIC_ATOMIC || m_data.syncType == ST_ATOMIC_FENCE) {
+		switch (m_data.guardSC)
+		{
+		default: DE_ASSERT(0); // fall through
+		case SC_BUFFER:		css << "       atomicStore(guard.x[bufferCoord], " << typeStr << "(1u), gl_ScopeDevice, " << storageSemanticsPayload.str() << ", gl_SemanticsRelease | gl_SemanticsMakeAvailable);\n"; break;
+		case SC_IMAGE:		css << "       imageAtomicStore(guard, imageCoord, (1u), gl_ScopeDevice, " << storageSemanticsPayload.str() << ", gl_SemanticsRelease | gl_SemanticsMakeAvailable);\n"; break;
+		}
+	} else {
+		css << "       memoryBarrier(gl_ScopeDevice, " << storageSemanticsAll.str() << ", gl_SemanticsRelease | gl_SemanticsMakeAvailable);\n";
+		switch (m_data.guardSC)
+		{
+		default: DE_ASSERT(0); // fall through
+		case SC_BUFFER:		css << "       atomicStore(guard.x[bufferCoord], " << typeStr << "(1u), gl_ScopeDevice, 0, 0);\n"; break;
+		case SC_IMAGE:		css << "       imageAtomicStore(guard, imageCoord, (1u), gl_ScopeDevice, 0, 0);\n"; break;
+		}
+	}
+
+	// Device-scope acquire/visibility either in invocation(0,0) or in every invocation
+	if (!m_data.transitiveVis) {
+		css << "   }\n";
+	}
+	if (m_data.syncType == ST_ATOMIC_ATOMIC || m_data.syncType == ST_FENCE_ATOMIC) {
+		switch (m_data.guardSC)
+		{
+		default: DE_ASSERT(0); // fall through
+		case SC_BUFFER:		css << "       skip = atomicLoad(guard.x[partnerBufferCoord00], gl_ScopeDevice, " << storageSemanticsPayload.str() << ", gl_SemanticsAcquire | gl_SemanticsMakeVisible) == 0;\n"; break;
+		case SC_IMAGE:		css << "       skip = imageAtomicLoad(guard, partnerImageCoord00, gl_ScopeDevice, " << storageSemanticsPayload.str() << ", gl_SemanticsAcquire | gl_SemanticsMakeVisible) == 0;\n"; break;
+		}
+	} else {
+		switch (m_data.guardSC)
+		{
+		default: DE_ASSERT(0); // fall through
+		case SC_BUFFER:		css << "       skip = atomicLoad(guard.x[partnerBufferCoord00], gl_ScopeDevice, 0, 0) == 0;\n"; break;
+		case SC_IMAGE:		css << "       skip = imageAtomicLoad(guard, partnerImageCoord00, gl_ScopeDevice, 0, 0) == 0;\n"; break;
+		}
+		css << "       memoryBarrier(gl_ScopeDevice, " << storageSemanticsAll.str() << ", gl_SemanticsAcquire | gl_SemanticsMakeVisible);\n";
+	}
+
+	// If invocation(0,0) did the acquire then store "skip" to shared memory and
+	// synchronize with the workgroup
+	if (m_data.transitiveVis) {
+		css << "       sharedSkip = skip;\n";
+		css << "   }\n";
+
+		css << "   controlBarrier(gl_ScopeWorkgroup, "
+								 "gl_ScopeWorkgroup, " <<
+								  storageSemanticsPayload.str() << " | gl_StorageSemanticsShared, "
+								 "gl_SemanticsAcquireRelease" << semVis << ");\n";
+		css << "   skip = sharedSkip;\n";
+	}
+
+	// Load payload
+	switch (m_data.payloadSC)
+	{
+	default: DE_ASSERT(0); // fall through
+	case SC_BUFFER:		css << "   " << typeStr << " r = payload.x[partnerBufferCoord];\n"; break;
+	case SC_IMAGE:		css << "   " << typeStr << " r = imageLoad(payload, partnerImageCoord).x;\n"; break;
+	}
+	css <<
+		"   if (!skip && r != partnerBufferCoord) { fail.x[bufferCoord] = 1; }\n"
+		"}\n";
+
+	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
+
+	programCollection.glslSources.add("test") << glu::ComputeSource(css.str()) << buildOptions;
 }
 
 TestInstance* MemoryModelTestCase::createInstance (Context& context) const
@@ -1447,6 +1646,8 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 														(SyncType)stCases[stNdx].value,			// SyncType syncType;
 														(Stage)stageCases[stageNdx].value,		// Stage stage;
 														(DataType)dtCases[dtNdx].value,			// DataType dataType;
+														false,									// bool transitive;
+														false,									// bool transitiveVis;
 													};
 
 													// Mustpass11 tests should only exercise things we expect to work on
@@ -1537,6 +1738,75 @@ tcu::TestCaseGroup*	createTests (tcu::TestContext& testCtx)
 		}
 		group->addChild(ttGroup.release());
 	}
+
+	TestGroupCase transVisCases[] =
+	{
+		{ 0,	"nontransvis",		"destination invocation acquires"		},
+		{ 1,	"transvis",			"invocation 0,0 acquires"				},
+	};
+
+	de::MovePtr<tcu::TestCaseGroup> transGroup(new tcu::TestCaseGroup(testCtx, "transitive", "transitive"));
+	for (int cohNdx = 0; cohNdx < DE_LENGTH_OF_ARRAY(cohCases); cohNdx++)
+	{
+		de::MovePtr<tcu::TestCaseGroup> cohGroup(new tcu::TestCaseGroup(testCtx, cohCases[cohNdx].name, cohCases[cohNdx].description));
+		for (int stNdx = 0; stNdx < DE_LENGTH_OF_ARRAY(stCases); stNdx++)
+		{
+			de::MovePtr<tcu::TestCaseGroup> stGroup(new tcu::TestCaseGroup(testCtx, stCases[stNdx].name, stCases[stNdx].description));
+			for (int plNdx = 0; plNdx < DE_LENGTH_OF_ARRAY(plCases); plNdx++)
+			{
+				de::MovePtr<tcu::TestCaseGroup> plGroup(new tcu::TestCaseGroup(testCtx, plCases[plNdx].name, plCases[plNdx].description));
+				for (int pscNdx = 0; pscNdx < DE_LENGTH_OF_ARRAY(pscCases); pscNdx++)
+				{
+					de::MovePtr<tcu::TestCaseGroup> pscGroup(new tcu::TestCaseGroup(testCtx, pscCases[pscNdx].name, pscCases[pscNdx].description));
+					for (int glNdx = 0; glNdx < DE_LENGTH_OF_ARRAY(glCases); glNdx++)
+					{
+						de::MovePtr<tcu::TestCaseGroup> glGroup(new tcu::TestCaseGroup(testCtx, glCases[glNdx].name, glCases[glNdx].description));
+						for (int gscNdx = 0; gscNdx < DE_LENGTH_OF_ARRAY(gscCases); gscNdx++)
+						{
+							de::MovePtr<tcu::TestCaseGroup> gscGroup(new tcu::TestCaseGroup(testCtx, gscCases[gscNdx].name, gscCases[gscNdx].description));
+							for (int visNdx = 0; visNdx < DE_LENGTH_OF_ARRAY(transVisCases); visNdx++)
+							{
+								CaseDef c =
+								{
+									!!plCases[plNdx].value,					// bool payloadMemLocal;
+									!!glCases[glNdx].value,					// bool guardMemLocal;
+									!!cohCases[cohNdx].value,				// bool coherent;
+									false,									// bool core11;
+									false,									// bool atomicRMW;
+									TT_MP,									// TestType testType;
+									(StorageClass)pscCases[pscNdx].value,	// StorageClass payloadSC;
+									(StorageClass)gscCases[gscNdx].value,	// StorageClass guardSC;
+									SCOPE_DEVICE,							// Scope scope;
+									(SyncType)stCases[stNdx].value,			// SyncType syncType;
+									STAGE_COMPUTE,							// Stage stage;
+									DATA_TYPE_UINT,							// DataType dataType;
+									true,									// bool transitive;
+									!!transVisCases[visNdx].value,			// bool transitiveVis;
+								};
+								if (c.payloadSC == SC_WORKGROUP || c.guardSC == SC_WORKGROUP)
+								{
+									continue;
+								}
+								if (c.syncType == ST_CONTROL_BARRIER || c.syncType == ST_CONTROL_AND_MEMORY_BARRIER)
+								{
+									continue;
+								}
+								gscGroup->addChild(new MemoryModelTestCase(testCtx, transVisCases[visNdx].name, transVisCases[visNdx].description, c));
+							}
+							glGroup->addChild(gscGroup.release());
+						}
+						pscGroup->addChild(glGroup.release());
+					}
+					plGroup->addChild(pscGroup.release());
+				}
+				stGroup->addChild(plGroup.release());
+			}
+			cohGroup->addChild(stGroup.release());
+		}
+		transGroup->addChild(cohGroup.release());
+	}
+	group->addChild(transGroup.release());
+
 	return group.release();
 }
 
