@@ -30,5 +30,7 @@ set(DEQP_VK_YCBCR_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_YCBCR_SRCS ../pch.cpp)
+
 add_library(deqp-vk-ycbcr STATIC ${DEQP_VK_YCBCR_SRCS})
 target_link_libraries(deqp-vk-ycbcr ${DEQP_VK_YCBCR_LIBS})

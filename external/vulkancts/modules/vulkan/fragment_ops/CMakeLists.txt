@@ -18,5 +18,7 @@ set(DEQP_VK_FRAGMENT_OPS_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_FRAGMENT_OPS_SRCS ../pch.cpp)
+
 add_library(deqp-vk-fragment-ops STATIC ${DEQP_VK_FRAGMENT_OPS_SRCS})
 target_link_libraries(deqp-vk-fragment-ops ${DEQP_VK_FRAGMENT_OPS_LIBS})

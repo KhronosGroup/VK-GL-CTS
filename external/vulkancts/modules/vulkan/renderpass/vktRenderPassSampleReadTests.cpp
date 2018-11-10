@@ -885,75 +885,7 @@ tcu::TestStatus SampleReadTestInstance::iterateInternal (void)
 
 	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
-	// Memory barrier between rendering and copy
-	{
-		const VkImageMemoryBarrier barrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			DE_NULL,
-
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			VK_ACCESS_TRANSFER_READ_BIT,
-
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-
-			*m_dstSinglesampleImage,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,
-				1u,
-				0u,
-				1u
-			}
-		};
-
-		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
-	}
-
-	// Copy image memory to buffer
-	{
-		const VkBufferImageCopy region =
-		{
-			0u,
-			0u,
-			0u,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,
-				0u,
-				1u,
-			},
-			{ 0u, 0u, 0u },
-			{ m_width, m_height, 1u }
-		};
-
-		vkd.cmdCopyImageToBuffer(*commandBuffer, *m_dstSinglesampleImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *m_dstBuffer, 1u, &region);
-	}
-
-	// Memory barrier between copy and host access
-	{
-		const VkBufferMemoryBarrier barrier =
-		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-			DE_NULL,
-
-			VK_ACCESS_TRANSFER_WRITE_BIT,
-			VK_ACCESS_HOST_READ_BIT,
-
-			VK_QUEUE_FAMILY_IGNORED,
-			VK_QUEUE_FAMILY_IGNORED,
-
-			*m_dstBuffer,
-			0u,
-			VK_WHOLE_SIZE
-		};
-
-		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
-	}
+	copyImageToBuffer(vkd, *commandBuffer, *m_dstSinglesampleImage, *m_dstBuffer, tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	endCommandBuffer(vkd, *commandBuffer);
 

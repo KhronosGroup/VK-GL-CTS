@@ -209,5 +209,7 @@ set(GLCTS_ESEXT_LIBS
 
 #set(GLCTS_ESEXT_LIBS ${GLCTS_ESEXT_LIBS} glcts-gtf)
 
+PCH(GLCTS_ESEXT_SRCS ../pch.cpp)
+
 add_library(glcts-esext STATIC ${GLCTS_ESEXT_SRCS})
 target_link_libraries(glcts-esext ${GLCTS_ESEXT_LIBS})

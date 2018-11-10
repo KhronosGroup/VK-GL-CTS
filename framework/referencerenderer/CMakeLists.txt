@@ -27,5 +27,7 @@ set(RR_SRCS
 	rrVertexPacket.hpp
 	)
 
+PCH(RR_SRCS ../pch.cpp)
+
 add_library(referencerenderer STATIC ${RR_SRCS})
 target_link_libraries(referencerenderer tcutil)

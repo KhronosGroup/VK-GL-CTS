@@ -1682,38 +1682,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 
 			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
-			const VkImageSubresourceRange	subresourceRange	=
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,											//VkImageAspectFlags	aspectMask
-				0u,																	//deUint32				baseMipLevel
-				1u,																	//deUint32				levelCount
-				0u,																	//deUint32				baseArrayLayer
-				1u																	//deUint32				layerCount
-			};
-
-			const VkBufferImageCopy			copyRegion			=
-			{
-				0ull,																//	VkDeviceSize				bufferOffset;
-				0u,																	//	deUint32					bufferRowLength;
-				0u,																	//	deUint32					bufferImageHeight;
-				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	//	VkImageSubresourceLayers	imageSubresource;
-				makeOffset3D(0, 0, 0),												//	VkOffset3D					imageOffset;
-				makeExtent3D(IVec3(maxWidth,1,1)),									//	VkExtent3D					imageExtent;
-			};
-
-			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
-																	VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-																	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-																	discardableImage.getImage(), subresourceRange);
-
-			const VkBufferMemoryBarrier copyBarrier = makeBufferMemoryBarrier(
-														VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
-														imageBufferResult.getBuffer(), 0ull, imageResultSize);
-
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &prepareForTransferBarrier);
-			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, discardableImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &copyRegion);
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &copyBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
-
+			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
 			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
@@ -1740,6 +1709,33 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 	}
 
 	return tcu::TestStatus::pass("OK");
+}
+
+bool vkt::subgroups::check(std::vector<const void*> datas,
+	deUint32 width, deUint32 ref)
+{
+	const deUint32* data = reinterpret_cast<const deUint32*>(datas[0]);
+
+	for (deUint32 n = 0; n < width; ++n)
+	{
+		if (data[n] != ref)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool vkt::subgroups::checkCompute(std::vector<const void*> datas,
+	const deUint32 numWorkgroups[3], const deUint32 localSize[3],
+	deUint32 ref)
+{
+	const deUint32 globalSizeX = numWorkgroups[0] * localSize[0];
+	const deUint32 globalSizeY = numWorkgroups[1] * localSize[1];
+	const deUint32 globalSizeZ = numWorkgroups[2] * localSize[2];
+
+	return check(datas, globalSizeX * globalSizeY * globalSizeZ, ref);
 }
 
 tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
@@ -1907,37 +1903,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 
 			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
-			const VkImageSubresourceRange	subresourceRange	=
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,											//VkImageAspectFlags	aspectMask
-				0u,																	//deUint32				baseMipLevel
-				1u,																	//deUint32				levelCount
-				0u,																	//deUint32				baseArrayLayer
-				1u																	//deUint32				layerCount
-			};
-
-			const VkBufferImageCopy			copyRegion			=
-			{
-				0ull,																//	VkDeviceSize				bufferOffset;
-				0u,																	//	deUint32					bufferRowLength;
-				0u,																	//	deUint32					bufferImageHeight;
-				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	//	VkImageSubresourceLayers	imageSubresource;
-				makeOffset3D(0, 0, 0),												//	VkOffset3D					imageOffset;
-				makeExtent3D(IVec3(maxWidth,1,1)),									//	VkExtent3D					imageExtent;
-			};
-
-			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
-																	VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-																	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-																	discardableImage.getImage(), subresourceRange);
-
-			const VkBufferMemoryBarrier copyBarrier = makeBufferMemoryBarrier(
-														VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
-														imageBufferResult.getBuffer(), 0ull, imageResultSize);
-
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &prepareForTransferBarrier);
-			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, discardableImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &copyRegion);
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &copyBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
@@ -2178,15 +2144,6 @@ tcu::TestStatus vkt::subgroups::allStages(
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			resultImage.getImage(), subresourceRange);
 
-		const VkImageMemoryBarrier		prepareForTransferBarrier	= makeImageMemoryBarrier(
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-			resultImage.getImage(), subresourceRange);
-
-		const VkBufferMemoryBarrier		copyBarrier					= makeBufferMemoryBarrier(
-			VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
-			imageBufferResult.getBuffer(), 0ull, imageResultSize);
-
 		for (deUint32 width = 1u; width < maxWidth; width++)
 		{
 			for (deUint32 ndx = stagesCount; ndx < stagesCount + extraDatasCount; ++ndx)
@@ -2195,11 +2152,6 @@ tcu::TestStatus vkt::subgroups::allStages(
 				const Allocation& alloc = inputBuffers[ndx]->getAllocation();
 				initializeMemory(context, alloc, extraDatas[ndx - stagesCount]);
 			}
-
-			const VkBufferImageCopy region = {0, 0, 0,
-					{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0},
-					{width, 1, 1}
-				};
 
 			totalIterations++;
 
@@ -2223,9 +2175,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &prepareForTransferBarrier);
-			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, resultImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &region);
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &copyBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, resultImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(width, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 
@@ -2474,37 +2424,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 
 			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
-			const VkImageSubresourceRange	subresourceRange	=
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,											//VkImageAspectFlags	aspectMask
-				0u,																	//deUint32				baseMipLevel
-				1u,																	//deUint32				levelCount
-				0u,																	//deUint32				baseArrayLayer
-				1u																	//deUint32				layerCount
-			};
-
-			const VkBufferImageCopy			copyRegion			=
-			{
-				0ull,																//	VkDeviceSize				bufferOffset;
-				0u,																	//	deUint32					bufferRowLength;
-				0u,																	//	deUint32					bufferImageHeight;
-				makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u),	//	VkImageSubresourceLayers	imageSubresource;
-				makeOffset3D(0, 0, 0),												//	VkOffset3D					imageOffset;
-				makeExtent3D(IVec3(maxWidth,1,1)),									//	VkExtent3D					imageExtent;
-			};
-
-			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
-																	VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-																	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-																	discardableImage.getImage(), subresourceRange);
-
-			const VkBufferMemoryBarrier copyBarrier = makeBufferMemoryBarrier(
-														VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT,
-														imageBufferResult.getBuffer(), 0ull, imageResultSize);
-
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &prepareForTransferBarrier);
-			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer, discardableImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageBufferResult.getBuffer(), 1u, &copyRegion);
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 1u, &copyBarrier, 0u, (const VkImageMemoryBarrier*)DE_NULL);
+			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, discardableImage.getImage(), imageBufferResult.getBuffer(), tcu::IVec2(maxWidth, 1), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 			Move<VkFence> fence(submitCommandBuffer(context, *cmdBuffer));
@@ -2699,26 +2619,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 
 			endRenderPass(context.getDeviceInterface(), *cmdBuffer);
 
-			vk::VkBufferImageCopy region = {0, 0, 0,
-				{VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}, {0, 0, 0},
-				{width, height, 1}};
-
-			const vk::VkImageSubresourceRange subresourceRange = {
-				VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u};
-
-			const VkImageMemoryBarrier prepareForTransferBarrier = makeImageMemoryBarrier(
-																	VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-																	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-																	resultImage.getImage(), subresourceRange);
-
-			context.getDeviceInterface().cmdPipelineBarrier(*cmdBuffer,
-					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-					(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u,
-					(const VkBufferMemoryBarrier*)DE_NULL, 1u, &prepareForTransferBarrier);
-
-			context.getDeviceInterface().cmdCopyImageToBuffer(*cmdBuffer,
-					resultImage.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					resultBuffer.getBuffer(), 1, &region);
+			copyImageToBuffer(context.getDeviceInterface(), *cmdBuffer, resultImage.getImage(), resultBuffer.getBuffer(), tcu::IVec2(width, height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 			endCommandBuffer(context.getDeviceInterface(), *cmdBuffer);
 

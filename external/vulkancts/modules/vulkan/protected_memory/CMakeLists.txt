@@ -49,5 +49,7 @@ set(DEQP_VK_PROTECTED_MEMORY_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_PROTECTED_MEMORY_SRCS ../pch.cpp)
+
 add_library(deqp-vk-protected-memory STATIC ${DEQP_VK_PROTECTED_MEMORY_SRCS})
 target_link_libraries(deqp-vk-protected-memory ${DEQP_VK_PROTECTED_MEMORY_LIBS})

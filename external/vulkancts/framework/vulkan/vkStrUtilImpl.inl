@@ -268,6 +268,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR:									return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR:										return "VK_STRUCTURE_TYPE_SEMAPHORE_GET_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT:		return "VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT:							return "VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR:												return "VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR";
 		case VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX:									return "VK_STRUCTURE_TYPE_OBJECT_TABLE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX:						return "VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NVX";
@@ -1641,15 +1644,16 @@ tcu::Format::Bitfield<32> getBufferUsageFlagsStr (VkBufferUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,			"VK_BUFFER_USAGE_TRANSFER_SRC_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_DST_BIT,			"VK_BUFFER_USAGE_TRANSFER_DST_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,	"VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,	"VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,		"VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,		"VK_BUFFER_USAGE_STORAGE_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDEX_BUFFER_BIT,			"VK_BUFFER_USAGE_INDEX_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,			"VK_BUFFER_USAGE_VERTEX_BUFFER_BIT"),
-		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,		"VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,				"VK_BUFFER_USAGE_TRANSFER_SRC_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_TRANSFER_DST_BIT,				"VK_BUFFER_USAGE_TRANSFER_DST_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT,		"VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT,		"VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,			"VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,			"VK_BUFFER_USAGE_STORAGE_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDEX_BUFFER_BIT,				"VK_BUFFER_USAGE_INDEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,				"VK_BUFFER_USAGE_VERTEX_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,			"VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT,	"VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -1767,6 +1771,7 @@ tcu::Format::Bitfield<32> getAccessFlagsStr (VkAccessFlags value)
 		tcu::Format::BitDesc(VK_ACCESS_HOST_WRITE_BIT,								"VK_ACCESS_HOST_WRITE_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_READ_BIT,								"VK_ACCESS_MEMORY_READ_BIT"),
 		tcu::Format::BitDesc(VK_ACCESS_MEMORY_WRITE_BIT,							"VK_ACCESS_MEMORY_WRITE_BIT"),
+		tcu::Format::BitDesc(VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT,			"VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT"),
 		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX,				"VK_ACCESS_COMMAND_PROCESS_READ_BIT_NVX"),
 		tcu::Format::BitDesc(VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX,				"VK_ACCESS_COMMAND_PROCESS_WRITE_BIT_NVX"),
 		tcu::Format::BitDesc(VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT,	"VK_ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT"),
@@ -2008,8 +2013,9 @@ tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsK
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR,	"VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR"),
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,	"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR,			"VK_SWAPCHAIN_CREATE_BIND_SFR_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,			"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,	"VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2070,6 +2076,15 @@ tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFe
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV,	"VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_NV,		"VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_NV"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV,		"VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_NV"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getConditionalRenderingFlagsEXTStr (VkConditionalRenderingFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT,	"VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5590,6 +5605,39 @@ std::ostream& operator<< (std::ostream& s, const VkViSurfaceCreateInfoNN& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tflags = " << getViSurfaceCreateFlagsNNStr(value.flags) << '\n';
 	s << "\twindow = " << value.window << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkConditionalRenderingBeginInfoEXT& value)
+{
+	s << "VkConditionalRenderingBeginInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << "\toffset = " << value.offset << '\n';
+	s << "\tflags = " << getConditionalRenderingFlagsEXTStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceConditionalRenderingFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceConditionalRenderingFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tconditionalRendering = " << value.conditionalRendering << '\n';
+	s << "\tinheritedConditionalRendering = " << value.inheritedConditionalRendering << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCommandBufferInheritanceConditionalRenderingInfoEXT& value)
+{
+	s << "VkCommandBufferInheritanceConditionalRenderingInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tconditionalRenderingEnable = " << value.conditionalRenderingEnable << '\n';
 	s << '}';
 	return s;
 }

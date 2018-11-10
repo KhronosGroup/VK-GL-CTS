@@ -359,10 +359,6 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 	de::UniquePtr<Allocation> bufMem(ctx.getDefaultAllocator().allocate(bufMemReq, MemoryRequirement::HostVisible));
 	VK_CHECK(vkd.bindBufferMemory(dev, buf.get(), bufMem->getMemory(), bufMem->getOffset()));
 
-	Unique<VkCommandPool> copyPool(createCommandPool(vkd, dev, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, uqfi));
-
-	Unique<VkCommandBuffer> copyBuffer(allocateCommandBuffer(vkd, dev, *copyPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
 	std::vector<VkBufferImageCopy> copyRegions;
 
 	deUint8* const bufMapPtr = reinterpret_cast<deUint8*>(bufMem->getHostPtr());
@@ -404,81 +400,7 @@ void initializeImage(Context& ctx, VkImage im, const ConstPixelBufferAccess* pba
 
 	flushAlloc(vkd, dev, *bufMem);
 
-	beginCommandBuffer(vkd, copyBuffer.get());
-
-	const VkImageSubresourceRange imMemBarSubRange =
-	{
-		VK_IMAGE_ASPECT_COLOR_BIT,
-		0,
-		(deUint32)imParams.levels,
-		0,
-		(deUint32)imParams.arrayLayers
-	};
-
-	VkImageMemoryBarrier imMemBar =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		DE_NULL,
-		0,
-		VK_ACCESS_TRANSFER_WRITE_BIT,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_QUEUE_FAMILY_IGNORED,
-		VK_QUEUE_FAMILY_IGNORED,
-		im,
-		imMemBarSubRange
-	};
-
-	VkBufferMemoryBarrier bufMemBar =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-		DE_NULL,
-		VK_ACCESS_HOST_WRITE_BIT,
-		VK_ACCESS_TRANSFER_READ_BIT,
-		VK_QUEUE_FAMILY_IGNORED,
-		VK_QUEUE_FAMILY_IGNORED,
-		buf.get(),
-		0,
-		bufSize
-	};
-
-	vkd.cmdPipelineBarrier(copyBuffer.get(),
-						   VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-						   VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-						   0,
-						   0,
-						   DE_NULL,
-						   1,
-						   &bufMemBar,
-						   1,
-						   &imMemBar);
-
-	vkd.cmdCopyBufferToImage(copyBuffer.get(),
-							 buf.get(),
-							 im,
-							 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-							 (deUint32)copyRegions.size(),
-							 &copyRegions[0]);
-
-	imMemBar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	imMemBar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	imMemBar.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	imMemBar.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	vkd.cmdPipelineBarrier(copyBuffer.get(),
-						   VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-						   VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-						   0,
-						   0,
-						   DE_NULL,
-						   0,
-						   DE_NULL,
-						   1,
-						   &imMemBar);
-
-	endCommandBuffer(vkd, copyBuffer.get());
-
-	submitCommandsAndWait(vkd, dev, ctx.getUniversalQueue(), copyBuffer.get());
+	copyBufferToImage(vkd, dev, ctx.getUniversalQueue(), ctx.getUniversalQueueFamilyIndex(), buf.get(), bufSize, copyRegions, DE_NULL, VK_IMAGE_ASPECT_COLOR_BIT, imParams.levels, imParams.arrayLayers, im);
 }
 
 struct TestCaseData

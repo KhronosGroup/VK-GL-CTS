@@ -265,6 +265,8 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdDrawIndexedIndirectCountKHRFunc)				
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceExternalImageFormatPropertiesNVFunc)	(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetMemoryWin32HandleNVFunc)							(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateViSurfaceNNFunc)									(VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginConditionalRenderingEXTFunc)					(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndConditionalRenderingEXTFunc)						(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdProcessCommandsNVXFunc)								(VkCommandBuffer commandBuffer, const VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdReserveSpaceForCommandsNVXFunc)						(VkCommandBuffer commandBuffer, const VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateIndirectCommandsLayoutNVXFunc)					(VkDevice device, const VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout);

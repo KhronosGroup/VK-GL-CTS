@@ -26,5 +26,7 @@ set(DEQP_VK_WSI_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_WSI_SRCS ../pch.cpp)
+
 add_library(deqp-vk-wsi STATIC ${DEQP_VK_WSI_SRCS})
 target_link_libraries(deqp-vk-wsi ${DEQP_VK_WSI_LIBS})

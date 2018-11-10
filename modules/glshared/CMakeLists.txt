@@ -1,5 +1,9 @@
 # Shared GL(ES) test code
 
+include_directories(
+	.
+	)
+
 set(DEQP_GL_SHARED_SRCS
 	glsBuiltinPrecisionTests.cpp
 	glsBuiltinPrecisionTests.hpp
@@ -68,6 +72,8 @@ set(DEQP_GL_SHARED_SRCS
 	glsTextureBufferCase.hpp
 	glsTextureBufferCase.cpp
 	)
+
+PCH(DEQP_GL_SHARED_SRCS ../pch.cpp)
 
 add_library(deqp-gl-shared STATIC ${DEQP_GL_SHARED_SRCS})
 target_link_libraries(deqp-gl-shared glutil glwrapper randomshaders tcutil glutil-sglr)

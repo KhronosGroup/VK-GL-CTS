@@ -90,6 +90,11 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTestsUtil.cpp \
+	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalClearAttachmentTests.cpp \
+	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDispatchTests.cpp \
+	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDrawTests.cpp \
+	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalRenderingTestUtil.cpp \
+	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalTests.cpp \
 	external/vulkancts/modules/vulkan/device_group/vktDeviceGroupRendering.cpp \
 	external/vulkancts/modules/vulkan/draw/vktBasicDrawTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBaseClass.cpp \
@@ -152,6 +157,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderTests.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewTests.cpp \
+	external/vulkancts/modules/vulkan/pch.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineBlendTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineCacheTests.cpp \
 	external/vulkancts/modules/vulkan/pipeline/vktPipelineClearUtil.cpp \
@@ -336,6 +342,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/texture/vktTextureFilteringTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureMipmapTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureShadowTests.cpp \
+	external/vulkancts/modules/vulkan/texture/vktTextureSwizzleTests.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureTestUtil.cpp \
 	external/vulkancts/modules/vulkan/texture/vktTextureTests.cpp \
 	external/vulkancts/modules/vulkan/ubo/vktRandomUniformBlockCase.cpp \
@@ -447,6 +454,7 @@ LOCAL_SRC_FILES := \
 	framework/delibs/decpp/deThreadLocal.cpp \
 	framework/delibs/decpp/deThreadSafeRingBuffer.cpp \
 	framework/delibs/decpp/deUniquePtr.cpp \
+	framework/delibs/decpp/pch.cpp \
 	framework/delibs/deimage/deImage.c \
 	framework/delibs/deimage/deTarga.c \
 	framework/delibs/depool/deMemPool.c \
@@ -1042,7 +1050,8 @@ LOCAL_SRC_FILES := \
 	modules/internal/ditTestPackage.cpp \
 	modules/internal/ditTestPackageEntry.cpp \
 	modules/internal/ditTextureFormatTests.cpp \
-	modules/internal/ditVulkanTests.cpp
+	modules/internal/ditVulkanTests.cpp \
+	modules/pch.cpp
 
 LOCAL_C_INCLUDES := \
 	$(deqp_dir)/execserver \
@@ -1052,6 +1061,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/binding_model \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/clipping \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/compute \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/conditional_rendering \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/device_group \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/draw \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/dynamic_state \
@@ -1061,6 +1071,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/memory_model \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/multiview \
+	$(deqp_dir)/external/vulkancts/modules/vulkan \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/pipeline \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/protected_memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/query_pool \
@@ -1078,7 +1089,6 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/texture \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ubo \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/util \
-	$(deqp_dir)/external/vulkancts/modules/vulkan \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/wsi \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/ycbcr \
 	$(deqp_dir)/framework/common \
@@ -1115,4 +1125,5 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/modules/gles31/stress \
 	$(deqp_dir)/modules/gles31 \
 	$(deqp_dir)/modules/glshared \
-	$(deqp_dir)/modules/internal
+	$(deqp_dir)/modules/internal \
+	$(deqp_dir)/modules

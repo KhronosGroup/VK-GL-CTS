@@ -110,7 +110,7 @@ public:
 protected:
 	void						initialize			(void);
 	virtual void				initPipeline		(const vk::VkDevice device);
-	void						beginRenderPass		(void);
+	void						beginRenderPass		(const vk::VkSubpassContents content = vk::VK_SUBPASS_CONTENTS_INLINE);
 	virtual tcu::TestStatus		iterate				(void)						{ TCU_FAIL("Implement iterate() method!");	}
 
 	enum

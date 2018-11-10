@@ -197,5 +197,7 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fShaderUniformIntegerFunctionTests.hpp
 	)
 
+PCH(DEQP_GLES31_FUNCTIONAL_SRCS ../../pch.cpp)
+
 add_library(deqp-gles31-functional STATIC ${DEQP_GLES31_FUNCTIONAL_SRCS})
 target_link_libraries(deqp-gles31-functional deqp-gl-shared glutil glutil-sglr tcutil referencerenderer ${DEQP_OPENGL_LIBRARIES})

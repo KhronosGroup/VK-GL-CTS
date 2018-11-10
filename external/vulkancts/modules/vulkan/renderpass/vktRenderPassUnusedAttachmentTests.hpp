@@ -26,13 +26,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
+#include "vktRenderPassTestsUtil.hpp"
 
 namespace vkt
 {
 namespace renderpass
 {
 
-tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx);
+tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderPassType renderPassType);
 
 } // renderpass
 } // vkt

@@ -626,7 +626,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 					DE_NULL,																				//												||	const void*				pNext;
 					0u,																						//  deUint32				srcSubpass;			||	deUint32				srcSubpass;
 					splitSubpassIndex + 1,																	//  deUint32				dstSubpass;			||	deUint32				dstSubpass;
-					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,											//  VkPipelineStageFlags	srcStageMask;		||	VkPipelineStageFlags	srcStageMask;
+					VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,											//  VkPipelineStageFlags	srcStageMask;		||	VkPipelineStageFlags	srcStageMask;
 					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,													//  VkPipelineStageFlags	dstStageMask;		||	VkPipelineStageFlags	dstStageMask;
 					VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,	//  VkAccessFlags			srcAccessMask;		||	VkAccessFlags			srcAccessMask;
 					VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,													//  VkAccessFlags			dstAccessMask;		||	VkAccessFlags			dstAccessMask;
@@ -1357,90 +1357,8 @@ tcu::TestStatus MultisampleRenderPassTestInstance::iterateInternal (void)
 
 	RenderpassSubpass::cmdEndRenderPass(vkd, *commandBuffer, &subpassEndInfo);
 
-	// Memory barriers between rendering and copies
-	{
-		std::vector<VkImageMemoryBarrier> barriers;
-
-		for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
-		{
-			const VkImageMemoryBarrier barrier =
-			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-				DE_NULL,
-
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				VK_ACCESS_TRANSFER_READ_BIT,
-
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-
-				VK_QUEUE_FAMILY_IGNORED,
-				VK_QUEUE_FAMILY_IGNORED,
-
-				**m_dstSinglesampleImages[dstNdx],
-				{
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					0u,
-					1u,
-					0u,
-					1u
-				}
-			};
-
-			barriers.push_back(barrier);
-		}
-
-		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0]);
-	}
-
-	// Copy image memory to buffers
 	for (size_t dstNdx = 0; dstNdx < m_dstSinglesampleImages.size(); dstNdx++)
-	{
-		const VkBufferImageCopy region =
-		{
-			0u,
-			0u,
-			0u,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				0u,
-				0u,
-				1u,
-			},
-			{ 0u, 0u, 0u },
-			{ m_width, m_height, 1u }
-		};
-
-		vkd.cmdCopyImageToBuffer(*commandBuffer, **m_dstSinglesampleImages[dstNdx], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_dstBuffers[dstNdx], 1u, &region);
-	}
-
-	// Memory barriers between copies and host access
-	{
-		std::vector<VkBufferMemoryBarrier> barriers;
-
-		for (size_t dstNdx = 0; dstNdx < m_dstBuffers.size(); dstNdx++)
-		{
-			const VkBufferMemoryBarrier barrier =
-			{
-				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-				DE_NULL,
-
-				VK_ACCESS_TRANSFER_WRITE_BIT,
-				VK_ACCESS_HOST_READ_BIT,
-
-				VK_QUEUE_FAMILY_IGNORED,
-				VK_QUEUE_FAMILY_IGNORED,
-
-				**m_dstBuffers[dstNdx],
-				0u,
-				VK_WHOLE_SIZE
-			};
-
-			barriers.push_back(barrier);
-		}
-
-		vkd.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, (deUint32)barriers.size(), &barriers[0], 0u, DE_NULL);
-	}
+		copyImageToBuffer(vkd, *commandBuffer, **m_dstSinglesampleImages[dstNdx], **m_dstBuffers[dstNdx], tcu::IVec2(m_width, m_height), VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	endCommandBuffer(vkd, *commandBuffer);
 

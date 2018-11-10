@@ -215,5 +215,7 @@ set(DEQP_GLES3_FUNCTIONAL_SRCS
 	es3fShaderFragDataTests.hpp
 	)
 
+PCH(DEQP_GLES3_FUNCTIONAL_SRCS ../../pch.cpp)
+
 add_library(deqp-gles3-functional STATIC ${DEQP_GLES3_FUNCTIONAL_SRCS})
 target_link_libraries(deqp-gles3-functional deqp-gl-shared glutil glutil-sglr tcutil referencerenderer ${DEQP_GLES3_LIBRARIES})

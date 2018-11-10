@@ -26,5 +26,7 @@ set(DEQP_VK_RENDER_PASS_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)
+
 add_library(deqp-vk-render-pass STATIC ${DEQP_VK_RENDER_PASS_SRCS})
 target_link_libraries(deqp-vk-render-pass ${DEQP_VK_RENDER_PASS_LIBS})

@@ -234,6 +234,7 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 	const char *scopeStr;
 	switch (m_data.scope)
 	{
+	default: DE_ASSERT(0); // fall through
 	case SCOPE_DEVICE:		scopeStr = "gl_ScopeDevice"; break;
 	case SCOPE_QUEUEFAMILY:	scopeStr = "gl_ScopeQueueFamily"; break;
 	case SCOPE_WORKGROUP:	scopeStr = "gl_ScopeWorkgroup"; break;
@@ -405,7 +406,8 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 			"   uint bufferCoord        = gl_VertexIndex;\n"
 			"   uint partnerBufferCoord = subgroupShuffleXor(gl_VertexIndex, gl_SubgroupSize-1);\n"
 			"   ivec2 imageCoord        = ivec2(gl_VertexIndex % (DIM*NUM_WORKGROUP_EACH_DIM), gl_VertexIndex / (DIM*NUM_WORKGROUP_EACH_DIM));\n"
-			"   ivec2 partnerImageCoord = subgroupShuffleXor(imageCoord, gl_SubgroupSize-1);\n";
+			"   ivec2 partnerImageCoord = subgroupShuffleXor(imageCoord, gl_SubgroupSize-1);\n\n"
+			"   gl_PointSize			= 1.0f;\n\n";
 			break;
 		case STAGE_FRAGMENT:
 			css <<
@@ -454,7 +456,8 @@ void MemoryModelTestCase::initPrograms (SourceCollections& programCollection) co
 			"   uint bufferCoord        = globalId.y * DIM*NUM_WORKGROUP_EACH_DIM + globalId.x;\n"
 			"   uint partnerBufferCoord = partnerGlobalId.y * DIM*NUM_WORKGROUP_EACH_DIM + partnerGlobalId.x;\n"
 			"   ivec2 imageCoord        = globalId;\n"
-			"   ivec2 partnerImageCoord = partnerGlobalId;\n";
+			"   ivec2 partnerImageCoord = partnerGlobalId;\n\n"
+			"   gl_PointSize			= 1.0f;\n\n";
 			break;
 		case STAGE_FRAGMENT:
 			css <<

@@ -61,11 +61,11 @@ namespace
 
 struct TestParams
 {
-	VkImageLayout		finalLayout;
 	VkAttachmentLoadOp	loadOp;
 	VkAttachmentStoreOp	storeOp;
 	VkAttachmentLoadOp	stencilLoadOp;
 	VkAttachmentStoreOp	stencilStoreOp;
+	RenderPassType		renderPassType;
 };
 
 struct Vertex4RGBA
@@ -95,6 +95,136 @@ std::vector<Vertex4RGBA> createQuad (void)
 	return vertices;
 }
 
+template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
+Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
+									 VkDevice				vkDevice,
+									 const TestParams		testParams)
+{
+	const VkImageAspectFlags	aspectMask						= testParams.renderPassType == RENDERPASS_TYPE_LEGACY ? 0 : VK_IMAGE_ASPECT_COLOR_BIT;
+	const AttachmentDesc		attachmentDescriptions[]		=
+	{
+		// Result attachment
+		AttachmentDesc (
+			DE_NULL,									// const void*						pNext
+			(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags
+			VK_FORMAT_R8G8B8A8_UNORM,					// VkFormat							format
+			VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples
+			VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp
+			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
+		),
+		AttachmentDesc (
+			DE_NULL,									// const void*						pNext
+			(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags
+			VK_FORMAT_R8G8B8A8_UNORM,					// VkFormat							format
+			VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples
+			testParams.loadOp,							// VkAttachmentLoadOp				loadOp
+			testParams.storeOp,							// VkAttachmentStoreOp				storeOp
+			testParams.stencilLoadOp,					// VkAttachmentLoadOp				stencilLoadOp
+			testParams.stencilStoreOp,					// VkAttachmentStoreOp				stencilStoreOp
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
+		),
+		// Input attachment
+		AttachmentDesc (
+			DE_NULL,									// const void*						pNext
+			(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags
+			VK_FORMAT_R8G8B8A8_UNORM,					// VkFormat							format
+			VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples
+			VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp
+			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp
+			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
+		)
+	};
+
+	// Note: Attachment 1 is not referenced by any subpass.
+	const AttachmentRef			resultAttachmentRefSubpass0		(
+		DE_NULL,									// const void*			pNext
+		2u,											// deUint32				attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout		layout
+		aspectMask									// VkImageAspectFlags	aspectMask
+	);
+
+	const AttachmentRef			resultAttachmentRefSubpass1		(
+		DE_NULL,									// const void*			pNext
+		0u,											// deUint32				attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout		layout
+		aspectMask									// VkImageAspectFlags	aspectMask
+	);
+
+	const AttachmentRef			inputAttachmentRefSubpass1		(
+		DE_NULL,									// const void*			pNext
+		2u,											// deUint32				attachment
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,	// VkImageLayout		layout
+		aspectMask									// VkImageAspectFlags	aspectMask
+	);
+
+	const SubpassDesc			subpassDescriptions[]			=
+	{
+		SubpassDesc (
+			DE_NULL,
+			(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags
+			VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint
+			0u,									// deUint32							viewMask
+			0u,									// deUint32							inputAttachmentCount
+			DE_NULL,							// const VkAttachmentReference*		pInputAttachments
+			1u,									// deUint32							colorAttachmentCount
+			&resultAttachmentRefSubpass0,		// const VkAttachmentReference*		pColorAttachments
+			DE_NULL,							// const VkAttachmentReference*		pResolveAttachments
+			DE_NULL,							// const VkAttachmentReference*		pDepthStencilAttachment
+			0u,									// deUint32							preserveAttachmentCount
+			DE_NULL								// const deUint32*					pPreserveAttachments
+		),
+		SubpassDesc (
+			DE_NULL,
+			(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags
+			VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint
+			0u,									// deUint32							viewMask
+			1u,									// deUint32							inputAttachmentCount
+			&inputAttachmentRefSubpass1,		// const VkAttachmentReference*		pInputAttachments
+			1u,									// deUint32							colorAttachmentCount
+			&resultAttachmentRefSubpass1,		// const VkAttachmentReference*		pColorAttachments
+			DE_NULL,							// const VkAttachmentReference*		pResolveAttachments
+			DE_NULL,							// const VkAttachmentReference*		pDepthStencilAttachment
+			0u,									// deUint32							preserveAttachmentCount
+			DE_NULL								// const deUint32*					pPreserveAttachments
+		)
+	};
+
+	const SubpassDep			subpassDependency				(
+		DE_NULL,										// const void*				pNext
+		0u,												// uint32_t					srcSubpass
+		1u,												// uint32_t					dstSubpass
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags		srcStageMask
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags		dstStageMask
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask
+		VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask
+		VK_DEPENDENCY_BY_REGION_BIT,					// VkDependencyFlags		dependencyFlags
+		0u												// deInt32					viewOffset
+	);
+
+	const RenderPassCreateInfo	renderPassInfo					(
+		DE_NULL,									// const void*						pNext
+		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags
+		3u,											// deUint32							attachmentCount
+		attachmentDescriptions,						// const VkAttachmentDescription*	pAttachments
+		2u,											// deUint32							subpassCount
+		subpassDescriptions,						// const VkSubpassDescription*		pSubpasses
+		1u,											// deUint32							dependencyCount
+		&subpassDependency,							// const VkSubpassDependency*		pDependencies
+		0u,											// deUint32							correlatedViewMaskCount
+		DE_NULL										// const deUint32*					pCorrelatedViewMasks
+	);
+
+	return renderPassInfo.createRenderPass(vk, vkDevice);
+}
+
 class UnusedAttachmentTest : public vkt::TestCase
 {
 public:
@@ -105,7 +235,6 @@ public:
 	virtual								~UnusedAttachmentTest	(void);
 	virtual void						initPrograms			(SourceCollections&	sourceCollections) const;
 	virtual TestInstance*				createInstance			(Context&			context) const;
-
 private:
 	const TestParams					m_testParams;
 };
@@ -113,15 +242,15 @@ private:
 class UnusedAttachmentTestInstance : public vkt::TestInstance
 {
 public:
-										UnusedAttachmentTestInstance	(Context& context,
-																		 const TestParams& testParams);
+										UnusedAttachmentTestInstance	(Context&				context,
+																		 const TestParams&		testParams);
 	virtual								~UnusedAttachmentTestInstance	(void);
 	virtual tcu::TestStatus				iterate							(void);
-
+	template<typename RenderpassSubpass>
+	void								createCommandBuffer				(const DeviceInterface&	vk,
+																		 VkDevice				vkDevice);
 private:
 	tcu::TestStatus						verifyImage						(void);
-
-	const TestParams					m_testParams;
 
 	const tcu::UVec2					m_renderSize;
 
@@ -220,7 +349,6 @@ void UnusedAttachmentTest::initPrograms (SourceCollections& sourceCollections) c
 UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 															const TestParams&	testParams)
 	: vkt::TestInstance	(context)
-	, m_testParams		(testParams)
 	, m_renderSize		(32u, 32u)
 	, m_vertices		(createQuad())
 {
@@ -229,6 +357,10 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	const deUint32				queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	SimpleAllocator				memAlloc				(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
 	const VkComponentMapping	componentMappingRGBA	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+
+	// Check for renderpass2 extension if used
+	if (testParams.renderPassType == RENDERPASS_TYPE_RENDERPASS2)
+		context.requireDeviceExtension("VK_KHR_create_renderpass2");
 
 	// Create color image
 	{
@@ -444,119 +576,10 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	}
 
 	// Create render pass
-	{
-		const VkAttachmentDescription	attachmentDescriptions[]		=
-		{
-			// Result attachment
-			{
-				(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags
-				VK_FORMAT_R8G8B8A8_UNORM,					// VkFormat							format
-				VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples
-				VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp
-				VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp
-				VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
-			},
-			{
-				(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags
-				VK_FORMAT_R8G8B8A8_UNORM,					// VkFormat							format
-				VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples
-				m_testParams.loadOp,						// VkAttachmentLoadOp				loadOp
-				m_testParams.storeOp,						// VkAttachmentStoreOp				storeOp
-				m_testParams.stencilLoadOp,					// VkAttachmentLoadOp				stencilLoadOp
-				m_testParams.stencilStoreOp,				// VkAttachmentStoreOp				stencilStoreOp
-				VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
-				m_testParams.finalLayout					// VkImageLayout					finalLayout
-			},
-			// Input attachment
-			{
-				(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags
-				VK_FORMAT_R8G8B8A8_UNORM,					// VkFormat							format
-				VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits			samples
-				VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp				loadOp
-				VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp				storeOp
-				VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp				stencilLoadOp
-				VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp				stencilStoreOp
-				VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
-			}
-		};
-
-		// Note: Attachment 1 is not referenced by any subpass.
-		const VkAttachmentReference		resultAttachmentRefSubpass0		=
-		{
-			2u,											// deUint32			attachment
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
-		};
-
-		const VkAttachmentReference		resultAttachmentRefSubpass1		=
-		{
-			0u,											// deUint32			attachment
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
-		};
-
-		const VkAttachmentReference		inputAttachmentRefSubpass1		=
-		{
-			2u,											// deUint32			attachment
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL	// VkImageLayout	layout
-		};
-
-		const VkSubpassDescription		subpassDescriptions[]			=
-		{
-			{
-				(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags
-				VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint
-				0u,									// deUint32							inputAttachmentCount
-				DE_NULL,							// const VkAttachmentReference*		pInputAttachments
-				1u,									// deUint32							colorAttachmentCount
-				&resultAttachmentRefSubpass0,		// const VkAttachmentReference*		pColorAttachments
-				DE_NULL,							// const VkAttachmentReference*		pResolveAttachments
-				DE_NULL,							// const VkAttachmentReference*		pDepthStencilAttachment
-				0u,									// deUint32							preserveAttachmentCount
-				DE_NULL								// const deUint32*					pPreserveAttachments
-			},
-			{
-				(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags
-				VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint
-				1u,									// deUint32							inputAttachmentCount
-				&inputAttachmentRefSubpass1,		// const VkAttachmentReference*		pInputAttachments
-				1u,									// deUint32							colorAttachmentCount
-				&resultAttachmentRefSubpass1,		// const VkAttachmentReference*		pColorAttachments
-				DE_NULL,							// const VkAttachmentReference*		pResolveAttachments
-				DE_NULL,							// const VkAttachmentReference*		pDepthStencilAttachment
-				0u,									// deUint32							preserveAttachmentCount
-				DE_NULL								// const deUint32*					pPreserveAttachments
-			}
-		};
-
-		const VkSubpassDependency		subpassDependency				=
-		{
-			0u,												// uint32_t					srcSubpass;
-			1u,												// uint32_t					dstSubpass;
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags		srcStageMask;
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags		dstStageMask;
-			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			srcAccessMask;
-			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,			// VkAccessFlags			dstAccessMask;
-			VK_DEPENDENCY_VIEW_LOCAL_BIT					// VkDependencyFlags		dependencyFlags;
-		};
-
-		const VkRenderPassCreateInfo	renderPassInfo					=
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureTypei					sType
-			DE_NULL,									// const void*						pNext
-			(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags
-			3u,											// deUint32							attachmentCount
-			attachmentDescriptions,						// const VkAttachmentDescription*	pAttachments
-			2u,											// deUint32							subpassCount
-			subpassDescriptions,						// const VkSubpassDescription*		pSubpasses
-			1u,											// deUint32							dependencyCount
-			&subpassDependency							// const VkSubpassDependency*		pDependencies
-		};
-
-		m_renderPass = createRenderPass(vk, vkDevice, &renderPassInfo);
-	}
+	if (testParams.renderPassType == RENDERPASS_TYPE_LEGACY)
+		m_renderPass = createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, vkDevice, testParams);
+	else
+		m_renderPass = createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, vkDevice, testParams);
 
 	// Create framebuffer
 	{
@@ -805,47 +828,58 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance (Context&			context,
 	m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 	// Create command buffer
-	{
-		const VkClearValue attachmentClearValues[] =
-		{
-			makeClearValueColorF32(0.5f, 0.5f, 0.5f, 1.0f),	// color
-			makeClearValueColorF32(0.5f, 0.5f, 0.5f, 1.0f),	// unused
-			makeClearValueColorF32(0.5f, 0.2f, 0.1f, 1.0f)	// input
-		};
-
-		const VkDeviceSize vertexBufferOffset = 0;
-
-		m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
-		beginCommandBuffer(vk, *m_cmdBuffer, 0u);
-
-		const VkRenderPassBeginInfo renderPassBeginInfo =
-		{
-			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
-			DE_NULL,									// const void*			pNext;
-			*m_renderPass,								// VkRenderPass			renderPass;
-			*m_framebuffer,								// VkFramebuffer		framebuffer;
-			makeRect2D(m_renderSize),					// VkRect2D				renderArea;
-			3u,											// uint32_t				clearValueCount;
-			attachmentClearValues						// const VkClearValue*	pClearValues;
-		};
-		vk.cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass0);
-		vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
-		vk.cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
-		vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass1);
-		vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutSubpass1, 0, 1, &m_descriptorSetSubpass1.get(), 0, DE_NULL);
-		vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
-
-		endRenderPass(vk, *m_cmdBuffer);
-		endCommandBuffer(vk, *m_cmdBuffer);
-	}
+	if (testParams.renderPassType == RENDERPASS_TYPE_LEGACY)
+		createCommandBuffer<RenderpassSubpass1>(vk, vkDevice);
+	else
+		createCommandBuffer<RenderpassSubpass2>(vk, vkDevice);
 }
 
 UnusedAttachmentTestInstance::~UnusedAttachmentTestInstance (void)
 {
+}
+
+template<typename RenderpassSubpass>
+void UnusedAttachmentTestInstance::createCommandBuffer (const DeviceInterface&	vk,
+														VkDevice				vkDevice)
+{
+	const typename RenderpassSubpass::SubpassBeginInfo	subpassBeginInfo	(DE_NULL, VK_SUBPASS_CONTENTS_INLINE);
+	const typename RenderpassSubpass::SubpassEndInfo	subpassEndInfo		(DE_NULL);
+
+	const VkClearValue attachmentClearValues[] =
+	{
+		makeClearValueColorF32(0.5f, 0.5f, 0.5f, 1.0f),	// color
+		makeClearValueColorF32(0.5f, 0.5f, 0.5f, 1.0f),	// unused
+		makeClearValueColorF32(0.5f, 0.2f, 0.1f, 1.0f)	// input
+	};
+
+	const VkDeviceSize vertexBufferOffset = 0;
+
+	m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+
+	const VkRenderPassBeginInfo renderPassBeginInfo =
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType		sType;
+		DE_NULL,									// const void*			pNext;
+		*m_renderPass,								// VkRenderPass			renderPass;
+		*m_framebuffer,								// VkFramebuffer		framebuffer;
+		makeRect2D(m_renderSize),					// VkRect2D				renderArea;
+		3u,											// uint32_t				clearValueCount;
+		attachmentClearValues						// const VkClearValue*	pClearValues;
+	};
+	RenderpassSubpass::cmdBeginRenderPass(vk, *m_cmdBuffer, &renderPassBeginInfo, &subpassBeginInfo);
+
+	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass0);
+	vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+	vk.cmdNextSubpass(*m_cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+	vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineSubpass1);
+	vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayoutSubpass1, 0, 1, &m_descriptorSetSubpass1.get(), 0, DE_NULL);
+	vk.cmdDraw(*m_cmdBuffer, (deUint32)m_vertices.size(), 1, 0, 0);
+
+	RenderpassSubpass::cmdEndRenderPass(vk, *m_cmdBuffer, &subpassEndInfo);
+	endCommandBuffer(vk, *m_cmdBuffer);
 }
 
 tcu::TestStatus UnusedAttachmentTestInstance::iterate (void)
@@ -899,34 +933,6 @@ tcu::TestStatus UnusedAttachmentTestInstance::verifyImage (void)
 	return tcu::TestStatus::pass("Pass");
 }
 
-std::string imageLayoutToString (VkImageLayout layout)
-{
-	switch (layout)
-	{
-		case VK_IMAGE_LAYOUT_UNDEFINED:
-			return "undefined";
-		case VK_IMAGE_LAYOUT_GENERAL:
-			return "general";
-		case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-			return "colorattachmentoptimal";
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-			return "depthstencilattachmentoptimal";
-		case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
-			return "depthstencilreadonlyoptimal";
-		case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-			return "shaderreadonlyoptimal";
-		case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-			return "transfersrcoptimal";
-		case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-			return "transferdstoptimal";
-		case VK_IMAGE_LAYOUT_PREINITIALIZED:
-			return "preinitialized";
-		default:
-			DE_FATAL("unexpected image layout");
-			return "";
-	};
-}
-
 std::string loadOpToString (VkAttachmentLoadOp loadOp)
 {
 	switch (loadOp)
@@ -959,20 +965,9 @@ std::string storeOpToString (VkAttachmentStoreOp storeOp)
 
 } // anonymous
 
-tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& testCtx, const RenderPassType renderPassType)
 {
 	de::MovePtr<tcu::TestCaseGroup>		unusedAttTests		(new tcu::TestCaseGroup(testCtx, "unused_attachment", "Unused attachment tests"));
-
-	const VkImageLayout					finalLayouts[]		=
-	{
-		VK_IMAGE_LAYOUT_GENERAL,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-	};
 
 	const VkAttachmentLoadOp			loadOps[]			=
 	{
@@ -987,42 +982,36 @@ tcu::TestCaseGroup* createRenderPassUnusedAttachmentTests (tcu::TestContext& tes
 		VK_ATTACHMENT_STORE_OP_DONT_CARE
 	};
 
-	for (deUint32 finalLayoutIdx = 0; finalLayoutIdx < DE_LENGTH_OF_ARRAY(finalLayouts); finalLayoutIdx++)
+	for (deUint32 loadOpIdx = 0; loadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpIdx++)
 	{
-		de::MovePtr<tcu::TestCaseGroup>	finalLayoutGroup(new tcu::TestCaseGroup(testCtx, imageLayoutToString(finalLayouts[finalLayoutIdx]).c_str(), ""));
+		de::MovePtr<tcu::TestCaseGroup>	loadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("loadop") + loadOpToString(loadOps[loadOpIdx])).c_str(), ""));
 
-		for (deUint32 loadOpIdx = 0; loadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); loadOpIdx++)
+		for (deUint32 storeOpIdx = 0; storeOpIdx < DE_LENGTH_OF_ARRAY(storeOps); storeOpIdx++)
 		{
-			de::MovePtr<tcu::TestCaseGroup>	loadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("loadop") + loadOpToString(loadOps[loadOpIdx])).c_str(), ""));
+			de::MovePtr<tcu::TestCaseGroup>	storeOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("storeop") + storeOpToString(storeOps[storeOpIdx])).c_str(), ""));
 
-			for (deUint32 storeOpIdx = 0; storeOpIdx < DE_LENGTH_OF_ARRAY(storeOps); storeOpIdx++)
+			for (deUint32 stencilLoadOpIdx = 0; stencilLoadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); stencilLoadOpIdx++)
 			{
-				de::MovePtr<tcu::TestCaseGroup>	storeOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("storeop") + storeOpToString(storeOps[storeOpIdx])).c_str(), ""));
+				de::MovePtr<tcu::TestCaseGroup>	stencilLoadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("stencilloadop") + loadOpToString(loadOps[stencilLoadOpIdx])).c_str(), ""));
 
-				for (deUint32 stencilLoadOpIdx = 0; stencilLoadOpIdx < DE_LENGTH_OF_ARRAY(loadOps); stencilLoadOpIdx++)
+				for (deUint32 stencilStoreOpIdx = 0; stencilStoreOpIdx < DE_LENGTH_OF_ARRAY(storeOps); stencilStoreOpIdx++)
 				{
-					de::MovePtr<tcu::TestCaseGroup>	stencilLoadOpGroup(new tcu::TestCaseGroup(testCtx, (std::string("stencilloadop") + loadOpToString(loadOps[stencilLoadOpIdx])).c_str(), ""));
+					TestParams			params;
+					const std::string	testName = std::string("stencilstoreop") + storeOpToString(storeOps[stencilStoreOpIdx]);
 
-					for (deUint32 stencilStoreOpIdx = 0; stencilStoreOpIdx < DE_LENGTH_OF_ARRAY(storeOps); stencilStoreOpIdx++)
-					{
-						TestParams			params;
-						const std::string	testName = std::string("stencilstoreop") + storeOpToString(storeOps[stencilStoreOpIdx]);
+					params.loadOp			= loadOps[loadOpIdx];
+					params.storeOp			= storeOps[storeOpIdx];
+					params.stencilLoadOp	= loadOps[stencilLoadOpIdx];
+					params.stencilStoreOp	= storeOps[stencilStoreOpIdx];
+					params.renderPassType	= renderPassType;
 
-						params.finalLayout		= finalLayouts[finalLayoutIdx];
-						params.loadOp			= loadOps[loadOpIdx];
-						params.storeOp			= storeOps[storeOpIdx];
-						params.stencilLoadOp	= loadOps[stencilLoadOpIdx];
-						params.stencilStoreOp	= storeOps[stencilStoreOpIdx];
-
-						stencilLoadOpGroup->addChild(new UnusedAttachmentTest(testCtx, testName, "", params));
-					}
-					storeOpGroup->addChild(stencilLoadOpGroup.release());
+					stencilLoadOpGroup->addChild(new UnusedAttachmentTest(testCtx, testName, "", params));
 				}
-				loadOpGroup->addChild(storeOpGroup.release());
+				storeOpGroup->addChild(stencilLoadOpGroup.release());
 			}
-			finalLayoutGroup->addChild(loadOpGroup.release());
+			loadOpGroup->addChild(storeOpGroup.release());
 		}
-		unusedAttTests->addChild(finalLayoutGroup.release());
+		unusedAttTests->addChild(loadOpGroup.release());
 	}
 
 	return unusedAttTests.release();

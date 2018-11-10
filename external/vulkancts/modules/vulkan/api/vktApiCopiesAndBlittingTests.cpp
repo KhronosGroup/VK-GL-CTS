@@ -3712,7 +3712,7 @@ tcu::TestStatus ResolveImageToImage::iterate (void)
 	{
 		case COPY_MS_IMAGE_TO_ARRAY_MS_IMAGE:
 			// Duplicate the multisampled image to a multisampled image array
-			sourceArraySize	= getArraySize(m_params.dst.image);
+			sourceArraySize	= getArraySize(m_params.dst.image); // fall through
 		case COPY_MS_IMAGE_TO_MS_IMAGE:
 			copyMSImageToMSImage(sourceArraySize);
 			sourceImage	= m_multisampledCopyImage.get();

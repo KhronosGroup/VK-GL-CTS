@@ -36,6 +36,7 @@
 #include "vktTestCase.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkImageUtil.hpp"
 
 #include <algorithm>
 
@@ -705,32 +706,11 @@ void									readUpResource						(Move<VkImage>&			source,
 	const VkDevice						vkDevice							= ctx.getDevice();
 	const VkQueue						queue								= ctx.getUniversalQueue();
 
-	const VkImageMemoryBarrier			srcImageBarrier						= makeMemoryBarrierInfo(*source, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	const VkBufferMemoryBarrier			dstBufferBarrier					= makeMemoryBarrierInfo(*target, params.bufferSize, TransferToResource);
-	const VkImageMemoryBarrier			postImageBarrier					= makeMemoryBarrierInfo(*source, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
 	Move<VkCommandPool>					commandPool							= createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, 0);
 	Move<VkCommandBuffer>				cmdBuffer							= createCommandBuffer(vk, vkDevice, *commandPool);
 
-	const VkBufferImageCopy				copyRegion							=
-	{
-		0u,																	// VkDeviceSize			bufferOffset;
-		params.imageSize.width,												// deUint32				bufferRowLength;
-		params.imageSize.height,											// deUint32				bufferImageHeight;
-		{
-			VK_IMAGE_ASPECT_COLOR_BIT,										// VkImageAspectFlags	aspect;
-			0u,																// deUint32				mipLevel;
-			0u,																// deUint32				baseArrayLayer;
-			1u,																// deUint32				layerCount;
-		},																	// VkImageSubresourceLayers imageSubresource;
-		{ 0, 0, 0 },														// VkOffset3D			imageOffset;
-		params.imageSize													// VkExtent3D			imageExtent;
-	};
-
 	beginCommandBuffer(vk, *cmdBuffer);
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 0, (const VkBufferMemoryBarrier*)DE_NULL, 1, &srcImageBarrier);
-	vk.cmdCopyImageToBuffer(*cmdBuffer, *source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *target, 1, (&copyRegion));
-	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &dstBufferBarrier, 1, &postImageBarrier);
+	copyImageToBuffer(vk, *cmdBuffer, *source, *target, tcu::IVec2(params.imageSize.width, params.imageSize.height), VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	endCommandBuffer(vk, *cmdBuffer);
 
 	submitCommandsAndWait(vk, vkDevice, queue, *cmdBuffer);

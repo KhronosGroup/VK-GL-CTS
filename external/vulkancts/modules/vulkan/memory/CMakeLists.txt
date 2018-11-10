@@ -24,5 +24,7 @@ set(DEQP_VK_MEMORY_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_MEMORY_SRCS ../pch.cpp)
+
 add_library(deqp-vk-memory STATIC ${DEQP_VK_MEMORY_SRCS})
 target_link_libraries(deqp-vk-memory ${DEQP_VK_MEMORY_LIBS})

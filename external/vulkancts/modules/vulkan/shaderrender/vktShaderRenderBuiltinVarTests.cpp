@@ -909,71 +909,8 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 
 	// Transfer marker buffer
 	{
-		const UVec2 copySize		= UVec2(m_renderSize.x() * m_samples, m_renderSize.y());
-		const VkImageMemoryBarrier imageBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType		sType
-			DE_NULL,										// const void*			pNext
-			VK_ACCESS_SHADER_WRITE_BIT,						// VkAccessFlags		srcAccessMask
-			VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessMask			dstAccessMask
-			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout		oldLayout
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout		newLayout
-			VK_QUEUE_FAMILY_IGNORED,						// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,						// uint32_t				dstQueueFamilyIndex
-			*markerImage,									// VkImage				image
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
-				0u,										// uint32_t				baseMipLevel
-				1u,										// uint32_t				mipLevels
-				0u,										// uint32_t				baseArray
-				1u										// uint32_t				arraySize
-			}
-		};
-
-		const VkBufferMemoryBarrier bufferBarrier =
-		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType		sType
-			DE_NULL,										// const void*			pNext
-			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags		srcAccessMask
-			VK_ACCESS_HOST_READ_BIT,						// VkAccessFlags		dstAccessMask
-			VK_QUEUE_FAMILY_IGNORED,						// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,						// uint32_t				dstQueueFamilyIndex
-			*markerBuffer,									// VkBufer				buffer
-			0u,												// VkDeviceSize			offset
-			VK_WHOLE_SIZE									// VkDeviceSize			size
-		};
-
-		const VkBufferImageCopy bufferImageCopy =
-		{
-			0u,									// VkDeviceSize		bufferOffset
-			copySize.x(),						// uint32_t			bufferRowLength
-			copySize.y(),						// uint32_t			bufferImageHeight
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspect
-				0u,							// uint32_t				mipLevel
-				0u,							// uint32_t				baseArrayLayer
-				1u							// uint32_t				layerCount
-			},
-			{ 0, 0, 0 },						// VkOffset3D		imageOffset
-			{
-				copySize.x(),				// uint32_t				width
-				copySize.y(),				// uint32_t				height,
-				1u							// uint32_t				depth
-			}
-		};
-
 		beginCommandBuffer(vk, *transferCmdBuffer);
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				(VkDependencyFlags)0,
-				0, (const VkMemoryBarrier*)DE_NULL,
-				0, (const VkBufferMemoryBarrier*)DE_NULL,
-				1, &imageBarrier);
-		vk.cmdCopyImageToBuffer(*transferCmdBuffer, *markerImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *markerBuffer, 1u, &bufferImageCopy);
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-				(VkDependencyFlags)0,
-				0, (const VkMemoryBarrier*)DE_NULL,
-				1, &bufferBarrier,
-				0, (const VkImageMemoryBarrier*)DE_NULL);
+		copyImageToBuffer(vk, *transferCmdBuffer, *markerImage, *markerBuffer, tcu::IVec2(m_renderSize.x() * m_samples, m_renderSize.y()), VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
@@ -983,70 +920,8 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 	{
 		bool status;
 
-		const VkBufferMemoryBarrier bufferBarrier =
-		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,			// VkStructureType		sType
-			DE_NULL,											// const void*			pNext
-			VK_ACCESS_TRANSFER_WRITE_BIT,						// VkAccessFlags		srcAccessMask
-			VK_ACCESS_HOST_READ_BIT,							// VkAccessFlags		dstAccessMask
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
-			*validationBuffer,									// VkBuffer				buffer
-			0u,													// VkDeviceSize			offset
-			VK_WHOLE_SIZE										// VkDeviceSize			size
-		};
-
-		const VkImageMemoryBarrier imageBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,				// VkStructureType		sType
-			DE_NULL,											// const void*			pNext
-			VK_ACCESS_SHADER_WRITE_BIT,							// VkAccessFlags		srcAccessMask
-			VK_ACCESS_TRANSFER_READ_BIT,						// VkAccessFlags		dstAccessMask
-			VK_IMAGE_LAYOUT_GENERAL,							// VkImageLayout		oldLayout
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,				// VkImageLayout		newLayout
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,							// uint32_t				dstQueueFamilyIndex
-			*depthResolveImage,									// VkImage				image
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
-				0u,										// uint32_t				baseMipLevel
-				1u,										// uint32_t				mipLevels,
-				0u,										// uint32_t				baseArray
-				1u,										// uint32_t				arraySize
-			}
-		};
-
-		const VkBufferImageCopy bufferImageCopy =
-		{
-			0u,													// VkDeviceSize			bufferOffset
-			m_samples * m_renderSize.x(),						// uint32_t				bufferRowLength
-			m_renderSize.y(),									// uint32_t				bufferImageHeight
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspect
-				0u,										// uint32_t				mipLevel
-				0u,										// uint32_t				baseArrayLayer
-				1u										// uint32_t				layerCount
-			},
-			{ 0, 0, 0 },										// VkOffset3D			imageOffset
-			{
-				m_samples * m_renderSize.x(),			// uint32_t				width
-				m_renderSize.y(),						// uint32_t				height
-				1u										// uint32_t				depth
-			}
-		};
-
 		beginCommandBuffer(vk, *transferCmdBuffer, 0u);
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				(VkDependencyFlags)0,
-				0, (const VkMemoryBarrier*)DE_NULL,
-				0, (const VkBufferMemoryBarrier*)DE_NULL,
-				1, &imageBarrier);
-		vk.cmdCopyImageToBuffer(*transferCmdBuffer, *depthResolveImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *validationBuffer, 1u, &bufferImageCopy);
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-				(VkDependencyFlags)0,
-				0, (const VkMemoryBarrier*)DE_NULL,
-				1, &bufferBarrier,
-				0, (const VkImageMemoryBarrier*)DE_NULL);
+		copyImageToBuffer(vk, *transferCmdBuffer, *depthResolveImage, *validationBuffer, tcu::IVec2(m_renderSize.x() * m_samples, m_renderSize.y()), VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());
@@ -1379,70 +1254,8 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 
 	// Transfer location image to buffer
 	{
-		const VkImageMemoryBarrier imageBarrier =
-		{
-			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType		sType
-			DE_NULL,										// const void*			pNext
-			VK_ACCESS_SHADER_WRITE_BIT,						// VkAccessFlags		srcAccessMask
-			VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessMask			dstAccessMask
-			VK_IMAGE_LAYOUT_GENERAL,						// VkImageLayout		oldLayout
-			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout		newLayout
-			VK_QUEUE_FAMILY_IGNORED,						// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,						// uint32_t				dstQueueFamilyIndex
-			*outputImage,									// VkImage				image
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,				// VkImageAspectFlags	aspectMask
-				0u,										// uint32_t				baseMipLevel
-				1u,										// uint32_t				mipLevels
-				0u,										// uint32_t				baseArray
-				1u										// uint32_t				arraySize
-			}
-		};
-
-		const VkBufferMemoryBarrier bufferBarrier =
-		{
-			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType		sType
-			DE_NULL,										// const void*			pNext
-			VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags		srcAccessMask
-			VK_ACCESS_HOST_READ_BIT,						// VkAccessFlags		dstAccessMask
-			VK_QUEUE_FAMILY_IGNORED,						// uint32_t				srcQueueFamilyIndex
-			VK_QUEUE_FAMILY_IGNORED,						// uint32_t				dstQueueFamilyIndex
-			*sampleLocationBuffer,							// VkBufer				buffer
-			0u,												// VkDeviceSize			offset
-			VK_WHOLE_SIZE									// VkDeviceSize			size
-		};
-
-		const VkBufferImageCopy bufferImageCopy =
-		{
-			0u,									// VkDeviceSize		bufferOffset
-			m_sampleCount * m_renderSize.x(),	// uint32_t			bufferRowLength
-			m_renderSize.y(),					// uint32_t			bufferImageHeight
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspect
-				0u,							// uint32_t				mipLevel
-				0u,							// uint32_t				baseArrayLayer
-				1u							// uint32_t				layerCount
-			},
-			{ 0, 0, 0 },						// VkOffset3D		imageOffset
-			{
-				m_sampleCount * m_renderSize.x(),	// uint32_t				width
-				m_renderSize.y(),			// uint32_t				height,
-				1u							// uint32_t				depth
-			}
-		};
-
 		beginCommandBuffer(vk, *transferCmdBuffer);
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-				(VkDependencyFlags)0,
-				0, (const VkMemoryBarrier*)DE_NULL,
-				0, (const VkBufferMemoryBarrier*)DE_NULL,
-				1, &imageBarrier);
-		vk.cmdCopyImageToBuffer(*transferCmdBuffer, *outputImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *sampleLocationBuffer, 1u, &bufferImageCopy);
-		vk.cmdPipelineBarrier(*transferCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-				(VkDependencyFlags)0,
-				0, (const VkMemoryBarrier*)DE_NULL,
-				1, &bufferBarrier,
-				0, (const VkImageMemoryBarrier*)DE_NULL);
+		copyImageToBuffer(vk, *transferCmdBuffer, *outputImage, *sampleLocationBuffer, tcu::IVec2(m_renderSize.x() * m_sampleCount, m_renderSize.y()), VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
 		endCommandBuffer(vk, *transferCmdBuffer);
 
 		submitCommandsAndWait(vk, device, queue, transferCmdBuffer.get());

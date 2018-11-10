@@ -711,6 +711,7 @@ class Texture2D : private TextureLevelPyramid
 {
 public:
 									Texture2D			(const TextureFormat& format, int width, int height);
+									Texture2D			(const TextureFormat& format, int width, int height, int mipmaps);
 									Texture2D			(const Texture2D& other);
 									~Texture2D			(void);
 

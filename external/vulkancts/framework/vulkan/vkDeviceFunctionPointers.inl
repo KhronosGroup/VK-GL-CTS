@@ -176,6 +176,8 @@ CmdDrawIndexedIndirectCountAMDFunc				cmdDrawIndexedIndirectCountAMD;
 CmdDrawIndirectCountKHRFunc						cmdDrawIndirectCountKHR;
 CmdDrawIndexedIndirectCountKHRFunc				cmdDrawIndexedIndirectCountKHR;
 GetMemoryWin32HandleNVFunc						getMemoryWin32HandleNV;
+CmdBeginConditionalRenderingEXTFunc				cmdBeginConditionalRenderingEXT;
+CmdEndConditionalRenderingEXTFunc				cmdEndConditionalRenderingEXT;
 CmdProcessCommandsNVXFunc						cmdProcessCommandsNVX;
 CmdReserveSpaceForCommandsNVXFunc				cmdReserveSpaceForCommandsNVX;
 CreateIndirectCommandsLayoutNVXFunc				createIndirectCommandsLayoutNVX;

@@ -38,5 +38,7 @@ set(DEQP_VK_TESSELLATION_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_TESSELLATION_SRCS ../pch.cpp)
+
 add_library(deqp-vk-tessellation STATIC ${DEQP_VK_TESSELLATION_SRCS})
 target_link_libraries(deqp-vk-tessellation ${DEQP_VK_TESSELLATION_LIBS})

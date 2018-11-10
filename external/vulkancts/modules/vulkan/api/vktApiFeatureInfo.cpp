@@ -770,6 +770,7 @@ void checkDeviceExtensions (tcu::ResultCollector& results, const vector<string>&
 		"VK_KHR_driver_properties",
 		"VK_KHR_shader_atomic_int64",
 		"VK_KHR_vulkan_memory_model",
+		"VK_KHR_swapchain_mutable_format",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedDeviceKhrExtensions), s_allowedDeviceKhrExtensions);
@@ -2860,12 +2861,13 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	log << TestLog::Message << extFeatures << TestLog::EndMessage;
 
 	vector<VkExtensionProperties>	properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	const bool khr_8bit_storage		= checkExtension(properties,"VK_KHR_8bit_storage");;
-	bool khr_16bit_storage			= true;
-	bool khr_multiview				= true;
-	bool deviceProtectedMemory		= true;
-	bool sampler_ycbcr_conversion	= true;
-	bool variable_pointers			= true;
+	const bool khr_8bit_storage				= checkExtension(properties,"VK_KHR_8bit_storage");
+	const bool ext_conditional_rendering	= checkExtension(properties,"VK_EXT_conditional_rendering");
+	bool khr_16bit_storage					= true;
+	bool khr_multiview						= true;
+	bool deviceProtectedMemory				= true;
+	bool sampler_ycbcr_conversion			= true;
+	bool variable_pointers					= true;
 	if (getPhysicalDeviceProperties(vki, physicalDevice).apiVersion < VK_API_VERSION_1_1)
 	{
 		khr_16bit_storage = checkExtension(properties,"VK_KHR_16bit_storage");
@@ -2877,6 +2879,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 	const int count = 2u;
 	VkPhysicalDevice8BitStorageFeaturesKHR				device8BitStorageFeatures[count];
+	VkPhysicalDeviceConditionalRenderingFeaturesEXT		deviceConditionalRenderingFeatures[count];
 	VkPhysicalDevice16BitStorageFeatures				device16BitStorageFeatures[count];
 	VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures[count];
 	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
@@ -2885,15 +2888,19 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
-		deMemset(&device8BitStorageFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDevice8BitStorageFeaturesKHR));
-		deMemset(&device16BitStorageFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDevice16BitStorageFeatures));
-		deMemset(&deviceMultiviewFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
-		deMemset(&protectedMemoryFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
-		deMemset(&samplerYcbcrConversionFeatures[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
-		deMemset(&variablePointerFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
+		deMemset(&device8BitStorageFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDevice8BitStorageFeaturesKHR));
+		deMemset(&deviceConditionalRenderingFeatures[ndx],	0xFF*ndx, sizeof(VkPhysicalDeviceConditionalRenderingFeaturesEXT));
+		deMemset(&device16BitStorageFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDevice16BitStorageFeatures));
+		deMemset(&deviceMultiviewFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
+		deMemset(&protectedMemoryFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
+		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
+		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
 
 		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
-		device8BitStorageFeatures[ndx].pNext = &device16BitStorageFeatures[ndx];
+		device8BitStorageFeatures[ndx].pNext = &deviceConditionalRenderingFeatures[ndx];
+
+		deviceConditionalRenderingFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
+		deviceConditionalRenderingFeatures[ndx].pNext = &device16BitStorageFeatures[ndx];
 
 		device16BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
 		device16BitStorageFeatures[ndx].pNext = &deviceMultiviewFeatures[ndx];
@@ -2924,6 +2931,14 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		)
 	{
 		TCU_FAIL("Mismatch between VkPhysicalDevice8BitStorageFeatures");
+	}
+
+	if ( ext_conditional_rendering &&
+		(deviceConditionalRenderingFeatures[0].conditionalRendering				!= deviceConditionalRenderingFeatures[1].conditionalRendering ||
+		deviceConditionalRenderingFeatures[0].inheritedConditionalRendering		!= deviceConditionalRenderingFeatures[1].inheritedConditionalRendering )
+		)
+	{
+		TCU_FAIL("Mismatch between VkPhysicalDeviceConditionalRenderingFeaturesEXT");
 	}
 
 	if ( khr_16bit_storage &&
@@ -2964,6 +2979,8 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	}
 	if (khr_8bit_storage)
 		log << TestLog::Message << device8BitStorageFeatures[0]		<< TestLog::EndMessage;
+	if (ext_conditional_rendering)
+		log << TestLog::Message << deviceConditionalRenderingFeatures[0]		<< TestLog::EndMessage;
 	if (khr_16bit_storage)
 		log << TestLog::Message << toString(device16BitStorageFeatures[0])		<< TestLog::EndMessage;
 	if (khr_multiview)
@@ -3404,7 +3421,7 @@ tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format,
 	const Unique<VkInstance>		instance		(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver			vki				(vkp, *instance);
 
-	const VkImageUsageFlags			ycbcrFlags		= isYCbCrFormat(format) ? (VkImageUsageFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR : (VkImageUsageFlags)0u;
+	const VkImageCreateFlags		ycbcrFlags		= isYCbCrFormat(format) ? (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR : (VkImageCreateFlags)0u;
 	const VkImageUsageFlags			allUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 													| VK_IMAGE_USAGE_TRANSFER_DST_BIT
 													| VK_IMAGE_USAGE_SAMPLED_BIT

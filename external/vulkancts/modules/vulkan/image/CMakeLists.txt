@@ -32,5 +32,7 @@ set(DEQP_VK_IMAGE_LIBS
 	vkutil
 	)
 
+PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)
+
 add_library(deqp-vk-image STATIC ${DEQP_VK_IMAGE_SRCS})
 target_link_libraries(deqp-vk-image ${DEQP_VK_IMAGE_LIBS})

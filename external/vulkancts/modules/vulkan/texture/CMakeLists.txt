@@ -26,6 +26,8 @@ set(DEQP_VK_TEXTURE_SRCS
 	vktTextureFilteringAnisotropyTests.hpp
 	vktTextureCompressedFormatTests.cpp
 	vktTextureCompressedFormatTests.hpp
+	vktTextureSwizzleTests.cpp
+	vktTextureSwizzleTests.hpp
 	)
 
 set(DEQP_VK_TEXTURE_LIBS
@@ -33,6 +35,8 @@ set(DEQP_VK_TEXTURE_LIBS
 	tcutil
 	vkutil
 	)
+
+PCH(DEQP_VK_TEXTURE_SRCS ../pch.cpp)
 
 add_library(deqp-vk-texture STATIC ${DEQP_VK_TEXTURE_SRCS})
 target_link_libraries(deqp-vk-texture ${DEQP_VK_TEXTURE_LIBS})
