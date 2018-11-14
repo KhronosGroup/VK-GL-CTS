@@ -2960,23 +2960,23 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 		VK_FORMAT_R16G16B16A16_SSCALED,
 		VK_FORMAT_R16G16B16A16_UINT,
 		VK_FORMAT_R16G16B16A16_SINT,
-		VK_FORMAT_R16G16B16A16_SFLOAT,
+		//VK_FORMAT_R16G16B16A16_SFLOAT,	removed as float views can't preserve NAN/INF/Denorm values
 		VK_FORMAT_R32G32_UINT,
 		VK_FORMAT_R32G32_SINT,
-		VK_FORMAT_R32G32_SFLOAT,
-		//VK_FORMAT_R64_UINT, remove from the test it couln'd not be use
-		//VK_FORMAT_R64_SINT, remove from the test it couln'd not be use
-		//VK_FORMAT_R64_SFLOAT, remove from the test it couln'd not be use
+		//VK_FORMAT_R32G32_SFLOAT,			removed as float views can't preserve NAN/INF/Denorm values
+		//VK_FORMAT_R64_UINT,				remove from the test it couldn't be used
+		//VK_FORMAT_R64_SINT,				remove from the test it couldn't be used
+		//VK_FORMAT_R64_SFLOAT,				remove from the test it couldn't be used
 	};
 
 	const VkFormat				uncompressedFormats128bit[]						=
 	{
 		VK_FORMAT_R32G32B32A32_UINT,
 		VK_FORMAT_R32G32B32A32_SINT,
-		VK_FORMAT_R32G32B32A32_SFLOAT,
-		//VK_FORMAT_R64G64_UINT, remove from the test it couln'd not be use
-		//VK_FORMAT_R64G64_SINT, remove from the test it couln'd not be use
-		//VK_FORMAT_R64G64_SFLOAT, remove from the test it couln'd not be use
+		//VK_FORMAT_R32G32B32A32_SFLOAT,	removed as float views can't preserve NAN/INF/Denorm values
+		//VK_FORMAT_R64G64_UINT,			remove from the test it couldn't be used
+		//VK_FORMAT_R64G64_SINT,			remove from the test it couldn't be used
+		//VK_FORMAT_R64G64_SFLOAT,			remove from the test it couldn't be used
 	};
 
 	const FormatsArray			formatsCompressedSets[]							=
@@ -2991,6 +2991,10 @@ tcu::TestCaseGroup* createImageCompressionTranscodingTests (tcu::TestContext& te
 		},
 	};
 
+	// Uncompressed formats - floating point formats should not be used in these
+	// tests as they cannot be relied upon to preserve all possible values in the
+	// underlying texture data. Refer to the note under the 'VkImageViewCreateInfo'
+	// section of the specification.
 	const FormatsArray			formatsUncompressedSets[]						=
 	{
 		{
