@@ -10123,10 +10123,19 @@ bool compareDerivativeWithFlavor (const deFloat16* inputAsFP16, const deFloat16*
 	for (deUint32 x = 0; x < numDataPointsByAxis; ++x)
 	for (deUint32 n = 0; n < N; ++n)
 	{
-		const deFloat16	expected	= tcu::Float16(derivativeFunc(inputAsFP16, x, y, n, flavor)).bits();
-		const deFloat16	output		= outputAsFP16[getOffset<R, N>(x, y, n)];
+		const float		expectedFloat	= derivativeFunc(inputAsFP16, x, y, n, flavor);
+		deFloat16		expected		= deFloat32To16Round(expectedFloat, DE_ROUNDINGMODE_TO_NEAREST_EVEN);
+		const deFloat16	output			= outputAsFP16[getOffset<R, N>(x, y, n)];
 
-		if (!compare16BitFloat(expected, output, error))
+		bool			reportError		= !compare16BitFloat(expected, output, error);
+
+		if (reportError)
+		{
+			expected	= deFloat32To16Round(expectedFloat, DE_ROUNDINGMODE_TO_ZERO);
+			reportError	= !compare16BitFloat(expected, output, error);
+		}
+
+		if (reportError)
 		{
 			error = "subcase at " + de::toString(x) + "," + de::toString(y) + "," + de::toString(n) + ": " + error;
 
