@@ -15064,6 +15064,15 @@ bool compareFP16ArithmeticFunc (const std::vector<Resource>& inputs, const vecto
 									reportError = false;
 							}
 
+							if (reportError && expected.isInf())
+							{
+								// RTZ rounding mode returns +/-65504 instead of Inf on overflow
+								if (expected.sign() == 1 && outputted.bits() == 0x7bff && iterationEdgeMin[componentNdx] <= std::numeric_limits<double>::max())
+									reportError = false;
+								else if (expected.sign() == -1 && outputted.bits() == 0xfbff && iterationEdgeMax[componentNdx] >= -std::numeric_limits<double>::max())
+									reportError = false;
+							}
+
 							if (reportError)
 							{
 								const double	outputtedDouble	= outputted.asDouble();
