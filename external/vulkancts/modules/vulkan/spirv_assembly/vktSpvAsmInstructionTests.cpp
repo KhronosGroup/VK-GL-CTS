@@ -2745,6 +2745,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntCase("sgreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",			-1000,	50,		selectFalseUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("ugreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",			10,		10,		selectTrueUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("iequal",				" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",			42,		24,		selectFalseUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoIntCase("inotequal",				" %i32 0",		" %i32 0",		"%bool",	"INotEqual            %sc_0 %sc_1",			42,		24,		selectTrueUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("logicaland",			"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",			0,		1,		selectFalseUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("logicalor",				"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",			1,		0,		selectTrueUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("logicalequal",			"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",			0,		1,		selectFalseUsingSc,	outputInts2));
@@ -7126,6 +7127,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntGraphicsCase("sgreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",				-1000,	50,		selectFalseUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("ugreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",				10,		10,		selectTrueUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("iequal",				" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",				42,		24,		selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("inotequal",				" %i32 0",		" %i32 0",		"%bool",	"INotEqual            %sc_0 %sc_1",				42,		24,		selectTrueUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("logicaland",			"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",				0,		1,		selectFalseUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalor",				"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",				1,		0,		selectTrueUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalequal",			"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",				0,		1,		selectFalseUsingSc,	outputColors2));
@@ -8126,20 +8128,69 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 	RGBA								invertedColors[4];
 	de::MovePtr<tcu::TestCaseGroup>		moduleTests			(new tcu::TestCaseGroup(testCtx, "module", "Multiple entry points into shaders"));
 
-	const ShaderElement					combinedPipeline[]	=
-	{
-		ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
-		ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
-		ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
-		ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
-		ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
-	};
-
 	getDefaultColors(defaultColors);
 	getInvertedDefaultColors(invertedColors);
-	addFunctionCaseWithPrograms<InstanceContext>(
-			moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline,
-			createInstanceContext(combinedPipeline, map<string, string>()));
+
+	// Combined module tests
+	{
+		// Shader stages: vertex and fragment
+		{
+			const ShaderElement combinedPipeline[]	=
+			{
+				ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+			};
+
+			addFunctionCaseWithPrograms<InstanceContext>(
+				moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline,
+				createInstanceContext(combinedPipeline, map<string, string>()));
+		}
+
+		// Shader stages: vertex, geometry and fragment
+		{
+			const ShaderElement combinedPipeline[]	=
+			{
+				ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+			};
+
+			addFunctionCaseWithPrograms<InstanceContext>(
+				moduleTests.get(), "same_module_geom", "", createCombinedModule, runAndVerifyDefaultPipeline,
+				createInstanceContext(combinedPipeline, map<string, string>()));
+		}
+
+		// Shader stages: vertex, tessellation control, tessellation evaluation and fragment
+		{
+			const ShaderElement combinedPipeline[]	=
+			{
+				ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+			};
+
+			addFunctionCaseWithPrograms<InstanceContext>(
+				moduleTests.get(), "same_module_tessc_tesse", "", createCombinedModule, runAndVerifyDefaultPipeline,
+				createInstanceContext(combinedPipeline, map<string, string>()));
+		}
+
+		// Shader stages: vertex, tessellation control, tessellation evaluation, geometry and fragment
+		{
+			const ShaderElement combinedPipeline[]	=
+			{
+				ShaderElement("module", "main", VK_SHADER_STAGE_VERTEX_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_GEOMETRY_BIT),
+				ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)
+			};
+
+			addFunctionCaseWithPrograms<InstanceContext>(
+				moduleTests.get(), "same_module_tessc_tesse_geom", "", createCombinedModule, runAndVerifyDefaultPipeline,
+				createInstanceContext(combinedPipeline, map<string, string>()));
+		}
+	}
 
 	const char* numbers[] =
 	{

@@ -359,7 +359,12 @@ void uploadYCbCrImage (ProtectedContext&					ctx,
 
 	beginCommandBuffer(vk, *cmdBuffer);
 
+	for (deUint32 planeNdx = 0; planeNdx < imageData.getDescription().numPlanes; ++planeNdx)
 	{
+		const vk::VkImageAspectFlagBits	aspect	= formatDesc.numPlanes > 1
+												? vk::getPlaneAspect(planeNdx)
+												: vk::VK_IMAGE_ASPECT_COLOR_BIT;
+
 		const vk::VkImageMemoryBarrier		preCopyBarrier	=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -371,7 +376,7 @@ void uploadYCbCrImage (ProtectedContext&					ctx,
 			queueFamilyIndex,
 			queueFamilyIndex,
 			image,
-			{ vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }
+			{ aspect, 0u, 1u, 0u, 1u }
 		};
 
 		vk.cmdPipelineBarrier(*cmdBuffer,
@@ -407,7 +412,12 @@ void uploadYCbCrImage (ProtectedContext&					ctx,
 		vk.cmdCopyBufferToImage(*cmdBuffer, ***stagingBuffers[planeNdx], image, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copy);
 	}
 
+	for (deUint32 planeNdx = 0; planeNdx < imageData.getDescription().numPlanes; ++planeNdx)
 	{
+		const vk::VkImageAspectFlagBits	aspect	= formatDesc.numPlanes > 1
+												? vk::getPlaneAspect(planeNdx)
+												: vk::VK_IMAGE_ASPECT_COLOR_BIT;
+
 		const vk::VkImageMemoryBarrier		postCopyBarrier	=
 		{
 			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -419,7 +429,7 @@ void uploadYCbCrImage (ProtectedContext&					ctx,
 			VK_QUEUE_FAMILY_IGNORED,
 			VK_QUEUE_FAMILY_IGNORED,
 			image,
-			{ vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }
+			{ aspect, 0u, 1u, 0u, 1u }
 		};
 
 		vk.cmdPipelineBarrier(*cmdBuffer,

@@ -3531,7 +3531,7 @@ tcu::TestStatus imageFormatProperties2 (Context& context, const VkFormat format,
 	const Unique<VkInstance>		instance		(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
 	const InstanceDriver			vki				(vkp, *instance);
 
-	const VkImageUsageFlags			ycbcrFlags		= isYCbCrFormat(format) ? (VkImageUsageFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR : (VkImageUsageFlags)0u;
+	const VkImageCreateFlags		ycbcrFlags		= isYCbCrFormat(format) ? (VkImageCreateFlags)VK_IMAGE_CREATE_DISJOINT_BIT_KHR : (VkImageCreateFlags)0u;
 	const VkImageUsageFlags			allUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 													| VK_IMAGE_USAGE_TRANSFER_DST_BIT
 													| VK_IMAGE_USAGE_SAMPLED_BIT

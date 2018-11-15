@@ -140,9 +140,10 @@ void static addBufferCopyCmd (const vk::DeviceInterface&	vk,
 		0u,													// VkDeviceSize			offset
 		VK_WHOLE_SIZE,										// VkDeviceSize			size
 	};
+
 	vk.cmdPipelineBarrier(cmdBuffer,
-						  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-						  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+						  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,	// srcStageMask
+						  vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,	// dstStageMask
 						  (vk::VkDependencyFlags)0,
 						  0, (const vk::VkMemoryBarrier*)DE_NULL,
 						  1, &dstWriteStartBarrier,
@@ -160,7 +161,7 @@ void static addBufferCopyCmd (const vk::DeviceInterface&	vk,
 	{
 		vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType		sType
 		DE_NULL,											// const void*			pNext
-		vk::VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags		srcAccessMask
+		vk::VK_ACCESS_SHADER_WRITE_BIT,						// VkAccessFlags		srcAccessMask
 		vk::VK_ACCESS_SHADER_READ_BIT,						// VkAccessFlags		dstAccessMask
 		queueFamilyIndex,									// uint32_t				srcQueueFamilyIndex
 		queueFamilyIndex,									// uint32_t				dstQueueFamilyIndex
@@ -169,8 +170,8 @@ void static addBufferCopyCmd (const vk::DeviceInterface&	vk,
 		VK_WHOLE_SIZE,										// VkDeviceSize			size
 	};
 	vk.cmdPipelineBarrier(cmdBuffer,
-						  vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-						  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+						  vk::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,		// srcStageMask
+						  vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// dstStageMask
 						  (vk::VkDependencyFlags)0,
 						  0, (const vk::VkMemoryBarrier*)DE_NULL,
 						  1, &dstWriteEndBarrier,
@@ -481,8 +482,8 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeFragmentTest(void)
 		};
 
 		vk.cmdPipelineBarrier(*cmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// srcStageMask
+							  vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// dstStageMask
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -517,8 +518,8 @@ tcu::TestStatus StorageBufferTestInstance<T>::executeFragmentTest(void)
 			}
 		};
 		vk.cmdPipelineBarrier(*cmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							  vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// srcStageMask
+							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,				// dstStageMask
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,

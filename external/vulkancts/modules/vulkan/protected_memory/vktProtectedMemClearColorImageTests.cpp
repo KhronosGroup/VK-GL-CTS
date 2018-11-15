@@ -180,18 +180,19 @@ tcu::TestStatus ClearColorImageTestInstance::iterate()
 			subresourceRange,									// subresourceRange
 		};
 
-		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-							  (vk::VkDependencyFlags)0,
-							  0, (const vk::VkMemoryBarrier*)DE_NULL,
-							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
-							  1, &initializeBarrier);
+		vk.cmdPipelineBarrier(targetCmdBuffer,								// commandBuffer
+							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,		// srcStageMask
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,			// dstStageMask
+							  (vk::VkDependencyFlags)0,						// dependencyFlags
+							  0, (const vk::VkMemoryBarrier*)DE_NULL,		// memoryBarrierCount, pMemoryBarriers
+							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,	// bufferMemoryBarrierCount, pBufferMemoryBarriers
+							  1, &initializeBarrier);						// imageMemoryBarrierCount, pImageMemoryBarriers
 	}
 
 	// Image clear
 	vk.cmdClearColorImage(targetCmdBuffer, **colorImage, vk::VK_IMAGE_LAYOUT_GENERAL, &m_clearColorValue, 1, &subresourceRange);
 
+	// Image barrier to change accessMask.
 	{
 		const vk::VkImageMemoryBarrier	initializeBarrier	=
 		{
@@ -207,8 +208,8 @@ tcu::TestStatus ClearColorImageTestInstance::iterate()
 			subresourceRange									// subresourceRange
 		};
 		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,		// srcStageMask
+							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,	// dstStageMask
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
