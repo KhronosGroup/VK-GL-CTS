@@ -2734,6 +2734,7 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntCase("sgreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",			-1000,	50,		selectFalseUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("ugreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",			10,		10,		selectTrueUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("iequal",				" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",			42,		24,		selectFalseUsingSc,	outputInts2));
+	cases.push_back(SpecConstantTwoIntCase("inotequal",				" %i32 0",		" %i32 0",		"%bool",	"INotEqual            %sc_0 %sc_1",			42,		24,		selectTrueUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("logicaland",			"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",			0,		1,		selectFalseUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("logicalor",				"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",			1,		0,		selectTrueUsingSc,	outputInts2));
 	cases.push_back(SpecConstantTwoIntCase("logicalequal",			"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",			0,		1,		selectFalseUsingSc,	outputInts2));
@@ -6698,6 +6699,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 	cases.push_back(SpecConstantTwoIntGraphicsCase("sgreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"SGreaterThanEqual    %sc_0 %sc_1",				-1000,	50,		selectFalseUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("ugreaterthanequal",		" %i32 0",		" %i32 0",		"%bool",	"UGreaterThanEqual    %sc_0 %sc_1",				10,		10,		selectTrueUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("iequal",				" %i32 0",		" %i32 0",		"%bool",	"IEqual               %sc_0 %sc_1",				42,		24,		selectFalseUsingSc,	outputColors2));
+	cases.push_back(SpecConstantTwoIntGraphicsCase("inotequal",				" %i32 0",		" %i32 0",		"%bool",	"INotEqual            %sc_0 %sc_1",				42,		24,		selectTrueUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("logicaland",			"True %bool",	"True %bool",	"%bool",	"LogicalAnd           %sc_0 %sc_1",				0,		1,		selectFalseUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalor",				"False %bool",	"False %bool",	"%bool",	"LogicalOr            %sc_0 %sc_1",				1,		0,		selectTrueUsingSc,	outputColors2));
 	cases.push_back(SpecConstantTwoIntGraphicsCase("logicalequal",			"True %bool",	"True %bool",	"%bool",	"LogicalEqual         %sc_0 %sc_1",				0,		1,		selectFalseUsingSc,	outputColors2));
