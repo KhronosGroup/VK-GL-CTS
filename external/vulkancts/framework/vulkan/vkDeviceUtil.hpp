@@ -46,6 +46,14 @@ Move<VkInstance>	createDefaultInstance	(const PlatformInterface&			vkPlatform,
 											 const std::vector<std::string>&	enabledExtensions,
 											 const VkAllocationCallbacks*		pAllocator	= DE_NULL);
 
+Move<VkInstance>	createInstanceWithExtensions (const PlatformInterface&			vkp,
+												  const deUint32					version,
+												  const std::vector<std::string>	requiredExtensions);
+
+Move<VkInstance>	createInstanceWithExtension (const PlatformInterface&	vkp,
+												 const deUint32				version,
+												 const std::string			requiredExtension);
+
 deUint32			chooseDeviceIndex		(const InstanceInterface&			vkInstance,
 											 const VkInstance					instance,
 											 const tcu::CommandLine&			cmdLine);
