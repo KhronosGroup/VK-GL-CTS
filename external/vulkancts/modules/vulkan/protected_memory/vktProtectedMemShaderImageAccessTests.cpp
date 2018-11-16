@@ -978,8 +978,8 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 		};
 
 		vk.cmdPipelineBarrier(*cmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,				// srcStageMask
+							  vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// dstStageMask
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -1023,8 +1023,8 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 			}
 		};
 		vk.cmdPipelineBarrier(*cmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							  vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// srcStageMask
+							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,				// dstStageMask
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,

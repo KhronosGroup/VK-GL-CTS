@@ -185,13 +185,13 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 			}
 		};
 
-		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-							  (vk::VkDependencyFlags)0,
-							  0, (const vk::VkMemoryBarrier*)DE_NULL,
-							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
-							  1, &startImgBarrier);
+		vk.cmdPipelineBarrier(targetCmdBuffer,								// commandBuffer
+							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,		// srcStageMask
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,		    // dstStageMask
+							  (vk::VkDependencyFlags)0,						// dependencyFlags
+							  0, (const vk::VkMemoryBarrier*)DE_NULL,		// memoryBarrierCount, pMemoryBarriers
+							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,	// bufferMemoryBarrierCount, pBufferMemoryBarriers
+							  1, &startImgBarrier);							// imageMemoryBarrierCount, pImageMemoryBarriers
 	}
 
 	// Image clear
@@ -228,8 +228,8 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 		};
 
 		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,	// srcStageMask
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,	// dstStageMask
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -259,8 +259,8 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 		};
 
 		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,	// srcStageMask
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,		// dstStageMask
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -286,9 +286,12 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 		imageExtent,							// VkExtent3D				extent;
 
 	};
-	vk.cmdCopyImage(targetCmdBuffer, **colorImageSrc, vk::VK_IMAGE_LAYOUT_GENERAL,
-					**colorImage, vk::VK_IMAGE_LAYOUT_GENERAL, 1u, &copyImageRegion);
+	vk.cmdCopyImage(targetCmdBuffer,
+					**colorImageSrc, vk::VK_IMAGE_LAYOUT_GENERAL,	// srcImageLayout
+					**colorImage, vk::VK_IMAGE_LAYOUT_GENERAL,		// dstImageLayout
+					1u, &copyImageRegion);
 
+	// Image barrier to change accessMask for destination image.
 	{
 		const vk::VkImageMemoryBarrier	endImgBarrier	=
 		{
@@ -310,8 +313,8 @@ tcu::TestStatus CopyImageTestInstance::iterate()
 			}
 		};
 		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,		// srcStageMask
+							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,	// dstStageMask
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,

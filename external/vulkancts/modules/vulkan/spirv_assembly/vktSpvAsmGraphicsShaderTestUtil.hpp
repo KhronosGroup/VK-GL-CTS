@@ -347,7 +347,8 @@ void getInvertedDefaultColors (tcu::RGBA (&colors)[4]);
 // Creates fragments that specialize into a simple pass-through shader (of any kind).
 std::map<std::string, std::string> passthruFragments (void);
 
-void createCombinedModule (vk::SourceCollections& dst, InstanceContext);
+// Creates a combined shader module based on VkShaderStageFlagBits defined in InstanceContext
+void createCombinedModule (vk::SourceCollections& dst, InstanceContext ctx);
 
 // This has two shaders of each stage. The first
 // is a passthrough, the second inverts the color.

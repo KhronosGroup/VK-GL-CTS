@@ -839,6 +839,7 @@ void SpirvShaderBinaryMultipleShaderObjectsTest::init()
 			  "OpMemoryModel Logical GLSL450\n"
 			  "OpEntryPoint Vertex %mainv \"mainv\" %_ %position %gl_VertexID %gl_InstanceID\n"
 			  "OpEntryPoint Fragment %mainf \"mainf\" %fColor\n"
+			  "OpExecutionMode %mainf OriginLowerLeft\n"
 			  "OpSource GLSL 450\n"
 			  "OpName %mainv \"mainv\"\n"
 			  "OpName %mainf \"mainf\"\n"

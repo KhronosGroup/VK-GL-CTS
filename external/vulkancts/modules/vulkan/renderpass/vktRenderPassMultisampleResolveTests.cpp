@@ -460,7 +460,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 				VK_ATTACHMENT_LOAD_OP_DONT_CARE,			//  VkAttachmentLoadOp				stencilLoadOp;				||  VkAttachmentLoadOp					stencilLoadOp;
 				VK_ATTACHMENT_STORE_OP_DONT_CARE,			//  VkAttachmentStoreOp				stencilStoreOp;				||  VkAttachmentStoreOp					stencilStoreOp;
 				VK_IMAGE_LAYOUT_UNDEFINED,					//  VkImageLayout					initialLayout;				||  VkImageLayout						initialLayout;
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL		//  VkImageLayout					finalLayout;				||  VkImageLayout						finalLayout;
+				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL		//  VkImageLayout					finalLayout;				||  VkImageLayout						finalLayout;
 			);
 			const AttachmentRef attachmentRef				//  VkAttachmentReference										||  VkAttachmentReference2KHR
 			(
