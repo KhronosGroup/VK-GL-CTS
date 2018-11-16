@@ -26,13 +26,13 @@ import sys
 import argparse
 
 def readFile (filename):
-	f = open(filename, 'rb')
+	f = open(filename, 'rt')
 	d = f.read()
 	f.close()
 	return d
 
 def writeFile (filename, data):
-	f = open(filename, 'wb')
+	f = open(filename, 'wt')
 	f.write(data)
 	f.close()
 
@@ -63,12 +63,12 @@ def parseArgs ():
 	args = parser.parse_args()
 
 	if (args.releaseName == None) != (args.releaseId == None):
-		print "Both --name and --id must be specified"
+		print("Both --name and --id must be specified")
 		parser.print_help()
 		sys.exit(-1)
 
 	if (args.releaseName != None) == args.git:
-		print "Either --name and --id, or --git must be specified"
+		print("Either --name and --id, or --git must be specified")
 		parser.print_help()
 		sys.exit(-1)
 
