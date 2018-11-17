@@ -150,6 +150,7 @@ typedef enum VkResult {
     VK_ERROR_INCOMPATIBLE_DISPLAY_KHR = -1000003001,
     VK_ERROR_VALIDATION_FAILED_EXT = -1000011001,
     VK_ERROR_INVALID_SHADER_NV = -1000012000,
+    VK_ERROR_INVALID_DEVICE_ADDRESS_EXT = -1000244000,
     VK_RESULT_BEGIN_RANGE = VK_ERROR_FRAGMENTED_POOL,
     VK_RESULT_END_RANGE = VK_INCOMPLETE,
     VK_RESULT_RANGE_SIZE = (VK_INCOMPLETE - VK_ERROR_FRAGMENTED_POOL + 1),
@@ -415,7 +416,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR = 1000199000,
     VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR = 1000199001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR = 1000211000,
-   VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT = 1000221000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT = 1000221000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT = 1000244000,
+    VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT = 1000244001,
+    VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT = 1000244002,
     VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_END_RANGE = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
     VK_STRUCTURE_TYPE_RANGE_SIZE = (VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT - VK_STRUCTURE_TYPE_APPLICATION_INFO + 1),
@@ -1337,6 +1341,7 @@ typedef enum VkBufferCreateFlagBits {
     VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT = 0x00000002,
     VK_BUFFER_CREATE_SPARSE_ALIASED_BIT = 0x00000004,
     VK_BUFFER_CREATE_PROTECTED_BIT = 0x00000008,
+    VK_BUFFER_CREATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT_EXT = 0x00000010,
     VK_BUFFER_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkBufferCreateFlagBits;
 typedef VkFlags VkBufferCreateFlags;
@@ -1352,6 +1357,7 @@ typedef enum VkBufferUsageFlagBits {
     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT = 0x00000080,
     VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT = 0x00000100,
     VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT = 0x00000200,
+    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT = 0x00020000,
     VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
 } VkBufferUsageFlagBits;
 typedef VkFlags VkBufferUsageFlags;
@@ -8133,6 +8139,42 @@ typedef struct VkPipelineRasterizationDepthClipStateCreateInfoEXT {
     VkPipelineRasterizationDepthClipStateCreateFlagsEXT    flags;
     VkBool32                                               depthClipEnable;
 } VkPipelineRasterizationDepthClipStateCreateInfoEXT;
+
+
+#define VK_EXT_buffer_device_address 1
+typedef deUint64 VkDeviceAddress;
+
+#define VK_EXT_BUFFER_DEVICE_ADDRESS_SPEC_VERSION 2
+#define VK_EXT_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME "VK_EXT_buffer_device_address"
+
+typedef struct VkPhysicalDeviceBufferAddressFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           bufferDeviceAddress;
+    VkBool32           bufferDeviceAddressCaptureReplay;
+    VkBool32           bufferDeviceAddressMultiDevice;
+} VkPhysicalDeviceBufferAddressFeaturesEXT;
+
+typedef struct VkBufferDeviceAddressInfoEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBuffer           buffer;
+} VkBufferDeviceAddressInfoEXT;
+
+typedef struct VkBufferDeviceAddressCreateInfoEXT {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkDeviceSize       deviceAddress;
+} VkBufferDeviceAddressCreateInfoEXT;
+
+
+typedef VkDeviceAddress (VKAPI_PTR *PFN_vkGetBufferDeviceAddressEXT)(VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkDeviceAddress VKAPI_CALL vkGetBufferDeviceAddressEXT(
+    VkDevice                                    device,
+    const VkBufferDeviceAddressInfoEXT*         pInfo);
+#endif
 
 
 #ifdef __cplusplus

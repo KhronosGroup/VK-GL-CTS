@@ -1011,3 +1011,8 @@ VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, c
 {
 	return m_vk.getMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
 }
+
+VkDeviceAddress DeviceDriver::getBufferDeviceAddressEXT (VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo) const
+{
+	return m_vk.getBufferDeviceAddressEXT(device, pInfo);
+}

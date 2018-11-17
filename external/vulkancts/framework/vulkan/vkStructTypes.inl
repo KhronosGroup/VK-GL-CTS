@@ -3247,6 +3247,29 @@ struct VkPipelineRasterizationDepthClipStateCreateInfoEXT
 	VkBool32											depthClipEnable;
 };
 
+struct VkPhysicalDeviceBufferAddressFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		bufferDeviceAddress;
+	VkBool32		bufferDeviceAddressCaptureReplay;
+	VkBool32		bufferDeviceAddressMultiDevice;
+};
+
+struct VkBufferDeviceAddressInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBuffer		buffer;
+};
+
+struct VkBufferDeviceAddressCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceSize	deviceAddress;
+};
+
 
 
 

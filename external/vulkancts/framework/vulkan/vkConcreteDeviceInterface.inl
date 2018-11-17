@@ -203,3 +203,4 @@ virtual VkResult			getValidationCacheDataEXT					(VkDevice device, VkValidationC
 virtual VkResult			getMemoryHostPointerPropertiesEXT			(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties) const;
 virtual VkResult			getAndroidHardwareBufferPropertiesANDROID	(VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const;
 virtual VkResult			getMemoryAndroidHardwareBufferANDROID		(VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const;
+virtual VkDeviceAddress		getBufferDeviceAddressEXT					(VkDevice device, const VkBufferDeviceAddressInfoEXT* pInfo) const;
