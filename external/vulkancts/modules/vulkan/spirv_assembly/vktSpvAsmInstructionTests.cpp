@@ -13657,13 +13657,52 @@ struct fp16Normalize : public fp16AllComponents
 	{
 		flavorNames.push_back("EmulatingFP16");
 		flavorNames.push_back("DoubleCalc");
+
+		// flavorNames will be extended later
 	}
 
+	virtual void	setArgCompCount			(size_t argNo, size_t compCount)
+	{
+		DE_ASSERT(argCompCount[argNo] == 0); // Once only
+
+		if (argNo == 0 && argCompCount[argNo] == 0)
+		{
+			const size_t		maxPermutationsCount	= 24u; // Equal to 4!
+			std::vector<int>	indices;
+
+			for (size_t componentNdx = 0; componentNdx < compCount; ++componentNdx)
+				indices.push_back(static_cast<int>(componentNdx));
+
+			m_permutations.reserve(maxPermutationsCount);
+
+			permutationsFlavorStart = flavorNames.size();
+
+			do
+			{
+				tcu::UVec4	permutation;
+				std::string	name		= "Permutted_";
+
+				for (size_t componentNdx = 0; componentNdx < compCount; ++componentNdx)
+				{
+					permutation[static_cast<int>(componentNdx)] = indices[componentNdx];
+					name += de::toString(indices[componentNdx]);
+				}
+
+				m_permutations.push_back(permutation);
+				flavorNames.push_back(name);
+
+			} while(std::next_permutation(indices.begin(), indices.end()));
+
+			permutationsFlavorEnd = flavorNames.size();
+		}
+
+		fp16AllComponents::setArgCompCount(argNo, compCount);
+	}
 	virtual double getULPs(vector<const deFloat16*>& in)
 	{
 		DE_UNREF(in);
 
-		return 4.0;
+		return 8.0;
 	}
 
 	template<class fp16type>
@@ -13720,6 +13759,35 @@ struct fp16Normalize : public fp16AllComponents
 				out[componentNdx] = fp16type(x.asDouble() / r).bits();
 			}
 		}
+		else if (de::inBounds<size_t>(getFlavor(), permutationsFlavorStart, permutationsFlavorEnd))
+		{
+			const int			compCount		(static_cast<int>(getArgCompCount(0)));
+			const size_t		permutationNdx	(getFlavor() - permutationsFlavorStart);
+			const tcu::UVec4&	permutation		(m_permutations[permutationNdx]);
+			fp16type			r				(0.0);
+
+			for (int permComponentNdx = 0; permComponentNdx < compCount; ++permComponentNdx)
+			{
+				const size_t	componentNdx	(permutation[permComponentNdx]);
+				const fp16type	x				(in[0][componentNdx]);
+				const fp16type	q				(x.asDouble() * x.asDouble());
+
+				r = fp16type(r.asDouble() + q.asDouble());
+			}
+
+			r = fp16type(deSqrt(r.asDouble()));
+
+			if (r.isZero())
+				return false;
+
+			for (int permComponentNdx = 0; permComponentNdx < compCount; ++permComponentNdx)
+			{
+				const size_t	componentNdx	(permutation[permComponentNdx]);
+				const fp16type	x				(in[0][componentNdx]);
+
+				out[componentNdx] = fp16type(x.asDouble() / r.asDouble()).bits();
+			}
+		}
 		else
 		{
 			TCU_THROW(InternalError, "Unknown flavor");
@@ -13732,6 +13800,11 @@ struct fp16Normalize : public fp16AllComponents
 
 		return true;
 	}
+
+private:
+	std::vector<tcu::UVec4> m_permutations;
+	size_t					permutationsFlavorStart;
+	size_t					permutationsFlavorEnd;
 };
 
 struct fp16FaceForward : public fp16AllComponents
@@ -14103,9 +14176,49 @@ struct fp16Dot : public fp16AllComponents
 		flavorNames.push_back("EmulatingFP16");
 		flavorNames.push_back("FloatCalc");
 		flavorNames.push_back("DoubleCalc");
+
+		// flavorNames will be extended later
 	}
 
-	virtual double getULPs(vector<const deFloat16*>& in)
+	virtual void	setArgCompCount			(size_t argNo, size_t compCount)
+	{
+		DE_ASSERT(argCompCount[argNo] == 0); // Once only
+
+		if (argNo == 0 && argCompCount[argNo] == 0)
+		{
+			const size_t		maxPermutationsCount	= 24u; // Equal to 4!
+			std::vector<int>	indices;
+
+			for (size_t componentNdx = 0; componentNdx < compCount; ++componentNdx)
+				indices.push_back(static_cast<int>(componentNdx));
+
+			m_permutations.reserve(maxPermutationsCount);
+
+			permutationsFlavorStart = flavorNames.size();
+
+			do
+			{
+				tcu::UVec4	permutation;
+				std::string	name		= "Permutted_";
+
+				for (size_t componentNdx = 0; componentNdx < compCount; ++componentNdx)
+				{
+					permutation[static_cast<int>(componentNdx)] = indices[componentNdx];
+					name += de::toString(indices[componentNdx]);
+				}
+
+				m_permutations.push_back(permutation);
+				flavorNames.push_back(name);
+
+			} while(std::next_permutation(indices.begin(), indices.end()));
+
+			permutationsFlavorEnd = flavorNames.size();
+		}
+
+		fp16AllComponents::setArgCompCount(argNo, compCount);
+	}
+
+	virtual double	getULPs(vector<const deFloat16*>& in)
 	{
 		DE_UNREF(in);
 
@@ -14170,6 +14283,26 @@ struct fp16Dot : public fp16AllComponents
 
 			result = dp;
 		}
+		else if (de::inBounds<size_t>(getFlavor(), permutationsFlavorStart, permutationsFlavorEnd))
+		{
+			const int			compCount		(static_cast<int>(getArgCompCount(1)));
+			const size_t		permutationNdx	(getFlavor() - permutationsFlavorStart);
+			const tcu::UVec4&	permutation		(m_permutations[permutationNdx]);
+			fp16type			dp				(0.0);
+
+			for (int permComponentNdx = 0; permComponentNdx < compCount; ++permComponentNdx)
+			{
+				const size_t		componentNdx	(permutation[permComponentNdx]);
+				const fp16type		x				(in[0][componentNdx]);
+				const fp16type		y				(in[1][componentNdx]);
+				const fp16type		q				(x.asDouble() * y.asDouble());
+
+				dp = fp16type(dp.asDouble() + q.asDouble());
+				eps += floatFormat16.ulp(q.asDouble(), 2.0);
+			}
+
+			result = dp.asDouble();
+		}
 		else
 		{
 			TCU_THROW(InternalError, "Unknown flavor");
@@ -14181,6 +14314,11 @@ struct fp16Dot : public fp16AllComponents
 
 		return true;
 	}
+
+private:
+	std::vector<tcu::UVec4> m_permutations;
+	size_t					permutationsFlavorStart;
+	size_t					permutationsFlavorEnd;
 };
 
 struct fp16VectorTimesScalar : public fp16AllComponents
@@ -14980,6 +15118,12 @@ bool compareFP16ArithmeticFunc (const std::vector<Resource>& inputs, const vecto
 
 	const deFloat16* const		outputAsFP16					= (const deFloat16*)outputAllocs[0]->getHostPtr();
 	TestedArithmeticFunction	func;
+
+	func.setOutCompCount(RES_COMPONENTS);
+	func.setArgCompCount(0, ARG0_COMPONENTS);
+	func.setArgCompCount(1, ARG1_COMPONENTS);
+	func.setArgCompCount(2, ARG2_COMPONENTS);
+
 	const bool					callOncePerComponent			= func.callOncePerComponent();
 	const deUint32				componentValidityMask			= func.getComponentValidity();
 	const size_t				denormModesCount				= 2;
@@ -14987,11 +15131,6 @@ bool compareFP16ArithmeticFunc (const std::vector<Resource>& inputs, const vecto
 	const size_t				successfulRunsPerComponent		= denormModesCount * func.getFlavorCount();
 	bool						success							= true;
 	size_t						validatedCount					= 0;
-
-	func.setOutCompCount(RES_COMPONENTS);
-	func.setArgCompCount(0, ARG0_COMPONENTS);
-	func.setArgCompCount(1, ARG1_COMPONENTS);
-	func.setArgCompCount(2, ARG2_COMPONENTS);
 
 	vector<deUint8>	inputBytes[3];
 
