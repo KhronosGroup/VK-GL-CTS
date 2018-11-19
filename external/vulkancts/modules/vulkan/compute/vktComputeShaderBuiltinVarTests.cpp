@@ -33,6 +33,7 @@
 #include "vkStrUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkTypeUtil.hpp"

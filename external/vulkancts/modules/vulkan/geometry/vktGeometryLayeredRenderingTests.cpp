@@ -32,6 +32,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkBuilderUtil.hpp"

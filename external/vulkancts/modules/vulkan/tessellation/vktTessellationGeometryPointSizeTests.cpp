@@ -29,6 +29,7 @@
 #include "tcuTestLog.hpp"
 
 #include "vkDefs.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"

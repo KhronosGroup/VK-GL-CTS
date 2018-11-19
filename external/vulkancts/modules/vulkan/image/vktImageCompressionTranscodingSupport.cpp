@@ -32,6 +32,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vktImageTestsUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkRef.hpp"

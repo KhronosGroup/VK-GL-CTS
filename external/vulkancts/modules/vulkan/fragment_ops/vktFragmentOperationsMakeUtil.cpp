@@ -52,50 +52,6 @@ VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			bufferSize,
 	return bufferCreateInfo;
 }
 
-VkBufferMemoryBarrier makeBufferMemoryBarrier (const VkAccessFlags	srcAccessMask,
-											   const VkAccessFlags	dstAccessMask,
-											   const VkBuffer		buffer,
-											   const VkDeviceSize	offset,
-											   const VkDeviceSize	bufferSizeBytes)
-{
-	const VkBufferMemoryBarrier barrier =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		srcAccessMask,								// VkAccessFlags	srcAccessMask;
-		dstAccessMask,								// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			destQueueFamilyIndex;
-		buffer,										// VkBuffer			buffer;
-		offset,										// VkDeviceSize		offset;
-		bufferSizeBytes,							// VkDeviceSize		size;
-	};
-	return barrier;
-}
-
-VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask,
-											 const VkAccessFlags			dstAccessMask,
-											 const VkImageLayout			oldLayout,
-											 const VkImageLayout			newLayout,
-											 const VkImage					image,
-											 const VkImageSubresourceRange	subresourceRange)
-{
-	const VkImageMemoryBarrier barrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-		DE_NULL,										// const void*				pNext;
-		srcAccessMask,									// VkAccessFlags			outputMask;
-		dstAccessMask,									// VkAccessFlags			inputMask;
-		oldLayout,										// VkImageLayout			oldLayout;
-		newLayout,										// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,						// deUint32					destQueueFamilyIndex;
-		image,											// VkImage					image;
-		subresourceRange,								// VkImageSubresourceRange	subresourceRange;
-	};
-	return barrier;
-}
-
 Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
 										 const VkDevice					device,
 										 const VkDescriptorPool			descriptorPool,

@@ -194,31 +194,6 @@ vk::VkBufferImageCopy			makeBufferImageCopy					(const vk::VkExtent3D				extent,
 																	 const deUint32						mipmapLevel		= 0u,
 																	 const vk::VkDeviceSize				bufferOffset	= 0ull);
 
-vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier				(const vk::VkAccessFlags			srcAccessMask,
-																	 const vk::VkAccessFlags			dstAccessMask,
-																	 const vk::VkBuffer					buffer,
-																	 const vk::VkDeviceSize				offset,
-																	 const vk::VkDeviceSize				bufferSizeBytes);
-
-vk::VkImageMemoryBarrier		makeImageMemoryBarrier				(const vk::VkAccessFlags			srcAccessMask,
-																	 const vk::VkAccessFlags			dstAccessMask,
-																	 const vk::VkImageLayout			oldLayout,
-																	 const vk::VkImageLayout			newLayout,
-																	 const vk::VkImage					image,
-																	 const vk::VkImageSubresourceRange	subresourceRange);
-
-vk::VkImageMemoryBarrier		makeImageMemoryBarrier				(const vk::VkAccessFlags			srcAccessMask,
-																	 const vk::VkAccessFlags			dstAccessMask,
-																	 const vk::VkImageLayout			oldLayout,
-																	 const vk::VkImageLayout			newLayout,
-																	 const deUint32						srcQueueFamilyIndex,
-																	 const deUint32						destQueueFamilyIndex,
-																	 const vk::VkImage					image,
-																	 const vk::VkImageSubresourceRange	subresourceRange);
-
-vk::VkMemoryBarrier				makeMemoryBarrier					(const vk::VkAccessFlags			srcAccessMask,
-																	 const vk::VkAccessFlags			dstAccessMask);
-
 vk::VkSparseImageMemoryBind		makeSparseImageMemoryBind			(const vk::DeviceInterface&			vk,
 																	 const vk::VkDevice					device,
 																	 const vk::VkDeviceSize				allocationSize,

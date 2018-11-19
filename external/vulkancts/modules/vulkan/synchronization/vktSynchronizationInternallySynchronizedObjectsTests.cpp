@@ -28,6 +28,7 @@
 #include "vkRef.hpp"
 #include "tcuDefs.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"

@@ -32,6 +32,7 @@
 #include "vkRefUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkMemUtil.hpp"

@@ -32,6 +32,7 @@
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkMemUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -504,11 +505,11 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate (void)
 				VK_ACCESS_SHADER_WRITE_BIT,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
-				sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? sparseQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
-				sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? computeQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
 				*sparseImage,
-				subresourceRange
-			);
+				subresourceRange,
+				sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? sparseQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
+				sparseQueue.queueFamilyIndex != computeQueue.queueFamilyIndex ? computeQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED
+				);
 
 			deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &sparseImageLayoutChangeBarrier);
 		}

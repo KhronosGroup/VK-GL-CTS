@@ -37,6 +37,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 

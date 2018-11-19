@@ -28,6 +28,7 @@ LOCAL_SRC_FILES := \
 	executor/xeXMLWriter.cpp \
 	external/vulkancts/framework/vulkan/vkAllocationCallbackUtil.cpp \
 	external/vulkancts/framework/vulkan/vkApiVersion.cpp \
+	external/vulkancts/framework/vulkan/vkBarrierUtil.cpp \
 	external/vulkancts/framework/vulkan/vkBinaryRegistry.cpp \
 	external/vulkancts/framework/vulkan/vkBufferWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkBuilderUtil.cpp \
