@@ -112,18 +112,22 @@ class CacheTestParam
 {
 public:
 								CacheTestParam          (const VkShaderStageFlagBits* shaders,
-														 deUint32                     count);
+														 deUint32                     count,
+														 bool						  compileCacheMissShaders);
 	virtual						~CacheTestParam         (void);
 	virtual const std::string   generateTestName        (void)          const;
 	virtual const std::string   generateTestDescription (void)          const;
 	VkShaderStageFlagBits       getShaderFlag           (deUint32 ndx)  const   { return m_shaders[ndx]; }
 	deUint32                    getShaderCount          (void)          const   { return (deUint32)m_shaderCount; }
+	bool						getCompileMissShaders	(void)			const	{ return m_compileCacheMissShaders;	}
 protected:
 	VkShaderStageFlagBits       m_shaders[VK_MAX_SHADER_STAGES];
 	size_t                      m_shaderCount;
+	bool						m_compileCacheMissShaders;
 };
 
-CacheTestParam::CacheTestParam (const VkShaderStageFlagBits* shaders, deUint32 count)
+CacheTestParam::CacheTestParam (const VkShaderStageFlagBits* shaders, deUint32 count, bool compileCacheMissShaders)
+	: m_compileCacheMissShaders	(compileCacheMissShaders)
 {
 	DE_ASSERT(count <= VK_MAX_SHADER_STAGES);
 	for (deUint32 ndx = 0; ndx < count; ndx++)
@@ -620,6 +624,7 @@ protected:
 	std::vector<Vertex4RGBA>            m_vertices;
 
 	SimpleGraphicsPipelineBuilder       m_pipelineBuilder;
+	SimpleGraphicsPipelineBuilder       m_missPipelineBuilder;
 	Move<VkRenderPass>                  m_renderPass;
 
 	Move<VkImage>                       m_colorImage[PIPELINE_CACHE_NDX_COUNT];
@@ -630,106 +635,125 @@ protected:
 
 void GraphicsCacheTest::initPrograms (SourceCollections& programCollection) const
 {
-	for (deUint32 shaderNdx = 0; shaderNdx < m_param.getShaderCount(); shaderNdx++)
+	enum ShaderCacheOpType
 	{
-		switch(m_param.getShaderFlag(shaderNdx))
+		SHADERS_CACHE_OP_HIT = 0,
+		SHADERS_CACHE_OP_MISS,
+
+		SHADERS_CACHE_OP_LAST
+	};
+
+	for (deUint32 shaderOpNdx = 0u; shaderOpNdx < SHADERS_CACHE_OP_LAST; shaderOpNdx++)
+	{
+		const ShaderCacheOpType shaderOp = (ShaderCacheOpType)shaderOpNdx;
+
+		if (shaderOp == SHADERS_CACHE_OP_MISS && !m_param.getCompileMissShaders())
+			continue;
+
+		const std::string missHitDiff = (shaderOp == SHADERS_CACHE_OP_HIT ? "" : " + 0.1");
+		const std::string missSuffix = (shaderOp == SHADERS_CACHE_OP_HIT ? "" : "_miss");
+
+		for (deUint32 shaderNdx = 0; shaderNdx < m_param.getShaderCount(); shaderNdx++)
 		{
-			case VK_SHADER_STAGE_VERTEX_BIT:
-				programCollection.glslSources.add("color_vert") << glu::VertexSource(
-					"#version 310 es\n"
-					"layout(location = 0) in vec4 position;\n"
-					"layout(location = 1) in vec4 color;\n"
-					"layout(location = 0) out highp vec4 vtxColor;\n"
-					"void main (void)\n"
-					"{\n"
-					"  gl_Position = position;\n"
-					"  vtxColor = color;\n"
-					"}\n");
-				break;
+			switch(m_param.getShaderFlag(shaderNdx))
+			{
+				case VK_SHADER_STAGE_VERTEX_BIT:
+					programCollection.glslSources.add("color_vert" + missSuffix) << glu::VertexSource(
+						"#version 310 es\n"
+						"layout(location = 0) in vec4 position;\n"
+						"layout(location = 1) in vec4 color;\n"
+						"layout(location = 0) out highp vec4 vtxColor;\n"
+						"void main (void)\n"
+						"{\n"
+						"  gl_Position = position;\n"
+						"  vtxColor = color" + missHitDiff + ";\n"
+						"}\n");
+					break;
 
-			case VK_SHADER_STAGE_FRAGMENT_BIT:
-				programCollection.glslSources.add("color_frag") << glu::FragmentSource(
-					"#version 310 es\n"
-					"layout(location = 0) in highp vec4 vtxColor;\n"
-					"layout(location = 0) out highp vec4 fragColor;\n"
-					"void main (void)\n"
-					"{\n"
-					"  fragColor = vtxColor;\n"
-					"}\n");
-				break;
+				case VK_SHADER_STAGE_FRAGMENT_BIT:
+					programCollection.glslSources.add("color_frag" + missSuffix) << glu::FragmentSource(
+						"#version 310 es\n"
+						"layout(location = 0) in highp vec4 vtxColor;\n"
+						"layout(location = 0) out highp vec4 fragColor;\n"
+						"void main (void)\n"
+						"{\n"
+						"  fragColor = vtxColor" + missHitDiff + ";\n"
+						"}\n");
+					break;
 
-			case VK_SHADER_STAGE_GEOMETRY_BIT:
-				programCollection.glslSources.add("dummy_geo") << glu::GeometrySource(
-					"#version 450 \n"
-					"layout(triangles) in;\n"
-					"layout(triangle_strip, max_vertices = 3) out;\n"
-					"layout(location = 0) in highp vec4 in_vtxColor[];\n"
-					"layout(location = 0) out highp vec4 vtxColor;\n"
-					"out gl_PerVertex { vec4 gl_Position; };\n"
-					"in gl_PerVertex { vec4 gl_Position; } gl_in[];\n"
-					"void main (void)\n"
-					"{\n"
-					"  for(int ndx=0; ndx<3; ndx++)\n"
-					"  {\n"
-					"    gl_Position = gl_in[ndx].gl_Position;\n"
-					"    vtxColor    = in_vtxColor[ndx];\n"
-					"    EmitVertex();\n"
-					"  }\n"
-					"  EndPrimitive();\n"
-					"}\n");
-				break;
+				case VK_SHADER_STAGE_GEOMETRY_BIT:
+					programCollection.glslSources.add("dummy_geo" + missSuffix) << glu::GeometrySource(
+						"#version 450 \n"
+						"layout(triangles) in;\n"
+						"layout(triangle_strip, max_vertices = 3) out;\n"
+						"layout(location = 0) in highp vec4 in_vtxColor[];\n"
+						"layout(location = 0) out highp vec4 vtxColor;\n"
+						"out gl_PerVertex { vec4 gl_Position; };\n"
+						"in gl_PerVertex { vec4 gl_Position; } gl_in[];\n"
+						"void main (void)\n"
+						"{\n"
+						"  for(int ndx=0; ndx<3; ndx++)\n"
+						"  {\n"
+						"    gl_Position = gl_in[ndx].gl_Position;\n"
+						"    vtxColor    = in_vtxColor[ndx]" + missHitDiff + ";\n"
+						"    EmitVertex();\n"
+						"  }\n"
+						"  EndPrimitive();\n"
+						"}\n");
+					break;
 
-			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
-				programCollection.glslSources.add("basic_tcs") << glu::TessellationControlSource(
-					"#version 450 \n"
-					"layout(vertices = 3) out;\n"
-					"layout(location = 0) in highp vec4 color[];\n"
-					"layout(location = 0) out highp vec4 vtxColor[];\n"
-					"out gl_PerVertex { vec4 gl_Position; } gl_out[3];\n"
-					"in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
-					"void main()\n"
-					"{\n"
-					"  gl_TessLevelOuter[0] = 4.0;\n"
-					"  gl_TessLevelOuter[1] = 4.0;\n"
-					"  gl_TessLevelOuter[2] = 4.0;\n"
-					"  gl_TessLevelInner[0] = 4.0;\n"
-					"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-					"  vtxColor[gl_InvocationID] = color[gl_InvocationID];\n"
-					"}\n");
-				break;
+				case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+					programCollection.glslSources.add("basic_tcs" + missSuffix) << glu::TessellationControlSource(
+						"#version 450 \n"
+						"layout(vertices = 3) out;\n"
+						"layout(location = 0) in highp vec4 color[];\n"
+						"layout(location = 0) out highp vec4 vtxColor[];\n"
+						"out gl_PerVertex { vec4 gl_Position; } gl_out[3];\n"
+						"in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
+						"void main()\n"
+						"{\n"
+						"  gl_TessLevelOuter[0] = 4.0;\n"
+						"  gl_TessLevelOuter[1] = 4.0;\n"
+						"  gl_TessLevelOuter[2] = 4.0;\n"
+						"  gl_TessLevelInner[0] = 4.0;\n"
+						"  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+						"  vtxColor[gl_InvocationID] = color[gl_InvocationID]" + missHitDiff + ";\n"
+						"}\n");
+					break;
 
-			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
-				programCollection.glslSources.add("basic_tes") << glu::TessellationEvaluationSource(
-					"#version 450 \n"
-					"layout(triangles, fractional_even_spacing, ccw) in;\n"
-					"layout(location = 0) in highp vec4 colors[];\n"
-					"layout(location = 0) out highp vec4 vtxColor;\n"
-					"out gl_PerVertex { vec4 gl_Position; };\n"
-					"in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
-					"void main() \n"
-					"{\n"
-					"  float u = gl_TessCoord.x;\n"
-					"  float v = gl_TessCoord.y;\n"
-					"  float w = gl_TessCoord.z;\n"
-					"  vec4 pos = vec4(0);\n"
-					"  vec4 color = vec4(0);\n"
-					"  pos.xyz += u * gl_in[0].gl_Position.xyz;\n"
-					"  color.xyz += u * colors[0].xyz;\n"
-					"  pos.xyz += v * gl_in[1].gl_Position.xyz;\n"
-					"  color.xyz += v * colors[1].xyz;\n"
-					"  pos.xyz += w * gl_in[2].gl_Position.xyz;\n"
-					"  color.xyz += w * colors[2].xyz;\n"
-					"  pos.w = 1.0;\n"
-					"  color.w = 1.0;\n"
-					"  gl_Position = pos;\n"
-					"  vtxColor = color;\n"
-					"}\n");
-				break;
+				case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+					programCollection.glslSources.add("basic_tes" + missSuffix) << glu::TessellationEvaluationSource(
+						"#version 450 \n"
+						"layout(triangles, fractional_even_spacing, ccw) in;\n"
+						"layout(location = 0) in highp vec4 colors[];\n"
+						"layout(location = 0) out highp vec4 vtxColor;\n"
+						"out gl_PerVertex { vec4 gl_Position; };\n"
+						"in gl_PerVertex { vec4 gl_Position; } gl_in[gl_MaxPatchVertices];\n"
+						"void main() \n"
+						"{\n"
+						"  float u = gl_TessCoord.x;\n"
+						"  float v = gl_TessCoord.y;\n"
+						"  float w = gl_TessCoord.z;\n"
+						"  vec4 pos = vec4(0);\n"
+						"  vec4 color = vec4(0)" + missHitDiff + ";\n"
+						"  pos.xyz += u * gl_in[0].gl_Position.xyz;\n"
+						"  color.xyz += u * colors[0].xyz;\n"
+						"  pos.xyz += v * gl_in[1].gl_Position.xyz;\n"
+						"  color.xyz += v * colors[1].xyz;\n"
+						"  pos.xyz += w * gl_in[2].gl_Position.xyz;\n"
+						"  color.xyz += w * colors[2].xyz;\n"
+						"  pos.w = 1.0;\n"
+						"  color.w = 1.0;\n"
+						"  gl_Position = pos;\n"
+						"  vtxColor = color;\n"
+						"}\n");
+					break;
 
-			default:
-				DE_FATAL("Unknown Shader Stage!");
-				break;
-		};
+				default:
+					DE_FATAL("Unknown Shader Stage!");
+					break;
+			};
+		}
 	}
 }
 
@@ -740,11 +764,12 @@ TestInstance* GraphicsCacheTest::createInstance (Context& context) const
 
 GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              context,
 													  const CacheTestParam* param)
-	: CacheTestInstance (context,param)
-	, m_renderSize      (32u, 32u)
-	, m_colorFormat     (VK_FORMAT_R8G8B8A8_UNORM)
-	, m_depthFormat     (VK_FORMAT_D16_UNORM)
-	, m_pipelineBuilder (context)
+	: CacheTestInstance		(context,param)
+	, m_renderSize			(32u, 32u)
+	, m_colorFormat			(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_depthFormat			(VK_FORMAT_D16_UNORM)
+	, m_pipelineBuilder		(context)
+	, m_missPipelineBuilder	(context)
 {
 	const DeviceInterface&  vk               = m_context.getDeviceInterface();
 	const VkDevice          vkDevice         = m_context.getDevice();
@@ -901,9 +926,17 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 		{
 			case VK_SHADER_STAGE_VERTEX_BIT:
 				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "color_vert", "main");
+				if (m_param->getCompileMissShaders())
+				{
+					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_VERTEX_BIT, "color_vert_miss", "main");
+				}
 				break;
 			case VK_SHADER_STAGE_FRAGMENT_BIT:
 				m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "color_frag", "main");
+				if (m_param->getCompileMissShaders())
+				{
+					m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, "color_frag_miss", "main");
+				}
 				break;
 			case VK_SHADER_STAGE_GEOMETRY_BIT:
 				if (features.geometryShader == VK_FALSE)
@@ -913,6 +946,10 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 				else
 				{
 					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo", "main");
+					if (m_param->getCompileMissShaders())
+					{
+						m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_GEOMETRY_BIT, "dummy_geo_miss", "main");
+					}
 				}
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
@@ -924,6 +961,11 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 				{
 					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs", "main");
 					m_pipelineBuilder.enableTessellationStage(3);
+					if (m_param->getCompileMissShaders())
+					{
+						m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "basic_tcs_miss", "main");
+						m_missPipelineBuilder.enableTessellationStage(3);
+					}
 				}
 				break;
 			case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
@@ -935,6 +977,11 @@ GraphicsCacheTestInstance::GraphicsCacheTestInstance (Context&              cont
 				{
 					m_pipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes", "main");
 					m_pipelineBuilder.enableTessellationStage(3);
+					if (m_param->getCompileMissShaders())
+					{
+						m_missPipelineBuilder.bindShaderStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "basic_tes_miss", "main");
+						m_missPipelineBuilder.enableTessellationStage(3);
+					}
 				}
 				break;
 			default:
@@ -1442,88 +1489,204 @@ PipelineFromIncompleteCacheTestInstance::~PipelineFromIncompleteCacheTestInstanc
 	delete[] m_data;
 }
 
+
+enum MergeCacheType
+{
+	MERGE_CACHE_EMPTY = 0,
+	MERGE_CACHE_FROM_DATA,
+	MERGE_CACHE_HIT,
+	MERGE_CACHE_MISS,
+	MERGE_CACHE_MISS_AND_HIT,
+	MERGE_CACHE_MERGED,
+
+	MERGE_CACHE_TYPE_LAST = MERGE_CACHE_MERGED
+};
+
+std::string getMergeCacheTypeStr (MergeCacheType type)
+{
+	switch (type)
+	{
+		case MERGE_CACHE_EMPTY:
+			return "empty";
+		case MERGE_CACHE_FROM_DATA:
+			return "from_data";
+		case MERGE_CACHE_HIT:
+			return "hit";
+		case MERGE_CACHE_MISS_AND_HIT:
+			return "misshit";
+		case MERGE_CACHE_MISS:
+			return "miss";
+		case MERGE_CACHE_MERGED:
+			return "merged";
+	}
+	TCU_FAIL("unhandled merge cache type");
+}
+
+std::string getMergeCacheTypesStr (const std::vector<MergeCacheType>& types)
+{
+	std::string ret;
+	for (size_t idx = 0; idx < types.size(); ++idx)
+	{
+		if (ret.size())
+			ret += '_';
+		ret += getMergeCacheTypeStr(types[idx]);
+	}
+	return ret;
+}
+
+
+class MergeCacheTestParam
+{
+public:
+	MergeCacheType				destCacheType;
+	std::vector<MergeCacheType> srcCacheTypes;
+};
+
 class MergeCacheTest : public GraphicsCacheTest
 {
 public:
-							MergeCacheTest      (tcu::TestContext&      testContext,
-												 const std::string&     name,
-												 const std::string&     description,
-												 const CacheTestParam*  param)
-								: GraphicsCacheTest (testContext, name, description, param)
-								{ }
-	virtual                 ~MergeCacheTest     (void) { }
-	virtual TestInstance*   createInstance      (Context&               context) const;
+								MergeCacheTest      (tcu::TestContext&			testContext,
+													 const std::string&			name,
+													 const std::string&			description,
+													 const CacheTestParam*		param,
+													 const MergeCacheTestParam* mergeCacheParam)
+									: GraphicsCacheTest (testContext, name, description, param)
+									, m_mergeCacheParam	(*mergeCacheParam)
+									{ }
+	virtual						~MergeCacheTest     (void) { }
+	virtual TestInstance*		createInstance      (Context&               context) const;
+private:
+	const MergeCacheTestParam	m_mergeCacheParam;
 };
 
 class MergeCacheTestInstance : public GraphicsCacheTestInstance
 {
 public:
-							MergeCacheTestInstance  (Context&              context,
-													 const CacheTestParam*  param);
-	virtual                 ~MergeCacheTestInstance (void);
+							MergeCacheTestInstance  (Context&					context,
+													 const CacheTestParam*		param,
+													 const MergeCacheTestParam* mergeCacheParam);
+private:
+	Move<VkPipelineCache>	createPipelineCache		(const DeviceInterface& vk, VkDevice device, MergeCacheType type);
+
 protected:
-	Move<VkPipelineCache>   m_cacheGetData;
-	Move<VkPipelineCache>   m_cacheEmpty;
 	Move<VkPipelineCache>   m_cacheMerged;
-	deUint8*                m_data;
 };
 
 TestInstance* MergeCacheTest::createInstance (Context& context) const
 {
-	return new MergeCacheTestInstance(context, &m_param);
+	return new MergeCacheTestInstance(context, &m_param, &m_mergeCacheParam);
 }
 
-MergeCacheTestInstance::MergeCacheTestInstance (Context& context, const CacheTestParam* param)
+MergeCacheTestInstance::MergeCacheTestInstance (Context& context, const CacheTestParam* param, const MergeCacheTestParam* mergeCacheParam)
 	: GraphicsCacheTestInstance (context, param)
-	, m_data                    (DE_NULL)
 {
 	const DeviceInterface&  vk               = m_context.getDeviceInterface();
 	const VkDevice          vkDevice         = m_context.getDevice();
 
+
+	// Create a merge destination cache
+	m_cacheMerged = createPipelineCache(vk, vkDevice, mergeCacheParam->destCacheType);
+
 	// Create more pipeline caches
+	std::vector<VkPipelineCache>	sourceCaches	(mergeCacheParam->srcCacheTypes.size());
+	typedef de::SharedPtr<Move<VkPipelineCache> > PipelineCachePtr;
+	std::vector<PipelineCachePtr>	sourceCachePtrs	(sourceCaches.size());
 	{
-		// Create a empty cache as one of source cache
-		VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
+		for (size_t sourceIdx = 0; sourceIdx < mergeCacheParam->srcCacheTypes.size(); sourceIdx++)
 		{
-			VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
-			DE_NULL,                                                // const void*                 pNext;
-			0u,                                                     // VkPipelineCacheCreateFlags  flags;
-			0u,                                                     // deUintptr                   initialDataSize;
-			DE_NULL,                                                // const void*                 pInitialData;
-		};
-		m_cacheEmpty = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
+			// vk::Move is not copyable, so create it on heap and wrap into de::SharedPtr
+			PipelineCachePtr	pipelineCachePtr	(new Move<VkPipelineCache>());
+			*pipelineCachePtr = createPipelineCache(vk, vkDevice, mergeCacheParam->srcCacheTypes[sourceIdx]);
 
-		// Create a empty cache for merge destination cache
-		m_cacheMerged = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
-
-		// Create a cache with init data from m_cache
-		size_t  dataSize = 0u;
-		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, DE_NULL));
-
-		m_data = new deUint8[dataSize];
-		DE_ASSERT(m_data);
-		VK_CHECK(vk.getPipelineCacheData(vkDevice, *m_cache, (deUintptr*)&dataSize, (void*)m_data));
-
-		pipelineCacheCreateInfo.initialDataSize = dataSize;
-		pipelineCacheCreateInfo.pInitialData = m_data;
-		m_cacheGetData = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
+			sourceCachePtrs[sourceIdx]	= pipelineCachePtr;
+			sourceCaches[sourceIdx]		= **pipelineCachePtr;
+		}
 	}
 
 	// Merge the caches
-	const VkPipelineCache sourceCaches[] =
-	{
-		*m_cacheEmpty,
-		*m_cacheGetData,
-	};
-	VK_CHECK(vk.mergePipelineCaches(vkDevice, *m_cacheMerged, 2u, sourceCaches));
+	VK_CHECK(vk.mergePipelineCaches(vkDevice, *m_cacheMerged, static_cast<deUint32>(sourceCaches.size()), &sourceCaches[0]));
 
 	// Create pipeline from merged cache
 	m_pipeline[PIPELINE_CACHE_NDX_CACHED] = m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *m_cacheMerged, *m_pipelineLayout);
 }
 
-MergeCacheTestInstance::~MergeCacheTestInstance (void)
+Move<VkPipelineCache> MergeCacheTestInstance::createPipelineCache (const DeviceInterface& vk, VkDevice device, MergeCacheType type)
 {
-	delete[] m_data;
+	VkPipelineCacheCreateInfo pipelineCacheCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,           // VkStructureType             sType;
+		DE_NULL,                                                // const void*                 pNext;
+		0u,                                                     // VkPipelineCacheCreateFlags  flags;
+		0u,                                                     // deUintptr                   initialDataSize;
+		DE_NULL,                                                // const void*                 pInitialData;
+	};
+
+	switch (type)
+	{
+		case MERGE_CACHE_EMPTY:
+		{
+			return vk::createPipelineCache(vk, device, &pipelineCacheCreateInfo);
+		}
+		case MERGE_CACHE_FROM_DATA:
+		{
+			// Create a cache with init data from m_cache
+			size_t  dataSize = 0u;
+			VK_CHECK(vk.getPipelineCacheData(device, *m_cache, (deUintptr*)&dataSize, DE_NULL));
+
+			std::vector<deUint8> data(dataSize);
+			VK_CHECK(vk.getPipelineCacheData(device, *m_cache, (deUintptr*)&dataSize, &data[0]));
+
+			pipelineCacheCreateInfo.initialDataSize = data.size();
+			pipelineCacheCreateInfo.pInitialData = &data[0];
+			return vk::createPipelineCache(vk, device, &pipelineCacheCreateInfo);
+		}
+		case MERGE_CACHE_HIT:
+		{
+			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+
+			m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *ret, *m_pipelineLayout);
+
+			return ret;
+		}
+		case MERGE_CACHE_MISS:
+		{
+			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+
+			m_missPipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *ret, *m_pipelineLayout);
+
+			return ret;
+		}
+		case MERGE_CACHE_MISS_AND_HIT:
+		{
+			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+
+			m_pipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *ret, *m_pipelineLayout);
+			m_missPipelineBuilder.buildPipeline(m_renderSize, *m_renderPass, *ret, *m_pipelineLayout);
+
+			return ret;
+		}
+		case MERGE_CACHE_MERGED:
+		{
+			Move<VkPipelineCache>	cache1			= createPipelineCache(vk, device, MERGE_CACHE_FROM_DATA);
+			Move<VkPipelineCache>	cache2			= createPipelineCache(vk, device, MERGE_CACHE_HIT);
+			Move<VkPipelineCache>	cache3			= createPipelineCache(vk, device, MERGE_CACHE_MISS);
+
+			const VkPipelineCache	sourceCaches[]	=
+			{
+				*cache1,
+				*cache2,
+				*cache3
+			};
+
+			Move<VkPipelineCache> ret = createPipelineCache(vk, device, MERGE_CACHE_EMPTY);
+
+			// Merge the caches
+			VK_CHECK(vk.mergePipelineCaches(device, *ret, DE_LENGTH_OF_ARRAY(sourceCaches), sourceCaches));
+
+			return ret;
+		}
+	}
+	TCU_FAIL("unhandled merge cache type");
 }
 
 class CacheHeaderTest : public GraphicsCacheTest
@@ -1897,9 +2060,9 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0)),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1)),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2)),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), false),
+			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), false),
+			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), false),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -1932,9 +2095,9 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0)),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1)),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2)),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), false),
+			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), false),
+			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), false),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -1967,9 +2130,9 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0)),
-			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1)),
-			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2)),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), false),
+			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), false),
+			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), false),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -1988,7 +2151,7 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 		};
 		const CacheTestParam testParams[] =
 		{
-			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0)),
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), false),
 		};
 
 		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
@@ -1997,9 +2160,81 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 		cacheTests->addChild(computeTests.release());
 	}
 
+	// Merge cache Tests
+	{
+		de::MovePtr<tcu::TestCaseGroup> mergeTests (new tcu::TestCaseGroup(testCtx, "merge", "Cache merging tests"));
+
+		const VkShaderStageFlagBits testParamShaders0[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const VkShaderStageFlagBits testParamShaders1[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_GEOMETRY_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const VkShaderStageFlagBits testParamShaders2[] =
+		{
+			VK_SHADER_STAGE_VERTEX_BIT,
+			VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+			VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+		};
+		const CacheTestParam testParams[] =
+		{
+			CacheTestParam(testParamShaders0, DE_LENGTH_OF_ARRAY(testParamShaders0), true),
+			CacheTestParam(testParamShaders1, DE_LENGTH_OF_ARRAY(testParamShaders1), true),
+			CacheTestParam(testParamShaders2, DE_LENGTH_OF_ARRAY(testParamShaders2), true),
+		};
+
+		for (deUint32 i = 0; i < DE_LENGTH_OF_ARRAY(testParams); i++)
+		{
+
+			de::MovePtr<tcu::TestCaseGroup> mergeStagesTests(new tcu::TestCaseGroup(testCtx, testParams[i].generateTestName().c_str(), testParams[i].generateTestDescription().c_str()));
+
+			for (deUint32 destTypeIdx = 0u; destTypeIdx <= MERGE_CACHE_TYPE_LAST; destTypeIdx++)
+			for (deUint32 srcType1Idx = 0u; srcType1Idx <= MERGE_CACHE_TYPE_LAST; srcType1Idx++)
+			{
+
+				MergeCacheTestParam cacheTestParam;
+				cacheTestParam.destCacheType = MergeCacheType(destTypeIdx);
+				cacheTestParam.srcCacheTypes.push_back(MergeCacheType(srcType1Idx));
+
+				// merge with one cache
+				{
+					std::string testName = "src_" + getMergeCacheTypesStr(cacheTestParam.srcCacheTypes) + "_dst_" + getMergeCacheTypeStr(cacheTestParam.destCacheType);
+					mergeStagesTests->addChild(new MergeCacheTest(testCtx,
+															testName.c_str(),
+															"Merge the caches test.",
+															&testParams[i],
+															&cacheTestParam));
+				}
+
+				// merge with two caches
+				for (deUint32 srcType2Idx = 0u; srcType2Idx <= MERGE_CACHE_TYPE_LAST; srcType2Idx++)
+				{
+					MergeCacheTestParam cacheTestParamTwoCaches = cacheTestParam;
+
+					cacheTestParamTwoCaches.srcCacheTypes.push_back(MergeCacheType(srcType2Idx));
+
+					std::string testName = "src_" + getMergeCacheTypesStr(cacheTestParamTwoCaches.srcCacheTypes) + "_dst_" + getMergeCacheTypeStr(cacheTestParamTwoCaches.destCacheType);
+					mergeStagesTests->addChild(new MergeCacheTest(testCtx,
+														   testName.c_str(),
+														   "Merge the caches test.",
+														   &testParams[i],
+														   &cacheTestParamTwoCaches));
+				}
+			}
+			mergeTests->addChild(mergeStagesTests.release());
+		}
+		cacheTests->addChild(mergeTests.release());
+	}
+
 	// Misc Tests
 	{
-		de::MovePtr<tcu::TestCaseGroup> miscTests (new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
+		de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc_tests", "Misc tests that can not be categorized to other group."));
 
 		const VkShaderStageFlagBits testParamShaders[] =
 		{
@@ -2007,11 +2242,8 @@ tcu::TestCaseGroup* createCacheTests (tcu::TestContext& testCtx)
 			VK_SHADER_STAGE_FRAGMENT_BIT,
 		};
 
-		const CacheTestParam testParam(testParamShaders, DE_LENGTH_OF_ARRAY(testParamShaders));
-		miscTests->addChild(new MergeCacheTest(testCtx,
-											   "merge_cache_test",
-											   "Merge the caches test.",
-											   &testParam));
+		const CacheTestParam testParam(testParamShaders, DE_LENGTH_OF_ARRAY(testParamShaders), false);
+
 
 		miscTests->addChild(new CacheHeaderTest(testCtx,
 											   "cache_header_test",
