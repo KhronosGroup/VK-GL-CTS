@@ -69,6 +69,7 @@
 #include "vktSpvAsmLoopDepLenTests.hpp"
 #include "vktSpvAsmLoopDepInfTests.hpp"
 #include "vktSpvAsmCompositeInsertTests.hpp"
+#include "vktSpvAsmVaryingNameTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -18003,6 +18004,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpConvertUToF", "convertutof"));
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpConvertFToU", "convertftou"));
 	graphicsTests->addChild(createPointerParameterGraphicsGroup(testCtx));
+	graphicsTests->addChild(createVaryingNameGraphicsGroup(testCtx));
 
 	graphicsTests->addChild(createFloat16Tests(testCtx));
 
