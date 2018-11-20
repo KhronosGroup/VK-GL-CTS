@@ -25,10 +25,14 @@ import sys
 import copy
 import multiprocessing
 
-from common import which, HostInfo, DEQP_DIR
+from . common import which, HostInfo, DEQP_DIR
 
 try:
-	import _winreg
+	if sys.version_info < (3, 0):
+		import _winreg
+	else:
+		import winreg
+		_winreg = winreg
 except:
 	_winreg = None
 

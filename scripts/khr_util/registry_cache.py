@@ -22,10 +22,9 @@
 
 import os
 import sys
-import urllib2
 import hashlib
 
-import registry
+from . import registry
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -68,7 +67,7 @@ class RegistrySource:
 		return self.filename
 
 def computeChecksum (data):
-	return hashlib.sha256(data).hexdigest()
+	return hashlib.sha256(data.replace('\r','').encode("utf-8")).hexdigest()
 
 def makeSourceUrl (repository, revision, filename):
 	return "%s/%s/%s" % (repository, revision, filename)
@@ -85,31 +84,36 @@ def checkoutGit (repository, revision, fullDstPath):
 		popWorkingDir()
 
 def checkoutFile (repository, revision, filename, cacheDir):
+	if sys.version_info < (3, 0):
+		from urllib2 import urlopen
+	else:
+		from urllib.request import urlopen
+
 	try:
-		req		= urllib2.urlopen(makeSourceUrl(repository, revision, filename))
+		req		= urlopen(makeSourceUrl(repository, revision, filename))
 		data	= req.read()
 	except IOError:
 		fullDstPath = os.path.join(cacheDir, "git")
 
 		checkoutGit(repository, revision, fullDstPath)
-		f		= open(os.path.join(fullDstPath, filename), "r")
+		f		= open(os.path.join(fullDstPath, filename), "rt")
 		data	= f.read()
 		f.close()
 	except:
-		print "Unexpected error:", sys.exc_info()[0]
+		print(("Unexpected error:", sys.exc_info()[0]))
 
 	return data
 
 def fetchFile (dstPath, repository, revision, filename, checksum, cacheDir):
 	def writeFile (filename, data):
-		f = open(filename, 'wb')
+		f = open(filename, 'wt')
 		f.write(data)
 		f.close()
 
 	if not os.path.exists(os.path.dirname(dstPath)):
 		os.makedirs(os.path.dirname(dstPath))
 
-	print "Fetching %s/%s@%s" % (repository, filename, revision)
+	print(("Fetching %s/%s@%s" % (repository, filename, revision)))
 	data		= checkoutFile(repository, revision, filename, cacheDir)
 	gotChecksum	= computeChecksum(data)
 
@@ -120,7 +124,7 @@ def fetchFile (dstPath, repository, revision, filename, checksum, cacheDir):
 
 def checkFile (filename, checksum):
 	def readFile (filename):
-		f = open(filename, 'rb')
+		f = open(filename, 'rt')
 		data = f.read()
 		f.close()
 		return data
