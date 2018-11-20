@@ -139,7 +139,7 @@ def getCommandLine (config):
 
 def readCaseList (filename):
 	cases = []
-	with open(filename, 'rb') as f:
+	with open(filename, 'rt') as f:
 		for line in f:
 			if line[:6] == "TEST: ":
 				cases.append(line[6:].strip())
@@ -152,7 +152,7 @@ def getCaseList (buildCfg, generator, module):
 
 def readPatternList (filename):
 	ptrns = []
-	with open(filename, 'rb') as f:
+	with open(filename, 'rt') as f:
 		for line in f:
 			line = line.strip()
 			if len(line) > 0 and line[0] != '#':
@@ -192,7 +192,7 @@ def applyPatterns (caseList, patterns, filename, op):
 		curList = [c for c in curList if c not in matched]
 
 	for pattern, reason in errors:
-		print "ERROR: %s: %s" % (reason, pattern)
+		print("ERROR: %s: %s" % (reason, pattern))
 
 	if len(errors) > 0:
 		die("Found %s invalid patterns while processing file %s" % (len(errors), filename))
@@ -342,7 +342,7 @@ def genAndroidTestXml (mustpass):
 	return configElement
 
 def genMustpass (mustpass, moduleCaseLists):
-	print "Generating mustpass '%s'" % mustpass.version
+	print("Generating mustpass '%s'" % mustpass.version)
 
 	patternLists = readPatternLists(mustpass)
 
@@ -353,24 +353,24 @@ def genMustpass (mustpass, moduleCaseLists):
 			filtered	= applyFilters(allCasesInPkg, patternLists, config.filters)
 			dstFile		= getDstCaseListPath(mustpass, package, config)
 
-			print "  Writing deqp caselist: " + dstFile
+			print("  Writing deqp caselist: " + dstFile)
 			writeFile(dstFile, "\n".join(filtered) + "\n")
 
 	specXML			= genSpecXML(mustpass)
 	specFilename	= os.path.join(mustpass.project.path, mustpass.version, "mustpass.xml")
 
-	print "  Writing spec: " + specFilename
-	writeFile(specFilename, prettifyXML(specXML))
+	print("  Writing spec: " + specFilename)
+	writeFile(specFilename, prettifyXML(specXML).decode())
 
 	# TODO: Which is the best selector mechanism?
 	if (mustpass.version == "master"):
 		androidTestXML		= genAndroidTestXml(mustpass)
 		androidTestFilename	= os.path.join(mustpass.project.path, "AndroidTest.xml")
 
-		print "  Writing AndroidTest.xml: " + androidTestFilename
-		writeFile(androidTestFilename, prettifyXML(androidTestXML))
+		print("  Writing AndroidTest.xml: " + androidTestFilename)
+		writeFile(androidTestFilename, prettifyXML(androidTestXML).decode())
 
-	print "Done!"
+	print("Done!")
 
 def genMustpassLists (mustpassLists, generator, buildCfg):
 	moduleCaseLists = {}

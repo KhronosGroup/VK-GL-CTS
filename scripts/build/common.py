@@ -88,13 +88,13 @@ def execute (args):
 		raise Exception("Failed to execute '%s', got %d" % (str(args), retcode))
 
 def readFile (filename):
-	f = open(filename, 'rb')
+	f = open(filename, 'rt')
 	data = f.read()
 	f.close()
 	return data
 
 def writeFile (filename, data):
-	f = open(filename, 'wb')
+	f = open(filename, 'wt')
 	f.write(data)
 	f.close()
 

@@ -66,7 +66,7 @@ def writeInlFile(filename, lines):
 def genExtDepArray(extDepsName, extDepsDict):
 	yield 'static const std::pair<const char*, const char*>\t%s[]\t=' % extDepsName
 	yield '{'
-	for ext in sorted(extDepsDict.iterkeys()):
+	for ext in sorted(extDepsDict.keys()):
 		for dep in extDepsDict[ext]:
 			yield '\tstd::make_pair("%s", "%s"),' % (ext, dep)
 	yield '};'
@@ -110,7 +110,7 @@ def genExtDeps(extInfoDict):
 	allExtDepsDict[VK_DEV_EXT_DEP_1_0]	= {}
 	allExtDepsDict[VK_DEV_EXT_DEP_1_1]	= {}
 
-	for ext, info in extInfoDict.iteritems():
+	for ext, info in extInfoDict.items():
 		if info.deps == None:
 			continue
 

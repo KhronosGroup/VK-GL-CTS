@@ -79,7 +79,7 @@ def readFile (filename):
 
 def writeFileIfChanged (filename, data):
 	if not os.path.exists(filename) or readFile(filename) != data:
-		f = open(filename, 'wb')
+		f = open(filename, 'wt')
 		f.write(data)
 		f.close()
 
@@ -90,7 +90,7 @@ def writeLines (filename, lines):
 		text += "\n"
 
 	writeFileIfChanged(filename, text)
-	print filename
+	print(filename)
 
 def writeInlFile (filename, header, source):
 	writeLines(filename, chain([header], source))
