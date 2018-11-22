@@ -25,8 +25,5 @@ dEQP-VK.glsl.texture_functions.texture.sparse_usampler2darray_bias_fragment
 dEQP-VK.glsl.texture_functions.texture.sparse_isampler3d_bias_fragment
 dEQP-VK.glsl.texture_functions.texture.sparse_usampler3d_bias_fragment
 
-# CTS issue 426, spec issue 403
-dEQP-VK.spirv_assembly.instruction.compute.opfunord.*
-
 # New tests from AOSP
 dEQP-VK.texture.explicit_lod.*
