@@ -157,12 +157,8 @@ endif ()
 
 # Precompiled header macro. Parameters are source file list and filename for pch cpp file.
 macro(PCH SRCS PCHCPP)
-  if(MSVC)
-    if (CMAKE_GENERATOR MATCHES "^Visual Studio")
-      set(PCH_NAME "$(IntDir)\\pch.pch")
-    else()
-      set(PCH_NAME "pch.pch")
-    endif()
+  if(MSVC AND CMAKE_GENERATOR MATCHES "^Visual Studio")
+    set(PCH_NAME "$(IntDir)\\pch.pch")
     # make source files use/depend on PCH_NAME
     set_source_files_properties(${${SRCS}} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fp${PCH_NAME}" OBJECT_DEPENDS "${PCH_NAME}")
     # make PCHCPP file compile and generate PCH_NAME
