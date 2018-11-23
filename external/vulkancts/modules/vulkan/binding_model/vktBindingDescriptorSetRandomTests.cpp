@@ -241,6 +241,13 @@ void DescriptorSetRandomTestCase::checkSupport(Context& context) const
 		TCU_THROW(NotSupportedError, "Number of descriptor sets not supported");
 	}
 
+	if ((m_data.maxPerStageUniformBuffers + m_data.maxPerStageStorageBuffers +
+		m_data.maxPerStageSampledImages + m_data.maxPerStageStorageImages) >
+		properties.properties.limits.maxPerStageResources)
+	{
+		TCU_THROW(NotSupportedError, "Number of descriptors not supported");
+	}
+
 	if (m_data.maxPerStageUniformBuffers > properties.properties.limits.maxPerStageDescriptorUniformBuffers ||
 		m_data.maxPerStageStorageBuffers > properties.properties.limits.maxPerStageDescriptorStorageBuffers ||
 		m_data.maxUniformBuffersDynamic  > properties.properties.limits.maxDescriptorSetUniformBuffersDynamic ||
