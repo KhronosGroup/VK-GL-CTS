@@ -24,7 +24,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
-
 #include "tcuInterval.hpp"
 
 #include <string>

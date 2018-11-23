@@ -27,6 +27,7 @@
 #include "deSTLUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkPlatform.hpp"
 
 namespace vkt
 {
@@ -149,6 +150,71 @@ bool isVariablePointersFeaturesSupported (const Context& context, ExtensionVaria
 		return false;
 
 	return true;
+}
+
+bool isFloat16Int8FeaturesSupported (const Context& context, ExtensionFloat16Int8Features toCheck)
+{
+	const VkPhysicalDeviceFloat16Int8FeaturesKHR& extensionFeatures = context.getFloat16Int8Features();
+
+	if ((toCheck & EXTFLOAT16INT8FEATURES_FLOAT16) != 0 && extensionFeatures.shaderFloat16 == VK_FALSE)
+		return false;
+
+	if ((toCheck & EXTFLOAT16INT8FEATURES_INT8) != 0 && extensionFeatures.shaderInt8 == VK_FALSE)
+		return false;
+
+	return true;
+}
+
+bool isFloatControlsFeaturesSupported (const Context& context, const ExtensionFloatControlsFeatures& toCheck)
+{
+	ExtensionFloatControlsFeatures refControls;
+	deMemset(&refControls, 0, sizeof(ExtensionFloatControlsFeatures));
+
+	// compare with all flags set to false to verify if any float control features are actualy requested by the test
+	if (deMemCmp(&toCheck, &refControls, sizeof(ExtensionFloatControlsFeatures)) == 0)
+		return true;
+
+	// return false when float control features are requested and proper extension is not supported
+	const std::vector<std::string>& deviceExtensions = context.getDeviceExtensions();
+	if (!isDeviceExtensionSupported(context.getUsedApiVersion(), deviceExtensions, "VK_KHR_shader_float_controls"))
+		return false;
+
+	// perform query to get supported float control properties
+	{
+		refControls.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+		refControls.pNext = DE_NULL;
+
+		VkPhysicalDeviceProperties2 deviceProperties;
+		deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		deviceProperties.pNext = &refControls;
+
+		const VkPhysicalDevice			physicalDevice		= context.getPhysicalDevice();
+		const vk::InstanceInterface&	instanceInterface	= context.getInstanceInterface();
+
+		instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
+	}
+
+	// check if flags needed by the test are not supported by the device
+	bool requiredFeaturesNotSupported =
+		(toCheck.shaderDenormFlushToZeroFloat16			&& !refControls.shaderDenormFlushToZeroFloat16) ||
+		(toCheck.shaderDenormPreserveFloat16			&& !refControls.shaderDenormPreserveFloat16) ||
+		(toCheck.shaderRoundingModeRTEFloat16			&& !refControls.shaderRoundingModeRTEFloat16) ||
+		(toCheck.shaderRoundingModeRTZFloat16			&& !refControls.shaderRoundingModeRTZFloat16) ||
+		(toCheck.shaderSignedZeroInfNanPreserveFloat16	&& !refControls.shaderSignedZeroInfNanPreserveFloat16) ||
+		(toCheck.shaderDenormFlushToZeroFloat32			&& !refControls.shaderDenormFlushToZeroFloat32) ||
+		(toCheck.shaderDenormPreserveFloat32			&& !refControls.shaderDenormPreserveFloat32) ||
+		(toCheck.shaderRoundingModeRTEFloat32			&& !refControls.shaderRoundingModeRTEFloat32) ||
+		(toCheck.shaderRoundingModeRTZFloat32			&& !refControls.shaderRoundingModeRTZFloat32) ||
+		(toCheck.shaderSignedZeroInfNanPreserveFloat32	&& !refControls.shaderSignedZeroInfNanPreserveFloat32) ||
+		(toCheck.shaderDenormFlushToZeroFloat64			&& !refControls.shaderDenormFlushToZeroFloat64) ||
+		(toCheck.shaderDenormPreserveFloat64			&& !refControls.shaderDenormPreserveFloat64) ||
+		(toCheck.shaderRoundingModeRTEFloat64			&& !refControls.shaderRoundingModeRTEFloat64) ||
+		(toCheck.shaderRoundingModeRTZFloat64			&& !refControls.shaderRoundingModeRTZFloat64) ||
+		(toCheck.shaderSignedZeroInfNanPreserveFloat64	&& !refControls.shaderSignedZeroInfNanPreserveFloat64);
+
+	// we checked if required features are not supported - we need to
+	// negate the result to know if all required features are available
+	return !requiredFeaturesNotSupported;
 }
 
 deUint32 getMinRequiredVulkanVersion (const SpirvVersion version)

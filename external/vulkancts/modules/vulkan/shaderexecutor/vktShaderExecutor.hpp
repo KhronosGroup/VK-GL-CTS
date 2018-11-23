@@ -56,9 +56,13 @@ struct ShaderSpec
 	std::string				globalDeclarations;	//!< These are placed into global scope. Can contain uniform declarations for example.
 	std::string				source;				//!< Source snippet to be executed.
 	vk::ShaderBuildOptions	buildOptions;
+	bool					packFloat16Bit;
+	bool					spirVShader;
 
 	ShaderSpec (void)
-		: glslVersion(glu::GLSL_VERSION_310_ES)
+		: glslVersion		(glu::GLSL_VERSION_450)
+		, packFloat16Bit	(false)
+		, spirVShader		(false)
 	{}
 };
 
@@ -76,6 +80,10 @@ public:
 
 	//! Execute
 	virtual void			execute				(int numValues, const void* const* inputs, void* const* outputs, vk::VkDescriptorSet extraResources = (vk::VkDescriptorSet)0) = 0;
+	bool					areInputs16Bit		(void) const;
+	bool					areOutputs16Bit		(void) const;
+	bool					isOutput16Bit		(const size_t ndx) const;
+	bool					isSpirVShader		(void) {return m_shaderSpec.spirVShader;}
 
 protected:
 							ShaderExecutor		(Context& context, const ShaderSpec& shaderSpec)

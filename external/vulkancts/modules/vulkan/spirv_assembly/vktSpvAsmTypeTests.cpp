@@ -45,6 +45,26 @@
 
 #define UNDEFINED_SPIRV_TEST_TYPE "testtype"
 
+namespace de
+{
+	// Specialize template to have output as integers instead of chars
+	template<>
+	inline std::string toString<deInt8> (const deInt8& value)
+	{
+		std::ostringstream s;
+		s << static_cast<deInt32>(value);
+		return s.str();
+	}
+
+	template<>
+	inline std::string toString<deUint8> (const deUint8& value)
+	{
+		std::ostringstream s;
+		s << static_cast<deUint32>(value);
+		return s.str();
+	}
+}
+
 namespace vkt
 {
 namespace SpirVAssembly
@@ -69,15 +89,23 @@ enum InputRange
 enum InputWidth
 {
 	WIDTH_DEFAULT = 0,
+	WIDTH_8,
 	WIDTH_16,
 	WIDTH_32,
 	WIDTH_64,
+	WIDTH_8_8,
+	WIDTH_8_16,
+	WIDTH_8_32,
+	WIDTH_8_64,
+	WIDTH_16_8,
 	WIDTH_16_16,
 	WIDTH_16_32,
 	WIDTH_16_64,
+	WIDTH_32_8,
 	WIDTH_32_16,
 	WIDTH_32_32,
 	WIDTH_32_64,
+	WIDTH_64_8,
 	WIDTH_64_16,
 	WIDTH_64_32,
 	WIDTH_64_64,
@@ -87,7 +115,9 @@ enum InputWidth
 
 enum InputType
 {
-	TYPE_I16 = 0,
+	TYPE_I8 = 0,
+	TYPE_U8,
+	TYPE_I16,
 	TYPE_U16,
 	TYPE_I32,
 	TYPE_U32,
@@ -295,6 +325,9 @@ deUint32 getInputWidth (InputWidth inputWidth, deUint32 ndx)
 {
 	switch (inputWidth)
 	{
+		case WIDTH_8:
+			DE_ASSERT(ndx < 1);
+			return 8;
 		case WIDTH_16:
 			DE_ASSERT(ndx < 1);
 			return 16;
@@ -304,6 +337,21 @@ deUint32 getInputWidth (InputWidth inputWidth, deUint32 ndx)
 		case WIDTH_64:
 			DE_ASSERT(ndx < 1);
 			return 64;
+		case WIDTH_8_8:
+			DE_ASSERT(ndx < 2);
+			return 8;
+		case WIDTH_8_16:
+			DE_ASSERT(ndx < 2);
+			return (ndx == 0) ? 8 : 16;
+		case WIDTH_8_32:
+			DE_ASSERT(ndx < 2);
+			return (ndx == 0) ? 8 : 32;
+		case WIDTH_8_64:
+			DE_ASSERT(ndx < 2);
+			return (ndx == 0) ? 8 : 64;
+		case WIDTH_16_8:
+			DE_ASSERT(ndx < 2);
+			return (ndx == 0) ? 16 : 8;
 		case WIDTH_16_16:
 			DE_ASSERT(ndx < 2);
 			return 16;
@@ -313,6 +361,9 @@ deUint32 getInputWidth (InputWidth inputWidth, deUint32 ndx)
 		case WIDTH_16_64:
 			DE_ASSERT(ndx < 2);
 			return (ndx == 0) ? 16 : 64;
+		case WIDTH_32_8:
+			DE_ASSERT(ndx < 2);
+			return (ndx == 0) ? 32 : 8;
 		case WIDTH_32_16:
 			DE_ASSERT(ndx < 2);
 			return (ndx == 0) ? 32 : 16;
@@ -322,6 +373,9 @@ deUint32 getInputWidth (InputWidth inputWidth, deUint32 ndx)
 		case WIDTH_32_64:
 			DE_ASSERT(ndx < 2);
 			return (ndx == 0) ? 32 : 64;
+		case WIDTH_64_8:
+			DE_ASSERT(ndx < 2);
+			return (ndx == 0) ? 64 : 8;
 		case WIDTH_64_16:
 			DE_ASSERT(ndx < 2);
 			return (ndx == 0) ? 64 : 16;
@@ -337,36 +391,59 @@ deUint32 getInputWidth (InputWidth inputWidth, deUint32 ndx)
 	}
 }
 
+bool has8BitInputWidth (InputWidth inputWidth)
+{
+	switch (inputWidth)
+	{
+		case WIDTH_8:		return true;
+		case WIDTH_16:		return false;
+		case WIDTH_32:		return false;
+		case WIDTH_64:		return false;
+		case WIDTH_8_8:		return true;
+		case WIDTH_8_16:	return true;
+		case WIDTH_8_32:	return true;
+		case WIDTH_8_64:	return true;
+		case WIDTH_16_8:	return true;
+		case WIDTH_16_16:	return false;
+		case WIDTH_16_32:	return false;
+		case WIDTH_16_64:	return false;
+		case WIDTH_32_8:	return true;
+		case WIDTH_32_16:	return false;
+		case WIDTH_32_32:	return false;
+		case WIDTH_32_64:	return false;
+		case WIDTH_64_8:	return true;
+		case WIDTH_64_16:	return false;
+		case WIDTH_64_32:	return false;
+		case WIDTH_64_64:	return false;
+		default:			return false;
+	}
+}
+
 bool has16BitInputWidth (InputWidth inputWidth)
 {
 	switch (inputWidth)
 	{
-		case WIDTH_16:
-			return true;
-		case WIDTH_32:
-			return false;
-		case WIDTH_64:
-			return false;
-		case WIDTH_16_16:
-			return true;
-		case WIDTH_16_32:
-			return true;
-		case WIDTH_16_64:
-			return true;
-		case WIDTH_32_16:
-			return true;
-		case WIDTH_32_32:
-			return false;
-		case WIDTH_32_64:
-			return false;
-		case WIDTH_64_16:
-			return true;
-		case WIDTH_64_32:
-			return false;
-		case WIDTH_64_64:
-			return false;
-		default:
-			return false;
+		case WIDTH_8:		return false;
+		case WIDTH_16:		return true;
+		case WIDTH_32:		return false;
+		case WIDTH_64:		return false;
+		case WIDTH_8_8:		return false;
+		case WIDTH_8_16:	return true;
+		case WIDTH_8_32:	return false;
+		case WIDTH_8_64:	return false;
+		case WIDTH_16_8:	return true;
+		case WIDTH_16_16:	return true;
+		case WIDTH_16_32:	return true;
+		case WIDTH_16_64:	return true;
+		case WIDTH_32_8:	return false;
+		case WIDTH_32_16:	return true;
+		case WIDTH_32_32:	return false;
+		case WIDTH_32_64:	return false;
+		case WIDTH_64_8:	return false;
+		case WIDTH_64_16:	return true;
+		case WIDTH_64_32:	return false;
+		case WIDTH_64_64:	return false;
+		default:			return false;
 	}
 }
 
@@ -374,32 +451,27 @@ bool has64BitInputWidth (InputWidth inputWidth)
 {
 	switch (inputWidth)
 	{
-		case WIDTH_16:
-			return false;
-		case WIDTH_32:
-			return false;
-		case WIDTH_64:
-			return true;
-		case WIDTH_16_16:
-			return false;
-		case WIDTH_16_32:
-			return false;
-		case WIDTH_16_64:
-			return true;
-		case WIDTH_32_16:
-			return false;
-		case WIDTH_32_32:
-			return false;
-		case WIDTH_32_64:
-			return true;
-		case WIDTH_64_16:
-			return true;
-		case WIDTH_64_32:
-			return true;
-		case WIDTH_64_64:
-			return true;
-		default:
-			return false;
+		case WIDTH_8:		return false;
+		case WIDTH_16:		return false;
+		case WIDTH_32:		return false;
+		case WIDTH_64:		return true;
+		case WIDTH_8_8:		return false;
+		case WIDTH_8_16:	return false;
+		case WIDTH_8_32:	return false;
+		case WIDTH_8_64:	return true;
+		case WIDTH_16_8:	return false;
+		case WIDTH_16_16:	return false;
+		case WIDTH_16_32:	return false;
+		case WIDTH_16_64:	return true;
+		case WIDTH_32_8:	return false;
+		case WIDTH_32_16:	return false;
+		case WIDTH_32_32:	return false;
+		case WIDTH_32_64:	return true;
+		case WIDTH_64_8:	return true;
+		case WIDTH_64_16:	return true;
+		case WIDTH_64_32:	return true;
+		case WIDTH_64_64:	return true;
+		default:			return false;
 	}
 }
 
@@ -407,6 +479,8 @@ InputType getInputType (deUint32 inputWidth, bool isSigned)
 {
 	switch (inputWidth)
 	{
+		case 8:
+			return (isSigned) ? TYPE_I8  : TYPE_U8;
 		case 16:
 			return (isSigned) ? TYPE_I16 : TYPE_U16;
 		case 32:
@@ -423,10 +497,10 @@ string getOtherSizeTypes (InputType inputType, deUint32 vectorSize, InputWidth i
 {
 	const deUint32 inputWidthValues[] =
 	{
-		16, 32, 64
+		8, 16, 32, 64
 	};
 
-	for (deUint32 widthNdx = 0; widthNdx < 3; widthNdx++)
+	for (deUint32 widthNdx = 0; widthNdx < DE_LENGTH_OF_ARRAY(inputWidthValues); widthNdx++)
 	{
 		const deUint32	typeWidth		= inputWidthValues[widthNdx];
 		const InputType	typeUnsigned	= getInputType(typeWidth, false);
@@ -439,6 +513,16 @@ string getOtherSizeTypes (InputType inputType, deUint32 vectorSize, InputWidth i
 			const string	signBit		= (isSigned) ? "1" : "0";
 
 			string			str			= "";
+
+			if (has8BitInputWidth(inputWidth) && typeWidth != 8)
+			{
+				// 8-bit scalar type
+				str += "%" + signPrefix + "8 = OpTypeInt 8 " + signBit + "\n";
+
+				// 8-bit vector type
+				if (vectorSize > 1)
+					str += "%v" + de::toString(vectorSize) + signPrefix + "8 = OpTypeVector %" + signPrefix + "8 " + de::toString(vectorSize) + "\n";
+			}
 
 			if (has16BitInputWidth(inputWidth) && typeWidth != 16)
 			{
@@ -474,20 +558,33 @@ string getSpirvCapabilityStr (const char* spirvCapability, InputWidth inputWidth
 
 	if (spirvCapability)
 	{
+		if (has8BitInputWidth(inputWidth) || deStringEqual("Int8", spirvCapability))
+			str += "OpCapability Int8\n";
+
 		if (has16BitInputWidth(inputWidth) || deStringEqual("Int16", spirvCapability))
 			str += "OpCapability Int16\n";
 
 		if (has64BitInputWidth(inputWidth) || deStringEqual("Int64", spirvCapability))
 			str += "OpCapability Int64\n";
+
+		if (deStringEqual("Int8", spirvCapability))
+			str += "OpCapability UniformAndStorageBuffer8BitAccess\n";
+
+		if (deStringEqual("Int16", spirvCapability))
+			str += "OpCapability UniformAndStorageBuffer16BitAccess\n";
 	}
 	else
 	{
+		if (has8BitInputWidth(inputWidth))
+			str += "OpCapability Int8\n";
+
 		if (has16BitInputWidth(inputWidth))
 			str += "OpCapability Int16\n";
 
 		if (has64BitInputWidth(inputWidth))
 			str += "OpCapability Int64\n";
 	}
+
 
 	return str;
 }
@@ -496,10 +593,10 @@ string getBinaryFullOperationWithInputWidthStr (string resultName, string spirvO
 {
 	const deUint32 inputWidthValues[] =
 	{
-		16, 32, 64
+		8, 16, 32, 64
 	};
 
-	for (deUint32 widthNdx = 0; widthNdx < 3; widthNdx++)
+	for (deUint32 widthNdx = 0; widthNdx < DE_LENGTH_OF_ARRAY(inputWidthValues); widthNdx++)
 	{
 		const deUint32	typeWidth		= inputWidthValues[widthNdx];
 		const InputType	typeUnsigned	= getInputType(typeWidth, false);
@@ -537,11 +634,12 @@ string getBinaryFullOperationWithInputWidthStr (string resultName, string spirvO
 string getFullOperationWithDifferentInputWidthStr (string resultName, string spirvOperation, InputType inputType, string spirvTestType, InputWidth inputWidth, bool isQuaternary)
 {
 	const bool		isSigned	= (inputType == TYPE_I32);
-	const string	inputType16	= (isSigned) ? "i16" : "u16";
-	const string	inputType64	= (isSigned) ? "i64" : "u64";
 
 	const deUint32	offsetWidth	= getInputWidth(inputWidth, 0);
 	const deUint32	countWidth	= getInputWidth(inputWidth, 1);
+
+	const string	offsetType	= ((isSigned) ? "i" : "u") + de::toString(offsetWidth);
+	const string	countType	= ((isSigned) ? "i" : "u") + de::toString(countWidth);
 
 	const string	offsetNdx	= (isQuaternary) ? "2" : "1";
 	const string	countNdx	= (isQuaternary) ? "3" : "2";
@@ -550,9 +648,9 @@ string getFullOperationWithDifferentInputWidthStr (string resultName, string spi
 
 	// Create intermediate values with different width
 	if (offsetWidth != 32)
-		str += "%input" + offsetNdx + "_val_" + de::toString(offsetWidth) + " = OpSConvert %" + ((offsetWidth == 16) ? inputType16 : inputType64) + " %input" + offsetNdx + "_val\n";
+		str += "%input" + offsetNdx + "_val_" + de::toString(offsetWidth) + " = OpSConvert %" + offsetType + " %input" + offsetNdx + "_val\n";
 	if (countWidth != 32)
-		str += "%input" + countNdx + "_val_" + de::toString(countWidth) + " = OpSConvert %" + ((countWidth == 16) ? inputType16 : inputType64) + " %input" + countNdx + "_val\n";
+		str += "%input" + countNdx + "_val_" + de::toString(countWidth) + " = OpSConvert %" + countType + " %input" + countNdx + "_val\n";
 
 	// Inputs with potentially different width
 	const string offsetStr	= "%input" + offsetNdx + "_val" + ((offsetWidth != 32) ? "_" + de::toString(offsetWidth) : "");
@@ -752,7 +850,7 @@ SpvAsmTypeTests<T>::SpvAsmTypeTests	(tcu::TestContext&	testCtx,
 	else
 	{
 		if (m_vectorSize > 1)
-			m_spirvTestType = "v" + numberToString(m_vectorSize) + scalarType;
+			m_spirvTestType = "v" + de::toString(m_vectorSize) + scalarType;
 		else
 			m_spirvTestType = scalarType;
 	}
@@ -770,7 +868,7 @@ std::string SpvAsmTypeTests<T>::createInputDecoration (deUint32 numInput)
 										 "OpDecorate %input${n_input} Binding ${n_input}\n");
 	map<string, string>		specs;
 
-	specs["n_input"] = numberToString(numInput);
+	specs["n_input"] = de::toString(numInput);
 
 	return decoration.specialize(specs);
 }
@@ -781,7 +879,7 @@ std::string SpvAsmTypeTests<T>::createInputPreMain (deUint32 numInput, deUint32 
 	const bool				scalarInput = (m_vectorSize != 1) && isScalarInput(spirvOpertaion, numInput);
 	const string			bufferType	= (scalarInput) ? "%scalarbufptr" : "%bufptr";
 
-	return "%input" + numberToString(numInput) + " = OpVariable " + bufferType + " Uniform\n";
+	return "%input" + de::toString(numInput) + " = OpVariable " + bufferType + " Uniform\n";
 }
 
 template <class T>
@@ -796,7 +894,7 @@ std::string SpvAsmTypeTests<T>::createInputTestfun (deUint32 numInput, deUint32 
 										 "%input${n_input}_val = OpLoad " + valueType + " %input${n_input}_loc\n");
 	map<string, string>		specs;
 
-	specs["n_input"] = numberToString(numInput);
+	specs["n_input"] = de::toString(numInput);
 	specs["testtype"] = m_spirvTestType;
 
 	return testfun.specialize(specs);
@@ -1170,11 +1268,11 @@ deUint32 SpvAsmTypeTests<T>::fillResources (GraphicsResources&	resources,
 	for (deUint32 elemNdx = 0; elemNdx < data.size(); ++elemNdx)
 	{
 		if (data[elemNdx] == m_cases[0])
-			outputs.push_back(1000);
+			outputs.push_back(100);
 		else if (data[elemNdx] == m_cases[1])
-			outputs.push_back(1100);
+			outputs.push_back(110);
 		else if (data[elemNdx] == m_cases[2])
-			outputs.push_back(1200);
+			outputs.push_back(120);
 		else
 			outputs.push_back(10);
 	}
@@ -1270,12 +1368,16 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 
 												 "OpFunctionEnd\n");
 
+	const bool					uses8bit		(m_inputType == TYPE_I8 || m_inputType == TYPE_U8 || has8BitInputWidth(inputWidth));
+	const string				vectorSizeStr	(de::toString(m_vectorSize));
 	std::vector<std::string>	noExtensions;
 	std::vector<std::string>	features;
 	RGBA						defaultColors[4];
 	map<string, string>			fragments;
 	map<string, string>			specs;
 	VulkanFeatures				requiredFeatures;
+	std::string					spirvExtensions;
+	std::string					spirvCapabilities;
 
 	getDefaultColors(defaultColors);
 
@@ -1299,14 +1401,29 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 			features.insert(features.begin(), "shaderInt64");
 	}
 
-	const string				vectorSizeStr	= numberToString(m_vectorSize);
+	if (uses8bit)
+	{
+		requiredFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_INT8;
+	}
+
+	if (m_inputType == TYPE_I8 || m_inputType == TYPE_U8)
+	{
+		requiredFeatures.ext8BitStorage	|= EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
+		spirvExtensions					+= "OpExtension \"SPV_KHR_8bit_storage\"\n";
+	}
+
+	if (m_inputType == TYPE_I16 || m_inputType == TYPE_U16)
+	{
+		requiredFeatures.ext16BitStorage	|= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		spirvExtensions						+= "OpExtension \"SPV_KHR_16bit_storage\"\n";
+	}
 
 	specs["testtype"]				= m_spirvTestType;
 	specs["scalartype"]				= m_spirvType;
-	specs["typesize"]				= numberToString(((m_vectorSize == 3) ? 4 : m_vectorSize) * m_typeSize / 8);
+	specs["typesize"]				= de::toString(((m_vectorSize == 3) ? 4 : m_vectorSize) * m_typeSize / 8);
 	specs["vector_size"]			= vectorSizeStr;
-	specs["num_elements"]			= numberToString(numElements);
-	specs["output_binding"]			= numberToString(resources.inputs.size());
+	specs["num_elements"]			= de::toString(numElements);
+	specs["output_binding"]			= de::toString(resources.inputs.size());
 	specs["shift_initializers"]		= replicate(" %c_shift1", m_vectorSize);
 
 	specs["bvec"]					= (m_vectorSize == 1 || m_vectorSize == 4) ? ("")
@@ -1327,7 +1444,7 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 									: ("%fp_" + m_spirvTestType + " = OpTypePointer Function %" + m_spirvTestType + "\n");
 
 	if (spirvExtension)
-		fragments["extension"] = "%ext1 = OpExtInstImport \"" + string(spirvExtension) + "\"";
+		spirvExtensions += "%ext1 = OpExtInstImport \"" + string(spirvExtension) + "\"";
 
 	for (deUint32 elemNdx = 0; elemNdx < decorations.size(); ++elemNdx)
 		fragments["decoration"] += decorations[elemNdx];
@@ -1359,7 +1476,10 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 		fragments["testfun"] += testfuns[elemNdx];
 	fragments["testfun"] += operation + post_testfun.specialize(specs);
 
-	fragments["capability"] = getSpirvCapabilityStr(m_spirvCapability, inputWidth);
+	spirvCapabilities += getSpirvCapabilityStr(m_spirvCapability, inputWidth);
+
+	fragments["extension"]	= spirvExtensions;
+	fragments["capability"]	= spirvCapabilities;
 
 	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, noExtensions, features, this, requiredFeatures);
 }
@@ -1804,6 +1924,7 @@ void SpvAsmTypeTests<T>::createTests (const char*				testName,
 	createStageTests(testName, resources, totalElements, decorations,
 					 pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
 }
+
 template <class T>
 void SpvAsmTypeTests<T>::createSwitchTests (void)
 {
@@ -1824,9 +1945,9 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 	const StringTemplate	scalar_pre_main	("%testtype = ${scalartype}\n");
 
 	const StringTemplate	post_pre_main	("%c_casedefault = OpConstant %${testtype} 10\n"
-											 "%c_case0 = OpConstant %${testtype} 1000\n"
-											 "%c_case1 = OpConstant %${testtype} 1100\n"
-											 "%c_case2 = OpConstant %${testtype} 1200\n"
+											 "%c_case0 = OpConstant %${testtype} 100\n"
+											 "%c_case1 = OpConstant %${testtype} 110\n"
+											 "%c_case2 = OpConstant %${testtype} 120\n"
 											 "%a${num_elements}testtype = OpTypeArray %${testtype} %c_u32_${num_elements}\n"
 											 "%up_testtype = OpTypePointer Uniform %${testtype}\n"
 											 "%buf = OpTypeStruct %a${num_elements}testtype\n"
@@ -1904,6 +2025,8 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 
 											 "OpFunctionEnd\n");
 
+	const bool				uses8bit		(m_inputType == TYPE_I8 || m_inputType == TYPE_U8);
+
 	GraphicsResources		resources;
 	RGBA					defaultColors[4];
 	map<string, string>		fragments;
@@ -1913,6 +2036,8 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 	VulkanFeatures			requiredFeatures;
 	vector<T>				dataset;
 	deUint32				numElements;
+	std::string				spirvExtensions;
+	std::string				spirvCapabilities;
 
 	getDefaultColors(defaultColors);
 
@@ -1923,13 +2048,30 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 	if (m_deviceFeature)
 		features.insert(features.begin(), m_deviceFeature);
 
+	if (uses8bit)
+	{
+		requiredFeatures.extFloat16Int8	|= EXTFLOAT16INT8FEATURES_INT8;
+	}
+
+	if (m_inputType == TYPE_I8 || m_inputType == TYPE_U8)
+	{
+		requiredFeatures.ext8BitStorage		|= EXT8BITSTORAGEFEATURES_UNIFORM_STORAGE_BUFFER;
+		spirvExtensions						+= "OpExtension \"SPV_KHR_8bit_storage\"\n";
+	}
+
+	if (m_inputType == TYPE_I16 || m_inputType == TYPE_U16)
+	{
+		requiredFeatures.ext16BitStorage	|= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		spirvExtensions						+= "OpExtension \"SPV_KHR_16bit_storage\"\n";
+	}
+
 	specs["testtype"] = m_spirvTestType;
 	specs["scalartype"] = m_spirvType;
-	specs["typesize"] = numberToString(m_typeSize / 8);
-	specs["num_elements"] = numberToString(numElements);
-	specs["case0"] = numberToString(m_cases[0]);
-	specs["case1"] = numberToString(m_cases[1]);
-	specs["case2"] = numberToString(m_cases[2]);
+	specs["typesize"] = de::toString(m_typeSize / 8);
+	specs["num_elements"] = de::toString(numElements);
+	specs["case0"] = de::toString(m_cases[0]);
+	specs["case1"] = de::toString(m_cases[1]);
+	specs["case2"] = de::toString(m_cases[2]);
 
 	fragments["decoration"] = decoration.specialize(specs);
 
@@ -1940,8 +2082,10 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 
 	fragments["testfun"] = testfun.specialize(specs);
 
-	if (m_spirvCapability)
-		fragments["capability"] = "OpCapability " + string(m_spirvCapability);
+	spirvCapabilities += getSpirvCapabilityStr(m_spirvCapability, WIDTH_DEFAULT);
+
+	fragments["extension"]	= spirvExtensions;
+	fragments["capability"]	= spirvCapabilities;
 
 	createTestsForAllStages("switch", defaultColors, defaultColors, fragments, resources, noExtensions, features, this, requiredFeatures);
 }
@@ -2098,6 +2242,57 @@ std::string	SpvAsmTypeTests<T>::replicate (const std::string&	replicant,
 	return result;
 }
 
+class SpvAsmTypeInt8Tests : public SpvAsmTypeTests<deInt8>
+{
+public:
+				SpvAsmTypeInt8Tests		(tcu::TestContext&	testCtx,
+										 deUint32			vectorSize);
+				~SpvAsmTypeInt8Tests	(void);
+	void		getDataset				(vector<deInt8>&	input,
+										 deUint32			numElements);
+	void		pushResource			(vector<Resource>&	resource,
+										 vector<deInt8>&	data);
+};
+
+SpvAsmTypeInt8Tests::SpvAsmTypeInt8Tests	(tcu::TestContext&	testCtx,
+											 deUint32			vectorSize)
+	: SpvAsmTypeTests	(testCtx, "i8", "int8 tests", DE_NULL, "Int8", "OpTypeInt 8 1", TYPE_I8, 8, vectorSize)
+{
+	m_cases[0] = -42;
+	m_cases[1] = 73;
+	m_cases[2] = 121;
+}
+
+SpvAsmTypeInt8Tests::~SpvAsmTypeInt8Tests (void)
+{
+}
+
+void SpvAsmTypeInt8Tests::getDataset (vector<deInt8>&	input,
+									  deUint32			numElements)
+{
+	// Push first special cases
+	input.push_back(0);
+	input.push_back(static_cast<deInt8>(deIntMinValue32(8)));// A 8-bit negative number
+	input.push_back(static_cast<deInt8>(deIntMaxValue32(8)));// A 8-bit positive number
+
+	// Push switch cases
+	input.push_back(m_cases[0]);
+	input.push_back(m_cases[1]);
+	input.push_back(m_cases[2]);
+
+	numElements -= static_cast<deUint32>(input.size());
+
+	// Random values
+	for (deUint32 elemNdx = 0; elemNdx < numElements; ++elemNdx)
+		input.push_back(static_cast<deInt8>(m_rnd.getUint8()));
+}
+
+void SpvAsmTypeInt8Tests::pushResource (vector<Resource>&	resource,
+										vector<deInt8>&		data)
+{
+	resource.push_back(Resource(BufferSp(new Int8Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+}
+
 class SpvAsmTypeInt16Tests : public SpvAsmTypeTests<deInt16>
 {
 public:
@@ -2249,6 +2444,56 @@ void SpvAsmTypeInt64Tests::pushResource	(vector<Resource>&	resource,
 										 vector<deInt64>&	data)
 {
 	resource.push_back(Resource(BufferSp(new Int64Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+}
+
+class SpvAsmTypeUint8Tests : public SpvAsmTypeTests<deUint8>
+{
+public:
+				SpvAsmTypeUint8Tests	(tcu::TestContext&	testCtx,
+										 deUint32			vectorSize);
+				~SpvAsmTypeUint8Tests	(void);
+	void		getDataset				(vector<deUint8>&	input,
+										 deUint32			numElements);
+	void		pushResource			(vector<Resource>&	resource,
+										 vector<deUint8>&	data);
+};
+
+SpvAsmTypeUint8Tests::SpvAsmTypeUint8Tests	(tcu::TestContext&	testCtx,
+											 deUint32			vectorSize)
+	: SpvAsmTypeTests	(testCtx, "u8", "uint8 tests", DE_NULL, "Int8", "OpTypeInt 8 0", TYPE_U8, 8, vectorSize)
+{
+	m_cases[0] = 0;
+	m_cases[1] = 73;
+	m_cases[2] = 193;
+}
+
+SpvAsmTypeUint8Tests::~SpvAsmTypeUint8Tests (void)
+{
+}
+
+void SpvAsmTypeUint8Tests::getDataset (vector<deUint8>&	input,
+									   deUint32			numElements)
+{
+	// Push first special cases
+	input.push_back(0);  // Min value
+	input.push_back(~0); // Max value
+
+	//Push switch cases
+	input.push_back(m_cases[0]);
+	input.push_back(m_cases[1]);
+	input.push_back(m_cases[2]);
+
+	numElements -= static_cast<deUint32>(input.size());
+
+	// Random values
+	for (deUint32 elemNdx = 0; elemNdx < numElements; ++elemNdx)
+		input.push_back(m_rnd.getUint8());
+}
+
+void SpvAsmTypeUint8Tests::pushResource (vector<Resource>&	resource,
+										 vector<deUint8>&	data)
+{
+	resource.push_back(Resource(BufferSp(new Uint8Buffer(data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 }
 
 class SpvAsmTypeUint16Tests : public SpvAsmTypeTests<deUint16>
@@ -2716,6 +2961,66 @@ public:
 	}
 };
 
+class TestMathInt8 : public TestMath<deInt8>
+{
+public:
+	static inline deInt8 test_msb (deInt8 x)
+	{
+		if (x > 0)
+			return static_cast<deInt8>(7 - deClz32((deUint32)x));
+		else if (x < 0)
+			return static_cast<deInt8>(7 - deClz32(~(deUint32)x));
+		else
+			return -1;
+	}
+
+	static inline deInt8 test_mul_div (deInt8 x, deInt8 y)
+	{
+		deInt32	x32	= static_cast<deInt32>(x);
+		deInt32	y32	= static_cast<deInt32>(y);
+
+		// In SPIR-V, if "y" is 0, then the result is undefined. In our case, let's return 0
+		if (y == static_cast<deInt8>(0))
+			return 0;
+		else
+			return static_cast<deInt8>(static_cast<deInt8>(x32 * y32) / y32);
+	}
+
+	static inline deInt8 test_ugreaterthan (deInt8 x, deInt8 y)
+	{
+		// Consume signed integers as unsigned integers
+		if ((x & 0x80) ^ (y & 0x80))
+			std::swap(x,y);
+
+		if (x > y)
+			return static_cast<deInt8>(1);
+		else
+			return static_cast<deInt8>(0);
+	}
+
+	static inline deInt8 test_ulessthan (deInt8 x, deInt8 y)
+	{
+		return test_ugreaterthan(y, x);
+	}
+
+	static inline deInt8 test_ugreaterthanequal (deInt8 x, deInt8 y)
+	{
+		// Consume signed integers as unsigned integers
+		if ((x & 0x80) ^ (y & 0x80))
+			std::swap(x,y);
+
+		if (x >= y)
+			return static_cast<deInt8>(1);
+		else
+			return static_cast<deInt8>(0);
+	}
+
+	static inline deInt8 test_ulessthanequal (deInt8 x, deInt8 y)
+	{
+		return test_ugreaterthanequal(y, x);
+	}
+};
+
 class TestMathInt16 : public TestMath<deInt16>
 {
 public:
@@ -2862,6 +3167,64 @@ public:
 	}
 };
 
+class TestMathUint8 : public TestMath<deUint8>
+{
+public:
+	static inline deUint32 test_msb (deUint8 x)
+	{
+		if (x > 0)
+			return 7 - deClz32((deUint32)x);
+		else
+			return -1;
+	}
+
+	static inline deUint8 test_mul_div (deUint8 x, deUint8 y)
+	{
+		const deUint32 x32 = static_cast<deUint32>(x);
+		const deUint32 y32 = static_cast<deUint32>(y);
+
+		// In SPIR-V, if "y" is 0, then the result is undefined. In our case, let's return 0
+		if (y == static_cast<deUint8>(0))
+			return 0;
+		else
+			return static_cast<deUint8>(static_cast<deUint8>(x32 * y32) / y32);
+	}
+
+	static inline deUint8 test_sgreaterthan (deUint8 x, deUint8 y)
+	{
+		// Consume unsigned integers as signed integers
+		if ((x & 0x80) ^ (y & 0x80))
+			std::swap(x,y);
+
+		if (x > y)
+			return static_cast<deUint8>(1);
+		else
+			return static_cast<deUint8>(0);
+	}
+
+	static inline deUint8 test_slessthan (deUint8 x, deUint8 y)
+	{
+		return test_sgreaterthan(y, x);
+	}
+
+	static inline deUint8 test_sgreaterthanequal (deUint8 x, deUint8 y)
+	{
+		// Consume unsigned integers as signed integers
+		if ((x & 0x80) ^ (y & 0x80))
+			std::swap(x,y);
+
+		if (x >= y)
+			return static_cast<deUint8>(1);
+		else
+			return static_cast<deUint8>(0);
+	}
+
+	static inline deUint8 test_slessthanequal (deUint8 x, deUint8 y)
+	{
+		return test_sgreaterthanequal(y, x);
+	}
+};
+
 class TestMathUint16 : public TestMath<deUint16>
 {
 public:
@@ -3005,36 +3368,45 @@ public:
 	}
 };
 
+#define I8_FILTER_NONE SpvAsmTypeInt8Tests::filterNone
 #define I16_FILTER_NONE SpvAsmTypeInt16Tests::filterNone
 #define I32_FILTER_NONE SpvAsmTypeInt32Tests::filterNone
 #define I64_FILTER_NONE SpvAsmTypeInt64Tests::filterNone
+#define U8_FILTER_NONE SpvAsmTypeUint8Tests::filterNone
 #define U16_FILTER_NONE SpvAsmTypeUint16Tests::filterNone
 #define U32_FILTER_NONE SpvAsmTypeUint32Tests::filterNone
 #define U64_FILTER_NONE SpvAsmTypeUint64Tests::filterNone
 
+#define I8_FILTER_ZERO SpvAsmTypeInt8Tests::filterZero
 #define I16_FILTER_ZERO SpvAsmTypeInt16Tests::filterZero
 #define I32_FILTER_ZERO SpvAsmTypeInt32Tests::filterZero
 #define I64_FILTER_ZERO SpvAsmTypeInt64Tests::filterZero
+#define U8_FILTER_ZERO SpvAsmTypeUint8Tests::filterZero
 #define U16_FILTER_ZERO SpvAsmTypeUint16Tests::filterZero
 #define U32_FILTER_ZERO SpvAsmTypeUint32Tests::filterZero
 #define U64_FILTER_ZERO SpvAsmTypeUint64Tests::filterZero
 
+#define I8_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeInt8Tests::filterNegativesAndZero
 #define I16_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeInt16Tests::filterNegativesAndZero
 #define I32_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeInt32Tests::filterNegativesAndZero
 #define I64_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeInt64Tests::filterNegativesAndZero
+#define U8_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeUint8Tests::filterNegativesAndZero
 #define U16_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeUint16Tests::filterNegativesAndZero
 #define U32_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeUint32Tests::filterNegativesAndZero
 #define U64_FILTER_NEGATIVES_AND_ZERO SpvAsmTypeUint64Tests::filterNegativesAndZero
 
+#define I8_FILTER_MIN_GT_MAX SpvAsmTypeInt8Tests::filterMinGtMax
 #define I16_FILTER_MIN_GT_MAX SpvAsmTypeInt16Tests::filterMinGtMax
 #define I32_FILTER_MIN_GT_MAX SpvAsmTypeInt32Tests::filterMinGtMax
 #define I64_FILTER_MIN_GT_MAX SpvAsmTypeInt64Tests::filterMinGtMax
+#define U8_FILTER_MIN_GT_MAX SpvAsmTypeUint8Tests::filterMinGtMax
 #define U16_FILTER_MIN_GT_MAX SpvAsmTypeUint16Tests::filterMinGtMax
 #define U32_FILTER_MIN_GT_MAX SpvAsmTypeUint32Tests::filterMinGtMax
 #define U64_FILTER_MIN_GT_MAX SpvAsmTypeUint64Tests::filterMinGtMax
 
 const string bitShiftTestPostfix[] =
 {
+	"_shift8",
 	"_shift16",
 	"_shift32",
 	"_shift64"
@@ -3042,19 +3414,26 @@ const string bitShiftTestPostfix[] =
 
 const string bitFieldTestPostfix[] =
 {
+	"_offset8_count8",
+	"_offset8_count16",
+	"_offset8_count32",
+	"_offset8_count64",
+	"_offset16_count8",
 	"_offset16_count16",
 	"_offset16_count32",
 	"_offset16_count64",
+	"_offset32_count8",
 	"_offset32_count16",
 	"_offset32_count32",
 	"_offset32_count64",
+	"_offset64_count8",
 	"_offset64_count16",
 	"_offset64_count32",
 	"_offset64_count64",
 };
 
 // Macro to create tests.
-// Syntax: MAKE_TEST_{S,V}_{I,U}_{1,3,6}
+// Syntax: MAKE_TEST_{S,V}_{I,U}_{8,1,3,6}
 //
 //  'S': create scalar test
 //  'V': create vector test
@@ -3062,15 +3441,19 @@ const string bitFieldTestPostfix[] =
 //  'I': create integer test
 //  'U': create unsigned integer test
 //
+//  '8': create 8-bit test
+//  '1': create 16-bit test
 //  '3': create 32-bit test
 //  '6': create 64-bit test
 //
 //  'W': bit width of some parameters in bit field and shift operations can be different from Result and Base
 //  'N': create 16-bit tests without 'test_high_part_zero' variants
 
-#define MAKE_TEST_S_I_136(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_S_I_8136(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 1; ++ndx) \
 	{ \
+		int8Tests[ndx]->createTests((name), (spirvOp), \
+			TestMathInt8::test_##op, I8_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		int16Tests[ndx]->createTests((name), (spirvOp), \
 			TestMathInt16::test_##op, I16_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		int16Tests[ndx]->createTests((name "_test_high_part_zero"), (spirvOp), \
@@ -3081,9 +3464,11 @@ const string bitFieldTestPostfix[] =
 			TestMathInt64::test_##op, I64_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 	} \
 
-#define MAKE_TEST_V_I_136(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_V_I_8136(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 1; ndx < 4; ++ndx) \
 	{ \
+		int8Tests[ndx]->createTests((name), (spirvOp), \
+			TestMathInt8::test_##op, I8_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		int16Tests[ndx]->createTests((name), (spirvOp), \
 			TestMathInt16::test_##op, I16_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		int16Tests[ndx]->createTests((name "_test_high_part_zero"), (spirvOp), \
@@ -3094,9 +3479,11 @@ const string bitFieldTestPostfix[] =
 			TestMathInt64::test_##op, I64_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 	} \
 
-#define MAKE_TEST_SV_I_136(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_SV_I_8136(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 4; ++ndx) \
 	{ \
+		int8Tests[ndx]->createTests((name), (spirvOp), \
+			TestMathInt8::test_##op, I8_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		int16Tests[ndx]->createTests((name), (spirvOp), \
 			TestMathInt16::test_##op, I16_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		int16Tests[ndx]->createTests((name "_test_high_part_zero"), (spirvOp), \
@@ -3107,9 +3494,11 @@ const string bitFieldTestPostfix[] =
 			TestMathInt64::test_##op, I64_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 	} \
 
-#define MAKE_TEST_SV_I_136_N(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_SV_I_8136_N(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 4; ++ndx) \
 	{ \
+		int8Tests[ndx]->createTests((name), (spirvOp), \
+			TestMathInt8::test_##op, I8_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		int16Tests[ndx]->createTests((name), (spirvOp), \
 			TestMathInt16::test_##op, I16_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		int32Tests[ndx]->createTests((name), (spirvOp), \
@@ -3118,18 +3507,22 @@ const string bitFieldTestPostfix[] =
 			TestMathInt64::test_##op, I64_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 	} \
 
-#define MAKE_TEST_SV_I_136_W(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_SV_I_8136_W(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 4; ++ndx) \
-	for (deUint32 width = 0; width < 3; ++width) \
+	for (deUint32 widthNdx = 0; widthNdx < DE_LENGTH_OF_ARRAY(bitShiftTestPostfix); ++widthNdx) \
 	{ \
-		int16Tests[ndx]->createTests(string(name + bitShiftTestPostfix[width]).c_str(), (spirvOp), \
-			TestMathInt16::test_##op, I16_##filter, inputRange, InputWidth(WIDTH_16 + width), (extension)); \
-		int16Tests[ndx]->createTests(string(name + bitShiftTestPostfix[width] + "_test_high_part_zero").c_str(), (spirvOp), \
-			TestMathInt16::test_##op, I16_##filter, inputRange, InputWidth(WIDTH_16 + width), (extension), true); \
-		int32Tests[ndx]->createTests(string(name + bitShiftTestPostfix[width]).c_str(), (spirvOp), \
-			TestMathInt32::test_##op, I32_##filter, inputRange, InputWidth(WIDTH_16 + width), (extension)); \
-		int64Tests[ndx]->createTests(string(name + bitShiftTestPostfix[width]).c_str(), (spirvOp), \
-			TestMathInt64::test_##op, I64_##filter, inputRange, InputWidth(WIDTH_16 + width), (extension)); \
+		const InputWidth inputWidth = static_cast<InputWidth>(WIDTH_8 + widthNdx); \
+		\
+		int8Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp), \
+			TestMathInt8::test_##op, I8_##filter, inputRange, inputWidth, (extension)); \
+		int16Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp), \
+			TestMathInt16::test_##op, I16_##filter, inputRange, inputWidth, (extension)); \
+		int16Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx] + "_test_high_part_zero").c_str(), (spirvOp), \
+			TestMathInt16::test_##op, I16_##filter, inputRange, inputWidth, (extension), true); \
+		int32Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp), \
+			TestMathInt32::test_##op, I32_##filter, inputRange, inputWidth, (extension)); \
+		int64Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp), \
+			TestMathInt64::test_##op, I64_##filter, inputRange, inputWidth, (extension)); \
 	} \
 
 #define MAKE_TEST_SV_I_1(name, spirvOp, op, filter, inputRange, extension) \
@@ -3148,15 +3541,17 @@ const string bitFieldTestPostfix[] =
 
 #define MAKE_TEST_SV_I_3_W(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 4; ++ndx) \
-	for (deUint32 width = 0; width < 9; ++width) \
+	for (deUint32 width = 0; width < DE_LENGTH_OF_ARRAY(bitFieldTestPostfix); ++width) \
 	{ \
 		int32Tests[ndx]->createTests(string(name + bitFieldTestPostfix[width]).c_str(), (spirvOp), \
-			TestMathInt32::test_##op, I32_##filter, inputRange, InputWidth(WIDTH_16_16 + width), (extension)); \
+			TestMathInt32::test_##op, I32_##filter, inputRange, InputWidth(WIDTH_8_8 + width), (extension)); \
 	} \
 
-#define MAKE_TEST_S_U_136(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_S_U_8136(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 1; ++ndx) \
 	{ \
+		uint8Tests[ndx]->createTests((name), (spirvOp), \
+			TestMathUint8::test_##op, U8_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		uint16Tests[ndx]->createTests((name), (spirvOp), \
 			TestMathUint16::test_##op, U16_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		uint16Tests[ndx]->createTests((name "_test_high_part_zero"), (spirvOp), \
@@ -3167,7 +3562,7 @@ const string bitFieldTestPostfix[] =
 			TestMathUint64::test_##op, U64_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 	} \
 
-#define MAKE_TEST_V_U_136(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_V_U_8136(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 1; ndx < 4; ++ndx) \
 	{ \
 		uint16Tests[ndx]->createTests((name), (spirvOp), \
@@ -3180,9 +3575,11 @@ const string bitFieldTestPostfix[] =
 			TestMathUint64::test_##op, U64_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 	} \
 
-#define MAKE_TEST_SV_U_136(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_SV_U_8136(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 4; ++ndx) \
 	{ \
+		uint8Tests[ndx]->createTests((name), (spirvOp), \
+			TestMathUint8::test_##op, U8_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		uint16Tests[ndx]->createTests((name), (spirvOp), \
 			TestMathUint16::test_##op, U16_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		uint16Tests[ndx]->createTests((name "_test_high_part_zero"), (spirvOp), \
@@ -3193,9 +3590,11 @@ const string bitFieldTestPostfix[] =
 			TestMathUint64::test_##op, U64_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 	} \
 
-#define MAKE_TEST_SV_U_136_N(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_SV_U_8136_N(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 4; ++ndx) \
 	{ \
+		uint8Tests[ndx]->createTests((name), (spirvOp), \
+			TestMathUint8::test_##op, U8_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		uint16Tests[ndx]->createTests((name), (spirvOp), \
 			TestMathUint16::test_##op, U16_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 		uint32Tests[ndx]->createTests((name), (spirvOp), \
@@ -3204,18 +3603,22 @@ const string bitFieldTestPostfix[] =
 			TestMathUint64::test_##op, U64_##filter, inputRange, WIDTH_DEFAULT, (extension)); \
 	} \
 
-#define MAKE_TEST_SV_U_136_W(name, spirvOp, op, filter, inputRange, extension) \
+#define MAKE_TEST_SV_U_8136_W(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 4; ++ndx) \
-	for (deUint32 width = 0; width < 3; ++width) \
+	for (deUint32 widthNdx = 0; widthNdx < DE_LENGTH_OF_ARRAY(bitShiftTestPostfix); ++widthNdx) \
 	{ \
-		uint16Tests[ndx]->createTests(string(name + bitShiftTestPostfix[width]).c_str(), (spirvOp), \
-			TestMathUint16::test_##op, U16_##filter, inputRange, InputWidth(WIDTH_16 + width), (extension)); \
-		uint16Tests[ndx]->createTests(string(name + bitShiftTestPostfix[width] + "_test_high_part_zero").c_str(), (spirvOp), \
-			TestMathUint16::test_##op, U16_##filter, inputRange, InputWidth(WIDTH_16 + width), (extension), true); \
-		uint32Tests[ndx]->createTests(string(name + bitShiftTestPostfix[width]).c_str(), (spirvOp), \
-			TestMathUint32::test_##op, U32_##filter, inputRange, InputWidth(WIDTH_16 + width), (extension)); \
-		uint64Tests[ndx]->createTests(string(name + bitShiftTestPostfix[width]).c_str(), (spirvOp), \
-			TestMathUint64::test_##op, U64_##filter, inputRange, InputWidth(WIDTH_16 + width), (extension)); \
+		const InputWidth inputWidth = static_cast<InputWidth>(WIDTH_8 + widthNdx); \
+		\
+		uint8Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp), \
+			TestMathUint8::test_##op, U8_##filter, inputRange, inputWidth, (extension)); \
+		uint16Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp), \
+			TestMathUint16::test_##op, U16_##filter, inputRange, inputWidth, (extension)); \
+		uint16Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx] + "_test_high_part_zero").c_str(), (spirvOp), \
+			TestMathUint16::test_##op, U16_##filter, inputRange, inputWidth, (extension), true); \
+		uint32Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp), \
+			TestMathUint32::test_##op, U32_##filter, inputRange, inputWidth, (extension)); \
+		uint64Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp), \
+			TestMathUint64::test_##op, U64_##filter, inputRange, inputWidth, (extension)); \
 	} \
 
 #define MAKE_TEST_SV_U_1(name, spirvOp, op, filter, inputRange, extension) \
@@ -3234,10 +3637,10 @@ const string bitFieldTestPostfix[] =
 
 #define MAKE_TEST_SV_U_3_W(name, spirvOp, op, filter, inputRange, extension) \
 	for (deUint32 ndx = 0; ndx < 4; ++ndx) \
-	for (deUint32 width = 0; width < 9; ++width) \
+	for (deUint32 width = 0; width < DE_LENGTH_OF_ARRAY(bitFieldTestPostfix); ++width) \
 	{ \
 		uint32Tests[ndx]->createTests(string(name + bitFieldTestPostfix[width]).c_str(), (spirvOp), \
-			TestMathUint32::test_##op, U32_##filter, inputRange, InputWidth(WIDTH_16_16 + width), (extension)); \
+			TestMathUint32::test_##op, U32_##filter, inputRange, InputWidth(WIDTH_8_8 + width), (extension)); \
 	} \
 
 tcu::TestCaseGroup* createTypeTests (tcu::TestContext& testCtx)
@@ -3246,88 +3649,92 @@ tcu::TestCaseGroup* createTypeTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>		typeScalarTests		(new tcu::TestCaseGroup(testCtx, "scalar", "scalar tests"));
 	de::MovePtr<tcu::TestCaseGroup>		typeVectorTests[3];
 
+	de::MovePtr<SpvAsmTypeInt8Tests>	int8Tests[4];
 	de::MovePtr<SpvAsmTypeInt16Tests>	int16Tests[4];
 	de::MovePtr<SpvAsmTypeInt32Tests>	int32Tests[4];
 	de::MovePtr<SpvAsmTypeInt64Tests>	int64Tests[4];
+	de::MovePtr<SpvAsmTypeUint8Tests>	uint8Tests[4];
 	de::MovePtr<SpvAsmTypeUint16Tests>	uint16Tests[4];
 	de::MovePtr<SpvAsmTypeUint32Tests>	uint32Tests[4];
 	de::MovePtr<SpvAsmTypeUint64Tests>	uint64Tests[4];
 
 	for (deUint32 ndx = 0; ndx < 3; ++ndx)
 	{
-		std::string testName = "vec" + numberToString(ndx + 2);
+		std::string testName = "vec" + de::toString(ndx + 2);
 		typeVectorTests[ndx] = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, testName.c_str(), "vector tests"));
 	}
 
 	for (deUint32 ndx = 0; ndx < 4; ++ndx)
 	{
+		int8Tests[ndx]		= de::MovePtr<SpvAsmTypeInt8Tests>(new SpvAsmTypeInt8Tests(testCtx, ndx + 1));
 		int16Tests[ndx]		= de::MovePtr<SpvAsmTypeInt16Tests>(new SpvAsmTypeInt16Tests(testCtx, ndx + 1));
 		int32Tests[ndx]		= de::MovePtr<SpvAsmTypeInt32Tests>(new SpvAsmTypeInt32Tests(testCtx, ndx + 1));
 		int64Tests[ndx]		= de::MovePtr<SpvAsmTypeInt64Tests>(new SpvAsmTypeInt64Tests(testCtx, ndx + 1));
+		uint8Tests[ndx]		= de::MovePtr<SpvAsmTypeUint8Tests>(new SpvAsmTypeUint8Tests(testCtx, ndx + 1));
 		uint16Tests[ndx]	= de::MovePtr<SpvAsmTypeUint16Tests>(new SpvAsmTypeUint16Tests(testCtx, ndx + 1));
 		uint32Tests[ndx]	= de::MovePtr<SpvAsmTypeUint32Tests>(new SpvAsmTypeUint32Tests(testCtx, ndx + 1));
 		uint64Tests[ndx]	= de::MovePtr<SpvAsmTypeUint64Tests>(new SpvAsmTypeUint64Tests(testCtx, ndx + 1));
 	}
 
-	MAKE_TEST_SV_I_136("negate", SpvOpSNegate, negate, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("add", SpvOpIAdd, add, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("sub", SpvOpISub, sub, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("mul", SpvOpIMul, mul, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("div", SpvOpSDiv, div, FILTER_ZERO, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136("div", SpvOpUDiv, div, FILTER_ZERO, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("rem", SpvOpSRem, rem, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("mod", SpvOpSMod, mod, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136("mod", SpvOpUMod, mod, FILTER_ZERO, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("abs", GLSLstd450SAbs, abs, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
-	MAKE_TEST_SV_I_136("sign", GLSLstd450SSign, sign, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
-	MAKE_TEST_SV_I_136("min", GLSLstd450SMin, min, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
-	MAKE_TEST_SV_U_136("min", GLSLstd450UMin, min, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
-	MAKE_TEST_SV_I_136("max", GLSLstd450SMax, max, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
-	MAKE_TEST_SV_U_136("max", GLSLstd450UMax, max, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
-	MAKE_TEST_SV_I_136("clamp", GLSLstd450SClamp, clamp, FILTER_MIN_GT_MAX, RANGE_FULL, "GLSL.std.450");
-	MAKE_TEST_SV_U_136("clamp", GLSLstd450UClamp, clamp, FILTER_MIN_GT_MAX, RANGE_FULL, "GLSL.std.450");
+	MAKE_TEST_SV_I_8136("negate", SpvOpSNegate, negate, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("add", SpvOpIAdd, add, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("sub", SpvOpISub, sub, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("mul", SpvOpIMul, mul, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("div", SpvOpSDiv, div, FILTER_ZERO, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136("div", SpvOpUDiv, div, FILTER_ZERO, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("rem", SpvOpSRem, rem, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("mod", SpvOpSMod, mod, FILTER_NEGATIVES_AND_ZERO, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136("mod", SpvOpUMod, mod, FILTER_ZERO, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("abs", GLSLstd450SAbs, abs, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
+	MAKE_TEST_SV_I_8136("sign", GLSLstd450SSign, sign, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
+	MAKE_TEST_SV_I_8136("min", GLSLstd450SMin, min, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
+	MAKE_TEST_SV_U_8136("min", GLSLstd450UMin, min, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
+	MAKE_TEST_SV_I_8136("max", GLSLstd450SMax, max, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
+	MAKE_TEST_SV_U_8136("max", GLSLstd450UMax, max, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
+	MAKE_TEST_SV_I_8136("clamp", GLSLstd450SClamp, clamp, FILTER_MIN_GT_MAX, RANGE_FULL, "GLSL.std.450");
+	MAKE_TEST_SV_U_8136("clamp", GLSLstd450UClamp, clamp, FILTER_MIN_GT_MAX, RANGE_FULL, "GLSL.std.450");
 	MAKE_TEST_SV_I_3("find_lsb", GLSLstd450FindILsb, lsb, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
 	MAKE_TEST_SV_I_3("find_msb", GLSLstd450FindSMsb, msb, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
 	MAKE_TEST_SV_U_3("find_msb", GLSLstd450FindUMsb, msb, FILTER_NONE, RANGE_FULL, "GLSL.std.450");
 	MAKE_TEST_SV_I_1("mul_sdiv", DE_NULL, mul_div, FILTER_ZERO, RANGE_FULL, DE_NULL);
 	MAKE_TEST_SV_U_1("mul_udiv", DE_NULL, mul_div, FILTER_ZERO, RANGE_FULL, DE_NULL);
 
-	MAKE_TEST_SV_U_136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
-	MAKE_TEST_SV_I_136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
-	MAKE_TEST_SV_U_136_W("shift_right_arithmetic", SpvOpShiftRightArithmetic, asr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
-	MAKE_TEST_SV_I_136_W("shift_right_arithmetic", SpvOpShiftRightArithmetic, asr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
-	MAKE_TEST_SV_U_136_W("shift_left_logical", SpvOpShiftLeftLogical, lsl, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
-	MAKE_TEST_SV_I_136_W("shift_left_logical", SpvOpShiftLeftLogical, lsl, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
+	MAKE_TEST_SV_U_8136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
+	MAKE_TEST_SV_I_8136_W("shift_right_logical", SpvOpShiftRightLogical, lsr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
+	MAKE_TEST_SV_U_8136_W("shift_right_arithmetic", SpvOpShiftRightArithmetic, asr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
+	MAKE_TEST_SV_I_8136_W("shift_right_arithmetic", SpvOpShiftRightArithmetic, asr, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
+	MAKE_TEST_SV_U_8136_W("shift_left_logical", SpvOpShiftLeftLogical, lsl, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
+	MAKE_TEST_SV_I_8136_W("shift_left_logical", SpvOpShiftLeftLogical, lsl, FILTER_NONE, RANGE_BIT_WIDTH, DE_NULL);
 
-	MAKE_TEST_SV_U_136("bitwise_or", SpvOpBitwiseOr, bitwise_or, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("bitwise_or", SpvOpBitwiseOr, bitwise_or , FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136("bitwise_xor", SpvOpBitwiseXor, bitwise_xor, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("bitwise_xor", SpvOpBitwiseXor, bitwise_xor, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136("bitwise_and", SpvOpBitwiseAnd, bitwise_and, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("bitwise_and", SpvOpBitwiseAnd, bitwise_and, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136("not", SpvOpNot, not, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("not", SpvOpNot, not, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136("bitwise_or", SpvOpBitwiseOr, bitwise_or, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("bitwise_or", SpvOpBitwiseOr, bitwise_or , FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136("bitwise_xor", SpvOpBitwiseXor, bitwise_xor, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("bitwise_xor", SpvOpBitwiseXor, bitwise_xor, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136("bitwise_and", SpvOpBitwiseAnd, bitwise_and, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("bitwise_and", SpvOpBitwiseAnd, bitwise_and, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136("not", SpvOpNot, not, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("not", SpvOpNot, not, FILTER_NONE, RANGE_FULL, DE_NULL);
 
-	MAKE_TEST_SV_U_136_N("iequal", SpvOpIEqual, iequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("iequal", SpvOpIEqual, iequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("inotequal", SpvOpINotEqual, inotequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("inotequal", SpvOpINotEqual, inotequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("ugreaterthan", SpvOpUGreaterThan, ugreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("ugreaterthan", SpvOpUGreaterThan, ugreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("sgreaterthan", SpvOpSGreaterThan, sgreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("sgreaterthan", SpvOpSGreaterThan, sgreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("ugreaterthanequal", SpvOpUGreaterThanEqual, ugreaterthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("ugreaterthanequal", SpvOpUGreaterThanEqual, ugreaterthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("sgreaterthanequal", SpvOpSGreaterThanEqual, sgreaterthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("sgreaterthanequal", SpvOpSGreaterThanEqual, sgreaterthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("ulessthan", SpvOpULessThan, ulessthan, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("ulessthan", SpvOpULessThan, ulessthan, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("slessthan", SpvOpSLessThan, slessthan, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("slessthan", SpvOpSLessThan, slessthan, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("ulessthanequal", SpvOpULessThanEqual, ulessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("ulessthanequal", SpvOpULessThanEqual, ulessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("iequal", SpvOpIEqual, iequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("iequal", SpvOpIEqual, iequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("inotequal", SpvOpINotEqual, inotequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("inotequal", SpvOpINotEqual, inotequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("ugreaterthan", SpvOpUGreaterThan, ugreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("ugreaterthan", SpvOpUGreaterThan, ugreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("sgreaterthan", SpvOpSGreaterThan, sgreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("sgreaterthan", SpvOpSGreaterThan, sgreaterthan, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("ugreaterthanequal", SpvOpUGreaterThanEqual, ugreaterthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("ugreaterthanequal", SpvOpUGreaterThanEqual, ugreaterthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("sgreaterthanequal", SpvOpSGreaterThanEqual, sgreaterthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("sgreaterthanequal", SpvOpSGreaterThanEqual, sgreaterthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("ulessthan", SpvOpULessThan, ulessthan, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("ulessthan", SpvOpULessThan, ulessthan, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("slessthan", SpvOpSLessThan, slessthan, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("slessthan", SpvOpSLessThan, slessthan, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("ulessthanequal", SpvOpULessThanEqual, ulessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("ulessthanequal", SpvOpULessThanEqual, ulessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, DE_NULL);
 
 	MAKE_TEST_SV_U_3_W("bit_field_insert", SpvOpBitFieldInsert, bitFieldInsert, FILTER_NONE, RANGE_BIT_WIDTH_SUM, DE_NULL);
 	MAKE_TEST_SV_I_3_W("bit_field_insert", SpvOpBitFieldInsert, bitFieldInsert, FILTER_NONE, RANGE_BIT_WIDTH_SUM, DE_NULL);
@@ -3340,29 +3747,33 @@ tcu::TestCaseGroup* createTypeTests (tcu::TestContext& testCtx)
 	MAKE_TEST_SV_U_3("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, DE_NULL);
 	MAKE_TEST_SV_I_3("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, DE_NULL);
 
-	MAKE_TEST_S_U_136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_S_I_136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_V_U_136("constant_composite", SpvOpConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_V_I_136("constant_composite", SpvOpConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_V_U_136("constant_null", SpvOpConstantNull, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_V_I_136("constant_null", SpvOpConstantNull, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_U_136("variable_initializer", SpvOpVariable, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_SV_I_136("variable_initializer", SpvOpVariable, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_S_U_136("spec_constant_initializer", SpvOpSpecConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_S_I_136("spec_constant_initializer", SpvOpSpecConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_V_U_136("spec_constant_composite_initializer", SpvOpSpecConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
-	MAKE_TEST_V_I_136("spec_constant_composite_initializer", SpvOpSpecConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_S_U_8136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_S_I_8136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_V_U_8136("constant_composite", SpvOpConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_V_I_8136("constant_composite", SpvOpConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_V_U_8136("constant_null", SpvOpConstantNull, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_V_I_8136("constant_null", SpvOpConstantNull, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_U_8136("variable_initializer", SpvOpVariable, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_SV_I_8136("variable_initializer", SpvOpVariable, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_S_U_8136("spec_constant_initializer", SpvOpSpecConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_S_I_8136("spec_constant_initializer", SpvOpSpecConstant, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_V_U_8136("spec_constant_composite_initializer", SpvOpSpecConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
+	MAKE_TEST_V_I_8136("spec_constant_composite_initializer", SpvOpSpecConstantComposite, constant, FILTER_NONE, RANGE_FULL, DE_NULL);
 
+	int8Tests[0]->createSwitchTests();
 	int16Tests[0]->createSwitchTests();
 	int32Tests[0]->createSwitchTests();
 	int64Tests[0]->createSwitchTests();
+	uint8Tests[0]->createSwitchTests();
 	uint16Tests[0]->createSwitchTests();
 	uint32Tests[0]->createSwitchTests();
 	uint64Tests[0]->createSwitchTests();
 
+	typeScalarTests->addChild(int8Tests[0].release());
 	typeScalarTests->addChild(int16Tests[0].release());
 	typeScalarTests->addChild(int32Tests[0].release());
 	typeScalarTests->addChild(int64Tests[0].release());
+	typeScalarTests->addChild(uint8Tests[0].release());
 	typeScalarTests->addChild(uint16Tests[0].release());
 	typeScalarTests->addChild(uint32Tests[0].release());
 	typeScalarTests->addChild(uint64Tests[0].release());
@@ -3371,9 +3782,11 @@ tcu::TestCaseGroup* createTypeTests (tcu::TestContext& testCtx)
 
 	for (deUint32 ndx = 0; ndx < 3; ++ndx)
 	{
+		typeVectorTests[ndx]->addChild(int8Tests[ndx + 1].release());
 		typeVectorTests[ndx]->addChild(int16Tests[ndx + 1].release());
 		typeVectorTests[ndx]->addChild(int32Tests[ndx + 1].release());
 		typeVectorTests[ndx]->addChild(int64Tests[ndx + 1].release());
+		typeVectorTests[ndx]->addChild(uint8Tests[ndx + 1].release());
 		typeVectorTests[ndx]->addChild(uint16Tests[ndx + 1].release());
 		typeVectorTests[ndx]->addChild(uint32Tests[ndx + 1].release());
 		typeVectorTests[ndx]->addChild(uint64Tests[ndx + 1].release());

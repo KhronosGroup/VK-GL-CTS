@@ -355,10 +355,9 @@ namespace SpirVAssembly
 
 // ComputeShaderTestCase implementations
 
-SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
+SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec)
 	: TestCase		(testCtx, name, description)
 	, m_shaderSpec	(spec)
-	, m_features	(features)
 {
 }
 
@@ -373,15 +372,14 @@ TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 	{
 		TCU_THROW(NotSupportedError, std::string("Vulkan higher than or equal to " + getVulkanName(getMinRequiredVulkanVersion(m_shaderSpec.spirvVersion)) + " is required for this test to run").c_str());
 	}
-	return new SpvAsmComputeShaderInstance(ctx, m_shaderSpec, m_features);
+	return new SpvAsmComputeShaderInstance(ctx, m_shaderSpec);
 }
 
 // ComputeShaderTestInstance implementations
 
-SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
+SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const ComputeShaderSpec& spec)
 	: TestInstance		(ctx)
 	, m_shaderSpec		(spec)
-	, m_features		(features)
 {
 }
 
@@ -404,7 +402,6 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	const DeviceInterface&				vkdi				= m_context.getDeviceInterface();
 	Allocator&							allocator			= m_context.getDefaultAllocator();
 	const VkQueue						queue				= m_context.getUniversalQueue();
-	const VkPhysicalDeviceFeatures&		features			= m_context.getDeviceFeatures();
 
 	vector<AllocationSp>				inputAllocs;
 	vector<AllocationSp>				outputAllocs;
@@ -422,21 +419,6 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	{
 		if (!de::contains(m_context.getDeviceExtensions().begin(), m_context.getDeviceExtensions().end(), *i))
 			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
-	}
-
-	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64 || m_features == COMPUTE_TEST_USES_INT16_FLOAT64) && !features.shaderInt16)
-	{
-		TCU_THROW(NotSupportedError, "shaderInt16 feature is not supported");
-	}
-
-	if ((m_features == COMPUTE_TEST_USES_INT64 || m_features == COMPUTE_TEST_USES_INT16_INT64 || m_features == COMPUTE_TEST_USES_INT64_FLOAT64) && !features.shaderInt64)
-	{
-		TCU_THROW(NotSupportedError, "shaderInt64 feature is not supported");
-	}
-
-	if ((m_features == COMPUTE_TEST_USES_FLOAT64 || m_features == COMPUTE_TEST_USES_INT16_FLOAT64 || m_features == COMPUTE_TEST_USES_INT64_FLOAT64) && !features.shaderFloat64)
-	{
-		TCU_THROW(NotSupportedError, "shaderFloat64 feature is not supported");
 	}
 
 	// Core features
@@ -464,8 +446,18 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		// VariablePointers features
 		{
 			if (!isVariablePointersFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extVariablePointers))
-				TCU_THROW(NotSupportedError, "Request Variable Pointer feature not supported");
+				TCU_THROW(NotSupportedError, "Requested Variable Pointer feature not supported");
 		}
+
+		// Float16/Int8 shader features
+		{
+			if (!isFloat16Int8FeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.extFloat16Int8))
+				TCU_THROW(NotSupportedError, "Requested 16bit float or 8bit int feature not supported");
+		}
+
+		// FloatControls features
+		if (!isFloatControlsFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.floatControlsProperties))
+			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
 	}
 
 	DE_ASSERT(!m_shaderSpec.outputs.empty());

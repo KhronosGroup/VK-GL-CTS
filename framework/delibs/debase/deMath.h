@@ -39,7 +39,8 @@ DE_BEGIN_EXTERN_C
 #define DE_LOG2_E		1.44269504088896340736f	/*!< log_2(e).				*/
 #define DE_INV_LOG2_E	0.69314718055994530942f	/*!< 1.0 / log_2(e).		*/
 
-#define DE_PI_DOUBLE	3.14159265358979323846  /*!< Pi as a double.		*/
+#define DE_PI_DOUBLE	3.14159265358979323846	/*!< Pi as a double.		*/
+#define DE_PI_16BIT		0x4248					/*!< Pi. as a float16b		*/
 
 /* Rounding mode control. */
 

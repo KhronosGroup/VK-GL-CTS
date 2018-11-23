@@ -494,6 +494,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetWin32HandleInfoKH
 std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSemaphoreGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePushDescriptorPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloat16Int8FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);
@@ -521,6 +522,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkDisplayPlaneCapabilities2KHR&
 std::ostream&	operator<<	(std::ostream& s, const VkImageFormatListCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkConformanceVersionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDriverPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloatControlsPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);

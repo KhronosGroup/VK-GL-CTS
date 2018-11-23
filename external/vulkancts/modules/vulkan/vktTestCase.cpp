@@ -311,6 +311,7 @@ public:
 	VkPhysicalDevice8BitStorageFeaturesKHR				eightBitStorageFeatures;
 	VkPhysicalDevice16BitStorageFeatures				sixteenBitStorageFeatures;
 	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures;
+	VkPhysicalDeviceFloat16Int8FeaturesKHR				float16Int8Features;
 	VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT	vertexAttributeDivisorFeatures;
 	VkPhysicalDeviceDescriptorIndexingFeaturesEXT		descriptorIndexingFeatures;
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT		inlineUniformBlockFeatures;
@@ -329,6 +330,9 @@ public:
 		deMemset(&eightBitStorageFeatures, 0, sizeof(eightBitStorageFeatures));
 		deMemset(&sixteenBitStorageFeatures, 0, sizeof(sixteenBitStorageFeatures));
 		deMemset(&variablePointerFeatures, 0, sizeof(variablePointerFeatures));
+		deMemset(&descriptorIndexingFeatures, 0, sizeof(descriptorIndexingFeatures));
+		deMemset(&inlineUniformBlockFeatures, 0, sizeof(inlineUniformBlockFeatures));
+		deMemset(&float16Int8Features, 0, sizeof(float16Int8Features));
 		deMemset(&vertexAttributeDivisorFeatures, 0, sizeof(vertexAttributeDivisorFeatures));
 		deMemset(&descriptorIndexingFeatures, 0, sizeof(descriptorIndexingFeatures));
 		deMemset(&inlineUniformBlockFeatures, 0, sizeof(inlineUniformBlockFeatures));
@@ -341,6 +345,9 @@ public:
 		eightBitStorageFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
 		sixteenBitStorageFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR;
 		variablePointerFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR;
+		descriptorIndexingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+		inlineUniformBlockFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
+		float16Int8Features.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
 		vertexAttributeDivisorFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
 		descriptorIndexingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
 		inlineUniformBlockFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT;
@@ -373,11 +380,6 @@ public:
 				*nextPtr	= &variablePointerFeatures;
 				nextPtr		= &variablePointerFeatures.pNext;
 			}
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_vertex_attribute_divisor"))
-			{
-				*nextPtr	= &vertexAttributeDivisorFeatures;
-				nextPtr		= &vertexAttributeDivisorFeatures.pNext;
-			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_descriptor_indexing"))
 			{
 				*nextPtr	= &descriptorIndexingFeatures;
@@ -387,6 +389,16 @@ public:
 			{
 				*nextPtr	= &inlineUniformBlockFeatures;
 				nextPtr		= &inlineUniformBlockFeatures.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_shader_float16_int8"))
+			{
+				*nextPtr	= &float16Int8Features;
+				nextPtr		= &float16Int8Features.pNext;
+			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_vertex_attribute_divisor"))
+			{
+				*nextPtr	= &vertexAttributeDivisorFeatures;
+				nextPtr		= &vertexAttributeDivisorFeatures.pNext;
 			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_vulkan_memory_model"))
 			{
@@ -435,6 +447,7 @@ public:
 	const VkPhysicalDevice8BitStorageFeaturesKHR&			get8BitStorageFeatures				(void) const	{ return m_deviceFeatures.eightBitStorageFeatures;			}
 	const VkPhysicalDevice16BitStorageFeatures&				get16BitStorageFeatures				(void) const	{ return m_deviceFeatures.sixteenBitStorageFeatures;		}
 	const VkPhysicalDeviceVariablePointerFeatures&			getVariablePointerFeatures			(void) const	{ return m_deviceFeatures.variablePointerFeatures;			}
+	const VkPhysicalDeviceFloat16Int8FeaturesKHR&			getFloat16Int8Features				(void) const	{ return m_deviceFeatures.float16Int8Features;				}
 	const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&getVertexAttributeDivisorFeatures	(void) const	{ return m_deviceFeatures.vertexAttributeDivisorFeatures;	}
 	const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&		getVulkanMemoryModelFeatures		(void) const	{ return m_deviceFeatures.vulkanMemoryModelFeatures;	}
 	const VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&		getShaderAtomicInt64Features		(void) const	{ return m_deviceFeatures.shaderAtomicInt64Features;	}
@@ -570,6 +583,8 @@ const vk::VkPhysicalDevice16BitStorageFeatures&
 										Context::get16BitStorageFeatures		(void) const { return m_device->get16BitStorageFeatures();		}
 const vk::VkPhysicalDeviceVariablePointerFeatures&
 										Context::getVariablePointerFeatures		(void) const { return m_device->getVariablePointerFeatures();	}
+const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
+										Context::getFloat16Int8Features			(void) const { return m_device->getFloat16Int8Features();		}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&
 										Context::getVertexAttributeDivisorFeatures	(void) const { return m_device->getVertexAttributeDivisorFeatures();	}
 const vk::VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&
