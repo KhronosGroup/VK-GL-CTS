@@ -166,6 +166,7 @@ GLCTS_3_2_2_GLES3_PKG					= Package(module = ES3CTS_MODULE, configurations = [
 					rotation		= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
+					skip			= "x11",
 					filters			= [include("gles3-master.txt"),
 									   include("gles3-pixelformat.txt"),
 									   exclude("gles3-pixelformat-issues.txt")]),
@@ -222,6 +223,7 @@ GLCTS_3_2_2_GLES31_PKG					= Package(module = ES31CTS_MODULE, configurations = [
 					rotation		= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
+					skip			= "x11",
 					filters			= [include("gles31-master.txt"), include("gles31-pixelformat.txt")]),
 	])
 
@@ -317,6 +319,7 @@ GLCTS_3_2_3_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
+					skip			= "x11",
 					filters		= GLCTS_3_2_3_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
 
 	])
@@ -384,6 +387,7 @@ GLCTS_3_2_3_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
+					skip			= "x11",
 					filters		= GLCTS_3_2_3_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
 	])
 
@@ -519,6 +523,7 @@ MASTER_GLES3_PKG				= Package(module = ES3CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
+					skip			= "x11",
 					filters		= MASTER_GLES3_COMMON_FILTERS + [include("gles3-pixelformat.txt")]),
 	])
 MASTER_GLES31_COMMON_FILTERS             = [
@@ -580,6 +585,7 @@ MASTER_GLES31_PKG				= Package(module = ES31CTS_MODULE, configurations = [
 					rotation	= "unspecified",
 					surfacewidth	= "256",
 					surfaceheight	= "256",
+					skip			= "x11",
 					filters		= MASTER_GLES31_COMMON_FILTERS + [include("gles31-pixelformat.txt")]),
 	])
 
@@ -1194,5 +1200,4 @@ if __name__ == "__main__":
 		raise Exception("GTF sources not found. GTF module is required to build the mustpass files. 'cd external && python fetch_kc_cts.py'")
 	genMustpassLists(ES_MUSTPASS_LISTS, ANY_GENERATOR, ES_BUILD_CONFIG)
 	gl_mustpass_lists = generateGLMustpass()
-#	genMustpassLists(gl_mustpass_lists, ANY_GENERATOR, GL_BUILD_CONFIG)
-
+	genMustpassLists(gl_mustpass_lists, ANY_GENERATOR, GL_BUILD_CONFIG)
