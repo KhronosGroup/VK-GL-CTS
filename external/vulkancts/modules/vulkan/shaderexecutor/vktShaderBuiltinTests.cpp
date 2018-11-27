@@ -48,6 +48,8 @@ tcu::TestCaseGroup* createBuiltinTests (tcu::TestContext& testCtx)
 
 	builtinTests->addChild(builtinFunctionTests.release());
 	builtinTests->addChild(new BuiltinPrecisionTests(testCtx));
+	builtinTests->addChild(new BuiltinPrecision16BitTests(testCtx));
+	builtinTests->addChild(new BuiltinPrecision16Storage32BitTests(testCtx));
 
 	return builtinTests.release();
 }

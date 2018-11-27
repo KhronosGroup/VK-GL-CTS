@@ -370,8 +370,8 @@ std::ostream& operator<< (std::ostream& str, const DeclareVariable& decl)
 
 	if (curType->isBasicType())
 	{
-		if (curType->getPrecision() != PRECISION_LAST)
-			str << glu::getPrecisionName(curType->getPrecision()) << " ";
+		if (curType->getPrecision() != PRECISION_LAST && !glu::isDataTypeFloat16OrVec(curType->getBasicType()))
+				str << glu::getPrecisionName(curType->getPrecision()) << " ";
 		str << glu::getDataTypeName(curType->getBasicType());
 	}
 	else if (curType->isStructType())

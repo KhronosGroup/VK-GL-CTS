@@ -1,16 +1,5 @@
 # Issue 217: Built-in function precision test issues
-dEQP-VK.glsl.builtin.precision.dot.highp_compute.*
-dEQP-VK.glsl.builtin.precision.smoothstep.mediump_compute.*
-dEQP-VK.glsl.builtin.precision.smoothstep.highp_compute.*
-dEQP-VK.glsl.builtin.precision.acosh.highp_compute.*
-dEQP-VK.glsl.builtin.precision.atanh.highp_compute.*
-dEQP-VK.glsl.builtin.precision.atanh.mediump_compute.*
-dEQP-VK.glsl.builtin.precision.reflect.mediump_compute.scalar
-dEQP-VK.glsl.builtin.precision.reflect.highp_compute.scalar
 dEQP-VK.glsl.builtin.precision.acos.mediump_compute.*
-dEQP-VK.glsl.builtin.precision.atan.mediump_compute.*
-dEQP-VK.glsl.builtin.precision.inverse.highp_compute.mat2
-dEQP-VK.glsl.builtin.precision.refract.*
 
 # Issue 233: Negative zero flat varying issue
 dEQP-VK.glsl.builtin.function.common.frexp.float_highp_vertex
@@ -26,7 +15,3 @@ dEQP-VK.glsl.texture_functions.textureoffset.isampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.usampler2darray_vertex
 dEQP-VK.glsl.texture_functions.textureoffset.usampler3d_vertex
 dEQP-VK.glsl.texture_functions.texturegradoffset.usampler2darray_vertex
-
-# Issue 702: Tests use invalid conversion operations
-dEQP-VK.spirv_assembly.instruction.*.indexing.*u32*
-dEQP-VK.spirv_assembly.instruction.*.indexing.*s32*

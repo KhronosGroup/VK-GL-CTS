@@ -5969,7 +5969,6 @@ void addSimpleTests (tcu::TestCaseGroup* group, const TestConfigExternal testCon
 										 0,
 										 testConfigExternal.allocationKind,
 										 testConfigExternal.renderPassType);
-
 		addFunctionCaseWithPrograms<TestConfig>(group, "color_unused_omit_blend_state", "Two unused color attachment case without blend state", createTestShaders, renderPassTest, testConfig);
 	}
 }

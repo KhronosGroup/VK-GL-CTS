@@ -211,7 +211,7 @@ ProgramBinary*			buildProgram		(const GlslSource& program, glu::ShaderProgramInf
 ProgramBinary*			buildProgram		(const HlslSource& program, glu::ShaderProgramInfo* buildInfo, const tcu::CommandLine& commandLine);
 ProgramBinary*			assembleProgram		(const vk::SpirVAsmSource& program, SpirVProgramInfo* buildInfo, const tcu::CommandLine& commandLine);
 void					disassembleProgram	(const ProgramBinary& program, std::ostream* dst);
-bool					validateProgram		(const ProgramBinary& program, std::ostream* dst, deUint32 vulkanVersion, bool relaxedLayout);
+bool					validateProgram		(const ProgramBinary& program, std::ostream* dst, const SpirvValidatorOptions&);
 
 Move<VkShaderModule>	createShaderModule	(const DeviceInterface& deviceInterface, VkDevice device, const ProgramBinary& binary, VkShaderModuleCreateFlags flags);
 

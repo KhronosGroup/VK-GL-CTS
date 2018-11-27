@@ -31,9 +31,9 @@
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vktTestCase.hpp"
-#include "vkTypeUtil.cpp"
-#include "vkCmdUtil.cpp"
-#include "vkObjUtil.cpp"
+#include "vkTypeUtil.hpp"
+#include "vkCmdUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuTestLog.hpp"
 

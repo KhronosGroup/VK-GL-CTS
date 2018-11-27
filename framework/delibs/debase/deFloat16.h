@@ -43,6 +43,9 @@ deFloat16	deFloat32To16				(float val32);
 deFloat16	deFloat32To16Round			(float val32, deRoundingMode mode);
 void		deFloat16_selfTest			(void);
 
+deFloat16	deFloat64To16				(double val64);
+deFloat16	deFloat64To16Round			(double val64, deRoundingMode mode);
+
 /*--------------------------------------------------------------------*//*!
  * \brief Convert 16-bit floating point number to 32 bit.
  * \param val16	Input value.
@@ -50,6 +53,12 @@ void		deFloat16_selfTest			(void);
  *//*--------------------------------------------------------------------*/
 float		deFloat16To32		(deFloat16 val16);
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Convert 16-bit floating point number to 64 bit.
+ * \param val16	Input value.
+ * \return Converted 64-bit floating-point value.
+ *//*--------------------------------------------------------------------*/
+double		deFloat16To64		(deFloat16 val16);
 DE_END_EXTERN_C
 
 #endif /* _DEFLOAT16_H */

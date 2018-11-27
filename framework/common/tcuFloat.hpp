@@ -132,6 +132,8 @@ typedef Float<deUint16,  5, 10,   15, FLOAT_HAS_SIGN|FLOAT_SUPPORT_DENORM>	Float
 typedef Float<deUint32,  8, 23,  127, FLOAT_HAS_SIGN|FLOAT_SUPPORT_DENORM>	Float32;	//!< IEEE 754 32-bit floating-point value
 typedef Float<deUint64, 11, 52, 1023, FLOAT_HAS_SIGN|FLOAT_SUPPORT_DENORM>	Float64;	//!< IEEE 754 64-bit floating-point value
 
+typedef Float<deUint16,  5, 10,   15, FLOAT_HAS_SIGN>	Float16Denormless;	//!< IEEE 754-2008 16-bit floating-point value without denormalized support
+
 template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, deUint32 Flags>
 inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::Float (void)
 	: m_value(0)
@@ -226,8 +228,8 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>
 Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::constructBits
 	(int sign, int exponent, StorageType mantissaBits)
 {
-	const StorageType signBit		= sign < 0 ? 1 : 0;
-	const StorageType exponentBits	= exponent + ExponentBias;
+	const StorageType signBit		= static_cast<StorageType>(sign < 0 ? 1 : 0);
+	const StorageType exponentBits	= static_cast<StorageType>(exponent + ExponentBias);
 
 	DE_ASSERT(sign == +1 || sign == -1 );
 	DE_ASSERT(exponentBits >> ExponentBits == 0);

@@ -189,7 +189,7 @@ Interval FloatFormat::convert (const Interval& x) const
 
 	// Round both bounds _inwards_ to closest representable values.
 	if (!tmp.empty())
-		ret |= clampValue(round(tmp.lo(), true)) | clampValue(round(tmp.hi(), false));
+		ret |= clampValue(round(tmp.lo(), false)) | clampValue(round(tmp.hi(), true));
 
 	// If this format's precision is not exact, the (possibly out-of-bounds)
 	// original value is also a possible result.

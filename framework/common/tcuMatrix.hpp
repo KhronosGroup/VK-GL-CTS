@@ -505,6 +505,23 @@ typedef Matrix<float, 2, 4>	Mat4x2;
 typedef Matrix<float, 3, 4>	Mat4x3;
 typedef Matrix4f			Mat4;
 
+//using tcu::Matrix;
+// Common typedefs 16Bit.
+typedef Matrix<deUint16, 2, 2>	Matrix2f16b;
+typedef Matrix<deUint16, 3, 3>	Matrix3f16b;
+typedef Matrix<deUint16, 4, 4>	Matrix4f16b;
+
+// GLSL-style naming \note CxR.
+typedef Matrix2f16b				Mat2_16b;
+typedef Matrix<deUint16, 3, 2>	Mat2x3_16b;
+typedef Matrix<deUint16, 4, 2>	Mat2x4_16b;
+typedef Matrix<deUint16, 2, 3>	Mat3x2_16b;
+typedef Matrix3f16b				Mat3_16b;
+typedef Matrix<deUint16, 4, 3>	Mat3x4_16b;
+typedef Matrix<deUint16, 2, 4>	Mat4x2_16b;
+typedef Matrix<deUint16, 3, 4>	Mat4x3_16b;
+typedef Matrix4f16b				Mat4_16b;
+
 // Matrix-scalar operators.
 
 template <typename T, int Rows, int Cols>
