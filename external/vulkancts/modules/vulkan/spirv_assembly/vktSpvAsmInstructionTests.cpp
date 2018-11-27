@@ -9236,8 +9236,7 @@ struct ConvertCase
 
 		if (usesInt16(from, to) || usesFloat16(from, to))
 		{
-			caps += "OpCapability StorageUniformBufferBlock16\n"
-					"OpCapability StorageUniform16\n";
+			caps += "OpCapability StorageUniformBufferBlock16\n";
 			exts += "OpExtension \"SPV_KHR_16bit_storage\"\n";
 		}
 
