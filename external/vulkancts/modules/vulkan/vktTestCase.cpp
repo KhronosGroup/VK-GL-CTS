@@ -341,7 +341,6 @@ public:
 		deMemset(&shaderAtomicInt64Features, 0, sizeof(shaderAtomicInt64Features));
 		deMemset(&conditionalRenderingFeatures, 0, sizeof(conditionalRenderingFeatures));
 		deMemset(&scalarBlockLayoutFeatures, 0, sizeof(scalarBlockLayoutFeatures));
-		deMemset(&float16Int8Features, 0, sizeof(float16Int8Features));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -358,7 +357,6 @@ public:
 		shaderAtomicInt64Features.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR;
 		conditionalRenderingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
 		scalarBlockLayoutFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
-		float16Int8Features.sType				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
 
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
@@ -424,11 +422,6 @@ public:
 			{
 				*nextPtr	= &scalarBlockLayoutFeatures;
 				nextPtr		= &scalarBlockLayoutFeatures.pNext;
-			}
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_shader_float16_int8"))
-			{
-				*nextPtr	= &float16Int8Features;
-				nextPtr		= &float16Int8Features.pNext;
 			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
