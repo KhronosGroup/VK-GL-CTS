@@ -100,6 +100,17 @@ std::vector<std::string> getRequiredWsiExtensions (const Extensions&	supportedEx
 	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
 		extensions.push_back("VK_EXT_swapchain_colorspace");
 
+	// VK_KHR_surface_protected_capabilities adds a way to check if swapchain can be
+	// created for protected VkSurface, so if this extension is enabled then we can
+	// check for that capability.
+	// To check this capability, vkGetPhysicalDeviceSurfaceCapabilities2KHR needs
+	// to be called so add VK_KHR_get_surface_capabilities2 for this.
+	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+	{
+		extensions.push_back("VK_KHR_get_surface_capabilities2");
+		extensions.push_back("VK_KHR_surface_protected_capabilities");
+	}
+
 	checkAllSupported(supportedExtensions, extensions);
 
 	return extensions;
@@ -1089,6 +1100,32 @@ tcu::TestStatus basicRenderTest (Context& baseCtx, vk::wsi::Type wsiType)
 																								*commandPool,
 																								vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 																								maxQueuedFrames));
+
+	if (isExtensionSupported(supportedExtensions, vk::RequiredExtension("VK_KHR_surface_protected_capabilities")))
+	{
+		// Check if swapchain can be created for protected surface
+		const vk::InstanceInterface&			vki			= context.getInstanceDriver();
+		vk::VkSurfaceCapabilities2KHR			extCapabilities;
+		vk::VkSurfaceProtectedCapabilitiesKHR		extProtectedCapabilities;
+		const vk::VkPhysicalDeviceSurfaceInfo2KHR	surfaceInfo =
+		{
+			vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+			DE_NULL,
+			surface
+		};
+
+		extProtectedCapabilities.sType			= vk::VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+		extProtectedCapabilities.pNext			= DE_NULL;
+		extProtectedCapabilities.supportsProtected	= DE_FALSE;
+
+		extCapabilities.sType				= vk::VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+		extCapabilities.pNext				= &extProtectedCapabilities;
+
+		VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(context.getPhysicalDevice(), &surfaceInfo, &extCapabilities));
+
+		if (extProtectedCapabilities.supportsProtected == DE_FALSE)
+			TCU_THROW(NotSupportedError, "Swapchain creation for Protected VkSurface is not Supported.");
+	}
 
 	try
 	{

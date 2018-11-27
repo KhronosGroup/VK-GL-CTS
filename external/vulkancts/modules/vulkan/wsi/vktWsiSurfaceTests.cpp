@@ -567,6 +567,68 @@ tcu::TestStatus querySurfaceCapabilities2Test (Context& context, Type wsiType)
 	return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus querySurfaceProtectedCapabilitiesTest (Context& context, Type wsiType)
+{
+	tcu::TestLog&			log			= context.getTestContext().getLog();
+	tcu::ResultCollector		results			(log);
+
+	vector<string>			requiredExtensions;
+	requiredExtensions.push_back("VK_KHR_get_surface_capabilities2");
+	requiredExtensions.push_back("VK_KHR_surface_protected_capabilities");
+	const InstanceHelper		instHelper		(context, wsiType, requiredExtensions);
+	const NativeObjects		native			(context, instHelper.supportedExtensions, wsiType);
+	const Unique<VkSurfaceKHR>	surface			(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+	const vector<VkPhysicalDevice>	physicalDevices		= enumeratePhysicalDevices(instHelper.vki, *instHelper.instance);
+
+	for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+	{
+		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
+		{
+			VkSurfaceCapabilities2KHR		extCapabilities;
+			VkSurfaceProtectedCapabilitiesKHR	extProtectedCapabilities;
+
+			deMemset(&extProtectedCapabilities, 0xcd, sizeof(VkSurfaceProtectedCapabilitiesKHR));
+			extProtectedCapabilities.sType		= VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+			extProtectedCapabilities.pNext		= DE_NULL;
+
+			deMemset(&extCapabilities, 0xcd, sizeof(VkSurfaceCapabilities2KHR));
+			extCapabilities.sType	= VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+			extCapabilities.pNext	= &extProtectedCapabilities;
+
+			{
+				VkPhysicalDeviceSurfaceInfo2KHR		infoCopy;
+				const VkPhysicalDeviceSurfaceInfo2KHR	surfaceInfo =
+				{
+					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
+					DE_NULL,
+					*surface
+				};
+
+
+				deMemcpy(&infoCopy, &surfaceInfo, sizeof(VkPhysicalDeviceSurfaceInfo2KHR));
+
+				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevices[deviceNdx], &surfaceInfo, &extCapabilities));
+
+				results.check(deMemoryEqual(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == DE_TRUE, "Driver wrote into input struct");
+			}
+
+			results.check(extCapabilities.sType == VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR &&
+					extCapabilities.pNext == &extProtectedCapabilities,
+					"sType/pNext modified");
+
+			results.check(extProtectedCapabilities.sType == VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR &&
+					extProtectedCapabilities.pNext == DE_NULL,
+					"sType/pNext modified");
+
+			results.check(extProtectedCapabilities.supportsProtected == 0 ||
+					extProtectedCapabilities.supportsProtected == 1,
+					"supportsProtected ");
+		}
+	}
+
+	return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 void validateSurfaceFormats (tcu::ResultCollector& results, Type wsiType, const vector<VkSurfaceFormatKHR>& formats)
 {
 	const VkSurfaceFormatKHR*	requiredFormats		= DE_NULL;
@@ -1186,6 +1248,7 @@ void createSurfaceTests (tcu::TestCaseGroup* testGroup, vk::wsi::Type wsiType)
 	addFunctionCase(testGroup, "query_support",							"Query surface support",									querySurfaceSupportTest,					wsiType);
 	addFunctionCase(testGroup, "query_capabilities",					"Query surface capabilities",								querySurfaceCapabilitiesTest,				wsiType);
 	addFunctionCase(testGroup, "query_capabilities2",					"Query extended surface capabilities",						querySurfaceCapabilities2Test,				wsiType);
+	addFunctionCase(testGroup, "query_protected_capabilities",			"Query protected surface capabilities",						querySurfaceProtectedCapabilitiesTest,		wsiType);
 	addFunctionCase(testGroup, "query_formats",							"Query surface formats",									querySurfaceFormatsTest,					wsiType);
 	addFunctionCase(testGroup, "query_formats2",						"Query extended surface formats",							querySurfaceFormats2Test,					wsiType);
 	addFunctionCase(testGroup, "query_present_modes",					"Query surface present modes",								querySurfacePresentModesTest,				wsiType);

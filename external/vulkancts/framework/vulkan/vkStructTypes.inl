@@ -2396,6 +2396,13 @@ struct VkPhysicalDeviceDepthStencilResolvePropertiesKHR
 	VkBool32				independentResolve;
 };
 
+struct VkSurfaceProtectedCapabilitiesKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		supportsProtected;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

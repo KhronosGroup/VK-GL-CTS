@@ -414,6 +414,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR = 1000199001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR = 1000211000,
    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT = 1000221000,
+    VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR = 1000239000,
     VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_END_RANGE = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
     VK_STRUCTURE_TYPE_RANGE_SIZE = (VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT - VK_STRUCTURE_TYPE_APPLICATION_INFO + 1),
@@ -6330,6 +6331,17 @@ typedef struct VkPhysicalDeviceDepthStencilResolvePropertiesKHR {
     VkBool32                 independentResolveNone;
     VkBool32                 independentResolve;
 } VkPhysicalDeviceDepthStencilResolvePropertiesKHR;
+
+
+#define VK_KHR_surface_protected_capabilities 1
+#define VK_KHR_SURFACE_PROTECTED_CAPABILITIES_SPEC_VERSION 1
+#define VK_KHR_SURFACE_PROTECTED_CAPABILITIES_EXTENSION_NAME "VK_KHR_surface_protected_capabilities"
+
+typedef struct VkSurfaceProtectedCapabilitiesKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           supportsProtected;
+} VkSurfaceProtectedCapabilitiesKHR;
 
 
 #define VK_EXT_debug_report 1
