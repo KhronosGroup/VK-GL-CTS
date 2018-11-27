@@ -78,8 +78,6 @@ public:
 												get16BitStorageFeatures			(void) const;
 	const vk::VkPhysicalDeviceVariablePointerFeatures&
 												getVariablePointerFeatures		(void) const;
-	const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
-												getFloat16Int8Features			(void) const;
 	const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&
 												getVertexAttributeDivisorFeatures(void) const;
 	const vk::VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&
@@ -90,6 +88,8 @@ public:
 												getConditionalRenderingFeatures	(void) const;
 	const vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&
 												getScalarBlockLayoutFeatures	(void) const;
+	const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
+												getFloat16Int8Features			(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;

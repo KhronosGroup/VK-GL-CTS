@@ -2425,12 +2425,8 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 	return flags;
 }
 
-bool isValidImageCreateFlagCombination (VkImageCreateFlags createFlags)
+bool isValidImageCreateFlagCombination (VkImageCreateFlags)
 {
-	// If create flags contains VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT or VK_IMAGE_CREATE_SPARSE_ALIASED_BIT, it must also contain VK_IMAGE_CREATE_SPARSE_BINDING_BIT
-	if ((createFlags & (VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT)) != 0 && (createFlags & VK_IMAGE_CREATE_SPARSE_BINDING_BIT) == 0)
-		return false;
-
 	return true;
 }
 
@@ -2466,6 +2462,9 @@ bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	device
 	DE_ASSERT(deviceFeatures.sparseBinding || (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT|VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)) == 0);
 	DE_ASSERT(deviceFeatures.sparseResidencyAliased || (createFlags & VK_IMAGE_CREATE_SPARSE_ALIASED_BIT) == 0);
 
+	if (isYCbCrFormat(format) && (createFlags & (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)))
+		return false;
+
 	if (createFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
 	{
 		if (isCompressedFormat(format))
@@ -2474,14 +2473,7 @@ bool isRequiredImageParameterCombination (const VkPhysicalDeviceFeatures&	device
 		if (isDepthStencilFormat(format))
 			return false;
 
-		deUint32 elementSize;
-
-		if (isYCbCrFormat(format))
-			elementSize = getYCbCrFormatElementSize(format);
-		else
-			elementSize = mapVkFormat(format).getPixelSize();
-
-		if (!deIsPowerOfTwo32(elementSize))
+		if (!deIsPowerOfTwo32(mapVkFormat(format).getPixelSize()))
 			return false;
 
 		switch (imageType)
@@ -2949,7 +2941,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deMemset(&protectedMemoryFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
 		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
 		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
-		deMemset(&scalarBlockLayoutFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeaturesEXT));
+		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeaturesEXT));
 
 		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
 		device8BitStorageFeatures[ndx].pNext = &deviceConditionalRenderingFeatures[ndx];

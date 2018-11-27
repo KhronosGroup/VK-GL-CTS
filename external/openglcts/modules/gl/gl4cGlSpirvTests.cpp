@@ -1073,6 +1073,10 @@ void SpirvModulesStateQueriesTest::init()
 			   "    vec4 c1;\n"
 			   "    vec2 c2;\n"
 			   "} components;\n"
+			   "layout (xfb_buffer = 0, xfb_offset = 16) out gl_PerVertex\n"
+			   "{\n"
+			   "    vec4 gl_Position;\n"
+			   "};\n"
 			   "\n"
 			   "void main()\n"
 			   "{\n"
@@ -1109,13 +1113,10 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 		std::string				 input;
 		for (int i = 0; i < (signed)lines.size(); ++i)
 		{
-			if (lines[i].find("OpName %position") != std::string::npos)
+			if (lines[i].find("OpName") != std::string::npos)
 				continue;
-			if (lines[i].find("OpName %extPosition") != std::string::npos)
-				continue;
-			if (lines[i].find("OpName %ComponentsBlock") != std::string::npos)
-				continue;
-			if (lines[i].find("OpName %components") != std::string::npos)
+
+			if (lines[i].find("OpMemberName") != std::string::npos)
 				continue;
 
 			input.append(lines[i] + "\n");
@@ -1162,18 +1163,16 @@ tcu::TestNode::IterateResult SpirvModulesStateQueriesTest::iterate()
 	}
 
 	// 3) Check if queries for ACTIVE_ATTRIBUTE_MAX_LENGTH, ACTIVE_UNIFORM_MAX_LENGTH,
-	//    ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH return value equal to 1, and
-	//    TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH value equals to 0
+	//    ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH and TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH return
+	//    value equal to 1
 	GLint programState[4];
-	GLint expectedValues[4] = {1, 1, 0, 1};
+	GLint expectedValues[4] = {1, 1, 1, 1};
 	gl.getProgramiv(program.getProgram(), GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &programState[0]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 
 	gl.getProgramiv(program.getProgram(), GL_ACTIVE_UNIFORM_MAX_LENGTH, &programState[1]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 
-	// We expect 0 for GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH because the current program
-	// doesn't activate transform feedback so there isn't any active varying.
 	gl.getProgramiv(program.getProgram(), GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH, &programState[2]);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "getProgramiv");
 

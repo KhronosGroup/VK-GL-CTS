@@ -1459,7 +1459,7 @@ void addCompute16bitStorageUniform16To32Group (tcu::TestCaseGroup* group)
 		"OpExecutionMode %main LocalSize 1 1 1\n"
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		"${stride}"
+		"${stride}\n"
 
 		"OpMemberDecorate %SSBO32 0 Offset 0\n"
 		"OpMemberDecorate %SSBO16 0 Offset 0\n"
@@ -7884,7 +7884,6 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 	const StringTemplate				capabilities		("OpCapability Float64\n"
 															 "OpCapability Float16\n"
 															 "OpCapability ${cap}\n");
-
 	// We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
 	resources.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16DummyData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
