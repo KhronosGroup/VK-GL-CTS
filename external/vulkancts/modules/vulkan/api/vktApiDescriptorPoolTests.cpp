@@ -132,6 +132,7 @@ tcu::TestStatus resetDescriptorPoolTest (Context& context, deUint32 numIteration
 
 			for (deUint32 ndx = 0; ndx < numIterations; ++ndx)
 			{
+				if (ndx % 1024 == 0) context.getTestContext().touchWatchdog();
 				// The test should crash in this loop at some point if there is a memory leak
 				VK_CHECK(vkd.allocateDescriptorSets(device, &descriptorSetInfo, &testSets[0]));
 				VK_CHECK(vkd.resetDescriptorPool(device, *descriptorPool, 0));
