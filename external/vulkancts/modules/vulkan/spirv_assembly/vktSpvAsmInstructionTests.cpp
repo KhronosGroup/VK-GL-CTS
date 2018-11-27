@@ -70,6 +70,7 @@
 #include "vktSpvAsmLoopDepInfTests.hpp"
 #include "vktSpvAsmCompositeInsertTests.hpp"
 #include "vktSpvAsmVaryingNameTests.hpp"
+#include "vktSpvAsmWorkgroupMemoryTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -5983,72 +5984,6 @@ tcu::TestCaseGroup* createFloat16OpConstantCompositeGroup (tcu::TestContext& tes
 	}
 
 	return group.release();
-}
-
-// IEEE-754 floating point numbers:
-// +--------+------+----------+-------------+
-// | binary | sign | exponent | significand |
-// +--------+------+----------+-------------+
-// | 16-bit |  1   |    5     |     10      |
-// +--------+------+----------+-------------+
-// | 32-bit |  1   |    8     |     23      |
-// +--------+------+----------+-------------+
-//
-// 16-bit floats:
-//
-// 0   000 00   00 0000 0001 (0x0001: 2e-24:         minimum positive denormalized)
-// 0   000 00   11 1111 1111 (0x03ff: 2e-14 - 2e-24: maximum positive denormalized)
-// 0   000 01   00 0000 0000 (0x0400: 2e-14:         minimum positive normalized)
-//
-// 0   000 00   00 0000 0000 (0x0000: +0)
-// 0   111 11   00 0000 0000 (0x7c00: +Inf)
-// 0   000 00   11 1111 0000 (0x03f0: +Denorm)
-// 0   000 01   00 0000 0001 (0x0401: +Norm)
-// 0   111 11   00 0000 1111 (0x7c0f: +SNaN)
-// 0   111 11   11 1111 0000 (0x7ff0: +QNaN)
-
-// Generate and return 16-bit floats and their corresponding 32-bit values.
-//
-// The first 14 number pairs are manually picked, while the rest are randomly generated.
-// Expected count to be at least 14 (numPicks).
-vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count)
-{
-	vector<deFloat16>	float16;
-
-	float16.reserve(count);
-
-	// Zero
-	float16.push_back(deUint16(0x0000));
-	float16.push_back(deUint16(0x8000));
-	// Infinity
-	float16.push_back(deUint16(0x7c00));
-	float16.push_back(deUint16(0xfc00));
-	// SNaN
-	float16.push_back(deUint16(0x7c0f));
-	float16.push_back(deUint16(0xfc0f));
-	// QNaN
-	float16.push_back(deUint16(0x7ff0));
-	float16.push_back(deUint16(0xfff0));
-
-	// Denormalized
-	float16.push_back(deUint16(0x03f0));
-	float16.push_back(deUint16(0x83f0));
-	// Normalized
-	float16.push_back(deUint16(0x0401));
-	float16.push_back(deUint16(0x8401));
-	// Some normal number
-	float16.push_back(deUint16(0x14cb));
-	float16.push_back(deUint16(0x94cb));
-
-	const deUint32		numPicks	= static_cast<deUint32>(float16.size());
-
-	DE_ASSERT(count >= numPicks);
-	count -= numPicks;
-
-	for (deUint32 numIdx = 0; numIdx < count; ++numIdx)
-		float16.push_back(rnd.getUint16());
-
-	return float16;
 }
 
 const vector<deFloat16> squarize(const vector<deFloat16>& inData, const deUint32 argNo)
@@ -18142,6 +18077,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createPointerParameterComputeGroup(testCtx));
 	computeTests->addChild(createFloat16Group(testCtx));
 	computeTests->addChild(createBoolGroup(testCtx));
+	computeTests->addChild(createWorkgroupMemoryComputeGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));
