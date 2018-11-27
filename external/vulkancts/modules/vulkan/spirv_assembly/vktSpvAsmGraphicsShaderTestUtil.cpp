@@ -645,7 +645,7 @@ string makeTessEvalShaderAssembly (const map<string, string>& fragments)
 		"%BP_op_gl_PerVertexOut = OpTypePointer Output %BP_gl_PerVertexOut\n"
 		"%BP_stream = OpVariable %BP_op_gl_PerVertexOut Output\n"
 		"%BP_gl_TessCoord = OpVariable %ip_v3f32 Input\n"
-		"%BP_gl_PrimitiveID = OpVariable %op_i32 Input\n"
+		"%BP_gl_PrimitiveID = OpVariable %ip_i32 Input\n"
 		"%BP_gl_PerVertexIn = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
 		"%BP_a32_gl_PerVertexIn = OpTypeArray %BP_gl_PerVertexIn %c_u32_32\n"
 		"%BP_ip_a32_gl_PerVertexIn = OpTypePointer Input %BP_a32_gl_PerVertexIn\n"
