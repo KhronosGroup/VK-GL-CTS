@@ -358,6 +358,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR:					return "VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR:								return "VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR";
 		default:																				return DE_NULL;
 	}
 }
@@ -5495,6 +5496,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthStencilRes
 	s << "\tsupportedStencilResolveModes = " << getResolveModeFlagsKHRStr(value.supportedStencilResolveModes) << '\n';
 	s << "\tindependentResolveNone = " << value.independentResolveNone << '\n';
 	s << "\tindependentResolve = " << value.independentResolve << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSurfaceProtectedCapabilitiesKHR& value)
+{
+	s << "VkSurfaceProtectedCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsupportsProtected = " << value.supportsProtected << '\n';
 	s << '}';
 	return s;
 }
