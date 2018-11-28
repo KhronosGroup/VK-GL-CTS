@@ -144,10 +144,11 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 
 	if (OPTYPE_BROADCAST == caseDef.opType)
 	{
-		bdy	<< "  tempResult = 0x3;\n"
-			<< "  for (int i = 0; i < " << subgroups::maxSupportedSubgroupSize() << "; i++)\n"
-			<< "  {\n"
-			<< "    const uint id = i;\n"
+		bdy	<< "  tempResult = 0x3;\n";
+		for (int i = 0; i < (int)subgroups::maxSupportedSubgroupSize(); i++)
+		{
+			bdy << "  {\n"
+			<< "    const uint id = "<< i << ";\n"
 			<< "    " << subgroups::getFormatNameForGLSL(caseDef.format)
 			<< " op = subgroupBroadcast(data1[gl_SubgroupInvocationID], id);\n"
 			<< "    if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
@@ -158,6 +159,7 @@ void initFrameBufferPrograms(SourceCollections& programCollection, CaseDefinitio
 			<< "      }\n"
 			<< "    }\n"
 			<< "  }\n";
+		}
 	}
 	else
 	{
