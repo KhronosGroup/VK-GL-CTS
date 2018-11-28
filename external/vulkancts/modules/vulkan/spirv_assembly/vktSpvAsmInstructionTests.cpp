@@ -8844,7 +8844,18 @@ struct ConvertCase
 
 		if (usesInt8(from, to))
 		{
+			bool requiresInt8Capability = true;
+			if (instruction == "OpUConvert" || instruction == "OpSConvert")
+			{
+				// Conversions between 8 and 32 bit are provided by SPV_KHR_8bit_storage. The rest requires explicit Int8
+				if (usesInt32(from, to))
+					requiresInt8Capability = false;
+			}
+
 			caps += "OpCapability StorageBuffer8BitAccess\n";
+			if (requiresInt8Capability)
+				caps += "OpCapability Int8\n";
+
 			decl += "%i8         = OpTypeInt 8 1\n"
 					"%u8         = OpTypeInt 8 0\n";
 			exts += "OpExtension \"SPV_KHR_8bit_storage\"\n";
