@@ -423,11 +423,6 @@ public:
 				*nextPtr	= &scalarBlockLayoutFeatures;
 				nextPtr		= &scalarBlockLayoutFeatures.pNext;
 			}
-			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_shader_float16_int8"))
-			{
-				*nextPtr	= &float16Int8Features;
-				nextPtr		= &float16Int8Features.pNext;
-			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
