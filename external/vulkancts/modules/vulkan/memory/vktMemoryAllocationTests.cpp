@@ -58,6 +58,12 @@ namespace memory
 namespace
 {
 
+template<typename T>
+T roundUpToMultiple(const T& a, const T& b)
+{
+	return b * (a / b + (a % b != 0 ? 1 : 0));
+}
+
 enum
 {
 	// The min max for allocation count is 4096. Use 4000 to take into account
@@ -300,8 +306,8 @@ tcu::TestStatus AllocateFreeTestInstance::iterate (void)
 
 	try
 	{
-		const VkMemoryType		memoryType		= m_memoryProperties.memoryTypes[m_memoryTypeIndex];
-		const VkMemoryHeap		memoryHeap		= m_memoryProperties.memoryHeaps[memoryType.heapIndex];
+		const VkMemoryType		memoryType				= m_memoryProperties.memoryTypes[m_memoryTypeIndex];
+		const VkMemoryHeap		memoryHeap				= m_memoryProperties.memoryHeaps[memoryType.heapIndex];
 
 		const VkDeviceSize		allocationSize	= (m_config.memorySize ? memReqs.size : (VkDeviceSize)(*m_config.memoryPercentage * (float)memoryHeap.size));
 		const VkDeviceSize		roundedUpAllocationSize	 = roundUpToNextMultiple(allocationSize, m_memoryLimits.deviceMemoryAllocationGranularity);
