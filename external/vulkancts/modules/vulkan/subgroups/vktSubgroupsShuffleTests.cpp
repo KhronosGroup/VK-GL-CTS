@@ -104,16 +104,17 @@ const std::string DeclSource(CaseDefinition caseDef, int baseBinding)
 const std::string TestSource(CaseDefinition caseDef)
 {
 	std::string						idTable[OPTYPE_LAST];
-	idTable[OPTYPE_SHUFFLE]			= "data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_XOR]		= "gl_SubgroupInvocationID ^ data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_UP]		= "gl_SubgroupInvocationID - data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_DOWN]	= "gl_SubgroupInvocationID + data2[gl_SubgroupInvocationID]";
+	idTable[OPTYPE_SHUFFLE]			= "id_in";
+	idTable[OPTYPE_SHUFFLE_XOR]		= "gl_SubgroupInvocationID ^ id_in";
+	idTable[OPTYPE_SHUFFLE_UP]		= "gl_SubgroupInvocationID - id_in";
+	idTable[OPTYPE_SHUFFLE_DOWN]	= "gl_SubgroupInvocationID + id_in";
 
 	const std::string testSource =
 		"  uint temp_res;\n"
 		"  uvec4 mask = subgroupBallot(true);\n"
+		"  uint id_in = data2[gl_SubgroupInvocationID] & (gl_SubgroupSize - 1);\n"
 		"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " op = "
-		+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
+		+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], id_in);\n"
 		"  uint id = " + idTable[caseDef.opType] + ";\n"
 		"  if ((id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
 		"  {\n"
