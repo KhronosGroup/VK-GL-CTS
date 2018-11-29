@@ -36,9 +36,14 @@
 #	include <windows.h>
 #endif
 
+#if (DE_OS == DE_OS_ANDROID)
+#   include <sys/system_properties.h>
+#endif
+
 #if (DE_OS == DE_OS_ANDROID) && defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__)
 #	include <android/hardware_buffer.h>
-#	define USE_ANDROID_O_HARDWARE_BUFFER 1
+#	include "deDynamicLibrary.hpp"
+#	define BUILT_WITH_ANDROID_HARDWARE_BUFFER 1
 #endif
 
 namespace vkt
@@ -119,15 +124,13 @@ NativeHandle::NativeHandle (const NativeHandle& other)
 		DE_FATAL("Platform doesn't support win32 handles");
 #endif
 	}
-#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 	else if (other.m_androidHardwareBuffer.internal)
 	{
 		DE_ASSERT(other.m_fd == -1);
 		DE_ASSERT(!other.m_win32Handle.internal);
 		m_androidHardwareBuffer = other.m_androidHardwareBuffer;
-		AHardwareBuffer_acquire((AHardwareBuffer*)m_androidHardwareBuffer.internal);
+		AndroidHardwareBufferExternalApi::getInstance()->acquire(m_androidHardwareBuffer);
 	}
-#endif
 	else
 		DE_FATAL("Native handle can't be duplicated");
 }
@@ -195,16 +198,12 @@ void NativeHandle::reset (void)
 		DE_FATAL("Platform doesn't support win32 handles");
 #endif
 	}
-
-#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 	if (m_androidHardwareBuffer.internal)
 	{
 		DE_ASSERT(m_fd == -1);
 		DE_ASSERT(!m_win32Handle.internal);
-		AHardwareBuffer_release((AHardwareBuffer*)m_androidHardwareBuffer.internal);
+		AndroidHardwareBufferExternalApi::getInstance()->release(m_androidHardwareBuffer);
 	}
-#endif
-
 	m_fd					= -1;
 	m_win32Handle			= vk::pt::Win32Handle(DE_NULL);
 	m_win32HandleType		= WIN32HANDLETYPE_LAST;
@@ -503,6 +502,10 @@ void getMemoryNative (const vk::DeviceInterface&					vkd,
 	}
 	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
 	{
+		if (!AndroidHardwareBufferExternalApi::getInstance())
+		{
+			TCU_THROW(NotSupportedError, "Platform doesn't support Android Hardware Buffer handles");
+		}
 		const vk::VkMemoryGetAndroidHardwareBufferInfoANDROID	info	=
 		{
 			vk::VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
@@ -1014,13 +1017,17 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 
 		return memory;
 	}
-#if defined(USE_ANDROID_O_HARDWARE_BUFFER)
 	else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID)
 	{
-		AHardwareBuffer_Desc desc;
-		AHardwareBuffer_describe(static_cast<const AHardwareBuffer*>(handle.getAndroidHardwareBuffer().internal), &desc);
+		AndroidHardwareBufferExternalApi* ahbApi = AndroidHardwareBufferExternalApi::getInstance();
+		if (!ahbApi)
+		{
+			TCU_THROW(NotSupportedError, "Platform doesn't support Android Hardware Buffer handles");
+		}
 
-		DE_ASSERT(desc.format == AHARDWAREBUFFER_FORMAT_BLOB || image != 0);
+		deUint32 ahbFormat = 0;
+		ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, DE_NULL, DE_NULL);
+		DE_ASSERT(ahbApi->ahbFormatIsBlob(ahbFormat) || image != 0);
 
 		vk::VkImportAndroidHardwareBufferInfoANDROID	importInfo =
 		{
@@ -1046,7 +1053,6 @@ static vk::Move<vk::VkDeviceMemory> importMemory (const vk::DeviceInterface&				
 
 		return memory;
 	}
-#endif // (USE_ANDROID_O_HARDWARE_BUFFER)
 	else
 	{
 		DE_FATAL("Unknown external memory type");
@@ -1125,8 +1131,8 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 										   vk::VkImageTiling							tiling,
 										   vk::VkImageCreateFlags						createFlags,
 										   vk::VkImageUsageFlags						usageFlags,
-										   deUint32 mipLevels,
-										   deUint32 arrayLayers)
+										   deUint32										mipLevels,
+										   deUint32										arrayLayers)
 {
 	const vk::VkExternalMemoryImageCreateInfo		externalCreateInfo	=
 	{
@@ -1154,6 +1160,321 @@ vk::Move<vk::VkImage> createExternalImage (const vk::DeviceInterface&					vkd,
 	};
 
 	return vk::createImage(vkd, device, &createInfo);
+}
+
+#if (DE_OS == DE_OS_ANDROID)
+#  if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
+#      define BUILT_WITH_ANDROID_P_HARDWARE_BUFFER 1
+#  endif
+
+static deInt32 androidGetSdkVersion()
+{
+	static deInt32 sdkVersion = -1;
+	if (sdkVersion < 0)
+	{
+		char value[128] = {0};
+		__system_property_get("ro.build.version.sdk", value);
+		sdkVersion = static_cast<deInt32>(strtol(value, DE_NULL, 10));
+		printf("SDK Version is %d\n", sdkVersion);
+	}
+	return sdkVersion;
+}
+
+static deInt32 checkAnbApiBuild()
+{
+	deInt32 sdkVersion = androidGetSdkVersion();
+#if !defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+	// When testing AHB on Android-O and newer the CTS must be compiled against API26 or newer.
+	DE_TEST_ASSERT(!(sdkVersion >= 26)); /* __ANDROID_API_O__ */
+#endif // !defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+#if !defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+	// When testing AHB on Android-P and newer the CTS must be compiled against API28 or newer.
+	DE_TEST_ASSERT(!(sdkVersion >= 28)); /*__ANDROID_API_P__ */
+#endif // !defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+	return sdkVersion;
+}
+
+bool AndroidHardwareBufferExternalApi::supportsAhb()
+{
+	return (checkAnbApiBuild() >= __ANDROID_API_O__);
+}
+
+AndroidHardwareBufferExternalApi::AndroidHardwareBufferExternalApi()
+{
+	deInt32 sdkVersion = checkAnbApiBuild();
+	if(sdkVersion >= __ANDROID_API_O__)
+	{
+#if defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+		if (!loadAhbDynamicApis(sdkVersion))
+		{
+			// Couldn't load  Android AHB system APIs.
+			DE_TEST_ASSERT(false);
+		}
+#else
+		// Invalid Android AHB APIs configuration. Please check the instructions on how to build NDK for Android.
+		DE_TEST_ASSERT(false);
+#endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+	}
+}
+
+AndroidHardwareBufferExternalApi::~AndroidHardwareBufferExternalApi()
+{
+}
+
+#if defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+typedef int  (*pfn_system_property_get)(const char *, char *);
+typedef int  (*pfnAHardwareBuffer_allocate)(const AHardwareBuffer_Desc* desc, AHardwareBuffer** outBuffer);
+typedef void (*pfnAHardwareBuffer_describe)(const AHardwareBuffer* buffer, AHardwareBuffer_Desc* outDesc);
+typedef void (*pfnAHardwareBuffer_acquire)(AHardwareBuffer* buffer);
+typedef void (*pfnAHardwareBuffer_release)(AHardwareBuffer* buffer);
+
+struct AhbFunctions
+{
+	pfnAHardwareBuffer_allocate allocate;
+	pfnAHardwareBuffer_describe describe;
+	pfnAHardwareBuffer_acquire  acquire;
+	pfnAHardwareBuffer_release  release;
+};
+
+static AhbFunctions ahbFunctions;
+
+static bool ahbFunctionsLoaded(AhbFunctions* pAhbFunctions)
+{
+	static bool ahbApiLoaded = false;
+	if (ahbApiLoaded ||
+	    ((pAhbFunctions->allocate != DE_NULL) &&
+		(pAhbFunctions->describe != DE_NULL) &&
+		(pAhbFunctions->acquire  != DE_NULL) &&
+		(pAhbFunctions->release  != DE_NULL)))
+	{
+		ahbApiLoaded = true;
+		return true;
+	}
+	return false;
+}
+
+bool AndroidHardwareBufferExternalApi::loadAhbDynamicApis(deInt32 sdkVersion)
+{
+	if(sdkVersion >= __ANDROID_API_O__)
+	{
+		if (!ahbFunctionsLoaded(&ahbFunctions))
+		{
+			de::DynamicLibrary libnativewindow("libnativewindow.so");
+			ahbFunctions.allocate = reinterpret_cast<pfnAHardwareBuffer_allocate>(libnativewindow.getFunction("AHardwareBuffer_allocate"));
+			ahbFunctions.describe = reinterpret_cast<pfnAHardwareBuffer_describe>(libnativewindow.getFunction("AHardwareBuffer_describe"));
+			ahbFunctions.acquire  = reinterpret_cast<pfnAHardwareBuffer_acquire>(libnativewindow.getFunction("AHardwareBuffer_acquire"));
+			ahbFunctions.release  = reinterpret_cast<pfnAHardwareBuffer_release>(libnativewindow.getFunction("AHardwareBuffer_release"));
+
+			return ahbFunctionsLoaded(&ahbFunctions);
+
+		}
+		else
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+class AndroidHardwareBufferExternalApi26 : public  AndroidHardwareBufferExternalApi
+{
+public:
+
+	virtual vk::pt::AndroidHardwareBufferPtr allocate(deUint32 width, deUint32  height, deUint32 layers, deUint32  format, deUint64 usage);
+	virtual void acquire(vk::pt::AndroidHardwareBufferPtr buffer);
+	virtual void release(vk::pt::AndroidHardwareBufferPtr buffer);
+	virtual void describe(const vk::pt::AndroidHardwareBufferPtr buffer,
+				  deUint32* width,
+				  deUint32* height,
+				  deUint32* layers,
+				  deUint32* format,
+				  deUint64* usage,
+				  deUint32* stride);
+	virtual deUint64 vkUsageToAhbUsage(vk::VkImageUsageFlagBits vkFlag);
+	virtual deUint64 vkCreateToAhbUsage(vk::VkImageCreateFlagBits vkFlag);
+	virtual deUint32 vkFormatToAhbFormat(vk::VkFormat vkFormat);
+	virtual deUint64 mustSupportAhbUsageFlags();
+	virtual bool     ahbFormatIsBlob(deUint32 ahbFormat) { return (ahbFormat == AHARDWAREBUFFER_FORMAT_BLOB); };
+
+	AndroidHardwareBufferExternalApi26() : AndroidHardwareBufferExternalApi() {};
+	virtual ~AndroidHardwareBufferExternalApi26() {};
+
+private:
+	// Stop the compiler generating methods of copy the object
+	AndroidHardwareBufferExternalApi26(AndroidHardwareBufferExternalApi26 const& copy);            // Not Implemented
+	AndroidHardwareBufferExternalApi26& operator=(AndroidHardwareBufferExternalApi26 const& copy); // Not Implemented
+};
+
+vk::pt::AndroidHardwareBufferPtr AndroidHardwareBufferExternalApi26::allocate(	deUint32 width,
+																				deUint32 height,
+																				deUint32 layers,
+																				deUint32 format,
+																				deUint64 usage)
+{
+	AHardwareBuffer_Desc hbufferdesc = {
+		width,
+		height,
+		layers,   // number of images
+		format,
+		usage,
+		0u,       // Stride in pixels, ignored for AHardwareBuffer_allocate()
+		0u,       // Initialize to zero, reserved for future use
+		0u        // Initialize to zero, reserved for future use
+	};
+
+	AHardwareBuffer* hbuffer  = DE_NULL;
+	ahbFunctions.allocate(&hbufferdesc, &hbuffer);
+
+	return vk::pt::AndroidHardwareBufferPtr(hbuffer);
+}
+
+void AndroidHardwareBufferExternalApi26::acquire(vk::pt::AndroidHardwareBufferPtr buffer)
+{
+	ahbFunctions.acquire(static_cast<AHardwareBuffer*>(buffer.internal));
+}
+
+void AndroidHardwareBufferExternalApi26::release(vk::pt::AndroidHardwareBufferPtr buffer)
+{
+	ahbFunctions.release(static_cast<AHardwareBuffer*>(buffer.internal));
+}
+
+void AndroidHardwareBufferExternalApi26::describe( const vk::pt::AndroidHardwareBufferPtr buffer,
+													deUint32* width,
+													deUint32* height,
+													deUint32* layers,
+													deUint32* format,
+													deUint64* usage,
+													deUint32* stride)
+{
+	AHardwareBuffer_Desc desc;
+	ahbFunctions.describe(static_cast<const AHardwareBuffer*>(buffer.internal), &desc);
+	if (width)  *width  = desc.width;
+	if (height) *height = desc.height;
+	if (layers) *layers = desc.layers;
+	if (format) *format = desc.format;
+	if (usage)  *usage  = desc.usage;
+	if (stride) *stride = desc.stride;
+}
+
+deUint64 AndroidHardwareBufferExternalApi26::vkUsageToAhbUsage(vk::VkImageUsageFlagBits vkFlags)
+{
+	switch(vkFlags)
+	{
+	  case vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT:
+	  case vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT:
+		// No AHB equivalent.
+		return 0u;
+	  case vk::VK_IMAGE_USAGE_SAMPLED_BIT:
+		return AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
+	  case vk::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT:
+		return AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE;
+	  case vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT:
+		return AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT;
+	  default:
+		  return 0u;
+	}
+}
+
+deUint64 AndroidHardwareBufferExternalApi26::vkCreateToAhbUsage(vk::VkImageCreateFlagBits vkFlags)
+{
+	switch(vkFlags)
+	{
+	  case vk::VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT:
+	  case vk::VK_IMAGE_CREATE_EXTENDED_USAGE_BIT:
+		// No AHB equivalent.
+		return 0u;
+	  case vk::VK_IMAGE_CREATE_PROTECTED_BIT:
+		return AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
+	  default:
+		return 0u;
+	}
+}
+
+deUint32 AndroidHardwareBufferExternalApi26::vkFormatToAhbFormat(vk::VkFormat vkFormat)
+{
+	 switch(vkFormat)
+	 {
+	   case vk::VK_FORMAT_R8G8B8A8_UNORM:
+		 return AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM;
+	   case vk::VK_FORMAT_R8G8B8_UNORM:
+		 return AHARDWAREBUFFER_FORMAT_R8G8B8_UNORM;
+	   case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
+		 return AHARDWAREBUFFER_FORMAT_R5G6B5_UNORM;
+	   case vk::VK_FORMAT_R16G16B16A16_SFLOAT:
+		 return AHARDWAREBUFFER_FORMAT_R16G16B16A16_FLOAT;
+	   case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+		 return AHARDWAREBUFFER_FORMAT_R10G10B10A2_UNORM;
+	   default:
+		 return 0u;
+	 }
+}
+
+deUint64 AndroidHardwareBufferExternalApi26::mustSupportAhbUsageFlags()
+{
+	return (AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE | AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT);
+}
+
+#if defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+class AndroidHardwareBufferExternalApi28 : public  AndroidHardwareBufferExternalApi26
+{
+public:
+
+	virtual deUint64 vkCreateToAhbUsage(vk::VkImageCreateFlagBits vkFlag);
+	virtual deUint64 mustSupportAhbUsageFlags();
+
+	AndroidHardwareBufferExternalApi28() : AndroidHardwareBufferExternalApi26() {};
+	virtual ~AndroidHardwareBufferExternalApi28() {};
+
+private:
+	// Stop the compiler generating methods of copy the object
+	AndroidHardwareBufferExternalApi28(AndroidHardwareBufferExternalApi28 const& copy);            // Not Implemented
+	AndroidHardwareBufferExternalApi28& operator=(AndroidHardwareBufferExternalApi28 const& copy); // Not Implemented
+};
+
+deUint64 AndroidHardwareBufferExternalApi28::vkCreateToAhbUsage(vk::VkImageCreateFlagBits vkFlags)
+{
+	switch(vkFlags)
+	{
+	  case vk::VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT:
+		return AHARDWAREBUFFER_USAGE_GPU_CUBE_MAP;
+	  default:
+		return AndroidHardwareBufferExternalApi26::vkCreateToAhbUsage(vkFlags);
+	}
+}
+
+deUint64 AndroidHardwareBufferExternalApi28::mustSupportAhbUsageFlags()
+{
+	return AndroidHardwareBufferExternalApi26::mustSupportAhbUsageFlags() | AHARDWAREBUFFER_USAGE_GPU_CUBE_MAP | AHARDWAREBUFFER_USAGE_GPU_MIPMAP_COMPLETE;
+}
+
+#endif // defined(BUILT_WITH_ANDROID_P_HARDWARE_BUFFER)
+#endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+#endif // (DE_OS == DE_OS_ANDROID)
+
+AndroidHardwareBufferExternalApi* AndroidHardwareBufferExternalApi::getInstance()
+{
+#if (DE_OS == DE_OS_ANDROID)
+	deInt32 sdkVersion = checkAnbApiBuild();
+#if defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+#  if defined(__ANDROID_API_P__) && (DE_ANDROID_API >= __ANDROID_API_P__)
+	if (sdkVersion >= __ANDROID_API_P__ )
+	{
+		static AndroidHardwareBufferExternalApi28 api28Instance;
+		return &api28Instance;
+	}
+	else
+#  elif defined(__ANDROID_API_O__) && (DE_ANDROID_API >= __ANDROID_API_O__)
+	if (sdkVersion >= __ANDROID_API_O__ )
+	{
+		static AndroidHardwareBufferExternalApi26 api26Instance;
+		return &api26Instance;
+	}
+#  endif
+#endif // defined(BUILT_WITH_ANDROID_HARDWARE_BUFFER)
+	DE_UNREF(sdkVersion);
+#endif // DE_OS == DE_OS_ANDROID
+	return DE_NULL;
 }
 
 } // ExternalMemoryUtil
