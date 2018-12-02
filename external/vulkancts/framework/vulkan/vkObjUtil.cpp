@@ -376,15 +376,16 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 	return createGraphicsPipeline(vk, device, DE_NULL, &pipelineCreateInfo);
 }
 
-Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
-								   const VkDevice				device,
-								   const VkFormat				colorFormat,
-								   const VkFormat				depthStencilFormat,
-								   const VkAttachmentLoadOp		loadOperation,
-								   const VkImageLayout			finalLayoutColor,
-								   const VkImageLayout			finalLayoutDepthStencil,
-								   const VkImageLayout			subpassLayoutColor,
-								   const VkImageLayout			subpassLayoutDepthStencil)
+Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
+								   const VkDevice						device,
+								   const VkFormat						colorFormat,
+								   const VkFormat						depthStencilFormat,
+								   const VkAttachmentLoadOp				loadOperation,
+								   const VkImageLayout					finalLayoutColor,
+								   const VkImageLayout					finalLayoutDepthStencil,
+								   const VkImageLayout					subpassLayoutColor,
+								   const VkImageLayout					subpassLayoutDepthStencil,
+								   const VkAllocationCallbacks* const	allocationCallbacks)
 {
 	const bool								hasColor							= colorFormat != VK_FORMAT_UNDEFINED;
 	const bool								hasDepthStencil						= depthStencilFormat != VK_FORMAT_UNDEFINED;
@@ -463,7 +464,7 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 		DE_NULL										// const VkSubpassDependency*        pDependencies
 	};
 
-	return createRenderPass(vk, device, &renderPassInfo);
+	return createRenderPass(vk, device, &renderPassInfo, allocationCallbacks);
 }
 
 } // vk

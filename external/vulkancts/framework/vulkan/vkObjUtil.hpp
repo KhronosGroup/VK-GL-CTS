@@ -70,15 +70,16 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&							vk,
 									   const VkPipelineColorBlendStateCreateInfo*		colorBlendStateCreateInfo = DE_NULL,
 									   const VkPipelineDynamicStateCreateInfo*			dynamicStateCreateInfo = DE_NULL);
 
-Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
-								   const VkDevice				device,
-								   const VkFormat				colorFormat,
-								   const VkFormat				depthStencilFormat			= VK_FORMAT_UNDEFINED,
-								   const VkAttachmentLoadOp		loadOperation				= VK_ATTACHMENT_LOAD_OP_CLEAR,
-								   const VkImageLayout			finalLayoutColor			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-								   const VkImageLayout			finalLayoutDepthStencil		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-								   const VkImageLayout			subpassLayoutColor			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-								   const VkImageLayout			subpassLayoutDepthStencil	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+Move<VkRenderPass> makeRenderPass (const DeviceInterface&				vk,
+								   const VkDevice						device,
+								   const VkFormat						colorFormat,
+								   const VkFormat						depthStencilFormat			= VK_FORMAT_UNDEFINED,
+								   const VkAttachmentLoadOp				loadOperation				= VK_ATTACHMENT_LOAD_OP_CLEAR,
+								   const VkImageLayout					finalLayoutColor			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+								   const VkImageLayout					finalLayoutDepthStencil		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+								   const VkImageLayout					subpassLayoutColor			= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+								   const VkImageLayout					subpassLayoutDepthStencil	= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+								   const VkAllocationCallbacks* const	allocationCallbacks			= DE_NULL);
 
 } // vk
 
