@@ -2004,7 +2004,7 @@ void addCompute16bitStoragePushConstant16To32Group (tcu::TestCaseGroup* group)
 
 		"${stride}"
 
-		"OpDecorate %PC16 BufferBlock\n"
+		"OpDecorate %PC16 Block\n"
 		"OpMemberDecorate %PC16 0 Offset 0\n"
 		"OpMemberDecorate %SSBO32 0 Offset 0\n"
 		"OpDecorate %SSBO32 BufferBlock\n"
@@ -4744,7 +4744,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 			"OpDecorate %a64f32 ArrayStride 4\n"
 			"OpDecorate %SSBO32 BufferBlock\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
-			"OpDecorate %PC16 BufferBlock\n"
+			"OpDecorate %PC16 Block\n"
 			"OpMemberDecorate %PC16 0 Offset 0\n"
 			"OpDecorate %ssbo32 DescriptorSet 0\n"
 			"OpDecorate %ssbo32 Binding 0\n";
@@ -4813,7 +4813,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 			"OpDecorate %a16v4f32 ArrayStride 16\n"
 			"OpDecorate %SSBO32 BufferBlock\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
-			"OpDecorate %PC16 BufferBlock\n"
+			"OpDecorate %PC16 Block\n"
 			"OpMemberDecorate %PC16 0 Offset 0\n"
 			"OpDecorate %ssbo32 DescriptorSet 0\n"
 			"OpDecorate %ssbo32 Binding 0\n";
@@ -4886,7 +4886,7 @@ void addGraphics16BitStoragePushConstantFloat16To32Group (tcu::TestCaseGroup* te
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
 			"OpMemberDecorate %SSBO32 0 ColMajor\n"
 			"OpMemberDecorate %SSBO32 0 MatrixStride 16\n"
-			"OpDecorate %PC16 BufferBlock\n"
+			"OpDecorate %PC16 Block\n"
 			"OpMemberDecorate %PC16 0 Offset 0\n"
 			"OpMemberDecorate %PC16 0 ColMajor\n"
 			"OpMemberDecorate %PC16 0 MatrixStride 8\n"
@@ -5053,7 +5053,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 			"OpDecorate %a${count}${type32} ArrayStride 4\n"
 			"OpDecorate %SSBO32 BufferBlock\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
-			"OpDecorate %PC16 BufferBlock\n"
+			"OpDecorate %PC16 Block\n"
 			"OpMemberDecorate %PC16 0 Offset 0\n"
 			"OpDecorate %ssbo32 DescriptorSet 0\n"
 			"OpDecorate %ssbo32 Binding 0\n");
@@ -5168,7 +5168,7 @@ void addGraphics16BitStoragePushConstantInt16To32Group (tcu::TestCaseGroup* test
 			"OpDecorate %a${count}${type32} ArrayStride 8\n"
 			"OpDecorate %SSBO32 BufferBlock\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
-			"OpDecorate %PC16 BufferBlock\n"
+			"OpDecorate %PC16 Block\n"
 			"OpMemberDecorate %PC16 0 Offset 0\n"
 			"OpDecorate %ssbo32 DescriptorSet 0\n"
 			"OpDecorate %ssbo32 Binding 0\n");
