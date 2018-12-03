@@ -289,11 +289,6 @@ bool isSRGBConversionRequired(const CaseDef& caseDef)
 		{
 			required = true;
 		}
-
-		// Following modes require VK_IMAGE_USAGE_STORAGE_BIT usage, not supported by srgb format
-		DE_ASSERT(caseDef.upload   != UPLOAD_STORE);
-		DE_ASSERT(caseDef.download != DOWNLOAD_LOAD);
-		DE_ASSERT(caseDef.download != DOWNLOAD_TEXTURE);
 	}
 
 	return required;

@@ -453,7 +453,9 @@ vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char*
 			delete[] source;
 			if (file) fclose(file);
 			cacheFileMutex.unlock();
-			return new vk::ProgramBinary((vk::ProgramFormat)format, length, bin);
+			vk::ProgramBinary* res = new vk::ProgramBinary((vk::ProgramFormat)format, length, bin);
+			delete[] bin;
+			return res;
 		}
 	}
 	if (file) fclose(file);

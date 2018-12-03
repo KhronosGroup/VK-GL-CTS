@@ -9029,6 +9029,14 @@ de::MovePtr<Command> createCmdCommands (const Memory&	memory,
 
 	try
 	{
+		// Insert a mostly-full barrier to order this work wrt previous command buffer.
+		commands.push_back(new PipelineBarrier(state.cache.getAllowedStages(),
+											   state.cache.getAllowedAcceses(),
+											   state.cache.getAllowedStages(),
+											   state.cache.getAllowedAcceses(),
+											   PipelineBarrier::TYPE_GLOBAL,
+											   tcu::nothing<vk::VkImageLayout>()));
+
 		for (; opNdx < opCount; opNdx++)
 		{
 			vector<Op>	ops;

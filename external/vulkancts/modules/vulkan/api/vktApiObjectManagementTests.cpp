@@ -1573,7 +1573,13 @@ struct RenderPass
 
 	static Move<VkRenderPass> create (const Environment& env, const Resources&, const Parameters&)
 	{
-		return makeRenderPass(env.vkd, env.device, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D16_UNORM);
+		return makeRenderPass(env.vkd, env.device, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_D16_UNORM,
+			VK_ATTACHMENT_LOAD_OP_CLEAR,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			env.allocationCallbacks);
 	}
 };
 

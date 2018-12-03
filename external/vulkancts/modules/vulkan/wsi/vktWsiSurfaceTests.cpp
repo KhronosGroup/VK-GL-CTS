@@ -614,9 +614,26 @@ tcu::TestStatus querySurfaceFormatsTest (Context& context, Type wsiType)
 	{
 		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
 		{
-			const vector<VkSurfaceFormatKHR>	formats	= getPhysicalDeviceSurfaceFormats(instHelper.vki,
-																						  physicalDevices[deviceNdx],
-																						  *surface);
+			deUint32	numFormats = 0;
+
+			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceFormatsKHR(physicalDevices[deviceNdx], *surface, &numFormats, DE_NULL));
+
+			std::vector<VkSurfaceFormatKHR>	formats	(numFormats + 1);
+
+			if (numFormats > 0)
+			{
+				const deUint32 numFormatsOrig = numFormats;
+
+				// check if below call properly overwrites formats count
+				numFormats++;
+
+				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceFormatsKHR(physicalDevices[deviceNdx], *surface, &numFormats, &formats[0]));
+
+				if (numFormats != numFormatsOrig)
+					results.fail("Format count changed between calls");
+			}
+
+			formats.pop_back();
 
 			log << TestLog::Message << "Device " << deviceNdx << ": " << tcu::formatArray(formats.begin(), formats.end()) << TestLog::EndMessage;
 
@@ -661,7 +678,7 @@ tcu::TestStatus querySurfaceFormats2Test (Context& context, Type wsiType)
 
 			if (numFormats > 0)
 			{
-				vector<VkSurfaceFormat2KHR>	formats	(numFormats);
+				vector<VkSurfaceFormat2KHR>	formats	(numFormats + 1);
 
 				for (size_t ndx = 0; ndx < formats.size(); ++ndx)
 				{
@@ -669,10 +686,17 @@ tcu::TestStatus querySurfaceFormats2Test (Context& context, Type wsiType)
 					formats[ndx].pNext = DE_NULL;
 				}
 
+				const deUint32 numFormatsOrig = numFormats;
+
+				// check if below call properly overwrites formats count
+				numFormats++;
+
 				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceFormats2KHR(physicalDevices[deviceNdx], &surfaceInfo, &numFormats, &formats[0]));
 
-				if ((size_t)numFormats != formats.size())
+				if ((size_t)numFormats != numFormatsOrig)
 					results.fail("Format count changed between calls");
+
+				formats.pop_back();
 
 				{
 					vector<VkSurfaceFormatKHR>	extFormats	(formats.size());
@@ -746,7 +770,26 @@ tcu::TestStatus querySurfacePresentModesTest (Context& context, Type wsiType)
 	{
 		if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
 		{
-			const vector<VkPresentModeKHR>	modes	= getPhysicalDeviceSurfacePresentModes(instHelper.vki, physicalDevices[deviceNdx], *surface);
+			deUint32	numModes = 0;
+
+			VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevices[deviceNdx], *surface, &numModes, DE_NULL));
+
+			vector<VkPresentModeKHR>	modes	(numModes + 1);
+
+			if (numModes > 0)
+			{
+				const deUint32 numModesOrig = numModes;
+
+				// check if below call properly overwrites mode count
+				numModes++;
+
+				VK_CHECK(instHelper.vki.getPhysicalDeviceSurfacePresentModesKHR(physicalDevices[deviceNdx], *surface, &numModes, &modes[0]));
+
+				if ((size_t)numModes != numModesOrig)
+					TCU_FAIL("Mode count changed between calls");
+			}
+
+			modes.pop_back();
 
 			log << TestLog::Message << "Device " << deviceNdx << ": " << tcu::formatArray(modes.begin(), modes.end()) << TestLog::EndMessage;
 
