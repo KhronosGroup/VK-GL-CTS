@@ -38,6 +38,6 @@ LOCAL_PACKAGE_NAME := com.drawelements.deqp
 LOCAL_MULTILIB := both
 
 # We could go down all the way to API-13 for 32bit. 22 is required for 64bit ARM.
-LOCAL_SDK_VERSION := 22
+LOCAL_SDK_VERSION := test_current
 
 include $(BUILD_PACKAGE)
