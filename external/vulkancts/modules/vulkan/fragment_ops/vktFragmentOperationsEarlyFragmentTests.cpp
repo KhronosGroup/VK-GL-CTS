@@ -387,7 +387,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 		pVertices[4] = tcu::Vec4( 1.0f,  1.0f,  1.0f,  1.0f);
 		pVertices[5] = tcu::Vec4( 1.0f, -1.0f,  0.5f,  1.0f);
 
-		flushMappedMemoryRange(vk, device, vertexBufferAlloc->getMemory(), vertexBufferAlloc->getOffset(), vertexBufferSizeBytes);
+		flushAlloc(vk, device, *vertexBufferAlloc);
 		// No barrier needed, flushed memory is automatically visible
 	}
 
@@ -401,7 +401,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 		deUint32* const pData = static_cast<deUint32*>(resultBufferAlloc->getHostPtr());
 
 		*pData = 0;
-		flushMappedMemoryRange(vk, device, resultBufferAlloc->getMemory(), resultBufferAlloc->getOffset(), resultBufferSizeBytes);
+		flushAlloc(vk, device, *resultBufferAlloc);
 	}
 
 	// Render result buffer (to retrieve color attachment contents)
@@ -463,7 +463,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 					*testImage, testSubresourceRange),
 			};
 
-			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
+			vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
 				0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
 		}
 
@@ -489,7 +489,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 
 	// Log result image
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), colorBufferSizeBytes);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 
 		const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc->getHostPtr());
 
@@ -499,7 +499,7 @@ tcu::TestStatus EarlyFragmentTestInstance::iterate (void)
 
 	// Verify results
 	{
-		invalidateMappedMemoryRange(vk, device, resultBufferAlloc->getMemory(), resultBufferAlloc->getOffset(), resultBufferSizeBytes);
+		invalidateAlloc(vk, device, *resultBufferAlloc);
 
 		const int  actualCounter	   = *static_cast<deInt32*>(resultBufferAlloc->getHostPtr());
 		const bool expectPartialResult = (m_useEarlyTests && m_useTestAttachment);
@@ -554,7 +554,7 @@ tcu::TestCaseGroup* createEarlyFragmentTests (tcu::TestContext& testCtx)
 		{ "early_fragment_tests_stencil",					FLAG_TEST_STENCIL																		},
 		{ "no_early_fragment_tests_depth_no_attachment",	FLAG_TEST_DEPTH   | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS | FLAG_DONT_USE_TEST_ATTACHMENT	},
 		{ "no_early_fragment_tests_stencil_no_attachment",	FLAG_TEST_STENCIL | FLAG_DONT_USE_EARLY_FRAGMENT_TESTS | FLAG_DONT_USE_TEST_ATTACHMENT	},
-		{ "early_fragment_tests_depth_no_attachment",		FLAG_TEST_DEPTH   |										 FLAG_DONT_USE_TEST_ATTACHMENT  },
+		{ "early_fragment_tests_depth_no_attachment",		FLAG_TEST_DEPTH   |										 FLAG_DONT_USE_TEST_ATTACHMENT	},
 		{ "early_fragment_tests_stencil_no_attachment",		FLAG_TEST_STENCIL |										 FLAG_DONT_USE_TEST_ATTACHMENT	},
 	};
 

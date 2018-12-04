@@ -267,7 +267,7 @@ VkPrimitiveTopology	getTopology (const TestPrimitive primitive)
 void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize size)
 {
 	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(size));
-	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), size);
+	flushAlloc(vk, device, alloc);
 }
 
 //! Transform from normalized coords to framebuffer space.
@@ -370,7 +370,7 @@ public:
 
 		{
 			deMemcpy(m_vertexBufferAlloc->getHostPtr(), &m_vertices[0], static_cast<std::size_t>(m_vertexBufferSize));
-			flushMappedMemoryRange(vk, device, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), m_vertexBufferSize);
+			flushAlloc(vk, device, *m_vertexBufferAlloc);
 		}
 
 		m_vertexModule				= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
@@ -473,8 +473,8 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 
 	// Log image
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferFullAlloc->getMemory(), 0ull, colorBufferSize);
-		invalidateMappedMemoryRange(vk, device, colorBufferScissoredAlloc->getMemory(), 0ull, colorBufferSize);
+		invalidateAlloc(vk, device, *colorBufferFullAlloc);
+		invalidateAlloc(vk, device, *colorBufferScissoredAlloc);
 
 		const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, colorBufferScissoredAlloc->getHostPtr());
 		tcu::PixelBufferAccess				referenceImage	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, colorBufferFullAlloc->getHostPtr());
