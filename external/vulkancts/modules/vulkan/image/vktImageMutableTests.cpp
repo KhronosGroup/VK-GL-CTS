@@ -1727,29 +1727,38 @@ tcu::TestCaseGroup* createImageMutableTests (TestContext& testCtx)
 			if (imageFormatNdx != viewFormatNdx && formatsAreCompatible(s_formats[imageFormatNdx], s_formats[viewFormatNdx]))
 			{
 				for (int upload = 0; upload < UPLOAD_LAST; upload++)
-				for (int download = 0; download < DOWNLOAD_LAST; download++)
 				{
-					CaseDef caseDef =
+					if (upload == UPLOAD_STORE && !isFormatImageLoadStoreCapable(s_formats[viewFormatNdx]))
+						continue;
+
+					for (int download = 0; download < DOWNLOAD_LAST; download++)
 					{
-						texture.type(),
-						texture.layerSize(),
-						static_cast<deUint32>(texture.numLayers()),
-						s_formats[imageFormatNdx],
-						s_formats[viewFormatNdx],
-						static_cast<enum Upload>(upload),
-						static_cast<enum Download>(download),
-						false,				// isFormatListTest;
-						false,				// isSwapchainImageTest
-						vk::wsi::TYPE_LAST	// wsiType
-					};
+						if ((download == DOWNLOAD_LOAD || download == DOWNLOAD_TEXTURE) &&
+							!isFormatImageLoadStoreCapable(s_formats[viewFormatNdx]))
+							continue;
 
-					std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[viewFormatNdx]) +
-						"_" + getUploadString(upload) + "_" + getDownloadString(download);
-					addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+						CaseDef caseDef =
+						{
+							texture.type(),
+							texture.layerSize(),
+							static_cast<deUint32>(texture.numLayers()),
+							s_formats[imageFormatNdx],
+							s_formats[viewFormatNdx],
+							static_cast<enum Upload>(upload),
+							static_cast<enum Download>(download),
+							false,				// isFormatListTest;
+							false,				// isSwapchainImageTest
+							vk::wsi::TYPE_LAST	// wsiType
+						};
 
-					caseDef.isFormatListTest = true;
-					caseName += "_format_list";
-					addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+						std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[viewFormatNdx]) +
+							"_" + getUploadString(upload) + "_" + getDownloadString(download);
+						addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+
+						caseDef.isFormatListTest = true;
+						caseName += "_format_list";
+						addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+					}
 				}
 			}
 		}
@@ -2233,8 +2242,16 @@ tcu::TestCaseGroup* createSwapchainImageMutableTests(TestContext& testCtx)
 					if (imageFormatNdx != viewFormatNdx && formatsAreCompatible(s_swapchainFormats[imageFormatNdx], s_swapchainFormats[viewFormatNdx]))
 					{
 						for (int upload = 0; upload < UPLOAD_LAST; upload++)
+						{
+							if (upload == UPLOAD_STORE && !isFormatImageLoadStoreCapable(s_swapchainFormats[viewFormatNdx]))
+								continue;
+
 							for (int download = 0; download < DOWNLOAD_LAST; download++)
 							{
+								if ((download == DOWNLOAD_LOAD || download == DOWNLOAD_TEXTURE) &&
+									!isFormatImageLoadStoreCapable(s_swapchainFormats[viewFormatNdx]))
+									continue;
+
 								CaseDef caseDef =
 								{
 									texture.type(),
@@ -2254,6 +2271,7 @@ tcu::TestCaseGroup* createSwapchainImageMutableTests(TestContext& testCtx)
 
 								addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testSwapchainMutable, caseDef);
 							}
+						}
 					}
 				}
 

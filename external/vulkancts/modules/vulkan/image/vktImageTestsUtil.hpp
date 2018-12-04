@@ -63,6 +63,7 @@ const char*				getGlslInputAttachmentType		(const vk::VkFormat format);
 bool					isPackedType					(const vk::VkFormat format);
 bool					isComponentSwizzled				(const vk::VkFormat format);
 int						getNumUsedChannels				(const vk::VkFormat format);
+bool					isFormatImageLoadStoreCapable	(const vk::VkFormat format);
 
 class Buffer
 {
