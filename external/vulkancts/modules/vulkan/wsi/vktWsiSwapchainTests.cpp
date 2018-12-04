@@ -42,6 +42,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 
+#include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuPlatform.hpp"
@@ -92,9 +93,10 @@ Move<VkInstance> createInstanceWithWsi (const PlatformInterface&		vkp,
 										deUint32						version,
 										const Extensions&				supportedExtensions,
 										Type							wsiType,
+										const vector<string>			extraExtensions,
 										const VkAllocationCallbacks*	pAllocator	= DE_NULL)
 {
-	vector<string>	extensions;
+	vector<string>	extensions = extraExtensions;
 
 	extensions.push_back("VK_KHR_surface");
 	extensions.push_back(getExtensionName(wsiType));
@@ -169,20 +171,15 @@ Move<VkDevice> createDeviceWithWsi (const PlatformInterface&		vkp,
 	return createDevice(vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
-deUint32 getNumQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice)
-{
-	deUint32	numFamilies		= 0;
-
-	vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numFamilies, DE_NULL);
-
-	return numFamilies;
-}
-
 vector<deUint32> getSupportedQueueFamilyIndices (const InstanceInterface& vki, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
-	const deUint32		numTotalFamilyIndices	= getNumQueueFamilyIndices(vki, physicalDevice);
-	vector<deUint32>	supportedFamilyIndices;
+	deUint32 numTotalFamilyIndices;
+	vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numTotalFamilyIndices, DE_NULL);
 
+	vector<VkQueueFamilyProperties> queueFamilyProperties(numTotalFamilyIndices);
+	vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &numTotalFamilyIndices, &queueFamilyProperties[0]);
+
+	vector<deUint32>	supportedFamilyIndices;
 	for (deUint32 queueFamilyNdx = 0; queueFamilyNdx < numTotalFamilyIndices; ++queueFamilyNdx)
 	{
 		if (getPhysicalDeviceSurfaceSupport(vki, physicalDevice, queueFamilyNdx, surface) != VK_FALSE)
@@ -215,6 +212,19 @@ struct InstanceHelper
 													   context.getUsedApiVersion(),
 													   supportedExtensions,
 													   wsiType,
+													   vector<string>(),
+													   pAllocator))
+		, vki					(context.getPlatformInterface(), *instance)
+	{}
+
+	InstanceHelper (Context& context, Type wsiType, const vector<string>& extensions, const VkAllocationCallbacks* pAllocator = DE_NULL)
+		: supportedExtensions	(enumerateInstanceExtensionProperties(context.getPlatformInterface(),
+																	  DE_NULL))
+		, instance				(createInstanceWithWsi(context.getPlatformInterface(),
+													   context.getUsedApiVersion(),
+													   supportedExtensions,
+													   wsiType,
+													   extensions,
 													   pAllocator))
 		, vki					(context.getPlatformInterface(), *instance)
 	{}
@@ -795,6 +805,13 @@ public:
 														 deUint32					imageNdx,
 														 deUint32					frameNdx) const;
 
+	void							recordDeviceGroupFrame (VkCommandBuffer			cmdBuffer,
+															deUint32				imageNdx,
+															deUint32				firstDeviceID,
+															deUint32				secondDeviceID,
+															deUint32				devicesCount,
+															deUint32				frameNdx) const;
+
 	static void						getPrograms			(SourceCollections& dst);
 
 private:
@@ -1110,6 +1127,80 @@ void TriangleRenderer::recordFrame (VkCommandBuffer	cmdBuffer,
 	endCommandBuffer(m_vkd, cmdBuffer);
 }
 
+void TriangleRenderer::recordDeviceGroupFrame (VkCommandBuffer	cmdBuffer,
+											   deUint32			firstDeviceID,
+											   deUint32			secondDeviceID,
+											   deUint32			devicesCount,
+											   deUint32			imageNdx,
+											   deUint32			frameNdx) const
+{
+	const VkFramebuffer	curFramebuffer	= **m_framebuffers[imageNdx];
+
+	beginCommandBuffer(m_vkd, cmdBuffer, 0u);
+
+	// begin renderpass
+	{
+		const VkClearValue clearValue = makeClearValueColorF32(0.125f, 0.25f, 0.75f, 1.0f);
+
+		VkRect2D zeroRect = { { 0, 0, },{ 0, 0, } };
+		vector<VkRect2D> renderAreas;
+		for (deUint32 i = 0; i < devicesCount; i++)
+			renderAreas.push_back(zeroRect);
+
+		// Render completely if there is only 1 device
+		if (devicesCount == 1u)
+		{
+			renderAreas[0].extent.width = (deInt32)m_renderSize.x();
+			renderAreas[0].extent.height = (deInt32)m_renderSize.y();
+		}
+		else
+		{
+			// Split into 2 vertical halves
+			renderAreas[firstDeviceID].extent.width		= (deInt32)m_renderSize.x() / 2;
+			renderAreas[firstDeviceID].extent.height	= (deInt32)m_renderSize.y();
+			renderAreas[secondDeviceID]					= renderAreas[firstDeviceID];
+			renderAreas[secondDeviceID].offset.x		= (deInt32)m_renderSize.x() / 2;
+		}
+
+		const VkDeviceGroupRenderPassBeginInfo deviceGroupRPBeginInfo =
+		{
+			VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO,
+			DE_NULL,
+			(deUint32)((1 << devicesCount) - 1),
+			devicesCount,
+			&renderAreas[0]
+		};
+
+		const VkRenderPassBeginInfo passBeginParams =
+		{
+			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,						// sType
+			&deviceGroupRPBeginInfo,										// pNext
+			*m_renderPass,													// renderPass
+			curFramebuffer,													// framebuffer
+			{
+				{ 0, 0 },
+				{ m_renderSize.x(), m_renderSize.y() }
+			},																// renderArea
+			1u,																// clearValueCount
+			&clearValue,													// pClearValues
+		};
+		m_vkd.cmdBeginRenderPass(cmdBuffer, &passBeginParams, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	m_vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+	{
+		const VkDeviceSize bindingOffset = 0;
+		m_vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_vertexBuffer.get(), &bindingOffset);
+	}
+
+	m_vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, (deUint32)sizeof(deUint32), &frameNdx);
+	m_vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+	endRenderPass(m_vkd, cmdBuffer);
+
+	endCommandBuffer(m_vkd, cmdBuffer);
+}
+
 void TriangleRenderer::getPrograms (SourceCollections& dst)
 {
 	dst.glslSources.add("tri-vert") << glu::VertexSource(
@@ -1178,6 +1269,92 @@ vector<CommandBufferSp> allocateCommandBuffers (const DeviceInterface&		vkd,
 	return buffers;
 }
 
+class AcquireNextImageWrapper
+{
+public:
+
+	AcquireNextImageWrapper(const DeviceInterface&	vkd,
+							VkDevice				device,
+							deUint32				deviceMask,
+							VkSwapchainKHR			swapchain,
+							deUint64				timeout)
+		: m_vkd			(vkd)
+		, m_device		(device)
+		, m_swapchain	(swapchain)
+		, m_timeout		(timeout)
+	{
+		DE_UNREF(deviceMask);	// needed for compatibility with acquireNextImage2KHR
+	}
+
+	bool featureAvailable(const deUint32 deviceVersion, const Extensions& supportedExtensions)
+	{
+		DE_UNREF(deviceVersion);
+		DE_UNREF(supportedExtensions);
+		return true;			// needed for compatibility with acquireNextImage2KHR
+	}
+
+	VkResult call(VkSemaphore semaphore, VkFence fence, deUint32* imageIndex)
+	{
+		return m_vkd.acquireNextImageKHR(m_device,
+										 m_swapchain,
+										 m_timeout,
+										 semaphore,
+										 fence,
+										 imageIndex);
+	}
+
+protected:
+
+	const DeviceInterface&	m_vkd;
+	VkDevice				m_device;
+	VkSwapchainKHR			m_swapchain;
+	deUint64				m_timeout;
+};
+
+class AcquireNextImage2Wrapper
+{
+public:
+
+	AcquireNextImage2Wrapper(const DeviceInterface&	vkd,
+							 VkDevice				device,
+							 deUint32				deviceMask,
+							 VkSwapchainKHR			swapchain,
+							 deUint64				timeout)
+		: m_vkd		(vkd)
+		, m_device	(device)
+	{
+		m_info.sType		= VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR;
+		m_info.pNext		= DE_NULL;
+		m_info.swapchain	= swapchain;
+		m_info.timeout		= timeout;
+		m_info.semaphore	= DE_NULL;
+		m_info.fence		= DE_NULL;
+		m_info.deviceMask	= deviceMask;
+	}
+
+	bool featureAvailable(const deUint32 deviceVersion, const Extensions& supportedExtensions)
+	{
+		return isDeviceExtensionSupported(deviceVersion, supportedExtensions, RequiredExtension("VK_KHR_device_group"));
+	}
+
+	VkResult call(VkSemaphore semaphore, VkFence fence, deUint32* imageIndex)
+	{
+		m_info.semaphore	= semaphore;
+		m_info.fence		= fence;
+		return m_vkd.acquireNextImage2KHR(m_device,
+										  &m_info,
+										  imageIndex);
+	}
+
+protected:
+
+	const DeviceInterface&		m_vkd;
+	VkDevice					m_device;
+	VkAcquireNextImageInfoKHR	m_info;
+};
+
+
+template <typename AcquireWrapperType>
 tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 {
 	const tcu::UVec2				desiredSize					(256, 256);
@@ -1192,6 +1369,10 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 	const Unique<VkSwapchainKHR>	swapchain					(createSwapchainKHR(vkd, device, &swapchainInfo));
 	const vector<VkImage>			swapchainImages				= getSwapchainImages(vkd, device, *swapchain);
 
+	AcquireWrapperType acquireImageWrapper(vkd, device, 0xFFFFFFFF, *swapchain, std::numeric_limits<deUint64>::max());
+	if (!acquireImageWrapper.featureAvailable(context.getUsedApiVersion(), instHelper.supportedExtensions))
+		TCU_THROW(NotSupportedError, "Required extension is not supported");
+
 	const TriangleRenderer			renderer					(vkd,
 																 device,
 																 allocator,
@@ -1204,7 +1385,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 
 	const size_t					maxQueuedFrames				= swapchainImages.size()*2;
 
-	// We need to keep hold of fences from vkAcquireNextImageKHR to actually
+	// We need to keep hold of fences from vkAcquireNextImage(2)KHR to actually
 	// limit number of frames we allow to be queued.
 	const vector<FenceSp>			imageReadyFences			(createFences(vkd, device, maxQueuedFrames));
 
@@ -1234,12 +1415,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 			VK_CHECK(vkd.resetFences(device, 1, &imageReadyFence));
 
 			{
-				const VkResult	acquireResult	= vkd.acquireNextImageKHR(device,
-																		  *swapchain,
-																		  std::numeric_limits<deUint64>::max(),
-																		  imageReadySemaphore,
-																		  (VkFence)0,
-																		  &imageNdx);
+				const VkResult	acquireResult	= acquireImageWrapper.call(imageReadySemaphore, (VkFence)0, &imageNdx);
 
 				if (acquireResult == VK_SUBOPTIMAL_KHR)
 					context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame " << frameNdx << TestLog::EndMessage;
@@ -1289,6 +1465,229 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 	{
 		// Make sure device is idle before destroying resources
 		vkd.deviceWaitIdle(device);
+		throw;
+	}
+
+	return tcu::TestStatus::pass("Rendering tests succeeded");
+}
+
+tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
+{
+	const InstanceHelper		instHelper			(context, wsiType, vector<string>(1, string("VK_KHR_device_group_creation")));
+	const tcu::CommandLine&		cmdLine				= context.getTestContext().getCommandLine();
+	VkPhysicalDevice			physicalDevice		= chooseDevice(instHelper.vki, *instHelper.instance, cmdLine);
+	const Extensions&			supportedExtensions	= enumerateDeviceExtensionProperties(instHelper.vki, physicalDevice, DE_NULL);
+
+	std::vector<const char*> deviceExtensions;
+	deviceExtensions.push_back("VK_KHR_swapchain");
+	if (!isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_device_group"))
+		deviceExtensions.push_back("VK_KHR_device_group");
+
+	for (std::size_t ndx = 0; ndx < deviceExtensions.size(); ++ndx)
+	{
+		if (!isExtensionSupported(supportedExtensions, RequiredExtension(deviceExtensions[ndx])))
+			TCU_THROW(NotSupportedError, (string(deviceExtensions[ndx]) + " is not supported").c_str());
+	}
+
+	const tcu::UVec2								desiredSize					(256, 256);
+	const NativeObjects								native						(context, instHelper.supportedExtensions, wsiType, tcu::just(desiredSize));
+	const Unique<VkSurfaceKHR>						surface						(createSurface(instHelper.vki, *instHelper.instance, wsiType, *native.display, *native.window));
+
+	const deUint32									devGroupIdx					= cmdLine.getVKDeviceGroupId() - 1;
+	const deUint32									deviceIdx					= context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
+	const vector<VkPhysicalDeviceGroupProperties>	deviceGroupProps			= enumeratePhysicalDeviceGroups(instHelper.vki, *instHelper.instance);
+	deUint32										physicalDevicesInGroupCount	= deviceGroupProps[devGroupIdx].physicalDeviceCount;
+	const VkPhysicalDevice*							physicalDevicesInGroup		= deviceGroupProps[devGroupIdx].physicalDevices;
+	deUint32										queueFamilyIndex			= chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup[deviceIdx], *surface);
+	const std::vector<VkQueueFamilyProperties>		queueProps					= getPhysicalDeviceQueueFamilyProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]);
+	const float										queuePriority				= 1.0f;
+	const deUint32									firstDeviceID				= 0;
+	const deUint32									secondDeviceID				= 1;
+
+	// create a device group
+	const VkDeviceGroupDeviceCreateInfo groupDeviceInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR,			// stype
+		DE_NULL,														// pNext
+		physicalDevicesInGroupCount,									// physicalDeviceCount
+		physicalDevicesInGroup											// physicalDevices
+	};
+	const VkDeviceQueueCreateInfo deviceQueueCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,						// type
+		DE_NULL,														// pNext
+		(VkDeviceQueueCreateFlags)0u,									// flags
+		queueFamilyIndex,												// queueFamilyIndex
+		1u,																// queueCount
+		&queuePriority,													// pQueuePriorities
+	};
+	const VkDeviceCreateInfo deviceCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,							// sType
+		&groupDeviceInfo,												// pNext
+		(VkDeviceCreateFlags)0u,										// flags
+		1,																// queueRecordCount
+		&deviceQueueCreateInfo,											// pRequestedQueues
+		0,																// layerCount
+		DE_NULL,														// ppEnabledLayerNames
+		deUint32(deviceExtensions.size()),								// enabledExtensionCount
+		&deviceExtensions[0],											// ppEnabledExtensionNames
+		DE_NULL,														// pEnabledFeatures
+	};
+	Move<VkDevice>					groupDevice					= createDevice(context.getPlatformInterface(), *instHelper.instance, instHelper.vki, physicalDevicesInGroup[deviceIdx], &deviceCreateInfo);
+	const DeviceDriver				vkd							(context.getPlatformInterface(), *instHelper.instance, *groupDevice);
+	VkQueue							queue						(getDeviceQueue(vkd, *groupDevice, queueFamilyIndex, 0));
+	SimpleAllocator					allocator					(vkd, *groupDevice, getPhysicalDeviceMemoryProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]));
+
+	// create swapchain for device group
+	struct VkDeviceGroupSwapchainCreateInfoKHR deviceGroupSwapchainInfo =
+	{
+		VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR,
+		DE_NULL,
+		VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR
+	};
+	VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(wsiType,
+																		 instHelper.vki,
+																		 physicalDevicesInGroup[deviceIdx],
+																		 *surface,
+																		 desiredSize,
+																		 2);
+	swapchainInfo.pNext = &deviceGroupSwapchainInfo;
+
+	const Unique<VkSwapchainKHR>	swapchain					(createSwapchainKHR(vkd, *groupDevice, &swapchainInfo));
+	const vector<VkImage>			swapchainImages				= getSwapchainImages(vkd, *groupDevice, *swapchain);
+
+	const TriangleRenderer			renderer					(vkd,
+																 *groupDevice,
+																 allocator,
+																 context.getBinaryCollection(),
+																 swapchainImages,
+																 swapchainInfo.imageFormat,
+																 tcu::UVec2(swapchainInfo.imageExtent.width, swapchainInfo.imageExtent.height));
+
+	const Unique<VkCommandPool>		commandPool					(createCommandPool(vkd, *groupDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+
+	const size_t					maxQueuedFrames				= swapchainImages.size()*2;
+
+	// We need to keep hold of fences from vkAcquireNextImage2KHR
+	// to actually limit number of frames we allow to be queued.
+	const vector<FenceSp>			imageReadyFences			(createFences(vkd, *groupDevice, maxQueuedFrames));
+
+	// We need maxQueuedFrames+1 for imageReadySemaphores pool as we need to
+	// pass the semaphore in same time as the fence we use to meter rendering.
+	const vector<SemaphoreSp>		imageReadySemaphores		(createSemaphores(vkd, *groupDevice, maxQueuedFrames+1));
+
+	// For rest we simply need maxQueuedFrames as we will wait for image from frameNdx-maxQueuedFrames
+	// to become available to us, guaranteeing that previous uses must have completed.
+	const vector<SemaphoreSp>		renderingCompleteSemaphores	(createSemaphores(vkd, *groupDevice, maxQueuedFrames));
+	const vector<CommandBufferSp>	commandBuffers				(allocateCommandBuffers(vkd, *groupDevice, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, maxQueuedFrames));
+
+	try
+	{
+		const deUint32	numFramesToRender = 60*10;
+
+		for (deUint32 frameNdx = 0; frameNdx < numFramesToRender; ++frameNdx)
+		{
+			const VkFence		imageReadyFence		= **imageReadyFences[frameNdx%imageReadyFences.size()];
+			const VkSemaphore	imageReadySemaphore	= **imageReadySemaphores[frameNdx%imageReadySemaphores.size()];
+			deUint32			imageNdx			= ~0u;
+
+			if (frameNdx >= maxQueuedFrames)
+				VK_CHECK(vkd.waitForFences(*groupDevice, 1u, &imageReadyFence, VK_TRUE, std::numeric_limits<deUint64>::max()));
+
+			VK_CHECK(vkd.resetFences(*groupDevice, 1, &imageReadyFence));
+
+			{
+				VkAcquireNextImageInfoKHR acquireNextImageInfo =
+				{
+					VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
+					DE_NULL,
+					*swapchain,
+					std::numeric_limits<deUint64>::max(),
+					imageReadySemaphore,
+					(VkFence)0,
+					(1 << firstDeviceID)
+				};
+
+				const VkResult acquireResult = vkd.acquireNextImage2KHR(*groupDevice, &acquireNextImageInfo, &imageNdx);
+
+				if (acquireResult == VK_SUBOPTIMAL_KHR)
+					context.getTestContext().getLog() << TestLog::Message << "Got " << acquireResult << " at frame " << frameNdx << TestLog::EndMessage;
+				else
+					VK_CHECK(acquireResult);
+			}
+
+			TCU_CHECK((size_t)imageNdx < swapchainImages.size());
+
+			{
+				const VkSemaphore			renderingCompleteSemaphore	= **renderingCompleteSemaphores[frameNdx%renderingCompleteSemaphores.size()];
+				const VkCommandBuffer		commandBuffer				= **commandBuffers[frameNdx%commandBuffers.size()];
+				const VkPipelineStageFlags	waitDstStage				= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+				// render triangle using one or two subdevices when available
+				renderer.recordDeviceGroupFrame(commandBuffer, firstDeviceID, secondDeviceID, physicalDevicesInGroupCount, imageNdx, frameNdx);
+
+				// submit queue
+				deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
+				std::vector<deUint32> deviceIndices(1, firstDeviceID);
+				if (physicalDevicesInGroupCount > 1)
+					deviceIndices.push_back(secondDeviceID);
+				const VkDeviceGroupSubmitInfo deviceGroupSubmitInfo =
+				{
+					VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,		// sType
+					DE_NULL,											// pNext
+					deUint32(deviceIndices.size()),						// waitSemaphoreCount
+					&deviceIndices[0],									// pWaitSemaphoreDeviceIndices
+					1u,													// commandBufferCount
+					&deviceMask,										// pCommandBufferDeviceMasks
+					deUint32(deviceIndices.size()),						// signalSemaphoreCount
+					&deviceIndices[0],									// pSignalSemaphoreDeviceIndices
+				};
+				const VkSubmitInfo submitInfo =
+				{
+					VK_STRUCTURE_TYPE_SUBMIT_INFO,						// sType
+					&deviceGroupSubmitInfo,								// pNext
+					1u,													// waitSemaphoreCount
+					&imageReadySemaphore,								// pWaitSemaphores
+					&waitDstStage,										// pWaitDstStageMask
+					1u,													// commandBufferCount
+					&commandBuffer,										// pCommandBuffers
+					1u,													// signalSemaphoreCount
+					&renderingCompleteSemaphore,						// pSignalSemaphores
+				};
+				VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, imageReadyFence));
+
+				// present swapchain image
+				deviceMask = (1 << firstDeviceID);
+				const VkDeviceGroupPresentInfoKHR deviceGroupPresentInfo =
+				{
+					VK_STRUCTURE_TYPE_DEVICE_GROUP_PRESENT_INFO_KHR,
+					DE_NULL,
+					1u,
+					&deviceMask,
+					VK_DEVICE_GROUP_PRESENT_MODE_LOCAL_BIT_KHR,
+				};
+				const VkPresentInfoKHR presentInfo =
+				{
+					VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+					&deviceGroupPresentInfo,
+					1u,
+					&renderingCompleteSemaphore,
+					1u,
+					&*swapchain,
+					&imageNdx,
+					(VkResult*)DE_NULL
+				};
+				VK_CHECK(vkd.queuePresentKHR(queue, &presentInfo));
+			}
+		}
+
+		VK_CHECK(vkd.deviceWaitIdle(*groupDevice));
+	}
+	catch (...)
+	{
+		// Make sure device is idle before destroying resources
+		vkd.deviceWaitIdle(*groupDevice);
 		throw;
 	}
 
@@ -1532,7 +1931,9 @@ void getBasicRenderPrograms (SourceCollections& dst, Type)
 
 void populateRenderGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
 {
-	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Test", getBasicRenderPrograms, basicRenderTest, wsiType);
+	addFunctionCaseWithPrograms(testGroup, "basic", "Basic Rendering Test", getBasicRenderPrograms, basicRenderTest<AcquireNextImageWrapper>, wsiType);
+	addFunctionCaseWithPrograms(testGroup, "basic2", "Basic Rendering Test using AcquireNextImage2", getBasicRenderPrograms, basicRenderTest<AcquireNextImage2Wrapper>, wsiType);
+	addFunctionCaseWithPrograms(testGroup, "device_group", "Basic Rendering Test using device_group", getBasicRenderPrograms, deviceGroupRenderTest, wsiType);
 }
 
 void populateGetImagesGroup (tcu::TestCaseGroup* testGroup, Type wsiType)
