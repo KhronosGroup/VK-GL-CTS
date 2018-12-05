@@ -6965,24 +6965,15 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 	de::MovePtr<tcu::TestCaseGroup>	suballocationTestGroup			= createSuballocationTests(testCtx, renderPassType);
 	de::MovePtr<tcu::TestCaseGroup>	dedicatedAllocationTestGroup	= createDedicatedAllocationTests(testCtx, renderPassType);
 
-	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassMultisampleTests(testCtx) : createRenderPass2MultisampleTests(testCtx));
-	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassMultisampleResolveTests(testCtx) : createRenderPass2MultisampleResolveTests(testCtx));
-	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSubpassDependencyTests(testCtx) : createRenderPass2SubpassDependencyTests(testCtx));
+	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassMultisampleTests(testCtx)			: createRenderPass2MultisampleTests(testCtx));
+	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassMultisampleResolveTests(testCtx)	: createRenderPass2MultisampleResolveTests(testCtx));
+	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSubpassDependencyTests(testCtx)	: createRenderPass2SubpassDependencyTests(testCtx));
+	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSampleReadTests(testCtx)			: createRenderPass2SampleReadTests(testCtx));
+	suballocationTestGroup->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSparseRenderTargetTests(testCtx)	: createRenderPass2SparseRenderTargetTests(testCtx));
+	suballocationTestGroup->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderPassType));
 
 	renderpassTests->addChild(suballocationTestGroup.release());
 	renderpassTests->addChild(dedicatedAllocationTestGroup.release());
-
-	if (renderPassType == RENDERPASS_TYPE_LEGACY)
-	{
-		renderpassTests->addChild(createRenderPassMultisampleTests(testCtx));
-		renderpassTests->addChild(createRenderPassMultisampleResolveTests(testCtx));
-		renderpassTests->addChild(createRenderPassSubpassDependencyTests(testCtx));
-	}
-
-	renderpassTests->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSampleReadTests(testCtx) : createRenderPass2SampleReadTests(testCtx));
-	renderpassTests->addChild((renderPassType == RENDERPASS_TYPE_LEGACY) ? createRenderPassSparseRenderTargetTests(testCtx) : createRenderPass2SparseRenderTargetTests(testCtx));
-
-	renderpassTests->addChild(createRenderPassUnusedAttachmentTests(testCtx, renderPassType));
 
 	return renderpassTests.release();
 }
