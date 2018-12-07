@@ -904,7 +904,8 @@ void UniformBlockTests::init (void)
 		const deUint32	allBasicTypes	= FEATURE_VECTORS|FEATURE_MATRICES;
 		const deUint32	unused			= FEATURE_UNUSED_MEMBERS|FEATURE_UNUSED_UNIFORMS;
 		const deUint32	matFlags		= FEATURE_MATRIX_LAYOUT;
-		const deUint32	allFeatures		= ~FEATURE_OUT_OF_ORDER_OFFSETS & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE;  // OOO offsets handled in a dedicated case group
+		const deUint32	allFeatures		= ~FEATURE_OUT_OF_ORDER_OFFSETS & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE
+										  & ~FEATURE_STD430_LAYOUT & ~FEATURE_SCALAR_LAYOUT;  // OOO offsets handled in a dedicated case group
 		const deUint32	allScalar		= ~allLayouts & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE;
 
 		tcu::TestCaseGroup* randomGroup = new tcu::TestCaseGroup(m_testCtx, "random", "Random Uniform Block cases");
