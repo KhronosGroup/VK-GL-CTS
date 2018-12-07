@@ -285,7 +285,7 @@ bool isSRGBConversionRequired(const CaseDef& caseDef)
 
 	if (isSRGB(mapVkFormat(caseDef.viewFormat)))
 	{
-		if (caseDef.upload == UPLOAD_DRAW)
+		if (caseDef.upload == UPLOAD_DRAW || caseDef.upload == UPLOAD_STORE)
 		{
 			required = true;
 		}
