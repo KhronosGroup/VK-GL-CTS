@@ -2791,6 +2791,8 @@ tcu::TestCaseGroup* createSpecConstantGroup (tcu::TestContext& testCtx)
 		// Special SPIR-V code for FConvert-case for 16-bit floats
 		if (strcmp(cases[caseNdx].caseName, "fconvert16") == 0)
 		{
+			spec.extensions.push_back("VK_KHR_shader_float16_int8");
+			spec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 			specializations["CAPABILITIES"]			= "OpCapability Float16\n";							// Adds 16-bit float capability
 			specializations["OPTYPE_DEFINITIONS"]	= "%f16 = OpTypeFloat 16\n";						// Adds 16-bit float type
 			specializations["TYPE_CONVERT"]			= "%sc_final32 = OpConvertFToS %i32 %sc_final\n";	// Converts 16-bit float to 32-bit integer
