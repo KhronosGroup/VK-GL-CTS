@@ -45,6 +45,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkQueryUtil.cpp \
 	external/vulkancts/framework/vulkan/vkRef.cpp \
 	external/vulkancts/framework/vulkan/vkRefUtil.cpp \
+	external/vulkancts/framework/vulkan/vkRenderDocUtil.cpp \
 	external/vulkancts/framework/vulkan/vkShaderProgram.cpp \
 	external/vulkancts/framework/vulkan/vkShaderToSpirV.cpp \
 	external/vulkancts/framework/vulkan/vkSpirVAsm.cpp \

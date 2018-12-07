@@ -35,6 +35,7 @@
 #include "vkDebugReportUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkApiVersion.hpp"
+#include "vkRenderDocUtil.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -198,6 +199,7 @@ private:
 	Context										m_context;
 
 	const UniquePtr<vk::DebugReportRecorder>	m_debugReportRecorder;
+	const UniquePtr<vk::RenderDocUtil>			m_renderDoc;
 
 	TestInstance*								m_instance;			//!< Current test case instance
 };
@@ -216,6 +218,9 @@ TestCaseExecutor::TestCaseExecutor (tcu::TestContext& testCtx)
 														 m_context.getInstanceInterface(),
 														 m_context.getInstance())
 							 : MovePtr<vk::DebugReportRecorder>(DE_NULL))
+	, m_renderDoc			(testCtx.getCommandLine().isRenderDocEnabled()
+							 ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil())
+							 : MovePtr<vk::RenderDocUtil>(DE_NULL))
 	, m_instance			(DE_NULL)
 {
 }
@@ -304,6 +309,8 @@ void TestCaseExecutor::init (tcu::TestCase* testCase, const std::string& casePat
 		buildProgram<vk::SpirVProgramInfo, vk::SpirVAsmCollection::Iterator>(casePath, asmIterator, m_prebuiltBinRegistry, log, &m_progCollection, commandLine);
 	}
 
+	if (m_renderDoc) m_renderDoc->startFrame(m_context.getInstance());
+
 	DE_ASSERT(!m_instance);
 	m_instance = vktCase->createInstance(m_context);
 }
@@ -312,6 +319,8 @@ void TestCaseExecutor::deinit (tcu::TestCase*)
 {
 	delete m_instance;
 	m_instance = DE_NULL;
+
+	if (m_renderDoc) m_renderDoc->endFrame(m_context.getInstance());
 
 	// Collect and report any debug messages
 	if (m_debugReportRecorder)
