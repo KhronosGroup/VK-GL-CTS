@@ -113,6 +113,7 @@ enum ValueId
 	V_ZERO_OR_FP32_DENORM_TO_FP64,
 	V_DENORM_TIMES_TWO,
 	V_DEGREES_DENORM,
+	V_TRIG_ONE,			//  1.0 trigonometric operations, including precision margin
 
 	//results of conversion operations
 	V_CONV_TO_FP16_RTZ_RESULT,
@@ -901,7 +902,7 @@ TypeTestResults<deFloat16>::TypeTestResults()
 		{ O_RADIANS,		V_ZERO },
 		{ O_DEGREES,		V_ZERO },
 		{ O_SIN,			V_ZERO },
-		{ O_COS,			V_ONE },
+		{ O_COS,			V_TRIG_ONE },
 		{ O_TAN,			V_ZERO },
 		{ O_ASIN,			V_ZERO },
 		{ O_ACOS,			V_PI_DIV_2 },
@@ -1029,7 +1030,7 @@ TypeTestResults<float>::TypeTestResults()
 		{ O_RADIANS,		V_ZERO },
 		{ O_DEGREES,		V_ZERO },
 		{ O_SIN,			V_ZERO },
-		{ O_COS,			V_ONE },
+		{ O_COS,			V_TRIG_ONE },
 		{ O_TAN,			V_ZERO },
 		{ O_ASIN,			V_ZERO },
 		{ O_ACOS,			V_PI_DIV_2 },
@@ -2006,6 +2007,22 @@ bool isAcosResultCorrect(const TYPE& returnedFloat, TestLog& log)
 	return false;
 }
 
+template <typename TYPE>
+bool isCosResultCorrect(const TYPE& returnedFloat, TestLog& log)
+{
+	// for cos(x) with x between -pi and pi, the precision error is 2^-11 for fp32 and 2^-7 for fp16.
+	double precision = returnedFloat.MANTISSA_BITS == 23 ? dePow(2, -11) : dePow(2, -7);
+	const double expected = 1.0;
+
+	if (deAbs(returnedFloat.asDouble() - expected) < precision)
+		return true;
+
+	log << TestLog::Message << "Expected result to be in range"
+		<< " (" << expected - precision << ", " << expected + precision << "), got "
+		<< returnedFloat.asDouble() << TestLog::EndMessage;
+	return false;
+}
+
 // Function used to compare test result with expected output.
 // TYPE can be Float16, Float32 or Float64.
 // FLOAT_TYPE can be deFloat16, float, double.
@@ -2075,6 +2092,10 @@ bool compareBytes(vector<deUint8>& expectedBytes, AllocationSp outputAlloc, Test
 		typename TYPE::StorageType returnedValue = returnedFloat.bits();
 		return (returnedValue == 0xbc00) || (returnedValue == 0xbbff);
 	}
+
+	// handle trigonometric operations precision errors
+	if (expectedValueId == V_TRIG_ONE)
+		return isCosResultCorrect<TYPE>(returnedFloat, log);
 
 	// handle acos(0) case
 	if (expectedValueId == V_PI_DIV_2)

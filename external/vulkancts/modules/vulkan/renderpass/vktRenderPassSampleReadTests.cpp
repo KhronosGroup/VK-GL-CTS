@@ -254,9 +254,12 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 									 VkDevice				device,
 									 VkFormat				srcFormat,
 									 VkFormat				dstFormat,
-									 deUint32				sampleCount)
+									 deUint32				sampleCount,
+									 RenderPassType			renderPassType)
 {
 	const VkSampleCountFlagBits			samples							(sampleCountBitFromSampleCount(sampleCount));
+	const VkImageAspectFlagBits			aspectFlag						((renderPassType == RENDERPASS_TYPE_RENDERPASS2) ?	VK_IMAGE_ASPECT_COLOR_BIT :
+																															static_cast<VkImageAspectFlagBits>(0u));
 	const AttachmentRef					srcAttachmentRef		//  VkAttachmentReference										||  VkAttachmentReference2KHR
 	(
 																//																||  VkStructureType						sType;
@@ -271,7 +274,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 		DE_NULL,												//																||  const void*							pNext;
 		0u,														//  deUint32						attachment;					||  deUint32							attachment;
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,				//  VkImageLayout					layout;						||  VkImageLayout						layout;
-		0u														//																||  VkImageAspectFlags					aspectMask;
+		aspectFlag												//																||  VkImageAspectFlags					aspectMask;
 	);
 	const AttachmentRef					dstAttachmentRef		//  VkAttachmentReference										||  VkAttachmentReference2KHR
 	(
@@ -415,9 +418,9 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vkd,
 	switch (renderPassType)
 	{
 		case RENDERPASS_TYPE_LEGACY:
-			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount);
+			return createRenderPass<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType);
 		case RENDERPASS_TYPE_RENDERPASS2:
-			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount);
+			return createRenderPass<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vkd, device, srcFormat, dstFormat, sampleCount, renderPassType);
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}
