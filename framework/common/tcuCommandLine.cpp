@@ -189,7 +189,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		<< Option<ShaderCache>			(DE_NULL,	"deqp-shadercache",				"Enable or disable shader cache",					s_enableNames,		"enable")
 		<< Option<ShaderCacheFilename>	(DE_NULL,	"deqp-shadercache-filename",	"Write shader cache to given file",										"shadercache.bin")
 		<< Option<ShaderCacheTruncate>	(DE_NULL,	"deqp-shadercache-truncate",	"Truncate shader cache before running tests",		s_enableNames,		"enable")
-		<< Option<RenderDoc>			(DE_NULL,	"deqp-renderdoc",				"Enable RenderDoc frame markers and workarounds",	s_enableNames,		"disable");
+		<< Option<RenderDoc>			(DE_NULL,	"deqp-renderdoc",				"Enable RenderDoc frame markers",					s_enableNames,		"disable");
 }
 
 void registerLegacyOptions (de::cmdline::Parser& parser)
