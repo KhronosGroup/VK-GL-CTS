@@ -116,6 +116,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
 		),
+		// Unused attachment
 		AttachmentDesc (
 			DE_NULL,									// const void*						pNext
 			(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags		flags
@@ -125,7 +126,7 @@ Move<VkRenderPass> createRenderPass (const DeviceInterface&	vk,
 			testParams.storeOp,							// VkAttachmentStoreOp				storeOp
 			testParams.stencilLoadOp,					// VkAttachmentLoadOp				stencilLoadOp
 			testParams.stencilStoreOp,					// VkAttachmentStoreOp				stencilStoreOp
-			VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout					initialLayout
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout					initialLayout
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout					finalLayout
 		),
 		// Input attachment
