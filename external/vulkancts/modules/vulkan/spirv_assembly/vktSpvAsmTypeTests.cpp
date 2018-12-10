@@ -1485,6 +1485,30 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 }
 
 template <class T>
+std::string valueToStr(const T v)
+{
+	std::stringstream s;
+	s << v;
+	return s.str();
+}
+
+template <>
+std::string valueToStr<deUint8> (const deUint8 v)
+{
+	std::stringstream s;
+	s << (deUint16)v;
+	return s.str();
+}
+
+template <>
+std::string valueToStr<deInt8> ( const deInt8 v)
+{
+	std::stringstream s;
+	s << (deInt16)v;
+	return s.str();
+}
+
+template <class T>
 bool SpvAsmTypeTests<T>::verifyResult (const vector<Resource>&		inputs,
 									   const vector<AllocationSp>&	outputAllocations,
 									   const vector<Resource>&		expectedOutputs,
@@ -1521,15 +1545,15 @@ bool SpvAsmTypeTests<T>::verifyResult (const vector<Resource>&		inputs,
 			inputStream << "(";
 			for (deUint32 ndxIndex = 0 ; ndxIndex < inputs.size(); ++ndxIndex)
 			{
-				inputStream << input[ndxIndex][ndxCount];
+				inputStream << valueToStr(input[ndxIndex][ndxCount]);
 				if (ndxIndex < inputs.size() - 1)
 					inputStream << ",";
 			}
 			inputStream << ")";
 			log << tcu::TestLog::Message
 				<< "Error: found unexpected result for inputs " << inputStream.str()
-				<< ": expected " << expected[ndxCount] << ", obtained "
-				<< obtained[ndxCount] << tcu::TestLog::EndMessage;
+				<< ": expected " << valueToStr(expected[ndxCount]) << ", obtained "
+				<< valueToStr(obtained[ndxCount]) << tcu::TestLog::EndMessage;
 			return false;
 		}
 	}
