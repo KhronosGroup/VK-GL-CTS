@@ -7094,16 +7094,16 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		map<string, string>			specializations;
 		map<string, string>			fragments;
 		SpecConstants				specConstants;
-		vector<string>				features;
 		PushConstants				noPushConstants;
 		GraphicsResources			noResources;
 		GraphicsInterfaces			noInterfaces;
 		std::vector<std::string>	noExtensions;
+		VulkanFeatures				requiredFeatures;
 
 		// Special SPIR-V code for SConvert-case
 		if (strcmp(cases[caseNdx].caseName, "sconvert") == 0)
 		{
-			features.push_back("shaderInt16");
+			requiredFeatures.coreFeatures.shaderInt16 = VK_TRUE;
 			fragments["capability"]					= "OpCapability Int16\n";					// Adds 16-bit integer capability
 			specializations["OPTYPE_DEFINITIONS"]	= "%i16 = OpTypeInt 16 1\n";				// Adds 16-bit integer type
 			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpSConvert %i32 %sc_op\n";	// Converts 16-bit integer to 32-bit integer
@@ -7112,7 +7112,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		// Special SPIR-V code for FConvert-case
 		if (strcmp(cases[caseNdx].caseName, "fconvert") == 0)
 		{
-			features.push_back("shaderFloat64");
+			requiredFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
 			fragments["capability"]					= "OpCapability Float64\n";					// Adds 64-bit float capability
 			specializations["OPTYPE_DEFINITIONS"]	= "%f64 = OpTypeFloat 64\n";				// Adds 64-bit float type
 			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpConvertFToS %i32 %sc_op\n";	// Converts 64-bit float to 32-bit integer
@@ -7141,7 +7141,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 
 		createTestsForAllStages(
 			cases[caseNdx].caseName, inputColors, cases[caseNdx].expectedColors, fragments, specConstants,
-			noPushConstants, noResources, noInterfaces, noExtensions, features, VulkanFeatures(), group.get());
+			noPushConstants, noResources, noInterfaces, noExtensions, requiredFeatures, group.get());
 	}
 
 	const char	decorations2[]			=
@@ -9641,7 +9641,6 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 	for (vector<ConvertCase>::const_iterator test = testCases.begin(); test != testCases.end(); ++test)
 	{
 		map<string, string>	fragments		= getConvertCaseFragments(instruction, *test);
-		vector<string>		features;
 		VulkanFeatures		vulkanFeatures;
 		GraphicsResources	resources;
 		vector<string>		extensions;
@@ -9659,7 +9658,7 @@ tcu::TestCaseGroup* createConvertGraphicsTests (tcu::TestContext& testCtx, const
 
 		createTestsForAllStages(
 			test->m_name, defaultColors, defaultColors, fragments, noSpecConstants,
-			noPushConstants, resources, noInterfaces, extensions, features, vulkanFeatures, group.get());
+			noPushConstants, resources, noInterfaces, extensions, vulkanFeatures, group.get());
 	}
 	return group.release();
 }
@@ -10719,7 +10718,6 @@ tcu::TestCaseGroup* createDerivativeTests (tcu::TestContext& testCtx)
 		SpecConstants		noSpecConstants;
 		PushConstants		noPushConstants;
 		GraphicsInterfaces	noInterfaces;
-		vector<string>		noFeatures;
 
 		specs["op_code"]			= testOp.opCode;
 		specs["num_data_points"]	= de::toString(testOp.inputData.size() / N);
@@ -10745,7 +10743,7 @@ tcu::TestCaseGroup* createDerivativeTests (tcu::TestContext& testCtx)
 		features.ext16BitStorage	= EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 
 		createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, testName.c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-							noPushConstants, specResource, noInterfaces, extensions, noFeatures, features, testGroup.get(), QP_TEST_RESULT_FAIL, string(), true);
+							noPushConstants, specResource, noInterfaces, extensions, features, testGroup.get(), QP_TEST_RESULT_FAIL, string(), true);
 	}
 
 	return testGroup.release();

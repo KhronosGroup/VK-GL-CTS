@@ -153,7 +153,6 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsInterfaces			noInterfaces;
-	std::vector<std::string>	noFeatures;
 	std::vector<std::string>	noExtensions;
 	VulkanFeatures				vulkanFeatures = VulkanFeatures();
 
@@ -249,21 +248,21 @@ void addGraphicsUboMatrixPaddingTest (tcu::TestCaseGroup* group)
 	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
 	createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "mat2x2_vert", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "mat2x2_tessc", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 	createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "mat2x2_tesse", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 	createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, "mat2x2_geom", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
 	createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "mat2x2_frag", defaultColors, defaultColors, fragments, noSpecConstants,
-					   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 }
 
 } // anonymous

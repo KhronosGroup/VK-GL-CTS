@@ -260,7 +260,6 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 								  const GraphicsResources&			resources_,
 								  const GraphicsInterfaces&			interfaces_,
 								  const vector<string>&				extensions_,
-								  const vector<string>&				features_,
 								  VulkanFeatures					vulkanFeatures_,
 								  VkShaderStageFlags				customizedStages_)
 	: testCodeFragments				(testCodeFragments_)
@@ -268,7 +267,6 @@ InstanceContext::InstanceContext (const RGBA						(&inputs)[4],
 	, hasTessellation				(false)
 	, requiredStages				(static_cast<VkShaderStageFlagBits>(0))
 	, requiredDeviceExtensions		(extensions_)
-	, requiredDeviceFeatures		(features_)
 	, requestedFeatures				(vulkanFeatures_)
 	, pushConstants					(pushConsants_)
 	, customizedStages				(customizedStages_)
@@ -296,7 +294,6 @@ InstanceContext::InstanceContext (const InstanceContext& other)
 	, hasTessellation				(other.hasTessellation)
 	, requiredStages				(other.requiredStages)
 	, requiredDeviceExtensions		(other.requiredDeviceExtensions)
-	, requiredDeviceFeatures		(other.requiredDeviceFeatures)
 	, requestedFeatures				(other.requestedFeatures)
 	, pushConstants					(other.pushConstants)
 	, customizedStages				(other.customizedStages)
@@ -2476,38 +2473,6 @@ TestStatus runAndVerifyDefaultPipeline (Context& context, InstanceContext instan
 			TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
 	}
 
-	{
-		for (deUint32 featureNdx = 0; featureNdx < instance.requiredDeviceFeatures.size(); ++featureNdx)
-		{
-			const string& feature = instance.requiredDeviceFeatures[featureNdx];
-
-			if (feature == "shaderInt16")
-			{
-				if (features.shaderInt16 != VK_TRUE)
-					TCU_THROW(NotSupportedError, "Device feature not supported: shaderInt16");
-			}
-			else if (feature == "shaderInt64")
-			{
-				if (features.shaderInt64 != VK_TRUE)
-					TCU_THROW(NotSupportedError, "Device feature not supported: shaderInt64");
-			}
-			else if (feature == "shaderFloat64")
-			{
-				if (features.shaderFloat64 != VK_TRUE)
-					TCU_THROW(NotSupportedError, "Device feature not supported: shaderFloat64");
-			}
-			else if (feature == "fragmentStoresAndAtomics")
-			{
-				if (features.fragmentStoresAndAtomics != VK_TRUE)
-					TCU_THROW(NotSupportedError, "Device feature not supported: fragmentStoresAndAtomics");
-			}
-			else
-			{
-				TCU_THROW(InternalError, (std::string("Unimplemented physical device feature: ") + feature).c_str());
-			}
-		}
-	}
-
 	// Core features
 	{
 		const VkShaderStageFlags		vertexPipelineStoresAndAtomicsAffected	= vk::VK_SHADER_STAGE_VERTEX_BIT
@@ -4141,7 +4106,6 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 						 const GraphicsResources&	resources,
 						 const GraphicsInterfaces&	interfaces,
 						 const vector<string>&		extensions,
-						 const vector<string>&		features,
 						 VulkanFeatures				vulkanFeatures,
 						 tcu::TestCaseGroup*		tests,
 						 const qpTestResult			failResult,
@@ -4156,7 +4120,7 @@ void createTestForStage (vk::VkShaderStageFlagBits	stage,
 	if (!specConstants.empty())
 		specConstantMap[stage] = specConstants;
 
-	InstanceContext					ctx					(inputColors, outputColors, testCodeFragments, specConstantMap, pushConstants, resources, interfaces, extensions, features, vulkanFeatures, stage);
+	InstanceContext					ctx					(inputColors, outputColors, testCodeFragments, specConstantMap, pushConstants, resources, interfaces, extensions, vulkanFeatures, stage);
 	for (size_t i = 0; i < pipeline.size(); ++i)
 	{
 		ctx.moduleMap[pipeline[i].moduleName].push_back(std::make_pair(pipeline[i].entryName, pipeline[i].stage));
@@ -4180,7 +4144,6 @@ void createTestsForAllStages (const std::string&			name,
 							  const GraphicsResources&		resources,
 							  const GraphicsInterfaces&		interfaces,
 							  const vector<string>&			extensions,
-							  const vector<string>&			features,
 							  VulkanFeatures				vulkanFeatures,
 							  tcu::TestCaseGroup*			tests,
 							  const qpTestResult			failResult,
@@ -4188,23 +4151,23 @@ void createTestsForAllStages (const std::string&			name,
 {
 	createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, name + "_vert",
 					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
-					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
+					   interfaces, extensions, vulkanFeatures, tests, failResult, failMessageTemplate);
 
 	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, name + "_tessc",
 					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
-					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
+					   interfaces, extensions, vulkanFeatures, tests, failResult, failMessageTemplate);
 
 	createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, name + "_tesse",
 					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
-					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
+					   interfaces, extensions, vulkanFeatures, tests, failResult, failMessageTemplate);
 
 	createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, name + "_geom",
 					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
-					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
+					   interfaces, extensions, vulkanFeatures, tests, failResult, failMessageTemplate);
 
 	createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, name + "_frag",
 					   inputColors, outputColors, testCodeFragments, specConstants, pushConstants, resources,
-					   interfaces, extensions, features, vulkanFeatures, tests, failResult, failMessageTemplate);
+					   interfaces, extensions, vulkanFeatures, tests, failResult, failMessageTemplate);
 }
 
 void addTessCtrlTest (tcu::TestCaseGroup* group, const char* name, const map<string, string>& fragments)
@@ -4214,7 +4177,7 @@ void addTessCtrlTest (tcu::TestCaseGroup* group, const char* name, const map<str
 
 	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, name,
 					   defaultColors, defaultColors, fragments, SpecConstants(), PushConstants(), GraphicsResources(),
-					   GraphicsInterfaces(), vector<string>(), vector<string>(), VulkanFeatures(), group);
+					   GraphicsInterfaces(), vector<string>(), VulkanFeatures(), group);
 }
 
 } // SpirVAssembly

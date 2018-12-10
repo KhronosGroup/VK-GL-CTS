@@ -1045,7 +1045,6 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsInterfaces			noInterfaces;
-	std::vector<std::string>	noFeatures;
 	std::vector<std::string>	noExtensions;
 	VulkanFeatures				vulkanFeatures		= VulkanFeatures();
 
@@ -1117,21 +1116,21 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 					vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 					vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
 					createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "shader_vert", defaultColors, defaultColors, fragments, noSpecConstants,
-						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+						noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, typeGroup.get());
 
 					createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "shader_tessc", defaultColors, defaultColors, fragments, noSpecConstants,
-						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+						noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, typeGroup.get());
 
 					createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "shader_tesse", defaultColors, defaultColors, fragments, noSpecConstants,
-						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+						noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, typeGroup.get());
 
 					createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, "shader_geom", defaultColors, defaultColors, fragments, noSpecConstants,
-						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+						noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, typeGroup.get());
 
 					vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
 					vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
 					createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "shader_frag", defaultColors, defaultColors, fragments, noSpecConstants,
-						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+						noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, typeGroup.get());
 
 					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
 						testtypeGroup->addChild(typeGroup.release());
@@ -1188,7 +1187,6 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 	SpecConstants				noSpecConstants;
 	PushConstants				noPushConstants;
 	GraphicsInterfaces			noInterfaces;
-	std::vector<std::string>	noFeatures;
 	std::vector<std::string>	noExtensions;
 	VulkanFeatures				vulkanFeatures		= VulkanFeatures();
 
@@ -1259,7 +1257,7 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 				getDefaultColors(defaultColors);
 
 				createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "shader_frag", defaultColors, defaultColors, fragments, noSpecConstants,
-								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, descGroup.get());
+								   noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, descGroup.get());
 
 				readOpGroup->addChild(descGroup.release());
 			}

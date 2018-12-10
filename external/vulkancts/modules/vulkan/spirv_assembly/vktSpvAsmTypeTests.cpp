@@ -664,6 +664,21 @@ string getFullOperationWithDifferentInputWidthStr (string resultName, string spi
 	return str;
 }
 
+static inline void requiredFeaturesFromStrings(const std::vector<std::string> &features, VulkanFeatures &requestedFeatures)
+{
+	for (deUint32 featureNdx = 0; featureNdx < features.size(); ++featureNdx)
+	{
+		const std::string& feature = features[featureNdx];
+
+		if (feature == "shaderInt16")
+			requestedFeatures.coreFeatures.shaderInt16 = VK_TRUE;
+		else if (feature == "shaderInt64")
+			requestedFeatures.coreFeatures.shaderInt64 = VK_TRUE;
+		else
+			DE_ASSERT(0);  // Not implemented. Don't add to here. Just use VulkanFeatures
+	}
+}
+
 template <class T>
 class SpvAsmTypeTests : public tcu::TestCaseGroup
 {
@@ -1481,7 +1496,9 @@ void SpvAsmTypeTests<T>::createStageTests (const char*			testName,
 	fragments["extension"]	= spirvExtensions;
 	fragments["capability"]	= spirvCapabilities;
 
-	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, noExtensions, features, this, requiredFeatures);
+	requiredFeaturesFromStrings(features, requiredFeatures);
+
+	createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, noExtensions, this, requiredFeatures);
 }
 
 template <class T>
@@ -2087,7 +2104,9 @@ void SpvAsmTypeTests<T>::createSwitchTests (void)
 	fragments["extension"]	= spirvExtensions;
 	fragments["capability"]	= spirvCapabilities;
 
-	createTestsForAllStages("switch", defaultColors, defaultColors, fragments, resources, noExtensions, features, this, requiredFeatures);
+	requiredFeaturesFromStrings(features, requiredFeatures);
+
+	createTestsForAllStages("switch", defaultColors, defaultColors, fragments, resources, noExtensions, this, requiredFeatures);
 }
 
 template <class T>

@@ -188,7 +188,7 @@ void addGraphicsVaryingNameTest (tcu::TestCaseGroup* group, const TestParams& pa
 	PushConstants			noPushConstants;
 	GraphicsInterfaces		noInterfaces;
 	vector<string>			extensions;
-	vector<string>			features;
+	VulkanFeatures			features;
 	map<string, string>		noFragments;
 	StageToSpecConstantMap	specConstantMap;
 	GraphicsResources		resources;
@@ -205,7 +205,7 @@ void addGraphicsVaryingNameTest (tcu::TestCaseGroup* group, const TestParams& pa
 
 	getDefaultColors(defaultColors);
 
-	features.push_back("fragmentStoresAndAtomics");
+	features.coreFeatures.fragmentStoresAndAtomics = VK_TRUE;
 	extensions.push_back("VK_KHR_storage_buffer_storage_class");
 
 	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
@@ -221,7 +221,6 @@ void addGraphicsVaryingNameTest (tcu::TestCaseGroup* group, const TestParams& pa
 				noInterfaces,
 				extensions,
 				features,
-				VulkanFeatures(),
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				QP_TEST_RESULT_FAIL,
 				string());
