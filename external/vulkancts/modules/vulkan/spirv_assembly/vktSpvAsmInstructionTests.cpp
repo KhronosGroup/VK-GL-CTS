@@ -5980,7 +5980,12 @@ tcu::TestCaseGroup* createFloat16OpConstantCompositeGroup (tcu::TestContext& tes
 		spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
 		spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
+
 		spec.extensions.push_back("VK_KHR_16bit_storage");
+		spec.extensions.push_back("VK_KHR_shader_float16_int8");
+
+		spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
+		spec.requestedVulkanFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
@@ -7097,7 +7102,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		PushConstants				noPushConstants;
 		GraphicsResources			noResources;
 		GraphicsInterfaces			noInterfaces;
-		std::vector<std::string>	noExtensions;
+		vector<string>				extensions;
 		VulkanFeatures				requiredFeatures;
 
 		// Special SPIR-V code for SConvert-case
@@ -7121,6 +7126,8 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 		// Special SPIR-V code for FConvert-case for 16-bit floats
 		if (strcmp(cases[caseNdx].caseName, "fconvert16") == 0)
 		{
+			extensions.push_back("VK_KHR_shader_float16_int8");
+			requiredFeatures.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 			fragments["capability"]					= "OpCapability Float16\n";					// Adds 16-bit float capability
 			specializations["OPTYPE_DEFINITIONS"]	= "%f16 = OpTypeFloat 16\n";				// Adds 16-bit float type
 			specializations["TYPE_CONVERT"]			= "%sc_op32 = OpConvertFToS %i32 %sc_op\n";	// Converts 16-bit float to 32-bit integer
@@ -7141,7 +7148,7 @@ tcu::TestCaseGroup* createSpecConstantTests (tcu::TestContext& testCtx)
 
 		createTestsForAllStages(
 			cases[caseNdx].caseName, inputColors, cases[caseNdx].expectedColors, fragments, specConstants,
-			noPushConstants, noResources, noInterfaces, noExtensions, requiredFeatures, group.get());
+			noPushConstants, noResources, noInterfaces, extensions, requiredFeatures, group.get());
 	}
 
 	const char	decorations2[]			=
@@ -9823,6 +9830,7 @@ tcu::TestCaseGroup* createOpConstantFloat16Tests(tcu::TestContext& testCtx)
 
 	extensions.push_back("VK_KHR_16bit_storage");
 	extensions.push_back("VK_KHR_shader_float16_int8");
+	features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
 
 	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameConstantsCode); ++testNdx)
 	{
