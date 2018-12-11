@@ -2410,6 +2410,7 @@ template<typename Object>	int getCreateCount				(void) { return 100;	}
 // Creating VkDevice and VkInstance can take significantly longer than other object types
 template<>					int getCreateCount<Instance>	(void) { return 20;		}
 template<>					int getCreateCount<Device>		(void) { return 20;		}
+template<>					int getCreateCount<DeviceGroup>	(void) { return 20;		}
 
 template<typename Object>
 class CreateThread : public ThreadGroupThread
