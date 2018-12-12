@@ -394,6 +394,9 @@ tcu::TestStatus createDeviceTest (Context& context)
 	const deUint32					queueCount				= 1;
 	const deUint32					queueIndex				= 0;
 	const float						queuePriority			= 1.0f;
+
+	const vector<VkQueueFamilyProperties> queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
 	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -435,6 +438,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 	const Unique<VkInstance>							instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver								instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice								physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
+	const vector<VkQueueFamilyProperties>				queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 	const deUint32										queueFamilyIndex		= 0;
 	const deUint32										queueCount				= 1;
 	const deUint32										queueIndex				= 0;
@@ -670,6 +674,9 @@ tcu::TestStatus createDeviceFeatures2Test (Context& context)
 	const deUint32					queueIndex				= 0;
 	const float						queuePriority			= 1.0f;
 
+	const InstanceDriver					instanceDriver			(vkp, instance.get());
+	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
 	VkPhysicalDeviceFeatures2		enabledFeatures;
 	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
 	{
@@ -731,6 +738,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 	const deUint32				queueCount				= 1;
 	const float					queuePriority			= 1.0f;
 	VkPhysicalDeviceFeatures	physicalDeviceFeatures;
+
+	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
 
