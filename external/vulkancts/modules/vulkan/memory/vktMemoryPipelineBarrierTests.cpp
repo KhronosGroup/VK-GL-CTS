@@ -82,6 +82,8 @@ namespace memory
 {
 namespace
 {
+
+#define ONE_MEGABYTE 1024*1024
 enum
 {
 	MAX_UNIFORM_BUFFER_SIZE = 1024,
@@ -1354,36 +1356,52 @@ void HostMemoryAccess::prepare (PrepareContext& context)
 
 void HostMemoryAccess::execute (ExecuteContext& context)
 {
-	de::Random		rng	(m_seed);
-	deUint8* const	ptr	= (deUint8*)context.getMapping();
-
 	if (m_read && m_write)
 	{
-		for (size_t pos = 0; pos < m_size; pos++)
+		de::Random		rng	(m_seed);
+		deUint8* const	ptr	= (deUint8*)context.getMapping();
+		if (m_size >= ONE_MEGABYTE)
 		{
-			const deUint8	mask	= rng.getUint8();
-			const deUint8	value	= ptr[pos];
+			deMemcpy(&m_readData[0], ptr, m_size);
+			for (size_t pos = 0; pos < m_size; ++pos)
+			{
+				ptr[pos] = m_readData[pos] ^ rng.getUint8();
+			}
+		}
+		else
+		{
+			for (size_t pos = 0; pos < m_size; ++pos)
+			{
+				const deUint8	mask	= rng.getUint8();
+				const deUint8	value	= ptr[pos];
 
-			m_readData[pos] = value;
-			ptr[pos] = value ^ mask;
+				m_readData[pos] = value;
+				ptr[pos] = value ^ mask;
+			}
 		}
 	}
 	else if (m_read)
 	{
-		for (size_t pos = 0; pos < m_size; pos++)
+		const deUint8* const	ptr = (deUint8*)context.getMapping();
+		if (m_size >= ONE_MEGABYTE)
 		{
-			const deUint8	value	= ptr[pos];
-
-			m_readData[pos] = value;
+			deMemcpy(&m_readData[0], ptr, m_size);
+		}
+		else
+		{
+			for (size_t pos = 0; pos < m_size; ++pos)
+			{
+				m_readData[pos] = ptr[pos];
+			}
 		}
 	}
 	else if (m_write)
 	{
-		for (size_t pos = 0; pos < m_size; pos++)
+		de::Random		rng	(m_seed);
+		deUint8* const	ptr	= (deUint8*)context.getMapping();
+		for (size_t pos = 0; pos < m_size; ++pos)
 		{
-			const deUint8	value	= rng.getUint8();
-
-			ptr[pos] = value;
+			ptr[pos] = rng.getUint8();
 		}
 	}
 	else
@@ -9688,10 +9706,10 @@ tcu::TestCaseGroup* createPipelineBarrierTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "pipeline_barrier", "Pipeline barrier tests."));
 	const vk::VkDeviceSize			sizes[]			=
 	{
-		1024,		// 1K
-		8*1024,		// 8K
-		64*1024,	// 64K
-		1024*1024,	// 1M
+		1024,			// 1K
+		8*1024,			// 8K
+		64*1024,		// 64K
+		ONE_MEGABYTE,	// 1M
 	};
 	const Usage						usages[]		=
 	{
