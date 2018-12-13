@@ -2589,8 +2589,6 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 
 	static const string vertexTemplate =
 		"OpCapability Shader\n"
-		"OpCapability ClipDistance\n"
-		"OpCapability CullDistance\n"
 		"${vert_capabilities}"
 
 		"OpExtension \"SPV_KHR_float_controls\"\n"
