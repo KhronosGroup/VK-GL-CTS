@@ -224,7 +224,7 @@ StateObjects::StateObjects (const vk::DeviceInterface&vk, vkt::Context &context,
 	{
 		// Vertex buffer
 		const size_t kBufferSize = numVertices * sizeof(tcu::Vec4);
-		m_vertexBuffer = Buffer::createAndAlloc(vk, device, BufferCreateInfo(kBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
+		m_vertexBuffer = Buffer::createAndAlloc(vk, device, BufferCreateInfo(kBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 	}
 }
 
@@ -235,7 +235,7 @@ void StateObjects::setVertices (const vk::DeviceInterface&vk, std::vector<tcu::V
 	tcu::Vec4 *ptr = reinterpret_cast<tcu::Vec4*>(m_vertexBuffer->getBoundMemory().getHostPtr());
 	std::copy(vertices.begin(), vertices.end(), ptr);
 
-	vk::flushMappedMemoryRange(vk, device,	m_vertexBuffer->getBoundMemory().getMemory(), m_vertexBuffer->getBoundMemory().getOffset(),	vertices.size() * sizeof(vertices[0]));
+	vk::flushAlloc(vk, device,	m_vertexBuffer->getBoundMemory());
 }
 
 enum OcclusionQueryResultSize
@@ -849,7 +849,7 @@ void OcclusionQueryTestInstance::captureResults (deUint64* retResults, deUint64*
 		const vk::Allocation& allocation = m_queryPoolResultsBuffer->getBoundMemory();
 		const void* allocationData = allocation.getHostPtr();
 
-		vk::invalidateMappedMemoryRange(vk, device, allocation.getMemory(), allocation.getOffset(), resultsBuffer.size());
+		vk::invalidateAlloc(vk, device, allocation);
 
 		deMemcpy(&resultsBuffer[0], allocationData, resultsBuffer.size());
 	}
