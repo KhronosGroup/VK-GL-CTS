@@ -509,7 +509,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 		inputPixelBuffer.setPixel(initialValue, x, y, z);
 	}
 
-	flushMappedMemoryRange(deviceInterface, device, inputBufferAllocation.getMemory(), inputBufferAllocation.getOffset(), imageSizeInBytes);
+	flushAlloc(deviceInterface, device, inputBufferAllocation);
 
 	// Create a buffer to store shader output copied from result image
 	m_outputBuffer = de::MovePtr<Buffer>(new Buffer(deviceInterface, device, allocator, makeBufferCreateInfo(outBuffSizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT), MemoryRequirement::HostVisible));
@@ -556,7 +556,7 @@ tcu::TestStatus	BinaryAtomicInstanceBase::iterate (void)
 
 	Allocation& outputBufferAllocation = m_outputBuffer->getAllocation();
 
-	invalidateMappedMemoryRange(deviceInterface, device, outputBufferAllocation.getMemory(), outputBufferAllocation.getOffset(), outBuffSizeInBytes);
+	invalidateAlloc(deviceInterface, device, outputBufferAllocation);
 
 	if (verifyResult(outputBufferAllocation))
 		return tcu::TestStatus::pass("Comparison succeeded");

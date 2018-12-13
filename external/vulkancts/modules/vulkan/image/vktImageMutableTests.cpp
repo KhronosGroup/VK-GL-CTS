@@ -2253,7 +2253,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 	const Unique<VkBuffer>		colorBuffer(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>	colorBufferAlloc(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 	deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
-	flushMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+	flushAlloc(vk, device, *colorBufferAlloc);
 
 
 	// Execute the test
@@ -2263,7 +2263,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 
 	// Verify results
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 
 		// For verification purposes, we use the format of the upload to generate the expected image
 		const VkFormat						format = caseDef.upload == UPLOAD_CLEAR || caseDef.upload == UPLOAD_COPY ? caseDef.imageFormat : caseDef.viewFormat;

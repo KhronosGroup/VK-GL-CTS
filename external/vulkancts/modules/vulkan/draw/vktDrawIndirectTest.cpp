@@ -264,7 +264,7 @@ IndirectDraw::IndirectDraw (Context &context, TestSpec testSpec)
 		{
 			indices[i] = static_cast<deUint32>(i);
 		}
-		vk::flushMappedMemoryRange(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory().getMemory(), m_indexBuffer->getBoundMemory().getOffset(), VK_WHOLE_SIZE);
+		vk::flushAlloc(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory());
 	}
 
 	// Check device for multidraw support:
@@ -467,11 +467,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 	deMemcpy(ptr, &m_junkData, static_cast<size_t>(m_offsetInBuffer));
 	deMemcpy(ptr + m_offsetInBuffer, &m_indirectBufferContents[0], static_cast<size_t>(dataSize));
 
-	vk::flushMappedMemoryRange(m_vk,
-							   m_context.getDevice(),
-							   m_indirectBuffer->getBoundMemory().getMemory(),
-							   m_indirectBuffer->getBoundMemory().getOffset(),
-							   VK_WHOLE_SIZE);
+	vk::flushAlloc(m_vk, m_context.getDevice(), m_indirectBuffer->getBoundMemory());
 
 	if (m_testIndirectCountExt)
 	{
@@ -490,11 +486,7 @@ tcu::TestStatus IndirectDraw::iterate (void)
 		else
 			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = 1u;
 
-		vk::flushMappedMemoryRange(m_vk,
-								   m_context.getDevice(),
-								   m_indirectCountBuffer->getBoundMemory().getMemory(),
-								   m_indirectCountBuffer->getBoundMemory().getOffset(),
-								   VK_WHOLE_SIZE);
+		vk::flushAlloc(m_vk, m_context.getDevice(), m_indirectCountBuffer->getBoundMemory());
 	}
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
@@ -790,11 +782,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 	deMemcpy(ptr, &m_junkData, static_cast<size_t>(m_offsetInBuffer));
 	deMemcpy((ptr + m_offsetInBuffer), &m_indirectBufferContents[0], static_cast<size_t>(dataSize));
 
-	vk::flushMappedMemoryRange(m_vk,
-							   m_context.getDevice(),
-							   m_indirectBuffer->getBoundMemory().getMemory(),
-							   m_indirectBuffer->getBoundMemory().getOffset(),
-							   VK_WHOLE_SIZE);
+	vk::flushAlloc(m_vk, m_context.getDevice(), m_indirectBuffer->getBoundMemory());
 
 	if (m_testIndirectCountExt)
 	{
@@ -813,11 +801,7 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 		else
 			*(deUint32*)(countBufferPtr + m_offsetInCountBuffer) = 1u;
 
-		vk::flushMappedMemoryRange(m_vk,
-								   m_context.getDevice(),
-								   m_indirectCountBuffer->getBoundMemory().getMemory(),
-								   m_indirectCountBuffer->getBoundMemory().getOffset(),
-								   VK_WHOLE_SIZE);
+		vk::flushAlloc(m_vk, m_context.getDevice(), m_indirectCountBuffer->getBoundMemory());
 	}
 
 	m_vk.cmdBindPipeline(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);

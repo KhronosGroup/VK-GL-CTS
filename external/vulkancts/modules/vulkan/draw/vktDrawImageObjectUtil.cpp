@@ -648,7 +648,7 @@ void Image::uploadUsingBuffer (vk::VkQueue					queue,
 	stagingResource = Buffer::createAndAlloc(m_vk, m_device, stagingBufferResourceCreateInfo, allocator, vk::MemoryRequirement::HostVisible);
 	deUint8* destPtr = reinterpret_cast<deUint8*>(stagingResource->getBoundMemory().getHostPtr());
 	deMemcpy(destPtr, data, static_cast<size_t>(bufferSize));
-	vk::flushMappedMemoryRange(m_vk, m_device, stagingResource->getBoundMemory().getMemory(), stagingResource->getBoundMemory().getOffset(), bufferSize);
+	vk::flushAlloc(m_vk, m_device, stagingResource->getBoundMemory());
 	{
 		CmdPoolCreateInfo copyCmdPoolCreateInfo(m_queueFamilyIndex);
 		vk::Unique<vk::VkCommandPool> copyCmdPool(vk::createCommandPool(m_vk, m_device, &copyCmdPoolCreateInfo));
