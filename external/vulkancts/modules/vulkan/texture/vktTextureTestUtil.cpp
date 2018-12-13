@@ -1374,7 +1374,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 	// Copy Image
 	{
-		copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? *m_resolvedImage : *m_image, *m_resultBuffer, tcu::IVec2(m_renderWidth, m_renderHeight), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+		copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? *m_resolvedImage : *m_image, *m_resultBuffer, tcu::IVec2(m_renderWidth, m_renderHeight));
 
 		addImageTransitionBarrier(*commandBuffer,
 								  m_multisampling ? *m_resolvedImage : *m_image,
