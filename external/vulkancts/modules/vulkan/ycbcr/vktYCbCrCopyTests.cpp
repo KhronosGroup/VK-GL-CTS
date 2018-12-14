@@ -171,7 +171,7 @@ vk::Move<vk::VkImage> createImage (const vk::DeviceInterface&	vkd,
 		vk::VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
-		vk::VK_IMAGE_LAYOUT_UNDEFINED,
+		tiling == vk::VK_IMAGE_TILING_LINEAR ? vk::VK_IMAGE_LAYOUT_PREINITIALIZED : vk::VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
 	return vk::createImage(vkd, device, &createInfo);
