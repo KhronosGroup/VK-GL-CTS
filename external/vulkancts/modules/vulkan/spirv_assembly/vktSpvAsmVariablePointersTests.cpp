@@ -618,21 +618,13 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 	// 7. inputC.a.r[?][?].(x|y)[?][?]	or	inputC.b.r[?][?].(x|y)[?][?]	= scalars
 	const int numLevels = 7;
 
-	const string decorations (
+	const string commonDecorations (
 		// Decorations
 		"OpDecorate %id BuiltIn GlobalInvocationId		\n"
-		"OpDecorate %inputA DescriptorSet 0				\n"
-		"OpDecorate %inputB DescriptorSet 0				\n"
-		"OpDecorate %inputC DescriptorSet 0				\n"
 		"OpDecorate %outdata DescriptorSet 0			\n"
-		"OpDecorate %inputA Binding 0					\n"
-		"OpDecorate %inputB Binding 1					\n"
-		"OpDecorate %inputC Binding 2					\n"
 		"OpDecorate %outdata Binding 3					\n"
 
 		// Set the Block decoration
-		"OpDecorate %outer_struct	Block				\n"
-		"OpDecorate %input_buffer	Block				\n"
 		"OpDecorate %output_buffer	Block				\n"
 
 		// Set the Offsets
@@ -649,6 +641,24 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"OpDecorate %mat2x2_inner_struct ArrayStride 128	\n"
 		"OpDecorate %outer_struct_ptr    ArrayStride 256	\n"
 		"OpDecorate %v4f32_ptr           ArrayStride 16		\n"
+	);
+
+	const string inputABDecorations (
+		"OpDecorate %inputA DescriptorSet 0				\n"
+		"OpDecorate %inputB DescriptorSet 0				\n"
+		"OpDecorate %inputA Binding 0					\n"
+		"OpDecorate %inputB Binding 1					\n"
+
+		// inputA and inputB have type outer_struct so it needs Block
+		"OpDecorate %outer_struct	Block				\n"
+	);
+
+	const string inputCDecorations (
+		"OpDecorate %inputC DescriptorSet 0				\n"
+		"OpDecorate %inputC Binding 2					\n"
+
+		// inputC has type input_buffer so it needs Block
+		"OpDecorate %input_buffer	Block				\n"
 	);
 
 	const string types (
@@ -710,10 +720,22 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		// VARIABLES //
 		///////////////
 		"%id					= OpVariable %uvec3ptr			Input				\n"
+		"%outdata				= OpVariable %output_buffer_ptr	StorageBuffer		\n"
+	);
+
+	const string inputABVariables (
 		"%inputA				= OpVariable %outer_struct_ptr	StorageBuffer		\n"
 		"%inputB				= OpVariable %outer_struct_ptr	StorageBuffer		\n"
+	);
+
+	const string inputCVariables (
 		"%inputC				= OpVariable %input_buffer_ptr	StorageBuffer		\n"
-		"%outdata				= OpVariable %output_buffer_ptr	StorageBuffer		\n"
+	);
+
+	const string inputCIntermediates (
+		// Here are the 2 nested structures within InputC.
+		"%inputC_a				= OpAccessChain %outer_struct_ptr %inputC %c_i32_0\n"
+		"%inputC_b				= OpAccessChain %outer_struct_ptr %inputC %c_i32_1\n"
 	);
 
 	const StringTemplate shaderTemplate (
@@ -731,11 +753,15 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
-		+ decorations
+		+ commonDecorations +
+
+		"${input_decorations}\n"
 
 		+ string(getComputeAsmCommonTypes())
 
 		+ types +
+
+		"${input_variables}\n"
 
 		// These selector functions return variable pointers.
 		// These functions are used by tests that use OpFunctionCall to obtain the variable pointer
@@ -753,9 +779,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"%main					= OpFunction %void None %voidf\n"
 		"%label					= OpLabel\n"
 
-		// Here are the 2 nested structures within InputC.
-		"%inputC_a				= OpAccessChain %outer_struct_ptr %inputC %c_i32_0\n"
-		"%inputC_b				= OpAccessChain %outer_struct_ptr %inputC %c_i32_1\n"
+		"${input_intermediates}\n"
 
 		// Define the 2 pointers from which we're going to choose one.
 		"${a_loc} \n"
@@ -787,6 +811,9 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		for (int selectInputA = 0; selectInputA < 2; ++selectInputA)
 		{
 			const string extraCap					= isSingleInputBuffer	? "OpCapability VariablePointersStorageBuffer\n" : "OpCapability VariablePointers\n";
+			const string inputDecorations			= isSingleInputBuffer	? inputCDecorations								 : inputABDecorations;
+			const string inputVariables				= isSingleInputBuffer	? inputCVariables								 : inputABVariables;
+			const string inputIntermediates			= isSingleInputBuffer	? inputCIntermediates							 : "";
 			const vector<float>& selectedInput		= isSingleInputBuffer	? inputC										 : (selectInputA ? inputA : inputB);
 			const string bufferType					= isSingleInputBuffer	? "single_buffer_"								 : "two_buffers_";
 			const string baseA						= isSingleInputBuffer	? "%inputC_a"									 : "%inputA";
@@ -883,6 +910,9 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					string opCodeForTests			= "opselect";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
 					specs["extra_capability"]		= extraCap;
+					specs["input_decorations"]		= inputDecorations;
+					specs["input_variables"]		= inputVariables;
+					specs["input_intermediates"]	= inputIntermediates;
 					specs["selected_type"]			= pointerTypeAtLevel[indexLevel];
 					specs["select_inputA"]			= spirvSelectInputA;
 					specs["a_loc"]					= inputALocations[indexLevel];
@@ -912,6 +942,9 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					string opCodeForTests			= "opfunctioncall";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
 					specs["extra_capability"]		= extraCap;
+					specs["input_decorations"]		= inputDecorations;
+					specs["input_variables"]		= inputVariables;
+					specs["input_intermediates"]	= inputIntermediates;
 					specs["selected_type"]			= pointerTypeAtLevel[indexLevel];
 					specs["select_inputA"]			= spirvSelectInputA;
 					specs["a_loc"]					= inputALocations[indexLevel];
@@ -943,6 +976,9 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					string opCodeForTests			= "opphi";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
 					specs["extra_capability"]		= extraCap;
+					specs["input_decorations"]		= inputDecorations;
+					specs["input_variables"]		= inputVariables;
+					specs["input_intermediates"]	= inputIntermediates;
 					specs["selected_type"]			= pointerTypeAtLevel[indexLevel];
 					specs["select_inputA"]			= spirvSelectInputA;
 					specs["a_loc"]					= inputALocations[indexLevel];
@@ -981,6 +1017,9 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					string opCodeForTests			= "opcopyobject";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
 					specs["extra_capability"]		= extraCap;
+					specs["input_decorations"]		= inputDecorations;
+					specs["input_variables"]		= inputVariables;
+					specs["input_intermediates"]	= inputIntermediates;
 					specs["selected_type"]			= pointerTypeAtLevel[indexLevel];
 					specs["select_inputA"]			= spirvSelectInputA;
 					specs["a_loc"]					= inputALocations[indexLevel];
@@ -1009,6 +1048,9 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					string opCodeForTests			= "opptraccesschain";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
 					specs["extra_capability"]		= extraCap;
+					specs["input_decorations"]		= inputDecorations;
+					specs["input_variables"]		= inputVariables;
+					specs["input_intermediates"]	= inputIntermediates;
 					specs["selected_type"]			= pointerTypeAtLevel[indexLevel];
 					specs["select_inputA"]			= spirvSelectInputA;
 					specs["a_loc"]					= inputAPtrAccessChain[indexLevel];
