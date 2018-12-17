@@ -55,14 +55,16 @@ enum FloatType
 };
 
 // Enum containing float behaviors that its possible to test.
-enum BehaviorId
+enum BehaviorFlagBits
 {
-	B_DENORM_PERSERVE = 0,	// DenormPreserve
-	B_DENORM_FLUSH,			// DenormFlushToZero
-	B_ZIN_PERSERVE,			// SignedZeroInfNanPreserve
-	B_RTE_ROUNDING,			// RoundingModeRTE
-	B_RTZ_ROUNDING,			// RoundingModeRTZ
+	B_DENORM_PERSERVE	= 0x00000001,		// DenormPreserve
+	B_DENORM_FLUSH		= 0x00000002,		// DenormFlushToZero
+	B_ZIN_PERSERVE		= 0x00000004,		// SignedZeroInfNanPreserve
+	B_RTE_ROUNDING		= 0x00000008,		// RoundingModeRTE
+	B_RTZ_ROUNDING		= 0x00000010		// RoundingModeRTZ
 };
+
+typedef deUint32 BehaviorFlags;
 
 // Codes for all float values used in tests as arguments and operation results
 // This approach allows to replace values with different types reducing complexity of the tests implementation
@@ -104,7 +106,7 @@ enum ValueId
 	V_DOT_RTZ_RESULT,
 	V_DOT_RTE_RESULT,
 
-	// non comon results of some operation
+	// non comon results of some operation - corner cases
 	V_MINUS_ONE_OR_CLOSE,			// value used only fur fp16 subtraction result of preserved denorm and one
 	V_PI_DIV_2,
 	V_ZERO_OR_MINUS_ZERO,			// both +0 and -0 are accepted
@@ -113,14 +115,14 @@ enum ValueId
 	V_ZERO_OR_FP32_DENORM_TO_FP64,
 	V_DENORM_TIMES_TWO,
 	V_DEGREES_DENORM,
-	V_TRIG_ONE,			//  1.0 trigonometric operations, including precision margin
+	V_TRIG_ONE,						// 1.0 trigonometric operations, including precision margin
 
 	//results of conversion operations
 	V_CONV_TO_FP16_RTZ_RESULT,
 	V_CONV_TO_FP16_RTE_RESULT,
 	V_CONV_TO_FP32_RTZ_RESULT,
 	V_CONV_TO_FP32_RTE_RESULT,
-	V_CONV_DENORM_SMALLER,	// used e.g. when converting fp16 denorm to fp32
+	V_CONV_DENORM_SMALLER,			// used e.g. when converting fp16 denorm to fp32
 	V_CONV_DENORM_BIGGER,
 };
 
@@ -1323,13 +1325,13 @@ public:
 	OperationTestCase()		{}
 
 	OperationTestCase(const char*	_baseName,
-					  BehaviorId	_behaviorId,
+					  BehaviorFlags	_behaviorFlags,
 					  OperationId	_operatinId,
 					  ValueId		_input1,
 					  ValueId		_input2,
 					  ValueId		_expectedOutput)
 		: baseName(_baseName)
-		, behaviorId(_behaviorId)
+		, behaviorFlags(_behaviorFlags)
 		, operationId(_operatinId)
 		, expectedOutput(_expectedOutput)
 	{
@@ -1340,7 +1342,7 @@ public:
 public:
 
 	string					baseName;
-	BehaviorId				behaviorId;
+	BehaviorFlags			behaviorFlags;
 	OperationId				operationId;
 	ValueId					input[2];
 	ValueId					expectedOutput;
@@ -1709,10 +1711,10 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		const BinaryCase&	binaryCase	= typeTestResults->binaryOpFTZ[i];
 		OperationId			operation	= binaryCase.operationId;
-		testCases.push_back(OTC("denorm_op_var_flush_to_zero",		B_DENORM_FLUSH, operation, V_DENORM, V_ONE,		binaryCase.opVarResult));
-		testCases.push_back(OTC("denorm_op_denorm_flush_to_zero",	B_DENORM_FLUSH, operation, V_DENORM, V_DENORM,	binaryCase.opDenormResult));
-		testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH, operation, V_DENORM, V_INF,		binaryCase.opInfResult));
-		testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH, operation, V_DENORM, V_NAN,		binaryCase.opNanResult));
+		testCases.push_back(OTC("denorm_op_var_flush_to_zero",		B_DENORM_FLUSH,					 operation, V_DENORM, V_ONE,		binaryCase.opVarResult));
+		testCases.push_back(OTC("denorm_op_denorm_flush_to_zero",	B_DENORM_FLUSH,					 operation, V_DENORM, V_DENORM,		binaryCase.opDenormResult));
+		testCases.push_back(OTC("denorm_op_inf_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PERSERVE, operation, V_DENORM, V_INF,		binaryCase.opInfResult));
+		testCases.push_back(OTC("denorm_op_nan_flush_to_zero",		B_DENORM_FLUSH | B_ZIN_PERSERVE, operation, V_DENORM, V_NAN,		binaryCase.opNanResult));
 	}
 
 	// Denorm - FlushToZero - unary operations
@@ -1728,10 +1730,10 @@ void TestCasesBuilder::build(vector<OperationTestCase>& testCases, TypeTestResul
 	{
 		const BinaryCase&	binaryCase	= typeTestResults->binaryOpDenormPreserve[i];
 		OperationId			operation	= binaryCase.operationId;
-		testCases.push_back(OTC("denorm_op_var_preserve",			B_DENORM_PERSERVE, operation, V_DENORM,	V_ONE,		binaryCase.opVarResult));
-		testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PERSERVE, operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult));
-		testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PERSERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult));
-		testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PERSERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult));
+		testCases.push_back(OTC("denorm_op_var_preserve",			B_DENORM_PERSERVE,					operation, V_DENORM,	V_ONE,		binaryCase.opVarResult));
+		testCases.push_back(OTC("denorm_op_denorm_preserve",		B_DENORM_PERSERVE,					operation, V_DENORM,	V_DENORM,	binaryCase.opDenormResult));
+		testCases.push_back(OTC("denorm_op_inf_preserve",			B_DENORM_PERSERVE | B_ZIN_PERSERVE, operation, V_DENORM,	V_INF,		binaryCase.opInfResult));
+		testCases.push_back(OTC("denorm_op_nan_preserve",			B_DENORM_PERSERVE | B_ZIN_PERSERVE, operation, V_DENORM,	V_NAN,		binaryCase.opNanResult));
 	}
 
 	// Denom - Preserve - unary operations
@@ -2166,7 +2168,7 @@ protected:
 	void specializeOperation(const TestCaseInfo&	testCaseInfo,
 							 SpecializedOperation&	specializedOperation) const;
 
-	void getBehaviorCapabilityAndExecutionMode(BehaviorId behaviorId,
+	void getBehaviorCapabilityAndExecutionMode(BehaviorFlags behaviorFlags,
 											   const string inBitWidth,
 											   const string outBitWidth,
 											   string& capability,
@@ -2174,7 +2176,7 @@ protected:
 
 	void setupVulkanFeatures(FloatType			inFloatType,
 							 FloatType			outFloatType,
-							 BehaviorId			behaviorId,
+							 BehaviorFlags		behaviorFlags,
 							 bool				float64FeatureRequired,
 							 VulkanFeatures&	features) const;
 
@@ -2191,7 +2193,8 @@ protected:
 	map<FloatType, TypeData> m_typeData;
 
 	// Map converting behaviuor id to OpCapability instruction
-	map<BehaviorId, string> m_behaviorToName;
+	typedef map<BehaviorFlagBits, string> BehaviorNameMap;
+	BehaviorNameMap m_behaviorToName;
 };
 
 TestGroupBuilderBase::TestGroupBuilderBase()
@@ -2271,25 +2274,38 @@ void TestGroupBuilderBase::specializeOperation(const TestCaseInfo&		testCaseInfo
 }
 
 
-void TestGroupBuilderBase::getBehaviorCapabilityAndExecutionMode(BehaviorId behaviorId,
+void TestGroupBuilderBase::getBehaviorCapabilityAndExecutionMode(BehaviorFlags behaviorFlags,
 																 const string inBitWidth,
 																 const string outBitWidth,
 																 string& capability,
 																 string& executionMode) const
 {
-	const string	behaviorName	= m_behaviorToName.at(behaviorId);
-	bool			rounding		= (behaviorId == B_RTE_ROUNDING) || (behaviorId == B_RTZ_ROUNDING);
+	// iterate over all behaviours and request those that are needed
+	BehaviorNameMap::const_iterator it = m_behaviorToName.begin();
+	while (it != m_behaviorToName.end())
+	{
+		BehaviorFlagBits	behaviorId		= it->first;
+		string				behaviorName	= it->second;
 
-	capability		= "OpCapability " + behaviorName + "\n";
+		if (behaviorFlags & behaviorId)
+		{
+			capability += "OpCapability " + behaviorName + "\n";
 
-	// rounding mode should be obeyed for destination type
-	executionMode	= "OpExecutionMode %main " + behaviorName + " " +
-					  (rounding ? outBitWidth : inBitWidth) + "\n";
+			// rounding mode should be obeyed for destination type
+			bool rounding = (behaviorId == B_RTE_ROUNDING) || (behaviorId == B_RTZ_ROUNDING);
+			executionMode += "OpExecutionMode %main " + behaviorName + " " +
+							 (rounding ? outBitWidth : inBitWidth) + "\n";
+		}
+
+		++it;
+	}
+
+	DE_ASSERT(!capability.empty() && !executionMode.empty());
 }
 
 void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 											   FloatType		outFloatType,
-											   BehaviorId		behaviorId,
+											   BehaviorFlags	behaviorFlags,
 											   bool				float64FeatureRequired,
 											   VulkanFeatures&	features) const
 {
@@ -2299,8 +2315,8 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 	ExtensionFloatControlsFeatures& floatControls = features.floatControlsProperties;
 
 	// rounding mode should obey the destination type
-	bool rteRounding = (behaviorId == B_RTE_ROUNDING);
-	bool rtzRounding = (behaviorId == B_RTZ_ROUNDING);
+	bool rteRounding = (behaviorFlags & B_RTE_ROUNDING) != 0;
+	bool rtzRounding = (behaviorFlags & B_RTZ_ROUNDING) != 0;
 	if (rteRounding || rtzRounding)
 	{
 		switch(outFloatType)
@@ -2323,19 +2339,19 @@ void TestGroupBuilderBase::setupVulkanFeatures(FloatType		inFloatType,
 	switch(inFloatType)
 	{
 	case FP16:
-		floatControls.shaderDenormPreserveFloat16			= behaviorId == B_DENORM_PERSERVE;
-		floatControls.shaderDenormFlushToZeroFloat16		= behaviorId == B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat16	= behaviorId == B_ZIN_PERSERVE;
+		floatControls.shaderDenormPreserveFloat16			= behaviorFlags & B_DENORM_PERSERVE;
+		floatControls.shaderDenormFlushToZeroFloat16		= behaviorFlags & B_DENORM_FLUSH;
+		floatControls.shaderSignedZeroInfNanPreserveFloat16	= behaviorFlags & B_ZIN_PERSERVE;
 		return;
 	case FP32:
-		floatControls.shaderDenormPreserveFloat32			= behaviorId == B_DENORM_PERSERVE;
-		floatControls.shaderDenormFlushToZeroFloat32		= behaviorId == B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat32	= behaviorId == B_ZIN_PERSERVE;
+		floatControls.shaderDenormPreserveFloat32			= behaviorFlags & B_DENORM_PERSERVE;
+		floatControls.shaderDenormFlushToZeroFloat32		= behaviorFlags & B_DENORM_FLUSH;
+		floatControls.shaderSignedZeroInfNanPreserveFloat32	= behaviorFlags & B_ZIN_PERSERVE;
 		return;
 	case FP64:
-		floatControls.shaderDenormPreserveFloat64			= behaviorId == B_DENORM_PERSERVE;
-		floatControls.shaderDenormFlushToZeroFloat64		= behaviorId == B_DENORM_FLUSH;
-		floatControls.shaderSignedZeroInfNanPreserveFloat64	= behaviorId == B_ZIN_PERSERVE;
+		floatControls.shaderDenormPreserveFloat64			= behaviorFlags & B_DENORM_PERSERVE;
+		floatControls.shaderDenormFlushToZeroFloat64		= behaviorFlags & B_DENORM_FLUSH;
+		floatControls.shaderSignedZeroInfNanPreserveFloat64	= behaviorFlags & B_ZIN_PERSERVE;
 		return;
 	}
 }
@@ -2507,7 +2523,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const TestCaseInfo& testCaseInfo,
 
 	string behaviorCapability;
 	string behaviorExecutionMode;
-	getBehaviorCapabilityAndExecutionMode(testCase.behaviorId,
+	getBehaviorCapabilityAndExecutionMode(testCase.behaviorFlags,
 										  inFloatWidthForCaps,
 										  outTypeSnippets->bitWidth,
 										  behaviorCapability,
@@ -2560,7 +2576,7 @@ void ComputeTestGroupBuilder::fillShaderSpec(const TestCaseInfo& testCaseInfo,
 
 	setupVulkanFeatures(inFloatTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
 						outFloatType,
-						testCase.behaviorId,
+						testCase.behaviorFlags,
 						float64FeatureRequired,
 						csSpec.requestedVulkanFeatures);
 
@@ -2584,8 +2600,8 @@ void getGraphicsShaderCode (vk::SourceCollections& dst, InstanceContext context)
 	// be implemented as a method because of how addFunctionCaseWithPrograms
 	// was implemented
 
-	SpirvVersion targetSpirvVersion	= context.resources.spirvVersion;
-	const deUint32 vulkanVersion	= dst.usedVulkanVersion;
+	SpirvVersion	targetSpirvVersion	= context.resources.spirvVersion;
+	const deUint32	vulkanVersion		= dst.usedVulkanVersion;
 
 	static const string vertexTemplate =
 		"OpCapability Shader\n"
@@ -2922,7 +2938,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 
 	string behaviorCapability;
 	string behaviorExecutionMode;
-	getBehaviorCapabilityAndExecutionMode(testCase.behaviorId,
+	getBehaviorCapabilityAndExecutionMode(testCase.behaviorFlags,
 										  inFloatWidthForCaps,
 										  outTypeSnippets->bitWidth,
 										  behaviorCapability,
@@ -3113,7 +3129,7 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	VulkanFeatures vulkanFeatures;
 	setupVulkanFeatures(inFloatTypeForCaps,		// usualy same as inFloatType - different only for UnpackHalf2x16
 						outFloatType,
-						testCase.behaviorId,
+						testCase.behaviorFlags,
 						float64FeatureRequired,
 						vulkanFeatures);
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = true;
