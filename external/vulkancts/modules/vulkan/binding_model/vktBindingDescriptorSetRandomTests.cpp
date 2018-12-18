@@ -998,7 +998,7 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 						DE_NULL,
 						(vk::VkBufferViewCreateFlags)0,
 						**buffer,								// buffer
-						VK_FORMAT_R32_UINT,						// format
+						VK_FORMAT_R32_SINT,						// format
 						(vk::VkDeviceSize)align*d,				// offset
 						(vk::VkDeviceSize)sizeof(deUint32)		// range
 					};

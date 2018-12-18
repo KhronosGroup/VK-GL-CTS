@@ -4020,7 +4020,6 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 
 	const string assembly(
 		"OpCapability Shader\n"
-		"OpCapability ClipDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %comp_main1 \"entrypoint1\" %id\n"
 		"OpEntryPoint GLCompute %comp_main2 \"entrypoint2\" %id\n"

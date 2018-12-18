@@ -2087,7 +2087,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetDisplayModeProperties2KHR (v
 		TCU_FAIL("Failed to retrieve displays list");
 
 	if (displaysVector.empty())
-		TCU_FAIL("No displays reported");
+		TCU_THROW(NotSupportedError, "No displays reported");
 
 	for (DisplayVector::iterator	it =  displaysVector.begin();
 									it != displaysVector.end();
