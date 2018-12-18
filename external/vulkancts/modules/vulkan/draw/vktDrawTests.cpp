@@ -67,7 +67,7 @@ void createChildren (tcu::TestCaseGroup* group)
 
 tcu::TestCaseGroup* createTests (tcu::TestContext& testCtx)
 {
-	return createTestGroup(testCtx, "draw", "Spimple Draw tests", createChildren);
+	return createTestGroup(testCtx, "draw", "Simple Draw tests", createChildren);
 }
 
 } // Draw

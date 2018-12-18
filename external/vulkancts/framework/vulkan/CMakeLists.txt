@@ -7,6 +7,8 @@ set(VKUTILNOSHADER_SRCS
 	vkApiVersion.hpp
 	vkBuilderUtil.cpp
 	vkBuilderUtil.hpp
+	vkBarrierUtil.cpp
+	vkBarrierUtil.hpp
 	vkCmdUtil.cpp
 	vkCmdUtil.hpp
 	vkDefs.cpp

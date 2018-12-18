@@ -27,3 +27,6 @@ dEQP-VK.glsl.texture_functions.texture.sparse_usampler3d_bias_fragment
 
 # New tests from AOSP
 dEQP-VK.texture.explicit_lod.*
+
+# Excluded VkRunner example tests
+dEQP-VK.vkrunner-example.*

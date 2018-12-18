@@ -15,6 +15,8 @@ set(DEQP_VK_CONDITIONAL_REDENDERING_SRCS
 	vktConditionalClearAttachmentTests.cpp
 	vktConditionalTests.hpp
 	vktConditionalTests.cpp
+	vktConditionalDrawAndClearTests.hpp
+	vktConditionalDrawAndClearTests.cpp
 )
 
 set(DEQP_VK_CONDITIONAL_REDENDERING_LIBS

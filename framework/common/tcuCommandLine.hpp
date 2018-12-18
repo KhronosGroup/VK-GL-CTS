@@ -226,7 +226,7 @@ public:
 	//! Enable optimizing of spir-v (--deqp-optimize-spirv)
 	bool							isSpirvOptimizationEnabled	(void) const;
 
-	//! Should we mark frames and enable WAs for RenderDoc (--deqp-renderdoc)
+	//! Enable RenderDoc frame markers (--deqp-renderdoc)
 	bool							isRenderDocEnabled			(void) const;
 
 	/*--------------------------------------------------------------------*//*!

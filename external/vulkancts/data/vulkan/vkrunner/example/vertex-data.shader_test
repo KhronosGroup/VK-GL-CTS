@@ -1,0 +1,68 @@
+[vertex shader]
+#version 430
+
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec4 color_in;
+layout(location = 0) out vec4 color_out;
+
+void
+main()
+{
+        gl_Position = position;
+        color_out = color_in;
+}
+
+[fragment shader]
+#version 430
+
+layout(location = 0) in vec4 color_in;
+layout(location = 0) out vec4 color_out;
+
+void
+main()
+{
+        color_out = color_in;
+}
+
+[vertex data]
+# position      color
+0/R32G32_SFLOAT 1/A8B8G8R8_UNORM_PACK32
+
+# Top-left red
+-1 -1           0xff0000ff
+0  -1           0xff0000ff
+-1 0            0xff0000ff
+0  -1           0xff0000ff
+-1 0            0xff0000ff
+0  0            0xff0000ff
+# Top-right green
+0 -1            0xff00ff00
+1  -1           0xff00ff00
+0 0             0xff00ff00
+1  -1           0xff00ff00
+0 0             0xff00ff00
+1  0            0xff00ff00
+# Bottom-left blue
+-1 0            0xffff0000
+0  0            0xffff0000
+-1 1            0xffff0000
+0  0            0xffff0000
+-1 1            0xffff0000
+0  1            0xffff0000
+# Bottom-right purple
+0 0             0xff800080
+1 0             0xff800080
+0 1             0xff800080
+1 0             0xff800080
+0 1             0xff800080
+1 1             0xff800080
+
+[test]
+clear
+
+draw arrays TRIANGLE_LIST 0 24
+
+relative probe rect rgb (0, 0, 0.5, 0.5) (1, 0, 0)
+relative probe rect rgb (0.5, 0, 0.5, 0.5) (0, 1, 0)
+relative probe rect rgb (0, 0.5, 0.5, 0.5) (0, 0, 1)
+relative probe rect rgb (0.5, 0.5, 0.5, 0.5) (0.5, 0, 0.5)

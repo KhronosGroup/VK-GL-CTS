@@ -69,6 +69,7 @@
 #include "vktSpvAsmLoopDepLenTests.hpp"
 #include "vktSpvAsmLoopDepInfTests.hpp"
 #include "vktSpvAsmCompositeInsertTests.hpp"
+#include "vktSpvAsmVaryingNameTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -4019,7 +4020,6 @@ tcu::TestCaseGroup* createMultipleShaderGroup (tcu::TestContext& testCtx)
 
 	const string assembly(
 		"OpCapability Shader\n"
-		"OpCapability ClipDistance\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %comp_main1 \"entrypoint1\" %id\n"
 		"OpEntryPoint GLCompute %comp_main2 \"entrypoint2\" %id\n"
@@ -18200,6 +18200,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpConvertUToF", "convertutof"));
 	graphicsTests->addChild(createConvertGraphicsTests(testCtx, "OpConvertFToU", "convertftou"));
 	graphicsTests->addChild(createPointerParameterGraphicsGroup(testCtx));
+	graphicsTests->addChild(createVaryingNameGraphicsGroup(testCtx));
 
 	graphicsTests->addChild(createFloat16Tests(testCtx));
 

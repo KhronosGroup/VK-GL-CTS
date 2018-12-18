@@ -24,6 +24,7 @@
 #include "vktPipelineMultisampleBaseResolve.hpp"
 #include "vktPipelineMakeUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"

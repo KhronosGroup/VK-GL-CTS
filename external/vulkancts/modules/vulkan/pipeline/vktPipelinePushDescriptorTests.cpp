@@ -3783,6 +3783,17 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			DE_NULL										// const deUint32*				pPreserveAttachments
 		};
 
+		const VkSubpassDependency		subpassDependency		=
+		{
+			VK_SUBPASS_EXTERNAL,							// deUint32				srcSubpass
+			0,												// deUint32				dstSubpass
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags	srcStageMask
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags	dstStageMask
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags		srcAccessMask
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT,	//	dstAccessMask
+			VK_DEPENDENCY_BY_REGION_BIT						// VkDependencyFlags	dependencyFlags
+		};
+
 		const VkRenderPassCreateInfo	renderPassInfo			=
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureTypei					sType
@@ -3792,8 +3803,8 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			attachmentDescriptions,						// const VkAttachmentDescription*	pAttachments
 			1u,											// deUint32							subpassCount
 			&subpassDescription,						// const VkSubpassDescription*		pSubpasses
-			0u,											// deUint32							dependencyCount
-			DE_NULL										// const VkSubpassDependency*		pDependencies
+			1u,											// deUint32							dependencyCount
+			&subpassDependency							// const VkSubpassDependency*		pDependencies
 		};
 
 		m_renderPasses.push_back(VkRenderPassSp(new Unique<VkRenderPass>(createRenderPass(m_vkd, *m_device, &renderPassInfo))));

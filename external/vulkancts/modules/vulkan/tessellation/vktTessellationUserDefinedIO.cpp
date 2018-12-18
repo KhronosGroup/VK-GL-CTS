@@ -34,6 +34,7 @@
 #include "gluVarTypeUtil.hpp"
 
 #include "vkDefs.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkBuilderUtil.hpp"

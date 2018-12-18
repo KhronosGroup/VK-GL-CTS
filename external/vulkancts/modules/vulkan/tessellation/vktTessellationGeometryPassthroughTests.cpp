@@ -30,6 +30,7 @@
 #include "tcuImageCompare.hpp"
 
 #include "vkDefs.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"

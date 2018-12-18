@@ -35,6 +35,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deStringUtil.hpp"

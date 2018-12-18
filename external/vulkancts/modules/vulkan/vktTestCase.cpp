@@ -32,9 +32,11 @@
 #include "vkDebugReportUtil.hpp"
 
 #include "tcuCommandLine.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deSTLUtil.hpp"
 #include "deMemory.h"
+#include <vkrunner/vkrunner.h>
 
 #include <set>
 
@@ -561,6 +563,18 @@ vk::Allocator* createAllocator (DefaultDevice* device)
 
 // Context
 
+void Context::errorCb(const char* message,
+					  void* user_data)
+{
+	Context* context = (Context*) user_data;
+
+	context->getTestContext().getLog()
+		<< tcu::TestLog::Message
+		<< message
+		<< "\n"
+		<< tcu::TestLog::EndMessage;
+}
+
 Context::Context (tcu::TestContext&				testCtx,
 				  const vk::PlatformInterface&	platformInterface,
 				  vk::BinaryCollection&			progCollection)
@@ -570,10 +584,22 @@ Context::Context (tcu::TestContext&				testCtx,
 	, m_device				(new DefaultDevice(m_platformInterface, testCtx.getCommandLine()))
 	, m_allocator			(createAllocator(m_device.get()))
 {
+	m_config = vr_config_new();
+	vr_config_set_user_data(m_config, this);
+	vr_config_set_error_cb(m_config, errorCb);
+	m_executor = vr_executor_new(m_config);
+	vr_executor_set_device(m_executor,
+						   getInstanceProc,
+						   this,
+						   getPhysicalDevice(),
+						   getUniversalQueueFamilyIndex(),
+						   getDevice());
 }
 
 Context::~Context (void)
 {
+	vr_config_free(m_config);
+	vr_executor_free(m_executor);
 }
 
 deUint32								Context::getAvailableInstanceVersion	(void) const { return m_device->getAvailableInstanceVersion();	}
@@ -615,6 +641,8 @@ deUint32								Context::getSparseQueueFamilyIndex		(void) const { return m_devi
 vk::VkQueue								Context::getSparseQueue					(void) const { return m_device->getSparseQueue();				}
 vk::Allocator&							Context::getDefaultAllocator			(void) const { return *m_allocator;								}
 deUint32								Context::getUsedApiVersion				(void) const { return m_device->getUsedApiVersion();			}
+vr_executor*							Context::getExecutor					(void) const
+																							{ return m_executor; }
 bool									Context::contextSupports				(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const
 																							{ return m_device->getUsedApiVersion() >= VK_MAKE_VERSION(majorNum, minorNum, patchNum); }
 bool									Context::contextSupports				(const ApiVersion version) const
@@ -720,6 +748,12 @@ bool Context::requireDeviceCoreFeature (const DeviceCoreFeature requiredFeature)
 		TCU_THROW(NotSupportedError, "Requested core feature is not supported: " + std::string(deviceCoreFeaturesTable[requiredFeatureIndex].featureName));
 
 	return true;
+}
+
+void* Context::getInstanceProc (const char* name, void* user_data)
+{
+	Context *context = (Context*) user_data;
+	return (void*) context->m_platformInterface.getInstanceProcAddr(context->getInstance(), name);
 }
 
 // TestCase
