@@ -3013,12 +3013,11 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	}
 	else // perform test in fragment stage - vertex stage is empty
 	{
-		fragAnnotations = inTypeSnippets->inputAnnotationsSnippet + inTypeSnippets->typeAnnotationsSnippet +
-						  outTypeSnippets->outputAnnotationsSnippet + outTypeSnippets->typeAnnotationsSnippet;
-
 		// check if input type is different from tested type
 		if (testOperation.isInputTypeRestricted)
 		{
+			fragAnnotations		= inTypeSnippets->inputAnnotationsSnippet + inTypeSnippets->typeAnnotationsSnippet +
+								  outTypeSnippets->outputAnnotationsSnippet + outTypeSnippets->typeAnnotationsSnippet;
 			fragCapabilities	= behaviorCapability + inTypeSnippets->capabilities + outTypeSnippets->capabilities;
 			fragExtensions		= inTypeSnippets->extensions + outTypeSnippets->extensions;
 			fragTypes			= inTypeSnippets->typeDefinitionsSnippet + outTypeSnippets->typeDefinitionsSnippet;
@@ -3028,6 +3027,8 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 		{
 			// input and output types are the same
 
+			fragAnnotations		= inTypeSnippets->inputAnnotationsSnippet + inTypeSnippets->typeAnnotationsSnippet +
+								  outTypeSnippets->outputAnnotationsSnippet;
 			fragCapabilities	= behaviorCapability + outTypeSnippets->capabilities;
 			fragExtensions		= outTypeSnippets->extensions;
 			fragTypes			= outTypeSnippets->typeDefinitionsSnippet;

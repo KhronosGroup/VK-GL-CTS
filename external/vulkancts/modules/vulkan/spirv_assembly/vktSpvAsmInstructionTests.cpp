@@ -2147,7 +2147,7 @@ tcu::TestCaseGroup* createOpCopyMemoryGroup (tcu::TestContext& testCtx)
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
-		"OpMemberDecorate %buf 0 Offset 0\n"
+		//"OpMemberDecorate %buf 0 Offset 0\n"  - exists in getComputeAsmInputOutputBufferTraits
 		"OpMemberDecorate %buf 1 Offset 16\n"
 		"OpMemberDecorate %buf 2 Offset 32\n"
 		"OpMemberDecorate %buf 3 Offset 48\n"
