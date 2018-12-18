@@ -111,7 +111,7 @@ void ImageValidator::initPrograms (vk::SourceCollections& programCollection) con
 }
 
 bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData& refData,
-									const vk::VkImage image, const vk::VkFormat imageFormat) const
+									const vk::VkImage image, const vk::VkFormat imageFormat, const vk::VkImageLayout imageLayout) const
 {
 	// Log out a few reference info
 	{
@@ -197,7 +197,7 @@ bool ImageValidator::validateImage (ProtectedContext& ctx, const ValidationData&
 	{
 		vk::VkDescriptorBufferInfo	descRefUniform	= makeDescriptorBufferInfo(**refUniform, 0, refUniformSize);
 		vk::VkDescriptorBufferInfo	descBuffer		= makeDescriptorBufferInfo(**helperBuffer, 0, helperBufferSize);
-		vk::VkDescriptorImageInfo	descSampledImg	= makeDescriptorImageInfo(*sampler, *imageView, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		vk::VkDescriptorImageInfo	descSampledImg	= makeDescriptorImageInfo(*sampler, *imageView, imageLayout);
 
 		vk::DescriptorSetUpdateBuilder()
 			.writeSingle(*descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(0u), vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descSampledImg)
