@@ -837,6 +837,7 @@ LOCAL_SRC_FILES := \
 	modules/gles2/functional/es2fLifetimeTests.cpp \
 	modules/gles2/functional/es2fLightAmountTest.cpp \
 	modules/gles2/functional/es2fMultisampleTests.cpp \
+	modules/gles2/functional/es2fMultisampledRenderToTextureTests.cpp \
 	modules/gles2/functional/es2fNegativeBufferApiTests.cpp \
 	modules/gles2/functional/es2fNegativeFragmentApiTests.cpp \
 	modules/gles2/functional/es2fNegativeShaderApiTests.cpp \
