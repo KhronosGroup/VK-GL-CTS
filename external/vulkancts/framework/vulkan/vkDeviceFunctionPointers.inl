@@ -172,6 +172,8 @@ CmdDebugMarkerEndEXTFunc						cmdDebugMarkerEndEXT;
 CmdDebugMarkerInsertEXTFunc						cmdDebugMarkerInsertEXT;
 CmdDrawIndirectCountAMDFunc						cmdDrawIndirectCountAMD;
 CmdDrawIndexedIndirectCountAMDFunc				cmdDrawIndexedIndirectCountAMD;
+CmdDrawIndirectCountKHRFunc						cmdDrawIndirectCountKHR;
+CmdDrawIndexedIndirectCountKHRFunc				cmdDrawIndexedIndirectCountKHR;
 GetMemoryWin32HandleNVFunc						getMemoryWin32HandleNV;
 CmdProcessCommandsNVXFunc						cmdProcessCommandsNVX;
 CmdReserveSpaceForCommandsNVXFunc				cmdReserveSpaceForCommandsNVX;
