@@ -1,3 +1,4 @@
+dEQP-GLES2.functional.multisampled_render_to_texture.readpixels
 dEQP-GLES2.functional.shaders.indexing.tmp_array.float_const_write_static_read_vertex
 dEQP-GLES2.functional.shaders.indexing.tmp_array.float_const_write_static_read_fragment
 dEQP-GLES2.functional.shaders.indexing.tmp_array.float_const_write_dynamic_read_vertex

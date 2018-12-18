@@ -29,6 +29,8 @@ set(DEQP_GLES2_FUNCTIONAL_SRCS
 	es2fLifetimeTests.hpp
 	es2fLightAmountTest.cpp
 	es2fLightAmountTest.hpp
+	es2fMultisampledRenderToTextureTests.cpp
+	es2fMultisampledRenderToTextureTests.hpp
 	es2fNegativeBufferApiTests.cpp
 	es2fNegativeBufferApiTests.hpp
 	es2fNegativeFragmentApiTests.cpp

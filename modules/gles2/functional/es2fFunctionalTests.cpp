@@ -25,6 +25,7 @@
 
 #include "es2fColorClearTest.hpp"
 #include "es2fLightAmountTest.hpp"
+#include "es2fMultisampledRenderToTextureTests.hpp"
 #include "es2fShaderExecuteTest.hpp"
 #include "es2fFboApiTest.hpp"
 #include "es2fFboRenderTest.hpp"
@@ -310,35 +311,36 @@ FunctionalTests::~FunctionalTests (void)
 
 void FunctionalTests::init (void)
 {
-	addChild(new PrerequisiteTests			(m_context));
-	addChild(new ImplementationLimitTests	(m_context));
-	addChild(new ClipControlTests			(m_context));
-	addChild(new ColorClearTest				(m_context));
-	addChild(new DepthStencilClearTests		(m_context));
-	addChild(new BufferTests				(m_context));
-	addChild(new LightAmountTest			(m_context));
-	addChild(new ShadersTestGroup			(m_context));
-	addChild(new TextureTestGroup			(m_context));
-	addChild(new FragmentOpTests			(m_context));
-	addChild(new FboTestGroup				(m_context));
-	addChild(new VertexArrayTestGroup		(m_context));
-	addChild(new ShaderApiTests				(m_context));
-	addChild(new NegativeApiTestGroup		(m_context));
-	addChild(new RasterizationTests			(m_context));
-	addChild(createAttributeLocationTests	(m_context));
-	addChild(new MultisampleTests			(m_context));
-	addChild(new UniformApiTests			(m_context));
-	addChild(new ReadPixelsTests			(m_context));
-	addChild(new DepthRangeTests			(m_context));
-	addChild(new DitheringTests				(m_context));
-	addChild(new StateQueryTests			(m_context));
-	addChild(new ClippingTests				(m_context));
-	addChild(new PolygonOffsetTests			(m_context));
-	addChild(new DrawTests					(m_context));
-	addChild(new FlushFinishTests			(m_context));
-	addChild(new DefaultVertexAttributeTests(m_context));
-	addChild(createLifetimeTests			(m_context));
-	addChild(createDebugMarkerTests			(m_context));
+	addChild(new PrerequisiteTests					(m_context));
+	addChild(new ImplementationLimitTests			(m_context));
+	addChild(new ClipControlTests					(m_context));
+	addChild(new ColorClearTest						(m_context));
+	addChild(new DepthStencilClearTests				(m_context));
+	addChild(new BufferTests						(m_context));
+	addChild(new LightAmountTest					(m_context));
+	addChild(new MultisampledRenderToTextureTests	(m_context));
+	addChild(new ShadersTestGroup					(m_context));
+	addChild(new TextureTestGroup					(m_context));
+	addChild(new FragmentOpTests					(m_context));
+	addChild(new FboTestGroup						(m_context));
+	addChild(new VertexArrayTestGroup				(m_context));
+	addChild(new ShaderApiTests						(m_context));
+	addChild(new NegativeApiTestGroup				(m_context));
+	addChild(new RasterizationTests					(m_context));
+	addChild(createAttributeLocationTests			(m_context));
+	addChild(new MultisampleTests					(m_context));
+	addChild(new UniformApiTests					(m_context));
+	addChild(new ReadPixelsTests					(m_context));
+	addChild(new DepthRangeTests					(m_context));
+	addChild(new DitheringTests						(m_context));
+	addChild(new StateQueryTests					(m_context));
+	addChild(new ClippingTests						(m_context));
+	addChild(new PolygonOffsetTests					(m_context));
+	addChild(new DrawTests							(m_context));
+	addChild(new FlushFinishTests					(m_context));
+	addChild(new DefaultVertexAttributeTests		(m_context));
+	addChild(createLifetimeTests					(m_context));
+	addChild(createDebugMarkerTests					(m_context));
 }
 
 } // Functional
