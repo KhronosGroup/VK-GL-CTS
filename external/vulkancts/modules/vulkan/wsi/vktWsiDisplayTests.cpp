@@ -1682,7 +1682,6 @@ tcu::TestStatus	DisplayCoverageTestInstance::testCreateDisplayPlaneSurfaceKHR (v
 /*--------------------------------------------------------------------*//*!
  * \brief Display enumeration coverage test using VK_KHR_get_display_properties2
  *
- * Throws ResourceError exception in case no displays available.
  * Throws an exception on fail.
  *
  * \return tcu::TestStatus::pass on success
@@ -1711,7 +1710,7 @@ tcu::TestStatus DisplayCoverageTestInstance::testGetPhysicalDeviceDisplayPropert
 		TCU_FAIL_STR(string("Expected VK_SUCCESS. Have ") + getResultAsString(result));
 
 	if (displayCountReported == 0)
-		TCU_THROW(ResourceError, std::string("Cannot perform test: no displays found").c_str());
+		TCU_THROW(NotSupportedError, std::string("Cannot perform test: no displays found").c_str());
 
 	displayCountToTest = displayCountReported;
 	if (displayCountReported > MAX_TESTED_DISPLAY_COUNT)
