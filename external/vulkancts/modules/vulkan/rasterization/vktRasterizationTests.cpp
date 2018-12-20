@@ -720,7 +720,7 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 		// Load vertices into vertex buffer
 		deMemcpy(vertexBufferMemory->getHostPtr(), positionData.data(), attributeBatchSize);
 		deMemcpy(reinterpret_cast<deUint8*>(vertexBufferMemory->getHostPtr()) +  attributeBatchSize, colorData.data(), attributeBatchSize);
-		flushMappedMemoryRange(vkd, vkDevice, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset(), vertexBufferParams.size);
+		flushAlloc(vkd, vkDevice, *vertexBufferMemory);
 	}
 
 	// Create Command Buffer
@@ -767,13 +767,13 @@ void BaseRenderingTestInstance::drawPrimitives (tcu::Surface& result, const std:
 	{
 		float	pointSize	= getPointSize();
 		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
-		flushMappedMemoryRange(vkd, vkDevice, m_uniformBufferMemory->getMemory(), m_uniformBufferMemory->getOffset(), m_uniformBufferSize);
+		flushAlloc(vkd, vkDevice, *m_uniformBufferMemory);
 	}
 
 	// Submit
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 
-	invalidateMappedMemoryRange(vkd, vkDevice, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset(), m_resultBufferSize);
+	invalidateAlloc(vkd, vkDevice, *m_resultBufferMemory);
 	tcu::copy(result.getAccess(), tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderSize, m_renderSize, 1), m_resultBufferMemory->getHostPtr()));
 }
 
@@ -2551,7 +2551,7 @@ void DiscardTestInstance::drawPrimitives (tcu::Surface& result, const std::vecto
 		// Load vertices into vertex buffer
 		deMemcpy(vertexBufferMemory->getHostPtr(), positionData.data(), attributeBatchSize);
 		deMemcpy(reinterpret_cast<deUint8*>(vertexBufferMemory->getHostPtr()) + attributeBatchSize, colorData.data(), attributeBatchSize);
-		flushMappedMemoryRange(vkd, vkDevice, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset(), vertexBufferParams.size);
+		flushAlloc(vkd, vkDevice, *vertexBufferMemory);
 	}
 
 	// Create Command Buffer
@@ -2604,13 +2604,13 @@ void DiscardTestInstance::drawPrimitives (tcu::Surface& result, const std::vecto
 		float pointSize = getPointSize();
 
 		deMemcpy(m_uniformBufferMemory->getHostPtr(), &pointSize, (size_t)m_uniformBufferSize);
-		flushMappedMemoryRange(vkd, vkDevice, m_uniformBufferMemory->getMemory(), m_uniformBufferMemory->getOffset(), m_uniformBufferSize);
+		flushAlloc(vkd, vkDevice, *m_uniformBufferMemory);
 	}
 
 	// Submit
 	submitCommandsAndWait(vkd, vkDevice, queue, commandBuffer.get());
 
-	invalidateMappedMemoryRange(vkd, vkDevice, m_resultBufferMemory->getMemory(), m_resultBufferMemory->getOffset(), m_resultBufferSize);
+	invalidateAlloc(vkd, vkDevice, *m_resultBufferMemory);
 	tcu::copy(result.getAccess(), tcu::ConstPixelBufferAccess(m_textureFormat, tcu::IVec3(m_renderSize, m_renderSize, 1), m_resultBufferMemory->getHostPtr()));
 }
 

@@ -171,7 +171,7 @@ vk::Move<vk::VkImage> createImage (const vk::DeviceInterface&	vkd,
 		vk::VK_SHARING_MODE_EXCLUSIVE,
 		0u,
 		(const deUint32*)DE_NULL,
-		vk::VK_IMAGE_LAYOUT_UNDEFINED,
+		tiling == vk::VK_IMAGE_TILING_LINEAR ? vk::VK_IMAGE_LAYOUT_PREINITIALIZED : vk::VK_IMAGE_LAYOUT_UNDEFINED,
 	};
 
 	return vk::createImage(vkd, device, &createInfo);
@@ -900,38 +900,19 @@ tcu::TestStatus imageCopyTest (Context& context, const TestConfig config)
 					const deUint8	res	= ((const deUint8*)result.getPlanePtr(planeNdx))[byteNdx];
 					const deUint8	ref	= ((const deUint8*)reference.getPlanePtr(planeNdx))[byteNdx];
 
+					deUint8 mask = 0xFF;
 					if (!(byteNdx & 0x01) && (ignoreLsb6Bits))
-					{
-						if ((res & 0xC0) != (ref & 0xC0))
-						{
-							log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx << ", Expected: " << (deUint32)(ref & 0xC0) << ", Got: " << (deUint32)(res & 0xC0) << TestLog::EndMessage;
-							errorCount++;
-
-							if (errorCount > maxErrorCount)
-								break;
-						}
-					}
+						mask = 0xC0;
 					else if (!(byteNdx & 0x01) && (ignoreLsb4Bits))
-					{
-						if ((res & 0xF0) != (ref & 0xF0))
-						{
-							log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx << ", Expected: " << (deUint32)(ref & 0xF0) << ", Got: " << (deUint32)(res & 0xF0) << TestLog::EndMessage;
-							errorCount++;
+						mask = 0xF0;
 
-							if (errorCount > maxErrorCount)
-								break;
-						}
-					}
-					else
+					if ((res & mask) != (ref & mask))
 					{
-						if (res != ref)
-						{
-							log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx << ", Expected: " << (deUint32)ref << ", Got: " << (deUint32)res << TestLog::EndMessage;
-							errorCount++;
+						log << TestLog::Message << "Plane: " << planeNdx << ", Offset: " << byteNdx << ", Expected: " << (deUint32)(ref & mask) << ", Got: " << (deUint32)(res & mask) << TestLog::EndMessage;
+						errorCount++;
 
-							if (errorCount > maxErrorCount)
-								break;
-						}
+						if (errorCount > maxErrorCount)
+							break;
 					}
 				}
 

@@ -539,7 +539,7 @@ tcu::TestStatus StoreTestInstance::verifyResult	(void)
 	const tcu::TextureLevel reference = generateReferenceImage(imageSize, m_format);
 
 	const Allocation& alloc = m_imageBuffer->getAllocation();
-	invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_imageSizeBytes);
+	invalidateAlloc(vk, device, alloc);
 	const tcu::ConstPixelBufferAccess result(mapVkFormat(m_format), imageSize, alloc.getHostPtr());
 
 	if (comparePixelBuffers(m_context.getTestContext().getLog(), m_texture, m_format, reference.getAccess(), result))
@@ -625,7 +625,7 @@ ImageStoreTestInstance::ImageStoreTestInstance (Context&		context,
 			*valuePtr = static_cast<deUint32>(layerNdx);
 		}
 
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), constantsBufferSizeBytes);
+		flushAlloc(vk, device, alloc);
 	}
 }
 
@@ -932,7 +932,7 @@ LoadStoreTestInstance::LoadStoreTestInstance (Context&			context,
 
 	const Allocation& alloc = m_imageBuffer->getAllocation();
 	deMemcpy(alloc.getHostPtr(), m_referenceImage.getAccess().getDataPtr(), static_cast<size_t>(m_imageSizeBytes));
-	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_imageSizeBytes);
+	flushAlloc(vk, device, alloc);
 }
 
 tcu::TestStatus LoadStoreTestInstance::verifyResult	(void)
@@ -945,7 +945,7 @@ tcu::TestStatus LoadStoreTestInstance::verifyResult	(void)
 	flipHorizontally(reference);
 
 	const Allocation& alloc = getResultBuffer()->getAllocation();
-	invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_imageSizeBytes);
+	invalidateAlloc(vk, device, alloc);
 	const tcu::ConstPixelBufferAccess result(mapVkFormat(m_imageFormat), m_texture.size(), alloc.getHostPtr());
 
 	if (comparePixelBuffers(m_context.getTestContext().getLog(), m_texture, m_imageFormat, reference, result))

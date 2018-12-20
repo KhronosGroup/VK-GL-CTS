@@ -391,12 +391,12 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 
 	// Upload vertex data
 	deMemcpy(vertexBufferAlloc.getHostPtr(), &vertexArray[0], vertexBufferSizeInBytes);
-	flushMappedMemoryRange(vk, device, vertexBufferAlloc.getMemory(), vertexBufferAlloc.getOffset(), vertexBufferSizeInBytes);
+	flushAlloc(vk, device, vertexBufferAlloc);
 
 	// Upload source image data
 	const Allocation& alloc = srcImageBuffer->getAllocation();
 	deMemcpy(alloc.getHostPtr(), &srcData[0], (size_t)srcImageSizeInBytes);
-	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), srcImageSizeInBytes);
+	flushAlloc(vk, device, alloc);
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -436,7 +436,7 @@ void GraphicsAttachmentsTestInstance::transcode (std::vector<deUint8>& srcData, 
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
-	invalidateMappedMemoryRange(vk, device, dstImageBufferAlloc.getMemory(), dstImageBufferAlloc.getOffset(), dstImageSizeInBytes);
+	invalidateAlloc(vk, device, dstImageBufferAlloc);
 	dstData.resize((size_t)dstImageSizeInBytes);
 	deMemcpy(&dstData[0], dstImageBufferAlloc.getHostPtr(), (size_t)dstImageSizeInBytes);
 
@@ -648,12 +648,12 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 
 	// Upload vertex data
 	deMemcpy(vertexBufferAlloc.getHostPtr(), &vertexArray[0], vertexBufferSizeInBytes);
-	flushMappedMemoryRange(vk, device, vertexBufferAlloc.getMemory(), vertexBufferAlloc.getOffset(), vertexBufferSizeInBytes);
+	flushAlloc(vk, device, vertexBufferAlloc);
 
 	// Upload source image data
 	const Allocation& alloc = srcImageBuffer->getAllocation();
 	deMemcpy(alloc.getHostPtr(), &srcData[0], (size_t)srcImageSizeInBytes);
-	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), srcImageSizeInBytes);
+	flushAlloc(vk, device, alloc);
 
 	beginCommandBuffer(vk, *cmdBuffer);
 	vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -697,7 +697,7 @@ void GraphicsTextureTestInstance::transcode (std::vector<deUint8>& srcData, std:
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
-	invalidateMappedMemoryRange(vk, device, dstImageBufferAlloc.getMemory(), dstImageBufferAlloc.getOffset(), dstImageSizeInBytes);
+	invalidateAlloc(vk, device, dstImageBufferAlloc);
 	dstData.resize((size_t)dstImageSizeInBytes);
 	deMemcpy(&dstData[0], dstImageBufferAlloc.getHostPtr(), (size_t)dstImageSizeInBytes);
 
