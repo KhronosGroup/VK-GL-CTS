@@ -133,7 +133,7 @@ const DrawTestParams drawTestGrid[] =
 	{ false,	true,	true,	0b1010, 0b1010, 0b1111, false,	NONE },
 	{ true,		true,	true,	0b0010, 0b1000, 0b0001, false,	NONE },
 	{ true,		true,	true,	0b1001, 0b1001, 0b0110, false,	NONE },
-	{ true,		true,	true,	0b0010, 0b1000, 0b1111, true,	FILL},
+	{ true,		true,	true,	0b0010, 0b1000, 0b1111, true,	FILL },
 	{ true,		true,	true,	0b1001, 0b1001, 0b1111, true,	FILL },
 	{ false,	true,	true,	0b1001, 0b1001, 0b0110, true,	FILL },
 	{ true,		true,	true,	0b0010, 0b1000, 0b1111, true,	COPY },
@@ -287,7 +287,7 @@ void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate (bool d
 	deUint32								predicate										= discard ? invert : !invert;
 
 	m_conditionalRenderingBuffer			= Buffer::createAndAlloc(m_vkd, m_device, BufferCreateInfo(dataSize, VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT | extraUsage), m_context.getDefaultAllocator(),
-																									   MemoryRequirement::HostVisible | MemoryRequirement::Local);
+																									   MemoryRequirement::HostVisible);
 
 	void *									conditionalRenderingBufferDataPointer			= static_cast<char*>(m_conditionalRenderingBuffer->getBoundMemory().getHostPtr()) + m_conditionalRenderingBufferOffset;
 
