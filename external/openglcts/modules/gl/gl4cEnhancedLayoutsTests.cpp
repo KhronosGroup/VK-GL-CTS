@@ -5257,8 +5257,8 @@ GLuint TestBase::getTestCaseNumber()
  *
  * @return Last location index
  **/
-bool TestBase::isFlatRequired(Utils::Shader::STAGES stage, const Utils::Type& type,
-							  Utils::Variable::STORAGE storage) const
+bool TestBase::isFlatRequired(Utils::Shader::STAGES stage, const Utils::Type& type, Utils::Variable::STORAGE storage,
+							  const bool coherent) const
 {
 	/* Float types do not need flat at all */
 	if (Utils::Type::Float == type.m_basic_type)
@@ -5272,8 +5272,14 @@ bool TestBase::isFlatRequired(Utils::Shader::STAGES stage, const Utils::Type& ty
 		return true;
 	}
 
-	/* Outputs from geometry shader */
-	if ((Utils::Shader::FRAGMENT == stage) && (Utils::Variable::VARYING_OUTPUT == storage))
+	/* Outputs from geometry shader
+	 *
+	 * This is not strictly needed since fragment shader input
+	 * interpolation qualifiers will override whatever comes from the
+	 * previous stage. However, if we want to have a coherent
+	 * interface, let's better do it.
+	 */
+	if ((Utils::Shader::GEOMETRY == stage) && (Utils::Variable::VARYING_OUTPUT == storage) && coherent)
 	{
 		return true;
 	}
@@ -14300,7 +14306,7 @@ void VaryingBlockAutomaticMemberLocationsTest::testInit()
  **/
 VaryingLocationLimitTest::VaryingLocationLimitTest(deqp::Context& context)
 	: NegativeTestBase(context, "varying_location_limit",
-					   "Test verifies that compiler reports error when location qualifier exceed limits")
+					   "Test verifies that compiler reports error when location qualifier exceeds limits")
 {
 }
 
@@ -14313,7 +14319,11 @@ VaryingLocationLimitTest::VaryingLocationLimitTest(deqp::Context& context)
  **/
 std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* var_definition = "layout (location = LAST /* + 1 */) FLAT DIRECTION TYPE gokuARRAY;\n";
+#else
 	static const GLchar* var_definition = "layout (location = LAST + 1) FLAT DIRECTION TYPE gokuARRAY;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 	static const GLchar* input_use		= "    if (TYPE(0) == gokuINDEX)\n"
 									 "    {\n"
 									 "        result += vec4(1, 0.5, 0.25, 0.125);\n"
@@ -14540,7 +14550,7 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 			var_use   = output_use;
 		}
 
-		if (true == isFlatRequired(stage, test_case.m_type, storage))
+		if (isFlatRequired(stage, test_case.m_type, storage))
 		{
 			flat = "flat";
 		}
@@ -15171,7 +15181,7 @@ GLuint VaryingArrayComponentsTest::getArrayLength()
  **/
 VaryingExceedingComponentsTest::VaryingExceedingComponentsTest(deqp::Context& context)
 	: NegativeTestBase(context, "varying_exceeding_components",
-					   "Test verifies that compiler reports error when component qualifier exceed limits")
+					   "Test verifies that compiler reports error when component qualifier exceeds limits")
 {
 }
 
@@ -15184,10 +15194,17 @@ VaryingExceedingComponentsTest::VaryingExceedingComponentsTest(deqp::Context& co
  **/
 std::string VaryingExceedingComponentsTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
+#if DEBUG_NEG_REMOVE_ERROR
 	static const GLchar* var_definition_arr =
-		"layout (location = 1, component = COMPONENT) flat DIRECTION TYPE gokuARRAY[1];\n";
+		"layout (location = 1 /*, component = COMPONENT */) FLAT DIRECTION TYPE gokuARRAY[1];\n";
 	static const GLchar* var_definition_one =
-		"layout (location = 1, component = COMPONENT) flat DIRECTION TYPE gokuARRAY;\n";
+		"layout (location = 1 /*, component = COMPONENT */) FLAT DIRECTION TYPE gokuARRAY;\n";
+#else
+	static const GLchar* var_definition_arr =
+		"layout (location = 1, component = COMPONENT) FLAT DIRECTION TYPE gokuARRAY[1];\n";
+	static const GLchar* var_definition_one =
+		"layout (location = 1, component = COMPONENT) FLAT DIRECTION TYPE gokuARRAY;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 	static const GLchar* input_use_arr = "    if (TYPE(0) == gokuINDEX[0])\n"
 										 "    {\n"
 										 "        result += vec4(1, 0.5, 0.25, 0.125);\n"
@@ -15406,16 +15423,19 @@ std::string VaryingExceedingComponentsTest::getShaderSource(GLuint test_case_ind
 		const GLchar* array = "";
 		GLchar		  buffer[16];
 		const GLchar* var_definition = 0;
-		const GLchar* direction		 = "in ";
+		const GLchar*			 direction		= "in";
 		const GLchar* index			 = "";
 		size_t		  position		 = 0;
 		size_t		  temp;
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = 0;
+		Utils::Variable::STORAGE storage   = Utils::Variable::VARYING_INPUT;
+		const GLchar*			 flat	  = "";
 
 		if (false == test_case.m_is_input)
 		{
 			direction = "out";
+			storage   = Utils::Variable::VARYING_OUTPUT;
 
 			if (false == test_case.m_is_array)
 			{
@@ -15440,6 +15460,11 @@ std::string VaryingExceedingComponentsTest::getShaderSource(GLuint test_case_ind
 				var_definition = var_definition_arr;
 				var_use		   = input_use_arr;
 			}
+		}
+
+		if (isFlatRequired(stage, test_case.m_type, storage, true))
+		{
+			flat = "flat";
 		}
 
 		sprintf(buffer, "%d", test_case.m_component);
@@ -15475,6 +15500,7 @@ std::string VaryingExceedingComponentsTest::getShaderSource(GLuint test_case_ind
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
 		position = temp;
 		Utils::replaceToken("COMPONENT", position, buffer, source);
+		Utils::replaceToken("FLAT", position, flat, source);
 		Utils::replaceToken("DIRECTION", position, direction, source);
 		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
@@ -15628,7 +15654,11 @@ VaryingComponentWithoutLocationTest::VaryingComponentWithoutLocationTest(deqp::C
  **/
 std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* var_definition = "/* layout (component = COMPONENT) */ FLAT DIRECTION TYPE gokuARRAY;\n";
+#else
 	static const GLchar* var_definition = "layout (component = COMPONENT) FLAT DIRECTION TYPE gokuARRAY;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 	static const GLchar* input_use		= "    if (TYPE(0) == gokuINDEX)\n"
 									 "    {\n"
 									 "        result += vec4(1, 0.5, 0.25, 0.125);\n"
@@ -15837,18 +15867,25 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 	{
 		const GLchar* array = "";
 		GLchar		  buffer[16];
-		const GLchar* direction = "in ";
+		const GLchar*			 direction = "in";
 		const GLchar* index		= "";
 		size_t		  position  = 0;
 		size_t		  temp;
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = input_use;
-		const GLchar* flat		= "flat";
+		Utils::Variable::STORAGE storage   = Utils::Variable::VARYING_INPUT;
+		const GLchar*			 flat	  = "";
 
 		if (false == test_case.m_is_input)
 		{
 			direction = "out";
+			storage   = Utils::Variable::VARYING_OUTPUT;
 			var_use   = output_use;
+		}
+
+		if (isFlatRequired(stage, test_case.m_type, storage, true))
+		{
+			flat = "flat";
 		}
 
 		sprintf(buffer, "%d", test_case.m_component);
@@ -15875,7 +15912,6 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
-			flat   = "";
 			break;
 		default:
 			TCU_FAIL("Invalid enum");
@@ -16027,28 +16063,24 @@ VaryingComponentOfInvalidTypeTest::VaryingComponentOfInvalidTypeTest(deqp::Conte
  **/
 std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* block_definition_arr = "layout (location = 1, component = COMPONENT) flat DIRECTION Goku {\n"
-												"    TYPE member;\n"
+	static const GLchar* block_definition_arr = "layout (location = 1COMPONENT) DIRECTION Goku {\n"
+												"    FLAT TYPE member;\n"
 												"} gokuARRAY[1];\n";
-	static const GLchar* block_definition_one = "layout (location = 1, component = COMPONENT) flat DIRECTION Goku {\n"
-												"    TYPE member;\n"
+	static const GLchar* block_definition_one = "layout (location = 1COMPONENT) DIRECTION Goku {\n"
+												"    FLAT TYPE member;\n"
 												"} gokuARRAY;\n";
-	static const GLchar* matrix_definition_arr =
-		"layout (location = 1, component = COMPONENT) flat DIRECTION TYPE gokuARRAY[1];\n";
-	static const GLchar* matrix_definition_one =
-		"layout (location = 1, component = COMPONENT) flat DIRECTION TYPE gokuARRAY;\n";
-	static const GLchar* struct_definition_arr =
-		"struct Goku {\n"
-		"    TYPE member;\n"
-		"};\n"
-		"\n"
-		"layout (location = 1, component = COMPONENT) flat DIRECTION Goku gokuARRAY[1];\n";
-	static const GLchar* struct_definition_one =
-		"struct Goku {\n"
-		"    TYPE member;\n"
-		"};\n"
-		"\n"
-		"layout (location = 1, component = COMPONENT) flat DIRECTION Goku gokuARRAY;\n";
+	static const GLchar* matrix_definition_arr = "layout (location = 1COMPONENT) FLAT DIRECTION TYPE gokuARRAY[1];\n";
+	static const GLchar* matrix_definition_one = "layout (location = 1COMPONENT) FLAT DIRECTION TYPE gokuARRAY;\n";
+	static const GLchar* struct_definition_arr = "struct Goku {\n"
+												 "    TYPE member;\n"
+												 "};\n"
+												 "\n"
+												 "layout (location = 1COMPONENT) FLAT DIRECTION Goku gokuARRAY[1];\n";
+	static const GLchar* struct_definition_one = "struct Goku {\n"
+												 "    TYPE member;\n"
+												 "};\n"
+												 "\n"
+												 "layout (location = 1COMPONENT) FLAT DIRECTION Goku gokuARRAY;\n";
 	static const GLchar* matrix_input_use_arr = "    if (TYPE(0) == gokuINDEX[0])\n"
 												"    {\n"
 												"        result += vec4(1, 0.5, 0.25, 0.125);\n"
@@ -16283,7 +16315,7 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 	if (test_case.m_stage == stage)
 	{
 		const GLchar* array = "";
-		GLchar		  buffer[16];
+		GLchar					 buffer[32];
 		const GLchar* var_definition = 0;
 		const GLchar* direction		 = "in ";
 		const GLchar* index			 = "";
@@ -16291,10 +16323,13 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 		size_t		  temp;
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = 0;
+		Utils::Variable::STORAGE storage   = Utils::Variable::VARYING_INPUT;
+		const GLchar*			 flat	  = "";
 
 		if (false == test_case.m_is_input)
 		{
 			direction = "out";
+			storage   = Utils::Variable::VARYING_OUTPUT;
 
 			if (false == test_case.m_is_array)
 			{
@@ -16381,7 +16416,16 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 			}
 		}
 
-		sprintf(buffer, "%d", test_case.m_component);
+		if (isFlatRequired(stage, test_case.m_type, storage))
+		{
+			flat = "flat";
+		}
+
+#if DEBUG_NEG_REMOVE_ERROR
+		sprintf(buffer, " /* , component = %d */", test_case.m_component);
+#else
+		sprintf(buffer, ", component = %d", test_case.m_component);
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 
 		switch (stage)
 		{
@@ -16418,6 +16462,7 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
 
+		Utils::replaceAllTokens("FLAT", flat, source);
 		Utils::replaceAllTokens("TYPE", type_name, source);
 		Utils::replaceAllTokens("INDEX", index, source);
 	}
@@ -16597,8 +16642,13 @@ InputComponentAliasingTest::InputComponentAliasingTest(deqp::Context& context)
  **/
 std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* var_definition = "layout (location = 1, component = COMPONENT) FLAT in TYPE gohanARRAY;\n"
-										  "layout (location = 1, component = COMPONENT) FLAT in TYPE gotenARRAY;\n";
+	static const GLchar* var_definition =
+		"layout (location = 1, component = COMPONENT) FLAT in TYPE gohanARRAY;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+		"/* layout (location = 1, component = COMPONENT) */ FLAT in TYPE gotenARRAY;\n";
+#else
+		"layout (location = 1, component = COMPONENT) FLAT in TYPE gotenARRAY;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 	static const GLchar* test_one = "    if (TYPE(0) == gohanINDEX)\n"
 									"    {\n"
 									"        result += vec4(1, 0.5, 0.25, 0.125);\n"
@@ -16805,13 +16855,11 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 		GLchar		  buffer_goten[16];
 		const GLchar* flat		  = "";
 		const GLchar* index		  = "";
-		const bool	is_flat_req = isFlatRequired(stage, test_case.m_type, Utils::Variable::VARYING_INPUT);
 		size_t		  position	= 0;
-		size_t		  temp;
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = test_one;
 
-		if (true == is_flat_req)
+		if (isFlatRequired(stage, test_case.m_type, Utils::Variable::VARYING_INPUT, true))
 		{
 			flat = "flat";
 		}
@@ -16846,9 +16894,8 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 			TCU_FAIL("Invalid enum");
 		}
 
-		temp = position;
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
-		position = temp;
+		position = 0;
 		Utils::replaceToken("COMPONENT", position, buffer_gohan, source);
 		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("COMPONENT", position, buffer_goten, source);
@@ -17009,8 +17056,13 @@ OutputComponentAliasingTest::OutputComponentAliasingTest(deqp::Context& context)
  **/
 std::string OutputComponentAliasingTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* var_definition = "layout (location = 1, component = COMPONENT) flat out TYPE gohanARRAY;\n"
-										  "layout (location = 1, component = COMPONENT) flat out TYPE gotenARRAY;\n";
+	static const GLchar* var_definition =
+		"layout (location = 1, component = COMPONENT) FLAT out TYPE gohanARRAY;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+		"/* layout (location = 1, component = COMPONENT) */ FLAT out TYPE gotenARRAY;\n";
+#else
+		"layout (location = 1, component = COMPONENT) FLAT out TYPE gotenARRAY;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 	static const GLchar* l_test = "    gohanINDEX = TYPE(1);\n"
 								  "    gotenINDEX = TYPE(0);\n";
 	static const GLchar* fs = "#version 430 core\n"
@@ -17213,10 +17265,16 @@ std::string OutputComponentAliasingTest::getShaderSource(GLuint test_case_index,
 		const GLchar* array = "";
 		GLchar		  buffer_gohan[16];
 		GLchar		  buffer_goten[16];
+		const GLchar* flat	 = "";
 		const GLchar* index	= "";
 		size_t		  position = 0;
 		size_t		  temp;
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
+
+		if (isFlatRequired(stage, test_case.m_type, Utils::Variable::VARYING_OUTPUT))
+		{
+			flat = "flat";
+		}
 
 		sprintf(buffer_gohan, "%d", test_case.m_component_gohan);
 		sprintf(buffer_goten, "%d", test_case.m_component_goten);
@@ -17252,8 +17310,10 @@ std::string OutputComponentAliasingTest::getShaderSource(GLuint test_case_index,
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
 		position = temp;
 		Utils::replaceToken("COMPONENT", position, buffer_gohan, source);
+		Utils::replaceToken("FLAT", position, flat, source);
 		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("COMPONENT", position, buffer_goten, source);
+		Utils::replaceToken("FLAT", position, flat, source);
 		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("VARIABLE_USE", position, l_test, source);
 
@@ -17629,18 +17689,27 @@ std::string VaryingLocationAliasingWithMixedTypesTest::getShaderSource(GLuint			
 			var_use   = output_use;
 		}
 
-		if (true == isFlatRequired(stage, test_case.m_type_gohan, storage))
+		/* If the interpolation qualifier would be different, the test
+		 * would fail and we are testing here mixed types, not mixed
+		 * interpolation qualifiers.
+		 */
+		if (isFlatRequired(stage, test_case.m_type_gohan, storage) ||
+			isFlatRequired(stage, test_case.m_type_goten, storage))
 		{
 			flat_gohan = "flat";
-		}
-
-		if (true == isFlatRequired(stage, test_case.m_type_goten, storage))
-		{
 			flat_goten = "flat";
 		}
 
 		sprintf(buffer_gohan, "%d", test_case.m_component_gohan);
 		sprintf(buffer_goten, "%d", test_case.m_component_goten);
+
+#if DEBUG_NEG_REMOVE_ERROR
+		type_goten_name = Utils::Type::GetType(test_case.m_type_gohan.m_basic_type, 1, 1).GetGLSLTypeName();
+		if (Utils::Type::Double == test_case.m_type_gohan.m_basic_type)
+		{
+			sprintf(buffer_goten, "%d", 0 == test_case.m_component_gohan ? 2 : 0);
+		}
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 
 		switch (stage)
 		{

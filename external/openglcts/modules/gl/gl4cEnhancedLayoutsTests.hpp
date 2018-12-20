@@ -1026,7 +1026,8 @@ protected:
 	std::string getTypeName(glw::GLuint index) const;
 	glw::GLuint getTypesNumber() const;
 
-	bool isFlatRequired(Utils::Shader::STAGES stage, const Utils::Type& type, Utils::Variable::STORAGE storage) const;
+	bool isFlatRequired(Utils::Shader::STAGES stage, const Utils::Type& type, Utils::Variable::STORAGE storage,
+						const bool coherent = false) const;
 
 private:
 	/* Private methods */
@@ -1123,7 +1124,7 @@ protected:
 	virtual bool testCase(glw::GLuint test_case_index);
 };
 
-/** Base class for test doing Texture alghorithm **/
+/** Base class for test doing Texture algorithm **/
 class TextureTestBase : public TestBase
 {
 public:
@@ -4410,7 +4411,7 @@ private:
 
 /** Implementation of test XFBCaptureInactiveOutputVariable. Description follows:
  *
- * Test verifies behaviour of inactive outputs.
+ * Test verifies behavior of inactive outputs.
  *
  * This test implements Buffer algorithm. Rasterization can be disabled. Draw
  * two vertices instead of one. Test following code snippet:
@@ -4472,7 +4473,7 @@ private:
 
 /** Implementation of test XFBCaptureInactiveOutputComponent. Description follows:
  *
- * Test verifies behaviour of inactive component.
+ * Test verifies behavior of inactive component.
  *
  * This test implements Buffer algorithm. Rasterization can be disabled. Draw
  * two vertices instead of one. Test following code snippet:
