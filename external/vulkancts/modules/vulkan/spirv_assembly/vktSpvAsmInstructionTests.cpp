@@ -17706,6 +17706,202 @@ tcu::TestCaseGroup* createFloat16Group (tcu::TestContext& testCtx)
 	return testGroup.release();
 }
 
+tcu::TestCaseGroup* createBoolMixedBitSizeGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "mixed_bitsize", "Tests boolean operands produced from instructions of different bit-sizes"));
+
+	de::Random						rnd				(deStringHash(group->getName()));
+	const int		numElements		= 100;
+	vector<float>	inputData		(numElements, 0);
+	vector<float>	outputData		(numElements, 0);
+	fillRandomScalars(rnd, 0.0f, 100.0f, &inputData[0], 100);
+
+	const StringTemplate			shaderTemplate	(
+		"${CAPS}\n"
+		"OpMemoryModel Logical GLSL450\n"
+		"OpEntryPoint GLCompute %main \"main\" %id\n"
+		"OpExecutionMode %main LocalSize 1 1 1\n"
+		"OpSource GLSL 430\n"
+		"OpName %main           \"main\"\n"
+		"OpName %id             \"gl_GlobalInvocationID\"\n"
+
+		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+
+		"%id        = OpVariable %uvec3ptr Input\n"
+		"${CONST}\n"
+		"%main      = OpFunction %void None %voidf\n"
+		"%label     = OpLabel\n"
+		"%idval     = OpLoad %uvec3 %id\n"
+		"%x         = OpCompositeExtract %u32 %idval 0\n"
+		"%inloc     = OpAccessChain %f32ptr %indata %c0i32 %x\n"
+
+		"${TEST}\n"
+
+		"%outloc    = OpAccessChain %f32ptr %outdata %c0i32 %x\n"
+		"             OpStore %outloc %res\n"
+		"             OpReturn\n"
+		"             OpFunctionEnd\n"
+	);
+
+	// Each test case produces 4 boolean values, and we want each of these values
+	// to come froma different combination of the available bit-sizes, so compute
+	// all possible combinations here.
+	vector<deUint32>	widths;
+	widths.push_back(32);
+	widths.push_back(16);
+	widths.push_back(8);
+
+	vector<IVec4>	cases;
+	for (size_t width0 = 0; width0 < widths.size(); width0++)
+	{
+		for (size_t width1 = 0; width1 < widths.size(); width1++)
+		{
+			for (size_t width2 = 0; width2 < widths.size(); width2++)
+			{
+				for (size_t width3 = 0; width3 < widths.size(); width3++)
+				{
+					cases.push_back(IVec4(widths[width0], widths[width1], widths[width2], widths[width3]));
+				}
+			}
+		}
+	}
+
+	for (size_t caseNdx = 0; caseNdx < cases.size(); caseNdx++)
+	{
+		/// Skip cases where all bitsizes are the same, we are only interested in testing booleans produced from instructions with different native bit-sizes
+		if (cases[caseNdx][0] == cases[caseNdx][1] && cases[caseNdx][0] == cases[caseNdx][2] && cases[caseNdx][0] == cases[caseNdx][3])
+			continue;
+
+		map<string, string>	specializations;
+		ComputeShaderSpec	spec;
+
+		// Inject appropriate capabilities and reference constants depending
+		// on the bit-sizes required by this test case
+		bool hasFloat32	= cases[caseNdx][0] == 32 || cases[caseNdx][1] == 32 || cases[caseNdx][2] == 32 || cases[caseNdx][3] == 32;
+		bool hasFloat16	= cases[caseNdx][0] == 16 || cases[caseNdx][1] == 16 || cases[caseNdx][2] == 16 || cases[caseNdx][3] == 16;
+		bool hasInt8	= cases[caseNdx][0] == 8 || cases[caseNdx][1] == 8 || cases[caseNdx][2] == 8 || cases[caseNdx][3] == 8;
+
+		string capsStr	= "OpCapability Shader\n";
+		string constStr	=
+			"%c0i32     = OpConstant %i32 0\n"
+			"%c1f32     = OpConstant %f32 1.0\n"
+			"%c0f32     = OpConstant %f32 0.0\n";
+
+		if (hasFloat32)
+		{
+			constStr	+=
+				"%c10f32    = OpConstant %f32 10.0\n"
+				"%c25f32    = OpConstant %f32 25.0\n"
+				"%c50f32    = OpConstant %f32 50.0\n"
+				"%c90f32    = OpConstant %f32 90.0\n";
+		}
+
+		if (hasFloat16)
+		{
+			capsStr		+= "OpCapability Float16\n";
+			constStr	+=
+				"%f16       = OpTypeFloat 16\n"
+				"%c10f16    = OpConstant %f16 10.0\n"
+				"%c25f16    = OpConstant %f16 25.0\n"
+				"%c50f16    = OpConstant %f16 50.0\n"
+				"%c90f16    = OpConstant %f16 90.0\n";
+		}
+
+		if (hasInt8)
+		{
+			capsStr		+= "OpCapability Int8\n";
+			constStr	+=
+				"%i8        = OpTypeInt 8 1\n"
+				"%c10i8     = OpConstant %i8 10\n"
+				"%c25i8     = OpConstant %i8 25\n"
+				"%c50i8     = OpConstant %i8 50\n"
+				"%c90i8     = OpConstant %i8 90\n";
+		}
+
+		// Each invocation reads a different float32 value as input. Depending on
+		// the bit-sizes required by the particular test case, we also produce
+		// float16 and/or and int8 values by converting from the 32-bit float.
+		string testStr	= "";
+		testStr			+= "%inval32   = OpLoad %f32 %inloc\n";
+		if (hasFloat16)
+			testStr		+= "%inval16   = OpFConvert %f16 %inval32\n";
+		if (hasInt8)
+			testStr		+= "%inval8    = OpConvertFToS %i8 %inval32\n";
+
+		// Because conversions from Float to Int round towards 0 we want our "greater" comparisons to be >=,
+		// that way a float32/float16 comparison such as 50.6f >= 50.0f will preserve its result
+		// when converted to int8, since FtoS(50.6f) results in 50. For "less" comparisons, it is the
+		// other way around, so in this case we want < instead of <=.
+		if (cases[caseNdx][0] == 32)
+			testStr		+= "%cmp1      = OpFOrdGreaterThanEqual %bool %inval32 %c25f32\n";
+		else if (cases[caseNdx][0] == 16)
+			testStr		+= "%cmp1      = OpFOrdGreaterThanEqual %bool %inval16 %c25f16\n";
+		else
+			testStr		+= "%cmp1      = OpSGreaterThanEqual %bool %inval8 %c25i8\n";
+
+		if (cases[caseNdx][1] == 32)
+			testStr		+= "%cmp2      = OpFOrdLessThan %bool %inval32 %c50f32\n";
+		else if (cases[caseNdx][1] == 16)
+			testStr		+= "%cmp2      = OpFOrdLessThan %bool %inval16 %c50f16\n";
+		else
+			testStr		+= "%cmp2      = OpSLessThan %bool %inval8 %c50i8\n";
+
+		if (cases[caseNdx][2] == 32)
+			testStr		+= "%cmp3      = OpFOrdLessThan %bool %inval32 %c10f32\n";
+		else if (cases[caseNdx][2] == 16)
+			testStr		+= "%cmp3      = OpFOrdLessThan %bool %inval16 %c10f16\n";
+		else
+			testStr		+= "%cmp3      = OpSLessThan %bool %inval8 %c10i8\n";
+
+		if (cases[caseNdx][3] == 32)
+			testStr		+= "%cmp4      = OpFOrdGreaterThanEqual %bool %inval32 %c90f32\n";
+		else if (cases[caseNdx][3] == 16)
+			testStr		+= "%cmp4      = OpFOrdGreaterThanEqual %bool %inval16 %c90f16\n";
+		else
+			testStr		+= "%cmp4      = OpSGreaterThanEqual %bool %inval8 %c90i8\n";
+
+		testStr			+= "%and1      = OpLogicalAnd %bool %cmp1 %cmp2\n";
+		testStr			+= "%or1       = OpLogicalOr %bool %cmp3 %cmp4\n";
+		testStr			+= "%or2       = OpLogicalOr %bool %and1 %or1\n";
+		testStr			+= "%not1      = OpLogicalNot %bool %or2\n";
+		testStr			+= "%res       = OpSelect %f32 %not1 %c1f32 %c0f32\n";
+
+		specializations["CAPS"]		= capsStr;
+		specializations["CONST"]	= constStr;
+		specializations["TEST"]		= testStr;
+
+		// Compute expected result by evaluating the boolean expression computed in the shader for each input value
+		for (size_t ndx = 0; ndx < numElements; ++ndx)
+			outputData[ndx] = !((inputData[ndx] >= 25.0f && inputData[ndx] < 50.0f) || (inputData[ndx] < 10.0f || inputData[ndx] >= 90.0f));
+
+		spec.assembly = shaderTemplate.specialize(specializations);
+		spec.inputs.push_back(BufferSp(new Float32Buffer(inputData)));
+		spec.outputs.push_back(BufferSp(new Float32Buffer(outputData)));
+		spec.numWorkGroups = IVec3(numElements, 1, 1);
+		if (hasFloat16)
+			spec.requestedVulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_FLOAT16;
+		if (hasInt8)
+			spec.requestedVulkanFeatures.extFloat16Int8 |= EXTFLOAT16INT8FEATURES_INT8;
+		spec.extensions.push_back("VK_KHR_shader_float16_int8");
+
+		string testName = "b" + de::toString(cases[caseNdx][0]) + "b" + de::toString(cases[caseNdx][1]) + "b" + de::toString(cases[caseNdx][2]) + "b" + de::toString(cases[caseNdx][3]);
+		group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), "", spec));
+	}
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createBoolGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "bool", "Boolean tests"));
+
+	testGroup->addChild(createBoolMixedBitSizeGroup(testCtx));
+
+	return testGroup.release();
+}
+
 tcu::TestCaseGroup* createOpNameAbuseTests (tcu::TestContext& testCtx)
 {
 	de::MovePtr<tcu::TestCaseGroup>	abuseGroup(new tcu::TestCaseGroup(testCtx, "opname_abuse", "OpName abuse tests"));
@@ -17945,6 +18141,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createOpMemberNameGroup(testCtx));
 	computeTests->addChild(createPointerParameterComputeGroup(testCtx));
 	computeTests->addChild(createFloat16Group(testCtx));
+	computeTests->addChild(createBoolGroup(testCtx));
 
 	graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
 	graphicsTests->addChild(createSpivVersionCheckTests(testCtx, !testComputePipeline));

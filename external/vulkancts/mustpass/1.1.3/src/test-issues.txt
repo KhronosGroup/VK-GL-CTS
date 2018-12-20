@@ -1,6 +1,3 @@
-# Issue 217: Built-in function precision test issues
-dEQP-VK.glsl.builtin.precision.acos.mediump_compute.*
-
 # Issue 233: Negative zero flat varying issue
 dEQP-VK.glsl.builtin.function.common.frexp.float_highp_vertex
 dEQP-VK.glsl.builtin.function.common.frexp.vec2_highp_vertex

@@ -30,6 +30,7 @@
 #include "vktRenderPassSparseRenderTargetTests.hpp"
 #include "vktRenderPassSubpassDependencyTests.hpp"
 #include "vktRenderPassUnusedAttachmentTests.hpp"
+#include "vktRenderPassDepthStencilResolveTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -6974,6 +6975,11 @@ tcu::TestCaseGroup* createRenderPassTestsInternal (tcu::TestContext& testCtx, Re
 
 	renderpassTests->addChild(suballocationTestGroup.release());
 	renderpassTests->addChild(dedicatedAllocationTestGroup.release());
+
+	if (renderPassType != RENDERPASS_TYPE_LEGACY)
+	{
+		renderpassTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
+	}
 
 	return renderpassTests.release();
 }
