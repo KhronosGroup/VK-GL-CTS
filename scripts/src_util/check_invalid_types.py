@@ -26,6 +26,12 @@ import sys
 from argparse import ArgumentParser
 from common import getChangedFiles, getAllProjectFiles, isTextFile
 
+CHECK_LITERAL_PATTERNS = [
+	r'\b[us]*int[0-9]+_t\b',
+	r'\b[U]*INT(_LEAST|_FAST|)[0-9]+_MAX\b',
+	r'\b0b',
+]
+
 CHECK_LIST = [
 	".cpp",
 	".hpp",
@@ -41,12 +47,13 @@ EXCLUSION_LIST = [
 	"framework/platform/lnx/X11/tcuLnxX11Xcb.cpp",
 	"framework/platform/lnx/wayland/tcuLnxWayland.hpp",
 	"framework/platform/lnx/wayland/tcuLnxWayland.cpp",
+	"framework/delibs/debase/deFloat16.c",
 ]
 
 def checkEnds(line, ends):
 	return any(line.endswith(end) for end in ends)
 
-def checkFileInvalidTypes (file):
+def checkFileInvalidLiterals (file):
 	error = False
 
 	if checkEnds(file.replace("\\", "/"), CHECK_LIST) and not checkEnds(file.replace("\\", "/"), EXCLUSION_LIST):
@@ -62,19 +69,20 @@ def checkFileInvalidTypes (file):
 				del list[1::2]
 				line = ' '
 				line = line.join(list)
-			found = re.search(r'\b[us]*int[0-9]+_t\b', line)
-			if found is not None:
-				error = True
-				print "%s:%i Unacceptable type found" % (file, lineNum+1)
+			for pattern in CHECK_LITERAL_PATTERNS:
+				found = re.search(pattern, line)
+				if found is not None:
+					error = True
+					print "%s:%i Unacceptable type found (pattern:%s)" % (file, lineNum+1, pattern)
 		f.close()
 
 	return not error
 
-def checkInvalidTypes (files):
+def checkInvalidLiterals (files):
 	error = False
 	for file in files:
 		if isTextFile(file):
-			if not checkFileInvalidTypes(file):
+			if not checkFileInvalidLiterals(file):
 				error = True
 
 	return not error
@@ -91,7 +99,7 @@ if __name__ == "__main__":
 	else:
 		files = getAllProjectFiles()
 
-	error = not checkInvalidTypes(files)
+	error = not checkInvalidLiterals(files)
 
 	if error:
 		print "One or more checks failed"
