@@ -16634,16 +16634,10 @@ void VaryingComponentOfInvalidTypeTest::testInit()
 			/* Use different CASE for matrices */
 			if (1 != type.m_n_columns)
 			{
-				testCase test_case_in_arr = { MATRIX, valid_component, true, true, (Utils::Shader::STAGES)stage, type };
-				testCase test_case_in_one = {
-					MATRIX, valid_component, false, true, (Utils::Shader::STAGES)stage, type
-				};
-				testCase test_case_out_arr = {
-					MATRIX, valid_component, true, false, (Utils::Shader::STAGES)stage, type
-				};
-				testCase test_case_out_one = {
-					MATRIX, valid_component, false, false, (Utils::Shader::STAGES)stage, type
-				};
+				testCase test_case_in_arr  = { MATRIX, 0, true, true, (Utils::Shader::STAGES)stage, type };
+				testCase test_case_in_one  = { MATRIX, 0, false, true, (Utils::Shader::STAGES)stage, type };
+				testCase test_case_out_arr = { MATRIX, 0, true, false, (Utils::Shader::STAGES)stage, type };
+				testCase test_case_out_one = { MATRIX, 0, false, false, (Utils::Shader::STAGES)stage, type };
 
 				m_test_cases.push_back(test_case_in_arr);
 				m_test_cases.push_back(test_case_in_one);
