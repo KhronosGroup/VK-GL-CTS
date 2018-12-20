@@ -27,6 +27,7 @@ import com.android.tradefed.config.OptionClass;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.metrics.proto.MetricMeasurement.Metric;
 import com.android.tradefed.result.ByteArrayInputStreamSource;
 import com.android.tradefed.result.ITestInvocationListener;
 import com.android.tradefed.result.LogDataType;
@@ -312,7 +313,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                         mSink.testLog(testId.getClassName() + "." + testId.getTestName() + "@"
                                 + entry.getKey().getId(), LogDataType.XML, source);
 
-                        source.cancel();
+                        source.close();
                     }
                 }
 
@@ -333,7 +334,7 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
                     mSink.testFailed(testId, errorLog.toString());
                 }
 
-                final Map<String, String> emptyMap = Collections.emptyMap();
+                final HashMap<String, Metric> emptyMap = new HashMap<>();
                 mSink.testEnded(testId, emptyMap);
             }
         }
@@ -1615,12 +1616,13 @@ public class DeqpTestRunner implements IBuildReceiver, IDeviceTest,
      * Pass all remaining tests without running them
      */
     private void fakePassTests(ITestInvocationListener listener) {
-        Map <String, String> emptyMap = Collections.emptyMap();
+        HashMap<String, Metric> emptyMap = new HashMap<>();
         for (TestDescription test : mRemainingTests) {
-            CLog.d("Skipping test '%s', Opengl ES version not supported", test.toString());
             listener.testStarted(test);
             listener.testEnded(test, emptyMap);
         }
+        // Log only once all the skipped tests
+        CLog.d("Opengl ES version not supported. Skipping tests '%s'", mRemainingTests);
         mRemainingTests.clear();
     }
 
