@@ -403,6 +403,7 @@ string makeVertexShaderAssembly (const map<string, string>& fragments)
 		"${extension:opt}\n"
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Vertex %BP_main \"main\" %BP_stream %BP_position %BP_vtx_color %BP_color %BP_gl_VertexIndex %BP_gl_InstanceIndex ${IF_entrypoint:opt} \n"
+		"${execution_mode:opt}\n"
 		"${debug:opt}\n"
 		"${moduleprocessed:opt}\n"
 		"OpMemberDecorate %BP_gl_PerVertex 0 BuiltIn Position\n"
@@ -486,6 +487,7 @@ string makeTessControlShaderAssembly (const map<string, string>& fragments)
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint TessellationControl %BP_main \"main\" %BP_out_color %BP_gl_InvocationID %BP_gl_PrimitiveID %BP_in_color %BP_gl_out %BP_gl_in %BP_gl_TessLevelOuter %BP_gl_TessLevelInner ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
+		"${execution_mode:opt}\n"
 		"${debug:opt}\n"
 		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_out_color Location 1\n"
@@ -611,6 +613,7 @@ string makeTessEvalShaderAssembly (const map<string, string>& fragments)
 		"OpExecutionMode %BP_main Triangles\n"
 		"OpExecutionMode %BP_main SpacingEqual\n"
 		"OpExecutionMode %BP_main VertexOrderCcw\n"
+		"${execution_mode:opt}\n"
 		"${debug:opt}\n"
 		"${moduleprocessed:opt}\n"
 		"OpMemberDecorate %BP_gl_PerVertexOut 0 BuiltIn Position\n"
@@ -759,6 +762,7 @@ string makeGeometryShaderAssembly (const map<string, string>& fragments)
 		"OpExecutionMode %BP_main Triangles\n"
 		"OpExecutionMode %BP_main OutputTriangleStrip\n"
 		"OpExecutionMode %BP_main OutputVertices 3\n"
+		"${execution_mode:opt}\n"
 		"${debug:opt}\n"
 		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_gl_PrimitiveID BuiltIn PrimitiveId\n"
@@ -878,6 +882,7 @@ string makeFragmentShaderAssembly (const map<string, string>& fragments)
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint Fragment %BP_main \"main\" %BP_vtxColor %BP_fragColor %BP_gl_FragCoord ${IF_entrypoint:opt} \n"
 		"OpExecutionMode %BP_main OriginUpperLeft\n"
+		"${execution_mode:opt}\n"
 		"${debug:opt}\n"
 		"${moduleprocessed:opt}\n"
 		"OpDecorate %BP_fragColor Location 0\n"
@@ -1013,6 +1018,7 @@ map<string, string> fillInterfacePlaceholderVert (void)
 	// Make sure the rest still need to be instantialized.
 	fragments["capability"]				= "${capability:opt}";
 	fragments["extension"]				= "${extension:opt}";
+	fragments["execution_mode"]			= "${execution_mode:opt}";
 	fragments["debug"]					= "${debug:opt}";
 	fragments["decoration"]				= "${decoration:opt}";
 	fragments["pre_main"]				= "${pre_main:opt}";
@@ -1049,6 +1055,7 @@ map<string, string> fillInterfacePlaceholderFrag (void)
 	// Make sure the rest still need to be instantialized.
 	fragments["capability"]				= "${capability:opt}";
 	fragments["extension"]				= "${extension:opt}";
+	fragments["execution_mode"]			= "${execution_mode:opt}";
 	fragments["debug"]					= "${debug:opt}";
 	fragments["decoration"]				= "${decoration:opt}";
 	fragments["pre_main"]				= "${pre_main:opt}";
@@ -1097,6 +1104,7 @@ map<string, string> fillInterfacePlaceholderTessCtrl (void)
 	// Make sure the rest still need to be instantialized.
 	fragments["capability"]					= "${capability:opt}";
 	fragments["extension"]					= "${extension:opt}";
+	fragments["execution_mode"]				= "${execution_mode:opt}";
 	fragments["debug"]						= "${debug:opt}";
 	fragments["decoration"]					= "${decoration:opt}";
 	fragments["decoration_tessc"]			= "${decoration_tessc:opt}";
@@ -1136,6 +1144,7 @@ map<string, string> fillInterfacePlaceholderTessEvalGeom (void)
 	// Make sure the rest still need to be instantialized.
 	fragments["capability"]					= "${capability:opt}";
 	fragments["extension"]					= "${extension:opt}";
+	fragments["execution_mode"]				= "${execution_mode:opt}";
 	fragments["debug"]						= "${debug:opt}";
 	fragments["decoration"]					= "${decoration:opt}";
 	fragments["pre_main"]					= "${pre_main:opt}";
