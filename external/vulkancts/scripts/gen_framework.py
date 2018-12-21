@@ -589,6 +589,9 @@ def parseDefinitions (extensionName, src):
 	def skipDefinition (extensionName, definition):
 		if extensionName == None:
 			return True
+		# SPEC_VERSION enums
+		if definition[0].startswith(extensionName.upper()) and definition[1].isdigit():
+			return False
 		if definition[0].startswith(extensionName.upper()):
 			return True
 		if definition[1].isdigit():
