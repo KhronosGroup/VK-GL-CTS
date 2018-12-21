@@ -1,0 +1,62 @@
+
+# Test for a bug found by GraphicsFuzz.
+# A fragment shader that uses pow.
+# Derived from the following GLSL:
+#
+# void main()
+# {
+#  vec2 a = vec2(1.0);
+#  vec4 b = vec4(1.0);
+#  pow(vec4(a, vec2(1.0)), b);
+#  _GLF_color = vec4(1.0, 0.0, 1.0, 1.0);
+# }
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %25
+               OpExecutionMode %4 OriginUpperLeft
+               OpSource ESSL 310
+               OpName %4 "main"
+               OpName %9 "a"
+               OpName %14 "b"
+               OpName %25 "_GLF_color"
+               OpDecorate %25 Location 0
+          %2 = OpTypeVoid
+          %3 = OpTypeFunction %2
+          %6 = OpTypeFloat 32
+          %7 = OpTypeVector %6 2
+          %8 = OpTypePointer Function %7
+         %10 = OpConstant %6 1
+         %11 = OpConstantComposite %7 %10 %10
+         %12 = OpTypeVector %6 4
+         %13 = OpTypePointer Function %12
+         %15 = OpConstantComposite %12 %10 %10 %10 %10
+         %24 = OpTypePointer Output %12
+         %25 = OpVariable %24 Output
+         %26 = OpConstant %6 0
+         %27 = OpConstantComposite %12 %10 %26 %10 %10
+          %4 = OpFunction %2 None %3
+          %5 = OpLabel
+          %9 = OpVariable %8 Function
+         %14 = OpVariable %13 Function
+               OpStore %9 %11
+               OpStore %14 %15
+         %16 = OpLoad %7 %9
+         %17 = OpCompositeExtract %6 %16 0
+         %18 = OpCompositeExtract %6 %16 1
+         %19 = OpCompositeExtract %6 %11 0
+         %20 = OpCompositeExtract %6 %11 1
+         %21 = OpCompositeConstruct %12 %17 %18 %19 %20
+         %22 = OpLoad %12 %14
+         %23 = OpExtInst %12 %1 Pow %21 %22
+               OpStore %25 %27
+               OpReturn
+               OpFunctionEnd
+
+[test]
+draw rect -1 -1 2 2
+probe all rgba 1 0 1 1
