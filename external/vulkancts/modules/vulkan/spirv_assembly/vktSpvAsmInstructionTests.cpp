@@ -14368,12 +14368,13 @@ struct fp16VectorTimesScalar : public fp16AllComponents
 
 		for (size_t componentNdx = 0; componentNdx < getArgCompCount(0); ++componentNdx)
 		{
-			const fp16type	x	(in[0][componentNdx]);
-			const fp16type	m	(s.asDouble() * x.asDouble());
+			const fp16type	x	   (in[0][componentNdx]);
+			const double    result (s.asDouble() * x.asDouble());
+			const fp16type	m	   (result);
 
 			out[componentNdx] = m.bits();
-			min[componentNdx] = getMin(m.asDouble(), getULPs(in));
-			max[componentNdx] = getMax(m.asDouble(), getULPs(in));
+			min[componentNdx] = getMin(result, getULPs(in));
+			max[componentNdx] = getMax(result, getULPs(in));
 		}
 
 		return true;
