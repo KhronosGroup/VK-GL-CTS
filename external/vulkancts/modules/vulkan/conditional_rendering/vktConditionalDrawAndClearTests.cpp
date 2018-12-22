@@ -122,23 +122,43 @@ struct DrawTestParams
 	TogglePredicateMode			m_toggleMode; //method of the predicate toggling
 };
 
+enum
+{
+	b0000 = 0x0,
+	b0001 = 0x1,
+	b0010 = 0x2,
+	b0011 = 0x3,
+	b0100 = 0x4,
+	b0101 = 0x5,
+	b0110 = 0x6,
+	b0111 = 0x7,
+	b1000 = 0x8,
+	b1001 = 0x9,
+	b1010 = 0xA,
+	b1011 = 0xB,
+	b1100 = 0xC,
+	b1101 = 0xD,
+	b1110 = 0xE,
+	b1111 = 0xF,
+};
+
 const DrawTestParams drawTestGrid[] =
 {
-	{ false,	false,	false,	0b0001, 0b1000, 0b1111, false,	NONE },
-	{ true,		false,	false,	0b0001, 0b1000, 0b0000, false,	NONE },
-	{ true,		false,	false,	0b0001, 0b0001, 0b1110, false,	NONE },
-	{ true,		false,	false,	0b1111, 0b1111, 0b0000, false,	NONE },
-	{ true,		false,	false,	0b0010, 0b0010, 0b1101, false,	NONE },
-	{ true,		true,	false,	0b1010, 0b1010, 0b0101, false,	NONE },
-	{ false,	true,	true,	0b1010, 0b1010, 0b1111, false,	NONE },
-	{ true,		true,	true,	0b0010, 0b1000, 0b0001, false,	NONE },
-	{ true,		true,	true,	0b1001, 0b1001, 0b0110, false,	NONE },
-	{ true,		true,	true,	0b0010, 0b1000, 0b1111, true,	FILL },
-	{ true,		true,	true,	0b1001, 0b1001, 0b1111, true,	FILL },
-	{ false,	true,	true,	0b1001, 0b1001, 0b0110, true,	FILL },
-	{ true,		true,	true,	0b0010, 0b1000, 0b1111, true,	COPY },
-	{ true,		true,	true,	0b1001, 0b1001, 0b1111, true,	COPY },
-	{ false,	true,	true,	0b1001, 0b1001, 0b0110, true,	COPY },
+	{ false,	false,	false,	b0001, b1000, b1111, false,	NONE },
+	{ true,		false,	false,	b0001, b1000, b0000, false,	NONE },
+	{ true,		false,	false,	b0001, b0001, b1110, false,	NONE },
+	{ true,		false,	false,	b1111, b1111, b0000, false,	NONE },
+	{ true,		false,	false,	b0010, b0010, b1101, false,	NONE },
+	{ true,		true,	false,	b1010, b1010, b0101, false,	NONE },
+	{ false,	true,	true,	b1010, b1010, b1111, false,	NONE },
+	{ true,		true,	true,	b0010, b1000, b0001, false,	NONE },
+	{ true,		true,	true,	b1001, b1001, b0110, false,	NONE },
+	{ true,		true,	true,	b0010, b1000, b1111, true,	FILL },
+	{ true,		true,	true,	b1001, b1001, b1111, true,	FILL },
+	{ false,	true,	true,	b1001, b1001, b0110, true,	FILL },
+	{ true,		true,	true,	b0010, b1000, b1111, true,	COPY },
+	{ true,		true,	true,	b1001, b1001, b1111, true,	COPY },
+	{ false,	true,	true,	b1001, b1001, b0110, true,	COPY },
 };
 
 std::string generateClearTestName(const ClearTestParams& clearTestParams)
