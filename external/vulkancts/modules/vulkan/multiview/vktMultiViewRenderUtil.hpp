@@ -46,7 +46,7 @@ template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, 
 vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkSampleCountFlagBits samples, const vk::VkAttachmentLoadOp colorLoadOp, const vk::VkFormat dsFormat);
 
 template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
-vk::Move<vk::VkRenderPass>			makeRenderPassWithAttachments	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks);
+vk::Move<vk::VkRenderPass>			makeRenderPassWithAttachments	(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, bool useAspects);
 
 template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep, typename RenderPassCreateInfo>
 vk::Move<vk::VkRenderPass>			makeRenderPassWithDepth			(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkFormat colorFormat, const std::vector<deUint32>& viewMasks, const vk::VkFormat dsFormat);

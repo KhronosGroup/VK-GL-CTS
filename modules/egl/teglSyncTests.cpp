@@ -23,6 +23,8 @@
 
 #include "teglSyncTests.hpp"
 
+#include "deStringUtil.hpp"
+
 #include "egluNativeWindow.hpp"
 #include "egluStrUtil.hpp"
 #include "egluUtil.hpp"
@@ -56,8 +58,6 @@ namespace deqp
 {
 namespace egl
 {
-namespace
-{
 
 const char* getSyncTypeName (EGLenum syncType)
 {
@@ -74,6 +74,27 @@ const char* getSyncTypeName (EGLenum syncType)
 class SyncTest : public TestCase
 {
 public:
+	typedef EGLSync     (Library::*createSync)(EGLDisplay, EGLenum, const EGLAttrib *) const ;
+	typedef EGLSyncKHR  (Library::*createSyncKHR)(EGLDisplay, EGLenum, const EGLint *) const ;
+	typedef EGLint      (Library::*clientWaitSync)(EGLDisplay, EGLSync, EGLint, EGLTime) const ;
+	typedef EGLint      (Library::*clientWaitSyncKHR)(EGLDisplay, EGLSyncKHR, EGLint, EGLTimeKHR) const ;
+	typedef EGLBoolean  (Library::*getSyncAttrib)(EGLDisplay, EGLSync, EGLint, EGLAttrib *) const ;
+	typedef EGLBoolean  (Library::*getSyncAttribKHR)(EGLDisplay, EGLSyncKHR, EGLint, EGLint *) const ;
+	typedef EGLBoolean  (Library::*destroySync)(EGLDisplay, EGLSync) const ;
+	typedef EGLBoolean  (Library::*destroySyncKHR)(EGLDisplay, EGLSyncKHR) const ;
+	typedef EGLBoolean  (Library::*waitSync)(EGLDisplay, EGLSync, EGLint) const ;
+	typedef EGLint      (Library::*waitSyncKHR)(EGLDisplay, EGLSyncKHR, EGLint) const ;
+
+	enum FunctionName
+	{
+		FUNC_NAME_CREATE_SYNC,
+		FUNC_NAME_CLIENT_WAIT_SYNC,
+		FUNC_NAME_GET_SYNC_ATTRIB,
+		FUNC_NAME_DESTROY_SYNC,
+		FUNC_NAME_WAIT_SYNC,
+		FUNC_NAME_NUM_NAMES
+	};
+
 	enum Extension
 	{
 		EXTENSION_NONE				= 0,
@@ -82,37 +103,54 @@ public:
 		EXTENSION_REUSABLE_SYNC		= (0x1 << 2)
 	};
 									SyncTest	(EglTestContext& eglTestCtx, EGLenum syncType, Extension extensions, bool useCurrentContext, const char* name, const char* description);
-									~SyncTest	(void);
+									virtual ~SyncTest	(void);
 
 	void							init		(void);
 	void							deinit		(void);
+	bool							hasRequiredEGLVersion(int requiredMajor, int requiredMinor);
+	bool							hasRequiredEGLExtensions(void);
+	EGLDisplay						getEglDisplay()	{return m_eglDisplay;}
 
 protected:
 	const EGLenum					m_syncType;
-	const Extension					m_extensions;
 	const bool						m_useCurrentContext;
 
 	glw::Functions					m_gl;
 
+	Extension						m_extensions;
 	EGLDisplay						m_eglDisplay;
 	EGLConfig						m_eglConfig;
 	EGLSurface						m_eglSurface;
 	eglu::NativeWindow*				m_nativeWindow;
 	EGLContext						m_eglContext;
 	EGLSyncKHR						m_sync;
+	string							m_funcNames[FUNC_NAME_NUM_NAMES];
+	string							m_funcNamesKHR[FUNC_NAME_NUM_NAMES];
 };
 
 SyncTest::SyncTest (EglTestContext& eglTestCtx, EGLenum syncType, Extension extensions,  bool useCurrentContext, const char* name, const char* description)
 	: TestCase				(eglTestCtx, name, description)
 	, m_syncType			(syncType)
-	, m_extensions			(extensions)
 	, m_useCurrentContext	(useCurrentContext)
+	, m_extensions			(extensions)
 	, m_eglDisplay			(EGL_NO_DISPLAY)
+	, m_eglConfig           (((eglw::EGLConfig)0))  // EGL_NO_CONFIG
 	, m_eglSurface			(EGL_NO_SURFACE)
 	, m_nativeWindow		(DE_NULL)
 	, m_eglContext			(EGL_NO_CONTEXT)
 	, m_sync				(EGL_NO_SYNC_KHR)
 {
+	m_funcNames[FUNC_NAME_CREATE_SYNC] = "eglCreateSync";
+	m_funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] = "eglClientWaitSync";
+	m_funcNames[FUNC_NAME_GET_SYNC_ATTRIB] = "eglGetSyncAttrib";
+	m_funcNames[FUNC_NAME_DESTROY_SYNC] = "eglDestroySync";
+	m_funcNames[FUNC_NAME_WAIT_SYNC] = "eglWaitSync";
+
+	m_funcNamesKHR[FUNC_NAME_CREATE_SYNC] = "eglCreateSyncKHR";
+	m_funcNamesKHR[FUNC_NAME_CLIENT_WAIT_SYNC] = "eglClientWaitSyncKHR";
+	m_funcNamesKHR[FUNC_NAME_GET_SYNC_ATTRIB] = "eglGetSyncAttribKHR";
+	m_funcNamesKHR[FUNC_NAME_DESTROY_SYNC] = "eglDestroySyncKHR";
+	m_funcNamesKHR[FUNC_NAME_WAIT_SYNC] = "eglWaitSyncKHR";
 }
 
 SyncTest::~SyncTest (void)
@@ -120,36 +158,46 @@ SyncTest::~SyncTest (void)
 	SyncTest::deinit();
 }
 
-void requiredEGLExtensions (const Library& egl, EGLDisplay display, SyncTest::Extension requiredExtensions)
+bool SyncTest::hasRequiredEGLVersion (int requiredMajor, int requiredMinor)
 {
-	SyncTest::Extension foundExtensions = SyncTest::EXTENSION_NONE;
-	std::istringstream	extensionStream(egl.queryString(display, EGL_EXTENSIONS));
-	string				extension;
+	const Library&	egl		= m_eglTestCtx.getLibrary();
+	TestLog&		log		= m_testCtx.getLog();
+	eglu::Version	version	= eglu::getVersion(egl, m_eglDisplay);
 
-	EGLU_CHECK_MSG(egl, "eglQueryString(display, EGL_EXTENSIONS)");
-
-	while (std::getline(extensionStream, extension, ' '))
+	if (version < eglu::Version(requiredMajor, requiredMinor))
 	{
-		if (extension == "EGL_KHR_fence_sync")
-			foundExtensions = (SyncTest::Extension)(foundExtensions | SyncTest::EXTENSION_FENCE_SYNC);
-		else if (extension == "EGL_KHR_reusable_sync")
-			foundExtensions = (SyncTest::Extension)(foundExtensions | SyncTest::EXTENSION_REUSABLE_SYNC);
-		else if (extension == "EGL_KHR_wait_sync")
-			foundExtensions = (SyncTest::Extension)(foundExtensions | SyncTest::EXTENSION_WAIT_SYNC);
+		log << TestLog::Message << "Required EGL version is not supported. "
+			"Has: " << version.getMajor() << "." << version.getMinor()
+			<< ", Required: " << requiredMajor << "." << requiredMinor << TestLog::EndMessage;
+		return false;
 	}
 
+	return true;
+}
+
+bool SyncTest::hasRequiredEGLExtensions (void)
+{
+	TestLog&		log	= m_testCtx.getLog();
+
+	if (!eglu::hasExtension(m_eglTestCtx.getLibrary(), m_eglDisplay, "EGL_KHR_fence_sync"))
 	{
-		const SyncTest::Extension missingExtensions = (SyncTest::Extension)((foundExtensions & requiredExtensions) ^ requiredExtensions);
-
-		if ((missingExtensions & SyncTest::EXTENSION_FENCE_SYNC) != 0)
-			TCU_THROW(NotSupportedError, "EGL_KHR_fence_sync not supported");
-
-		if ((missingExtensions & SyncTest::EXTENSION_REUSABLE_SYNC) != 0)
-			TCU_THROW(NotSupportedError, "EGL_KHR_reusable_sync not supported");
-
-		if ((missingExtensions & SyncTest::EXTENSION_WAIT_SYNC) != 0)
-			TCU_THROW(NotSupportedError, "EGL_KHR_wait_sync not supported");
+		log << TestLog::Message << "EGL_KHR_fence_sync not supported" << TestLog::EndMessage;
+		return false;
 	}
+
+	if (!eglu::hasExtension(m_eglTestCtx.getLibrary(), m_eglDisplay, "EGL_KHR_reusable_sync"))
+	{
+		log << TestLog::Message << "EGL_KHR_reusable_sync not supported" << TestLog::EndMessage;
+		return false;
+	}
+
+	if (!eglu::hasExtension(m_eglTestCtx.getLibrary(), m_eglDisplay, "EGL_KHR_wait_sync"))
+	{
+		log << TestLog::Message << "EGL_KHR_wait_sync not supported" << TestLog::EndMessage;
+		return false;
+	}
+
+	return true;
 }
 
 void requiredGLESExtensions (const glw::Functions& gl)
@@ -206,10 +254,7 @@ void SyncTest::init (void)
 
 	m_eglTestCtx.initGLFunctions(&m_gl, glu::ApiType::es(2,0));
 
-	{
-		const Extension syncTypeExtension = getSyncTypeExtension(m_syncType);
-		requiredEGLExtensions(egl, m_eglDisplay, (Extension)(m_extensions | syncTypeExtension));
-	}
+	m_extensions = (Extension)(m_extensions | getSyncTypeExtension(m_syncType));
 
 	if (m_useCurrentContext)
 	{
@@ -225,6 +270,14 @@ void SyncTest::init (void)
 		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_eglContext));
 
 		requiredGLESExtensions(m_gl);
+	}
+
+	// Verify EXTENSION_REUSABLE_SYNC is supported before running the tests
+	if (m_syncType == EGL_SYNC_REUSABLE_KHR) {
+		if (!eglu::hasExtension(m_eglTestCtx.getLibrary(), m_eglDisplay, "EGL_KHR_reusable_sync"))
+		{
+			TCU_THROW(NotSupportedError, "EGL_KHR_reusable_sync not supported");
+		}
 	}
 }
 
@@ -270,16 +323,42 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename createSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
+		string			msgChk	= funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] << "(" <<
+			m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, msgChk.c_str());
+	}
 
+	IterateResult iterate(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync>(m_funcNames, &Library::createSync);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -292,21 +371,46 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename createSyncFuncType, typename attribType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc)
 	{
+		// Reset before each test
+		deinit();
+		init();
 
-		const Library&	egl				= m_eglTestCtx.getLibrary();
-		TestLog&		log				= m_testCtx.getLog();
-		const EGLint	attribList[]	=
+		const Library&	    egl				= m_eglTestCtx.getLibrary();
+		TestLog&		    log				= m_testCtx.getLog();
+		string              msgChk          = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+		const attribType    attribList[]	=
 		{
 			EGL_NONE
 		};
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, attribList);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", { EGL_NONE })" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, attribList);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) <<
+			", { EGL_NONE })" << TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, msgChk.c_str());
+	}
 
+	IterateResult iterate (void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, EGLAttrib>(m_funcNames, &Library::createSync);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -319,27 +423,54 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename createSyncFuncType, typename syncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc, syncType eglNoSync)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = egl.createSyncKHR(EGL_NO_DISPLAY, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(EGL_NO_DISPLAY, " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(EGL_NO_DISPLAY, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(EGL_NO_DISPLAY, " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" <<
+				eglu::getErrorStr(error) << "' expected EGL_BAD_DISPLAY" <<
+				TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
-		TCU_CHECK(m_sync == EGL_NO_SYNC_KHR);
+		TCU_CHECK(m_sync == eglNoSync);
+	};
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, EGLSync>(m_funcNames, &Library::createSync, EGL_NO_SYNC);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, EGLSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR, EGL_NO_SYNC_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -352,27 +483,56 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename createSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc, EGLSyncKHR eglNoSync,
+			  EGLint syncError, string syncErrorName)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, EGL_NONE, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", EGL_NONE, NULL)" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, EGL_NONE, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] << "(" <<
+			m_eglDisplay << ", EGL_NONE, NULL)" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
-		if (error != EGL_BAD_ATTRIBUTE)
+		if (error != syncError)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_ATTRIBUTE" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" <<
+				eglu::getErrorStr(error) << "' expected " << syncErrorName << " " <<
+				TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
-		TCU_CHECK(m_sync == EGL_NO_SYNC_KHR);
+		TCU_CHECK(m_sync == eglNoSync);
+	}
 
+	IterateResult	iterate					(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync>(m_funcNames, &Library::createSync, EGL_NO_SYNC,
+							 EGL_BAD_PARAMETER, "EGL_BAD_PARAMETER");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR, EGL_NO_SYNC_KHR,
+								EGL_BAD_ATTRIBUTE, "EGL_BAD_ATTRIBUTE");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -385,32 +545,58 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename createSyncFuncType, typename attribType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc, EGLSyncKHR eglNoSync)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
 
-		EGLint attribs[] = {
+		attribType attribs[] = {
 			2, 3, 4, 5,
 			EGL_NONE
 		};
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, attribs);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", { 2, 3, 4, 5, EGL_NONE })" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, attribs);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) <<
+			", { 2, 3, 4, 5, EGL_NONE })" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_ATTRIBUTE)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_ATTRIBUTE" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_ATTRIBUTE" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
-		TCU_CHECK(m_sync == EGL_NO_SYNC_KHR);
+		TCU_CHECK(m_sync == eglNoSync);
+	}
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, EGLAttrib>(m_funcNames, &Library::createSync, EGL_NO_SYNC);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR, EGL_NO_SYNC_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -423,30 +609,58 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename createSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc, EGLSyncKHR eglNoSync)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
 
-		log << TestLog::Message << "eglMakeCurrent(" << m_eglDisplay << ", EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)" << TestLog::EndMessage;
-		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		log << TestLog::Message << "eglMakeCurrent(" << m_eglDisplay <<
+			", EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)" << TestLog::EndMessage;
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE,
+										 EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_MATCH)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_MATCH" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_MATCH" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
-		TCU_CHECK(m_sync == EGL_NO_SYNC_KHR);
+		TCU_CHECK(m_sync == eglNoSync);
+	};
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync>(m_funcNames, &Library::createSync, EGL_NO_SYNC);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR, EGL_NO_SYNC_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -459,17 +673,28 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename createSyncFuncType, typename clientWaitSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  clientWaitSyncFuncType clientWaitSyncFunc)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
+		string          msgChk  = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, msgChk.c_str());
 
-		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0, 0);
-		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, 0)" << TestLog::EndMessage;
+		EGLint status = (egl.*clientWaitSyncFunc)(m_eglDisplay, m_sync, 0, 0);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] <<
+			"(" << m_eglDisplay << ", " << m_sync << ", 0, 0)" << TestLog::EndMessage;
 
 		if (m_syncType == EGL_SYNC_FENCE_KHR)
 			TCU_CHECK(status == EGL_CONDITION_SATISFIED_KHR || status == EGL_TIMEOUT_EXPIRED_KHR);
@@ -477,8 +702,27 @@ public:
 			TCU_CHECK(status == EGL_TIMEOUT_EXPIRED_KHR);
 		else
 			DE_ASSERT(DE_FALSE);
+	}
 
+	IterateResult	iterate					(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, clientWaitSync>(m_funcNames, &Library::createSync,
+											 &Library::clientWaitSync);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
+												   &Library::clientWaitSyncKHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 
@@ -492,19 +736,34 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename createSyncFuncType, typename clientWaitSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  clientWaitSyncFuncType clientWaitSyncFunc,
+			  EGLTime eglTime, const string &eglTimeName,
+			  EGLint condSatisfied)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		                = m_eglTestCtx.getLibrary();
+		TestLog&		log		                = m_testCtx.getLog();
+		string          createSyncMsgChk        = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+		string          clientWaitSyncMsgChk    = funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] + "()";
+
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
 
 		if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 		{
 			EGLBoolean ret = egl.signalSyncKHR(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
-			log << TestLog::Message << ret << " = eglSignalSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" << TestLog::EndMessage;
+			log << TestLog::Message << ret << " = eglSignalSyncKHR(" <<
+				m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" <<
+				TestLog::EndMessage;
 			EGLU_CHECK_MSG(egl, "eglSignalSyncKHR()");
 		}
 		else if (m_syncType == EGL_SYNC_FENCE_KHR)
@@ -515,13 +774,38 @@ public:
 		else
 			DE_ASSERT(DE_FALSE);
 
-		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0, EGL_FOREVER_KHR);
-		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, EGL_FOREVER_KHR)" << TestLog::EndMessage;
+		EGLint status = (egl.*clientWaitSyncFunc)(m_eglDisplay, m_sync, 0, eglTime);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] <<
+			"(" << m_eglDisplay << ", " << m_sync << ", 0, " << eglTimeName << ")" <<
+			TestLog::EndMessage;
 
-		TCU_CHECK(status == EGL_CONDITION_SATISFIED_KHR);
-		EGLU_CHECK_MSG(egl, "eglClientWaitSyncKHR()");
+		TCU_CHECK(status == condSatisfied);
+		EGLU_CHECK_MSG(egl, clientWaitSyncMsgChk.c_str());
+	};
 
+	IterateResult	iterate					(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, clientWaitSync>(m_funcNames, &Library::createSync,
+											 &Library::clientWaitSync,
+											 EGL_FOREVER, "EGL_FOREVER",
+											 EGL_CONDITION_SATISFIED);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
+												   &Library::clientWaitSyncKHR,
+												   EGL_FOREVER_KHR, "EGL_FOREVER_KHR",
+												   EGL_CONDITION_SATISFIED_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -534,20 +818,33 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename createSyncFuncType, typename clientWaitSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  clientWaitSyncFuncType clientWaitSyncFunc,
+			  EGLint condSatisfied, EGLTime eglTime, const string &eglTimeName)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		          = m_eglTestCtx.getLibrary();
+		TestLog&		log		          = m_testCtx.getLog();
+		string          createSyncMsgChk  = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
 
 
 		if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 		{
 			EGLBoolean ret = egl.signalSyncKHR(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
-			log << TestLog::Message << ret << " = eglSignalSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" << TestLog::EndMessage;
+			log << TestLog::Message << ret << " = eglSignalSyncKHR(" <<
+				m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" <<
+				TestLog::EndMessage;
 			EGLU_CHECK_MSG(egl, "eglSignalSyncKHR()");
 		}
 		else if (m_syncType == EGL_SYNC_FENCE_KHR)
@@ -558,15 +855,40 @@ public:
 		else
 			DE_ASSERT(DE_FALSE);
 
-		log << TestLog::Message << "eglMakeCurrent(" << m_eglDisplay << ", EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)" << TestLog::EndMessage;
-		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+		log << TestLog::Message << "eglMakeCurrent(" << m_eglDisplay <<
+			", EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)" << TestLog::EndMessage;
+		EGLU_CHECK_CALL(egl, makeCurrent(m_eglDisplay, EGL_NO_SURFACE,
+										 EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
-		EGLint result = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, 0, EGL_FOREVER_KHR);
-		log << TestLog::Message << result << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, EGL_FOREVER_KHR)" << TestLog::EndMessage;
+		EGLint result = (egl.*clientWaitSyncFunc)(m_eglDisplay, m_sync, 0, eglTime);
+		log << TestLog::Message << result << " = " << funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] <<
+			"(" << m_eglDisplay << ", " << m_sync << ", 0, " << eglTimeName << ")" <<
+			TestLog::EndMessage;
 
-		TCU_CHECK(result == EGL_CONDITION_SATISFIED_KHR);
+		TCU_CHECK(result == condSatisfied);
+	};
 
+	IterateResult	iterate					(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, clientWaitSync>(m_funcNames, &Library::createSync,
+											 &Library::clientWaitSync,
+											 EGL_CONDITION_SATISFIED, EGL_FOREVER, "EGL_FOREVER");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
+												   &Library::clientWaitSyncKHR,
+												   EGL_CONDITION_SATISFIED_KHR, EGL_FOREVER_KHR, "EGL_FOREVER_KHR");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -579,28 +901,71 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename createSyncFuncType, typename clientWaitSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  clientWaitSyncFuncType clientWaitSyncFunc,
+			  EGLint flags, const string &flagsName,
+			  EGLTime eglTime, const string &eglTimeName,
+			  EGLint condSatisfied)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
 
 		if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 		{
 			EGLBoolean ret = egl.signalSyncKHR(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
-			log << TestLog::Message << ret << " = eglSignalSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" << TestLog::EndMessage;
+			log << TestLog::Message << ret << " = eglSignalSyncKHR(" <<
+				m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" <<
+				TestLog::EndMessage;
 			EGLU_CHECK_MSG(egl, "eglSignalSyncKHR()");
 		}
 
-		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
-		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR)" << TestLog::EndMessage;
+		EGLint status = (egl.*clientWaitSyncFunc)(m_eglDisplay, m_sync, flags, eglTime);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] <<
+			"(" << m_eglDisplay << ", " << m_sync << ", " << flagsName << ", " <<
+			eglTimeName << ")" << TestLog::EndMessage;
 
-		TCU_CHECK(status == EGL_CONDITION_SATISFIED_KHR);
+		TCU_CHECK(status == condSatisfied);
 
+	}
+
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, clientWaitSync>(m_funcNames, &Library::createSync,
+											 &Library::clientWaitSync,
+											 EGL_SYNC_FLUSH_COMMANDS_BIT, "EGL_SYNC_FLUSH_COMMANDS_BIT",
+											 EGL_FOREVER, "EGL_FOREVER",
+											 EGL_CONDITION_SATISFIED);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
+												   &Library::clientWaitSyncKHR,
+												   EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, "EGL_SYNC_FLUSH_COMMANDS_BIT_KHR",
+												   EGL_FOREVER_KHR, "EGL_FOREVER_KHR",
+												   EGL_CONDITION_SATISFIED_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -613,31 +978,69 @@ public:
 	{
 	}
 
-	IterateResult	iterate							(void)
+	template <typename createSyncFuncType, typename clientWaitSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  clientWaitSyncFuncType clientWaitSyncFunc,
+			  EGLint flags, const string &flagsName,
+			  EGLTime eglTime, const string &eglTimeName)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLint status = egl.clientWaitSyncKHR(EGL_NO_DISPLAY, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
-		log << TestLog::Message << status << " = eglClientWaitSyncKHR(EGL_NO_DISPLAY, " << m_sync << ", EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR)" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] << "(" <<
+			m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		EGLint status = (egl.*clientWaitSyncFunc)(EGL_NO_DISPLAY, m_sync, flags, eglTime);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] <<
+			"(EGL_NO_DISPLAY, " << m_sync << ", " << flagsName << ", " <<
+			eglTimeName << ")" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(status == EGL_FALSE);
+	}
 
+	IterateResult	iterate							(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, clientWaitSync>(m_funcNames, &Library::createSync,
+											 &Library::clientWaitSync,
+											 EGL_SYNC_FLUSH_COMMANDS_BIT, "EGL_SYNC_FLUSH_COMMANDS_BIT",
+											 EGL_FOREVER, "EGL_FOREVER");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, clientWaitSyncKHR>(m_funcNamesKHR, &Library::createSyncKHR,
+												   &Library::clientWaitSyncKHR,
+												   EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, "EGL_SYNC_FLUSH_COMMANDS_BIT_KHR",
+												   EGL_FOREVER_KHR, "EGL_FOREVER_KHR");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -650,27 +1053,59 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename clientWaitSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  clientWaitSyncFuncType clientWaitSyncFunc,
+			  EGLSync sync, const string &syncName,
+			  EGLTime eglTime, const string &eglTimeName)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
 
-		EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, EGL_NO_SYNC_KHR, 0, EGL_FOREVER_KHR);
-		log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", EGL_NO_SYNC_KHR, 0, EGL_FOREVER_KHR)" << TestLog::EndMessage;
+		EGLint status = (egl.*clientWaitSyncFunc)(m_eglDisplay, sync, 0, eglTime);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] <<
+			"(" << m_eglDisplay << ", " << syncName << ", 0, " << eglTimeName << ")" <<
+			TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(status == EGL_FALSE);
+	}
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<clientWaitSync>(m_funcNames, &Library::clientWaitSync,
+								 EGL_NO_SYNC, "EGL_NO_SYNC",
+								 EGL_FOREVER, "EGL_FOREVER");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<clientWaitSyncKHR>(m_funcNamesKHR, &Library::clientWaitSyncKHR,
+									EGL_NO_SYNC_KHR, "EGL_NO_SYNC_KHR",
+									EGL_FOREVER_KHR, "EGL_FOREVER_KHR");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -683,22 +1118,57 @@ public:
 	{
 	}
 
+	template <typename createSyncFuncType, typename getSyncAttribFuncType, typename getSyncAttribValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  getSyncAttribFuncType getSyncAttribFunc,
+			  EGLint attribute, const string &attributeName)
+	{
+		// Reset before each test
+		deinit();
+		init();
+
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		getSyncAttribValueType type = 0;
+		EGLU_CHECK_CALL_FPTR(egl, (egl.*getSyncAttribFunc)(m_eglDisplay, m_sync,
+														   attribute, &type));
+		log << TestLog::Message << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] << "(" << m_eglDisplay <<
+			", " << m_sync << ", " << attributeName << ", {" << type << "})" <<
+			TestLog::EndMessage;
+
+		TCU_CHECK(type == ((getSyncAttribValueType)m_syncType));
+	}
+
 	IterateResult	iterate			(void)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
-
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
-
-		EGLint type = 0;
-		EGLU_CHECK_CALL(egl, getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_TYPE_KHR, &type));
-		log << TestLog::Message << "eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_TYPE_KHR, {" << type << "})" << TestLog::EndMessage;
-
-		TCU_CHECK(type == ((EGLint)m_syncType));
-
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, getSyncAttrib, EGLAttrib>(m_funcNames, &Library::createSync,
+													   &Library::getSyncAttrib,
+													   EGL_SYNC_TYPE, "EGL_SYNC_TYPE");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR,
+														  &Library::getSyncAttribKHR,
+														  EGL_SYNC_TYPE_KHR, "EGL_SYNC_TYPE_KHR");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -711,25 +1181,59 @@ public:
 	{
 	}
 
-	IterateResult	iterate				(void)
+	template <typename createSyncFuncType, typename getSyncAttribFuncType, typename getSyncAttribValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  getSyncAttribFuncType getSyncAttribFunc,
+			  EGLint attribute, const string &attributeName)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLint status = 0;
-		EGLU_CHECK_CALL(egl, getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_STATUS_KHR, &status));
-		log << TestLog::Message << "eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_STATUS_KHR, {" << status << "})" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		getSyncAttribValueType status = 0;
+		EGLU_CHECK_CALL_FPTR(egl, (egl.*getSyncAttribFunc)(m_eglDisplay, m_sync, attribute, &status));
+		log << TestLog::Message << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] << "(" <<
+			m_eglDisplay << ", " << m_sync << ", " << attributeName << ", {" <<
+			status << "})" << TestLog::EndMessage;
 
 		if (m_syncType == EGL_SYNC_FENCE_KHR)
 			TCU_CHECK(status == EGL_SIGNALED_KHR || status == EGL_UNSIGNALED_KHR);
 		else if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 			TCU_CHECK(status == EGL_UNSIGNALED_KHR);
+	}
 
+	IterateResult	iterate				(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, getSyncAttrib, EGLAttrib>(m_funcNames, &Library::createSync,
+													   &Library::getSyncAttrib,
+													   EGL_SYNC_STATUS, "EGL_SYNC_STATUS");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR,
+														  &Library::getSyncAttribKHR,
+														  EGL_SYNC_STATUS_KHR, "EGL_SYNC_STATUS_KHR");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -742,19 +1246,40 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename createSyncFuncType,
+		typename clientWaitSyncFuncType,
+		typename getSyncAttribFuncType,
+		typename getSyncAttribValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  clientWaitSyncFuncType clientWaitSyncFunc,
+			  EGLint flags, const string &flagsName,
+			  EGLTime eglTime, const string &eglTimeName,
+			  EGLint condSatisfied,
+			  getSyncAttribFuncType getSyncAttribFunc,
+			  EGLint attribute, const string &attributeName,
+			  getSyncAttribValueType statusVal)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
 
 		if (m_syncType == EGL_SYNC_REUSABLE_KHR)
 		{
 			EGLBoolean ret = egl.signalSyncKHR(m_eglDisplay, m_sync, EGL_SIGNALED_KHR);
-			log << TestLog::Message << ret << " = eglSignalSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" << TestLog::EndMessage;
+			log << TestLog::Message << ret << " = eglSignalSyncKHR(" <<
+				m_eglDisplay << ", " << m_sync << ", EGL_SIGNALED_KHR)" <<
+				TestLog::EndMessage;
 			EGLU_CHECK_MSG(egl, "eglSignalSyncKHR()");
 		}
 		else if (m_syncType == EGL_SYNC_FENCE_KHR)
@@ -766,18 +1291,55 @@ public:
 			DE_ASSERT(DE_FALSE);
 
 		{
-			EGLint status = egl.clientWaitSyncKHR(m_eglDisplay, m_sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
-			log << TestLog::Message << status << " = eglClientWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR)" << TestLog::EndMessage;
-			TCU_CHECK(status == EGL_CONDITION_SATISFIED_KHR);
+			EGLint status = (egl.*clientWaitSyncFunc)(m_eglDisplay, m_sync, flags, eglTime);
+			log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_CLIENT_WAIT_SYNC] << "(" <<
+				m_eglDisplay << ", " << m_sync << ", " << flagsName << ", " <<
+				eglTimeName << ")" << TestLog::EndMessage;
+			TCU_CHECK(status == condSatisfied);
 		}
 
-		EGLint status = 0;
-		EGLU_CHECK_CALL(egl, getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_STATUS_KHR, &status));
-		log << TestLog::Message << "eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_STATUS_KHR, {" << status << "})" << TestLog::EndMessage;
+		getSyncAttribValueType status = 0;
+		EGLU_CHECK_CALL_FPTR(egl, (egl.*getSyncAttribFunc)(m_eglDisplay, m_sync, attribute, &status));
+		log << TestLog::Message << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] << "(" <<
+			m_eglDisplay << ", " << m_sync << ", " << attributeName << ", {" <<
+			status << "})" << TestLog::EndMessage;
 
-		TCU_CHECK(status == EGL_SIGNALED_KHR);
+		TCU_CHECK(status == statusVal);
+	}
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, clientWaitSync, getSyncAttrib, EGLAttrib>(m_funcNames,
+																	   &Library::createSync,
+																	   &Library::clientWaitSync,
+																	   EGL_SYNC_FLUSH_COMMANDS_BIT, "EGL_SYNC_FLUSH_COMMANDS_BIT",
+																	   EGL_FOREVER, "EGL_FOREVER",
+																	   EGL_CONDITION_SATISFIED,
+																	   &Library::getSyncAttrib,
+																	   EGL_SYNC_STATUS, "EGL_SYNC_STATUS",
+																	   EGL_SIGNALED);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, clientWaitSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR,
+																			 &Library::createSyncKHR,
+																			 &Library::clientWaitSyncKHR,
+																			 EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, "EGL_SYNC_FLUSH_COMMANDS_BIT_KHR",
+																			 EGL_FOREVER_KHR, "EGL_FOREVER_KHR",
+																			 EGL_CONDITION_SATISFIED_KHR,
+																			 &Library::getSyncAttribKHR,
+																			 EGL_SYNC_STATUS_KHR, "EGL_SYNC_STATUS_KHR",
+																			 EGL_SIGNALED_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -790,22 +1352,62 @@ public:
 	{
 	}
 
+	template <typename createSyncFuncType,
+		typename getSyncAttribFuncType,
+		typename getSyncAttribValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  getSyncAttribFuncType getSyncAttribFunc,
+			  EGLint attribute, const string &attributeName,
+			  getSyncAttribValueType statusVal)
+	{
+		// Reset before each test
+		deinit();
+		init();
+
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		getSyncAttribValueType condition = 0;
+		EGLU_CHECK_CALL_FPTR(egl, (egl.*getSyncAttribFunc)(m_eglDisplay, m_sync,
+														   attribute, &condition));
+		log << TestLog::Message << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] << "(" <<
+			m_eglDisplay << ", " << m_sync << ", " << attributeName << ", {" <<
+			condition << "})" << TestLog::EndMessage;
+
+		TCU_CHECK(condition == statusVal);
+	}
+
 	IterateResult	iterate					(void)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
-
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
-
-		EGLint condition = 0;
-		EGLU_CHECK_CALL(egl, getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_CONDITION_KHR, &condition));
-		log << TestLog::Message << "eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_CONDITION_KHR, {" << condition << "})" << TestLog::EndMessage;
-
-		TCU_CHECK(condition == EGL_SYNC_PRIOR_COMMANDS_COMPLETE_KHR);
-
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, getSyncAttrib, EGLAttrib>(m_funcNames, &Library::createSync,
+													   &Library::getSyncAttrib,
+													   EGL_SYNC_CONDITION, "EGL_SYNC_CONDITION",
+													   EGL_SYNC_PRIOR_COMMANDS_COMPLETE);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR,
+														  &Library::getSyncAttribKHR,
+														  EGL_SYNC_CONDITION_KHR, "EGL_SYNC_CONDITION_KHR",
+														  EGL_SYNC_PRIOR_COMMANDS_COMPLETE_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -818,33 +1420,70 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename createSyncFuncType,
+		typename getSyncAttribFuncType,
+		typename getSyncAttribValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  getSyncAttribFuncType getSyncAttribFunc,
+			  EGLint attribute, const string &attributeName)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLint condition = 0xF0F0F;
-		EGLBoolean result = egl.getSyncAttribKHR(EGL_NO_DISPLAY, m_sync, EGL_SYNC_CONDITION_KHR, &condition);
-		log << TestLog::Message << result << " = eglGetSyncAttribKHR(EGL_NO_DISPLAY, " << m_sync << ", EGL_SYNC_CONDITION_KHR, {" << condition << "})" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		getSyncAttribValueType condition = 0xF0F0F;
+		EGLBoolean result = (egl.*getSyncAttribFunc)(EGL_NO_DISPLAY, m_sync, attribute, &condition);
+		log << TestLog::Message << result << " = " << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] <<
+			"(EGL_NO_DISPLAY, " << m_sync << ", " << attributeName << ", {" <<
+			condition << "})" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(result == EGL_FALSE);
 		TCU_CHECK(condition == 0xF0F0F);
+	};
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, getSyncAttrib, EGLAttrib>(m_funcNames, &Library::createSync,
+													   &Library::getSyncAttrib,
+													   EGL_SYNC_CONDITION, "EGL_SYNC_CONDITION");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR, &Library::createSyncKHR,
+														  &Library::getSyncAttribKHR,
+														  EGL_SYNC_CONDITION_KHR, "EGL_SYNC_CONDITION_KHR");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -857,29 +1496,64 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename getSyncAttribFuncType,
+		typename getSyncSyncValueType,
+		typename getSyncAttribValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  getSyncAttribFuncType getSyncAttribFunc,
+			  getSyncSyncValueType syncValue, const string &syncName,
+			  EGLint attribute, const string &attributeName)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
 
-		EGLint condition = 0xF0F0F;
-		EGLBoolean result = egl.getSyncAttribKHR(m_eglDisplay, EGL_NO_SYNC_KHR, EGL_SYNC_CONDITION_KHR, &condition);
-		log << TestLog::Message << result << " = eglGetSyncAttribKHR(" << m_eglDisplay << ", EGL_NO_SYNC_KHR, EGL_SYNC_CONDITION_KHR, {" << condition << "})" << TestLog::EndMessage;
+		getSyncAttribValueType condition = 0xF0F0F;
+		EGLBoolean result = (egl.*getSyncAttribFunc)(m_eglDisplay, syncValue,
+			attribute, &condition);
+		log << TestLog::Message << result << " = " << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] <<
+			"(" << m_eglDisplay << ", " << syncName << ", " << attributeName << ", {" <<
+			condition << "})" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(result == EGL_FALSE);
 		TCU_CHECK(condition == 0xF0F0F);
+	}
 
+	IterateResult	iterate					(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<getSyncAttrib, EGLSync, EGLAttrib>(m_funcNames, &Library::getSyncAttrib,
+													EGL_NO_SYNC, "EGL_NO_SYNC",
+													EGL_SYNC_CONDITION, "EGL_SYNC_CONDITION");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<getSyncAttribKHR, EGLSyncKHR, EGLint>(m_funcNamesKHR, &Library::getSyncAttribKHR,
+													   EGL_NO_SYNC_KHR, "EGL_NO_SYNC_KHR",
+													   EGL_SYNC_CONDITION_KHR, "EGL_SYNC_CONDITION_KHR");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -892,33 +1566,69 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename createSyncFuncType,
+		typename getSyncAttribFuncType,
+		typename getSyncAttribValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  getSyncAttribFuncType getSyncAttribFunc)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLint condition = 0xF0F0F;
-		EGLBoolean result = egl.getSyncAttribKHR(m_eglDisplay, m_sync, EGL_NONE, &condition);
-		log << TestLog::Message << result << " = eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_NONE, {" << condition << "})" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		getSyncAttribValueType condition = 0xF0F0F;
+		EGLBoolean result = (egl.*getSyncAttribFunc)(m_eglDisplay, m_sync, EGL_NONE, &condition);
+		log << TestLog::Message << result << " = " << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] <<
+			"(" << m_eglDisplay << ", " << m_sync << ", EGL_NONE, {" << condition << "})" <<
+			TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_ATTRIBUTE)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_ATTRIBUTE" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_ATTRIBUTE" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(result == EGL_FALSE);
 		TCU_CHECK(condition == 0xF0F0F);
+	}
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, getSyncAttrib, EGLAttrib>(m_funcNames,
+													   &Library::createSync,
+													   &Library::getSyncAttrib);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, getSyncAttribKHR, EGLint>(m_funcNamesKHR,
+														  &Library::createSyncKHR,
+														  &Library::getSyncAttribKHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -931,31 +1641,67 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename createSyncFuncType,
+		typename getSyncAttribFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  getSyncAttribFuncType getSyncAttribFunc,
+			  EGLint attribute, const string &attributeName)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLBoolean result = egl.getSyncAttribKHR(m_eglDisplay, m_sync, EGL_SYNC_TYPE_KHR, NULL);
-		log << TestLog::Message << result << " = eglGetSyncAttribKHR(" << m_eglDisplay << ", " << m_sync << ", EGL_SYNC_CONDITION_KHR, NULL)" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		EGLBoolean result = (egl.*getSyncAttribFunc)(m_eglDisplay, m_sync, attribute, NULL);
+		log << TestLog::Message << result << " = " << funcNames[FUNC_NAME_GET_SYNC_ATTRIB] <<
+			"(" << m_eglDisplay << ", " << m_sync << ", " << attributeName << ", NULL)" <<
+			TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(result == EGL_FALSE);
+	}
 
+	IterateResult	iterate					(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, getSyncAttrib>(m_funcNames, &Library::createSync,
+											&Library::getSyncAttrib,
+											EGL_SYNC_TYPE, "EGL_SYNC_TYPE");
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, getSyncAttribKHR>(m_funcNamesKHR, &Library::createSyncKHR,
+												  &Library::getSyncAttribKHR,
+												  EGL_SYNC_TYPE_KHR, "EGL_SYNC_TYPE_KHR");
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -968,20 +1714,57 @@ public:
 	{
 	}
 
+	template <typename createSyncFuncType,
+		typename destroySyncFuncType,
+		typename getSyncSyncValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  destroySyncFuncType destroySyncFunc,
+			  getSyncSyncValueType syncValue)
+	{
+		// Reset before each test
+		deinit();
+		init();
+
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
+
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << funcNames[FUNC_NAME_CREATE_SYNC] << "(" <<
+			m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		log << TestLog::Message << funcNames[FUNC_NAME_DESTROY_SYNC] << "(" <<
+			m_eglDisplay << ", " << m_sync << ")" << TestLog::EndMessage;
+		EGLU_CHECK_CALL_FPTR(egl, (egl.*destroySyncFunc)(m_eglDisplay, m_sync));
+		m_sync = syncValue;
+	}
+
 	IterateResult	iterate			(void)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
-
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << "eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
-
-		log << TestLog::Message << "eglDestroySyncKHR(" << m_eglDisplay << ", " << m_sync << ")" << TestLog::EndMessage;
-		EGLU_CHECK_CALL(egl, destroySyncKHR(m_eglDisplay, m_sync));
-		m_sync = EGL_NO_SYNC_KHR;
-
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, destroySync, EGLSync>(m_funcNames,
+												   &Library::createSync,
+												   &Library::destroySync,
+												   EGL_NO_SYNC);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, destroySyncKHR, EGLSyncKHR>(m_funcNamesKHR,
+															&Library::createSyncKHR,
+															&Library::destroySyncKHR,
+															EGL_NO_SYNC_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -994,31 +1777,64 @@ public:
 	{
 	}
 
-	IterateResult	iterate							(void)
+	template <typename createSyncFuncType, typename destroySyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  destroySyncFuncType destroySyncFunc)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << "eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLBoolean result = egl.destroySyncKHR(EGL_NO_DISPLAY, m_sync);
-		log << TestLog::Message << result << " = eglDestroySyncKHR(EGL_NO_DISPLAY, " << m_sync << ")" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << funcNames[FUNC_NAME_CREATE_SYNC] << "(" <<
+			m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		EGLBoolean result = (egl.*destroySyncFunc)(EGL_NO_DISPLAY, m_sync);
+		log << TestLog::Message << result << " = " << funcNames[FUNC_NAME_DESTROY_SYNC] <<
+			"(EGL_NO_DISPLAY, " << m_sync << ")" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(result == EGL_FALSE);
+	}
 
+	IterateResult	iterate							(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, destroySync>(m_funcNames,
+										  &Library::createSync,
+										  &Library::destroySync);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, destroySyncKHR>(m_funcNamesKHR,
+												&Library::createSyncKHR,
+												&Library::destroySyncKHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -1031,27 +1847,57 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename destroySyncFuncType, typename getSyncSyncValueType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  destroySyncFuncType destroySyncFunc,
+			  getSyncSyncValueType syncValue)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
 
-		EGLBoolean result = egl.destroySyncKHR(m_eglDisplay, EGL_NO_SYNC_KHR);
-		log << TestLog::Message << result << " = eglDestroySyncKHR(" << m_eglDisplay << ", EGL_NO_SYNC_KHR)" << TestLog::EndMessage;
+		EGLBoolean result = (egl.*destroySyncFunc)(m_eglDisplay, syncValue);
+		log << TestLog::Message << result << " = " << funcNames[FUNC_NAME_DESTROY_SYNC] <<
+			"(" << m_eglDisplay << ", " << syncValue << ")" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(result == EGL_FALSE);
+	}
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<destroySync, EGLSync>(m_funcNames,
+									   &Library::destroySync,
+									   EGL_NO_SYNC);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<destroySyncKHR, EGLSyncKHR>(m_funcNamesKHR,
+											 &Library::destroySyncKHR,
+											 EGL_NO_SYNC_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -1064,23 +1910,58 @@ public:
 	{
 	}
 
-	IterateResult	iterate			(void)
+	template <typename createSyncFuncType,
+		typename waitSyncFuncType,
+		typename waitSyncStatusType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  waitSyncFuncType waitSyncFunc)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl     = m_eglTestCtx.getLibrary();
+		TestLog&		log     = m_testCtx.getLog();
+		string          msgChk  = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLint status = egl.waitSyncKHR(m_eglDisplay, m_sync, 0);
-		log << TestLog::Message << status << " = eglWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0, 0)" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, msgChk.c_str());
+
+		waitSyncStatusType status = (egl.*waitSyncFunc)(m_eglDisplay, m_sync, 0);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_WAIT_SYNC] << "(" <<
+			m_eglDisplay << ", " << m_sync << ", 0, 0)" << TestLog::EndMessage;
 
 		TCU_CHECK(status == EGL_TRUE);
 
 		GLU_CHECK_GLW_CALL(m_gl, finish());
+	}
 
+
+	IterateResult	iterate			(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, waitSync, EGLBoolean>(m_funcNames,
+												   &Library::createSync,
+												   &Library::waitSync);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, waitSyncKHR, EGLint>(m_funcNamesKHR,
+													 &Library::createSyncKHR,
+													 &Library::waitSyncKHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 
@@ -1094,31 +1975,66 @@ public:
 	{
 	}
 
-	IterateResult	iterate						(void)
+	template <typename createSyncFuncType,
+		typename waitSyncFuncType,
+		typename waitSyncStatusType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  waitSyncFuncType waitSyncFunc)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl     = m_eglTestCtx.getLibrary();
+		TestLog&		log     = m_testCtx.getLog();
+		string          msgChk  = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLint status = egl.waitSyncKHR(EGL_NO_DISPLAY, m_sync, 0);
-		log << TestLog::Message << status << " = eglWaitSyncKHR(EGL_NO_DISPLAY, " << m_sync << ", 0)" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, msgChk.c_str());
+
+		waitSyncStatusType status = (egl.*waitSyncFunc)(EGL_NO_DISPLAY, m_sync, 0);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_WAIT_SYNC] <<
+			"(EGL_NO_DISPLAY, " << m_sync << ", 0)" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_DISPLAY)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_DISPLAY" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(status == EGL_FALSE);
+	}
 
+	IterateResult	iterate						(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, waitSync, EGLBoolean>(m_funcNames,
+												   &Library::createSync,
+												   &Library::waitSync);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, waitSyncKHR, EGLint>(m_funcNamesKHR,
+													 &Library::createSyncKHR,
+													 &Library::waitSyncKHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -1131,27 +2047,57 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename waitSyncFuncType, typename waitSyncSyncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  waitSyncFuncType waitSyncFunc,
+			  waitSyncSyncType syncValue)
 	{
+		// Reset before each test
+		deinit();
+		init();
+
 		const Library&	egl		= m_eglTestCtx.getLibrary();
 		TestLog&		log		= m_testCtx.getLog();
 
-		EGLint status = egl.waitSyncKHR(m_eglDisplay, EGL_NO_SYNC_KHR, 0);
-		log << TestLog::Message << status << " = eglWaitSyncKHR(" << m_eglDisplay << ", EGL_NO_SYNC_KHR, 0)" << TestLog::EndMessage;
+		EGLint status = (egl.*waitSyncFunc)(m_eglDisplay, syncValue, 0);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_WAIT_SYNC] <<
+			"(" << m_eglDisplay << ", " << syncValue << ", 0)" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(status == EGL_FALSE);
+	}
 
+	IterateResult	iterate					(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<waitSync, EGLSync>(m_funcNames,
+									&Library::waitSync,
+									EGL_NO_SYNC);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<waitSyncKHR, EGLSyncKHR>(m_funcNamesKHR,
+										  &Library::waitSyncKHR,
+										  EGL_NO_SYNC_KHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
@@ -1164,36 +2110,67 @@ public:
 	{
 	}
 
-	IterateResult	iterate					(void)
+	template <typename createSyncFuncType, typename waitSyncFuncType>
+	void test(string funcNames[FUNC_NAME_NUM_NAMES],
+			  createSyncFuncType createSyncFunc,
+			  waitSyncFuncType waitSyncFunc)
 	{
-		const Library&	egl		= m_eglTestCtx.getLibrary();
-		TestLog&		log		= m_testCtx.getLog();
+		// Reset before each test
+		deinit();
+		init();
 
-		m_sync = egl.createSyncKHR(m_eglDisplay, m_syncType, NULL);
-		log << TestLog::Message << m_sync << " = eglCreateSyncKHR(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" << TestLog::EndMessage;
-		EGLU_CHECK_MSG(egl, "eglCreateSyncKHR()");
+		const Library&	egl		            = m_eglTestCtx.getLibrary();
+		TestLog&		log		            = m_testCtx.getLog();
+		string          createSyncMsgChk    = funcNames[FUNC_NAME_CREATE_SYNC] + "()";
 
-		EGLint status = egl.waitSyncKHR(m_eglDisplay, m_sync, 0xFFFFFFFF);
-		log << TestLog::Message << status << " = eglWaitSyncKHR(" << m_eglDisplay << ", " << m_sync << ", 0xFFFFFFFF)" << TestLog::EndMessage;
+		m_sync = (egl.*createSyncFunc)(m_eglDisplay, m_syncType, NULL);
+		log << TestLog::Message << m_sync << " = " << funcNames[FUNC_NAME_CREATE_SYNC] <<
+			"(" << m_eglDisplay << ", " << getSyncTypeName(m_syncType) << ", NULL)" <<
+			TestLog::EndMessage;
+		EGLU_CHECK_MSG(egl, createSyncMsgChk.c_str());
+
+		EGLint status = (egl.*waitSyncFunc)(m_eglDisplay, m_sync, 0xFFFFFFFF);
+		log << TestLog::Message << status << " = " << funcNames[FUNC_NAME_WAIT_SYNC] <<
+			"(" << m_eglDisplay << ", " << m_sync << ", 0xFFFFFFFF)" << TestLog::EndMessage;
 
 		EGLint error = egl.getError();
 		log << TestLog::Message << error << " = eglGetError()" << TestLog::EndMessage;
 
 		if (error != EGL_BAD_PARAMETER)
 		{
-			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) << "' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
+			log << TestLog::Message << "Unexpected error '" << eglu::getErrorStr(error) <<
+				"' expected EGL_BAD_PARAMETER" << TestLog::EndMessage;
 			m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail");
-			return STOP;
+			return;
 		}
 
 		TCU_CHECK(status == EGL_FALSE);
+	}
 
+	IterateResult	iterate					(void)
+	{
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+		if (hasRequiredEGLVersion(1, 5))
+		{
+			test<createSync, waitSync>(m_funcNames,
+									   &Library::createSync,
+									   &Library::waitSync);
+		}
+		if (hasRequiredEGLExtensions())
+		{
+			test<createSyncKHR, waitSyncKHR>(m_funcNamesKHR,
+											 &Library::createSyncKHR,
+											 &Library::waitSyncKHR);
+		}
+		else if (!hasRequiredEGLVersion(1, 5))
+		{
+			TCU_THROW(NotSupportedError, "Required extensions not supported");
+		}
+
 		return STOP;
 	}
 };
-
-} // anonymous
 
 FenceSyncTests::FenceSyncTests (EglTestContext& eglTestCtx)
 	: TestCaseGroup	(eglTestCtx, "fence_sync", "EGL_KHR_fence_sync extension tests")
@@ -1329,3 +2306,4 @@ void ReusableSyncTests::init (void)
 
 } // egl
 } // deqp
+

@@ -185,12 +185,26 @@ protected:
 class InvalidCreateImage : public ImageTestCase
 {
 public:
+	typedef EGLImage    (Library::*createImage)(EGLDisplay, EGLContext, EGLenum, EGLClientBuffer, const EGLAttrib *) const ;
+	typedef EGLImageKHR (Library::*createImageKHR)(EGLDisplay, EGLContext, EGLenum, EGLClientBuffer, const EGLint *) const ;
+
 	InvalidCreateImage (EglTestContext& eglTestCtx)
 		: ImageTestCase(eglTestCtx, ApiType::es(2, 0), "invalid_create_image", "eglCreateImageKHR() with invalid arguments")
 	{
 	}
 
-	void checkCreate (const char* desc, EGLDisplay dpy, const char* dpyStr, EGLContext context, const char* ctxStr, EGLenum source, const char* srcStr, EGLint expectError);
+	template <typename createImageFuncType, typename imageType>
+	void checkCreate	(createImageFuncType createImageFunc,
+						 string createImageName,
+						 const char* msg,
+						 EGLDisplay dpy,
+						 const char* dpyStr,
+						 EGLContext context,
+						 const char* ctxStr,
+						 EGLenum source,
+						 const char* srcStr,
+						 EGLint expectError,
+						 imageType noImageVal);
 
 	IterateResult iterate (void)
 	{
@@ -203,11 +217,26 @@ public:
 			TCU_THROW(NotSupportedError, "EGLimages not supported");
 		}
 
-#define CHECK_CREATE(MSG, DPY, CONTEXT, SOURCE, ERR) checkCreate(MSG, DPY, #DPY, CONTEXT, #CONTEXT, SOURCE, #SOURCE, ERR)
+		if (eglu::getVersion(egl, m_display) >= eglu::Version(1, 5))
+		{
+#define CHECK_CREATE(MSG, DPY, CONTEXT, SOURCE, ERR) \
+			checkCreate<createImage, EGLImage>(&Library::createImage, "eglCreateImage", MSG, DPY, #DPY, CONTEXT, #CONTEXT, SOURCE, #SOURCE, ERR, EGL_NO_IMAGE)
 		CHECK_CREATE("Testing bad display (-1)...", (EGLDisplay)-1, EGL_NO_CONTEXT, EGL_NONE, EGL_BAD_DISPLAY);
 		CHECK_CREATE("Testing bad context (-1)...", m_display, (EGLContext)-1, EGL_NONE, EGL_BAD_CONTEXT);
 		CHECK_CREATE("Testing bad source (-1)...", m_display, EGL_NO_CONTEXT, (EGLenum)-1, EGL_BAD_PARAMETER);
 #undef CHECK_CREATE
+		}
+
+		if (eglu::hasExtension(egl, m_display, "EGL_KHR_image") &&
+			eglu::hasExtension(egl, m_display, "EGL_KHR_image_base"))
+		{
+#define CHECK_CREATE_KHR(MSG, DPY, CONTEXT, SOURCE, ERR) \
+			checkCreate<createImageKHR, EGLImageKHR>(&Library::createImageKHR, "eglCreateImageKHR", MSG, DPY, #DPY, CONTEXT, #CONTEXT, SOURCE, #SOURCE, ERR, EGL_NO_IMAGE_KHR)
+		CHECK_CREATE_KHR("Testing bad display (-1)...", (EGLDisplay)-1, EGL_NO_CONTEXT, EGL_NONE, EGL_BAD_DISPLAY);
+		CHECK_CREATE_KHR("Testing bad context (-1)...", m_display, (EGLContext)-1, EGL_NONE, EGL_BAD_CONTEXT);
+		CHECK_CREATE_KHR("Testing bad source (-1)...", m_display, EGL_NO_CONTEXT, (EGLenum)-1, EGL_BAD_PARAMETER);
+#undef CHECK_CREATE_KHR
+		}
 
 		m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
 		return STOP;
@@ -215,16 +244,27 @@ public:
 
 };
 
-void InvalidCreateImage::checkCreate (const char* msg, EGLDisplay dpy, const char* dpyStr, EGLContext context, const char* ctxStr, EGLenum source, const char* srcStr, EGLint expectError)
+template <typename createImageFuncType, typename imageType>
+void InvalidCreateImage::checkCreate (createImageFuncType createImageFunc,
+									  string createImageName,
+									  const char* msg,
+									  EGLDisplay dpy,
+									  const char* dpyStr,
+									  EGLContext context,
+									  const char* ctxStr,
+									  EGLenum source,
+									  const char* srcStr,
+									  EGLint expectError,
+									  imageType noImageVal)
 {
 	m_testCtx.getLog() << TestLog::Message << msg << TestLog::EndMessage;
 	{
 		const Library&		egl		= m_eglTestCtx.getLibrary();
-		const EGLImageKHR	image	= egl.createImageKHR(dpy, context, source, 0, DE_NULL);
+		const imageType	    image	= (egl.*createImageFunc)(dpy, context, source, 0, DE_NULL);
 		ostringstream		call;
 
-		call << "eglCreateImage(" << dpyStr << ", " << ctxStr << ", " << srcStr << ", 0, DE_NULL)";
-		checkCallReturn(m_eglTestCtx, call.str().c_str(), image, EGL_NO_IMAGE_KHR, expectError);
+		call << createImageName << "(" << dpyStr << ", " << ctxStr << ", " << srcStr << ", 0, DE_NULL)";
+		checkCallReturn(m_eglTestCtx, call.str().c_str(), image, noImageVal, expectError);
 	}
 }
 

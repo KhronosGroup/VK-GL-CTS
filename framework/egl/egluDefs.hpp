@@ -25,9 +25,10 @@
 
 #include "tcuDefs.hpp"
 
-#define EGLU_CHECK(EGLW)			eglu::checkError((EGLW).getError(), DE_NULL, __FILE__, __LINE__)
-#define EGLU_CHECK_MSG(EGLW, MSG)	eglu::checkError((EGLW).getError(), MSG, __FILE__, __LINE__)
-#define EGLU_CHECK_CALL(EGLW, CALL)	do { (EGLW).CALL; eglu::checkError((EGLW).getError(), #CALL, __FILE__, __LINE__); } while (deGetFalse())
+#define EGLU_CHECK(EGLW)					eglu::checkError((EGLW).getError(), DE_NULL, __FILE__, __LINE__)
+#define EGLU_CHECK_MSG(EGLW, MSG)			eglu::checkError((EGLW).getError(), MSG, __FILE__, __LINE__)
+#define EGLU_CHECK_CALL(EGLW, CALL)			do { (EGLW).CALL; eglu::checkError((EGLW).getError(), #CALL, __FILE__, __LINE__); } while (deGetFalse())
+#define EGLU_CHECK_CALL_FPTR(EGLW, CALL)	do { CALL; eglu::checkError((EGLW).getError(), #CALL, __FILE__, __LINE__); } while (deGetFalse())
 
 /*--------------------------------------------------------------------*//*!
  * \brief EGL utilities

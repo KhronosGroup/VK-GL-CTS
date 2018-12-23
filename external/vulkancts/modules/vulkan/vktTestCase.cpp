@@ -361,6 +361,8 @@ public:
 		conditionalRenderingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
 		scalarBlockLayoutFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 
+		vector<VkExtensionProperties> deviceExtensionProperties =
+			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
@@ -408,8 +410,18 @@ public:
 			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_vulkan_memory_model"))
 			{
-				*nextPtr	= &vulkanMemoryModelFeatures;
-				nextPtr		= &vulkanMemoryModelFeatures.pNext;
+				for (size_t i = 0; i < deviceExtensionProperties.size(); ++i)
+				{
+					if (deStringEqual(deviceExtensionProperties[i].extensionName, "VK_KHR_vulkan_memory_model"))
+					{
+						if (deviceExtensionProperties[i].specVersion == VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION)
+						{
+							*nextPtr	= &vulkanMemoryModelFeatures;
+							nextPtr		= &vulkanMemoryModelFeatures.pNext;
+						}
+						break;
+					}
+				}
 			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_shader_atomic_int64"))
 			{
