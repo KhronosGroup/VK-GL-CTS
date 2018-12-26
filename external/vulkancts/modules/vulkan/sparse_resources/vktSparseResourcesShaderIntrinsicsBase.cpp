@@ -23,6 +23,7 @@
 
 #include "vktSparseResourcesShaderIntrinsicsBase.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 using namespace vk;
 
@@ -544,11 +545,11 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate (void)
 			VK_ACCESS_TRANSFER_WRITE_BIT,
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			sparseQueue.queueFamilyIndex != extractQueue.queueFamilyIndex ? sparseQueue.queueFamilyIndex  : VK_QUEUE_FAMILY_IGNORED,
-			sparseQueue.queueFamilyIndex != extractQueue.queueFamilyIndex ? extractQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
 			*imageSparse,
-			fullImageSubresourceRange
-		);
+			fullImageSubresourceRange,
+			sparseQueue.queueFamilyIndex != extractQueue.queueFamilyIndex ? sparseQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED,
+			sparseQueue.queueFamilyIndex != extractQueue.queueFamilyIndex ? extractQueue.queueFamilyIndex : VK_QUEUE_FAMILY_IGNORED
+			);
 
 		deviceInterface.cmdPipelineBarrier(*commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &imageSparseTransferDstBarrier);
 	}

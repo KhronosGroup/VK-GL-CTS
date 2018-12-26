@@ -33,6 +33,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkStrUtil.hpp"
 #include "vkCmdUtil.hpp"

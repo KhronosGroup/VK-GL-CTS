@@ -136,9 +136,9 @@ vk::Move<vk::VkRenderPass> makeRenderPassWithAttachments (const DeviceInterface&
 	switch (renderPassType)
 	{
 		case RENDERPASS_TYPE_LEGACY:
-			return MultiView::makeRenderPassWithAttachments<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, device, colorFormat, viewMasks);
+			return MultiView::makeRenderPassWithAttachments<AttachmentDescription1, AttachmentReference1, SubpassDescription1, SubpassDependency1, RenderPassCreateInfo1>(vk, device, colorFormat, viewMasks, renderPassType == RENDERPASS_TYPE_RENDERPASS2);
 		case RENDERPASS_TYPE_RENDERPASS2:
-			return MultiView::makeRenderPassWithAttachments<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, device, colorFormat, viewMasks);
+			return MultiView::makeRenderPassWithAttachments<AttachmentDescription2, AttachmentReference2, SubpassDescription2, SubpassDependency2, RenderPassCreateInfo2>(vk, device, colorFormat, viewMasks, renderPassType == RENDERPASS_TYPE_RENDERPASS2);
 		default:
 			TCU_THROW(InternalError, "Impossible");
 	}

@@ -2377,6 +2377,25 @@ struct VkPhysicalDeviceFloatControlsPropertiesKHR
 	VkBool32		shaderRoundingModeRTZFloat64;
 };
 
+struct VkSubpassDescriptionDepthStencilResolveKHR
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkResolveModeFlagBitsKHR			depthResolveMode;
+	VkResolveModeFlagBitsKHR			stencilResolveMode;
+	const VkAttachmentReference2KHR*	pDepthStencilResolveAttachment;
+};
+
+struct VkPhysicalDeviceDepthStencilResolvePropertiesKHR
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkResolveModeFlagsKHR	supportedDepthResolveModes;
+	VkResolveModeFlagsKHR	supportedStencilResolveModes;
+	VkBool32				independentResolveNone;
+	VkBool32				independentResolve;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

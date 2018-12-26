@@ -36,22 +36,6 @@ namespace vkt
 namespace sparse
 {
 
-vk::Move<VkInstance> createInstanceWithExtensions(const vk::PlatformInterface& vkp, const deUint32 version, const std::vector<std::string>   enableExtensions)
-{
-	std::vector<std::string>					enableExtensionPtrs;
-	const std::vector<VkExtensionProperties>	availableExtensions	 = enumerateInstanceExtensionProperties(vkp, DE_NULL);
-	for (size_t extensionID = 0; extensionID < enableExtensions.size(); extensionID++)
-	{
-		if (!isInstanceExtensionSupported(version, availableExtensions, RequiredExtension(enableExtensions[extensionID])))
-			TCU_THROW(NotSupportedError, (enableExtensions[extensionID] + " is not supported").c_str());
-
-		if (!isCoreInstanceExtension(version, enableExtensions[extensionID]))
-			enableExtensionPtrs.push_back(enableExtensions[extensionID]);
-	}
-
-	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, enableExtensionPtrs, DE_NULL);
-}
-
 tcu::UVec3 getShaderGridSize (const ImageType imageType, const tcu::UVec3& imageSize, const deUint32 mipLevel)
 {
 	const deUint32 mipLevelX = std::max(imageSize.x() >> mipLevel, 1u);
@@ -404,88 +388,6 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&		vk,
 	};
 
 	return createFramebuffer(vk, device, &framebufferInfo);
-}
-
-VkBufferMemoryBarrier makeBufferMemoryBarrier (const VkAccessFlags	srcAccessMask,
-											   const VkAccessFlags	dstAccessMask,
-											   const VkBuffer		buffer,
-											   const VkDeviceSize	offset,
-											   const VkDeviceSize	bufferSizeBytes)
-{
-	const VkBufferMemoryBarrier barrier =
-	{
-		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
-		DE_NULL,									// const void*		pNext;
-		srcAccessMask,								// VkAccessFlags	srcAccessMask;
-		dstAccessMask,								// VkAccessFlags	dstAccessMask;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,					// deUint32			destQueueFamilyIndex;
-		buffer,										// VkBuffer			buffer;
-		offset,										// VkDeviceSize		offset;
-		bufferSizeBytes,							// VkDeviceSize		size;
-	};
-	return barrier;
-}
-
-VkImageMemoryBarrier makeImageMemoryBarrier	(const VkAccessFlags			srcAccessMask,
-											 const VkAccessFlags			dstAccessMask,
-											 const VkImageLayout			oldLayout,
-											 const VkImageLayout			newLayout,
-											 const VkImage					image,
-											 const VkImageSubresourceRange	subresourceRange)
-{
-	const VkImageMemoryBarrier barrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType			sType;
-		DE_NULL,								// const void*				pNext;
-		srcAccessMask,							// VkAccessFlags			outputMask;
-		dstAccessMask,							// VkAccessFlags			inputMask;
-		oldLayout,								// VkImageLayout			oldLayout;
-		newLayout,								// VkImageLayout			newLayout;
-		VK_QUEUE_FAMILY_IGNORED,				// deUint32					srcQueueFamilyIndex;
-		VK_QUEUE_FAMILY_IGNORED,				// deUint32					destQueueFamilyIndex;
-		image,									// VkImage					image;
-		subresourceRange,						// VkImageSubresourceRange	subresourceRange;
-	};
-	return barrier;
-}
-
-VkImageMemoryBarrier makeImageMemoryBarrier (const VkAccessFlags			srcAccessMask,
-											 const VkAccessFlags			dstAccessMask,
-											 const VkImageLayout			oldLayout,
-											 const VkImageLayout			newLayout,
-											 const deUint32					srcQueueFamilyIndex,
-											 const deUint32					destQueueFamilyIndex,
-											 const VkImage					image,
-											 const VkImageSubresourceRange	subresourceRange)
-{
-	const VkImageMemoryBarrier barrier =
-	{
-		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType			sType;
-		DE_NULL,								// const void*				pNext;
-		srcAccessMask,							// VkAccessFlags			outputMask;
-		dstAccessMask,							// VkAccessFlags			inputMask;
-		oldLayout,								// VkImageLayout			oldLayout;
-		newLayout,								// VkImageLayout			newLayout;
-		srcQueueFamilyIndex,					// deUint32					srcQueueFamilyIndex;
-		destQueueFamilyIndex,					// deUint32					destQueueFamilyIndex;
-		image,									// VkImage					image;
-		subresourceRange,						// VkImageSubresourceRange	subresourceRange;
-	};
-	return barrier;
-}
-
-VkMemoryBarrier makeMemoryBarrier (const VkAccessFlags	srcAccessMask,
-									   const VkAccessFlags	dstAccessMask)
-{
-	const VkMemoryBarrier barrier =
-	{
-		VK_STRUCTURE_TYPE_MEMORY_BARRIER,	// VkStructureType			sType;
-		DE_NULL,							// const void*				pNext;
-		srcAccessMask,						// VkAccessFlags			outputMask;
-		dstAccessMask,						// VkAccessFlags			inputMask;
-	};
-	return barrier;
 }
 
 de::MovePtr<Allocation> bindImage (const DeviceInterface& vk, const VkDevice device, Allocator& allocator, const VkImage image, const MemoryRequirement requirement)

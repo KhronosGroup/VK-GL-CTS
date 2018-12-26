@@ -31,6 +31,7 @@
 #include "vktTestGroupUtil.hpp"
 
 #include "vkMemUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkRefUtil.hpp"

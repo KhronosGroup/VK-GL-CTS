@@ -29,6 +29,7 @@ from common import getChangedFiles, getAllProjectFiles, isTextFile
 CHECK_LITERAL_PATTERNS = [
 	r'\b[us]*int[0-9]+_t\b',
 	r'\b[U]*INT(_LEAST|_FAST|)[0-9]+_MAX\b',
+	r'\b0b',
 ]
 
 CHECK_LIST = [
@@ -46,6 +47,7 @@ EXCLUSION_LIST = [
 	"framework/platform/lnx/X11/tcuLnxX11Xcb.cpp",
 	"framework/platform/lnx/wayland/tcuLnxWayland.hpp",
 	"framework/platform/lnx/wayland/tcuLnxWayland.cpp",
+	"framework/delibs/debase/deFloat16.c",
 ]
 
 def checkEnds(line, ends):

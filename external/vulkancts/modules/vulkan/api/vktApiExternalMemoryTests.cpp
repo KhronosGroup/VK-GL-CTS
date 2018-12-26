@@ -3822,7 +3822,7 @@ de::MovePtr<tcu::TestCaseGroup> createFenceTests (tcu::TestContext& testCtx, vk:
 	return fenceGroup;
 }
 
-bool ValidateAHardwareBuffer(vk::VkFormat format, deUint64 requiredAhbUsage, const vk::DeviceDriver& vkd, const vk::VkDevice& device, vk::VkImageCreateFlags createFlag)
+bool ValidateAHardwareBuffer(vk::VkFormat format, deUint64 requiredAhbUsage, const vk::DeviceDriver& vkd, const vk::VkDevice& device, vk::VkImageCreateFlags createFlag, deUint32 layerCount, bool& enableMaxLayerTest)
 {
 	DE_UNREF(createFlag);
 
@@ -3838,10 +3838,17 @@ bool ValidateAHardwareBuffer(vk::VkFormat format, deUint64 requiredAhbUsage, con
 		return false;
 #endif
 
-	vk::pt::AndroidHardwareBufferPtr ahb = ahbApi->allocate(64u, 64u, 1u, ahbApi->vkFormatToAhbFormat(format), requiredAhbUsage);
+	vk::pt::AndroidHardwareBufferPtr ahb = ahbApi->allocate(64u, 64u, layerCount, ahbApi->vkFormatToAhbFormat(format), requiredAhbUsage);
 	if (ahb.internal == DE_NULL)
-		return false;
-
+	{
+		enableMaxLayerTest = false;
+		// try again with layerCount '1'
+		ahb = ahbApi->allocate(64u, 64u, 1u, ahbApi->vkFormatToAhbFormat(format), requiredAhbUsage);
+		if (ahb.internal == DE_NULL)
+		{
+			return false;
+		}
+	}
 	NativeHandle nativeHandle(ahb);
 	vk::VkAndroidHardwareBufferFormatPropertiesANDROID formatProperties =
 	{
@@ -3890,6 +3897,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 	const vk::Unique<vk::VkDevice>				  device				(createDevice(context.getUsedApiVersion(), vkp, *instance, vki, physicalDevice, 0u, externalMemoryType, 0u, queueFamilyIndex));
 	const vk::DeviceDriver						  vkd					(vkp, *instance, *device);
 	TestLog&									  log				  = context.getTestContext().getLog();
+	const vk::VkPhysicalDeviceLimits			  limits			  = getPhysicalDeviceProperties(vki, physicalDevice).limits;
 
 	vk::VkPhysicalDeviceProtectedMemoryFeatures		protectedFeatures;
 	protectedFeatures.sType				= vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES;
@@ -3933,6 +3941,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 		vk::VkImageUsageFlags	usage				= 0;
 		vk::VkImageCreateFlags	createFlag			= 0;
 		deUint64				requiredAhbUsage	= 0;
+		bool					enableMaxLayerTest	= true;
 		for (size_t usageNdx = 0; usageNdx < numOfUsageFlags; usageNdx++)
 		{
 			if ((combo & (1u << usageNdx)) == 0)
@@ -3957,7 +3966,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 			continue;
 
 		// Only test a combination if AHardwareBuffer can be successfully allocated for it.
-		if (!ValidateAHardwareBuffer(format, requiredAhbUsage, vkd, *device, createFlag))
+		if (!ValidateAHardwareBuffer(format, requiredAhbUsage, vkd, *device, createFlag, limits.maxImageArrayLayers, enableMaxLayerTest))
 			continue;
 
 		bool foundAnyUsableTiling = false;
@@ -4056,6 +4065,9 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 				ahbApi->describe(handle.getAndroidHardwareBuffer(), DE_NULL, DE_NULL, DE_NULL, &ahbFormat, &anhUsage, DE_NULL);
 				TCU_CHECK(ahbFormat == ahbApi->vkFormatToAhbFormat(format));
 				TCU_CHECK((anhUsage & requiredAhbUsage) == requiredAhbUsage);
+
+				// Let watchdog know we're alive
+				context.getTestContext().touchWatchdog();
 			}
 
 			if (properties.imageFormatProperties.maxMipLevels > 1u)
@@ -4076,7 +4088,7 @@ tcu::TestStatus testAndroidHardwareBufferImageFormat  (Context& context, vk::VkF
 				TCU_CHECK((anhUsage & requiredAhbUsage) == requiredAhbUsage);
 			}
 
-			if (properties.imageFormatProperties.maxArrayLayers > 1u)
+			if ((properties.imageFormatProperties.maxArrayLayers > 1u) && enableMaxLayerTest)
 			{
 				deUint32								exportedMemoryTypeIndex	= ~0U;
 				const vk::Unique<vk::VkImage>			image					(createExternalImage(vkd, *device, queueFamilyIndex, externalMemoryType, format, 64u, 64u, tiling, createFlag, usage, 1u, properties.imageFormatProperties.maxArrayLayers));

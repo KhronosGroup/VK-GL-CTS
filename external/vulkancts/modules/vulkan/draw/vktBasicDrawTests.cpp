@@ -416,11 +416,7 @@ void DrawTestInstanceBase::initialize (const DrawParamsBase& data)
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_vertexBuffer->getBoundMemory().getHostPtr());
 	deMemcpy(ptr, &(m_data.vertices[0]), static_cast<size_t>(dataSize));
 
-	vk::flushMappedMemoryRange(m_vk,
-							   device,
-							   m_vertexBuffer->getBoundMemory().getMemory(),
-							   m_vertexBuffer->getBoundMemory().getOffset(),
-							   VK_WHOLE_SIZE);
+	vk::flushAlloc(m_vk, device, m_vertexBuffer->getBoundMemory());
 
 	const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
 	m_cmdPool	= vk::createCommandPool(m_vk, device, &cmdPoolCreateInfo);
@@ -766,7 +762,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedParams>::iterate (void)
 
 	deMemcpy(indexAlloc->getHostPtr(), &(m_data.indexes[0]), bufferSize);
 
-	vk::flushMappedMemoryRange(m_vk, vkDevice, indexAlloc->getMemory(), indexAlloc->getOffset(), bufferSize);
+	vk::flushAlloc(m_vk, vkDevice, *indexAlloc);
 
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, *indexBuffer, 0u, m_data.indexType);
 	m_vk.cmdDrawIndexed(*m_cmdBuffer, m_data.params.indexCount, m_data.params.instanceCount, m_data.params.firstIndex, m_data.params.vertexOffset, m_data.params.firstInstance);
@@ -880,7 +876,7 @@ tcu::TestStatus DrawTestInstance<DrawIndirectParams>::iterate (void)
 
 		deMemcpy(indirectAlloc->getHostPtr(), &(m_data.commands[0]), (size_t)indirectInfoSize);
 
-		vk::flushMappedMemoryRange(m_vk, vkDevice, indirectAlloc->getMemory(), indirectAlloc->getOffset(), indirectInfoSize);
+		vk::flushAlloc(m_vk, vkDevice, *indirectAlloc);
 	}
 
 	// If multiDrawIndirect not supported execute single calls
@@ -1031,7 +1027,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 
 		deMemcpy(indirectAlloc->getHostPtr(), &(m_data.commands[0]), (size_t)indirectInfoSize);
 
-		vk::flushMappedMemoryRange(m_vk, vkDevice, indirectAlloc->getMemory(), indirectAlloc->getOffset(), indirectInfoSize);
+		vk::flushAlloc(m_vk, vkDevice, *indirectAlloc);
 	}
 
 	const deUint32	bufferSize = (deUint32)(m_data.indexes.size() * sizeof(deUint32));
@@ -1059,7 +1055,7 @@ tcu::TestStatus DrawTestInstance<DrawIndexedIndirectParams>::iterate (void)
 
 	deMemcpy(indexAlloc->getHostPtr(), &(m_data.indexes[0]), bufferSize);
 
-	vk::flushMappedMemoryRange(m_vk, vkDevice, indexAlloc->getMemory(), indexAlloc->getOffset(), bufferSize);
+	vk::flushAlloc(m_vk, vkDevice, *indexAlloc);
 
 	m_vk.cmdBindIndexBuffer(*m_cmdBuffer, *indexBuffer, 0u, m_data.indexType);
 

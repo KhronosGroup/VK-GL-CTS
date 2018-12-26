@@ -81,6 +81,31 @@ Move<VkInstance> createDefaultInstance (const PlatformInterface& vkPlatform, deU
 	return createDefaultInstance(vkPlatform, apiVersion, vector<string>(), vector<string>(), DE_NULL);
 }
 
+Move<VkInstance> createInstanceWithExtensions (const PlatformInterface&			vkp,
+											   const deUint32					version,
+											   const std::vector<std::string>	requiredExtensions)
+{
+	std::vector<std::string>					extensionPtrs;
+	const std::vector<VkExtensionProperties>	availableExtensions	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
+	for (size_t extensionID = 0; extensionID < requiredExtensions.size(); extensionID++)
+	{
+		if (!isInstanceExtensionSupported(version, availableExtensions, RequiredExtension(requiredExtensions[extensionID])))
+			TCU_THROW(NotSupportedError, (requiredExtensions[extensionID] + " is not supported").c_str());
+
+		if (!isCoreInstanceExtension(version, requiredExtensions[extensionID]))
+			extensionPtrs.push_back(requiredExtensions[extensionID]);
+	}
+
+	return createDefaultInstance(vkp, version, std::vector<std::string>() /* layers */, extensionPtrs, DE_NULL);
+}
+
+Move<VkInstance> createInstanceWithExtension (const PlatformInterface&	vkp,
+											  const deUint32			version,
+											  const std::string			requiredExtension)
+{
+	return createInstanceWithExtensions(vkp, version, std::vector<std::string>(1, requiredExtension));
+}
+
 deUint32 chooseDeviceIndex (const InstanceInterface& vkInstance, const VkInstance instance, const tcu::CommandLine& cmdLine)
 {
 	const vector<VkPhysicalDevice>			devices					= enumeratePhysicalDevices(vkInstance, instance);

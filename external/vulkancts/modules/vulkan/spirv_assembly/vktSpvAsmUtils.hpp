@@ -32,6 +32,8 @@
 #include "deMemory.h"
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
+#include "deRandom.hpp"
+#include "deFloat16.h"
 
 #include <string>
 #include <vector>
@@ -302,6 +304,54 @@ bool isFloatControlsFeaturesSupported (const Context&							context,
 deUint32 getMinRequiredVulkanVersion (const vk::SpirvVersion version);
 
 std::string	getVulkanName (const deUint32 version);
+
+// Performs a bitwise copy of source to the destination type Dest.
+template <typename Dest, typename Src>
+Dest bitwiseCast (Src source)
+{
+  Dest dest;
+  DE_STATIC_ASSERT(sizeof(source) == sizeof(dest));
+  deMemcpy(&dest, &source, sizeof(dest));
+  return dest;
+}
+
+// Generate and return 64-bit integers.
+//
+// Expected count to be at least 16.
+std::vector<deInt64> getInt64s (de::Random& rnd, const deUint32 count);
+
+// Generate and return 32-bit integers.
+//
+// Expected count to be at least 16.
+std::vector<deInt32> getInt32s (de::Random& rnd, const deUint32 count);
+
+// Generate and return 16-bit integers.
+//
+// Expected count to be at least 8.
+std::vector<deInt16> getInt16s (de::Random& rnd, const deUint32 count);
+
+// Generate and return 8-bit integers.
+//
+// Expected count to be at least 8.
+std::vector<deInt8> getInt8s (de::Random& rnd, const deUint32 count);
+
+// Generate and return 64-bit floats
+//
+// The first 24 number pairs are manually picked, while the rest are randomly generated.
+// Expected count to be at least 24 (numPicks).
+std::vector<double> getFloat64s (de::Random& rnd, deUint32 count);
+
+// Generate and return 32-bit floats
+//
+// The first 24 number pairs are manually picked, while the rest are randomly generated.
+// Expected count to be at least 24 (numPicks).
+std::vector<float> getFloat32s (de::Random& rnd, deUint32 count);
+
+// Generate and return 16-bit floats and their corresponding 32-bit values.
+//
+// The first 14 number pairs are manually picked, while the rest are randomly generated.
+// Expected count to be at least 14 (numPicks).
+std::vector<deFloat16> getFloat16s (de::Random& rnd, deUint32 count);
 
 } // SpirVAssembly
 } // vkt

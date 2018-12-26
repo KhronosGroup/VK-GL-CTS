@@ -227,6 +227,7 @@ tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr						(VkCompositeAlphaFla
 tcu::Format::Bitfield<32>	getSwapchainCreateFlagsKHRStr						(VkSwapchainCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getDeviceGroupPresentModeFlagsKHRStr				(VkDeviceGroupPresentModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr						(VkDisplayPlaneAlphaFlagsKHR value);
+tcu::Format::Bitfield<32>	getResolveModeFlagsKHRStr							(VkResolveModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getDebugReportFlagsEXTStr							(VkDebugReportFlagsEXT value);
 tcu::Format::Bitfield<32>	getExternalMemoryHandleTypeFlagsNVStr				(VkExternalMemoryHandleTypeFlagsNV value);
 tcu::Format::Bitfield<32>	getExternalMemoryFeatureFlagsNVStr					(VkExternalMemoryFeatureFlagsNV value);
@@ -523,6 +524,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageFormatListCreateInfoKHR&
 std::ostream&	operator<<	(std::ostream& s, const VkConformanceVersionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDriverPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloatControlsPropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSubpassDescriptionDepthStencilResolveKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthStencilResolvePropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);

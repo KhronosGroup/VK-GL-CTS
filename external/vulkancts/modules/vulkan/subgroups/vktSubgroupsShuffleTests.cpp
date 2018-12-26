@@ -82,40 +82,76 @@ struct CaseDefinition
 	VkFormat			format;
 };
 
+const std::string to_string(int x) {
+	std::ostringstream oss;
+	oss << x;
+	return oss.str();
+}
+
+const std::string DeclSource(CaseDefinition caseDef, int baseBinding)
+{
+	return
+		"layout(set = 0, binding = " + to_string(baseBinding) + ", std430) readonly buffer Buffer2\n"
+		"{\n"
+		"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1[];\n"
+		"};\n"
+		"layout(set = 0, binding = " + to_string(baseBinding + 1) + ", std430) readonly buffer Buffer3\n"
+		"{\n"
+		"  uint data2[];\n"
+		"};\n";
+}
+
+const std::string TestSource(CaseDefinition caseDef)
+{
+	std::string						idTable[OPTYPE_LAST];
+	idTable[OPTYPE_SHUFFLE]			= "id_in";
+	idTable[OPTYPE_SHUFFLE_XOR]		= "gl_SubgroupInvocationID ^ id_in";
+	idTable[OPTYPE_SHUFFLE_UP]		= "gl_SubgroupInvocationID - id_in";
+	idTable[OPTYPE_SHUFFLE_DOWN]	= "gl_SubgroupInvocationID + id_in";
+
+	const std::string testSource =
+		"  uint temp_res;\n"
+		"  uvec4 mask = subgroupBallot(true);\n"
+		"  uint id_in = data2[gl_SubgroupInvocationID] & (gl_SubgroupSize - 1);\n"
+		"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " op = "
+		+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], id_in);\n"
+		"  uint id = " + idTable[caseDef.opType] + ";\n"
+		"  if ((id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
+		"  {\n"
+		"    temp_res = (op == data1[id]) ? 1 : 0;\n"
+		"  }\n"
+		"  else\n"
+		"  {\n"
+		"    temp_res = 1; // Invocation we read from was inactive, so we can't verify results!\n"
+		"  }\n";
+
+	return testSource;
+}
+
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
 	const vk::ShaderBuildOptions	buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	std::string						idTable[OPTYPE_LAST];
 
 	subgroups::setFragmentShaderFrameBuffer(programCollection);
 
 	if (VK_SHADER_STAGE_VERTEX_BIT != caseDef.shaderStage)
 		subgroups::setVertexShaderFrameBuffer(programCollection);
 
-	idTable[OPTYPE_SHUFFLE]			= "data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_XOR]		= "gl_SubgroupInvocationID ^ data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_UP]		= "gl_SubgroupInvocationID - data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_DOWN]	= "gl_SubgroupInvocationID + data2[gl_SubgroupInvocationID]";
+	const std::string extSource =
+	(OPTYPE_SHUFFLE == caseDef.opType || OPTYPE_SHUFFLE_XOR == caseDef.opType) ?
+		"#extension GL_KHR_shader_subgroup_shuffle: enable\n" :
+		"#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
+
+	const std::string testSource = TestSource(caseDef);
 
 	if (VK_SHADER_STAGE_VERTEX_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream vertexSrc;
 		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
-			<< "layout(location = 0) out float result;\n";
-
-		switch (caseDef.opType)
-		{
-			case OPTYPE_SHUFFLE:
-			case OPTYPE_SHUFFLE_XOR:
-				vertexSrc << "#extension GL_KHR_shader_subgroup_shuffle: enable\n";
-				break;
-			default:
-				vertexSrc << "#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
-				break;
-		}
-
-		vertexSrc	<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< "layout(location = 0) out float result;\n"
+			<< extSource
+			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
 			<< "{\n"
 			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data1[" << subgroups::maxSupportedSubgroupSize() << "];\n"
@@ -127,18 +163,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "\n"
 			<< "void main (void)\n"
 			<< "{\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-			<< getOpTypeName(caseDef.opType) << "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-			<< "  uint id = " << idTable[caseDef.opType] << ";\n"
-			<< "  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-			<< "  {\n"
-			<< "    result = (op == data1[id]) ? 1.0f : 0.0f;\n"
-			<< "  }\n"
-			<< "  else\n"
-			<< "  {\n"
-			<< "    result = 1.0f;\n" // Invocation we read from was inactive, so we can't verify results!
-			<< "  }\n"
+			<< testSource
+			<< "  result = temp_res;\n"
 			<< "  gl_Position = in_position;\n"
 			<< "  gl_PointSize = 1.0f;\n"
 			<< "}\n";
@@ -149,20 +175,9 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream geometry;
 
-		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n";
-
-		switch (caseDef.opType)
-		{
-			case OPTYPE_SHUFFLE:
-			case OPTYPE_SHUFFLE_XOR:
-				geometry << "#extension GL_KHR_shader_subgroup_shuffle: enable\n";
-				break;
-			default:
-				geometry << "#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
-				break;
-		}
-
-		geometry << "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< extSource
+			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -177,18 +192,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "\n"
 			<< "void main (void)\n"
 			<< "{\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-			<< getOpTypeName(caseDef.opType) << "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-			<< "  uint id = " << idTable[caseDef.opType] << ";\n"
-			<< "  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-			<< "  {\n"
-			<< "    out_color = (op == data1[id]) ? 1.0 : 0.0;\n"
-			<< "  }\n"
-			<< "  else\n"
-			<< "  {\n"
-			<< "    out_color = 1.0;\n" // Invocation we read from was inactive, so we can't verify results!
-			<< "  }\n"
+			<< testSource
+			<< "  out_color = temp_res;\n"
 			<< "  gl_Position = gl_in[0].gl_Position;\n"
 			<< "  EmitVertex();\n"
 			<< "  EndPrimitive();\n"
@@ -201,20 +206,9 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	{
 		std::ostringstream controlSource;
 
-		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n";
-
-		switch (caseDef.opType)
-		{
-			case OPTYPE_SHUFFLE:
-			case OPTYPE_SHUFFLE_XOR:
-				controlSource << "#extension GL_KHR_shader_subgroup_shuffle: enable\n";
-				break;
-			default:
-				controlSource << "#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
-				break;
-		}
-
-		controlSource	<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< extSource
+			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -233,18 +227,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "    gl_TessLevelOuter[0] = 1.0f;\n"
 			<< "    gl_TessLevelOuter[1] = 1.0f;\n"
 			<< "  }\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-			<< getOpTypeName(caseDef.opType) << "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-			<< "  uint id = " << idTable[caseDef.opType] << ";\n"
-			<< "  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-			<< "  {\n"
-			<< "    out_color[gl_InvocationID] = (op == data1[id]) ? 1 : 0;\n"
-			<< "  }\n"
-			<< "  else\n"
-			<< "  {\n"
-			<< "    out_color[gl_InvocationID] = 1;\n"  // Invocation we read from was inactive, so we can't verify results!
-			<< "  }\n"
+			<< testSource
+			<< "  out_color[gl_InvocationID] = temp_res;\n"
 			<< "  gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
 			<< "}\n";
 
@@ -256,19 +240,9 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 	else if (VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream evaluationSource;
-		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n";
-		switch (caseDef.opType)
-		{
-			case OPTYPE_SHUFFLE:
-			case OPTYPE_SHUFFLE_XOR:
-				evaluationSource << "#extension GL_KHR_shader_subgroup_shuffle: enable\n";
-				break;
-			default:
-				evaluationSource << "#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
-				break;
-		}
-
-		evaluationSource	<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
+			<< extSource
+			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -282,18 +256,8 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 			<< "\n"
 			<< "void main (void)\n"
 			<< "{\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-			<< getOpTypeName(caseDef.opType) << "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-			<< "  uint id = " << idTable[caseDef.opType] << ";\n"
-			<< "  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-			<< "  {\n"
-			<< "   out_color = (op == data1[id]) ? 1.0 : 0.0;\n"
-			<< "  }\n"
-			<< "  else\n"
-			<< "  {\n"
-			<< "    out_color = 1.0;\n"  // Invocation we read from was inactive, so we can't verify results!
-			<< "  }\n"
+			<< testSource
+			<< "  out_color = temp_res;\n"
 			<< "  gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);\n"
 			<< "}\n";
 
@@ -309,44 +273,28 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	std::string idTable[OPTYPE_LAST];
-	idTable[OPTYPE_SHUFFLE] = "data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_XOR] = "gl_SubgroupInvocationID ^ data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_UP] = "gl_SubgroupInvocationID - data2[gl_SubgroupInvocationID]";
-	idTable[OPTYPE_SHUFFLE_DOWN] = "gl_SubgroupInvocationID + data2[gl_SubgroupInvocationID]";
+	const std::string vSource =
+		"#version 450\n"
+		"#extension GL_KHR_shader_subgroup_ballot: enable\n";
+	const std::string eSource =
+	(OPTYPE_SHUFFLE == caseDef.opType || OPTYPE_SHUFFLE_XOR == caseDef.opType) ?
+		"#extension GL_KHR_shader_subgroup_shuffle: enable\n" :
+		"#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
+	const std::string extSource = vSource + eSource;
+
+	const std::string testSource = TestSource(caseDef);
 
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream src;
 
-		src << "#version 450\n";
-
-		switch (caseDef.opType)
-		{
-			case OPTYPE_SHUFFLE:
-			case OPTYPE_SHUFFLE_XOR:
-				src << "#extension GL_KHR_shader_subgroup_shuffle: enable\n";
-				break;
-			default:
-				src << "#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
-				break;
-		}
-
-		src	<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
-			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
-			"local_size_z_id = 2) in;\n"
+	src << extSource
+			<< "layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2) in;\n"
 			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
 			<< "{\n"
 			<< "  uint result[];\n"
 			<< "};\n"
-			<< "layout(set = 0, binding = 1, std430) buffer Buffer2\n"
-			<< "{\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data1[];\n"
-			<< "};\n"
-			<< "layout(set = 0, binding = 2, std430) buffer Buffer3\n"
-			<< "{\n"
-			<< "  uint data2[];\n"
-			<< "};\n"
+			<< DeclSource(caseDef, 1)
 			<< "\n"
 			<< "void main (void)\n"
 			<< "{\n"
@@ -354,18 +302,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			<< "  highp uint offset = globalSize.x * ((globalSize.y * "
 			"gl_GlobalInvocationID.z) + gl_GlobalInvocationID.y) + "
 			"gl_GlobalInvocationID.x;\n"
-			<< "  uvec4 mask = subgroupBallot(true);\n"
-			<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " op = "
-			<< getOpTypeName(caseDef.opType) << "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-			<< "  uint id = " << idTable[caseDef.opType] << ";\n"
-			<< "  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-			<< "  {\n"
-			<< "    result[offset] = (op == data1[id]) ? 1 : 0;\n"
-			<< "  }\n"
-			<< "  else\n"
-			<< "  {\n"
-			<< "    result[offset] = 1; // Invocation we read from was inactive, so we can't verify results!\n"
-			<< "  }\n"
+			<< testSource
+			<< "  result[offset] = temp_res;\n"
 			<< "}\n";
 
 		programCollection.glslSources.add("comp")
@@ -373,44 +311,21 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 	}
 	else
 	{
-		const std::string source =
-		(OPTYPE_SHUFFLE == caseDef.opType || OPTYPE_SHUFFLE_XOR == caseDef.opType) ?
-			"#extension GL_KHR_shader_subgroup_shuffle: enable\n"
-		:
-			"#extension GL_KHR_shader_subgroup_shuffle_relative: enable\n";
+		const std::string declSource = DeclSource(caseDef, 4);
 
 		{
 			const string vertex =
-				"#version 450\n"
-				+ source +
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				extSource +
 				"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
 				"{\n"
 				"  uint result[];\n"
 				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1[];\n"
-				"};\n"
-				"layout(set = 0, binding = 5, std430) readonly buffer Buffer3\n"
-				"{\n"
-				"  uint data2[];\n"
-				"};\n"
+				+ declSource +
 				"\n"
 				"void main (void)\n"
 				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " op = "
-				+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-				"  uint id = " + idTable[caseDef.opType] + ";\n"
-				"  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-				"  {\n"
-				"    result[gl_VertexIndex] = (op == data1[id]) ? 1 : 0;\n"
-				"  }\n"
-				"  else\n"
-				"  {\n"
-				"    result[gl_VertexIndex] = 1; // Invocation we read from was inactive, so we can't verify results!\n"
-				"  }\n"
+				+ testSource +
+				"  result[gl_VertexIndex] = temp_res;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
 				"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
@@ -423,37 +338,18 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string tesc =
-				"#version 450\n"
-				+ source +
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				extSource +
 				"layout(vertices=1) out;\n"
 				"layout(set = 0, binding = 1, std430)  buffer Buffer1\n"
 				"{\n"
 				"  uint result[];\n"
 				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1[];\n"
-				"};\n"
-				"layout(set = 0, binding = 5, std430) readonly buffer Buffer3\n"
-				"{\n"
-				"  uint data2[];\n"
-				"};\n"
+				+ declSource +
 				"\n"
 				"void main (void)\n"
 				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " op = "
-				+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-				"  uint id = " + idTable[caseDef.opType] + ";\n"
-				"  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-				"  {\n"
-				"    result[gl_PrimitiveID] = (op == data1[id]) ? 1 : 0;\n"
-				"  }\n"
-				"  else\n"
-				"  {\n"
-				"    result[gl_PrimitiveID] = 1; // Invocation we read from was inactive, so we can't verify results!\n"
-				"  }\n"
+				+ testSource +
+				"  result[gl_PrimitiveID] = temp_res;\n"
 				"  if (gl_InvocationID == 0)\n"
 				"  {\n"
 				"    gl_TessLevelOuter[0] = 1.0f;\n"
@@ -468,37 +364,18 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string tese =
-				"#version 450\n"
-				+ source +
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				extSource +
 				"layout(isolines) in;\n"
 				"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
 				"{\n"
 				"  uint result[];\n"
 				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1[];\n"
-				"};\n"
-				"layout(set = 0, binding = 5, std430) readonly buffer Buffer3\n"
-				"{\n"
-				"  uint data2[];\n"
-				"};\n"
+				+ declSource +
 				"\n"
 				"void main (void)\n"
 				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " op = "
-				+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-				"  uint id = " + idTable[caseDef.opType] + ";\n"
-				"  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-				"  {\n"
-				"    result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = (op == data1[id]) ? 1 : 0;\n"
-				"  }\n"
-				"  else\n"
-				"  {\n"
-				"    result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = 1; // Invocation we read from was inactive, so we can't verify results!\n"
-				"  }\n"
+				+ testSource +
+				"  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = temp_res;\n"
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 				"}\n";
@@ -509,38 +386,19 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		{
 			const string geometry =
-				"#version 450\n"
-				+ source +
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				extSource +
 				"layout(${TOPOLOGY}) in;\n"
 				"layout(points, max_vertices = 1) out;\n"
 				"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
 				"{\n"
 				"  uint result[];\n"
 				"};\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1[];\n"
-				"};\n"
-				"layout(set = 0, binding = 5, std430) readonly buffer Buffer3\n"
-				"{\n"
-				"  uint data2[];\n"
-				"};\n"
+				+ declSource +
 				"\n"
 				"void main (void)\n"
 				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " op = "
-				+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-				"  uint id = " + idTable[caseDef.opType] + ";\n"
-				"  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-				"  {\n"
-				"    result[gl_PrimitiveIDIn] = (op == data1[id]) ? 1 : 0;\n"
-				"  }\n"
-				"  else\n"
-				"  {\n"
-				"    result[gl_PrimitiveIDIn] = 1; // Invocation we read from was inactive, so we can't verify results!\n"
-				"  }\n"
+				+ testSource +
+				"  result[gl_PrimitiveIDIn] = temp_res;\n"
 				"  gl_Position = gl_in[0].gl_Position;\n"
 				"  EmitVertex();\n"
 				"  EndPrimitive();\n"
@@ -551,32 +409,13 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		}
 		{
 			const string fragment =
-				"#version 450\n"
-				+ source +
-				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				extSource +
 				"layout(location = 0) out uint result;\n"
-				"layout(set = 0, binding = 4, std430) readonly buffer Buffer1\n"
-				"{\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " data1[];\n"
-				"};\n"
-				"layout(set = 0, binding = 5, std430) readonly buffer Buffer2\n"
-				"{\n"
-				"  uint data2[];\n"
-				"};\n"
+				+ declSource +
 				"void main (void)\n"
 				"{\n"
-				"  uvec4 mask = subgroupBallot(true);\n"
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " op = "
-				+ getOpTypeName(caseDef.opType) + "(data1[gl_SubgroupInvocationID], data2[gl_SubgroupInvocationID]);\n"
-				"  uint id = " + idTable[caseDef.opType] + ";\n"
-				"  if ((0 <= id) && (id < gl_SubgroupSize) && subgroupBallotBitExtract(mask, id))\n"
-				"  {\n"
-				"    result = (op == data1[id]) ? 1 : 0;\n"
-				"  }\n"
-				"  else\n"
-				"  {\n"
-				"    result = 1; // Invocation we read from was inactive, so we can't verify results!\n"
-				"  }\n"
+				+ testSource +
+				"  result = temp_res;\n"
 				"}\n";
 
 			programCollection.glslSources.add("fragment")

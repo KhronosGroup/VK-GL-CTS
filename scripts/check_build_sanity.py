@@ -189,6 +189,7 @@ EARLY_SPECIAL_RECIPES	= [
 			RunScript(os.path.join("scripts", "gen_egl.py")),
 			RunScript(os.path.join("scripts", "opengl", "gen_all.py")),
 			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py")),
+			RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py")),
 			RunScript(os.path.join("scripts", "gen_android_mk.py")),
 		]),
 	('gen-ext-deps', [

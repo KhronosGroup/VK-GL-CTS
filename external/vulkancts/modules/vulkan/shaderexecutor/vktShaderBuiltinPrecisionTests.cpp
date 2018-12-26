@@ -6171,8 +6171,8 @@ void PrecisionCase::testStatement (const Variables<In, Out>& variables, const St
 	for (vector<Symbol>::const_iterator symIter = m_spec.inputs.begin(); symIter != m_spec.inputs.end(); ++symIter)
 		inputs16Bit = inputs16Bit || glu::isDataTypeFloat16OrVec(symIter->varType.getBasicType());
 
-	if (inputs16Bit || m_spec.packFloat16Bit) //TODO GL_KHR_shader_explicit_arithmetic_types spirv/glsl tools need to be updated  [24.05.2018 A.Sarwa]
-		m_spec.globalDeclarations += "#extension GL_KHX_shader_explicit_arithmetic_types: require\n";
+	if (inputs16Bit || m_spec.packFloat16Bit)
+		m_spec.globalDeclarations += "#extension GL_EXT_shader_explicit_arithmetic_types: require\n";
 
 	m_spec.outputs.resize(outCount);
 

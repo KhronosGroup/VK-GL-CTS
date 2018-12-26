@@ -139,7 +139,7 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 void zeroBuffer (const DeviceInterface& vk, const VkDevice device, const Allocation& alloc, const VkDeviceSize size)
 {
 	deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(size));
-	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), size);
+	flushAlloc(vk, device, alloc);
 }
 
 void requireFeatureMultiViewport (const InstanceInterface& vki, const VkPhysicalDevice physDevice)
@@ -349,7 +349,7 @@ public:
 
 		{
 			deMemcpy(m_vertexBufferAlloc->getHostPtr(), &vertices[0], static_cast<std::size_t>(m_vertexBufferSize));
-			flushMappedMemoryRange(vk, device, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), m_vertexBufferSize);
+			flushAlloc(vk, device, *m_vertexBufferAlloc);
 		}
 
 		m_vertexModule		= createShaderModule	(vk, device, context.getBinaryCollection().get("vert"), 0u);
@@ -451,7 +451,7 @@ tcu::TestStatus test (Context& context, const int numViewports)
 
 	// Log image
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), 0ull, colorBufferSize);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 
 		const tcu::ConstPixelBufferAccess	resultImage		(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1u, colorBufferAlloc->getHostPtr());
 		const tcu::TextureLevel				referenceImage	= generateReferenceImage(mapVkFormat(colorFormat), renderSize, clearColor, scissors, vertexColors);

@@ -47,6 +47,10 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmLoopDepLenTests.hpp
 	vktSpvAsmLoopDepInfTests.cpp
 	vktSpvAsmLoopDepInfTests.hpp
+	vktSpvAsmVaryingNameTests.cpp
+	vktSpvAsmVaryingNameTests.hpp
+	vktSpvAsmWorkgroupMemoryTests.cpp
+	vktSpvAsmWorkgroupMemoryTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

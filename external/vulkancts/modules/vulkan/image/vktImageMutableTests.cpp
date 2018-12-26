@@ -285,7 +285,7 @@ bool isSRGBConversionRequired(const CaseDef& caseDef)
 
 	if (isSRGB(mapVkFormat(caseDef.viewFormat)))
 	{
-		if (caseDef.upload == UPLOAD_DRAW)
+		if (caseDef.upload == UPLOAD_DRAW || caseDef.upload == UPLOAD_STORE)
 		{
 			required = true;
 		}
@@ -1789,29 +1789,38 @@ tcu::TestCaseGroup* createImageMutableTests (TestContext& testCtx)
 			if (imageFormatNdx != viewFormatNdx && formatsAreCompatible(s_formats[imageFormatNdx], s_formats[viewFormatNdx]))
 			{
 				for (int upload = 0; upload < UPLOAD_LAST; upload++)
-				for (int download = 0; download < DOWNLOAD_LAST; download++)
 				{
-					CaseDef caseDef =
+					if (upload == UPLOAD_STORE && !isFormatImageLoadStoreCapable(s_formats[viewFormatNdx]))
+						continue;
+
+					for (int download = 0; download < DOWNLOAD_LAST; download++)
 					{
-						texture.type(),
-						texture.layerSize(),
-						static_cast<deUint32>(texture.numLayers()),
-						s_formats[imageFormatNdx],
-						s_formats[viewFormatNdx],
-						static_cast<enum Upload>(upload),
-						static_cast<enum Download>(download),
-						false,				// isFormatListTest;
-						false,				// isSwapchainImageTest
-						vk::wsi::TYPE_LAST	// wsiType
-					};
+						if ((download == DOWNLOAD_LOAD || download == DOWNLOAD_TEXTURE) &&
+							!isFormatImageLoadStoreCapable(s_formats[viewFormatNdx]))
+							continue;
 
-					std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[viewFormatNdx]) +
-						"_" + getUploadString(upload) + "_" + getDownloadString(download);
-					addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+						CaseDef caseDef =
+						{
+							texture.type(),
+							texture.layerSize(),
+							static_cast<deUint32>(texture.numLayers()),
+							s_formats[imageFormatNdx],
+							s_formats[viewFormatNdx],
+							static_cast<enum Upload>(upload),
+							static_cast<enum Download>(download),
+							false,				// isFormatListTest;
+							false,				// isSwapchainImageTest
+							vk::wsi::TYPE_LAST	// wsiType
+						};
 
-					caseDef.isFormatListTest = true;
-					caseName += "_format_list";
-					addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+						std::string caseName = getFormatShortString(s_formats[imageFormatNdx]) + "_" + getFormatShortString(s_formats[viewFormatNdx]) +
+							"_" + getUploadString(upload) + "_" + getDownloadString(download);
+						addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+
+						caseDef.isFormatListTest = true;
+						caseName += "_format_list";
+						addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testMutable, caseDef);
+					}
 				}
 			}
 		}
@@ -2177,6 +2186,12 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 	case UPLOAD_STORE:
 		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
 		break;
+	case UPLOAD_CLEAR:
+		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+		break;
+	case UPLOAD_COPY:
+		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+		break;
 	default:
 		DE_FATAL("Invalid upload method");
 		break;
@@ -2191,6 +2206,9 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 		break;
 	case DOWNLOAD_LOAD:
 		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
+		break;
+	case DOWNLOAD_COPY:
+		viewFormatFeatureFlags |= VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 		break;
 	default:
 		DE_FATAL("Invalid download method");
@@ -2207,15 +2225,24 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 	if ((viewFormatProps.optimalTilingFeatures & viewFormatFeatureFlags) != viewFormatFeatureFlags)
 		TCU_THROW(NotSupportedError, "View format doesn't support upload/download method");
 
+	const bool haveMaintenance2 = isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2");
+
 	// We don't use the base image for anything other than transfer
 	// operations so there are no features to check.  However, The Vulkan
 	// 1.0 spec does not allow us to create an image view with usage that
 	// is not supported by the main format.  With VK_KHR_maintenance2, we
 	// can do this via VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR.
 	if ((imageFormatProps.optimalTilingFeatures & viewFormatFeatureFlags) != viewFormatFeatureFlags &&
-		!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2"))
+		!haveMaintenance2)
 	{
 		TCU_THROW(NotSupportedError, "Image format doesn't support upload/download method");
+	}
+
+	// If no format feature flags are supported, the format itself is not supported,
+	// and images of that format cannot be created.
+	if (imageFormatProps.optimalTilingFeatures == 0)
+	{
+		TCU_THROW(NotSupportedError, "Base image format is not supported");
 	}
 
 	// Create a color buffer for host-inspection of results
@@ -2226,7 +2253,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 	const Unique<VkBuffer>		colorBuffer(makeBuffer(vk, device, colorBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT));
 	const UniquePtr<Allocation>	colorBufferAlloc(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
 	deMemset(colorBufferAlloc->getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
-	flushMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+	flushAlloc(vk, device, *colorBufferAlloc);
 
 
 	// Execute the test
@@ -2236,7 +2263,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 
 	// Verify results
 	{
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), VK_WHOLE_SIZE);
+		invalidateAlloc(vk, device, *colorBufferAlloc);
 
 		// For verification purposes, we use the format of the upload to generate the expected image
 		const VkFormat						format = caseDef.upload == UPLOAD_CLEAR || caseDef.upload == UPLOAD_COPY ? caseDef.imageFormat : caseDef.viewFormat;
@@ -2277,8 +2304,16 @@ tcu::TestCaseGroup* createSwapchainImageMutableTests(TestContext& testCtx)
 					if (imageFormatNdx != viewFormatNdx && formatsAreCompatible(s_swapchainFormats[imageFormatNdx], s_swapchainFormats[viewFormatNdx]))
 					{
 						for (int upload = 0; upload < UPLOAD_LAST; upload++)
+						{
+							if (upload == UPLOAD_STORE && !isFormatImageLoadStoreCapable(s_swapchainFormats[viewFormatNdx]))
+								continue;
+
 							for (int download = 0; download < DOWNLOAD_LAST; download++)
 							{
+								if ((download == DOWNLOAD_LOAD || download == DOWNLOAD_TEXTURE) &&
+									!isFormatImageLoadStoreCapable(s_swapchainFormats[viewFormatNdx]))
+									continue;
+
 								CaseDef caseDef =
 								{
 									texture.type(),
@@ -2298,6 +2333,7 @@ tcu::TestCaseGroup* createSwapchainImageMutableTests(TestContext& testCtx)
 
 								addFunctionCaseWithPrograms(groupByImageViewType.get(), caseName, "", initPrograms, testSwapchainMutable, caseDef);
 							}
+						}
 					}
 				}
 

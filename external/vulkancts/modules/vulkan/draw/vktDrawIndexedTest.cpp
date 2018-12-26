@@ -148,13 +148,8 @@ tcu::TestStatus DrawIndexed::iterate (void)
 											vk::MemoryRequirement::HostVisible);
 
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_indexBuffer->getBoundMemory().getHostPtr());
-
 	deMemcpy(ptr, &m_indexes[0], static_cast<size_t>(dataSize));
-
-	vk::flushMappedMemoryRange(m_vk, m_context.getDevice(),
-							   m_indexBuffer->getBoundMemory().getMemory(),
-							   m_indexBuffer->getBoundMemory().getOffset(),
-							   VK_WHOLE_SIZE);
+	vk::flushAlloc(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory());
 
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();
@@ -237,10 +232,7 @@ tcu::TestStatus DrawInstancedIndexed::iterate (void)
 	deUint8* ptr = reinterpret_cast<deUint8*>(m_indexBuffer->getBoundMemory().getHostPtr());
 
 	deMemcpy(ptr, &m_indexes[0], static_cast<size_t>(dataSize));
-	vk::flushMappedMemoryRange(m_vk, m_context.getDevice(),
-							   m_indexBuffer->getBoundMemory().getMemory(),
-							   m_indexBuffer->getBoundMemory().getOffset(),
-							   VK_WHOLE_SIZE);
+	vk::flushAlloc(m_vk, m_context.getDevice(), m_indexBuffer->getBoundMemory());
 
 	const vk::VkDeviceSize vertexBufferOffset = 0;
 	const vk::VkBuffer vertexBuffer = m_vertexBuffer->object();

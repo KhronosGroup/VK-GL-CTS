@@ -1560,7 +1560,7 @@ void PushDescriptorImageGraphicsTestInstance::init (void)
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4Tex4));
-		flushMappedMemoryRange(m_vkd, *m_device, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		flushAlloc(m_vkd, *m_device, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool
@@ -2391,7 +2391,7 @@ tcu::TestStatus PushDescriptorImageComputeTestInstance::iterate (void)
 tcu::TestStatus PushDescriptorImageComputeTestInstance::verifyOutput (void)
 {
 	float ref[16];
-	invalidateMappedMemoryRange(m_vkd, *m_device, m_outputBufferAlloc->getMemory(), m_outputBufferAlloc->getOffset(), (size_t)64u);
+	invalidateAlloc(m_vkd, *m_device, *m_outputBufferAlloc);
 
 	switch(m_params.descriptorType)
 	{
@@ -2758,7 +2758,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 		VK_CHECK(m_vkd.bindBufferMemory(*m_device, **m_buffers[bufIdx], m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset()));
 
 		deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &defaultTestColors[bufIdx], 16u);
-		flushMappedMemoryRange(m_vkd, *m_device, m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset(), 16u);
+		flushAlloc(m_vkd, *m_device, *m_bufferAllocs[bufIdx]);
 	}
 
 	// Create buffer views
@@ -2925,7 +2925,7 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init (void)
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4RGBA));
-		flushMappedMemoryRange(m_vkd, *m_device, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		flushAlloc(m_vkd, *m_device, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool
@@ -3183,7 +3183,7 @@ void PushDescriptorTexelBufferComputeTestInstance::init (void)
 		VK_CHECK(m_vkd.bindBufferMemory(*m_device, **m_buffers[bufIdx], m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset()));
 
 		deMemcpy(m_bufferAllocs[bufIdx]->getHostPtr(), &defaultTestColors[bufIdx], 16u);
-		flushMappedMemoryRange(m_vkd, *m_device, m_bufferAllocs[bufIdx]->getMemory(), m_bufferAllocs[bufIdx]->getOffset(), 16u);
+		flushAlloc(m_vkd, *m_device, *m_bufferAllocs[bufIdx]);
 	}
 
 	// Create buffer views
@@ -3379,7 +3379,7 @@ tcu::TestStatus PushDescriptorTexelBufferComputeTestInstance::iterate (void)
 tcu::TestStatus PushDescriptorTexelBufferComputeTestInstance::verifyOutput (void)
 {
 	const float ref[8] = { 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f };
-	invalidateMappedMemoryRange(m_vkd, *m_device, m_outputBufferAlloc->getMemory(), m_outputBufferAlloc->getOffset(), (size_t)32u);
+	invalidateAlloc(m_vkd, *m_device, *m_outputBufferAlloc);
 
 	// Verify result
 	if (deMemCmp((void*)ref, m_outputBufferAlloc->getHostPtr(), (size_t)(16u * m_params.numCalls)))
@@ -3783,6 +3783,17 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			DE_NULL										// const deUint32*				pPreserveAttachments
 		};
 
+		const VkSubpassDependency		subpassDependency		=
+		{
+			VK_SUBPASS_EXTERNAL,							// deUint32				srcSubpass
+			0,												// deUint32				dstSubpass
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,	// VkPipelineStageFlags	srcStageMask
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,			// VkPipelineStageFlags	dstStageMask
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags		srcAccessMask
+			VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT,	//	dstAccessMask
+			VK_DEPENDENCY_BY_REGION_BIT						// VkDependencyFlags	dependencyFlags
+		};
+
 		const VkRenderPassCreateInfo	renderPassInfo			=
 		{
 			VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureTypei					sType
@@ -3792,8 +3803,8 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 			attachmentDescriptions,						// const VkAttachmentDescription*	pAttachments
 			1u,											// deUint32							subpassCount
 			&subpassDescription,						// const VkSubpassDescription*		pSubpasses
-			0u,											// deUint32							dependencyCount
-			DE_NULL										// const VkSubpassDependency*		pDependencies
+			1u,											// deUint32							dependencyCount
+			&subpassDependency							// const VkSubpassDependency*		pDependencies
 		};
 
 		m_renderPasses.push_back(VkRenderPassSp(new Unique<VkRenderPass>(createRenderPass(m_vkd, *m_device, &renderPassInfo))));
@@ -3948,7 +3959,7 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init (void)
 
 		// Load vertices into vertex buffer
 		deMemcpy(m_vertexBufferAlloc->getHostPtr(), m_vertices.data(), m_vertices.size() * sizeof(Vertex4Tex4));
-		flushMappedMemoryRange(m_vkd, *m_device, m_vertexBufferAlloc->getMemory(), m_vertexBufferAlloc->getOffset(), vertexBufferParams.size);
+		flushAlloc(m_vkd, *m_device, *m_vertexBufferAlloc);
 	}
 
 	// Create command pool

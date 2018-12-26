@@ -707,10 +707,7 @@ public:
 
 		{
 			deMemcpy(m_vertexBuffer->getBoundMemory().getHostPtr(), &m_vertices[0], static_cast<std::size_t>(vertexBufferSize));
-			flushMappedMemoryRange(vk, device,
-								   m_vertexBuffer->getBoundMemory().getMemory(),
-								   m_vertexBuffer->getBoundMemory().getOffset(),
-								   vertexBufferSize);
+			flushAlloc(vk, device, m_vertexBuffer->getBoundMemory());
 		}
 
 		if (shader == TESSELLATION)
@@ -823,7 +820,7 @@ tcu::TestStatus testVertexShader (Context& context, const int numViewports)
 	{
 		const Allocation alloc = colorBuffer->getBoundMemory();
 		deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), colorBufferSize);
+		flushAlloc(vk, device, alloc);
 	}
 
 	{
@@ -880,7 +877,7 @@ tcu::TestStatus testTessellationShader (Context& context, const int numViewports
 	{
 		const Allocation alloc = colorBuffer->getBoundMemory();
 		deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(colorBufferSize));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), colorBufferSize);
+		flushAlloc(vk, device, alloc);
 	}
 
 	{

@@ -34,6 +34,7 @@
 #include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkMemUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -281,7 +282,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 			*valuePtr = layerNdx;
 		}
 
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), constantsBufferSizeBytes);
+		flushAlloc(vk, device, alloc);
 	}
 
 	const VkDeviceSize	resultBufferSizeBytes	= getImageSizeBytes(caseDef.texture.size(), CHECKSUM_IMAGE_FORMAT);
@@ -291,7 +292,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	{
 		const Allocation& alloc = resultBuffer->getAllocation();
 		deMemset(alloc.getHostPtr(), 0, static_cast<size_t>(resultBufferSizeBytes));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+		flushAlloc(vk, device, alloc);
 	}
 
 	// Descriptors
@@ -435,7 +436,7 @@ tcu::TestStatus test (Context& context, const CaseDef caseDef)
 	// Verify
 	{
 		const Allocation& alloc = resultBuffer->getAllocation();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+		invalidateAlloc(vk, device, alloc);
 
 		const IVec3		imageSize			= caseDef.texture.size();
 		const deInt32*	pDataPtr			= static_cast<deInt32*>(alloc.getHostPtr());

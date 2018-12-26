@@ -274,8 +274,8 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&		vk,
 		(VkAttachmentDescriptionFlags)0,									//  VkAttachmentDescriptionFlags	flags;						||  VkAttachmentDescriptionFlags		flags;
 		dsFormat,															//  VkFormat						format;						||  VkFormat							format;
 		samples,															//  VkSampleCountFlagBits			samples;					||  VkSampleCountFlagBits				samples;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,									//  VkAttachmentLoadOp				loadOp;						||  VkAttachmentLoadOp					loadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,									//  VkAttachmentStoreOp				storeOp;					||  VkAttachmentStoreOp					storeOp;
+		VK_ATTACHMENT_LOAD_OP_LOAD,											//  VkAttachmentLoadOp				loadOp;						||  VkAttachmentLoadOp					loadOp;
+		VK_ATTACHMENT_STORE_OP_STORE,										//  VkAttachmentStoreOp				storeOp;					||  VkAttachmentStoreOp					storeOp;
 		VK_ATTACHMENT_LOAD_OP_LOAD,											//  VkAttachmentLoadOp				stencilLoadOp;				||  VkAttachmentLoadOp					stencilLoadOp;
 		VK_ATTACHMENT_STORE_OP_STORE,										//  VkAttachmentStoreOp				stencilStoreOp;				||  VkAttachmentStoreOp					stencilStoreOp;
 		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,					//  VkImageLayout					initialLayout;				||  VkImageLayout						initialLayout;
@@ -436,7 +436,8 @@ template<typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, 
 Move<VkRenderPass> makeRenderPassWithAttachments (const DeviceInterface&	vk,
 												  const VkDevice			device,
 												  const VkFormat			colorFormat,
-												  const vector<deUint32>&	viewMasks)
+												  const vector<deUint32>&	viewMasks,
+												  bool						useAspects)
 {
 	const deUint32								subpassCount				= static_cast<deUint32>(viewMasks.size());
 
@@ -489,7 +490,7 @@ Move<VkRenderPass> makeRenderPassWithAttachments (const DeviceInterface&	vk,
 		DE_NULL,															//																||  const void*							pNext;
 		1u,																	//  deUint32						attachment;					||  deUint32							attachment;
 		VK_IMAGE_LAYOUT_GENERAL,											//  VkImageLayout					layout;						||  VkImageLayout						layout;
-		0u																	//																||  VkImageAspectFlags					aspectMask;
+		useAspects ? VK_IMAGE_ASPECT_COLOR_BIT : static_cast<VkImageAspectFlagBits>(0u)							//																||  VkImageAspectFlags					aspectMask;
 	);
 
 	const AttachmentRef							depthAttachmentReference	//  VkAttachmentReference										||  VkAttachmentReference2KHR
@@ -586,7 +587,8 @@ Move<VkRenderPass> makeRenderPassWithAttachments<AttachmentDescription1, Attachm
 												 (const DeviceInterface&	vk,
 												  const VkDevice			device,
 												  const VkFormat			colorFormat,
-												  const vector<deUint32>&	viewMasks);
+												  const vector<deUint32>&	viewMasks,
+												  bool						useAspects);
 
 // Instantiate function for renderpass2 structures
 template
@@ -594,7 +596,8 @@ Move<VkRenderPass> makeRenderPassWithAttachments<AttachmentDescription2, Attachm
 												 (const DeviceInterface&	vk,
 												  const VkDevice			device,
 												  const VkFormat			colorFormat,
-												  const vector<deUint32>&	viewMasks);
+												  const vector<deUint32>&	viewMasks,
+												  bool						useAspects);
 
 void beginSecondaryCommandBuffer (const DeviceInterface&				vk,
 								   const VkCommandBuffer				commandBuffer,

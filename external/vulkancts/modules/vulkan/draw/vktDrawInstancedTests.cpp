@@ -145,10 +145,7 @@ de::SharedPtr<Buffer> createAndUploadBuffer(const std::vector<T> data, const vk:
 
 	deMemcpy(ptr, &data[0], static_cast<size_t>(dataSize));
 
-	vk::flushMappedMemoryRange(vk, context.getDevice(),
-							   buffer->getBoundMemory().getMemory(),
-							   buffer->getBoundMemory().getOffset(),
-							   VK_WHOLE_SIZE);
+	vk::flushAlloc(vk, context.getDevice(), buffer->getBoundMemory());
 	return buffer;
 }
 

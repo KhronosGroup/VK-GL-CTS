@@ -27,6 +27,7 @@
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkBuilderUtil.hpp"

@@ -50,6 +50,7 @@ enum TestType
 	TESTTYPE_PASS_IMAGE_TO_FUNCTION,
 	TESTTYPE_PASS_SAMPLER_TO_FUNCTION,
 	TESTTYPE_PASS_IMAGE_AND_SAMPLER_TO_FUNCTION,
+	TESTTYPE_OPTYPEIMAGE_MISMATCH,
 
 	TESTTYPE_LAST
 };
@@ -164,6 +165,9 @@ const char* getTestTypeName (TestType testType)
 
 		case TESTTYPE_PASS_IMAGE_AND_SAMPLER_TO_FUNCTION:
 			return "pass_image_and_sampler_to_function";
+
+		case TESTTYPE_OPTYPEIMAGE_MISMATCH:
+			return "optypeimage_mismatch";
 
 		default:
 			DE_FATAL("Unknown test type");
@@ -283,7 +287,7 @@ VkFormat getImageFormat (ReadOp readOp)
 // Get variables that are declared in the read function, ie. not passed as parameters
 std::string getFunctionDstVariableStr (ReadOp readOp, DescriptorType descType, TestType testType)
 {
-	const bool passNdx = (testType == TESTTYPE_LOCAL_VARIABLES);
+	const bool passNdx = (testType == TESTTYPE_LOCAL_VARIABLES)					|| (testType == TESTTYPE_OPTYPEIMAGE_MISMATCH);
 	const bool passImg = ((testType == TESTTYPE_PASS_IMAGE_TO_FUNCTION)			|| (testType == TESTTYPE_PASS_IMAGE_AND_SAMPLER_TO_FUNCTION));
 	const bool passSmp = ((testType == TESTTYPE_PASS_SAMPLER_TO_FUNCTION)		|| (testType == TESTTYPE_PASS_IMAGE_AND_SAMPLER_TO_FUNCTION));
 
@@ -598,10 +602,61 @@ bool isImageSampleDrefReadOp (ReadOp readOp)
 	return (readOp == READOP_IMAGESAMPLE_DREF_IMPLICIT_LOD) || (readOp == READOP_IMAGESAMPLE_DREF_EXPLICIT_LOD);
 }
 
-// Get types and pointers for input images and samplers
-std::string getImageSamplerTypeStr (DescriptorType descType, ReadOp readOp, deUint32 depthProperty)
+static const VkFormat optypeimageFormatMismatchVkFormat[] =
 {
-	const string imageFormat = isImageSampleDrefReadOp(readOp) ? "R32f" : "Rgba32f";
+	VK_FORMAT_R8G8B8A8_UNORM,
+	VK_FORMAT_R8G8B8A8_SNORM,
+	VK_FORMAT_R8G8B8A8_UINT,
+	VK_FORMAT_R8G8B8A8_SINT,
+	VK_FORMAT_R16G16B16A16_UINT,
+	VK_FORMAT_R16G16B16A16_SINT,
+	VK_FORMAT_R16G16B16A16_SFLOAT,
+	VK_FORMAT_R32_UINT,
+	VK_FORMAT_R32_SINT,
+	VK_FORMAT_R32G32B32A32_UINT,
+	VK_FORMAT_R32G32B32A32_SINT,
+	VK_FORMAT_R32G32B32A32_SFLOAT
+};
+
+static const size_t optypeimageFormatMismatchFormatCount = sizeof(optypeimageFormatMismatchVkFormat) / sizeof(VkFormat);
+
+static const char *optypeimageFormatMismatchSpirvFormat[] =
+{
+	"Rgba8",
+	"Rgba8Snorm",
+	"Rgba8ui",
+	"Rgba8i",
+	"Rgba16ui",
+	"Rgba16i",
+	"Rgba16f",
+	"R32ui",
+	"R32i",
+	"Rgba32ui",
+	"Rgba32i",
+	"Rgba32f"
+};
+
+static const char *optypeimageFormatMismatchCase[] =
+{
+	"rgba8",
+	"rgba8snorm",
+	"rgba8ui",
+	"rgba8i",
+	"rgba16ui",
+	"rgba16i",
+	"rgba16f",
+	"r32ui",
+	"r32i",
+	"rgba32ui",
+	"rgba32i",
+	"rgba32f"
+};
+
+// Get types and pointers for input images and samplers
+std::string getImageSamplerTypeStr (DescriptorType descType, ReadOp readOp, deUint32 depthProperty, TestType testType, int formatIndex)
+{
+	const string imageFormat =	(testType == TESTTYPE_OPTYPEIMAGE_MISMATCH) ? optypeimageFormatMismatchSpirvFormat[formatIndex] :
+								isImageSampleDrefReadOp(readOp) ? "R32f" : "Rgba32f";
 
 	switch (descType)
 	{
@@ -682,6 +737,15 @@ std::string getSamplerDecoration (DescriptorType descType)
 	}
 }
 
+// no-operation verify functon to ignore test results (optypeimage_mismatch)
+bool nopVerifyFunction (const std::vector<Resource>&,
+						const std::vector<AllocationSp>&,
+						const std::vector<Resource>&,
+						tcu::TestLog&)
+{
+	return true;
+}
+
 void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 {
 	tcu::TestContext& testCtx = group->getTestContext();
@@ -709,135 +773,153 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 				if (!isValidTestCase((TestType)testNdx, (DescriptorType)descNdx, (ReadOp)opNdx))
 					continue;
 
-				const std::string	imageReadOp				= getImageReadOpStr((ReadOp)opNdx);
+				deUint32 numFormats = 1;
+				if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
+					numFormats = optypeimageFormatMismatchFormatCount;
 
-				const std::string	imageSamplerTypes		= getImageSamplerTypeStr((DescriptorType)descNdx, (ReadOp)opNdx, DEPTH_PROPERTY_NON_DEPTH);
-				const std::string	functionParamTypes		= getFunctionParamTypeStr((TestType)testNdx);
-
-				const std::string	functionSrcVariables	= getFunctionSrcVariableStr((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx);
-				const std::string	functionDstVariables	= getFunctionDstVariableStr((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx);
-
-				const std::string	functionSrcParams		= getFunctionSrcParamStr(TestType(testNdx));
-				const std::string	functionDstParams		= getFunctionDstParamStr((ReadOp)opNdx, TestType(testNdx));
-
-				getDefaultColors(defaultColors);
-
-				ComputeShaderSpec	spec;
-
-				spec.numWorkGroups	= IVec3(numDataPoints, 1, 1);
-
-				spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
-
-				// Separate sampler for sampled images
-				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+				for (deUint32 formatIndex = 0; formatIndex < numFormats; formatIndex++)
 				{
-					vector<tcu::Vec4> dummyData;
-					spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData))));
-					spec.inputs[1].setDescriptorType(VK_DESCRIPTOR_TYPE_SAMPLER);
+
+					const std::string	imageReadOp = getImageReadOpStr((ReadOp)opNdx);
+
+					const std::string	imageSamplerTypes = getImageSamplerTypeStr((DescriptorType)descNdx, (ReadOp)opNdx, DEPTH_PROPERTY_NON_DEPTH, (TestType)testNdx, formatIndex);
+					const std::string	functionParamTypes = getFunctionParamTypeStr((TestType)testNdx);
+
+					const std::string	functionSrcVariables = getFunctionSrcVariableStr((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx);
+					const std::string	functionDstVariables = getFunctionDstVariableStr((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx);
+
+					const std::string	functionSrcParams = getFunctionSrcParamStr((TestType)testNdx);
+					const std::string	functionDstParams = getFunctionDstParamStr((ReadOp)opNdx, (TestType)testNdx);
+
+					getDefaultColors(defaultColors);
+
+					ComputeShaderSpec	spec;
+
+					spec.numWorkGroups = IVec3(numDataPoints, 1, 1);
+
+					spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
+
+					// Separate sampler for sampled images
+					if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+					{
+						vector<tcu::Vec4> dummyData;
+						spec.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData))));
+						spec.inputs[1].setDescriptorType(VK_DESCRIPTOR_TYPE_SAMPLER);
+					}
+
+					// Second combined image sampler with different image data
+					if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
+					{
+						for (size_t i = 0; i < inputData.size(); i++)
+							inputData[i] = tcu::Vec4(1.0f) - inputData[i];
+
+						spec.inputs.push_back(BufferSp(new Vec4Buffer(inputData)));
+						spec.inputs[1].setDescriptorType(getVkDescriptorType((DescriptorType)descNdx));
+					}
+
+					// Shader is expected to pass the input image data to the output buffer
+					spec.outputs.push_back(BufferSp(new Vec4Buffer(inputData)));
+
+					const std::string	samplerDecoration = getSamplerDecoration((DescriptorType)descNdx);
+
+					const string		shaderSource =
+						"                       OpCapability Shader\n"
+						"                  %1 = OpExtInstImport \"GLSL.std.450\"\n"
+						"                       OpMemoryModel Logical GLSL450\n"
+						"                       OpEntryPoint GLCompute %main \"main\" %id\n"
+						"                       OpExecutionMode %main LocalSize 1 1 1\n"
+						"                       OpSource GLSL 430\n"
+						"                       OpDecorate %id BuiltIn GlobalInvocationId\n"
+						"                       OpDecorate %_arr_v4f_u32_64 ArrayStride 16\n"
+						"                       OpMemberDecorate %Output 0 Offset 0\n"
+						"                       OpDecorate %Output BufferBlock\n"
+						"                       OpDecorate %InputData DescriptorSet 0\n"
+						"                       OpDecorate %InputData Binding 0\n"
+
+						+ samplerDecoration +
+
+						"                       OpDecorate %OutputData DescriptorSet 0\n"
+						"                       OpDecorate %OutputData Binding " + de::toString(spec.inputs.size()) + "\n"
+
+						"               %void = OpTypeVoid\n"
+						"                  %3 = OpTypeFunction %void\n"
+						"                %u32 = OpTypeInt 32 0\n"
+						"                %i32 = OpTypeInt 32 1\n"
+						"                %f32 = OpTypeFloat 32\n"
+						" %_ptr_Function_uint = OpTypePointer Function %u32\n"
+						"              %v3u32 = OpTypeVector %u32 3\n"
+						"   %_ptr_Input_v3u32 = OpTypePointer Input %v3u32\n"
+						"                 %id = OpVariable %_ptr_Input_v3u32 Input\n"
+						"            %c_f32_0 = OpConstant %f32 0.0\n"
+						"            %c_u32_0 = OpConstant %u32 0\n"
+						"            %c_i32_0 = OpConstant %i32 0\n"
+						"    %_ptr_Input_uint = OpTypePointer Input %u32\n"
+						"              %v2u32 = OpTypeVector %u32 2\n"
+						"              %v2f32 = OpTypeVector %f32 2\n"
+						"              %v4f32 = OpTypeVector %f32 4\n"
+						"           %uint_128 = OpConstant %u32 128\n"
+						"           %c_u32_64 = OpConstant %u32 64\n"
+						"            %c_u32_8 = OpConstant %u32 8\n"
+						"            %c_f32_8 = OpConstant %f32 8.0\n"
+						"        %c_v2f32_8_8 = OpConstantComposite %v2f32 %c_f32_8 %c_f32_8\n"
+						"    %_arr_v4f_u32_64 = OpTypeArray %v4f32 %c_u32_64\n"
+						"   %_ptr_Uniform_v4f = OpTypePointer Uniform %v4f32\n"
+						"             %Output = OpTypeStruct %_arr_v4f_u32_64\n"
+						"%_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
+						"         %OutputData = OpVariable %_ptr_Uniform_Output Uniform\n"
+
+						+ imageSamplerTypes +
+
+						"     %read_func_type = OpTypeFunction %void %u32" + functionParamTypes + "\n"
+
+						"          %read_func = OpFunction %void None %read_func_type\n"
+						"           %func_ndx = OpFunctionParameter %u32\n"
+
+						+ functionDstParams +
+
+						"          %funcentry = OpLabel\n"
+						"                %row = OpUMod %u32 %func_ndx %c_u32_8\n"
+						"                %col = OpUDiv %u32 %func_ndx %c_u32_8\n"
+						"              %coord = OpCompositeConstruct %v2u32 %row %col\n"
+						"             %coordf = OpConvertUToF %v2f32 %coord\n"
+						"       %normalcoordf = OpFDiv %v2f32 %coordf %c_v2f32_8_8\n"
+
+						+ functionDstVariables +
+
+						"              %color = " + imageReadOp + "\n"
+						"                 %36 = OpAccessChain %_ptr_Uniform_v4f %OutputData %c_u32_0 %func_ndx\n"
+						"                       OpStore %36 %color\n"
+						"                       OpReturn\n"
+						"                       OpFunctionEnd\n"
+
+						"               %main = OpFunction %void None %3\n"
+						"                  %5 = OpLabel\n"
+						"                  %i = OpVariable %_ptr_Function_uint Function\n"
+						"                 %14 = OpAccessChain %_ptr_Input_uint %id %c_u32_0\n"
+						"                 %15 = OpLoad %u32 %14\n"
+						"                       OpStore %i %15\n"
+						"              %index = OpLoad %u32 %14\n"
+
+						+ functionSrcVariables +
+
+						"                %res = OpFunctionCall %void %read_func %index" + functionSrcParams + "\n"
+						"                       OpReturn\n"
+						"                       OpFunctionEnd\n";
+
+					spec.assembly = shaderSource;
+
+					// If testing for mismatched optypeimage, ignore the
+					// result (we're only interested to see if we crash)
+					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
+						spec.verifyIO = nopVerifyFunction;
+
+					string testname = getTestTypeName((TestType)testNdx);
+
+					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
+						testname = testname + string("_") + string(optypeimageFormatMismatchCase[formatIndex]);
+
+					descGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testname.c_str(), "", spec));
 				}
-
-				// Second combined image sampler with different image data
-				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
-				{
-					for (size_t i = 0; i < inputData.size(); i++)
-						inputData[i] = tcu::Vec4(1.0f) - inputData[i];
-
-					spec.inputs.push_back(BufferSp(new Vec4Buffer(inputData)));
-					spec.inputs[1].setDescriptorType(getVkDescriptorType((DescriptorType)descNdx));
-				}
-
-				// Shader is expected to pass the input image data to the output buffer
-				spec.outputs.push_back(BufferSp(new Vec4Buffer(inputData)));
-
-				const std::string	samplerDecoration		= getSamplerDecoration((DescriptorType)descNdx);
-
-				const string		shaderSource	=
-					"                       OpCapability Shader\n"
-					"                  %1 = OpExtInstImport \"GLSL.std.450\"\n"
-					"                       OpMemoryModel Logical GLSL450\n"
-					"                       OpEntryPoint GLCompute %main \"main\" %id\n"
-					"                       OpExecutionMode %main LocalSize 1 1 1\n"
-					"                       OpSource GLSL 430\n"
-					"                       OpDecorate %id BuiltIn GlobalInvocationId\n"
-					"                       OpDecorate %_arr_v4f_u32_64 ArrayStride 16\n"
-					"                       OpMemberDecorate %Output 0 Offset 0\n"
-					"                       OpDecorate %Output BufferBlock\n"
-					"                       OpDecorate %InputData DescriptorSet 0\n"
-					"                       OpDecorate %InputData Binding 0\n"
-
-					+ samplerDecoration +
-
-					"                       OpDecorate %OutputData DescriptorSet 0\n"
-					"                       OpDecorate %OutputData Binding " + de::toString(spec.inputs.size()) + "\n"
-
-					"               %void = OpTypeVoid\n"
-					"                  %3 = OpTypeFunction %void\n"
-					"                %u32 = OpTypeInt 32 0\n"
-					"                %i32 = OpTypeInt 32 1\n"
-					"                %f32 = OpTypeFloat 32\n"
-					" %_ptr_Function_uint = OpTypePointer Function %u32\n"
-					"              %v3u32 = OpTypeVector %u32 3\n"
-					"   %_ptr_Input_v3u32 = OpTypePointer Input %v3u32\n"
-					"                 %id = OpVariable %_ptr_Input_v3u32 Input\n"
-					"            %c_f32_0 = OpConstant %f32 0.0\n"
-					"            %c_u32_0 = OpConstant %u32 0\n"
-					"            %c_i32_0 = OpConstant %i32 0\n"
-					"    %_ptr_Input_uint = OpTypePointer Input %u32\n"
-					"              %v2u32 = OpTypeVector %u32 2\n"
-					"              %v2f32 = OpTypeVector %f32 2\n"
-					"              %v4f32 = OpTypeVector %f32 4\n"
-					"           %uint_128 = OpConstant %u32 128\n"
-					"           %c_u32_64 = OpConstant %u32 64\n"
-					"            %c_u32_8 = OpConstant %u32 8\n"
-					"            %c_f32_8 = OpConstant %f32 8.0\n"
-					"        %c_v2f32_8_8 = OpConstantComposite %v2f32 %c_f32_8 %c_f32_8\n"
-					"    %_arr_v4f_u32_64 = OpTypeArray %v4f32 %c_u32_64\n"
-					"   %_ptr_Uniform_v4f = OpTypePointer Uniform %v4f32\n"
-					"             %Output = OpTypeStruct %_arr_v4f_u32_64\n"
-					"%_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
-					"         %OutputData = OpVariable %_ptr_Uniform_Output Uniform\n"
-
-					+ imageSamplerTypes +
-
-					"     %read_func_type = OpTypeFunction %void %u32" + functionParamTypes + "\n"
-
-					"          %read_func = OpFunction %void None %read_func_type\n"
-					"           %func_ndx = OpFunctionParameter %u32\n"
-
-					+ functionDstParams +
-
-					"          %funcentry = OpLabel\n"
-					"                %row = OpUMod %u32 %func_ndx %c_u32_8\n"
-					"                %col = OpUDiv %u32 %func_ndx %c_u32_8\n"
-					"              %coord = OpCompositeConstruct %v2u32 %row %col\n"
-					"             %coordf = OpConvertUToF %v2f32 %coord\n"
-					"       %normalcoordf = OpFDiv %v2f32 %coordf %c_v2f32_8_8\n"
-
-					+ functionDstVariables +
-
-					"              %color = " + imageReadOp + "\n"
-					"                 %36 = OpAccessChain %_ptr_Uniform_v4f %OutputData %c_u32_0 %func_ndx\n"
-					"                       OpStore %36 %color\n"
-					"                       OpReturn\n"
-					"                       OpFunctionEnd\n"
-
-					"               %main = OpFunction %void None %3\n"
-					"                  %5 = OpLabel\n"
-					"                  %i = OpVariable %_ptr_Function_uint Function\n"
-					"                 %14 = OpAccessChain %_ptr_Input_uint %id %c_u32_0\n"
-					"                 %15 = OpLoad %u32 %14\n"
-					"                       OpStore %i %15\n"
-					"              %index = OpLoad %u32 %14\n"
-
-					+ functionSrcVariables +
-
-					"                %res = OpFunctionCall %void %read_func %index" + functionSrcParams + "\n"
-					"                       OpReturn\n"
-					"                       OpFunctionEnd\n";
-
-				spec.assembly			= shaderSource;
-
-				descGroup->addChild(new SpvAsmComputeShaderCase(testCtx, getTestTypeName((TestType)testNdx), "", spec));
 			}
 			readOpGroup->addChild(descGroup.release());
 		}
@@ -845,12 +927,12 @@ void addComputeImageSamplerTest (tcu::TestCaseGroup* group)
 	}
 }
 
-map<string, string> generateGraphicsImageSamplerSource (ReadOp readOp, DescriptorType descriptorType, TestType testType, DepthProperty depthProperty, deUint32 outputBinding)
+map<string, string> generateGraphicsImageSamplerSource (ReadOp readOp, DescriptorType descriptorType, TestType testType, DepthProperty depthProperty, deUint32 outputBinding, deUint32 formatIndex)
 {
 	map<string, string>	source;
 
 	const std::string	imageReadOp				= getImageReadOpStr(readOp);
-	const std::string	imageSamplerTypes		= getImageSamplerTypeStr(descriptorType, readOp, depthProperty);
+	const std::string	imageSamplerTypes		= getImageSamplerTypeStr(descriptorType, readOp, depthProperty, testType, formatIndex);
 	const std::string	functionParamTypes		= getFunctionParamTypeStr(testType);
 	const std::string	functionSrcVariables	= getFunctionSrcVariableStr(readOp, descriptorType, testType);
 	const std::string	functionDstVariables	= getFunctionDstVariableStr(readOp, descriptorType, testType);
@@ -984,55 +1066,80 @@ void addGraphicsImageSamplerTest (tcu::TestCaseGroup* group)
 				if (!isValidTestCase((TestType)testNdx, (DescriptorType)descNdx, (ReadOp)opNdx))
 					continue;
 
-				de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, getTestTypeName((TestType)testNdx), ""));
+				deUint32 formatCount = 1;
+				if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
+					formatCount = optypeimageFormatMismatchFormatCount;
 
-				GraphicsResources				resources;
+				// this group is only used for optypeimage_mismatch case
+				de::MovePtr<tcu::TestCaseGroup> testtypeGroup(new tcu::TestCaseGroup(testCtx, getTestTypeName((TestType)testNdx), ""));
 
-				resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
-
-				// Separate sampler for sampled images
-				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+				for (deUint32 formatIndex = 0; formatIndex < formatCount; formatIndex++)
 				{
-					vector<tcu::Vec4> dummyData;
-					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData)), VK_DESCRIPTOR_TYPE_SAMPLER));
-				}
+					// optypeimage_mismatch uses an additional level of test hierarchy
+					const char *groupname = testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH ? optypeimageFormatMismatchCase[formatIndex] : getTestTypeName((TestType)testNdx);
+					de::MovePtr<tcu::TestCaseGroup>	typeGroup(new tcu::TestCaseGroup(testCtx, groupname, ""));
 
-				// Second combined image sampler with different image data
-				if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
-				{
-					for (size_t i = 0; i < inputData.size(); i++)
-						inputData[i] = tcu::Vec4(1.0f) - inputData[i];
+					GraphicsResources				resources;
 
 					resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
+
+					// Separate sampler for sampled images
+					if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+					{
+						vector<tcu::Vec4> dummyData;
+						resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(dummyData)), VK_DESCRIPTOR_TYPE_SAMPLER));
+					}
+
+					// Second combined image sampler with different image data
+					if ((DescriptorType)descNdx == DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER_SEPARATE_DESCRIPTORS)
+					{
+						for (size_t i = 0; i < inputData.size(); i++)
+							inputData[i] = tcu::Vec4(1.0f) - inputData[i];
+
+						resources.inputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), getVkDescriptorType((DescriptorType)descNdx)));
+					}
+
+					// Shader is expected to pass the input image data to output buffer
+					resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+
+					getDefaultColors(defaultColors);
+
+					const map<string, string>		fragments = generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx, DEPTH_PROPERTY_NON_DEPTH, (deUint32)resources.inputs.size(), (formatIndex + 1) % optypeimageFormatMismatchFormatCount);
+
+					// If testing for mismatched optypeimage, ignore the rendered
+					// result (we're only interested to see if we crash)
+					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
+					{
+						resources.verifyIO = nopVerifyFunction;
+						resources.inputFormat = optypeimageFormatMismatchVkFormat[formatIndex];
+					}
+
+					vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
+					vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
+					createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "shader_vert", defaultColors, defaultColors, fragments, noSpecConstants,
+						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+					createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "shader_tessc", defaultColors, defaultColors, fragments, noSpecConstants,
+						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+					createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "shader_tesse", defaultColors, defaultColors, fragments, noSpecConstants,
+						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+					createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, "shader_geom", defaultColors, defaultColors, fragments, noSpecConstants,
+						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+					vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
+					vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
+					createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "shader_frag", defaultColors, defaultColors, fragments, noSpecConstants,
+						noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
+
+					if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
+						testtypeGroup->addChild(typeGroup.release());
+					else
+						descGroup->addChild(typeGroup.release());
 				}
-
-				// Shader is expected to pass the input image data to output buffer
-				resources.outputs.push_back(Resource(BufferSp(new Vec4Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-
-				getDefaultColors(defaultColors);
-
-				const map<string, string>		fragments	= generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, (TestType)testNdx, DEPTH_PROPERTY_NON_DEPTH, (deUint32)resources.inputs.size());
-
-				vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
-				vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
-				createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, "shader_vert", defaultColors, defaultColors, fragments, noSpecConstants,
-								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
-
-				createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "shader_tessc", defaultColors, defaultColors, fragments, noSpecConstants,
-								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
-
-				createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "shader_tesse", defaultColors, defaultColors, fragments, noSpecConstants,
-								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
-
-				createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, "shader_geom", defaultColors, defaultColors, fragments, noSpecConstants,
-								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
-
-				vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
-				vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
-				createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, "shader_frag", defaultColors, defaultColors, fragments, noSpecConstants,
-								   noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, typeGroup.get());
-
-				descGroup->addChild(typeGroup.release());
+				if (testNdx == TESTTYPE_OPTYPEIMAGE_MISMATCH)
+					descGroup->addChild(testtypeGroup.release());
 			}
 			readOpGroup->addChild(descGroup.release());
 		}
@@ -1147,7 +1254,7 @@ void addGraphicsDepthPropertyTest (tcu::TestCaseGroup* group)
 				if (hasDpethComponent)
 					resources.verifyIO = verifyDepthCompareResult;
 
-				const map<string, string>	fragments			= generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, TESTTYPE_LOCAL_VARIABLES, (DepthProperty)propertyNdx, (deUint32)resources.inputs.size());
+				const map<string, string>	fragments			= generateGraphicsImageSamplerSource((ReadOp)opNdx, (DescriptorType)descNdx, TESTTYPE_LOCAL_VARIABLES, (DepthProperty)propertyNdx, (deUint32)resources.inputs.size(), 0);
 
 				getDefaultColors(defaultColors);
 

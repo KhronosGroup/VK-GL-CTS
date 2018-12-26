@@ -394,6 +394,9 @@ tcu::TestStatus createDeviceTest (Context& context)
 	const deUint32					queueCount				= 1;
 	const deUint32					queueIndex				= 0;
 	const float						queuePriority			= 1.0f;
+
+	const vector<VkQueueFamilyProperties> queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
+
 	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
 	{
 		VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -435,6 +438,7 @@ tcu::TestStatus createMultipleDevicesTest (Context& context)
 	const Unique<VkInstance>							instance				(createDefaultInstance(platformInterface, context.getUsedApiVersion()));
 	const InstanceDriver								instanceDriver			(platformInterface, instance.get());
 	const VkPhysicalDevice								physicalDevice			= chooseDevice(instanceDriver, instance.get(), context.getTestContext().getCommandLine());
+	const vector<VkQueueFamilyProperties>				queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 	const deUint32										queueFamilyIndex		= 0;
 	const deUint32										queueCount				= 1;
 	const deUint32										queueIndex				= 0;
@@ -659,34 +663,19 @@ tcu::TestStatus createDeviceWithVariousQueueCountsTest (Context& context)
 	return tcu::TestStatus::pass("Pass");
 }
 
-Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, const char* extensionName, Context& context)
-{
-	const vector<VkExtensionProperties>	instanceExts		= enumerateInstanceExtensionProperties(vkp, DE_NULL);
-	vector<string>						enabledExts;
-
-	const deUint32						instanceVersion		= context.getUsedApiVersion();
-
-	if (!isCoreInstanceExtension(instanceVersion, extensionName))
-	{
-		if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
-			TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
-		else
-			enabledExts.push_back(extensionName);
-	}
-
-	return createDefaultInstance(vkp, instanceVersion, vector<string>() /* layers */, enabledExts);
-}
-
 tcu::TestStatus createDeviceFeatures2Test (Context& context)
 {
 	const PlatformInterface&		vkp						= context.getPlatformInterface();
-	const Unique<VkInstance>		instance				(createInstanceWithExtension(vkp, "VK_KHR_get_physical_device_properties2", context));
+	const Unique<VkInstance>		instance				(createInstanceWithExtension(vkp, context.getUsedApiVersion(), "VK_KHR_get_physical_device_properties2"));
 	const InstanceDriver			vki						(vkp, instance.get());
 	const VkPhysicalDevice			physicalDevice			= chooseDevice(vki, instance.get(), context.getTestContext().getCommandLine());
 	const deUint32					queueFamilyIndex		= 0;
 	const deUint32					queueCount				= 1;
 	const deUint32					queueIndex				= 0;
 	const float						queuePriority			= 1.0f;
+
+	const InstanceDriver					instanceDriver			(vkp, instance.get());
+	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	VkPhysicalDeviceFeatures2		enabledFeatures;
 	const VkDeviceQueueCreateInfo	deviceQueueCreateInfo	=
@@ -749,6 +738,8 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTest (Context& context)
 	const deUint32				queueCount				= 1;
 	const float					queuePriority			= 1.0f;
 	VkPhysicalDeviceFeatures	physicalDeviceFeatures;
+
+	const vector<VkQueueFamilyProperties>	queueFamilyProperties	= getPhysicalDeviceQueueFamilyProperties(instanceDriver, physicalDevice);
 
 	instanceDriver.getPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
 

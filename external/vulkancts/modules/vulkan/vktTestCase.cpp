@@ -32,9 +32,11 @@
 #include "vkDebugReportUtil.hpp"
 
 #include "tcuCommandLine.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deSTLUtil.hpp"
 #include "deMemory.h"
+#include <vkrunner/vkrunner.h>
 
 #include <set>
 
@@ -158,6 +160,7 @@ vector<string> addCoreDeviceExtensions(const vector<string>& extensions, deUint3
 deUint32 getTargetInstanceVersion (const PlatformInterface& vkp)
 {
 	deUint32 version = pack(ApiVersion(1, 0, 0));
+
 	if (vkp.enumerateInstanceVersion(&version) != VK_SUCCESS)
 		TCU_THROW(InternalError, "Enumerate instance version error");
 	return version;
@@ -358,6 +361,8 @@ public:
 		conditionalRenderingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
 		scalarBlockLayoutFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 
+		vector<VkExtensionProperties> deviceExtensionProperties =
+			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
 
 		if (isPhysicalDeviceFeatures2Supported(apiVersion, instanceExtensions))
 		{
@@ -405,8 +410,18 @@ public:
 			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_vulkan_memory_model"))
 			{
-				*nextPtr	= &vulkanMemoryModelFeatures;
-				nextPtr		= &vulkanMemoryModelFeatures.pNext;
+				for (size_t i = 0; i < deviceExtensionProperties.size(); ++i)
+				{
+					if (deStringEqual(deviceExtensionProperties[i].extensionName, "VK_KHR_vulkan_memory_model"))
+					{
+						if (deviceExtensionProperties[i].specVersion == VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION)
+						{
+							*nextPtr	= &vulkanMemoryModelFeatures;
+							nextPtr		= &vulkanMemoryModelFeatures.pNext;
+						}
+						break;
+					}
+				}
 			}
 			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_KHR_shader_atomic_int64"))
 			{
@@ -560,6 +575,18 @@ vk::Allocator* createAllocator (DefaultDevice* device)
 
 // Context
 
+void Context::errorCb(const char* message,
+					  void* user_data)
+{
+	Context* context = (Context*) user_data;
+
+	context->getTestContext().getLog()
+		<< tcu::TestLog::Message
+		<< message
+		<< "\n"
+		<< tcu::TestLog::EndMessage;
+}
+
 Context::Context (tcu::TestContext&				testCtx,
 				  const vk::PlatformInterface&	platformInterface,
 				  vk::BinaryCollection&			progCollection)
@@ -569,10 +596,22 @@ Context::Context (tcu::TestContext&				testCtx,
 	, m_device				(new DefaultDevice(m_platformInterface, testCtx.getCommandLine()))
 	, m_allocator			(createAllocator(m_device.get()))
 {
+	m_config = vr_config_new();
+	vr_config_set_user_data(m_config, this);
+	vr_config_set_error_cb(m_config, errorCb);
+	m_executor = vr_executor_new(m_config);
+	vr_executor_set_device(m_executor,
+						   getInstanceProc,
+						   this,
+						   getPhysicalDevice(),
+						   getUniversalQueueFamilyIndex(),
+						   getDevice());
 }
 
 Context::~Context (void)
 {
+	vr_config_free(m_config);
+	vr_executor_free(m_executor);
 }
 
 deUint32								Context::getAvailableInstanceVersion	(void) const { return m_device->getAvailableInstanceVersion();	}
@@ -614,6 +653,8 @@ deUint32								Context::getSparseQueueFamilyIndex		(void) const { return m_devi
 vk::VkQueue								Context::getSparseQueue					(void) const { return m_device->getSparseQueue();				}
 vk::Allocator&							Context::getDefaultAllocator			(void) const { return *m_allocator;								}
 deUint32								Context::getUsedApiVersion				(void) const { return m_device->getUsedApiVersion();			}
+vr_executor*							Context::getExecutor					(void) const
+																							{ return m_executor; }
 bool									Context::contextSupports				(const deUint32 majorNum, const deUint32 minorNum, const deUint32 patchNum) const
 																							{ return m_device->getUsedApiVersion() >= VK_MAKE_VERSION(majorNum, minorNum, patchNum); }
 bool									Context::contextSupports				(const ApiVersion version) const
@@ -719,6 +760,12 @@ bool Context::requireDeviceCoreFeature (const DeviceCoreFeature requiredFeature)
 		TCU_THROW(NotSupportedError, "Requested core feature is not supported: " + std::string(deviceCoreFeaturesTable[requiredFeatureIndex].featureName));
 
 	return true;
+}
+
+void* Context::getInstanceProc (const char* name, void* user_data)
+{
+	Context *context = (Context*) user_data;
+	return (void*) context->m_platformInterface.getInstanceProcAddr(context->getInstance(), name);
 }
 
 // TestCase

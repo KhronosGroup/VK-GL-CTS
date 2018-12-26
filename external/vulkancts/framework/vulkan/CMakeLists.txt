@@ -7,6 +7,8 @@ set(VKUTILNOSHADER_SRCS
 	vkApiVersion.hpp
 	vkBuilderUtil.cpp
 	vkBuilderUtil.hpp
+	vkBarrierUtil.cpp
+	vkBarrierUtil.hpp
 	vkCmdUtil.cpp
 	vkCmdUtil.hpp
 	vkDefs.cpp
@@ -56,6 +58,8 @@ set(VKUTILNOSHADER_SRCS
 	vkYCbCrImageWithMemory.hpp
 	vkObjUtil.cpp
 	vkObjUtil.hpp
+	vkRenderDocUtil.hpp
+	vkRenderDocUtil.cpp
 	)
 
 set(VKUTIL_SRCS

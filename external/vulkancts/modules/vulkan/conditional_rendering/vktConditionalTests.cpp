@@ -27,6 +27,7 @@
 #include "vktConditionalDrawTests.hpp"
 #include "vktConditionalDispatchTests.hpp"
 #include "vktConditionalClearAttachmentTests.hpp"
+#include "vktConditionalDrawAndClearTests.hpp"
 
 namespace vkt
 {
@@ -43,6 +44,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(new ConditionalDrawTests(testCtx));
 	group->addChild(new ConditionalDispatchTests(testCtx));
 	group->addChild(new ConditionalClearAttachmentTests(testCtx));
+	group->addChild(new ConditionalRenderingDrawAndClearTests(testCtx));
 }
 
 } // anonymous

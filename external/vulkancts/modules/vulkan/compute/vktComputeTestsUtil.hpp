@@ -126,19 +126,6 @@ vk::VkBufferCreateInfo			makeBufferCreateInfo			(const vk::VkDeviceSize						buf
 vk::VkBufferImageCopy			makeBufferImageCopy				(const vk::VkExtent3D						extent,
 																 const deUint32								arraySize);
 
-vk::VkBufferMemoryBarrier		makeBufferMemoryBarrier			(const vk::VkAccessFlags					srcAccessMask,
-																 const vk::VkAccessFlags					dstAccessMask,
-																 const vk::VkBuffer							buffer,
-																 const vk::VkDeviceSize						offset,
-																 const vk::VkDeviceSize						bufferSizeBytes);
-
-vk::VkImageMemoryBarrier		makeImageMemoryBarrier			(const vk::VkAccessFlags					srcAccessMask,
-																 const vk::VkAccessFlags					dstAccessMask,
-																 const vk::VkImageLayout					oldLayout,
-																 const vk::VkImageLayout					newLayout,
-																 const vk::VkImage							image,
-																 const vk::VkImageSubresourceRange			subresourceRange);
-
 inline vk::VkExtent3D makeExtent3D (const tcu::IVec3& vec)
 {
 	return vk::makeExtent3D(vec.x(), vec.y(), vec.z());

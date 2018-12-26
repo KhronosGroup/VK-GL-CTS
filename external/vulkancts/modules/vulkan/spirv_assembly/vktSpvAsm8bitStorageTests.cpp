@@ -166,93 +166,6 @@ bool computeCheckBuffers (const std::vector<Resource>&	originalInts,
 	return deMemCmp(&result[0], outputAllocs.front()->getHostPtr(), result.size()) == 0;
 }
 
-// Generate and return 16-bit integers.
-//
-// Expected count to be at least 8.
-vector<deInt16> getInt16s (de::Random& rnd, const deUint32 count)
-{
-	vector<deInt16>		data;
-
-	data.reserve(count);
-
-	// Make sure we have boundary numbers.
-	data.push_back(deInt16(0x0000));  // 0
-	data.push_back(deInt16(0x0001));  // 1
-	data.push_back(deInt16(0x002a));  // 42
-	data.push_back(deInt16(0x7fff));  // 32767
-	data.push_back(deInt16(0x8000));  // -32868
-	data.push_back(deInt16(0x8001));  // -32767
-	data.push_back(deInt16(0xffd6));  // -42
-	data.push_back(deInt16(0xffff));  // -1
-
-	DE_ASSERT(count >= data.size());
-
-	for (deUint32 numNdx = static_cast<deUint32>(data.size()); numNdx < count; ++numNdx)
-		data.push_back(static_cast<deInt16>(rnd.getUint16()));
-
-	return data;
-}
-
-// Generate and return 32-bit integers.
-//
-// Expected count to be at least 16.
-vector<deInt32> getInt32s (de::Random& rnd, const deUint32 count)
-{
-	vector<deInt32>		data;
-
-	data.reserve(count);
-
-	// Make sure we have boundary numbers.
-	data.push_back(deInt32(0x00000000));  // 0
-	data.push_back(deInt32(0x00000001));  // 1
-	data.push_back(deInt32(0x0000002a));  // 42
-	data.push_back(deInt32(0x00007fff));  // 32767
-	data.push_back(deInt32(0x00008000));  // 32768
-	data.push_back(deInt32(0x0000ffff));  // 65535
-	data.push_back(deInt32(0x00010000));  // 65536
-	data.push_back(deInt32(0x7fffffff));  // 2147483647
-	data.push_back(deInt32(0x80000000));  // -2147483648
-	data.push_back(deInt32(0x80000001));  // -2147483647
-	data.push_back(deInt32(0xffff0000));  // -65536
-	data.push_back(deInt32(0xffff0001));  // -65535
-	data.push_back(deInt32(0xffff8000));  // -32768
-	data.push_back(deInt32(0xffff8001));  // -32767
-	data.push_back(deInt32(0xffffffd6));  // -42
-	data.push_back(deInt32(0xffffffff));  // -1
-
-	DE_ASSERT(count >= data.size());
-
-	for (deUint32 numNdx = static_cast<deUint32>(data.size()); numNdx < count; ++numNdx)
-		data.push_back(static_cast<deInt32>(rnd.getUint32()));
-
-	return data;
-}
-
-// Expected count to be at least 8.
-vector<deInt8> getInt8s (de::Random& rnd, const deUint32 count)
-{
-	vector<deInt8>		data;
-
-	data.reserve(count);
-
-	// Make sure we have boundary numbers.
-	data.push_back(deInt8(0x00));  // 0
-	data.push_back(deInt8(0x01));  // 1
-	data.push_back(deInt8(0x2a));  // 42
-	data.push_back(deInt8(0x7f));  // 127
-	data.push_back(deInt8(0x80));  // -128
-	data.push_back(deInt8(0x81));  // -127
-	data.push_back(deInt8(0xd6));  // -42
-	data.push_back(deInt8(0xff));  // -1
-
-	DE_ASSERT(count >= data.size());
-
-	for (deUint32 numNdx = static_cast<deUint32>(data.size()); numNdx < count; ++numNdx)
-		data.push_back(static_cast<deInt8>(rnd.getUint8()));
-
-	return data;
-}
-
 void addInfo(vector<bool>& info, int& ndx, const int count, const bool isData)
 {
 	for (int index = 0; index < count; ++index)
@@ -1042,6 +955,8 @@ void addCompute8bitStorage32To8Group (tcu::TestCaseGroup* group)
 
 		"${stride}"
 
+		"OpDecorate %SSBO32 Block\n"
+		"OpDecorate %SSBO8 Block\n"
 		"OpMemberDecorate %SSBO32 0 Offset 0\n"
 		"OpMemberDecorate %SSBO8 0 Offset 0\n"
 		"OpDecorate %ssbo32 DescriptorSet 0\n"
@@ -1199,6 +1114,8 @@ void addCompute8bitUniform8To32Group (tcu::TestCaseGroup* group)
 
 		"${stride}"
 
+		"OpDecorate %SSBO32 Block\n"
+		"OpDecorate %SSBO8 Block\n"
 		"OpMemberDecorate %SSBO32 0 Offset 0\n"
 		"OpMemberDecorate %SSBO8 0 Offset 0\n"
 		"OpDecorate %SSBO8 ${storage}\n"
@@ -1356,6 +1273,7 @@ void addCompute8bitStoragePushConstant8To32Group (tcu::TestCaseGroup* group)
 		"${stride}"
 
 		"OpDecorate %PC8 Block\n"
+		"OpDecorate %SSBO32 Block\n"
 		"OpMemberDecorate %PC8 0 Offset 0\n"
 		"OpMemberDecorate %SSBO32 0 Offset 0\n"
 		"OpDecorate %ssbo32 DescriptorSet 0\n"
@@ -1518,6 +1436,8 @@ void addCompute8bitStorage16To8Group (tcu::TestCaseGroup* group)
 
 		"${stride}"
 
+		"OpDecorate %SSBO16 Block\n"
+		"OpDecorate %SSBO8 Block\n"
 		"OpMemberDecorate %SSBO16 0 Offset 0\n"
 		"OpMemberDecorate %SSBO8 0 Offset 0\n"
 		"OpDecorate %ssbo16 DescriptorSet 0\n"
@@ -1673,6 +1593,8 @@ void addCompute8bitUniform8To16Group (tcu::TestCaseGroup* group)
 
 		"${stride}"
 
+		"OpDecorate %SSBO16 Block\n"
+		"OpDecorate %SSBO8 Block\n"
 		"OpMemberDecorate %SSBO16 0 Offset 0\n"
 		"OpMemberDecorate %SSBO8 0 Offset 0\n"
 		"OpDecorate %SSBO8 ${storage}\n"
@@ -1834,6 +1756,7 @@ void addCompute8bitStoragePushConstant8To16Group (tcu::TestCaseGroup* group)
 		"${stride}"
 
 		"OpDecorate %PC8 Block\n"
+		"OpDecorate %SSBO16 Block\n"
 		"OpMemberDecorate %PC8 0 Offset 0\n"
 		"OpMemberDecorate %SSBO16 0 Offset 0\n"
 		"OpDecorate %ssbo16 DescriptorSet 0\n"
@@ -1996,6 +1919,8 @@ void addCompute8bitStorageBuffer8To8Group (tcu::TestCaseGroup* group)
 			<< "OpExecutionMode %main LocalSize 1 1 1\n"
 			<< "OpDecorate %id BuiltIn GlobalInvocationId\n"
 			<< "OpDecorate %i8arr ArrayStride 1\n"
+			<< "OpDecorate %SSBO_IN Block\n"
+			<< "OpDecorate %SSBO_OUT Block\n"
 			<< "OpMemberDecorate %SSBO_IN 0 Coherent\n"
 			<< "OpMemberDecorate %SSBO_OUT 0 Coherent\n"
 			<< "OpMemberDecorate %SSBO_IN 0 Offset 0\n"
@@ -2079,7 +2004,8 @@ void addCompute8bitStorageUniform8StructTo32StructGroup (tcu::TestCaseGroup* gro
 		"\n"
 		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
 		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
-		"OpDecorate %SSBO_IN ${storage}\n"
+		"OpDecorate %SSBO_IN Block\n"
+		"OpDecorate %SSBO_OUT Block\n"
 		"OpDecorate %ssboIN DescriptorSet 0\n"
 		"OpDecorate %ssboOUT DescriptorSet 0\n"
 		"OpDecorate %ssboIN Binding 0\n"
@@ -2260,7 +2186,6 @@ void addCompute8bitStorageUniform8StructTo32StructGroup (tcu::TestCaseGroup* gro
 		string					testName	= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name);
 
 		specs["capability"]		= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
-		specs["storage"]		= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].decor;
 		specs["stridei8"]		= getStructShaderComponet(SHADERTEMPLATE_STRIDE8BIT_STD140);
 		specs["stridei32"]		= getStructShaderComponet(SHADERTEMPLATE_STRIDE32BIT_STD430);
 		specs["32Storage"]		= "StorageBuffer";
@@ -2300,6 +2225,7 @@ void addCompute8bitStorageUniform32StructTo8StructGroup (tcu::TestCaseGroup* gro
 		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
 		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
 		"OpDecorate %SSBO_IN Block\n"
+		"OpDecorate %SSBO_OUT Block\n"
 		"OpDecorate %ssboIN DescriptorSet 0\n"
 		"OpDecorate %ssboOUT DescriptorSet 0\n"
 		"OpDecorate %ssboIN Binding 0\n"
@@ -2522,11 +2448,12 @@ void addCompute8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		"${OutOffsets}"
 		"${InOffsets}"
 		"\n"//SSBO IN
+		"OpDecorate %SSBO_IN Block\n"
 		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
 		"OpDecorate %ssboIN DescriptorSet 0\n"
-		"${inSSBODecor}"
 		"OpDecorate %ssboIN Binding 0\n"
 		"\n"//SSBO OUT
+		"OpDecorate %SSBO_OUT Block\n"
 		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
 		"OpDecorate %ssboOUT DescriptorSet 0\n"
 		"OpDecorate %ssboOUT Binding 1\n"
@@ -2712,7 +2639,6 @@ void addCompute8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 								"%v4i32inPtr  = OpTypePointer Uniform %v4i32\n" :
 								"";
 		specs["inPtr"]			= isUniform ? "inPtr" : "outPtr";
-		specs["inSSBODecor"]	= isUniform ? "OpDecorate %SSBO_IN Block\n" : "";
 		specsOffset["InOut"]	= "In";
 		specs["InOffsets"]		= StringTemplate(isUniform ? getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD140) : getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD430)).specialize(specsOffset);
 		specsOffset["InOut"]	= "Out";
@@ -2785,9 +2711,10 @@ void addGraphics8BitStorageUniformInt32To8Group (tcu::TestCaseGroup* testGroup)
 	const StringTemplate	scalarDecoration(
 			"OpDecorate %ra_i32 ArrayStride 16\n"
 			"OpDecorate %ra_i8 ArrayStride 1\n"
+			"OpDecorate %SSBO32 Block\n"
+			"OpDecorate %SSBO8 Block\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
 			"OpMemberDecorate %SSBO8 0 Offset 0\n"
-			"OpDecorate %SSBO32 ${indecor}\n"
 			"OpDecorate %ssbo32 DescriptorSet 0\n"
 			"OpDecorate %ssbo8 DescriptorSet 0\n"
 			"OpDecorate %ssbo32 Binding 0\n"
@@ -2846,9 +2773,10 @@ void addGraphics8BitStorageUniformInt32To8Group (tcu::TestCaseGroup* testGroup)
 	const StringTemplate	vecDecoration(
 			"OpDecorate %ra_v4i32 ArrayStride 16\n"
 			"OpDecorate %ra_v4i8 ArrayStride 4\n"
+			"OpDecorate %SSBO32 Block\n"
+			"OpDecorate %SSBO8 Block\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
 			"OpMemberDecorate %SSBO8 0 Offset 0\n"
-			"OpDecorate %SSBO32 ${indecor}\n"
 			"OpDecorate %ssbo32 DescriptorSet 0\n"
 			"OpDecorate %ssbo8 DescriptorSet 0\n"
 			"OpDecorate %ssbo32 Binding 0\n"
@@ -2929,7 +2857,6 @@ void addGraphics8BitStorageUniformInt32To8Group (tcu::TestCaseGroup* testGroup)
 			string				name		= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
 			specs["cap"]					= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
-			specs["indecor"]				= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].decor;
 			specs["itype32"]				= intFacts[factIdx].type32;
 			specs["v4itype32"]				= "%v4" + string(intFacts[factIdx].type32).substr(1);
 			specs["itype8"]					= intFacts[factIdx].type8;
@@ -3011,9 +2938,10 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 	const StringTemplate scalarDecoration		(
 			"OpDecorate %ra_i32 ArrayStride 4\n"
 			"OpDecorate %ra_i8 ArrayStride 16\n"
+			"OpDecorate %SSBO32 Block\n"
+			"OpDecorate %SSBO8 Block\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
 			"OpMemberDecorate %SSBO8 0 Offset 0\n"
-			"OpDecorate %SSBO8 ${indecor}\n"
 			"OpDecorate %ssbo32 DescriptorSet 0\n"
 			"OpDecorate %ssbo8 DescriptorSet 0\n"
 			"OpDecorate %ssbo32 Binding 1\n"
@@ -3072,9 +3000,10 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 	const StringTemplate vecDecoration		(
 			"OpDecorate %ra_v2i32 ArrayStride 8\n"
 			"OpDecorate %ra_v2i8 ArrayStride 16\n"
+			"OpDecorate %SSBO32 Block\n"
+			"OpDecorate %SSBO8 Block\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
 			"OpMemberDecorate %SSBO8 0 Offset 0\n"
-			"OpDecorate %SSBO8 ${indecor}\n"
 			"OpDecorate %ssbo32 DescriptorSet 0\n"
 			"OpDecorate %ssbo8 DescriptorSet 0\n"
 			"OpDecorate %ssbo32 Binding 1\n"
@@ -3143,7 +3072,6 @@ void addGraphics8BitStorageUniformInt8To32Group (tcu::TestCaseGroup* testGroup)
 				string				name		= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
 				specs["cap"]					= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
-				specs["indecor"]				= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].decor;
 				specs["itype32"]				= intFacts[factIdx].type32;
 				specs["v2itype32"]				= "%v2" + string(intFacts[factIdx].type32).substr(1);
 				specs["itype8"]					= intFacts[factIdx].type8;
@@ -3321,7 +3249,7 @@ void addGraphics8BitStoragePushConstantInt8To32Group (tcu::TestCaseGroup* testGr
 		const StringTemplate	decoration	(
 			"OpDecorate %a${count}${type8} ArrayStride 1\n"
 			"OpDecorate %a${count}${type32} ArrayStride 4\n"
-			"OpDecorate %SSBO32 BufferBlock\n"
+			"OpDecorate %SSBO32 Block\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
 			"OpDecorate %PC8 Block\n"
 			"OpMemberDecorate %PC8 0 Offset 0\n"
@@ -3436,6 +3364,7 @@ void addGraphics8BitStoragePushConstantInt8To32Group (tcu::TestCaseGroup* testGr
 		const StringTemplate	decoration	(
 			"OpDecorate %a${count}${type8} ArrayStride 2\n"
 			"OpDecorate %a${count}${type32} ArrayStride 8\n"
+			"OpDecorate %SSBO32 Block\n"
 			"OpMemberDecorate %SSBO32 0 Offset 0\n"
 			"OpDecorate %PC8 Block\n"
 			"OpMemberDecorate %PC8 0 Offset 0\n"
@@ -3586,9 +3515,10 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 	const StringTemplate	scalarDecoration(
 			"OpDecorate %ra_i16 ArrayStride 16\n"
 			"OpDecorate %ra_i8 ArrayStride 1\n"
+			"OpDecorate %SSBO16 Block\n"
+			"OpDecorate %SSBO8 Block\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
 			"OpMemberDecorate %SSBO8 0 Offset 0\n"
-			"OpDecorate %SSBO16 ${indecor}\n"
 			"OpDecorate %ssbo16 DescriptorSet 0\n"
 			"OpDecorate %ssbo8 DescriptorSet 0\n"
 			"OpDecorate %ssbo16 Binding 0\n"
@@ -3649,9 +3579,10 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 	const StringTemplate	vecDecoration(
 			"OpDecorate %ra_v4i16 ArrayStride 16\n"
 			"OpDecorate %ra_v4i8 ArrayStride 4\n"
+			"OpDecorate %SSBO16 Block\n"
+			"OpDecorate %SSBO8 Block\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
 			"OpMemberDecorate %SSBO8 0 Offset 0\n"
-			"OpDecorate %SSBO16 ${indecor}\n"
 			"OpDecorate %ssbo16 DescriptorSet 0\n"
 			"OpDecorate %ssbo8 DescriptorSet 0\n"
 			"OpDecorate %ssbo16 Binding 0\n"
@@ -3736,7 +3667,6 @@ void addGraphics8BitStorageUniformInt16To8Group (tcu::TestCaseGroup* testGroup)
 			string				name		= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
 			specs["cap"]					= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
-			specs["indecor"]				= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].decor;
 			specs["itype16"]				= intFacts[factIdx].type16;
 			specs["v4itype16"]				= "%v4" + string(intFacts[factIdx].type16).substr(1);
 			specs["itype8"]					= intFacts[factIdx].type8;
@@ -3822,9 +3752,10 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 	const StringTemplate scalarDecoration		(
 			"OpDecorate %ra_i16 ArrayStride 2\n"
 			"OpDecorate %ra_i8 ArrayStride 16\n"
+			"OpDecorate %SSBO16 Block\n"
+			"OpDecorate %SSBO8 Block\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
 			"OpMemberDecorate %SSBO8 0 Offset 0\n"
-			"OpDecorate %SSBO8 ${indecor}\n"
 			"OpDecorate %ssbo16 DescriptorSet 0\n"
 			"OpDecorate %ssbo8 DescriptorSet 0\n"
 			"OpDecorate %ssbo16 Binding 1\n"
@@ -3885,9 +3816,10 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 	const StringTemplate vecDecoration		(
 			"OpDecorate %ra_v2i16 ArrayStride 4\n"
 			"OpDecorate %ra_v2i8 ArrayStride 16\n"
+			"OpDecorate %SSBO16 Block\n"
+			"OpDecorate %SSBO8 Block\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
 			"OpMemberDecorate %SSBO8 0 Offset 0\n"
-			"OpDecorate %SSBO8 ${indecor}\n"
 			"OpDecorate %ssbo16 DescriptorSet 0\n"
 			"OpDecorate %ssbo8 DescriptorSet 0\n"
 			"OpDecorate %ssbo16 Binding 1\n"
@@ -3956,7 +3888,6 @@ void addGraphics8BitStorageUniformInt8To16Group (tcu::TestCaseGroup* testGroup)
 				string				name		= string(CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].name) + "_" + categories[catIdx].name + "_" + intFacts[factIdx].name;
 
 				specs["cap"]					= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].cap;
-				specs["indecor"]				= CAPABILITIES[UNIFORM_AND_STORAGEBUFFER_TEST].decor;
 				specs["itype16"]				= intFacts[factIdx].type16;
 				specs["v2itype16"]				= "%v2" + string(intFacts[factIdx].type16).substr(1);
 				specs["itype8"]					= intFacts[factIdx].type8;
@@ -4138,7 +4069,7 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 		const StringTemplate	decoration	(
 			"OpDecorate %a${count}${type8} ArrayStride 1\n"
 			"OpDecorate %a${count}${type16} ArrayStride 2\n"
-			"OpDecorate %SSBO16 BufferBlock\n"
+			"OpDecorate %SSBO16 Block\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
 			"OpDecorate %PC8 Block\n"
 			"OpMemberDecorate %PC8 0 Offset 0\n"
@@ -4255,6 +4186,7 @@ void addGraphics8BitStoragePushConstantInt8To16Group (tcu::TestCaseGroup* testGr
 		const StringTemplate	decoration	(
 			"OpDecorate %a${count}${type8} ArrayStride 2\n"
 			"OpDecorate %a${count}${type16} ArrayStride 4\n"
+			"OpDecorate %SSBO16 Block\n"
 			"OpMemberDecorate %SSBO16 0 Offset 0\n"
 			"OpDecorate %PC8 Block\n"
 			"OpMemberDecorate %PC8 0 Offset 0\n"
@@ -4429,9 +4361,10 @@ void addGraphics8BitStorageUniformStruct8To32Group (tcu::TestCaseGroup* testGrou
 		"\n"
 		"${stridei32}"
 		"\n"
+		"OpDecorate %SSBO_IN Block\n"
+		"OpDecorate %SSBO_OUT Block\n"
 		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
 		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
-		"${indecor}"
 		"OpDecorate %ssboIN DescriptorSet 0\n"
 		"OpDecorate %ssboOUT DescriptorSet 0\n"
 		"OpDecorate %ssboIN Binding 0\n"
@@ -4597,7 +4530,6 @@ void addGraphics8BitStorageUniformStruct8To32Group (tcu::TestCaseGroup* testGrou
 			const string			testName	= string(CAPABILITIES[capIdx].name) + "_" + intFacts[intFactsNdx].name;
 
 			specs["cap"]						= CAPABILITIES[capIdx].cap;
-			specs["indecor"]					= isUniform ? "OpDecorate %SSBO_IN Block\n" : "";
 			specs["stridei8"]					= getStructShaderComponet(isUniform ? SHADERTEMPLATE_STRIDE8BIT_STD140 : SHADERTEMPLATE_STRIDE8BIT_STD430);
 			specs["stridei32"]					= getStructShaderComponet(SHADERTEMPLATE_STRIDE32BIT_STD430);
 			specs["32Storage"]					= "StorageBuffer";
@@ -4697,9 +4629,10 @@ void addGraphics8BitStorageUniformStruct32To8Group (tcu::TestCaseGroup* testGrou
 		"\n"
 		"${stridei32}"
 		"\n"
+		"OpDecorate %SSBO_IN Block\n"
+		"OpDecorate %SSBO_OUT Block\n"
 		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
 		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
-		"${indecor}"
 		"OpDecorate %ssboIN DescriptorSet 0\n"
 		"OpDecorate %ssboOUT DescriptorSet 0\n"
 		"OpDecorate %ssboIN Binding 0\n"
@@ -4867,7 +4800,6 @@ void addGraphics8BitStorageUniformStruct32To8Group (tcu::TestCaseGroup* testGrou
 			GraphicsResources	resources;
 
 			specs["cap"]					= CAPABILITIES[STORAGE_BUFFER_TEST].cap;
-			specs["indecor"]				= isUniform ? "OpDecorate %SSBO_IN Block\n" : "";
 			specs["stridei8"]				= getStructShaderComponet(SHADERTEMPLATE_STRIDE8BIT_STD430);
 			specs["stridei32"]				= getStructShaderComponet(isUniform ? SHADERTEMPLATE_STRIDE32BIT_STD140 : SHADERTEMPLATE_STRIDE32BIT_STD430);
 			specs["8Storage"]				= "StorageBuffer";
@@ -4966,11 +4898,12 @@ void addGraphics8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 		"${OutOffsets}"
 		"${InOffsets}"
 		"\n"//SSBO IN
+		"OpDecorate %SSBO_IN Block\n"
 		"OpMemberDecorate %SSBO_IN 0 Offset 0\n"
 		"OpDecorate %ssboIN DescriptorSet 0\n"
-		"${inSSBODecor}"
 		"OpDecorate %ssboIN Binding 0\n"
 		"\n"//SSBO OUT
+		"OpDecorate %SSBO_OUT Block\n"
 		"OpMemberDecorate %SSBO_OUT 0 Offset 0\n"
 		"OpDecorate %ssboOUT DescriptorSet 0\n"
 		"OpDecorate %ssboOUT Binding 1\n");
@@ -5102,7 +5035,6 @@ void addGraphics8bitStorage8bitStructMixedTypesGroup (tcu::TestCaseGroup* group)
 								"%v4i32inPtr  = OpTypePointer Uniform %v4i32\n" :
 								"";
 		specs["inPtr"]			= isUniform ? "inPtr" : "outPtr";
-		specs["inSSBODecor"]	= isUniform ? "OpDecorate %SSBO_IN Block\n" : "";
 		specsOffset["InOut"]	= "In";
 		specs["InOffsets"]		= StringTemplate(isUniform ? getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD140) : getStructShaderComponet(SHADERTEMPLATE_STRIDEMIX_STD430)).specialize(specsOffset);
 		specsOffset["InOut"]	= "Out";

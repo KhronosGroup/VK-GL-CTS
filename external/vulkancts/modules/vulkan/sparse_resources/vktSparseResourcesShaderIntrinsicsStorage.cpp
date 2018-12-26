@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktSparseResourcesShaderIntrinsicsStorage.hpp"
+#include "vkBarrierUtil.hpp"
 
 using namespace vk;
 

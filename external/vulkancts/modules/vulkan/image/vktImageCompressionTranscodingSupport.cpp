@@ -32,6 +32,7 @@
 #include "vktTestCaseUtil.hpp"
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vktImageTestsUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkRef.hpp"
@@ -677,7 +678,7 @@ void BasicComputeTestInstance::copyDataToImage (const VkCommandBuffer&	cmdBuffer
 	{
 		const Allocation& alloc = imageBuffer.getAllocation();
 		deMemcpy(alloc.getHostPtr(), &m_data[0], m_data.size());
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_data.size());
+		flushAlloc(vk, device, alloc);
 	}
 
 	beginCommandBuffer(vk, cmdBuffer);
@@ -887,7 +888,7 @@ bool BasicComputeTestInstance::copyResultAndCompare (const VkCommandBuffer&	cmdB
 	submitCommandsAndWait(vk, device, queue, cmdBuffer);
 
 	const Allocation& allocResult = imageBufferResult.getAllocation();
-	invalidateMappedMemoryRange(vk, device, allocResult.getMemory(), allocResult.getOffset(), imageResultSize);
+	invalidateAlloc(vk, device, allocResult);
 	if (deMemCmp((const void *)allocResult.getHostPtr(), (const void *)&m_data[static_cast<size_t>(offset)], static_cast<size_t>(imageResultSize)) == 0ull)
 		return true;
 	return false;
@@ -1290,8 +1291,8 @@ bool BasicComputeTestInstance::decompressImage (const VkCommandBuffer&	cmdBuffer
 
 		const Allocation&		resultAlloc		= resultBuffer.getAllocation();
 		const Allocation&		referenceAlloc	= referenceBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), bufferSize);
-		invalidateMappedMemoryRange(vk, device, referenceAlloc.getMemory(), referenceAlloc.getOffset(), bufferSize);
+		invalidateAlloc(vk, device, resultAlloc);
+		invalidateAlloc(vk, device, referenceAlloc);
 
 		BinaryCompareMode compareMode =
 			(m_parameters.formatIsASTC)
@@ -1644,7 +1645,7 @@ void GraphicsAttachmentsTestInstance::prepareVertexBuffer ()
 	// Upload vertex data
 	const Allocation&	vertexBufferAlloc	= m_vertexBuffer->getAllocation();
 	deMemcpy(vertexBufferAlloc.getHostPtr(), &vertexArray[0], vertexBufferSizeInBytes);
-	flushMappedMemoryRange(vk, device, vertexBufferAlloc.getMemory(), vertexBufferAlloc.getOffset(), vertexBufferSizeInBytes);
+	flushAlloc(vk, device, vertexBufferAlloc);
 }
 
 void GraphicsAttachmentsTestInstance::transcodeRead ()
@@ -1725,7 +1726,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 			// Upload source image data
 			const Allocation& alloc = srcImageBuffer->getAllocation();
 			deMemcpy(alloc.getHostPtr(), &m_srcData[levelNdx][layerNdx]->at(0), srcImageSizeInBytes);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), srcImageSizeInBytes);
+			flushAlloc(vk, device, alloc);
 
 			beginCommandBuffer(vk, *cmdBuffer);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -1773,7 +1774,7 @@ void GraphicsAttachmentsTestInstance::transcodeRead ()
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
-			invalidateMappedMemoryRange(vk, device, dstImageBufferAlloc.getMemory(), dstImageBufferAlloc.getOffset(), dstImageSizeInBytes);
+			invalidateAlloc(vk, device, dstImageBufferAlloc);
 			deMemcpy(&m_dstData[levelNdx][layerNdx]->at(0), dstImageBufferAlloc.getHostPtr(), dstImageSizeInBytes);
 		}
 	}
@@ -1859,7 +1860,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 			// Upload source image data
 			const Allocation& alloc = srcImageBuffer->getAllocation();
 			deMemcpy(alloc.getHostPtr(), &m_srcData[levelNdx][layerNdx]->at(0), srcImageSizeInBytes);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), srcImageSizeInBytes);
+			flushAlloc(vk, device, alloc);
 
 			beginCommandBuffer(vk, *cmdBuffer);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -1907,7 +1908,7 @@ void GraphicsAttachmentsTestInstance::transcodeWrite ()
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
-			invalidateMappedMemoryRange(vk, device, dstImageBufferAlloc.getMemory(), dstImageBufferAlloc.getOffset(), dstImageSizeInBytes);
+			invalidateAlloc(vk, device, dstImageBufferAlloc);
 			deMemcpy(&m_dstData[levelNdx][layerNdx]->at(0), dstImageBufferAlloc.getHostPtr(), dstImageSizeInBytes);
 		}
 	}
@@ -2088,7 +2089,7 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	{
 		const Allocation& refSrcImageBufferAlloc = refSrcImageBuffer->getAllocation();
 		deMemcpy(refSrcImageBufferAlloc.getHostPtr(), &refCompressedData[0], refCompressedData.size());
-		flushMappedMemoryRange(vk, device, refSrcImageBufferAlloc.getMemory(), refSrcImageBufferAlloc.getOffset(), refCompressedData.size());
+		flushAlloc(vk, device, refSrcImageBufferAlloc);
 	}
 
 	beginCommandBuffer(vk, *cmdBuffer);
@@ -2160,10 +2161,10 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 	// Compare decompressed pixel data in reference and result images
 	{
 		const Allocation&	refDstBufferAlloc	= refDstBuffer->getAllocation();
-		invalidateMappedMemoryRange(vk, device, refDstBufferAlloc.getMemory(), refDstBufferAlloc.getOffset(), dstBufferSize);
+		invalidateAlloc(vk, device, refDstBufferAlloc);
 
 		const Allocation&	resDstBufferAlloc	= resDstBuffer->getAllocation();
-		invalidateMappedMemoryRange(vk, device, resDstBufferAlloc.getMemory(), resDstBufferAlloc.getOffset(), dstBufferSize);
+		invalidateAlloc(vk, device, resDstBufferAlloc);
 
 		BinaryCompareMode compareMode =
 			(m_parameters.formatIsASTC)
@@ -2179,8 +2180,8 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression (const std::vector<deU
 		if (res == COMPARE_RESULT_FAILED)
 		{
 			// Do fuzzy to log error mask
-			invalidateMappedMemoryRange(vk, device, resDstBufferAlloc.getMemory(), resDstBufferAlloc.getOffset(), dstBufferSize);
-			invalidateMappedMemoryRange(vk, device, refDstBufferAlloc.getMemory(), refDstBufferAlloc.getOffset(), dstBufferSize);
+			invalidateAlloc(vk, device, resDstBufferAlloc);
+			invalidateAlloc(vk, device, refDstBufferAlloc);
 
 			tcu::ConstPixelBufferAccess	resPixels	(mapVkFormat(m_parameters.formatForVerify), renderSize.width, renderSize.height, 1u, resDstBufferAlloc.getHostPtr());
 			tcu::ConstPixelBufferAccess	refPixels	(mapVkFormat(m_parameters.formatForVerify), renderSize.width, renderSize.height, 1u, refDstBufferAlloc.getHostPtr());
@@ -2309,7 +2310,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 			// Upload source image data
 			const Allocation& alloc = srcImageBuffer->getAllocation();
 			deMemcpy(alloc.getHostPtr(), &m_srcData[levelNdx][layerNdx]->at(0), srcImageSizeInBytes);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), srcImageSizeInBytes);
+			flushAlloc(vk, device, alloc);
 
 			beginCommandBuffer(vk, *cmdBuffer);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -2357,7 +2358,7 @@ void GraphicsTextureTestInstance::transcodeRead ()
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
-			invalidateMappedMemoryRange(vk, device, dstImageBufferAlloc.getMemory(), dstImageBufferAlloc.getOffset(), dstImageSizeInBytes);
+			invalidateAlloc(vk, device, dstImageBufferAlloc);
 			deMemcpy(&m_dstData[levelNdx][layerNdx]->at(0), dstImageBufferAlloc.getHostPtr(), dstImageSizeInBytes);
 		}
 	}
@@ -2449,7 +2450,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 			// Upload source image data
 			const Allocation& alloc = srcImageBuffer->getAllocation();
 			deMemcpy(alloc.getHostPtr(), &m_srcData[levelNdx][layerNdx]->at(0), srcImageSizeInBytes);
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), srcImageSizeInBytes);
+			flushAlloc(vk, device, alloc);
 
 			beginCommandBuffer(vk, *cmdBuffer);
 			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -2497,7 +2498,7 @@ void GraphicsTextureTestInstance::transcodeWrite ()
 			submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 			const Allocation& dstImageBufferAlloc = dstImageBuffer->getAllocation();
-			invalidateMappedMemoryRange(vk, device, dstImageBufferAlloc.getMemory(), dstImageBufferAlloc.getOffset(), dstImageSizeInBytes);
+			invalidateAlloc(vk, device, dstImageBufferAlloc);
 			deMemcpy(&m_dstData[levelNdx][layerNdx]->at(0), dstImageBufferAlloc.getHostPtr(), dstImageSizeInBytes);
 		}
 	}

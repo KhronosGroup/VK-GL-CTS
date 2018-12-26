@@ -72,19 +72,6 @@ using std::string;
 typedef de::SharedPtr<Allocation>				AllocationSp;
 typedef de::SharedPtr<vk::Unique<VkBuffer> >	VkBufferSp;
 
-Move<VkInstance> createInstanceWithExtension (const PlatformInterface& vkp, deUint32 version, const char* extensionName)
-{
-	const vector<VkExtensionProperties>	instanceExts	= enumerateInstanceExtensionProperties(vkp, DE_NULL);
-	vector<string>						enabledExts;
-
-	if (!isExtensionSupported(instanceExts, RequiredExtension(extensionName)))
-		TCU_THROW(NotSupportedError, (string(extensionName) + " is not supported").c_str());
-
-	enabledExts.push_back(extensionName);
-
-	return vk::createDefaultInstance(vkp, version, vector<string>() /* layers */, enabledExts);
-}
-
 Move<VkImage> createTestImage (const DeviceInterface&	vkd,
 							   VkDevice					device,
 							   VkFormat					format,
