@@ -91,6 +91,7 @@
 #include "vktAmberExampleTests.hpp"
 #include "vktAmberGraphicsFuzzTests.hpp"
 #include "vktTransformFeedbackTests.hpp"
+#include "vktDescriptorIndexingTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -502,6 +503,7 @@ void TestPackage::init (void)
 	addChild(cts_amber::createExampleTests		(m_testCtx));
 	addChild(cts_amber::createGraphicsFuzzTests	(m_testCtx));
 	addChild(TransformFeedback::createTests		(m_testCtx));
+	addChild(DescriptorIndexing::createTests	(m_testCtx));
 }
 
 } // vkt

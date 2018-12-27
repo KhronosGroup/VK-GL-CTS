@@ -35,6 +35,7 @@ add_subdirectory(memory_model)
 add_subdirectory(transform_feedback)
 add_subdirectory(util)
 add_subdirectory(amber)
+add_subdirectory(descriptor_indexing)
 
 include_directories(
 	api
@@ -72,6 +73,7 @@ include_directories(
 	transform_feedback
 	util
 	amber
+	descriptor_indexing
 	)
 
 set(DEQP_VK_SRCS
@@ -128,6 +130,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-memory-model
 	deqp-vk-amber
 	deqp-vk-transform-feedback
+	deqp-vk-descriptor-indexing
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))
