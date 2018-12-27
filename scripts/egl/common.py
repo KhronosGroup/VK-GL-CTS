@@ -40,8 +40,8 @@ EGL_WRAPPER_DIR		= os.path.normpath(os.path.join(EGL_DIR, "wrapper"))
 EGL_SOURCE			= khr_util.registry_cache.RegistrySource(
 						"https://raw.githubusercontent.com/KhronosGroup/EGL-Registry",
 						"api/egl.xml",
-						"13a26984991216cbf9a44fbf390f95dc05b5493a",
-						"1c59e6b6b89d2b9047a8f5c680a6bb240b8048700ce91cefa0e870798da4f3db")
+						"3338ed0db494d6a4db7f76627b38f0b1892db096",
+						"863db99411edfd83ba1d875fb0e13e021e155689d3eae5199a9b1ec969f368e9")
 
 VERSION				= '1.5'
 
@@ -74,6 +74,7 @@ EXTENSIONS			= [
 	"EGL_EXT_gl_colorspace_bt2020_pq",
 	"EGL_EXT_gl_colorspace_display_p3",
 	"EGL_EXT_gl_colorspace_display_p3_linear",
+	"EGL_EXT_gl_colorspace_display_p3_passthrough",
 	"EGL_EXT_gl_colorspace_scrgb",
 	"EGL_EXT_gl_colorspace_scrgb_linear",
 	"EGL_EXT_surface_SMPTE2086_metadata",
