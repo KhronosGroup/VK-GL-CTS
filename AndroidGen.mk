@@ -108,6 +108,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalDrawTests.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalRenderingTestUtil.cpp \
 	external/vulkancts/modules/vulkan/conditional_rendering/vktConditionalTests.cpp \
+	external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorIndexingTests.cpp \
+	external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTests.cpp \
+	external/vulkancts/modules/vulkan/descriptor_indexing/vktDescriptorSetsIndexingTestsUtils.cpp \
 	external/vulkancts/modules/vulkan/device_group/vktDeviceGroupRendering.cpp \
 	external/vulkancts/modules/vulkan/draw/vktBasicDrawTests.cpp \
 	external/vulkancts/modules/vulkan/draw/vktDrawBaseClass.cpp \
@@ -1093,6 +1096,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/clipping \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/compute \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/conditional_rendering \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/descriptor_indexing \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/device_group \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/draw \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/dynamic_state \
