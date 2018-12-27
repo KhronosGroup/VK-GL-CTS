@@ -1725,9 +1725,9 @@ void TransferTestInstance::configCommandBuffer(void)
 			{
 				const VkBufferCopy  copyBufRegion =
 				{
-					0u,      // VkDeviceSize    srcOffset;
-					0u,      // VkDeviceSize    destOffset;
-					512u,    // VkDeviceSize    copySize;
+					0u,           // VkDeviceSize    srcOffset;
+					0u,           // VkDeviceSize    destOffset;
+					m_bufSize,    // VkDeviceSize    copySize;
 				};
 				vk.cmdCopyBuffer(*m_cmdBuffer, *m_srcBuffer, *m_dstBuffer, 1u, &copyBufRegion);
 				break;
