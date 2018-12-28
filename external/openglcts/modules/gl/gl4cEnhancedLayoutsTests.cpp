@@ -16687,11 +16687,15 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 							  "layout(points)                           in;\n"
 							  "layout(triangle_strip, max_vertices = 4) out;\n"
 							  "\n"
+							  "layout (location = 1, component = COMPONENT) FLAT out TYPE gohan;\n"
+							  "\n"
 							  "in  vec4 tes_gs[];\n"
 							  "out vec4 gs_fs;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
+							  "    gohan = TYPE(1);\n"
+							  "\n"
 							  "    gs_fs = tes_gs[0];\n"
 							  "    gl_Position  = vec4(-1, -1, 0, 1);\n"
 							  "    EmitVertex();\n"
@@ -16742,11 +16746,14 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 							   "\n"
 							   "layout(vertices = 1) out;\n"
 							   "\n"
+							   "layout (location = 1, component = COMPONENT) FLAT out TYPE gohan[];\n"
+							   "\n"
 							   "in  vec4 vs_tcs[];\n"
 							   "out vec4 tcs_tes[];\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
+							   "    gohan[gl_InvocationID] = TYPE(1);\n"
 							   "\n"
 							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
 							   "\n"
@@ -16789,11 +16796,15 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 							   "\n"
 							   "layout(isolines, point_mode) in;\n"
 							   "\n"
+							   "layout (location = 1, component = COMPONENT) FLAT out TYPE gohan;\n"
+							   "\n"
 							   "in  vec4 tcs_tes[];\n"
 							   "out vec4 tes_gs;\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
+							   "    gohan = TYPE(1);\n"
+							   "\n"
 							   "    tes_gs = tcs_tes[0];\n"
 							   "}\n"
 							   "\n";
@@ -16819,11 +16830,15 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 	static const GLchar* vs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
+							  "layout (location = 1, component = COMPONENT) FLAT out TYPE gohan;\n"
+							  "\n"
 							  "in  vec4 in_vs;\n"
 							  "out vec4 vs_tcs;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
+							  "    gohan = TYPE(1);\n"
+							  "\n"
 							  "    vs_tcs = in_vs;\n"
 							  "}\n"
 							  "\n";
@@ -16845,18 +16860,20 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 									 "}\n"
 									 "\n";
 
-	std::string source;
-	testCase&   test_case = m_test_cases[test_case_index];
+	std::string   source;
+	testCase&	 test_case = m_test_cases[test_case_index];
+	GLchar		  buffer_gohan[16];
+	const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
+
+	sprintf(buffer_gohan, "%d", test_case.m_component_gohan);
 
 	if (test_case.m_stage == stage)
 	{
 		const GLchar* array = "";
-		GLchar		  buffer_gohan[16];
 		GLchar		  buffer_goten[16];
 		const GLchar* flat		  = "";
 		const GLchar* index		  = "";
 		size_t		  position	= 0;
-		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_use   = test_one;
 
 		if (isFlatRequired(stage, test_case.m_type, Utils::Variable::VARYING_INPUT, true))
@@ -16864,7 +16881,6 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 			flat = "flat";
 		}
 
-		sprintf(buffer_gohan, "%d", test_case.m_component_gohan);
 		sprintf(buffer_goten, "%d", test_case.m_component_goten);
 
 		switch (stage)
@@ -16908,6 +16924,13 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 	}
 	else
 	{
+		const GLchar* flat = "";
+
+		if (isFlatRequired(stage, test_case.m_type, Utils::Variable::VARYING_OUTPUT, true))
+		{
+			flat = "flat";
+		}
+
 		switch (stage)
 		{
 		case Utils::Shader::FRAGMENT:
@@ -16928,6 +16951,10 @@ std::string InputComponentAliasingTest::getShaderSource(GLuint test_case_index, 
 		default:
 			TCU_FAIL("Invalid enum");
 		}
+
+		Utils::replaceAllTokens("FLAT", flat, source);
+		Utils::replaceAllTokens("COMPONENT", buffer_gohan, source);
+		Utils::replaceAllTokens("TYPE", type_name, source);
 	}
 
 	return source;
