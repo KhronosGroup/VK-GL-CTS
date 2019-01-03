@@ -44,6 +44,7 @@
 #define USE_NSIGHT 0
 #define DEBUG_ENBALE_MESSAGE_CALLBACK 0
 #define DEBUG_NEG_LOG_ERROR 0
+#define DEBUG_NEG_REMOVE_ERROR 0
 #define DEBUG_REPLACE_TOKEN 0
 #define DEBUG_REPEAT_TEST_CASE 0
 #define DEBUG_REPEATED_TEST_CASE 0
@@ -13525,14 +13526,13 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 												"    layout (location = 4) vec4 goten;\n"
 												"    layout (location = 6) vec4 chichi;\n"
 												"} gokuARRAY;\n";
-	static const GLchar* block_definition_default = "Goku {\n"
-													"    vec4 gohan;\n"
-													"    vec4 goten;\n"
-													"    vec4 chichi;\n"
-													"} gokuARRAY;\n";
 	static const GLchar* block_definition_one = "Goku {\n"
 												"    vec4 gohan;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+												"    /* layout (location = 4) */ vec4 goten;\n"
+#else
 												"    layout (location = 4) vec4 goten;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 												"    vec4 chichi;\n"
 												"} gokuARRAY;\n";
 	static const GLchar* input_use  = "    result += gokuINDEX.gohan + gokuINDEX.goten + gokuINDEX.chichi;\n";
@@ -13731,121 +13731,51 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 									 "}\n"
 									 "\n";
 
-	static const GLchar* shaders_in[6][6] = { /* cs  */ { 0, 0, 0, 0, 0, 0 },
-											  /* vs  */ { 0, vs_tested, tcs, tes, gs, fs },
-											  /* tcs */ { 0, vs_tested, tcs_tested, tes, gs, fs },
-											  /* tes */ { 0, vs, tcs_tested, tes_tested, gs, fs },
-											  /* gs  */ { 0, vs, tcs, tes_tested, gs_tested, fs },
-											  /* fs  */ { 0, vs, tcs, tes, gs_tested, fs_tested } };
-
-	static const GLchar* shaders_out[6][6] = { /* cs  */ { 0, 0, 0, 0, 0, 0 },
-											   /* vs  */ { 0, vs_tested, tcs_tested, tes, gs, fs },
-											   /* tcs */ { 0, vs, tcs_tested, tes_tested, gs, fs },
-											   /* tes */ { 0, vs, tcs, tes_tested, gs_tested, fs },
-											   /* gs  */ { 0, vs, tcs, tes, gs_tested, fs_tested },
-											   /* fs  */ { 0, 0, 0, 0, 0, 0 } };
-
-	static const bool require_modifications_in[6][6] = {
-		/* cs  */ { false, false, false, false, false, false },
-		/* vs  */ { false, true, false, false, false, false },
-		/* tcs */ { false, true, true, false, false, false },
-		/* tes */ { false, false, true, true, false, false },
-		/* gs  */ { false, false, false, true, true, false },
-		/* fs  */ { false, false, false, false, true, true }
-	};
-
-	static const bool require_modifications_out[6][6] = {
-		/* cs  */ { false, false, false, false, false, false },
-		/* vs  */ { false, true, true, false, false, false },
-		/* tcs */ { false, false, true, true, false, false },
-		/* tes */ { false, false, false, true, true, false },
-		/* gs  */ { false, false, false, false, true, true },
-		/* fs  */ { false, false, false, false, false, false }
-	};
-
 	const GLchar* array					= "";
 	const GLchar* direction				= "out";
 	const GLchar* index					= "";
-	bool		  require_modifications = false;
 	std::string   source;
 	testCase&	 test_case = m_test_cases[test_case_index];
 	const GLchar* var_use   = output_use;
+	const GLchar* definition = test_case.m_qualify_all ? block_definition_all : block_definition_one;
 
 	if (true == test_case.m_is_input)
 	{
-		require_modifications = require_modifications_in[test_case.m_stage][stage];
-		source				  = shaders_in[test_case.m_stage][stage];
-
-		if (test_case.m_stage == stage)
-		{
-			direction = "in";
-			var_use   = input_use;
-		}
+		direction = "in";
+		var_use   = input_use;
 	}
-	else
-	{
-		require_modifications = require_modifications_out[test_case.m_stage][stage];
-		source				  = shaders_out[test_case.m_stage][stage];
-
-		if (test_case.m_stage != stage)
-		{
-			direction = "in";
-			var_use   = input_use;
-		}
-	}
-
-	const GLchar* definition = test_case.m_qualify_all ? block_definition_all
-			: block_definition_default;
 
 	if (test_case.m_stage == stage)
 	{
-		if (true == test_case.m_qualify_all)
-		{
-			definition = block_definition_all;
-		}
-		else
-		{
-			definition = block_definition_one;
-		}
-	}
-
-	// Geometry shader inputs, tessellation control shader inputs and outputs, and tessellation evaluation
-	// inputs all have an additional level of arrayness relative to other shader inputs and outputs.
-	switch (stage)
-	{
-	case Utils::Shader::FRAGMENT:
-		break;
-	case Utils::Shader::TESS_CTRL:
-		array = "[]";
-		index = "[gl_InvocationID]";
-		break;
-	// geometry shader's input must have one more dimension than tessellation evaluation shader's output,
-	// the GS input block is an array, so the DS output can't be declared as an array
-	case Utils::Shader::GEOMETRY:
-	case Utils::Shader::TESS_EVAL:
-	{
-		if (std::string(direction) == std::string("in")) // match HS output and DS input
-		{
-			array = "[]";
-			index = "[0]";
-		}
-		else // match DS output and GS input
-		{
-			array = "";
-			index = "";
-		}
-	}
-	break;
-	case Utils::Shader::VERTEX:
-		break;
-	default:
-		TCU_FAIL("Invalid enum");
-	}
-
-	if (true == require_modifications)
-	{
 		size_t position = 0;
-		size_t temp;
+		size_t temp		= 0;
+
+		switch (stage)
+		{
+		case Utils::Shader::FRAGMENT:
+			source = fs_tested;
+			break;
+		case Utils::Shader::GEOMETRY:
+			source = gs_tested;
+			array  = test_case.m_is_input ? "[]" : "";
+			index  = test_case.m_is_input ? "[0]" : "";
+			break;
+		case Utils::Shader::TESS_CTRL:
+			source = tcs_tested;
+			array  = "[]";
+			index  = "[gl_InvocationID]";
+			break;
+		case Utils::Shader::TESS_EVAL:
+			source = tes_tested;
+			array  = test_case.m_is_input ? "[]" : "";
+			index  = test_case.m_is_input ? "[0]" : "";
+			break;
+		case Utils::Shader::VERTEX:
+			source = vs_tested;
+			break;
+		default:
+			TCU_FAIL("Invalid enum");
+		}
 
 		Utils::replaceToken("DIRECTION", position, direction, source);
 		temp = position;
