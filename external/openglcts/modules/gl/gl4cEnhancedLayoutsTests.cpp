@@ -13023,7 +13023,7 @@ bool VaryingStructureLocationsTest::useMonolithicProgram(GLuint /* test_case_ind
  **/
 VaryingStructureMemberLocationTest::VaryingStructureMemberLocationTest(deqp::Context& context)
 	: NegativeTestBase(context, "varying_structure_member_location",
-					   "Test verifies that compiler does not allow location qualifier on member of strucure")
+					   "Test verifies that compiler does not allow location qualifier on member of structure")
 {
 }
 
@@ -13038,7 +13038,11 @@ std::string VaryingStructureMemberLocationTest::getShaderSource(GLuint test_case
 {
 	static const GLchar* struct_definition = "struct Data {\n"
 											 "    vec4 gohan;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+											 "    /* layout (location = 4) */ vec4 goten;\n"
+#else
 											 "    layout (location = 4) vec4 goten;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 											 "};\n";
 	static const GLchar* input_var  = "in Data data;\n";
 	static const GLchar* output_var = "out Data data;\n";
@@ -13249,15 +13253,10 @@ std::string VaryingStructureMemberLocationTest::getShaderSource(GLuint test_case
 
 	std::string   source;
 	testCase&	 test_case		 = m_test_cases[test_case_index];
-	const GLchar* var_definition = 0;
-	const GLchar* var_use		 = 0;
+	const GLchar* var_definition  = input_var;
+	const GLchar* var_use		  = Utils::Shader::VERTEX == test_case.m_stage ? input_use : "\n";
 
-	if (true == test_case.m_is_input)
-	{
-		var_definition = input_var;
-		var_use		   = input_use;
-	}
-	else
+	if (!test_case.m_is_input)
 	{
 		var_definition = output_var;
 		var_use		   = output_use;
@@ -13738,17 +13737,17 @@ std::string VaryingBlockMemberLocationsTest::getShaderSource(GLuint test_case_in
 									 "\n";
 
 	const GLchar* array					= "";
-	const GLchar* direction				= "out";
+	const GLchar* direction				= "in";
 	const GLchar* index					= "";
 	std::string   source;
 	testCase&	 test_case = m_test_cases[test_case_index];
-	const GLchar* var_use   = output_use;
+	const GLchar* var_use	= Utils::Shader::VERTEX == test_case.m_stage ? input_use : "\n";
 	const GLchar* definition = test_case.m_qualify_all ? block_definition_all : block_definition_one;
 
-	if (true == test_case.m_is_input)
+	if (!test_case.m_is_input)
 	{
-		direction = "in";
-		var_use   = input_use;
+		direction = "out";
+		var_use   = output_use;
 	}
 
 	if (test_case.m_stage == stage)
@@ -13940,7 +13939,11 @@ std::string VaryingBlockAutomaticMemberLocationsTest::getShaderSource(GLuint				
 											"    vec4 goku;\n"
 											"    vec4 gohan[4];\n"
 											"    vec4 goten;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+											"    /* layout (location = 1) */ vec4 chichi;\n"
+#else
 											"    layout (location = 1) vec4 chichi;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 											"    vec4 pan;\n"
 											"} dbzARRAY;\n";
 	static const GLchar* input_use = "    result += dbzINDEX.goku + dbzINDEX.gohan[0] + dbzINDEX.gohan[1] + "
@@ -14148,16 +14151,16 @@ std::string VaryingBlockAutomaticMemberLocationsTest::getShaderSource(GLuint				
 									 "\n";
 
 	const GLchar* array		= "";
-	const GLchar* direction = "out";
+	const GLchar* direction = "in";
 	const GLchar* index		= "";
 	std::string   source;
 	testCase&	 test_case = m_test_cases[test_case_index];
-	const GLchar* var_use   = output_use;
+	const GLchar* var_use   = Utils::Shader::VERTEX == test_case.m_stage ? input_use : "\n";
 
-	if (true == test_case.m_is_input)
+	if (!test_case.m_is_input)
 	{
-		direction = "in ";
-		var_use   = input_use;
+		direction = "out";
+		var_use   = output_use;
 	}
 
 	if (test_case.m_stage == stage)
@@ -15453,12 +15456,12 @@ std::string VaryingExceedingComponentsTest::getShaderSource(GLuint test_case_ind
 			if (false == test_case.m_is_array)
 			{
 				var_definition = var_definition_one;
-				var_use		   = input_use_one;
+				var_use		   = Utils::Shader::VERTEX == stage ? input_use_one : "\n";
 			}
 			else
 			{
 				var_definition = var_definition_arr;
-				var_use		   = input_use_arr;
+				var_use		   = Utils::Shader::VERTEX == stage ? input_use_arr : "\n";
 			}
 		}
 
@@ -15872,7 +15875,7 @@ std::string VaryingComponentWithoutLocationTest::getShaderSource(GLuint test_cas
 		size_t		  position  = 0;
 		size_t		  temp;
 		const GLchar* type_name = test_case.m_type.GetGLSLTypeName();
-		const GLchar* var_use   = input_use;
+		const GLchar*			 var_use   = Utils::Shader::VERTEX == stage ? input_use : "\n";
 		Utils::Variable::STORAGE storage   = Utils::Variable::VARYING_INPUT;
 		const GLchar*			 flat	  = "";
 
@@ -16380,15 +16383,15 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 				{
 				case BLOCK:
 					var_definition = block_definition_one;
-					var_use		   = member_input_use_one;
+					var_use		   = Utils::Shader::VERTEX == stage ? member_input_use_one : "\n";
 					break;
 				case MATRIX:
 					var_definition = matrix_definition_one;
-					var_use		   = matrix_input_use_one;
+					var_use		   = Utils::Shader::VERTEX == stage ? matrix_input_use_one : "\n";
 					break;
 				case STRUCT:
 					var_definition = struct_definition_one;
-					var_use		   = member_input_use_one;
+					var_use		   = Utils::Shader::VERTEX == stage ? member_input_use_one : "\n";
 					break;
 				default:
 					TCU_FAIL("Invalid enum");
@@ -16400,15 +16403,15 @@ std::string VaryingComponentOfInvalidTypeTest::getShaderSource(GLuint test_case_
 				{
 				case BLOCK:
 					var_definition = block_definition_arr;
-					var_use		   = member_input_use_arr;
+					var_use		   = Utils::Shader::VERTEX == stage ? member_input_use_arr : "\n";
 					break;
 				case MATRIX:
 					var_definition = matrix_definition_arr;
-					var_use		   = matrix_input_use_arr;
+					var_use		   = Utils::Shader::VERTEX == stage ? matrix_input_use_arr : "\n";
 					break;
 				case STRUCT:
 					var_definition = struct_definition_arr;
-					var_use		   = member_input_use_arr;
+					var_use		   = Utils::Shader::VERTEX == stage ? member_input_use_arr : "\n";
 					break;
 				default:
 					TCU_FAIL("Invalid enum");
@@ -17707,7 +17710,7 @@ std::string VaryingLocationAliasingWithMixedTypesTest::getShaderSource(GLuint			
 		const GLchar*			 type_gohan_name = test_case.m_type_gohan.GetGLSLTypeName();
 		const GLchar*			 type_goten_name = test_case.m_type_goten.GetGLSLTypeName();
 		Utils::Variable::STORAGE storage		 = Utils::Variable::VARYING_INPUT;
-		const GLchar*			 var_use		 = input_use;
+		const GLchar*			 var_use		 = Utils::Shader::VERTEX == stage ? input_use : "\n";
 
 		if (false == test_case.m_is_input)
 		{
@@ -17782,15 +17785,15 @@ std::string VaryingLocationAliasingWithMixedTypesTest::getShaderSource(GLuint			
 		temp = position;
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
 		position = temp;
-		if (true == test_case.m_is_input)
+		if (!test_case.m_is_input)
 		{
+			Utils::replaceToken("TYPE", position, type_gohan_name, source);
+			Utils::replaceToken("TYPE", position, type_goten_name, source);
 			Utils::replaceToken("TYPE", position, type_gohan_name, source);
 			Utils::replaceToken("TYPE", position, type_goten_name, source);
 		}
-		else
+		else if (Utils::Shader::VERTEX == stage)
 		{
-			Utils::replaceToken("TYPE", position, type_gohan_name, source);
-			Utils::replaceToken("TYPE", position, type_goten_name, source);
 			Utils::replaceToken("TYPE", position, type_gohan_name, source);
 			Utils::replaceToken("TYPE", position, type_goten_name, source);
 		}
@@ -18236,11 +18239,21 @@ std::string VaryingLocationAliasingWithMixedInterpolationTest::getShaderSource(G
 		const GLchar* index		= "";
 		const GLchar* int_gohan = getInterpolationQualifier(test_case.m_interpolation_gohan);
 		const GLchar* int_goten = getInterpolationQualifier(test_case.m_interpolation_goten);
+#if DEBUG_NEG_REMOVE_ERROR
+		if (FLAT == test_case.m_interpolation_goten)
+		{
+			int_gohan = int_goten;
+		}
+		else
+		{
+			int_goten = int_gohan;
+		}
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 		size_t		  position  = 0;
 		size_t		  temp;
 		const GLchar* type_gohan_name = test_case.m_type_gohan.GetGLSLTypeName();
 		const GLchar* type_goten_name = test_case.m_type_goten.GetGLSLTypeName();
-		const GLchar* var_use		  = input_use;
+		const GLchar* var_use		  = Utils::Shader::VERTEX == stage ? input_use : "\n";
 
 		if (false == test_case.m_is_input)
 		{
@@ -18296,15 +18309,15 @@ std::string VaryingLocationAliasingWithMixedInterpolationTest::getShaderSource(G
 		temp = position;
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
 		position = temp;
-		if (true == test_case.m_is_input)
+		if (!test_case.m_is_input)
 		{
+			Utils::replaceToken("TYPE", position, type_gohan_name, source);
+			Utils::replaceToken("TYPE", position, type_goten_name, source);
 			Utils::replaceToken("TYPE", position, type_gohan_name, source);
 			Utils::replaceToken("TYPE", position, type_goten_name, source);
 		}
-		else
+		else if (Utils::Shader::VERTEX == stage)
 		{
-			Utils::replaceToken("TYPE", position, type_gohan_name, source);
-			Utils::replaceToken("TYPE", position, type_goten_name, source);
 			Utils::replaceToken("TYPE", position, type_gohan_name, source);
 			Utils::replaceToken("TYPE", position, type_goten_name, source);
 		}
@@ -18786,7 +18799,11 @@ std::string VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getShaderSourc
 		const GLchar* array_gohan = "";
 		const GLchar* array_goten = "";
 		const GLchar* aux_gohan   = getAuxiliaryQualifier(test_case.m_aux_gohan);
+#if DEBUG_NEG_REMOVE_ERROR
+		const GLchar* aux_goten = aux_gohan;
+#else
 		const GLchar* aux_goten   = getAuxiliaryQualifier(test_case.m_aux_goten);
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 		GLchar		  buffer_gohan[16];
 		GLchar		  buffer_goten[16];
 		const GLchar* direction   = "in ";
@@ -18798,7 +18815,7 @@ std::string VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getShaderSourc
 		size_t		  temp;
 		const GLchar* type_gohan_name = test_case.m_type_gohan.GetGLSLTypeName();
 		const GLchar* type_goten_name = test_case.m_type_goten.GetGLSLTypeName();
-		const GLchar* var_use		  = input_use;
+		const GLchar* var_use		  = Utils::Shader::VERTEX == stage ? input_use : "\n";
 
 		if (false == test_case.m_is_input)
 		{
@@ -18829,18 +18846,28 @@ std::string VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getShaderSourc
 				array_gohan = "[]";
 				index_gohan = "[gl_InvocationID]";
 			}
+#if DEBUG_NEG_REMOVE_ERROR
+			array_goten = array_gohan;
+			index_goten = index_gohan;
+#else
 			if (PATCH != test_case.m_aux_goten)
 			{
 				array_goten = "[]";
 				index_goten = "[gl_InvocationID]";
 			}
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source		= tes_tested;
 			array_gohan = "[]";
 			index_gohan = "[0]";
+#if DEBUG_NEG_REMOVE_ERROR
+			array_goten = array_gohan;
+			index_goten = index_gohan;
+#else
 			array_goten = "[]";
 			index_goten = "[0]";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -18868,15 +18895,15 @@ std::string VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getShaderSourc
 		temp = position;
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
 		position = temp;
-		if (true == test_case.m_is_input)
+		if (!test_case.m_is_input)
 		{
+			Utils::replaceToken("TYPE", position, type_gohan_name, source);
+			Utils::replaceToken("TYPE", position, type_goten_name, source);
 			Utils::replaceToken("TYPE", position, type_gohan_name, source);
 			Utils::replaceToken("TYPE", position, type_goten_name, source);
 		}
-		else
+		else if (Utils::Shader::VERTEX == stage)
 		{
-			Utils::replaceToken("TYPE", position, type_gohan_name, source);
-			Utils::replaceToken("TYPE", position, type_goten_name, source);
 			Utils::replaceToken("TYPE", position, type_gohan_name, source);
 			Utils::replaceToken("TYPE", position, type_goten_name, source);
 		}
@@ -19493,10 +19520,15 @@ XFBInputTest::XFBInputTest(deqp::Context& context)
  **/
 std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* buffer_var_definition = "/* layout (xfb_buffer = 2) */ in vec4 gohanARRAY;\n";
+	static const GLchar* offset_var_definition = "/* layout (xfb_offset = 16) */ in vec4 gohanARRAY;\n";
+	static const GLchar* stride_var_definition = "/* layout (xfb_stride = 32) */ in vec4 gohanARRAY;\n";
+#else
 	static const GLchar* buffer_var_definition = "layout (xfb_buffer = 2) in vec4 gohanARRAY;\n";
 	static const GLchar* offset_var_definition = "layout (xfb_offset = 16) in vec4 gohanARRAY;\n";
 	static const GLchar* stride_var_definition = "layout (xfb_stride = 32) in vec4 gohanARRAY;\n";
-	static const GLchar* input_use			   = "    result += gohanINDEX;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 	static const GLchar* fs					   = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
@@ -19519,8 +19551,6 @@ std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader:
 									 "void main()\n"
 									 "{\n"
 									 "    vec4 result = gs_fs;\n"
-									 "\n"
-									 "VARIABLE_USE"
 									 "\n"
 									 "    fs_out = result;\n"
 									 "}\n"
@@ -19564,8 +19594,6 @@ std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader:
 									 "void main()\n"
 									 "{\n"
 									 "    vec4 result = tes_gs[0];\n"
-									 "\n"
-									 "VARIABLE_USE"
 									 "\n"
 									 "    gs_fs = result;\n"
 									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
@@ -19616,8 +19644,6 @@ std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader:
 									  "{\n"
 									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
 									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
 									  "    tcs_tes[gl_InvocationID] = result;\n"
 									  "\n"
 									  "    gl_TessLevelOuter[0] = 1.0;\n"
@@ -19655,8 +19681,6 @@ std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader:
 									  "{\n"
 									  "    vec4 result = tcs_tes[0];\n"
 									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
 									  "    tes_gs += result;\n"
 									  "}\n"
 									  "\n";
@@ -19683,8 +19707,6 @@ std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader:
 									 "{\n"
 									 "    vec4 result = in_vs;\n"
 									 "\n"
-									 "VARIABLE_USE"
-									 "\n"
 									 "    vs_tcs += result;\n"
 									 "}\n"
 									 "\n";
@@ -19695,11 +19717,8 @@ std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader:
 	if (test_case.m_stage == stage)
 	{
 		const GLchar* array	= "";
-		const GLchar* index	= "";
 		size_t		  position = 0;
-		size_t		  temp;
 		const GLchar* var_definition = 0;
-		const GLchar* var_use		 = input_use;
 
 		switch (test_case.m_qualifier)
 		{
@@ -19724,17 +19743,14 @@ std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader:
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
 			array  = "[]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::TESS_CTRL:
 			source = tcs_tested;
 			array  = "[]";
-			index  = "[gl_InvocationID]";
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
 			array  = "[]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -19743,13 +19759,9 @@ std::string XFBInputTest::getShaderSource(GLuint test_case_index, Utils::Shader:
 			TCU_FAIL("Invalid enum");
 		}
 
-		temp = position;
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
-		position = temp;
+		position = 0;
 		Utils::replaceToken("ARRAY", position, array, source);
-		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
-
-		Utils::replaceAllTokens("INDEX", index, source);
 	}
 	else
 	{
