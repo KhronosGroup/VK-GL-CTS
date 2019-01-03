@@ -13447,7 +13447,11 @@ void VaryingStructureMemberLocationTest::testInit()
 		testCase test_case_in  = { true, (Utils::Shader::STAGES)stage };
 		testCase test_case_out = { false, (Utils::Shader::STAGES)stage };
 
-		m_test_cases.push_back(test_case_in);
+		/* It is a compile-time error to declare a struct as a VS input */
+		if (Utils::Shader::VERTEX != stage)
+		{
+			m_test_cases.push_back(test_case_in);
+		}
 
 		if (Utils::Shader::FRAGMENT != stage)
 		{
