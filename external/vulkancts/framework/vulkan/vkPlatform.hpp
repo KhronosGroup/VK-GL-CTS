@@ -53,6 +53,10 @@ public:
 
 #include "vkConcretePlatformInterface.inl"
 
+				virtual	GetInstanceProcAddrFunc	getGetInstanceProcAddr  () const {
+					return m_vk.getInstanceProcAddr;
+				}
+
 protected:
 	struct Functions
 	{

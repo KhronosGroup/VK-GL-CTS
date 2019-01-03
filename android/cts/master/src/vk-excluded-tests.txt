@@ -67,3 +67,6 @@ dEQP-VK.wsi.android.incremental_present.scale_down.*
 
 # Excluded VkRunner example tests
 dEQP-VK.vkrunner-example.*
+
+# Exclude Amber example tests
+dEQP-VK.amber-example.*

@@ -779,6 +779,11 @@ void* Context::getInstanceProc (const char* name, void* user_data)
 	return (void*) context->m_platformInterface.getInstanceProcAddr(context->getInstance(), name);
 }
 
+void* Context::getInstanceProcAddr	()
+{
+	return (void*)m_platformInterface.getGetInstanceProcAddr();
+}
+
 // TestCase
 
 void TestCase::initPrograms (SourceCollections&) const

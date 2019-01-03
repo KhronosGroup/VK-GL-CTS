@@ -99,6 +99,10 @@ if (NOT EXISTS ${SPIRV_INCLUDE_PATH})
 endif()
 include_directories(${SPIRV_INCLUDE_PATH})
 
+# Amber
+add_subdirectory(external/amber)
+include_directories(external/amber)
+
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
