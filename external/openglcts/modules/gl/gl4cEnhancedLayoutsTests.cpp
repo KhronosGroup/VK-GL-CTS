@@ -595,7 +595,7 @@ GLenum Type::GetTypeGLenum() const
 	return result;
 }
 
-/** Calculate the numbe of components consumed by a type
+/** Calculate the number of components consumed by a type
  *   according to 11.1.2.1 Output Variables
  *
  * @return Calculated number of components for the type
@@ -613,6 +613,39 @@ GLuint Type::GetNumComponents() const
 	}
 
 	return num_components;
+}
+
+/** Calculate the valid values to use with the component qualifier
+ *
+ * @return Vector with the valid values, in growing order, or empty if
+ *         the component qualifier is not allowed
+ **/
+std::vector<GLuint> Type::GetValidComponents() const
+{
+	const GLuint		component_size			  = Utils::Type::Double == m_basic_type ? 2 : 1;
+	const GLuint		n_components_per_location = Utils::Type::Double == m_basic_type ? 2 : 4;
+	const GLuint		n_req_components		  = m_n_rows;
+	const GLint			max_valid_component		  = (GLint)n_components_per_location - (GLint)n_req_components;
+	std::vector<GLuint> data;
+
+	/* The component qualifier cannot be used for matrices */
+	if (1 != m_n_columns)
+	{
+		return data;
+	}
+
+	/* The component qualifier cannot be used for dvec3/dvec4 */
+	if (max_valid_component < 0)
+	{
+		return data;
+	}
+
+	for (GLuint i = 0; i <= (GLuint)max_valid_component; ++i)
+	{
+		data.push_back(i * component_size);
+	}
+
+	return data;
 }
 
 /** Calculate stride for the type according to std140 rules
@@ -736,6 +769,28 @@ GLenum Type::GetTypeGLenum(TYPES type)
 	}
 
 	return result;
+}
+
+/** Check if two types can share the same location, based on the underlying numerical type and bit width
+ *
+ * @param first   First type to compare
+ * @param second  Second type to compare
+ *
+ * @return true if the types can share the same location
+ **/
+bool Type::CanTypesShareLocation(TYPES first, TYPES second)
+{
+	if (first == second)
+	{
+		return true;
+	}
+
+	if (Float == first || Float == second || Double == first || Double == second)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 /** Get proper glUniformNdv routine for vectors with specified number of rows
@@ -17876,16 +17931,14 @@ bool VaryingLocationAliasingWithMixedTypesTest::isComputeRelevant(GLuint /* test
  **/
 void VaryingLocationAliasingWithMixedTypesTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type_gohan		   = getType(i);
-		const bool		   is_float_type_gohan = isFloatType(type_gohan);
+		const std::vector<GLuint>& valid_components_gohan = type_gohan.GetValidComponents();
 
-		/* Skip matrices */
-		if (1 != type_gohan.m_n_columns)
+		if (valid_components_gohan.empty())
 		{
 			continue;
 		}
@@ -17893,81 +17946,55 @@ void VaryingLocationAliasingWithMixedTypesTest::testInit()
 		for (GLuint j = 0; j < n_types; ++j)
 		{
 			const Utils::Type& type_goten		   = getType(j);
-			const bool		   is_float_type_goten = isFloatType(type_goten);
+			const std::vector<GLuint>& valid_components_goten = type_goten.GetValidComponents();
 
-			/* Skip matrices */
-			if (1 != type_goten.m_n_columns)
+			if (valid_components_goten.empty())
 			{
 				continue;
 			}
 
 			/* Skip valid combinations */
-			if (is_float_type_gohan == is_float_type_goten)
+			if (Utils::Type::CanTypesShareLocation(type_gohan.m_basic_type, type_goten.m_basic_type))
 			{
 				continue;
 			}
 
-			const GLuint n_req_components_gohan = type_gohan.m_n_rows;
-			const GLuint n_req_components_goten = type_goten.m_n_rows;
-			const GLuint valid_component_gohan  = n_components_per_location - n_req_components_gohan;
-			const GLuint valid_component_goten  = n_components_per_location - n_req_components_goten;
-
-			/* Skip pairs that cannot fit into one location */
-			if (n_components_per_location < (n_req_components_gohan + n_req_components_goten))
+			for (std::vector<GLuint>::const_iterator it_gohan = valid_components_gohan.begin();
+				 it_gohan != valid_components_gohan.end(); ++it_gohan)
 			{
-				continue;
-			}
-
-			for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
-			{
-				/* Skip compute shader */
-				if (Utils::Shader::COMPUTE == stage)
+				const GLuint min_component = *it_gohan + type_gohan.GetNumComponents();
+				for (std::vector<GLuint>::const_iterator it_goten = valid_components_goten.begin();
+					 it_goten != valid_components_goten.end(); ++it_goten)
 				{
-					continue;
-				}
 
-				for (GLuint gohan = 0; gohan <= valid_component_gohan; ++gohan)
-				{
-					const GLint first_aliasing = gohan - n_req_components_goten + 1;
-					const GLint last_aliasing  = gohan + n_req_components_gohan - 1;
-
-					const GLuint goten_lower_limit = std::max(0, first_aliasing);
-					const GLuint goten_upper_limit = last_aliasing + 1;
-
-					/* Compoennets before gohan */
-					for (GLuint goten = 0; goten < goten_lower_limit; ++goten)
+					if (min_component > *it_goten)
 					{
-						testCase test_case_in = { gohan,	  goten,	 true, (Utils::Shader::STAGES)stage,
-												  type_gohan, type_goten };
-						testCase test_case_out = { gohan,	  goten,	 false, (Utils::Shader::STAGES)stage,
-												   type_gohan, type_goten };
-
-						if (Utils::Shader::VERTEX != stage)
-							m_test_cases.push_back(test_case_in);
-
-						/* Skip double outputs in fragment shader */
-						if ((Utils::Shader::FRAGMENT != stage) || ((Utils::Type::Double != type_gohan.m_basic_type) &&
-																   (Utils::Type::Double != type_goten.m_basic_type)))
-						{
-							m_test_cases.push_back(test_case_out);
-						}
+						continue;
 					}
 
-					/* Components after gohan */
-					for (GLuint goten = goten_upper_limit; goten <= valid_component_goten; ++goten)
+					for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 					{
-						testCase test_case_in = { gohan,	  goten,	 true, (Utils::Shader::STAGES)stage,
-												  type_gohan, type_goten };
-						testCase test_case_out = { gohan,	  goten,	 false, (Utils::Shader::STAGES)stage,
-												   type_gohan, type_goten };
+						/* Skip compute shader */
+						if (Utils::Shader::COMPUTE == stage)
+						{
+							continue;
+						}
 
 						if (Utils::Shader::VERTEX != stage)
+						{
+							testCase test_case_in = { *it_gohan,  *it_goten, true, (Utils::Shader::STAGES)stage,
+													  type_gohan, type_goten };
+
 							m_test_cases.push_back(test_case_in);
+						}
 
 						/* Skip double outputs in fragment shader */
 						if ((Utils::Shader::FRAGMENT != stage) || ((Utils::Type::Double != type_gohan.m_basic_type) &&
 																   (Utils::Type::Double != type_goten.m_basic_type)))
 						{
+							testCase test_case_out = { *it_gohan,  *it_goten, false, (Utils::Shader::STAGES)stage,
+													   type_gohan, type_goten };
+
 							m_test_cases.push_back(test_case_out);
 						}
 					}
@@ -17975,24 +18002,6 @@ void VaryingLocationAliasingWithMixedTypesTest::testInit()
 			}
 		}
 	}
-}
-
-/** Check if given type is float
- *
- * @param type Type in question
- *
- * @return true if tpye is float, false otherwise
- **/
-bool VaryingLocationAliasingWithMixedTypesTest::isFloatType(const Utils::Type& type)
-{
-	bool is_float = false;
-
-	if ((Utils::Type::Double == type.m_basic_type) || (Utils::Type::Float == type.m_basic_type))
-	{
-		is_float = true;
-	}
-
-	return is_float;
 }
 
 /** Constructor

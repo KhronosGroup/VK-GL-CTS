@@ -69,6 +69,7 @@ public:
 	glw::GLuint GetSize(const bool is_std140 = false) const;
 	glw::GLenum GetTypeGLenum() const;
 	glw::GLuint GetNumComponents() const;
+	std::vector<glw::GLuint> GetValidComponents() const;
 
 	/* Public static routines */
 	/* Functionality */
@@ -85,6 +86,8 @@ public:
 
 	/* GL gets */
 	static glw::GLenum GetTypeGLenum(TYPES type);
+
+	static bool CanTypesShareLocation(TYPES first, TYPES second);
 
 	/* Public fields */
 	TYPES		m_basic_type;
@@ -3018,9 +3021,6 @@ private:
 		Utils::Type			  m_type_gohan;
 		Utils::Type			  m_type_goten;
 	};
-
-	/* Private routines */
-	bool isFloatType(const Utils::Type& type);
 
 	/* Private fields */
 	std::vector<testCase> m_test_cases;
