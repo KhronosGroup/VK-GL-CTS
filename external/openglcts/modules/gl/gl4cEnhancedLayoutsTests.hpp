@@ -3092,7 +3092,6 @@ private:
 
 	/* Private routines */
 	const glw::GLchar* getInterpolationQualifier(INTERPOLATIONS interpolation);
-	bool isFloatType(const Utils::Type& type);
 
 	/* Private fields */
 	std::vector<testCase> m_test_cases;

@@ -18410,42 +18410,43 @@ bool VaryingLocationAliasingWithMixedInterpolationTest::isComputeRelevant(GLuint
  **/
 void VaryingLocationAliasingWithMixedInterpolationTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type_gohan		   = getType(i);
-		const bool		   is_float_type_gohan = isFloatType(type_gohan);
+		const std::vector<GLuint>& valid_components_gohan = type_gohan.GetValidComponents();
 
-		/* Skip matrices */
-		if (1 != type_gohan.m_n_columns)
+		if (valid_components_gohan.empty())
 		{
 			continue;
 		}
 
+		const GLuint gohan = valid_components_gohan.front();
+
 		for (GLuint j = 0; j < n_types; ++j)
 		{
 			const Utils::Type& type_goten		   = getType(j);
-			const bool		   is_float_type_goten = isFloatType(type_goten);
+			const std::vector<GLuint>& valid_components_goten = type_goten.GetValidComponents();
 
-			/* Skip matrices */
-			if (1 != type_goten.m_n_columns)
+			if (valid_components_goten.empty())
+			{
+				continue;
+			}
+
+			/* Just get the highest valid component for goten and
+			 * check if we can use it.
+			 */
+			const GLuint min_component = gohan + type_gohan.GetNumComponents();
+			const GLuint goten		   = valid_components_goten.back();
+
+			if (min_component > goten)
 			{
 				continue;
 			}
 
 			/* Skip invalid combinations */
-			if (is_float_type_gohan != is_float_type_goten)
-			{
-				continue;
-			}
-
-			const GLuint n_req_components_gohan = type_gohan.m_n_rows;
-			const GLuint n_req_components_goten = type_goten.m_n_rows;
-
-			/* Skip pairs that cannot fit into one location */
-			if (n_components_per_location < (n_req_components_gohan + n_req_components_goten))
+			if (!Utils::Type::CanTypesShareLocation(type_gohan.m_basic_type, type_goten.m_basic_type))
 			{
 				continue;
 			}
@@ -18458,60 +18459,63 @@ void VaryingLocationAliasingWithMixedInterpolationTest::testInit()
 					continue;
 				}
 
-				const GLuint gohan = 0;
-				const GLuint goten = gohan + n_req_components_gohan;
-
 				for (GLuint int_gohan = 0; int_gohan < INTERPOLATION_MAX; ++int_gohan)
 				{
 					for (GLuint int_goten = 0; int_goten < INTERPOLATION_MAX; ++int_goten)
 					{
-						const bool is_gohan_double = (Utils::Type::Double == type_gohan.m_basic_type) ? true : false;
-						const bool is_goten_double = (Utils::Type::Double == type_goten.m_basic_type) ? true : false;
-						const bool is_gohan_flat   = (FLAT == int_gohan) ? true : false;
-						const bool is_goten_flat   = (FLAT == int_goten) ? true : false;
-						const bool is_gohan_accepted_as_fs_in =
-							(is_gohan_double && is_gohan_flat) || (!is_gohan_double);
-						const bool is_goten_accepted_as_fs_in =
-							(is_goten_double && is_goten_flat) || (!is_goten_double);
-						const bool is_comb_accepted_as_fs_in = is_gohan_accepted_as_fs_in && is_goten_accepted_as_fs_in;
-
 						/* Skip when both are the same */
 						if (int_gohan == int_goten)
 						{
 							continue;
 						}
 
-						testCase test_case_in = { gohan,
-												  goten,
-												  (INTERPOLATIONS)int_gohan,
-												  (INTERPOLATIONS)int_goten,
-												  true,
-												  (Utils::Shader::STAGES)stage,
-												  type_gohan,
-												  type_goten };
-
-						testCase test_case_out = { gohan,
-												   goten,
-												   (INTERPOLATIONS)int_gohan,
-												   (INTERPOLATIONS)int_goten,
-												   false,
-												   (Utils::Shader::STAGES)stage,
-												   type_gohan,
-												   type_goten };
-
-						/* Skip inputs in:
-						 * vertex shader,
-						 * fragment shader when not flat double is used
+						/* Skip inputs in: vertex shader and whenever
+						 * flat is mandatory and is not the chosen
+						 * one.
 						 */
-						if ((Utils::Shader::VERTEX != stage) &&
-							((Utils::Shader::FRAGMENT != stage) || (true == is_comb_accepted_as_fs_in)))
+						bool skip_inputs = Utils::Shader::VERTEX == stage;
+						skip_inputs |=
+							(FLAT != int_gohan && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage), type_gohan,
+																 Utils::Variable::VARYING_INPUT));
+						skip_inputs |=
+							(FLAT != int_goten && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage), type_goten,
+																 Utils::Variable::VARYING_INPUT));
+
+						if (!skip_inputs)
 						{
+							testCase test_case_in = { gohan,
+													  goten,
+													  static_cast<INTERPOLATIONS>(int_gohan),
+													  static_cast<INTERPOLATIONS>(int_goten),
+													  true,
+													  static_cast<Utils::Shader::STAGES>(stage),
+													  type_gohan,
+													  type_goten };
 							m_test_cases.push_back(test_case_in);
 						}
 
-						/* Skip outputs in fragment shader */
-						if (Utils::Shader::FRAGMENT != stage)
+						/* Skip outputs in fragment shader and
+						 * whenever flat is mandatory and is not the
+						 * chosen one.
+						 */
+						bool skip_outputs = Utils::Shader::FRAGMENT == stage;
+						skip_outputs |=
+							(FLAT != int_gohan && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage), type_gohan,
+																 Utils::Variable::VARYING_OUTPUT));
+						skip_outputs |=
+							(FLAT != int_goten && isFlatRequired(static_cast<Utils::Shader::STAGES>(stage), type_goten,
+																 Utils::Variable::VARYING_OUTPUT));
+
+						if (!skip_outputs)
 						{
+							testCase test_case_out = { gohan,
+													   goten,
+													   static_cast<INTERPOLATIONS>(int_gohan),
+													   static_cast<INTERPOLATIONS>(int_goten),
+													   false,
+													   static_cast<Utils::Shader::STAGES>(stage),
+													   type_gohan,
+													   type_goten };
 							m_test_cases.push_back(test_case_out);
 						}
 					}
@@ -18547,24 +18551,6 @@ const GLchar* VaryingLocationAliasingWithMixedInterpolationTest::getInterpolatio
 	}
 
 	return result;
-}
-
-/** Check if given type is float
- *
- * @param type Type in question
- *
- * @return true if tpye is float, false otherwise
- **/
-bool VaryingLocationAliasingWithMixedInterpolationTest::isFloatType(const Utils::Type& type)
-{
-	bool is_float = false;
-
-	if ((Utils::Type::Double == type.m_basic_type) || (Utils::Type::Float == type.m_basic_type))
-	{
-		is_float = true;
-	}
-
-	return is_float;
 }
 
 /** Constructor
