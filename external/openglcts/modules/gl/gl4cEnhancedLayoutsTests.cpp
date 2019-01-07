@@ -18771,11 +18771,11 @@ std::string VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getShaderSourc
 #endif /* DEBUG_NEG_REMOVE_ERROR */
 		GLchar		  buffer_gohan[16];
 		GLchar		  buffer_goten[16];
-		const GLchar* direction   = "in ";
+		const GLchar*			 direction	 = "in";
 		const GLchar* index_gohan = "";
 		const GLchar* index_goten = "";
-		const GLchar* int_gohan   = test_case.m_int_gohan;
-		const GLchar* int_goten   = test_case.m_int_goten;
+		Utils::Variable::STORAGE storage	   = Utils::Variable::VARYING_INPUT;
+		const GLchar*			 interpolation = "";
 		size_t		  position	= 0;
 		size_t		  temp;
 		const GLchar* type_gohan_name = test_case.m_type_gohan.GetGLSLTypeName();
@@ -18785,8 +18785,14 @@ std::string VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getShaderSourc
 		if (false == test_case.m_is_input)
 		{
 			direction = "out";
-
+			storage   = Utils::Variable::VARYING_OUTPUT;
 			var_use = output_use;
+		}
+
+		if (isFlatRequired(stage, test_case.m_type_gohan, storage) ||
+			isFlatRequired(stage, test_case.m_type_goten, storage))
+		{
+			interpolation = "flat";
 		}
 
 		sprintf(buffer_gohan, "%d", test_case.m_component_gohan);
@@ -18824,14 +18830,20 @@ std::string VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getShaderSourc
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source		= tes_tested;
-			array_gohan = test_case.m_is_input ? "[]" : "";
-			index_gohan = test_case.m_is_input ? "[0]" : "";
+			if (PATCH != test_case.m_aux_gohan)
+			{
+				array_gohan = test_case.m_is_input ? "[]" : "";
+				index_gohan = test_case.m_is_input ? "[0]" : "";
+			}
 #if DEBUG_NEG_REMOVE_ERROR
 			array_goten = array_gohan;
 			index_goten = index_gohan;
 #else
-			array_goten						   = test_case.m_is_input ? "[]" : "";
-			index_goten						   = test_case.m_is_input ? "[0]" : "";
+			if (PATCH != test_case.m_aux_goten)
+			{
+				array_goten = test_case.m_is_input ? "[]" : "";
+				index_goten = test_case.m_is_input ? "[0]" : "";
+			}
 #endif /* DEBUG_NEG_REMOVE_ERROR */
 			break;
 		case Utils::Shader::VERTEX:
@@ -18845,13 +18857,13 @@ std::string VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getShaderSourc
 		position = 0;
 		Utils::replaceToken("COMPONENT", position, buffer_gohan, source);
 		Utils::replaceToken("AUX", position, aux_gohan, source);
-		Utils::replaceToken("INTERPOLATION", position, int_gohan, source);
+		Utils::replaceToken("INTERPOLATION", position, interpolation, source);
 		Utils::replaceToken("DIRECTION", position, direction, source);
 		Utils::replaceToken("TYPE", position, type_gohan_name, source);
 		Utils::replaceToken("ARRAY", position, array_gohan, source);
 		Utils::replaceToken("COMPONENT", position, buffer_goten, source);
 		Utils::replaceToken("AUX", position, aux_goten, source);
-		Utils::replaceToken("INTERPOLATION", position, int_goten, source);
+		Utils::replaceToken("INTERPOLATION", position, interpolation, source);
 		Utils::replaceToken("DIRECTION", position, direction, source);
 		Utils::replaceToken("TYPE", position, type_goten_name, source);
 		Utils::replaceToken("ARRAY", position, array_goten, source);
@@ -18955,100 +18967,128 @@ bool VaryingLocationAliasingWithMixedAuxiliaryStorageTest::isComputeRelevant(GLu
  **/
 void VaryingLocationAliasingWithMixedAuxiliaryStorageTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type_gohan		   = getType(i);
-		const bool		   is_float_type_gohan = isFloatType(type_gohan);
+		const std::vector<GLuint>& valid_components_gohan = type_gohan.GetValidComponents();
 
-		/* Skip matrices */
-		if (1 != type_gohan.m_n_columns)
+		if (valid_components_gohan.empty())
 		{
 			continue;
 		}
 
+		const GLuint gohan = valid_components_gohan.front();
+
 		for (GLuint j = 0; j < n_types; ++j)
 		{
 			const Utils::Type& type_goten		   = getType(j);
-			const bool		   is_flat_req_gohan   = (Utils::Type::Float == type_gohan.m_basic_type) ? false : true;
-			const bool		   is_flat_req_goten   = (Utils::Type::Float == type_goten.m_basic_type) ? false : true;
-			const bool		   is_float_type_goten = isFloatType(type_goten);
+			const std::vector<GLuint>& valid_components_goten = type_goten.GetValidComponents();
 
-			/* Skip matrices */
-			if (1 != type_goten.m_n_columns)
+			if (valid_components_goten.empty())
+			{
+				continue;
+			}
+
+			/* Just get the highest valid component for goten and
+			 * check if we can use it.
+			 */
+			const GLuint min_component = gohan + type_gohan.GetNumComponents();
+			const GLuint goten		   = valid_components_goten.back();
+
+			if (min_component > goten)
 			{
 				continue;
 			}
 
 			/* Skip invalid combinations */
-			if (is_float_type_gohan != is_float_type_goten)
+			if (!Utils::Type::CanTypesShareLocation(type_gohan.m_basic_type, type_goten.m_basic_type))
 			{
 				continue;
 			}
 
-			const GLuint n_req_components_gohan = type_gohan.m_n_rows;
-			const GLuint n_req_components_goten = type_goten.m_n_rows;
-
-			/* Skip pairs that cannot fit into one location */
-			if (n_components_per_location < (n_req_components_gohan + n_req_components_goten))
+			for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 			{
-				continue;
+				/* Skip compute shader */
+				if (Utils::Shader::COMPUTE == stage)
+				{
+					continue;
+				}
+
+				/* Skip vertex shader */
+				if (Utils::Shader::VERTEX == stage)
+				{
+					continue;
+				}
+
+				for (GLuint aux = 0; aux < AUXILIARY_MAX; ++aux)
+				{
+					Utils::Shader::STAGES const shader_stage = static_cast<Utils::Shader::STAGES>(stage);
+					AUXILIARIES const			auxiliary	= static_cast<AUXILIARIES>(aux);
+
+					switch (auxiliary)
+					{
+					case NONE:
+						break;
+					case PATCH:
+						if (Utils::Shader::TESS_CTRL == shader_stage || Utils::Shader::TESS_EVAL == shader_stage)
+						{
+							bool	 direction			   = Utils::Shader::TESS_EVAL == shader_stage;
+							testCase test_case_patch_gohan = { gohan,	 goten,		auxiliary,  NONE,
+															   direction, shader_stage, type_gohan, type_goten };
+							testCase test_case_patch_goten = { gohan,	 goten,		NONE,		auxiliary,
+															   direction, shader_stage, type_gohan, type_goten };
+
+							m_test_cases.push_back(test_case_patch_gohan);
+							m_test_cases.push_back(test_case_patch_goten);
+						}
+						break;
+					case CENTROID:
+					{
+						if (Utils::Shader::FRAGMENT != shader_stage)
+						{
+							testCase test_case_centroid_out_gohan = { gohan, goten,		   auxiliary,  NONE,
+																	  false, shader_stage, type_gohan, type_goten };
+							testCase test_case_centroid_out_goten = { gohan, goten,		   NONE,	   auxiliary,
+																	  false, shader_stage, type_gohan, type_goten };
+
+							m_test_cases.push_back(test_case_centroid_out_gohan);
+							m_test_cases.push_back(test_case_centroid_out_goten);
+						}
+
+						testCase test_case_centroid_in_gohan = { gohan, goten,		  auxiliary,  NONE,
+																 true,  shader_stage, type_gohan, type_goten };
+						testCase test_case_centroid_in_goten = { gohan, goten,		  NONE,		  auxiliary,
+																 true,  shader_stage, type_gohan, type_goten };
+
+						m_test_cases.push_back(test_case_centroid_in_gohan);
+						m_test_cases.push_back(test_case_centroid_in_goten);
+					}
+					break;
+					case SAMPLE:
+						if (Utils::Shader::FRAGMENT == shader_stage)
+						{
+							testCase test_case_sample_gohan_none = { gohan, goten,		  auxiliary,  NONE,
+																	 true,  shader_stage, type_gohan, type_goten };
+							testCase test_case_sample_goten_none = { gohan, goten,		  NONE,		  auxiliary,
+																	 true,  shader_stage, type_gohan, type_goten };
+							testCase test_case_sample_gohan_centroid = { gohan, goten,		  auxiliary,  CENTROID,
+																		 true,  shader_stage, type_gohan, type_goten };
+							testCase test_case_sample_goten_centroid = { gohan, goten,		  CENTROID,   auxiliary,
+																		 true,  shader_stage, type_gohan, type_goten };
+
+							m_test_cases.push_back(test_case_sample_gohan_none);
+							m_test_cases.push_back(test_case_sample_goten_none);
+							m_test_cases.push_back(test_case_sample_gohan_centroid);
+							m_test_cases.push_back(test_case_sample_goten_centroid);
+						}
+						break;
+					default:
+						TCU_FAIL("Invalid enum");
+					}
+				}
 			}
-
-			const GLuint gohan = 0;
-			const GLuint goten = gohan + n_req_components_gohan;
-
-			const GLchar* fs_int_gohan = is_flat_req_gohan ? "flat" : "";
-			const GLchar* fs_int_goten = is_flat_req_goten ? "flat" : "";
-
-			testCase test_case_tcs_np = { gohan,	  goten,	 NONE, PATCH, "", "", false, Utils::Shader::TESS_CTRL,
-										  type_gohan, type_goten };
-
-			testCase test_case_tcs_pn = { gohan,	  goten,	 PATCH, NONE, "", "", false, Utils::Shader::TESS_CTRL,
-										  type_gohan, type_goten };
-
-			testCase test_case_tes_np = { gohan,	  goten,	 NONE, PATCH, "", "", true, Utils::Shader::TESS_EVAL,
-										  type_gohan, type_goten };
-
-			testCase test_case_tes_pn = { gohan,	  goten,	 PATCH, NONE, "", "", true, Utils::Shader::TESS_EVAL,
-										  type_gohan, type_goten };
-
-			testCase test_case_fs_nc = { gohan,		   goten,		 NONE, CENTROID,
-										 fs_int_gohan, fs_int_goten, true, Utils::Shader::FRAGMENT,
-										 type_gohan,   type_goten };
-
-			testCase test_case_fs_cn = { gohan,		   goten,		 CENTROID, NONE,
-										 fs_int_gohan, fs_int_goten, true,	 Utils::Shader::FRAGMENT,
-										 type_gohan,   type_goten };
-
-			testCase test_case_fs_ns = { gohan,		   goten,		 NONE, SAMPLE,
-										 fs_int_gohan, fs_int_goten, true, Utils::Shader::FRAGMENT,
-										 type_gohan,   type_goten };
-
-			testCase test_case_fs_sn = { gohan,		   goten,		 SAMPLE, NONE,
-										 fs_int_gohan, fs_int_goten, true,   Utils::Shader::FRAGMENT,
-										 type_gohan,   type_goten };
-
-			testCase test_case_fs_cs = { gohan,		   goten,		 CENTROID, SAMPLE,
-										 fs_int_gohan, fs_int_goten, true,	 Utils::Shader::FRAGMENT,
-										 type_gohan,   type_goten };
-
-			testCase test_case_fs_sc = { gohan,		   goten,		 SAMPLE, CENTROID,
-										 fs_int_gohan, fs_int_goten, true,   Utils::Shader::FRAGMENT,
-										 type_gohan,   type_goten };
-
-			m_test_cases.push_back(test_case_tcs_np);
-			m_test_cases.push_back(test_case_tcs_pn);
-			m_test_cases.push_back(test_case_tes_np);
-			m_test_cases.push_back(test_case_tes_pn);
-			m_test_cases.push_back(test_case_fs_nc);
-			m_test_cases.push_back(test_case_fs_cn);
-			m_test_cases.push_back(test_case_fs_ns);
-			m_test_cases.push_back(test_case_fs_sn);
-			m_test_cases.push_back(test_case_fs_cs);
-			m_test_cases.push_back(test_case_fs_sc);
 		}
 	}
 }
@@ -19082,24 +19122,6 @@ const GLchar* VaryingLocationAliasingWithMixedAuxiliaryStorageTest::getAuxiliary
 	}
 
 	return result;
-}
-
-/** Check if given type is float
- *
- * @param type Type in question
- *
- * @return true if tpye is float, false otherwise
- **/
-bool VaryingLocationAliasingWithMixedAuxiliaryStorageTest::isFloatType(const Utils::Type& type)
-{
-	bool is_float = false;
-
-	if ((Utils::Type::Double == type.m_basic_type) || (Utils::Type::Float == type.m_basic_type))
-	{
-		is_float = true;
-	}
-
-	return is_float;
 }
 
 /* Constants used by VertexAttribLocationAPITest */

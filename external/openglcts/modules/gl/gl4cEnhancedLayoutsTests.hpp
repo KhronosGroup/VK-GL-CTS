@@ -3153,8 +3153,6 @@ private:
 		glw::GLuint			  m_component_goten;
 		AUXILIARIES			  m_aux_gohan;
 		AUXILIARIES			  m_aux_goten;
-		const glw::GLchar*	m_int_gohan;
-		const glw::GLchar*	m_int_goten;
 		bool				  m_is_input;
 		Utils::Shader::STAGES m_stage;
 		Utils::Type			  m_type_gohan;
@@ -3163,7 +3161,6 @@ private:
 
 	/* Private routines */
 	const glw::GLchar* getAuxiliaryQualifier(AUXILIARIES aux);
-	bool isFloatType(const Utils::Type& type);
 
 	/* Private fields */
 	std::vector<testCase> m_test_cases;
