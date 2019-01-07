@@ -19016,22 +19016,13 @@ void VaryingLocationAliasingWithMixedAuxiliaryStorageTest::testInit()
 					continue;
 				}
 
-				/* Skip vertex shader */
-				if (Utils::Shader::VERTEX == stage)
-				{
-					continue;
-				}
-
 				for (GLuint aux = 0; aux < AUXILIARY_MAX; ++aux)
 				{
 					Utils::Shader::STAGES const shader_stage = static_cast<Utils::Shader::STAGES>(stage);
 					AUXILIARIES const			auxiliary	= static_cast<AUXILIARIES>(aux);
 
-					switch (auxiliary)
+					if (PATCH == auxiliary)
 					{
-					case NONE:
-						break;
-					case PATCH:
 						if (Utils::Shader::TESS_CTRL == shader_stage || Utils::Shader::TESS_EVAL == shader_stage)
 						{
 							bool	 direction			   = Utils::Shader::TESS_EVAL == shader_stage;
@@ -19043,49 +19034,33 @@ void VaryingLocationAliasingWithMixedAuxiliaryStorageTest::testInit()
 							m_test_cases.push_back(test_case_patch_gohan);
 							m_test_cases.push_back(test_case_patch_goten);
 						}
-						break;
-					case CENTROID:
+						continue;
+					}
+
+					for (GLuint second_aux = 0; second_aux < AUXILIARY_MAX; ++second_aux)
 					{
+						AUXILIARIES const second_auxiliary = static_cast<AUXILIARIES>(second_aux);
+
+						if (PATCH == second_auxiliary || auxiliary == second_auxiliary)
+						{
+							continue;
+						}
+
 						if (Utils::Shader::FRAGMENT != shader_stage)
 						{
-							testCase test_case_centroid_out_gohan = { gohan, goten,		   auxiliary,  NONE,
-																	  false, shader_stage, type_gohan, type_goten };
-							testCase test_case_centroid_out_goten = { gohan, goten,		   NONE,	   auxiliary,
-																	  false, shader_stage, type_gohan, type_goten };
+							testCase test_case_out = { gohan, goten,		auxiliary,  second_auxiliary,
+													   false, shader_stage, type_gohan, type_goten };
 
-							m_test_cases.push_back(test_case_centroid_out_gohan);
-							m_test_cases.push_back(test_case_centroid_out_goten);
+							m_test_cases.push_back(test_case_out);
 						}
 
-						testCase test_case_centroid_in_gohan = { gohan, goten,		  auxiliary,  NONE,
-																 true,  shader_stage, type_gohan, type_goten };
-						testCase test_case_centroid_in_goten = { gohan, goten,		  NONE,		  auxiliary,
-																 true,  shader_stage, type_gohan, type_goten };
-
-						m_test_cases.push_back(test_case_centroid_in_gohan);
-						m_test_cases.push_back(test_case_centroid_in_goten);
-					}
-					break;
-					case SAMPLE:
-						if (Utils::Shader::FRAGMENT == shader_stage)
+						if (Utils::Shader::VERTEX != shader_stage)
 						{
-							testCase test_case_sample_gohan_none = { gohan, goten,		  auxiliary,  NONE,
-																	 true,  shader_stage, type_gohan, type_goten };
-							testCase test_case_sample_goten_none = { gohan, goten,		  NONE,		  auxiliary,
-																	 true,  shader_stage, type_gohan, type_goten };
-							testCase test_case_sample_gohan_centroid = { gohan, goten,		  auxiliary,  CENTROID,
-																		 true,  shader_stage, type_gohan, type_goten };
-							testCase test_case_sample_goten_centroid = { gohan, goten,		  CENTROID,   auxiliary,
-																		 true,  shader_stage, type_gohan, type_goten };
+							testCase test_case_in = { gohan, goten,		   auxiliary,  second_auxiliary,
+													  true,  shader_stage, type_gohan, type_goten };
 
-							m_test_cases.push_back(test_case_sample_gohan_none);
-							m_test_cases.push_back(test_case_sample_goten_none);
-							m_test_cases.push_back(test_case_sample_gohan_centroid);
-							m_test_cases.push_back(test_case_sample_goten_centroid);
+							m_test_cases.push_back(test_case_in);
 						}
-						break;
-					default:
-						TCU_FAIL("Invalid enum");
 					}
 				}
 			}
