@@ -166,9 +166,16 @@ void			sampleTexture				(const tcu::SurfaceAccess& dst, const tcu::TextureCubeAr
 void			sampleTexture				(const tcu::SurfaceAccess& dst, const tcu::Texture1DView&		src, const float* texCoord, const ReferenceParams& params);
 void			sampleTexture				(const tcu::SurfaceAccess& dst, const tcu::Texture1DArrayView&	src, const float* texCoord, const ReferenceParams& params);
 
+float			triangleInterpolate			(float v0, float v1, float v2, float x, float y);
+float			triangleInterpolate			(const tcu::Vec3& v, float x, float y);
+
 float			computeLodFromDerivates		(LodMode mode, float dudx, float dudy);
 float			computeLodFromDerivates		(LodMode mode, float dudx, float dvdx, float dudy, float dvdy);
 float			computeLodFromDerivates		(LodMode mode, float dudx, float dvdx, float dwdx, float dudy, float dvdy, float dwdy);
+
+float			computeNonProjectedTriLod	(LodMode mode, const tcu::IVec2& dstSize, deInt32 srcSize, const tcu::Vec3& sq);
+float			computeNonProjectedTriLod	(LodMode mode, const tcu::IVec2& dstSize, const tcu::IVec2& srcSize, const tcu::Vec3& sq, const tcu::Vec3& tq);
+float			computeNonProjectedTriLod	(LodMode mode, const tcu::IVec2& dstSize, const tcu::IVec3& srcSize, const tcu::Vec3& sq, const tcu::Vec3& tq, const tcu::Vec3& rq);
 
 void			computeQuadTexCoord1D			(std::vector<float>& dst, float left, float right);
 void			computeQuadTexCoord1DArray		(std::vector<float>& dst, int layerNdx, float left, float right);
