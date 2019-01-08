@@ -224,13 +224,6 @@ public class DeqpTestRunnerTest extends TestCase {
         if (majorVersion > requiredMajorVersion
                 || (majorVersion == requiredMajorVersion && minorVersion >= requiredMinorVersion)) {
 
-            EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG)))
-                    .andReturn("").once();
-            EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                    EasyMock.eq(true),
-                    EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName()))))
-                    .andReturn(null).once();
-
             expectRenderConfigQuery(mockDevice, requiredMajorVersion,
                     requiredMinorVersion);
 
@@ -244,9 +237,6 @@ public class DeqpTestRunnerTest extends TestCase {
 
             runInstrumentationLineAndAnswer(mockDevice, mockIDevice, testTrie, commandLine,
                     output);
-
-            EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG)))
-                    .andReturn("").once();
         }
 
         mockListener.testRunStarted(getTestId(deqpTest), 1);
@@ -363,13 +353,6 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
-
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true), EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName()))))
-                .andReturn(null).once();
-
         expectRenderConfigQuery(mockDevice, 3, 0);
 
         String commandLine = String.format(
@@ -401,9 +384,6 @@ public class DeqpTestRunnerTest extends TestCase {
 
         mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
         EasyMock.expectLastCall().once();
-
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
 
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
@@ -530,12 +510,6 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true), EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName()))))
-                .andReturn(null).once();
-
         expectRenderConfigQuery(mockDevice, 3, 0);
 
         String commandLine = String.format(
@@ -563,9 +537,6 @@ public class DeqpTestRunnerTest extends TestCase {
 
         mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
         EasyMock.expectLastCall().once();
-
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
 
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
@@ -628,15 +599,6 @@ public class DeqpTestRunnerTest extends TestCase {
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
         boolean thereAreTests = !expectedTests.isEmpty();
-        if (thereAreTests)
-        {
-            // only expect to install/uninstall packages if there are any tests
-            EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
-            EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true), EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName()))))
-                .andReturn(null).once();
-        }
 
         ITestInvocationListener mockListener
                 = EasyMock.createStrictMock(ITestInvocationListener.class);
@@ -664,13 +626,6 @@ public class DeqpTestRunnerTest extends TestCase {
 
         mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
         EasyMock.expectLastCall().once();
-
-        if (thereAreTests)
-        {
-            // package will only be installed if there are tests to run
-            EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
-        }
 
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
@@ -872,12 +827,6 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true), EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName()))))
-                .andReturn(null).once();
-
         expectRenderConfigQuery(mockDevice, 3, 0);
 
         String commandLine = String.format(
@@ -922,9 +871,6 @@ public class DeqpTestRunnerTest extends TestCase {
         mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
         EasyMock.expectLastCall().once();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
-
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
 
@@ -962,17 +908,6 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.executeShellCommand("pm list features"))
                 .andReturn("not a valid format");
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).
-            andReturn("").once();
-
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true),
-                EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName())))).andReturn(null)
-                .once();
-
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG)))
-                .andReturn("").once();
-
         mockListener.testRunStarted(getTestId(deqpTest), 1);
         EasyMock.expectLastCall().once();
 
@@ -1008,23 +943,12 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).
-            andReturn("").once();
-
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true),
-                EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName())))).andReturn(null)
-                .once();
-
         expectRenderConfigQueryAndReturn(mockDevice,
                 "--deqp-gl-config-name=rgba8888d24s8 "
                 + "--deqp-screen-rotation=unspecified "
                 + "--deqp-surface-type=window "
                 + "--deqp-gl-major-version=3 "
                 + "--deqp-gl-minor-version=0", "Maybe?");
-
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG)))
-                .andReturn("").once();
 
         mockListener.testRunStarted(getTestId(deqpTest), 1);
         EasyMock.expectLastCall().once();
@@ -1110,14 +1034,6 @@ public class DeqpTestRunnerTest extends TestCase {
                 (isLandscapeOrientation &&
                 featureString.contains(DeqpTestRunner.FEATURE_LANDSCAPE));
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).
-            andReturn("").once();
-
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true),
-                EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName())))).andReturn(null)
-                .once();
-
         if (executable) {
             expectRenderConfigQuery(mockDevice, String.format(
                     "--deqp-gl-config-name=rgba8888d24s8 --deqp-screen-rotation=%s "
@@ -1135,9 +1051,6 @@ public class DeqpTestRunnerTest extends TestCase {
             runInstrumentationLineAndAnswer(mockDevice, mockIDevice, testTrie, commandLine,
                     output);
         }
-
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG)))
-                .andReturn("").once();
 
         mockListener.testRunStarted(getTestId(deqpTest), 1);
         EasyMock.expectLastCall().once();
@@ -1342,22 +1255,11 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).
-            andReturn("").once();
-
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true),
-                EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName())))).andReturn(null)
-                .once();
-
         expectRenderConfigQueryAndReturn(mockDevice, String.format(
                 "--deqp-gl-config-name=%s --deqp-screen-rotation=unspecified "
                 + "--deqp-surface-type=window "
                 + "--deqp-gl-major-version=3 "
                 + "--deqp-gl-minor-version=0", pixelFormat), "No");
-
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG)))
-                .andReturn("").once();
 
         mockListener.testRunStarted(getTestId(deqpTest), 1);
         EasyMock.expectLastCall().once();
@@ -1709,14 +1611,6 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).
-            andReturn("").once();
-
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true),
-                EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName())))).andReturn(null)
-                .once();
-
         expectRenderConfigQuery(mockDevice,
                 "--deqp-gl-config-name=rgba8888d24s8 --deqp-screen-rotation=unspecified "
                 + "--deqp-surface-type=window --deqp-gl-major-version=3 "
@@ -1766,12 +1660,6 @@ public class DeqpTestRunnerTest extends TestCase {
             EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                     .andReturn(Integer.toString(version)).atLeastOnce();
 
-            EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                    .once();
-            EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                    EasyMock.eq(true), EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName()))))
-                    .andReturn(null).once();
-
             mockListener.testRunStarted(getTestId(shard), shardTests.size());
             EasyMock.expectLastCall().once();
 
@@ -1793,9 +1681,6 @@ public class DeqpTestRunnerTest extends TestCase {
 
             mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
             EasyMock.expectLastCall().once();
-
-            EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                    .once();
 
             EasyMock.replay(mockDevice, mockIDevice);
             EasyMock.replay(mockListener);
@@ -1906,14 +1791,6 @@ public class DeqpTestRunnerTest extends TestCase {
         int version = 3 << 16;
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
-
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).
-            andReturn("").once();
-
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true),
-                EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName())))).andReturn(null)
-                .once();
 
         expectRenderConfigQuery(mockDevice,
                 "--deqp-gl-config-name=rgba8888d24s8 --deqp-screen-rotation=unspecified "
@@ -2078,12 +1955,6 @@ public class DeqpTestRunnerTest extends TestCase {
         EasyMock.expect(mockDevice.getProperty("ro.opengles.version"))
                 .andReturn(Integer.toString(version)).atLeastOnce();
 
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
-        EasyMock.expect(mockDevice.installPackage(EasyMock.<File>anyObject(),
-                EasyMock.eq(true), EasyMock.eq(AbiUtils.createAbiFlag(ABI.getName()))))
-                .andReturn(null).once();
-
         expectRenderConfigQuery(mockDevice, 3, 0);
 
         String commandLine = String.format(
@@ -2111,9 +1982,6 @@ public class DeqpTestRunnerTest extends TestCase {
 
         mockListener.testRunEnded(EasyMock.anyLong(), EasyMock.<Map<String, String>>notNull());
         EasyMock.expectLastCall().once();
-
-        EasyMock.expect(mockDevice.uninstallPackage(EasyMock.eq(DEQP_ONDEVICE_PKG))).andReturn("")
-                .once();
 
         EasyMock.replay(mockDevice, mockIDevice);
         EasyMock.replay(mockListener);
