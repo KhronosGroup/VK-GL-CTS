@@ -315,7 +315,9 @@ void optimizeCompiledBinary (vector<deUint32>& binary, int optimizationRecipe, c
 			TCU_THROW(InternalError, "Unknown optimization recipe requested");
 	}
 
-	const bool ok = optimizer.Run(binary.data(), binary.size(), &binary);
+	spvtools::OptimizerOptions optimizer_options;
+	optimizer_options.set_run_validator(false);
+	const bool ok = optimizer.Run(binary.data(), binary.size(), &binary, optimizer_options);
 
 	if (!ok)
 		TCU_THROW(InternalError, "Optimizer call failed");
@@ -345,6 +347,19 @@ void validateCompiledBinary(const vector<deUint32>& binary, glu::ShaderProgramIn
 	{
 		buildInfo->program.linkOk	 = false;
 		buildInfo->program.infoLog	+= "\n" + validationLog.str();
+
+		TCU_THROW(InternalError, "Validation failed for compiled SPIR-V binary");
+	}
+}
+
+void validateCompiledBinary(const vector<deUint32>& binary, SpirVProgramInfo* buildInfo, const SpirvValidatorOptions& options)
+{
+	std::ostringstream validationLog;
+
+	if (!validateSpirV(binary.size(), &binary[0], &validationLog, options))
+	{
+		buildInfo->compileOk = false;
+		buildInfo->infoLog += "\n" + validationLog.str();
 
 		TCU_THROW(InternalError, "Validation failed for compiled SPIR-V binary");
 	}
@@ -602,13 +617,16 @@ ProgramBinary* buildProgram (const GlslSource& program, glu::ShaderProgramInfo* 
 			TCU_CHECK_INTERNAL(!binary.empty());
 		}
 
+		if (optimizationRecipe != 0)
+		{
+			validateCompiledBinary(binary, buildInfo, program.buildOptions.getSpirvValidatorOptions());
+			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
+		}
+
 		if (validateBinary)
 		{
 			validateCompiledBinary(binary, buildInfo, program.buildOptions.getSpirvValidatorOptions());
 		}
-
-		if (optimizationRecipe != 0)
-			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
@@ -684,13 +702,16 @@ ProgramBinary* buildProgram (const HlslSource& program, glu::ShaderProgramInfo* 
 			TCU_CHECK_INTERNAL(!binary.empty());
 		}
 
+		if (optimizationRecipe != 0)
+		{
+			validateCompiledBinary(binary, buildInfo, program.buildOptions.getSpirvValidatorOptions());
+			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
+		}
+
 		if (validateBinary)
 		{
 			validateCompiledBinary(binary, buildInfo, program.buildOptions.getSpirvValidatorOptions());
 		}
-
-		if (optimizationRecipe != 0)
-			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
@@ -741,21 +762,16 @@ ProgramBinary* assembleProgram (const SpirVAsmSource& program, SpirVProgramInfo*
 		if (!assembleSpirV(&program, &binary, buildInfo, spirvVersion))
 			TCU_THROW(InternalError, "Failed to assemble SPIR-V");
 
-		if (validateBinary)
+		if (optimizationRecipe != 0)
 		{
-			std::ostringstream	validationLog;
-
-			if (!validateSpirV(binary.size(), &binary[0], &validationLog, program.buildOptions.getSpirvValidatorOptions()))
-			{
-				buildInfo->compileOk = false;
-				buildInfo->infoLog += "\n" + validationLog.str();
-
-				TCU_THROW(InternalError, "Validation failed for assembled SPIR-V binary");
-			}
+			validateCompiledBinary(binary, buildInfo, program.buildOptions.getSpirvValidatorOptions());
+			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
 		}
 
-		if (optimizationRecipe != 0)
-			optimizeCompiledBinary(binary, optimizationRecipe, spirvVersion);
+		if (validateBinary)
+		{
+			validateCompiledBinary(binary, buildInfo, program.buildOptions.getSpirvValidatorOptions());
+		}
 
 		res = createProgramBinaryFromSpirV(binary);
 		if (commandLine.isShadercacheEnabled())
