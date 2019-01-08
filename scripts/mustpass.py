@@ -305,6 +305,12 @@ def genAndroidTestXml (mustpass):
 	RUNNER_CLASS = "com.drawelements.deqp.runner.DeqpTestRunner"
 	configElement = ElementTree.Element("configuration")
 
+	# have the deqp package installed on the device for us
+	preparerElement = ElementTree.SubElement(configElement, "target_preparer")
+	preparerElement.set("class", "com.android.tradefed.targetprep.suite.SuiteApkInstaller")
+	addOptionElement(preparerElement, "cleanup-apks", "true")
+	addOptionElement(preparerElement, "test-file-name", "com.drawelements.deqp.apk")
+
 	# add in metadata option for component name
 	ElementTree.SubElement(configElement, "option", name="test-suite-tag", value="cts")
 	ElementTree.SubElement(configElement, "option", name="config-descriptor:metadata", key="component", value="deqp")
