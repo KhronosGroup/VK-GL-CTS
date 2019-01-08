@@ -161,6 +161,7 @@ enum IndexExprType
 enum TextureType
 {
 	TEXTURE_TYPE_1D = 0,
+	TEXTURE_TYPE_1D_ARRAY,
 	TEXTURE_TYPE_2D,
 	TEXTURE_TYPE_CUBE,
 	TEXTURE_TYPE_2D_ARRAY,
@@ -297,6 +298,12 @@ static TextureType getTextureType (glu::DataType samplerType)
 		case glu::TYPE_SAMPLER_1D_SHADOW:
 			return TEXTURE_TYPE_1D;
 
+		case glu::TYPE_SAMPLER_1D_ARRAY:
+		case glu::TYPE_INT_SAMPLER_1D_ARRAY:
+		case glu::TYPE_UINT_SAMPLER_1D_ARRAY:
+		case glu::TYPE_SAMPLER_1D_ARRAY_SHADOW:
+			return TEXTURE_TYPE_1D_ARRAY;
+
 		case glu::TYPE_SAMPLER_2D:
 		case glu::TYPE_INT_SAMPLER_2D:
 		case glu::TYPE_UINT_SAMPLER_2D:
@@ -327,10 +334,11 @@ static TextureType getTextureType (glu::DataType samplerType)
 
 static bool isShadowSampler (glu::DataType samplerType)
 {
-	return samplerType == glu::TYPE_SAMPLER_1D_SHADOW		||
-		   samplerType == glu::TYPE_SAMPLER_2D_SHADOW		||
-		   samplerType == glu::TYPE_SAMPLER_2D_ARRAY_SHADOW	||
-		   samplerType == glu::TYPE_SAMPLER_CUBE_SHADOW;
+	return	samplerType == glu::TYPE_SAMPLER_1D_SHADOW			||
+			samplerType == glu::TYPE_SAMPLER_1D_ARRAY_SHADOW	||
+			samplerType == glu::TYPE_SAMPLER_2D_SHADOW			||
+			samplerType == glu::TYPE_SAMPLER_2D_ARRAY_SHADOW	||
+			samplerType == glu::TYPE_SAMPLER_CUBE_SHADOW;
 }
 
 static glu::DataType getSamplerOutputType (glu::DataType samplerType)
@@ -338,6 +346,7 @@ static glu::DataType getSamplerOutputType (glu::DataType samplerType)
 	switch (samplerType)
 	{
 		case glu::TYPE_SAMPLER_1D:
+		case glu::TYPE_SAMPLER_1D_ARRAY:
 		case glu::TYPE_SAMPLER_2D:
 		case glu::TYPE_SAMPLER_CUBE:
 		case glu::TYPE_SAMPLER_2D_ARRAY:
@@ -345,12 +354,14 @@ static glu::DataType getSamplerOutputType (glu::DataType samplerType)
 			return glu::TYPE_FLOAT_VEC4;
 
 		case glu::TYPE_SAMPLER_1D_SHADOW:
+		case glu::TYPE_SAMPLER_1D_ARRAY_SHADOW:
 		case glu::TYPE_SAMPLER_2D_SHADOW:
 		case glu::TYPE_SAMPLER_CUBE_SHADOW:
 		case glu::TYPE_SAMPLER_2D_ARRAY_SHADOW:
 			return glu::TYPE_FLOAT;
 
 		case glu::TYPE_INT_SAMPLER_1D:
+		case glu::TYPE_INT_SAMPLER_1D_ARRAY:
 		case glu::TYPE_INT_SAMPLER_2D:
 		case glu::TYPE_INT_SAMPLER_CUBE:
 		case glu::TYPE_INT_SAMPLER_2D_ARRAY:
@@ -358,6 +369,7 @@ static glu::DataType getSamplerOutputType (glu::DataType samplerType)
 			return glu::TYPE_INT_VEC4;
 
 		case glu::TYPE_UINT_SAMPLER_1D:
+		case glu::TYPE_UINT_SAMPLER_1D_ARRAY:
 		case glu::TYPE_UINT_SAMPLER_2D:
 		case glu::TYPE_UINT_SAMPLER_CUBE:
 		case glu::TYPE_UINT_SAMPLER_2D_ARRAY:
@@ -398,6 +410,7 @@ static glu::DataType getSamplerCoordType (glu::DataType samplerType)
 	switch (texType)
 	{
 		case TEXTURE_TYPE_1D:		numCoords = 1;	break;
+		case TEXTURE_TYPE_1D_ARRAY:	numCoords = 2;	break;
 		case TEXTURE_TYPE_2D:		numCoords = 2;	break;
 		case TEXTURE_TYPE_2D_ARRAY:	numCoords = 3;	break;
 		case TEXTURE_TYPE_CUBE:		numCoords = 3;	break;
@@ -406,7 +419,9 @@ static glu::DataType getSamplerCoordType (glu::DataType samplerType)
 			DE_ASSERT(false);
 	}
 
-	if (isShadowSampler(samplerType))
+	if (samplerType == glu::TYPE_SAMPLER_1D_SHADOW)
+		numCoords = 3;
+	else if (isShadowSampler(samplerType))
 		numCoords += 1;
 
 	DE_ASSERT(de::inRange(numCoords, 1, 4));
@@ -439,7 +454,8 @@ static vk::VkImageType getVkImageType (TextureType texType)
 {
 	switch (texType)
 	{
-		case TEXTURE_TYPE_1D:			return vk::VK_IMAGE_TYPE_1D;
+		case TEXTURE_TYPE_1D:
+		case TEXTURE_TYPE_1D_ARRAY:		return vk::VK_IMAGE_TYPE_1D;
 		case TEXTURE_TYPE_2D:
 		case TEXTURE_TYPE_2D_ARRAY:		return vk::VK_IMAGE_TYPE_2D;
 		case TEXTURE_TYPE_CUBE:			return vk::VK_IMAGE_TYPE_2D;
@@ -455,6 +471,7 @@ static vk::VkImageViewType getVkImageViewType (TextureType texType)
 	switch (texType)
 	{
 		case TEXTURE_TYPE_1D:			return vk::VK_IMAGE_VIEW_TYPE_1D;
+		case TEXTURE_TYPE_1D_ARRAY:		return vk::VK_IMAGE_VIEW_TYPE_1D_ARRAY;
 		case TEXTURE_TYPE_2D:			return vk::VK_IMAGE_VIEW_TYPE_2D;
 		case TEXTURE_TYPE_2D_ARRAY:		return vk::VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 		case TEXTURE_TYPE_CUBE:			return vk::VK_IMAGE_VIEW_TYPE_CUBE;
@@ -1939,22 +1956,25 @@ void OpaqueTypeIndexingTests::init (void)
 	{
 		static const glu::DataType samplerTypes[] =
 		{
-			// \note 1D images will be added by a later extension.
-//			glu::TYPE_SAMPLER_1D,
+			glu::TYPE_SAMPLER_1D,
+			glu::TYPE_SAMPLER_1D_ARRAY,
+			glu::TYPE_SAMPLER_1D_ARRAY_SHADOW,
 			glu::TYPE_SAMPLER_2D,
 			glu::TYPE_SAMPLER_CUBE,
 			glu::TYPE_SAMPLER_2D_ARRAY,
 			glu::TYPE_SAMPLER_3D,
-//			glu::TYPE_SAMPLER_1D_SHADOW,
+			glu::TYPE_SAMPLER_1D_SHADOW,
 			glu::TYPE_SAMPLER_2D_SHADOW,
 			glu::TYPE_SAMPLER_CUBE_SHADOW,
 			glu::TYPE_SAMPLER_2D_ARRAY_SHADOW,
-//			glu::TYPE_INT_SAMPLER_1D,
+			glu::TYPE_INT_SAMPLER_1D,
+			glu::TYPE_INT_SAMPLER_1D_ARRAY,
 			glu::TYPE_INT_SAMPLER_2D,
 			glu::TYPE_INT_SAMPLER_CUBE,
 			glu::TYPE_INT_SAMPLER_2D_ARRAY,
 			glu::TYPE_INT_SAMPLER_3D,
-//			glu::TYPE_UINT_SAMPLER_1D,
+			glu::TYPE_UINT_SAMPLER_1D,
+			glu::TYPE_UINT_SAMPLER_1D_ARRAY,
 			glu::TYPE_UINT_SAMPLER_2D,
 			glu::TYPE_UINT_SAMPLER_CUBE,
 			glu::TYPE_UINT_SAMPLER_2D_ARRAY,
@@ -2016,20 +2036,10 @@ void OpaqueTypeIndexingTests::init (void)
 				const glu::ShaderType	shaderType		= shaderTypes[shaderTypeNdx].type;
 				const std::string		name			= std::string(indexExprName) + "_" + shaderTypes[shaderTypeNdx].name;
 
-				// \note [pyry] In Vulkan CTS 1.0.2 ubo/ssbo/atomic_counter groups should not cover tess/geom stages
-				if ((shaderType == glu::SHADERTYPE_VERTEX)		||
-					(shaderType == glu::SHADERTYPE_FRAGMENT)	||
-					(shaderType == glu::SHADERTYPE_COMPUTE))
-				{
-					uboGroup->addChild	(new BlockArrayIndexingCase		(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
-					acGroup->addChild	(new AtomicCounterIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, indexExprType, shaderType));
-
-					if (indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL || indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
-						ssboGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType));
-				}
-
-				if (indexExprType == INDEX_EXPR_TYPE_CONST_LITERAL || indexExprType == INDEX_EXPR_TYPE_CONST_EXPRESSION)
-					ssboStorageBufGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType, (deUint32)BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER));
+				uboGroup->addChild	(new BlockArrayIndexingCase		(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_UNIFORM,	indexExprType, shaderType));
+				acGroup->addChild	(new AtomicCounterIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, indexExprType, shaderType));
+				ssboGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType));
+				ssboStorageBufGroup->addChild	(new BlockArrayIndexingCase	(m_testCtx, name.c_str(), indexExprDesc, BLOCKTYPE_BUFFER, indexExprType, shaderType, (deUint32)BlockArrayIndexingCaseInstance::FLAG_USE_STORAGE_BUFFER));
 			}
 		}
 	}
