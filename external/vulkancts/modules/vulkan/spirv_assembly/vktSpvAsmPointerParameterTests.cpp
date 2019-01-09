@@ -676,6 +676,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 
 	spec.assembly					= shaderSource;
 	spec.numWorkGroups				= IVec3(1, 1, 1);
+	spec.requestedVulkanFeatures	= requiredFeatures;
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "workgroup_memory_variable_pointers", "", spec));
 }
