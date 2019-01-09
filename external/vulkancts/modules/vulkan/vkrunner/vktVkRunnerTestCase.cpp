@@ -126,6 +126,9 @@ bool VkRunnerTestCase::getShaders()
 
 TestInstance* VkRunnerTestCase::createInstance(Context& ctx) const
 {
+	if (m_testCaseData.script == DE_NULL)
+		TCU_THROW(InternalError, "Could not find script file");
+
 	return new VkRunnerTestInstance(ctx, m_testCaseData);
 }
 
