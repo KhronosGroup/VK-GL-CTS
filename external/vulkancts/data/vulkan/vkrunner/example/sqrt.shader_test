@@ -25,4 +25,5 @@ uniform float 0 <INPUT>
 compute 1 1 1
 
 # Probe that we got the expected value
-probe ssbo float 0 0 == <OUTPUT>
+tolerance 0.00006% 0.00006% 0.00006% 0.00006%
+probe ssbo float 0 0 ~= <OUTPUT>
