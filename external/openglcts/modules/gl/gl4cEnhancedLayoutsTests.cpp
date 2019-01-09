@@ -20629,41 +20629,59 @@ XFBTooSmallStrideTest::XFBTooSmallStrideTest(deqp::Context& context)
  **/
 std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* array_var_definition = "layout (xfb_buffer = 0, xfb_stride = 32) out;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* array_var_definition = "layout (xfb_buffer = 0 /*, xfb_stride = 32 */ ) out;\n"
+#else
+	static const GLchar* array_var_definition  = "layout (xfb_buffer = 0, xfb_stride = 32) out;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 												"\n"
-												"layout (xfb_offset = 16) out vec4 gohanARRAY[4];\n";
-	static const GLchar* block_var_definition = "layout (xfb_buffer = 0, xfb_stride = 32) out;\n"
+												"layout (xfb_offset = 16) out vec4 gohan[4];\n";
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* block_var_definition = "layout (xfb_buffer = 0 /*, xfb_stride = 32 */ ) out;\n"
+#else
+	static const GLchar* block_var_definition  = "layout (xfb_buffer = 0, xfb_stride = 32) out;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 												"\n"
 												"layout (xfb_offset = 0) out Goku {\n"
 												"    vec4 gohan;\n"
 												"    vec4 goten;\n"
 												"    vec4 chichi;\n"
-												"} gokuARRAY;\n";
+												"} goku;\n";
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* offset_var_definition = "layout (xfb_buffer = 0 /*, xfb_stride = 40 */ ) out;\n"
+#else
 	static const GLchar* offset_var_definition = "layout (xfb_buffer = 0, xfb_stride = 40) out;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 												 "\n"
-												 "layout (xfb_offset = 32) out vec4 gohanARRAY;\n";
-	// The test considers gohan overflows the buffer 0, but according to spec, it is valid to declare the variable with qualifier "layout (xfb_offset = 16, xfb_stride = 32) out vec4 gohan;"
-	// To make the shader failed to compile, change xfb_stride to a value that is smaller than 32
+												 "layout (xfb_offset = 32) out vec4 gohan;\n";
+// The test considers gohan overflows the buffer 0, but according to spec, it is valid to declare the variable with qualifier "layout (xfb_offset = 16, xfb_stride = 32) out vec4 gohan;"
+// To make the shader failed to compile, change xfb_stride to a value that is smaller than 32
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* stride_var_definition = "layout (xfb_buffer = 0 /*, xfb_stride = 28 */ ) out;\n"
+												 "\n"
+												 "layout (xfb_offset = 16 /*, xfb_stride = 28 */ ) out vec4 gohan;\n";
+#else
 	static const GLchar* stride_var_definition = "layout (xfb_buffer = 0, xfb_stride = 28) out;\n"
 												 "\n"
-												 "layout (xfb_offset = 16, xfb_stride = 28) out vec4 gohanARRAY;\n";
-	static const GLchar* array_use = "    gohanINDEX[0] = result / 2;\n"
-									 "    gohanINDEX[1] = result / 4;\n"
-									 "    gohanINDEX[2] = result / 6;\n"
-									 "    gohanINDEX[3] = result / 8;\n";
-	static const GLchar* block_use = "    gokuINDEX.gohan  = result / 2;\n"
-									 "    gokuINDEX.goten  = result / 4;\n"
-									 "    gokuINDEX.chichi = result / 6;\n";
-	static const GLchar* output_use = "gohanINDEX = result / 4;\n";
+												 "layout (xfb_offset = 16, xfb_stride = 28) out vec4 gohan;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* array_use = "    gohan[0] = result / 2;\n"
+									 "    gohan[1] = result / 4;\n"
+									 "    gohan[2] = result / 6;\n"
+									 "    gohan[3] = result / 8;\n";
+	static const GLchar* block_use = "    goku.gohan  = result / 2;\n"
+									 "    goku.goten  = result / 4;\n"
+									 "    goku.chichi = result / 6;\n";
+	static const GLchar* output_use = "gohan = result / 4;\n";
 	static const GLchar* fs			= "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
-							  "in  vec4 gs_fs;\n"
+							  "in  vec4 any_fs;\n"
 							  "out vec4 fs_out;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    fs_out = gs_fs;\n"
+							  "    fs_out = any_fs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* gs_tested = "#version 430 core\n"
@@ -20674,25 +20692,25 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 									 "\n"
 									 "VAR_DEFINITION"
 									 "\n"
-									 "in  vec4 tes_gs[];\n"
-									 "out vec4 gs_fs;\n"
+									 "in  vec4 vs_any[];\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
-									 "    vec4 result = tes_gs[0];\n"
+									 "    vec4 result = vs_any[0];\n"
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
 									 "}\n"
@@ -20702,13 +20720,13 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 							   "\n"
 							   "layout(vertices = 1) out;\n"
 							   "\n"
-							   "in  vec4 vs_tcs[];\n"
+							   "in  vec4 vs_any[];\n"
 							   "out vec4 tcs_tes[];\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
 							   "\n"
-							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
+							   "    tcs_tes[gl_InvocationID] = vs_any[gl_InvocationID];\n"
 							   "\n"
 							   "    gl_TessLevelOuter[0] = 1.0;\n"
 							   "    gl_TessLevelOuter[1] = 1.0;\n"
@@ -20718,32 +20736,6 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 							   "    gl_TessLevelInner[1] = 1.0;\n"
 							   "}\n"
 							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_tcs[];\n"
-									  "out vec4 tcs_tes[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    tcs_tes[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
 	static const GLchar* tes_tested = "#version 430 core\n"
 									  "#extension GL_ARB_enhanced_layouts : require\n"
 									  "\n"
@@ -20752,7 +20744,7 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 									  "VAR_DEFINITION"
 									  "\n"
 									  "in  vec4 tcs_tes[];\n"
-									  "out vec4 tes_gs;\n"
+									  "out vec4 any_fs;\n"
 									  "\n"
 									  "void main()\n"
 									  "{\n"
@@ -20760,18 +20752,18 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 									  "\n"
 									  "VARIABLE_USE"
 									  "\n"
-									  "    tes_gs += result;\n"
+									  "    any_fs += result;\n"
 									  "}\n"
 									  "\n";
 	static const GLchar* vs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
 							  "in  vec4 in_vs;\n"
-							  "out vec4 vs_tcs;\n"
+							  "out vec4 vs_any;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    vs_any = in_vs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* vs_tested = "#version 430 core\n"
@@ -20780,7 +20772,7 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 									 "VAR_DEFINITION"
 									 "\n"
 									 "in  vec4 in_vs;\n"
-									 "out vec4 vs_tcs;\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
@@ -20788,7 +20780,7 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs += result;\n"
+									 "    any_fs += result;\n"
 									 "}\n"
 									 "\n";
 
@@ -20797,10 +20789,7 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 
 	if (test_case.m_stage == stage)
 	{
-		const GLchar* array	= "";
-		const GLchar* index	= "";
 		size_t		  position = 0;
-		size_t		  temp;
 		const GLchar* var_definition = 0;
 		const GLchar* var_use		 = 0;
 
@@ -20830,18 +20819,9 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 		{
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
-			array  = "[]";
-			index  = "[0]";
-			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			array  = "[]";
-			index  = "[gl_InvocationID]";
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
-			array  = "[]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -20850,32 +20830,15 @@ std::string XFBTooSmallStrideTest::getShaderSource(GLuint test_case_index, Utils
 			TCU_FAIL("Invalid enum");
 		}
 
-		temp = position;
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
-		position = temp;
-		Utils::replaceToken("ARRAY", position, array, source);
+		position = 0;
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
-
-		Utils::replaceAllTokens("INDEX", index, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
 		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
 			switch (stage)
 			{
 			case Utils::Shader::FRAGMENT:
@@ -23184,9 +23147,15 @@ std::string XFBMultipleVertexStreamsTest::getShaderSource(GLuint /* test_case_in
 										  "layout (xfb_buffer = 3, xfb_stride = valid_stride) out;\n"
 										  "\n"
 										  "\n"
+#if DEBUG_NEG_REMOVE_ERROR
+										  "layout (stream = 0, xfb_buffer = 1, xfb_offset = 48) out vec4 goku;\n"
+										  "layout (stream = 1, xfb_buffer = 3, xfb_offset = 32) out vec4 gohan;\n"
+										  "layout (stream = 2, xfb_buffer = 2, xfb_offset = 16) out vec4 goten;\n";
+#else
 										  "layout (stream = 0, xfb_buffer = 1, xfb_offset = 48) out vec4 goku;\n"
 										  "layout (stream = 1, xfb_buffer = 1, xfb_offset = 32) out vec4 gohan;\n"
 										  "layout (stream = 2, xfb_buffer = 1, xfb_offset = 16) out vec4 goten;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 	static const GLchar* var_use = "    goku  = result / 2;\n"
 								   "    gohan = result / 4;\n"
 								   "    goten = result / 6;\n";
@@ -23210,12 +23179,12 @@ std::string XFBMultipleVertexStreamsTest::getShaderSource(GLuint /* test_case_in
 							  "\n"
 							  "VAR_DEFINITION"
 							  "\n"
-							  "in  vec4 tes_gs[];\n"
+							  "in  vec4 vs_gs[];\n"
 							  "out vec4 gs_fs;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vec4 result = tes_gs[0];\n"
+							  "    vec4 result = vs_gs[0];\n"
 							  "\n"
 							  "VARIABLE_USE"
 							  "\n"
@@ -23237,11 +23206,11 @@ std::string XFBMultipleVertexStreamsTest::getShaderSource(GLuint /* test_case_in
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
 							  "in  vec4 in_vs;\n"
-							  "out vec4 vs_tcs;\n"
+							  "out vec4 vs_gs;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    vs_gs = in_vs;\n"
 							  "}\n"
 							  "\n";
 
@@ -23304,29 +23273,41 @@ XFBExceedBufferLimitTest::XFBExceedBufferLimitTest(deqp::Context& context)
  **/
 std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* block_var_definition = "const uint buffer_index = BUFFER;\n"
+	static const GLchar* block_var_definition = "const uint buffer_index = MAX_BUFFER;\n"
 												"\n"
+#if DEBUG_NEG_REMOVE_ERROR
+												"layout (xfb_buffer = 0, xfb_offset = 0) out Goku {\n"
+#else
 												"layout (xfb_buffer = buffer_index, xfb_offset = 0) out Goku {\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 												"    vec4 member;\n"
-												"} gokuARRAY;\n";
-	static const GLchar* global_var_definition = "const uint buffer_index = BUFFER;\n"
+												"} goku;\n";
+	static const GLchar* global_var_definition = "const uint buffer_index = MAX_BUFFER;\n"
 												 "\n"
+#if DEBUG_NEG_REMOVE_ERROR
+												 "layout (xfb_buffer = 0) out;\n";
+#else
 												 "layout (xfb_buffer = buffer_index) out;\n";
-	static const GLchar* vector_var_definition = "const uint buffer_index = BUFFER;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* vector_var_definition = "const uint buffer_index = MAX_BUFFER;\n"
 												 "\n"
-												 "layout (xfb_buffer = buffer_index) out vec4 gokuARRAY;\n";
-	static const GLchar* block_use  = "    gokuINDEX.member = result / 2;\n";
+#if DEBUG_NEG_REMOVE_ERROR
+												 "layout (xfb_buffer = 0) out vec4 goku;\n";
+#else
+												 "layout (xfb_buffer = buffer_index) out vec4 goku;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* block_use  = "    goku.member = result / 2;\n";
 	static const GLchar* global_use = "";
-	static const GLchar* vector_use = "    gokuINDEX = result / 2;\n";
+	static const GLchar* vector_use = "    goku = result / 2;\n";
 	static const GLchar* fs			= "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
-							  "in  vec4 gs_fs;\n"
+							  "in  vec4 any_fs;\n"
 							  "out vec4 fs_out;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    fs_out = gs_fs;\n"
+							  "    fs_out = any_fs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* gs_tested = "#version 430 core\n"
@@ -23337,25 +23318,25 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 									 "\n"
 									 "VAR_DEFINITION"
 									 "\n"
-									 "in  vec4 tes_gs[];\n"
-									 "out vec4 gs_fs;\n"
+									 "in  vec4 vs_any[];\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
-									 "    vec4 result = tes_gs[0];\n"
+									 "    vec4 result = vs_any[0];\n"
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
 									 "}\n"
@@ -23365,13 +23346,13 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 							   "\n"
 							   "layout(vertices = 1) out;\n"
 							   "\n"
-							   "in  vec4 vs_tcs[];\n"
+							   "in  vec4 vs_any[];\n"
 							   "out vec4 tcs_tes[];\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
 							   "\n"
-							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
+							   "    tcs_tes[gl_InvocationID] = vs_any[gl_InvocationID];\n"
 							   "\n"
 							   "    gl_TessLevelOuter[0] = 1.0;\n"
 							   "    gl_TessLevelOuter[1] = 1.0;\n"
@@ -23381,32 +23362,6 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 							   "    gl_TessLevelInner[1] = 1.0;\n"
 							   "}\n"
 							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_tcs[];\n"
-									  "out vec4 tcs_tes[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    tcs_tes[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
 	static const GLchar* tes_tested = "#version 430 core\n"
 									  "#extension GL_ARB_enhanced_layouts : require\n"
 									  "\n"
@@ -23415,7 +23370,7 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 									  "VAR_DEFINITION"
 									  "\n"
 									  "in  vec4 tcs_tes[];\n"
-									  "out vec4 tes_gs;\n"
+									  "out vec4 any_fs;\n"
 									  "\n"
 									  "void main()\n"
 									  "{\n"
@@ -23423,18 +23378,18 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 									  "\n"
 									  "VARIABLE_USE"
 									  "\n"
-									  "    tes_gs += result;\n"
+									  "    any_fs += result;\n"
 									  "}\n"
 									  "\n";
 	static const GLchar* vs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
 							  "in  vec4 in_vs;\n"
-							  "out vec4 vs_tcs;\n"
+							  "out vec4 vs_any;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    vs_any = in_vs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* vs_tested = "#version 430 core\n"
@@ -23443,7 +23398,7 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 									 "VAR_DEFINITION"
 									 "\n"
 									 "in  vec4 in_vs;\n"
-									 "out vec4 vs_tcs;\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
@@ -23451,7 +23406,7 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs = result;\n"
+									 "    any_fs = result;\n"
 									 "}\n"
 									 "\n";
 
@@ -23460,13 +23415,10 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 
 	if (test_case.m_stage == stage)
 	{
-		const GLchar*	array = "";
 		GLchar			 buffer[16];
 		const Functions& gl		   = m_context.getRenderContext().getFunctions();
-		const GLchar*	index	 = "";
 		GLint			 max_n_xfb = 0;
 		size_t			 position  = 0;
-		size_t			 temp;
 		const GLchar*	var_definition = 0;
 		const GLchar*	var_use		= 0;
 
@@ -23497,18 +23449,9 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 		{
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
-			array  = "[]";
-			index  = "[0]";
-			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			array  = "[]";
-			index  = "[gl_InvocationID]";
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
-			array  = "[]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -23517,36 +23460,16 @@ std::string XFBExceedBufferLimitTest::getShaderSource(GLuint test_case_index, Ut
 			TCU_FAIL("Invalid enum");
 		}
 
-		temp = position;
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
-		position = temp;
-		Utils::replaceToken("BUFFER", position, buffer, source);
-		if (GLOBAL != test_case.m_case)
-		{
-			Utils::replaceToken("ARRAY", position, array, source);
-		}
+		position = 0;
+		Utils::replaceToken("MAX_BUFFER", position, buffer, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
-
-		Utils::replaceAllTokens("INDEX", index, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
 		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
 			switch (stage)
 			{
 			case Utils::Shader::FRAGMENT:
@@ -23686,30 +23609,43 @@ XFBExceedOffsetLimitTest::XFBExceedOffsetLimitTest(deqp::Context& context)
  **/
 std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* block_var_definition = "const uint max_size = SIZE;\n"
+	static const GLchar* block_var_definition = "const uint overflow_offset = MAX_SIZE + 16;\n"
 												"\n"
-												"layout (xfb_buffer = 0, xfb_offset = max_size + 16) out Goku {\n"
+#if DEBUG_NEG_REMOVE_ERROR
+												"layout (xfb_buffer = 0, xfb_offset = 0) out Goku {\n"
+#else
+												"layout (xfb_buffer = 0, xfb_offset = overflow_offset + 16) out Goku "
+												"{\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 												"    vec4 member;\n"
-												"} gokuARRAY;\n";
-	static const GLchar* global_var_definition = "const uint max_size = SIZE;\n"
+												"} goku;\n";
+	static const GLchar* global_var_definition = "const uint overflow_offset = MAX_SIZE + 16;\n"
 												 "\n"
-												 "layout (xfb_buffer = 0, xfb_stride = max_size + 16) out;\n";
-	static const GLchar* vector_var_definition =
-		"const uint max_size = SIZE;\n"
-		"\n"
-		"layout (xfb_buffer = 0, xfb_offset = max_size + 16) out vec4 gokuARRAY;\n";
-	static const GLchar* block_use  = "    gokuINDEX.member = result / 2;\n";
+#if DEBUG_NEG_REMOVE_ERROR
+												 "layout (xfb_buffer = 0, xfb_stride = 0) out;\n";
+#else
+												 "layout (xfb_buffer = 0, xfb_stride = overflow_offset) out;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* vector_var_definition = "const uint overflow_offset = MAX_SIZE + 16;\n"
+												 "\n"
+#if DEBUG_NEG_REMOVE_ERROR
+												 "layout (xfb_buffer = 0, xfb_offset = 0) out vec4 goku;\n";
+#else
+												 "layout (xfb_buffer = 0, xfb_offset = overflow_offset) out vec4 "
+												 "goku;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* block_use  = "    goku.member = result / 2;\n";
 	static const GLchar* global_use = "";
-	static const GLchar* vector_use = "    gokuINDEX = result / 2;\n";
+	static const GLchar* vector_use = "    goku = result / 2;\n";
 	static const GLchar* fs			= "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
-							  "in  vec4 gs_fs;\n"
+							  "in  vec4 any_fs;\n"
 							  "out vec4 fs_out;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    fs_out = gs_fs;\n"
+							  "    fs_out = any_fs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* gs_tested = "#version 430 core\n"
@@ -23720,25 +23656,25 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 									 "\n"
 									 "VAR_DEFINITION"
 									 "\n"
-									 "in  vec4 tes_gs[];\n"
-									 "out vec4 gs_fs;\n"
+									 "in  vec4 vs_any[];\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
-									 "    vec4 result = tes_gs[0];\n"
+									 "    vec4 result = vs_any[0];\n"
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
 									 "}\n"
@@ -23748,13 +23684,13 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 							   "\n"
 							   "layout(vertices = 1) out;\n"
 							   "\n"
-							   "in  vec4 vs_tcs[];\n"
+							   "in  vec4 vs_any[];\n"
 							   "out vec4 tcs_tes[];\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
 							   "\n"
-							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
+							   "    tcs_tes[gl_InvocationID] = vs_any[gl_InvocationID];\n"
 							   "\n"
 							   "    gl_TessLevelOuter[0] = 1.0;\n"
 							   "    gl_TessLevelOuter[1] = 1.0;\n"
@@ -23764,32 +23700,6 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 							   "    gl_TessLevelInner[1] = 1.0;\n"
 							   "}\n"
 							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_tcs[];\n"
-									  "out vec4 tcs_tes[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    tcs_tes[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
 	static const GLchar* tes_tested = "#version 430 core\n"
 									  "#extension GL_ARB_enhanced_layouts : require\n"
 									  "\n"
@@ -23798,7 +23708,7 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 									  "VAR_DEFINITION"
 									  "\n"
 									  "in  vec4 tcs_tes[];\n"
-									  "out vec4 tes_gs;\n"
+									  "out vec4 any_fs;\n"
 									  "\n"
 									  "void main()\n"
 									  "{\n"
@@ -23806,18 +23716,18 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 									  "\n"
 									  "VARIABLE_USE"
 									  "\n"
-									  "    tes_gs += result;\n"
+									  "    any_fs += result;\n"
 									  "}\n"
 									  "\n";
 	static const GLchar* vs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
 							  "in  vec4 in_vs;\n"
-							  "out vec4 vs_tcs;\n"
+							  "out vec4 vs_any;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    vs_any = in_vs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* vs_tested = "#version 430 core\n"
@@ -23826,7 +23736,7 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 									 "VAR_DEFINITION"
 									 "\n"
 									 "in  vec4 in_vs;\n"
-									 "out vec4 vs_tcs;\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
@@ -23834,7 +23744,7 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs = result;\n"
+									 "    any_fs = result;\n"
 									 "}\n"
 									 "\n";
 
@@ -23843,14 +23753,11 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 
 	if (test_case.m_stage == stage)
 	{
-		const GLchar*	array = "";
 		GLchar			 buffer[16];
 		const Functions& gl				 = m_context.getRenderContext().getFunctions();
-		const GLchar*	index			 = "";
 		GLint			 max_n_xfb_comp  = 0;
 		GLint			 max_n_xfb_bytes = 0;
 		size_t			 position		 = 0;
-		size_t			 temp;
 		const GLchar*	var_definition = 0;
 		const GLchar*	var_use		= 0;
 
@@ -23878,24 +23785,14 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 		default:
 			TCU_FAIL("Invalid enum");
 		}
-		// It is a compile time error to apply xfb_offset to the declaration of an unsized array(GLSL4.5 spec: Page73)
-		// change array = "[]" to "[1]"
+
 		switch (stage)
 		{
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
-			array  = "[1]";
-			index  = "[0]";
-			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			array  = "[1]";
-			index  = "[gl_InvocationID]";
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
-			array  = "[1]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -23904,36 +23801,16 @@ std::string XFBExceedOffsetLimitTest::getShaderSource(GLuint test_case_index, Ut
 			TCU_FAIL("Invalid enum");
 		}
 
-		temp = position;
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
-		position = temp;
-		Utils::replaceToken("SIZE", position, buffer, source);
-		if (GLOBAL != test_case.m_case)
-		{
-			Utils::replaceToken("ARRAY", position, array, source);
-		}
+		position = 0;
+		Utils::replaceToken("MAX_SIZE", position, buffer, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
-
-		Utils::replaceAllTokens("INDEX", index, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
 		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
 			switch (stage)
 			{
 			case Utils::Shader::FRAGMENT:
@@ -24794,19 +24671,23 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 {
 	static const GLchar* var_definition = "layout (xfb_offset = 0) out Goku {\n"
 										  "                            vec4 gohan;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+										  "    /* layout (xfb_buffer = 1) */ vec4 goten;\n"
+#else
 										  "    layout (xfb_buffer = 1) vec4 goten;\n"
-										  "} gokuARRAY;\n";
-	static const GLchar* var_use = "    gokuINDEX.gohan = result / 2;\n"
-								   "    gokuINDEX.goten = result / 4;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+										  "} goku;\n";
+	static const GLchar* var_use = "    goku.gohan = result / 2;\n"
+								   "    goku.goten = result / 4;\n";
 	static const GLchar* fs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
-							  "in  vec4 gs_fs;\n"
+							  "in  vec4 any_fs;\n"
 							  "out vec4 fs_out;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    fs_out = gs_fs;\n"
+							  "    fs_out = any_fs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* gs_tested = "#version 430 core\n"
@@ -24817,25 +24698,25 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 									 "\n"
 									 "VAR_DEFINITION"
 									 "\n"
-									 "in  vec4 tes_gs[];\n"
-									 "out vec4 gs_fs;\n"
+									 "in  vec4 vs_any[];\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
-									 "    vec4 result = tes_gs[0];\n"
+									 "    vec4 result = vs_any[0];\n"
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
 									 "}\n"
@@ -24845,13 +24726,13 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 							   "\n"
 							   "layout(vertices = 1) out;\n"
 							   "\n"
-							   "in  vec4 vs_tcs[];\n"
+							   "in  vec4 vs_any[];\n"
 							   "out vec4 tcs_tes[];\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
 							   "\n"
-							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
+							   "    tcs_tes[gl_InvocationID] = vs_any[gl_InvocationID];\n"
 							   "\n"
 							   "    gl_TessLevelOuter[0] = 1.0;\n"
 							   "    gl_TessLevelOuter[1] = 1.0;\n"
@@ -24861,32 +24742,6 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 							   "    gl_TessLevelInner[1] = 1.0;\n"
 							   "}\n"
 							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_tcs[];\n"
-									  "out vec4 tcs_tes[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    tcs_tes[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
 	static const GLchar* tes_tested = "#version 430 core\n"
 									  "#extension GL_ARB_enhanced_layouts : require\n"
 									  "\n"
@@ -24895,7 +24750,7 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 									  "VAR_DEFINITION"
 									  "\n"
 									  "in  vec4 tcs_tes[];\n"
-									  "out vec4 tes_gs;\n"
+									  "out vec4 any_fs;\n"
 									  "\n"
 									  "void main()\n"
 									  "{\n"
@@ -24903,18 +24758,18 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 									  "\n"
 									  "VARIABLE_USE"
 									  "\n"
-									  "    tes_gs += result;\n"
+									  "    any_fs += result;\n"
 									  "}\n"
 									  "\n";
 	static const GLchar* vs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
 							  "in  vec4 in_vs;\n"
-							  "out vec4 vs_tcs;\n"
+							  "out vec4 vs_any;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    vs_any = in_vs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* vs_tested = "#version 430 core\n"
@@ -24923,7 +24778,7 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 									 "VAR_DEFINITION"
 									 "\n"
 									 "in  vec4 in_vs;\n"
-									 "out vec4 vs_tcs;\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
@@ -24931,7 +24786,7 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs = result;\n"
+									 "    any_fs = result;\n"
 									 "}\n"
 									 "\n";
 
@@ -24940,26 +24795,15 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 
 	if (test_case.m_stage == stage)
 	{
-		const GLchar* array	= "";
-		const GLchar* index	= "";
 		size_t		  position = 0;
 
 		switch (stage)
 		{
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
-			array  = "[]";
-			index  = "[0]";
-			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			array  = "[]";
-			index  = "[gl_InvocationID]";
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
-			array  = "[]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -24970,29 +24814,13 @@ std::string XFBBlockMemberBufferTest::getShaderSource(GLuint test_case_index, Ut
 
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
 		position = 0;
-		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
-
-		Utils::replaceAllTokens("INDEX", index, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
 		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
 			switch (stage)
 			{
 			case Utils::Shader::FRAGMENT:
@@ -25114,24 +24942,28 @@ XFBOutputOverlappingTest::XFBOutputOverlappingTest(deqp::Context& context)
  **/
 std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* var_definition = "layout (xfb_offset = OFFSET) out TYPE gohanARRAY;\n"
-										  "layout (xfb_offset = OFFSET) out TYPE gotenARRAY;\n";
-	static const GLchar* var_use = "    gohanINDEX = TYPE(0);\n"
-								   "    gotenINDEX = TYPE(1);\n"
+	static const GLchar* var_definition = "layout (xfb_offset = 0) out TYPE gohan;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+										  "/* layout (xfb_offset = OFFSET) */ out TYPE goten;\n";
+#else
+										  "layout (xfb_offset = OFFSET) out TYPE goten;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* var_use = "    gohan = TYPE(0);\n"
+								   "    goten = TYPE(1);\n"
 								   "    if (vec4(0) == result)\n"
 								   "    {\n"
-								   "        gohanINDEX = TYPE(1);\n"
-								   "        gotenINDEX = TYPE(0);\n"
+								   "        gohan = TYPE(1);\n"
+								   "        goten = TYPE(0);\n"
 								   "    }\n";
 	static const GLchar* fs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
-							  "in  vec4 gs_fs;\n"
+							  "in  vec4 any_fs;\n"
 							  "out vec4 fs_out;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    fs_out = gs_fs;\n"
+							  "    fs_out = any_fs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* gs_tested = "#version 430 core\n"
@@ -25142,25 +24974,25 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 									 "\n"
 									 "VAR_DEFINITION"
 									 "\n"
-									 "in  vec4 tes_gs[];\n"
-									 "out vec4 gs_fs;\n"
+									 "in  vec4 vs_any[];\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
-									 "    vec4 result = tes_gs[0];\n"
+									 "    vec4 result = vs_any[0];\n"
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
 									 "}\n"
@@ -25170,13 +25002,13 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 							   "\n"
 							   "layout(vertices = 1) out;\n"
 							   "\n"
-							   "in  vec4 vs_tcs[];\n"
+							   "in  vec4 vs_any[];\n"
 							   "out vec4 tcs_tes[];\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
 							   "\n"
-							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
+							   "    tcs_tes[gl_InvocationID] = vs_any[gl_InvocationID];\n"
 							   "\n"
 							   "    gl_TessLevelOuter[0] = 1.0;\n"
 							   "    gl_TessLevelOuter[1] = 1.0;\n"
@@ -25186,32 +25018,6 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 							   "    gl_TessLevelInner[1] = 1.0;\n"
 							   "}\n"
 							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_tcs[];\n"
-									  "out vec4 tcs_tes[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    tcs_tes[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
 	static const GLchar* tes_tested = "#version 430 core\n"
 									  "#extension GL_ARB_enhanced_layouts : require\n"
 									  "\n"
@@ -25220,7 +25026,7 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 									  "VAR_DEFINITION"
 									  "\n"
 									  "in  vec4 tcs_tes[];\n"
-									  "out vec4 tes_gs;\n"
+									  "out vec4 any_fs;\n"
 									  "\n"
 									  "void main()\n"
 									  "{\n"
@@ -25228,18 +25034,18 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 									  "\n"
 									  "VARIABLE_USE"
 									  "\n"
-									  "    tes_gs += result;\n"
+									  "    any_fs += result;\n"
 									  "}\n"
 									  "\n";
 	static const GLchar* vs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
 							  "in  vec4 in_vs;\n"
-							  "out vec4 vs_tcs;\n"
+							  "out vec4 vs_any;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    vs_any = in_vs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* vs_tested = "#version 430 core\n"
@@ -25248,7 +25054,7 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 									 "VAR_DEFINITION"
 									 "\n"
 									 "in  vec4 in_vs;\n"
-									 "out vec4 vs_tcs;\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
@@ -25256,7 +25062,7 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs = result;\n"
+									 "    any_fs = result;\n"
 									 "}\n"
 									 "\n";
 
@@ -25265,33 +25071,19 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 
 	if (test_case.m_stage == stage)
 	{
-		const GLchar* array = "";
-		GLchar		  buffer_gohan[16];
-		GLchar		  buffer_goten[16];
-		const GLchar* index			 = "";
+		GLchar		  offset[16];
 		size_t		  position		 = 0;
-		size_t		  position_start = 0;
 		const GLchar* type_name		 = test_case.m_type.GetGLSLTypeName();
 
-		sprintf(buffer_gohan, "%d", test_case.m_offset_gohan);
-		sprintf(buffer_goten, "%d", test_case.m_offset_goten);
+		sprintf(offset, "%d", test_case.m_offset);
 
 		switch (stage)
 		{
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
-			array  = "[]";
-			index  = "[0]";
-			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			array  = "[]";
-			index  = "[gl_InvocationID]";
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
-			array  = "[]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -25302,42 +25094,16 @@ std::string XFBOutputOverlappingTest::getShaderSource(GLuint test_case_index, Ut
 
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
 		position = 0;
-		Utils::replaceToken("OFFSET", position, buffer_gohan, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
-		Utils::replaceToken("ARRAY", position, array, source);
-		Utils::replaceToken("OFFSET", position, buffer_goten, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
-		Utils::replaceToken("ARRAY", position, array, source);
-		position_start = position;
+		Utils::replaceToken("OFFSET", position, offset, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
-		position = position_start;
-		Utils::replaceToken("INDEX", position, index, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
-		Utils::replaceToken("INDEX", position, index, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
-		Utils::replaceToken("INDEX", position, index, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
-		Utils::replaceToken("INDEX", position, index, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
+
+		Utils::replaceAllTokens("TYPE", type_name, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
 		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
 			switch (stage)
 			{
 			case Utils::Shader::FRAGMENT:
@@ -25397,8 +25163,7 @@ std::string XFBOutputOverlappingTest::getTestCaseName(GLuint test_case_index)
 	testCase&		  test_case = m_test_cases[test_case_index];
 
 	stream << "Stage: " << Utils::Shader::GetStageName(test_case.m_stage)
-		   << ", type: " << test_case.m_type.GetGLSLTypeName() << ", offsets: " << test_case.m_offset_gohan << " & "
-		   << test_case.m_offset_goten;
+		   << ", type: " << test_case.m_type.GetGLSLTypeName() << ", offset: " << test_case.m_offset;
 
 	return stream.str();
 }
@@ -25433,7 +25198,7 @@ void XFBOutputOverlappingTest::testInit()
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type			  = getType(i);
-		const GLuint	   base_alingment = Utils::Type::GetTypeSize(type.m_basic_type);
+		const GLuint	   basic_type_size = Utils::Type::GetTypeSize(type.m_basic_type);
 
 		/* Skip scalars, not applicable as:
 		 *
@@ -25453,8 +25218,7 @@ void XFBOutputOverlappingTest::testInit()
 				continue;
 			}
 
-			testCase test_case = { 0 /* gohan offset */, base_alingment /* goten_offset */,
-								   (Utils::Shader::STAGES)stage, type };
+			testCase test_case = { basic_type_size /* offset */, (Utils::Shader::STAGES)stage, type };
 
 			m_test_cases.push_back(test_case);
 		}
@@ -25480,21 +25244,25 @@ XFBInvalidOffsetAlignmentTest::XFBInvalidOffsetAlignmentTest(deqp::Context& cont
  **/
 std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* var_definition = "layout (xfb_offset = OFFSET) out TYPE gohanARRAY;\n";
-	static const GLchar* var_use		= "    gohanINDEX = TYPE(0);\n"
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* var_definition = "/* layout (xfb_offset = OFFSET) */ out TYPE gohan;\n";
+#else
+	static const GLchar* var_definition = "layout (xfb_offset = OFFSET) out TYPE gohan;\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* var_use = "    gohan = TYPE(0);\n"
 								   "    if (vec4(0) == result)\n"
 								   "    {\n"
-								   "        gohanINDEX = TYPE(1);\n"
+								   "        gohan = TYPE(1);\n"
 								   "    }\n";
 	static const GLchar* fs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
-							  "in  vec4 gs_fs;\n"
+							  "in  vec4 any_fs;\n"
 							  "out vec4 fs_out;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    fs_out = gs_fs;\n"
+							  "    fs_out = any_fs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* gs_tested = "#version 430 core\n"
@@ -25505,25 +25273,25 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 									 "\n"
 									 "VAR_DEFINITION"
 									 "\n"
-									 "in  vec4 tes_gs[];\n"
-									 "out vec4 gs_fs;\n"
+									 "in  vec4 vs_any[];\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
-									 "    vec4 result = tes_gs[0];\n"
+									 "    vec4 result = vs_any[0];\n"
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, -1, 0, 1);\n"
 									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
+									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(1, 1, 0, 1);\n"
 									 "    EmitVertex();\n"
 									 "}\n"
@@ -25533,13 +25301,13 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 							   "\n"
 							   "layout(vertices = 1) out;\n"
 							   "\n"
-							   "in  vec4 vs_tcs[];\n"
+							   "in  vec4 vs_any[];\n"
 							   "out vec4 tcs_tes[];\n"
 							   "\n"
 							   "void main()\n"
 							   "{\n"
 							   "\n"
-							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
+							   "    tcs_tes[gl_InvocationID] = vs_any[gl_InvocationID];\n"
 							   "\n"
 							   "    gl_TessLevelOuter[0] = 1.0;\n"
 							   "    gl_TessLevelOuter[1] = 1.0;\n"
@@ -25549,32 +25317,6 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 							   "    gl_TessLevelInner[1] = 1.0;\n"
 							   "}\n"
 							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_tcs[];\n"
-									  "out vec4 tcs_tes[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    tcs_tes[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
 	static const GLchar* tes_tested = "#version 430 core\n"
 									  "#extension GL_ARB_enhanced_layouts : require\n"
 									  "\n"
@@ -25583,7 +25325,7 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 									  "VAR_DEFINITION"
 									  "\n"
 									  "in  vec4 tcs_tes[];\n"
-									  "out vec4 tes_gs;\n"
+									  "out vec4 any_fs;\n"
 									  "\n"
 									  "void main()\n"
 									  "{\n"
@@ -25591,18 +25333,18 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 									  "\n"
 									  "VARIABLE_USE"
 									  "\n"
-									  "    tes_gs += result;\n"
+									  "    any_fs += result;\n"
 									  "}\n"
 									  "\n";
 	static const GLchar* vs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
 							  "in  vec4 in_vs;\n"
-							  "out vec4 vs_tcs;\n"
+							  "out vec4 vs_any;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    vs_any = in_vs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* vs_tested = "#version 430 core\n"
@@ -25611,7 +25353,7 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 									 "VAR_DEFINITION"
 									 "\n"
 									 "in  vec4 in_vs;\n"
-									 "out vec4 vs_tcs;\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
@@ -25619,7 +25361,7 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs = result;\n"
+									 "    any_fs = result;\n"
 									 "}\n"
 									 "\n";
 
@@ -25628,31 +25370,19 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 
 	if (test_case.m_stage == stage)
 	{
-		const GLchar* array = "";
-		GLchar		  buffer[16];
-		const GLchar* index			 = "";
+		GLchar		  offset[16];
 		size_t		  position		 = 0;
-		size_t		  position_start = 0;
 		const GLchar* type_name		 = test_case.m_type.GetGLSLTypeName();
 
-		sprintf(buffer, "%d", test_case.m_offset);
+		sprintf(offset, "%d", test_case.m_offset);
 
 		switch (stage)
 		{
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
-			array  = "[]";
-			index  = "[0]";
-			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			array  = "[]";
-			index  = "[gl_InvocationID]";
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
-			array  = "[]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -25663,35 +25393,16 @@ std::string XFBInvalidOffsetAlignmentTest::getShaderSource(GLuint test_case_inde
 
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
 		position = 0;
-		Utils::replaceToken("OFFSET", position, buffer, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
-		Utils::replaceToken("ARRAY", position, array, source);
-		position_start = position;
+		Utils::replaceToken("OFFSET", position, offset, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
-		position = position_start;
-		Utils::replaceToken("INDEX", position, index, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
-		Utils::replaceToken("INDEX", position, index, source);
-		Utils::replaceToken("TYPE", position, type_name, source);
+
+		Utils::replaceAllTokens("TYPE", type_name, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
 		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
 			switch (stage)
 			{
 			case Utils::Shader::FRAGMENT:
@@ -25786,7 +25497,7 @@ void XFBInvalidOffsetAlignmentTest::testInit()
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type			  = getType(i);
-		const GLuint	   base_alingment = Utils::Type::GetTypeSize(type.m_basic_type);
+		const GLuint	   basic_type_size = Utils::Type::GetTypeSize(type.m_basic_type);
 
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
@@ -25796,7 +25507,7 @@ void XFBInvalidOffsetAlignmentTest::testInit()
 				continue;
 			}
 
-			for (GLuint offset = base_alingment + 1; offset < 2 * base_alingment; ++offset)
+			for (GLuint offset = basic_type_size + 1; offset < 2 * basic_type_size; ++offset)
 			{
 				testCase test_case = { offset, (Utils::Shader::STAGES)stage, type };
 
@@ -27329,125 +27040,21 @@ XFBCaptureUnsizedArrayTest::XFBCaptureUnsizedArrayTest(deqp::Context& context)
  **/
 std::string XFBCaptureUnsizedArrayTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* var_definition = "layout (xfb_offset = 0) out vec4 gokuARRAY[];\n";
-	static const GLchar* var_use		= "    gokuINDEX[0] = result / 2;\n";
-	static const GLchar* fs				= "#version 430 core\n"
+#if DEBUG_NEG_REMOVE_ERROR
+	static const GLchar* var_definition = "/* layout (xfb_offset = 0) */ out vec4 goku[];\n";
+#else
+	static const GLchar* var_definition = "layout (xfb_offset = 0) out vec4 goku[];\n";
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+	static const GLchar* var_use = "    goku[0] = result / 2;\n";
+	static const GLchar* fs		 = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
 							  "\n"
-							  "in  vec4 gs_fs;\n"
+							  "in  vec4 any_fs;\n"
 							  "out vec4 fs_out;\n"
 							  "\n"
 							  "void main()\n"
 							  "{\n"
-							  "    fs_out = gs_fs;\n"
-							  "}\n"
-							  "\n";
-	static const GLchar* gs_tested = "#version 430 core\n"
-									 "#extension GL_ARB_enhanced_layouts : require\n"
-									 "\n"
-									 "layout(points)                           in;\n"
-									 "layout(triangle_strip, max_vertices = 4) out;\n"
-									 "\n"
-									 "VAR_DEFINITION"
-									 "\n"
-									 "in  vec4 tes_gs[];\n"
-									 "out vec4 gs_fs;\n"
-									 "\n"
-									 "void main()\n"
-									 "{\n"
-									 "    vec4 result = tes_gs[0];\n"
-									 "\n"
-									 "VARIABLE_USE"
-									 "\n"
-									 "    gs_fs = result;\n"
-									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
-									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
-									 "    gl_Position  = vec4(-1, 1, 0, 1);\n"
-									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
-									 "    gl_Position  = vec4(1, -1, 0, 1);\n"
-									 "    EmitVertex();\n"
-									 "    gs_fs = result;\n"
-									 "    gl_Position  = vec4(1, 1, 0, 1);\n"
-									 "    EmitVertex();\n"
-									 "}\n"
-									 "\n";
-	static const GLchar* tcs = "#version 430 core\n"
-							   "#extension GL_ARB_enhanced_layouts : require\n"
-							   "\n"
-							   "layout(vertices = 1) out;\n"
-							   "\n"
-							   "in  vec4 vs_tcs[];\n"
-							   "out vec4 tcs_tes[];\n"
-							   "\n"
-							   "void main()\n"
-							   "{\n"
-							   "\n"
-							   "    tcs_tes[gl_InvocationID] = vs_tcs[gl_InvocationID];\n"
-							   "\n"
-							   "    gl_TessLevelOuter[0] = 1.0;\n"
-							   "    gl_TessLevelOuter[1] = 1.0;\n"
-							   "    gl_TessLevelOuter[2] = 1.0;\n"
-							   "    gl_TessLevelOuter[3] = 1.0;\n"
-							   "    gl_TessLevelInner[0] = 1.0;\n"
-							   "    gl_TessLevelInner[1] = 1.0;\n"
-							   "}\n"
-							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_tcs[];\n"
-									  "out vec4 tcs_tes[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_tcs[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    tcs_tes[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
-	static const GLchar* tes_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(isolines, point_mode) in;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 tcs_tes[];\n"
-									  "out vec4 tes_gs;\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = tcs_tes[0];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    tes_gs += result;\n"
-									  "}\n"
-									  "\n";
-	static const GLchar* vs = "#version 430 core\n"
-							  "#extension GL_ARB_enhanced_layouts : require\n"
-							  "\n"
-							  "in  vec4 in_vs;\n"
-							  "out vec4 vs_tcs;\n"
-							  "\n"
-							  "void main()\n"
-							  "{\n"
-							  "    vs_tcs = in_vs;\n"
+							  "    fs_out = any_fs;\n"
 							  "}\n"
 							  "\n";
 	static const GLchar* vs_tested = "#version 430 core\n"
@@ -27456,7 +27063,7 @@ std::string XFBCaptureUnsizedArrayTest::getShaderSource(GLuint test_case_index, 
 									 "VAR_DEFINITION"
 									 "\n"
 									 "in  vec4 in_vs;\n"
-									 "out vec4 vs_tcs;\n"
+									 "out vec4 any_fs;\n"
 									 "\n"
 									 "void main()\n"
 									 "{\n"
@@ -27464,7 +27071,7 @@ std::string XFBCaptureUnsizedArrayTest::getShaderSource(GLuint test_case_index, 
 									 "\n"
 									 "VARIABLE_USE"
 									 "\n"
-									 "    vs_tcs = result;\n"
+									 "    any_fs = result;\n"
 									 "}\n"
 									 "\n";
 
@@ -27473,27 +27080,10 @@ std::string XFBCaptureUnsizedArrayTest::getShaderSource(GLuint test_case_index, 
 
 	if (test_case.m_stage == stage)
 	{
-		const GLchar* array	= "";
-		const GLchar* index	= "";
 		size_t		  position = 0;
 
 		switch (stage)
 		{
-		case Utils::Shader::GEOMETRY:
-			source = gs_tested;
-			array  = "[]";
-			index  = "[0]";
-			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			array  = "[]";
-			index  = "[gl_InvocationID]";
-			break;
-		case Utils::Shader::TESS_EVAL:
-			source = tes_tested;
-			array  = "[]";
-			index  = "[0]";
-			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
 			break;
@@ -27503,57 +27093,12 @@ std::string XFBCaptureUnsizedArrayTest::getShaderSource(GLuint test_case_index, 
 
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
 		position = 0;
-		Utils::replaceToken("ARRAY", position, array, source);
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
-
-		Utils::replaceAllTokens("INDEX", index, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
-		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_EVAL:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::TESS_CTRL:
-				source = tcs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
 		case Utils::Shader::VERTEX:
 			switch (stage)
 			{
@@ -27617,8 +27162,9 @@ void XFBCaptureUnsizedArrayTest::testInit()
 	for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 	{
 		/* Not aplicable for */
-		if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::FRAGMENT == stage) ||
-			(Utils::Shader::GEOMETRY == stage) || (Utils::Shader::TESS_EVAL == stage))
+		if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
+			(Utils::Shader::FRAGMENT == stage) || (Utils::Shader::GEOMETRY == stage) ||
+			(Utils::Shader::TESS_EVAL == stage))
 		{
 			continue;
 		}

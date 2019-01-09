@@ -3514,9 +3514,9 @@ private:
  *
  * ,
  *
- *     layout (xfb_buffer = 0, xfb_stride = 32) out;
+ *     layout (xfb_buffer = 0, xfb_stride = 28) out;
  *
- *     layout (xfb_offset = 16, xfb_stride = 32) out vec4 goku;
+ *     layout (xfb_offset = 16, xfb_stride = 28) out vec4 goku;
  *
  *     goku = EXPECTED_VALUE.
  *
@@ -4094,11 +4094,11 @@ private:
  *
  * ,
  *
- *     layout (xfb_buffer = 0, xfb_offset = MAX_SIZE) out vec4 output;
+ *     layout (xfb_buffer = 0, xfb_offset = MAX_SIZE + 16) out vec4 output;
  *
  * and
  *
- *     layout (xfb_buffer = 0, xfb_offset = MAX_SIZE) out Block
+ *     layout (xfb_buffer = 0, xfb_offset = MAX_SIZE + 16) out Block
  *     {
  *         vec4 member;
  *     };
@@ -4317,8 +4317,8 @@ private:
  *
  * Test following code snippet:
  *
- *     layout (xfb_offset = sizeof(type))       out type gohan;
- *     layout (xfb_offset = 1.5 * sizeof(type)) out type goten;
+ *     layout (xfb_offset = 0)       out type gohan;
+ *     layout (xfb_offset = 0.5 * sizeof(type)) out type goten;
  *
  *     gohan = EXPECTED_VALUE;
  *     goten = EXPECTED_VALUE;
@@ -4350,8 +4350,7 @@ private:
 	/* Private types */
 	struct testCase
 	{
-		glw::GLuint			  m_offset_gohan;
-		glw::GLuint			  m_offset_goten;
+		glw::GLuint			  m_offset;
 		Utils::Shader::STAGES m_stage;
 		Utils::Type			  m_type;
 	};
