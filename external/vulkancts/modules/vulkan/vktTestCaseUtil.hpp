@@ -24,10 +24,26 @@
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"
+#include "tcuResource.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
 {
+
+class ShaderSourceProvider
+{
+public:
+	static std::string getSource (tcu::Archive& archive, const char* path)
+	{
+		de::UniquePtr<tcu::Resource> resource(archive.getResource(path));
+
+		std::vector<deUint8> readBuffer(resource->getSize() + 1);
+		resource->read(&readBuffer[0], resource->getSize());
+		readBuffer[readBuffer.size() - 1] = 0;
+
+		return std::string(reinterpret_cast<const char*>(&readBuffer[0]));
+	}
+};
 
 template<typename Arg0>
 struct NoPrograms1

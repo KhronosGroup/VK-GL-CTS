@@ -25,7 +25,9 @@
 #include <vkrunner/vkrunner.h>
 
 #include "vktVkRunnerTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuResource.hpp"
 
 namespace vkt
 {
@@ -71,7 +73,9 @@ VkRunnerTestCase::VkRunnerTestCase (tcu::TestContext&	testCtx,
 	readFilename.append(m_testCaseData.categoryname);
 	readFilename.append("/");
 	readFilename.append(m_testCaseData.filename);
-	m_testCaseData.source = vr_source_from_file(readFilename.c_str());
+
+	std::string s = ShaderSourceProvider::getSource(m_testCtx.getArchive(), readFilename.c_str());
+	m_testCaseData.source = vr_source_from_string(s.c_str());
 }
 
 VkRunnerTestCase::~VkRunnerTestCase (void)
