@@ -2046,12 +2046,8 @@ std::string generateSpirv(const ShaderSpec& spec, const bool are16Bit, const boo
 		src << "OpCapability StorageBuffer16BitAccess\n"
 			"OpCapability UniformAndStorageBuffer16BitAccess\n";
 
-	if (spec.packFloat16Bit || are16Bit)
-		src << "OpExtension \"SPV_AMD_gpu_shader_half_float\"\n";
-
 	if (are16Bit)
-		src << "OpExtension \"SPV_AMD_gpu_shader_half_float\"\n"
-			"OpExtension \"SPV_KHR_16bit_storage\"\n";
+		src << "OpExtension \"SPV_KHR_16bit_storage\"\n";
 
 	src << "%1 = OpExtInstImport \"GLSL.std.450\"\n"
 		"OpMemoryModel Logical GLSL450\n"

@@ -102,6 +102,8 @@ using de::UniquePtr;
 using tcu::StringTemplate;
 using tcu::Vec4;
 
+const bool TEST_WITHOUT_NAN	= false;
+
 template<typename T>
 static void fillRandomScalars (de::Random& rnd, T minValue, T maxValue, void* dst, int numValues, int offset = 0)
 {
@@ -6073,7 +6075,7 @@ struct fp16isGreater		{ bool operator()(const tcu::Float16 in1, const tcu::Float
 struct fp16isLessOrEqual	{ bool operator()(const tcu::Float16 in1, const tcu::Float16 in2)	{ return in1.asFloat() <= in2.asFloat(); } };
 struct fp16isGreaterOrEqual	{ bool operator()(const tcu::Float16 in1, const tcu::Float16 in2)	{ return in1.asFloat() >= in2.asFloat(); } };
 
-template <class TestedLogicalFunction, bool onlyTestFunc, bool unationModeAnd>
+template <class TestedLogicalFunction, bool onlyTestFunc, bool unationModeAnd, bool nanSupported>
 bool compareFP16Logical (const std::vector<Resource>& inputs, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>&, TestLog& log)
 {
 	if (inputs.size() != 2 || outputAllocs.size() != 1)
@@ -6115,16 +6117,23 @@ bool compareFP16Logical (const std::vector<Resource>& inputs, const vector<Alloc
 			}
 			else
 			{
+				const bool	f1nan	= f1.isNaN();
+				const bool	f2nan	= f2.isNaN();
+
+				// Skip NaN floats if not supported by implementation
+				if (!nanSupported && (f1nan || f2nan))
+					continue;
+
 				if (unationModeAnd)
 				{
-					const bool	ordered	= !f1.isNaN() && !f2.isNaN();
+					const bool	ordered		= !f1nan && !f2nan;
 
 					if (ordered && testedLogicalFunction(f1, f2))
 						expectedOutput = float16one;
 				}
 				else
 				{
-					const bool	unordered	= f1.isNaN() || f2.isNaN();
+					const bool	unordered	= f1nan || f2nan;
 
 					if (unordered || testedLogicalFunction(f1, f2))
 						expectedOutput = float16one;
@@ -9876,9 +9885,11 @@ void finalizeTestsCreation (ComputeShaderSpec&			specResource,
 }
 
 template<class SpecResource>
-tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bool nanSupported)
 {
-	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "logical", "Float 16 logical tests"));
+	const string						nan					= nanSupported ? "_nan" : "";
+	const string						groupName			= "logical" + nan;
+	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Float 16 logical tests"));
 
 	de::Random							rnd					(deStringHash(testGroup->getName()));
 	const StringTemplate				capabilities		("OpCapability ${cap}\n");
@@ -9894,26 +9905,27 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx)
 	struct TestOp
 	{
 		const char*		opCode;
-		VerifyIOFunc	verifyFunc;
+		VerifyIOFunc	verifyFuncNan;
+		VerifyIOFunc	verifyFuncNonNan;
 		const deUint32	argCount;
 	};
 
 	const TestOp	testOps[]	=
 	{
-		{ "OpIsNan"						,	compareFP16Logical<fp16isNan,				true,  false>	,	1	},
-		{ "OpIsInf"						,	compareFP16Logical<fp16isInf,				true,  false>	,	1	},
-		{ "OpFOrdEqual"					,	compareFP16Logical<fp16isEqual,				false, true>	,	2	},
-		{ "OpFUnordEqual"				,	compareFP16Logical<fp16isEqual,				false, false>	,	2	},
-		{ "OpFOrdNotEqual"				,	compareFP16Logical<fp16isUnequal,			false, true>	,	2	},
-		{ "OpFUnordNotEqual"			,	compareFP16Logical<fp16isUnequal,			false, false>	,	2	},
-		{ "OpFOrdLessThan"				,	compareFP16Logical<fp16isLess,				false, true>	,	2	},
-		{ "OpFUnordLessThan"			,	compareFP16Logical<fp16isLess,				false, false>	,	2	},
-		{ "OpFOrdGreaterThan"			,	compareFP16Logical<fp16isGreater,			false, true>	,	2	},
-		{ "OpFUnordGreaterThan"			,	compareFP16Logical<fp16isGreater,			false, false>	,	2	},
-		{ "OpFOrdLessThanEqual"			,	compareFP16Logical<fp16isLessOrEqual,		false, true>	,	2	},
-		{ "OpFUnordLessThanEqual"		,	compareFP16Logical<fp16isLessOrEqual,		false, false>	,	2	},
-		{ "OpFOrdGreaterThanEqual"		,	compareFP16Logical<fp16isGreaterOrEqual,	false, true>	,	2	},
-		{ "OpFUnordGreaterThanEqual"	,	compareFP16Logical<fp16isGreaterOrEqual,	false, false>	,	2	},
+		{ "OpIsNan"						,	compareFP16Logical<fp16isNan,				true,  false, true>,	compareFP16Logical<fp16isNan,				true,  false, false>,	1	},
+		{ "OpIsInf"						,	compareFP16Logical<fp16isInf,				true,  false, true>,	compareFP16Logical<fp16isInf,				true,  false, false>,	1	},
+		{ "OpFOrdEqual"					,	compareFP16Logical<fp16isEqual,				false, true,  true>,	compareFP16Logical<fp16isEqual,				false, true,  false>,	2	},
+		{ "OpFUnordEqual"				,	compareFP16Logical<fp16isEqual,				false, false, true>,	compareFP16Logical<fp16isEqual,				false, false, false>,	2	},
+		{ "OpFOrdNotEqual"				,	compareFP16Logical<fp16isUnequal,			false, true,  true>,	compareFP16Logical<fp16isUnequal,			false, true,  false>,	2	},
+		{ "OpFUnordNotEqual"			,	compareFP16Logical<fp16isUnequal,			false, false, true>,	compareFP16Logical<fp16isUnequal,			false, false, false>,	2	},
+		{ "OpFOrdLessThan"				,	compareFP16Logical<fp16isLess,				false, true,  true>,	compareFP16Logical<fp16isLess,				false, true,  false>,	2	},
+		{ "OpFUnordLessThan"			,	compareFP16Logical<fp16isLess,				false, false, true>,	compareFP16Logical<fp16isLess,				false, false, false>,	2	},
+		{ "OpFOrdGreaterThan"			,	compareFP16Logical<fp16isGreater,			false, true,  true>,	compareFP16Logical<fp16isGreater,			false, true,  false>,	2	},
+		{ "OpFUnordGreaterThan"			,	compareFP16Logical<fp16isGreater,			false, false, true>,	compareFP16Logical<fp16isGreater,			false, false, false>,	2	},
+		{ "OpFOrdLessThanEqual"			,	compareFP16Logical<fp16isLessOrEqual,		false, true,  true>,	compareFP16Logical<fp16isLessOrEqual,		false, true,  false>,	2	},
+		{ "OpFUnordLessThanEqual"		,	compareFP16Logical<fp16isLessOrEqual,		false, false, true>,	compareFP16Logical<fp16isLessOrEqual,		false, false, false>,	2	},
+		{ "OpFOrdGreaterThanEqual"		,	compareFP16Logical<fp16isGreaterOrEqual,	false, true,  true>,	compareFP16Logical<fp16isGreaterOrEqual,	false, true,  false>,	2	},
+		{ "OpFUnordGreaterThanEqual"	,	compareFP16Logical<fp16isGreaterOrEqual,	false, false, true>,	compareFP16Logical<fp16isGreaterOrEqual,	false, false, false>,	2	},
 	};
 
 	{ // scalar cases
@@ -10019,10 +10031,17 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx)
 			specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data1)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-			specResource.verifyIO = testOp.verifyFunc;
+			specResource.verifyIO = nanSupported ? testOp.verifyFuncNan : testOp.verifyFuncNonNan;
 
 			extensions.push_back("VK_KHR_16bit_storage");
 			extensions.push_back("VK_KHR_shader_float16_int8");
+
+			if (nanSupported)
+			{
+				extensions.push_back("VK_KHR_shader_float_controls");
+
+				features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = DE_TRUE;
+			}
 
 			features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 			features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
@@ -10138,10 +10157,17 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx)
 			specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16DataVec1)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			specResource.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16DataVec2)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			specResource.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16OutVecDummy)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-			specResource.verifyIO = testOp.verifyFunc;
+			specResource.verifyIO = nanSupported ? testOp.verifyFuncNan : testOp.verifyFuncNonNan;
 
 			extensions.push_back("VK_KHR_16bit_storage");
 			extensions.push_back("VK_KHR_shader_float16_int8");
+
+			if (nanSupported)
+			{
+				extensions.push_back("VK_KHR_shader_float_controls");
+
+				features.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat16 = DE_TRUE;
+			}
 
 			features.ext16BitStorage = EXT16BITSTORAGEFEATURES_UNIFORM_BUFFER_BLOCK;
 			features.extFloat16Int8 = EXTFLOAT16INT8FEATURES_FLOAT16;
@@ -14634,12 +14660,13 @@ struct fp16VectorTimesScalar : public fp16AllComponents
 
 		for (size_t componentNdx = 0; componentNdx < getArgCompCount(0); ++componentNdx)
 		{
-			const fp16type	x	(in[0][componentNdx]);
-			const fp16type	m	(s.asDouble() * x.asDouble());
+			const fp16type	x	   (in[0][componentNdx]);
+			const double    result (s.asDouble() * x.asDouble());
+			const fp16type	m	   (result);
 
 			out[componentNdx] = m.bits();
-			min[componentNdx] = getMin(m.asDouble(), getULPs(in));
-			max[componentNdx] = getMax(m.asDouble(), getULPs(in));
+			min[componentNdx] = getMin(result, getULPs(in));
+			max[componentNdx] = getMax(result, getULPs(in));
 		}
 
 		return true;
@@ -17599,7 +17626,7 @@ tcu::TestCaseGroup* createFloat16Tests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16", "Float 16 tests"));
 
 	testGroup->addChild(createOpConstantFloat16Tests(testCtx));
-	testGroup->addChild(createFloat16LogicalSet<GraphicsResources>(testCtx));
+	testGroup->addChild(createFloat16LogicalSet<GraphicsResources>(testCtx, TEST_WITHOUT_NAN));
 	testGroup->addChild(createFloat16FuncSet<GraphicsResources>(testCtx));
 	testGroup->addChild(createDerivativeTests<256, 1>(testCtx));
 	testGroup->addChild(createDerivativeTests<256, 2>(testCtx));
@@ -17624,7 +17651,7 @@ tcu::TestCaseGroup* createFloat16Group (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16", "Float 16 tests"));
 
 	testGroup->addChild(createFloat16OpConstantCompositeGroup(testCtx));
-	testGroup->addChild(createFloat16LogicalSet<ComputeShaderSpec>(testCtx));
+	testGroup->addChild(createFloat16LogicalSet<ComputeShaderSpec>(testCtx, TEST_WITHOUT_NAN));
 	testGroup->addChild(createFloat16FuncSet<ComputeShaderSpec>(testCtx));
 	testGroup->addChild(createFloat16VectorExtractSet<ComputeShaderSpec>(testCtx));
 	testGroup->addChild(createFloat16VectorInsertSet<ComputeShaderSpec>(testCtx));
