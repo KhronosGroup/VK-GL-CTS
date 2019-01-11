@@ -300,7 +300,7 @@ tcu::TestStatus CopyBufferToImageTestInstance::iterate()
 		<< tcu::TestLog::Message << "Fill value: " << m_fillValue << tcu::TestLog::EndMessage;
 
 	// Validate resulting image
-	if (m_validator.validateImage(ctx, m_refData, **colorImage, m_imageFormat))
+	if (m_validator.validateImage(ctx, m_refData, **colorImage, m_imageFormat, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
 		return tcu::TestStatus::pass("Everything went OK");
 	else
 		return tcu::TestStatus::fail("Something went really wrong");

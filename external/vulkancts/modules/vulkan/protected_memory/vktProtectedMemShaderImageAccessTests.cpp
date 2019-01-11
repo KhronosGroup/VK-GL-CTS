@@ -231,6 +231,7 @@ private:
 	de::MovePtr<tcu::Texture2D>	createTestTexture2D		(void);
 	void						calculateAtomicRef		(tcu::Texture2D&		texture2D);
 	tcu::TestStatus				validateResult			(vk::VkImage			image,
+														 vk::VkImageLayout		imageLayout,
 														 const tcu::Texture2D&	texture2D,
 														 const tcu::Sampler&	refSampler);
 
@@ -545,8 +546,31 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest (void)
 		// Upload data to an unprotected image
 		uploadImage(m_protectedContext, **unprotectedImage, *texture2D);
 
+		// Select vkImageLayout based upon accessType
+		vk::VkImageLayout imageSrcLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
+
+		switch (m_params.accessType)
+		{
+			case ACCESS_TYPE_SAMPLING:
+			case ACCESS_TYPE_TEXEL_FETCH:
+			{
+				imageSrcLayout = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				break;
+			}
+			case ACCESS_TYPE_IMAGE_LOAD:
+			case ACCESS_TYPE_IMAGE_STORE:
+			case ACCESS_TYPE_IMAGE_ATOMICS:
+			{
+				imageSrcLayout = vk::VK_IMAGE_LAYOUT_GENERAL;
+				break;
+			}
+			default:
+				DE_FATAL("Impossible");
+				break;
+		}
+
 		// Copy unprotected image to protected image
-		copyToProtectedImage(m_protectedContext, **unprotectedImage, **imageSrc, IMAGE_WIDTH, IMAGE_HEIGHT);
+		copyToProtectedImage(m_protectedContext, **unprotectedImage, **imageSrc, imageSrcLayout, IMAGE_WIDTH, IMAGE_HEIGHT);
 	}
 
 	// Clear dst image
@@ -671,7 +695,7 @@ tcu::TestStatus ImageAccessTestInstance::executeComputeTest (void)
 	{
 		const vk::VkImage	resultImage		= m_params.accessType == ACCESS_TYPE_IMAGE_ATOMICS ? **imageSrc : **imageDst;
 
-		return validateResult(resultImage, *texture2D, refSampler);
+		return validateResult(resultImage, vk::VK_IMAGE_LAYOUT_GENERAL, *texture2D, refSampler);
 	}
 }
 
@@ -745,6 +769,29 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 		}
 	}
 
+	// Select vkImageLayout based upon accessType
+	vk::VkImageLayout imageLayout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
+
+	switch (m_params.accessType)
+	{
+		case ACCESS_TYPE_SAMPLING:
+		case ACCESS_TYPE_TEXEL_FETCH:
+		{
+			imageLayout = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			break;
+		}
+		case ACCESS_TYPE_IMAGE_LOAD:
+		case ACCESS_TYPE_IMAGE_STORE:
+		case ACCESS_TYPE_IMAGE_ATOMICS:
+		{
+			imageLayout = vk::VK_IMAGE_LAYOUT_GENERAL;
+			break;
+		}
+		default:
+			DE_FATAL("Impossible");
+			break;
+	}
+
 	// Upload source image
 	{
 		de::MovePtr<vk::ImageWithMemory>	unprotectedImage	= createImage2D(ctx, PROTECTION_DISABLED, queueFamilyIndex,
@@ -756,7 +803,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 		uploadImage(m_protectedContext, **unprotectedImage, *texture2D);
 
 		// Copy unprotected image to protected image
-		copyToProtectedImage(m_protectedContext, **unprotectedImage, **imageSrc, IMAGE_WIDTH, IMAGE_HEIGHT);
+		copyToProtectedImage(m_protectedContext, **unprotectedImage, **imageSrc, imageLayout, IMAGE_WIDTH, IMAGE_HEIGHT);
 	}
 
 	// Clear dst image
@@ -1010,7 +1057,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 			vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// srcAccessMask
 			vk::VK_ACCESS_SHADER_READ_BIT,						// dstAccessMask
 			vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// oldLayout
-			vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,		// newLayout
+			imageLayout,										// newLayout
 			queueFamilyIndex,									// srcQueueFamilyIndex
 			queueFamilyIndex,									// dstQueueFamilyIndex
 			**colorImage,										// image
@@ -1048,7 +1095,7 @@ tcu::TestStatus ImageAccessTestInstance::executeFragmentTest (void)
 		const vk::VkImage	resultImage		= m_params.accessType == ACCESS_TYPE_IMAGE_ATOMICS	?	**imageSrc	:
 											  m_params.accessType == ACCESS_TYPE_IMAGE_STORE	?	**imageDst	: **colorImage;
 
-		return validateResult(resultImage, *texture2D, refSampler);
+		return validateResult(resultImage, imageLayout, *texture2D, refSampler);
 	}
 }
 
@@ -1069,7 +1116,7 @@ void ImageAccessTestInstance::calculateAtomicRef (tcu::Texture2D& texture2D)
 	}
 }
 
-tcu::TestStatus ImageAccessTestInstance::validateResult (vk::VkImage image, const tcu::Texture2D& texture2D, const tcu::Sampler& refSampler)
+tcu::TestStatus ImageAccessTestInstance::validateResult (vk::VkImage image, vk::VkImageLayout imageLayout, const tcu::Texture2D& texture2D, const tcu::Sampler& refSampler)
 {
 	de::Random			rnd			(getSeedValue(m_params));
 	ValidationData		refData;
@@ -1084,7 +1131,7 @@ tcu::TestStatus ImageAccessTestInstance::validateResult (vk::VkImage image, cons
 		refData.values[ndx] = texture2D.sample(refSampler, cx, cy, lod);
 	}
 
-	if (!m_validator.validateImage(m_protectedContext, refData, image, m_params.imageFormat))
+	if (!m_validator.validateImage(m_protectedContext, refData, image, m_params.imageFormat, imageLayout))
 		return tcu::TestStatus::fail("Something went really wrong");
 	else
 		return tcu::TestStatus::pass("Everything went OK");

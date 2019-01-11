@@ -1350,10 +1350,10 @@ tcu::TestStatus testSemaphoreFdDup (Context&					context,
 				}
 				else
 					DE_FATAL("Unknown permanence.");
+
+				VK_CHECK(vkd.queueWaitIdle(queue));
 			}
 		}
-
-		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		return tcu::TestStatus::pass("Pass");
 	}
@@ -1420,10 +1420,10 @@ tcu::TestStatus testSemaphoreFdDup2 (Context&					context,
 				}
 				else
 					DE_FATAL("Unknown permanence.");
+
+				VK_CHECK(vkd.queueWaitIdle(queue));
 			}
 		}
-
-		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		return tcu::TestStatus::pass("Pass");
 	}
@@ -1490,10 +1490,10 @@ tcu::TestStatus testSemaphoreFdDup3 (Context&					context,
 				}
 				else
 					DE_FATAL("Unknown permanence.");
+
+				VK_CHECK(vkd.queueWaitIdle(queue));
 			}
 		}
-
-		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		return tcu::TestStatus::pass("Pass");
 	}
@@ -2364,10 +2364,10 @@ tcu::TestStatus testFenceFdDup (Context&				context,
 				}
 				else
 					DE_FATAL("Unknown permanence.");
+
+				VK_CHECK(vkd.queueWaitIdle(queue));
 			}
 		}
-
-		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		return tcu::TestStatus::pass("Pass");
 	}
@@ -2434,10 +2434,10 @@ tcu::TestStatus testFenceFdDup2 (Context&				context,
 				}
 				else
 					DE_FATAL("Unknown permanence.");
+
+				VK_CHECK(vkd.queueWaitIdle(queue));
 			}
 		}
-
-		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		return tcu::TestStatus::pass("Pass");
 	}
@@ -2504,10 +2504,10 @@ tcu::TestStatus testFenceFdDup3 (Context&				context,
 				}
 				else
 					DE_FATAL("Unknown permanence.");
+
+				VK_CHECK(vkd.queueWaitIdle(queue));
 			}
 		}
-
-		VK_CHECK(vkd.queueWaitIdle(queue));
 
 		return tcu::TestStatus::pass("Pass");
 	}

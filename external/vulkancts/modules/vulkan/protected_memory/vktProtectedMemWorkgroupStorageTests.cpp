@@ -95,6 +95,7 @@ public:
 private:
 	de::MovePtr<tcu::Texture2D>	createTestTexture2D				(void);
 	tcu::TestStatus				validateResult					(vk::VkImage			image,
+																 vk::VkImageLayout imageLayout,
 																 const tcu::Texture2D&	texture2D,
 																 const tcu::Sampler&	refSampler);
 	void						calculateRef					(tcu::Texture2D&		texture2D);
@@ -249,7 +250,7 @@ tcu::TestStatus WorkgroupStorageTestInstance::iterate (void)
 		uploadImage(m_protectedContext, **unprotectedImage, *texture2D);
 
 		// Copy unprotected image to protected image
-		copyToProtectedImage(m_protectedContext, **unprotectedImage, **imageSrc, m_params.imageWidth, m_params.imageHeight);
+		copyToProtectedImage(m_protectedContext, **unprotectedImage, **imageSrc, vk::VK_IMAGE_LAYOUT_GENERAL, m_params.imageWidth, m_params.imageHeight);
 	}
 
 	// Clear dst image
@@ -311,7 +312,7 @@ tcu::TestStatus WorkgroupStorageTestInstance::iterate (void)
 	calculateRef(*texture2D);
 
 	// Validate result
-	return validateResult(**imageDst, *texture2D, refSampler);
+	return validateResult(**imageDst, vk::VK_IMAGE_LAYOUT_GENERAL, *texture2D, refSampler);
 }
 
 void WorkgroupStorageTestInstance::calculateRef (tcu::Texture2D& texture2D)
@@ -331,7 +332,7 @@ void WorkgroupStorageTestInstance::calculateRef (tcu::Texture2D& texture2D)
 	}
 }
 
-tcu::TestStatus WorkgroupStorageTestInstance::validateResult (vk::VkImage image, const tcu::Texture2D& texture2D, const tcu::Sampler& refSampler)
+tcu::TestStatus WorkgroupStorageTestInstance::validateResult (vk::VkImage image, vk::VkImageLayout imageLayout, const tcu::Texture2D& texture2D, const tcu::Sampler& refSampler)
 {
 	de::Random			rnd			(getSeedValue(m_params));
 	ValidationData		refData;
@@ -346,7 +347,7 @@ tcu::TestStatus WorkgroupStorageTestInstance::validateResult (vk::VkImage image,
 		refData.values[ndx] = texture2D.sample(refSampler, cx, cy, lod);
 	}
 
-	if (!m_validator.validateImage(m_protectedContext, refData, image, vk::VK_FORMAT_R8G8B8A8_UNORM))
+	if (!m_validator.validateImage(m_protectedContext, refData, image, vk::VK_FORMAT_R8G8B8A8_UNORM, imageLayout))
 		return tcu::TestStatus::fail("Result validation failed");
 	else
 		return tcu::TestStatus::pass("Pass");

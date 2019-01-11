@@ -173,6 +173,7 @@ void								uploadImage							(ProtectedContext&					ctx,
 void								copyToProtectedImage				(ProtectedContext&					ctx,
 																		 vk::VkImage						srcImage,
 																		 vk::VkImage						dstImage,
+																		 vk::VkImageLayout					dstImageLayout,
 																		 deUint32							width,
 																		 deUint32							height);
 
