@@ -2135,6 +2135,42 @@ struct VkPresentRegionsKHR
 	const VkPresentRegionKHR*	pRegions;
 };
 
+struct VkPhysicalDeviceImagelessFramebufferFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		imagelessFramebuffer;
+};
+
+struct VkFramebufferAttachmentImageInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkImageCreateFlags	flags;
+	VkImageUsageFlags	usage;
+	deUint32			width;
+	deUint32			height;
+	deUint32			layerCount;
+	deUint32			viewFormatCount;
+	const VkFormat*		pViewFormats;
+};
+
+struct VkFramebufferAttachmentsCreateInfoKHR
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	deUint32									attachmentImageInfoCount;
+	const VkFramebufferAttachmentImageInfoKHR*	pAttachmentImageInfos;
+};
+
+struct VkRenderPassAttachmentBeginInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	deUint32			attachmentCount;
+	const VkImageView*	pAttachments;
+};
+
 struct VkAttachmentDescription2KHR
 {
 	VkStructureType					sType;

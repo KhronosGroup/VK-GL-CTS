@@ -294,6 +294,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT:			return "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_HDR_METADATA_EXT:												return "VK_STRUCTURE_TYPE_HDR_METADATA_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR:							return "VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR:							return "VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR:							return "VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR";
 		case VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR:									return "VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR";
 		case VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR:										return "VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR";
 		case VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR:										return "VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR";
@@ -1747,6 +1751,15 @@ tcu::Format::Bitfield<32> getDescriptorPoolCreateFlagsStr (VkDescriptorPoolCreat
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR,	"VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getAttachmentDescriptionFlagsStr (VkAttachmentDescriptionFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2272,11 +2285,6 @@ tcu::Format::Bitfield<32> getSamplerCreateFlagsStr (VkSamplerCreateFlags value)
 }
 
 tcu::Format::Bitfield<32> getDescriptorPoolResetFlagsStr (VkDescriptorPoolResetFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
-}
-
-tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -5168,6 +5176,54 @@ std::ostream& operator<< (std::ostream& s, const VkPresentRegionsKHR& value)
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainCount = " << value.swapchainCount << '\n';
 	s << "\tpRegions = " << value.pRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceImagelessFramebufferFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceImagelessFramebufferFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\timagelessFramebuffer = " << value.imagelessFramebuffer << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFramebufferAttachmentImageInfoKHR& value)
+{
+	s << "VkFramebufferAttachmentImageInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getImageCreateFlagsStr(value.flags) << '\n';
+	s << "\tusage = " << getImageUsageFlagsStr(value.usage) << '\n';
+	s << "\twidth = " << value.width << '\n';
+	s << "\theight = " << value.height << '\n';
+	s << "\tlayerCount = " << value.layerCount << '\n';
+	s << "\tviewFormatCount = " << value.viewFormatCount << '\n';
+	s << "\tpViewFormats = " << value.pViewFormats << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkFramebufferAttachmentsCreateInfoKHR& value)
+{
+	s << "VkFramebufferAttachmentsCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tattachmentImageInfoCount = " << value.attachmentImageInfoCount << '\n';
+	s << "\tpAttachmentImageInfos = " << value.pAttachmentImageInfos << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassAttachmentBeginInfoKHR& value)
+{
+	s << "VkRenderPassAttachmentBeginInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tattachmentCount = " << value.attachmentCount << '\n';
+	s << "\tpAttachments = " << value.pAttachments << '\n';
 	s << '}';
 	return s;
 }

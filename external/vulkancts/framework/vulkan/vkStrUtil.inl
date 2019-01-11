@@ -201,6 +201,7 @@ tcu::Format::Bitfield<32>	getCullModeFlagsStr										(VkCullModeFlags value);
 tcu::Format::Bitfield<32>	getColorComponentFlagsStr								(VkColorComponentFlags value);
 tcu::Format::Bitfield<32>	getDescriptorSetLayoutCreateFlagsStr					(VkDescriptorSetLayoutCreateFlags value);
 tcu::Format::Bitfield<32>	getDescriptorPoolCreateFlagsStr							(VkDescriptorPoolCreateFlags value);
+tcu::Format::Bitfield<32>	getFramebufferCreateFlagsStr							(VkFramebufferCreateFlags value);
 tcu::Format::Bitfield<32>	getAttachmentDescriptionFlagsStr						(VkAttachmentDescriptionFlags value);
 tcu::Format::Bitfield<32>	getSubpassDescriptionFlagsStr							(VkSubpassDescriptionFlags value);
 tcu::Format::Bitfield<32>	getAccessFlagsStr										(VkAccessFlags value);
@@ -259,7 +260,6 @@ tcu::Format::Bitfield<32>	getPipelineDynamicStateCreateFlagsStr					(VkPipelineD
 tcu::Format::Bitfield<32>	getPipelineLayoutCreateFlagsStr							(VkPipelineLayoutCreateFlags value);
 tcu::Format::Bitfield<32>	getSamplerCreateFlagsStr								(VkSamplerCreateFlags value);
 tcu::Format::Bitfield<32>	getDescriptorPoolResetFlagsStr							(VkDescriptorPoolResetFlags value);
-tcu::Format::Bitfield<32>	getFramebufferCreateFlagsStr							(VkFramebufferCreateFlags value);
 tcu::Format::Bitfield<32>	getRenderPassCreateFlagsStr								(VkRenderPassCreateFlags value);
 tcu::Format::Bitfield<32>	getCommandPoolTrimFlagsStr								(VkCommandPoolTrimFlags value);
 tcu::Format::Bitfield<32>	getDescriptorUpdateTemplateCreateFlagsStr				(VkDescriptorUpdateTemplateCreateFlags value);
@@ -500,6 +500,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloat16Int8Feat
 std::ostream&	operator<<	(std::ostream& s, const VkRectLayerKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPresentRegionsKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceImagelessFramebufferFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFramebufferAttachmentImageInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFramebufferAttachmentsCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassAttachmentBeginInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAttachmentDescription2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkAttachmentReference2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassDescription2KHR& value);

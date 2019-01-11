@@ -736,6 +736,26 @@ template<> VkStructureType getStructureType<VkPresentRegionsKHR> (void)
 	return VK_STRUCTURE_TYPE_PRESENT_REGIONS_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceImagelessFramebufferFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkFramebufferAttachmentImageInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkFramebufferAttachmentsCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassAttachmentBeginInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkAttachmentDescription2KHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR;

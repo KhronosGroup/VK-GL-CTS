@@ -91,6 +91,7 @@
 #include "vktVkRunnerExampleTests.hpp"
 #include "vktVkRunnerGraphicsFuzzTests.hpp"
 #include "vktAmberExampleTests.hpp"
+#include "vktImagelessFramebufferTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -502,6 +503,7 @@ void TestPackage::init (void)
 	addChild(vkrunner::createTests				(m_testCtx));
 	addChild(vkrunner::createGraphicsFuzzTests	(m_testCtx));
 	addChild(cts_amber::createExampleTests		(m_testCtx));
+	addChild(imageless::createTests				(m_testCtx));
 }
 
 } // vkt

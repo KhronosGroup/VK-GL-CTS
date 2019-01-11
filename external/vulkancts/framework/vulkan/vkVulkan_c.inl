@@ -345,6 +345,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT = 1000102000,
     VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT = 1000102001,
     VK_STRUCTURE_TYPE_HDR_METADATA_EXT = 1000105000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR = 1000108000,
+    VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO_KHR = 1000108001,
+    VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO_KHR = 1000108002,
+    VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO_KHR = 1000108003,
     VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR = 1000109000,
     VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR = 1000109001,
     VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2_KHR = 1000109002,
@@ -1435,6 +1439,11 @@ typedef enum VkDescriptorPoolCreateFlagBits {
 } VkDescriptorPoolCreateFlagBits;
 typedef VkFlags VkDescriptorPoolCreateFlags;
 typedef VkFlags VkDescriptorPoolResetFlags;
+
+typedef enum VkFramebufferCreateFlagBits {
+    VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT_KHR = 0x00000001,
+    VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+} VkFramebufferCreateFlagBits;
 typedef VkFlags VkFramebufferCreateFlags;
 typedef VkFlags VkRenderPassCreateFlags;
 
@@ -5660,6 +5669,44 @@ VKAPI_ATTR void VKAPI_CALL vkUpdateDescriptorSetWithTemplateKHR(
     VkDescriptorUpdateTemplate                  descriptorUpdateTemplate,
     const void*                                 pData);
 #endif
+
+#define VK_KHR_imageless_framebuffer 1
+#define VK_KHR_IMAGELESS_FRAMEBUFFER_SPEC_VERSION 1
+#define VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME "VK_KHR_imageless_framebuffer"
+
+typedef struct VkPhysicalDeviceImagelessFramebufferFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           imagelessFramebuffer;
+} VkPhysicalDeviceImagelessFramebufferFeaturesKHR;
+
+typedef struct VkFramebufferAttachmentImageInfoKHR {
+    VkStructureType       sType;
+    const void*           pNext;
+    VkImageCreateFlags    flags;
+    VkImageUsageFlags     usage;
+    deUint32              width;
+    deUint32              height;
+    deUint32              layerCount;
+    deUint32              viewFormatCount;
+    const VkFormat*       pViewFormats;
+} VkFramebufferAttachmentImageInfoKHR;
+
+typedef struct VkFramebufferAttachmentsCreateInfoKHR {
+    VkStructureType                               sType;
+    const void*                                   pNext;
+    deUint32                                      attachmentImageInfoCount;
+    const VkFramebufferAttachmentImageInfoKHR*    pAttachmentImageInfos;
+} VkFramebufferAttachmentsCreateInfoKHR;
+
+typedef struct VkRenderPassAttachmentBeginInfoKHR {
+    VkStructureType       sType;
+    const void*           pNext;
+    deUint32              attachmentCount;
+    const VkImageView*    pAttachments;
+} VkRenderPassAttachmentBeginInfoKHR;
+
+
 
 #define VK_KHR_create_renderpass2 1
 #define VK_KHR_CREATE_RENDERPASS_2_SPEC_VERSION 1
