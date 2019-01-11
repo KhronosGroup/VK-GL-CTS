@@ -8,6 +8,7 @@ const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&					getCornerSampledImag
 const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&				getConditionalRenderingFeatures				(void) const;
 const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&						getFloat16Int8Features						(void) const;
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					getDepthClipEnableFeatures					(void) const;
+const vk::VkPhysicalDeviceImagelessFramebufferFeaturesKHR&				getImagelessFramebufferFeatures				(void) const;
 const vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT&				getInlineUniformBlockFeatures				(void) const;
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdvancedFeatures			(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT&				getDescriptorIndexingFeatures				(void) const;

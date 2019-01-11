@@ -46,5 +46,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_shader_atomic_int64",
 	"VK_KHR_vulkan_memory_model",
 	"VK_KHR_uniform_buffer_standard_layout",
+	"VK_KHR_imageless_framebuffer",
 };
 

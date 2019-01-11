@@ -8,6 +8,7 @@ const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&					Context::getCornerSa
 const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&				Context::getConditionalRenderingFeatures				(void) const { return m_device->getConditionalRenderingFeatures();				}
 const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&						Context::getFloat16Int8Features							(void) const { return m_device->getFloat16Int8Features();						}
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&					Context::getDepthClipEnableFeatures						(void) const { return m_device->getDepthClipEnableFeatures();					}
+const vk::VkPhysicalDeviceImagelessFramebufferFeaturesKHR&				Context::getImagelessFramebufferFeatures				(void) const { return m_device->getImagelessFramebufferFeatures();				}
 const vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT&				Context::getInlineUniformBlockFeatures					(void) const { return m_device->getInlineUniformBlockFeatures();				}
 const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			Context::getBlendOperationAdvancedFeatures				(void) const { return m_device->getBlendOperationAdvancedFeatures();			}
 const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT&				Context::getDescriptorIndexingFeatures					(void) const { return m_device->getDescriptorIndexingFeatures();				}

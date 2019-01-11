@@ -36,6 +36,7 @@ add_subdirectory(transform_feedback)
 add_subdirectory(util)
 add_subdirectory(amber)
 add_subdirectory(descriptor_indexing)
+add_subdirectory(imageless_framebuffer)
 
 include_directories(
 	api
@@ -74,6 +75,7 @@ include_directories(
 	util
 	amber
 	descriptor_indexing
+	imageless_framebuffer
 	)
 
 set(DEQP_VK_SRCS
@@ -131,6 +133,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-amber
 	deqp-vk-transform-feedback
 	deqp-vk-descriptor-indexing
+	deqp-vk-imageless-framebuffer
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))
