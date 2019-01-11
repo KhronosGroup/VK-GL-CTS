@@ -535,6 +535,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  float pixelSize = 2.0f/1024.0f;\n"
 				"  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
 				"  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
+				"  gl_PointSize = 1.0f;\n"
 				"}\n";
 
 			programCollection.glslSources.add("vert")
