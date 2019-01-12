@@ -590,6 +590,130 @@ tcu::TestStatus testPrimitivesDepthClamp (Context& context, const VkPrimitiveTop
 	return (numPassed == numCases ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Rendered image(s) are incorrect"));
 }
 
+//! Primitives partially outside the clip volume, but depth clipped with explicit depth clip control
+tcu::TestStatus testPrimitivesDepthClip (Context& context, const VkPrimitiveTopology topology)
+{
+	if (!context.getDepthClipEnableFeatures().depthClipEnable)
+		throw tcu::NotSupportedError("VK_EXT_depth_clip_enable not supported");
+
+	std::vector<VulkanShader> shaders;
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT,		context.getBinaryCollection().get("vert")));
+	shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT,	context.getBinaryCollection().get("frag")));
+
+	const int		numCases		= 4;
+	const IVec2		regionSize		= IVec2(RENDER_SIZE/2, RENDER_SIZE);	//! size of the clamped region
+	const int		regionPixels	= regionSize.x() * regionSize.y();
+	tcu::TestLog&	log				= context.getTestContext().getLog();
+	int				numPassed		= 0;
+
+	static const struct
+	{
+		const char* const	desc;
+		float				zPos;
+		bool				depthClipEnable;
+		IVec2				regionOffset;
+		Vec4				color;
+	} cases[numCases] =
+	{
+		{ "Draw primitives intersecting the near clipping plane, depth clip enabled",	-0.5f,	true,	IVec2(0, 0),				Vec4(0.0f, 0.0f, 0.0f, 1.0f) },
+		{ "Draw primitives intersecting the near clipping plane, depth clip disabled",	-0.5f,	false,	IVec2(0, 0),				Vec4(1.0f, 0.0f, 0.0f, 1.0f) },
+		{ "Draw primitives intersecting the far clipping plane, depth clip enabled",	 0.5f,	true,	IVec2(RENDER_SIZE/2, 0),	Vec4(0.0f, 0.0f, 0.0f, 1.0f) },
+		{ "Draw primitives intersecting the far clipping plane, depth clip disabled",	 0.5f,	false,	IVec2(RENDER_SIZE/2, 0),	Vec4(1.0f, 1.0f, 0.0f, 1.0f) },
+	};
+
+	// Per case minimum number of colored pixels.
+	int caseMinPixels[numCases] = { 0, 0, 0, 0 };
+
+	switch (topology)
+	{
+		case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+			caseMinPixels[0] = caseMinPixels[2] = regionPixels - 1;
+			caseMinPixels[1] = caseMinPixels[3] = 2;
+			break;
+
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY:
+			caseMinPixels[0] = regionPixels;
+			caseMinPixels[1] = RENDER_SIZE - 2;
+			caseMinPixels[2] = regionPixels;
+			caseMinPixels[3] = 2 * (RENDER_SIZE - 2);
+			break;
+
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+		case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+			caseMinPixels[0] = caseMinPixels[1] = caseMinPixels[2] = caseMinPixels[3] = regionPixels;
+			break;
+
+		default:
+			DE_ASSERT(0);
+			break;
+	}
+
+	// Test depth clip with depth clamp disabled.
+	numPassed = 0;
+	for (int caseNdx = 0; caseNdx < numCases; ++caseNdx)
+	{
+		log << tcu::TestLog::Message << cases[caseNdx].desc << tcu::TestLog::EndMessage;
+
+		const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 1.0f);
+
+		DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+		DrawCallData				drawCallData	(vertices);
+		VulkanProgram				vulkanProgram	(shaders);
+		drawState.depthClampEnable = false;
+		drawState.explicitDepthClipEnable = true;
+		drawState.depthClipEnable = cases[caseNdx].depthClipEnable;
+
+		VulkanDrawContext			drawContext(context, drawState, drawCallData, vulkanProgram);
+		drawContext.draw();
+
+		const int numPixels = countPixels(drawContext.getColorPixels(), cases[caseNdx].regionOffset, regionSize, cases[caseNdx].color, Vec4());
+
+		if (numPixels >= caseMinPixels[caseNdx])
+			++numPassed;
+	}
+
+	if (numPassed < numCases)
+		return tcu::TestStatus::fail("Rendered image(s) are incorrect (depth clip with depth clamp disabled)");
+
+	// Test depth clip with depth clamp enabled.
+	numPassed = 0;
+	if (getPhysicalDeviceFeatures(context.getInstanceInterface(), context.getPhysicalDevice()).depthClamp)
+	{
+		for (int caseNdx = 0; caseNdx < numCases; ++caseNdx)
+		{
+			log << tcu::TestLog::Message << cases[caseNdx].desc << tcu::TestLog::EndMessage;
+
+			const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 1.0f);
+
+			DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+			DrawCallData				drawCallData	(vertices);
+			VulkanProgram				vulkanProgram	(shaders);
+			drawState.depthClampEnable = true;
+			drawState.explicitDepthClipEnable = true;
+			drawState.depthClipEnable = cases[caseNdx].depthClipEnable;
+
+			VulkanDrawContext			drawContext(context, drawState, drawCallData, vulkanProgram);
+			drawContext.draw();
+
+			const int numPixels = countPixels(drawContext.getColorPixels(), cases[caseNdx].regionOffset, regionSize, cases[caseNdx].color, Vec4());
+
+			if (numPixels >= caseMinPixels[caseNdx])
+				++numPassed;
+		}
+
+		if (numPassed < numCases)
+			return tcu::TestStatus::fail("Rendered image(s) are incorrect (depth clip with depth clamp enabled)");
+	}
+
+	return tcu::TestStatus::pass("OK");
+}
+
 //! Large point clipping
 //! Spec: If the primitive under consideration is a point, then clipping passes it unchanged if it lies within the clip volume;
 //!       otherwise, it is discarded.
@@ -1369,6 +1493,17 @@ void addClippingTests (tcu::TestCaseGroup* clippingTestsGroup)
 			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
 				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
 					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", initPrograms, testPrimitivesDepthClamp, cases[caseNdx]);
+
+			clipVolumeGroup->addChild(group.release());
+		}
+
+		// Depth clipping
+		{
+			MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "depth_clip", ""));
+
+			for (int caseNdx = 0; caseNdx < DE_LENGTH_OF_ARRAY(cases); ++caseNdx)
+				addFunctionCaseWithPrograms<VkPrimitiveTopology>(
+					group.get(), getPrimitiveTopologyShortName(cases[caseNdx]), "", initPrograms, testPrimitivesDepthClip, cases[caseNdx]);
 
 			clipVolumeGroup->addChild(group.release());
 		}

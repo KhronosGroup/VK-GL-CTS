@@ -290,6 +290,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SWIZZLE_STATE_CREATE_INFO_NV:					return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SWIZZLE_STATE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT:				return "VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT:			return "VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_HDR_METADATA_EXT:												return "VK_STRUCTURE_TYPE_HDR_METADATA_EXT";
 		case VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR:									return "VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR";
 		case VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR:										return "VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR";
@@ -2362,6 +2364,11 @@ tcu::Format::Bitfield<32> getPipelineCoverageModulationStateCreateFlagsNVStr (Vk
 }
 
 tcu::Format::Bitfield<32> getValidationCacheCreateFlagsEXTStr (VkValidationCacheCreateFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
+}
+
+tcu::Format::Bitfield<32> getPipelineRasterizationDepthClipStateCreateFlagsEXTStr (VkPipelineRasterizationDepthClipStateCreateFlagsEXT value)
 {
 	return tcu::Format::Bitfield<32>(value, DE_NULL, DE_NULL);
 }
@@ -6619,6 +6626,27 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceScalarBlockLayo
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tscalarBlockLayout = " << value.scalarBlockLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthClipEnableFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceDepthClipEnableFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdepthClipEnable = " << value.depthClipEnable << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationDepthClipStateCreateInfoEXT& value)
+{
+	s << "VkPipelineRasterizationDepthClipStateCreateInfoEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getPipelineRasterizationDepthClipStateCreateFlagsEXTStr(value.flags) << '\n';
+	s << "\tdepthClipEnable = " << value.depthClipEnable << '\n';
 	s << '}';
 	return s;
 }

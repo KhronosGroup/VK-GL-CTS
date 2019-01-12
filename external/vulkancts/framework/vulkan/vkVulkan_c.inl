@@ -341,6 +341,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_SWIZZLE_STATE_CREATE_INFO_NV = 1000098000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT = 1000099000,
     VK_STRUCTURE_TYPE_PIPELINE_DISCARD_RECTANGLE_STATE_CREATE_INFO_EXT = 1000099001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT = 1000102000,
+    VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT = 1000102001,
     VK_STRUCTURE_TYPE_HDR_METADATA_EXT = 1000105000,
     VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2_KHR = 1000109000,
     VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2_KHR = 1000109001,
@@ -8111,6 +8113,26 @@ typedef struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT {
     void*              pNext;
     VkBool32           scalarBlockLayout;
 } VkPhysicalDeviceScalarBlockLayoutFeaturesEXT;
+
+
+#define VK_EXT_depth_clip_enable 1
+#define VK_EXT_DEPTH_CLIP_ENABLE_SPEC_VERSION 1
+#define VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME "VK_EXT_depth_clip_enable"
+
+typedef VkFlags VkPipelineRasterizationDepthClipStateCreateFlagsEXT;
+
+typedef struct VkPhysicalDeviceDepthClipEnableFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           depthClipEnable;
+} VkPhysicalDeviceDepthClipEnableFeaturesEXT;
+
+typedef struct VkPipelineRasterizationDepthClipStateCreateInfoEXT {
+    VkStructureType                                        sType;
+    const void*                                            pNext;
+    VkPipelineRasterizationDepthClipStateCreateFlagsEXT    flags;
+    VkBool32                                               depthClipEnable;
+} VkPipelineRasterizationDepthClipStateCreateInfoEXT;
 
 
 #ifdef __cplusplus
