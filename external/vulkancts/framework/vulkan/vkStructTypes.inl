@@ -3313,6 +3313,13 @@ struct VkPhysicalDeviceHostQueryResetFeaturesEXT
 	VkBool32		hostQueryReset;
 };
 
+struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		uniformBufferStandardLayout;
+};
+
 
 
 
