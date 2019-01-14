@@ -3254,6 +3254,13 @@ struct VkPipelineRasterizationDepthClipStateCreateInfoEXT
 	VkBool32											depthClipEnable;
 };
 
+struct VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		uniformBufferStandardLayout;
+};
+
 
 
 

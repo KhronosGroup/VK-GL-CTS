@@ -165,6 +165,9 @@ bool validateSpirV (size_t binarySizeInWords, const deUint32* binary, std::ostre
 			case SpirvValidatorOptions::kRelaxedBlockLayout:
 				spvValidatorOptionsSetRelaxBlockLayout(options, true);
 				break;
+			case SpirvValidatorOptions::kUniformStandardLayout:
+				spvValidatorOptionsSetUniformBufferStandardLayout(options, true);
+				break;
 			case SpirvValidatorOptions::kScalarBlockLayout:
 				spvValidatorOptionsSetScalarBlockLayout(options, true);
 				break;

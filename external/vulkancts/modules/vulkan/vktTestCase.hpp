@@ -91,6 +91,8 @@ public:
 												getConditionalRenderingFeatures	(void) const;
 	const vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&
 												getScalarBlockLayoutFeatures	(void) const;
+	const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR&
+												getUniformBufferStandardLayoutFeatures(void) const;
 	const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
 												getFloat16Int8Features			(void) const;
 	const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&
