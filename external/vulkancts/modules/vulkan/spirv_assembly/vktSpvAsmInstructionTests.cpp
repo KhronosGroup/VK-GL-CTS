@@ -376,6 +376,7 @@ tcu::TestCaseGroup* createOpNopGroup (tcu::TestContext& testCtx)
 	return group.release();
 }
 
+template<bool nanSupported>
 bool compareFUnord (const std::vector<Resource>& inputs, const vector<AllocationSp>& outputAllocs, const std::vector<Resource>& expectedOutputs, TestLog& log)
 {
 	if (outputAllocs.size() != 1)
@@ -397,6 +398,9 @@ bool compareFUnord (const std::vector<Resource>& inputs, const vector<Allocation
 
 	for (size_t idx = 0; idx < expectedBytes.size() / sizeof(deInt32); ++idx)
 	{
+		if (!nanSupported && (tcu::Float32(input1AsFloat[idx]).isNaN() || tcu::Float32(input2AsFloat[idx]).isNaN()))
+			continue;
+
 		if (outputAsInt[idx] != expectedOutputAsInt[idx])
 		{
 			log << TestLog::Message << "ERROR: Sub-case failed. inputs: " << input1AsFloat[idx] << "," << input2AsFloat[idx] << " output: " << outputAsInt[idx]<< " expected output: " << expectedOutputAsInt[idx] << TestLog::EndMessage;
@@ -426,17 +430,19 @@ do { \
 	cases.push_back(OpFUnordCase(#NAME, OPCODE, compare_##NAME::compare)); \
 } while (deGetFalse())
 
-tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
+tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx, const bool nanSupported)
 {
-	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opfunord", "Test the OpFUnord* opcodes"));
+	const string					nan				= nanSupported ? "_nan" : "";
+	const string					groupName		= "opfunord" + nan;
+	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Test the OpFUnord* opcodes"));
 	de::Random						rnd				(deStringHash(group->getName()));
 	const int						numElements		= 100;
 	vector<OpFUnordCase>			cases;
-
+	string							extensions		= nanSupported ? "OpExtension \"SPV_KHR_float_controls\"\n" : "";
+	string							capabilities	= nanSupported ? "OpCapability SignedZeroInfNanPreserve\n" : "";
+	string                          exeModes        = nanSupported ? "OpExecutionMode %main SignedZeroInfNanPreserve 32\n" : "";
 	const StringTemplate			shaderTemplate	(
-
-		string(getComputeAsmShaderPreamble()) +
-
+		string(getComputeAsmShaderPreamble(capabilities, extensions, exeModes)) +
 		"OpSource GLSL 430\n"
 		"OpName %main           \"main\"\n"
 		"OpName %id             \"gl_GlobalInvocationID\"\n"
@@ -528,7 +534,12 @@ tcu::TestCaseGroup* createOpFUnordGroup (tcu::TestContext& testCtx)
 		spec.inputs.push_back(BufferSp(new Float32Buffer(inputFloats2)));
 		spec.outputs.push_back(BufferSp(new Int32Buffer(expectedInts)));
 		spec.numWorkGroups = IVec3(numElements, 1, 1);
-		spec.verifyIO = &compareFUnord;
+		spec.verifyIO = nanSupported ? &compareFUnord<true> : &compareFUnord<false>;
+		if (nanSupported)
+		{
+			spec.extensions.push_back("VK_KHR_shader_float_controls");
+			spec.requestedVulkanFeatures.floatControlsProperties.shaderSignedZeroInfNanPreserveFloat32 = DE_TRUE;
+		}
 		group->addChild(new SpvAsmComputeShaderCase(testCtx, cases[caseNdx].name, cases[caseNdx].name, spec));
 	}
 
@@ -18041,7 +18052,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 	computeTests->addChild(createSpivVersionCheckTests(testCtx, testComputePipeline));
 	computeTests->addChild(createLocalSizeGroup(testCtx));
 	computeTests->addChild(createOpNopGroup(testCtx));
-	computeTests->addChild(createOpFUnordGroup(testCtx));
+	computeTests->addChild(createOpFUnordGroup(testCtx, TEST_WITHOUT_NAN));
 	computeTests->addChild(createOpAtomicGroup(testCtx, false));
 	computeTests->addChild(createOpAtomicGroup(testCtx, true));					// Using new StorageBuffer decoration
 	computeTests->addChild(createOpAtomicGroup(testCtx, false, 1024, true));	// Return value validation
