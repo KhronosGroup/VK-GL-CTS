@@ -187,7 +187,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
 
 		vk.cmdPipelineBarrier(targetCmdBuffer,
 							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -228,8 +228,8 @@ tcu::TestStatus BlitImageTestInstance::iterate()
 		};
 
 		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -260,7 +260,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
 
 		vk.cmdPipelineBarrier(targetCmdBuffer,
 							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -314,8 +314,8 @@ tcu::TestStatus BlitImageTestInstance::iterate()
 			}
 		};
 		vk.cmdPipelineBarrier(targetCmdBuffer,
-							  vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 							  vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+							  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
 							  (vk::VkDependencyFlags)0,
 							  0, (const vk::VkMemoryBarrier*)DE_NULL,
 							  0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
@@ -339,7 +339,7 @@ tcu::TestStatus BlitImageTestInstance::iterate()
 		<< tcu::TestLog::Message << "Color clear value: " << tcu::Vec4(m_clearColorValue.float32) << tcu::TestLog::EndMessage;
 
 	// Validate resulting image
-	if (m_validator.validateImage(ctx, m_refData, **colorImage, m_imageFormat))
+	if (m_validator.validateImage(ctx, m_refData, **colorImage, m_imageFormat, vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL))
 		return tcu::TestStatus::pass("Everything went OK");
 	else
 		return tcu::TestStatus::fail("Something went really wrong");

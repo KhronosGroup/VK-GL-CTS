@@ -204,6 +204,21 @@ struct TestParameters
 	{}
 };
 
+static vk::VkCompositeAlphaFlagBitsKHR firstSupportedCompositeAlpha(const vk::VkSurfaceCapabilitiesKHR& capabilities)
+{
+	deUint32 alphaMode = 1u;
+
+	for (;alphaMode < capabilities.supportedCompositeAlpha;	alphaMode = alphaMode<<1u)
+	{
+		if ((alphaMode & capabilities.supportedCompositeAlpha) != 0)
+		{
+			break;
+		}
+	}
+
+	return (vk::VkCompositeAlphaFlagBitsKHR)alphaMode;
+}
+
 std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::wsi::Type								wsiType,
 																		   TestDimension								dimension,
 																		   const ProtectedContext&						context,
@@ -232,7 +247,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainParameterCases (vk::w
 		0u,
 		(const deUint32*)DE_NULL,
 		defaultTransform,
-		vk::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		firstSupportedCompositeAlpha(capabilities),
 		vk::VK_PRESENT_MODE_FIFO_KHR,
 		VK_FALSE,							// clipped
 		(vk::VkSwapchainKHR)0				// oldSwapchain
@@ -703,7 +718,7 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters (vk::wsi::Type					wsiT
 		0u,
 		(const deUint32*)DE_NULL,
 		transform,
-		vk::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		firstSupportedCompositeAlpha(capabilities),
 		vk::VK_PRESENT_MODE_FIFO_KHR,
 		VK_FALSE,							// clipped
 		(vk::VkSwapchainKHR)0				// oldSwapchain
@@ -1094,7 +1109,7 @@ tcu::TestStatus basicRenderTest (Context& baseCtx, vk::wsi::Type wsiType)
 																			  *swapchain,
 																			  std::numeric_limits<deUint64>::max(),
 																			  imageReadySemaphore,
-																			  imageReadyFence,
+																			  0,
 																			  &imageNdx);
 
 				if (acquireResult == vk::VK_SUBOPTIMAL_KHR)
@@ -1143,7 +1158,7 @@ tcu::TestStatus basicRenderTest (Context& baseCtx, vk::wsi::Type wsiType)
 				};
 
 				renderer.recordFrame(commandBuffer, imageNdx, frameNdx);
-				VK_CHECK(vkd.queueSubmit(context.getQueue(), 1u, &submitInfo, (vk::VkFence)0));
+				VK_CHECK(vkd.queueSubmit(context.getQueue(), 1u, &submitInfo, imageReadyFence));
 				VK_CHECK(vkd.queuePresentKHR(context.getQueue(), &presentInfo));
 			}
 		}
