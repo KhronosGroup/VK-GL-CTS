@@ -52,7 +52,8 @@ public:
 	bool					validateImage	(ProtectedContext&		ctx,
 											 const ValidationData&	refData,
 											 const vk::VkImage		image,
-											 const vk::VkFormat		imageFormat) const;
+											 const vk::VkFormat		imageFormat,
+											 const vk::VkImageLayout imageLayout) const;
 
 private:
 	const vk::VkFormat		m_imageFormat;

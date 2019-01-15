@@ -1422,7 +1422,7 @@ void BlockArrayIndexingCase::createShaderSpec (void)
 	const char*			instanceName	= "block";
 	const char*			indicesPrefix	= "index";
 	const char*			resultPrefix	= "result";
-	const char*			interfaceName	= m_blockType == BLOCKTYPE_UNIFORM ? "uniform" : "buffer";
+	const char*			interfaceName	= m_blockType == BLOCKTYPE_UNIFORM ? "uniform" : "readonly buffer";
 	std::ostringstream	global, code;
 
 	for (int readNdx = 0; readNdx < numReads; readNdx++)
