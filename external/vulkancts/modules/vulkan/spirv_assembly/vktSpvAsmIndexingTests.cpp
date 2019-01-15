@@ -675,7 +675,14 @@ void addComputeIndexingNon16BaseAlignmentTests (tcu::TestCaseGroup* group)
 
 	inputData.reserve(numInputFloats);
 	for (deUint32 numIdx = 0; numIdx < numInputFloats; ++numIdx)
-		inputData.push_back(rnd.getFloat());
+	{
+		float f = rnd.getFloat();
+
+		// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+		f = deFloatFloor(f);
+
+		inputData.push_back(f);
+	}
 
 	spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
