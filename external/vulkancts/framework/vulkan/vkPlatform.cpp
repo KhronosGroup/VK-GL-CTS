@@ -78,6 +78,11 @@ wsi::Display* Platform::createWsiDisplay (wsi::Type) const
 	TCU_THROW(NotSupportedError, "WSI not supported");
 }
 
+bool Platform::hasDisplay (wsi::Type) const
+{
+	return false;
+}
+
 void Platform::describePlatform (std::ostream& dst) const
 {
 	dst << "vk::Platform::describePlatform() not implemented";

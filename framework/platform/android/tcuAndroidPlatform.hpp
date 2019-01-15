@@ -55,6 +55,7 @@ public:
 	void							describePlatform	(std::ostream& dst) const;
 	void							getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
 	vk::wsi::Display*				createWsiDisplay	(vk::wsi::Type wsiType) const;
+	bool						hasDisplay		(vk::wsi::Type wsiType) const;
 
 private:
 	NativeActivity&					m_activity;

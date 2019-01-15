@@ -43,7 +43,9 @@ public:
 	xcb_connection_t*	getConnection	(void) { return m_connection;	}
 
 	void				processEvents	(void);
+	static bool			hasDisplay	(const char* name);
 
+	static DisplayState	s_displayState;
 protected:
 	xcb_screen_t*		m_screen;
 	xcb_connection_t*	m_connection;
