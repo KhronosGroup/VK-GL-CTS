@@ -42,6 +42,8 @@ const struct wl_registry_listener Display::s_registryListener =
 	Display::handleGlobalRemove
 };
 
+Display::DisplayState Display::s_displayState = Display::DISPLAY_STATE_UNKNOWN;
+
 const struct wl_shell_surface_listener Window::s_shellSurfaceListener =
 {
 	Window::handlePing,
@@ -66,6 +68,21 @@ void Display::handleGlobalRemove (void* data, struct wl_registry* registry, uint
 	DE_UNREF(data);
 	DE_UNREF(registry);
 	DE_UNREF(name);
+}
+
+bool Display::hasDisplay (const char* name)
+{
+	if (s_displayState == DISPLAY_STATE_UNKNOWN)
+	{
+		struct wl_display *display = wl_display_connect(name);
+		if (display)
+		{
+			s_displayState = DISPLAY_STATE_AVAILABLE;
+			wl_display_disconnect(display);
+		} else
+			s_displayState = DISPLAY_STATE_UNAVAILABLE;
+	}
+	return s_displayState == DISPLAY_STATE_AVAILABLE ? true : false;
 }
 
 Display::Display (EventState& eventState, const char* name)

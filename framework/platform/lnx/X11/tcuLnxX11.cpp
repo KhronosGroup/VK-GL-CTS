@@ -52,6 +52,24 @@ WindowBase::~WindowBase (void)
 {
 }
 
+XlibDisplay::DisplayState XlibDisplay::s_displayState = XlibDisplay::DISPLAY_STATE_UNKNOWN;
+
+bool XlibDisplay::hasDisplay (const char* name)
+{
+	if (s_displayState == DISPLAY_STATE_UNKNOWN)
+	{
+		XInitThreads();
+		Display *display = XOpenDisplay((char*)name);
+		if (display)
+		{
+			s_displayState = DISPLAY_STATE_AVAILABLE;
+			XCloseDisplay(display);
+		} else
+			s_displayState = DISPLAY_STATE_UNAVAILABLE;
+	}
+	return s_displayState == DISPLAY_STATE_AVAILABLE ? true : false;
+}
+
 XlibDisplay::XlibDisplay (EventState& eventState, const char* name)
 	: DisplayBase	(eventState)
 {

@@ -347,5 +347,13 @@ vk::wsi::Display* Platform::createWsiDisplay (vk::wsi::Type wsiType) const
 		TCU_THROW(NotSupportedError, "WSI type not supported on Android");
 }
 
+bool Platform::hasDisplay (vk::wsi::Type wsiType) const
+{
+	if (wsiType == vk::wsi::TYPE_ANDROID)
+		return true;
+
+	return false;
+}
+
 } // Android
 } // tcu

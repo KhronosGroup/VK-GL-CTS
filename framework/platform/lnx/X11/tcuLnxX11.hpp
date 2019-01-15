@@ -47,6 +47,13 @@ public:
 	virtual			~DisplayBase	(void);
 	virtual void	processEvents	(void) = 0;
 
+	enum DisplayState
+	{
+		DISPLAY_STATE_UNKNOWN = -1,
+		DISPLAY_STATE_UNAVAILABLE,
+		DISPLAY_STATE_AVAILABLE
+	};
+
 protected:
 	EventState&		m_eventState;
 
@@ -90,6 +97,9 @@ public:
 	bool			getVisualInfo	(VisualID visualID, XVisualInfo& dst);
 	void			processEvents	(void);
 	void			processEvent	(XEvent& event);
+	static bool		hasDisplay	(const char* name);
+
+	static DisplayState	s_displayState;
 
 protected:
 	::Display*		m_display;
