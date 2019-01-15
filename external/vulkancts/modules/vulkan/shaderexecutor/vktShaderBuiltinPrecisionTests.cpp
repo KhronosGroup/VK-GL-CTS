@@ -69,7 +69,7 @@ enum
 	// platforms where toggling floating-point rounding mode is slow (emulated arm on x86).
 	// As a workaround watchdog is kept happy by touching it periodically during reference
 	// interval computation.
-	TOUCH_WATCHDOG_VALUE_FREQUENCY	= 4096
+	TOUCH_WATCHDOG_VALUE_FREQUENCY	= 512
 };
 
 namespace vkt
