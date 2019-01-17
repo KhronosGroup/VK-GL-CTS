@@ -41,6 +41,7 @@
 
 #include "rrRenderer.hpp"
 #include "deRandom.hpp"
+#include "deMath.h"
 
 using namespace vk;
 
@@ -1462,6 +1463,14 @@ tcu::TestStatus SubpassDependencyTestInstance::iterate (void)
 	}
 }
 
+static float truncateCoord(int dim, int subPixelBits, float f)
+{
+	const float scale = (float)(dim << subPixelBits);
+	const float coord = deFloatFloor(f * scale) / scale;
+
+	return coord;
+}
+
 template<typename RenderpassSubpass>
 tcu::TestStatus SubpassDependencyTestInstance::iterateInternal (void)
 {
@@ -1509,10 +1518,12 @@ tcu::TestStatus SubpassDependencyTestInstance::iterateInternal (void)
 
 		for (int vertexNdx = 0; vertexNdx < 3; vertexNdx++)
 		{
-			vertexData.push_back(Vec4(2.0f * ((((float) rand.getFloat()) / (float) 1.0f)) + -1.0f,	// x-coordinate
-									  2.0f * ((((float) rand.getFloat()) / (float) 1.0f)) + -1.0f,	// y-coordinate
-									  primitiveDepth,												// z-coordinate (depth)
-									  1.0f));														// w-coordinate
+			const int subPixelBits = m_context.getDeviceProperties().limits.subPixelPrecisionBits;
+
+			float x = 2.0f * truncateCoord(m_width,  subPixelBits, rand.getFloat()) - 1.0f;
+			float y = 2.0f * truncateCoord(m_height, subPixelBits, rand.getFloat()) - 1.0f;
+
+			vertexData.push_back(Vec4(x, y, primitiveDepth, 1.0f));
 		}
 	}
 
