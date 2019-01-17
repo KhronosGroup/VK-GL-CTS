@@ -668,7 +668,8 @@ void TypeSnippetsBase::updateSpirvSnippets()
 		"OpMemberDecorate %SSBO_in 0 Offset 0\n"
 		"OpDecorate %SSBO_in BufferBlock\n"
 		"OpDecorate %ssbo_in DescriptorSet 0\n"
-		"OpDecorate %ssbo_in Binding 0\n";
+		"OpDecorate %ssbo_in Binding 0\n"
+		"OpDecorate %ssbo_in NonWritable\n";
 
 	const string inputDefinitionsTemplate =
 		"%SSBO_in              = OpTypeStruct %type_float_arr_2\n"
