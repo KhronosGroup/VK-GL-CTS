@@ -9085,7 +9085,7 @@ std::string TexelBufferDescriptorCase::genResourceDeclarations (vk::VkShaderStag
 	DE_UNREF(stage);
 
 	const bool			isUniform		= isUniformDescriptorType(m_descriptorType);
-	const char* const	storageType		= (isUniform) ? ("samplerBuffer ") : ("readonly imageBuffer ");
+	const char* const	storageType		= (isUniform) ? ("textureBuffer ") : ("readonly imageBuffer ");
 	const char* const	formatQualifier	= (isUniform) ? ("") : (", rgba8");
 	const deUint32		numSets			= getDescriptorSetCount(m_descriptorSetCount);
 
