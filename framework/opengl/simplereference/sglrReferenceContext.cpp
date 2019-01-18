@@ -244,6 +244,7 @@ ReferenceContextLimits::ReferenceContextLimits (const glu::RenderContext& render
 	, maxTexture3DSize			(0)
 	, maxRenderbufferSize		(0)
 	, maxVertexAttribs			(0)
+	, subpixelBits				(0)
 {
 	const glw::Functions& gl = renderCtx.getFunctions();
 
@@ -252,6 +253,7 @@ ReferenceContextLimits::ReferenceContextLimits (const glu::RenderContext& render
 	gl.getIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE,	&maxTextureCubeSize);
 	gl.getIntegerv(GL_MAX_RENDERBUFFER_SIZE,		&maxRenderbufferSize);
 	gl.getIntegerv(GL_MAX_VERTEX_ATTRIBS,			&maxVertexAttribs);
+	gl.getIntegerv(GL_SUBPIXEL_BITS,				&subpixelBits);
 
 	if (contextSupports(contextType, glu::ApiType::es(3,0)) || glu::isContextTypeGLCore(contextType))
 	{
@@ -4290,7 +4292,7 @@ void ReferenceContext::drawWithReference (const rr::PrimitiveList& primitives, i
 	const rr::Program					program		(m_currentProgram->m_program->getVertexShader(),
 													 m_currentProgram->m_program->getFragmentShader(),
 													 (m_currentProgram->m_program->m_hasGeometryShader) ? (m_currentProgram->m_program->getGeometryShader()) : (DE_NULL));
-	rr::RenderState						state		((rr::ViewportState)(colorBuf0));
+	rr::RenderState						state		((rr::ViewportState)(colorBuf0), m_limits.subpixelBits);
 
 	const rr::Renderer					referenceRenderer;
 	std::vector<rr::VertexAttrib>		vertexAttribs;

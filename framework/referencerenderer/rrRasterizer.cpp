@@ -28,30 +28,30 @@
 namespace rr
 {
 
-inline deInt64 toSubpixelCoord (float v)
+inline deInt64 toSubpixelCoord (float v, int bits)
 {
-	return (deInt64)(v * (1<<RASTERIZER_SUBPIXEL_BITS) + (v < 0.f ? -0.5f : 0.5f));
+	return (deInt64)(v * (float)(1 << bits) + (v < 0.f ? -0.5f : 0.5f));
 }
 
-inline deInt64 toSubpixelCoord (deInt32 v)
+inline deInt64 toSubpixelCoord (deInt32 v, int bits)
 {
-	return v << RASTERIZER_SUBPIXEL_BITS;
+	return v << bits;
 }
 
-inline deInt32 ceilSubpixelToPixelCoord (deInt64 coord, bool fillEdge)
+inline deInt32 ceilSubpixelToPixelCoord (deInt64 coord, int bits, bool fillEdge)
 {
 	if (coord >= 0)
-		return (deInt32)((coord + ((1ll<<RASTERIZER_SUBPIXEL_BITS) - (fillEdge ? 0 : 1))) >> RASTERIZER_SUBPIXEL_BITS);
+		return (deInt32)((coord + ((1ll << bits) - (fillEdge ? 0 : 1))) >> bits);
 	else
-		return (deInt32)((coord + (fillEdge ? 1 : 0)) >> RASTERIZER_SUBPIXEL_BITS);
+		return (deInt32)((coord + (fillEdge ? 1 : 0)) >> bits);
 }
 
-inline deInt32 floorSubpixelToPixelCoord (deInt64 coord, bool fillEdge)
+inline deInt32 floorSubpixelToPixelCoord (deInt64 coord, int bits, bool fillEdge)
 {
 	if (coord >= 0)
-		return (deInt32)((coord - (fillEdge ? 1 : 0)) >> RASTERIZER_SUBPIXEL_BITS);
+		return (deInt32)((coord - (fillEdge ? 1 : 0)) >> bits);
 	else
-		return (deInt32)((coord - ((1ll<<RASTERIZER_SUBPIXEL_BITS) - (fillEdge ? 0 : 1))) >> RASTERIZER_SUBPIXEL_BITS);
+		return (deInt32)((coord - ((1ll << bits) - (fillEdge ? 0 : 1))) >> bits);
 }
 
 static inline void initEdgeCCW (EdgeFunction& edge, const HorizontalFill horizontalFill, const VerticalFill verticalFill, const deInt64 x0, const deInt64 y0, const deInt64 x1, const deInt64 y1)
@@ -118,21 +118,21 @@ enum LINE_SIDE
 	LINE_SIDE_RIGHT
 };
 
-static tcu::Vector<deInt64,2> toSubpixelVector (const tcu::Vec2& v)
+static tcu::Vector<deInt64,2> toSubpixelVector (const tcu::Vec2& v, int bits)
 {
-	return tcu::Vector<deInt64,2>(toSubpixelCoord(v.x()), toSubpixelCoord(v.y()));
+	return tcu::Vector<deInt64,2>(toSubpixelCoord(v.x(), bits), toSubpixelCoord(v.y(), bits));
 }
 
-static tcu::Vector<deInt64,2> toSubpixelVector (const tcu::IVec2& v)
+static tcu::Vector<deInt64,2> toSubpixelVector (const tcu::IVec2& v, int bits)
 {
-	return tcu::Vector<deInt64,2>(toSubpixelCoord(v.x()), toSubpixelCoord(v.y()));
+	return tcu::Vector<deInt64,2>(toSubpixelCoord(v.x(), bits), toSubpixelCoord(v.y(), bits));
 }
 
 #if defined(DE_DEBUG)
-static bool isTheCenterOfTheFragment (const tcu::Vector<deInt64,2>& a)
+static bool isTheCenterOfTheFragment (const tcu::Vector<deInt64,2>& a, int bits)
 {
-	const deUint64 pixelSize = 1ll << (RASTERIZER_SUBPIXEL_BITS);
-	const deUint64 halfPixel = 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
+	const deUint64 pixelSize = 1ll << bits;
+	const deUint64 halfPixel = 1ll << (bits - 1);
 	return	((a.x() & (pixelSize-1)) == halfPixel &&
 				(a.y() & (pixelSize-1)) == halfPixel);
 }
@@ -231,13 +231,13 @@ bool lineInCornerOutsideAngleRange (const SubpixelLineSegment& line, const tcu::
 	return 2 * (-dotProduct) * (-dotProduct) < tcu::lengthSquared(v)*tcu::lengthSquared(cornerExitNormal);
 }
 
-bool doesLineSegmentExitDiamond (const SubpixelLineSegment& line, const tcu::Vector<deInt64,2>& diamondCenter)
+bool doesLineSegmentExitDiamond (const SubpixelLineSegment& line, const tcu::Vector<deInt64,2>& diamondCenter, int bits)
 {
-	DE_ASSERT(isTheCenterOfTheFragment(diamondCenter));
+	DE_ASSERT(isTheCenterOfTheFragment(diamondCenter, bits));
 
 	// Diamond Center is at diamondCenter in subpixel coords
 
-	const deInt64 halfPixel = 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
+	const deInt64 halfPixel = 1ll << (bits - 1);
 
 	// Reject distant diamonds early
 	{
@@ -445,12 +445,13 @@ bool doesLineSegmentExitDiamond (const SubpixelLineSegment& line, const tcu::Vec
 
 } // LineRasterUtil
 
-TriangleRasterizer::TriangleRasterizer (const tcu::IVec4& viewport, const int numSamples, const RasterizationState& state)
+TriangleRasterizer::TriangleRasterizer (const tcu::IVec4& viewport, const int numSamples, const RasterizationState& state, const int subpixelBits)
 	: m_viewport				(viewport)
 	, m_numSamples				(numSamples)
 	, m_winding					(state.winding)
 	, m_horizontalFill			(state.horizontalFill)
 	, m_verticalFill			(state.verticalFill)
+	, m_subpixelBits			(subpixelBits)
 	, m_face					(FACETYPE_LAST)
 	, m_viewportOrientation		(state.viewportOrientation)
 {
@@ -469,12 +470,12 @@ void TriangleRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1, const t
 	m_v2 = v2;
 
 	// Positions in fixed-point coordinates.
-	const deInt64	x0		= toSubpixelCoord(v0.x());
-	const deInt64	y0		= toSubpixelCoord(v0.y());
-	const deInt64	x1		= toSubpixelCoord(v1.x());
-	const deInt64	y1		= toSubpixelCoord(v1.y());
-	const deInt64	x2		= toSubpixelCoord(v2.x());
-	const deInt64	y2		= toSubpixelCoord(v2.y());
+	const deInt64	x0		= toSubpixelCoord(v0.x(), m_subpixelBits);
+	const deInt64	y0		= toSubpixelCoord(v0.y(), m_subpixelBits);
+	const deInt64	x1		= toSubpixelCoord(v1.x(), m_subpixelBits);
+	const deInt64	y1		= toSubpixelCoord(v1.y(), m_subpixelBits);
+	const deInt64	x2		= toSubpixelCoord(v2.x(), m_subpixelBits);
+	const deInt64	y2		= toSubpixelCoord(v2.y(), m_subpixelBits);
 
 	// Initialize edge functions.
 	if (m_winding == WINDING_CCW)
@@ -514,10 +515,10 @@ void TriangleRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1, const t
 	const deInt64	yMin	= de::min(de::min(y0, y1), y2);
 	const deInt64	yMax	= de::max(de::max(y0, y1), y2);
 
-	m_bboxMin.x() = floorSubpixelToPixelCoord	(xMin, m_horizontalFill	== FILL_LEFT);
-	m_bboxMin.y() = floorSubpixelToPixelCoord	(yMin, m_verticalFill	== FILL_BOTTOM);
-	m_bboxMax.x() = ceilSubpixelToPixelCoord	(xMax, m_horizontalFill	== FILL_RIGHT);
-	m_bboxMax.y() = ceilSubpixelToPixelCoord	(yMax, m_verticalFill	== FILL_TOP);
+	m_bboxMin.x() = floorSubpixelToPixelCoord	(xMin, m_subpixelBits, m_horizontalFill	== FILL_LEFT);
+	m_bboxMin.y() = floorSubpixelToPixelCoord	(yMin, m_subpixelBits, m_verticalFill	== FILL_BOTTOM);
+	m_bboxMax.x() = ceilSubpixelToPixelCoord	(xMax, m_subpixelBits, m_horizontalFill	== FILL_RIGHT);
+	m_bboxMax.y() = ceilSubpixelToPixelCoord	(yMax, m_subpixelBits, m_verticalFill	== FILL_TOP);
 
 	// Clamp to viewport
 	const int		wX0		= m_viewport.x();
@@ -537,7 +538,7 @@ void TriangleRasterizer::rasterizeSingleSample (FragmentPacket* const fragmentPa
 {
 	DE_ASSERT(maxFragmentPackets > 0);
 
-	const deUint64	halfPixel	= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
+	const deUint64	halfPixel	= 1ll << (m_subpixelBits - 1);
 	int				packetNdx	= 0;
 
 	// For depth interpolation; given barycentrics A, B, C = (1 - A - B)
@@ -553,10 +554,10 @@ void TriangleRasterizer::rasterizeSingleSample (FragmentPacket* const fragmentPa
 		const int		y0		= m_curPos.y();
 
 		// Subpixel coords
-		const deInt64	sx0		= toSubpixelCoord(x0)	+ halfPixel;
-		const deInt64	sx1		= toSubpixelCoord(x0+1)	+ halfPixel;
-		const deInt64	sy0		= toSubpixelCoord(y0)	+ halfPixel;
-		const deInt64	sy1		= toSubpixelCoord(y0+1)	+ halfPixel;
+		const deInt64	sx0		= toSubpixelCoord(x0,   m_subpixelBits)	+ halfPixel;
+		const deInt64	sx1		= toSubpixelCoord(x0+1, m_subpixelBits)	+ halfPixel;
+		const deInt64	sy0		= toSubpixelCoord(y0,   m_subpixelBits)	+ halfPixel;
+		const deInt64	sy1		= toSubpixelCoord(y0+1, m_subpixelBits)	+ halfPixel;
 
 		const deInt64	sx[4]	= { sx0, sx1, sx0, sx1 };
 		const deInt64	sy[4]	= { sy0, sy0, sy1, sy1 };
@@ -643,73 +644,61 @@ void TriangleRasterizer::rasterizeSingleSample (FragmentPacket* const fragmentPa
 }
 
 // Sample positions - ordered as (x, y) list.
-
-// \note Macros are used to eliminate function calls even in debug builds.
-#define SAMPLE_POS_TO_SUBPIXEL_COORD(POS)	\
-	(deInt64)((POS) * (1<<RASTERIZER_SUBPIXEL_BITS) + 0.5f)
-
-#define SAMPLE_POS(X, Y)	\
-	SAMPLE_POS_TO_SUBPIXEL_COORD(X), SAMPLE_POS_TO_SUBPIXEL_COORD(Y)
-
-static const deInt64 s_samplePos2[] =
+static const float s_samplePts2[] =
 {
-	SAMPLE_POS(0.3f, 0.3f),
-	SAMPLE_POS(0.7f, 0.7f)
+	0.3f, 0.3f,
+	0.7f, 0.7f
 };
 
-static const deInt64 s_samplePos4[] =
+static const float s_samplePts4[] =
 {
-	SAMPLE_POS(0.25f, 0.25f),
-	SAMPLE_POS(0.75f, 0.25f),
-	SAMPLE_POS(0.25f, 0.75f),
-	SAMPLE_POS(0.75f, 0.75f)
+	0.25f, 0.25f,
+	0.75f, 0.25f,
+	0.25f, 0.75f,
+	0.75f, 0.75f
 };
-DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_samplePos4) == 4*2);
 
-static const deInt64 s_samplePos8[] =
+static const float s_samplePts8[] =
 {
-	SAMPLE_POS( 7.f/16.f,  9.f/16.f),
-	SAMPLE_POS( 9.f/16.f, 13.f/16.f),
-	SAMPLE_POS(11.f/16.f,  3.f/16.f),
-	SAMPLE_POS(13.f/16.f, 11.f/16.f),
-	SAMPLE_POS( 1.f/16.f,  7.f/16.f),
-	SAMPLE_POS( 5.f/16.f,  1.f/16.f),
-	SAMPLE_POS(15.f/16.f,  5.f/16.f),
-	SAMPLE_POS( 3.f/16.f, 15.f/16.f)
+	7.f  / 16.f,  9.f / 16.f,
+	9.f  / 16.f, 13.f / 16.f,
+	11.f / 16.f,  3.f / 16.f,
+	13.f / 16.f, 11.f / 16.f,
+	1.f  / 16.f,  7.f / 16.f,
+	5.f  / 16.f,  1.f / 16.f,
+	15.f / 16.f,  5.f / 16.f,
+	3.f  / 16.f, 15.f / 16.f
 };
-DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_samplePos8) == 8*2);
 
-static const deInt64 s_samplePos16[] =
+static const float s_samplePts16[] =
 {
-	SAMPLE_POS(1.f/8.f, 1.f/8.f),
-	SAMPLE_POS(3.f/8.f, 1.f/8.f),
-	SAMPLE_POS(5.f/8.f, 1.f/8.f),
-	SAMPLE_POS(7.f/8.f, 1.f/8.f),
-	SAMPLE_POS(1.f/8.f, 3.f/8.f),
-	SAMPLE_POS(3.f/8.f, 3.f/8.f),
-	SAMPLE_POS(5.f/8.f, 3.f/8.f),
-	SAMPLE_POS(7.f/8.f, 3.f/8.f),
-	SAMPLE_POS(1.f/8.f, 5.f/8.f),
-	SAMPLE_POS(3.f/8.f, 5.f/8.f),
-	SAMPLE_POS(5.f/8.f, 5.f/8.f),
-	SAMPLE_POS(7.f/8.f, 5.f/8.f),
-	SAMPLE_POS(1.f/8.f, 7.f/8.f),
-	SAMPLE_POS(3.f/8.f, 7.f/8.f),
-	SAMPLE_POS(5.f/8.f, 7.f/8.f),
-	SAMPLE_POS(7.f/8.f, 7.f/8.f)
+	1.f / 8.f, 1.f / 8.f,
+	3.f / 8.f, 1.f / 8.f,
+	5.f / 8.f, 1.f / 8.f,
+	7.f / 8.f, 1.f / 8.f,
+	1.f / 8.f, 3.f / 8.f,
+	3.f / 8.f, 3.f / 8.f,
+	5.f / 8.f, 3.f / 8.f,
+	7.f / 8.f, 3.f / 8.f,
+	1.f / 8.f, 5.f / 8.f,
+	3.f / 8.f, 5.f / 8.f,
+	5.f / 8.f, 5.f / 8.f,
+	7.f / 8.f, 5.f / 8.f,
+	1.f / 8.f, 7.f / 8.f,
+	3.f / 8.f, 7.f / 8.f,
+	5.f / 8.f, 7.f / 8.f,
+	7.f / 8.f, 7.f / 8.f
 };
-DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_samplePos16) == 16*2);
-
-#undef SAMPLE_POS
-#undef SAMPLE_POS_TO_SUBPIXEL_COORD
 
 template<int NumSamples>
 void TriangleRasterizer::rasterizeMultiSample (FragmentPacket* const fragmentPackets, float* const depthValues, const int maxFragmentPackets, int& numPacketsRasterized)
 {
 	DE_ASSERT(maxFragmentPackets > 0);
 
-	const deInt64*	samplePos	= DE_NULL;
-	const deUint64	halfPixel	= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
+	// Big enough to hold maximum multisample count
+	deInt64			samplePos[DE_LENGTH_OF_ARRAY(s_samplePts16)];
+	const float *	samplePts	= DE_NULL;
+	const deUint64	halfPixel	= 1ll << (m_subpixelBits - 1);
 	int				packetNdx	= 0;
 
 	// For depth interpolation, see rasterizeSingleSample
@@ -719,13 +708,16 @@ void TriangleRasterizer::rasterizeMultiSample (FragmentPacket* const fragmentPac
 
 	switch (NumSamples)
 	{
-		case 2:		samplePos = s_samplePos2;	break;
-		case 4:		samplePos = s_samplePos4;	break;
-		case 8:		samplePos = s_samplePos8;	break;
-		case 16:	samplePos = s_samplePos16;	break;
+		case 2:		samplePts = s_samplePts2;	break;
+		case 4:		samplePts = s_samplePts4;	break;
+		case 8:		samplePts = s_samplePts8;	break;
+		case 16:	samplePts = s_samplePts16;	break;
 		default:
 			DE_ASSERT(false);
 	}
+
+	for (int c = 0; c < NumSamples * 2; ++c)
+		samplePos[c] = toSubpixelCoord(samplePts[c], m_subpixelBits);
 
 	while (m_curPos.y() <= m_bboxMax.y() && packetNdx < maxFragmentPackets)
 	{
@@ -733,10 +725,10 @@ void TriangleRasterizer::rasterizeMultiSample (FragmentPacket* const fragmentPac
 		const int		y0		= m_curPos.y();
 
 		// Base subpixel coords
-		const deInt64	sx0		= toSubpixelCoord(x0);
-		const deInt64	sx1		= toSubpixelCoord(x0+1);
-		const deInt64	sy0		= toSubpixelCoord(y0);
-		const deInt64	sy1		= toSubpixelCoord(y0+1);
+		const deInt64	sx0		= toSubpixelCoord(x0,   m_subpixelBits);
+		const deInt64	sx1		= toSubpixelCoord(x0+1, m_subpixelBits);
+		const deInt64	sy0		= toSubpixelCoord(y0,   m_subpixelBits);
+		const deInt64	sy1		= toSubpixelCoord(y0+1, m_subpixelBits);
 
 		const deInt64	sx[4]	= { sx0, sx1, sx0, sx1 };
 		const deInt64	sy[4]	= { sy0, sy0, sy1, sy1 };
@@ -863,8 +855,9 @@ void TriangleRasterizer::rasterize (FragmentPacket* const fragmentPackets, float
 	}
 }
 
-SingleSampleLineRasterizer::SingleSampleLineRasterizer (const tcu::IVec4& viewport)
+SingleSampleLineRasterizer::SingleSampleLineRasterizer (const tcu::IVec4& viewport, const int subpixelBits)
 	: m_viewport		(viewport)
+	, m_subpixelBits	(subpixelBits)
 	, m_curRowFragment	(0)
 	, m_lineWidth		(0.0f)
 {
@@ -881,40 +874,40 @@ void SingleSampleLineRasterizer::init (const tcu::Vec4& v0, const tcu::Vec4& v1,
 	// Bounding box \note: with wide lines, the line is actually moved as in the spec
 	const deInt32					lineWidthPixels	= (lineWidth > 1.0f) ? (deInt32)floor(lineWidth + 0.5f) : 1;
 
-	const tcu::Vector<deInt64,2>	widthOffset		= (isXMajor ? tcu::Vector<deInt64,2>(0, -1) : tcu::Vector<deInt64,2>(-1, 0)) * (toSubpixelCoord(lineWidthPixels - 1) / 2);
+	const tcu::Vector<deInt64,2>	widthOffset		= (isXMajor ? tcu::Vector<deInt64,2>(0, -1) : tcu::Vector<deInt64,2>(-1, 0)) * (toSubpixelCoord(lineWidthPixels - 1, m_subpixelBits) / 2);
 
-	const deInt64					x0				= toSubpixelCoord(v0.x()) + widthOffset.x();
-	const deInt64					y0				= toSubpixelCoord(v0.y()) + widthOffset.y();
-	const deInt64					x1				= toSubpixelCoord(v1.x()) + widthOffset.x();
-	const deInt64					y1				= toSubpixelCoord(v1.y()) + widthOffset.y();
+	const deInt64					x0				= toSubpixelCoord(v0.x(), m_subpixelBits) + widthOffset.x();
+	const deInt64					y0				= toSubpixelCoord(v0.y(), m_subpixelBits) + widthOffset.y();
+	const deInt64					x1				= toSubpixelCoord(v1.x(), m_subpixelBits) + widthOffset.x();
+	const deInt64					y1				= toSubpixelCoord(v1.y(), m_subpixelBits) + widthOffset.y();
 
 	// line endpoints might be perturbed, add some margin
-	const deInt64					xMin			= de::min(x0, x1) - toSubpixelCoord(1);
-	const deInt64					xMax			= de::max(x0, x1) + toSubpixelCoord(1);
-	const deInt64					yMin			= de::min(y0, y1) - toSubpixelCoord(1);
-	const deInt64					yMax			= de::max(y0, y1) + toSubpixelCoord(1);
+	const deInt64					xMin			= de::min(x0, x1) - toSubpixelCoord(1, m_subpixelBits);
+	const deInt64					xMax			= de::max(x0, x1) + toSubpixelCoord(1, m_subpixelBits);
+	const deInt64					yMin			= de::min(y0, y1) - toSubpixelCoord(1, m_subpixelBits);
+	const deInt64					yMax			= de::max(y0, y1) + toSubpixelCoord(1, m_subpixelBits);
 
 	// Remove invisible area
 
 	if (isXMajor)
 	{
 		// clamp to viewport in major direction
-		m_bboxMin.x() = de::clamp(floorSubpixelToPixelCoord(xMin, true), m_viewport.x(), m_viewport.x() + m_viewport.z() - 1);
-		m_bboxMax.x() = de::clamp(ceilSubpixelToPixelCoord (xMax, true), m_viewport.x(), m_viewport.x() + m_viewport.z() - 1);
+		m_bboxMin.x() = de::clamp(floorSubpixelToPixelCoord(xMin, m_subpixelBits, true), m_viewport.x(), m_viewport.x() + m_viewport.z() - 1);
+		m_bboxMax.x() = de::clamp(ceilSubpixelToPixelCoord (xMax, m_subpixelBits, true), m_viewport.x(), m_viewport.x() + m_viewport.z() - 1);
 
 		// clamp to padded viewport in minor direction (wide lines might bleed over viewport in minor direction)
-		m_bboxMin.y() = de::clamp(floorSubpixelToPixelCoord(yMin, true), m_viewport.y() - lineWidthPixels, m_viewport.y() + m_viewport.w() - 1);
-		m_bboxMax.y() = de::clamp(ceilSubpixelToPixelCoord (yMax, true), m_viewport.y() - lineWidthPixels, m_viewport.y() + m_viewport.w() - 1);
+		m_bboxMin.y() = de::clamp(floorSubpixelToPixelCoord(yMin, m_subpixelBits, true), m_viewport.y() - lineWidthPixels, m_viewport.y() + m_viewport.w() - 1);
+		m_bboxMax.y() = de::clamp(ceilSubpixelToPixelCoord (yMax, m_subpixelBits, true), m_viewport.y() - lineWidthPixels, m_viewport.y() + m_viewport.w() - 1);
 	}
 	else
 	{
 		// clamp to viewport in major direction
-		m_bboxMin.y() = de::clamp(floorSubpixelToPixelCoord(yMin, true), m_viewport.y(), m_viewport.y() + m_viewport.w() - 1);
-		m_bboxMax.y() = de::clamp(ceilSubpixelToPixelCoord (yMax, true), m_viewport.y(), m_viewport.y() + m_viewport.w() - 1);
+		m_bboxMin.y() = de::clamp(floorSubpixelToPixelCoord(yMin, m_subpixelBits, true), m_viewport.y(), m_viewport.y() + m_viewport.w() - 1);
+		m_bboxMax.y() = de::clamp(ceilSubpixelToPixelCoord (yMax, m_subpixelBits, true), m_viewport.y(), m_viewport.y() + m_viewport.w() - 1);
 
 		// clamp to padded viewport in minor direction (wide lines might bleed over viewport in minor direction)
-		m_bboxMin.x() = de::clamp(floorSubpixelToPixelCoord(xMin, true), m_viewport.x() - lineWidthPixels, m_viewport.x() + m_viewport.z() - 1);
-		m_bboxMax.x() = de::clamp(ceilSubpixelToPixelCoord (xMax, true), m_viewport.x() - lineWidthPixels, m_viewport.x() + m_viewport.z() - 1);
+		m_bboxMin.x() = de::clamp(floorSubpixelToPixelCoord(xMin, m_subpixelBits, true), m_viewport.x() - lineWidthPixels, m_viewport.x() + m_viewport.z() - 1);
+		m_bboxMax.x() = de::clamp(ceilSubpixelToPixelCoord (xMax, m_subpixelBits, true), m_viewport.x() - lineWidthPixels, m_viewport.x() + m_viewport.z() - 1);
 	}
 
 	m_lineWidth = lineWidth;
@@ -930,25 +923,25 @@ void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPacket
 {
 	DE_ASSERT(maxFragmentPackets > 0);
 
-	const deInt64								halfPixel			= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
+	const deInt64								halfPixel			= 1ll << (m_subpixelBits - 1);
 	const deInt32								lineWidth			= (m_lineWidth > 1.0f) ? deFloorFloatToInt32(m_lineWidth + 0.5f) : 1;
 	const bool									isXMajor			= de::abs((m_v1 - m_v0).x()) >= de::abs((m_v1 - m_v0).y());
 	const tcu::IVec2							minorDirection		= (isXMajor) ? (tcu::IVec2(0, 1)) : (tcu::IVec2(1, 0));
 	const int									minViewportLimit	= (isXMajor) ? (m_viewport.y()) : (m_viewport.x());
 	const int									maxViewportLimit	= (isXMajor) ? (m_viewport.y() + m_viewport.w()) : (m_viewport.x() + m_viewport.z());
-	const tcu::Vector<deInt64,2>				widthOffset			= -minorDirection.cast<deInt64>() * (toSubpixelCoord(lineWidth - 1) / 2);
-	const tcu::Vector<deInt64,2>				pa					= LineRasterUtil::toSubpixelVector(m_v0.xy()) + widthOffset;
-	const tcu::Vector<deInt64,2>				pb					= LineRasterUtil::toSubpixelVector(m_v1.xy()) + widthOffset;
+	const tcu::Vector<deInt64,2>				widthOffset			= -minorDirection.cast<deInt64>() * (toSubpixelCoord(lineWidth - 1, m_subpixelBits) / 2);
+	const tcu::Vector<deInt64,2>				pa					= LineRasterUtil::toSubpixelVector(m_v0.xy(), m_subpixelBits) + widthOffset;
+	const tcu::Vector<deInt64,2>				pb					= LineRasterUtil::toSubpixelVector(m_v1.xy(), m_subpixelBits) + widthOffset;
 	const LineRasterUtil::SubpixelLineSegment	line				= LineRasterUtil::SubpixelLineSegment(pa, pb);
 
 	int											packetNdx			= 0;
 
 	while (m_curPos.y() <= m_bboxMax.y() && packetNdx < maxFragmentPackets)
 	{
-		const tcu::Vector<deInt64,2> diamondPosition = LineRasterUtil::toSubpixelVector(m_curPos) + tcu::Vector<deInt64,2>(halfPixel,halfPixel);
+		const tcu::Vector<deInt64,2> diamondPosition = LineRasterUtil::toSubpixelVector(m_curPos, m_subpixelBits) + tcu::Vector<deInt64,2>(halfPixel,halfPixel);
 
 		// Should current fragment be drawn? == does the segment exit this diamond?
-		if (LineRasterUtil::doesLineSegmentExitDiamond(line, diamondPosition))
+		if (LineRasterUtil::doesLineSegmentExitDiamond(line, diamondPosition, m_subpixelBits))
 		{
 			const tcu::Vector<deInt64,2>	pr					= diamondPosition;
 			const float						t					= tcu::dot((pr - pa).asFloat(), (pb - pa).asFloat()) / tcu::lengthSquared(pb.asFloat() - pa.asFloat());
@@ -1020,10 +1013,10 @@ void SingleSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPacket
 	numPacketsRasterized = packetNdx;
 }
 
-MultiSampleLineRasterizer::MultiSampleLineRasterizer (const int numSamples, const tcu::IVec4& viewport)
+MultiSampleLineRasterizer::MultiSampleLineRasterizer (const int numSamples, const tcu::IVec4& viewport, const int subpixelBits)
 	: m_numSamples			(numSamples)
-	, m_triangleRasterizer0 (viewport, m_numSamples, RasterizationState())
-	, m_triangleRasterizer1 (viewport, m_numSamples, RasterizationState())
+	, m_triangleRasterizer0 (viewport, m_numSamples, RasterizationState(), subpixelBits)
+	, m_triangleRasterizer1 (viewport, m_numSamples, RasterizationState(), subpixelBits)
 {
 }
 
@@ -1093,7 +1086,8 @@ void MultiSampleLineRasterizer::rasterize (FragmentPacket* const fragmentPackets
 	}
 }
 
-LineExitDiamondGenerator::LineExitDiamondGenerator (void)
+LineExitDiamondGenerator::LineExitDiamondGenerator (const int subpixelBits)
+	: m_subpixelBits(subpixelBits)
 {
 }
 
@@ -1103,21 +1097,21 @@ LineExitDiamondGenerator::~LineExitDiamondGenerator (void)
 
 void LineExitDiamondGenerator::init (const tcu::Vec4& v0, const tcu::Vec4& v1)
 {
-	const deInt64					x0				= toSubpixelCoord(v0.x());
-	const deInt64					y0				= toSubpixelCoord(v0.y());
-	const deInt64					x1				= toSubpixelCoord(v1.x());
-	const deInt64					y1				= toSubpixelCoord(v1.y());
+	const deInt64					x0				= toSubpixelCoord(v0.x(), m_subpixelBits);
+	const deInt64					y0				= toSubpixelCoord(v0.y(), m_subpixelBits);
+	const deInt64					x1				= toSubpixelCoord(v1.x(), m_subpixelBits);
+	const deInt64					y1				= toSubpixelCoord(v1.y(), m_subpixelBits);
 
 	// line endpoints might be perturbed, add some margin
-	const deInt64					xMin			= de::min(x0, x1) - toSubpixelCoord(1);
-	const deInt64					xMax			= de::max(x0, x1) + toSubpixelCoord(1);
-	const deInt64					yMin			= de::min(y0, y1) - toSubpixelCoord(1);
-	const deInt64					yMax			= de::max(y0, y1) + toSubpixelCoord(1);
+	const deInt64					xMin			= de::min(x0, x1) - toSubpixelCoord(1, m_subpixelBits);
+	const deInt64					xMax			= de::max(x0, x1) + toSubpixelCoord(1, m_subpixelBits);
+	const deInt64					yMin			= de::min(y0, y1) - toSubpixelCoord(1, m_subpixelBits);
+	const deInt64					yMax			= de::max(y0, y1) + toSubpixelCoord(1, m_subpixelBits);
 
-	m_bboxMin.x() = floorSubpixelToPixelCoord(xMin, true);
-	m_bboxMin.y() = floorSubpixelToPixelCoord(yMin, true);
-	m_bboxMax.x() = ceilSubpixelToPixelCoord (xMax, true);
-	m_bboxMax.y() = ceilSubpixelToPixelCoord (yMax, true);
+	m_bboxMin.x() = floorSubpixelToPixelCoord(xMin, m_subpixelBits, true);
+	m_bboxMin.y() = floorSubpixelToPixelCoord(yMin, m_subpixelBits, true);
+	m_bboxMax.x() = ceilSubpixelToPixelCoord (xMax, m_subpixelBits, true);
+	m_bboxMax.y() = ceilSubpixelToPixelCoord (yMax, m_subpixelBits, true);
 
 	m_v0 = v0;
 	m_v1 = v1;
@@ -1129,18 +1123,18 @@ void LineExitDiamondGenerator::rasterize (LineExitDiamond* const lineDiamonds, c
 {
 	DE_ASSERT(maxDiamonds > 0);
 
-	const deInt64								halfPixel			= 1ll << (RASTERIZER_SUBPIXEL_BITS-1);
-	const tcu::Vector<deInt64,2>				pa					= LineRasterUtil::toSubpixelVector(m_v0.xy());
-	const tcu::Vector<deInt64,2>				pb					= LineRasterUtil::toSubpixelVector(m_v1.xy());
+	const deInt64								halfPixel			= 1ll << (m_subpixelBits - 1);
+	const tcu::Vector<deInt64,2>				pa					= LineRasterUtil::toSubpixelVector(m_v0.xy(), m_subpixelBits);
+	const tcu::Vector<deInt64,2>				pb					= LineRasterUtil::toSubpixelVector(m_v1.xy(), m_subpixelBits);
 	const LineRasterUtil::SubpixelLineSegment	line				= LineRasterUtil::SubpixelLineSegment(pa, pb);
 
 	int											diamondNdx			= 0;
 
 	while (m_curPos.y() <= m_bboxMax.y() && diamondNdx < maxDiamonds)
 	{
-		const tcu::Vector<deInt64,2> diamondPosition = LineRasterUtil::toSubpixelVector(m_curPos) + tcu::Vector<deInt64,2>(halfPixel,halfPixel);
+		const tcu::Vector<deInt64,2> diamondPosition = LineRasterUtil::toSubpixelVector(m_curPos, m_subpixelBits) + tcu::Vector<deInt64,2>(halfPixel,halfPixel);
 
-		if (LineRasterUtil::doesLineSegmentExitDiamond(line, diamondPosition))
+		if (LineRasterUtil::doesLineSegmentExitDiamond(line, diamondPosition, m_subpixelBits))
 		{
 			LineExitDiamond& packet = lineDiamonds[diamondNdx];
 			packet.position = m_curPos;

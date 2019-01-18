@@ -1105,7 +1105,7 @@ void rasterizePrimitive (const RenderState&					state,
 	const int			numSamples		= renderTarget.getNumSamples();
 	const float			depthClampMin	= de::min(state.viewport.zn, state.viewport.zf);
 	const float			depthClampMax	= de::max(state.viewport.zn, state.viewport.zf);
-	TriangleRasterizer	rasterizer		(renderTargetRect, numSamples, state.rasterization);
+	TriangleRasterizer	rasterizer		(renderTargetRect, numSamples, state.rasterization, state.subpixelBits);
 	float				depthOffset		= 0.0f;
 
 	rasterizer.init(triangle.v0->position, triangle.v1->position, triangle.v2->position);
@@ -1175,8 +1175,8 @@ void rasterizePrimitive (const RenderState&					state,
 	const float					depthClampMax		= de::max(state.viewport.zn, state.viewport.zf);
 	const bool					msaa				= numSamples > 1;
 	FragmentShadingContext		shadingContext		(line.v0->outputs, line.v1->outputs, DE_NULL, &buffers.shaderOutputs[0], buffers.fragmentDepthBuffer, line.v1->primitiveID, (int)program.fragmentShader->getOutputs().size(), numSamples, FACETYPE_FRONT);
-	SingleSampleLineRasterizer	aliasedRasterizer	(renderTargetRect);
-	MultiSampleLineRasterizer	msaaRasterizer		(numSamples, renderTargetRect);
+	SingleSampleLineRasterizer	aliasedRasterizer	(renderTargetRect, state.subpixelBits);
+	MultiSampleLineRasterizer	msaaRasterizer		(numSamples, renderTargetRect, state.subpixelBits);
 
 	// Initialize rasterization.
 	if (msaa)
@@ -1226,8 +1226,8 @@ void rasterizePrimitive (const RenderState&					state,
 	const int			numSamples		= renderTarget.getNumSamples();
 	const float			depthClampMin	= de::min(state.viewport.zn, state.viewport.zf);
 	const float			depthClampMax	= de::max(state.viewport.zn, state.viewport.zf);
-	TriangleRasterizer	rasterizer1		(renderTargetRect, numSamples, state.rasterization);
-	TriangleRasterizer	rasterizer2		(renderTargetRect, numSamples, state.rasterization);
+	TriangleRasterizer	rasterizer1		(renderTargetRect, numSamples, state.rasterization, state.subpixelBits);
+	TriangleRasterizer	rasterizer2		(renderTargetRect, numSamples, state.rasterization, state.subpixelBits);
 
 	// draw point as two triangles
 	const float offset				= point.v0->pointSize / 2.0f;

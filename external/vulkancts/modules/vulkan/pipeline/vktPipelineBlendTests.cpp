@@ -784,7 +784,7 @@ tcu::TestStatus BlendTestInstance::verifyImage (void)
 			const VkPipelineColorBlendAttachmentState& blendState = m_blendStates[quadNdx];
 
 			// Set blend state
-			rr::RenderState renderState					(refRenderer.getViewportState());
+			rr::RenderState renderState					(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 			renderState.fragOps.blendMode				= rr::BLENDMODE_STANDARD;
 			renderState.fragOps.blendRGBState.srcFunc	= mapVkBlendFactor(blendState.srcColorBlendFactor);
 			renderState.fragOps.blendRGBState.dstFunc	= mapVkBlendFactor(blendState.dstColorBlendFactor);

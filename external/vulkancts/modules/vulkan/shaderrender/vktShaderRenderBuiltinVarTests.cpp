@@ -150,7 +150,7 @@ TestStatus BuiltinGlFrontFacingCaseInstance::iterate (void)
 
 	testDesc = "gl_FrontFacing " + getPrimitiveTopologyShortName(m_topology) + " ";
 
-	DrawState					drawState		(m_topology, FRONTFACE_RENDERWIDTH, FRONTFACE_RENDERHEIGHT);
+	DrawState					drawState		(m_topology, FRONTFACE_RENDERWIDTH, FRONTFACE_RENDERHEIGHT, m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 	DrawCallData				drawCallData	(vertices);
 	VulkanProgram				vulkanProgram	(shaders);
 
@@ -750,7 +750,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragDepthVert")));
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragDepthFrag")));
 
-		DrawState				drawState(m_topology, m_renderSize.x(), m_renderSize.y());
+		DrawState				drawState(m_topology, m_renderSize.x(), m_renderSize.y(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 		DrawCallData			drawCallData(vertices);
 		VulkanProgram			vulkanProgram(shaders);
 
@@ -894,7 +894,7 @@ TestStatus BuiltinFragDepthCaseInstance::iterate (void)
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragDepthVertPass2")));
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragDepthFragPass2")));
 
-		DrawState				drawState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_renderSize.x(), m_renderSize.y());
+		DrawState				drawState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_renderSize.x(), m_renderSize.y(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 		DrawCallData			drawCallData(vertices);
 		VulkanProgram			vulkanProgram(shaders);
 
@@ -1230,7 +1230,7 @@ TestStatus BuiltinFragCoordMsaaCaseInstance::iterate (void)
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("FragCoordMsaaVert")));
 		shaders.push_back(VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("FragCoordMsaaFrag")));
 
-		DrawState			drawState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_renderSize.x(), m_renderSize.y());
+		DrawState			drawState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, m_renderSize.x(), m_renderSize.y(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 		DrawCallData		drawCallData(vertices);
 		VulkanProgram		vulkanProgram(shaders);
 

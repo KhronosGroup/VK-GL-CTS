@@ -606,7 +606,8 @@ tcu::TestStatus DynamicOffsetGraphicsTestInstance::verifyImage (void)
 				m_vertices[quadIdx * 6 + vertexIdx].color.xyzw() = refColor;
 			}
 
-		refRenderer.draw(rr::RenderState(refRenderer.getViewportState()), rr::PRIMITIVETYPE_TRIANGLES, m_vertices);
+		refRenderer.draw(rr::RenderState(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits),
+			             rr::PRIMITIVETYPE_TRIANGLES, m_vertices);
 	}
 
 	// Compare result with reference image

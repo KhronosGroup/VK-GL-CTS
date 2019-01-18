@@ -577,9 +577,9 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 
 		struct LocalUtil
 		{
-			static DrawState getDrawState (UVec2 renderSize)
+			static DrawState getDrawState (UVec2 renderSize, const int subpixelBits)
 			{
-				DrawState state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderSize.x(), renderSize.y());
+				DrawState state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, renderSize.x(), renderSize.y(), subpixelBits);
 				state.colorFormat = VK_FORMAT_R32G32_SFLOAT;
 				return state;
 			}
@@ -615,7 +615,7 @@ tcu::TestStatus testImageQueryLod (Context& context, TestParameters params)
 
 		const UVec2					renderSize	(128, 256);
 		const vector<Vec4>			vertices	(LocalUtil::getVertices());
-		const DrawState				drawState	(LocalUtil::getDrawState(renderSize));
+		const DrawState				drawState	(LocalUtil::getDrawState(renderSize, context.getDeviceProperties().limits.subPixelPrecisionBits));
 		const DrawCallData			drawCallData(vertices);
 		const VulkanProgram			program		(LocalUtil::getProgram(context, *descLayout, *descSet));
 

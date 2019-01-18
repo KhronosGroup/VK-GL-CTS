@@ -1350,7 +1350,7 @@ tcu::TestStatus InputAssemblyInstance::verifyImage (void)
 	// Render reference image
 	{
 		const rr::PrimitiveType		topology	= mapVkPrimitiveTopology(m_primitiveTopology);
-		rr::RenderState				renderState	(refRenderer.getViewportState());
+		rr::RenderState				renderState	(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 
 		if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
 			renderState.point.pointSize = 3.0f;

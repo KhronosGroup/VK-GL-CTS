@@ -726,7 +726,7 @@ private:
 		MAX_VERTICES = 8*3	//!< 8 triangles, totals 24 vertices
 	};
 
-	void				renderReference			(const tcu::PixelBufferAccess& dst, const int numVertices, const deUint16* const indices, const tcu::Vec4* const positions, const tcu::Vec4* const colors);
+	void				renderReference			(const tcu::PixelBufferAccess& dst, const int numVertices, const deUint16* const indices, const tcu::Vec4* const positions, const tcu::Vec4* const colors, const int subpixelBits);
 
 	glu::ShaderProgram*	m_program;
 	deUint32			m_positionBuffer;
@@ -950,10 +950,10 @@ public:
 	}
 };
 
-void VertexIDCase::renderReference (const tcu::PixelBufferAccess& dst, const int numVertices, const deUint16* const indices, const tcu::Vec4* const positions, const tcu::Vec4* const colors)
+void VertexIDCase::renderReference (const tcu::PixelBufferAccess& dst, const int numVertices, const deUint16* const indices, const tcu::Vec4* const positions, const tcu::Vec4* const colors, const int subpixelBits)
 {
 	const rr::Renderer				referenceRenderer;
-	const rr::RenderState			referenceState		((rr::ViewportState)(rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(dst)));
+	const rr::RenderState			referenceState		((rr::ViewportState)(rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(dst)), subpixelBits);
 	const rr::RenderTarget			referenceTarget		(rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(dst));
 	const VertexIDReferenceShader	referenceShader;
 	      rr::VertexAttrib			attribs[2];
@@ -1015,6 +1015,9 @@ VertexIDCase::IterateResult VertexIDCase::iterate (void)
 
 	tcu::clear(refImg.getAccess(), clearColor);
 
+	int	subpixelBits= 0;
+	gl.getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
+
 	if (m_iterNdx == 0)
 	{
 		tcu::ScopedLogSection	logSection	(m_testCtx.getLog(), "Iter0", "glDrawArrays()");
@@ -1030,7 +1033,7 @@ VertexIDCase::IterateResult VertexIDCase::iterate (void)
 		for (int ndx = 0; ndx < (int)indices.size(); ndx++)
 			indices[ndx] = (deUint16)ndx;
 
-		renderReference(refImg.getAccess(), (int)m_positions.size(), &indices[0], &m_positions[0], &m_colors[0]);
+		renderReference(refImg.getAccess(), (int)m_positions.size(), &indices[0], &m_positions[0], &m_colors[0], subpixelBits);
 	}
 	else if (m_iterNdx == 1)
 	{
@@ -1053,7 +1056,7 @@ VertexIDCase::IterateResult VertexIDCase::iterate (void)
 		glu::readPixels(m_context.getRenderContext(), viewportX, viewportY, testImg.getAccess());
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Draw");
 
-		renderReference(refImg.getAccess(), (int)indices.size(), &indices[0], &mappedPos[0], &m_colors[0]);
+		renderReference(refImg.getAccess(), (int)indices.size(), &indices[0], &mappedPos[0], &m_colors[0], subpixelBits);
 	}
 	else if (m_iterNdx == 2)
 	{
@@ -1080,7 +1083,7 @@ VertexIDCase::IterateResult VertexIDCase::iterate (void)
 		GLU_EXPECT_NO_ERROR(gl.getError(), "Draw");
 
 		tcu::clear(refImg.getAccess(), clearColor);
-		renderReference(refImg.getAccess(), (int)indices.size(), &indices[0], &mappedPos[0], &m_colors[0]);
+		renderReference(refImg.getAccess(), (int)indices.size(), &indices[0], &mappedPos[0], &m_colors[0], subpixelBits);
 	}
 	else
 		DE_ASSERT(false);
