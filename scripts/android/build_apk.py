@@ -887,7 +887,7 @@ def parseArgs ():
 	parser.add_argument('--native-api',
 		type=int,
 		dest='nativeApi',
-		default=21,
+		default=28,
 		help="Android API level to target in native code")
 	parser.add_argument('--sdk',
 		dest='sdkPath',
