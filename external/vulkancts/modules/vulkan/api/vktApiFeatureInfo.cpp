@@ -2578,9 +2578,10 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 																	properties.maxExtent.height	>= deviceLimits.maxImageDimension3D &&
 																	properties.maxExtent.depth	>= deviceLimits.maxImageDimension3D),
 								  "Reported dimensions smaller than device limits");
-					results.check(properties.maxMipLevels == fullMipPyramidSize, "maxMipLevels is not full mip pyramid size");
-					results.check(imageType == VK_IMAGE_TYPE_3D || properties.maxArrayLayers >= deviceLimits.maxImageArrayLayers,
-								  "maxArrayLayers smaller than device limits");
+					results.check((isYCbCrFormat(format) && (properties.maxMipLevels == 1)) || properties.maxMipLevels == fullMipPyramidSize,
+					              "Invalid mip pyramid size");
+					results.check((isYCbCrFormat(format) && (properties.maxArrayLayers == 1)) || imageType == VK_IMAGE_TYPE_3D ||
+					              properties.maxArrayLayers >= deviceLimits.maxImageArrayLayers, "Invalid maxArrayLayers");
 				}
 				else
 				{
