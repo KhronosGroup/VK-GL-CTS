@@ -29,7 +29,7 @@ The following tools must be installed and present in the PATH variable:
 ### Android
 
  * Android NDK r15c or later.
- * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 22
+ * Android SDK with: SDK Tools, SDK Platform-tools, SDK Build-tools, and API 22 (API 26 for Android 8.x, API 28 for Android 9.x)
  * Java Development Kit (JDK)
  * Windows: either NMake or Ninja in PATH
 
@@ -87,6 +87,11 @@ Following command will build dEQP.apk:
 
 By default the CTS package will be built for the Android API level 21 (Android 5.0 and above).
 Another API level may be supplied using --native-api command line option.
+
+Additional requirements for implementations supporting VK\_ANDROID\_external\_memory\_android\_hardware_buffer:
+
+- For Android 8.x builds the API level must be selected to >= 26 (i.e --native-api=26)
+- For Android 9.x builds the API level must be selected to >= 28 (i.e --native-api=28)
 
 The package can be installed by either running:
 
