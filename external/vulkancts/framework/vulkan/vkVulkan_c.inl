@@ -8090,7 +8090,7 @@ typedef struct VkPhysicalDeviceShaderAtomicInt64FeaturesKHR {
 
 
 #define VK_KHR_vulkan_memory_model 1
-#define VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION 2
+#define VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION 3
 #define VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME "VK_KHR_vulkan_memory_model"
 
 typedef struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR {
@@ -8098,6 +8098,7 @@ typedef struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR {
     void*              pNext;
     VkBool32           vulkanMemoryModel;
     VkBool32           vulkanMemoryModelDeviceScope;
+    VkBool32           vulkanMemoryModelAvailabilityVisibilityChains;
 } VkPhysicalDeviceVulkanMemoryModelFeaturesKHR;
 
 
