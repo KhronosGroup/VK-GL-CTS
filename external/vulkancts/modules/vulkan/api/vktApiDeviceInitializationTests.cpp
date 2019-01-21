@@ -1061,10 +1061,12 @@ std::vector<AllocTrack>	g_allocatedVector;
 bool					g_intentionalFailEnabled	= false;
 deUint32				g_intenionalFailIndex		= 0;
 deUint32				g_intenionalFailCount		= 0;
+size_t					g_allocationsCount			= 0;
 
 void freeAllocTracker (void)
 {
 	g_allocatedVector.clear();
+	g_allocationsCount = 0;
 }
 
 void initAllocTracker (size_t size, deUint32 intentionalFailIndex = (deUint32)~0)
@@ -1086,6 +1088,8 @@ void initAllocTracker (size_t size, deUint32 intentionalFailIndex = (deUint32)~0
 		g_intenionalFailIndex		= 0;
 		g_intenionalFailCount		= 0;
 	}
+
+	g_allocationsCount = 0;
 }
 
 bool isAllocTrackerEmpty ()
@@ -1134,6 +1138,7 @@ VKAPI_ATTR void *VKAPI_CALL allocCallbackFunc (void *pUserData, size_t size, siz
 				g_allocatedVector[vectorIdx].wasAllocated			= true;
 			}
 
+			g_allocationsCount++;
 			return g_allocatedVector[vectorIdx].alignedStartAddress;
 		}
 	}
@@ -1235,14 +1240,25 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 		DE_NULL									// ppEnabledExtensionNames
 	};
 	deUint32					failIndex			= 0;
-	VkResult					result				= VK_ERROR_OUT_OF_HOST_MEMORY;
+	VkResult					result				= VK_SUCCESS;
+	size_t						max_allowed_alloc	= 0;
 
-	while (result == VK_ERROR_OUT_OF_HOST_MEMORY)
+	do
 	{
-		initAllocTracker(9999, failIndex++);
+		if (max_allowed_alloc == 0)
+		{
+			if (result != VK_SUCCESS)
+				return tcu::TestStatus::fail("Could not create instance and device");
 
-		if (failIndex >= 9999u)
-			return tcu::TestStatus::fail("Out of retries, could not create instance and device");
+			initAllocTracker(99999);
+		}
+		else
+		{
+			initAllocTracker(max_allowed_alloc, failIndex++);
+
+			if (failIndex >= static_cast<deUint32>(max_allowed_alloc))
+				return tcu::TestStatus::fail("Out of retries, could not create instance and device");
+		}
 
 		result = vkp.createInstance(&instanceCreateInfo, &allocationCallbacks, &instance);
 
@@ -1353,8 +1369,14 @@ tcu::TestStatus createInstanceDeviceIntentionalAllocFail (Context& context)
 
 		DeviceDriver(vkp, instance, device).destroyDevice(device, &allocationCallbacks);
 		vki.destroyInstance(instance, &allocationCallbacks);
+		if (max_allowed_alloc == 0)
+		{
+			max_allowed_alloc	= g_allocationsCount + 100;
+			result				= VK_ERROR_OUT_OF_HOST_MEMORY;
+		}
 		freeAllocTracker();
 	}
+	while (result == VK_ERROR_OUT_OF_HOST_MEMORY);
 
 	return tcu::TestStatus::pass("Pass");
 }
