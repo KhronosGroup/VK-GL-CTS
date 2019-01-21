@@ -1496,7 +1496,7 @@ struct VkPhysicalDeviceMultiviewProperties
 	deUint32		maxMultiviewInstanceIndex;
 };
 
-struct VkPhysicalDeviceVariablePointerFeatures
+struct VkPhysicalDeviceVariablePointersFeatures
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -1737,7 +1737,7 @@ struct VkDescriptorSetLayoutSupport
 	VkBool32		supported;
 };
 
-struct VkPhysicalDeviceShaderDrawParameterFeatures
+struct VkPhysicalDeviceShaderDrawParametersFeatures
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3254,7 +3254,7 @@ struct VkPipelineRasterizationDepthClipStateCreateInfoEXT
 	VkBool32											depthClipEnable;
 };
 
-struct VkPhysicalDeviceBufferAddressFeaturesEXT
+struct VkPhysicalDeviceBufferDeviceAddressFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -3312,6 +3312,7 @@ struct VkPhysicalDeviceHostQueryResetFeaturesEXT
 	void*			pNext;
 	VkBool32		hostQueryReset;
 };
+
 
 
 

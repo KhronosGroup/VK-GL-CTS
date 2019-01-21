@@ -76,7 +76,7 @@ public:
 												get8BitStorageFeatures			(void) const;
 	const vk::VkPhysicalDevice16BitStorageFeatures&
 												get16BitStorageFeatures			(void) const;
-	const vk::VkPhysicalDeviceVariablePointerFeatures&
+	const vk::VkPhysicalDeviceVariablePointersFeatures&
 												getVariablePointerFeatures		(void) const;
 	const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&
 												getVertexAttributeDivisorFeatures(void) const;
@@ -92,7 +92,7 @@ public:
 												getFloat16Int8Features			(void) const;
 	const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&
 												getDepthClipEnableFeatures		(void) const;
-	const vk::VkPhysicalDeviceBufferAddressFeaturesEXT&
+	const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&
 												getBufferDeviceAddressFeatures	(void) const;
 	const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
 												getCooperativeMatrixFeatures	(void) const;

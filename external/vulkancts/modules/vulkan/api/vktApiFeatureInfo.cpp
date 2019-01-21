@@ -2674,7 +2674,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDeviceMultiviewFeatures					deviceMultiviewFeatures[count];
 	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
-	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures[count];
+	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures[count];
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
@@ -2685,7 +2685,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deMemset(&deviceMultiviewFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceMultiviewFeatures));
 		deMemset(&protectedMemoryFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
 		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
-		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointerFeatures));
+		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointersFeatures));
 		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeaturesEXT));
 
 		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
@@ -2770,7 +2770,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		variablePointerFeatures[0].variablePointers					!= variablePointerFeatures[1].variablePointers)
 		)
 	{
-		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointerFeatures");
+		TCU_FAIL("Mismatch between VkPhysicalDeviceVariablePointersFeatures");
 	}
 	if (scalar_block_layout &&
 		(scalarBlockLayoutFeatures[0].scalarBlockLayout	!= scalarBlockLayoutFeatures[1].scalarBlockLayout))

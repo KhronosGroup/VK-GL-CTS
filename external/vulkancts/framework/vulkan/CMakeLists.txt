@@ -70,6 +70,9 @@ set(VKUTILNOSHADER_SRCS
 	vkObjUtil.hpp
 	${VKRENDERDOC_SRC}
 	vkRenderDocUtil.hpp
+	vkDeviceFeatures.hpp
+	vkDeviceFeatures.cpp
+	vkDeviceFeatures.inl
 	)
 
 set(VKUTIL_SRCS

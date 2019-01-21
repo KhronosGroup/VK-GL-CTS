@@ -1470,6 +1470,96 @@ def writeCoreFunctionalities(api, filename):
 
 	writeInlFile(filename, INL_HEADER, lines)
 
+def writeDeviceFeatures	(src, filename):
+
+	def makeExtensionNameDef(extName, sType, sSuffix):
+		if extName:	return extName
+		return 'DECL' + (sSuffix if sSuffix else '') + '_' + sType + '_EXTENSION_NAME'
+
+	def makeExtensionNameLine(extName, extLine, sType, sSuffix):
+		if extLine: return extLine
+		definitionExtensionName		= makeExtensionNameDef(extName, sType, sSuffix)
+		definitionExtensionString	= "not_existent_feature"
+		return '#define {0} "{1}"'.format(definitionExtensionName, definitionExtensionString)
+
+	def writeExtensionNameBlock(stream, defs):
+		for sType, sSuffix, extStruct, extLine, extName, specVer in defs:
+			definitionExtensionLine = makeExtensionNameLine(extName, extLine, sType, sSuffix)
+			stream.append(definitionExtensionLine)
+		stream.append("\n")
+
+	def writeCreateFeatureStructWrapperBlock(stream, defs):
+		stream.append("static const FeatureStructMapItem featureStructCreatorMap[] =\n{");
+		for sType, sSuffix, extStruct, extLine, extName, specVer in defs:
+			definitionExtensionName = makeExtensionNameDef(extName, sType, sSuffix)
+			stream.append("\t{{ createFeatureStructWrapper<{0}>, {1}, {2} }},".format(extStruct, definitionExtensionName, specVer))
+		stream.append("};\n");
+
+	def writeMakeFeatureDescBlock(stream, defs):
+		for idx, (sType, sSuffix, extStruct, extLine, extName, specVer) in enumerate(defs):
+			sTypeName = "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_" + sType + "_FEATURES" + sSuffix
+			extString = makeExtensionNameDef(extName, sType, sSuffix)
+			stream.append("template<> FeatureDesc makeFeatureDesc<{0}>(void) " \
+				"{{ return FeatureDesc({1}, {2}, {3}, {4}); }}".format(extStruct, sTypeName, extString, specVer, len(defs)-idx))
+		stream.append('\n')
+
+	def structNameFromSTypePart(sType):
+		def capitalize_undescore_letter(match): return match.group(0).upper()
+		return re.sub("[_0-9][a-z]", capitalize_undescore_letter, sType.capitalize()).replace('_', '')
+
+	def resolveExceptions(sType):
+		return sType
+
+	def removeDuplicates(defs):
+		i       = 0
+		sType	= 0
+		sSuffix = 1
+		while i < len(defs):
+			j = i + 1
+			while j < len(defs):
+				if defs[i][sType] == defs[j][sType]:
+					if not defs[i][sSuffix]:
+						defs.pop(i)
+						i = i - 1
+						break
+					if not defs[j][sSuffix]:
+						defs.pop(j)
+						j = j - 1
+				j = j + 1
+			i = i + 1
+
+	def lookForDefinitions(src):
+		defs = []
+		ptrnSType	= r'VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_(\w+)_FEATURES(\w*)\s*='
+		matches		= re.findall(ptrnSType, src, re.M)
+		removeDuplicates(matches)
+		for sType, sSuffix in matches:
+			structName			= structNameFromSTypePart(sType)
+			ptrnStructName		= r'\s*typedef\s+struct\s+(VkPhysicalDevice' + structName + 'Features\w*)'
+			matchStructName		= re.search(ptrnStructName, src, re.M)
+			if matchStructName:
+				ptrnExtensionName	= r'^\s*#define\s+(\w+' + resolveExceptions(sType) + '_EXTENSION_NAME).+$'
+				matchExtensionName	= re.search(ptrnExtensionName, src, re.M)
+				ptrnSpecVersion		= r'^\s*#define\s+(\w+' + resolveExceptions(sType) + '_SPEC_VERSION).+$'
+				matchSpecVersion	= re.search(ptrnSpecVersion, src, re.M)
+				defs.append( (sType, sSuffix, matchStructName.group(1), \
+								matchExtensionName.group(0)	if matchExtensionName	else None,
+								matchExtensionName.group(1)	if matchExtensionName	else None,
+								matchSpecVersion.group	(1)	if matchSpecVersion		else '0') )
+		return defs
+
+	stream									= []
+	defs									= lookForDefinitions(src)
+
+	stream.append							('#include "vkDeviceFeatures.hpp"\n')
+	stream.append							('namespace vk\n{')
+	writeExtensionNameBlock					(stream, defs)
+	writeMakeFeatureDescBlock				(stream, defs)
+	writeCreateFeatureStructWrapperBlock	(stream, defs)
+	stream.append							('} // vk\n')
+
+	writeInlFile(filename, INL_HEADER, stream)
+
 if __name__ == "__main__":
 	src				= readFile(VULKAN_H)
 	api				= parseAPI(src)
@@ -1507,3 +1597,4 @@ if __name__ == "__main__":
 	writeSupportedExtenions		(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
 	writeCoreFunctionalities	(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
 	writeExtensionFunctions		(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))
+	writeDeviceFeatures         (src, os.path.join(VULKAN_DIR, "vkDeviceFeatures.inl"))

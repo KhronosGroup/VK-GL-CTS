@@ -313,7 +313,7 @@ public:
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYCbCrConversionFeatures;
 	VkPhysicalDevice8BitStorageFeaturesKHR				eightBitStorageFeatures;
 	VkPhysicalDevice16BitStorageFeatures				sixteenBitStorageFeatures;
-	VkPhysicalDeviceVariablePointerFeatures				variablePointerFeatures;
+	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures;
 	VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT	vertexAttributeDivisorFeatures;
 	VkPhysicalDeviceDescriptorIndexingFeaturesEXT		descriptorIndexingFeatures;
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT		inlineUniformBlockFeatures;
@@ -323,7 +323,7 @@ public:
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures;
 	VkPhysicalDeviceFloat16Int8FeaturesKHR				float16Int8Features;
 	VkPhysicalDeviceDepthClipEnableFeaturesEXT			depthClipEnableFeatures;
-	VkPhysicalDeviceBufferAddressFeaturesEXT			bufferDeviceAddressFeatures;
+	VkPhysicalDeviceBufferDeviceAddressFeaturesEXT		bufferDeviceAddressFeatures;
 	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
 	VkPhysicalDeviceHostQueryResetFeaturesEXT			hostQueryResetFeatures;
 
@@ -501,7 +501,7 @@ public:
 	const VkPhysicalDeviceSamplerYcbcrConversionFeatures&	getSamplerYCbCrConversionFeatures	(void) const	{ return m_deviceFeatures.samplerYCbCrConversionFeatures;	}
 	const VkPhysicalDevice8BitStorageFeaturesKHR&			get8BitStorageFeatures				(void) const	{ return m_deviceFeatures.eightBitStorageFeatures;			}
 	const VkPhysicalDevice16BitStorageFeatures&				get16BitStorageFeatures				(void) const	{ return m_deviceFeatures.sixteenBitStorageFeatures;		}
-	const VkPhysicalDeviceVariablePointerFeatures&			getVariablePointerFeatures			(void) const	{ return m_deviceFeatures.variablePointerFeatures;			}
+	const VkPhysicalDeviceVariablePointersFeatures&			getVariablePointerFeatures			(void) const	{ return m_deviceFeatures.variablePointerFeatures;			}
 	const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&getVertexAttributeDivisorFeatures	(void) const	{ return m_deviceFeatures.vertexAttributeDivisorFeatures;	}
 	const VkPhysicalDeviceVulkanMemoryModelFeaturesKHR&		getVulkanMemoryModelFeatures		(void) const	{ return m_deviceFeatures.vulkanMemoryModelFeatures;	}
 	const VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&		getShaderAtomicInt64Features		(void) const	{ return m_deviceFeatures.shaderAtomicInt64Features;	}
@@ -509,7 +509,7 @@ public:
 	const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&		getScalarBlockLayoutFeatures		(void) const	{ return m_deviceFeatures.scalarBlockLayoutFeatures;	}
 	const VkPhysicalDeviceFloat16Int8FeaturesKHR&			getFloat16Int8Features				(void) const	{ return m_deviceFeatures.float16Int8Features;				}
 	const VkPhysicalDeviceDepthClipEnableFeaturesEXT&		getDepthClipEnableFeatures			(void) const	{ return m_deviceFeatures.depthClipEnableFeatures;			}
-	const VkPhysicalDeviceBufferAddressFeaturesEXT&			getBufferDeviceAddressFeatures		(void) const	{ return m_deviceFeatures.bufferDeviceAddressFeatures;	}
+	const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&	getBufferDeviceAddressFeatures		(void) const	{ return m_deviceFeatures.bufferDeviceAddressFeatures;	}
 	const VkPhysicalDeviceCooperativeMatrixFeaturesNV&		getCooperativeMatrixFeatures		(void) const	{ return m_deviceFeatures.cooperativeMatrixFeatures;	}
 	const VkPhysicalDeviceHostQueryResetFeaturesEXT&		getHostQueryResetFeatures			(void) const	{ return m_deviceFeatures.hostQueryResetFeatures;			}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
@@ -641,7 +641,7 @@ const vk::VkPhysicalDevice8BitStorageFeaturesKHR&
 										Context::get8BitStorageFeatures			(void) const { return m_device->get8BitStorageFeatures();		}
 const vk::VkPhysicalDevice16BitStorageFeatures&
 										Context::get16BitStorageFeatures		(void) const { return m_device->get16BitStorageFeatures();		}
-const vk::VkPhysicalDeviceVariablePointerFeatures&
+const vk::VkPhysicalDeviceVariablePointersFeatures&
 										Context::getVariablePointerFeatures		(void) const { return m_device->getVariablePointerFeatures();	}
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&
 										Context::getVertexAttributeDivisorFeatures	(void) const { return m_device->getVertexAttributeDivisorFeatures();	}
@@ -657,7 +657,7 @@ const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
 										Context::getFloat16Int8Features			(void) const { return m_device->getFloat16Int8Features();		}
 const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&
 										Context::getDepthClipEnableFeatures		(void) const { return m_device->getDepthClipEnableFeatures();	}
-const vk::VkPhysicalDeviceBufferAddressFeaturesEXT&
+const vk::VkPhysicalDeviceBufferDeviceAddressFeaturesEXT&
 										Context::getBufferDeviceAddressFeatures	(void) const { return m_device->getBufferDeviceAddressFeatures();	}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
 										Context::getCooperativeMatrixFeatures	(void) const { return m_device->getCooperativeMatrixFeatures();	}

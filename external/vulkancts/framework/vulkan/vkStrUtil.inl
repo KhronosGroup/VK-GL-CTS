@@ -432,7 +432,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineTessellationDomainOri
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassMultiviewCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMultiviewProperties& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVariablePointerFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVariablePointersFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceProtectedMemoryProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceQueueInfo2& value);
@@ -462,7 +462,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemapho
 std::ostream&	operator<<	(std::ostream& s, const VkExternalSemaphoreProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDescriptorSetLayoutSupport& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParameterFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderDrawParametersFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSurfaceFormatKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSwapchainCreateInfoKHR& value);
@@ -632,7 +632,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkanMemoryMod
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClipEnableFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationDepthClipStateCreateInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBufferAddressFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBufferDeviceAddressFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixPropertiesNV& value);

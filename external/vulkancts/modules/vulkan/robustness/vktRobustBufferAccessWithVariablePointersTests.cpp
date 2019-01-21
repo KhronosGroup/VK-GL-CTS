@@ -64,12 +64,12 @@ namespace
 {
 
 // A function for getting information on variable pointer features supported through physical device
-vk::VkPhysicalDeviceVariablePointerFeatures querySupportedVariablePointersFeatures (const deUint32					apiVersion,
+vk::VkPhysicalDeviceVariablePointersFeatures querySupportedVariablePointersFeatures (const deUint32					apiVersion,
 																					const InstanceInterface&		vki,
 																					VkPhysicalDevice				device,
 																					const std::vector<std::string>&	instanceExtensions)
 {
-	VkPhysicalDeviceVariablePointerFeatures extensionFeatures =
+	VkPhysicalDeviceVariablePointersFeatures extensionFeatures =
 	{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR,	// sType
 		DE_NULL,															// pNext
@@ -1231,7 +1231,7 @@ RobustReadTest::RobustReadTest (tcu::TestContext&		testContext,
 
 TestInstance* RobustReadTest::createInstance (Context& context) const
 {
-	VkPhysicalDeviceVariablePointerFeatures pointerFeatures = querySupportedVariablePointersFeatures(context.getUsedApiVersion(), context.getInstanceInterface(), context.getPhysicalDevice(), context.getInstanceExtensions());
+	VkPhysicalDeviceVariablePointersFeatures pointerFeatures = querySupportedVariablePointersFeatures(context.getUsedApiVersion(), context.getInstanceInterface(), context.getPhysicalDevice(), context.getInstanceExtensions());
 
 	if (pointerFeatures.variablePointersStorageBuffer != DE_TRUE)
 		return new NotSupportedInstance(context, std::string("VariablePointersStorageBuffer support is required for this test."));
@@ -1271,7 +1271,7 @@ RobustWriteTest::RobustWriteTest (tcu::TestContext&		testContext,
 
 TestInstance* RobustWriteTest::createInstance (Context& context) const
 {
-	VkPhysicalDeviceVariablePointerFeatures pointerFeatures = querySupportedVariablePointersFeatures(context.getUsedApiVersion(), context.getInstanceInterface(), context.getPhysicalDevice(), context.getInstanceExtensions());
+	VkPhysicalDeviceVariablePointersFeatures pointerFeatures = querySupportedVariablePointersFeatures(context.getUsedApiVersion(), context.getInstanceInterface(), context.getPhysicalDevice(), context.getInstanceExtensions());
 	if (pointerFeatures.variablePointersStorageBuffer != DE_TRUE)
 		return new NotSupportedInstance(context, std::string("VariablePointersStorageBuffer support is required for this test."));
 

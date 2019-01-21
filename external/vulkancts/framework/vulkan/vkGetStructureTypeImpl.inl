@@ -421,9 +421,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMultiviewProperties>
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceVariablePointerFeatures> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceVariablePointersFeatures> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceProtectedMemoryFeatures> (void)
@@ -561,9 +561,9 @@ template<> VkStructureType getStructureType<VkDescriptorSetLayoutSupport> (void)
 	return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDrawParameterFeatures> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderDrawParametersFeatures> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
 }
 
 template<> VkStructureType getStructureType<VkSwapchainCreateInfoKHR> (void)
@@ -1266,9 +1266,9 @@ template<> VkStructureType getStructureType<VkPipelineRasterizationDepthClipStat
 	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceBufferAddressFeaturesEXT> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceBufferDeviceAddressFeaturesEXT> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkBufferDeviceAddressInfoEXT> (void)
