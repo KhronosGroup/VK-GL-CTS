@@ -3229,6 +3229,7 @@ struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR
 	void*			pNext;
 	VkBool32		vulkanMemoryModel;
 	VkBool32		vulkanMemoryModelDeviceScope;
+	VkBool32		vulkanMemoryModelAvailabilityVisibilityChains;
 };
 
 struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT

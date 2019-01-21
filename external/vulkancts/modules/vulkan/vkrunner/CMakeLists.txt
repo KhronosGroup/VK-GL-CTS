@@ -7,6 +7,8 @@ set(DEQP_VK_VKRUNNER_SRCS
 	vktVkRunnerTestCase.hpp
 	vktVkRunnerExampleTests.cpp
 	vktVkRunnerExampleTests.hpp
+	vktVkRunnerGraphicsFuzzTests.cpp
+	vktVkRunnerGraphicsFuzzTests.hpp
 	)
 
 set(DEQP_VK_VKRUNNER_LIBS

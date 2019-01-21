@@ -6619,6 +6619,7 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVulkanMemoryMod
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvulkanMemoryModel = " << value.vulkanMemoryModel << '\n';
 	s << "\tvulkanMemoryModelDeviceScope = " << value.vulkanMemoryModelDeviceScope << '\n';
+	s << "\tvulkanMemoryModelAvailabilityVisibilityChains = " << value.vulkanMemoryModelAvailabilityVisibilityChains << '\n';
 	s << '}';
 	return s;
 }

@@ -359,6 +359,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
 	external/vulkancts/modules/vulkan/vkrunner/vktVkRunnerExampleTests.cpp \
+	external/vulkancts/modules/vulkan/vkrunner/vktVkRunnerGraphicsFuzzTests.cpp \
 	external/vulkancts/modules/vulkan/vkrunner/vktVkRunnerTestCase.cpp \
 	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
 	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
