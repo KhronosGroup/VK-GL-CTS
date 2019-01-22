@@ -39,16 +39,7 @@ if (GLES1_LIBRARIES)
 	set(DEQP_SUPPORT_GLES1	ON)
 	set(DEQP_GLES1_LIBRARIES ${GLES1_LIBRARIES})
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${GLES1_LIBRARY_DIRS}")
-	if ("${PKG_GLES1_INCLUDE_DIRS}" STREQUAL "")
-		# PKG_GLES1_INCLUDE_DIRS empty, see if matching include
-		# path (GLES/gl.h) exists beside library directory
-		set(GLES1_INCLUDE "${GLES1_LIBDIR}/../include")
-		if (EXISTS ${GLES1_INCLUDE}/GLES/gl.h)
-			include_directories(${GLES1_INCLUDE})
-		else()
-			message(FATAL_ERROR "Could not find include path for GLES1 headers")
-		endif (EXISTS ${GLES1_INCLUDE}/GLES/gl.h)
-	endif ("${PKG_GLES1_INCLUDE_DIRS}" STREQUAL "")
+	include_directories(${GLES1_INCLUDE_DIRS})
 endif (GLES1_LIBRARIES)
 
 set(DEQP_PLATFORM_LIBRARIES ${X11_LIBRARIES})
