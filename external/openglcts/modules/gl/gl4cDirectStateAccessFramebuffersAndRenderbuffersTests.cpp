@@ -4681,7 +4681,7 @@ void GetAttachmentParametersTest::Clean()
 	{
 		if (m_to[i])
 		{
-			gl.deleteRenderbuffers(1, &m_to[i]);
+			gl.deleteTextures(1, &m_to[i]);
 
 			m_to[i] = 0;
 		}
