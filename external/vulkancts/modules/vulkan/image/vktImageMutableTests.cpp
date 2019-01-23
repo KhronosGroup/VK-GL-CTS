@@ -923,14 +923,16 @@ VkImageUsageFlags getImageUsageForTestCase (const CaseDef& caseDef)
 class UploadDownloadExecutor
 {
 public:
-	UploadDownloadExecutor(Context& context, const CaseDef& caseSpec) :
+	UploadDownloadExecutor(Context& context, VkDevice device, VkQueue queue, deUint32 queueFamilyIndex, const CaseDef& caseSpec) :
 	m_caseDef(caseSpec),
 	m_haveMaintenance2(isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance2")),
 	m_vk(context.getDeviceInterface()),
-	m_device(context.getDevice()),
-	m_queue(context.getUniversalQueue()),
-	m_queueFamilyIndex(context.getUniversalQueueFamilyIndex()),
-	m_allocator(context.getDefaultAllocator())
+	m_device(device),
+	m_queue(queue),
+	m_queueFamilyIndex(queueFamilyIndex),
+	m_allocator(context.getDeviceInterface(), device,
+		    getPhysicalDeviceMemoryProperties(context.getInstanceInterface(),
+						      context.getPhysicalDevice()))
 	{
 	}
 
@@ -962,7 +964,7 @@ private:
 	const VkDevice						m_device;
 	const VkQueue						m_queue;
 	const deUint32						m_queueFamilyIndex;
-	Allocator&							m_allocator;
+	SimpleAllocator						m_allocator;
 
 	Move<VkCommandPool>					m_cmdPool;
 	Move<VkCommandBuffer>				m_cmdBuffer;
@@ -1750,7 +1752,7 @@ tcu::TestStatus testMutable (Context& context, const CaseDef caseDef)
 	flushAlloc(vk, device, *colorBufferAlloc);
 
 	// Execute the test
-	UploadDownloadExecutor executor(context, caseDef);
+	UploadDownloadExecutor executor(context, device, context.getUniversalQueue(), context.getUniversalQueueFamilyIndex(), caseDef);
 	executor.run(context, *colorBuffer);
 
 	// Verify results
@@ -2119,7 +2121,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 	const VkDevice					device = *devHelper.device;
 	const VkPhysicalDevice			physDevice = devHelper.physicalDevice;
 
-	Allocator&						allocator = context.getDefaultAllocator();
+	SimpleAllocator				allocator(vk, device, getPhysicalDeviceMemoryProperties(vki, context.getPhysicalDevice()));
 
 	// Check required features on the format for the required upload/download methods
 	VkFormatProperties	imageFormatProps, viewFormatProps;
@@ -2257,7 +2259,7 @@ tcu::TestStatus testSwapchainMutable(Context& context, CaseDef caseDef)
 
 
 	// Execute the test
-	UploadDownloadExecutor executor(context, caseDef);
+	UploadDownloadExecutor executor(context, device, devHelper.queue, devHelper.queueFamilyIndex, caseDef);
 
 	executor.runSwapchain(context, *colorBuffer, swapchainImages[0]);
 
