@@ -3597,12 +3597,16 @@ private:
  *
  * Test following code snippets:
  *
- *     layout (xfb_offset = 0, xfb_stride = 2 * sizeof(type)) out type goku;
+ *     layout (xfb_stride = sizeof(type)) out;
+ *
+ *     layout (xfb_offset = 0) out type goku;
  *
  * and
  *
- *     layout (xfb_offset = 0, xfb_stride = 2 * sizeof(type)) out type goku;
- *     layout (xfb_offset = sizeof(type))                     out type vegeta;
+ *     layout (xfb_stride = sizeof(type)) out;
+ *
+ *     layout (xfb_offset = 0)            out type goku;
+ *     layout (xfb_offset = sizeof(type)) out type vegeta;
  *
  * It is expected that:
  *     - first snippet will build successfully,

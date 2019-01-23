@@ -21026,26 +21026,32 @@ XFBVariableStrideTest::XFBVariableStrideTest(deqp::Context& context)
  **/
 std::string XFBVariableStrideTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
-	static const GLchar* invalid_var_definition =
-		"const uint type_size = SIZE;\n"
-		"\n"
-		"layout (xfb_offset = 0, xfb_stride = 2 * type_size) out TYPE gokuARRAY;\n"
-		"layout (xfb_offset = type_size)                     out TYPE vegetaARRAY;\n";
-	static const GLchar* valid_var_definition =
-		"const uint type_size = SIZE;\n"
-		"\n"
-		"layout (xfb_offset = 0, xfb_stride = 2 * type_size) out TYPE gokuARRAY;\n";
-	static const GLchar* invalid_use = "    gokuINDEX   = TYPE(1);\n"
-									   "    vegetaINDEX = TYPE(0);\n"
+	static const GLchar* invalid_var_definition = "const uint type_size = SIZE;\n"
+												  "\n"
+#if DEBUG_NEG_REMOVE_ERROR
+												  "layout (xfb_stride = 2 * type_size) out;\n"
+#else
+												  "layout (xfb_stride = type_size) out;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
+												  "\n"
+												  "layout (xfb_offset = 0)         out TYPE goku;\n"
+												  "layout (xfb_offset = type_size) out TYPE vegeta;\n";
+	static const GLchar* valid_var_definition = "const uint type_size = SIZE;\n"
+												"\n"
+												"layout (xfb_stride = type_size) out;\n"
+												"\n"
+												"layout (xfb_offset = 0) out TYPE goku;\n";
+	static const GLchar* invalid_use = "    goku   = TYPE(1);\n"
+									   "    vegeta = TYPE(0);\n"
 									   "    if (vec4(0) == result)\n"
 									   "    {\n"
-									   "        gokuINDEX   = TYPE(0);\n"
-									   "        vegetaINDEX = TYPE(1);\n"
+									   "        goku   = TYPE(0);\n"
+									   "        vegeta = TYPE(1);\n"
 									   "    }\n";
-	static const GLchar* valid_use = "    gokuINDEX   = TYPE(1);\n"
+	static const GLchar* valid_use = "    goku   = TYPE(1);\n"
 									 "    if (vec4(0) == result)\n"
 									 "    {\n"
-									 "        gokuINDEX   = TYPE(0);\n"
+									 "        goku   = TYPE(0);\n"
 									 "    }\n";
 	static const GLchar* fs = "#version 430 core\n"
 							  "#extension GL_ARB_enhanced_layouts : require\n"
@@ -21110,32 +21116,6 @@ std::string XFBVariableStrideTest::getShaderSource(GLuint test_case_index, Utils
 							   "    gl_TessLevelInner[1] = 1.0;\n"
 							   "}\n"
 							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_any[];\n"
-									  "out vec4 any_fs[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_any[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    any_fs[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
 	static const GLchar* tes_tested = "#version 430 core\n"
 									  "#extension GL_ARB_enhanced_layouts : require\n"
 									  "\n"
@@ -21189,11 +21169,8 @@ std::string XFBVariableStrideTest::getShaderSource(GLuint test_case_index, Utils
 
 	if (test_case.m_stage == stage)
 	{
-		const GLchar* array = "";
 		GLchar		  buffer[16];
-		const GLchar* index	= "";
 		size_t		  position = 0;
-		size_t		  temp;
 		const GLchar* type_name		 = test_case.m_type.GetGLSLTypeName();
 		const GLchar* var_definition = 0;
 		const GLchar* var_use		 = 0;
@@ -21218,18 +21195,9 @@ std::string XFBVariableStrideTest::getShaderSource(GLuint test_case_index, Utils
 		{
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
-			array  = "[1]";
-			index  = "[0]";
-			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			array  = "[1]";
-			index  = "[gl_InvocationID]";
 			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
-			array  = "[1]";
-			index  = "[0]";
 			break;
 		case Utils::Shader::VERTEX:
 			source = vs_tested;
@@ -21238,38 +21206,18 @@ std::string XFBVariableStrideTest::getShaderSource(GLuint test_case_index, Utils
 			TCU_FAIL("Invalid enum");
 		}
 
-		temp = position;
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
-		position = temp;
+		position = 0;
 		Utils::replaceToken("SIZE", position, buffer, source);
-		Utils::replaceToken("ARRAY", position, array, source);
-		if (INVALID == test_case.m_case)
-		{
-			Utils::replaceToken("ARRAY", position, array, source);
-		}
 		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
 
 		Utils::replaceAllTokens("TYPE", type_name, source);
-		Utils::replaceAllTokens("INDEX", index, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
 		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
 			switch (stage)
 			{
 			case Utils::Shader::FRAGMENT:
@@ -21388,37 +21336,18 @@ void XFBVariableStrideTest::testInit()
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
-		const Utils::Type& type = getType(i);
-
-		/*
-		 Some of the cases are declared as following are considered as invalid,
-		 but accoring to spec, the following declaration is valid: shaders in the
-		 transform feedback capturing mode have an initial global default of layout(xfb_buffer=0) out,
-		 so for the first variable's declaration, the xfb_stride = 16 is applied on buffer 0,  for the
-		 second variable, its buffer is also inherited from global buffer 0, and its offset does not overflows
-		 the stride.
-
-		 The xfb_stride is the memory width of given buffer, not for variable even though xfb_stride
-		 is declared on the variable. It seems that the writter of this case misunderstand the concept of
-		 xfb_stride, because spec describes that xfb_stride can be declared multiple times for the same buffer,
-		 it is a compile or link-time error to have different values specified for the stride for the same buffer.
-
-		 int type_size = 8;
-		 layout (xfb_offset = 0, xfb_stride = 2 * type_size) out double goku;
-		 layout (xfb_offset = type_size)                     out double vegeta;
-		 */
-		// all the shaders are valid, so remove the following loop(it contains CASE_MAX is enum of valid and invalid)
-		// for (GLuint c = 0; c < CASE_MAX; ++c)
+		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
-			for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+			if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
+				(Utils::Shader::FRAGMENT == stage))
 			{
-				if ((Utils::Shader::COMPUTE == stage) || (Utils::Shader::TESS_CTRL == stage) ||
-					(Utils::Shader::FRAGMENT == stage))
-				{
-					continue;
-				}
+				continue;
+			}
 
-				testCase test_case = { (CASES)VALID, (Utils::Shader::STAGES)stage, type };
+			const Utils::Type& type = getType(i);
+			for (GLuint c = 0; c < CASE_MAX; ++c)
+			{
+				testCase test_case = { static_cast<CASES>(c), static_cast<Utils::Shader::STAGES>(stage), type };
 
 				m_test_cases.push_back(test_case);
 			}
