@@ -21852,7 +21852,11 @@ XFBDuplicatedStrideTest::XFBDuplicatedStrideTest(deqp::Context& context)
 std::string XFBDuplicatedStrideTest::getShaderSource(GLuint test_case_index, Utils::Shader::STAGES stage)
 {
 	static const GLchar* invalid_var_definition = "const uint valid_stride = 64;\n"
+#if DEBUG_NEG_REMOVE_ERROR
+												  "const uint conflicting_stride = 64;\n"
+#else
 												  "const uint conflicting_stride = 128;\n"
+#endif /* DEBUG_NEG_REMOVE_ERROR */
 												  "\n"
 												  "layout (xfb_buffer = 0, xfb_stride = valid_stride)       out;\n"
 												  "layout (xfb_buffer = 0, xfb_stride = conflicting_stride) out;\n";
@@ -21885,8 +21889,6 @@ std::string XFBDuplicatedStrideTest::getShaderSource(GLuint test_case_index, Uti
 									 "void main()\n"
 									 "{\n"
 									 "    vec4 result = vs_any[0];\n"
-									 "\n"
-									 "VARIABLE_USE"
 									 "\n"
 									 "    any_fs = result;\n"
 									 "    gl_Position  = vec4(-1, -1, 0, 1);\n"
@@ -21923,32 +21925,6 @@ std::string XFBDuplicatedStrideTest::getShaderSource(GLuint test_case_index, Uti
 							   "    gl_TessLevelInner[1] = 1.0;\n"
 							   "}\n"
 							   "\n";
-	static const GLchar* tcs_tested = "#version 430 core\n"
-									  "#extension GL_ARB_enhanced_layouts : require\n"
-									  "\n"
-									  "layout(vertices = 1) out;\n"
-									  "\n"
-									  "VAR_DEFINITION"
-									  "\n"
-									  "in  vec4 vs_any[];\n"
-									  "out vec4 any_fs[];\n"
-									  "\n"
-									  "void main()\n"
-									  "{\n"
-									  "    vec4 result = vs_any[gl_InvocationID];\n"
-									  "\n"
-									  "VARIABLE_USE"
-									  "\n"
-									  "    any_fs[gl_InvocationID] = result;\n"
-									  "\n"
-									  "    gl_TessLevelOuter[0] = 1.0;\n"
-									  "    gl_TessLevelOuter[1] = 1.0;\n"
-									  "    gl_TessLevelOuter[2] = 1.0;\n"
-									  "    gl_TessLevelOuter[3] = 1.0;\n"
-									  "    gl_TessLevelInner[0] = 1.0;\n"
-									  "    gl_TessLevelInner[1] = 1.0;\n"
-									  "}\n"
-									  "\n";
 	static const GLchar* tes_tested = "#version 430 core\n"
 									  "#extension GL_ARB_enhanced_layouts : require\n"
 									  "\n"
@@ -21962,8 +21938,6 @@ std::string XFBDuplicatedStrideTest::getShaderSource(GLuint test_case_index, Uti
 									  "void main()\n"
 									  "{\n"
 									  "    vec4 result = tcs_tes[0];\n"
-									  "\n"
-									  "VARIABLE_USE"
 									  "\n"
 									  "    any_fs = result;\n"
 									  "}\n"
@@ -21991,8 +21965,6 @@ std::string XFBDuplicatedStrideTest::getShaderSource(GLuint test_case_index, Uti
 									 "{\n"
 									 "    vec4 result = in_vs;\n"
 									 "\n"
-									 "VARIABLE_USE"
-									 "\n"
 									 "    any_fs += result;\n"
 									 "}\n"
 									 "\n";
@@ -22004,7 +21976,6 @@ std::string XFBDuplicatedStrideTest::getShaderSource(GLuint test_case_index, Uti
 	{
 		size_t		  position		 = 0;
 		const GLchar* var_definition = 0;
-		const GLchar* var_use		 = "";
 
 		switch (test_case.m_case)
 		{
@@ -22023,9 +21994,6 @@ std::string XFBDuplicatedStrideTest::getShaderSource(GLuint test_case_index, Uti
 		case Utils::Shader::GEOMETRY:
 			source = gs_tested;
 			break;
-		case Utils::Shader::TESS_CTRL:
-			source = tcs_tested;
-			break;
 		case Utils::Shader::TESS_EVAL:
 			source = tes_tested;
 			break;
@@ -22037,26 +22005,12 @@ std::string XFBDuplicatedStrideTest::getShaderSource(GLuint test_case_index, Uti
 		}
 
 		Utils::replaceToken("VAR_DEFINITION", position, var_definition, source);
-		Utils::replaceToken("VARIABLE_USE", position, var_use, source);
 	}
 	else
 	{
 		switch (test_case.m_stage)
 		{
 		case Utils::Shader::GEOMETRY:
-			switch (stage)
-			{
-			case Utils::Shader::FRAGMENT:
-				source = fs;
-				break;
-			case Utils::Shader::VERTEX:
-				source = vs;
-				break;
-			default:
-				source = "";
-			}
-			break;
-		case Utils::Shader::TESS_CTRL:
 			switch (stage)
 			{
 			case Utils::Shader::FRAGMENT:
