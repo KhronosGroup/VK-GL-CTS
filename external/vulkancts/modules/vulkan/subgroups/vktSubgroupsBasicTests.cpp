@@ -1395,6 +1395,18 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		}
 		else
 		{
+			std::ostringstream testSrc;
+			testSrc << "  uint tempRes;\n"
+					<< "  if (subgroupElect())\n"
+					<< "  {\n"
+					<< "    tempRes = " << ELECTED_VALUE << ";\n"
+					<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
+					<< "  }\n"
+					<< "  else\n"
+					<< "  {\n"
+					<< "    tempRes = " << UNELECTED_VALUE << ";\n"
+					<< "  }\n";
+
 			{
 				std::ostringstream  vertex;
 				vertex	<< "#version 450\n"
@@ -1410,15 +1422,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 						<< "\n"
 						<< "void main (void)\n"
 						<< "{\n"
-						<< "  if (subgroupElect())\n"
-						<< "  {\n"
-						<< "    result[gl_VertexIndex] = " << ELECTED_VALUE << ";\n"
-						<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
-						<< "  }\n"
-						<< "  else\n"
-						<< "  {\n"
-						<< "    result[gl_VertexIndex] = " << UNELECTED_VALUE << ";\n"
-						<< "  }\n"
+						<< testSrc.str()
+						<< "  result[gl_VertexIndex] = tempRes;\n"
 						<< "  float pixelSize = 2.0f/1024.0f;\n"
 						<< "  float pixelPosition = pixelSize/2.0f - 1.0f;\n"
 						<< "  gl_Position = vec4(float(gl_VertexIndex) * pixelSize + pixelPosition, 0.0f, 0.0f, 1.0f);\n"
@@ -1444,15 +1449,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 						<< "\n"
 						<< "void main (void)\n"
 						<< "{\n"
-						<< "  if (subgroupElect())\n"
-						<< "  {\n"
-						<< "    result[gl_PrimitiveID] = " << ELECTED_VALUE << ";\n"
-						<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
-						<< "  }\n"
-						<< "  else\n"
-						<< "  {\n"
-						<< "    result[gl_PrimitiveID] = " << UNELECTED_VALUE << ";\n"
-						<< "  }\n"
+						<< testSrc.str()
+						<< "  result[gl_PrimitiveID] = tempRes;\n"
 						<< "  if (gl_InvocationID == 0)\n"
 						<< "  {\n"
 						<< "    gl_TessLevelOuter[0] = 1.0f;\n"
@@ -1480,15 +1478,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 						<< "\n"
 						<< "void main (void)\n"
 						<< "{\n"
-						<< "  if (subgroupElect())\n"
-						<< "  {\n"
-						<< "    result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = " << ELECTED_VALUE << ";\n"
-						<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
-						<< "  }\n"
-						<< "  else\n"
-						<< "  {\n"
-						<< "    result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = " << UNELECTED_VALUE << ";\n"
-						<< "  }\n"
+						<< testSrc.str()
+						<< "  result[gl_PrimitiveID * 2 + uint(gl_TessCoord.x + 0.5)] = tempRes;\n"
 						<< "  float pixelSize = 2.0f/1024.0f;\n"
 						<< "  gl_Position = gl_in[0].gl_Position + gl_TessCoord.x * pixelSize / 2.0f;\n"
 						<< "}\n";
@@ -1513,15 +1504,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 							<< "\n"
 							<< "void main (void)\n"
 							<< "{\n"
-							<< "  if (subgroupElect())\n"
-							<< "  {\n"
-							<< "    result[gl_PrimitiveIDIn] = " << ELECTED_VALUE << ";\n"
-							<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
-							<< "  }\n"
-							<< "  else\n"
-							<< "  {\n"
-							<< "    result[gl_PrimitiveIDIn] = " << UNELECTED_VALUE << ";\n"
-							<< "  }\n"
+							<< testSrc.str()
+							<< "  result[gl_PrimitiveIDIn] = tempRes;\n"
 							<< "  gl_Position = gl_in[0].gl_Position;\n"
 							<< "  EmitVertex();\n"
 							<< "  EndPrimitive();\n"
@@ -1542,15 +1526,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 							<< "void main (void)\n"
 							<< "{\n"
 							<< "  if (gl_HelperInvocation) return;\n"
-							<< "  if (subgroupElect())\n"
-							<< "  {\n"
-							<< "    data = " << ELECTED_VALUE << ";\n"
-							<< "    atomicAdd(numSubgroupsExecuted, 1);\n"
-							<< "  }\n"
-							<< "  else\n"
-							<< "  {\n"
-							<< "    data = " << UNELECTED_VALUE << ";\n"
-							<< "  }\n"
+							<< testSrc.str()
+							<< "  data = tempRes;\n"
 							<< "}\n";
 				programCollection.glslSources.add("fragment")
 					<< glu::FragmentSource(fragment.str())<< vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
