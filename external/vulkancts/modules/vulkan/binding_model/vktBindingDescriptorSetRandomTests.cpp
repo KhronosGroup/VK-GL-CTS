@@ -700,6 +700,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 				"  uvec4 color = (accum != 0) ? uvec4(0,0,0,0) : uvec4(1,0,0,1);\n"
 				"  imageStore(image0_0, ivec2(gl_VertexIndex % " << DIM << ", gl_VertexIndex / " << DIM << "), color);\n"
 				"  gl_PointSize = 1.0f;\n"
+				"  gl_Position = vec4(0.0f, 0.0f, 0.0f, 1.0f);\n"
 				"}\n";
 
 			programCollection.glslSources.add("test") << glu::VertexSource(vss.str());
