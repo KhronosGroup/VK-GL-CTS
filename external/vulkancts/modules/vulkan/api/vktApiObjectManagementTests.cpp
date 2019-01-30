@@ -2410,6 +2410,7 @@ template<typename Object>	int getCreateCount				(void) { return 100;	}
 // Creating VkDevice and VkInstance can take significantly longer than other object types
 template<>					int getCreateCount<Instance>	(void) { return 20;		}
 template<>					int getCreateCount<Device>		(void) { return 20;		}
+template<>					int getCreateCount<DeviceGroup>	(void) { return 20;		}
 
 template<typename Object>
 class CreateThread : public ThreadGroupThread
@@ -2590,8 +2591,9 @@ tcu::TestStatus createSingleAllocCallbacksTest (Context& context, typename Objec
 	return tcu::TestStatus::pass("Ok");
 }
 
-template<typename Object>	deUint32	getOomIterLimit			(void) { return 1024;	}
-template<>					deUint32	getOomIterLimit<Device>	(void) { return 20;		}
+template<typename Object>	deUint32	getOomIterLimit					(void) { return 1024;	}
+template<>					deUint32	getOomIterLimit<Device>         (void) { return 20;		}
+template<>					deUint32	getOomIterLimit<DeviceGroup>	(void) { return 20;		}
 
 template<typename Object>
 tcu::TestStatus allocCallbackFailTest (Context& context, typename Object::Parameters params)
