@@ -467,7 +467,8 @@ static std::string generateGeometryShader (const ShaderSpec& shaderSpec, const s
 	src << "\n"
 		<< "void main (void)\n"
 		<< "{\n"
-		<< "	gl_Position = gl_in[0].gl_Position;\n\n";
+		<< "	gl_Position = gl_in[0].gl_Position;\n"
+		<< "	gl_PointSize = gl_in[0].gl_PointSize;\n\n";
 
 	// Fetch input variables
 	for (vector<Symbol>::const_iterator input = shaderSpec.inputs.begin(); input != shaderSpec.inputs.end(); ++input)

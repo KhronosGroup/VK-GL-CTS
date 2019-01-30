@@ -2677,9 +2677,13 @@ void initTests (tcu::TestCaseGroup* group, const RenderPassType renderPassType)
 						const VkFormat				format						(formats[formatNdx]);
 						const VkSampleCountFlagBits	sampleCount					(VK_SAMPLE_COUNT_1_BIT);
 						const VkAttachmentLoadOp	loadOp						(VK_ATTACHMENT_LOAD_OP_CLEAR);
-						const VkAttachmentStoreOp	storeOp						(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+						const VkAttachmentStoreOp	storeOp						((attachmentNdx == attachmentCount - 1)
+																					? VK_ATTACHMENT_STORE_OP_STORE
+																					: VK_ATTACHMENT_STORE_OP_DONT_CARE);
 						const VkAttachmentLoadOp	stencilLoadOp				(VK_ATTACHMENT_LOAD_OP_CLEAR);
-						const VkAttachmentStoreOp	stencilStoreOp				(VK_ATTACHMENT_STORE_OP_STORE);
+						const VkAttachmentStoreOp	stencilStoreOp				((attachmentNdx == attachmentCount - 1)
+																					? VK_ATTACHMENT_STORE_OP_STORE
+																					: VK_ATTACHMENT_STORE_OP_DONT_CARE);
 						const VkImageLayout			initialLayout				(VK_IMAGE_LAYOUT_UNDEFINED);
 						const VkImageLayout			finalLayout					(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
