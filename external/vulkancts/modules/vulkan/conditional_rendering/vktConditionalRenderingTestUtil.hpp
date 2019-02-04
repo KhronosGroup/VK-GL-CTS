@@ -36,31 +36,37 @@ namespace conditional
 
 struct ConditionalData
 {
-	bool		conditionEnabled;
-	deUint32	conditionValue;
+	bool		conditionInPrimaryCommandBuffer;
+	bool		conditionInSecondaryCommandBuffer;
 	bool		conditionInverted;
-	bool		useSecondaryBuffer;
+	bool		conditionInherited;
+	deUint32	conditionValue;
 
 	bool		expectCommandExecution;
 };
 
 static const ConditionalData s_testsData[] =
 {
-//  Enabled	Val Inverted Secondary Result
-	{ true,	1,	false,	false,		true },
-	{ true,	0,	false,	false,		false },
-	{ true,	0,	true,	false,		true},
-	{ true,	1,	true,	false,		false },
-	{ true,	1,	false,	true,		true },
-	{ true,	0,	false,	true,		false },
-	{ true,	0,	true,	true,		true },
-	{ true,	1,	true,	true,		false },
+//  Primary	Secondary Inverted Inherited Val  Result
+	{ true,		false,	false,	false,	1,	true },
+	{ true,		false,	false,	false,	0,	false },
+	{ true,		false,	true,	false,	0,	true},
+	{ true,		false,	true,	false,	1,	false },
+	{ true,		false,	false,	true,	1,	true },
+	{ true,		false,	false,	true,	0,	false },
+	{ true,		false,	true,	true,	0,	true },
+	{ true,		false,	true,	true,	1,	false },
+
+	{ false,	true,	false,	false,	1,	true },
+	{ false,	true,	false,	false,	0,	false },
+	{ false,	true,	true,	false,	0,	true},
+	{ false,	true,	true,	false,	1,	false },
 
 	/* Test that commands are executed correctly when secondary command buffer is constructed
 	 * with conditional rendering enabled but conditional rendering is not enabled when
 	 * executing it in the primary command buffer.
 	 */
-	{ false,1,	false,	true,		true },
+	{ false,	false,	false,	true,	1,	true },
 };
 
 std::ostream&				operator<< (std::ostream& str, ConditionalData const& c);
