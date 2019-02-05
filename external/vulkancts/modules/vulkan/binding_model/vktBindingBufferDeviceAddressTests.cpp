@@ -551,7 +551,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 		numBindings = numBindings*3+1;
 	}
 
-	VkBufferDeviceAddressCreateInfoEXT addressCreateInfo =
+	VkBufferDeviceAddressCreateInfo addressCreateInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT,	// VkStructureType	 sType;
 		DE_NULL,													// const void*		 pNext;
@@ -561,7 +561,7 @@ tcu::TestStatus BufferAddressTestInstance::iterate (void)
 	std::vector<deUint8 *> cpuAddrs(numBindings);
 	std::vector<VkDeviceAddress> gpuAddrs(numBindings);
 
-	VkBufferDeviceAddressInfoEXT info =
+	VkBufferDeviceAddressInfo info =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	 sType;
 		DE_NULL,											// const void*		 pNext;

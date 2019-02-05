@@ -168,6 +168,25 @@ if (!m_vk.updateDescriptorSetWithTemplate)
 m_vk.getDescriptorSetLayoutSupport					= (GetDescriptorSetLayoutSupportFunc)					GET_PROC_ADDR("vkGetDescriptorSetLayoutSupport");
 if (!m_vk.getDescriptorSetLayoutSupport)
 	m_vk.getDescriptorSetLayoutSupport				= (GetDescriptorSetLayoutSupportFunc)					GET_PROC_ADDR("vkGetDescriptorSetLayoutSupportKHR");
+m_vk.cmdDrawIndirectCount							= (CmdDrawIndirectCountFunc)							GET_PROC_ADDR("vkCmdDrawIndirectCount");
+if (!m_vk.cmdDrawIndirectCount)
+	m_vk.cmdDrawIndirectCount						= (CmdDrawIndirectCountFunc)							GET_PROC_ADDR("vkCmdDrawIndirectCountKHR");
+m_vk.cmdDrawIndexedIndirectCount					= (CmdDrawIndexedIndirectCountFunc)						GET_PROC_ADDR("vkCmdDrawIndexedIndirectCount");
+if (!m_vk.cmdDrawIndexedIndirectCount)
+	m_vk.cmdDrawIndexedIndirectCount				= (CmdDrawIndexedIndirectCountFunc)						GET_PROC_ADDR("vkCmdDrawIndexedIndirectCountKHR");
+m_vk.createRenderPass2								= (CreateRenderPass2Func)								GET_PROC_ADDR("vkCreateRenderPass2");
+if (!m_vk.createRenderPass2)
+	m_vk.createRenderPass2							= (CreateRenderPass2Func)								GET_PROC_ADDR("vkCreateRenderPass2KHR");
+m_vk.cmdBeginRenderPass2							= (CmdBeginRenderPass2Func)								GET_PROC_ADDR("vkCmdBeginRenderPass2");
+if (!m_vk.cmdBeginRenderPass2)
+	m_vk.cmdBeginRenderPass2						= (CmdBeginRenderPass2Func)								GET_PROC_ADDR("vkCmdBeginRenderPass2KHR");
+m_vk.cmdNextSubpass2								= (CmdNextSubpass2Func)									GET_PROC_ADDR("vkCmdNextSubpass2");
+if (!m_vk.cmdNextSubpass2)
+	m_vk.cmdNextSubpass2							= (CmdNextSubpass2Func)									GET_PROC_ADDR("vkCmdNextSubpass2KHR");
+m_vk.cmdEndRenderPass2								= (CmdEndRenderPass2Func)								GET_PROC_ADDR("vkCmdEndRenderPass2");
+if (!m_vk.cmdEndRenderPass2)
+	m_vk.cmdEndRenderPass2							= (CmdEndRenderPass2Func)								GET_PROC_ADDR("vkCmdEndRenderPass2KHR");
+m_vk.getBufferDeviceAddress							= (GetBufferDeviceAddressFunc)							GET_PROC_ADDR("vkGetBufferDeviceAddress");
 m_vk.createSwapchainKHR								= (CreateSwapchainKHRFunc)								GET_PROC_ADDR("vkCreateSwapchainKHR");
 m_vk.destroySwapchainKHR							= (DestroySwapchainKHRFunc)								GET_PROC_ADDR("vkDestroySwapchainKHR");
 m_vk.getSwapchainImagesKHR							= (GetSwapchainImagesKHRFunc)							GET_PROC_ADDR("vkGetSwapchainImagesKHR");
@@ -183,17 +202,11 @@ m_vk.importSemaphoreFdKHR							= (ImportSemaphoreFdKHRFunc)							GET_PROC_ADDR
 m_vk.getSemaphoreFdKHR								= (GetSemaphoreFdKHRFunc)								GET_PROC_ADDR("vkGetSemaphoreFdKHR");
 m_vk.cmdPushDescriptorSetKHR						= (CmdPushDescriptorSetKHRFunc)							GET_PROC_ADDR("vkCmdPushDescriptorSetKHR");
 m_vk.cmdPushDescriptorSetWithTemplateKHR			= (CmdPushDescriptorSetWithTemplateKHRFunc)				GET_PROC_ADDR("vkCmdPushDescriptorSetWithTemplateKHR");
-m_vk.createRenderPass2KHR							= (CreateRenderPass2KHRFunc)							GET_PROC_ADDR("vkCreateRenderPass2KHR");
-m_vk.cmdBeginRenderPass2KHR							= (CmdBeginRenderPass2KHRFunc)							GET_PROC_ADDR("vkCmdBeginRenderPass2KHR");
-m_vk.cmdNextSubpass2KHR								= (CmdNextSubpass2KHRFunc)								GET_PROC_ADDR("vkCmdNextSubpass2KHR");
-m_vk.cmdEndRenderPass2KHR							= (CmdEndRenderPass2KHRFunc)							GET_PROC_ADDR("vkCmdEndRenderPass2KHR");
 m_vk.getSwapchainStatusKHR							= (GetSwapchainStatusKHRFunc)							GET_PROC_ADDR("vkGetSwapchainStatusKHR");
 m_vk.importFenceFdKHR								= (ImportFenceFdKHRFunc)								GET_PROC_ADDR("vkImportFenceFdKHR");
 m_vk.getFenceFdKHR									= (GetFenceFdKHRFunc)									GET_PROC_ADDR("vkGetFenceFdKHR");
 m_vk.acquireProfilingLockKHR						= (AcquireProfilingLockKHRFunc)							GET_PROC_ADDR("vkAcquireProfilingLockKHR");
 m_vk.releaseProfilingLockKHR						= (ReleaseProfilingLockKHRFunc)							GET_PROC_ADDR("vkReleaseProfilingLockKHR");
-m_vk.cmdDrawIndirectCountKHR						= (CmdDrawIndirectCountKHRFunc)							GET_PROC_ADDR("vkCmdDrawIndirectCountKHR");
-m_vk.cmdDrawIndexedIndirectCountKHR					= (CmdDrawIndexedIndirectCountKHRFunc)					GET_PROC_ADDR("vkCmdDrawIndexedIndirectCountKHR");
 m_vk.debugMarkerSetObjectTagEXT						= (DebugMarkerSetObjectTagEXTFunc)						GET_PROC_ADDR("vkDebugMarkerSetObjectTagEXT");
 m_vk.debugMarkerSetObjectNameEXT					= (DebugMarkerSetObjectNameEXTFunc)						GET_PROC_ADDR("vkDebugMarkerSetObjectNameEXT");
 m_vk.cmdDebugMarkerBeginEXT							= (CmdDebugMarkerBeginEXTFunc)							GET_PROC_ADDR("vkCmdDebugMarkerBeginEXT");

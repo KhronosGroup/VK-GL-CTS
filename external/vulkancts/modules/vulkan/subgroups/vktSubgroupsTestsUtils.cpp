@@ -1040,14 +1040,14 @@ bool vkt::subgroups::isTessellationAndGeometryPointSizeSupported (Context& conte
 
 bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat format)
 {
-	VkPhysicalDeviceSubgroupExtendedTypesFeaturesKHR subgroupExtendedTypesFeatures;
+	VkPhysicalDeviceSubgroupExtendedTypesFeatures subgroupExtendedTypesFeatures;
 	deMemset(&subgroupExtendedTypesFeatures, 0, sizeof(subgroupExtendedTypesFeatures));
-	subgroupExtendedTypesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR;
+	subgroupExtendedTypesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_EXTENDED_TYPES_FEATURES;
 	subgroupExtendedTypesFeatures.pNext = DE_NULL;
 
-	VkPhysicalDeviceFloat16Int8FeaturesKHR float16Int8Features;
+	VkPhysicalDeviceShaderFloat16Int8Features float16Int8Features;
 	deMemset(&float16Int8Features, 0, sizeof(float16Int8Features));
-	float16Int8Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+	float16Int8Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
 	float16Int8Features.pNext = DE_NULL;
 
 	VkPhysicalDeviceFeatures2 features2;

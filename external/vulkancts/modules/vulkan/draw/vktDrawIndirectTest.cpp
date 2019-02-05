@@ -500,9 +500,9 @@ tcu::TestStatus IndirectDraw::iterate (void)
 			case DRAW_TYPE_SEQUENTIAL:
 			{
 				if (m_testIndirectCountExt)
-					m_vk.cmdDrawIndirectCountKHR(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
-												 m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
-												 m_strideInBuffer);
+					m_vk.cmdDrawIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+											  m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
+											  m_strideInBuffer);
 				else
 					m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
 				break;
@@ -510,9 +510,9 @@ tcu::TestStatus IndirectDraw::iterate (void)
 			case DRAW_TYPE_INDEXED:
 			{
 				if (m_testIndirectCountExt)
-					m_vk.cmdDrawIndexedIndirectCountKHR(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
-														m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
-														m_strideInBuffer);
+					m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+													 m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
+													 m_strideInBuffer);
 				else
 					m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
 				break;
@@ -530,9 +530,9 @@ tcu::TestStatus IndirectDraw::iterate (void)
 				case DRAW_TYPE_SEQUENTIAL:
 				{
 					if (m_testIndirectCountExt)
-						m_vk.cmdDrawIndirectCountKHR(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
-													 m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
-													 m_strideInBuffer);
+						m_vk.cmdDrawIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
+												  m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
+												  m_strideInBuffer);
 					else
 						m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
 					break;
@@ -540,9 +540,9 @@ tcu::TestStatus IndirectDraw::iterate (void)
 				case DRAW_TYPE_INDEXED:
 				{
 					if (m_testIndirectCountExt)
-						m_vk.cmdDrawIndexedIndirectCountKHR(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
-															m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
-															m_strideInBuffer);
+						m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
+														 m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
+														 m_strideInBuffer);
 					else
 						m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
 					break;
@@ -815,9 +815,9 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 			case DRAW_TYPE_SEQUENTIAL:
 			{
 				if (m_testIndirectCountExt)
-					m_vk.cmdDrawIndirectCountKHR(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
-												 m_indirectCountBuffer->object(), m_offsetInCountBuffer,
-												 m_drawCount + m_indirectCountExtDrawPadding, m_strideInBuffer);
+					m_vk.cmdDrawIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+											  m_indirectCountBuffer->object(), m_offsetInCountBuffer,
+											  m_drawCount + m_indirectCountExtDrawPadding, m_strideInBuffer);
 				else
 					m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
 				break;
@@ -825,9 +825,9 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 			case DRAW_TYPE_INDEXED:
 			{
 				if (m_testIndirectCountExt)
-					m_vk.cmdDrawIndexedIndirectCountKHR(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
-														m_indirectCountBuffer->object(), m_offsetInCountBuffer,
-														m_drawCount + m_indirectCountExtDrawPadding, m_strideInBuffer);
+					m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer,
+													 m_indirectCountBuffer->object(), m_offsetInCountBuffer,
+													 m_drawCount + m_indirectCountExtDrawPadding, m_strideInBuffer);
 				else
 					m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer, m_drawCount, m_strideInBuffer);
 				break;
@@ -845,9 +845,9 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 				case DRAW_TYPE_SEQUENTIAL:
 				{
 					if (m_testIndirectCountExt)
-						m_vk.cmdDrawIndirectCountKHR(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
-													 m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
-													 m_strideInBuffer);
+						m_vk.cmdDrawIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
+												  m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
+												  m_strideInBuffer);
 					else
 						m_vk.cmdDrawIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
 					break;
@@ -855,9 +855,9 @@ tcu::TestStatus IndirectDrawInstanced<FirstInstanceSupport>::iterate (void)
 				case DRAW_TYPE_INDEXED:
 				{
 					if (m_testIndirectCountExt)
-						m_vk.cmdDrawIndexedIndirectCountKHR(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
-															m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
-															m_strideInBuffer);
+						m_vk.cmdDrawIndexedIndirectCount(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer,
+														 m_indirectCountBuffer->object(), m_offsetInCountBuffer, m_drawCount + m_indirectCountExtDrawPadding,
+														 m_strideInBuffer);
 					else
 						m_vk.cmdDrawIndexedIndirect(*m_cmdBuffer, m_indirectBuffer->object(), m_offsetInBuffer + drawNdx*m_strideInBuffer, 1u, 0u);
 					break;

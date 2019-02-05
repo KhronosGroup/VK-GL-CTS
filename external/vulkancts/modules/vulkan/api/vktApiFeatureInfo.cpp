@@ -1660,7 +1660,7 @@ VkFormatFeatureFlags getRequiredOptimalExtendedTilingFeatures (Context& context,
 		{
 			if (de::contains(DE_ARRAY_BEGIN(s_requiredSampledImageFilterMinMaxFormats), DE_ARRAY_END(s_requiredSampledImageFilterMinMaxFormats), format))
 			{
-				VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT	physicalDeviceSamplerMinMaxProperties =
+				VkPhysicalDeviceSamplerFilterMinmaxProperties		physicalDeviceSamplerMinMaxProperties =
 				{
 					VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES_EXT,
 					DE_NULL,
@@ -2676,7 +2676,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	log << TestLog::Message << extFeatures << TestLog::EndMessage;
 
 	vector<VkExtensionProperties>	properties = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
-	const bool khr_8bit_storage				= checkExtension(properties,"VK_KHR_8bit_storage");
+	const bool khr_8bit_storage				= checkExtension(properties,"VK_KHR_8bit_storage") || context.getUsedApiVersion() >= VK_API_VERSION_1_2;
 	const bool ext_conditional_rendering	= checkExtension(properties,"VK_EXT_conditional_rendering");
 	const bool scalar_block_layout			= checkExtension(properties,"VK_EXT_scalar_block_layout");
 	const bool performance_counter			= checkExtension(properties,"VK_KHR_performance_query");
@@ -2702,7 +2702,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDeviceProtectedMemoryFeatures				protectedMemoryFeatures[count];
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
 	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures[count];
-	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures[count];
+	VkPhysicalDeviceScalarBlockLayoutFeatures			scalarBlockLayoutFeatures[count];
 	VkPhysicalDevicePerformanceCounterFeaturesKHR		performanceCounterFeatures[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
@@ -2714,7 +2714,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deMemset(&protectedMemoryFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceProtectedMemoryFeatures));
 		deMemset(&samplerYcbcrConversionFeatures[ndx],		0xFF*ndx, sizeof(VkPhysicalDeviceSamplerYcbcrConversionFeatures));
 		deMemset(&variablePointerFeatures[ndx],				0xFF*ndx, sizeof(VkPhysicalDeviceVariablePointersFeatures));
-		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeaturesEXT));
+		deMemset(&scalarBlockLayoutFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDeviceScalarBlockLayoutFeatures));
 		deMemset(&performanceCounterFeatures[ndx],			0xFF*ndx, sizeof(VkPhysicalDevicePerformanceCounterFeaturesKHR));
 
 		device8BitStorageFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR;
@@ -3034,14 +3034,14 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			TCU_FAIL("VkPhysicalDevicePushDescriptorPropertiesKHR.maxPushDescriptors must be at least 32");
 		}
 	}
-	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_shader_float_controls")))
+	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_shader_float_controls")) || (context.getUsedApiVersion() >= VK_API_VERSION_1_2))
 	{
-		VkPhysicalDeviceFloatControlsPropertiesKHR floatControlsProperties[count];
+		VkPhysicalDeviceFloatControlsProperties floatControlsProperties[count];
 
 		for (int ndx = 0; ndx < count; ++ndx)
 		{
-			deMemset(&floatControlsProperties[ndx], 0xFF, sizeof(VkPhysicalDeviceFloatControlsPropertiesKHR));
-			floatControlsProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES_KHR;
+			deMemset(&floatControlsProperties[ndx], 0xFF, sizeof(VkPhysicalDeviceFloatControlsProperties));
+			floatControlsProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES;
 			floatControlsProperties[ndx].pNext = DE_NULL;
 
 			extProperties.pNext = &floatControlsProperties[ndx];
@@ -3049,7 +3049,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 		}
 
-		if (deMemCmp(&floatControlsProperties[0], &floatControlsProperties[1], sizeof(VkPhysicalDeviceFloatControlsPropertiesKHR)) != 0)
+		if (deMemCmp(&floatControlsProperties[0], &floatControlsProperties[1], sizeof(VkPhysicalDeviceFloatControlsProperties)) != 0)
 		{
 			TCU_FAIL("Mismatch in VkPhysicalDeviceFloatControlsPropertiesKHR");
 		}
@@ -3059,12 +3059,12 @@ tcu::TestStatus deviceProperties2 (Context& context)
 
 	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_depth_stencil_resolve")))
 	{
-		VkPhysicalDeviceDepthStencilResolvePropertiesKHR  dsResolveProperties[count];
+		VkPhysicalDeviceDepthStencilResolveProperties dsResolveProperties[count];
 
 		for (int ndx = 0; ndx < count; ++ndx)
 		{
-			deMemset(&dsResolveProperties[ndx], 0xFF, sizeof(VkPhysicalDeviceDepthStencilResolvePropertiesKHR));
-			dsResolveProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
+			deMemset(&dsResolveProperties[ndx], 0xFF, sizeof(VkPhysicalDeviceDepthStencilResolveProperties));
+			dsResolveProperties[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
 			dsResolveProperties[ndx].pNext = DE_NULL;
 
 			extProperties.pNext = &dsResolveProperties[ndx];
@@ -3072,7 +3072,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			vki.getPhysicalDeviceProperties2(physicalDevice, &extProperties);
 		}
 
-		if (deMemCmp(&dsResolveProperties[0], &dsResolveProperties[1], sizeof(VkPhysicalDeviceDepthStencilResolvePropertiesKHR)) != 0)
+		if (deMemCmp(&dsResolveProperties[0], &dsResolveProperties[1], sizeof(VkPhysicalDeviceDepthStencilResolveProperties)) != 0)
 		{
 			TCU_FAIL("Mismatch in VkPhysicalDeviceDepthStencilResolvePropertiesKHR");
 		}

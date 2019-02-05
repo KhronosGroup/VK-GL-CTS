@@ -700,7 +700,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate (void)
 	vk::DescriptorSetUpdateBuilder setUpdateBuilder;
 	if (m_data.storageClass == SC_PHYSICAL_STORAGE_BUFFER)
 	{
-		VkBufferDeviceAddressInfoEXT info =
+		VkBufferDeviceAddressInfo info =
 		{
 			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	 sType;
 			DE_NULL,											// const void*		 pNext;

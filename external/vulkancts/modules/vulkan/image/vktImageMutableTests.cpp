@@ -523,7 +523,7 @@ Move<VkImage> makeImage (const DeviceInterface&		vk,
 		viewFormat
 	};
 
-	const VkImageFormatListCreateInfoKHR formatListInfo =
+	const VkImageFormatListCreateInfo formatListInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,	// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
@@ -2040,7 +2040,7 @@ Move<VkSwapchainKHR> makeSwapchain(const DeviceInterface&		vk,
 		viewFormat
 	};
 
-	const VkImageFormatListCreateInfoKHR formatListInfo =
+	const VkImageFormatListCreateInfo formatListInfo =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO_KHR,	// VkStructureType			sType;
 		DE_NULL,												// const void*				pNext;
