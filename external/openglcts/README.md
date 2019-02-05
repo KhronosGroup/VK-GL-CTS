@@ -99,7 +99,7 @@ the Standard Template Library (STL).
 Configuring and Building the Tests
 ------------------------
 The CTS is built via CMake build system. The requirements for the build are as follows:
-- CMake 2.8 or newer, 2.8.8 or newer recommended
+- CMake 2.8 (3.6 for Android NDK r17+ builds) or newer
 - C++ compiler with STL and exceptions support
 - Unix: Make + GCC / Clang
 - Windows: Visual Studio or Windows SDK (available free-of-charge)
@@ -322,13 +322,16 @@ as well. See CMake help for more details.
 The conformance tests come with native Android support. The following packages
 are needed in order to build an Android binary:
 - Python 2.7.x
-- Android NDK r15c
-- Android SDK with API 22 packages and tools installed
+- Android NDK r17c
+- Android SDK with API 28 packages and tools installed
 - Apache Ant
 
 An Android binary (for ES 3.2) can be built using command:
 
 	python scripts/android/build_apk.py --target=openglcts --sdk <path to Android SDK> --ndk <path to Android NDK>
+
+By default the CTS package will be built for the Android API level 28.
+Another API level may be supplied using --native-api command line option.
 
 If Khronos Confidential CTS is present then the script will set `GLCTS_GTF_TARGET`
 to `gles32` by default.

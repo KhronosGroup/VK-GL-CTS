@@ -236,13 +236,15 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 
 	vk::VkCommandBuffer targetCmdBuffer = *cmdBuffer;
 
-	if (m_conditionalData.useSecondaryBuffer)
+	const bool useSecondaryCmdBuffer = m_conditionalData.conditionInherited || m_conditionalData.conditionInSecondaryCommandBuffer;
+
+	if (useSecondaryCmdBuffer)
 	{
 		const vk::VkCommandBufferInheritanceConditionalRenderingInfoEXT conditionalRenderingInheritanceInfo =
 		{
 			vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT,
 			DE_NULL,
-			VK_TRUE											// conditionalRenderingEnable
+			m_conditionalData.conditionInherited ? VK_TRUE : VK_FALSE	// conditionalRenderingEnable
 		};
 
 		const vk::VkCommandBufferInheritanceInfo inheritanceInfo =
@@ -273,33 +275,39 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	vk.cmdBindPipeline(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
 	vk.cmdBindDescriptorSets(targetCmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
-	if (m_conditionalData.useSecondaryBuffer)
+	de::SharedPtr<Draw::Buffer> conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
+
+	if (m_conditionalData.conditionInSecondaryCommandBuffer)
+	{
+		beginConditionalRendering(vk, *secondaryCmdBuffer, *conditionalBuffer, m_conditionalData);
+		recordDispatch(vk, *secondaryCmdBuffer, indirectBuffer);
+		vk.cmdEndConditionalRenderingEXT(*secondaryCmdBuffer);
+		vk.endCommandBuffer(*secondaryCmdBuffer);
+	}
+	else if (m_conditionalData.conditionInherited)
 	{
 		recordDispatch(vk, *secondaryCmdBuffer, indirectBuffer);
-	}
-
-	de::SharedPtr<Draw::Buffer> conditionalBuffer;
-	if (m_conditionalData.conditionEnabled)
-	{
-		conditionalBuffer = createConditionalRenderingBuffer(m_context, m_conditionalData);
-		beginConditionalRendering(vk, *cmdBuffer, *conditionalBuffer, m_conditionalData);
-	}
-
-	if (!m_conditionalData.useSecondaryBuffer)
-	{
-		recordDispatch(vk, *cmdBuffer, indirectBuffer);
-	}
-
-	if (m_conditionalData.useSecondaryBuffer)
-	{
 		vk.endCommandBuffer(*secondaryCmdBuffer);
-
-		vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
 	}
 
-	if (m_conditionalData.conditionEnabled)
+	if (m_conditionalData.conditionInPrimaryCommandBuffer)
 	{
+		beginConditionalRendering(vk, *cmdBuffer, *conditionalBuffer, m_conditionalData);
+
+		if (m_conditionalData.conditionInherited)
+		{
+			vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
+		}
+		else
+		{
+			recordDispatch(vk, *cmdBuffer, indirectBuffer);
+		}
+
 		vk.cmdEndConditionalRenderingEXT(*cmdBuffer);
+	}
+	else if (useSecondaryCmdBuffer)
+	{
+		vk.cmdExecuteCommands(*cmdBuffer, 1, &secondaryCmdBuffer.get());
 	}
 
 	endCommandBuffer(vk, *cmdBuffer);
