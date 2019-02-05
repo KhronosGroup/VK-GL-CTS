@@ -102,6 +102,7 @@ using de::UniquePtr;
 using tcu::StringTemplate;
 using tcu::Vec4;
 
+const bool TEST_WITH_NAN	= true;
 const bool TEST_WITHOUT_NAN	= false;
 
 template<typename T>
@@ -9910,7 +9911,9 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, groupName.c_str(), "Float 16 logical tests"));
 
 	de::Random							rnd					(deStringHash(testGroup->getName()));
-	const StringTemplate				capabilities		("OpCapability ${cap}\n");
+	const string						spvCapabilities		= string("OpCapability StorageUniformBufferBlock16\n") + (nanSupported ? "OpCapability SignedZeroInfNanPreserve\n" : "");
+	const string						spvExtensions		= string("OpExtension \"SPV_KHR_16bit_storage\"\n") + (nanSupported ? "OpExtension \"SPV_KHR_float_controls\"\n" : "");
+	const string						spvExecutionMode	= nanSupported ? "OpExecutionMode %BP_main SignedZeroInfNanPreserve 16\n" : "";
 	const deUint32						numDataPoints		= 16;
 	const vector<deFloat16>				float16Data			= getFloat16s(rnd, numDataPoints);
 	const vector<deFloat16>				float16Data1		= squarize(float16Data, 0);
@@ -10034,14 +10037,14 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 			map<string, string>	fragments;
 			vector<string>		extensions;
 
-			specs["cap"]				= "StorageUniformBufferBlock16";
 			specs["num_data_points"]	= de::toString(iterations);
 			specs["op_code"]			= testOp.opCode;
 			specs["op_arg1"]			= (testOp.argCount == 1) ? "" : "%val_src1";
 			specs["op_arg1_calc"]		= (testOp.argCount == 1) ? "" : arg1Calc.specialize(specs);
 
-			fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-			fragments["capability"]		= capabilities.specialize(specs);
+			fragments["extension"]		= spvExtensions;
+			fragments["capability"]		= spvCapabilities;
+			fragments["execution_mode"]	= spvExecutionMode;
 			fragments["decoration"]		= decoration.specialize(specs);
 			fragments["pre_main"]		= preMain.specialize(specs);
 			fragments["testfun"]		= testFun.specialize(specs);
@@ -10160,14 +10163,14 @@ tcu::TestCaseGroup* createFloat16LogicalSet (tcu::TestContext& testCtx, const bo
 			VulkanFeatures		features;
 			map<string, string>	fragments;
 
-			specs["cap"]				= "StorageUniformBufferBlock16";
 			specs["num_data_points"]	= de::toString(iterations);
 			specs["op_code"]			= testOp.opCode;
 			specs["op_arg1"]			= (testOp.argCount == 1) ? "" : "%val_src1";
 			specs["op_arg1_calc"]		= (testOp.argCount == 1) ? "" : arg1Calc.specialize(specs);
 
-			fragments["extension"]		= "OpExtension \"SPV_KHR_16bit_storage\"";
-			fragments["capability"]		= capabilities.specialize(specs);
+			fragments["extension"]		= spvExtensions;
+			fragments["capability"]		= spvCapabilities;
+			fragments["execution_mode"]	= spvExecutionMode;
 			fragments["decoration"]		= decoration.specialize(specs);
 			fragments["pre_main"]		= preMain.specialize(specs);
 			fragments["testfun"]		= testFun.specialize(specs);
@@ -17643,6 +17646,7 @@ tcu::TestCaseGroup* createFloat16Tests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16", "Float 16 tests"));
 
 	testGroup->addChild(createOpConstantFloat16Tests(testCtx));
+	testGroup->addChild(createFloat16LogicalSet<GraphicsResources>(testCtx, TEST_WITH_NAN));
 	testGroup->addChild(createFloat16LogicalSet<GraphicsResources>(testCtx, TEST_WITHOUT_NAN));
 	testGroup->addChild(createFloat16FuncSet<GraphicsResources>(testCtx));
 	testGroup->addChild(createDerivativeTests<256, 1>(testCtx));
@@ -17668,6 +17672,7 @@ tcu::TestCaseGroup* createFloat16Group (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>		testGroup			(new tcu::TestCaseGroup(testCtx, "float16", "Float 16 tests"));
 
 	testGroup->addChild(createFloat16OpConstantCompositeGroup(testCtx));
+	testGroup->addChild(createFloat16LogicalSet<ComputeShaderSpec>(testCtx, TEST_WITH_NAN));
 	testGroup->addChild(createFloat16LogicalSet<ComputeShaderSpec>(testCtx, TEST_WITHOUT_NAN));
 	testGroup->addChild(createFloat16FuncSet<ComputeShaderSpec>(testCtx));
 	testGroup->addChild(createFloat16VectorExtractSet<ComputeShaderSpec>(testCtx));

@@ -152,6 +152,7 @@ std::string makeComputeShaderAssembly(const std::map<std::string, std::string>& 
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %BP_main \"main\" %BP_id3u\n"
 		"OpExecutionMode %BP_main LocalSize 1 1 1\n"
+		"${execution_mode:opt}\n"
 		"OpSource GLSL 430\n"
 		"OpDecorate %BP_id3u BuiltIn GlobalInvocationId\n"
 
