@@ -1367,7 +1367,10 @@ void createCombinedModule (vk::SourceCollections& dst, InstanceContext ctx)
 
 	// opEntryPoints
 	{
-		opEntryPoints << "OpEntryPoint Vertex %vert_main \"main\" %vert_Position %vert_vtxColor %vert_color %vert_vtxPosition %vert_vertex_id %vert_instance_id\n";
+		if (useTessellation)
+			opEntryPoints << "OpEntryPoint Vertex %vert_main \"main\" %vert_Position %vert_vtxColor %vert_color %vert_vtxPosition %vert_vertex_id %vert_instance_id\n";
+		else
+			opEntryPoints << "OpEntryPoint Vertex %vert_main \"main\" %vert_Position %vert_vtxColor %vert_color %vert_glPerVertex %vert_vertex_id %vert_instance_id\n";
 
 		if (useGeometry)
 			opEntryPoints << "OpEntryPoint Geometry %geom_main \"main\" %geom_out_gl_position %geom_gl_in %geom_out_color %geom_in_color\n";
@@ -1402,20 +1405,25 @@ void createCombinedModule (vk::SourceCollections& dst, InstanceContext ctx)
 
 	combinedModule <<	"OpExecutionMode %frag_main OriginUpperLeft\n"
 
-						"; Vertex decorations\n";
+						"; Vertex decorations\n"
+						"OpDecorate %vert_Position Location 0\n"
+						"OpDecorate %vert_vtxColor Location 1\n"
+						"OpDecorate %vert_color Location 1\n"
+						"OpDecorate %vert_vertex_id BuiltIn VertexIndex\n"
+						"OpDecorate %vert_instance_id BuiltIn InstanceIndex\n";
 
 	// If tessellation is used, vertex position is written by tessellation stage.
 	// Otherwise it will be written by vertex stage.
 	if (useTessellation)
 		combinedModule <<	"OpDecorate %vert_vtxPosition Location 2\n";
 	else
-		combinedModule <<	"OpDecorate %vert_vtxPosition BuiltIn Position\n";
-
-	combinedModule	<<	"OpDecorate %vert_Position Location 0\n"
-						"OpDecorate %vert_vtxColor Location 1\n"
-						"OpDecorate %vert_color Location 1\n"
-						"OpDecorate %vert_vertex_id BuiltIn VertexIndex\n"
-						"OpDecorate %vert_instance_id BuiltIn InstanceIndex\n";
+	{
+		combinedModule <<	"OpMemberDecorate %vert_per_vertex_out 0 BuiltIn Position\n"
+							"OpMemberDecorate %vert_per_vertex_out 1 BuiltIn PointSize\n"
+							"OpMemberDecorate %vert_per_vertex_out 2 BuiltIn ClipDistance\n"
+							"OpMemberDecorate %vert_per_vertex_out 3 BuiltIn CullDistance\n"
+							"OpDecorate %vert_per_vertex_out Block\n";
+	}
 
 	if (useGeometry)
 	{
@@ -1464,12 +1472,20 @@ void createCombinedModule (vk::SourceCollections& dst, InstanceContext ctx)
 						SPIRV_ASSEMBLY_ARRAYS
 
 						"; Vertex Variables\n"
-						"%vert_vtxPosition = OpVariable %op_v4f32 Output\n"
 						"%vert_Position = OpVariable %ip_v4f32 Input\n"
 						"%vert_vtxColor = OpVariable %op_v4f32 Output\n"
 						"%vert_color = OpVariable %ip_v4f32 Input\n"
 						"%vert_vertex_id = OpVariable %ip_i32 Input\n"
 						"%vert_instance_id = OpVariable %ip_i32 Input\n";
+
+	if (useTessellation)
+		combinedModule <<	"%vert_vtxPosition = OpVariable %op_v4f32 Output\n";
+	else
+	{
+		combinedModule <<	"%vert_per_vertex_out = OpTypeStruct %v4f32 %f32 %a1f32 %a1f32\n"
+							"%vert_op_per_vertex_out = OpTypePointer Output %vert_per_vertex_out\n"
+							"%vert_glPerVertex = OpVariable %vert_op_per_vertex_out Output\n";
+	}
 
 	if (useGeometry)
 	{
@@ -1511,9 +1527,17 @@ void createCombinedModule (vk::SourceCollections& dst, InstanceContext ctx)
 						"; Vertex Entry\n"
 						"%vert_main = OpFunction %void None %fun\n"
 						"%vert_label = OpLabel\n"
-						"%vert_tmp_position = OpLoad %v4f32 %vert_Position\n"
-						"OpStore %vert_vtxPosition %vert_tmp_position\n"
-						"%vert_tmp_color = OpLoad %v4f32 %vert_color\n"
+						"%vert_tmp_position = OpLoad %v4f32 %vert_Position\n";
+
+	if (useTessellation)
+		combinedModule <<	"OpStore %vert_vtxPosition %vert_tmp_position\n";
+	else
+	{
+		combinedModule <<	"%vert_out_pos_ptr = OpAccessChain %op_v4f32 %vert_glPerVertex %c_i32_0\n"
+							"OpStore %vert_out_pos_ptr %vert_tmp_position\n";
+	}
+
+	combinedModule <<	"%vert_tmp_color = OpLoad %v4f32 %vert_color\n"
 						"OpStore %vert_vtxColor %vert_tmp_color\n"
 						"OpReturn\n"
 						"OpFunctionEnd\n";
