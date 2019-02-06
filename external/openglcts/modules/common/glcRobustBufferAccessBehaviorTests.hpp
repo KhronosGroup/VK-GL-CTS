@@ -277,6 +277,18 @@ private:
 	deqp::Context& m_context;
 };
 
+class RobustBufferAccessBehaviorBaseTestCase : public deqp::TestCase
+{
+public:
+	RobustBufferAccessBehaviorBaseTestCase(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description);
+
+	virtual ~RobustBufferAccessBehaviorBaseTestCase();
+
+protected:
+	glu::RenderContext* m_newRenderContext;
+	glu::RenderContext* m_previousRenderContext;
+};
+
 /** Implementation of test VertexBufferObjects. Description follows:
  *
  * This test verifies that any "out-of-bound" read from vertex buffer result with abnormal program exit
@@ -323,7 +335,7 @@ private:
  * - inspect contents of framebuffer, it is expected that it is filled with
  * value 1.
  **/
-class VertexBufferObjectsTest : public deqp::TestCase
+class VertexBufferObjectsTest : public RobustBufferAccessBehaviorBaseTestCase
 {
 public:
 	/* Public methods */
@@ -373,7 +385,8 @@ protected:
  * - mipmap at level 1;
  * - a texture with 4 samples.
  **/
-class TexelFetchTest : public deqp::TestCase
+
+class TexelFetchTest : public RobustBufferAccessBehaviorBaseTestCase
 {
 public:
 	/* Public methods */
@@ -483,7 +496,7 @@ protected:
  *   * value of src_index is equal to gl_LocalInvocationID.x + 16; It is
  *   expected that destination buffer will be filled with value 0.
  **/
-class StorageBufferTest : public deqp::TestCase
+class StorageBufferTest : public RobustBufferAccessBehaviorBaseTestCase
 {
 public:
 	/* Public methods */
@@ -529,7 +542,7 @@ protected:
  * - use uniform buffer for source instead of storage buffer;
  * - ignore the case with invalid value of dst_index.
  **/
-class UniformBufferTest : public deqp::TestCase
+class UniformBufferTest : public RobustBufferAccessBehaviorBaseTestCase
 {
 public:
 	/* Public methods */
