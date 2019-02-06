@@ -47,6 +47,7 @@ void createVkRunnerTests (tcu::TestCaseGroup* graphicsFuzzTests)
 		{	"continue-and-merge.shader_test",			"continue-and-merge",			"A fragment shader with two nested loops"										},
 		{	"control-flow-switch.shader_test",			"control-flow-switch",			"A fragment shader with somewhat complex control flow and a switch"				},
 		{	"dead-struct-init.shader_test",				"dead-struct-init",				"A fragment shader that uses struct initializers"								},
+		{	"fragcoord-control-flow.shader_test",		"fragcoord-control-flow",		"A fragment shader that uses FragCoord and somewhat complex control flow"		},
 		{	"fragcoord-control-flow-2.shader_test",		"fragcoord-control-flow-2",		"A fragment shader that uses FragCoord and somewhat complex control flow"		},
 		{	"mat-array-deep-control-flow.shader_test",	"mat-array-deep-control-flow",	"A fragment shader that uses an array of matrices and has deep control flow"	},
 		{	"mat-array-distance.shader_test",			"mat-array-distance",			"A fragment shader that uses an array of matrices and distance"					},
