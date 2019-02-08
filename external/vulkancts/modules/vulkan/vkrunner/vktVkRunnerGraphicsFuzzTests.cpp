@@ -44,7 +44,12 @@ void createVkRunnerTests (tcu::TestCaseGroup* graphicsFuzzTests)
 		const char *filename, *name, *description;
 	} tests[] =
 	{
-		{ "pow-vec4.shader_test", "pow-vec4", "A fragment shader that uses pow" },
+		{	"control-flow-switch.shader_test",			"control-flow-switch",			"A fragment shader with somewhat complex control flow and a switch"				},
+		{	"dead-struct-init.shader_test",				"dead-struct-init",				"A fragment shader that uses struct initializers"								},
+		{	"mat-array-deep-control-flow.shader_test",	"mat-array-deep-control-flow",	"A fragment shader that uses an array of matrices and has deep control flow"	},
+		{	"mat-array-distance.shader_test",			"mat-array-distance",			"A fragment shader that uses an array of matrices and distance"					},
+		{	"pow-vec4.shader_test",						"pow-vec4",						"A fragment shader that uses pow"												},
+		{	"swizzle-struct-init-min.shader_test",		"swizzle-struct-init-min",		"A fragment shader that uses vector swizzles, struct initializers, and min"		},
 	};
 
 	for (size_t i = 0; i < sizeof tests / sizeof tests[0]; i++)

@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 Google Inc.
+ * Copyright (c) 2019 Google Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -292,15 +293,7 @@ vector<AllocationSp> allocateAndBindImageMemory (const DeviceInterface&	vkd,
 	{
 		const deUint32	numPlanes	= getPlaneCount(format);
 
-		for (deUint32 planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
-		{
-			const VkImageAspectFlagBits	planeAspect	= getPlaneAspect(planeNdx);
-			const VkMemoryRequirements	reqs		= getImagePlaneMemoryRequirements(vkd, device, image, planeAspect);
-
-			allocations.push_back(AllocationSp(allocator.allocate(reqs, requirement).release()));
-
-			bindImagePlaneMemory(vkd, device, image, allocations.back()->getMemory(), allocations.back()->getOffset(), planeAspect);
-		}
+		bindImagePlanesMemory(vkd, device, image, numPlanes, allocations, allocator, requirement);
 	}
 	else
 	{

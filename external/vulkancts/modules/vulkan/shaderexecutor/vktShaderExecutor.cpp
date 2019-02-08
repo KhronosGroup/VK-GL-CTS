@@ -891,7 +891,7 @@ void FragmentOutExecutor::execute (int numValues, const void* const* inputs, voi
 	const deUint32										queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
 	Allocator&											memAlloc				= m_context.getDefaultAllocator();
 
-	const deUint32										renderSizeX				= de::min(static_cast<deUint32>(DEFAULT_RENDER_WIDTH), (deUint32)numValues);
+	const deUint32										renderSizeX				= de::min(static_cast<deUint32>(128), (deUint32)numValues);
 	const deUint32										renderSizeY				= ((deUint32)numValues / renderSizeX) + (((deUint32)numValues % renderSizeX != 0) ? 1u : 0u);
 	const tcu::UVec2									renderSize				(renderSizeX, renderSizeY);
 	std::vector<tcu::Vec2>								positions;

@@ -2,7 +2,8 @@
  * Vulkan CTS Framework
  * --------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2019 Google Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2017 Samsung Electronics Co., Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,15 +41,8 @@ YCbCrImageWithMemory::YCbCrImageWithMemory (const vk::DeviceInterface&		vk,
 	if ((imageCreateInfo.flags & VK_IMAGE_CREATE_DISJOINT_BIT_KHR) != 0)
 	{
 		const deUint32	numPlanes	= getPlaneCount(imageCreateInfo.format);
-		for (deUint32 planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
-		{
-			const VkImageAspectFlagBits	planeAspect	= getPlaneAspect(planeNdx);
-			const VkMemoryRequirements	reqs		= getImagePlaneMemoryRequirements(vk, device, *m_image, planeAspect);
 
-			m_allocations.push_back(AllocationSp(allocator.allocate(reqs, requirement).release()));
-
-			bindImagePlaneMemory(vk, device, *m_image, m_allocations.back()->getMemory(), m_allocations.back()->getOffset(), planeAspect);
-		}
+		bindImagePlanesMemory(vk, device, *m_image, numPlanes, m_allocations, allocator, requirement);
 	}
 	else
 	{

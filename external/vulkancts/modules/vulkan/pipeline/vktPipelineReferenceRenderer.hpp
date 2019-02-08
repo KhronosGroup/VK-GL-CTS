@@ -243,6 +243,7 @@ public:
 														 const std::vector<Vertex4Tex4>&	vertexBuffer);
 
 	tcu::PixelBufferAccess		getAccess				(void);
+	tcu::PixelBufferAccess		getDepthAccess			(void);
 	const rr::ViewportState		getViewportState		(void) const;
 
 private:
@@ -258,6 +259,7 @@ private:
 	tcu::TextureLevel			m_colorBuffer;
 	tcu::TextureLevel			m_resolveColorBuffer;
 	tcu::TextureLevel			m_depthStencilBuffer;
+	tcu::TextureLevel			m_resolveDepthBuffer;
 
 	rr::RenderTarget*			m_renderTarget;
 	const rr::Program*			m_program;

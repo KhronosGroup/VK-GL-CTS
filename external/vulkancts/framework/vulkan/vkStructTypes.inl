@@ -3239,6 +3239,21 @@ struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT
 	VkBool32		scalarBlockLayout;
 };
 
+struct VkPhysicalDeviceDepthClipEnableFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		depthClipEnable;
+};
+
+struct VkPipelineRasterizationDepthClipStateCreateInfoEXT
+{
+	VkStructureType										sType;
+	const void*											pNext;
+	VkPipelineRasterizationDepthClipStateCreateFlagsEXT	flags;
+	VkBool32											depthClipEnable;
+};
+
 
 
 
