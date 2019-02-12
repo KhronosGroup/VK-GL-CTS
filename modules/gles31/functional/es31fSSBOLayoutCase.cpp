@@ -1282,11 +1282,14 @@ void generateWriteSrc (std::ostream& src, const ShaderInterface& interface, cons
 	}
 }
 
-string generateComputeShader (glu::GLSLVersion glslVersion, const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& comparePtrs, const vector<BlockDataPtr>& writePtrs)
+string generateComputeShader (const glw::Functions& gl, glu::GLSLVersion glslVersion, const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& comparePtrs, const vector<BlockDataPtr>& writePtrs)
 {
 	std::ostringstream src;
+	glw::GLint maxShaderStorageBufferBindings;
 
 	DE_ASSERT(glslVersion == glu::GLSL_VERSION_310_ES || glslVersion == glu::GLSL_VERSION_430);
+
+	gl.getIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &maxShaderStorageBufferBindings);
 
 	src << glu::getGLSLVersionDeclaration(glslVersion) << "\n";
 	src << "layout(local_size_x = 1) in;\n";
@@ -1306,6 +1309,11 @@ string generateComputeShader (glu::GLSLVersion glslVersion, const ShaderInterfac
 			generateDeclaration(src, block, bindingPoint);
 
 			bindingPoint += block.isArray() ? block.getArraySize() : 1;
+		}
+
+		if (bindingPoint > maxShaderStorageBufferBindings)
+		{
+			throw tcu::NotSupportedError("Test requires support for more SSBO bindings than implementation exposes");
 		}
 	}
 
@@ -2109,7 +2117,7 @@ SSBOLayoutCase::IterateResult SSBOLayoutCase::iterate (void)
 	generateValues			(refLayout, writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
 	copyNonWrittenData		(m_interface, refLayout, initialData.pointers, writeData.pointers);
 
-	const glu::ShaderProgram program(m_renderCtx, glu::ProgramSources() << glu::ComputeSource(generateComputeShader(m_glslVersion, m_interface, refLayout, initialData.pointers, writeData.pointers)));
+	const glu::ShaderProgram program(m_renderCtx, glu::ProgramSources() << glu::ComputeSource(generateComputeShader(gl, m_glslVersion, m_interface, refLayout, initialData.pointers, writeData.pointers)));
 	log << program;
 
 	if (!program.isOk())
