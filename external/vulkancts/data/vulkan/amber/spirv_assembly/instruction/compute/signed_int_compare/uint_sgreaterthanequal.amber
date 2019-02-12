@@ -1,0 +1,69 @@
+# Test SGreaterThanEqual with unsigned int params
+# Google bug b/73133282
+#
+# Derived from the following OpenCL C, but cleaned up to be more generic.
+#
+# kernel void foo(global int *A, global int*B, global int*C) __attribute__((reqd_work_group_size(1,1,1))) {
+#   uint i = get_global_id(0);
+#   C[i] = A[i] >= B[i];
+# }
+
+[compute shader spirv]
+               OpCapability Shader
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %18 "main" %gl_GlobalInvocationID
+               OpExecutionMode %18 LocalSize 1 1 1
+               OpSource OpenCL_C 120
+               OpDecorate %_runtimearr_uint ArrayStride 4
+               OpMemberDecorate %_struct_3 0 Offset 0
+               OpDecorate %_struct_3 BufferBlock
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %15 DescriptorSet 0
+               OpDecorate %15 Binding 0
+               OpDecorate %16 DescriptorSet 0
+               OpDecorate %16 Binding 1
+               OpDecorate %17 DescriptorSet 0
+               OpDecorate %17 Binding 2
+       %uint = OpTypeInt 32 0
+%_runtimearr_uint = OpTypeRuntimeArray %uint
+  %_struct_3 = OpTypeStruct %_runtimearr_uint
+%_ptr_Uniform__struct_3 = OpTypePointer Uniform %_struct_3
+       %void = OpTypeVoid
+          %6 = OpTypeFunction %void
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%_ptr_Input_uint = OpTypePointer Input %uint
+%_ptr_Uniform_uint = OpTypePointer Uniform %uint
+       %bool = OpTypeBool
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+         %15 = OpVariable %_ptr_Uniform__struct_3 Uniform
+         %16 = OpVariable %_ptr_Uniform__struct_3 Uniform
+         %17 = OpVariable %_ptr_Uniform__struct_3 Uniform
+         %18 = OpFunction %void None %6
+         %19 = OpLabel
+         %20 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_0
+         %21 = OpLoad %uint %20
+         %22 = OpAccessChain %_ptr_Uniform_uint %15 %uint_0 %21
+         %23 = OpLoad %uint %22
+         %24 = OpAccessChain %_ptr_Uniform_uint %16 %uint_0 %21
+         %25 = OpLoad %uint %24
+         %26 = OpSGreaterThanEqual %bool %23 %25
+         %27 = OpSelect %uint %26 %uint_1 %uint_0
+         %28 = OpAccessChain %_ptr_Uniform_uint %17 %uint_0 %21
+               OpStore %28 %27
+               OpReturn
+               OpFunctionEnd
+
+[test]
+# A[]
+ssbo 0:0 subdata int 0  -8 -7 -6 -5 -4 -3 -2  0  0  1  2  3  4  5  6  7
+# B[]
+ssbo 0:1 subdata int 0  -9 -7 -5  2 -1  1  0  0  1  0  2 -2  4  8  4 -4
+# The answer array C[]
+ssbo 0:2 subdata int 0   8  8  8  8  8  8  8  8  8  8  8  8  8  8  8  8
+
+compute 16 1 1
+
+probe ssbo int 0:2 0 ==  1  1  0  0  0  0  0  1  0  1  1  1  1  0  1  1
