@@ -62,6 +62,10 @@ enum TestType
 	TEST_TYPE_BASIC,
 	TEST_TYPE_RESUME,
 	TEST_TYPE_STREAMS,
+	TEST_TYPE_XFB_POINTSIZE,
+	TEST_TYPE_XFB_CLIPDISTANCE,
+	TEST_TYPE_XFB_CULLDISTANCE,
+	TEST_TYPE_XFB_CLIP_AND_CULL,
 	TEST_TYPE_STREAMS_POINTSIZE,
 	TEST_TYPE_STREAMS_CLIPDISTANCE,
 	TEST_TYPE_STREAMS_CULLDISTANCE,
@@ -748,6 +752,104 @@ tcu::TestStatus TransformFeedbackResumeTestInstance::iterate (void)
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	verifyTransformFeedbackBuffer(tfBufAllocation, m_parameters.bufferSize);
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+class TransformFeedbackBuiltinTestInstance : public TransformFeedbackTestInstance
+{
+public:
+						TransformFeedbackBuiltinTestInstance	(Context& context, const TestParameters& parameters);
+
+protected:
+	tcu::TestStatus		iterate									(void);
+	void				verifyTransformFeedbackBuffer			(const MovePtr<Allocation>& bufAlloc, const VkDeviceSize offset, const deUint32 bufBytes);
+};
+
+TransformFeedbackBuiltinTestInstance::TransformFeedbackBuiltinTestInstance (Context& context, const TestParameters& parameters)
+	: TransformFeedbackTestInstance	(context, parameters)
+{
+	const deUint32 tfBuffersSupported	= m_transformFeedbackProperties.maxTransformFeedbackBuffers;
+	const deUint32 tfBuffersRequired	= m_parameters.partCount;
+
+	if (tfBuffersSupported < tfBuffersRequired)
+		TCU_THROW(NotSupportedError, std::string("maxTransformFeedbackBuffers=" + de::toString(tfBuffersSupported) + ", while test requires " + de::toString(tfBuffersRequired)).c_str());
+}
+
+void TransformFeedbackBuiltinTestInstance::verifyTransformFeedbackBuffer (const MovePtr<Allocation>& bufAlloc, const VkDeviceSize offset, const deUint32 bufBytes)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+
+	invalidateMappedMemoryRange(vk, device, bufAlloc->getMemory(), bufAlloc->getOffset(), VK_WHOLE_SIZE);
+
+	const deUint32			numPoints	= static_cast<deUint32>(bufBytes / sizeof(float));
+	const deUint8*			tfDataBytes	= (deUint8*)bufAlloc->getHostPtr();
+	const float*			tfData		= (float*)&tfDataBytes[offset];
+
+	for (deUint32 i = 0; i < numPoints; ++i)
+	{
+		const deUint32	divisor		= 32768u;
+		const float		epsilon		= 1.0f / float(divisor);
+		const float		expected	= float(i) / float(divisor);
+
+		if (deAbs(tfData[i] - expected) > epsilon)
+			TCU_FAIL(std::string("Failed at item ") + de::toString(i) + " received:" + de::toString(tfData[i]) + " expected:" + de::toString(expected));
+	}
+}
+
+tcu::TestStatus TransformFeedbackBuiltinTestInstance::iterate (void)
+{
+	const DeviceInterface&				vk						= m_context.getDeviceInterface();
+	const VkDevice						device					= m_context.getDevice();
+	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue						queue					= m_context.getUniversalQueue();
+	Allocator&							allocator				= m_context.getDefaultAllocator();
+
+	const Unique<VkShaderModule>		vertexModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkRenderPass>			renderPass				(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
+	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout		(vk, device));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u));
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const VkDeviceSize					tfBufSize				= m_parameters.bufferSize * m_parameters.partCount;
+	const VkBufferCreateInfo			tfBufCreateInfo			= makeBufferCreateInfo(tfBufSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+	const Move<VkBuffer>				tfBuf					= createBuffer(vk, device, &tfBufCreateInfo);
+	const std::vector<VkBuffer>			tfBufArray				= std::vector<VkBuffer>(m_parameters.partCount, *tfBuf);
+	const MovePtr<Allocation>			tfBufAllocation			= allocator.allocate(getBufferMemoryRequirements(vk, device, *tfBuf), MemoryRequirement::HostVisible);
+	const std::vector<VkDeviceSize>		tfBufBindingSizes		= std::vector<VkDeviceSize>(m_parameters.partCount, m_parameters.bufferSize);
+	const std::vector<VkDeviceSize>		tfBufBindingOffsets		= generateOffsetsList(tfBufBindingSizes);
+	const deUint32						perVertexDataSize		= (m_parameters.testType == TEST_TYPE_XFB_POINTSIZE)    ? static_cast<deUint32>(sizeof(float))
+																: (m_parameters.testType == TEST_TYPE_XFB_CLIPDISTANCE) ? static_cast<deUint32>(8u * sizeof(float))
+																: (m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE) ? static_cast<deUint32>(8u * sizeof(float))
+																: (m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL) ? static_cast<deUint32>(6u * sizeof(float))
+																: 0u;
+	const deUint32						numPoints				= m_parameters.bufferSize / perVertexDataSize;
+
+	VK_CHECK(vk.bindBufferMemory(device, *tfBuf, tfBufAllocation->getMemory(), tfBufAllocation->getOffset()));
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	{
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_imageExtent2D));
+		{
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+			vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0, m_parameters.partCount, &tfBufArray[0], &tfBufBindingOffsets[0], &tfBufBindingSizes[0]);
+
+			vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+			{
+				vk.cmdDraw(*cmdBuffer, numPoints, 1u, 0u, 0u);
+			}
+			vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+		}
+		endRenderPass(vk, *cmdBuffer);
+	}
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	verifyTransformFeedbackBuffer(tfBufAllocation, tfBufBindingOffsets[m_parameters.partCount - 1], numPoints * perVertexDataSize);
 
 	return tcu::TestStatus::pass("Pass");
 }
@@ -1441,6 +1543,18 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 	if (m_parameters.testType == TEST_TYPE_RESUME)
 		return new TransformFeedbackResumeTestInstance(context, m_parameters);
 
+	if (m_parameters.testType == TEST_TYPE_XFB_POINTSIZE)
+		return new TransformFeedbackBuiltinTestInstance(context, m_parameters);
+
+	if (m_parameters.testType == TEST_TYPE_XFB_CLIPDISTANCE)
+		return new TransformFeedbackBuiltinTestInstance(context, m_parameters);
+
+	if (m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE)
+		return new TransformFeedbackBuiltinTestInstance(context, m_parameters);
+
+	if (m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL)
+		return new TransformFeedbackBuiltinTestInstance(context, m_parameters);
+
 	if (m_parameters.testType == TEST_TYPE_STREAMS)
 		return new TransformFeedbackStreamsTestInstance(context, m_parameters);
 
@@ -1474,6 +1588,10 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 									|| m_parameters.testType == TEST_TYPE_STREAMS_POINTSIZE
 									|| m_parameters.testType == TEST_TYPE_STREAMS_CULLDISTANCE
 									|| m_parameters.testType == TEST_TYPE_STREAMS_CLIPDISTANCE;
+	const bool xfbBuiltinPipeline	=  m_parameters.testType == TEST_TYPE_XFB_POINTSIZE
+									|| m_parameters.testType == TEST_TYPE_XFB_CLIPDISTANCE
+									|| m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE
+									|| m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL;
 
 	if (m_parameters.testType == TEST_TYPE_BASIC || m_parameters.testType == TEST_TYPE_RESUME || m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY)
 	{
@@ -1492,6 +1610,41 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 				<< "void main(void)\n"
 				<< "{\n"
 				<< "    idx_out = uInput.start + gl_VertexIndex;\n"
+				<< "}\n";
+
+			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+		}
+
+		return;
+	}
+
+	if (xfbBuiltinPipeline)
+	{
+		const std::string	outputBuiltIn		= (m_parameters.testType == TEST_TYPE_XFB_POINTSIZE)     ? "float gl_PointSize;\n"
+												: (m_parameters.testType == TEST_TYPE_XFB_CLIPDISTANCE)  ? "float gl_ClipDistance[8];\n"
+												: (m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE)  ? "float gl_CullDistance[8];\n"
+												: (m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL) ? "float gl_CullDistance[5];\nfloat gl_ClipDistance[1];\n"
+												: "";
+		const std::string	operationBuiltIn	= (m_parameters.testType == TEST_TYPE_XFB_POINTSIZE)     ? "gl_PointSize = float(gl_VertexIndex) / 32768.0f;"
+												: (m_parameters.testType == TEST_TYPE_XFB_CLIPDISTANCE)  ? "for (int i=0; i<8; i++) gl_ClipDistance[i] = float(8 * gl_VertexIndex + i) / 32768.0f;"
+												: (m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE)  ? "for (int i=0; i<8; i++) gl_CullDistance[i] = float(8 * gl_VertexIndex + i) / 32768.0f;"
+												: (m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL) ? "for (int i=0; i<5; i++) gl_CullDistance[i] = float(6 * gl_VertexIndex + i) / 32768.0f;\n"
+																										   "gl_ClipDistance[0] = float(6 * gl_VertexIndex + 5) / 32768.0f;\n"
+												: "";
+
+		// Vertex shader
+		{
+			std::ostringstream src;
+			src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+				<< "\n"
+				<< "layout(xfb_buffer = " << m_parameters.partCount - 1 << ", xfb_offset = 0) out gl_PerVertex\n"
+				<< "{\n"
+				<< outputBuiltIn
+				<< "};\n"
+				<< "\n"
+				<< "void main(void)\n"
+				<< "{\n"
+				<< operationBuiltIn
 				<< "}\n";
 
 			programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
@@ -1821,8 +1974,8 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 	{
 		const deUint32		bufferCounts[]	= { 1, 2, 4, 8 };
 		const deUint32		bufferSizes[]	= { 256, 512, 128*1024 };
-		const TestType		testTypes[]		= { TEST_TYPE_BASIC, TEST_TYPE_RESUME };
-		const std::string	testTypeNames[]	= { "basic", "resume" };
+		const TestType		testTypes[]		= { TEST_TYPE_BASIC, TEST_TYPE_RESUME, TEST_TYPE_XFB_POINTSIZE, TEST_TYPE_XFB_CLIPDISTANCE, TEST_TYPE_XFB_CULLDISTANCE, TEST_TYPE_XFB_CLIP_AND_CULL };
+		const std::string	testTypeNames[]	= { "basic",         "resume",         "xfb_pointsize",         "xfb_clipdistance",         "xfb_culldistance",         "xfb_clip_and_cull"         };
 
 		for (deUint32 testTypesNdx = 0; testTypesNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypesNdx)
 		{

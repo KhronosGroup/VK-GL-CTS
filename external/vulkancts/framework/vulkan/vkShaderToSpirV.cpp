@@ -184,7 +184,7 @@ void getDefaultBuiltInResources (TBuiltInResource* builtin)
 	builtin->maxFragmentAtomicCounterBuffers			= 1;
 	builtin->maxCombinedAtomicCounterBuffers			= 1;
 	builtin->maxAtomicCounterBufferSize					= 16384;
-	builtin->maxTransformFeedbackBuffers				= 4;
+	builtin->maxTransformFeedbackBuffers				= 8;
 	builtin->maxTransformFeedbackInterleavedComponents	= 16382;
 	builtin->maxCullDistances							= 8;
 	builtin->maxCombinedClipAndCullDistances			= 8;
