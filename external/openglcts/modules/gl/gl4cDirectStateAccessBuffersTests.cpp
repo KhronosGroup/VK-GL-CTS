@@ -2761,7 +2761,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 			m_pClearNamedBufferData(buffer, GL_R8, invalid_format, GL_UNSIGNED_BYTE, &dummy_data);
 
 			is_ok &= ErrorCheckAndLog(
-				"glClearNamedBufferData", GL_INVALID_ENUM,
+				"glClearNamedBufferData", GL_INVALID_VALUE,
 				" if format is not a valid format "
 				"(one of GL_RED, GL_RG, GL_RGB, GL_BGR, GL_RGBA, GL_BGRA, "
 				"GL_RED_INTEGER, GL_RG_INTEGER, GL_RGB_INTEGER, GL_BGR_INTEGER, GL_RGBA_INTEGER, GL_BGRA_INTEGER, "
@@ -2791,7 +2791,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferData()
 			m_pClearNamedBufferData(buffer, GL_R8, GL_RED, invalid_type, &dummy_data);
 
 			is_ok &= ErrorCheckAndLog(
-				"glClearNamedBufferData", GL_INVALID_ENUM,
+				"glClearNamedBufferData", GL_INVALID_VALUE,
 				" if format is not a valid type "
 				"(one of GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, "
 				"GL_SHORT, GL_UNSIGNED_INT, GL_INT, GL_FLOAT, GL_UNSIGNED_BYTE_3_3_2, "
@@ -3045,7 +3045,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 									   &dummy_data);
 
 			is_ok &= ErrorCheckAndLog(
-				"glClearNamedBufferSubData", GL_INVALID_ENUM,
+				"glClearNamedBufferSubData", GL_INVALID_VALUE,
 				" if format is not a valid format "
 				"(one of GL_RED, GL_RG, GL_RGB, GL_BGR, GL_RGBA, GL_BGRA, "
 				"GL_RED_INTEGER, GL_RG_INTEGER, GL_RGB_INTEGER, GL_BGR_INTEGER, GL_RGBA_INTEGER, GL_BGRA_INTEGER, "
@@ -3075,7 +3075,7 @@ bool ErrorsTest::TestErrorsOfClearNamedBufferSubData()
 			m_pClearNamedBufferSubData(buffer, GL_R8, 0, sizeof(dummy_data), GL_RGBA, invalid_type, &dummy_data);
 
 			is_ok &= ErrorCheckAndLog(
-				"glClearNamedBufferSubData", GL_INVALID_ENUM,
+				"glClearNamedBufferSubData", GL_INVALID_VALUE,
 				" if format is not a valid type "
 				"(one of GL_UNSIGNED_BYTE, GL_BYTE, GL_UNSIGNED_SHORT, "
 				"GL_SHORT, GL_UNSIGNED_INT, GL_INT, GL_FLOAT, GL_UNSIGNED_BYTE_3_3_2, "

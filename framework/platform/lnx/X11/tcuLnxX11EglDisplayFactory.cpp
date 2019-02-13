@@ -104,7 +104,7 @@ class Display : public NativeDisplay
 {
 public:
 	static const Capability CAPABILITIES		= Capability(CAPABILITY_GET_DISPLAY_LEGACY |
-															 CAPABILITY_GET_DISPLAY_PLATFORM);
+															 CAPABILITY_GET_DISPLAY_PLATFORM_EXT);
 
 								Display				(MovePtr<XlibDisplay> x11Display)
 									: NativeDisplay	(CAPABILITIES,
@@ -113,6 +113,7 @@ public:
 									, m_display		(x11Display) {}
 
 	void*						getPlatformNative		(void)	{ return m_display->getXDisplay(); }
+	eglw::EGLNativeDisplayType	getPlatformExtension	(void)	{ return reinterpret_cast<eglw::EGLNativeDisplayType>(m_display->getXDisplay()); }
 	eglw::EGLNativeDisplayType	getLegacyNative			(void)	{ return reinterpret_cast<eglw::EGLNativeDisplayType>(m_display->getXDisplay()); }
 
 	XlibDisplay&				getX11Display			(void)			{ return *m_display;	}
@@ -129,6 +130,7 @@ class Window : public NativeWindow
 public:
 	static const Capability	CAPABILITIES		= Capability(CAPABILITY_CREATE_SURFACE_LEGACY |
 															 CAPABILITY_CREATE_SURFACE_PLATFORM |
+															 CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION |
 															 CAPABILITY_GET_SURFACE_SIZE |
 															 CAPABILITY_SET_SURFACE_SIZE |
 															 CAPABILITY_GET_SCREEN_SIZE);
@@ -137,8 +139,9 @@ public:
 													 const WindowParams&	params,
 													 Visual*				visual);
 
-	eglw::EGLNativeWindowType	getLegacyNative		(void) { return reinterpret_cast<eglw::EGLNativeWindowType>(m_window.getXID()); }
-	void*						getPlatformNative	(void) { return &m_window.getXID();	}
+	eglw::EGLNativeWindowType	getLegacyNative			(void) { return reinterpret_cast<eglw::EGLNativeWindowType>(m_window.getXID()); }
+	void*						getPlatformExtension	(void) { return &m_window.getXID();	}
+	void*						getPlatformNative		(void) { return &m_window.getXID();	}
 
 	IVec2						getSurfaceSize		(void) const;
 	void						setSurfaceSize		(IVec2 size);
@@ -220,7 +223,7 @@ class Pixmap : public NativePixmap
 public:
 	enum {
 		CAPABILITIES = (CAPABILITY_CREATE_SURFACE_LEGACY |
-						CAPABILITY_CREATE_SURFACE_PLATFORM |
+						CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION |
 						CAPABILITY_READ_PIXELS)
 	};
 

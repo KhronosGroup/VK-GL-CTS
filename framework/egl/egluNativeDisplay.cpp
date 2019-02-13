@@ -26,6 +26,11 @@
 
 namespace eglu
 {
+namespace
+{
+static const NativeDisplay::Capability platformCapabilities =
+	static_cast<NativeDisplay::Capability>(NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM | NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM_EXT);
+}
 
 using namespace eglw;
 
@@ -37,7 +42,7 @@ NativeDisplay::NativeDisplay (Capability capabilities, EGLenum platformType, con
 	, m_platformExtension	(platformExtension)
 {
 	DE_ASSERT(platformType != EGL_NONE && platformExtension);
-	DE_ASSERT(capabilities & CAPABILITY_GET_DISPLAY_PLATFORM);
+	DE_ASSERT(capabilities & platformCapabilities);
 }
 
 NativeDisplay::NativeDisplay (Capability capabilities)
@@ -45,7 +50,7 @@ NativeDisplay::NativeDisplay (Capability capabilities)
 	, m_platformType		(EGL_NONE)
 	, m_platformExtension	("")
 {
-	DE_ASSERT(!(capabilities & CAPABILITY_GET_DISPLAY_PLATFORM));
+	DE_ASSERT(!(capabilities & platformCapabilities));
 	DE_ASSERT(capabilities & CAPABILITY_GET_DISPLAY_LEGACY);
 }
 
@@ -63,18 +68,18 @@ EGLNativeDisplayType NativeDisplay::getLegacyNative (void)
 
 void* NativeDisplay::getPlatformNative (void)
 {
-	// If NativeDisplay claims to support CAPABILITY_GET_DISPLAY_PLATFORM then
-	// this method must be implemented.
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_DISPLAY_PLATFORM) == 0);
-	TCU_THROW(NotSupportedError, "eglu::NativeDisplay can't be used with eglGetPlatformDisplay()");
+	// If NativeDisplay claims to support CAPABILITY_GET_DISPLAY_PLATFORM or CAPABILITY_GET_DISPLAY_PLATFORM_EXT
+	// then this method must be implemented.
+	TCU_CHECK_INTERNAL((m_capabilities & platformCapabilities) == 0);
+	TCU_THROW(NotSupportedError, "eglu::NativeDisplay can't be used with eglGetPlatformDisplay or eglGetPlatformDisplayEXT()");
 }
 
 const EGLAttrib* NativeDisplay::getPlatformAttributes (void) const
 {
-	// If NativeDisplay claims to support CAPABILITY_GET_DISPLAY_PLATFORM then
-	// this method must be implemented.
-	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_GET_DISPLAY_PLATFORM) == 0);
-	TCU_THROW(NotSupportedError, "eglu::NativeDisplay can't be used with eglGetPlatformDisplay()");
+	// If NativeDisplay claims to support CAPABILITY_GET_DISPLAY_PLATFORM or CAPABILITY_GET_DISPLAY_PLATFORM_EXT
+	// then this method must be implemented.
+	TCU_CHECK_INTERNAL((m_capabilities & platformCapabilities) == 0);
+	TCU_THROW(NotSupportedError, "eglu::NativeDisplay can't be used with eglGetPlatformDisplay or eglGetPlatformDisplayEXT()");
 }
 
 // NativeDisplayFactory
@@ -85,8 +90,8 @@ NativeDisplayFactory::NativeDisplayFactory (const std::string& name, const std::
 	, m_platformType		(platformType)
 	, m_platformExtension	(platformExtension)
 {
-	DE_ASSERT(platformType != EGL_NONE && platformExtension);
-	DE_ASSERT(capabilities & NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM);
+	DE_ASSERT(platformType != EGL_NONE && (platformExtension || (platformCapabilities & NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM)));
+	DE_ASSERT(capabilities & platformCapabilities);
 }
 
 NativeDisplayFactory::NativeDisplayFactory (const std::string& name, const std::string& description, NativeDisplay::Capability capabilities)
@@ -95,7 +100,7 @@ NativeDisplayFactory::NativeDisplayFactory (const std::string& name, const std::
 	, m_platformType		(EGL_NONE)
 	, m_platformExtension	("")
 {
-	DE_ASSERT(!(capabilities & NativeDisplay::CAPABILITY_GET_DISPLAY_PLATFORM));
+	DE_ASSERT(!(capabilities & platformCapabilities));
 	DE_ASSERT(capabilities & NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY);
 }
 

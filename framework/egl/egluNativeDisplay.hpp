@@ -44,8 +44,9 @@ class NativeDisplay
 public:
 	enum Capability
 	{
-		CAPABILITY_GET_DISPLAY_LEGACY	= (1<<0),	//!< Query EGL display using eglGetDisplay()
-		CAPABILITY_GET_DISPLAY_PLATFORM	= (1<<1)	//!< Query EGL display using eglGetPlatformDisplay()
+		CAPABILITY_GET_DISPLAY_LEGACY		= (1<<0),	//!< Query EGL display using eglGetDisplay()
+		CAPABILITY_GET_DISPLAY_PLATFORM		= (1<<1),	//!< Query EGL display using eglGetPlatformDisplay()
+		CAPABILITY_GET_DISPLAY_PLATFORM_EXT	= (1<<2)	//!< Query EGL display using eglGetPlatformDisplayEXT()
 	};
 
 	virtual								~NativeDisplay				(void);

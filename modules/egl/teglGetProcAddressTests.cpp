@@ -40,6 +40,8 @@ namespace egl
 namespace
 {
 
+#define EGL_MAKE_VERSION(major, minor) (((major) << 12) | (minor))
+
 using tcu::TestLog;
 using namespace eglw;
 
@@ -71,21 +73,6 @@ FunctionNames getExtFunctionNames (const std::string& extName)
 	return FunctionNames(0, DE_NULL);
 }
 
-FunctionNames getCoreFunctionNames (EGLint apiBit)
-{
-	switch (apiBit)
-	{
-		case 0:							return FunctionNames(DE_LENGTH_OF_ARRAY(s_EGL14),	s_EGL14);
-		case EGL_OPENGL_ES_BIT:			return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES10),	s_GLES10);
-		case EGL_OPENGL_ES2_BIT:		return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES20),	s_GLES20);
-		case EGL_OPENGL_ES3_BIT_KHR:	return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES30),	s_GLES30);
-		default:
-			DE_ASSERT(false);
-	}
-
-	return FunctionNames(0, DE_NULL);
-}
-
 } // anonymous
 
 // Base class for eglGetProcAddress() test cases
@@ -106,6 +93,7 @@ public:
 
 protected:
 	EGLDisplay					m_display;
+	int							m_eglVersion;
 
 private:
 	std::vector<std::string>	m_supported;
@@ -128,16 +116,23 @@ void GetProcAddressCase::init (void)
 	{
 		m_supported = eglu::getClientExtensions(m_eglTestCtx.getLibrary());
 	}
-	catch (const eglu::Error& error)
+	catch (const tcu::NotSupportedError& error)
 	{
-		// EGL_BAD_DISPLAY is generated if client extensions are not supported.
-		if (error.getError() != EGL_BAD_DISPLAY)
-			throw;
+		// Ignore case where EGL client extensions are not supported
+		// that's okay for these tests.
 	}
 
 	DE_ASSERT(m_display == EGL_NO_DISPLAY);
 
 	m_display = eglu::getAndInitDisplay(m_eglTestCtx.getNativeDisplay());
+
+	// The EGL_VERSION string is laid out as follows:
+	// major_version.minor_version space vendor_specific_info
+	// Split version from vendor_specific_info
+	std::vector<std::string> tokens = de::splitString(eglQueryString(m_display, EGL_VERSION), ' ');
+	// split version into major & minor
+	std::vector<std::string> values = de::splitString(tokens[0], '.');
+	m_eglVersion = EGL_MAKE_VERSION(atoi(values[0].c_str()), atoi(values[1].c_str()));
 
 	{
 		const std::vector<std::string> displayExtensios = eglu::getDisplayExtensions(m_eglTestCtx.getLibrary(), m_display);
@@ -220,9 +215,18 @@ private:
 class GetProcAddressCoreFunctionsCase : public GetProcAddressCase
 {
 public:
-	GetProcAddressCoreFunctionsCase (EglTestContext& eglTestCtx, const char* name, const char* description, const EGLint apiBit)
+	enum ApiType
+	{
+		EGL14,
+		EGL15,
+		GLES,
+		GLES2,
+		GLES3
+	};
+
+	GetProcAddressCoreFunctionsCase (EglTestContext& eglTestCtx, const char* name, const char* description, const ApiType apiType)
 		: GetProcAddressCase	(eglTestCtx, name, description)
-		, m_apiBit				(apiBit)
+		, m_apiType				(apiType)
 	{
 	}
 
@@ -230,19 +234,90 @@ public:
 	{
 	}
 
+	EGLint RenderableType (ApiType type)
+	{
+		EGLint	renderableType = EGL_OPENGL_ES_BIT;
+		switch (type) {
+			case EGL14:
+			case EGL15:
+			case GLES:
+				renderableType = EGL_OPENGL_ES_BIT;
+				break;
+			case GLES2:
+				renderableType = EGL_OPENGL_ES2_BIT;
+				break;
+			case GLES3:
+				renderableType = EGL_OPENGL_ES3_BIT_KHR;
+				break;
+		}
+		return renderableType;
+	}
+
+	bool isApiSupported (void)
+	{
+		EGLint	renderableType = EGL_OPENGL_ES_BIT;
+		switch (m_apiType) {
+			case EGL14:
+				if (m_eglVersion >= EGL_MAKE_VERSION(1, 4)) return true;
+				return false;
+				break;
+			case EGL15:
+				// With Android Q, EGL 1.5 entry points must have valid
+				// GetProcAddress.
+				if (m_eglVersion >= EGL_MAKE_VERSION(1, 5)) return true;
+				return false;
+				break;
+			case GLES:
+			case GLES2:
+			case GLES3:
+				renderableType = RenderableType(m_apiType);
+				break;
+		}
+		return (eglu::getRenderableAPIsMask(m_eglTestCtx.getLibrary(), m_display) & renderableType) == renderableType;
+	}
+
+	FunctionNames getCoreFunctionNames (EGLint apiType)
+	{
+		switch (apiType)
+		{
+			case EGL14:				return FunctionNames(DE_LENGTH_OF_ARRAY(s_EGL14),	s_EGL14);
+			case EGL15:				return FunctionNames(DE_LENGTH_OF_ARRAY(s_EGL15),	s_EGL15);
+			case GLES	:			return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES10),	s_GLES10);
+			case GLES2:				return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES20),	s_GLES20);
+			case GLES3:			return FunctionNames(DE_LENGTH_OF_ARRAY(s_GLES30),	s_GLES30);
+			default:
+				DE_ASSERT(false);
+		}
+
+		return FunctionNames(0, DE_NULL);
+	}
+
 	void executeTest (void)
 	{
 		TestLog&				log					= m_testCtx.getLog();
 		const bool				funcPtrSupported	= isSupported("EGL_KHR_get_all_proc_addresses");
-		const bool				apiSupported		= (eglu::getRenderableAPIsMask(m_eglTestCtx.getLibrary(), m_display) & m_apiBit) == m_apiBit;
-		const FunctionNames		funcNames			= getCoreFunctionNames(m_apiBit);
+		const bool				apiSupported		= isApiSupported();
+		const FunctionNames		funcNames			= getCoreFunctionNames(m_apiType);
 
 		log << TestLog::Message << "EGL_KHR_get_all_proc_addresses: " << (funcPtrSupported ? "supported" : "not supported") << TestLog::EndMessage;
 		log << TestLog::Message << TestLog::EndMessage;
 
 		if (!apiSupported)
 		{
-			log << TestLog::Message << eglu::getConfigAttribValueStr(EGL_RENDERABLE_TYPE, m_apiBit) << " not supported by any available configuration." << TestLog::EndMessage;
+			switch (m_apiType)
+			{
+				case EGL14:
+					log << TestLog::Message << " EGL not supported by any available configuration." << TestLog::EndMessage;
+					break;
+				case EGL15:
+					log << TestLog::Message << " EGL 1.5 not supported by any available configuration." << TestLog::EndMessage;
+					break;
+				case GLES:
+				case GLES2:
+				case GLES3:
+					log << TestLog::Message << eglu::getConfigAttribValueStr(EGL_RENDERABLE_TYPE, RenderableType(m_apiType)) << " not supported by any available configuration." << TestLog::EndMessage;
+					break;
+			}
 			log << TestLog::Message << TestLog::EndMessage;
 		}
 
@@ -268,7 +343,7 @@ public:
 	}
 
 private:
-	const EGLint	m_apiBit;
+	const ApiType	m_apiType;
 };
 
 GetProcAddressTests::GetProcAddressTests (EglTestContext& eglTestCtx)
@@ -304,10 +379,12 @@ void GetProcAddressTests::init (void)
 		tcu::TestCaseGroup* coreFuncGroup = new tcu::TestCaseGroup(m_testCtx, "core", "Test core functions");
 		addChild(coreFuncGroup);
 
-		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"egl",		"Test EGL core functions",			0));
-		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles",		"Test OpenGL ES core functions",	EGL_OPENGL_ES_BIT));
-		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles2",	"Test OpenGL ES 2 core functions",	EGL_OPENGL_ES2_BIT));
-		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles3",	"Test OpenGL ES 3 core functions",	EGL_OPENGL_ES3_BIT_KHR));
+		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"egl",		"Test EGL core functions",			GetProcAddressCoreFunctionsCase::EGL14));
+
+		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"egl15",	"Test EGL 1.5 functions",			GetProcAddressCoreFunctionsCase::EGL15));
+		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles",		"Test OpenGL ES core functions",	GetProcAddressCoreFunctionsCase::GLES));
+		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles2",	"Test OpenGL ES 2 core functions",	GetProcAddressCoreFunctionsCase::GLES2));
+		coreFuncGroup->addChild(new GetProcAddressCoreFunctionsCase	(m_eglTestCtx,	"gles3",	"Test OpenGL ES 3 core functions",	GetProcAddressCoreFunctionsCase::GLES3));
 	}
 }
 
