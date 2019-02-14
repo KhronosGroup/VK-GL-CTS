@@ -146,7 +146,7 @@ public:
 
 bool isEGLExtensionSupported(
 		const eglw::Library& egl,
-		eglw::EGLDisplay display,
+		eglw::EGLDisplay,
 		const std::string& extName)
 {
 	const vector<string> exts = eglu::getClientExtensions(egl);
@@ -199,7 +199,7 @@ class ContextFactory : public glu::ContextFactory
 {
 public:
 					ContextFactory	(void);
-	glu::RenderContext*		createContext	(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const;
+	glu::RenderContext*		createContext	(const glu::RenderConfig& config, const tcu::CommandLine&, const glu::RenderContext*) const;
 };
 
 class EglRenderContext : public glu::RenderContext
@@ -232,7 +232,7 @@ ContextFactory::ContextFactory()
 	: glu::ContextFactory("default", "EGL surfaceless context")
 {}
 
-glu::RenderContext* ContextFactory::createContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine) const
+glu::RenderContext* ContextFactory::createContext(const glu::RenderConfig& config, const tcu::CommandLine& cmdLine, const glu::RenderContext*) const
 {
 	return new EglRenderContext(config, cmdLine);
 }
@@ -296,7 +296,6 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 			frame_buffer_attribs.push_back(EGL_DONT_CARE);
 			break;
 		case glu::RenderConfig::SURFACETYPE_OFFSCREEN_NATIVE:
-			break;
 		case glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC:
 			frame_buffer_attribs.push_back(EGL_PBUFFER_BIT);
 			surface_attribs.push_back(EGL_WIDTH);
@@ -343,9 +342,13 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig& config, const tcu::C
 		case glu::RenderConfig::SURFACETYPE_DONT_CARE:
 			egl_surface = EGL_NO_SURFACE;
 			break;
+		case glu::RenderConfig::SURFACETYPE_OFFSCREEN_NATIVE:
 		case glu::RenderConfig::SURFACETYPE_OFFSCREEN_GENERIC:
 			egl_surface = eglCreatePbufferSurface(m_eglDisplay, egl_config, &surface_attribs[0]);
 			break;
+		case glu::RenderConfig::SURFACETYPE_WINDOW:
+		case glu::RenderConfig::SURFACETYPE_LAST:
+			TCU_CHECK_INTERNAL(false);
 	}
 
 	context_attribs.push_back(EGL_CONTEXT_MAJOR_VERSION_KHR);
