@@ -44,6 +44,7 @@ void createVkRunnerTests (tcu::TestCaseGroup* graphicsFuzzTests)
 		const char *filename, *name, *description;
 	} tests[] =
 	{
+		{	"continue-and-merge.shader_test",			"continue-and-merge",			"A fragment shader with two nested loops"										},
 		{	"control-flow-switch.shader_test",			"control-flow-switch",			"A fragment shader with somewhat complex control flow and a switch"				},
 		{	"dead-struct-init.shader_test",				"dead-struct-init",				"A fragment shader that uses struct initializers"								},
 		{	"mat-array-deep-control-flow.shader_test",	"mat-array-deep-control-flow",	"A fragment shader that uses an array of matrices and has deep control flow"	},
@@ -63,10 +64,8 @@ void createVkRunnerTests (tcu::TestCaseGroup* graphicsFuzzTests)
 		/* Need to call getShaders() manually to detect any issue in the
 		 * shader test file, like invalid test commands or the file doesn't exist.
 		 */
-		if (testCase->getShaders())
-			graphicsFuzzTests->addChild(testCase);
-		else
-			delete testCase;
+		testCase->getShaders();
+		graphicsFuzzTests->addChild(testCase);
 	}
 }
 
