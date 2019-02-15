@@ -8215,7 +8215,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 		{
 			ops.push_back(OP_PIPELINE_BARRIER_GLOBAL);
 
-			if (state.hasImage)
+			if (state.hasImage && (state.imageLayout != vk::VK_IMAGE_LAYOUT_UNDEFINED))
 				ops.push_back(OP_PIPELINE_BARRIER_IMAGE);
 
 			if (state.hasBuffer)
