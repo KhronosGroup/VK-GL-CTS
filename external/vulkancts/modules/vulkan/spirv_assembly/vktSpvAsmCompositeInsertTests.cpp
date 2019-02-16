@@ -213,7 +213,6 @@ void addGraphicsVectorCompositeInsertTests (tcu::TestCaseGroup* group)
 		SpecConstants		noSpecConstants;
 		PushConstants		noPushConstants;
 		GraphicsInterfaces	noInterfaces;
-		vector<string>		noFeatures;
 		vector<string>		noExtensions;
 		VulkanFeatures		vulkanFeatures	= VulkanFeatures();
 		vector<float>		refData;
@@ -258,21 +257,21 @@ void addGraphicsVectorCompositeInsertTests (tcu::TestCaseGroup* group)
 		vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 		vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
 		createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, (testName + "_vert").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-				noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+				noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 		createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, (testName + "_tessc").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-				noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+				noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 		createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, (testName + "_tesse").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-				noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+				noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 		createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, (testName + "_geom").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-				noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+				noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 		vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
 		vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
 		createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, (testName + "_frag").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-				noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+				noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 	}
 }
 
@@ -365,7 +364,6 @@ void addGraphicsMatrixCompositeInsertTests (tcu::TestCaseGroup* group)
 			SpecConstants			noSpecConstants;
 			PushConstants			noPushConstants;
 			GraphicsInterfaces		noInterfaces;
-			vector<string>			noFeatures;
 			vector<string>			noExtensions;
 			VulkanFeatures			vulkanFeatures	= VulkanFeatures();
 			vector<float>			identityData;
@@ -416,21 +414,21 @@ void addGraphicsMatrixCompositeInsertTests (tcu::TestCaseGroup* group)
 			vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 			vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
 			createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, (testName + "_vert").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-					noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 			createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, (testName + "_tessc").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-					noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 			createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, (testName + "_tesse").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-					noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 			createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, (testName + "_geom").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-					noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 			vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
 			vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
 			createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, (testName + "_frag").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-					noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+					noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 		}
 	}
 }
@@ -508,7 +506,6 @@ void addGraphicsNestedStructCompositeInsertTests (tcu::TestCaseGroup* group)
 	SpecConstants		noSpecConstants;
 	PushConstants		noPushConstants;
 	GraphicsInterfaces	noInterfaces;
-	vector<string>		noFeatures;
 	vector<string>		noExtensions;
 	VulkanFeatures		vulkanFeatures	= VulkanFeatures();
 	vector<float>		identityData;
@@ -559,21 +556,21 @@ void addGraphicsNestedStructCompositeInsertTests (tcu::TestCaseGroup* group)
 	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_FALSE;
 	createTestForStage(VK_SHADER_STAGE_VERTEX_BIT, (testName + "_vert").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-			noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+			noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 	createTestForStage(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, (testName + "_tessc").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-			noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+			noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 	createTestForStage(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, (testName + "_tesse").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-			noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+			noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 	createTestForStage(VK_SHADER_STAGE_GEOMETRY_BIT, (testName + "_geom").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-			noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+			noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 
 	vulkanFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_FALSE;
 	vulkanFeatures.coreFeatures.fragmentStoresAndAtomics = DE_TRUE;
 	createTestForStage(VK_SHADER_STAGE_FRAGMENT_BIT, (testName + "_frag").c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-			noPushConstants, resources, noInterfaces, noExtensions, noFeatures, vulkanFeatures, group);
+			noPushConstants, resources, noInterfaces, noExtensions, vulkanFeatures, group);
 }
 
 } // anonymous

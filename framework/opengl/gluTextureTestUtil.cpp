@@ -164,12 +164,12 @@ inline float bilinearInterpolate (float x, float y, const tcu::Vec4& quad)
 	return quad.x()*w00 + quad.y()*w10 + quad.z()*w01 + quad.w()*w11;
 }
 
-inline float triangleInterpolate (float v0, float v1, float v2, float x, float y)
+float triangleInterpolate (float v0, float v1, float v2, float x, float y)
 {
 	return v0 + (v2-v0)*x + (v1-v0)*y;
 }
 
-inline float triangleInterpolate (const tcu::Vec3& v, float x, float y)
+float triangleInterpolate (const tcu::Vec3& v, float x, float y)
 {
 	return triangleInterpolate(v.x(), v.y(), v.z(), x, y);
 }
@@ -195,7 +195,7 @@ float computeLodFromDerivates (LodMode mode, float dudx, float dudy)
 	return deFloatLog2(p);
 }
 
-static float computeNonProjectedTriLod (LodMode mode, const tcu::IVec2& dstSize, deInt32 srcSize, const tcu::Vec3& sq)
+float computeNonProjectedTriLod (LodMode mode, const tcu::IVec2& dstSize, deInt32 srcSize, const tcu::Vec3& sq)
 {
 	float dux	= (sq.z() - sq.x()) * (float)srcSize;
 	float duy	= (sq.y() - sq.x()) * (float)srcSize;
@@ -233,7 +233,7 @@ float computeLodFromDerivates (LodMode mode, float dudx, float dvdx, float dudy,
 	return deFloatLog2(p);
 }
 
-static float computeNonProjectedTriLod (LodMode mode, const tcu::IVec2& dstSize, const tcu::IVec2& srcSize, const tcu::Vec3& sq, const tcu::Vec3& tq)
+float computeNonProjectedTriLod (LodMode mode, const tcu::IVec2& dstSize, const tcu::IVec2& srcSize, const tcu::Vec3& sq, const tcu::Vec3& tq)
 {
 	float dux	= (sq.z() - sq.x()) * (float)srcSize.x();
 	float duy	= (sq.y() - sq.x()) * (float)srcSize.x();
@@ -274,7 +274,7 @@ float computeLodFromDerivates (LodMode mode, float dudx, float dvdx, float dwdx,
 	return deFloatLog2(p);
 }
 
-static float computeNonProjectedTriLod (LodMode mode, const tcu::IVec2& dstSize, const tcu::IVec3& srcSize, const tcu::Vec3& sq, const tcu::Vec3& tq, const tcu::Vec3& rq)
+float computeNonProjectedTriLod (LodMode mode, const tcu::IVec2& dstSize, const tcu::IVec3& srcSize, const tcu::Vec3& sq, const tcu::Vec3& tq, const tcu::Vec3& rq)
 {
 	float dux	= (sq.z() - sq.x()) * (float)srcSize.x();
 	float duy	= (sq.y() - sq.x()) * (float)srcSize.x();

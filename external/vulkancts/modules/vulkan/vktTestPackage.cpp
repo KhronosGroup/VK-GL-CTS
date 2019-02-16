@@ -89,6 +89,7 @@
 #include "vktDeviceGroupTests.hpp"
 #include "vktMemoryModelTests.hpp"
 #include "vktVkRunnerExampleTests.hpp"
+#include "vktVkRunnerGraphicsFuzzTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -464,40 +465,41 @@ tcu::TestCaseExecutor* TestPackage::createExecutor (void) const
 
 void TestPackage::init (void)
 {
-	addChild(createTestGroup				(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
-	addChild(api::createTests				(m_testCtx));
-	addChild(memory::createTests			(m_testCtx));
-	addChild(pipeline::createTests			(m_testCtx));
-	addChild(BindingModel::createTests		(m_testCtx));
-	addChild(SpirVAssembly::createTests		(m_testCtx));
-	addChild(createTestGroup				(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
-	addChild(createRenderPassTests			(m_testCtx));
-	addChild(createRenderPass2Tests			(m_testCtx));
-	addChild(ubo::createTests				(m_testCtx));
-	addChild(DynamicState::createTests		(m_testCtx));
-	addChild(ssbo::createTests				(m_testCtx));
-	addChild(QueryPool::createTests			(m_testCtx));
-	addChild(Draw::createTests				(m_testCtx));
-	addChild(compute::createTests			(m_testCtx));
-	addChild(image::createTests				(m_testCtx));
-	addChild(wsi::createTests				(m_testCtx));
-	addChild(synchronization::createTests	(m_testCtx));
-	addChild(sparse::createTests			(m_testCtx));
-	addChild(tessellation::createTests		(m_testCtx));
-	addChild(rasterization::createTests		(m_testCtx));
-	addChild(clipping::createTests			(m_testCtx));
-	addChild(FragmentOperations::createTests(m_testCtx));
-	addChild(texture::createTests			(m_testCtx));
-	addChild(geometry::createTests			(m_testCtx));
-	addChild(robustness::createTests		(m_testCtx));
-	addChild(MultiView::createTests			(m_testCtx));
-	addChild(subgroups::createTests			(m_testCtx));
-	addChild(ycbcr::createTests				(m_testCtx));
-	addChild(ProtectedMem::createTests		(m_testCtx));
-	addChild(DeviceGroup::createTests		(m_testCtx));
-	addChild(MemoryModel::createTests		(m_testCtx));
-	addChild(conditional::createTests		(m_testCtx));
-	addChild(vkrunner::createTests			(m_testCtx));
+	addChild(createTestGroup					(m_testCtx, "info", "Build and Device Info Tests", createInfoTests));
+	addChild(api::createTests					(m_testCtx));
+	addChild(memory::createTests				(m_testCtx));
+	addChild(pipeline::createTests				(m_testCtx));
+	addChild(BindingModel::createTests			(m_testCtx));
+	addChild(SpirVAssembly::createTests			(m_testCtx));
+	addChild(createTestGroup					(m_testCtx, "glsl", "GLSL shader execution tests", createGlslTests));
+	addChild(createRenderPassTests				(m_testCtx));
+	addChild(createRenderPass2Tests				(m_testCtx));
+	addChild(ubo::createTests					(m_testCtx));
+	addChild(DynamicState::createTests			(m_testCtx));
+	addChild(ssbo::createTests					(m_testCtx));
+	addChild(QueryPool::createTests				(m_testCtx));
+	addChild(Draw::createTests					(m_testCtx));
+	addChild(compute::createTests				(m_testCtx));
+	addChild(image::createTests					(m_testCtx));
+	addChild(wsi::createTests					(m_testCtx));
+	addChild(synchronization::createTests		(m_testCtx));
+	addChild(sparse::createTests				(m_testCtx));
+	addChild(tessellation::createTests			(m_testCtx));
+	addChild(rasterization::createTests			(m_testCtx));
+	addChild(clipping::createTests				(m_testCtx));
+	addChild(FragmentOperations::createTests	(m_testCtx));
+	addChild(texture::createTests				(m_testCtx));
+	addChild(geometry::createTests				(m_testCtx));
+	addChild(robustness::createTests			(m_testCtx));
+	addChild(MultiView::createTests				(m_testCtx));
+	addChild(subgroups::createTests				(m_testCtx));
+	addChild(ycbcr::createTests					(m_testCtx));
+	addChild(ProtectedMem::createTests			(m_testCtx));
+	addChild(DeviceGroup::createTests			(m_testCtx));
+	addChild(MemoryModel::createTests			(m_testCtx));
+	addChild(conditional::createTests			(m_testCtx));
+	addChild(vkrunner::createTests				(m_testCtx));
+	addChild(vkrunner::createGraphicsFuzzTests	(m_testCtx));
 }
 
 } // vkt

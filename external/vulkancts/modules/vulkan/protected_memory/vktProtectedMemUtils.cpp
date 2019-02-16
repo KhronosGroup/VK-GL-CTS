@@ -832,7 +832,7 @@ void uploadImage (ProtectedContext& ctx, vk::VkImage image, const tcu::Texture2D
 	}
 }
 
-void copyToProtectedImage (ProtectedContext& ctx, vk::VkImage srcImage, vk::VkImage dstImage, deUint32 width, deUint32 height)
+void copyToProtectedImage (ProtectedContext& ctx, vk::VkImage srcImage, vk::VkImage dstImage, vk::VkImageLayout dstImageLayout, deUint32 width, deUint32 height)
 {
 	const vk::DeviceInterface&			vk					= ctx.getDeviceInterface();
 	const vk::VkDevice					device				= ctx.getDevice();
@@ -888,7 +888,7 @@ void copyToProtectedImage (ProtectedContext& ctx, vk::VkImage srcImage, vk::VkIm
 		vk::VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags			srcAccessMask;
 		vk::VK_ACCESS_SHADER_READ_BIT,					// VkAccessFlags			dstAccessMask;
 		vk::VK_IMAGE_LAYOUT_GENERAL,					// VkImageLayout			oldLayout;
-		vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,	// VkImageLayout			newLayout;
+		dstImageLayout,									// VkImageLayout			newLayout;
 		queueFamilyIndex,								// deUint32					srcQueueFamilyIndex;
 		queueFamilyIndex,								// deUint32					dstQueueFamilyIndex;
 		dstImage,										// VkImage					image;

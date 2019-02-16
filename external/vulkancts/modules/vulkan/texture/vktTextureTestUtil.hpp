@@ -114,7 +114,7 @@ enum Program
 	PROGRAM_LAST
 };
 
-void initializePrograms(vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs);
+void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle = DE_NULL);
 
 typedef de::SharedPtr<pipeline::TestTexture>		TestTextureSp;
 typedef de::SharedPtr<pipeline::TestTexture2D>		TestTexture2DSp;

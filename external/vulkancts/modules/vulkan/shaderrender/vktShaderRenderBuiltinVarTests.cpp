@@ -1597,7 +1597,7 @@ TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
 	const UVec2		viewportSize	= getViewportSize();
 	const int		width			= viewportSize.x();
 	const int		height			= viewportSize.y();
-	const tcu::Vec3	scale			(1.f / float(width), 1.f / float(height), 1.0f);
+	const tcu::Vec3	scale			(1.0f / float(width), 1.0f / float(height), 1.0f);
 	const float		precision		= 0.00001f;
 	const deUint16	indices[6]		=
 	{
@@ -1818,17 +1818,28 @@ TestInstance* BuiltinGlFragCoordWCase::createInstance (Context& context) const
 	return new BuiltinGlFragCoordWCaseInstance(context);
 }
 
+enum
+{
+	POINTCOORD_VARIANT_DEFAULT,
+	POINTCOORD_VARIANT_UNIFORM_VERTEX,
+	POINTCOORD_VARIANT_UNIFORM_FRAGMENT
+};
+
+
 class BuiltinGlPointCoordCaseInstance : public ShaderRenderCaseInstance
 {
 public:
-					BuiltinGlPointCoordCaseInstance	(Context& context);
+					BuiltinGlPointCoordCaseInstance	(Context& context, int testVariant);
 
 	TestStatus		iterate								(void);
 	virtual void	setupDefaultInputs					(void);
+private:
+	int				variant;
 };
 
-BuiltinGlPointCoordCaseInstance::BuiltinGlPointCoordCaseInstance (Context& context)
-	: ShaderRenderCaseInstance	(context)
+BuiltinGlPointCoordCaseInstance::BuiltinGlPointCoordCaseInstance (Context& context, int testVariant)
+	: ShaderRenderCaseInstance	(context),
+	  variant(testVariant)
 {
 }
 
@@ -1844,6 +1855,7 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 	Surface					resImage		(width, height);
 	Surface					refImage		(width, height);
 	bool					compareOk		= false;
+	const tcu::Vec3			scale(1.0f / float(width), 1.0f / float(height), 1.0f);
 
 	// Compute coordinates.
 	{
@@ -1863,6 +1875,10 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 	}
 
 	setup();
+
+	if (variant == POINTCOORD_VARIANT_UNIFORM_VERTEX || variant == POINTCOORD_VARIANT_UNIFORM_FRAGMENT)
+		addUniform(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, scale);
+
 	addAttribute(0u, VK_FORMAT_R32G32B32_SFLOAT, deUint32(sizeof(Vec3)), numPoints, &coords[0]);
 	render(numPoints, 0, DE_NULL, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
 	copy(resImage.getAccess(), getResultImage().getAccess());
@@ -1872,8 +1888,15 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 
 	for (vector<Vec3>::const_iterator pointIter = coords.begin(); pointIter != coords.end(); ++pointIter)
 	{
-		const float	centerX	= float(width) *(pointIter->x()*0.5f + 0.5f);
-		const float	centerY	= float(height)*(pointIter->y()*0.5f + 0.5f);
+		float x = pointIter->x();
+		float y = pointIter->y();
+		if (variant == POINTCOORD_VARIANT_UNIFORM_VERTEX)
+		{
+			x *= scale.m_data[0];
+			y *= scale.m_data[1];
+		}
+		const float	centerX	= float(width) *(x*0.5f + 0.5f);
+		const float	centerY	= float(height)*(y*0.5f + 0.5f);
 		const float	size	= pointIter->z();
 		const int	x0		= deRoundFloatToInt32(centerX - size*0.5f);
 		const int	y0		= deRoundFloatToInt32(centerY - size*0.5f);
@@ -1892,7 +1915,14 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 				const float		fragY	= float(dy) + 0.5f;
 				const float		s		= 0.5f + (fragX - centerX) / size;
 				const float		t		= 0.5f + (fragY - centerY) / size;
-				const Vec4		color	(s, t, 0.0f, 1.0f);
+				Vec4			color	(s, t, 0.0f, 1.0f);
+
+				if (variant == POINTCOORD_VARIANT_UNIFORM_FRAGMENT)
+				{
+					color.m_data[0] *= scale.m_data[0];
+					color.m_data[1] *= scale.m_data[1];
+					color.m_data[2] *= scale.m_data[2];
+				}
 
 				if (de::inBounds(dx, 0, refImage.getWidth()) && de::inBounds(dy, 0, refImage.getHeight()))
 					refImage.setPixel(dx, dy, RGBA(color));
@@ -1915,19 +1945,21 @@ void BuiltinGlPointCoordCaseInstance::setupDefaultInputs (void)
 class BuiltinGlPointCoordCase : public TestCase
 {
 public:
-								BuiltinGlPointCoordCase	(TestContext& testCtx, const string& name, const string& description);
+								BuiltinGlPointCoordCase	(TestContext& testCtx, const string& name, const string& description, int testVariant);
 	virtual						~BuiltinGlPointCoordCase	(void);
 
 	void						initPrograms				(SourceCollections& dst) const;
 	TestInstance*				createInstance				(Context& context) const;
 
 private:
+	int							variant;
 								BuiltinGlPointCoordCase	(const BuiltinGlPointCoordCase&);	// not allowed!
 	BuiltinGlPointCoordCase&	operator=					(const BuiltinGlPointCoordCase&);	// not allowed!
 };
 
-BuiltinGlPointCoordCase::BuiltinGlPointCoordCase (TestContext& testCtx, const string& name, const string& description)
-	: TestCase(testCtx, name, description)
+BuiltinGlPointCoordCase::BuiltinGlPointCoordCase (TestContext& testCtx, const string& name, const string& description, int testVariant)
+	: TestCase(testCtx, name, description),
+	  variant(testVariant)
 {
 }
 
@@ -1937,27 +1969,69 @@ BuiltinGlPointCoordCase::~BuiltinGlPointCoordCase (void)
 
 void BuiltinGlPointCoordCase::initPrograms (SourceCollections& dst) const
 {
-	dst.glslSources.add("vert") << glu::VertexSource(
-		"#version 310 es\n"
-		"layout(location = 0) in highp vec3 a_position;\n"
-		"void main (void)\n"
-		"{\n"
-		"    gl_Position = vec4(a_position.xy, 0.0, 1.0);\n"
-		"    gl_PointSize = a_position.z;\n"
-		"}\n");
+	switch (variant)
+	{
+	case POINTCOORD_VARIANT_UNIFORM_FRAGMENT:
+		dst.glslSources.add("vert") << glu::VertexSource(
+			"#version 310 es\n"
+			"layout(location = 0) in highp vec3 a_position;\n"
+			"void main (void)\n"
+			"{\n"
+			"    gl_Position = vec4(a_position.xy, 0.0, 1.0);\n"
+			"    gl_PointSize = a_position.z;\n"
+			"}\n");
 
-	dst.glslSources.add("frag") << glu::FragmentSource(
-		"#version 310 es\n"
-		"layout(location = 0) out lowp vec4 o_color;\n"
-		"void main (void)\n"
-		"{\n"
-		"    o_color = vec4(gl_PointCoord, 0.0, 1.0);\n"
-		"}\n");
+		dst.glslSources.add("frag") << glu::FragmentSource(
+			"#version 310 es\n"
+			"layout(set=0, binding=0) uniform Scale { highp vec3 u_scale; };\n"
+			"layout(location = 0) out lowp vec4 o_color;\n"
+			"void main (void)\n"
+			"{\n"
+			"    o_color = vec4(gl_PointCoord, 0.0, 1.0) * vec4(u_scale, 1.0);\n"
+			"}\n");
+		break;
+	case POINTCOORD_VARIANT_UNIFORM_VERTEX:
+		dst.glslSources.add("vert") << glu::VertexSource(
+			"#version 310 es\n"
+			"layout(set=0, binding=0) uniform Scale { highp vec3 u_scale; };\n"
+			"layout(location = 0) in highp vec3 a_position;\n"
+			"void main (void)\n"
+			"{\n"
+			"    gl_Position = vec4(a_position.xy, 0.0, 1.0) * vec4(u_scale, 1.0);\n"
+			"    gl_PointSize = a_position.z;\n"
+			"}\n");
+
+		dst.glslSources.add("frag") << glu::FragmentSource(
+			"#version 310 es\n"
+			"layout(location = 0) out lowp vec4 o_color;\n"
+			"void main (void)\n"
+			"{\n"
+			"    o_color = vec4(gl_PointCoord, 0.0, 1.0);\n"
+			"}\n");
+		break;
+	default: // POINTCOORD_VARIANT_DEFAULT
+		dst.glslSources.add("vert") << glu::VertexSource(
+			"#version 310 es\n"
+			"layout(location = 0) in highp vec3 a_position;\n"
+			"void main (void)\n"
+			"{\n"
+			"    gl_Position = vec4(a_position.xy, 0.0, 1.0);\n"
+			"    gl_PointSize = a_position.z;\n"
+			"}\n");
+
+		dst.glslSources.add("frag") << glu::FragmentSource(
+			"#version 310 es\n"
+			"layout(location = 0) out lowp vec4 o_color;\n"
+			"void main (void)\n"
+			"{\n"
+			"    o_color = vec4(gl_PointCoord, 0.0, 1.0);\n"
+			"}\n");
+	}
 }
 
 TestInstance* BuiltinGlPointCoordCase::createInstance (Context& context) const
 {
-	return new BuiltinGlPointCoordCaseInstance(context);
+	return new BuiltinGlPointCoordCaseInstance(context, variant);
 }
 
 enum ShaderInputTypeBits
@@ -2221,7 +2295,9 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 
 	simpleGroup->addChild(new BuiltinGlFragCoordXYZCase(testCtx, "fragcoord_xyz", "FragCoord xyz test"));
 	simpleGroup->addChild(new BuiltinGlFragCoordWCase(testCtx, "fragcoord_w", "FragCoord w test"));
-	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord", "PointCoord test"));
+	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord", "PointCoord test", POINTCOORD_VARIANT_DEFAULT));
+	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord_uniform_frag", "PointCoord test with fragment uniform", POINTCOORD_VARIANT_UNIFORM_FRAGMENT));
+	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord_uniform_vert", "PointCoord test with vertex uniform", POINTCOORD_VARIANT_UNIFORM_VERTEX));
 
 	// FragCoord_msaa
 	{

@@ -1351,6 +1351,82 @@ def writeSupportedExtenions(api, filename):
 	""] + removeVersionDefines(versionSet)
 	writeInlFile(filename, INL_HEADER, lines)
 
+def writeExtensionFunctions (api, filename):
+
+	def isInstanceExtension (ext):
+		if ext.name and ext.functions:
+			if ext.functions[0].getType() == Function.TYPE_INSTANCE:
+				return True
+			else:
+				return False
+
+	def isDeviceExtension (ext):
+		if ext.name and ext.functions:
+			if ext.functions[0].getType() == Function.TYPE_DEVICE:
+				return True
+			else:
+				return False
+
+	def writeExtensionNameArrays ():
+		instanceExtensionNames = []
+		deviceExtensionNames = []
+		for ext in api.extensions:
+			if ext.name and isInstanceExtension(ext):
+				instanceExtensionNames += [ext.name]
+			elif ext.name and isDeviceExtension(ext):
+				deviceExtensionNames += [ext.name]
+		yield '::std::string instanceExtensionNames[] =\n{'
+		for instanceExtName in instanceExtensionNames:
+			if (instanceExtName == instanceExtensionNames[len(instanceExtensionNames) - 1]):
+				yield '\t"%s"' % instanceExtName
+			else:
+				yield '\t"%s",' % instanceExtName
+		yield '};\n'
+		yield '::std::string deviceExtensionNames[] =\n{'
+		for deviceExtName in deviceExtensionNames:
+			if (deviceExtName == deviceExtensionNames[len(deviceExtensionNames) - 1]):
+				yield '\t"%s"' % deviceExtName
+			else:
+				yield '\t"%s",' % deviceExtName
+		yield '};'
+
+	def writeExtensionFunctions (functionType):
+		isFirstWrite = True
+		if functionType == Function.TYPE_INSTANCE:
+			yield 'void getInstanceExtensionFunctions (::std::string extName, ::std::vector<const char*>& functions)\n{'
+		elif functionType == Function.TYPE_DEVICE:
+			yield 'void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const char*>& functions)\n{'
+		for ext in api.extensions:
+			funcNames = []
+			if ext.name:
+				for func in ext.functions:
+					if func.getType() == functionType:
+						funcNames.append(func.name)
+			if (funcNames):
+				yield ('\tif (extName == "%s")' % ext.name) if isFirstWrite else  ('\telse if (extName == "%s")' % ext.name)
+				if (len(funcNames) > 1):
+					yield "\t{"
+				for funcName in funcNames:
+					yield '\t\tfunctions.push_back("%s");' % funcName
+				if (len(funcNames) > 1):
+					yield '\t}'
+				isFirstWrite = False
+		if not isFirstWrite:
+			yield '\telse'
+			yield '\t\tDE_ASSERT("Extension name not found");\n}'
+
+	lines = ['']
+	for line in writeExtensionFunctions(Function.TYPE_INSTANCE):
+		lines += [line]
+	lines += ['']
+	for line in writeExtensionFunctions(Function.TYPE_DEVICE):
+		lines += [line]
+	lines += ['']
+	for line in writeExtensionNameArrays():
+		lines += [line]
+
+	writeInlFile(filename, INL_HEADER, lines)
+
 def writeCoreFunctionalities(api, filename):
 	functionOriginValues = ["FUNCTIONORIGIN_PLATFORM", "FUNCTIONORIGIN_INSTANCE", "FUNCTIONORIGIN_DEVICE"]
 
@@ -1430,3 +1506,4 @@ if __name__ == "__main__":
 	writeTypeUtil				(api, os.path.join(VULKAN_DIR, "vkTypeUtil.inl"))
 	writeSupportedExtenions		(api, os.path.join(VULKAN_DIR, "vkSupportedExtensions.inl"))
 	writeCoreFunctionalities	(api, os.path.join(VULKAN_DIR, "vkCoreFunctionalities.inl"))
+	writeExtensionFunctions		(api, os.path.join(VULKAN_DIR, "vkExtensionFunctions.inl"))

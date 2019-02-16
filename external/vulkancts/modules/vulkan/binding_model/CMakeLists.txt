@@ -11,6 +11,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDescriptorUpdateTests.hpp
 	vktBindingDescriptorSetRandomTests.cpp
 	vktBindingDescriptorSetRandomTests.hpp
+	vktBindingDescriptorCopyTests.cpp
+	vktBindingDescriptorCopyTests.hpp
 	)
 
 set(DEQP_VK_BINDING_MODEL_LIBS

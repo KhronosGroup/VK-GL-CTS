@@ -59,10 +59,8 @@ void createVkRunnerTests (tcu::TestCaseGroup* vkRunnerTests)
 		/* Need to call getShaders() manually to detect any issue in the
 		 * shader test file, like invalid test commands or the file doesn't exist.
 		 */
-		if (testCase->getShaders())
-			vkRunnerTests->addChild(testCase);
-		else
-			delete testCase;
+		testCase->getShaders();
+		vkRunnerTests->addChild(testCase);
 	}
 
 	// Add some tests of the sqrt function using the templating mechanism
@@ -85,10 +83,8 @@ void createVkRunnerTests (tcu::TestCaseGroup* vkRunnerTests)
 		 * replacements in the shader test. Otherwise, VkRunner will fail when found
 		 * unknown commands or invalid sentences when processing the shader test file.
 		 */
-		if (testCase->getShaders())
-			vkRunnerTests->addChild(testCase);
-		else
-			delete testCase;
+		testCase->getShaders();
+		vkRunnerTests->addChild(testCase);
 	}
 }
 

@@ -1671,6 +1671,8 @@ void addTwoInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGroup*
 		"OpDecorate %in_b			DescriptorSet 0				\n"
 		"OpDecorate %in_a			Binding 0					\n"
 		"OpDecorate %in_b			Binding 1					\n"
+		"OpDecorate %in_a			NonWritable					\n"
+		"OpDecorate %in_b			NonWritable					\n"
 	);
 
 	const StringTemplate preMain		(
@@ -2072,6 +2074,7 @@ void addSingleInputBufferReadOnlyVariablePointersGraphicsGroup (tcu::TestCaseGro
 
 		"OpDecorate %input			DescriptorSet 0				\n"
 		"OpDecorate %input			Binding 0					\n"
+		"OpDecorate %input			NonWritable					\n"
 	);
 
 	const StringTemplate preMain		(
@@ -2444,6 +2447,7 @@ void addNullptrVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 		// Decorations
 		"OpDecorate %input DescriptorSet 0				\n"
 		"OpDecorate %input Binding 0					\n"
+		"OpDecorate %input NonWritable					\n"
 
 		// Set the Block decoration
 		"OpDecorate %float_struct	Block				\n"

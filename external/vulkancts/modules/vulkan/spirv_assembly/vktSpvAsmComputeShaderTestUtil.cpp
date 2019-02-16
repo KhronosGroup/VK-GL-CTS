@@ -60,13 +60,16 @@ bool verifyOutputWithEpsilon (const std::vector<AllocationSp>& outputAllocs, con
 }
 }
 
-const char* getComputeAsmShaderPreamble (void)
+std::string getComputeAsmShaderPreamble (const std::string& capabilities, const std::string& extensions, const std::string& exeModes)
 {
 	return
-		"OpCapability Shader\n"
+		std::string("OpCapability Shader\n") +
+		capabilities +
+		extensions +
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
-		"OpExecutionMode %main LocalSize 1 1 1\n";
+		"OpExecutionMode %main LocalSize 1 1 1\n"+
+		exeModes;
 }
 
 const char* getComputeAsmShaderPreambleWithoutLocalSize (void)
@@ -149,6 +152,7 @@ std::string makeComputeShaderAssembly(const std::map<std::string, std::string>& 
 		"OpMemoryModel Logical GLSL450\n"
 		"OpEntryPoint GLCompute %BP_main \"main\" %BP_id3u\n"
 		"OpExecutionMode %BP_main LocalSize 1 1 1\n"
+		"${execution_mode:opt}\n"
 		"OpSource GLSL 430\n"
 		"OpDecorate %BP_id3u BuiltIn GlobalInvocationId\n"
 

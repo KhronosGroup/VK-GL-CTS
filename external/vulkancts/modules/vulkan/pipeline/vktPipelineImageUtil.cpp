@@ -28,6 +28,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkTypeUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuAstcUtil.hpp"
 #include "deRandom.hpp"
@@ -271,6 +272,121 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment (const vk::DeviceInterface&	v
 	// Read buffer data
 	invalidateAlloc(vk, device, *bufferAlloc);
 	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(resultLevel->getFormat(), resultLevel->getSize(), bufferAlloc->getHostPtr()));
+
+	return resultLevel;
+}
+
+de::MovePtr<tcu::TextureLevel> readDepthAttachment (const vk::DeviceInterface&	vk,
+													vk::VkDevice				device,
+													vk::VkQueue					queue,
+													deUint32					queueFamilyIndex,
+													vk::Allocator&				allocator,
+													vk::VkImage					image,
+													vk::VkFormat				format,
+													const tcu::UVec2&			renderSize)
+{
+	Move<VkBuffer>					buffer;
+	de::MovePtr<Allocation>			bufferAlloc;
+	Move<VkCommandPool>				cmdPool;
+	Move<VkCommandBuffer>			cmdBuffer;
+	Move<VkFence>					fence;
+
+	tcu::TextureFormat				retFormat		(tcu::TextureFormat::D, tcu::TextureFormat::CHANNELTYPE_LAST);
+	tcu::TextureFormat				bufferFormat	(tcu::TextureFormat::D, tcu::TextureFormat::CHANNELTYPE_LAST);
+	switch (format)
+	{
+	case vk::VK_FORMAT_D16_UNORM:
+	case vk::VK_FORMAT_D16_UNORM_S8_UINT:
+		bufferFormat.type = retFormat.type = tcu::TextureFormat::UNORM_INT16;
+		break;
+	case vk::VK_FORMAT_D24_UNORM_S8_UINT:
+	case vk::VK_FORMAT_X8_D24_UNORM_PACK32:
+		retFormat.type = tcu::TextureFormat::UNORM_INT24;
+		// vkCmdCopyBufferToImage copies D24 data to 32-bit pixels.
+		bufferFormat.type = tcu::TextureFormat::UNSIGNED_INT_24_8_REV;
+		break;
+	case vk::VK_FORMAT_D32_SFLOAT:
+	case vk::VK_FORMAT_D32_SFLOAT_S8_UINT:
+		bufferFormat.type = retFormat.type = tcu::TextureFormat::FLOAT;
+		break;
+	default:
+		TCU_FAIL("unrecognized format");
+	}
+
+	const VkDeviceSize				pixelDataSize	= renderSize.x() * renderSize.y() * bufferFormat.getPixelSize();
+	de::MovePtr<tcu::TextureLevel>	resultLevel		(new tcu::TextureLevel(retFormat, renderSize.x(), renderSize.y()));
+
+	// Create destination buffer
+	{
+		const VkBufferCreateInfo bufferParams =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,		// VkStructureType		sType;
+			DE_NULL,									// const void*			pNext;
+			0u,											// VkBufferCreateFlags	flags;
+			pixelDataSize,								// VkDeviceSize			size;
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT,			// VkBufferUsageFlags	usage;
+			VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode		sharingMode;
+			0u,											// deUint32				queueFamilyIndexCount;
+			DE_NULL										// const deUint32*		pQueueFamilyIndices;
+		};
+
+		buffer		= createBuffer(vk, device, &bufferParams);
+		bufferAlloc = allocator.allocate(getBufferMemoryRequirements(vk, device, *buffer), MemoryRequirement::HostVisible);
+		VK_CHECK(vk.bindBufferMemory(device, *buffer, bufferAlloc->getMemory(), bufferAlloc->getOffset()));
+	}
+
+	// Create command pool and buffer
+	cmdPool		= createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+	cmdBuffer	= allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	// Create fence
+	fence = createFence(vk, device);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+
+	const VkImageSubresourceLayers	subresource	=
+	{
+		VK_IMAGE_ASPECT_DEPTH_BIT,					// VkImageAspectFlags	aspectMask;
+		0u,											// deUint32				mipLevel;
+		0u,											// deUint32				baseArrayLayer;
+		1u,											// deUint32				layerCount;
+	};
+
+	const VkBufferImageCopy			region		=
+	{
+		0ull,												// VkDeviceSize					bufferOffset;
+		0u,													// deUint32						bufferRowLength;
+		0u,													// deUint32						bufferImageHeight;
+		subresource,										// VkImageSubresourceLayers		imageSubresource;
+		makeOffset3D(0, 0, 0),								// VkOffset3D					imageOffset;
+		makeExtent3D(renderSize.x(), renderSize.y(), 1u)	// VkExtent3D					imageExtent;
+	};
+
+	vk.cmdCopyImageToBuffer(*cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *buffer, 1u, &region);
+
+	const VkBufferMemoryBarrier	bufferBarrier =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType;
+		DE_NULL,									// const void*		pNext;
+		VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask;
+		VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex;
+		VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex;
+		*buffer,									// VkBuffer			buffer;
+		0ull,										// VkDeviceSize		offset;
+		VK_WHOLE_SIZE								// VkDeviceSize		size;
+	};
+
+	vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
+						  0u, DE_NULL, 1u, &bufferBarrier, 0u, DE_NULL);
+
+	endCommandBuffer(vk, *cmdBuffer);
+
+	submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+	// Read buffer data
+	invalidateAlloc(vk, device, *bufferAlloc);
+	tcu::copy(*resultLevel, tcu::ConstPixelBufferAccess(bufferFormat, resultLevel->getSize(), bufferAlloc->getHostPtr()));
 
 	return resultLevel;
 }

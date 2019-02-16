@@ -161,7 +161,7 @@ VkImageType imageViewTypeToImageType (VkImageViewType type)
 	return VK_IMAGE_TYPE_2D;
 }
 
-void initializePrograms(vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs)
+void initializePrograms (vk::SourceCollections& programCollection, glu::Precision texCoordPrecision, const std::vector<Program>& programs, const char* texCoordSwizzle)
 {
 	static const char* vertShaderTemplate =
 		"${VTX_HEADER}"
@@ -190,7 +190,8 @@ void initializePrograms(vk::SourceCollections& programCollection, glu::Precision
 		"layout (set=1, binding=0) uniform ${PRECISION} ${SAMPLER_TYPE} u_sampler;\n"
 		"void main (void)\n"
 		"{\n"
-		"	${FRAG_COLOR} = ${LOOKUP} * u_colorScale + u_colorBias;\n"
+		"  ${PRECISION} ${TEXCOORD_TYPE} texCoord = v_texCoord${TEXCOORD_SWZ:opt};\n"
+		"  ${FRAG_COLOR} = ${LOOKUP} * u_colorScale + u_colorBias;\n"
 		"}\n";
 
 	tcu::StringTemplate					vertexSource	(vertShaderTemplate);
@@ -237,56 +238,59 @@ void initializePrograms(vk::SourceCollections& programCollection, glu::Precision
 		else
 			DE_ASSERT(DE_FALSE);
 
+		if (texCoordSwizzle)
+			params["TEXCOORD_SWZ"]	= std::string(".") + texCoordSwizzle;
+
 		const char*	sampler	= DE_NULL;
 		const char*	lookup	= DE_NULL;
 
 		switch (program)
 		{
-			case PROGRAM_2D_FLOAT:			sampler = "sampler2D";				lookup = "texture(u_sampler, v_texCoord)";												break;
-			case PROGRAM_2D_INT:			sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_2D_UINT:			sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_2D_SHADOW:			sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(v_texCoord, u_ref)), 0.0, 0.0, 1.0)";			break;
-			case PROGRAM_2D_FLOAT_BIAS:		sampler = "sampler2D";				lookup = "texture(u_sampler, v_texCoord, u_bias)";										break;
-			case PROGRAM_2D_INT_BIAS:		sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_2D_UINT_BIAS:		sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_2D_SHADOW_BIAS:	sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(v_texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";	break;
-			case PROGRAM_1D_FLOAT:			sampler = "sampler1D";				lookup = "texture(u_sampler, v_texCoord)";												break;
-			case PROGRAM_1D_INT:			sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_1D_UINT:			sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_1D_SHADOW:			sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(v_texCoord, 0.0, u_ref)), 0.0, 0.0, 1.0)";		break;
-			case PROGRAM_1D_FLOAT_BIAS:		sampler = "sampler1D";				lookup = "texture(u_sampler, v_texCoord, u_bias)";										break;
-			case PROGRAM_1D_INT_BIAS:		sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_1D_UINT_BIAS:		sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_1D_SHADOW_BIAS:	sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(v_texCoord, 0.0, u_ref), u_bias), 0.0, 0.0, 1.0)";	break;
-			case PROGRAM_CUBE_FLOAT:		sampler = "samplerCube";			lookup = "texture(u_sampler, v_texCoord)";												break;
-			case PROGRAM_CUBE_INT:			sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_CUBE_UINT:			sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_CUBE_SHADOW:		sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(v_texCoord, u_ref)), 0.0, 0.0, 1.0)";			break;
-			case PROGRAM_CUBE_FLOAT_BIAS:	sampler = "samplerCube";			lookup = "texture(u_sampler, v_texCoord, u_bias)";										break;
-			case PROGRAM_CUBE_INT_BIAS:		sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_CUBE_UINT_BIAS:	sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_CUBE_SHADOW_BIAS:	sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(v_texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";	break;
-			case PROGRAM_2D_ARRAY_FLOAT:	sampler = "sampler2DArray";			lookup = "texture(u_sampler, v_texCoord)";												break;
-			case PROGRAM_2D_ARRAY_INT:		sampler = "isampler2DArray";		lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_2D_ARRAY_UINT:		sampler = "usampler2DArray";		lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_2D_ARRAY_SHADOW:	sampler = "sampler2DArrayShadow";	lookup = "vec4(texture(u_sampler, vec4(v_texCoord, u_ref)), 0.0, 0.0, 1.0)";			break;
-			case PROGRAM_3D_FLOAT:			sampler = "sampler3D";				lookup = "texture(u_sampler, v_texCoord)";												break;
-			case PROGRAM_3D_INT:			sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_3D_UINT:			sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_3D_FLOAT_BIAS:		sampler = "sampler3D";				lookup = "texture(u_sampler, v_texCoord, u_bias)";										break;
-			case PROGRAM_3D_INT_BIAS:		sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_3D_UINT_BIAS:		sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, v_texCoord, u_bias))";								break;
-			case PROGRAM_CUBE_ARRAY_FLOAT:	sampler = "samplerCubeArray";		lookup = "texture(u_sampler, v_texCoord)";												break;
-			case PROGRAM_CUBE_ARRAY_INT:	sampler = "isamplerCubeArray";		lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_CUBE_ARRAY_UINT:	sampler = "usamplerCubeArray";		lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_CUBE_ARRAY_SHADOW:	sampler = "samplerCubeArrayShadow";	lookup = "vec4(texture(u_sampler, v_texCoord, u_ref), 0.0, 0.0, 1.0)";			break;
-			case PROGRAM_1D_ARRAY_FLOAT:	sampler = "sampler1DArray";			lookup = "texture(u_sampler, v_texCoord)";												break;
-			case PROGRAM_1D_ARRAY_INT:		sampler = "isampler1DArray";		lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_1D_ARRAY_UINT:		sampler = "usampler1DArray";		lookup = "vec4(texture(u_sampler, v_texCoord))";										break;
-			case PROGRAM_1D_ARRAY_SHADOW:	sampler = "sampler1DArrayShadow";	lookup = "vec4(texture(u_sampler, vec3(v_texCoord, u_ref)), 0.0, 0.0, 1.0)";			break;
-			case PROGRAM_BUFFER_FLOAT:		sampler = "samplerBuffer";			lookup = "texelFetch(u_sampler, int(v_texCoord))";										break;
-			case PROGRAM_BUFFER_INT:		sampler = "isamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(v_texCoord)))";								break;
-			case PROGRAM_BUFFER_UINT:		sampler = "usamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(v_texCoord)))";								break;
+			case PROGRAM_2D_FLOAT:			sampler = "sampler2D";				lookup = "texture(u_sampler, texCoord)";												break;
+			case PROGRAM_2D_INT:			sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_2D_UINT:			sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_2D_SHADOW:			sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
+			case PROGRAM_2D_FLOAT_BIAS:		sampler = "sampler2D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
+			case PROGRAM_2D_INT_BIAS:		sampler = "isampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
+			case PROGRAM_2D_UINT_BIAS:		sampler = "usampler2D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
+			case PROGRAM_2D_SHADOW_BIAS:	sampler = "sampler2DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";		break;
+			case PROGRAM_1D_FLOAT:			sampler = "sampler1D";				lookup = "texture(u_sampler, texCoord)";												break;
+			case PROGRAM_1D_INT:			sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_1D_UINT:			sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_1D_SHADOW:			sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, 0.0, u_ref)), 0.0, 0.0, 1.0)";			break;
+			case PROGRAM_1D_FLOAT_BIAS:		sampler = "sampler1D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
+			case PROGRAM_1D_INT_BIAS:		sampler = "isampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
+			case PROGRAM_1D_UINT_BIAS:		sampler = "usampler1D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
+			case PROGRAM_1D_SHADOW_BIAS:	sampler = "sampler1DShadow";		lookup = "vec4(texture(u_sampler, vec3(texCoord, 0.0, u_ref), u_bias), 0.0, 0.0, 1.0)";	break;
+			case PROGRAM_CUBE_FLOAT:		sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord)";												break;
+			case PROGRAM_CUBE_INT:			sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_CUBE_UINT:			sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_CUBE_SHADOW:		sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
+			case PROGRAM_CUBE_FLOAT_BIAS:	sampler = "samplerCube";			lookup = "texture(u_sampler, texCoord, u_bias)";										break;
+			case PROGRAM_CUBE_INT_BIAS:		sampler = "isamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
+			case PROGRAM_CUBE_UINT_BIAS:	sampler = "usamplerCube";			lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
+			case PROGRAM_CUBE_SHADOW_BIAS:	sampler = "samplerCubeShadow";		lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref), u_bias), 0.0, 0.0, 1.0)";		break;
+			case PROGRAM_2D_ARRAY_FLOAT:	sampler = "sampler2DArray";			lookup = "texture(u_sampler, texCoord)";												break;
+			case PROGRAM_2D_ARRAY_INT:		sampler = "isampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_2D_ARRAY_UINT:		sampler = "usampler2DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_2D_ARRAY_SHADOW:	sampler = "sampler2DArrayShadow";	lookup = "vec4(texture(u_sampler, vec4(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
+			case PROGRAM_3D_FLOAT:			sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord)";												break;
+			case PROGRAM_3D_INT:			sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_3D_UINT:			sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_3D_FLOAT_BIAS:		sampler = "sampler3D";				lookup = "texture(u_sampler, texCoord, u_bias)";										break;
+			case PROGRAM_3D_INT_BIAS:		sampler = "isampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
+			case PROGRAM_3D_UINT_BIAS:		sampler = "usampler3D";				lookup = "vec4(texture(u_sampler, texCoord, u_bias))";									break;
+			case PROGRAM_CUBE_ARRAY_FLOAT:	sampler = "samplerCubeArray";		lookup = "texture(u_sampler, texCoord)";												break;
+			case PROGRAM_CUBE_ARRAY_INT:	sampler = "isamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_CUBE_ARRAY_UINT:	sampler = "usamplerCubeArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_CUBE_ARRAY_SHADOW:	sampler = "samplerCubeArrayShadow";	lookup = "vec4(texture(u_sampler, texCoord, u_ref), 0.0, 0.0, 1.0)";					break;
+			case PROGRAM_1D_ARRAY_FLOAT:	sampler = "sampler1DArray";			lookup = "texture(u_sampler, texCoord)";												break;
+			case PROGRAM_1D_ARRAY_INT:		sampler = "isampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_1D_ARRAY_UINT:		sampler = "usampler1DArray";		lookup = "vec4(texture(u_sampler, texCoord))";											break;
+			case PROGRAM_1D_ARRAY_SHADOW:	sampler = "sampler1DArrayShadow";	lookup = "vec4(texture(u_sampler, vec3(texCoord, u_ref)), 0.0, 0.0, 1.0)";				break;
+			case PROGRAM_BUFFER_FLOAT:		sampler = "samplerBuffer";			lookup = "texelFetch(u_sampler, int(texCoord))";										break;
+			case PROGRAM_BUFFER_INT:		sampler = "isamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";									break;
+			case PROGRAM_BUFFER_UINT:		sampler = "usamplerBuffer";			lookup = "vec4(texelFetch(u_sampler, int(texCoord)))";									break;
 			default:
 				DE_ASSERT(false);
 		}
@@ -930,7 +934,7 @@ Move<VkDescriptorSet> TextureRenderer::makeDescriptorSet (const VkDescriptorPool
 	return allocateDescriptorSet(vkd, vkDevice, &allocateParams);
 }
 
-void TextureRenderer::addImageTransitionBarrier(VkCommandBuffer commandBuffer, VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const
+void TextureRenderer::addImageTransitionBarrier (VkCommandBuffer commandBuffer, VkImage image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout) const
 {
 	const DeviceInterface&			vkd					= m_context.getDeviceInterface();
 
@@ -1374,7 +1378,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 	// Copy Image
 	{
-		copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? *m_resolvedImage : *m_image, *m_resultBuffer, tcu::IVec2(m_renderWidth, m_renderHeight), VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+		copyImageToBuffer(vkd, *commandBuffer, m_multisampling ? *m_resolvedImage : *m_image, *m_resultBuffer, tcu::IVec2(m_renderWidth, m_renderHeight));
 
 		addImageTransitionBarrier(*commandBuffer,
 								  m_multisampling ? *m_resolvedImage : *m_image,

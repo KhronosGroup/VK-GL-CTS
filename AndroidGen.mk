@@ -82,6 +82,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiSmokeTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiVersionCheck.cpp \
+	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorCopyTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorSetRandomTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorUpdateTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingModelTests.cpp \
@@ -359,6 +360,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp \
 	external/vulkancts/modules/vulkan/vkrunner/vktVkRunnerExampleTests.cpp \
+	external/vulkancts/modules/vulkan/vkrunner/vktVkRunnerGraphicsFuzzTests.cpp \
 	external/vulkancts/modules/vulkan/vkrunner/vktVkRunnerTestCase.cpp \
 	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
 	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \

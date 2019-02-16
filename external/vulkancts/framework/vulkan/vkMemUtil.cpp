@@ -2,7 +2,8 @@
  * Vulkan CTS Framework
  * --------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2019 Google Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +27,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
+#include "vkImageUtil.hpp"
 #include "deInt32.h"
 
 #include <sstream>
@@ -35,6 +37,9 @@ namespace vk
 
 using de::UniquePtr;
 using de::MovePtr;
+using std::vector;
+
+typedef de::SharedPtr<Allocation> AllocationSp;
 
 namespace
 {
@@ -349,29 +354,46 @@ deUint32 getCompatibleMemoryTypes (const VkPhysicalDeviceMemoryProperties& devic
 	return compatibleTypes;
 }
 
-void bindImagePlaneMemory (const DeviceInterface&	vkd,
-						   VkDevice					device,
-						   VkImage					image,
-						   VkDeviceMemory			memory,
-						   VkDeviceSize				memoryOffset,
-						   VkImageAspectFlagBits	planeAspect)
+void bindImagePlanesMemory (const DeviceInterface&		vkd,
+							const VkDevice				device,
+							const VkImage				image,
+							const deUint32				numPlanes,
+							vector<AllocationSp>&		allocations,
+							vk::Allocator&				allocator,
+							const vk::MemoryRequirement	requirement)
 {
-	const VkBindImagePlaneMemoryInfo	planeInfo	=
-	{
-		VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
-		DE_NULL,
-		planeAspect
-	};
-	const VkBindImageMemoryInfo			coreInfo	=
-	{
-		VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
-		&planeInfo,
-		image,
-		memory,
-		memoryOffset,
-	};
+	vector<VkBindImageMemoryInfo>		coreInfos;
+	vector<VkBindImagePlaneMemoryInfo>	planeInfos;
+	coreInfos.reserve(numPlanes);
+	planeInfos.reserve(numPlanes);
 
-	VK_CHECK(vkd.bindImageMemory2(device, 1u, &coreInfo));
+	for (deUint32 planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
+	{
+		const VkImageAspectFlagBits	planeAspect	= getPlaneAspect(planeNdx);
+		const VkMemoryRequirements	reqs		= getImagePlaneMemoryRequirements(vkd, device, image, planeAspect);
+
+		allocations.push_back(AllocationSp(allocator.allocate(reqs, requirement).release()));
+
+		VkBindImagePlaneMemoryInfo	planeInfo	=
+		{
+			VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR,
+			DE_NULL,
+			planeAspect
+		};
+		planeInfos.push_back(planeInfo);
+
+		VkBindImageMemoryInfo		coreInfo	=
+		{
+			VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR,
+			&planeInfos.back(),
+			image,
+			allocations.back()->getMemory(),
+			allocations.back()->getOffset(),
+		};
+		coreInfos.push_back(coreInfo);
+	}
+
+	VK_CHECK(vkd.bindImageMemory2(device, numPlanes, coreInfos.data()));
 }
 
 } // vk

@@ -4,7 +4,8 @@
  * Vulkan CTS Framework
  * --------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2019 Google Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +26,8 @@
 
 #include "vkDefs.hpp"
 #include "deUniquePtr.hpp"
+#include "deSharedPtr.hpp"
+#include <vector>
 
 namespace vk
 {
@@ -152,7 +155,13 @@ void					flushMappedMemoryRange		(const DeviceInterface& vkd, VkDevice device, V
 void					invalidateMappedMemoryRange	(const DeviceInterface& vkd, VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
 
 deUint32				getCompatibleMemoryTypes	(const VkPhysicalDeviceMemoryProperties& deviceMemProps, MemoryRequirement requirement);
-void					bindImagePlaneMemory		(const DeviceInterface&	vkd, VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset, VkImageAspectFlagBits planeAspect);
+void					bindImagePlanesMemory		(const vk::DeviceInterface&					vkd,
+													 const vk::VkDevice							device,
+													 const vk::VkImage							image,
+													 const deUint32								numPlanes,
+													 std::vector<de::SharedPtr<Allocation> >&	allocations,
+													 vk::Allocator&								allocator,
+													 const vk::MemoryRequirement				requirement);
 
 } // vk
 

@@ -3222,6 +3222,7 @@ struct VkPhysicalDeviceVulkanMemoryModelFeaturesKHR
 	void*			pNext;
 	VkBool32		vulkanMemoryModel;
 	VkBool32		vulkanMemoryModelDeviceScope;
+	VkBool32		vulkanMemoryModelAvailabilityVisibilityChains;
 };
 
 struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT
@@ -3229,6 +3230,21 @@ struct VkPhysicalDeviceScalarBlockLayoutFeaturesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		scalarBlockLayout;
+};
+
+struct VkPhysicalDeviceDepthClipEnableFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		depthClipEnable;
+};
+
+struct VkPipelineRasterizationDepthClipStateCreateInfoEXT
+{
+	VkStructureType										sType;
+	const void*											pNext;
+	VkPipelineRasterizationDepthClipStateCreateFlagsEXT	flags;
+	VkBool32											depthClipEnable;
 };
 
 

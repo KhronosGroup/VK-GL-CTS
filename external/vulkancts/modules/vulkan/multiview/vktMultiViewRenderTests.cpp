@@ -2650,6 +2650,11 @@ void MultiViewQueriesTestInstance::draw (const deUint32 subpassCount, VkRenderPa
 
 	beforeDraw();
 
+	// Query pools must be reset before use
+	m_device->cmdResetQueryPool(*m_cmdBuffer, *occlusionQueryPool, queryStartIndex, queryCountersNumber);
+	m_device->cmdResetQueryPool(*m_cmdBuffer, *timestampStartQueryPool, queryStartIndex, queryCountersNumber);
+	m_device->cmdResetQueryPool(*m_cmdBuffer, *timestampEndQueryPool, queryStartIndex, queryCountersNumber);
+
 	cmdBeginRenderPass(*m_device, *m_cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE, m_parameters.renderPassType);
 
 	m_device->cmdBindVertexBuffers(*m_cmdBuffer, 0u, DE_LENGTH_OF_ARRAY(vertexBuffers), vertexBuffers, vertexBufferOffsets);

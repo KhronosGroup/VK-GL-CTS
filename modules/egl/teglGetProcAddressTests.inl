@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos EGL API description (egl.xml) revision 13a26984991216cbf9a44fbf390f95dc05b5493a.
+ * Generated from Khronos EGL API description (egl.xml) revision 3338ed0db494d6a4db7f76627b38f0b1892db096.
  */
 
 static const char* s_EGL14[] =
@@ -40,6 +40,20 @@ static const char* s_EGL14[] =
 	"eglWaitClient",
 	"eglWaitGL",
 	"eglWaitNative",
+};
+
+static const char* s_EGL15[] =
+{
+	"eglClientWaitSync",
+	"eglCreateImage",
+	"eglCreatePlatformPixmapSurface",
+	"eglCreatePlatformWindowSurface",
+	"eglCreateSync",
+	"eglDestroyImage",
+	"eglDestroySync",
+	"eglGetPlatformDisplay",
+	"eglGetSyncAttrib",
+	"eglWaitSync",
 };
 
 static const char* s_GLES10[] =
@@ -454,6 +468,11 @@ static const char* s_EGL_ANDROID_create_native_client_buffer[] =
 	"eglCreateNativeClientBufferANDROID",
 };
 
+static const char* s_EGL_ANDROID_get_native_client_buffer[] =
+{
+	"eglGetNativeClientBufferANDROID",
+};
+
 static const char* s_EGL_ANDROID_native_fence_sync[] =
 {
 	"eglDupNativeFenceFDANDROID",
@@ -464,9 +483,23 @@ static const char* s_EGL_ANDROID_presentation_time[] =
 	"eglPresentationTimeANDROID",
 };
 
+static const char* s_EGL_ANDROID_get_frame_timestamps[] =
+{
+	"eglGetCompositorTimingSupportedANDROID",
+	"eglGetCompositorTimingANDROID",
+	"eglGetNextFrameIdANDROID",
+	"eglGetFrameTimestampSupportedANDROID",
+	"eglGetFrameTimestampsANDROID",
+};
+
 static const char* s_EGL_ANGLE_query_surface_pointer[] =
 {
 	"eglQuerySurfacePointerANGLE",
+};
+
+static const char* s_EGL_EXT_client_sync[] =
+{
+	"eglClientSignalSyncEXT",
 };
 
 static const char* s_EGL_EXT_device_base[] =
@@ -522,6 +555,11 @@ static const char* s_EGL_EXT_stream_consumer_egloutput[] =
 static const char* s_EGL_EXT_swap_buffers_with_damage[] =
 {
 	"eglSwapBuffersWithDamageEXT",
+};
+
+static const char* s_EGL_EXT_sync_reuse[] =
+{
+	"eglUnsignalSyncEXT",
 };
 
 static const char* s_EGL_HI_clientpixmap[] =
@@ -681,6 +719,11 @@ static const char* s_EGL_NV_post_sub_buffer[] =
 static const char* s_EGL_NV_stream_consumer_gltexture_yuv[] =
 {
 	"eglStreamConsumerGLTextureExternalAttribsNV",
+};
+
+static const char* s_EGL_NV_stream_flush[] =
+{
+	"eglStreamFlushNV",
 };
 
 static const char* s_EGL_NV_stream_metadata[] =
@@ -1846,9 +1889,12 @@ static const struct
 {
 	{ "EGL_ANDROID_blob_cache",								DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_blob_cache),							s_EGL_ANDROID_blob_cache							},
 	{ "EGL_ANDROID_create_native_client_buffer",			DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_create_native_client_buffer),			s_EGL_ANDROID_create_native_client_buffer			},
+	{ "EGL_ANDROID_get_native_client_buffer",				DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_get_native_client_buffer),				s_EGL_ANDROID_get_native_client_buffer				},
 	{ "EGL_ANDROID_native_fence_sync",						DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_native_fence_sync),					s_EGL_ANDROID_native_fence_sync						},
 	{ "EGL_ANDROID_presentation_time",						DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_presentation_time),					s_EGL_ANDROID_presentation_time						},
+	{ "EGL_ANDROID_get_frame_timestamps",					DE_LENGTH_OF_ARRAY(s_EGL_ANDROID_get_frame_timestamps),					s_EGL_ANDROID_get_frame_timestamps					},
 	{ "EGL_ANGLE_query_surface_pointer",					DE_LENGTH_OF_ARRAY(s_EGL_ANGLE_query_surface_pointer),					s_EGL_ANGLE_query_surface_pointer					},
+	{ "EGL_EXT_client_sync",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_client_sync),								s_EGL_EXT_client_sync								},
 	{ "EGL_EXT_device_base",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_base),								s_EGL_EXT_device_base								},
 	{ "EGL_EXT_device_enumeration",							DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_enumeration),						s_EGL_EXT_device_enumeration						},
 	{ "EGL_EXT_device_query",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_device_query),								s_EGL_EXT_device_query								},
@@ -1857,6 +1903,7 @@ static const struct
 	{ "EGL_EXT_platform_base",								DE_LENGTH_OF_ARRAY(s_EGL_EXT_platform_base),							s_EGL_EXT_platform_base								},
 	{ "EGL_EXT_stream_consumer_egloutput",					DE_LENGTH_OF_ARRAY(s_EGL_EXT_stream_consumer_egloutput),				s_EGL_EXT_stream_consumer_egloutput					},
 	{ "EGL_EXT_swap_buffers_with_damage",					DE_LENGTH_OF_ARRAY(s_EGL_EXT_swap_buffers_with_damage),					s_EGL_EXT_swap_buffers_with_damage					},
+	{ "EGL_EXT_sync_reuse",									DE_LENGTH_OF_ARRAY(s_EGL_EXT_sync_reuse),								s_EGL_EXT_sync_reuse								},
 	{ "EGL_HI_clientpixmap",								DE_LENGTH_OF_ARRAY(s_EGL_HI_clientpixmap),								s_EGL_HI_clientpixmap								},
 	{ "EGL_KHR_cl_event2",									DE_LENGTH_OF_ARRAY(s_EGL_KHR_cl_event2),								s_EGL_KHR_cl_event2									},
 	{ "EGL_KHR_debug",										DE_LENGTH_OF_ARRAY(s_EGL_KHR_debug),									s_EGL_KHR_debug										},
@@ -1883,6 +1930,7 @@ static const struct
 	{ "EGL_NV_native_query",								DE_LENGTH_OF_ARRAY(s_EGL_NV_native_query),								s_EGL_NV_native_query								},
 	{ "EGL_NV_post_sub_buffer",								DE_LENGTH_OF_ARRAY(s_EGL_NV_post_sub_buffer),							s_EGL_NV_post_sub_buffer							},
 	{ "EGL_NV_stream_consumer_gltexture_yuv",				DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_consumer_gltexture_yuv),				s_EGL_NV_stream_consumer_gltexture_yuv				},
+	{ "EGL_NV_stream_flush",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_flush),								s_EGL_NV_stream_flush								},
 	{ "EGL_NV_stream_metadata",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_metadata),							s_EGL_NV_stream_metadata							},
 	{ "EGL_NV_stream_reset",								DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_reset),								s_EGL_NV_stream_reset								},
 	{ "EGL_NV_stream_sync",									DE_LENGTH_OF_ARRAY(s_EGL_NV_stream_sync),								s_EGL_NV_stream_sync								},

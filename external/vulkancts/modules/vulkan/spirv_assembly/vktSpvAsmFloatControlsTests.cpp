@@ -668,7 +668,8 @@ void TypeSnippetsBase::updateSpirvSnippets()
 		"OpMemberDecorate %SSBO_in 0 Offset 0\n"
 		"OpDecorate %SSBO_in BufferBlock\n"
 		"OpDecorate %ssbo_in DescriptorSet 0\n"
-		"OpDecorate %ssbo_in Binding 0\n";
+		"OpDecorate %ssbo_in Binding 0\n"
+		"OpDecorate %ssbo_in NonWritable\n";
 
 	const string inputDefinitionsTemplate =
 		"%SSBO_in              = OpTypeStruct %type_float_arr_2\n"
@@ -3121,7 +3122,6 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 	resources.outputs.push_back(Resource(outBufferSp, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 	resources.verifyIO = checkFloatsLUT[outFloatType];
 
-	vector<string>			features;
 	StageToSpecConstantMap	noSpecConstants;
 	PushConstants			noPushConstants;
 	GraphicsInterfaces		noInterfaces;
@@ -3150,7 +3150,6 @@ InstanceContext GraphicsTestGroupBuilder::createInstanceContext(const TestCaseIn
 						resources,
 						noInterfaces,
 						extensions,
-						features,
 						vulkanFeatures,
 						testedStage);
 

@@ -112,6 +112,7 @@ def getInterfaceExactVersion (registry, api, version):
 def gen ():
 	eglRegistry		= getEGLRegistry()
 	eglCoreIface	= getInterface(eglRegistry, 'egl', '1.4')
+	egl15Iface		= getInterfaceExactVersion(eglRegistry, 'egl', '1.5')
 	eglExtensions	= getExtensionList(eglRegistry, 'egl')
 
 	glRegistry		= getGLRegistry()
@@ -126,6 +127,7 @@ def gen ():
 
 	writeInlFile(os.path.normpath(os.path.join(SCRIPTS_DIR, "..", "..", "modules", "egl", "teglGetProcAddressTests.inl")),
 				 chain(makeFunctionList		("EGL14",	eglCoreIface),
+					   makeFunctionList		("EGL15",	egl15Iface),
 					   makeFunctionList		("GLES10",	gles10CoreIface),
 					   makeFunctionList		("GLES20",	gles20CoreIface),
 					   makeFunctionList		("GLES30",	gles30CoreIface),

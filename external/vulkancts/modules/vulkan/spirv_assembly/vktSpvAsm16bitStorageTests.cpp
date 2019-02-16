@@ -4176,7 +4176,6 @@ void addGraphics16BitStorageInputOutputFloat16To16x2Group (tcu::TestCaseGroup* t
 	SpecConstants			noSpecConstants;
 	PushConstants			noPushConstants;
 	vector<string>			extensions;
-	vector<string>			features;
 	map<string, string>		noFragments;
 	GraphicsResources		noResources;
 	StageToSpecConstantMap	specConstantMap;
@@ -4228,7 +4227,6 @@ void addGraphics16BitStorageInputOutputFloat16To16x2Group (tcu::TestCaseGroup* t
 																			noResources,
 																			interfaces,
 																			extensions,
-																			features,
 																			requiredFeatures,
 																			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 																			QP_TEST_RESULT_FAIL,
@@ -4252,7 +4250,6 @@ void addGraphics16BitStorageInputOutputInt16To16x2Group (tcu::TestCaseGroup* tes
 	SpecConstants			noSpecConstants;
 	PushConstants			noPushConstants;
 	vector<string>			extensions;
-	vector<string>			features;
 	map<string, string>		noFragments;
 	GraphicsResources		noResources;
 	StageToSpecConstantMap	specConstantMap;
@@ -4306,7 +4303,6 @@ void addGraphics16BitStorageInputOutputInt16To16x2Group (tcu::TestCaseGroup* tes
 																			noResources,
 																			interfaces,
 																			extensions,
-																			features,
 																			requiredFeatures,
 																			VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 																			QP_TEST_RESULT_FAIL,

@@ -328,7 +328,8 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 			1u,												// deUint32					arrayLayers;
 			VK_SAMPLE_COUNT_1_BIT,							// VkSampleCountFlagBits	samples;
 			VK_IMAGE_TILING_OPTIMAL,						// VkImageTiling			tiling;
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	// VkImageUsageFlags		usage;
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT,				// VkImageUsageFlags		usage;
 			VK_SHARING_MODE_EXCLUSIVE,						// VkSharingMode			sharingMode;
 			1u,												// deUint32					queueFamilyIndexCount;
 			&queueFamilyIndex,								// const deUint32*			pQueueFamilyIndices;
@@ -381,7 +382,7 @@ DepthTestInstance::DepthTestInstance (Context&				context,
 	}
 
 	// Create render pass
-	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat);
+	m_renderPass = makeRenderPass(vk, vkDevice, m_colorFormat, m_depthFormat, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 	// Create framebuffer
 	{
@@ -651,7 +652,7 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 		{
 			// Set depth state
 			rr::RenderState renderState(refRenderer.getViewportState());
-			renderState.fragOps.depthTestEnabled = true;
+			renderState.fragOps.depthTestEnabled = m_depthTestEnable;
 			renderState.fragOps.depthFunc = mapVkCompareOp(m_depthCompareOps[quadNdx]);
 			if (m_depthBoundsTestEnable)
 			{
@@ -667,7 +668,7 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 		}
 	}
 
-	// Compare result with reference image
+	// Compare color result with reference image
 	{
 		const DeviceInterface&			vk					= m_context.getDeviceInterface();
 		const VkDevice					vkDevice			= m_context.getDevice();
@@ -685,6 +686,64 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 															  tcu::IVec3(1, 1, 0),
 															  true,
 															  tcu::COMPARE_LOG_RESULT);
+	}
+
+	// Compare depth result with reference image
+	{
+		const DeviceInterface&			vk					= m_context.getDeviceInterface();
+		const VkDevice					vkDevice			= m_context.getDevice();
+		const VkQueue					queue				= m_context.getUniversalQueue();
+		const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
+		SimpleAllocator					allocator			(vk, vkDevice, getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+		de::MovePtr<tcu::TextureLevel>	result				= readDepthAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator, *m_depthImage, m_depthFormat, m_renderSize);
+
+
+		{
+			de::MovePtr<tcu::TextureLevel>	convertedReferenceLevel;
+			tcu::Maybe<tcu::TextureFormat>	convertedFormat;
+
+			if (refRenderer.getDepthAccess().getFormat().type == tcu::TextureFormat::UNSIGNED_INT_24_8_REV)
+			{
+				convertedFormat = tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT24);
+			}
+			if (refRenderer.getDepthAccess().getFormat().type == tcu::TextureFormat::UNSIGNED_INT_16_8_8)
+			{
+				convertedFormat = tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::UNORM_INT16);
+			}
+			else if (refRenderer.getDepthAccess().getFormat().type == tcu::TextureFormat::FLOAT_UNSIGNED_INT_24_8_REV)
+			{
+				convertedFormat = tcu::TextureFormat(tcu::TextureFormat::D, tcu::TextureFormat::FLOAT);
+			}
+
+			if (convertedFormat)
+			{
+				convertedReferenceLevel = de::MovePtr<tcu::TextureLevel>(new tcu::TextureLevel(*convertedFormat, refRenderer.getDepthAccess().getSize().x(), refRenderer.getDepthAccess().getSize().y()));
+				tcu::copy(convertedReferenceLevel->getAccess(), refRenderer.getDepthAccess());
+			}
+
+			float depthThreshold = 0.0f;
+
+			if (tcu::getTextureChannelClass(result->getFormat().type) == tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT)
+			{
+				const tcu::IVec4	formatBits = tcu::getTextureFormatBitDepth(result->getFormat());
+				depthThreshold = 1.0f / static_cast<float>((1 << formatBits[0]) - 1);
+			}
+			else if (tcu::getTextureChannelClass(result->getFormat().type) == tcu::TEXTURECHANNELCLASS_FLOATING_POINT)
+			{
+
+				depthThreshold = 0.0000001f;
+			}
+			else
+				TCU_FAIL("unrecognized format type class");
+
+			compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(),
+												   "DepthImageCompare",
+												   "Depth image comparison",
+												   convertedReferenceLevel ? convertedReferenceLevel->getAccess() : refRenderer.getDepthAccess(),
+												   result->getAccess(),
+												   tcu::Vec4(depthThreshold, 0.0f, 0.0f, 0.0f),
+												   tcu::COMPARE_LOG_RESULT);
+		}
 	}
 
 	if (compareOk)
@@ -907,6 +966,23 @@ tcu::TestCaseGroup* createDepthTests (tcu::TestContext& testCtx)
 														true));
 			}
 			formatTest->addChild(compareOpsTests.release());
+
+			// Test case with depth test enabled, but depth write disabled
+			de::MovePtr<tcu::TestCaseGroup>	depthTestDisabled(new tcu::TestCaseGroup(testCtx, "depth_test_disabled", "Test for disabled depth test"));
+			{
+				const VkCompareOp depthOpsDepthTestDisabled[DepthTest::QUAD_COUNT] = { VK_COMPARE_OP_NEVER, VK_COMPARE_OP_LESS, VK_COMPARE_OP_GREATER, VK_COMPARE_OP_ALWAYS };
+				depthTestDisabled->addChild(new DepthTest(testCtx,
+														"depth_write_enabled",
+														"Depth writes should not occur if depth test is disabled",
+														depthFormats[formatNdx],
+														depthOpsDepthTestDisabled,
+														false,			/* depthBoundsTestEnable */
+														0.0f,			/* depthBoundMin*/
+														1.0f,			/* depthBoundMax*/
+														false,			/* depthTestEnable */
+														false			/* stencilTestEnable */));
+			}
+			formatTest->addChild(depthTestDisabled.release());
 			formatTests->addChild(formatTest.release());
 		}
 		depthTests->addChild(formatTests.release());

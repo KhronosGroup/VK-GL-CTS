@@ -676,6 +676,7 @@ void addComputePointerWorkgroupMemoryVariablePointersTest (tcu::TestCaseGroup* g
 
 	spec.assembly					= shaderSource;
 	spec.numWorkGroups				= IVec3(1, 1, 1);
+	spec.requestedVulkanFeatures	= requiredFeatures;
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "workgroup_memory_variable_pointers", "", spec));
 }
@@ -945,7 +946,11 @@ void addGraphicsPointerBufferMemoryTest (tcu::TestCaseGroup* group)
 		"                          OpFunctionEnd\n";
 
 	fragments["extension"]	=
-		"OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n";
+		"OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
+		"OpExtension \"SPV_KHR_variable_pointers\"\n";
+
+	fragments["capability"] =
+		"OpCapability VariablePointersStorageBuffer\n";
 
 	getDefaultColors(defaultColors);
 
@@ -954,6 +959,7 @@ void addGraphicsPointerBufferMemoryTest (tcu::TestCaseGroup* group)
 	for (deUint32 numIdx = 0; numIdx < numFloats / 2; ++numIdx)
 		expectedOutput.push_back(2.0f);
 
+	extensions.push_back("VK_KHR_variable_pointers");
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 

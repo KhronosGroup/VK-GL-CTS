@@ -41,6 +41,12 @@ EGLNativeWindowType NativeWindow::getLegacyNative (void)
 	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support eglCreateWindowSurface()", DE_NULL, __FILE__, __LINE__);
 }
 
+void* NativeWindow::getPlatformExtension (void)
+{
+	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM_EXTENSION) == 0);
+	throw tcu::NotSupportedError("eglu::NativeWindow doesn't support eglCreatePlatformWindowSurfaceEXT()", DE_NULL, __FILE__, __LINE__);
+}
+
 void* NativeWindow::getPlatformNative (void)
 {
 	TCU_CHECK_INTERNAL((m_capabilities & CAPABILITY_CREATE_SURFACE_PLATFORM) == 0);

@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
+ * Copyright (c) 2019 Google Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
  * Copyright (c) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,22 +69,24 @@ enum TestType
 	TEST_TYPE_INVOCATION_PER_LAYER,				// !< draw to all layers, one invocation per layer
 	TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION,	// !< draw to all layers, multiple invocations write to multiple layers
 	TEST_TYPE_LAYERED_READBACK,					// !< draw to two layers multiple times
+	TEST_TYPE_SECONDARY_CMD_BUFFER				// !< layered rendering using secondary command buffer
 };
 
 struct ImageParams
 {
-	VkImageViewType		viewType;
-	VkExtent3D			size;
-	deUint32			numLayers;
+	VkImageViewType	viewType;
+	VkExtent3D		size;
+	deUint32		numLayers;
 };
 
 struct TestParams
 {
-	TestType			testType;
-	ImageParams			image;
+	TestType	testType;
+	ImageParams	image;
+	bool		inheritFramebuffer;
 };
 
-static const float s_colors[][4] =
+const float		s_colors[][4]					=
 {
 	{ 1.0f, 1.0f, 1.0f, 1.0f },		// white
 	{ 1.0f, 0.0f, 0.0f, 1.0f },		// red
@@ -91,6 +94,16 @@ static const float s_colors[][4] =
 	{ 0.0f, 0.0f, 1.0f, 1.0f },		// blue
 	{ 1.0f, 1.0f, 0.0f, 1.0f },		// yellow
 	{ 1.0f, 0.0f, 1.0f, 1.0f },		// magenta
+};
+
+const tcu::Vec4	secondaryCmdBufClearColors[]	=
+{
+	tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f),
+	tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f),
+	tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+	tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+	tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+	tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f)
 };
 
 tcu::Vec4 scaleColor(const tcu::Vec4& color, float factor)
@@ -212,6 +225,69 @@ Move<VkRenderPass> makeRenderPass (const DeviceInterface&	vk,
 	return vk::makeRenderPass(vk, device, colorFormat, useDepthStencil ? dsFormat : VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_LOAD);
 }
 
+Move<VkRenderPass> makeRenderPassWithSelfDependency (const DeviceInterface&	vk,
+													 const VkDevice			device,
+													 const VkFormat			colorFormat)
+{
+	const VkAttachmentDescription	attachmentDescription	=
+	{
+		(VkAttachmentDescriptionFlags)0,			// VkAttachmentDescriptionFlags	flags
+		colorFormat,								// VkFormat						format
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits		samples
+		VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp			loadOp
+		VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp			storeOp
+		VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp			stencilLoadOp
+		VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp			stencilStoreOp
+		VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout				initialLayout
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout				finalLayout
+	};
+
+	const VkAttachmentReference		colorAttachmentRef		=
+	{
+		0u,											// deUint32			attachment
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout	layout
+	};
+
+	const VkSubpassDescription		subpassDescription		=
+	{
+		(VkSubpassDescriptionFlags)0,		// VkSubpassDescriptionFlags		flags
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint				pipelineBindPoint
+		0u,									// deUint32							inputAttachmentCount
+		DE_NULL,							// const VkAttachmentReference*		pInputAttachments
+		1u,									// deUint32							colorAttachmentCount
+		&colorAttachmentRef,				// const VkAttachmentReference*		pColorAttachments
+		DE_NULL,							// const VkAttachmentReference*		pResolveAttachments
+		DE_NULL,							// const VkAttachmentReference*		pDepthStencilAttachment
+		0u,									// deUint32							preserveAttachmentCount
+		DE_NULL								// const deUint32*					pPreserveAttachments
+	};
+
+	const VkSubpassDependency		subpassDependency		=
+	{
+		0u,										// deUint32				srcSubpass
+		0u,										// deUint32				dstSubpass
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// VkPipelineStageFlags	srcStageMask
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,	// VkPipelineStageFlags	dstStageMask
+		VK_ACCESS_SHADER_WRITE_BIT,				// VkAccessFlags		srcAccessMask
+		VK_ACCESS_SHADER_READ_BIT,				// VkAccessFlags		dstAccessMask
+		0u,										// VkDependencyFlags	dependencyFlags
+	};
+
+	const VkRenderPassCreateInfo	renderPassInfo			=
+	{
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType					sType
+		DE_NULL,									// const void*						pNext
+		(VkRenderPassCreateFlags)0,					// VkRenderPassCreateFlags			flags
+		1u,											// deUint32							attachmentCount
+		&attachmentDescription,						// const VkAttachmentDescription*	pAttachments
+		1u,											// deUint32							subpassCount
+		&subpassDescription,						// const VkSubpassDescription*		pSubpasses
+		1u,											// deUint32							dependencyCount
+		&subpassDependency							// const VkSubpassDependency*		pDependencies
+	};
+
+	return createRenderPass(vk, device, &renderPassInfo);
+}
 
 Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									   const VkDevice				device,
@@ -223,10 +299,10 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 									   const VkExtent2D				renderSize,
 									   const bool					useDepthStencil = false)
 {
-	const std::vector<VkViewport>			viewports						(1, makeViewport(renderSize));
-	const std::vector<VkRect2D>				scissors						(1, makeRect2D(renderSize));
+	const std::vector<VkViewport>				viewports						(1, makeViewport(renderSize));
+	const std::vector<VkRect2D>					scissors						(1, makeRect2D(renderSize));
 
-	const VkStencilOpState					stencilOpState					= makeStencilOpState(
+	const VkStencilOpState						stencilOpState					= makeStencilOpState(
 		VK_STENCIL_OP_KEEP,					// stencil fail
 		VK_STENCIL_OP_INCREMENT_AND_CLAMP,	// depth & stencil pass
 		VK_STENCIL_OP_KEEP,					// depth only fail
@@ -235,40 +311,51 @@ Move<VkPipeline> makeGraphicsPipeline (const DeviceInterface&		vk,
 		~0u,								// write mask
 		0u);								// reference
 
-	VkPipelineDepthStencilStateCreateInfo	pipelineDepthStencilStateInfo	=
+	const VkPipelineDepthStencilStateCreateInfo	pipelineDepthStencilStateInfo	=
 	{
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                           sType;
-		DE_NULL,													// const void*                               pNext;
-		(VkPipelineDepthStencilStateCreateFlags)0,					// VkPipelineDepthStencilStateCreateFlags    flags;
-		useDepthStencil ? VK_TRUE : VK_FALSE,						// VkBool32                                  depthTestEnable;
-		useDepthStencil ? VK_TRUE : VK_FALSE,						// VkBool32                                  depthWriteEnable;
-		VK_COMPARE_OP_LESS,											// VkCompareOp                               depthCompareOp;
-		VK_FALSE,													// VkBool32                                  depthBoundsTestEnable;
-		useDepthStencil ? VK_TRUE : VK_FALSE,						// VkBool32                                  stencilTestEnable;
-		stencilOpState,												// VkStencilOpState                          front;
-		stencilOpState,												// VkStencilOpState                          back;
-		0.0f,														// float                                     minDepthBounds;
-		1.0f														// float                                     maxDepthBounds;
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType							sType
+		DE_NULL,													// const void*								pNext
+		(VkPipelineDepthStencilStateCreateFlags)0,					// VkPipelineDepthStencilStateCreateFlags	flags
+		useDepthStencil ? VK_TRUE : VK_FALSE,						// VkBool32									depthTestEnable
+		useDepthStencil ? VK_TRUE : VK_FALSE,						// VkBool32									depthWriteEnable
+		VK_COMPARE_OP_LESS,											// VkCompareOp								depthCompareOp
+		VK_FALSE,													// VkBool32									depthBoundsTestEnable
+		useDepthStencil ? VK_TRUE : VK_FALSE,						// VkBool32									stencilTestEnable
+		stencilOpState,												// VkStencilOpState							front
+		stencilOpState,												// VkStencilOpState							back
+		0.0f,														// float									minDepthBounds
+		1.0f														// float									maxDepthBounds
 	};
 
-	return vk::makeGraphicsPipeline(vk,									// const DeviceInterface&                        vk
-									device,								// const VkDevice                                device
-									pipelineLayout,						// const VkPipelineLayout                        pipelineLayout
-									vertexModule,						// const VkShaderModule                          vertexShaderModule
-									DE_NULL,							// const VkShaderModule                          tessellationControlModule
-									DE_NULL,							// const VkShaderModule                          tessellationEvalModule
-									geometryModule,						// const VkShaderModule                          geometryShaderModule
-									fragmentModule,						// const VkShaderModule                          fragmentShaderModule
-									renderPass,							// const VkRenderPass                            renderPass
-									viewports,							// const std::vector<VkViewport>&                viewports
-									scissors,							// const std::vector<VkRect2D>&                  scissors
-									VK_PRIMITIVE_TOPOLOGY_POINT_LIST,	// const VkPrimitiveTopology                     topology
-									0u,									// const deUint32                                subpass
-									0u,									// const deUint32                                patchControlPoints
-									DE_NULL,							// const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-									DE_NULL,							// const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
-									DE_NULL,							// const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
-									&pipelineDepthStencilStateInfo);	// const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+	const VkPipelineVertexInputStateCreateInfo	vertexInputStateInfo			=
+	{
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType							sType
+		DE_NULL,													// const void*								pNext
+		0u,															// VkPipelineVertexInputStateCreateFlags	flags
+		0u,															// deUint32									vertexBindingDescriptionCount
+		DE_NULL,													// const VkVertexInputBindingDescription*	pVertexBindingDescriptions
+		0u,															// deUint32									vertexAttributeDescriptionCount
+		DE_NULL														// const VkVertexInputAttributeDescription*	pVertexAttributeDescriptions
+	};
+
+	return vk::makeGraphicsPipeline(vk,									// const DeviceInterface&							vk
+									device,								// const VkDevice									device
+									pipelineLayout,						// const VkPipelineLayout							pipelineLayout
+									vertexModule,						// const VkShaderModule								vertexShaderModule
+									DE_NULL,							// const VkShaderModule								tessellationControlModule
+									DE_NULL,							// const VkShaderModule								tessellationEvalModule
+									geometryModule,						// const VkShaderModule								geometryShaderModule
+									fragmentModule,						// const VkShaderModule								fragmentShaderModule
+									renderPass,							// const VkRenderPass								renderPass
+									viewports,							// const std::vector<VkViewport>&					viewports
+									scissors,							// const std::vector<VkRect2D>&						scissors
+									VK_PRIMITIVE_TOPOLOGY_POINT_LIST,	// const VkPrimitiveTopology						topology
+									0u,									// const deUint32									subpass
+									0u,									// const deUint32									patchControlPoints
+									&vertexInputStateInfo,				// const VkPipelineVertexInputStateCreateInfo*		vertexInputStateCreateInfo
+									DE_NULL,							// const VkPipelineRasterizationStateCreateInfo*	rasterizationStateCreateInfo
+									DE_NULL,							// const VkPipelineMultisampleStateCreateInfo*		multisampleStateCreateInfo
+									&pipelineDepthStencilStateInfo);	// const VkPipelineDepthStencilStateCreateInfo*		depthStencilStateCreateInfo
 }
 
 Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
@@ -293,6 +380,60 @@ Move<VkFramebuffer> makeFramebuffer (const DeviceInterface&	vk,
 	};
 
 	return createFramebuffer(vk, device, &framebufferInfo);
+}
+
+void copyLayeredImageToBuffer(const DeviceInterface& vk, VkCommandBuffer cmdBuffer, VkImage image, VkBuffer buffer, const ImageParams& imageParams)
+{
+	// Image read barrier
+	{
+		const VkImageSubresourceRange	colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, imageParams.numLayers);
+		const VkImageMemoryBarrier		barrier =
+		{
+			VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType			sType
+			DE_NULL,									// const void*				pNext
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,		// VkAccessFlags			outputMask
+			VK_ACCESS_TRANSFER_READ_BIT,				// VkAccessFlags			inputMask
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout			oldLayout
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,		// VkImageLayout			newLayout
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32					destQueueFamilyIndex
+			image,										// VkImage					image
+			colorSubresourceRange						// VkImageSubresourceRange	subresourceRange
+		};
+
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, DE_NULL, 0u, DE_NULL, 1u, &barrier);
+	}
+	// Color image -> host buffer
+	{
+		const VkBufferImageCopy region =
+		{
+			0ull,																					// VkDeviceSize				bufferOffset
+			0u,																						// deUint32					bufferRowLength
+			0u,																						// deUint32					bufferImageHeight
+			makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, imageParams.numLayers),	// VkImageSubresourceLayers	imageSubresource
+			makeOffset3D(0, 0, 0),																	// VkOffset3D				imageOffset
+			imageParams.size																		// VkExtent3D				imageExtent
+		};
+
+		vk.cmdCopyImageToBuffer(cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1u, &region);
+	}
+	// Buffer write barrier
+	{
+		const VkBufferMemoryBarrier barrier =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,	// VkStructureType	sType
+			DE_NULL,									// const void*		pNext
+			VK_ACCESS_TRANSFER_WRITE_BIT,				// VkAccessFlags	srcAccessMask
+			VK_ACCESS_HOST_READ_BIT,					// VkAccessFlags	dstAccessMask
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32			srcQueueFamilyIndex
+			VK_QUEUE_FAMILY_IGNORED,					// deUint32			dstQueueFamilyIndex
+			buffer,										// VkBuffer			buffer
+			0ull,										// VkDeviceSize		offset
+			VK_WHOLE_SIZE								// VkDeviceSize		size
+		};
+
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, DE_NULL, 1u, &barrier, DE_NULL, 0u);
+	}
 }
 
 //! Convenience wrapper to access 1D, 2D, and 3D image layers/slices in a uniform way.
@@ -351,13 +492,14 @@ inline bool compareColors (const Vec4& colorA, const Vec4& colorB, const Vec4& t
 				tcu::BVec4(true, true, true, true));
 }
 
-bool verifyImageSingleColoredRow (tcu::TestLog& log, const tcu::ConstPixelBufferAccess image, const float rowWidthRatio, const tcu::Vec4& barColor)
+bool verifyImageSingleColoredRow (tcu::TestLog& log, const tcu::ConstPixelBufferAccess image, const float rowWidthRatio, const tcu::Vec4& barColor, bool topRightCleared = false, bool bottomRightCleared = false)
 {
 	DE_ASSERT(rowWidthRatio > 0.0f);
 
 	const Vec4				black				(0.0f, 0.0f, 0.0f, 1.0f);
 	const Vec4				green				(0.0f, 1.0f, 0.0f, 1.0f);
 	const Vec4				red					(1.0f, 0.0f, 0.0f, 1.0f);
+	const Vec4				brown				(0.5f, 0.25f, 0.0f, 1.0f);
 	const Vec4				threshold			(0.02f);
 	const int				barLength			= static_cast<int>(rowWidthRatio * static_cast<float>(image.getWidth()));
 	const int				barLengthThreshold	= 1;
@@ -376,18 +518,22 @@ bool verifyImageSingleColoredRow (tcu::TestLog& log, const tcu::ConstPixelBuffer
 	for (int y = 0; y < image.getHeight(); ++y)
 	for (int x = 0; x < image.getWidth();  ++x)
 	{
-		const Vec4	color		= image.getPixel(x, y);
-		const bool	isBlack		= compareColors(color, black, threshold);
-		const bool	isColor		= compareColors(color, barColor, threshold);
+		const Vec4	color			= image.getPixel(x, y);
+		const bool	isBlack			= compareColors(color, black, threshold);
+		const bool	isBrown			= compareColors(color, brown, threshold);
+		const bool	isColor			= compareColors(color, barColor, threshold);
+		const bool	isOutsideColor	= ((topRightCleared && y < image.getHeight() / 2) || (bottomRightCleared && y >= image.getHeight() / 2)) ? isBrown : isBlack;
 
 		bool isOk;
 
 		if (x <= barLength - barLengthThreshold)
 			isOk = isColor;
 		else if (x >= barLength + barLengthThreshold)
-			isOk = isBlack;
+		{
+			isOk = isOutsideColor;
+		}
 		else
-			isOk = isColor || isBlack;
+			isOk = isColor || isOutsideColor;
 
 		allPixelsOk &= isOk;
 
@@ -664,6 +810,18 @@ bool verifyLayerContent (tcu::TestLog& log, const TestType testType, const tcu::
 			return result;
 		}
 
+		case TEST_TYPE_SECONDARY_CMD_BUFFER:
+		{
+			const tcu::Vec4	clearColor	= secondaryCmdBufClearColors[layerNdx % DE_LENGTH_OF_ARRAY(secondaryCmdBufClearColors)];
+			const tcu::Vec4	quadColor	= s_colors[layerNdx % DE_LENGTH_OF_ARRAY(s_colors)];
+			// The first draw: blend clearColor and quadColor
+			const tcu::Vec4	firstDraw	= (clearColor + quadColor) * 0.5f;
+			// The second draw: blend previous result and quadColor
+			const tcu::Vec4	secondDraw	= (firstDraw + quadColor) * 0.5f;
+
+			return verifyImageSingleColoredRow(log, image, 0.5f, secondDraw, layerNdx < numLayers / 2, layerNdx >= numLayers / 2);
+		}
+
 		default:
 			DE_ASSERT(0);
 			return false;
@@ -716,7 +874,7 @@ std::string toGlsl (const Vec4& v)
 
 void initPrograms (SourceCollections& programCollection, const TestParams params)
 {
-	const bool geomOutputColor = (params.testType == TEST_TYPE_ALL_LAYERS || params.testType == TEST_TYPE_INVOCATION_PER_LAYER || params.testType == TEST_TYPE_LAYERED_READBACK);
+	const bool geomOutputColor = (params.testType == TEST_TYPE_ALL_LAYERS || params.testType == TEST_TYPE_INVOCATION_PER_LAYER || params.testType == TEST_TYPE_LAYERED_READBACK || params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER);
 
 	// Vertex shader
 	{
@@ -734,9 +892,12 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 	{
 		const int numLayers		= static_cast<int>(params.image.viewType == VK_IMAGE_VIEW_TYPE_3D ? params.image.size.depth : params.image.numLayers);
 
-		const int maxVertices	= (params.testType == TEST_TYPE_DIFFERENT_CONTENT)																						? (numLayers + 1) * numLayers :
-								  (params.testType == TEST_TYPE_ALL_LAYERS || params.testType == TEST_TYPE_LAYER_ID || params.testType == TEST_TYPE_LAYERED_READBACK)	? numLayers * 4 :
-								  (params.testType == TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION)																			? 6 : 4;
+		const int maxVertices	= (params.testType == TEST_TYPE_DIFFERENT_CONTENT)				? (numLayers + 1) * numLayers :
+								  (params.testType == TEST_TYPE_ALL_LAYERS
+								   || params.testType == TEST_TYPE_LAYER_ID
+								   || params.testType == TEST_TYPE_LAYERED_READBACK
+								   || params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)		? numLayers * 4 :
+								  (params.testType == TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION)	? 6 : 4;
 
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -810,7 +971,7 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 				<< "    gl_Layer    = " << targetLayer << ";\n"
 				<< "    EmitVertex();\n";
 		}
-		else if (params.testType == TEST_TYPE_ALL_LAYERS)
+		else if (params.testType == TEST_TYPE_ALL_LAYERS || params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)
 		{
 			src << colorTable.str()
 				<< "\n"
@@ -979,11 +1140,34 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 
 	// Fragment shader
 	{
+		std::string imageViewString;
+
+		switch (params.image.viewType)
+		{
+			case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
+				imageViewString = "image1DArray";
+				break;
+			case VK_IMAGE_VIEW_TYPE_2D_ARRAY:
+				imageViewString = "image2DArray";
+				break;
+			case VK_IMAGE_VIEW_TYPE_CUBE:
+				imageViewString = "imageCube";
+				break;
+			case VK_IMAGE_VIEW_TYPE_CUBE_ARRAY:
+				imageViewString = "imageCubeArray";
+				break;
+			default:
+				DE_ASSERT(params.image.viewType == VK_IMAGE_VIEW_TYPE_3D);
+				imageViewString = "image3D";
+				break;
+		};
+
 		std::ostringstream src;
 		src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
 			<< "\n"
 			<< "layout(location = 0) out vec4 o_color;\n"
 			<< (geomOutputColor ? "layout(location = 0) in  vec4 vert_color;\n" : "")
+			<< (params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER ? std::string("layout(set = 0, binding = 0, rgba8) uniform " + imageViewString + " storageImage;\n") : std::string(""))
 			<< "\n"
 			<< "void main(void)\n"
 			<< "{\n";
@@ -995,6 +1179,22 @@ void initPrograms (SourceCollections& programCollection, const TestParams params
 				<< "                   ((gl_Layer/2) % 2) == 1 ? 1.0 : 0.5,\n"
 				<< "                     gl_Layer         == 0 ? 1.0 : 0.0,\n"
 				<< "                                             1.0);\n";
+		}
+		else if (params.testType == TEST_TYPE_SECONDARY_CMD_BUFFER)
+		{
+			switch (params.image.viewType)
+			{
+				case VK_IMAGE_VIEW_TYPE_1D_ARRAY:
+					src << "    ivec2 coord = ivec2(int(gl_FragCoord.x), gl_Layer);\n";
+					break;
+				default:
+					src << "    ivec3 coord = ivec3(int(gl_FragCoord.x), int(gl_FragCoord.y), gl_Layer);\n";
+					break;
+			};
+
+			src << "    vec4 src_color = imageLoad(storageImage, coord);\n"
+				<< "    o_color = (vert_color + src_color) / 2.0;\n"
+				<< "    imageStore(storageImage, coord, o_color);\n";
 		}
 		else if (geomOutputColor)
 			src << "    o_color = vert_color;\n";
@@ -1061,62 +1261,8 @@ tcu::TestStatus test (Context& context, const TestParams params)
 	vk.cmdDraw(*cmdBuffer, 1u, 1u, 0u, 0u);
 	endRenderPass(vk, *cmdBuffer);
 
-	// Prepare color image for copy
-	{
-		const VkImageSubresourceRange	colorSubresourceRange	= makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers);
-		const VkImageMemoryBarrier		barriers[] =
-		{
-			{
-				VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,			// VkStructureType			sType;
-				DE_NULL,										// const void*				pNext;
-				VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,			// VkAccessFlags			outputMask;
-				VK_ACCESS_TRANSFER_READ_BIT,					// VkAccessFlags			inputMask;
-				VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout			oldLayout;
-				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,			// VkImageLayout			newLayout;
-				VK_QUEUE_FAMILY_IGNORED,						// deUint32					srcQueueFamilyIndex;
-				VK_QUEUE_FAMILY_IGNORED,						// deUint32					destQueueFamilyIndex;
-				*colorImage,									// VkImage					image;
-				colorSubresourceRange,							// VkImageSubresourceRange	subresourceRange;
-			},
-		};
-
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-			0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
-	}
-	// Color image -> host buffer
-	{
-		const VkBufferImageCopy region =
-		{
-			0ull,																						// VkDeviceSize                bufferOffset;
-			0u,																							// uint32_t                    bufferRowLength;
-			0u,																							// uint32_t                    bufferImageHeight;
-			makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, params.image.numLayers),		// VkImageSubresourceLayers    imageSubresource;
-			makeOffset3D(0, 0, 0),																		// VkOffset3D                  imageOffset;
-			params.image.size,																			// VkExtent3D                  imageExtent;
-		};
-
-		vk.cmdCopyImageToBuffer(*cmdBuffer, *colorImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorBuffer, 1u, &region);
-	}
-	// Buffer write barrier
-	{
-		const VkBufferMemoryBarrier barriers[] =
-		{
-			{
-				VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,		// VkStructureType    sType;
-				DE_NULL,										// const void*        pNext;
-				VK_ACCESS_TRANSFER_WRITE_BIT,					// VkAccessFlags      srcAccessMask;
-				VK_ACCESS_HOST_READ_BIT,						// VkAccessFlags      dstAccessMask;
-				VK_QUEUE_FAMILY_IGNORED,						// uint32_t           srcQueueFamilyIndex;
-				VK_QUEUE_FAMILY_IGNORED,						// uint32_t           dstQueueFamilyIndex;
-				*colorBuffer,									// VkBuffer           buffer;
-				0ull,											// VkDeviceSize       offset;
-				VK_WHOLE_SIZE,									// VkDeviceSize       size;
-			},
-		};
-
-		vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
-			0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers, DE_NULL, 0u);
-	}
+	// Copy color image to buffer
+	copyLayeredImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, params.image);
 
 	endCommandBuffer(vk, *cmdBuffer);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -1313,7 +1459,7 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 
 		VK_CHECK(vk.bindBufferMemory(device, *uniformBuf[pass], uniformBufAlloc[pass]->getMemory(), uniformBufAlloc[pass]->getOffset()));
 		deMemcpy(uniformBufAlloc[pass]->getHostPtr(), &pass, uniformBufSize);
-		flushMappedMemoryRange(vk, device, uniformBufAlloc[pass]->getMemory(), uniformBufAlloc[pass]->getOffset(), uniformBufSize);
+		flushMappedMemoryRange(vk, device, uniformBufAlloc[pass]->getMemory(), uniformBufAlloc[pass]->getOffset(), VK_WHOLE_SIZE);
 
 		DescriptorSetUpdateBuilder()
 			.writeSingle(*descriptorSet[pass], DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &uniformBufDesc[pass])
@@ -1395,6 +1541,254 @@ tcu::TestStatus testLayeredReadBack (Context& context, const TestParams params)
 		return tcu::TestStatus::fail("Following parts of image are incorrect:" + result);
 }
 
+tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams params)
+{
+	if (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType &&
+		(!isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_maintenance1")))
+	{
+		TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance1 not supported");
+	}
+
+	const DeviceInterface&				vk					= context.getDeviceInterface();
+	const InstanceInterface&			vki					= context.getInstanceInterface();
+	const VkDevice						device				= context.getDevice();
+	const VkPhysicalDevice				physDevice			= context.getPhysicalDevice();
+	const VkPhysicalDeviceFeatures		features			= getPhysicalDeviceFeatures(vki, physDevice);
+	const deUint32						queueFamilyIndex	= context.getUniversalQueueFamilyIndex();
+	const VkQueue						queue				= context.getUniversalQueue();
+	Allocator&							allocator			= context.getDefaultAllocator();
+
+	checkGeometryShaderSupport(vki, physDevice);
+
+	if (!features.fragmentStoresAndAtomics)
+		TCU_THROW(NotSupportedError, "Storage image stores not supported in fragment shader");
+
+	const VkFormat						colorFormat			= VK_FORMAT_R8G8B8A8_UNORM;
+	const deUint32						numLayers			= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? params.image.size.depth : params.image.numLayers);
+	const Vec4							clearColor			= Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	const VkDeviceSize					colorBufferSize		= params.image.size.width * params.image.size.height * params.image.size.depth * params.image.numLayers * tcu::getPixelSize(mapVkFormat(colorFormat));
+	const VkImageCreateFlags			imageCreateFlags	= (isCubeImageViewType(params.image.viewType) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : (VkImageCreateFlagBits)0) |
+															  (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR : (VkImageCreateFlagBits)0);
+	const VkImageViewType				viewType			= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : params.image.viewType);
+
+	const Unique<VkImage>				colorImage			(makeImage(vk, device, makeImageCreateInfo(imageCreateFlags, getImageType(params.image.viewType), colorFormat, params.image.size,
+																	   params.image.numLayers, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT)));
+	const UniquePtr<Allocation>			colorImageAlloc		(bindImage(vk, device, allocator, *colorImage, MemoryRequirement::Any));
+	const Unique<VkImageView>			colorImageView		(makeImageView(vk, device, *colorImage, viewType, colorFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers)));
+
+	const Unique<VkImage>				offscreenImage		(makeImage(vk, device, makeImageCreateInfo(imageCreateFlags, getImageType(params.image.viewType), colorFormat, params.image.size,
+																	   params.image.numLayers, VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)));
+	const UniquePtr<Allocation>			offscreenImageAlloc	(bindImage(vk, device, allocator, *offscreenImage, MemoryRequirement::Any));
+	const Unique<VkImageView>			offscreenImageView	(makeImageView(vk, device, *offscreenImage, params.image.viewType, colorFormat,
+																		   makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers)));
+
+	const Unique<VkBuffer>				colorBuffer			(makeBuffer(vk, device, makeBufferCreateInfo(colorBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)));
+	const UniquePtr<Allocation>			colorBufferAlloc	(bindBuffer(vk, device, allocator, *colorBuffer, MemoryRequirement::HostVisible));
+
+	const Move<VkDescriptorPool>		descriptorPool		= DescriptorPoolBuilder() .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u) .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+	const Move<VkDescriptorSetLayout>	descriptorSetLayout	= DescriptorSetLayoutBuilder() .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT) .build(vk, device);
+	const Move<VkDescriptorSet>			descriptorSet		= makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+
+	const Unique<VkShaderModule>		vertexModule		(createShaderModule(vk, device, context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkShaderModule>		geometryModule		(createShaderModule(vk, device, context.getBinaryCollection().get("geom"), 0u));
+	const Unique<VkShaderModule>		fragmentModule		(createShaderModule(vk, device, context.getBinaryCollection().get("frag"), 0u));
+
+	const Unique<VkRenderPass>			renderPass			(makeRenderPassWithSelfDependency(vk, device, colorFormat));
+	const Unique<VkFramebuffer>			framebuffer			(makeFramebuffer(vk, device, *renderPass, &*colorImageView, 1u, params.image.size.width, params.image.size.height, numLayers));
+	const Unique<VkPipelineLayout>		pipelineLayout		(makePipelineLayout(vk, device, *descriptorSetLayout));
+	const Unique<VkPipeline>			pipeline			(makeGraphicsPipeline(vk, device, *pipelineLayout, *renderPass, *vertexModule, *geometryModule, *fragmentModule,
+																				  makeExtent2D(params.image.size.width, params.image.size.height)));
+
+	const Unique<VkCommandPool>			cmdPool				(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer			(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+	const Unique<VkCommandBuffer>		secondaryCmdBuffer	(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+
+	zeroBuffer(vk, device, *colorBufferAlloc, colorBufferSize);
+
+	const VkDescriptorImageInfo imageDescriptorInfo = makeDescriptorImageInfo(DE_NULL, *offscreenImageView, VK_IMAGE_LAYOUT_GENERAL);
+
+    DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageDescriptorInfo)
+		.update(vk, device);
+
+	// Clear each layer of storage image
+	{
+		vk::Unique<vk::VkCommandBuffer> clearCmdBuffer (vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+		beginCommandBuffer(vk, *clearCmdBuffer);
+
+		const vk::VkImageSubresourceRange	subresourceRange	=
+		{
+			vk::VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags	aspectMask
+			0u,								// deUint32				baseMipLevel
+			1u,								// deUint32				levelCount
+			0u,								// deUint32				baseArrayLayer
+			params.image.numLayers			// deUint32				layerCount
+		};
+
+		const vk::VkImageMemoryBarrier		preImageBarrier		=
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType			sType
+			DE_NULL,									// const void*				pNext
+			0u,											// VkAccessFlags			srcAccessMask
+			vk::VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			dstAccessMask
+			vk::VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout			oldLayout
+			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			newLayout
+			queueFamilyIndex,							// deUint32					srcQueueFamilyIndex
+			queueFamilyIndex,							// deUint32					dstQueueFamilyIndex
+			*offscreenImage,							// VkImage					image
+			subresourceRange							// VkImageSubresourceRange	subresourceRange
+		};
+
+		const vk::VkImageMemoryBarrier		postImageBarrier	=
+		{
+			vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,	// VkStructureType			sType
+			DE_NULL,									// const void*				pNext
+			vk::VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			srcAccessMask
+			vk::VK_ACCESS_SHADER_WRITE_BIT,				// VkAccessFlags			dstAccessMask
+			vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			oldLayout
+			vk::VK_IMAGE_LAYOUT_GENERAL,				// VkImageLayout			newLayout
+			queueFamilyIndex,							// deUint32					srcQueueFamilyIndex
+			queueFamilyIndex,							// deUint32					dstQueueFamilyIndex
+			*offscreenImage,							// VkImage					image
+			subresourceRange							// VkImageSubresourceRange	subresourceRange
+		};
+
+		vk.cmdPipelineBarrier(*clearCmdBuffer,
+				vk::VK_PIPELINE_STAGE_HOST_BIT,
+				vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+				(vk::VkDependencyFlags)0,
+				0, (const vk::VkMemoryBarrier*)DE_NULL,
+				0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+				1, &preImageBarrier);
+
+		for (deUint32 layerNdx = 0; layerNdx < numLayers; ++layerNdx)
+		{
+			const deUint32		imageDepth	= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType) ? layerNdx :       0u;
+			const deUint32		layer		= (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType) ?       0u : layerNdx;
+			const VkOffset3D	imageOffset = makeOffset3D(0u, 0u, imageDepth);
+			const VkExtent3D	imageExtent = makeExtent3D(params.image.size.width, params.image.size.height, 1u);
+
+			{
+				const tcu::Vec4					storageImageClearColor	= secondaryCmdBufClearColors[layerNdx % DE_LENGTH_OF_ARRAY(secondaryCmdBufClearColors)];
+				const deUint32					colorImagePixelSize		= static_cast<deUint32>(tcu::getPixelSize(mapVkFormat(colorFormat)));
+				const deUint32					bufferSliceSize			= params.image.size.width * params.image.size.height * colorImagePixelSize;
+				const VkDeviceSize				bufferOffset			= layerNdx * bufferSliceSize;
+				const VkImageSubresourceLayers	imageSubresource		= makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, layer, 1u);
+				const VkBufferImageCopy			bufferImageCopyRegion	= makeBufferImageCopy(bufferOffset, imageSubresource, imageOffset, imageExtent);
+
+				fillBuffer(vk, device, *colorBufferAlloc, bufferOffset, bufferSliceSize, colorFormat, storageImageClearColor);
+				vk.cmdCopyBufferToImage(*clearCmdBuffer, *colorBuffer, *offscreenImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &bufferImageCopyRegion);
+			}
+		}
+
+		vk.cmdPipelineBarrier(*clearCmdBuffer,
+				vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+				vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				(vk::VkDependencyFlags)0,
+				0, (const vk::VkMemoryBarrier*)DE_NULL,
+				0, (const vk::VkBufferMemoryBarrier*)DE_NULL,
+				1, &postImageBarrier);
+
+		endCommandBuffer(vk, *clearCmdBuffer);
+
+		submitCommandsAndWait(vk, device, queue, *clearCmdBuffer);
+	}
+
+	// Begin secondary command buffer
+	{
+		const VkCommandBufferInheritanceInfo	commandBufferInheritanceInfo	=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,				// VkStructureType					sType
+			DE_NULL,														// const void*						pNext
+			*renderPass,													// VkRenderPass						renderPass
+			0u,																// deUint32							subpass
+			params.inheritFramebuffer ? *framebuffer : (VkFramebuffer)0,	// VkFramebuffer					framebuffer
+			VK_FALSE,														// VkBool32							occlusionQueryEnable
+			0u,																// VkQueryControlFlags				queryFlags
+			0u																// VkQueryPipelineStatisticFlags	pipelineStatistics
+		};
+
+		const VkCommandBufferBeginInfo			commandBufferBeginInfo			=
+		{
+			VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,		// VkStructureType							sType
+			DE_NULL,											// const void*								pNext
+			VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+			| VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,	// VkCommandBufferUsageFlags				flags
+			&commandBufferInheritanceInfo						// const VkCommandBufferInheritanceInfo*	pInheritanceInfo
+		};
+
+		VK_CHECK(vk.beginCommandBuffer(*secondaryCmdBuffer, &commandBufferBeginInfo));
+	}
+
+	vk.cmdBindDescriptorSets(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u, DE_NULL);
+
+	// Clear framebuffer: upper right corner for half of the layers and bottom right for the others.
+	{
+		const VkClearAttachment	clearAttachment	=
+		{
+			VK_IMAGE_ASPECT_COLOR_BIT,						// VkImageAspectFlags	aspectMask
+			0u,												// deUint32				colorAttachment
+			makeClearValueColorF32(0.5f, 0.25, 0.0f, 1.0f)	// VkClearValue			clearValue
+		};
+
+		const VkOffset2D		offsetTop		= { (deInt32)params.image.size.width / 2, 0 };
+		const VkOffset2D		offsetBottom	= { (deInt32)params.image.size.width / 2, (deInt32)params.image.size.height / 2 };
+		const VkExtent2D		extentTop		= { params.image.size.width / 2, params.image.size.height / 2 };
+		const VkExtent2D		extentBottom	= { params.image.size.width / 2, de::max(params.image.size.height / 2, 1u) };
+		const VkRect2D			rectRightTop	= { offsetTop, extentTop };
+		const VkRect2D			rectRightBottom	= { offsetBottom, extentBottom };
+		const VkClearRect		rects[]			=
+		{
+			{
+				rectRightTop,		// VkRect2D	rect
+				0u,					// deUint32	baseArrayLayer
+				numLayers / 2		// deUint32	layerCount
+			},
+			{
+				rectRightBottom,	// VkRect2D	rect
+				numLayers / 2,		// deUint32	baseArrayLayer
+				numLayers / 2		// deUint32	layerCount
+			}
+		};
+
+		vk.cmdClearAttachments(*secondaryCmdBuffer, 1u, &clearAttachment, 2u, rects);
+	}
+
+	vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+	vk.cmdDraw(*secondaryCmdBuffer, 1u, 1u, 0u, 0u);
+	// Barrier between draws
+	{
+		const VkMemoryBarrier barrier =
+		{
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,	// VkStructureType	sType
+			DE_NULL,							// const void*		pNext
+			VK_ACCESS_SHADER_WRITE_BIT,			// VkAccessFlags	srcAccessMask
+			VK_ACCESS_SHADER_READ_BIT			// VkAccessFlags	dstAccessMask
+		};
+
+		vk.cmdPipelineBarrier(*secondaryCmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 1u, &barrier, 0u, DE_NULL, 0u, DE_NULL);
+	}
+	vk.cmdDraw(*secondaryCmdBuffer, 1u, 1u, 0u, 0u);
+	endCommandBuffer(vk, *secondaryCmdBuffer);
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, params.image.size.width, params.image.size.height), clearColor, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	vk.cmdExecuteCommands(*cmdBuffer, 1u, &(*secondaryCmdBuffer));
+	endRenderPass(vk, *cmdBuffer);
+
+	copyLayeredImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, params.image);
+
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	invalidateMappedMemoryRange(vk, device, colorBufferAlloc->getMemory(), colorBufferAlloc->getOffset(), colorBufferSize);
+
+	if (!verifyResults(context.getTestContext().getLog(), params, colorFormat, colorBufferAlloc->getHostPtr()))
+		return tcu::TestStatus::fail("Rendered images are incorrect");
+	else
+		return tcu::TestStatus::pass("OK");
+}
+
 } // anonymous
 
 tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
@@ -1416,6 +1810,7 @@ tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
 		{ TEST_TYPE_INVOCATION_PER_LAYER,			"invocation_per_layer",				"Render to multiple layers with multiple invocations, one invocation per layer"			},
 		{ TEST_TYPE_MULTIPLE_LAYERS_PER_INVOCATION,	"multiple_layers_per_invocation",	"Render to multiple layers with multiple invocations, multiple layers per invocation",	},
 		{ TEST_TYPE_LAYERED_READBACK,				"readback",							"Render to multiple layers with two passes to check LOAD_OP_LOAD capability"			},
+		{ TEST_TYPE_SECONDARY_CMD_BUFFER,			"secondary_cmd_buffer",				"Layered rendering using secondary command buffer"										}
 	};
 
 	const ImageParams imageParams[] =
@@ -1433,14 +1828,21 @@ tcu::TestCaseGroup* createLayeredRenderingTests (tcu::TestContext& testCtx)
 
 		for (int testTypeNdx = 0; testTypeNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypeNdx)
 		{
-			const TestParams params =
+			TestParams params =
 			{
 				testTypes[testTypeNdx].test,
 				imageParams[imageParamNdx],
+				false
 			};
 
 			if (testTypes[testTypeNdx].test == TEST_TYPE_LAYERED_READBACK)
 				addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, initPrograms, testLayeredReadBack, params);
+			else if (testTypes[testTypeNdx].test == TEST_TYPE_SECONDARY_CMD_BUFFER)
+			{
+				addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer", testTypes[testTypeNdx].description, initPrograms, testSecondaryCmdBuffer, params);
+				params.inheritFramebuffer = true;
+				addFunctionCaseWithPrograms(viewTypeGroup.get(), "secondary_cmd_buffer_inherit_framebuffer", testTypes[testTypeNdx].description, initPrograms, testSecondaryCmdBuffer, params);
+			}
 			else
 				addFunctionCaseWithPrograms(viewTypeGroup.get(), testTypes[testTypeNdx].name, testTypes[testTypeNdx].description, initPrograms, test, params);
 		}

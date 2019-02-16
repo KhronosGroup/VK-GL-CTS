@@ -320,7 +320,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"9ed38739b974f9d6585e8c5f11184409b11d3817",
+		"2898223375d57fb3974f24e1e944bb624f67cb73",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
@@ -331,7 +331,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/Igalia/vkrunner.git",
 		None,
-		"2787f7ceaa96de8ad0c352629a4ed297da068872",
+		"79229ee3662da691240bde7fb6c6578e0e10e3f1",
 		"vkrunner"),
 ]
 

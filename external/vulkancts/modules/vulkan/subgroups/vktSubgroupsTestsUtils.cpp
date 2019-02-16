@@ -2009,71 +2009,57 @@ tcu::TestStatus vkt::subgroups::allStages(
 										*renderPass,
 										(shaderStageRequired & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT) ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_POINT_LIST));
 
-	DescriptorPoolBuilder poolBuilder;
+	Move <VkDescriptorPool>	descriptorPool;
+	Move <VkDescriptorSet>	descriptorSet;
 
-	for (deUint32 ndx = 0u; ndx < static_cast<deUint32>(inputBuffers.size()); ndx++)
+	if (inputBuffers.size() > 0)
 	{
-		poolBuilder.addType(inputBuffers[ndx]->getType());
+		DescriptorPoolBuilder poolBuilder;
+
+		for (deUint32 ndx = 0u; ndx < static_cast<deUint32>(inputBuffers.size()); ndx++)
+		{
+			poolBuilder.addType(inputBuffers[ndx]->getType());
+		}
+
+		descriptorPool =
+			poolBuilder.build(context.getDeviceInterface(), context.getDevice(),
+				VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+		// Create descriptor set
+		descriptorSet = makeDescriptorSet(context, *descriptorPool, *descriptorSetLayout);
+
+		DescriptorSetUpdateBuilder updateBuilder;
+
+		for (deUint32 ndx = 0u; ndx < stagesCount + extraDatasCount; ndx++)
+		{
+			deUint32 binding;
+			if (ndx < stagesCount) binding = getResultBinding(stagesVector[ndx]);
+			else binding = extraDatas[ndx -stagesCount].binding;
+
+			if (inputBuffers[ndx]->isImage())
+			{
+				VkDescriptorImageInfo info =
+					makeDescriptorImageInfo(inputBuffers[ndx]->getAsImage()->getSampler(),
+											inputBuffers[ndx]->getAsImage()->getImageView(), VK_IMAGE_LAYOUT_GENERAL);
+
+				updateBuilder.writeSingle(	*descriptorSet,
+											DescriptorSetUpdateBuilder::Location::binding(binding),
+											inputBuffers[ndx]->getType(), &info);
+			}
+			else
+			{
+				VkDescriptorBufferInfo info =
+					makeDescriptorBufferInfo(inputBuffers[ndx]->getAsBuffer()->getBuffer(),
+							0ull, inputBuffers[ndx]->getAsBuffer()->getSize());
+
+				updateBuilder.writeSingle(	*descriptorSet,
+													DescriptorSetUpdateBuilder::Location::binding(binding),
+													inputBuffers[ndx]->getType(), &info);
+			}
+		}
+
+		updateBuilder.update(context.getDeviceInterface(), context.getDevice());
 	}
-
-	const Unique<VkDescriptorPool> descriptorPool(
-		poolBuilder.build(context.getDeviceInterface(), context.getDevice(),
-						  VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
-
-	// Create descriptor set
-	const Unique<VkDescriptorSet> descriptorSet(
-		makeDescriptorSet(context, *descriptorPool, *descriptorSetLayout));
-
-	DescriptorSetUpdateBuilder updateBuilder;
-
-	for (deUint32 ndx = 0u; ndx < stagesCount; ndx++)
-	{
-		if (inputBuffers[ndx]->isImage())
-		{
-			VkDescriptorImageInfo info =
-				makeDescriptorImageInfo(inputBuffers[ndx]->getAsImage()->getSampler(),
-										inputBuffers[ndx]->getAsImage()->getImageView(), VK_IMAGE_LAYOUT_GENERAL);
-
-			updateBuilder.writeSingle(*descriptorSet,
-									  DescriptorSetUpdateBuilder::Location::binding(getResultBinding(stagesVector[ndx])),
-									  inputBuffers[ndx]->getType(), &info);
-		}
-		else
-		{
-			VkDescriptorBufferInfo info =
-				makeDescriptorBufferInfo(inputBuffers[ndx]->getAsBuffer()->getBuffer(),
-										 0ull, inputBuffers[ndx]->getAsBuffer()->getSize());
-
-			updateBuilder.writeSingle(*descriptorSet,
-									  DescriptorSetUpdateBuilder::Location::binding(getResultBinding(stagesVector[ndx])),
-									  inputBuffers[ndx]->getType(), &info);
-		}
-	}
-
-	for (deUint32 ndx = stagesCount; ndx < stagesCount + extraDatasCount; ndx++)
-	{
-		if (inputBuffers[ndx]->isImage())
-		{
-			VkDescriptorImageInfo info =
-				makeDescriptorImageInfo(inputBuffers[ndx]->getAsImage()->getSampler(),
-										inputBuffers[ndx]->getAsImage()->getImageView(), VK_IMAGE_LAYOUT_GENERAL);
-
-			updateBuilder.writeSingle(*descriptorSet,
-									  DescriptorSetUpdateBuilder::Location::binding(extraDatas[ndx -stagesCount].binding),
-									  inputBuffers[ndx]->getType(), &info);
-		}
-		else
-		{
-			VkDescriptorBufferInfo info =
-				makeDescriptorBufferInfo(inputBuffers[ndx]->getAsBuffer()->getBuffer(),
-										 0ull, inputBuffers[ndx]->getAsBuffer()->getSize());
-
-			updateBuilder.writeSingle(*descriptorSet,
-									  DescriptorSetUpdateBuilder::Location::binding(extraDatas[ndx - stagesCount].binding),
-									  inputBuffers[ndx]->getType(), &info);
-		}
-	}
-	updateBuilder.update(context.getDeviceInterface(), context.getDevice());
 
 	{
 		const Unique<VkCommandPool>		cmdPool					(makeCommandPool(context));
@@ -2124,9 +2110,10 @@ tcu::TestStatus vkt::subgroups::allStages(
 
 			context.getDeviceInterface().cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
 
-			context.getDeviceInterface().cmdBindDescriptorSets(*cmdBuffer,
-					VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-					&descriptorSet.get(), 0u, DE_NULL);
+			if (stagesCount + extraDatasCount > 0)
+				context.getDeviceInterface().cmdBindDescriptorSets(*cmdBuffer,
+						VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+						&descriptorSet.get(), 0u, DE_NULL);
 
 			context.getDeviceInterface().cmdDraw(*cmdBuffer, width, 1, 0, 0);
 

@@ -45,14 +45,47 @@ using std::string;
 using std::vector;
 using tcu::TestLog;
 
+bool isDefaultComponentMapping (VkComponentMapping mapping)
+{
+	if ((mapping.r == VK_COMPONENT_SWIZZLE_R || mapping.r == VK_COMPONENT_SWIZZLE_IDENTITY) &&
+		(mapping.g == VK_COMPONENT_SWIZZLE_G || mapping.g == VK_COMPONENT_SWIZZLE_IDENTITY) &&
+		(mapping.b == VK_COMPONENT_SWIZZLE_B || mapping.b == VK_COMPONENT_SWIZZLE_IDENTITY) &&
+		(mapping.a == VK_COMPONENT_SWIZZLE_A || mapping.a == VK_COMPONENT_SWIZZLE_IDENTITY))
+		return true;
+	else
+		return false;
+}
+
+template <typename INSTANCE_TYPE>
+class SwizzleTestCase : public TextureTestCase<INSTANCE_TYPE>
+{
+public:
+					SwizzleTestCase	(tcu::TestContext& context, const std::string& name, const std::string& description, const typename INSTANCE_TYPE::ParameterType& testParameters)
+						: TextureTestCase<INSTANCE_TYPE>	(context, name, description, testParameters)
+	{}
+
+	virtual void	initPrograms	(vk::SourceCollections& programCollection) const
+	{
+		initializePrograms(programCollection,
+						   this->m_testsParameters.texCoordPrecision,
+						   this->m_testsParameters.programs,
+						   this->m_testsParameters.texCoordSwizzle);
+	}
+};
+
 struct Swizzle2DTestParameters : public Texture2DTestCaseParameters
 {
 										Swizzle2DTestParameters	(void);
 	TextureBinding::ImageBackingMode	backingMode;
 	vk::VkComponentMapping				componentMapping;
+	const char*							texCoordSwizzle;
+	const deUint8*						texCoordMapping;
 };
 
 Swizzle2DTestParameters::Swizzle2DTestParameters (void)
+	: componentMapping	(makeComponentMappingRGBA())
+	, texCoordSwizzle	(DE_NULL)
+	, texCoordMapping	(DE_NULL)
 {
 }
 
@@ -80,9 +113,12 @@ Swizzle2DTestInstance::Swizzle2DTestInstance (Context&				context,
 											  const ParameterType&	testParameters)
 	: TestInstance			(context)
 	, m_testParameters		(testParameters)
-	// Hard format values unused
-	, m_format				(isCompressedFormat(m_testParameters.format) ? tcu::TextureFormat() : mapVkFormat(testParameters.format))
-	, m_compressedFormat	(isCompressedFormat(m_testParameters.format) ? mapVkCompressedFormat(testParameters.format) : tcu::CompressedTexFormat())
+	, m_format				(isCompressedFormat(m_testParameters.format)
+								? tcu::TextureFormat() // Unused
+								: mapVkFormat(testParameters.format))
+	, m_compressedFormat	(isCompressedFormat(m_testParameters.format)
+								? mapVkCompressedFormat(testParameters.format)
+								: tcu::CompressedTexFormat()) // Unused
 	, m_texture				(TestTexture2DSp(isCompressedFormat(m_testParameters.format)
 								? new pipeline::TestTexture2D(m_compressedFormat, testParameters.width, testParameters.height)
 								: new pipeline::TestTexture2D(m_format, testParameters.width, testParameters.height)))
@@ -124,12 +160,65 @@ tcu::TestStatus Swizzle2DTestInstance::iterate (void)
 	const tcu::PixelFormat	pixelFormat		(formatBitDepth[0], formatBitDepth[1], formatBitDepth[2], formatBitDepth[3]);
 	tcu::Surface			referenceFrame	(m_renderer.getRenderWidth(), m_renderer.getRenderHeight());
 
-	sampleTexture(tcu::SurfaceAccess(referenceFrame, pixelFormat), m_texture->getTexture(), &texCoord[0], sampleParams);
-
-	tcu::Surface			swizzledReference	= referenceFrame;
-
-	// Swizzle reference
+	// Render reference (based on sampleTextureNonProjected in gluTextureTestUtil.cpp)
 	{
+		std::vector<tcu::ConstPixelBufferAccess>	storage;
+		const tcu::Texture2DView					src			= getEffectiveTextureView(m_texture->getTexture(), storage, sampleParams.sampler);
+		const tcu::SurfaceAccess					dst			= tcu::SurfaceAccess(referenceFrame, pixelFormat);
+
+		const tcu::IVec2							dstSize		= tcu::IVec2(dst.getWidth(), dst.getHeight());
+		const tcu::IVec2							srcSize		= tcu::IVec2(src.getWidth(), src.getHeight());
+
+		const float									lodBias		= (sampleParams.flags & ReferenceParams::USE_BIAS) ? sampleParams.bias : 0.0f;
+		const tcu::Vec4								sq			= tcu::Vec4(texCoord[0+0], texCoord[2+0], texCoord[4+0], texCoord[6+0]);
+		const tcu::Vec4								tq			= tcu::Vec4(texCoord[0+1], texCoord[2+1], texCoord[4+1], texCoord[6+1]);
+
+		tcu::Vec3									tri[2][2]	=
+		{
+			{ sq.swizzle(0, 1, 2), sq.swizzle(3, 2, 1) },
+			{ tq.swizzle(0, 1, 2), tq.swizzle(3, 2, 1) }
+		};
+
+		// Swizzle texture coordinates
+		if (m_testParameters.texCoordMapping)
+		{
+			const tcu::Vec3 swz[2][2] =
+			{
+				{ tri[m_testParameters.texCoordMapping[0]][0], tri[m_testParameters.texCoordMapping[0]][1] },
+				{ tri[m_testParameters.texCoordMapping[1]][0], tri[m_testParameters.texCoordMapping[1]][1] }
+			};
+
+			memcpy(tri, swz, sizeof(tri));
+		}
+
+		// Coordinates and lod per triangle
+		const tcu::Vec3		triS[2]		= { tri[0][0], tri[0][1] };
+		const tcu::Vec3		triT[2]		= { tri[1][0], tri[1][1] };
+		const float			triLod[2]	= { de::clamp(computeNonProjectedTriLod(sampleParams.lodMode, dstSize, srcSize, triS[0], triT[0]) + lodBias, sampleParams.minLod, sampleParams.maxLod),
+											de::clamp(computeNonProjectedTriLod(sampleParams.lodMode, dstSize, srcSize, triS[1], triT[1]) + lodBias, sampleParams.minLod, sampleParams.maxLod) };
+
+		for (int y = 0; y < dstSize.y(); y++)
+		for (int x = 0; x < dstSize.x(); x++)
+		{
+			const float	yf		= ((float)y + 0.5f) / (float)dstSize.y();
+			const float	xf		= ((float)x + 0.5f) / (float)dstSize.x();
+
+			const int	triNdx	= xf + yf >= 1.0f ? 1 : 0; // Top left fill rule
+			const float	triX	= triNdx ? 1.0f-xf : xf;
+			const float	triY	= triNdx ? 1.0f-yf : yf;
+
+			const float	s		= triangleInterpolate(triS[triNdx].x(), triS[triNdx].y(), triS[triNdx].z(), triX, triY);
+			const float	t		= triangleInterpolate(triT[triNdx].x(), triT[triNdx].y(), triT[triNdx].z(), triX, triY);
+			const float	lod		= triLod[triNdx];
+
+			dst.setPixel(src.sample(sampleParams.sampler, s, t, lod) * sampleParams.colorScale + sampleParams.colorBias, x, y);
+		}
+	}
+
+	// Reference component mapping swizzle
+	if (!isDefaultComponentMapping(m_testParameters.componentMapping))
+	{
+		tcu::Surface				swzSurface	= referenceFrame;
 		const tcu::IVec4			bitDepth	= getTextureFormatBitDepth(isCompressedFormat(m_testParameters.format)
 													? getUncompressedFormat(m_compressedFormat)
 													: m_format);
@@ -181,13 +270,15 @@ tcu::TestStatus Swizzle2DTestInstance::iterate (void)
 				}
 			}
 
-			swizzledReference.setPixel(x, y, tcu::RGBA(swizzled.x(), swizzled.y(), swizzled.z(), swizzled.w()));
+			swzSurface.setPixel(x, y, tcu::RGBA(swizzled.x(), swizzled.y(), swizzled.z(), swizzled.w()));
 		}
+
+		referenceFrame = swzSurface;
 	}
 
 	// Compare and log
 	const tcu::RGBA	threshold	= pixelFormat.getColorThreshold() + tcu::RGBA(2, 2, 2, 2);
-	const bool	isOk			= compareImages(log, swizzledReference, rendered, threshold);
+	const bool		isOk		= compareImages(log, referenceFrame, rendered, threshold);
 
 	return isOk ? tcu::TestStatus::pass("Pass") : tcu::TestStatus::fail("Image verification failed");
 }
@@ -354,7 +445,18 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		{ "aaaa",	{VK_COMPONENT_SWIZZLE_A,	VK_COMPONENT_SWIZZLE_A,		VK_COMPONENT_SWIZZLE_A,		VK_COMPONENT_SWIZZLE_A}		}
 	};
 
-	de::MovePtr<tcu::TestCaseGroup>	groupCompMap (new tcu::TestCaseGroup(testCtx, "component_mapping", "Component mapping swizzles"));
+	static const struct {
+		const char*		swizzle;
+		const deUint8	mapping[2];
+	} texCoordSwizzles2d[] =
+	{
+		{ "yx", { 1, 0 } },
+		{ "xx", { 0, 0 } },
+		{ "yy", { 1, 1 } }
+	};
+
+	de::MovePtr<tcu::TestCaseGroup>	groupCompMap	(new tcu::TestCaseGroup(testCtx, "component_mapping",	"Component mapping swizzles"));
+	de::MovePtr<tcu::TestCaseGroup>	groupTexCoord	(new tcu::TestCaseGroup(testCtx, "texture_coordinate",	"Texture coordinate swizzles"));
 
 	// 2D Component mapping swizzles
 	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
@@ -379,10 +481,39 @@ void populateTextureSwizzleTests (tcu::TestCaseGroup* textureSwizzleTests)
 		testParameters.magFilter		= tcu::Sampler::NEAREST;
 		testParameters.programs.push_back(formats2D[formatNdx].program);
 
-		groupCompMap->addChild(new TextureTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+		groupCompMap->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
+	}
+
+	// 2D Texture coordinate swizzles
+	for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes2D); sizeNdx++)
+	for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats2D); formatNdx++)
+	for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); backingNdx++)
+	for (int swizzleNdx = 0; swizzleNdx < DE_LENGTH_OF_ARRAY(texCoordSwizzles2d); swizzleNdx++)
+	{
+		const string formatStr	= de::toString(getFormatStr(formats2D[formatNdx].format));
+		const string caseDesc	= formatStr + ", TEXTURETYPE_2D";
+		const string caseName	= de::toLower(formatStr.substr(10)) + "_2d"
+								+ "_" + sizes2D[sizeNdx].name
+								+ backingModes[backingNdx].name
+								+ "_" + texCoordSwizzles2d[swizzleNdx].swizzle;
+
+		Swizzle2DTestParameters	testParameters;
+		testParameters.format			= formats2D[formatNdx].format;
+		testParameters.backingMode		= backingModes[backingNdx].backingMode;
+		testParameters.componentMapping	= makeComponentMappingRGBA();
+		testParameters.texCoordSwizzle	= texCoordSwizzles2d[swizzleNdx].swizzle;
+		testParameters.texCoordMapping	= texCoordSwizzles2d[swizzleNdx].mapping;
+		testParameters.width			= sizes2D[sizeNdx].width;
+		testParameters.height			= sizes2D[sizeNdx].height;
+		testParameters.minFilter		= tcu::Sampler::NEAREST;
+		testParameters.magFilter		= tcu::Sampler::NEAREST;
+		testParameters.programs.push_back(formats2D[formatNdx].program);
+
+		groupTexCoord->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), caseDesc.c_str(), testParameters));
 	}
 
 	textureSwizzleTests->addChild(groupCompMap.release());
+	textureSwizzleTests->addChild(groupTexCoord.release());
 }
 
 } // anonymous

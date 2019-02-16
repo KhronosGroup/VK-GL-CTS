@@ -21,7 +21,7 @@
  *
  *//*!
  * \file
- * \brief Tests for subpass dependency tests
+ * \brief Tests for subpass dependency
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"

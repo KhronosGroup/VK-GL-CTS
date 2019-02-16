@@ -1251,3 +1251,13 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceScalarBlockLayoutFea
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClipEnableFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPipelineRasterizationDepthClipStateCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
+}
+

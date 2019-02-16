@@ -311,7 +311,6 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 				const string				testName		= chainOpTestNames[chainOpIdx] + string(sign == 0 ? "_u" : "_s") + de::toString(idxSize);
 				VulkanFeatures				vulkanFeatures;
 				vector<string>				extensions;
-				vector<string>				features;
 				SpecConstants				noSpecConstants;
 				PushConstants				noPushConstants;
 				GraphicsInterfaces			noInterfaces;
@@ -432,7 +431,7 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 				if (idxSize == 16)
 				{
 					fragments["capability"] = "OpCapability Int16\n";
-					features.push_back("shaderInt16");
+					vulkanFeatures.coreFeatures.shaderInt16 = VK_TRUE;
 					specs["convert"] = "OpUConvert";
 					specs["intdecl"] =	"                      %u16 = OpTypeInt 16 0\n"
 								"                      %i16 = OpTypeInt 16 1\n";
@@ -440,7 +439,7 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 				else if (idxSize == 64)
 				{
 					fragments["capability"] = "OpCapability Int64\n";
-					features.push_back("shaderInt64");
+					vulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
 					specs["convert"] = "OpUConvert";
 					specs["intdecl"] =	"                      %u64 = OpTypeInt 64 0\n"
 								"                      %i64 = OpTypeInt 64 1\n";
@@ -493,7 +492,7 @@ void addGraphicsIndexingStructTests (tcu::TestCaseGroup* group)
 
 				createTestsForAllStages(
 						testName.c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
-						noPushConstants, resources, noInterfaces, extensions, features, vulkanFeatures, structGroup.get());
+						noPushConstants, resources, noInterfaces, extensions, vulkanFeatures, structGroup.get());
 			}
 		}
 	}
@@ -676,7 +675,14 @@ void addComputeIndexingNon16BaseAlignmentTests (tcu::TestCaseGroup* group)
 
 	inputData.reserve(numInputFloats);
 	for (deUint32 numIdx = 0; numIdx < numInputFloats; ++numIdx)
-		inputData.push_back(rnd.getFloat());
+	{
+		float f = rnd.getFloat();
+
+		// CPU might not use the same rounding mode as the GPU. Use whole numbers to avoid rounding differences.
+		f = deFloatFloor(f);
+
+		inputData.push_back(f);
+	}
 
 	spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 

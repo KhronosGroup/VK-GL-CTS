@@ -322,6 +322,7 @@ public:
 	VkPhysicalDeviceConditionalRenderingFeaturesEXT		conditionalRenderingFeatures;
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures;
 	VkPhysicalDeviceFloat16Int8FeaturesKHR				float16Int8Features;
+	VkPhysicalDeviceDepthClipEnableFeaturesEXT			depthClipEnableFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -337,6 +338,7 @@ public:
 		deMemset(&descriptorIndexingFeatures, 0, sizeof(descriptorIndexingFeatures));
 		deMemset(&inlineUniformBlockFeatures, 0, sizeof(inlineUniformBlockFeatures));
 		deMemset(&float16Int8Features, 0, sizeof(float16Int8Features));
+		deMemset(&depthClipEnableFeatures, 0, sizeof(depthClipEnableFeatures));
 		deMemset(&vertexAttributeDivisorFeatures, 0, sizeof(vertexAttributeDivisorFeatures));
 		deMemset(&descriptorIndexingFeatures, 0, sizeof(descriptorIndexingFeatures));
 		deMemset(&inlineUniformBlockFeatures, 0, sizeof(inlineUniformBlockFeatures));
@@ -360,6 +362,7 @@ public:
 		shaderAtomicInt64Features.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES_KHR;
 		conditionalRenderingFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT;
 		scalarBlockLayoutFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
+		depthClipEnableFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -438,6 +441,11 @@ public:
 				*nextPtr	= &scalarBlockLayoutFeatures;
 				nextPtr		= &scalarBlockLayoutFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_EXT_depth_clip_enable"))
+			{
+				*nextPtr	= &depthClipEnableFeatures;
+				nextPtr		= &depthClipEnableFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -476,6 +484,7 @@ public:
 	const VkPhysicalDeviceConditionalRenderingFeaturesEXT&	getConditionalRenderingFeatures		(void) const	{ return m_deviceFeatures.conditionalRenderingFeatures;	}
 	const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&		getScalarBlockLayoutFeatures		(void) const	{ return m_deviceFeatures.scalarBlockLayoutFeatures;	}
 	const VkPhysicalDeviceFloat16Int8FeaturesKHR&			getFloat16Int8Features				(void) const	{ return m_deviceFeatures.float16Int8Features;				}
+	const VkPhysicalDeviceDepthClipEnableFeaturesEXT&		getDepthClipEnableFeatures			(void) const	{ return m_deviceFeatures.depthClipEnableFeatures;			}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -643,6 +652,8 @@ const vk::VkPhysicalDeviceScalarBlockLayoutFeaturesEXT&
 										Context::getScalarBlockLayoutFeatures	(void) const { return m_device->getScalarBlockLayoutFeatures();	}
 const vk::VkPhysicalDeviceFloat16Int8FeaturesKHR&
 										Context::getFloat16Int8Features			(void) const { return m_device->getFloat16Int8Features();		}
+const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&
+										Context::getDepthClipEnableFeatures		(void) const { return m_device->getDepthClipEnableFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}
