@@ -15661,25 +15661,23 @@ bool VaryingExceedingComponentsTest::isComputeRelevant(GLuint /* test_case_index
  **/
 void VaryingExceedingComponentsTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
-		const Utils::Type& type				 = getType(i);
-		const GLuint	   n_req_components  = type.m_n_rows;
-		const GLuint	   valid_component   = n_components_per_location - n_req_components;
-		const GLuint	   invalid_component = valid_component + 1;
+		const Utils::Type&		   type				= getType(i);
+		const std::vector<GLuint>& valid_components = type.GetValidComponents();
+
+		if (valid_components.empty())
+		{
+			continue;
+		}
+
+		const GLuint invalid_component = valid_components.back() + (Utils::Type::Double == type.m_basic_type ? 2 : 1);
 
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
 			if (Utils::Shader::COMPUTE == stage)
-			{
-				continue;
-			}
-
-			/* Component cannot be used for matrices */
-			if (1 != type.m_n_columns)
 			{
 				continue;
 			}
@@ -16073,14 +16071,17 @@ bool VaryingComponentWithoutLocationTest::isComputeRelevant(GLuint /* test_case_
  **/
 void VaryingComponentWithoutLocationTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
-		const Utils::Type& type				= getType(i);
-		const GLuint	   n_req_components = type.m_n_rows;
-		const GLuint	   valid_component  = n_components_per_location - n_req_components;
+		const Utils::Type&		   type				= getType(i);
+		const std::vector<GLuint>& valid_components = type.GetValidComponents();
+
+		if (valid_components.empty())
+		{
+			continue;
+		}
 
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
@@ -16089,14 +16090,8 @@ void VaryingComponentWithoutLocationTest::testInit()
 				continue;
 			}
 
-			/* Component cannot be used for matrices */
-			if (1 != type.m_n_columns)
-			{
-				continue;
-			}
-
-			testCase test_case_in  = { valid_component, true, (Utils::Shader::STAGES)stage, type };
-			testCase test_case_out = { valid_component, false, (Utils::Shader::STAGES)stage, type };
+			testCase test_case_in  = { valid_components.back(), true, (Utils::Shader::STAGES)stage, type };
+			testCase test_case_out = { valid_components.back(), false, (Utils::Shader::STAGES)stage, type };
 
 			m_test_cases.push_back(test_case_in);
 
@@ -16615,14 +16610,12 @@ bool VaryingComponentOfInvalidTypeTest::isComputeRelevant(GLuint /* test_case_in
  **/
 void VaryingComponentOfInvalidTypeTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type				= getType(i);
-		const GLuint	   n_req_components = type.m_n_rows;
-		const GLuint	   valid_component  = n_components_per_location - n_req_components;
+		const std::vector<GLuint>& valid_components = type.GetValidComponents();
 
 		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 		{
@@ -16650,17 +16643,21 @@ void VaryingComponentOfInvalidTypeTest::testInit()
 			}
 			else
 			{
+				if (valid_components.empty())
+				{
+					continue;
+				}
+
 				for (GLuint c = BLOCK; c < MAX_CASES; ++c)
 				{
-					testCase test_case_in_arr = { (CASES)c, valid_component, true, true, (Utils::Shader::STAGES)stage,
-												  type };
-					testCase test_case_in_one = { (CASES)c, valid_component, false, true, (Utils::Shader::STAGES)stage,
-												  type };
-					testCase test_case_out_arr = { (CASES)c, valid_component, true, false, (Utils::Shader::STAGES)stage,
-												   type };
-					testCase test_case_out_one = {
-						(CASES)c, valid_component, false, false, (Utils::Shader::STAGES)stage, type
-					};
+					testCase test_case_in_arr = { (CASES)c, valid_components.back(),	  true,
+												  true,		(Utils::Shader::STAGES)stage, type };
+					testCase test_case_in_one = { (CASES)c, valid_components.back(),	  false,
+												  true,		(Utils::Shader::STAGES)stage, type };
+					testCase test_case_out_arr = { (CASES)c, valid_components.back(),	  true,
+												   false,	(Utils::Shader::STAGES)stage, type };
+					testCase test_case_out_one = { (CASES)c, valid_components.back(),	  false,
+												   false,	(Utils::Shader::STAGES)stage, type };
 
 					if (Utils::Shader::VERTEX != stage)
 					{
@@ -17077,41 +17074,29 @@ void InputComponentAliasingTest::testInit()
 	for (GLuint i = 0; i < n_types; ++i)
 	{
 		const Utils::Type& type						 = getType(i);
-		const bool		   use_double				 = (Utils::Type::Double == type.m_basic_type);
-		const GLuint	   n_components_per_location = use_double ? 2 : 4;
-		const GLuint	   n_req_components			 = type.m_n_rows;
-		const GLint		   valid_component			 = (GLint)n_components_per_location - (GLint)n_req_components;
-		const GLuint	   component_size			 = use_double ? 2 : 1;
-		/* Skip matrices */
-		if (1 != type.m_n_columns)
-		{
-			continue;
-		}
-		/* Skip dvec3/dvec4 which doesn't support the component qualifier */
-		if (valid_component < 0)
+		const std::vector<GLuint>& valid_components			 = type.GetValidComponents();
+
+		if (valid_components.empty())
 		{
 			continue;
 		}
 
-		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+		for (std::vector<GLuint>::const_iterator it_gohan = valid_components.begin();
+			 it_gohan != valid_components.end(); ++it_gohan)
 		{
-			if (Utils::Shader::COMPUTE == stage)
+			const GLuint max_component = *it_gohan + type.GetNumComponents();
+			for (std::vector<GLuint>::const_iterator it_goten = it_gohan;
+				 it_goten != valid_components.end() && max_component > *it_goten; ++it_goten)
 			{
-				continue;
-			}
-
-			for (GLuint gohan = 0; gohan <= (GLuint)valid_component; ++gohan)
-			{
-				const GLint first_aliasing = gohan - n_req_components + 1;
-				const GLint last_aliasing  = gohan + n_req_components - 1;
-
-				const GLuint goten_start = std::max(0, first_aliasing);
-				const GLuint goten_stop  = std::min(valid_component, last_aliasing);
-
-				for (GLuint goten = goten_start; goten <= goten_stop; ++goten)
+				for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 				{
-					testCase test_case = { gohan * component_size, goten * component_size, (Utils::Shader::STAGES)stage,
-										   type };
+					/* Skip compute shader */
+					if (Utils::Shader::COMPUTE == stage)
+					{
+						continue;
+					}
+
+					testCase test_case = { *it_gohan, *it_goten, (Utils::Shader::STAGES)stage, type };
 
 					m_test_cases.push_back(test_case);
 				}
@@ -17467,44 +17452,39 @@ bool OutputComponentAliasingTest::isComputeRelevant(GLuint /* test_case_index */
  **/
 void OutputComponentAliasingTest::testInit()
 {
-	static const GLuint n_components_per_location = 4;
 	const GLuint		n_types					  = getTypesNumber();
 
 	for (GLuint i = 0; i < n_types; ++i)
 	{
-		const Utils::Type& type				= getType(i);
-		const GLuint	   n_req_components = type.m_n_rows;
-		const GLuint	   valid_component  = n_components_per_location - n_req_components;
+		const Utils::Type&		   type				= getType(i);
+		const std::vector<GLuint>& valid_components = type.GetValidComponents();
 
-		/* Skip matrices */
-		if (1 != type.m_n_columns)
+		if (valid_components.empty())
 		{
 			continue;
 		}
 
-		for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
+		for (std::vector<GLuint>::const_iterator it_gohan = valid_components.begin();
+			 it_gohan != valid_components.end(); ++it_gohan)
 		{
-			if (Utils::Shader::COMPUTE == stage)
+			const GLuint max_component = *it_gohan + type.GetNumComponents();
+			for (std::vector<GLuint>::const_iterator it_goten = it_gohan;
+				 it_goten != valid_components.end() && max_component > *it_goten; ++it_goten)
 			{
-				continue;
-			}
-
-			if ((Utils::Shader::FRAGMENT == stage) && (Utils::Type::Double == type.m_basic_type))
-			{
-				continue;
-			}
-
-			for (GLuint gohan = 0; gohan <= valid_component; ++gohan)
-			{
-				const GLint first_aliasing = gohan - n_req_components + 1;
-				const GLint last_aliasing  = gohan + n_req_components - 1;
-
-				const GLuint goten_start = std::max(0, first_aliasing);
-				const GLuint goten_stop  = std::min((GLint)valid_component, last_aliasing);
-
-				for (GLuint goten = goten_start; goten <= goten_stop; ++goten)
+				for (GLuint stage = 0; stage < Utils::Shader::STAGE_MAX; ++stage)
 				{
-					testCase test_case = { gohan, goten, (Utils::Shader::STAGES)stage, type };
+					/* Skip compute shader */
+					if (Utils::Shader::COMPUTE == stage)
+					{
+						continue;
+					}
+
+					if ((Utils::Shader::FRAGMENT == stage) && (Utils::Type::Double == type.m_basic_type))
+					{
+						continue;
+					}
+
+					testCase test_case = { *it_gohan, *it_goten, (Utils::Shader::STAGES)stage, type };
 
 					m_test_cases.push_back(test_case);
 				}
