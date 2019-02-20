@@ -1629,10 +1629,13 @@ tcu::TestStatus deviceGroupRenderTest (Context& context, Type wsiType)
 				renderer.recordDeviceGroupFrame(commandBuffer, firstDeviceID, secondDeviceID, physicalDevicesInGroupCount, imageNdx, frameNdx);
 
 				// submit queue
-				deUint32 deviceMask = (1 << firstDeviceID) | (1 << secondDeviceID);
+				deUint32 deviceMask = (1 << firstDeviceID);
 				std::vector<deUint32> deviceIndices(1, firstDeviceID);
 				if (physicalDevicesInGroupCount > 1)
+				{
+					deviceMask |= (1 << secondDeviceID);
 					deviceIndices.push_back(secondDeviceID);
+				}
 				const VkDeviceGroupSubmitInfo deviceGroupSubmitInfo =
 				{
 					VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR,		// sType
