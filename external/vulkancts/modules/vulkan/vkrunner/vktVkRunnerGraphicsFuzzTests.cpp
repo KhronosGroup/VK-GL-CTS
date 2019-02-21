@@ -51,6 +51,7 @@ void createVkRunnerTests (tcu::TestCaseGroup* graphicsFuzzTests)
 		{	"mat-array-distance.shader_test",			"mat-array-distance",			"A fragment shader that uses an array of matrices and distance"					},
 		{	"pow-vec4.shader_test",						"pow-vec4",						"A fragment shader that uses pow"												},
 		{	"swizzle-struct-init-min.shader_test",		"swizzle-struct-init-min",		"A fragment shader that uses vector swizzles, struct initializers, and min"		},
+		{	"while-inside-switch.shader_test",			"while-inside-switch",			"A fragment shader that uses a while loop inside a switch"						},
 	};
 
 	for (size_t i = 0; i < sizeof tests / sizeof tests[0]; i++)

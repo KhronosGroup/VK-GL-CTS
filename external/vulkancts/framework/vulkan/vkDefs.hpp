@@ -178,12 +178,14 @@ class PlatformInterface
 public:
 #include "vkVirtualPlatformInterface.inl"
 
+	virtual	GetInstanceProcAddrFunc	getGetInstanceProcAddr	() const = 0;
+
 protected:
-						PlatformInterface	(void) {}
+									PlatformInterface		(void) {}
 
 private:
-						PlatformInterface	(const PlatformInterface&);
-	PlatformInterface&	operator=			(const PlatformInterface&);
+									PlatformInterface		(const PlatformInterface&);
+	PlatformInterface&				operator=				(const PlatformInterface&);
 };
 
 class InstanceInterface

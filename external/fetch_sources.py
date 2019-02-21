@@ -333,6 +333,11 @@ PACKAGES = [
 		None,
 		"79229ee3662da691240bde7fb6c6578e0e10e3f1",
 		"vkrunner"),
+	GitRepo(
+		"https://github.com/google/amber.git",
+		None,
+		"50dbc8a0bceca63731f0ccb8c62c69751e67a5f8",
+		"amber"),
 ]
 
 def parseArgs ():

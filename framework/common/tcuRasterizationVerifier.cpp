@@ -936,21 +936,15 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const
 			(lineNormalizedDeviceSpace[1] + tcu::Vec2(1.0f, 1.0f)) * 0.5f * viewportSize,
 		};
 
-		const tcu::Vec2 lineScreenSpaceRounded[2] =
-		{
-			tcu::Vec2(deFloatRound(lineScreenSpace[0].x() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits), deFloatRound(lineScreenSpace[0].y() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits)),
-			tcu::Vec2(deFloatRound(lineScreenSpace[1].x() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits), deFloatRound(lineScreenSpace[1].y() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits))
-		};
-
-		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpaceRounded[1] - lineScreenSpaceRounded[0]);
+		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpace[1] - lineScreenSpace[0]);
 		const tcu::Vec2 lineNormalDir	= tcu::Vec2(lineDir.y(), -lineDir.x());
 
 		const tcu::Vec2 lineQuadScreenSpace[4] =
 		{
-			lineScreenSpaceRounded[0] + lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[0] - lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[1] - lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[1] + lineNormalDir * halfLineWidth,
+			lineScreenSpace[0] + lineNormalDir * halfLineWidth,
+			lineScreenSpace[0] - lineNormalDir * halfLineWidth,
+			lineScreenSpace[1] - lineNormalDir * halfLineWidth,
+			lineScreenSpace[1] + lineNormalDir * halfLineWidth,
 		};
 		const tcu::Vec2 lineQuadNormalizedDeviceSpace[4] =
 		{
@@ -995,21 +989,15 @@ bool verifyMultisampleLineGroupInterpolation (const tcu::Surface& surface, const
 			(lineNormalizedDeviceSpace[1] + tcu::Vec2(1.0f, 1.0f)) * 0.5f * viewportSize,
 		};
 
-		const tcu::Vec2 lineScreenSpaceRounded[2] =
-		{
-			tcu::Vec2(deFloatRound(lineScreenSpace[0].x() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits), deFloatRound(lineScreenSpace[0].y() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits)),
-			tcu::Vec2(deFloatRound(lineScreenSpace[1].x() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits), deFloatRound(lineScreenSpace[1].y() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits))
-		};
-
-		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpaceRounded[1] - lineScreenSpaceRounded[0]);
+		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpace[1] - lineScreenSpace[0]);
 		const tcu::Vec2 lineNormalDir	= tcu::Vec2(lineDir.y(), -lineDir.x());
 
 		const tcu::Vec2 lineQuadScreenSpace[4] =
 		{
-			lineScreenSpaceRounded[0] + lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[0] - lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[1] - lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[1] + lineNormalDir * halfLineWidth,
+			lineScreenSpace[0] + lineNormalDir * halfLineWidth,
+			lineScreenSpace[0] - lineNormalDir * halfLineWidth,
+			lineScreenSpace[1] - lineNormalDir * halfLineWidth,
+			lineScreenSpace[1] + lineNormalDir * halfLineWidth,
 		};
 		const tcu::Vec2 lineQuadNormalizedDeviceSpace[4] =
 		{

@@ -113,6 +113,8 @@ public:
 	bool										requireInstanceExtension		(const std::string& required);
 	bool										requireDeviceCoreFeature		(const DeviceCoreFeature requiredDeviceCoreFeature);
 
+	void*										getInstanceProcAddr				();
+
 protected:
 	tcu::TestContext&							m_testCtx;
 	const vk::PlatformInterface&				m_platformInterface;

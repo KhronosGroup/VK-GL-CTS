@@ -56,6 +56,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkWsiPlatform.cpp \
 	external/vulkancts/framework/vulkan/vkWsiUtil.cpp \
 	external/vulkancts/framework/vulkan/vkYCbCrImageWithMemory.cpp \
+	external/vulkancts/modules/vulkan/amber/vktAmberExampleTests.cpp \
+	external/vulkancts/modules/vulkan/amber/vktAmberHelper.cpp \
+	external/vulkancts/modules/vulkan/amber/vktAmberTestCase.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferAndImageAllocationUtil.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferComputeInstance.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferTests.cpp \
@@ -1069,6 +1072,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/execserver \
 	$(deqp_dir)/executor \
 	$(deqp_dir)/external/vulkancts/framework/vulkan \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/amber \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/api \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/binding_model \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/clipping \

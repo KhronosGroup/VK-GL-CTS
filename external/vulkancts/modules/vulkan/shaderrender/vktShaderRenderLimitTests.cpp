@@ -166,7 +166,22 @@ void FragmentInputComponentCase::initPrograms (SourceCollections& dst) const
 		"        o_color = vec4(1.0, 0.0, 0.0, 1.0);\n"
 		"}\n");
 
-	deUint16					maxLocations	= (deUint16)deCeilToInt32((float)m_inputComponents / 4u);
+	//
+	// The number of vertex output/fragment input components is *inclusive* of any built-ins being used,
+	// since gl_Position is always output by the shader, this actually means that there are n - 4 components
+	// available as user specified output data.
+	//
+	// [14.1.4. Location Assignment, para 11]
+	//
+	// "The number of input and output locations available for a shader input or output
+	//  interface are limited, and dependent on the shader stage as described in Shader
+	//  Input and Output Locations. All variables in both the built-in interface block
+	//  and the user-defined variable interface count against these limits."
+	//
+	// So, as an example, the '128' component variant of this test will specify 124 user
+	// declared outputs in addition to gl_Position.
+
+	deUint16					maxLocations	= (deUint16)deCeilToInt32((float)(m_inputComponents - 4) / 4u);
 	string						varyingType;
 	map<string, string>			vertexParams;
 	map<string, string>			fragmentParams;
@@ -209,10 +224,21 @@ TestInstance* FragmentInputComponentCase::createInstance (Context& context) cons
 	const VkPhysicalDevice			physDevice					= context.getPhysicalDevice();
 	const VkPhysicalDeviceLimits	limits						= getPhysicalDeviceProperties(vki, physDevice).limits;
 	const deUint16					maxFragmentInputComponents	= (deUint16)limits.maxFragmentInputComponents;
+	const deUint16					maxVertexOutputComponents	= (deUint16)limits.maxVertexOutputComponents;
 
 	if (m_inputComponents > maxFragmentInputComponents)
 	{
-		const std::string notSupportedStr = "Unsupported number of fragment input components, fragmentInputComponents: " + de::toString(m_inputComponents);
+		const std::string notSupportedStr = "Unsupported number of fragment input components (" +
+											de::toString(m_inputComponents) +
+											") maxFragmentInputComponents=" + de::toString(maxFragmentInputComponents);
+		TCU_THROW(NotSupportedError, notSupportedStr.c_str());
+	}
+
+	if (m_inputComponents > maxVertexOutputComponents)
+	{
+		const std::string notSupportedStr = "Unsupported number of user specified vertex output components (" +
+											de::toString(m_inputComponents) +
+											") maxVertexOutputComponents=" + de::toString(maxVertexOutputComponents);
 		TCU_THROW(NotSupportedError, notSupportedStr.c_str());
 	}
 

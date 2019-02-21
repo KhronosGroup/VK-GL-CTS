@@ -30,3 +30,6 @@ dEQP-VK.texture.explicit_lod.*
 
 # Excluded VkRunner example tests
 dEQP-VK.vkrunner-example.*
+
+# Excluded Amber example tests
+dEQP-VK.amber-example.*

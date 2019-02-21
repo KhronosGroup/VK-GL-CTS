@@ -108,6 +108,13 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 	return new VulkanDisplay();
 }
 
+bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType)  const
+{
+	if (wsiType != vk::wsi::TYPE_MACOS)
+		return false;
+
+	return true;
+}
 vk::Library* VulkanPlatform::createLibrary (void) const
 {
 	return new VulkanLibrary();
