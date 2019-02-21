@@ -1370,7 +1370,7 @@ tcu::TestStatus basicRenderTest (Context& context, Type wsiType)
 	const Unique<VkSwapchainKHR>	swapchain					(createSwapchainKHR(vkd, device, &swapchainInfo));
 	const vector<VkImage>			swapchainImages				= getSwapchainImages(vkd, device, *swapchain);
 
-	AcquireWrapperType acquireImageWrapper(vkd, device, 0xFFFFFFFF, *swapchain, std::numeric_limits<deUint64>::max());
+	AcquireWrapperType acquireImageWrapper(vkd, device, 1u, *swapchain, std::numeric_limits<deUint64>::max());
 	if (!acquireImageWrapper.featureAvailable(context.getUsedApiVersion(), instHelper.supportedExtensions))
 		TCU_THROW(NotSupportedError, "Required extension is not supported");
 
