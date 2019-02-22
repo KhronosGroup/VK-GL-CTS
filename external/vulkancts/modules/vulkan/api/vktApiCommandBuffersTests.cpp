@@ -1923,9 +1923,9 @@ tcu::TestStatus simultaneousUseSecondaryBufferTest(Context& context)
 	// check if secondary buffer has been executed
 	VkResult result = vk.getEventStatus(vkDevice,*eventTwo);
 	if (result == VK_EVENT_SET)
-		return tcu::TestStatus::pass("Simulatous Secondary Command Buffer Execution succeeded");
+		return tcu::TestStatus::pass("Simultaneous Secondary Command Buffer Execution succeeded");
 	else
-		return tcu::TestStatus::fail("Simulatous Secondary Command Buffer Execution FAILED");
+		return tcu::TestStatus::fail("Simultaneous Secondary Command Buffer Execution FAILED");
 }
 
 tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context& context)
@@ -2062,9 +2062,9 @@ tcu::TestStatus simultaneousUseSecondaryBufferOnePrimaryBufferTest(Context& cont
 	result.readResultContentsTo(&resultCount);
 	// check if secondary buffer has been executed
 	if (resultCount == 2)
-		return tcu::TestStatus::pass("Simulatous Secondary Command Buffer Execution succeeded");
+		return tcu::TestStatus::pass("Simultaneous Secondary Command Buffer Execution succeeded");
 	else
-		return tcu::TestStatus::fail("Simulatous Secondary Command Buffer Execution FAILED");
+		return tcu::TestStatus::fail("Simultaneous Secondary Command Buffer Execution FAILED");
 }
 
 tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context& context)
@@ -2240,9 +2240,9 @@ tcu::TestStatus simultaneousUseSecondaryBufferTwoPrimaryBuffersTest(Context& con
 	result.readResultContentsTo(&resultCount);
 	// check if secondary buffer has been executed
 	if (resultCount == 2)
-		return tcu::TestStatus::pass("Simulatous Secondary Command Buffer Execution succeeded");
+		return tcu::TestStatus::pass("Simultaneous Secondary Command Buffer Execution succeeded");
 	else
-		return tcu::TestStatus::fail("Simulatous Secondary Command Buffer Execution FAILED");
+		return tcu::TestStatus::fail("Simultaneous Secondary Command Buffer Execution FAILED");
 }
 
 tcu::TestStatus recordBufferQueryPreciseWithFlagTest(Context& context)

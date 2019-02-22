@@ -66,17 +66,21 @@ Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface&	vkdi,
 										  Allocator&				allocator,
 										  size_t					numBytes,
 										  AllocationMp*				outMemory,
+										  bool						physStorageBuffer,
 										  bool						coherent = false)
 {
-	VkBufferUsageFlags			usageBit			= (VkBufferUsageFlags)0;
+	VkBufferUsageFlags			usageFlags			= (VkBufferUsageFlags)0u;
+
+	if (physStorageBuffer)
+		usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT;
 
 	switch (dtype)
 	{
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:			usageBit = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;	break;
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:			usageBit = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;	break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			usageBit = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
-		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			usageBit = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
-		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	usageBit = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:			usageFlags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:			usageFlags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:			usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:			usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:	usageFlags |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;	break;
 		default:										DE_FATAL("Not implemented");
 	}
 
@@ -86,7 +90,7 @@ Move<VkBuffer> createBufferAndBindMemory (const DeviceInterface&	vkdi,
 		DE_NULL,								// pNext
 		0u,										// flags
 		numBytes,								// size
-		usageBit,								// usage
+		usageFlags,								// usage
 		VK_SHARING_MODE_EXCLUSIVE,				// sharingMode
 		0u,										// queueFamilyCount
 		DE_NULL,								// pQueueFamilyIndices
@@ -458,6 +462,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		// FloatControls features
 		if (!isFloatControlsFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.floatControlsProperties))
 			TCU_THROW(NotSupportedError, "Requested Float Controls features not supported");
+
+        if (m_shaderSpec.usesPhysStorageBuffer && !m_context.getBufferDeviceAddressFeatures().bufferDeviceAddress)
+			TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
 	}
 
 	DE_ASSERT(!m_shaderSpec.outputs.empty());
@@ -494,7 +501,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			const size_t		numBytes		= inputBytes.size();
 
 			AllocationMp		bufferAlloc;
-			BufferHandleUp*		buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc, m_shaderSpec.coherentMemory));
+			BufferHandleUp*		buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc, m_shaderSpec.usesPhysStorageBuffer, m_shaderSpec.coherentMemory));
 
 			setMemory(vkdi, device, &*bufferAlloc, numBytes, &inputBytes.front(), m_shaderSpec.coherentMemory);
 			inputBuffers.push_back(BufferHandleSp(buffer));
@@ -511,7 +518,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 			const size_t				numBytes		= inputBytes.size();
 
 			AllocationMp				bufferAlloc;
-			BufferHandleUp*				buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc));
+			BufferHandleUp*				buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descType, allocator, numBytes, &bufferAlloc, m_shaderSpec.usesPhysStorageBuffer));
 
 			AllocationMp				imageAlloc;
 			ImageHandleUp*				image			= new ImageHandleUp(createImageAndBindMemory(vkdi, device, descType, allocator, queueFamilyIndex, &imageAlloc));
@@ -694,12 +701,53 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 		output->getBytes(outputBytes);
 
 		const size_t		numBytes	= outputBytes.size();
-		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc, m_shaderSpec.coherentMemory));
+		BufferHandleUp*		buffer		= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, descriptorTypes.back(), allocator, numBytes, &alloc, m_shaderSpec.usesPhysStorageBuffer, m_shaderSpec.coherentMemory));
 
 		fillMemoryWithValue(vkdi, device, &*alloc, numBytes, 0xff, m_shaderSpec.coherentMemory);
 		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
 		outputBuffers.push_back(BufferHandleSp(buffer));
 		outputAllocs.push_back(de::SharedPtr<Allocation>(alloc.release()));
+	}
+
+	std::vector<VkDeviceAddress> gpuAddrs;
+	// Query the buffer device addresses, write them into a new buffer, and replace
+	// all the descriptors with just a desciptor to this new buffer.
+	if (m_shaderSpec.usesPhysStorageBuffer)
+	{
+		VkBufferDeviceAddressInfoEXT info =
+		{
+			VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	sType;
+			DE_NULL,											// const void*		pNext;
+			0,													// VkBuffer			buffer
+		};
+
+		for (deUint32 inputNdx = 0; inputNdx < m_shaderSpec.inputs.size(); ++inputNdx)
+		{
+			info.buffer = **inputBuffers[inputNdx];
+			VkDeviceAddress addr = vkdi.getBufferDeviceAddressEXT(device, &info);
+			gpuAddrs.push_back(addr);
+		}
+		for (deUint32 outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
+		{
+			info.buffer = **outputBuffers[outputNdx];
+			VkDeviceAddress addr = vkdi.getBufferDeviceAddressEXT(device, &info);
+			gpuAddrs.push_back(addr);
+		}
+
+		descriptorInfos.clear();
+		descriptorTypes.clear();
+		descriptorTypes.push_back(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+		const size_t		numBytes		= gpuAddrs.size() * sizeof(VkDeviceAddress);
+
+		AllocationMp		bufferAlloc;
+		BufferHandleUp*		buffer			= new BufferHandleUp(createBufferAndBindMemory(vkdi, device, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+																						   allocator, numBytes, &bufferAlloc, false, m_shaderSpec.coherentMemory));
+
+		setMemory(vkdi, device, &*bufferAlloc, numBytes, &gpuAddrs.front(), m_shaderSpec.coherentMemory);
+		inputBuffers.push_back(BufferHandleSp(buffer));
+		inputAllocs.push_back(de::SharedPtr<Allocation>(bufferAlloc.release()));
+
+		descriptorInfos.push_back(vk::makeDescriptorBufferInfo(**buffer, 0u, numBytes));
 	}
 
 	// Create layouts and descriptor set.

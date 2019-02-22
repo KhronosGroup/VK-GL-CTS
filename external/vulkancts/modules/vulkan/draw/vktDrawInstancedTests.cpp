@@ -600,7 +600,7 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 			const rr::Program						program			(&vertShader, &fragShader);
 			const rr::MultisamplePixelBufferAccess	colorBuffer		= rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(refImage.getAccess());
 			const rr::RenderTarget					renderTarget	(colorBuffer);
-			const rr::RenderState					renderState		((rr::ViewportState(colorBuffer)));
+			const rr::RenderState					renderState		((rr::ViewportState(colorBuffer)), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 			const rr::Renderer						renderer;
 
 			const rr::VertexAttrib	vertexAttribs[] =

@@ -35,7 +35,6 @@ namespace rr
 //! Rasterizer configuration
 enum
 {
-	RASTERIZER_SUBPIXEL_BITS			= 8,
 	RASTERIZER_MAX_SAMPLES_PER_FRAGMENT	= 16
 };
 
@@ -127,7 +126,7 @@ struct EdgeFunction
 class TriangleRasterizer
 {
 public:
-							TriangleRasterizer		(const tcu::IVec4& viewport, const int numSamples, const RasterizationState& state);
+							TriangleRasterizer		(const tcu::IVec4& viewport, const int numSamples, const RasterizationState& state, const int suppixelBits);
 
 	void					init					(const tcu::Vec4& v0, const tcu::Vec4& v1, const tcu::Vec4& v2);
 
@@ -147,6 +146,7 @@ private:
 	const Winding			m_winding;
 	const HorizontalFill	m_horizontalFill;
 	const VerticalFill		m_verticalFill;
+	const int				m_subpixelBits;
 
 	// Per-triangle rasterization state.
 	tcu::Vec4				m_v0;
@@ -178,7 +178,7 @@ private:
 class SingleSampleLineRasterizer
 {
 public:
-									SingleSampleLineRasterizer	(const tcu::IVec4& viewport);
+									SingleSampleLineRasterizer	(const tcu::IVec4& viewport, const int subpixelBits);
 									~SingleSampleLineRasterizer	(void);
 
 	void							init						(const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth);
@@ -192,6 +192,7 @@ private:
 
 	// Constant rasterization state.
 	const tcu::IVec4				m_viewport;
+	const int						m_subpixelBits;
 
 	// Per-line rasterization state.
 	tcu::Vec4						m_v0;
@@ -219,7 +220,7 @@ private:
 class MultiSampleLineRasterizer
 {
 public:
-								MultiSampleLineRasterizer	(const int numSamples, const tcu::IVec4& viewport);
+								MultiSampleLineRasterizer	(const int numSamples, const tcu::IVec4& viewport, const int subpixelBits);
 								~MultiSampleLineRasterizer	();
 
 	void						init						(const tcu::Vec4& v0, const tcu::Vec4& v1, float lineWidth);
@@ -262,7 +263,7 @@ struct LineExitDiamond
 class LineExitDiamondGenerator
 {
 public:
-									LineExitDiamondGenerator	(void);
+									LineExitDiamondGenerator	(const int subpixelBits);
 									~LineExitDiamondGenerator	(void);
 
 	void							init						(const tcu::Vec4& v0, const tcu::Vec4& v1);
@@ -273,6 +274,8 @@ public:
 private:
 									LineExitDiamondGenerator	(const LineExitDiamondGenerator&); // not allowed
 	LineExitDiamondGenerator&		operator=					(const LineExitDiamondGenerator&); // not allowed
+
+	const int						m_subpixelBits;
 
 	// Per-line rasterization state.
 	tcu::Vec4						m_v0;

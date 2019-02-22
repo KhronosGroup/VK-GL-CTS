@@ -446,7 +446,7 @@ tcu::TestStatus testPrimitivesInside (Context& context, const VkPrimitiveTopolog
 		log << tcu::TestLog::Message << cases[caseNdx].desc << tcu::TestLog::EndMessage;
 
 		const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 0.0f);
-		DrawState			drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+		DrawState			drawState		(topology, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 		DrawCallData		drawCallData	(vertices);
 		VulkanProgram		vulkanProgram	(shaders);
 
@@ -488,7 +488,7 @@ tcu::TestStatus testPrimitivesOutside (Context& context, const VkPrimitiveTopolo
 		log << tcu::TestLog::Message << cases[caseNdx].desc << tcu::TestLog::EndMessage;
 
 		const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 0.0f);
-		DrawState				drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+		DrawState				drawState		(topology, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 		DrawCallData			drawCallData	(vertices);
 		VulkanProgram			vulkanProgram	(shaders);
 
@@ -573,7 +573,7 @@ tcu::TestStatus testPrimitivesDepthClamp (Context& context, const VkPrimitiveTop
 
 		const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 1.0f);
 
-		DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+		DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 		DrawCallData				drawCallData	(vertices);
 		VulkanProgram				vulkanProgram	(shaders);
 		drawState.depthClampEnable = cases[caseNdx].depthClampEnable;
@@ -662,7 +662,7 @@ tcu::TestStatus testPrimitivesDepthClip (Context& context, const VkPrimitiveTopo
 
 		const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 1.0f);
 
-		DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+		DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 		DrawCallData				drawCallData	(vertices);
 		VulkanProgram				vulkanProgram	(shaders);
 		drawState.depthClampEnable = false;
@@ -691,7 +691,7 @@ tcu::TestStatus testPrimitivesDepthClip (Context& context, const VkPrimitiveTopo
 
 			const std::vector<Vec4> vertices = genVertices(topology, Vec4(0.0f, 0.0f, cases[caseNdx].zPos, 0.0f), 1.0f);
 
-			DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE);
+			DrawState					drawState		(topology, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 			DrawCallData				drawCallData	(vertices);
 			VulkanProgram				vulkanProgram	(shaders);
 			drawState.depthClampEnable = true;
@@ -762,7 +762,7 @@ tcu::TestStatus testLargePoints (Context& context)
 
 	log << tcu::TestLog::Message << "Drawing several large points just outside the clip volume. Expecting an empty image or all points rendered." << tcu::TestLog::EndMessage;
 
-	DrawState			drawState		(VK_PRIMITIVE_TOPOLOGY_POINT_LIST, RENDER_SIZE, RENDER_SIZE);
+	DrawState			drawState		(VK_PRIMITIVE_TOPOLOGY_POINT_LIST, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 	DrawCallData		drawCallData	(vertices);
 	VulkanProgram		vulkanProgram	(shaders);
 
@@ -892,7 +892,7 @@ tcu::TestStatus testWideLines (Context& context, const LineOrientation lineOrien
 		<< tcu::TestLog::Message << "Line width is " << lineWidth << "." << tcu::TestLog::EndMessage
 		<< tcu::TestLog::Message << "strictLines is " << (strictLines ? "VK_TRUE." : "VK_FALSE.") << tcu::TestLog::EndMessage;
 
-	DrawState					drawState		(VK_PRIMITIVE_TOPOLOGY_LINE_LIST, RENDER_SIZE, RENDER_SIZE);
+	DrawState					drawState		(VK_PRIMITIVE_TOPOLOGY_LINE_LIST, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 	DrawCallData				drawCallData	(vertices);
 	VulkanProgram				vulkanProgram	(shaders);
 	drawState.lineWidth			= lineWidth;
@@ -945,7 +945,7 @@ tcu::TestStatus testWideLines (Context& context, const LineOrientation lineOrien
 		WideLineFragmentShader		fragmentShader;
 
 		// Draw wide line was two triangles
-		DrawState					refDrawState	(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, RENDER_SIZE, RENDER_SIZE);
+		DrawState					refDrawState	(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 		DrawCallData				refCallData		(refVertices);
 		ReferenceDrawContext		refDrawContext	(refDrawState, refCallData, vertexShader, fragmentShader);
 
@@ -1295,7 +1295,7 @@ tcu::TestStatus testClipDistance (Context& context, const CaseDefinition caseDef
 		<< tcu::TestLog::Message << "Using " << caseDef.numClipDistances << " ClipDistance(s) and " << caseDef.numCullDistances << " CullDistance(s)" << tcu::TestLog::EndMessage
 		<< tcu::TestLog::Message << "Expecting upper half of the clipped bars to be black." << tcu::TestLog::EndMessage;
 
-	DrawState			drawState		(caseDef.topology, RENDER_SIZE, RENDER_SIZE);
+	DrawState			drawState		(caseDef.topology, RENDER_SIZE, RENDER_SIZE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 	DrawCallData		drawCallData	(vertices);
 	VulkanProgram		vulkanProgram	(shaders);
 
@@ -1424,7 +1424,7 @@ tcu::TestStatus testComplementarity (Context& context, const int numClipDistance
 		<< tcu::TestLog::Message << "Using " << numClipDistances << " clipping plane(s), one of them possibly having negative values." << tcu::TestLog::EndMessage
 		<< tcu::TestLog::Message << "Expecting a uniform gray area, no missing (black) nor overlapped (white) pixels." << tcu::TestLog::EndMessage;
 
-	DrawState					drawState		(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, RENDER_SIZE_LARGE, RENDER_SIZE_LARGE);
+	DrawState					drawState		(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, RENDER_SIZE_LARGE, RENDER_SIZE_LARGE, context.getDeviceProperties().limits.subPixelPrecisionBits);
 	DrawCallData				drawCallData	(vertices);
 	VulkanProgram				vulkanProgram	(shaders);
 	drawState.blendEnable		= true;

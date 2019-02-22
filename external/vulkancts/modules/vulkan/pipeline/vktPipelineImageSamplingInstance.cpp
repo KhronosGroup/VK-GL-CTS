@@ -1348,7 +1348,7 @@ tcu::TestStatus ImageSamplingInstance::verifyImage (void)
 
 	// Render out coordinates
 	{
-		const rr::RenderState renderState(refRenderer.getViewportState());
+		const rr::RenderState renderState(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 		refRenderer.draw(renderState, rr::PRIMITIVETYPE_TRIANGLES, m_vertices);
 	}
 

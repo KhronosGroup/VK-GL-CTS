@@ -1285,7 +1285,7 @@ tcu::TestStatus RasterizationSamplesInstance::verifyImage (const tcu::ConstPixel
 		const ColorFragmentShader	fragmentShader	(tcuColorFormat, tcuDepthFormat);
 		const rr::Program			program			(&vertexShader, &fragmentShader);
 		ReferenceRenderer			refRenderer		(m_renderSize.x(), m_renderSize.y(), 1, tcuColorFormat, tcuDepthFormat, &program);
-		rr::RenderState				renderState		(refRenderer.getViewportState());
+		rr::RenderState				renderState		(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 
 		if (m_primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST)
 		{

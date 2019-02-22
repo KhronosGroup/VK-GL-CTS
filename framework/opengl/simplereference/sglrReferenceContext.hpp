@@ -563,6 +563,7 @@ struct ReferenceContextLimits
 		, maxTexture3DSize			(256)
 		, maxRenderbufferSize		(2048)
 		, maxVertexAttribs			(16)
+		, subpixelBits				(rr::RenderState::DEFAULT_SUBPIXEL_BITS)
 	{
 	}
 
@@ -579,6 +580,7 @@ struct ReferenceContextLimits
 	int							maxTexture3DSize;
 	int							maxRenderbufferSize;
 	int							maxVertexAttribs;
+	int							subpixelBits;
 
 	// Both variants are needed since there are glGetString() and glGetStringi()
 	std::vector<std::string>	extensionList;

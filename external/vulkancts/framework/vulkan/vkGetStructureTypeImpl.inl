@@ -1271,3 +1271,18 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceUniformBufferStandar
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceBufferAddressFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBufferDeviceAddressInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBufferDeviceAddressCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT;
+}
+

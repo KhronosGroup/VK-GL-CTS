@@ -218,7 +218,7 @@ std::string getPrimitiveTopologyShortName (const VkPrimitiveTopology topology)
 	return de::toLower(name.substr(22));
 }
 
-DrawState::DrawState(const vk::VkPrimitiveTopology topology_, deUint32 renderWidth_, deUint32 renderHeight_)
+DrawState::DrawState(const vk::VkPrimitiveTopology topology_, deUint32 renderWidth_, deUint32 renderHeight_, const int subpixelBits_)
 	: topology					(topology_)
 	, colorFormat				(VK_FORMAT_R8G8B8A8_UNORM)
 	, renderSize				(tcu::UVec2(renderWidth_, renderHeight_))
@@ -232,6 +232,7 @@ DrawState::DrawState(const vk::VkPrimitiveTopology topology_, deUint32 renderWid
 	, numPatchControlPoints		(0)
 	, numSamples				(VK_SAMPLE_COUNT_1_BIT)
 	, sampleShadingEnable		(false)
+	, subpixelBits			(subpixelBits_)
 	, explicitDepthClipEnable	(false)
 	, depthClipEnable			(false)
 {
@@ -251,7 +252,7 @@ void ReferenceDrawContext::draw (void)
 		const rr::Program						program(&m_vertexShader, &m_fragmentShader);
 		const rr::MultisamplePixelBufferAccess	referenceColorBuffer = rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(m_refImage.getAccess());
 		const rr::RenderTarget					renderTarget(referenceColorBuffer);
-		const rr::RenderState					renderState((rr::ViewportState(referenceColorBuffer)), rr::VIEWPORTORIENTATION_UPPER_LEFT);
+		const rr::RenderState					renderState((rr::ViewportState(referenceColorBuffer)), m_drawState.subpixelBits, rr::VIEWPORTORIENTATION_UPPER_LEFT);
 		const rr::Renderer						renderer;
 		const rr::VertexAttrib					vertexAttrib[] =
 		{

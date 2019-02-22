@@ -272,6 +272,8 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 		functions.push_back("vkGetAndroidHardwareBufferPropertiesANDROID");
 		functions.push_back("vkGetMemoryAndroidHardwareBufferANDROID");
 	}
+	else if (extName == "VK_EXT_buffer_device_address")
+		functions.push_back("vkGetBufferDeviceAddressEXT");
 	else
 		DE_ASSERT("Extension name not found");
 }
@@ -336,5 +338,6 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	"VK_EXT_hdr_metadata",
 	"VK_EXT_sample_locations",
 	"VK_EXT_validation_cache",
-	"VK_ANDROID_external_memory_android_hardware_buffer"
+	"VK_ANDROID_external_memory_android_hardware_buffer",
+	"VK_EXT_buffer_device_address"
 };

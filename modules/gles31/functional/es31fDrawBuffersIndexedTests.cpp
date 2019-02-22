@@ -641,10 +641,10 @@ void setBlendState (rr::FragmentOperationState& fragOps, const BlendState& state
 		fragOps.colorMask = *state.colorMask;
 }
 
-rr::RenderState createRenderState (const BlendState& preCommonBlendState, const BlendState& postCommonBlendState, const DrawBufferInfo& info)
+rr::RenderState createRenderState (const BlendState& preCommonBlendState, const BlendState& postCommonBlendState, const DrawBufferInfo& info, int subpixelBits)
 {
 	const IVec2		size	= info.getSize();
-	rr::RenderState	state	(rr::ViewportState(rr::WindowRectangle(0, 0, size.x(), size.y())));
+	rr::RenderState	state	(rr::ViewportState(rr::WindowRectangle(0, 0, size.x(), size.y())), subpixelBits);
 
 	state.fragOps.blendMode = rr::BLENDMODE_STANDARD;
 
@@ -811,6 +811,7 @@ rr::VertexAttrib createVertexAttrib (const float* coords)
 void renderRefQuad (const BlendState&				preCommonBlendState,
 					const BlendState&				postCommonBlendState,
 					const vector<DrawBufferInfo>&	drawBuffers,
+					const int						subpixelBits,
 					vector<TextureLevel>&			refRenderbuffers)
 {
 	const rr::Renderer			renderer;
@@ -824,7 +825,7 @@ void renderRefQuad (const BlendState&				preCommonBlendState,
 	{
 		if (drawBuffers[drawBufferNdx].getRender())
 		{
-			const rr::RenderState	renderState		(createRenderState(preCommonBlendState, postCommonBlendState, drawBuffers[drawBufferNdx]));
+			const rr::RenderState	renderState		(createRenderState(preCommonBlendState, postCommonBlendState, drawBuffers[drawBufferNdx], subpixelBits));
 			const rr::RenderTarget	renderTarget	(rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(refRenderbuffers[drawBufferNdx].getAccess()));
 			const VertexShader		vertexShader;
 			const FragmentShader	fragmentShader	(drawBufferNdx, drawBuffers[drawBufferNdx]);
@@ -1043,7 +1044,10 @@ void renderQuad (TestLog&						log,
 
 	GLU_EXPECT_NO_ERROR(gl.getError(), "Failed to render");
 
-	renderRefQuad(preCommonBlendState, postCommonBlendState, drawBuffers, refRenderbuffers);
+	int subpixelBits = 0;
+	gl.getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
+
+	renderRefQuad(preCommonBlendState, postCommonBlendState, drawBuffers, subpixelBits, refRenderbuffers);
 }
 
 void logBlendState (TestLog&			log,
