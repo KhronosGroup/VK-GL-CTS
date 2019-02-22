@@ -212,6 +212,10 @@ void MemoryModelTestCase::checkSupport(Context& context) const
 	}
 	if (m_data.dataType == DATA_TYPE_UINT64)
 	{
+		if (!context.getDeviceFeatures().shaderInt64)
+		{
+			TCU_THROW(NotSupportedError, "64-bit integer in shaders not supported");
+		}
 		if (!context.getShaderAtomicInt64Features().shaderBufferInt64Atomics &&
 			(m_data.guardSC == SC_BUFFER || m_data.guardSC == SC_PHYSBUFFER))
 		{
