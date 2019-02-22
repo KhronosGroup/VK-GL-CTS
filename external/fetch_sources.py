@@ -315,18 +315,18 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		None,
-		"5eab6df648eace6eab69c44ccd17bd0f5e57406d",
+		"4c43afcade0f6b17c4977c92a6de6c7d3344ba5d",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"4e06d7a2bba04e5728f37ef8313060acfcd2ff60",
+		"a51d3d9f223361165127ded3cd2e59d81e22d91f",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		None,
-		"79b6681aadcb53c27d1052e5f8a0e82a981dbf2f",
+		"e74c389f81915d0a48d6df1af83c3862c5ad85ab",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/Igalia/vkrunner.git",
