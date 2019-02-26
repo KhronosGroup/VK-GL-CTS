@@ -221,6 +221,34 @@ enum Access
 	ACCESS_LAST
 };
 
+Access accessFlagToAccess (vk::VkAccessFlagBits flag)
+{
+	switch (flag)
+	{
+	case vk::VK_ACCESS_INDIRECT_COMMAND_READ_BIT:			return ACCESS_INDIRECT_COMMAND_READ_BIT;
+	case vk::VK_ACCESS_INDEX_READ_BIT:						return ACCESS_INDEX_READ_BIT;
+	case vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT:			return ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+	case vk::VK_ACCESS_UNIFORM_READ_BIT:					return ACCESS_UNIFORM_READ_BIT;
+	case vk::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT:			return ACCESS_INPUT_ATTACHMENT_READ_BIT;
+	case vk::VK_ACCESS_SHADER_READ_BIT:						return ACCESS_SHADER_READ_BIT;
+	case vk::VK_ACCESS_SHADER_WRITE_BIT:					return ACCESS_SHADER_WRITE_BIT;
+	case vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT:			return ACCESS_COLOR_ATTACHMENT_READ_BIT;
+	case vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT:			return ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	case vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:	return ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+	case vk::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:	return ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	case vk::VK_ACCESS_TRANSFER_READ_BIT:					return ACCESS_TRANSFER_READ_BIT;
+	case vk::VK_ACCESS_TRANSFER_WRITE_BIT:					return ACCESS_TRANSFER_WRITE_BIT;
+	case vk::VK_ACCESS_HOST_READ_BIT:						return ACCESS_HOST_READ_BIT;
+	case vk::VK_ACCESS_HOST_WRITE_BIT:						return ACCESS_HOST_WRITE_BIT;
+	case vk::VK_ACCESS_MEMORY_READ_BIT:						return ACCESS_MEMORY_READ_BIT;
+	case vk::VK_ACCESS_MEMORY_WRITE_BIT:					return ACCESS_MEMORY_WRITE_BIT;
+
+	default:
+		DE_FATAL("Unknown access flags");
+		return ACCESS_LAST;
+	}
+}
+
 // Sequential stage enums
 enum PipelineStage
 {
@@ -243,9 +271,9 @@ enum PipelineStage
 	PIPELINESTAGE_LAST
 };
 
-PipelineStage pipelineStageFlagToPipelineStage (vk::VkPipelineStageFlagBits flags)
+PipelineStage pipelineStageFlagToPipelineStage (vk::VkPipelineStageFlagBits flag)
 {
-	switch (flags)
+	switch (flag)
 	{
 		case vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT:						return PIPELINESTAGE_TOP_OF_PIPE_BIT;
 		case vk::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT:					return PIPELINESTAGE_BOTTOM_OF_PIPE_BIT;
@@ -7275,9 +7303,9 @@ private:
 	const vk::VkPipelineStageFlags	m_allowedStages;
 	const vk::VkAccessFlags			m_allowedAccesses;
 
-	// [dstStage][srcStage] = srcAccesses
-	// In stage dstStage write srcAccesses from srcStage are not yet available
-	vk::VkAccessFlags				m_unavailableWriteOperations[PIPELINESTAGE_LAST][PIPELINESTAGE_LAST];
+	// [dstStage][srcStage][dstAccess] = srcAccesses
+	// In stage dstStage write srcAccesses from srcStage are not yet available for dstAccess
+	vk::VkAccessFlags				m_unavailableWriteOperations[PIPELINESTAGE_LAST][PIPELINESTAGE_LAST][ACCESS_LAST];
 	// Latest pipeline transition is not available in stage
 	bool							m_unavailableLayoutTransition[PIPELINESTAGE_LAST];
 	// [dstStage] = dstAccesses
@@ -7318,7 +7346,15 @@ CacheState::CacheState (vk::VkPipelineStageFlags allowedStages, vk::VkAccessFlag
 
 			// There are no write operations that are not yet available
 			// initially.
-			m_unavailableWriteOperations[dstStage][srcStage] = 0;
+			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
+			{
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
+
+				if ((dstAccess_ & m_allowedAccesses) == 0)
+					continue;
+
+				m_unavailableWriteOperations[dstStage][srcStage][dstAccess] = 0;
+			}
 		}
 	}
 }
@@ -7369,8 +7405,16 @@ void CacheState::perform (vk::VkPipelineStageFlagBits	stage,
 			// Mark all accesses from all stages invisible
 			m_invisibleOperations[dstStage] |= m_allowedAccesses;
 
-			// Mark write access from srcStage unavailable to all stages
-			m_unavailableWriteOperations[dstStage][srcStage] |= access;
+			// Mark write access from srcStage unavailable to all stages for all accesses
+			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
+			{
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
+
+				if ((dstAccess_ & m_allowedAccesses) == 0)
+					continue;
+
+				m_unavailableWriteOperations[dstStage][srcStage][dstAccess] |= access;
+			}
 		}
 	}
 }
@@ -7430,7 +7474,7 @@ void CacheState::getFullBarrier (vk::VkPipelineStageFlags&	srcStages,
 			dstAccesses |= m_invisibleOperations[dstStage];
 		}
 
-		// Make sure all write operations fro mall stages are available
+		// Make sure all write operations from all stages are available
 		for (vk::VkPipelineStageFlags srcStage_ = 1; srcStage_ <= m_allowedStages; srcStage_ <<= 1)
 		{
 			const PipelineStage srcStage = pipelineStageFlagToPipelineStage((vk::VkPipelineStageFlagBits)srcStage_);
@@ -7438,11 +7482,19 @@ void CacheState::getFullBarrier (vk::VkPipelineStageFlags&	srcStages,
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
 
-			if (m_unavailableWriteOperations[dstStage][srcStage])
+			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 			{
-				dstStages |= dstStage_;
-				srcStages |= dstStage_;
-				srcAccesses |= m_unavailableWriteOperations[dstStage][srcStage];
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
+
+				if ((dstAccess_ & m_allowedAccesses) == 0)
+					continue;
+
+				if (m_unavailableWriteOperations[dstStage][srcStage][dstAccess])
+				{
+					dstStages |= dstStage_;
+					srcStages |= dstStage_;
+					srcAccesses |= m_unavailableWriteOperations[dstStage][srcStage][dstAccess];
+				}
 			}
 
 			if (m_unavailableLayoutTransition[dstStage] && !m_unavailableLayoutTransition[srcStage])
@@ -7462,9 +7514,9 @@ void CacheState::getFullBarrier (vk::VkPipelineStageFlags&	srcStages,
 }
 
 void CacheState::checkImageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
-										 vk::VkAccessFlags			srcAccesses,
-										 vk::VkPipelineStageFlags	dstStages,
-										 vk::VkAccessFlags			dstAccesses)
+										  vk::VkAccessFlags			srcAccesses,
+										  vk::VkPipelineStageFlags	dstStages,
+										  vk::VkAccessFlags			dstAccesses)
 {
 	DE_ASSERT((srcStages & (~m_allowedStages)) == 0);
 	DE_ASSERT((srcAccesses & (~m_allowedAccesses)) == 0);
@@ -7514,10 +7566,18 @@ void CacheState::checkImageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
 				if ((srcStage_ & m_allowedStages) == 0)
 					continue;
 
-				if (m_unavailableWriteOperations[dstStage][srcStage] != (getWriteAccessFlags() & m_allowedAccesses))
+				for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
 				{
-					anyWriteAvailable = true;
-					break;
+					const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
+
+					if ((dstAccess_ & m_allowedAccesses) == 0)
+						continue;
+
+					if (m_unavailableWriteOperations[dstStage][srcStage][dstAccess] != (getWriteAccessFlags() & m_allowedAccesses))
+					{
+						anyWriteAvailable = true;
+						break;
+					}
 				}
 			}
 		}
@@ -7558,7 +7618,15 @@ void CacheState::imageLayoutBarrier (vk::VkPipelineStageFlags	srcStages,
 				continue;
 
 			// All write operations are available after layout transition
-			m_unavailableWriteOperations[dstStage][srcStage] = 0;
+			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
+			{
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
+
+				if ((dstAccess_ & m_allowedAccesses) == 0)
+					continue;
+
+				m_unavailableWriteOperations[dstStage][srcStage][dstAccess] = 0;
+			}
 		}
 	}
 }
@@ -7576,7 +7644,7 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 	// Transitivity
 	{
 		vk::VkPipelineStageFlags		oldIncompleteOperations[PIPELINESTAGE_LAST];
-		vk::VkAccessFlags				oldUnavailableWriteOperations[PIPELINESTAGE_LAST][PIPELINESTAGE_LAST];
+		vk::VkAccessFlags				oldUnavailableWriteOperations[PIPELINESTAGE_LAST][PIPELINESTAGE_LAST][ACCESS_LAST];
 		bool							oldUnavailableLayoutTransition[PIPELINESTAGE_LAST];
 
 		deMemcpy(oldIncompleteOperations, m_incompleteOperations, sizeof(oldIncompleteOperations));
@@ -7611,7 +7679,15 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 						continue;
 
 					// Writes that are available in srcStage are also available in dstStage
-					m_unavailableWriteOperations[dstStage][sharedStage] &= oldUnavailableWriteOperations[srcStage][sharedStage];
+					for (vk::VkAccessFlags sharedAccess_ = 1; sharedAccess_ <= m_allowedAccesses; sharedAccess_ <<= 1)
+					{
+						const Access sharedAccess = accessFlagToAccess((vk::VkAccessFlagBits)sharedAccess_);
+
+						if ((sharedAccess_ & m_allowedAccesses) == 0)
+							continue;
+
+						m_unavailableWriteOperations[dstStage][sharedStage][sharedAccess] &= oldUnavailableWriteOperations[srcStage][sharedStage][sharedAccess];
+					}
 				}
 			}
 		}
@@ -7636,12 +7712,20 @@ void CacheState::barrier (vk::VkPipelineStageFlags	srcStages,
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
 
-			// Make srcAccesses from srcStage available in dstStage
-			if ((srcStage_ & srcStages) != 0)
-				m_unavailableWriteOperations[dstStage][srcStage] &= ~srcAccesses;
+			// Make srcAccesses from srcStage available in dstStage for dstAccess
+			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
+			{
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
 
-			if (m_unavailableWriteOperations[dstStage][srcStage] != 0)
-				allWritesAvailable = false;
+				if ((dstAccess_ & m_allowedAccesses) == 0)
+					continue;
+
+				if (((srcStage_ & srcStages) != 0) && ((dstAccess_ & dstAccesses) != 0))
+					m_unavailableWriteOperations[dstStage][srcStage][dstAccess] &= ~srcAccesses;
+
+				if (m_unavailableWriteOperations[dstStage][srcStage][dstAccess] != 0)
+					allWritesAvailable = false;
+			}
 		}
 
 		// If all writes are available in dstStage make dstAccesses also visible
@@ -7678,9 +7762,17 @@ bool CacheState::isClean (void) const
 			if ((srcStage_ & m_allowedStages) == 0)
 				continue;
 
-			// Some write operations are not available yet
-			if (m_unavailableWriteOperations[dstStage][srcStage] != 0)
-				return false;
+			for (vk::VkAccessFlags dstAccess_ = 1; dstAccess_ <= m_allowedAccesses; dstAccess_ <<= 1)
+			{
+				const Access dstAccess = accessFlagToAccess((vk::VkAccessFlagBits)dstAccess_);
+
+				if ((dstAccess_ & m_allowedAccesses) == 0)
+					continue;
+
+				// Some write operations are not available yet
+				if (m_unavailableWriteOperations[dstStage][srcStage][dstAccess] != 0)
+					return false;
+			}
 		}
 	}
 
@@ -7944,7 +8036,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 		{
 			ops.push_back(OP_PIPELINE_BARRIER_GLOBAL);
 
-			if (state.hasImage)
+			if (state.hasImage && (state.imageLayout != vk::VK_IMAGE_LAYOUT_UNDEFINED))
 				ops.push_back(OP_PIPELINE_BARRIER_IMAGE);
 
 			if (state.hasBuffer)
