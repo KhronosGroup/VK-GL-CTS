@@ -31,6 +31,23 @@ namespace lnx
 namespace x11
 {
 
+XcbDisplay::DisplayState XcbDisplay::s_displayState = XcbDisplay::DISPLAY_STATE_UNKNOWN;
+
+bool XcbDisplay::hasDisplay (const char* name)
+{
+	if (s_displayState == DISPLAY_STATE_UNKNOWN)
+	{
+		xcb_connection_t *connection = xcb_connect(name, NULL);
+		if (connection)
+		{
+			s_displayState = DISPLAY_STATE_AVAILABLE;
+			xcb_disconnect(connection);
+		} else
+			s_displayState = DISPLAY_STATE_UNAVAILABLE;
+	}
+	return s_displayState == DISPLAY_STATE_AVAILABLE ? true : false;
+}
+
 XcbDisplay::XcbDisplay (EventState& platform, const char* name)
 	: DisplayBase	(platform)
 {

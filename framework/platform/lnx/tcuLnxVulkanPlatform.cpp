@@ -40,10 +40,12 @@ using de::UniquePtr;
 #	if defined (DEQP_SUPPORT_XCB)
 #		include "tcuLnxX11Xcb.hpp"
 #	endif // DEQP_SUPPORT_XCB
+#	define X11_DISPLAY ""
 #endif // DEQP_SUPPORT_X11
 
 #if defined (DEQP_SUPPORT_WAYLAND)
 #	include "tcuLnxWayland.hpp"
+#	define WAYLAND_DISPLAY DE_NULL
 #endif // DEQP_SUPPORT_WAYLAND
 
 namespace tcu
@@ -211,17 +213,17 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 	{
 #if defined (DEQP_SUPPORT_X11)
 	case vk::wsi::TYPE_XLIB:
-		return new VulkanDisplayXlib(MovePtr<x11::DisplayBase>(new x11::XlibDisplay(m_eventState,"")));
+		return new VulkanDisplayXlib(MovePtr<x11::DisplayBase>(new x11::XlibDisplay(m_eventState,X11_DISPLAY)));
 		break;
 #endif // DEQP_SUPPORT_X11
 #if defined (DEQP_SUPPORT_XCB)
 	case vk::wsi::TYPE_XCB:
-		return new VulkanDisplayXcb(MovePtr<x11::DisplayBase>(new x11::XcbDisplay(m_eventState,"")));
+		return new VulkanDisplayXcb(MovePtr<x11::DisplayBase>(new x11::XcbDisplay(m_eventState,X11_DISPLAY)));
 		break;
 #endif // DEQP_SUPPORT_XCB
 #if defined (DEQP_SUPPORT_WAYLAND)
 	case vk::wsi::TYPE_WAYLAND:
-		return new VulkanDisplayWayland(MovePtr<wayland::Display>(new wayland::Display(m_eventState, DE_NULL)));
+		return new VulkanDisplayWayland(MovePtr<wayland::Display>(new wayland::Display(m_eventState, WAYLAND_DISPLAY)));
 		break;
 #endif // DEQP_SUPPORT_WAYLAND
 
@@ -230,7 +232,27 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 
 	};
 }
+bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType) const
+{
+	switch(wsiType)
+	{
+#if defined (DEQP_SUPPORT_X11)
+	case vk::wsi::TYPE_XLIB:
+		return x11::XlibDisplay::hasDisplay(X11_DISPLAY);
+#endif // DEQP_SUPPORT_X11
+#if defined (DEQP_SUPPORT_XCB)
+	case vk::wsi::TYPE_XCB:
+		return x11::XcbDisplay::hasDisplay(X11_DISPLAY);
+#endif // DEQP_SUPPORT_XCB
+#if defined (DEQP_SUPPORT_WAYLAND)
+	case vk::wsi::TYPE_WAYLAND:
+		return wayland::Display::hasDisplay(WAYLAND_DISPLAY);
+#endif // DEQP_SUPPORT_WAYLAND
+	default:
+		return false;
 
+	};
+}
 vk::Library* VulkanPlatform::createLibrary (void) const
 {
 	return new VulkanLibrary();

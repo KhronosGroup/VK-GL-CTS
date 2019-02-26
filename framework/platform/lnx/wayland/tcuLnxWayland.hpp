@@ -51,6 +51,15 @@ public:
 	struct wl_shell*		getShell				(void) { return m_shell;		}
 
 	void					processEvents			(void);
+	static bool				hasDisplay			(const char* name);
+
+	enum DisplayState
+	{
+		DISPLAY_STATE_UNKNOWN = -1,
+		DISPLAY_STATE_UNAVAILABLE,
+		DISPLAY_STATE_AVAILABLE
+	};
+	static DisplayState		s_displayState;
 
 protected:
 	EventState&				m_eventState;
