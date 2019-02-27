@@ -82,7 +82,8 @@ bool assembleSpirV (const SpirVAsmSource* program, std::vector<deUint32>* dst, S
 	{
 		const std::string&	spvSource			= program->source;
 		const deUint64		compileStartTime	= deGetMicroseconds();
-		const spv_result_t	compileOk			= spvTextToBinary(context, spvSource.c_str(), spvSource.size(), &binary, &diagnostic);
+		const deUint32		options				= SPV_TEXT_TO_BINARY_OPTION_PRESERVE_NUMERIC_IDS;
+		const spv_result_t	compileOk			= spvTextToBinaryWithOptions(context, spvSource.c_str(), spvSource.size(), options, &binary, &diagnostic);
 
 		buildInfo->source			= spvSource;
 		buildInfo->infoLog			= diagnostic? diagnostic->error : ""; // \todo [2015-07-13 pyry] Include debug log?
