@@ -1880,6 +1880,14 @@ VKAPI_ATTR VkDeviceAddress VKAPI_CALL getBufferDeviceAddressEXT (VkDevice device
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesNV (VkPhysicalDevice physicalDevice, deUint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -1968,6 +1976,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCreateIOSSurfaceMVK,								createIOSSurfaceMVK),
 	VK_NULL_FUNC_ENTRY(vkCreateMacOSSurfaceMVK,								createMacOSSurfaceMVK),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,			getPhysicalDeviceMultisamplePropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,	getPhysicalDeviceCooperativeMatrixPropertiesNV),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =

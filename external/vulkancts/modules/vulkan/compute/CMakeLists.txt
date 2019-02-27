@@ -5,6 +5,8 @@ set(DEQP_VK_COMPUTE_SRCS
 	vktComputeTests.hpp
 	vktComputeBasicComputeShaderTests.cpp
 	vktComputeBasicComputeShaderTests.hpp
+	vktComputeCooperativeMatrixTests.cpp
+	vktComputeCooperativeMatrixTests.hpp
 	vktComputeIndirectComputeDispatchTests.cpp
 	vktComputeIndirectComputeDispatchTests.hpp
 	vktComputeShaderBuiltinVarTests.cpp

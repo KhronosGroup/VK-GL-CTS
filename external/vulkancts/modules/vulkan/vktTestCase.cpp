@@ -101,7 +101,8 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 	{
 		"VK_KHR_",
 		"VK_EXT_",
-		"VK_KHX_"
+		"VK_KHX_",
+		"VK_NV_cooperative_matrix"
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -324,6 +325,7 @@ public:
 	VkPhysicalDeviceFloat16Int8FeaturesKHR				float16Int8Features;
 	VkPhysicalDeviceDepthClipEnableFeaturesEXT			depthClipEnableFeatures;
 	VkPhysicalDeviceBufferAddressFeaturesEXT			bufferDeviceAddressFeatures;
+	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -348,6 +350,7 @@ public:
 		deMemset(&conditionalRenderingFeatures, 0, sizeof(conditionalRenderingFeatures));
 		deMemset(&scalarBlockLayoutFeatures, 0, sizeof(scalarBlockLayoutFeatures));
 		deMemset(&bufferDeviceAddressFeatures, 0, sizeof(bufferDeviceAddressFeatures));
+		deMemset(&cooperativeMatrixFeatures, 0, sizeof(cooperativeMatrixFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -366,6 +369,7 @@ public:
 		scalarBlockLayoutFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
 		depthClipEnableFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT;
 		bufferDeviceAddressFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
+		cooperativeMatrixFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -454,6 +458,11 @@ public:
 				*nextPtr	= &bufferDeviceAddressFeatures;
 				nextPtr		= &bufferDeviceAddressFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_NV_cooperative_matrix"))
+			{
+				*nextPtr	= &cooperativeMatrixFeatures;
+				nextPtr		= &cooperativeMatrixFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -494,6 +503,7 @@ public:
 	const VkPhysicalDeviceFloat16Int8FeaturesKHR&			getFloat16Int8Features				(void) const	{ return m_deviceFeatures.float16Int8Features;				}
 	const VkPhysicalDeviceDepthClipEnableFeaturesEXT&		getDepthClipEnableFeatures			(void) const	{ return m_deviceFeatures.depthClipEnableFeatures;			}
 	const VkPhysicalDeviceBufferAddressFeaturesEXT&			getBufferDeviceAddressFeatures		(void) const	{ return m_deviceFeatures.bufferDeviceAddressFeatures;	}
+	const VkPhysicalDeviceCooperativeMatrixFeaturesNV&		getCooperativeMatrixFeatures		(void) const	{ return m_deviceFeatures.cooperativeMatrixFeatures;	}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -665,6 +675,8 @@ const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&
 										Context::getDepthClipEnableFeatures		(void) const { return m_device->getDepthClipEnableFeatures();	}
 const vk::VkPhysicalDeviceBufferAddressFeaturesEXT&
 										Context::getBufferDeviceAddressFeatures	(void) const { return m_device->getBufferDeviceAddressFeatures();	}
+const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
+										Context::getCooperativeMatrixFeatures	(void) const { return m_device->getCooperativeMatrixFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

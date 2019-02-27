@@ -3277,6 +3277,35 @@ struct VkBufferDeviceAddressCreateInfoEXT
 	VkDeviceSize	deviceAddress;
 };
 
+struct VkCooperativeMatrixPropertiesNV
+{
+	VkStructureType		sType;
+	void*				pNext;
+	deUint32			MSize;
+	deUint32			NSize;
+	deUint32			KSize;
+	VkComponentTypeNV	AType;
+	VkComponentTypeNV	BType;
+	VkComponentTypeNV	CType;
+	VkComponentTypeNV	DType;
+	VkScopeNV			scope;
+};
+
+struct VkPhysicalDeviceCooperativeMatrixPropertiesNV
+{
+	VkStructureType		sType;
+	void*				pNext;
+	VkShaderStageFlags	cooperativeMatrixSupportedStages;
+};
+
+struct VkPhysicalDeviceCooperativeMatrixFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cooperativeMatrix;
+	VkBool32		cooperativeMatrixRobustBufferAccess;
+};
+
 
 
 

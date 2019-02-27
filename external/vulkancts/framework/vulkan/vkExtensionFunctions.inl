@@ -108,6 +108,8 @@ void getInstanceExtensionFunctions (::std::string extName, ::std::vector<const c
 		functions.push_back("vkCreateMacOSSurfaceMVK");
 	else if (extName == "VK_EXT_sample_locations")
 		functions.push_back("vkGetPhysicalDeviceMultisamplePropertiesEXT");
+	else if (extName == "VK_NV_cooperative_matrix")
+		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
 	else
 		DE_ASSERT("Extension name not found");
 }
@@ -302,7 +304,8 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	"VK_EXT_acquire_xlib_display",
 	"VK_EXT_display_surface_counter",
 	"VK_MVK_ios_surface",
-	"VK_MVK_macos_surface"
+	"VK_MVK_macos_surface",
+	"VK_NV_cooperative_matrix"
 };
 
 ::std::string deviceExtensionNames[] =
