@@ -1124,6 +1124,7 @@ protected:
 	virtual std::string getShaderSource(glw::GLuint test_case_index, Utils::Shader::STAGES stage) = 0;
 	virtual bool isComputeRelevant(glw::GLuint test_case_index);
 	virtual bool isFailureExpected(glw::GLuint test_case_index);
+	virtual bool isSeparable(const glw::GLuint test_case_index);
 	virtual bool testCase(glw::GLuint test_case_index);
 };
 
@@ -2530,6 +2531,7 @@ protected:
 	virtual std::string getTestCaseName(glw::GLuint test_case_index);
 	virtual glw::GLuint getTestCaseNumber();
 	virtual bool isComputeRelevant(glw::GLuint test_case_index);
+	virtual bool isSeparable(const glw::GLuint test_case_index);
 	virtual void testInit();
 
 private:

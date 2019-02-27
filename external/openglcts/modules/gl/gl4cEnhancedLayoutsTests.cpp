@@ -6194,6 +6194,17 @@ bool NegativeTestBase::isFailureExpected(GLuint /* test_case_index */)
 	return true;
 }
 
+/** Selects if the test case should use a separable program
+ *
+ * @param ignored
+ *
+ * @return false
+ **/
+bool NegativeTestBase::isSeparable(const GLuint /* test_case_index */)
+{
+	return false;
+}
+
 /** Runs test case
  *
  * @param test_case_index Id of test case
@@ -6288,7 +6299,24 @@ bool NegativeTestBase::testCase(GLuint test_case_index)
 
 		try
 		{
-			program.Init("" /* cs */, fs_source, gs_source, tcs_source, tes_source, vs_source, false /* separable */);
+			if (isSeparable(test_case_index))
+			{
+				program.Init("" /*cs*/, fs_source, "" /*gs_source*/, "" /*tcs_source*/, "" /*tes_source*/,
+							 "" /*vs_source*/, true /* separable */);
+				program.Init("" /*cs*/, "" /*fs_source*/, gs_source, "" /*tcs_source*/, "" /*tes_source*/,
+							 "" /*vs_source*/, true /* separable */);
+				program.Init("" /*cs*/, "" /*fs_source*/, "" /*gs_source*/, tcs_source, "" /*tes_source*/,
+							 "" /*vs_source*/, true /* separable */);
+				program.Init("" /*cs*/, "" /*fs_source*/, "" /*gs_source*/, "" /*tcs_source*/, tes_source,
+							 "" /*vs_source*/, true /* separable */);
+				program.Init("" /*cs*/, "" /*fs_source*/, "" /*gs_source*/, "" /*tcs_source*/, "" /*tes_source*/,
+							 vs_source, true /* separable */);
+			}
+			else
+			{
+				program.Init("" /* cs */, fs_source, gs_source, tcs_source, tes_source, vs_source,
+							 false /* separable */);
+			}
 		}
 		catch (Utils::Shader::InvalidSourceException& exc)
 		{
@@ -14441,6 +14469,7 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 							  "layout(points)                           in;\n"
 							  "layout(triangle_strip, max_vertices = 4) out;\n"
 							  "\n"
+							  "PERVERTEX" /* Separable programs require explicit declaration of gl_PerVertex */
 							  "in  vec4 tes_gs[];\n"
 							  "out vec4 gs_fs;\n"
 							  "\n"
@@ -14466,6 +14495,7 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 									 "layout(points)                           in;\n"
 									 "layout(triangle_strip, max_vertices = 4) out;\n"
 									 "\n"
+									 "PERVERTEX" /* Separable programs require explicit declaration of gl_PerVertex */
 									 "VAR_DEFINITION"
 									 "\n"
 									 "in  vec4 tes_gs[];\n"
@@ -14601,6 +14631,11 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 
 	std::string source;
 	testCase&   test_case = m_test_cases[test_case_index];
+	size_t		  position   = 0;
+	const GLchar* per_vertex = !isSeparable(test_case_index) ? "" : "out gl_PerVertex {\n"
+																	"vec4 gl_Position;\n"
+																	"};\n"
+																	"\n";
 
 	if (test_case.m_stage == stage)
 	{
@@ -14610,7 +14645,6 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 		const GLchar*			 flat	  = "";
 		const GLchar*			 index	 = "";
 		GLuint					 last	  = getLastInputLocation(stage, test_case.m_type, 0, true);
-		size_t					 position  = 0;
 		const GLchar*			 type_name = test_case.m_type.GetGLSLTypeName();
 		Utils::Variable::STORAGE storage   = Utils::Variable::VARYING_INPUT;
 		const GLchar*			 var_use   = input_use;
@@ -14639,6 +14673,7 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 			source = gs_tested;
 			array  = test_case.m_is_input ? "[]" : "";
 			index  = test_case.m_is_input ? "[0]" : "";
+			Utils::replaceToken("PERVERTEX", position, per_vertex, source);
 			break;
 		case Utils::Shader::TESS_CTRL:
 			source = tcs_tested;
@@ -14677,6 +14712,7 @@ std::string VaryingLocationLimitTest::getShaderSource(GLuint test_case_index, Ut
 			break;
 		case Utils::Shader::GEOMETRY:
 			source = gs;
+			Utils::replaceToken("PERVERTEX", position, per_vertex, source);
 			break;
 		case Utils::Shader::TESS_CTRL:
 			source = tcs;
@@ -14739,6 +14775,19 @@ GLuint VaryingLocationLimitTest::getTestCaseNumber()
 bool VaryingLocationLimitTest::isComputeRelevant(GLuint /* test_case_index */)
 {
 	return false;
+}
+
+/** Selects if the test case should use a separable program
+ *
+ * @param test_case_index Id of test case
+ *
+ * @return whether the test should use separable programs or not
+ **/
+bool VaryingLocationLimitTest::isSeparable(const GLuint test_case_index)
+{
+	const testCase& test_case = m_test_cases[test_case_index];
+
+	return test_case.m_is_input && test_case.m_stage != Utils::Shader::VERTEX;
 }
 
 /** Prepare all test cases
