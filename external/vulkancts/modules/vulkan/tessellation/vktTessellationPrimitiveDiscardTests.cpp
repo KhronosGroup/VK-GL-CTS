@@ -414,8 +414,9 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();
+
 		deMemcpy(alloc.getHostPtr(), &attributes[0], static_cast<std::size_t>(vertexDataSizeBytes));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+		flushAlloc(vk, device, alloc);
 		// No barrier needed, flushed memory is automatically visible
 	}
 
@@ -426,8 +427,9 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 	{
 		const Allocation& alloc = resultBuffer.getAllocation();
+
 		deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(resultBufferSizeBytes));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+		flushAlloc(vk, device, alloc);
 	}
 
 	// Color attachment
@@ -536,19 +538,21 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 	{
 		// Log rendered image
-		const Allocation& colorBufferAlloc = colorBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc.getMemory(), colorBufferAlloc.getOffset(), colorBufferSizeBytes);
+		const Allocation&					colorBufferAlloc	= colorBuffer.getAllocation();
 
-		const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
+		invalidateAlloc(vk, device, colorBufferAlloc);
 
-		tcu::TestLog& log = context.getTestContext().getLog();
+		const tcu::ConstPixelBufferAccess	imagePixelAccess	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
+		tcu::TestLog&						log					= context.getTestContext().getLog();
+
 		log << tcu::TestLog::Image("color0", "Rendered image", imagePixelAccess);
 
 		// Verify case result
-		const Allocation& resultAlloc = resultBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), resultBufferSizeBytes);
+		const Allocation&					resultAlloc			= resultBuffer.getAllocation();
 
-		const deInt32 numResultVertices = *static_cast<deInt32*>(resultAlloc.getHostPtr());
+		invalidateAlloc(vk, device, resultAlloc);
+
+		const deInt32						numResultVertices	= *static_cast<deInt32*>(resultAlloc.getHostPtr());
 
 		if (!lessThanOneInnerLevelsDefined(caseDef) && caseDef.useLessThanOneInnerLevels)
 		{

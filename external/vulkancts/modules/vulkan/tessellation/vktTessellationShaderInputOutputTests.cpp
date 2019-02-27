@@ -87,9 +87,9 @@ tcu::TestStatus runTest (Context&							context,
 
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();
-		deMemcpy(alloc.getHostPtr(), vertexData, static_cast<std::size_t>(vertexDataSizeBytes));
 
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+		deMemcpy(alloc.getHostPtr(), vertexData, static_cast<std::size_t>(vertexDataSizeBytes));
+		flushAlloc(vk, device, alloc);
 		// No barrier needed, flushed memory is automatically visible
 	}
 
@@ -173,13 +173,15 @@ tcu::TestStatus runTest (Context&							context,
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	{
-		const Allocation& colorBufferAlloc = colorBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc.getMemory(), colorBufferAlloc.getOffset(), colorBufferSizeBytes);
+		const Allocation&					colorBufferAlloc	= colorBuffer.getAllocation();
+
+		invalidateAlloc(vk, device, colorBufferAlloc);
 
 		// Verify case result
-		const tcu::ConstPixelBufferAccess resultImageAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
-		tcu::TestLog& log = context.getTestContext().getLog();
-		const bool ok = tcu::fuzzyCompare(log, "ImageComparison", "Image Comparison", referenceImageAccess, resultImageAccess, 0.002f, tcu::COMPARE_LOG_RESULT);
+		const tcu::ConstPixelBufferAccess	resultImageAccess	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
+		tcu::TestLog&						log					= context.getTestContext().getLog();
+		const bool							ok					= tcu::fuzzyCompare(log, "ImageComparison", "Image Comparison", referenceImageAccess, resultImageAccess,
+																  0.002f, tcu::COMPARE_LOG_RESULT);
 
 		return (ok ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Failure"));
 	}
