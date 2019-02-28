@@ -64,3 +64,9 @@ dEQP-VK.ssbo.layout.random.16bit.relaxed.49
 dEQP-VK.ssbo.layout.random.16bit.relaxed.55
 dEQP-VK.ssbo.layout.random.16bit.relaxed.73
 dEQP-VK.ssbo.layout.random.8bit.nested_structs_arrays.14
+
+#VK-GL-CTS 1274
+dEQP-VK.rasterization.interpolation.basic.lines_wide
+dEQP-VK.rasterization.interpolation.projected.line_strip_wide
+dEQP-VK.rasterization.flatshading.lines_wide
+
