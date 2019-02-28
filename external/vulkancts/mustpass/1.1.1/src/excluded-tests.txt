@@ -57,3 +57,8 @@ dEQP-VK.tessellation.primitive_discard.triangles_fractional_odd_spacing_cw_valid
 dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_ccw_valid_levels
 dEQP-VK.tessellation.primitive_discard.quads_fractional_odd_spacing_cw_valid_levels
 
+#VK-GL-CTS 1274
+dEQP-VK.rasterization.interpolation.basic.lines_wide
+dEQP-VK.rasterization.interpolation.projected.line_strip_wide
+dEQP-VK.rasterization.flatshading.lines_wide
+
