@@ -30,3 +30,9 @@ dEQP-VK.texture.explicit_lod.*
 
 # Excluded VkRunner example tests
 dEQP-VK.vkrunner-example.*
+
+#VK-GL-CTS 1274
+dEQP-VK.rasterization.interpolation.basic.lines_wide
+dEQP-VK.rasterization.interpolation.projected.line_strip_wide
+dEQP-VK.rasterization.flatshading.lines_wide
+
