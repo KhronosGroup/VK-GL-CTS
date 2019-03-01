@@ -1017,30 +1017,51 @@ void replaceToken(const GLchar* token, size_t& search_position, const GLchar* te
 	search_position = token_position + text_length;
 }
 
-RobustBufferAccessBehaviorBaseTestCase::RobustBufferAccessBehaviorBaseTestCase(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description) :
-	TestCase(context, name, description)
+
+class RobustnessEnabledContext
 {
-	m_newRenderContext = DE_NULL;
+public:
+	RobustnessEnabledContext(deqp::Context& context, const tcu::CommandLine& commandLine, tcu::Platform& platform);
 
-	if (context.getContextInfo().isExtensionSupported("GL_ARB_robustness") && context.getContextInfo().isExtensionSupported("GL_ARB_robust_buffer_access_behavior"))
+	~RobustnessEnabledContext(void);
+
+protected:
+	deqp::Context&		m_context;
+
+	glu::RenderContext* m_renderContext;
+	glu::RenderContext* m_previousRenderContext;
+};
+
+RobustnessEnabledContext::RobustnessEnabledContext(deqp::Context& context, const tcu::CommandLine& commandLine, tcu::Platform& platform)
+	: m_context			(context)
+	, m_renderContext	(DE_NULL)
+{
+
+	if (!context.getContextInfo().isExtensionSupported("GL_ARB_robustness") || !context.getContextInfo().isExtensionSupported("GL_ARB_robust_buffer_access_behavior"))
 	{
-		const tcu::CommandLine& commandLine = m_testCtx.getCommandLine();
-		if (commandLine.getSurfaceType() == tcu::SURFACETYPE_WINDOW && commandLine.getRunMode() == tcu::RUNMODE_EXECUTE)
-		{
-			glu::RenderConfig		renderCfg(glu::ContextType(context.getRenderContext().getType().getAPI(), glu::CONTEXT_ROBUST));
-			glu::parseRenderConfig(&renderCfg, commandLine);
+		throw tcu::NotSupportedError("GL_ARB_robustness and GL_ARB_robust_buffer_access_behavior must be supported to run this test case");
+	}
 
-			m_newRenderContext = createRenderContext(m_testCtx.getPlatform(), commandLine, renderCfg);
-			m_previousRenderContext = &m_context.getRenderContext();
-			m_context.setRenderContext(m_newRenderContext);
-		}
+	{
+		glu::RenderConfig		renderCfg(glu::ContextType(m_context.getRenderContext().getType().getAPI(), glu::CONTEXT_ROBUST));
+		glu::parseRenderConfig(&renderCfg, commandLine);
+
+		m_renderContext = createRenderContext(platform, commandLine, renderCfg);
+		m_previousRenderContext = &m_context.getRenderContext();
+		m_context.setRenderContext(m_renderContext);
 	}
 }
 
-RobustBufferAccessBehaviorBaseTestCase::~RobustBufferAccessBehaviorBaseTestCase()
+RobustnessEnabledContext::~RobustnessEnabledContext()
 {
-	if (m_newRenderContext != DE_NULL)
+	if (m_renderContext != DE_NULL)
+	{
 		m_context.setRenderContext(m_previousRenderContext);
+
+		delete m_renderContext;
+
+		m_context.getRenderContext().makeCurrent();
+	}
 }
 
 /** Constructor
@@ -1048,7 +1069,7 @@ RobustBufferAccessBehaviorBaseTestCase::~RobustBufferAccessBehaviorBaseTestCase(
  * @param context Test context
  **/
 VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context)
-	: RobustBufferAccessBehaviorBaseTestCase(context, "vertex_buffer_objects", "Verifies that out-of-bound reads from VB result in zero")
+	: TestCase(context, "vertex_buffer_objects", "Verifies that out-of-bound reads from VB result in zero")
 {
 	/* Nothing to be done */
 }
@@ -1058,7 +1079,7 @@ VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context)
  * @param context Test context
  **/
 VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context, const char* name, const char* description)
-	: RobustBufferAccessBehaviorBaseTestCase(context, name, description)
+	: TestCase(context, name, description)
 {
 	/* Nothing to be done */
 }
@@ -1069,11 +1090,7 @@ VertexBufferObjectsTest::VertexBufferObjectsTest(deqp::Context& context, const c
  **/
 tcu::TestNode::IterateResult VertexBufferObjectsTest::iterate()
 {
-	if (m_newRenderContext == DE_NULL)
-	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Robustness not supported");
-		return TestNode::STOP;
-	}
+	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
 
 	static const GLuint invalid_elements[] = {
 		9, 1, 2, 10, 2, 3, 11, 3, 4, 12, 4, 5, 13, 5, 6, 14, 6, 7, 15, 7, 8, 16, 8, 1,
@@ -1320,7 +1337,7 @@ bool VertexBufferObjectsTest::verifyResults(glw::GLuint texture_id)
  * @param context Test context
  **/
 TexelFetchTest::TexelFetchTest(deqp::Context& context)
-	: RobustBufferAccessBehaviorBaseTestCase(context, "texel_fetch", "Verifies that out-of-bound fetches from texture result in zero")
+	: TestCase(context, "texel_fetch", "Verifies that out-of-bound fetches from texture result in zero")
 	, m_test_case(R8)
 {
 	/* Nothing to be done */
@@ -1331,7 +1348,7 @@ TexelFetchTest::TexelFetchTest(deqp::Context& context)
  * @param context Test context
  **/
 TexelFetchTest::TexelFetchTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: RobustBufferAccessBehaviorBaseTestCase(context, name, description), m_test_case(R8)
+	: TestCase(context, name, description), m_test_case(R8)
 {
 	/* Nothing to be done */
 }
@@ -1342,11 +1359,7 @@ TexelFetchTest::TexelFetchTest(deqp::Context& context, const glw::GLchar* name, 
  **/
 tcu::TestNode::IterateResult TexelFetchTest::iterate()
 {
-	if (m_newRenderContext == DE_NULL)
-	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Robustness not supported");
-		return TestNode::STOP;
-	}
+	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
 
 	/* Constants */
 	static const GLuint height = 16;
@@ -2437,11 +2450,7 @@ ImageLoadStoreTest::ImageLoadStoreTest(deqp::Context& context, const glw::GLchar
  **/
 tcu::TestNode::IterateResult ImageLoadStoreTest::iterate()
 {
-	if (m_newRenderContext == DE_NULL)
-	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Robustness not supported");
-		return TestNode::STOP;
-	}
+	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
 
 	/* Constants */
 	static const GLuint height = 16;
@@ -3335,7 +3344,7 @@ const GLfloat StorageBufferTest::m_source_data[4]		= { 2.0f, 3.0f, 4.0f, 5.0f };
  * @param context Test context
  **/
 StorageBufferTest::StorageBufferTest(deqp::Context& context)
-	: RobustBufferAccessBehaviorBaseTestCase(context, "storage_buffer", "Verifies that out-of-bound access to SSBO is discared or resutls in 0")
+	: TestCase(context, "storage_buffer", "Verifies that out-of-bound access to SSBO is discared or resutls in 0")
 	, m_test_case(VALID)
 	, m_hasKhrRobustBufferAccess(false)
 {
@@ -3347,7 +3356,7 @@ StorageBufferTest::StorageBufferTest(deqp::Context& context)
  * @param context Test context
  **/
 StorageBufferTest::StorageBufferTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: RobustBufferAccessBehaviorBaseTestCase(context, name, description), m_test_case(VALID)
+	: TestCase(context, name, description), m_test_case(VALID)
 {
 	/* Nothing to be done */
 }
@@ -3358,11 +3367,7 @@ StorageBufferTest::StorageBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult StorageBufferTest::iterate()
 {
-	if (m_newRenderContext == DE_NULL)
-	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Robustness not supported");
-		return TestNode::STOP;
-	}
+	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
 
 	/* GL entry points */
 	const Functions& gl = m_context.getRenderContext().getFunctions();
@@ -3620,7 +3625,7 @@ bool StorageBufferTest::verifyResults(GLfloat* buffer_data)
  * @param context Test context
  **/
 UniformBufferTest::UniformBufferTest(deqp::Context& context)
-	: RobustBufferAccessBehaviorBaseTestCase(context, "uniform_buffer", "Verifies that out-of-bound access to UBO resutls in 0"), m_test_case(VALID)
+	: TestCase(context, "uniform_buffer", "Verifies that out-of-bound access to UBO resutls in 0"), m_test_case(VALID)
 {
 	/* Nothing to be done here */
 }
@@ -3630,7 +3635,7 @@ UniformBufferTest::UniformBufferTest(deqp::Context& context)
  * @param context Test context
  **/
 UniformBufferTest::UniformBufferTest(deqp::Context& context, const glw::GLchar* name, const glw::GLchar* description)
-	: RobustBufferAccessBehaviorBaseTestCase(context, name, description), m_test_case(VALID)
+	: TestCase(context, name, description), m_test_case(VALID)
 {
 	/* Nothing to be done */
 }
@@ -3641,11 +3646,7 @@ UniformBufferTest::UniformBufferTest(deqp::Context& context, const glw::GLchar* 
  **/
 tcu::TestNode::IterateResult UniformBufferTest::iterate()
 {
-	if (m_newRenderContext == DE_NULL)
-	{
-		m_context.getTestContext().setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Robustness not supported");
-		return TestNode::STOP;
-	}
+	RobustnessEnabledContext context(m_context, m_testCtx.getCommandLine(), m_testCtx.getPlatform());
 
 	static const GLfloat destination_data[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	/* The source buffer is packed std140 so we need vec4s */
