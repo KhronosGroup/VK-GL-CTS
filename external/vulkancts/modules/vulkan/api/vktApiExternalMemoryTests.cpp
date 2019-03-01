@@ -241,6 +241,9 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 									 deUint32										queueFamilyIndex,
 									 bool											useDedicatedAllocs = false)
 {
+	bool	useExternalSemaphore = false;
+	bool	useExternalFence = false;
+	bool	useExternalMemory = false;
 	std::vector<const char*>	deviceExtensions;
 
 	if ((externalSemaphoreTypes
@@ -248,6 +251,7 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_semaphore_fd");
+		useExternalSemaphore = true;
 	}
 
 	if ((externalFenceTypes
@@ -255,6 +259,7 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 				| vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_fence_fd");
+		useExternalFence = true;
 	}
 
 	if (useDedicatedAllocs)
@@ -269,6 +274,7 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 			& vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_memory_fd");
+		useExternalMemory = true;
 	}
 
 	if ((externalSemaphoreTypes
@@ -276,6 +282,7 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 				| vk::VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_semaphore_win32");
+		useExternalSemaphore = true;
 	}
 
 	if ((externalFenceTypes
@@ -283,6 +290,7 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 				| vk::VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_fence_win32");
+		useExternalFence = true;
 	}
 
 	if ((externalMemoryTypes
@@ -294,12 +302,36 @@ vk::Move<vk::VkDevice> createDevice (const deUint32									apiVersion,
 			   | vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT)) != 0)
 	{
 		deviceExtensions.push_back("VK_KHR_external_memory_win32");
+		useExternalMemory = true;
 	}
 
 	if ((externalMemoryTypes
 		& vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID) != 0)
 	{
 		deviceExtensions.push_back("VK_ANDROID_external_memory_android_hardware_buffer");
+		useExternalMemory = true;
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_sampler_ycbcr_conversion"))
+			deviceExtensions.push_back("VK_KHR_sampler_ycbcr_conversion");
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_EXT_queue_family_foreign"))
+			deviceExtensions.push_back("VK_EXT_queue_family_foreign");
+	}
+
+	if (useExternalSemaphore)
+	{
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_external_semaphore"))
+			deviceExtensions.push_back("VK_KHR_external_semaphore");
+	}
+
+	if (useExternalFence)
+	{
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_external_fence"))
+			deviceExtensions.push_back("VK_KHR_external_fence");
+	}
+
+	if (useExternalMemory)
+	{
+		if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_external_memory"))
+			deviceExtensions.push_back("VK_KHR_external_memory");
 	}
 
 	const float								priority				= 0.5f;
