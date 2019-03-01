@@ -846,6 +846,36 @@ template<> VkStructureType getStructureType<VkPipelineExecutableInternalRepresen
 	return VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INTERNAL_REPRESENTATION_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceTimelineSemaphoreFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTimelineSemaphorePropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreTypeCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkTimelineSemaphoreSubmitInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreWaitInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSemaphoreSignalInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;

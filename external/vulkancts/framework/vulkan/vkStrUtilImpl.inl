@@ -430,6 +430,12 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV:												return "VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR:									return "VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR:								return "VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR:											return "VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR:										return "VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS2_FEATURES_INTEL:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS2_FEATURES_INTEL";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT";
@@ -1425,6 +1431,17 @@ const char* getPipelineExecutableStatisticFormatKHRName (VkPipelineExecutableSta
 		case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR:	return "VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_FLOAT64_KHR";
 		case VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_MAX_ENUM_KHR:	return "VK_PIPELINE_EXECUTABLE_STATISTIC_FORMAT_MAX_ENUM_KHR";
 		default:													return DE_NULL;
+	}
+}
+
+const char* getSemaphoreTypeKHRName (VkSemaphoreTypeKHR value)
+{
+	switch (value)
+	{
+		case VK_SEMAPHORE_TYPE_BINARY_KHR:		return "VK_SEMAPHORE_TYPE_BINARY_KHR";
+		case VK_SEMAPHORE_TYPE_TIMELINE_KHR:	return "VK_SEMAPHORE_TYPE_TIMELINE_KHR";
+		case VK_SEMAPHORE_TYPE_MAX_ENUM_KHR:	return "VK_SEMAPHORE_TYPE_MAX_ENUM_KHR";
+		default:								return DE_NULL;
 	}
 }
 
@@ -2703,6 +2720,16 @@ tcu::Format::Bitfield<32> getResolveModeFlagsKHRStr (VkResolveModeFlagsKHR value
 		tcu::Format::BitDesc(VK_RESOLVE_MODE_MIN_BIT_KHR,				"VK_RESOLVE_MODE_MIN_BIT_KHR"),
 		tcu::Format::BitDesc(VK_RESOLVE_MODE_MAX_BIT_KHR,				"VK_RESOLVE_MODE_MAX_BIT_KHR"),
 		tcu::Format::BitDesc(VK_RESOLVE_MODE_FLAG_BITS_MAX_ENUM_KHR,	"VK_RESOLVE_MODE_FLAG_BITS_MAX_ENUM_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getSemaphoreWaitFlagsKHRStr (VkSemaphoreWaitFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_SEMAPHORE_WAIT_ANY_BIT_KHR,				"VK_SEMAPHORE_WAIT_ANY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM_KHR,	"VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -6224,6 +6251,74 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineExecutableInternalRep
 	s << "\tisText = " << value.isText << '\n';
 	s << "\tdataSize = " << value.dataSize << '\n';
 	s << "\tpData = " << value.pData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTimelineSemaphoreFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceTimelineSemaphoreFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttimelineSemaphore = " << value.timelineSemaphore << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTimelineSemaphorePropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceTimelineSemaphorePropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxTimelineSemaphoreValueDifference = " << value.maxTimelineSemaphoreValueDifference << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreTypeCreateInfoKHR& value)
+{
+	s << "VkSemaphoreTypeCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphoreType = " << value.semaphoreType << '\n';
+	s << "\tinitialValue = " << value.initialValue << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkTimelineSemaphoreSubmitInfoKHR& value)
+{
+	s << "VkTimelineSemaphoreSubmitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\twaitSemaphoreValueCount = " << value.waitSemaphoreValueCount << '\n';
+	s << "\tpWaitSemaphoreValues = " << value.pWaitSemaphoreValues << '\n';
+	s << "\tsignalSemaphoreValueCount = " << value.signalSemaphoreValueCount << '\n';
+	s << "\tpSignalSemaphoreValues = " << value.pSignalSemaphoreValues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreWaitInfoKHR& value)
+{
+	s << "VkSemaphoreWaitInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getSemaphoreWaitFlagsKHRStr(value.flags) << '\n';
+	s << "\tsemaphoreCount = " << value.semaphoreCount << '\n';
+	s << "\tpSemaphores = " << value.pSemaphores << '\n';
+	s << "\tpValues = " << value.pValues << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSemaphoreSignalInfoKHR& value)
+{
+	s << "VkSemaphoreSignalInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsemaphore = " << value.semaphore << '\n';
+	s << "\tvalue = " << value.value << '\n';
 	s << '}';
 	return s;
 }

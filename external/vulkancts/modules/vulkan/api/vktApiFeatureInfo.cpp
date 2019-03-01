@@ -2703,6 +2703,8 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDeviceSamplerYcbcrConversionFeatures		samplerYcbcrConversionFeatures[count];
 	VkPhysicalDeviceVariablePointersFeatures			variablePointerFeatures[count];
 	VkPhysicalDeviceScalarBlockLayoutFeaturesEXT		scalarBlockLayoutFeatures[count];
+	VkPhysicalDeviceTimelineSemaphoreFeaturesKHR		timelineSemaphoreFeatures[count];
+
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -2737,7 +2739,10 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		variablePointerFeatures[ndx].pNext = &scalarBlockLayoutFeatures[ndx];
 
 		scalarBlockLayoutFeatures[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT;
-		scalarBlockLayoutFeatures[ndx].pNext = DE_NULL;
+		scalarBlockLayoutFeatures[ndx].pNext = &timelineSemaphoreFeatures;
+
+		timelineSemaphoreFeatures[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+		timelineSemaphoreFeatures[ndx].pNext			= DE_NULL;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

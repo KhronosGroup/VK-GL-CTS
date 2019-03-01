@@ -82,6 +82,32 @@ Move<VkSemaphore> createSemaphore (const DeviceInterface&		vk,
 	return createSemaphore(vk, device, &createInfo, pAllocator);
 }
 
+Move<VkSemaphore> createSemaphoreType (const DeviceInterface&		vk,
+									   VkDevice						device,
+									   VkSemaphoreTypeKHR			type,
+									   VkSemaphoreCreateFlags		flags,
+									   const deUint64				initialValue,
+									   const VkAllocationCallbacks*	pAllocator)
+{
+	const VkSemaphoreTypeCreateInfoKHR	createTypeInfo =
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR,
+		DE_NULL,
+
+		type,
+		initialValue,
+	};
+	const VkSemaphoreCreateInfo		createInfo =
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		&createTypeInfo,
+
+		flags
+	};
+
+	return createSemaphore(vk, device, &createInfo, pAllocator);
+}
+
 Move<VkFence> createFence (const DeviceInterface&		vk,
 						   VkDevice						device,
 						   VkFenceCreateFlags			flags,

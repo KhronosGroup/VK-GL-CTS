@@ -78,6 +78,35 @@ static const char* const s_perVertexBlock =	"gl_PerVertex {\n"
 											"    vec4 gl_Position;\n"
 											"}";
 
+static const SyncInfo emptySyncInfo =
+{
+	0,							// VkPipelineStageFlags		stageMask;
+	0,							// VkAccessFlags			accessMask;
+	VK_IMAGE_LAYOUT_UNDEFINED,	// VkImageLayout			imageLayout;
+};
+
+std::string getShaderStageName(VkShaderStageFlagBits stage)
+{
+	switch (stage)
+	{
+		default:
+			DE_FATAL("Unhandled stage!");
+			return "";
+		case VK_SHADER_STAGE_COMPUTE_BIT:
+			return "compute";
+		case VK_SHADER_STAGE_FRAGMENT_BIT:
+			return "fragment";
+		case VK_SHADER_STAGE_VERTEX_BIT:
+			return "vertex";
+		case VK_SHADER_STAGE_GEOMETRY_BIT:
+			return "geometry";
+		case VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT:
+			return "tess_control";
+		case VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT:
+			return "tess_eval";
+	}
+}
+
 //! A pipeline that can be embedded inside an operation.
 class Pipeline
 {
@@ -216,6 +245,16 @@ Data getHostBufferData (const OperationContext& context, const Buffer& hostBuffe
 	invalidateAlloc(vk, device, alloc);
 
 	return data;
+}
+
+void setHostBufferData (const OperationContext& context, const Buffer& hostBuffer, const Data& data)
+{
+	const DeviceInterface&	vk		= context.getDeviceInterface();
+	const VkDevice			device	= context.getDevice();
+	const Allocation&		alloc	= hostBuffer.getAllocation();
+
+	deMemcpy(alloc.getHostPtr(), data.data, data.size);
+	flushAlloc(vk, device, alloc);
 }
 
 void assertValidShaderStage (const VkShaderStageFlagBits stage)
@@ -515,7 +554,12 @@ public:
 		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -537,6 +581,11 @@ public:
 		return data;
 	}
 
+	void setData (const Data& data)
+	{
+		deMemcpy(&m_data[0], data.data, data.size);
+	}
+
 private:
 	OperationContext&		m_context;
 	Resource&				m_resource;
@@ -556,7 +605,12 @@ public:
 		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
 	{
 		return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
@@ -575,6 +629,12 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		return de::MovePtr<Operation>(new Implementation(context, resource, m_bufferOp));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 
 private:
@@ -626,12 +686,30 @@ public:
 			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
 		}
 		else
+		{
+			// // Insert a barrier so buffer data is available to the device
+			// const VkBufferMemoryBarrier	barrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, **m_hostBuffer, 0u, m_resource.getBuffer().size);
+			// vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
+
 			vk.cmdCopyBuffer(cmdBuffer, **m_hostBuffer, m_resource.getBuffer().handle, 1u, &copyRegion);
+		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
 	{
-		const VkAccessFlags access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_TRANSFER_READ_BIT : VK_ACCESS_TRANSFER_WRITE_BIT);
+		const VkAccessFlags access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_TRANSFER_READ_BIT : 0);
+		const SyncInfo		syncInfo	=
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
+			access,								// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const VkAccessFlags access		= (m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_TRANSFER_WRITE_BIT : 0);
 		const SyncInfo		syncInfo	=
 		{
 			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
@@ -644,6 +722,12 @@ public:
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_resource.getBuffer().size);
+	}
+
+	void setData (const Data& data)
+	{
+		DE_ASSERT(m_mode == ACCESS_MODE_WRITE);
+		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
 private:
@@ -663,9 +747,14 @@ public:
 		DE_UNREF(resourceDesc);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
 	{
-		return (m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		return m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return m_mode == ACCESS_MODE_WRITE ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0;
 	}
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
@@ -679,8 +768,109 @@ public:
 		return de::MovePtr<Operation>(new Implementation(context, resource, m_mode));
 	}
 
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
 private:
-	const AccessMode			m_mode;
+	const AccessMode	m_mode;
+};
+
+class CopyImplementation : public Operation
+{
+public:
+	CopyImplementation (OperationContext& context, Resource& inResource, Resource& outResource)
+		: m_context		(context)
+		, m_inResource	(inResource)
+		, m_outResource	(outResource)
+	{
+	}
+
+	void recordCommands (const VkCommandBuffer cmdBuffer)
+	{
+		const DeviceInterface&	vk			= m_context.getDeviceInterface();
+		const VkBufferCopy		copyRegion	= makeBufferCopy(0u, 0u, m_inResource.getBuffer().size);
+
+		vk.cmdCopyBuffer(cmdBuffer, m_inResource.getBuffer().handle, m_outResource.getBuffer().handle, 1u, &copyRegion);
+	}
+
+	SyncInfo getInSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_READ_BIT,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	Data getData (void) const
+	{
+		Data data = { 0, DE_NULL };
+		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
+	}
+
+private:
+	OperationContext&		m_context;
+	Resource&				m_inResource;
+	Resource&				m_outResource;
+	de::MovePtr<Buffer>		m_hostBuffer;
+};
+
+class CopySupport : public OperationSupport
+{
+public:
+	CopySupport (const ResourceDescription& resourceDesc)
+	{
+		DE_ASSERT(resourceDesc.type == RESOURCE_TYPE_BUFFER);
+		DE_UNREF(resourceDesc);
+	}
+
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	}
+
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
+	{
+		DE_UNREF(context);
+		return VK_QUEUE_TRANSFER_BIT;
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
+	de::MovePtr<Operation> build (OperationContext& context, Resource& inResource, Resource& outResource) const
+	{
+		return de::MovePtr<Operation>(new CopyImplementation(context, inResource, outResource));
+	}
 };
 
 } // CopyBuffer ns
@@ -784,7 +974,20 @@ public:
 		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
+	{
+		const VkAccessFlags access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_TRANSFER_READ_BIT : VK_ACCESS_TRANSFER_WRITE_BIT);
+		const VkImageLayout layout		= (m_mode == ACCESS_MODE_READ ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		const SyncInfo		syncInfo	=
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
+			access,								// VkAccessFlags			accessMask;
+			layout,								// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
 	{
 		const VkAccessFlags access		= (m_mode == ACCESS_MODE_READ ? VK_ACCESS_TRANSFER_READ_BIT : VK_ACCESS_TRANSFER_WRITE_BIT);
 		const VkImageLayout layout		= (m_mode == ACCESS_MODE_READ ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -800,6 +1003,12 @@ public:
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_bufferSize);
+	}
+
+	void setData (const Data& data)
+	{
+		DE_ASSERT(m_mode == ACCESS_MODE_WRITE);
+		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
 protected:
@@ -942,9 +1151,14 @@ public:
 		DE_ASSERT(m_type != TYPE_BLIT || !isDepthStencil);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
 	{
-		return (m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		return (m_mode == ACCESS_MODE_READ ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0);
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return (m_mode == ACCESS_MODE_WRITE ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : 0);
 	}
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
@@ -961,9 +1175,222 @@ public:
 			return de::MovePtr<Operation>(new BlitImplementation(context, resource, m_mode));
 	}
 
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
 private:
 	const Type			m_type;
 	const AccessMode	m_mode;
+	VkQueueFlags		m_requiredQueueFlags;
+};
+
+class BlitCopyImplementation : public Operation
+{
+public:
+	BlitCopyImplementation (OperationContext& context, Resource& inResource, Resource& outResource)
+		: m_context			(context)
+		, m_inResource		(inResource)
+		, m_outResource		(outResource)
+		, m_blitRegion		(makeBlitRegion(m_inResource))
+	{
+		DE_ASSERT(m_inResource.getType() == RESOURCE_TYPE_IMAGE);
+		DE_ASSERT(m_outResource.getType() == RESOURCE_TYPE_IMAGE);
+
+		const InstanceInterface&	vki				= m_context.getInstanceInterface();
+		const VkPhysicalDevice		physDevice		= m_context.getPhysicalDevice();
+		const VkFormatProperties	formatProps		= getPhysicalDeviceFormatProperties(vki, physDevice, m_inResource.getImage().format);
+		const VkFormatFeatureFlags	requiredFlags	= (VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT);
+
+		// SRC and DST blit is required because both images are using the same format.
+		if ((formatProps.optimalTilingFeatures & requiredFlags) != requiredFlags)
+			TCU_THROW(NotSupportedError, "Format doesn't support blits");
+	}
+
+	void recordCommands (const VkCommandBuffer cmdBuffer)
+	{
+		const DeviceInterface&	vk	= m_context.getDeviceInterface();
+
+		{
+			const VkImageMemoryBarrier layoutBarrier =
+				makeImageMemoryBarrier(
+					(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					m_outResource.getImage().handle, m_outResource.getImage().subresourceRange);
+
+			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
+								  0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+		}
+
+		vk.cmdBlitImage(cmdBuffer,
+						m_inResource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						m_outResource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						1u, &m_blitRegion, VK_FILTER_NEAREST);
+	}
+
+	SyncInfo getInSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	Data getData (void) const
+	{
+		Data data = { 0, DE_NULL };
+		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
+	}
+
+private:
+	OperationContext&	m_context;
+	Resource&			m_inResource;
+	Resource&			m_outResource;
+	const VkImageBlit	m_blitRegion;
+};
+
+class CopyCopyImplementation : public Operation
+{
+public:
+	CopyCopyImplementation (OperationContext& context, Resource& inResource, Resource& outResource)
+		: m_context			(context)
+		, m_inResource		(inResource)
+		, m_outResource		(outResource)
+		, m_imageCopyRegion	(makeImageCopyRegion(m_inResource))
+	{
+		DE_ASSERT(m_inResource.getType() == RESOURCE_TYPE_IMAGE);
+		DE_ASSERT(m_outResource.getType() == RESOURCE_TYPE_IMAGE);
+	}
+
+	void recordCommands (const VkCommandBuffer cmdBuffer)
+	{
+		const DeviceInterface&	vk	= m_context.getDeviceInterface();
+
+		{
+			const VkImageMemoryBarrier layoutBarrier =
+				makeImageMemoryBarrier(
+					(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
+					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					m_outResource.getImage().handle, m_outResource.getImage().subresourceRange);
+
+			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
+								  0u, DE_NULL, 0u, DE_NULL, 1u, &layoutBarrier);
+		}
+
+		vk.cmdCopyImage(cmdBuffer,
+						m_inResource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						m_outResource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						1u, &m_imageCopyRegion);
+	}
+
+	SyncInfo getInSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	Data getData (void) const
+	{
+		Data data = { 0, DE_NULL };
+		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
+	}
+
+private:
+	OperationContext&	m_context;
+	Resource&			m_inResource;
+	Resource&			m_outResource;
+	const VkImageCopy	m_imageCopyRegion;
+};
+
+class CopySupport : public OperationSupport
+{
+public:
+	CopySupport (const ResourceDescription& resourceDesc, const Type type)
+		: m_type				(type)
+	{
+		DE_ASSERT(resourceDesc.type == RESOURCE_TYPE_IMAGE);
+
+		const bool isDepthStencil	= isDepthStencilFormat(resourceDesc.imageFormat);
+		m_requiredQueueFlags		= (isDepthStencil || m_type == TYPE_BLIT ? VK_QUEUE_GRAPHICS_BIT : VK_QUEUE_TRANSFER_BIT);
+
+		// Don't blit depth/stencil images.
+		DE_ASSERT(m_type != TYPE_BLIT || !isDepthStencil);
+	}
+
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	}
+
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
+	{
+		DE_UNREF(context);
+		return m_requiredQueueFlags;
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
+	de::MovePtr<Operation> build (OperationContext& context, Resource& inResource, Resource& outResource) const
+	{
+		if (m_type == TYPE_COPY)
+			return de::MovePtr<Operation>(new CopyCopyImplementation(context, inResource, outResource));
+		else
+			return de::MovePtr<Operation>(new BlitCopyImplementation(context, inResource, outResource));
+	}
+
+private:
+	const Type			m_type;
 	VkQueueFlags		m_requiredQueueFlags;
 };
 
@@ -1218,7 +1645,7 @@ public:
 		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
 	{
 		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_READ ? (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_ACCESS_UNIFORM_READ_BIT
 																											 : VK_ACCESS_SHADER_READ_BIT)
@@ -1232,9 +1659,27 @@ public:
 		return syncInfo;
 	}
 
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const VkAccessFlags	accessFlags = m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_SHADER_WRITE_BIT : 0;
+		const SyncInfo		syncInfo	=
+		{
+			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
+			accessFlags,					// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_resource.getBuffer().size);
+	}
+
+	void setData (const Data& data)
+	{
+		DE_ASSERT(m_mode == ACCESS_MODE_WRITE);
+		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
 private:
@@ -1424,9 +1869,21 @@ public:
 		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
 	{
-		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_READ ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_SHADER_WRITE_BIT);
+		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_READ ? VK_ACCESS_SHADER_READ_BIT : 0);
+		const SyncInfo		syncInfo	=
+		{
+			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
+			accessFlags,				// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_GENERAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const VkAccessFlags	accessFlags = (m_mode == ACCESS_MODE_WRITE ? VK_ACCESS_SHADER_WRITE_BIT : 0);
 		const SyncInfo		syncInfo	=
 		{
 			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
@@ -1439,6 +1896,12 @@ public:
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_hostBufferSizeBytes);
+	}
+
+	void setData (const Data& data)
+	{
+		DE_ASSERT(m_mode == ACCESS_MODE_WRITE);
+		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
 private:
@@ -1486,7 +1949,8 @@ void initPassthroughPrograms (SourceCollections&			programCollection,
 			<< (stage & VK_SHADER_STAGE_VERTEX_BIT ? mainCode : "")
 			<< "}\n";
 
-		programCollection.glslSources.add(shaderPrefix + "vert") << glu::VertexSource(src.str());
+		if (!programCollection.glslSources.contains(shaderPrefix + "vert"))
+			programCollection.glslSources.add(shaderPrefix + "vert") << glu::VertexSource(src.str());
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)
@@ -1515,7 +1979,8 @@ void initPassthroughPrograms (SourceCollections&			programCollection,
 			<< (stage & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ? "\n" + mainCode : "")
 			<< "}\n";
 
-		programCollection.glslSources.add(shaderPrefix + "tesc") << glu::TessellationControlSource(src.str());
+		if (!programCollection.glslSources.contains(shaderPrefix + "tesc"))
+			programCollection.glslSources.add(shaderPrefix + "tesc") << glu::TessellationControlSource(src.str());
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
@@ -1539,7 +2004,8 @@ void initPassthroughPrograms (SourceCollections&			programCollection,
 			<< (stage & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ? mainCode : "")
 			<< "}\n";
 
-		programCollection.glslSources.add(shaderPrefix + "tese") << glu::TessellationEvaluationSource(src.str());
+		if (!programCollection.glslSources.contains(shaderPrefix + "tese"))
+			programCollection.glslSources.add(shaderPrefix + "tese") << glu::TessellationEvaluationSource(src.str());
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT)
@@ -1568,7 +2034,8 @@ void initPassthroughPrograms (SourceCollections&			programCollection,
 			<< (stage & VK_SHADER_STAGE_GEOMETRY_BIT ? "\n" + mainCode : "")
 			<< "}\n";
 
-		programCollection.glslSources.add(shaderPrefix + "geom") << glu::GeometrySource(src.str());
+		if (!programCollection.glslSources.contains(shaderPrefix + "geom"))
+			programCollection.glslSources.add(shaderPrefix + "geom") << glu::GeometrySource(src.str());
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_FRAGMENT_BIT)
@@ -1585,7 +2052,8 @@ void initPassthroughPrograms (SourceCollections&			programCollection,
 			<< (stage & VK_SHADER_STAGE_FRAGMENT_BIT ? "\n" + mainCode : "")
 			<< "}\n";
 
-		programCollection.glslSources.add(shaderPrefix + "frag") << glu::FragmentSource(src.str());
+		if (!programCollection.glslSources.contains(shaderPrefix + "frag"))
+			programCollection.glslSources.add(shaderPrefix + "frag") << glu::FragmentSource(src.str());
 	}
 
 	if (requiredStages & VK_SHADER_STAGE_COMPUTE_BIT)
@@ -1601,7 +2069,8 @@ void initPassthroughPrograms (SourceCollections&			programCollection,
 			<< (stage & VK_SHADER_STAGE_COMPUTE_BIT ? mainCode : "")
 			<< "}\n";
 
-		programCollection.glslSources.add(shaderPrefix + "comp") << glu::ComputeSource(src.str());
+		if (!programCollection.glslSources.contains(shaderPrefix + "comp"))
+			programCollection.glslSources.add(shaderPrefix + "comp") << glu::ComputeSource(src.str());
 	}
 }
 
@@ -1654,9 +2123,20 @@ public:
 		initPassthroughPrograms(programCollection, m_shaderPrefix, declSrc.str(), copySrc.str(), m_stage);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
 	{
-		return (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+		if (m_bufferType == BUFFER_TYPE_UNIFORM)
+			return m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : 0;
+		else
+			return m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		if (m_bufferType == BUFFER_TYPE_UNIFORM)
+			return m_mode == ACCESS_MODE_WRITE ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : 0;
+		else
+			return m_mode == ACCESS_MODE_WRITE ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : 0;
 	}
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
@@ -1671,6 +2151,12 @@ public:
 			return de::MovePtr<Operation>(new BufferImplementation(context, resource, m_stage, m_bufferType, m_shaderPrefix, m_mode, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
 		else
 			return de::MovePtr<Operation>(new BufferImplementation(context, resource, m_stage, m_bufferType, m_shaderPrefix, m_mode, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 
 private:
@@ -1730,7 +2216,12 @@ public:
 		initPassthroughPrograms(programCollection, m_shaderPrefix, declSrc.str(), mainSrc.str(), m_stage);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return VK_IMAGE_USAGE_STORAGE_BIT;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
 	{
 		return VK_IMAGE_USAGE_STORAGE_BIT;
 	}
@@ -1749,9 +2240,424 @@ public:
 			return de::MovePtr<Operation>(new ImageImplementation(context, resource, m_stage, m_shaderPrefix, m_mode, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
 	}
 
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
 private:
 	const ResourceDescription	m_resourceDesc;
 	const AccessMode			m_mode;
+	const VkShaderStageFlagBits	m_stage;
+	const std::string			m_shaderPrefix;
+	const DispatchCall			m_dispatchCall;
+};
+
+//! Copy operation on a UBO/SSBO in graphics/compute pipeline.
+class BufferCopyImplementation : public Operation
+{
+public:
+	BufferCopyImplementation (OperationContext&				context,
+							  Resource&						inResource,
+							  Resource&						outResource,
+							  const VkShaderStageFlagBits	stage,
+							  const BufferType				bufferType,
+							  const std::string&			shaderPrefix,
+							  const PipelineType			pipelineType,
+							  const DispatchCall			dispatchCall)
+		: m_context			(context)
+		, m_inResource		(inResource)
+		, m_outResource		(outResource)
+		, m_stage			(stage)
+		, m_pipelineStage	(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
+		, m_bufferType		(bufferType)
+		, m_dispatchCall	(dispatchCall)
+	{
+		requireFeaturesForSSBOAccess (m_context, m_stage);
+
+		const DeviceInterface&	vk			= m_context.getDeviceInterface();
+		const VkDevice			device		= m_context.getDevice();
+
+		// Prepare descriptors
+		{
+			const VkDescriptorType	bufferDescriptorType	= (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+			m_descriptorSetLayout = DescriptorSetLayoutBuilder()
+				.addSingleBinding(bufferDescriptorType, m_stage)
+				.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, m_stage)
+				.build(vk, device);
+
+			m_descriptorPool = DescriptorPoolBuilder()
+				.addType(bufferDescriptorType)
+				.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+				.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+			m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
+
+			const VkDescriptorBufferInfo  inBufferInfo = makeDescriptorBufferInfo(m_inResource.getBuffer().handle, m_inResource.getBuffer().offset, m_inResource.getBuffer().size);
+			const VkDescriptorBufferInfo  outBufferInfo	 = makeDescriptorBufferInfo(m_outResource.getBuffer().handle, m_outResource.getBuffer().offset, m_outResource.getBuffer().size);
+
+			DescriptorSetUpdateBuilder()
+				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &inBufferInfo)
+				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outBufferInfo)
+				.update(vk, device);
+		}
+
+		// Create pipeline
+		m_pipeline = (pipelineType == PIPELINE_TYPE_GRAPHICS ? de::MovePtr<Pipeline>(new GraphicsPipeline(context, stage, shaderPrefix, *m_descriptorSetLayout))
+															 : de::MovePtr<Pipeline>(new ComputePipeline(context, m_dispatchCall, shaderPrefix, *m_descriptorSetLayout)));
+	}
+
+	void recordCommands (const VkCommandBuffer cmdBuffer)
+	{
+		m_pipeline->recordCommands(m_context, cmdBuffer, *m_descriptorSet);
+	}
+
+	SyncInfo getInSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_SHADER_READ_BIT,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			m_pipelineStage,				// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_SHADER_WRITE_BIT,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	Data getData (void) const
+	{
+		Data data = { 0, DE_NULL };
+		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
+	}
+
+private:
+	OperationContext&			m_context;
+	Resource&					m_inResource;
+	Resource&					m_outResource;
+	const VkShaderStageFlagBits	m_stage;
+	const VkPipelineStageFlags	m_pipelineStage;
+	const BufferType			m_bufferType;
+	const DispatchCall			m_dispatchCall;
+	Move<VkDescriptorPool>		m_descriptorPool;
+	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
+	Move<VkDescriptorSet>		m_descriptorSet;
+	de::MovePtr<Pipeline>		m_pipeline;
+};
+
+class CopyBufferSupport : public OperationSupport
+{
+public:
+	CopyBufferSupport (const ResourceDescription&	resourceDesc,
+					   const BufferType				bufferType,
+					   const VkShaderStageFlagBits	stage,
+					   const DispatchCall			dispatchCall = DISPATCH_CALL_DISPATCH)
+		: m_resourceDesc	(resourceDesc)
+		, m_bufferType		(bufferType)
+		, m_stage			(stage)
+		, m_shaderPrefix	(std::string("copy_") + getShaderStageName(stage) + (m_bufferType == BUFFER_TYPE_UNIFORM ? "_ubo_" : "_ssbo_"))
+		, m_dispatchCall	(dispatchCall)
+	{
+		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_BUFFER);
+		DE_ASSERT(m_bufferType == BUFFER_TYPE_UNIFORM || m_bufferType == BUFFER_TYPE_STORAGE);
+		DE_ASSERT(m_bufferType != BUFFER_TYPE_UNIFORM || m_resourceDesc.size.x() <= MAX_UBO_RANGE);
+		DE_ASSERT(m_dispatchCall == DISPATCH_CALL_DISPATCH || m_dispatchCall == DISPATCH_CALL_DISPATCH_INDIRECT);
+
+		assertValidShaderStage(m_stage);
+	}
+
+	void initPrograms (SourceCollections& programCollection) const
+	{
+		DE_ASSERT((m_resourceDesc.size.x() % sizeof(tcu::UVec4)) == 0);
+
+		const std::string	bufferTypeStr	= (m_bufferType == BUFFER_TYPE_UNIFORM ? "uniform" : "buffer");
+		const int			numVecElements	= static_cast<int>(m_resourceDesc.size.x() / sizeof(tcu::UVec4));  // std140 must be aligned to a multiple of 16
+
+		std::ostringstream declSrc;
+		declSrc << "layout(set = 0, binding = 0, std140) readonly " << bufferTypeStr << " Input {\n"
+				<< "    uvec4 data[" << numVecElements << "];\n"
+				<< "} b_in;\n"
+				<< "\n"
+				<< "layout(set = 0, binding = 1, std140) writeonly buffer Output {\n"
+				<< "    uvec4 data[" << numVecElements << "];\n"
+				<< "} b_out;\n";
+
+		std::ostringstream copySrc;
+		copySrc << "    for (int i = 0; i < " << numVecElements << "; ++i) {\n"
+				<< "        b_out.data[i] = b_in.data[i];\n"
+				<< "    }\n";
+
+		initPassthroughPrograms(programCollection, m_shaderPrefix, declSrc.str(), copySrc.str(), m_stage);
+	}
+
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	}
+
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
+	{
+		DE_UNREF(context);
+		return (m_stage == VK_SHADER_STAGE_COMPUTE_BIT ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT);
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
+	de::MovePtr<Operation> build (OperationContext& context, Resource& inResource, Resource& outResource) const
+	{
+		if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
+			return de::MovePtr<Operation>(new BufferCopyImplementation(context, inResource, outResource, m_stage, m_bufferType, m_shaderPrefix, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
+		else
+			return de::MovePtr<Operation>(new BufferCopyImplementation(context, inResource, outResource, m_stage, m_bufferType, m_shaderPrefix, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
+	}
+
+private:
+	const ResourceDescription	m_resourceDesc;
+	const BufferType			m_bufferType;
+	const VkShaderStageFlagBits	m_stage;
+	const std::string			m_shaderPrefix;
+	const DispatchCall			m_dispatchCall;
+};
+
+class CopyImageImplementation : public Operation
+{
+public:
+	CopyImageImplementation (OperationContext&				context,
+							 Resource&						inResource,
+							 Resource&						outResource,
+							 const VkShaderStageFlagBits	stage,
+							 const std::string&				shaderPrefix,
+							 const PipelineType				pipelineType,
+							 const DispatchCall				dispatchCall)
+		: m_context				(context)
+		, m_inResource			(inResource)
+		, m_outResource			(outResource)
+		, m_stage				(stage)
+		, m_pipelineStage		(pipelineStageFlagsFromShaderStageFlagBits(m_stage))
+		, m_dispatchCall		(dispatchCall)
+	{
+		const DeviceInterface&		vk			= m_context.getDeviceInterface();
+		const InstanceInterface&	vki			= m_context.getInstanceInterface();
+		const VkDevice				device		= m_context.getDevice();
+		const VkPhysicalDevice		physDevice	= m_context.getPhysicalDevice();
+
+		// Image stores are always required, in either access mode.
+		requireFeaturesForSSBOAccess(m_context, m_stage);
+
+		// Some storage image formats require additional capability.
+		if (isStorageImageExtendedFormat(m_inResource.getImage().format))
+			requireFeatures(vki, physDevice, FEATURE_SHADER_STORAGE_IMAGE_EXTENDED_FORMATS);
+
+		// Image resources
+		{
+			const VkImageViewType viewType = getImageViewType(m_inResource.getImage().imageType);
+
+			m_srcImageView	= makeImageView(vk, device, m_inResource.getImage().handle, viewType, m_inResource.getImage().format, m_inResource.getImage().subresourceRange);
+			m_dstImageView	= makeImageView(vk, device, m_outResource.getImage().handle, viewType, m_outResource.getImage().format, m_outResource.getImage().subresourceRange);
+		}
+
+		// Prepare descriptors
+		{
+			m_descriptorSetLayout = DescriptorSetLayoutBuilder()
+				.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_stage)
+				.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_stage)
+				.build(vk, device);
+
+			m_descriptorPool = DescriptorPoolBuilder()
+				.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+				.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+				.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+			m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
+
+			const VkDescriptorImageInfo srcImageInfo = makeDescriptorImageInfo(DE_NULL, *m_srcImageView, VK_IMAGE_LAYOUT_GENERAL);
+			const VkDescriptorImageInfo dstImageInfo = makeDescriptorImageInfo(DE_NULL, *m_dstImageView, VK_IMAGE_LAYOUT_GENERAL);
+
+			DescriptorSetUpdateBuilder()
+				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &srcImageInfo)
+				.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &dstImageInfo)
+				.update(vk, device);
+		}
+
+		// Create pipeline
+		m_pipeline = (pipelineType == PIPELINE_TYPE_GRAPHICS ? de::MovePtr<Pipeline>(new GraphicsPipeline(context, stage, shaderPrefix, *m_descriptorSetLayout))
+															 : de::MovePtr<Pipeline>(new ComputePipeline(context, m_dispatchCall, shaderPrefix, *m_descriptorSetLayout)));
+	}
+
+	void recordCommands (const VkCommandBuffer cmdBuffer)
+	{
+		{
+			const DeviceInterface&		vk			= m_context.getDeviceInterface();
+			const VkImageMemoryBarrier	barriers[]	= {
+				 makeImageMemoryBarrier(
+					(VkAccessFlags)0, VK_ACCESS_SHADER_WRITE_BIT,
+					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+					m_outResource.getImage().handle, m_outResource.getImage().subresourceRange),
+				 makeImageMemoryBarrier(
+					(VkAccessFlags) 0, VK_ACCESS_SHADER_READ_BIT,
+					VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+					m_inResource.getImage().handle, m_inResource.getImage().subresourceRange),
+			};
+
+			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_pipelineStage, (VkDependencyFlags)0,
+								  0u, DE_NULL, 0u, DE_NULL, DE_LENGTH_OF_ARRAY(barriers), barriers);
+		}
+
+		// Execute shaders
+
+		m_pipeline->recordCommands(m_context, cmdBuffer, *m_descriptorSet);
+	}
+
+	SyncInfo getInSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_SHADER_READ_BIT,	// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_GENERAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const SyncInfo		syncInfo	=
+		{
+			m_pipelineStage,			// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_SHADER_WRITE_BIT,	// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_GENERAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	Data getData (void) const
+	{
+		Data data = { 0, DE_NULL };
+		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
+	}
+
+private:
+	OperationContext&			m_context;
+	Resource&					m_inResource;
+	Resource&					m_outResource;
+	const VkShaderStageFlagBits	m_stage;
+	const VkPipelineStageFlags	m_pipelineStage;
+	const DispatchCall			m_dispatchCall;
+	Move<VkImageView>			m_srcImageView;
+	Move<VkImageView>			m_dstImageView;
+	Move<VkDescriptorPool>		m_descriptorPool;
+	Move<VkDescriptorSetLayout>	m_descriptorSetLayout;
+	Move<VkDescriptorSet>		m_descriptorSet;
+	de::MovePtr<Pipeline>		m_pipeline;
+};
+
+class CopyImageSupport : public OperationSupport
+{
+public:
+	CopyImageSupport (const ResourceDescription&	resourceDesc,
+					  const VkShaderStageFlagBits	stage,
+					  const DispatchCall			dispatchCall = DISPATCH_CALL_DISPATCH)
+		: m_resourceDesc	(resourceDesc)
+		, m_stage			(stage)
+		, m_shaderPrefix	(std::string("copy_image_") + getShaderStageName(stage) + "_")
+		, m_dispatchCall	(dispatchCall)
+	{
+		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_IMAGE);
+		DE_ASSERT(m_dispatchCall == DISPATCH_CALL_DISPATCH || m_dispatchCall == DISPATCH_CALL_DISPATCH_INDIRECT);
+
+		assertValidShaderStage(m_stage);
+	}
+
+	void initPrograms (SourceCollections& programCollection) const
+	{
+		const std::string	imageFormat	= getShaderImageFormatQualifier(m_resourceDesc.imageFormat);
+		const std::string	imageType	= getShaderImageType(m_resourceDesc.imageFormat, m_resourceDesc.imageType);
+
+		std::ostringstream declSrc;
+		declSrc << "layout(set = 0, binding = 0, " << imageFormat << ") readonly  uniform " << imageType << " srcImg;\n"
+				<< "layout(set = 0, binding = 1, " << imageFormat << ") writeonly uniform " << imageType << " dstImg;\n";
+
+		std::ostringstream mainSrc;
+		if (m_resourceDesc.imageType == VK_IMAGE_TYPE_1D)
+			mainSrc << "    for (int x = 0; x < " << m_resourceDesc.size.x() << "; ++x)\n"
+					<< "        imageStore(dstImg, x, imageLoad(srcImg, x));\n";
+		else if (m_resourceDesc.imageType == VK_IMAGE_TYPE_2D)
+			mainSrc << "    for (int y = 0; y < " << m_resourceDesc.size.y() << "; ++y)\n"
+					<< "    for (int x = 0; x < " << m_resourceDesc.size.x() << "; ++x)\n"
+					<< "        imageStore(dstImg, ivec2(x, y), imageLoad(srcImg, ivec2(x, y)));\n";
+		else if (m_resourceDesc.imageType == VK_IMAGE_TYPE_3D)
+			mainSrc << "    for (int z = 0; z < " << m_resourceDesc.size.z() << "; ++z)\n"
+					<< "    for (int y = 0; y < " << m_resourceDesc.size.y() << "; ++y)\n"
+					<< "    for (int x = 0; x < " << m_resourceDesc.size.x() << "; ++x)\n"
+					<< "        imageStore(dstImg, ivec3(x, y, z), imageLoad(srcImg, ivec3(x, y, z)));\n";
+		else
+			DE_ASSERT(0);
+
+		initPassthroughPrograms(programCollection, m_shaderPrefix, declSrc.str(), mainSrc.str(), m_stage);
+	}
+
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return VK_IMAGE_USAGE_STORAGE_BIT;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return VK_IMAGE_USAGE_STORAGE_BIT;
+	}
+
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
+	{
+		DE_UNREF(context);
+		return (m_stage == VK_SHADER_STAGE_COMPUTE_BIT ? VK_QUEUE_COMPUTE_BIT : VK_QUEUE_GRAPHICS_BIT);
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
+	de::MovePtr<Operation> build (OperationContext& context, Resource& inResource, Resource& outResource) const
+	{
+		if (m_stage & VK_SHADER_STAGE_COMPUTE_BIT)
+			return de::MovePtr<Operation>(new CopyImageImplementation(context, inResource, outResource, m_stage, m_shaderPrefix, PIPELINE_TYPE_COMPUTE, m_dispatchCall));
+		else
+			return de::MovePtr<Operation>(new CopyImageImplementation(context, inResource, outResource, m_stage, m_shaderPrefix, PIPELINE_TYPE_GRAPHICS, m_dispatchCall));
+	}
+
+private:
+	const ResourceDescription	m_resourceDesc;
 	const VkShaderStageFlagBits	m_stage;
 	const std::string			m_shaderPrefix;
 	const DispatchCall			m_dispatchCall;
@@ -1798,7 +2704,12 @@ public:
 		vk.cmdCopyBufferToImage(cmdBuffer, **m_hostBuffer, m_resource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -1812,6 +2723,11 @@ public:
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_bufferSize);
+	}
+
+	void setData (const Data& data)
+	{
+		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
 private:
@@ -1880,7 +2796,7 @@ public:
 		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -1891,9 +2807,19 @@ public:
 		return syncInfo;
 	}
 
+	SyncInfo getOutSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_resource.getBuffer().size);
+	}
+
+	void setData (const Data& data)
+	{
+		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
 private:
@@ -1911,6 +2837,7 @@ class Support : public OperationSupport
 public:
 	Support (const ResourceDescription& resourceDesc, const AccessMode mode)
 		: m_mode				(mode)
+		, m_resourceType		(resourceDesc.type)
 		, m_requiredQueueFlags	(resourceDesc.type == RESOURCE_TYPE_IMAGE && isDepthStencilFormat(resourceDesc.imageFormat) ? VK_QUEUE_GRAPHICS_BIT : VK_QUEUE_TRANSFER_BIT)
 	{
 		// From spec:
@@ -1922,12 +2849,20 @@ public:
 		DE_ASSERT(m_mode == ACCESS_MODE_WRITE || resourceDesc.type != RESOURCE_TYPE_IMAGE);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
 	{
-		if (m_mode == ACCESS_MODE_READ)
-			return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		if (m_resourceType == RESOURCE_TYPE_IMAGE)
+			return m_mode == ACCESS_MODE_READ ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0;
 		else
-			return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+			return m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		if (m_resourceType == RESOURCE_TYPE_IMAGE)
+			return m_mode == ACCESS_MODE_WRITE ? VK_IMAGE_USAGE_TRANSFER_DST_BIT : 0;
+		else
+			return m_mode == ACCESS_MODE_WRITE ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0;
 	}
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
@@ -1944,8 +2879,137 @@ public:
 			return de::MovePtr<Operation>(new WriteImplementation(context, resource));
 	}
 
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
 private:
 	const AccessMode			m_mode;
+	const enum ResourceType		m_resourceType;
+	const VkQueueFlags			m_requiredQueueFlags;
+};
+
+class CopyImplementation : public Operation
+{
+public:
+	CopyImplementation (OperationContext& context, Resource& inResource, Resource& outResource)
+		: m_context		(context)
+		, m_inResource	(inResource)
+		, m_outResource	(outResource)
+	{
+		DE_ASSERT(m_inResource.getType() == RESOURCE_TYPE_BUFFER);
+		DE_ASSERT(m_outResource.getType() == RESOURCE_TYPE_IMAGE);
+	}
+
+	void recordCommands (const VkCommandBuffer cmdBuffer)
+	{
+		const DeviceInterface&	vk			= m_context.getDeviceInterface();
+		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_outResource.getImage().subresourceLayers, m_outResource.getImage().extent);
+
+		// Resource -> Image
+		{
+
+		const VkBufferMemoryBarrier bufferLayoutBarrier =
+			makeBufferMemoryBarrier(
+				(VkAccessFlags)0, VK_ACCESS_TRANSFER_READ_BIT,
+				m_inResource.getBuffer().handle, 0, m_inResource.getBuffer().size);
+		const VkImageMemoryBarrier imageLayoutBarrier =
+			makeImageMemoryBarrier(
+				(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				m_outResource.getImage().handle, m_outResource.getImage().subresourceRange);
+		vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL,
+							  1u, &bufferLayoutBarrier, 1u, &imageLayoutBarrier);
+
+		vk.cmdCopyBufferToImage(cmdBuffer, m_inResource.getBuffer().handle, m_outResource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &copyRegion);
+		}
+	}
+
+	SyncInfo getInSyncInfo (void) const
+	{
+		const SyncInfo syncInfo =
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_READ_BIT,			// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const SyncInfo syncInfo =
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,			// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,			// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,	// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	Data getData (void) const
+	{
+		Data data = { 0, DE_NULL };
+		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
+	}
+
+private:
+	OperationContext&		m_context;
+	Resource&				m_inResource;
+	Resource&				m_outResource;
+};
+
+class CopySupport : public OperationSupport
+{
+public:
+	CopySupport (const ResourceDescription& resourceDesc)
+		: m_resourceType		(resourceDesc.type)
+		, m_requiredQueueFlags	(resourceDesc.type == RESOURCE_TYPE_IMAGE && isDepthStencilFormat(resourceDesc.imageFormat) ? VK_QUEUE_GRAPHICS_BIT : VK_QUEUE_TRANSFER_BIT)
+	{
+	}
+
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		if (m_resourceType == RESOURCE_TYPE_IMAGE)
+			return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		else
+			return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		if (m_resourceType == RESOURCE_TYPE_IMAGE)
+			return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		else
+			return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	}
+
+	VkQueueFlags getQueueFlags (const OperationContext& context) const
+	{
+		DE_UNREF(context);
+		return m_requiredQueueFlags;
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
+	}
+
+	de::MovePtr<Operation> build (OperationContext& context, Resource& inResource, Resource& outResource) const
+	{
+		return de::MovePtr<Operation>(new CopyImplementation(context, inResource, outResource));
+	}
+
+private:
+	const enum ResourceType		m_resourceType;
 	const VkQueueFlags			m_requiredQueueFlags;
 };
 
@@ -2014,7 +3078,12 @@ public:
 		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -2028,6 +3097,11 @@ public:
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_resource.getBuffer().size);
+	}
+
+	void setData (const Data& data)
+	{
+		setHostBufferData(m_context, *m_hostBuffer, data);
 	}
 
 private:
@@ -2076,7 +3150,7 @@ public:
 		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -2087,9 +3161,19 @@ public:
 		return syncInfo;
 	}
 
+	SyncInfo getOutSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_bufferSize);
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
 	}
 
 private:
@@ -2097,6 +3181,82 @@ private:
 	Resource&				m_resource;
 	de::MovePtr<Buffer>		m_hostBuffer;
 	const VkDeviceSize		m_bufferSize;
+};
+
+class CopyImplementation : public Operation
+{
+public:
+	CopyImplementation (OperationContext& context, Resource& inResource, Resource& outResource)
+		: m_context				(context)
+		, m_inResource			(inResource)
+		, m_outResource			(outResource)
+		, m_subresourceRange	(makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u))
+		, m_subresourceLayers	(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u))
+	{
+		DE_ASSERT(m_inResource.getType() == RESOURCE_TYPE_IMAGE);
+		DE_ASSERT(m_outResource.getType() == RESOURCE_TYPE_BUFFER);
+	}
+
+	void recordCommands (const VkCommandBuffer cmdBuffer)
+	{
+		const DeviceInterface&	vk			= m_context.getDeviceInterface();
+		const VkBufferImageCopy	copyRegion	= makeBufferImageCopy(m_subresourceLayers, m_inResource.getImage().extent);
+
+		{
+			const VkImageMemoryBarrier imageLayoutBarrier = makeImageMemoryBarrier(
+				(VkAccessFlags)0, VK_ACCESS_TRANSFER_READ_BIT,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				m_inResource.getImage().handle, m_subresourceRange);
+			const VkBufferMemoryBarrier bufferLayoutBarrier = makeBufferMemoryBarrier(
+				(VkAccessFlags)0, VK_ACCESS_TRANSFER_WRITE_BIT,
+				m_outResource.getBuffer().handle, 0, m_outResource.getBuffer().size);
+
+			vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0u, DE_NULL,
+								  1u, &bufferLayoutBarrier, 1u, &imageLayoutBarrier);
+		}
+
+		vk.cmdCopyImageToBuffer(cmdBuffer, m_inResource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_outResource.getBuffer().handle, 1u, &copyRegion);
+	}
+
+	SyncInfo getInSyncInfo (void) const
+	{
+		const SyncInfo syncInfo =
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_READ_BIT,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
+	{
+		const SyncInfo syncInfo =
+		{
+			VK_PIPELINE_STAGE_TRANSFER_BIT,		// VkPipelineStageFlags		stageMask;
+			VK_ACCESS_TRANSFER_WRITE_BIT,		// VkAccessFlags			accessMask;
+			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout			imageLayout;
+		};
+		return syncInfo;
+	}
+
+	Data getData (void) const
+	{
+		Data data = { 0, DE_NULL };
+		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
+	}
+
+private:
+	OperationContext&				m_context;
+	Resource&						m_inResource;
+	Resource&						m_outResource;
+	const VkImageSubresourceRange	m_subresourceRange;
+	const VkImageSubresourceLayers	m_subresourceLayers;
 };
 
 class Support : public OperationSupport
@@ -2111,12 +3271,14 @@ public:
 		DE_ASSERT(m_mode == ACCESS_MODE_WRITE || resourceDesc.type != RESOURCE_TYPE_BUFFER);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
 	{
-		if (m_mode == ACCESS_MODE_READ)
-			return VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		else
-			return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		return m_mode == ACCESS_MODE_READ ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT : 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return m_mode == ACCESS_MODE_WRITE ? VK_BUFFER_USAGE_TRANSFER_DST_BIT : 0;
 	}
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
@@ -2131,6 +3293,12 @@ public:
 			return de::MovePtr<Operation>(new ReadImplementation(context, resource));
 		else
 			return de::MovePtr<Operation>(new WriteImplementation(context, resource));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 
 private:
@@ -2185,7 +3353,12 @@ public:
 			vk.cmdClearDepthStencilImage(cmdBuffer, m_resource.getImage().handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &m_clearValue.depthStencil, 1u, &m_resource.getImage().subresourceRange);
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -2204,6 +3377,11 @@ public:
 			&m_data[0],			// const deUint8*	data;
 		};
 		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
 	}
 
 private:
@@ -2227,7 +3405,12 @@ public:
 		DE_ASSERT((m_resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) || (m_mode != CLEAR_MODE_DEPTH_STENCIL));
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
 	{
 		return VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	}
@@ -2244,6 +3427,12 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		return de::MovePtr<Operation>(new Implementation(context, resource, m_mode));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 
 private:
@@ -2397,7 +3586,12 @@ public:
 		endRenderPass(vk, cmdBuffer);
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -2416,6 +3610,12 @@ public:
 			&m_expectedData[0],			// const deUint8*	data;
 		};
 		return data;
+	}
+
+	void setData (const Data& data)
+	{
+		DE_ASSERT(m_expectedData.size() == data.size);
+		deMemcpy(&m_expectedData[0], data.data, data.size);
 	}
 
 private:
@@ -2495,7 +3695,12 @@ public:
 		}
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
 	{
 		return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
@@ -2509,6 +3714,12 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		return de::MovePtr<Operation>(new Implementation(context, resource, m_drawCall));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 
 private:
@@ -2536,7 +3747,7 @@ public:
 		const VkExtent3D&			extent		= m_resource.getImage().extent;
 		const VkFormat				format		= m_resource.getImage().format;
 		const tcu::TextureFormat	texFormat	= mapVkFormat(format);
-		const SyncInfo				syncInfo	= getSyncInfo();
+		const SyncInfo				syncInfo	= getOutSyncInfo();
 
 		m_data.resize(static_cast<std::size_t>(size));
 		tcu::PixelBufferAccess imagePixels(texFormat, extent.width, extent.height, extent.depth, &m_data[0]);
@@ -2587,7 +3798,12 @@ public:
 		endRenderPass(vk, cmdBuffer);
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
 	{
 		SyncInfo syncInfo;
 		syncInfo.stageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
@@ -2621,6 +3837,11 @@ public:
 		return data;
 	}
 
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
+	}
+
 private:
 	OperationContext&		m_context;
 	Resource&				m_resource;
@@ -2640,7 +3861,12 @@ public:
 		DE_ASSERT(m_resourceDesc.type == RESOURCE_TYPE_IMAGE);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
 	{
 		switch (m_resourceDesc.imageAspect)
 		{
@@ -2664,6 +3890,12 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		return de::MovePtr<Operation>(new Implementation(context, resource));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 
 private:
@@ -2876,7 +4108,7 @@ public:
 		vk.cmdPipelineBarrier(cmdBuffer, m_pipelineStage, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0u, DE_NULL, 1u, &barrier, 0u, DE_NULL);
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -2887,9 +4119,19 @@ public:
 		return syncInfo;
 	}
 
+	SyncInfo getOutSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_hostBuffer, m_hostBufferSizeBytes);
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
 	}
 
 private:
@@ -2964,7 +4206,12 @@ public:
 		vk.cmdUpdateBuffer(cmdBuffer, m_resource.getBuffer().handle, m_resource.getBuffer().offset, m_resource.getBuffer().size, m_indirectData);
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
+	SyncInfo getOutSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -2983,6 +4230,11 @@ public:
 			reinterpret_cast<const deUint8*>(&m_expectedValue),	// const deUint8*	data;
 		};
 		return data;
+	}
+
+	void setData (const Data&)
+	{
+		DE_ASSERT(0);
 	}
 
 private:
@@ -3067,9 +4319,14 @@ public:
 		}
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
 	{
 		return VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
+	{
+		return 0;
 	}
 
 	VkQueueFlags getQueueFlags (const OperationContext& context) const
@@ -3081,6 +4338,12 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		return de::MovePtr<Operation>(new ReadImplementation(context, resource));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 
 private:
@@ -3097,7 +4360,12 @@ public:
 		DE_UNREF(resourceDesc);
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return 0;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
 	{
 		return VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	}
@@ -3111,6 +4379,12 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		return de::MovePtr<Operation>(new WriteImplementation(context, resource));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 };
 
@@ -3221,7 +4495,7 @@ public:
 		}
 	}
 
-	SyncInfo getSyncInfo (void) const
+	SyncInfo getInSyncInfo (void) const
 	{
 		const SyncInfo syncInfo =
 		{
@@ -3232,9 +4506,19 @@ public:
 		return syncInfo;
 	}
 
+	SyncInfo getOutSyncInfo (void) const
+	{
+		return emptySyncInfo;
+	}
+
 	Data getData (void) const
 	{
 		return getHostBufferData(m_context, *m_outputBuffer, m_resource.getBuffer().size);
+	}
+
+	void setData (const Data& data)
+	{
+		setHostBufferData(m_context, *m_outputBuffer, data);
 	}
 
 private:
@@ -3302,7 +4586,12 @@ public:
 		}
 	}
 
-	deUint32 getResourceUsageFlags (void) const
+	deUint32 getInResourceUsageFlags (void) const
+	{
+		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	}
+
+	deUint32 getOutResourceUsageFlags (void) const
 	{
 		return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 	}
@@ -3316,6 +4605,12 @@ public:
 	de::MovePtr<Operation> build (OperationContext& context, Resource& resource) const
 	{
 		return de::MovePtr<Operation>(new Implementation(context, resource));
+	}
+
+	de::MovePtr<Operation> build (OperationContext&, Resource&, Resource&) const
+	{
+		DE_ASSERT(0);
+		return de::MovePtr<Operation>();
 	}
 
 private:
@@ -3557,6 +4852,27 @@ bool isResourceSupported (const OperationName opName, const ResourceDescription&
 			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageType == VK_IMAGE_TYPE_2D
 				&& (resourceDesc.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) == 0;
 
+		case OPERATION_NAME_COPY_BUFFER:
+		case OPERATION_NAME_COPY_SSBO_VERTEX:
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_CONTROL:
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_COPY_SSBO_GEOMETRY:
+		case OPERATION_NAME_COPY_SSBO_FRAGMENT:
+		case OPERATION_NAME_COPY_SSBO_COMPUTE:
+		case OPERATION_NAME_COPY_SSBO_COMPUTE_INDIRECT:
+			return resourceDesc.type == RESOURCE_TYPE_BUFFER;
+
+		case OPERATION_NAME_COPY_IMAGE:
+		case OPERATION_NAME_BLIT_IMAGE:
+		case OPERATION_NAME_COPY_IMAGE_VERTEX:
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_CONTROL:
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_EVALUATION:
+		case OPERATION_NAME_COPY_IMAGE_GEOMETRY:
+		case OPERATION_NAME_COPY_IMAGE_FRAGMENT:
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE:
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE_INDIRECT:
+			return resourceDesc.type == RESOURCE_TYPE_IMAGE && resourceDesc.imageAspect == VK_IMAGE_ASPECT_COLOR_BIT;
+
 		default:
 			DE_ASSERT(0);
 			return false;
@@ -3630,6 +4946,23 @@ std::string getOperationName (const OperationName opName)
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DISPATCH:			return "read_indirect_buffer_dispatch";
 		case OPERATION_NAME_READ_VERTEX_INPUT:						return "read_vertex_input";
 
+		case OPERATION_NAME_COPY_BUFFER:							return "copy_buffer";
+		case OPERATION_NAME_COPY_IMAGE:								return "copy_image";
+		case OPERATION_NAME_BLIT_IMAGE:								return "blit_image";
+		case OPERATION_NAME_COPY_SSBO_VERTEX:						return "copy_buffer_vertex";
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_CONTROL:			return "copy_ssbo_tess_control";
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_EVALUATION:		return "copy_ssbo_tess_eval";
+		case OPERATION_NAME_COPY_SSBO_GEOMETRY:						return "copy_ssbo_geometry";
+		case OPERATION_NAME_COPY_SSBO_FRAGMENT:						return "copy_ssbo_fragment";
+		case OPERATION_NAME_COPY_SSBO_COMPUTE:						return "copy_ssbo_compute";
+		case OPERATION_NAME_COPY_SSBO_COMPUTE_INDIRECT:				return "copy_ssbo_compute_indirect";
+		case OPERATION_NAME_COPY_IMAGE_VERTEX:						return "copy_image_vertex";
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_CONTROL:		return "copy_image_tess_control";
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_EVALUATION:		return "copy_image_tess_eval";
+		case OPERATION_NAME_COPY_IMAGE_GEOMETRY:					return "copy_image_geometry";
+		case OPERATION_NAME_COPY_IMAGE_FRAGMENT:					return "copy_image_fragment";
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE:						return "copy_image_compute";
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE_INDIRECT:			return "copy_image_compute_indirect";
 		default:
 			DE_ASSERT(0);
 			return "";
@@ -3702,6 +5035,24 @@ de::MovePtr<OperationSupport> makeOperationSupport (const OperationName opName, 
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DRAW_INDEXED:		return de::MovePtr<OperationSupport>(new IndirectBuffer		::ReadSupport	(resourceDesc));
 		case OPERATION_NAME_READ_INDIRECT_BUFFER_DISPATCH:			return de::MovePtr<OperationSupport>(new IndirectBuffer		::ReadSupport	(resourceDesc));
 		case OPERATION_NAME_READ_VERTEX_INPUT:						return de::MovePtr<OperationSupport>(new VertexInput		::Support		(resourceDesc));
+
+		case OPERATION_NAME_COPY_BUFFER:							return de::MovePtr<OperationSupport>(new CopyBuffer			::CopySupport		(resourceDesc));
+		case OPERATION_NAME_COPY_IMAGE:								return de::MovePtr<OperationSupport>(new CopyBlitImage		::CopySupport		(resourceDesc, CopyBlitImage::TYPE_COPY));
+		case OPERATION_NAME_BLIT_IMAGE:								return de::MovePtr<OperationSupport>(new CopyBlitImage		::CopySupport		(resourceDesc, CopyBlitImage::TYPE_BLIT));
+		case OPERATION_NAME_COPY_SSBO_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_CONTROL:			return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_COPY_SSBO_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_COPY_SSBO_GEOMETRY:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_COPY_SSBO_FRAGMENT:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_COPY_SSBO_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_COPY_SSBO_COMPUTE_INDIRECT:				return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyBufferSupport	(resourceDesc, BUFFER_TYPE_STORAGE, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
+		case OPERATION_NAME_COPY_IMAGE_VERTEX:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_VERTEX_BIT));
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_CONTROL:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+		case OPERATION_NAME_COPY_IMAGE_TESSELLATION_EVALUATION:		return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+		case OPERATION_NAME_COPY_IMAGE_GEOMETRY:					return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_GEOMETRY_BIT));
+		case OPERATION_NAME_COPY_IMAGE_FRAGMENT:					return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_FRAGMENT_BIT));
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE:						return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_COMPUTE_BIT));
+		case OPERATION_NAME_COPY_IMAGE_COMPUTE_INDIRECT:			return de::MovePtr<OperationSupport>(new ShaderAccess		::CopyImageSupport	(resourceDesc, VK_SHADER_STAGE_COMPUTE_BIT, ShaderAccess::DISPATCH_CALL_DISPATCH_INDIRECT));
 
 		default:
 			DE_ASSERT(0);

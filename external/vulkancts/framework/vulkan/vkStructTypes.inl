@@ -2371,6 +2371,56 @@ struct VkPipelineExecutableInternalRepresentationKHR
 	void*			pData;
 };
 
+struct VkPhysicalDeviceTimelineSemaphoreFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		timelineSemaphore;
+};
+
+struct VkPhysicalDeviceTimelineSemaphorePropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	deUint64		maxTimelineSemaphoreValueDifference;
+};
+
+struct VkSemaphoreTypeCreateInfoKHR
+{
+	VkStructureType		sType;
+	const void*			pNext;
+	VkSemaphoreTypeKHR	semaphoreType;
+	deUint64			initialValue;
+};
+
+struct VkTimelineSemaphoreSubmitInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	deUint32		waitSemaphoreValueCount;
+	const deUint64*	pWaitSemaphoreValues;
+	deUint32		signalSemaphoreValueCount;
+	const deUint64*	pSignalSemaphoreValues;
+};
+
+struct VkSemaphoreWaitInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkSemaphoreWaitFlagsKHR	flags;
+	deUint32				semaphoreCount;
+	const VkSemaphore*		pSemaphores;
+	const deUint64*			pValues;
+};
+
+struct VkSemaphoreSignalInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkSemaphore		semaphore;
+	deUint64		value;
+};
+
 struct VkDebugReportCallbackCreateInfoEXT
 {
 	VkStructureType					sType;

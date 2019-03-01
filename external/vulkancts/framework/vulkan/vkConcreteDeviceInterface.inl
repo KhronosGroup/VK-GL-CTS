@@ -165,6 +165,9 @@ virtual void				cmdDrawIndexedIndirectCountKHR					(VkCommandBuffer commandBuffe
 virtual VkResult			getPipelineExecutablePropertiesKHR				(VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, deUint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const;
 virtual VkResult			getPipelineExecutableStatisticsKHR				(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const;
 virtual VkResult			getPipelineExecutableInternalRepresentationsKHR	(VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, deUint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const;
+virtual VkResult			getSemaphoreCounterValueKHR						(VkDevice device, VkSemaphore semaphore, deUint64* pValue) const;
+virtual VkResult			waitSemaphoresKHR								(VkDevice device, const VkSemaphoreWaitInfoKHR* pWaitInfo, deUint64 timeout) const;
+virtual VkResult			signalSemaphoreKHR								(VkDevice device, const VkSemaphoreSignalInfoKHR* pSignalInfo) const;
 virtual VkResult			debugMarkerSetObjectTagEXT						(VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const;
 virtual VkResult			debugMarkerSetObjectNameEXT						(VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const;
 virtual void				cmdDebugMarkerBeginEXT							(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const;

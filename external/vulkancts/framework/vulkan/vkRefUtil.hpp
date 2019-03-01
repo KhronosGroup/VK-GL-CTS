@@ -49,6 +49,13 @@ Move<VkSemaphore>		createSemaphore			(const DeviceInterface&			vk,
 												 VkSemaphoreCreateFlags			flags		= (VkSemaphoreCreateFlags)0,
 												 const VkAllocationCallbacks*	pAllocator	= DE_NULL);
 
+Move<VkSemaphore>		createSemaphoreType		(const DeviceInterface&			vk,
+												 VkDevice						device,
+												 VkSemaphoreTypeKHR				type,
+												 VkSemaphoreCreateFlags			flags			= (VkSemaphoreCreateFlags)0,
+												 const deUint64					initialValue	= 0,
+												 const VkAllocationCallbacks*	pAllocator		= DE_NULL);
+
 Move<VkFence>			createFence				(const DeviceInterface&			vk,
 												 VkDevice						device,
 												 VkFenceCreateFlags				flags		= (VkFenceCreateFlags)0,

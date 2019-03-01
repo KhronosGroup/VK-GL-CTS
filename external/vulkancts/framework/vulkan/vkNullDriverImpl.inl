@@ -1560,6 +1560,29 @@ VKAPI_ATTR VkResult VKAPI_CALL getPipelineExecutableInternalRepresentationsKHR (
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getSemaphoreCounterValueKHR (VkDevice device, VkSemaphore semaphore, deUint64* pValue)
+{
+	DE_UNREF(device);
+	DE_UNREF(semaphore);
+	DE_UNREF(pValue);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL waitSemaphoresKHR (VkDevice device, const VkSemaphoreWaitInfoKHR* pWaitInfo, deUint64 timeout)
+{
+	DE_UNREF(device);
+	DE_UNREF(pWaitInfo);
+	DE_UNREF(timeout);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL signalSemaphoreKHR (VkDevice device, const VkSemaphoreSignalInfoKHR* pSignalInfo)
+{
+	DE_UNREF(device);
+	DE_UNREF(pSignalInfo);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL debugReportMessageEXT (VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, deUint64 object, deUintptr location, deInt32 messageCode, const char* pLayerPrefix, const char* pMessage)
 {
 	DE_UNREF(instance);
@@ -2612,6 +2635,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutablePropertiesKHR,				getPipelineExecutablePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableStatisticsKHR,				getPipelineExecutableStatisticsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineExecutableInternalRepresentationsKHR,	getPipelineExecutableInternalRepresentationsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSemaphoreCounterValueKHR,						getSemaphoreCounterValueKHR),
+	VK_NULL_FUNC_ENTRY(vkWaitSemaphoresKHR,									waitSemaphoresKHR),
+	VK_NULL_FUNC_ENTRY(vkSignalSemaphoreKHR,								signalSemaphoreKHR),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectTagEXT,						debugMarkerSetObjectTagEXT),
 	VK_NULL_FUNC_ENTRY(vkDebugMarkerSetObjectNameEXT,						debugMarkerSetObjectNameEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerBeginEXT,							cmdDebugMarkerBeginEXT),

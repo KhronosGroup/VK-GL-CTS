@@ -468,6 +468,12 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXCLUSIVE_SCISSOR_FEATURES_NV = 1000205002,
     VK_STRUCTURE_TYPE_CHECKPOINT_DATA_NV = 1000206000,
     VK_STRUCTURE_TYPE_QUEUE_FAMILY_CHECKPOINT_PROPERTIES_NV = 1000206001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR = 1000207000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_PROPERTIES_KHR = 1000207001,
+    VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR = 1000207002,
+    VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR = 1000207003,
+    VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO_KHR = 1000207004,
+    VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR = 1000207005,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_FUNCTIONS2_FEATURES_INTEL = 1000209000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES_KHR = 1000211000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT = 1000212000,
@@ -6402,6 +6408,88 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetPipelineExecutableInternalRepresentationsKHR
     VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations);
 #endif
 
+
+#define VK_KHR_timeline_semaphore 1
+#define VK_KHR_TIMELINE_SEMAPHORE_SPEC_VERSION 2
+#define VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME "VK_KHR_timeline_semaphore"
+
+typedef enum VkSemaphoreTypeKHR {
+    VK_SEMAPHORE_TYPE_BINARY_KHR = 0,
+    VK_SEMAPHORE_TYPE_TIMELINE_KHR = 1,
+    VK_SEMAPHORE_TYPE_BEGIN_RANGE_KHR = VK_SEMAPHORE_TYPE_BINARY_KHR,
+    VK_SEMAPHORE_TYPE_END_RANGE_KHR = VK_SEMAPHORE_TYPE_TIMELINE_KHR,
+    VK_SEMAPHORE_TYPE_RANGE_SIZE_KHR = (VK_SEMAPHORE_TYPE_TIMELINE_KHR - VK_SEMAPHORE_TYPE_BINARY_KHR + 1),
+    VK_SEMAPHORE_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkSemaphoreTypeKHR;
+
+typedef enum VkSemaphoreWaitFlagBitsKHR {
+    VK_SEMAPHORE_WAIT_ANY_BIT_KHR = 0x00000001,
+    VK_SEMAPHORE_WAIT_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkSemaphoreWaitFlagBitsKHR;
+typedef VkFlags VkSemaphoreWaitFlagsKHR;
+typedef struct VkPhysicalDeviceTimelineSemaphoreFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           timelineSemaphore;
+} VkPhysicalDeviceTimelineSemaphoreFeaturesKHR;
+
+typedef struct VkPhysicalDeviceTimelineSemaphorePropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    deUint64           maxTimelineSemaphoreValueDifference;
+} VkPhysicalDeviceTimelineSemaphorePropertiesKHR;
+
+typedef struct VkSemaphoreTypeCreateInfoKHR {
+    VkStructureType       sType;
+    const void*           pNext;
+    VkSemaphoreTypeKHR    semaphoreType;
+    deUint64              initialValue;
+} VkSemaphoreTypeCreateInfoKHR;
+
+typedef struct VkTimelineSemaphoreSubmitInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    deUint32           waitSemaphoreValueCount;
+    const deUint64*    pWaitSemaphoreValues;
+    deUint32           signalSemaphoreValueCount;
+    const deUint64*    pSignalSemaphoreValues;
+} VkTimelineSemaphoreSubmitInfoKHR;
+
+typedef struct VkSemaphoreWaitInfoKHR {
+    VkStructureType            sType;
+    const void*                pNext;
+    VkSemaphoreWaitFlagsKHR    flags;
+    deUint32                   semaphoreCount;
+    const VkSemaphore*         pSemaphores;
+    const deUint64*            pValues;
+} VkSemaphoreWaitInfoKHR;
+
+typedef struct VkSemaphoreSignalInfoKHR {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkSemaphore        semaphore;
+    deUint64           value;
+} VkSemaphoreSignalInfoKHR;
+
+typedef VkResult (VKAPI_PTR *PFN_vkGetSemaphoreCounterValueKHR)(VkDevice device, VkSemaphore semaphore, deUint64* pValue);
+typedef VkResult (VKAPI_PTR *PFN_vkWaitSemaphoresKHR)(VkDevice device, const VkSemaphoreWaitInfoKHR* pWaitInfo, deUint64 timeout);
+typedef VkResult (VKAPI_PTR *PFN_vkSignalSemaphoreKHR)(VkDevice device, const VkSemaphoreSignalInfoKHR* pSignalInfo);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkGetSemaphoreCounterValueKHR(
+    VkDevice                                    device,
+    VkSemaphore                                 semaphore,
+    deUint64*                                   pValue);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkWaitSemaphoresKHR(
+    VkDevice                                    device,
+    const VkSemaphoreWaitInfoKHR*               pWaitInfo,
+    deUint64                                    timeout);
+
+VKAPI_ATTR VkResult VKAPI_CALL vkSignalSemaphoreKHR(
+    VkDevice                                    device,
+    const VkSemaphoreSignalInfoKHR*             pSignalInfo);
+#endif
 
 
 #define VK_EXT_debug_report 1
