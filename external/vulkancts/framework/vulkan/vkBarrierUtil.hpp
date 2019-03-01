@@ -33,7 +33,9 @@ VkBufferMemoryBarrier makeBufferMemoryBarrier (const VkAccessFlags	srcAccessMask
 											   const VkAccessFlags	dstAccessMask,
 											   const VkBuffer		buffer,
 											   const VkDeviceSize	offset,
-											   const VkDeviceSize	bufferSizeBytes);
+											   const VkDeviceSize	bufferSizeBytes,
+											   const deUint32		srcQueueFamilyIndex		= VK_QUEUE_FAMILY_IGNORED,
+											   const deUint32		destQueueFamilyIndex	= VK_QUEUE_FAMILY_IGNORED);
 
 
 VkImageMemoryBarrier makeImageMemoryBarrier (const VkAccessFlags			srcAccessMask,

@@ -2706,6 +2706,7 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	VkPhysicalDeviceBufferDeviceAddressFeaturesEXT	deviceBufferDeviceAddressFeaturesEXT[count];
 	VkPhysicalDeviceBufferDeviceAddressFeatures		deviceBufferDeviceAddressFeatures[count];
 	VkPhysicalDeviceDescriptorIndexingFeatures		deviceDescriptorIndexingFeatures[count];
+	VkPhysicalDeviceTimelineSemaphoreFeatures		timelineSemaphoreFeatures[count];
 
 	for (int ndx = 0; ndx < count; ++ndx)
 	{
@@ -2764,7 +2765,10 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 		deviceBufferDeviceAddressFeaturesEXT[ndx].pNext	= &deviceDescriptorIndexingFeatures[ndx];
 
 		deviceDescriptorIndexingFeatures[ndx].sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-		deviceDescriptorIndexingFeatures[ndx].pNext		= DE_NULL;
+		deviceDescriptorIndexingFeatures[ndx].pNext		= &timelineSemaphoreFeatures[ndx];
+
+		timelineSemaphoreFeatures[ndx].sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
+		timelineSemaphoreFeatures[ndx].pNext			= DE_NULL;
 
 		deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
 		extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;

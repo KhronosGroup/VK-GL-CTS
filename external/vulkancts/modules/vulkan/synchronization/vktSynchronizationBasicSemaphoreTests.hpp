@@ -31,7 +31,8 @@ namespace vkt
 namespace synchronization
 {
 
-tcu::TestCaseGroup*		createBasicSemaphoreTests	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createBasicBinarySemaphoreTests		(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*		createBasicTimelineSemaphoreTests	(tcu::TestContext& testCtx);
 
 } //synchronization
 } // vkt
