@@ -315,7 +315,9 @@ PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/spirv-tools.git",
 		"git@gitlab.khronos.org:spirv/spirv-tools.git",
-		"ab5b9257b69e3e6f3e87d99857af62e3f7191331",
+		# Preliminary support for SPIR-V 1.4,
+                # VK_KHR_uniform_buffer_standard_layout
+		"4d8991f7c1bd1bcc285538f68d9b9fed31131240",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
@@ -326,7 +328,8 @@ PACKAGES = [
 	GitRepo(
 		"https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
 		"git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-		"79b6681aadcb53c27d1052e5f8a0e82a981dbf2f",
+		# Preliminary support for SPIR-V 1.4
+		"e9b9ab4f05a178a5ad1cf3ae0849aaa32de8e0a4",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/Igalia/vkrunner.git",

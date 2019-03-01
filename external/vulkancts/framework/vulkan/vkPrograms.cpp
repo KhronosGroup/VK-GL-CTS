@@ -889,7 +889,7 @@ vk::SpirvVersion getBaselineSpirvVersion (const deUint32 /* vulkanVersion */)
 	return vk::SPIRV_VERSION_1_0;
 }
 
-// Max supported versions for each vulkan version
+// Max supported versions for each vulkan version, without requiring a Vulkan extension.
 vk::SpirvVersion getMaxSpirvVersionForAsm (const deUint32 vulkanVersion)
 {
 	vk::SpirvVersion	result			= vk::SPIRV_VERSION_LAST;
@@ -922,7 +922,7 @@ vk::SpirvVersion getMaxSpirvVersionForGlsl (const deUint32 vulkanVersion)
 
 SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
 {
-	DE_STATIC_ASSERT(SPIRV_VERSION_1_3 + 1 == SPIRV_VERSION_LAST);
+	DE_STATIC_ASSERT(SPIRV_VERSION_1_4 + 1 == SPIRV_VERSION_LAST);
 
 	if (binary.getFormat() != PROGRAM_FORMAT_SPIRV)
 		TCU_THROW(InternalError, "Binary is not in SPIR-V format");
@@ -934,6 +934,7 @@ SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
 	const deUint32				spirvBinaryVersion11	= 0x00010100;
 	const deUint32				spirvBinaryVersion12	= 0x00010200;
 	const deUint32				spirvBinaryVersion13	= 0x00010300;
+	const deUint32				spirvBinaryVersion14	= 0x00010400;
 	const SpirvBinaryHeader*	header					= reinterpret_cast<const SpirvBinaryHeader*>(binary.getBinary());
 	const deUint32				spirvVersion			= isNativeSpirVBinaryEndianness()
 														? header->version
@@ -946,6 +947,7 @@ SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
 		case spirvBinaryVersion11:	result = SPIRV_VERSION_1_1; break; //!< SPIR-V 1.1
 		case spirvBinaryVersion12:	result = SPIRV_VERSION_1_2; break; //!< SPIR-V 1.2
 		case spirvBinaryVersion13:	result = SPIRV_VERSION_1_3; break; //!< SPIR-V 1.3
+		case spirvBinaryVersion14:	result = SPIRV_VERSION_1_4; break; //!< SPIR-V 1.4
 		default:					TCU_THROW(InternalError, "Unknown SPIR-V version detected in binary");
 	}
 
@@ -954,7 +956,7 @@ SpirvVersion extractSpirvVersion (const ProgramBinary& binary)
 
 std::string getSpirvVersionName (const SpirvVersion spirvVersion)
 {
-	DE_STATIC_ASSERT(SPIRV_VERSION_1_3 + 1 == SPIRV_VERSION_LAST);
+	DE_STATIC_ASSERT(SPIRV_VERSION_1_4 + 1 == SPIRV_VERSION_LAST);
 	DE_ASSERT(spirvVersion < SPIRV_VERSION_LAST);
 
 	std::string result;
@@ -965,6 +967,7 @@ std::string getSpirvVersionName (const SpirvVersion spirvVersion)
 		case SPIRV_VERSION_1_1: result = "1.1"; break; //!< SPIR-V 1.1
 		case SPIRV_VERSION_1_2: result = "1.2"; break; //!< SPIR-V 1.2
 		case SPIRV_VERSION_1_3: result = "1.3"; break; //!< SPIR-V 1.3
+		case SPIRV_VERSION_1_4: result = "1.4"; break; //!< SPIR-V 1.4
 		default:				result = "Unknown";
 	}
 

@@ -579,7 +579,7 @@ void registerOptions (de::cmdline::Parser& parser)
 		{ "1.1",	VK_MAKE_VERSION(1, 1, 0)	},
 	};
 
-	DE_STATIC_ASSERT(vk::SPIRV_VERSION_1_3 + 1 == vk::SPIRV_VERSION_LAST);
+	DE_STATIC_ASSERT(vk::SPIRV_VERSION_1_4 + 1 == vk::SPIRV_VERSION_LAST);
 
 	parser << Option<opt::DstPath>("d", "dst-path", "Destination path", "out")
 		<< Option<opt::Cases>("n", "deqp-case", "Case path filter (works as in test binaries)")
