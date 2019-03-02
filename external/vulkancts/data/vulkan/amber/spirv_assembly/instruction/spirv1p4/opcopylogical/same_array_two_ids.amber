@@ -1,0 +1,58 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; Tests copy of same structural array given two IDs.
+
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %in_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct1 Block
+OpMemberDecorate %struct1 0 Offset 0
+OpDecorate %struct2 Block
+OpMemberDecorate %struct2 0 Offset 0
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+OpDecorate %float_array1 ArrayStride 4
+OpDecorate %float_array2 ArrayStride 4
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_32 = OpConstant %uint 32
+
+%float_array1 = OpTypeArray %float %uint_32
+%ptr_float_array1 = OpTypePointer StorageBuffer %float_array1
+%struct1 = OpTypeStruct %float_array1
+%ptr_struct1 = OpTypePointer StorageBuffer %struct1
+
+%float_array2 = OpTypeArray %float %uint_32
+%ptr_float_array2 = OpTypePointer StorageBuffer %float_array2
+%struct2 = OpTypeStruct %float_array2
+%ptr_struct2 = OpTypePointer StorageBuffer %struct2
+
+%in_var = OpVariable %ptr_struct1 StorageBuffer
+%out_var = OpVariable %ptr_struct2 StorageBuffer
+
+%func_ty = OpTypeFunction %void
+%main = OpFunction %void None %func_ty
+%1 = OpLabel
+%in_gep = OpAccessChain %ptr_float_array1 %in_var %uint_0
+%in_array = OpLoad %float_array1 %in_gep
+%copy = OpCopyLogical %float_array2 %in_array
+%out_gep = OpAccessChain %ptr_float_array2 %out_var %uint_0
+OpStore %out_gep %copy
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata float 0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0
+ssbo 0:1 128
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo float 0:1 0 == 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0 11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0 20.0 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0 31.0 32.0
