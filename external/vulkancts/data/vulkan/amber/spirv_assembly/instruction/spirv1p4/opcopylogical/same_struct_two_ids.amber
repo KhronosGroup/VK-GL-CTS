@@ -1,0 +1,53 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; Tests copying same structural struct with different IDs.
+
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %in_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct1 Block
+OpMemberDecorate %struct1 0 Offset 0
+OpMemberDecorate %struct1 1 Offset 4
+OpMemberDecorate %struct1 2 Offset 8
+OpMemberDecorate %struct1 3 Offset 12
+OpDecorate %struct2 BufferBlock
+OpMemberDecorate %struct2 0 Offset 0
+OpMemberDecorate %struct2 1 Offset 4
+OpMemberDecorate %struct2 2 Offset 8
+OpMemberDecorate %struct2 3 Offset 12
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+
+%struct1 = OpTypeStruct %int %int %int %int
+%ptr_struct1 = OpTypePointer Uniform %struct1
+
+%struct2 = OpTypeStruct %int %int %int %int
+%ptr_struct2 = OpTypePointer Uniform %struct2
+
+%in_var = OpVariable %ptr_struct1 Uniform
+%out_var = OpVariable %ptr_struct2 Uniform
+
+%func_ty = OpTypeFunction %void
+%main = OpFunction %void None %func_ty
+%1 = OpLabel
+%in_struct = OpLoad %struct1 %in_var
+%copy = OpCopyLogical %struct2 %in_struct
+OpStore %out_var %copy
+OpReturn
+OpFunctionEnd
+
+[test]
+uniform ubo 0:0 uvec4 0 1 2 3 4
+ssbo 0:1 subdata uvec4 0 8 8 8 8
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uvec4 0:1 0 == 1 2 3 4

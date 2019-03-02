@@ -1,0 +1,77 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; Tests copying nested arrays with differing outer array strides.
+
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %in_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct_stride_4 Block
+OpMemberDecorate %struct_stride_4 0 Offset 0
+OpDecorate %struct_stride_8 Block
+OpMemberDecorate %struct_stride_8 0 Offset 0
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+OpDecorate %float_array_32_stride_4 ArrayStride 4
+OpDecorate %float_array_32_stride_8 ArrayStride 4 ;; for ease this ID is odd
+OpDecorate %array_array_stride_4 ArrayStride 128
+OpDecorate %array_array_stride_8 ArrayStride 256
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%uint = OpTypeInt 32 0
+%uint_0 = OpConstant %uint 0
+%uint_8 = OpConstant %uint 8
+%uint_32 = OpConstant %uint 32
+
+%float_array_32_stride_4 = OpTypeArray %float %uint_32
+%array_array_stride_4 = OpTypeArray %float_array_32_stride_4 %uint_8
+%ptr_array_array_stride_4 = OpTypePointer StorageBuffer %array_array_stride_4
+%struct_stride_4 = OpTypeStruct %array_array_stride_4
+%ptr_struct_stride_4 = OpTypePointer StorageBuffer %struct_stride_4
+
+%float_array_32_stride_8 = OpTypeArray %float %uint_32
+%array_array_stride_8 = OpTypeArray %float_array_32_stride_4 %uint_8
+%ptr_array_array_stride_8 = OpTypePointer StorageBuffer %array_array_stride_8
+%struct_stride_8 = OpTypeStruct %array_array_stride_8
+%ptr_struct_stride_8 = OpTypePointer StorageBuffer %struct_stride_8
+
+%in_var = OpVariable %ptr_struct_stride_4 StorageBuffer
+%out_var = OpVariable %ptr_struct_stride_8 StorageBuffer
+
+%func_ty = OpTypeFunction %void
+%main = OpFunction %void None %func_ty
+%1 = OpLabel
+%in_gep = OpAccessChain %ptr_array_array_stride_4 %in_var %uint_0
+%in_array = OpLoad %array_array_stride_4 %in_gep
+%copy = OpCopyLogical %array_array_stride_8 %in_array
+%out_gep = OpAccessChain %ptr_array_array_stride_8 %out_var %uint_0
+OpStore %out_gep %copy
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata float 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+ssbo 0:0 subdata float 128 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+ssbo 0:0 subdata float 256 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+ssbo 0:0 subdata float 384 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+ssbo 0:0 subdata float 512 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+ssbo 0:0 subdata float 640 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+ssbo 0:0 subdata float 768 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+ssbo 0:0 subdata float 896 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+ssbo 0:1 2048
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo float 0:1 0 == 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+probe ssbo float 0:1 256 == 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+probe ssbo float 0:1 512 == 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+probe ssbo float 0:1 768 == 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+probe ssbo float 0:1 1024 == 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+probe ssbo float 0:1 1280 == 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+probe ssbo float 0:1 1536 == 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
+probe ssbo float 0:1 1792 == 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32

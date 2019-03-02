@@ -22,15 +22,12 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestGroupUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 namespace vkt
 {
 namespace cts_amber
 {
-
-class AmberTestCase : public tcu::TestNode
-{
-};
 
 AmberTestCase* createAmberTestCase (tcu::TestContext&	testCtx,
 									const char*			name,

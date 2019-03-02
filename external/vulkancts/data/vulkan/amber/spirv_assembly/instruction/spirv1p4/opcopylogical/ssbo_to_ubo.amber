@@ -1,0 +1,94 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; Tests converting from SSBO layout to UBO layout.
+
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %in_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %struct1 Block
+OpMemberDecorate %struct1 0 Offset 0
+OpMemberDecorate %struct1 1 Offset 16
+OpMemberDecorate %struct1 2 Offset 48
+OpMemberDecorate %struct1 3 Offset 64
+OpMemberDecorate %struct1 4 Offset 80
+OpMemberDecorate %struct1 5 Offset 96
+OpMemberDecorate %struct1 6 Offset 112
+
+OpDecorate %struct2 Block
+OpMemberDecorate %struct2 0 Offset 0
+OpMemberDecorate %struct2 1 Offset 4
+OpMemberDecorate %struct2 2 Offset 12
+OpMemberDecorate %struct2 3 Offset 16
+OpMemberDecorate %struct2 4 Offset 32
+OpMemberDecorate %struct2 5 Offset 48
+OpMemberDecorate %struct2 6 Offset 64
+
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+
+OpDecorate %int_array_2_stride_4 ArrayStride 4
+OpDecorate %int_array_2_stride_16 ArrayStride 16
+OpMemberDecorate %int_struct1 0 Offset 4
+OpMemberDecorate %int_struct2 0 Offset 8
+
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float2 = OpTypeVector %float 2
+%float3 = OpTypeVector %float 3
+%float4 = OpTypeVector %float 4
+%matrix = OpTypeMatrix %float4 4
+%int = OpTypeInt 32 0
+%int_2 = OpConstant %int 2
+%int_array_2_stride_4 = OpTypeArray %int %int_2
+%int_array_2_stride_16 = OpTypeArray %int %int_2
+%int_struct1 = OpTypeStruct %int
+%int_struct2 = OpTypeStruct %int
+
+%struct1 = OpTypeStruct %int %int_array_2_stride_16 %int %int_struct1 %float4 %float3 %float2
+%ptr_struct1 = OpTypePointer StorageBuffer %struct1
+
+%struct2 = OpTypeStruct %int %int_array_2_stride_4 %int %int_struct2 %float4 %float3 %float2
+%ptr_struct2 = OpTypePointer StorageBuffer %struct2
+
+%in_var = OpVariable %ptr_struct2 StorageBuffer
+%out_var = OpVariable %ptr_struct1 StorageBuffer
+
+%func_ty = OpTypeFunction %void
+%main = OpFunction %void None %func_ty
+%1 = OpLabel
+%in_struct = OpLoad %struct2 %in_var
+%copy = OpCopyLogical %struct1 %in_struct
+OpStore %out_var %copy
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata uint 0 1
+ssbo 0:0 subdata uint 4 2 3
+ssbo 0:0 subdata uint 12 4
+ssbo 0:0 subdata uint 24 5
+# Really vec4
+ssbo 0:0 subdata uint 32 6 7 8 9
+# Really vec3
+ssbo 0:0 subdata uint 48 10 11 12
+# Really vec2
+ssbo 0:0 subdata uint 64 13 14
+ssbo 0:1 128
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uint 0:1 0 == 1
+probe ssbo uint 0:1 16 == 2
+probe ssbo uint 0:1 32 == 3
+probe ssbo uint 0:1 48 == 4
+probe ssbo uint 0:1 68 == 5
+probe ssbo uint 0:1 80 == 6 7 8 9
+probe ssbo uint 0:1 96 == 10 11 12
+probe ssbo uint 0:1 112 == 13 14

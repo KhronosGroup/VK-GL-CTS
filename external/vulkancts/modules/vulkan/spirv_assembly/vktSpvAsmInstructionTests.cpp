@@ -65,6 +65,7 @@
 #include "vktSpvAsmVariablePointersTests.hpp"
 #include "vktSpvAsmVariableInitTests.hpp"
 #include "vktSpvAsmPointerParameterTests.hpp"
+#include "vktSpvAsmSpirvVersion1p4Tests.hpp"
 #include "vktSpvAsmSpirvVersionTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktSpvAsmLoopDepLenTests.hpp"
@@ -18514,6 +18515,7 @@ tcu::TestCaseGroup* createInstructionTests (tcu::TestContext& testCtx)
 
 	instructionTests->addChild(computeTests.release());
 	instructionTests->addChild(graphicsTests.release());
+	instructionTests->addChild(createSpirvVersion1p4Group(testCtx));
 
 	return instructionTests.release();
 }

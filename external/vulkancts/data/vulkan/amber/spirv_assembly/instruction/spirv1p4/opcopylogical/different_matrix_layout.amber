@@ -1,0 +1,59 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; Tests copying column major to row major matrix.
+
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %in_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+OpDecorate %struct1 Block
+OpMemberDecorate %struct1 0 Offset 0
+OpMemberDecorate %struct1 0 ColMajor
+OpMemberDecorate %struct1 0 MatrixStride 16
+OpDecorate %struct2 Block
+OpMemberDecorate %struct2 0 Offset 0
+OpMemberDecorate %struct2 0 RowMajor
+OpMemberDecorate %struct2 0 MatrixStride 16
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+%void = OpTypeVoid
+%float = OpTypeFloat 32
+%float4 = OpTypeVector %float 4
+%matrix = OpTypeMatrix %float4 4
+
+%struct1 = OpTypeStruct %matrix
+%ptr_struct1 = OpTypePointer StorageBuffer %struct1
+
+%struct2 = OpTypeStruct %matrix
+%ptr_struct2 = OpTypePointer StorageBuffer %struct2
+
+%in_var = OpVariable %ptr_struct1 StorageBuffer
+%out_var = OpVariable %ptr_struct2 StorageBuffer
+
+%func_ty = OpTypeFunction %void
+%main = OpFunction %void None %func_ty
+%1 = OpLabel
+%in_struct = OpLoad %struct1 %in_var
+%copy = OpCopyLogical %struct2 %in_struct
+OpStore %out_var %copy
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 subdata vec4 0 1 2 3 4
+ssbo 0:0 subdata vec4 16 5 6 7 8
+ssbo 0:0 subdata vec4 32 9 10 11 12
+ssbo 0:0 subdata vec4 48 13 14 15 16
+ssbo 0:1 64
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo vec4 0:1 0 == 1 5 9 13
+probe ssbo vec4 0:1 16 == 2 6 10 14
+probe ssbo vec4 0:1 32 == 3 7 11 15
+probe ssbo vec4 0:1 48 == 4 8 12 16
