@@ -1286,10 +1286,12 @@ string generateComputeShader (const glw::Functions& gl, glu::GLSLVersion glslVer
 {
 	std::ostringstream src;
 	glw::GLint maxShaderStorageBufferBindings;
+	glw::GLint maxComputeShaderStorageBlocks;
 
 	DE_ASSERT(glslVersion == glu::GLSL_VERSION_310_ES || glslVersion == glu::GLSL_VERSION_430);
 
 	gl.getIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &maxShaderStorageBufferBindings);
+	gl.getIntegerv(GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS, &maxComputeShaderStorageBlocks);
 
 	src << glu::getGLSLVersionDeclaration(glslVersion) << "\n";
 	src << "layout(local_size_x = 1) in;\n";
@@ -1314,6 +1316,10 @@ string generateComputeShader (const glw::Functions& gl, glu::GLSLVersion glslVer
 		if (bindingPoint > maxShaderStorageBufferBindings)
 		{
 			throw tcu::NotSupportedError("Test requires support for more SSBO bindings than implementation exposes");
+		}
+		if (bindingPoint > maxComputeShaderStorageBlocks)
+		{
+			throw tcu::NotSupportedError("Test requires support for more compute shader storage blocks than implementation exposes");
 		}
 	}
 
