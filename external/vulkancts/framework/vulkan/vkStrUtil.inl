@@ -527,6 +527,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDriverPropertie
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloatControlsPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassDescriptionDepthStencilResolveKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthStencilResolvePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSurfaceProtectedCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);

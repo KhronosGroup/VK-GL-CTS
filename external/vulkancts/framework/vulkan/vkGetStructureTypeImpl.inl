@@ -866,6 +866,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDepthStencilResolveP
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkSurfaceProtectedCapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
