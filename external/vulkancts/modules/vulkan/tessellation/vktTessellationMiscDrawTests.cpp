@@ -153,9 +153,9 @@ tcu::TestStatus runTest (Context& context, const CaseDefinition caseDef)
 
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();
-		deMemcpy(alloc.getHostPtr(), &vertexData[0], static_cast<std::size_t>(vertexDataSizeBytes));
 
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+		deMemcpy(alloc.getHostPtr(), &vertexData[0], static_cast<std::size_t>(vertexDataSizeBytes));
+		flushAlloc(vk, device, alloc);
 		// No barrier needed, flushed memory is automatically visible
 	}
 
@@ -228,10 +228,11 @@ tcu::TestStatus runTest (Context& context, const CaseDefinition caseDef)
 
 		// Upload tessellation levels data to the input buffer
 		{
-			const Allocation& alloc = tessLevelsBuffer.getAllocation();
-			TessLevels* const bufferTessLevels = static_cast<TessLevels*>(alloc.getHostPtr());
+			const Allocation& alloc				= tessLevelsBuffer.getAllocation();
+			TessLevels* const bufferTessLevels	= static_cast<TessLevels*>(alloc.getHostPtr());
+
 			*bufferTessLevels = tessLevelCases[tessLevelCaseNdx];
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeof(TessLevels));
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Reset the command buffer and begin recording.
@@ -278,15 +279,17 @@ tcu::TestStatus runTest (Context& context, const CaseDefinition caseDef)
 		submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 		{
-			const Allocation& colorBufferAlloc = colorBuffer.getAllocation();
-			invalidateMappedMemoryRange(vk, device, colorBufferAlloc.getMemory(), colorBufferAlloc.getOffset(), colorBufferSizeBytes);
+			const Allocation&	colorBufferAlloc	= colorBuffer.getAllocation();
+
+			invalidateAlloc(vk, device, colorBufferAlloc);
 
 			// Verify case result
 			const tcu::ConstPixelBufferAccess resultImageAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
 
 			// Load reference image
-			const std::string referenceImagePath = caseDef.referenceImagePathPrefix + "_" + de::toString(tessLevelCaseNdx) + ".png";
-			tcu::TextureLevel referenceImage;
+			const std::string	referenceImagePath	= caseDef.referenceImagePathPrefix + "_" + de::toString(tessLevelCaseNdx) + ".png";
+
+			tcu::TextureLevel	referenceImage;
 			tcu::ImageIO::loadPNG(referenceImage, context.getTestContext().getArchive(), referenceImagePath.c_str());
 
 			if (tcu::fuzzyCompare(context.getTestContext().getLog(), "ImageComparison", "Image Comparison",

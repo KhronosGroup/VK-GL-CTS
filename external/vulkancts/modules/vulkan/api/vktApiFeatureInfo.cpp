@@ -2388,8 +2388,10 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 	{
 		flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
 
-		if (type == VK_IMAGE_TYPE_2D)
+		if (type == VK_IMAGE_TYPE_2D && !isYCbCrFormat(format))
+		{
 			flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		}
 	}
 
 	if (isYCbCrFormat(format) && getPlaneCount(format) > 1)

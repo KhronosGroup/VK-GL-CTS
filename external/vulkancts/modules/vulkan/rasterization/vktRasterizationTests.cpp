@@ -1207,6 +1207,173 @@ void PointTestInstance::generatePoints (int iteration, std::vector<tcu::Vec4>& o
 }
 
 template <typename ConcreteTestInstance>
+class PointSizeTestCase : public BaseRenderingTestCase
+{
+public:
+							PointSizeTestCase	(tcu::TestContext&		context,
+												 std::string&			name,
+												 std::string&			description,
+												 deUint32				renderSize,
+												 float					pointSize,
+												 VkSampleCountFlagBits	sampleCount = VK_SAMPLE_COUNT_1_BIT)
+								: BaseRenderingTestCase (context, name, description, sampleCount)
+								, m_pointSize	(pointSize)
+								, m_renderSize	(renderSize)
+							{}
+
+	virtual TestInstance*	createInstance		(Context& context) const
+							{
+								VkPhysicalDeviceProperties	properties	(context.getDeviceProperties());
+								VkPhysicalDeviceFeatures	features	(context.getDeviceFeatures());
+
+								if (!features.largePoints)
+									TCU_THROW(NotSupportedError , "largePoints feature required");
+
+								if (m_renderSize > properties.limits.maxViewportDimensions[0] || m_renderSize > properties.limits.maxViewportDimensions[1])
+									TCU_THROW(NotSupportedError , "Viewport dimensions not supported");
+
+								if (m_renderSize > properties.limits.maxFramebufferWidth || m_renderSize > properties.limits.maxFramebufferHeight)
+									TCU_THROW(NotSupportedError , "Framebuffer width/height not supported");
+
+								return new ConcreteTestInstance(context, m_renderSize, m_pointSize);
+							}
+protected:
+	const float				m_pointSize;
+	const deUint32			m_renderSize;
+};
+
+class PointSizeTestInstance : public BaseRenderingTestInstance
+{
+public:
+							PointSizeTestInstance	(Context& context, deUint32 renderSize, float pointSize);
+	virtual tcu::TestStatus	iterate					(void);
+	virtual float			getPointSize			(void) const;
+
+private:
+	void					generatePointData		(std::vector<tcu::Vec4>& outData, std::vector<PointSceneSpec::ScenePoint>& outPoints);
+	bool					verifyPoint				(tcu::TestLog& log, tcu::Surface image, float pointSize);
+	bool					isPointSizeClamped		(float pointSize, float maxPointSizeLimit);
+
+	const float				m_pointSize;
+	const float				m_maxPointSize;
+	const deUint32			m_renderSize;
+};
+
+PointSizeTestInstance::PointSizeTestInstance (Context& context, deUint32 renderSize, float pointSize)
+	: BaseRenderingTestInstance	(context, vk::VK_SAMPLE_COUNT_1_BIT, renderSize)
+	, m_pointSize				(pointSize)
+	, m_maxPointSize			(context.getDeviceProperties().limits.pointSizeRange[1])
+	, m_renderSize				(renderSize)
+{
+}
+
+tcu::TestStatus PointSizeTestInstance::iterate (void)
+{
+	tcu::Surface							resultImage (m_renderSize, m_renderSize);
+	std::vector<tcu::Vec4>					drawBuffer;
+	std::vector<PointSceneSpec::ScenePoint>	points;
+
+	// Generate data
+	generatePointData(drawBuffer, points);
+
+	// Draw image
+	drawPrimitives(resultImage, drawBuffer, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+
+	// Compare
+	{
+		// pointSize must either be specified pointSize or clamped to device limit pointSizeRange[1]
+		const float	pointSize	(deFloatMin(m_pointSize, m_maxPointSize));
+		const bool	compareOk	(verifyPoint(m_context.getTestContext().getLog(), resultImage, pointSize));
+
+		// Result
+		if (compareOk)
+			return isPointSizeClamped(pointSize, m_maxPointSize) ? tcu::TestStatus::pass("Pass, pointSize clamped to pointSizeRange[1]") : tcu::TestStatus::pass("Pass");
+		else
+			return tcu::TestStatus::fail("Incorrect rasterization");
+	}
+}
+
+float PointSizeTestInstance::getPointSize (void) const
+{
+	return m_pointSize;
+}
+
+void PointSizeTestInstance::generatePointData (std::vector<tcu::Vec4>& outData, std::vector<PointSceneSpec::ScenePoint>& outPoints)
+{
+	const tcu::PointSceneSpec::ScenePoint point =
+	{
+		tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f),	// position
+		tcu::Vec4(1.0f),					// color
+		m_pointSize							// pointSize
+	};
+
+	outData.push_back(point.position);
+	outPoints.push_back(point);
+
+	// log
+	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Point position: "	<< de::toString(point.position)		<< tcu::TestLog::EndMessage;
+	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Point color: "		<< de::toString(point.color)		<< tcu::TestLog::EndMessage;
+	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Point size: "		<< de::toString(point.pointSize)	<< tcu::TestLog::EndMessage;
+	m_context.getTestContext().getLog() << tcu::TestLog::Message << "Render size: "		<< de::toString(m_renderSize)		<< tcu::TestLog::EndMessage;
+}
+
+bool PointSizeTestInstance::verifyPoint (tcu::TestLog& log, tcu::Surface image, float pointSize)
+{
+	deUint32	pointWidth						(0u);
+	deUint32	pointHeight						(0u);
+	bool		incorrectlyColoredPixelsFound	(false);
+	bool		isOk							(true);
+
+	// Verify rasterized point width and color
+	for (size_t x = 0; x < (deUint32)image.getWidth(); x++)
+	{
+		tcu::Vec4 pixelColor = image.getAccess().getPixel((deUint32)x, image.getHeight() / 2);
+
+		if (pixelColor == tcu::Vec4(1.0f))
+			pointWidth++;
+
+		if ((pixelColor != tcu::Vec4(1.0f)) && (pixelColor != tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)))
+			incorrectlyColoredPixelsFound = true;
+	}
+
+	// Verify rasterized point height and color
+	for (size_t y = 0; y < (deUint32)image.getHeight(); y++)
+	{
+		tcu::Vec4 pixelColor = image.getAccess().getPixel((deUint32)y, image.getWidth() / 2);
+
+		if (pixelColor == tcu::Vec4(1.0f))
+			pointHeight++;
+
+		if ((pixelColor != tcu::Vec4(1.0f)) && (pixelColor != tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)))
+			incorrectlyColoredPixelsFound = true;
+	}
+
+	// Compare amount of rasterized point pixels to expected pointSize.
+	if ((pointWidth != (deUint32)deRoundFloatToInt32(pointSize)) || (pointHeight != (deUint32)deRoundFloatToInt32(pointSize)))
+	{
+		log << tcu::TestLog::Message << "Incorrect point size. Expected pointSize: " << de::toString(pointSize)
+			<< ". Rasterized point width: " << pointWidth << " pixels, height: "
+			<< pointHeight << " pixels." << tcu::TestLog::EndMessage;
+
+		isOk = false;
+	}
+
+	// Check incorrectly colored pixels
+	if (incorrectlyColoredPixelsFound)
+	{
+		log << tcu::TestLog::Message << "Incorrectly colored pixels found." << tcu::TestLog::EndMessage;
+		isOk = false;
+	}
+
+	return isOk;
+}
+
+bool PointSizeTestInstance::isPointSizeClamped (float pointSize, float maxPointSizeLimit)
+{
+	return (pointSize == maxPointSizeLimit);
+}
+
+template <typename ConcreteTestInstance>
 class BaseTestCase : public BaseRenderingTestCase
 {
 public:
@@ -3142,6 +3309,44 @@ void createRasterizationTests (tcu::TestCaseGroup* rasterizationTests)
 		primitives->addChild(new WidenessTestCase<LinesTestInstance>		(testCtx, "lines_wide",			"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_LIST with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE));
 		primitives->addChild(new WidenessTestCase<LineStripTestInstance>	(testCtx, "line_strip_wide",	"Render primitives as VK_PRIMITIVE_TOPOLOGY_LINE_STRIP with wide lines, verify rasterization result",		PRIMITIVEWIDENESS_WIDE));
 		primitives->addChild(new WidenessTestCase<PointTestInstance>		(testCtx, "points",				"Render primitives as VK_PRIMITIVE_TOPOLOGY_POINT_LIST, verify rasterization result",						PRIMITIVEWIDENESS_WIDE));
+	}
+
+	// .primitive_size
+	{
+		tcu::TestCaseGroup* const primitiveSize = new tcu::TestCaseGroup(testCtx, "primitive_size", "Primitive size");
+		rasterizationTests->addChild(primitiveSize);
+
+		// .points
+		{
+			tcu::TestCaseGroup* const points = new tcu::TestCaseGroup(testCtx, "points", "Point size");
+
+			static const struct TestCombinations
+			{
+				const deUint32	renderSize;
+				const float		pointSize;
+			} testCombinations[] =
+			{
+				{ 1024,		128.0f		},
+				{ 1024,		256.0f		},
+				{ 1024,		512.0f		},
+				{ 2048,		1024.0f		},
+				{ 4096,		2048.0f		},
+				{ 8192,		4096.0f		},
+				{ 16384,	8192.0f		},
+				{ 16384,	10000.0f	}
+			};
+
+			for (size_t testCombNdx = 0; testCombNdx < DE_LENGTH_OF_ARRAY(testCombinations); testCombNdx++)
+			{
+				std::string	testCaseName	= "point_size_" + de::toString(testCombinations[testCombNdx].pointSize);
+				deUint32	renderSize		= testCombinations[testCombNdx].renderSize;
+				float		pointSize		= testCombinations[testCombNdx].pointSize;
+
+				points->addChild(new PointSizeTestCase<PointSizeTestInstance>	(testCtx, testCaseName,	testCaseName, renderSize, pointSize));
+			}
+
+			primitiveSize->addChild(points);
+		}
 	}
 
 	// .fill_rules

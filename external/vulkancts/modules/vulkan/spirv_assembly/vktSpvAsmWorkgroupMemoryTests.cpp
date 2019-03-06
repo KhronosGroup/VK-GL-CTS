@@ -40,6 +40,7 @@ using tcu::IVec3;
 using tcu::Vec4;
 using tcu::StringTemplate;
 using tcu::Float16;
+using tcu::Float32;
 
 namespace
 {
@@ -71,6 +72,35 @@ bool checkResultsFloat16 (const vector<Resource>&		inputs,
 			continue;
 
 		if (Float16(results[i]).isNaN() && Float16(expected[i]).isNaN())
+			continue;
+
+		return false;
+	}
+
+	return true;
+}
+
+
+bool checkResultsFloat32 (const vector<Resource>&		inputs,
+						  const vector<AllocationSp>&	outputAllocs,
+						  const vector<Resource>&		expectedOutputs,
+						  tcu::TestLog&					log)
+{
+	DE_UNREF(inputs);
+	DE_UNREF(log);
+
+	std::vector<deUint8> expectedBytes;
+	expectedOutputs.front().getBuffer()->getPackedBytes(expectedBytes);
+
+	const deUint32*	results		= reinterpret_cast<const deUint32*>(outputAllocs.front()->getHostPtr());
+	const deUint32*	expected	= reinterpret_cast<const deUint32*>(&expectedBytes[0]);
+
+	for (size_t i = 0; i < expectedBytes.size() / sizeof (deUint32); i++)
+	{
+		if (results[i] == expected[i])
+			continue;
+
+		if (Float32(results[i]).isNaN() && Float32(expected[i]).isNaN())
 			continue;
 
 		return false;
@@ -286,6 +316,7 @@ void addComputeWorkgroupMemoryTests (tcu::TestCaseGroup* group)
 
 		spec.assembly		= shaderSource.specialize(shaderSpec);
 		spec.numWorkGroups	= IVec3(1, 1, 1);
+		spec.verifyIO		= checkResultsFloat32;
 
 		spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 		spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(outputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));

@@ -8215,7 +8215,7 @@ void getAvailableOps (const State& state, bool supportsBuffers, bool supportsIma
 		{
 			ops.push_back(OP_PIPELINE_BARRIER_GLOBAL);
 
-			if (state.hasImage)
+			if (state.hasImage && (state.imageLayout != vk::VK_IMAGE_LAYOUT_UNDEFINED))
 				ops.push_back(OP_PIPELINE_BARRIER_IMAGE);
 
 			if (state.hasBuffer)
@@ -9775,7 +9775,7 @@ struct AddPrograms
 					"#version 310 es\n"
 					"#extension GL_EXT_texture_buffer : require\n"
 					"precision highp float;\n"
-					"layout(set=0, binding=0) uniform highp usamplerBuffer u_sampler;\n"
+					"layout(set=0, binding=0) uniform highp utextureBuffer u_sampler;\n"
 					"void main (void) {\n"
 					"\tgl_PointSize = 1.0;\n"
 					"\thighp uint val = texelFetch(u_sampler, gl_VertexIndex).x;\n"
@@ -9792,9 +9792,10 @@ struct AddPrograms
 				const char* const fragmentShader =
 					"#version 310 es\n"
 					"#extension GL_EXT_texture_buffer : require\n"
+					"#extension GL_EXT_samplerless_texture_functions : require\n"
 					"precision highp float;\n"
 					"precision highp int;\n"
-					"layout(set=0, binding=0) uniform highp usamplerBuffer u_sampler;\n"
+					"layout(set=0, binding=0) uniform highp utextureBuffer u_sampler;\n"
 					"layout(location = 0) out highp vec4 o_color;\n"
 					"layout(push_constant) uniform PushC\n"
 					"{\n"

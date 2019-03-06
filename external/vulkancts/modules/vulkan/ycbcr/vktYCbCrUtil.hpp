@@ -99,7 +99,8 @@ void										uploadImage					(const vk::DeviceInterface&	vkd,
 																		 vk::VkImage				image,
 																		 const MultiPlaneImageData&	imageData,
 																		 vk::VkAccessFlags			nextAccess,
-																		 vk::VkImageLayout			finalLayout);
+																		 vk::VkImageLayout			finalLayout,
+																		 deUint32					arrayLayer = 0u);
 
 void										fillImageMemory				(const vk::DeviceInterface&							vkd,
 																		 vk::VkDevice										device,
@@ -108,7 +109,8 @@ void										fillImageMemory				(const vk::DeviceInterface&							vkd,
 																		 const std::vector<de::SharedPtr<vk::Allocation> >&	memory,
 																		 const MultiPlaneImageData&							imageData,
 																		 vk::VkAccessFlags									nextAccess,
-																		 vk::VkImageLayout									finalLayout);
+																		 vk::VkImageLayout									finalLayout,
+																		 deUint32											arrayLayer = 0u);
 
 void										downloadImage				(const vk::DeviceInterface&	vkd,
 																		 vk::VkDevice				device,

@@ -391,11 +391,13 @@ tcu::TestStatus test (Context& context, const Flags flags)
 
 	// Verify results
 	{
-		const Allocation& alloc = colorBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), colorBufferSizeBytes);
-		tcu::ConstPixelBufferAccess image(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, alloc.getHostPtr());
+		const Allocation&			alloc	= colorBuffer.getAllocation();
+		tcu::TestLog&				log		= context.getTestContext().getLog();
 
-		tcu::TestLog& log = context.getTestContext().getLog();
+		invalidateAlloc(vk, device, alloc);
+
+		tcu::ConstPixelBufferAccess	image	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, alloc.getHostPtr());
+
 		log << tcu::LogImage("color0", "", image);
 
 		if (verifyImage(log, image, expectedPointSize))

@@ -554,17 +554,19 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 
 		// Upload tessellation levels data to the input buffer
 		{
-			const Allocation& alloc = tessLevelsBuffer.getAllocation();
-			TessLevels* const bufferTessLevels = static_cast<TessLevels*>(alloc.getHostPtr());
+			const Allocation& alloc				= tessLevelsBuffer.getAllocation();
+			TessLevels* const bufferTessLevels	= static_cast<TessLevels*>(alloc.getHostPtr());
+
 			*bufferTessLevels = tessLevelCases[tessLevelCaseNdx];
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeof(TessLevels));
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Clear the results buffer
 		{
 			const Allocation& alloc = resultBuffer.getAllocation();
+
 			deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(resultBufferSizeBytes));
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Reset the command buffer and begin recording.
@@ -591,13 +593,14 @@ tcu::TestStatus TessCoordTestInstance::iterate (void)
 
 		// Verify results
 		{
-			const Allocation& resultAlloc = resultBuffer.getAllocation();
-			invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), resultBufferSizeBytes);
+			const Allocation&				resultAlloc			= resultBuffer.getAllocation();
+
+			invalidateAlloc(vk, device, resultAlloc);
 
 			const deInt32					numResults			= *static_cast<deInt32*>(resultAlloc.getHostPtr());
-			const std::vector<tcu::Vec3>	resultTessCoords    = readInterleavedData<tcu::Vec3>(numResults, resultAlloc.getHostPtr(), resultBufferTessCoordsOffset, sizeof(tcu::Vec4));
-			const std::vector<tcu::Vec3>&	referenceTessCoords = allReferenceTessCoords[tessLevelCaseNdx];
-			const int						numExpectedResults  = static_cast<int>(referenceTessCoords.size());
+			const std::vector<tcu::Vec3>	resultTessCoords	= readInterleavedData<tcu::Vec3>(numResults, resultAlloc.getHostPtr(), resultBufferTessCoordsOffset, sizeof(tcu::Vec4));
+			const std::vector<tcu::Vec3>&	referenceTessCoords	= allReferenceTessCoords[tessLevelCaseNdx];
+			const int						numExpectedResults	= static_cast<int>(referenceTessCoords.size());
 			tcu::TestLog&					log					= m_context.getTestContext().getLog();
 
 			if (numResults < numExpectedResults)

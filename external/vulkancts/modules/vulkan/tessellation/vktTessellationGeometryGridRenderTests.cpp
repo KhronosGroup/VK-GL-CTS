@@ -604,12 +604,13 @@ tcu::TestStatus GridRenderTestInstance::iterate (void)
 
 	// Verify results
 	{
-		const Allocation& alloc = colorBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), colorBufferSizeBytes);
+		const Allocation&					alloc			(colorBuffer.getAllocation());
 
-		const tcu::ConstPixelBufferAccess imageAllLayers(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), m_params.numLayers, alloc.getHostPtr());
+		invalidateAlloc(vk, device, alloc);
 
-		bool allOk = true;
+		const tcu::ConstPixelBufferAccess	imageAllLayers	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), m_params.numLayers, alloc.getHostPtr());
+		bool								allOk			(true);
+
 		for (int ndx = 0; ndx < m_params.numLayers; ++ndx)
 			allOk = allOk && verifyResultLayer(m_context.getTestContext().getLog(),
 											   tcu::getSubregion(imageAllLayers, 0, 0, ndx, renderSize.x(), renderSize.y(), 1),

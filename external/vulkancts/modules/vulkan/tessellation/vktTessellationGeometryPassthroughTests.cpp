@@ -352,11 +352,12 @@ inline tcu::ConstPixelBufferAccess getPixelBufferAccess (const DeviceInterface& 
 														 const VkDevice			device,
 														 const Buffer&			colorBuffer,
 														 const VkFormat			colorFormat,
-														 const VkDeviceSize		colorBufferSizeBytes,
 														 const tcu::IVec2&		renderSize)
 {
 	const Allocation& alloc = colorBuffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), colorBufferSizeBytes);
+
+	invalidateAlloc(vk, device, alloc);
+
 	return tcu::ConstPixelBufferAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, alloc.getHostPtr());
 }
 
@@ -434,22 +435,24 @@ tcu::TestStatus PassthroughTestInstance::iterate (void)
 
 	if (m_params.useTessLevels)
 	{
-		const Allocation& alloc = tessLevelsBuffer.getAllocation();
-		TessLevels* const bufferTessLevels = static_cast<TessLevels*>(alloc.getHostPtr());
+		const Allocation& alloc				= tessLevelsBuffer.getAllocation();
+		TessLevels* const bufferTessLevels	= static_cast<TessLevels*>(alloc.getHostPtr());
+
 		*bufferTessLevels = m_params.tessLevels;
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeof(TessLevels));
+		flushAlloc(vk, device, alloc);
 	}
 
 	// Vertex attributes
 
-	const VkDeviceSize	vertexDataSizeBytes = sizeInBytes(m_params.vertices);
+	const VkDeviceSize	vertexDataSizeBytes	= sizeInBytes(m_params.vertices);
 	const VkFormat		vertexFormat		= VK_FORMAT_R32G32B32A32_SFLOAT;
 	const Buffer		vertexBuffer		(vk, device, allocator, makeBufferCreateInfo(vertexDataSizeBytes, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();
+
 		deMemcpy(alloc.getHostPtr(), &m_params.vertices[0], static_cast<std::size_t>(vertexDataSizeBytes));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+		flushAlloc(vk, device, alloc);
 	}
 
 	// Descriptors - make descriptor for tessellation levels, even if we don't use them, to simplify code
@@ -577,8 +580,8 @@ tcu::TestStatus PassthroughTestInstance::iterate (void)
 
 	// Verify results
 
-	tcu::ConstPixelBufferAccess image0 = getPixelBufferAccess(vk, device, *colorBuffer[0], colorFormat, colorBufferSizeBytes, renderSize);
-	tcu::ConstPixelBufferAccess image1 = getPixelBufferAccess(vk, device, *colorBuffer[1], colorFormat, colorBufferSizeBytes, renderSize);
+	tcu::ConstPixelBufferAccess image0 = getPixelBufferAccess(vk, device, *colorBuffer[0], colorFormat, renderSize);
+	tcu::ConstPixelBufferAccess image1 = getPixelBufferAccess(vk, device, *colorBuffer[1], colorFormat, renderSize);
 
 	const tcu::UVec4 colorThreshold    (8, 8, 8, 255);
 	const tcu::IVec3 positionDeviation (1, 1, 0);		// 3x3 search kernel
