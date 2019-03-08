@@ -99,7 +99,9 @@ private:
 
 #include "vkBasicTypes.inl"
 
-#define VK_CORE_FORMAT_LAST		((vk::VkFormat)(vk::VK_FORMAT_ASTC_12x12_SRGB_BLOCK+1))
+#define VK_CORE_FORMAT_LAST			((vk::VkFormat)(vk::VK_FORMAT_ASTC_12x12_SRGB_BLOCK+1))
+#define VK_CORE_IMAGE_TILING_LAST	((vk::VkImageTiling)(vk::VK_IMAGE_TILING_LINEAR+1))
+#define VK_CORE_IMAGE_TYPE_LAST		((vk::VkImageType)(vk::VK_IMAGE_TYPE_3D+1))
 
 enum SpirvVersion
 {

@@ -184,6 +184,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/memory/vktMemoryTests.cpp \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelMessagePassing.cpp \
 	external/vulkancts/modules/vulkan/memory_model/vktMemoryModelPadding.cpp \
+	external/vulkancts/modules/vulkan/modifiers/vktModifiersTests.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderPassUtil.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderTests.cpp \
 	external/vulkancts/modules/vulkan/multiview/vktMultiViewRenderUtil.cpp \
@@ -1155,6 +1156,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/imageless_framebuffer \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/memory \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/memory_model \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/modifiers \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/multiview \
 	$(deqp_dir)/external/vulkancts/modules/vulkan \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/pipeline \
