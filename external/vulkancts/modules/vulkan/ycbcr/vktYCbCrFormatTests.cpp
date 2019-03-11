@@ -181,8 +181,7 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface&	vkd,
 										   VkDevice					device,
 										   VkDescriptorPool			descPool,
 										   VkDescriptorSetLayout	descLayout,
-										   VkImageView				imageView,
-										   VkSampler				sampler)
+										   VkImageView				imageView)
 {
 	Move<VkDescriptorSet>					descSet;
 
@@ -202,7 +201,7 @@ Move<VkDescriptorSet> createDescriptorSet (const DeviceInterface&	vkd,
 	{
 		const VkDescriptorImageInfo			imageInfo			=
 		{
-			sampler,
+			0xdeadbeef,    // Not required to be valid. Use something invalid and not NULL
 			imageView,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		};
@@ -391,7 +390,7 @@ tcu::TestStatus testFormat (Context& context, TestParameters params)
 
 	const Unique<VkDescriptorSetLayout>		descLayout				(createDescriptorSetLayout(vkd, device, *sampler));
 	const Unique<VkDescriptorPool>			descPool				(createDescriptorPool(vkd, device));
-	const Unique<VkDescriptorSet>			descSet					(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView, *sampler));
+	const Unique<VkDescriptorSet>			descSet					(createDescriptorSet(vkd, device, *descPool, *descLayout, *imageView));
 
 	MultiPlaneImageData						imageData				(format, size);
 
