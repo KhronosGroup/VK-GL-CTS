@@ -36,6 +36,8 @@ set(DEQP_VK_DRAW_SRCS
 	vktDrawDifferingInterpolationTests.cpp
 	vktDrawScissorTests.hpp
 	vktDrawScissorTests.cpp
+	vktDrawMultipleInterpolationTests.hpp
+	vktDrawMultipleInterpolationTests.cpp
 )
 
 set(DEQP_VK_DRAW_LIBS

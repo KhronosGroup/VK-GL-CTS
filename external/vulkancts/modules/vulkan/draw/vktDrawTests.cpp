@@ -37,6 +37,7 @@
 #include "vktDrawShaderLayerTests.hpp"
 #include "vktDrawShaderViewportIndexTests.hpp"
 #include "vktDrawScissorTests.hpp"
+#include "vktDrawMultipleInterpolationTests.hpp"
 
 namespace vkt
 {
@@ -63,6 +64,7 @@ void createChildren (tcu::TestCaseGroup* group)
 	group->addChild(createShaderLayerTests				(testCtx));
 	group->addChild(createShaderViewportIndexTests		(testCtx));
 	group->addChild(createScissorTests					(testCtx));
+	group->addChild(createMultipleInterpolationTests	(testCtx));
 }
 
 } // anonymous
