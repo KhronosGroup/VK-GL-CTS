@@ -2,6 +2,16 @@
 # Split into two libraries - one that depends on spirv/glslang libraries
 # which have long build times, and one that can build in parallel with those.
 
+include(CheckIncludeFile)
+check_include_file_cxx(
+	${CMAKE_SOURCE_DIR}/external/renderdoc/src/renderdoc_app.h
+	HAVE_RENDERDOC_APP_H)
+if(HAVE_RENDERDOC_APP_H)
+	set(VKRENDERDOC_SRC vkRenderDocUtil.cpp)
+else()
+	set(VKRENDERDOC_SRC vkNoRenderDocUtil.cpp)
+endif(HAVE_RENDERDOC_APP_H)
+
 set(VKUTILNOSHADER_SRCS
 	vkApiVersion.cpp
 	vkApiVersion.hpp
@@ -58,8 +68,8 @@ set(VKUTILNOSHADER_SRCS
 	vkYCbCrImageWithMemory.hpp
 	vkObjUtil.cpp
 	vkObjUtil.hpp
+	${VKRENDERDOC_SRC}
 	vkRenderDocUtil.hpp
-	vkRenderDocUtil.cpp
 	)
 
 set(VKUTIL_SRCS
