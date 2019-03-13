@@ -19,7 +19,7 @@ else ()
 endif ()
 
 if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
-	message(STATUS "glslang found; building with DEQP_SUPPORT_GLSLANG")
+	message(STATUS "glslang found; building with DEQP_HAVE_GLSLANG")
 
 	# Disable glslang install as part of cmake install.
 	set(SKIP_GLSLANG_INSTALL OFF CACHE BOOL "" FORCE)
