@@ -738,6 +738,7 @@ tcu::TestStatus noSSBOtest (Context& context, const CaseDefinition caseDef)
 
 	subgroups::SSBOData inputData;
 	inputData.format = caseDef.format;
+	inputData.layout = subgroups::SSBOData::LayoutStd140;
 	inputData.numElements = subgroups::maxSupportedSubgroupSize();
 	inputData.initializeType = OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 
@@ -770,6 +771,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 		subgroups::SSBOData inputData;
 		inputData.format = caseDef.format;
+		inputData.layout = subgroups::SSBOData::LayoutStd430;
 		inputData.numElements = subgroups::maxSupportedSubgroupSize();
 		inputData.initializeType = OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 
@@ -803,6 +805,7 @@ tcu::TestStatus test(Context& context, const CaseDefinition caseDef)
 
 		subgroups::SSBOData inputData;
 		inputData.format			= caseDef.format;
+		inputData.layout			= subgroups::SSBOData::LayoutStd430;
 		inputData.numElements		= subgroups::maxSupportedSubgroupSize();
 		inputData.initializeType	= OPTYPE_ALLEQUAL == caseDef.opType ? subgroups::SSBOData::InitializeZero : subgroups::SSBOData::InitializeNonZero;
 		inputData.binding			= 4u;

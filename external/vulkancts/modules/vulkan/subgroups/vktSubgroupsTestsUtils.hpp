@@ -58,6 +58,7 @@ struct SSBOData
 {
 	SSBOData() :
 		initializeType	(InitializeNone),
+		layout			(LayoutStd140),
 		format			(vk::VK_FORMAT_UNDEFINED),
 		numElements		(0),
 		isImage			(false),
@@ -71,6 +72,13 @@ struct SSBOData
 		InitializeNonZero,
 		InitializeZero,
 	} initializeType;
+
+	enum InputDataLayoutType
+	{
+		LayoutStd140 = 0,
+		LayoutStd430,
+		LayoutPacked
+	} layout;
 
 	vk::VkFormat				format;
 	vk::VkDeviceSize			numElements;

@@ -87,6 +87,17 @@ deUint32 getFormatSizeInBytes(const VkFormat format)
 	}
 }
 
+deUint32 getElementSizeInBytes(
+	const VkFormat format,
+	const subgroups::SSBOData::InputDataLayoutType layout)
+{
+	deUint32 bytes = getFormatSizeInBytes(format);
+	if (layout == subgroups::SSBOData::LayoutStd140)
+		return bytes < 16 ? 16 : bytes;
+	else
+		return bytes;
+}
+
 Move<VkPipelineLayout> makePipelineLayout(
 	Context& context, const VkDescriptorSetLayout descriptorSetLayout)
 {
@@ -425,7 +436,7 @@ struct Buffer : public BufferOrImage
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 			DE_NULL,
 			0u,
-			sizeInBytes,
+			m_sizeInBytes,
 			m_usage,
 			VK_SHARING_MODE_EXCLUSIVE,
 			0u,
@@ -435,7 +446,6 @@ struct Buffer : public BufferOrImage
 								context.getDevice(), &bufferCreateInfo);
 		vk::VkMemoryRequirements req = getBufferMemoryRequirements(
 										   context.getDeviceInterface(), context.getDevice(), *m_buffer);
-		req.size *= 4;
 		m_allocation = context.getDefaultAllocator().allocate(
 						   req, MemoryRequirement::HostVisible);
 		VK_CHECK(context.getDeviceInterface().bindBufferMemory(
@@ -1377,7 +1387,8 @@ void vkt::subgroups::addGeometryShadersFromTemplate (const std::string& spirvTem
 void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBOData& data)
 {
 	const vk::VkFormat format = data.format;
-	const vk::VkDeviceSize size = getFormatSizeInBytes(format) * data.numElements;
+	const vk::VkDeviceSize size = data.numElements *
+		(data.isImage ? getFormatSizeInBytes(format) : getElementSizeInBytes(format, data.layout));
 	if (subgroups::SSBOData::InitializeNonZero == data.initializeType)
 	{
 		de::Random rnd(context.getTestContext().getCommandLine().getBaseSeed());
@@ -1568,7 +1579,7 @@ tcu::TestStatus vkt::subgroups::makeTessellationEvaluationFrameBufferTest(
 		}
 		else
 		{
-			vk::VkDeviceSize size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -1786,7 +1797,7 @@ tcu::TestStatus vkt::subgroups::makeGeometryFrameBufferTest(
 		}
 		else
 		{
-			vk::VkDeviceSize size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -2048,7 +2059,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 	for (deUint32 ndx = 0u; ndx < stagesCount; ++ndx)
 	{
 		const VkDeviceSize shaderSize = (stagesVector[ndx] == VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ? maxWidth * 2 : maxWidth;
-		const VkDeviceSize size = getFormatSizeInBytes(format) * shaderSize;
+		const VkDeviceSize size = getElementSizeInBytes(format, SSBOData::LayoutStd430) * shaderSize;
 		inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 
 		layoutBuilder.addIndexedBinding(inputBuffers[ndx]->getType(), 1, stagesVector[ndx], getResultBinding(stagesVector[ndx]), DE_NULL);
@@ -2063,7 +2074,7 @@ tcu::TestStatus vkt::subgroups::allStages(
 		}
 		else
 		{
-			const vk::VkDeviceSize size = getFormatSizeInBytes(extraDatas[datasNdx].format) * extraDatas[datasNdx].numElements;
+			const vk::VkDeviceSize size = getElementSizeInBytes(extraDatas[datasNdx].format, extraDatas[datasNdx].layout) * extraDatas[datasNdx].numElements;
 			inputBuffers[ndx] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
@@ -2344,7 +2355,7 @@ tcu::TestStatus vkt::subgroups::makeVertexFrameBufferTest(Context& context, vk::
 		}
 		else
 		{
-			vk::VkDeviceSize size = getFormatSizeInBytes(extraData[i].format) * extraData[i].numElements;
+			vk::VkDeviceSize size = getElementSizeInBytes(extraData[i].format, extraData[i].layout) * extraData[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
 		const Allocation& alloc = inputBuffers[i]->getAllocation();
@@ -2566,7 +2577,7 @@ tcu::TestStatus vkt::subgroups::makeFragmentFrameBufferTest	(Context& context, V
 		else
 		{
 			vk::VkDeviceSize size =
-				getFormatSizeInBytes(extraDatas[i].format) * extraDatas[i].numElements;
+				getElementSizeInBytes(extraDatas[i].format, extraDatas[i].layout) * extraDatas[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
 		}
 
@@ -2795,7 +2806,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		else
 		{
 			vk::VkDeviceSize size =
-				getFormatSizeInBytes(inputs[i].format) * inputs[i].numElements;
+				getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
 			inputBuffers[i] = de::SharedPtr<BufferOrImage>(new Buffer(context, size));
 		}
 
@@ -2864,7 +2875,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 		else
 		{
 			vk::VkDeviceSize size =
-				getFormatSizeInBytes(inputs[i].format) * inputs[i].numElements;
+				getElementSizeInBytes(inputs[i].format, inputs[i].layout) * inputs[i].numElements;
 			VkDescriptorBufferInfo info =
 				makeDescriptorBufferInfo(inputBuffers[i]->getAsBuffer()->getBuffer(), 0ull, size);
 
@@ -2960,7 +2971,7 @@ tcu::TestStatus vkt::subgroups::makeComputeTest(
 			if (!inputBuffers[i]->isImage())
 			{
 				vk::VkDeviceSize size =
-					getFormatSizeInBytes(inputs[i].format) *
+					getElementSizeInBytes(inputs[i].format, inputs[i].layout) *
 					inputs[i].numElements;
 				const Allocation& resultAlloc = inputBuffers[i]->getAllocation();
 				invalidateMappedMemoryRange(context.getDeviceInterface(),
