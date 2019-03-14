@@ -2486,6 +2486,13 @@ struct VkImageViewHandleInfoNVX
 	VkSampler			sampler;
 };
 
+struct VkPhysicalDeviceSubgroupExtendedTypesFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupExtendedTypes;
+};
+
 struct VkTextureLODGatherFormatPropertiesAMD
 {
 	VkStructureType	sType;

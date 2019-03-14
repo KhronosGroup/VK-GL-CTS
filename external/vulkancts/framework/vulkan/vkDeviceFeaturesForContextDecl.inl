@@ -15,6 +15,7 @@ const vk::VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperation
 const vk::VkPhysicalDeviceDescriptorIndexingFeaturesEXT&				getDescriptorIndexingFeatures				(void) const;
 const vk::VkPhysicalDeviceShadingRateImageFeaturesNV&					getShadingRateImageFeatures					(void) const;
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures		(void) const;
+const vk::VkPhysicalDeviceSubgroupExtendedTypesFeaturesKHR&				getSubgroupExtendedTypesFeatures			(void) const;
 const vk::VkPhysicalDevice8BitStorageFeaturesKHR&						get8BitStorageFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&					getShaderAtomicInt64Features				(void) const;
 const vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeatures			(void) const;

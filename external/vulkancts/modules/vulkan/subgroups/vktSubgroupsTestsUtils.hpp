@@ -48,6 +48,7 @@
 #include "deUniquePtr.hpp"
 
 #include <string>
+#include <vector>
 
 namespace vkt
 {
@@ -114,13 +115,19 @@ bool isFragmentSSBOSupportedForDevice(Context& context);
 
 bool isVertexSSBOSupportedForDevice(Context& context);
 
-bool isDoubleSupportedForDevice(Context& context);
+bool isFormatSupportedForDevice(Context& context, vk::VkFormat format);
 
 bool isTessellationAndGeometryPointSizeSupported(Context& context);
 
-bool isDoubleFormat(vk::VkFormat format);
+std::string getFormatNameForGLSL (vk::VkFormat format);
 
-std::string getFormatNameForGLSL(vk::VkFormat format);
+std::string getAdditionalExtensionForFormat (vk::VkFormat format);
+
+const std::vector<vk::VkFormat> getAllFormats ();
+
+bool isFormatSigned (vk::VkFormat format);
+bool isFormatUnsigned (vk::VkFormat format);
+bool isFormatFloat (vk::VkFormat format);
 
 void addGeometryShadersFromTemplate (const std::string& glslTemplate, const vk::ShaderBuildOptions& options, vk::GlslSourceCollection& collection);
 void addGeometryShadersFromTemplate (const std::string& spirvTemplate, const vk::SpirVAsmBuildOptions& options, vk::SpirVAsmCollection& collection);

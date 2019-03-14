@@ -111,8 +111,6 @@ struct CaseDefinition
 void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefinition caseDef)
 {
 	const vk::ShaderBuildOptions buildOptions	(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_3, 0u);
-	const bool formatIsBoolean =
-		VK_FORMAT_R8_USCALED == caseDef.format || VK_FORMAT_R8G8_USCALED == caseDef.format || VK_FORMAT_R8G8B8_USCALED == caseDef.format || VK_FORMAT_R8G8B8A8_USCALED == caseDef.format;
 
 	if (VK_SHADER_STAGE_FRAGMENT_BIT != caseDef.shaderStage)
 		subgroups::setFragmentShaderFrameBuffer(programCollection);
@@ -146,7 +144,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 				"  result |= 0x4;\n"
 		: (OPTYPE_ALLEQUAL == caseDef.opType) ?
 				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect())\n;" : "(12.0 * float(data[gl_SubgroupInvocationID]) + gl_SubgroupInvocationID);\n") +
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(gl_SubgroupInvocationID);\n" +
 				"  result = " + getOpTypeName(caseDef.opType) + "("
 				+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
 				"  result |= " + getOpTypeName(caseDef.opType) +
@@ -165,6 +163,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		std::ostringstream vertexSrc;
 		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(location = 0) out vec4 out_color;\n"
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -189,6 +188,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 
 		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -216,6 +216,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		std::ostringstream controlSource;
 		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -246,6 +247,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
 			<< "#extension GL_EXT_tessellation_shader : require\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -283,7 +285,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 				"  result |= 0x4;\n"
 		: (OPTYPE_ALLEQUAL == caseDef.opType) ?
 				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(12.0 * float(data[gl_SubgroupInvocationID]) + int(gl_FragCoord.x*gl_SubgroupInvocationID));\n") +
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(gl_SubgroupInvocationID);\n" +
 				"  result |= " + getOpTypeName(caseDef.opType) + "("
 				+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x10 : 0;\n"
 				"  result |= " + getOpTypeName(caseDef.opType) +
@@ -300,6 +302,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		std::ostringstream fragmentSource;
 		fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 		<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
+		<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 		<< "layout(location = 0) out uint out_color;\n"
 		<< "layout(set = 0, binding = 0) uniform Buffer1\n"
 		<< "{\n"
@@ -333,14 +336,13 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 
 void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 {
-	const bool formatIsBoolean =
-		VK_FORMAT_R8_USCALED == caseDef.format || VK_FORMAT_R8G8_USCALED == caseDef.format || VK_FORMAT_R8G8B8_USCALED == caseDef.format || VK_FORMAT_R8G8B8A8_USCALED == caseDef.format;
 	if (VK_SHADER_STAGE_COMPUTE_BIT == caseDef.shaderStage)
 	{
 		std::ostringstream src;
 
 		src << "#version 450\n"
 			<< "#extension GL_KHR_shader_subgroup_vote: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
 			"local_size_z_id = 2) in;\n"
 			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
@@ -379,8 +381,8 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 
 		else if (OPTYPE_ALLEQUAL == caseDef.opType)
 		{
-			src << "  " << subgroups::getFormatNameForGLSL(caseDef.format) <<" valueEqual = " << subgroups::getFormatNameForGLSL(caseDef.format) << "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n"
-				<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) <<" valueNoEqual = " << subgroups::getFormatNameForGLSL(caseDef.format) << (formatIsBoolean ? "(subgroupElect());\n" : "(12.0 * float(data[gl_SubgroupInvocationID]) + offset);\n")
+			src << "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " valueEqual = " << subgroups::getFormatNameForGLSL(caseDef.format) << "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n"
+				<< "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " valueNoEqual = " << subgroups::getFormatNameForGLSL(caseDef.format) << "(gl_SubgroupInvocationID);\n"
 				<<"  result[offset] = " << getOpTypeName(caseDef.opType) << "("
 				<< subgroups::getFormatNameForGLSL(caseDef.format) << "(1)) ? 0x1 : 0x0;\n"
 				<< "  result[offset] |= " << getOpTypeName(caseDef.opType)
@@ -416,7 +418,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"  result[offset] |= 0x4;\n"
 		: (OPTYPE_ALLEQUAL == caseDef.opType) ?
 				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
-				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(12.0 * float(data[gl_SubgroupInvocationID]) + gl_SubgroupInvocationID);\n") +
+				"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(gl_SubgroupInvocationID);\n" +
 				"  result[offset] = " + getOpTypeName(caseDef.opType) + "("
 				+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
 				"  result[offset] |= " + getOpTypeName(caseDef.opType) +
@@ -436,6 +438,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			const string vertex =
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_vote: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
 				"{\n"
 				"  uint result[];\n"
@@ -462,6 +465,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			const string tesc =
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_vote: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(vertices=1) out;\n"
 				"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
 				"{\n"
@@ -492,6 +496,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			const string tese =
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_vote: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(isolines) in;\n"
 				"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
 				"{\n"
@@ -518,6 +523,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			const string geometry =
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_vote: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(${TOPOLOGY}) in;\n"
 				"layout(points, max_vertices = 1) out;\n"
 				"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
@@ -558,7 +564,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 					"  result |= 0x4;\n"
 			: (OPTYPE_ALLEQUAL == caseDef.opType) ?
 					"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(1.25 * float(data[gl_SubgroupInvocationID]) + 5.0);\n" +
-					"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + (formatIsBoolean ? "(subgroupElect());\n" : "(12.0 * float(data[gl_SubgroupInvocationID]) + int(gl_FragCoord.x*gl_SubgroupInvocationID));\n") +
+					"  " + subgroups::getFormatNameForGLSL(caseDef.format) + " valueNoEqual = " + subgroups::getFormatNameForGLSL(caseDef.format) + "(gl_SubgroupInvocationID);\n" +
 					"  result = " + getOpTypeName(caseDef.opType) + "("
 					+ subgroups::getFormatNameForGLSL(caseDef.format) + "(1)) ? 0x1 : 0;\n"
 					"  result |= " + getOpTypeName(caseDef.opType) +
@@ -574,6 +580,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			const string fragment =
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_vote: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(location = 0) out uint result;\n"
 				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
 				"{\n"
@@ -602,11 +609,8 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 		TCU_THROW(NotSupportedError, "Device does not support subgroup vote operations");
 	}
 
-	if (subgroups::isDoubleFormat(caseDef.format) &&
-			!subgroups::isDoubleSupportedForDevice(context))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup double operations");
-	}
+	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
+		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
@@ -734,20 +738,9 @@ tcu::TestCaseGroup* createSubgroupsVoteTests(tcu::TestContext& testCtx)
 		VK_SHADER_STAGE_GEOMETRY_BIT,
 	};
 
-	const VkFormat formats[] =
-	{
-		VK_FORMAT_R32_SINT, VK_FORMAT_R32G32_SINT, VK_FORMAT_R32G32B32_SINT,
-		VK_FORMAT_R32G32B32A32_SINT, VK_FORMAT_R32_UINT, VK_FORMAT_R32G32_UINT,
-		VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32A32_UINT,
-		VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT,
-		VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_FORMAT_R64_SFLOAT, VK_FORMAT_R64G64_SFLOAT,
-		VK_FORMAT_R64G64B64_SFLOAT, VK_FORMAT_R64G64B64A64_SFLOAT,
-		VK_FORMAT_R8_USCALED, VK_FORMAT_R8G8_USCALED,
-		VK_FORMAT_R8G8B8_USCALED, VK_FORMAT_R8G8B8A8_USCALED,
-	};
+	const std::vector<VkFormat> formats = subgroups::getAllFormats();
 
-	for (int formatIndex = 0; formatIndex < DE_LENGTH_OF_ARRAY(formats); ++formatIndex)
+	for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
 	{
 		const VkFormat format = formats[formatIndex];
 

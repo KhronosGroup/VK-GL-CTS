@@ -15,6 +15,7 @@ const VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT&			getBlendOperationAdva
 const VkPhysicalDeviceDescriptorIndexingFeaturesEXT&				getDescriptorIndexingFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDescriptorIndexingFeaturesEXT>();					}
 const VkPhysicalDeviceShadingRateImageFeaturesNV&					getShadingRateImageFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShadingRateImageFeaturesNV>();					}
 const VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&			getRepresentativeFragmentTestFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>();			}
+const VkPhysicalDeviceSubgroupExtendedTypesFeaturesKHR&				getSubgroupExtendedTypesFeatures			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceSubgroupExtendedTypesFeaturesKHR>();				}
 const VkPhysicalDevice8BitStorageFeaturesKHR&						get8BitStorageFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevice8BitStorageFeaturesKHR>();						}
 const VkPhysicalDeviceShaderAtomicInt64FeaturesKHR&					getShaderAtomicInt64Features				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderAtomicInt64FeaturesKHR>();					}
 const VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT&			getVertexAttributeDivisorFeatures			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT>();				}

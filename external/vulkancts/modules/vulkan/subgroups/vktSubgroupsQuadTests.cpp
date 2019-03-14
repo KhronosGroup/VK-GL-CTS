@@ -106,6 +106,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float result;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -152,6 +153,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -203,6 +205,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -254,6 +257,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -315,6 +319,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		src << "#version 450\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
 			"local_size_z_id = 2) in;\n"
 			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
@@ -384,6 +389,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
 				"{\n"
 				"  uint result[];\n"
@@ -420,6 +426,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(vertices=1) out;\n"
 				"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
 				"{\n"
@@ -459,6 +466,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(isolines) in;\n"
 				"layout(set = 0, binding = 2, std430)  buffer Buffer1\n"
 				"{\n"
@@ -494,6 +502,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(${TOPOLOGY}) in;\n"
 				"layout(points, max_vertices = 1) out;\n"
 				"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
@@ -531,6 +540,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(location = 0) out uint result;\n"
 				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
 				"{\n"
@@ -565,12 +575,8 @@ void supportedCheck (Context& context, CaseDefinition caseDef)
 	if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_QUAD_BIT))
 		TCU_THROW(NotSupportedError, "Device does not support subgroup quad operations");
 
-
-	if (subgroups::isDoubleFormat(caseDef.format) &&
-			!subgroups::isDoubleSupportedForDevice(context))
-	{
-		TCU_THROW(NotSupportedError, "Device does not support subgroup double operations");
-	}
+	if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
+		TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
 	*caseDef.geometryPointSizeSupported = subgroups::isTessellationAndGeometryPointSizeSupported(context);
 }
@@ -683,19 +689,6 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> framebufferGroup(new tcu::TestCaseGroup(
 		testCtx, "framebuffer", "Subgroup arithmetic category tests: framebuffer"));
 
-	const VkFormat formats[] =
-	{
-		VK_FORMAT_R32_SINT, VK_FORMAT_R32G32_SINT, VK_FORMAT_R32G32B32_SINT,
-		VK_FORMAT_R32G32B32A32_SINT, VK_FORMAT_R32_UINT, VK_FORMAT_R32G32_UINT,
-		VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32A32_UINT,
-		VK_FORMAT_R32_SFLOAT, VK_FORMAT_R32G32_SFLOAT,
-		VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_FORMAT_R64_SFLOAT, VK_FORMAT_R64G64_SFLOAT,
-		VK_FORMAT_R64G64B64_SFLOAT, VK_FORMAT_R64G64B64A64_SFLOAT,
-		VK_FORMAT_R8_USCALED, VK_FORMAT_R8G8_USCALED,
-		VK_FORMAT_R8G8B8_USCALED, VK_FORMAT_R8G8B8A8_USCALED,
-	};
-
 	const VkShaderStageFlags stages[] =
 	{
 		VK_SHADER_STAGE_VERTEX_BIT,
@@ -704,9 +697,11 @@ tcu::TestCaseGroup* createSubgroupsQuadTests(tcu::TestContext& testCtx)
 		VK_SHADER_STAGE_GEOMETRY_BIT,
 	};
 
+	const std::vector<VkFormat> formats = subgroups::getAllFormats();
+
 	for (int direction = 0; direction < 4; ++direction)
 	{
-		for (int formatIndex = 0; formatIndex < DE_LENGTH_OF_ARRAY(formats); ++formatIndex)
+		for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
 		{
 			const VkFormat format = formats[formatIndex];
 

@@ -319,9 +319,9 @@ PACKAGES = [
 		"2c0111e6eba779cf30e8c7f5a733ea0762895ba0",
 		"spirv-tools"),
 	GitRepo(
-		"https://github.com/KhronosGroup/glslang.git",
-		None,
-		"a549bb81752365526f6d7334f00961ea08689211",
+		"https://gitlab.khronos.org/GLSL/glslang.git",
+		"git@gitlab.khronos.org:GLSL/glslang.git",
+		"7c445410ea437c5fc8cfc498a322f9ef04c0b115",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
