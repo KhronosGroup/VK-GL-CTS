@@ -24,6 +24,7 @@
  */ /*--------------------------------------------------------------------*/
 
 #include "vktSubgroupsTestsUtils.hpp"
+#include "deFloat16.h"
 #include "deRandom.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuStringTemplate.hpp"
@@ -67,6 +68,32 @@ deUint32 getFormatSizeInBytes(const VkFormat format)
 		default:
 			DE_FATAL("Unhandled format!");
 			return 0;
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R8_UINT:
+			return static_cast<deUint32>(sizeof(deInt8));
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8G8_UINT:
+			return static_cast<deUint32>(sizeof(deInt8) * 2);
+		case VK_FORMAT_R8G8B8_SINT:
+		case VK_FORMAT_R8G8B8_UINT:
+		case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_R8G8B8A8_UINT:
+			return static_cast<deUint32>(sizeof(deInt8) * 4);
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R16_SFLOAT:
+			return static_cast<deUint32>(sizeof(deInt16));
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R16G16_SFLOAT:
+			return static_cast<deUint32>(sizeof(deInt16) * 2);
+		case VK_FORMAT_R16G16B16_UINT:
+		case VK_FORMAT_R16G16B16_SINT:
+		case VK_FORMAT_R16G16B16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SINT:
+		case VK_FORMAT_R16G16B16A16_UINT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			return static_cast<deUint32>(sizeof(deInt16) * 4);
 		case VK_FORMAT_R32_SINT:
 		case VK_FORMAT_R32_UINT:
 		case VK_FORMAT_R32_SFLOAT:
@@ -82,11 +109,19 @@ deUint32 getFormatSizeInBytes(const VkFormat format)
 		case VK_FORMAT_R32G32B32A32_UINT:
 		case VK_FORMAT_R32G32B32A32_SFLOAT:
 			return static_cast<deUint32>(sizeof(deInt32) * 4);
+		case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R64_UINT:
 		case VK_FORMAT_R64_SFLOAT:
 			return static_cast<deUint32>(sizeof(deInt64));
+		case VK_FORMAT_R64G64_SINT:
+		case VK_FORMAT_R64G64_UINT:
 		case VK_FORMAT_R64G64_SFLOAT:
 			return static_cast<deUint32>(sizeof(deInt64) * 2);
+		case VK_FORMAT_R64G64B64_SINT:
+		case VK_FORMAT_R64G64B64_UINT:
 		case VK_FORMAT_R64G64B64_SFLOAT:
+		case VK_FORMAT_R64G64B64A64_SINT:
+		case VK_FORMAT_R64G64B64A64_UINT:
 		case VK_FORMAT_R64G64B64A64_SFLOAT:
 			return static_cast<deUint32>(sizeof(deInt64) * 4);
 		// The below formats are used to represent bool and bvec* types. These
@@ -1005,10 +1040,27 @@ bool vkt::subgroups::isTessellationAndGeometryPointSizeSupported (Context& conte
 
 bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat format)
 {
+	VkPhysicalDeviceShaderSubgroupExtendedTypesFeaturesKHR subgroupExtendedTypesFeatures;
+	deMemset(&subgroupExtendedTypesFeatures, 0, sizeof(subgroupExtendedTypesFeatures));
+	subgroupExtendedTypesFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR;
+	subgroupExtendedTypesFeatures.pNext = DE_NULL;
+
+	VkPhysicalDeviceShaderFloat16Int8FeaturesKHR float16Int8Features;
+	deMemset(&float16Int8Features, 0, sizeof(float16Int8Features));
+	float16Int8Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES_KHR;
+	float16Int8Features.pNext = DE_NULL;
+
 	VkPhysicalDeviceFeatures2 features2;
 	deMemset(&features2, 0, sizeof(features2));
 	features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	features2.pNext = DE_NULL;
+
+	if (isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_subgroup_extended_types") &&
+		isDeviceExtensionSupported(context.getUsedApiVersion(), context.getDeviceExtensions(), "VK_KHR_shader_float16_int8"))
+	{
+		features2.pNext = &subgroupExtendedTypesFeatures;
+		subgroupExtendedTypesFeatures.pNext = &float16Int8Features;
+	}
 
 	const PlatformInterface&		platformInterface		= context.getPlatformInterface();
 	const VkInstance				instance				= context.getInstance();
@@ -1020,11 +1072,43 @@ bool vkt::subgroups::isFormatSupportedForDevice(Context& context, vk::VkFormat f
 	{
 		default:
 			return true;
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R16G16B16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & float16Int8Features.shaderFloat16 ? true : false;
 		case VK_FORMAT_R64_SFLOAT:
 		case VK_FORMAT_R64G64_SFLOAT:
 		case VK_FORMAT_R64G64B64_SFLOAT:
 		case VK_FORMAT_R64G64B64A64_SFLOAT:
 			return features2.features.shaderFloat64 ? true : false;
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8G8B8_SINT:
+		case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_R8_UINT:
+		case VK_FORMAT_R8G8_UINT:
+		case VK_FORMAT_R8G8B8_UINT:
+		case VK_FORMAT_R8G8B8A8_UINT:
+			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & float16Int8Features.shaderInt8 ? true : false;
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R16G16B16_SINT:
+		case VK_FORMAT_R16G16B16A16_SINT:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R16G16B16_UINT:
+		case VK_FORMAT_R16G16B16A16_UINT:
+			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & features2.features.shaderInt16 ? true : false;
+		case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R64G64_SINT:
+		case VK_FORMAT_R64G64B64_SINT:
+		case VK_FORMAT_R64G64B64A64_SINT:
+		case VK_FORMAT_R64_UINT:
+		case VK_FORMAT_R64G64_UINT:
+		case VK_FORMAT_R64G64B64_UINT:
+		case VK_FORMAT_R64G64B64A64_UINT:
+			return subgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes & features2.features.shaderInt64 ? true : false;
 	}
 }
 
@@ -1035,6 +1119,38 @@ std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)
 		default:
 			DE_FATAL("Unhandled format!");
 			return "";
+		case VK_FORMAT_R8_SINT:
+			return "int8_t";
+		case VK_FORMAT_R8G8_SINT:
+			return "i8vec2";
+		case VK_FORMAT_R8G8B8_SINT:
+			return "i8vec3";
+		case VK_FORMAT_R8G8B8A8_SINT:
+			return "i8vec4";
+		case VK_FORMAT_R8_UINT:
+			return "uint8_t";
+		case VK_FORMAT_R8G8_UINT:
+			return "u8vec2";
+		case VK_FORMAT_R8G8B8_UINT:
+			return "u8vec3";
+		case VK_FORMAT_R8G8B8A8_UINT:
+			return "u8vec4";
+		case VK_FORMAT_R16_SINT:
+			return "int16_t";
+		case VK_FORMAT_R16G16_SINT:
+			return "i16vec2";
+		case VK_FORMAT_R16G16B16_SINT:
+			return "i16vec3";
+		case VK_FORMAT_R16G16B16A16_SINT:
+			return "i16vec4";
+		case VK_FORMAT_R16_UINT:
+			return "uint16_t";
+		case VK_FORMAT_R16G16_UINT:
+			return "u16vec2";
+		case VK_FORMAT_R16G16B16_UINT:
+			return "u16vec3";
+		case VK_FORMAT_R16G16B16A16_UINT:
+			return "u16vec4";
 		case VK_FORMAT_R32_SINT:
 			return "int";
 		case VK_FORMAT_R32G32_SINT:
@@ -1051,6 +1167,30 @@ std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)
 			return "uvec3";
 		case VK_FORMAT_R32G32B32A32_UINT:
 			return "uvec4";
+		case VK_FORMAT_R64_SINT:
+			return "int64_t";
+		case VK_FORMAT_R64G64_SINT:
+			return "i64vec2";
+		case VK_FORMAT_R64G64B64_SINT:
+			return "i64vec3";
+		case VK_FORMAT_R64G64B64A64_SINT:
+			return "i64vec4";
+		case VK_FORMAT_R64_UINT:
+			return "uint64_t";
+		case VK_FORMAT_R64G64_UINT:
+			return "u64vec2";
+		case VK_FORMAT_R64G64B64_UINT:
+			return "u64vec3";
+		case VK_FORMAT_R64G64B64A64_UINT:
+			return "u64vec4";
+		case VK_FORMAT_R16_SFLOAT:
+			return "float16_t";
+		case VK_FORMAT_R16G16_SFLOAT:
+			return "f16vec2";
+		case VK_FORMAT_R16G16B16_SFLOAT:
+			return "f16vec3";
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			return "f16vec4";
 		case VK_FORMAT_R32_SFLOAT:
 			return "float";
 		case VK_FORMAT_R32G32_SFLOAT:
@@ -1078,10 +1218,67 @@ std::string vkt::subgroups::getFormatNameForGLSL (VkFormat format)
 	}
 }
 
+std::string vkt::subgroups::getAdditionalExtensionForFormat (vk::VkFormat format)
+{
+	switch (format)
+	{
+		default:
+			return "";
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8G8B8_SINT:
+		case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_R8_UINT:
+		case VK_FORMAT_R8G8_UINT:
+		case VK_FORMAT_R8G8B8_UINT:
+		case VK_FORMAT_R8G8B8A8_UINT:
+			return "#extension GL_EXT_shader_subgroup_extended_types_int8 : enable\n";
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R16G16B16_SINT:
+		case VK_FORMAT_R16G16B16A16_SINT:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R16G16B16_UINT:
+		case VK_FORMAT_R16G16B16A16_UINT:
+			return "#extension GL_EXT_shader_subgroup_extended_types_int16 : enable\n";
+		case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R64G64_SINT:
+		case VK_FORMAT_R64G64B64_SINT:
+		case VK_FORMAT_R64G64B64A64_SINT:
+		case VK_FORMAT_R64_UINT:
+		case VK_FORMAT_R64G64_UINT:
+		case VK_FORMAT_R64G64B64_UINT:
+		case VK_FORMAT_R64G64B64A64_UINT:
+			return "#extension GL_EXT_shader_subgroup_extended_types_int64 : enable\n";
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R16G16B16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			return "#extension GL_EXT_shader_subgroup_extended_types_float16 : enable\n";
+	}
+}
+
 const std::vector<vk::VkFormat> vkt::subgroups::getAllFormats()
 {
 	std::vector<VkFormat> formats;
 
+	formats.push_back(VK_FORMAT_R8_SINT);
+	formats.push_back(VK_FORMAT_R8G8_SINT);
+	formats.push_back(VK_FORMAT_R8G8B8_SINT);
+	formats.push_back(VK_FORMAT_R8G8B8A8_SINT);
+	formats.push_back(VK_FORMAT_R8_UINT);
+	formats.push_back(VK_FORMAT_R8G8_UINT);
+	formats.push_back(VK_FORMAT_R8G8B8_UINT);
+	formats.push_back(VK_FORMAT_R8G8B8A8_UINT);
+	formats.push_back(VK_FORMAT_R16_SINT);
+	formats.push_back(VK_FORMAT_R16G16_SINT);
+	formats.push_back(VK_FORMAT_R16G16B16_SINT);
+	formats.push_back(VK_FORMAT_R16G16B16A16_SINT);
+	formats.push_back(VK_FORMAT_R16_UINT);
+	formats.push_back(VK_FORMAT_R16G16_UINT);
+	formats.push_back(VK_FORMAT_R16G16B16_UINT);
+	formats.push_back(VK_FORMAT_R16G16B16A16_UINT);
 	formats.push_back(VK_FORMAT_R32_SINT);
 	formats.push_back(VK_FORMAT_R32G32_SINT);
 	formats.push_back(VK_FORMAT_R32G32B32_SINT);
@@ -1090,6 +1287,18 @@ const std::vector<vk::VkFormat> vkt::subgroups::getAllFormats()
 	formats.push_back(VK_FORMAT_R32G32_UINT);
 	formats.push_back(VK_FORMAT_R32G32B32_UINT);
 	formats.push_back(VK_FORMAT_R32G32B32A32_UINT);
+	formats.push_back(VK_FORMAT_R64_SINT);
+	formats.push_back(VK_FORMAT_R64G64_SINT);
+	formats.push_back(VK_FORMAT_R64G64B64_SINT);
+	formats.push_back(VK_FORMAT_R64G64B64A64_SINT);
+	formats.push_back(VK_FORMAT_R64_UINT);
+	formats.push_back(VK_FORMAT_R64G64_UINT);
+	formats.push_back(VK_FORMAT_R64G64B64_UINT);
+	formats.push_back(VK_FORMAT_R64G64B64A64_UINT);
+	formats.push_back(VK_FORMAT_R16_SFLOAT);
+	formats.push_back(VK_FORMAT_R16G16_SFLOAT);
+	formats.push_back(VK_FORMAT_R16G16B16_SFLOAT);
+	formats.push_back(VK_FORMAT_R16G16B16A16_SFLOAT);
 	formats.push_back(VK_FORMAT_R32_SFLOAT);
 	formats.push_back(VK_FORMAT_R32G32_SFLOAT);
 	formats.push_back(VK_FORMAT_R32G32B32_SFLOAT);
@@ -1112,10 +1321,22 @@ bool vkt::subgroups::isFormatSigned (VkFormat format)
 	{
 		default:
 			return false;
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R8G8_SINT:
+		case VK_FORMAT_R8G8B8_SINT:
+		case VK_FORMAT_R8G8B8A8_SINT:
+		case VK_FORMAT_R16_SINT:
+		case VK_FORMAT_R16G16_SINT:
+		case VK_FORMAT_R16G16B16_SINT:
+		case VK_FORMAT_R16G16B16A16_SINT:
 		case VK_FORMAT_R32_SINT:
 		case VK_FORMAT_R32G32_SINT:
 		case VK_FORMAT_R32G32B32_SINT:
 		case VK_FORMAT_R32G32B32A32_SINT:
+		case VK_FORMAT_R64_SINT:
+		case VK_FORMAT_R64G64_SINT:
+		case VK_FORMAT_R64G64B64_SINT:
+		case VK_FORMAT_R64G64B64A64_SINT:
 			return true;
 	}
 }
@@ -1126,10 +1347,22 @@ bool vkt::subgroups::isFormatUnsigned (VkFormat format)
 	{
 		default:
 			return false;
+		case VK_FORMAT_R8_UINT:
+		case VK_FORMAT_R8G8_UINT:
+		case VK_FORMAT_R8G8B8_UINT:
+		case VK_FORMAT_R8G8B8A8_UINT:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R16G16_UINT:
+		case VK_FORMAT_R16G16B16_UINT:
+		case VK_FORMAT_R16G16B16A16_UINT:
 		case VK_FORMAT_R32_UINT:
 		case VK_FORMAT_R32G32_UINT:
 		case VK_FORMAT_R32G32B32_UINT:
 		case VK_FORMAT_R32G32B32A32_UINT:
+		case VK_FORMAT_R64_UINT:
+		case VK_FORMAT_R64G64_UINT:
+		case VK_FORMAT_R64G64B64_UINT:
+		case VK_FORMAT_R64G64B64A64_UINT:
 			return true;
 	}
 }
@@ -1140,6 +1373,10 @@ bool vkt::subgroups::isFormatFloat (VkFormat format)
 	{
 		default:
 			return false;
+		case VK_FORMAT_R16_SFLOAT:
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R16G16B16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
 		case VK_FORMAT_R32_SFLOAT:
 		case VK_FORMAT_R32G32_SFLOAT:
 		case VK_FORMAT_R32G32B32_SFLOAT:
@@ -1473,6 +1710,40 @@ void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBO
 			default:
 				DE_FATAL("Illegal buffer format");
 				break;
+			case VK_FORMAT_R8_SINT:
+			case VK_FORMAT_R8G8_SINT:
+			case VK_FORMAT_R8G8B8_SINT:
+			case VK_FORMAT_R8G8B8A8_SINT:
+			case VK_FORMAT_R8_UINT:
+			case VK_FORMAT_R8G8_UINT:
+			case VK_FORMAT_R8G8B8_UINT:
+			case VK_FORMAT_R8G8B8A8_UINT:
+			{
+				deUint8* ptr = reinterpret_cast<deUint8*>(alloc.getHostPtr());
+
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(deUint8)); k++)
+				{
+					ptr[k] = rnd.getUint8();
+				}
+			}
+			break;
+			case VK_FORMAT_R16_SINT:
+			case VK_FORMAT_R16G16_SINT:
+			case VK_FORMAT_R16G16B16_SINT:
+			case VK_FORMAT_R16G16B16A16_SINT:
+			case VK_FORMAT_R16_UINT:
+			case VK_FORMAT_R16G16_UINT:
+			case VK_FORMAT_R16G16B16_UINT:
+			case VK_FORMAT_R16G16B16A16_UINT:
+			{
+				deUint16* ptr = reinterpret_cast<deUint16*>(alloc.getHostPtr());
+
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(deUint16)); k++)
+				{
+					ptr[k] = rnd.getUint16();
+				}
+			}
+			break;
 			case VK_FORMAT_R8_USCALED:
 			case VK_FORMAT_R8G8_USCALED:
 			case VK_FORMAT_R8G8B8_USCALED:
@@ -1491,6 +1762,36 @@ void initializeMemory(Context& context, const Allocation& alloc, subgroups::SSBO
 				for (vk::VkDeviceSize k = 0; k < (size / sizeof(deUint32)); k++)
 				{
 					ptr[k] = rnd.getUint32();
+				}
+			}
+			break;
+			case VK_FORMAT_R64_SINT:
+			case VK_FORMAT_R64G64_SINT:
+			case VK_FORMAT_R64G64B64_SINT:
+			case VK_FORMAT_R64G64B64A64_SINT:
+			case VK_FORMAT_R64_UINT:
+			case VK_FORMAT_R64G64_UINT:
+			case VK_FORMAT_R64G64B64_UINT:
+			case VK_FORMAT_R64G64B64A64_UINT:
+			{
+				deUint64* ptr = reinterpret_cast<deUint64*>(alloc.getHostPtr());
+
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(deUint64)); k++)
+				{
+					ptr[k] = rnd.getUint64();
+				}
+			}
+			break;
+			case VK_FORMAT_R16_SFLOAT:
+			case VK_FORMAT_R16G16_SFLOAT:
+			case VK_FORMAT_R16G16B16_SFLOAT:
+			case VK_FORMAT_R16G16B16A16_SFLOAT:
+			{
+				deFloat16* ptr = reinterpret_cast<deFloat16*>(alloc.getHostPtr());
+
+				for (vk::VkDeviceSize k = 0; k < (size / sizeof(deFloat16)); k++)
+				{
+					ptr[k] = deFloat32To16(rnd.getFloat());
 				}
 			}
 			break;

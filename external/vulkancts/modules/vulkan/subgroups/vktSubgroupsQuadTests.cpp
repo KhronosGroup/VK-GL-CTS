@@ -106,6 +106,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float result;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -152,6 +153,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		geometry << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -203,6 +205,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -254,6 +257,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -315,6 +319,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		src << "#version 450\n"
 			<< "#extension GL_KHR_shader_subgroup_quad: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
 			"local_size_z_id = 2) in;\n"
 			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
@@ -384,6 +389,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
 				"{\n"
 				"  uint result[];\n"
@@ -420,6 +426,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(vertices=1) out;\n"
 				"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
 				"{\n"
@@ -459,6 +466,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(isolines) in;\n"
 				"layout(set = 0, binding = 2, std430)  buffer Buffer1\n"
 				"{\n"
@@ -494,6 +502,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(${TOPOLOGY}) in;\n"
 				"layout(points, max_vertices = 1) out;\n"
 				"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
@@ -531,6 +540,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_quad: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(location = 0) out uint result;\n"
 				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
 				"{\n"

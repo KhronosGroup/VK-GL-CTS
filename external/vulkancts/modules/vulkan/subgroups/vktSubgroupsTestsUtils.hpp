@@ -125,6 +125,8 @@ bool isTessellationAndGeometryPointSizeSupported(Context& context);
 
 std::string getFormatNameForGLSL (vk::VkFormat format);
 
+std::string getAdditionalExtensionForFormat (vk::VkFormat format);
+
 const std::vector<vk::VkFormat> getAllFormats ();
 
 bool isFormatSigned (vk::VkFormat format);

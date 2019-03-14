@@ -101,9 +101,13 @@ std::string getOpTypeOperation(int opType, vk::VkFormat format, std::string lhs,
 			{
 				default:
 					return "min(" + lhs + ", " + rhs + ")";
+				case VK_FORMAT_R16_SFLOAT:
 				case VK_FORMAT_R32_SFLOAT:
 				case VK_FORMAT_R64_SFLOAT:
 					return "(isnan(" + lhs + ") ? " + rhs + " : (isnan(" + rhs + ") ? " + lhs + " : min(" + lhs + ", " + rhs + ")))";
+				case VK_FORMAT_R16G16_SFLOAT:
+				case VK_FORMAT_R16G16B16_SFLOAT:
+				case VK_FORMAT_R16G16B16A16_SFLOAT:
 				case VK_FORMAT_R32G32_SFLOAT:
 				case VK_FORMAT_R32G32B32_SFLOAT:
 				case VK_FORMAT_R32G32B32A32_SFLOAT:
@@ -117,9 +121,13 @@ std::string getOpTypeOperation(int opType, vk::VkFormat format, std::string lhs,
 			{
 				default:
 					return "max(" + lhs + ", " + rhs + ")";
+				case VK_FORMAT_R16_SFLOAT:
 				case VK_FORMAT_R32_SFLOAT:
 				case VK_FORMAT_R64_SFLOAT:
 					return "(isnan(" + lhs + ") ? " + rhs + " : (isnan(" + rhs + ") ? " + lhs + " : max(" + lhs + ", " + rhs + ")))";
+				case VK_FORMAT_R16G16_SFLOAT:
+				case VK_FORMAT_R16G16B16_SFLOAT:
+				case VK_FORMAT_R16G16B16A16_SFLOAT:
 				case VK_FORMAT_R32G32_SFLOAT:
 				case VK_FORMAT_R32G32B32_SFLOAT:
 				case VK_FORMAT_R32G32B32A32_SFLOAT:
@@ -195,11 +203,42 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			}
 			else if (isInt)
 			{
-				return subgroups::getFormatNameForGLSL(format) + "(0x7fffffff)";
+				switch (format)
+				{
+					default:
+						return subgroups::getFormatNameForGLSL(format) + "(0x7fffffff)";
+					case VK_FORMAT_R8_SINT:
+					case VK_FORMAT_R8G8_SINT:
+					case VK_FORMAT_R8G8B8_SINT:
+					case VK_FORMAT_R8G8B8A8_SINT:
+					case VK_FORMAT_R8_UINT:
+					case VK_FORMAT_R8G8_UINT:
+					case VK_FORMAT_R8G8B8_UINT:
+					case VK_FORMAT_R8G8B8A8_UINT:
+						return subgroups::getFormatNameForGLSL(format) + "(0x7f)";
+					case VK_FORMAT_R16_SINT:
+					case VK_FORMAT_R16G16_SINT:
+					case VK_FORMAT_R16G16B16_SINT:
+					case VK_FORMAT_R16G16B16A16_SINT:
+					case VK_FORMAT_R16_UINT:
+					case VK_FORMAT_R16G16_UINT:
+					case VK_FORMAT_R16G16B16_UINT:
+					case VK_FORMAT_R16G16B16A16_UINT:
+						return subgroups::getFormatNameForGLSL(format) + "(0x7fff)";
+			        case VK_FORMAT_R64_SINT:
+			        case VK_FORMAT_R64G64_SINT:
+			        case VK_FORMAT_R64G64B64_SINT:
+			        case VK_FORMAT_R64G64B64A64_SINT:
+			        case VK_FORMAT_R64_UINT:
+			        case VK_FORMAT_R64G64_UINT:
+			        case VK_FORMAT_R64G64B64_UINT:
+			        case VK_FORMAT_R64G64B64A64_UINT:
+						return subgroups::getFormatNameForGLSL(format) + "(0x7fffffffffffffffUL)";
+				}
 			}
 			else if (isUnsigned)
 			{
-				return subgroups::getFormatNameForGLSL(format) + "(0xffffffffu)";
+				return subgroups::getFormatNameForGLSL(format) + "(-1)";
 			}
 			else
 			{
@@ -213,7 +252,38 @@ std::string getIdentity(int opType, vk::VkFormat format)
 			}
 			else if (isInt)
 			{
-				return subgroups::getFormatNameForGLSL(format) + "(0x80000000)";
+				switch (format)
+				{
+					default:
+						return subgroups::getFormatNameForGLSL(format) + "(0x80000000)";
+					case VK_FORMAT_R8_SINT:
+					case VK_FORMAT_R8G8_SINT:
+					case VK_FORMAT_R8G8B8_SINT:
+					case VK_FORMAT_R8G8B8A8_SINT:
+					case VK_FORMAT_R8_UINT:
+					case VK_FORMAT_R8G8_UINT:
+					case VK_FORMAT_R8G8B8_UINT:
+					case VK_FORMAT_R8G8B8A8_UINT:
+						return subgroups::getFormatNameForGLSL(format) + "(0x80)";
+					case VK_FORMAT_R16_SINT:
+					case VK_FORMAT_R16G16_SINT:
+					case VK_FORMAT_R16G16B16_SINT:
+					case VK_FORMAT_R16G16B16A16_SINT:
+					case VK_FORMAT_R16_UINT:
+					case VK_FORMAT_R16G16_UINT:
+					case VK_FORMAT_R16G16B16_UINT:
+					case VK_FORMAT_R16G16B16A16_UINT:
+						return subgroups::getFormatNameForGLSL(format) + "(0x8000)";
+			        case VK_FORMAT_R64_SINT:
+			        case VK_FORMAT_R64G64_SINT:
+			        case VK_FORMAT_R64G64B64_SINT:
+			        case VK_FORMAT_R64G64B64A64_SINT:
+			        case VK_FORMAT_R64_UINT:
+			        case VK_FORMAT_R64G64_UINT:
+			        case VK_FORMAT_R64G64B64_UINT:
+			        case VK_FORMAT_R64G64B64A64_UINT:
+						return subgroups::getFormatNameForGLSL(format) + "(0x8000000000000000UL)";
+				}
 			}
 			else if (isUnsigned)
 			{
@@ -241,9 +311,24 @@ std::string getCompare(int opType, vk::VkFormat format, std::string lhs, std::st
 		default:
 			return "all(equal(" + lhs + ", " + rhs + "))";
 		case VK_FORMAT_R8_USCALED:
+		case VK_FORMAT_R8_UINT:
+		case VK_FORMAT_R8_SINT:
+		case VK_FORMAT_R16_UINT:
+		case VK_FORMAT_R16_SINT:
 		case VK_FORMAT_R32_UINT:
 		case VK_FORMAT_R32_SINT:
+		case VK_FORMAT_R64_UINT:
+		case VK_FORMAT_R64_SINT:
 			return "(" + lhs + " == " + rhs + ")";
+		case VK_FORMAT_R16_SFLOAT:
+			switch (opType)
+			{
+				default:
+					return "(abs(" + lhs + " - " + rhs + ") < 0.1)";
+				case OPTYPE_CLUSTERED_MIN:
+				case OPTYPE_CLUSTERED_MAX:
+					return "(" + lhs + " == " + rhs + ")";
+			}
 		case VK_FORMAT_R32_SFLOAT:
 		case VK_FORMAT_R64_SFLOAT:
 			switch (opType)
@@ -253,6 +338,17 @@ std::string getCompare(int opType, vk::VkFormat format, std::string lhs, std::st
 				case OPTYPE_CLUSTERED_MIN:
 				case OPTYPE_CLUSTERED_MAX:
 					return "(" + lhs + " == " + rhs + ")";
+			}
+		case VK_FORMAT_R16G16_SFLOAT:
+		case VK_FORMAT_R16G16B16_SFLOAT:
+		case VK_FORMAT_R16G16B16A16_SFLOAT:
+			switch (opType)
+			{
+				default:
+					return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName + "(0.1)))";
+				case OPTYPE_CLUSTERED_MIN:
+				case OPTYPE_CLUSTERED_MAX:
+					return "all(equal(" + lhs + ", " + rhs + "))";
 			}
 		case VK_FORMAT_R32G32_SFLOAT:
 		case VK_FORMAT_R32G32B32_SFLOAT:
@@ -334,6 +430,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		vertexSrc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450 )<< "\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(location = 0) in highp vec4 in_position;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -359,6 +456,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		geometry  << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(points) in;\n"
 			<< "layout(points, max_vertices = 1) out;\n"
 			<< "layout(location = 0) out float out_color;\n"
@@ -388,6 +486,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		controlSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(vertices = 2) out;\n"
 			<< "layout(location = 0) out float out_color[];\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -419,6 +518,7 @@ void initFrameBufferPrograms (SourceCollections& programCollection, CaseDefiniti
 		evaluationSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450)<<"\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout(isolines, equal_spacing, ccw ) in;\n"
 			<< "layout(location = 0) out float out_color;\n"
 			<< "layout(set = 0, binding = 0) uniform Buffer1\n"
@@ -455,6 +555,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 		src << "#version 450\n"
 			<< "#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			<< "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			<< subgroups::getAdditionalExtensionForFormat(caseDef.format)
 			<< "layout (local_size_x_id = 0, local_size_y_id = 1, "
 			"local_size_z_id = 2) in;\n"
 			<< "layout(set = 0, binding = 0, std430) buffer Buffer1\n"
@@ -487,6 +588,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(set = 0, binding = 0, std430) buffer Buffer1\n"
 				"{\n"
 				"  uint result[];\n"
@@ -516,6 +618,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 			"#version 450\n"
 			"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 			"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+			+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 			"layout(vertices=1) out;\n"
 			"layout(set = 0, binding = 1, std430) buffer Buffer1\n"
 			"{\n"
@@ -548,6 +651,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(isolines) in;\n"
 				"layout(set = 0, binding = 2, std430) buffer Buffer1\n"
 				"{\n"
@@ -575,6 +679,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(${TOPOLOGY}) in;\n"
 				"layout(points, max_vertices = 1) out;\n"
 				"layout(set = 0, binding = 3, std430) buffer Buffer1\n"
@@ -603,6 +708,7 @@ void initPrograms(SourceCollections& programCollection, CaseDefinition caseDef)
 				"#version 450\n"
 				"#extension GL_KHR_shader_subgroup_clustered: enable\n"
 				"#extension GL_KHR_shader_subgroup_ballot: enable\n"
+				+ subgroups::getAdditionalExtensionForFormat(caseDef.format) +
 				"layout(location = 0) out uint result;\n"
 				"layout(set = 0, binding = 4, std430) readonly buffer Buffer2\n"
 				"{\n"
@@ -766,6 +872,10 @@ tcu::TestCaseGroup* createSubgroupsClusteredTests(tcu::TestContext& testCtx)
 			{
 				default:
 					break;
+				case VK_FORMAT_R16_SFLOAT:
+				case VK_FORMAT_R16G16_SFLOAT:
+				case VK_FORMAT_R16G16B16_SFLOAT:
+				case VK_FORMAT_R16G16B16A16_SFLOAT:
 				case VK_FORMAT_R32_SFLOAT:
 				case VK_FORMAT_R32G32_SFLOAT:
 				case VK_FORMAT_R32G32B32_SFLOAT:
