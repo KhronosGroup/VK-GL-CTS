@@ -336,7 +336,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/google/amber.git",
 		None,
-		"50dbc8a0bceca63731f0ccb8c62c69751e67a5f8",
+		"34c750892a8a8bf7e3440ea25cf4c8c690a44827",
 		"amber"),
 ]
 

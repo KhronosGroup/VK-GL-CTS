@@ -170,7 +170,8 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 
 	amber::EngineConfig*	vkConfig = GetVulkanConfig(m_context.getInstance(),
 			m_context.getPhysicalDevice(), m_context.getDevice(), &m_context.getDeviceFeatures(),
-			m_context.getInstanceExtensions(), m_context.getUniversalQueueFamilyIndex(),
+			&m_context.getDeviceFeatures2(), m_context.getInstanceExtensions(),
+			m_context.getDeviceExtensions(), m_context.getUniversalQueueFamilyIndex(),
 			m_context.getUniversalQueue(), m_context.getInstanceProcAddr());
 
 	amber::Amber			am;
