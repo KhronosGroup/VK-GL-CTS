@@ -320,7 +320,7 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"822817977cdd5df28b85ae8c317fe802bfd8854b",
+		"137e071ca42f2c9e378d974c399a89504804a1e5",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
