@@ -24,9 +24,12 @@
  * \brief Functional tests using amber
  *//*--------------------------------------------------------------------*/
 
+#include <string>
+#include <set>
 #include "amber/recipe.h"
 #include "tcuDefs.hpp"
 #include "tcuTestCase.hpp"
+#include "vkSpirVProgram.hpp"
 #include "vktTestCase.hpp"
 
 namespace vkt
@@ -60,11 +63,30 @@ public:
 
 	virtual TestInstance* createInstance (Context& ctx) const;
 
+	// Check that the Vulkan implementation supports this test.
+	// We have the principle that client code in dEQP should independently
+	// determine if the test should be supported:
+	//  - If any of the extensions registered via
+	//    |addRequiredDeviceExtension| is not supported then throw a
+	//    NotSupported exception.
+	//  - Otherwise, we do a secondary sanity check depending on code inside
+	//    Amber itself: if the Amber test says it is not supported, then
+	//    throw an internal error exception.
+	virtual void checkSupport(Context& ctx) const; // override
+
 	bool parse(const char* category, const char* filename);
 	void initPrograms(vk::SourceCollections& programCollection) const;
+	// If the test case uses SPIR-V Assembly, use these build options.
+	// Otherwise, defaults to target Vulkan 1.0, SPIR-V 1.0.
+	void setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_options);
+
+	// Add a require device extension, to be checked in checkSupport.
+	void addRequiredDeviceExtension(const std::string& ext);
 
 private:
 	amber::Recipe* m_recipe;
+	vk::SpirVAsmBuildOptions m_asm_options;
+	std::set<std::string> m_required_device_extensions;
 };
 
 } // cts_amber

@@ -26,6 +26,7 @@
 
 #include <iostream>
 
+#include "deDefs.hpp"
 #include "deUniquePtr.hpp"
 #include "deFilePath.hpp"
 #include "vktTestCaseUtil.hpp"
@@ -34,6 +35,7 @@
 #include "vktAmberHelper.hpp"
 #include "tcuResource.hpp"
 #include "tcuTestLog.hpp"
+#include "vkSpirVProgram.hpp"
 
 namespace vkt
 {
@@ -43,7 +45,8 @@ namespace cts_amber
 AmberTestCase::AmberTestCase (tcu::TestContext& testCtx,
 							  const char*		name,
 							  const char*		description)
-	: TestCase(testCtx, name, description)
+	: TestCase(testCtx, name, description),
+	  m_recipe(DE_NULL)
 {
 }
 
@@ -55,6 +58,64 @@ AmberTestCase::~AmberTestCase (void)
 TestInstance* AmberTestCase::createInstance(Context& ctx) const
 {
 	return new AmberTestInstance(ctx, m_recipe);
+}
+
+static amber::EngineConfig* createEngineConfig(Context& ctx)
+{
+	amber::EngineConfig*	vkConfig = GetVulkanConfig(ctx.getInstance(),
+			ctx.getPhysicalDevice(), ctx.getDevice(), &ctx.getDeviceFeatures(),
+			&ctx.getDeviceFeatures2(), ctx.getInstanceExtensions(),
+			ctx.getDeviceExtensions(), ctx.getUniversalQueueFamilyIndex(),
+			ctx.getUniversalQueue(), ctx.getInstanceProcAddr());
+
+	return vkConfig;
+}
+
+void AmberTestCase::checkSupport(Context& ctx) const
+{
+	// Check for device extensions as declared by the test code.
+	if (m_required_device_extensions.size())
+	{
+			std::set<std::string> device_extensions(ctx.getDeviceExtensions().begin(),
+													ctx.getDeviceExtensions().end());
+			std::string missing;
+			for (std::set<std::string>::iterator iter = m_required_device_extensions.begin();
+				 iter != m_required_device_extensions.end();
+				 ++iter)
+			{
+					if (device_extensions.count(*iter) == 0)
+					{
+							missing += " " + *iter;
+					}
+			}
+			if (missing.size() > 0)
+			{
+					std::string message("Test requires unsupported extensions:");
+					message += missing;
+					TCU_THROW(NotSupportedError, message.c_str());
+			}
+	}
+
+	// Check for extensions as declared by the Amber script itself.  Throw an internal
+	// error if that's more demanding.
+	amber::Amber			am;
+	amber::Options			amber_options;
+	amber_options.engine	= amber::kEngineTypeVulkan;
+	amber_options.config	= createEngineConfig(ctx);
+	amber_options.delegate	= DE_NULL;
+
+	amber::Result r = am.AreAllRequirementsSupported(m_recipe, &amber_options);
+	if (!r.IsSuccess())
+	{
+		// dEQP does not to rely on external code to determine whether
+		// a test is supported.  So throw an internal error here instead
+		// of a NotSupportedError.  If an Amber test is not supported, then
+		// you must override this method and throw a NotSupported exception
+		// before reach here.
+		TCU_THROW(InternalError, r.Error().c_str());
+	}
+
+	delete amber_options.config;
 }
 
 bool AmberTestCase::parse(const char* category, const char* filename)
@@ -76,6 +137,9 @@ bool AmberTestCase::parse(const char* category, const char* filename)
 	{
 		getTestContext().getLog()
 			<< tcu::TestLog::Message
+			<< "Failed to parse Amber test "
+			<< readFilename
+			<< ": "
 			<< r.Error()
 			<< "\n"
 			<< tcu::TestLog::EndMessage;
@@ -97,7 +161,7 @@ void AmberTestCase::initPrograms(vk::SourceCollections& programCollection) const
 
 		if (shader.format == amber::kShaderFormatSpirvAsm)
 		{
-			programCollection.spirvAsmSources.add(shader.shader_name) << shader.shader_source;
+			programCollection.spirvAsmSources.add(shader.shader_name) << shader.shader_source << m_asm_options;
 		}
 		else if (shader.format == amber::kShaderFormatGlsl)
 		{
@@ -168,16 +232,10 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 		shaderMap[shader.shader_name] = data;
 	}
 
-	amber::EngineConfig*	vkConfig = GetVulkanConfig(m_context.getInstance(),
-			m_context.getPhysicalDevice(), m_context.getDevice(), &m_context.getDeviceFeatures(),
-			&m_context.getDeviceFeatures2(), m_context.getInstanceExtensions(),
-			m_context.getDeviceExtensions(), m_context.getUniversalQueueFamilyIndex(),
-			m_context.getUniversalQueue(), m_context.getInstanceProcAddr());
-
 	amber::Amber						am;
 	amber::Options						amber_options;
 	amber_options.engine				= amber::kEngineTypeVulkan;
-	amber_options.config				= vkConfig;
+	amber_options.config				= createEngineConfig(m_context);
 	amber_options.delegate				= DE_NULL;
 	amber_options.pipeline_create_only	= false;
 
@@ -190,9 +248,19 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 			<< tcu::TestLog::EndMessage;
 	}
 
-	delete vkConfig;
+	delete amber_options.config;
 
 	return r.IsSuccess() ? tcu::TestStatus::pass("Pass") :tcu::TestStatus::fail("Fail");
+}
+
+void AmberTestCase::setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_options)
+{
+		m_asm_options = asm_options;
+}
+
+void AmberTestCase::addRequiredDeviceExtension(const std::string& ext)
+{
+		m_required_device_extensions.insert(ext);
 }
 
 } // cts_amber
