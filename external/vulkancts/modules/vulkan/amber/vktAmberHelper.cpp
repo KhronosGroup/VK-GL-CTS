@@ -32,7 +32,9 @@ amber::EngineConfig* GetVulkanConfig	(void*			instance,
 										 void*			physicalDevice,
 										 void*			device,
 										 const void*	features,
-										 const			std::vector<std::string>& extensions,
+										 const void*	features2,
+										 const			std::vector<std::string>& instance_extensions,
+										 const			std::vector<std::string>& device_extensions,
 										 deUint32		queueIdx,
 										 void*			queue,
 										 void*			getInstanceProcAddr)
@@ -42,7 +44,9 @@ amber::EngineConfig* GetVulkanConfig	(void*			instance,
 	cfg->instance = static_cast<VkInstance>(instance);
 	cfg->physical_device = static_cast<VkPhysicalDevice>(physicalDevice);
 	cfg->available_features = *static_cast<const VkPhysicalDeviceFeatures*>(features);
-	cfg->available_extensions = extensions;
+	cfg->available_features2 = *static_cast<const VkPhysicalDeviceFeatures2KHR*>(features2);
+	cfg->available_instance_extensions = instance_extensions;
+	cfg->available_device_extensions = device_extensions;
 	cfg->queue_family_index = queueIdx;
 	cfg->device = static_cast<VkDevice>(device);
 	cfg->queue = static_cast<VkQueue>(queue);

@@ -101,7 +101,8 @@ vector<string> filterExtensions (const vector<VkExtensionProperties>& extensions
 	{
 		"VK_KHR_",
 		"VK_EXT_",
-		"VK_KHX_"
+		"VK_KHX_",
+		"VK_NV_cooperative_matrix"
 	};
 
 	for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
@@ -326,6 +327,7 @@ public:
 	VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR	uniformBufferStandardLayoutFeatures;
 	VkPhysicalDeviceBufferAddressFeaturesEXT			bufferDeviceAddressFeatures;
 	VkPhysicalDeviceImagelessFramebufferFeaturesKHR		imagelessFramebufferFeatures;
+	VkPhysicalDeviceCooperativeMatrixFeaturesNV			cooperativeMatrixFeatures;
 
 	DeviceFeatures (const InstanceInterface&	vki,
 					const deUint32				apiVersion,
@@ -352,6 +354,7 @@ public:
 		deMemset(&uniformBufferStandardLayoutFeatures, 0, sizeof(uniformBufferStandardLayoutFeatures));
 		deMemset(&bufferDeviceAddressFeatures, 0, sizeof(bufferDeviceAddressFeatures));
 		deMemset(&imagelessFramebufferFeatures, 0, sizeof(imagelessFramebufferFeatures));
+		deMemset(&cooperativeMatrixFeatures, 0, sizeof(cooperativeMatrixFeatures));
 
 		coreFeatures.sType						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		samplerYCbCrConversionFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES;
@@ -372,6 +375,7 @@ public:
 		uniformBufferStandardLayoutFeatures.sType	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR;
 		bufferDeviceAddressFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
 		imagelessFramebufferFeatures.sType		= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGELESS_FRAMEBUFFER_FEATURES_KHR;
+		cooperativeMatrixFeatures.sType			= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
 
 		vector<VkExtensionProperties> deviceExtensionProperties =
 			enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -470,6 +474,11 @@ public:
 				*nextPtr	= &imagelessFramebufferFeatures;
 				nextPtr		= &imagelessFramebufferFeatures.pNext;
 			}
+			if (de::contains(deviceExtensions.begin(), deviceExtensions.end(), "VK_NV_cooperative_matrix"))
+			{
+				*nextPtr	= &cooperativeMatrixFeatures;
+				nextPtr		= &cooperativeMatrixFeatures.pNext;
+			}
 
 			vki.getPhysicalDeviceFeatures2(physicalDevice, &coreFeatures);
 		}
@@ -518,6 +527,7 @@ public:
 	const VkPhysicalDeviceBufferAddressFeaturesEXT&			getBufferDeviceAddressFeatures		(void) const	{ return m_deviceFeatures.bufferDeviceAddressFeatures;	}
 	const VkPhysicalDeviceImagelessFramebufferFeaturesKHR&	getImagelessFramebufferFeatures		(void) const	{ return m_deviceFeatures.imagelessFramebufferFeatures;		}
 
+	const VkPhysicalDeviceCooperativeMatrixFeaturesNV&		getCooperativeMatrixFeatures		(void) const	{ return m_deviceFeatures.cooperativeMatrixFeatures;	}
 	VkDevice												getDevice							(void) const	{ return *m_device;											}
 	const DeviceInterface&									getDeviceInterface					(void) const	{ return m_deviceInterface;									}
 	const VkPhysicalDeviceProperties&						getDeviceProperties					(void) const	{ return m_deviceProperties;								}
@@ -693,6 +703,8 @@ const vk::VkPhysicalDeviceBufferAddressFeaturesEXT&
 										Context::getBufferDeviceAddressFeatures	(void) const { return m_device->getBufferDeviceAddressFeatures();	}
 const vk::VkPhysicalDeviceImagelessFramebufferFeaturesKHR&
 										Context::getImagelessFramebufferFeatures	(void) const { return m_device->getImagelessFramebufferFeatures();		}
+const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
+										Context::getCooperativeMatrixFeatures	(void) const { return m_device->getCooperativeMatrixFeatures();	}
 const vk::VkPhysicalDeviceProperties&	Context::getDeviceProperties			(void) const { return m_device->getDeviceProperties();			}
 const vector<string>&					Context::getDeviceExtensions			(void) const { return m_device->getDeviceExtensions();			}
 vk::VkDevice							Context::getDevice						(void) const { return m_device->getDevice();					}

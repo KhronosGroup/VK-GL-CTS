@@ -370,6 +370,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT:									return "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT";
 		case VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFORM_BUFFER_STANDARD_LAYOUT_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV:								return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV";
 		default:																				return DE_NULL;
 	}
 }
@@ -1411,6 +1414,37 @@ const char* getValidationCacheHeaderVersionEXTName (VkValidationCacheHeaderVersi
 	{
 		case VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT:	return "VK_VALIDATION_CACHE_HEADER_VERSION_ONE_EXT";
 		default:											return DE_NULL;
+	}
+}
+
+const char* getComponentTypeNVName (VkComponentTypeNV value)
+{
+	switch (value)
+	{
+		case VK_COMPONENT_TYPE_FLOAT16_NV:	return "VK_COMPONENT_TYPE_FLOAT16_NV";
+		case VK_COMPONENT_TYPE_FLOAT32_NV:	return "VK_COMPONENT_TYPE_FLOAT32_NV";
+		case VK_COMPONENT_TYPE_FLOAT64_NV:	return "VK_COMPONENT_TYPE_FLOAT64_NV";
+		case VK_COMPONENT_TYPE_SINT8_NV:	return "VK_COMPONENT_TYPE_SINT8_NV";
+		case VK_COMPONENT_TYPE_SINT16_NV:	return "VK_COMPONENT_TYPE_SINT16_NV";
+		case VK_COMPONENT_TYPE_SINT32_NV:	return "VK_COMPONENT_TYPE_SINT32_NV";
+		case VK_COMPONENT_TYPE_SINT64_NV:	return "VK_COMPONENT_TYPE_SINT64_NV";
+		case VK_COMPONENT_TYPE_UINT8_NV:	return "VK_COMPONENT_TYPE_UINT8_NV";
+		case VK_COMPONENT_TYPE_UINT16_NV:	return "VK_COMPONENT_TYPE_UINT16_NV";
+		case VK_COMPONENT_TYPE_UINT32_NV:	return "VK_COMPONENT_TYPE_UINT32_NV";
+		case VK_COMPONENT_TYPE_UINT64_NV:	return "VK_COMPONENT_TYPE_UINT64_NV";
+		default:							return DE_NULL;
+	}
+}
+
+const char* getScopeNVName (VkScopeNV value)
+{
+	switch (value)
+	{
+		case VK_SCOPE_DEVICE_NV:		return "VK_SCOPE_DEVICE_NV";
+		case VK_SCOPE_WORKGROUP_NV:		return "VK_SCOPE_WORKGROUP_NV";
+		case VK_SCOPE_SUBGROUP_NV:		return "VK_SCOPE_SUBGROUP_NV";
+		case VK_SCOPE_QUEUE_FAMILY_NV:	return "VK_SCOPE_QUEUE_FAMILY_NV";
+		default:						return DE_NULL;
 	}
 }
 
@@ -6763,6 +6797,44 @@ std::ostream& operator<< (std::ostream& s, const VkBufferDeviceAddressCreateInfo
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tdeviceAddress = " << value.deviceAddress << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCooperativeMatrixPropertiesNV& value)
+{
+	s << "VkCooperativeMatrixPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tMSize = " << value.MSize << '\n';
+	s << "\tNSize = " << value.NSize << '\n';
+	s << "\tKSize = " << value.KSize << '\n';
+	s << "\tAType = " << value.AType << '\n';
+	s << "\tBType = " << value.BType << '\n';
+	s << "\tCType = " << value.CType << '\n';
+	s << "\tDType = " << value.DType << '\n';
+	s << "\tscope = " << value.scope << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrixPropertiesNV& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrixPropertiesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrixSupportedStages = " << getShaderStageFlagsStr(value.cooperativeMatrixSupportedStages) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrixFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrixFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrix = " << value.cooperativeMatrix << '\n';
+	s << "\tcooperativeMatrixRobustBufferAccess = " << value.cooperativeMatrixRobustBufferAccess << '\n';
 	s << '}';
 	return s;
 }

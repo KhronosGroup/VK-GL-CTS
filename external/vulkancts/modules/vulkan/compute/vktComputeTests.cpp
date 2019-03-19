@@ -23,6 +23,7 @@
 
 #include "vktComputeTests.hpp"
 #include "vktComputeBasicComputeShaderTests.hpp"
+#include "vktComputeCooperativeMatrixTests.hpp"
 #include "vktComputeIndirectComputeDispatchTests.hpp"
 #include "vktComputeShaderBuiltinVarTests.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -41,6 +42,7 @@ void createChildren (tcu::TestCaseGroup* computeTests)
 
 	computeTests->addChild(createBasicComputeShaderTests(testCtx));
 	computeTests->addChild(createBasicDeviceGroupComputeShaderTests(testCtx));
+	computeTests->addChild(createCooperativeMatrixTests(testCtx));
 	computeTests->addChild(createIndirectComputeDispatchTests(testCtx));
 	computeTests->addChild(createComputeShaderBuiltinVarTests(testCtx));
 }
