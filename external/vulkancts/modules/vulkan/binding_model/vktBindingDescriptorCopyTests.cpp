@@ -1419,6 +1419,9 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 	vector<VkAttachmentDescription>			attachmentDescriptions;
 	vector<VkImageView>						imageViews;
 
+	if(limits.maxBoundDescriptorSets <= m_descriptorSets.size())
+		TCU_THROW(NotSupportedError, "Maximum bound descriptor sets limit exceeded.");
+
 	// Check physical device limits of per stage and per desriptor set descriptor count
 	{
 		deUint32	numPerStageSamplers			= 0;
@@ -2299,7 +2302,7 @@ void addDescriptorCopyTests (tcu::TestContext&					testCtx,
 		commands->addDescriptor(DescriptorSp(new T(3u, 0u, 3u, 4u)), 0u);
 
 		commands->copyDescriptor(0u, 0u, 0u,	// from
-								 0u, 0u, 0u,	// to
+								 0u, 1u, 0u,	// to
 								 3u);			// num descriptors
 
 
