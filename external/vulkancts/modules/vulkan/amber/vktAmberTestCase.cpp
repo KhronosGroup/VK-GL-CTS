@@ -178,6 +178,7 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 	amber::Options			amber_options;
 	amber_options.engine	= amber::kEngineTypeVulkan;
 	amber_options.config	= vkConfig;
+	amber_options.delegate	= DE_NULL;
 
 
 	amber::Result r = am.ExecuteWithShaderData(m_recipe, &amber_options, shaderMap);
