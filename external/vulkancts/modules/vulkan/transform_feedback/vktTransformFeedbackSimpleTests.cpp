@@ -66,6 +66,7 @@ enum TestType
 	TEST_TYPE_XFB_CLIPDISTANCE,
 	TEST_TYPE_XFB_CULLDISTANCE,
 	TEST_TYPE_XFB_CLIP_AND_CULL,
+	TEST_TYPE_TRIANGLE_STRIP_ADJACENCY,
 	TEST_TYPE_STREAMS_POINTSIZE,
 	TEST_TYPE_STREAMS_CLIPDISTANCE,
 	TEST_TYPE_STREAMS_CULLDISTANCE,
@@ -754,6 +755,113 @@ tcu::TestStatus TransformFeedbackResumeTestInstance::iterate (void)
 	verifyTransformFeedbackBuffer(tfBufAllocation, m_parameters.bufferSize);
 
 	return tcu::TestStatus::pass("Pass");
+}
+
+class TransformFeedbackTriangleStripWithAdjacencyTestInstance : public TransformFeedbackTestInstance
+{
+public:
+						TransformFeedbackTriangleStripWithAdjacencyTestInstance	(Context& context, const TestParameters& parameters);
+
+protected:
+	tcu::TestStatus		iterate													(void);
+	void				verifyTransformFeedbackBuffer							(const MovePtr<Allocation>& bufAlloc, const VkDeviceSize bufBytes);
+};
+
+TransformFeedbackTriangleStripWithAdjacencyTestInstance::TransformFeedbackTriangleStripWithAdjacencyTestInstance (Context& context, const TestParameters& parameters)
+	: TransformFeedbackTestInstance	(context, parameters)
+{
+}
+
+tcu::TestStatus TransformFeedbackTriangleStripWithAdjacencyTestInstance::iterate (void)
+{
+	const DeviceInterface&				vk						= m_context.getDeviceInterface();
+	const VkDevice						device					= m_context.getDevice();
+	const deUint32						queueFamilyIndex		= m_context.getUniversalQueueFamilyIndex();
+	const VkQueue						queue					= m_context.getUniversalQueue();
+	Allocator&							allocator				= m_context.getDefaultAllocator();
+
+	DE_ASSERT(m_parameters.partCount >= 6);
+
+	const VkPrimitiveTopology			topology				(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY);
+	const Unique<VkShaderModule>		vertexModule			(createShaderModule		(vk, device, m_context.getBinaryCollection().get("vert"), 0u));
+	const Unique<VkRenderPass>			renderPass				(makeRenderPass			(vk, device, VK_FORMAT_UNDEFINED));
+	const Unique<VkFramebuffer>			framebuffer				(makeFramebuffer		(vk, device, *renderPass, m_imageExtent2D, DE_NULL));
+	const Unique<VkPipelineLayout>		pipelineLayout			(makePipelineLayout		(vk, device));
+	const Unique<VkPipeline>			pipeline				(makeGraphicsPipeline	(vk, device, *pipelineLayout, *renderPass, *vertexModule, DE_NULL, DE_NULL, m_imageExtent2D, 0u, DE_NULL, topology));
+	const Unique<VkCommandPool>			cmdPool					(createCommandPool		(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer				(allocateCommandBuffer	(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const deUint32						numPrimitives			= m_parameters.partCount / 2u - 2u;
+	const deUint32						numPoints				= 3u * numPrimitives;
+	const VkDeviceSize					bufferSize				= numPoints * sizeof(deUint32);
+	const VkBufferCreateInfo			tfBufCreateInfo			= makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+	const Move<VkBuffer>				tfBuf					= createBuffer(vk, device, &tfBufCreateInfo);
+	const MovePtr<Allocation>			tfBufAllocation			= allocator.allocate(getBufferMemoryRequirements(vk, device, *tfBuf), MemoryRequirement::HostVisible);
+	const VkDeviceSize					tfBufBindingSize		= bufferSize;
+	const VkDeviceSize					tfBufBindingOffset		= 0u;
+	const deUint32						startValue				= 0u;
+
+	VK_CHECK(vk.bindBufferMemory(device, *tfBuf, tfBufAllocation->getMemory(), tfBufAllocation->getOffset()));
+
+	beginCommandBuffer(vk, *cmdBuffer);
+	{
+		beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(m_imageExtent2D));
+		{
+			vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+			vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0, 1, &*tfBuf, &tfBufBindingOffset, &tfBufBindingSize);
+
+			vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0u, sizeof(startValue), &startValue);
+
+			vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+			{
+				vk.cmdDraw(*cmdBuffer, m_parameters.partCount, 1u, 0u, 0u);
+			}
+			vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, DE_NULL, DE_NULL);
+		}
+		endRenderPass(vk, *cmdBuffer);
+	}
+	endCommandBuffer(vk, *cmdBuffer);
+	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+	verifyTransformFeedbackBuffer(tfBufAllocation, bufferSize);
+
+	return tcu::TestStatus::pass("Pass");
+}
+
+void TransformFeedbackTriangleStripWithAdjacencyTestInstance::verifyTransformFeedbackBuffer (const MovePtr<Allocation>& bufAlloc, const VkDeviceSize bufBytes)
+{
+	const DeviceInterface&	vk			= m_context.getDeviceInterface();
+	const VkDevice			device		= m_context.getDevice();
+
+	invalidateMappedMemoryRange(vk, device, bufAlloc->getMemory(), bufAlloc->getOffset(), VK_WHOLE_SIZE);
+
+	const deUint32			numPoints	= static_cast<deUint32>(bufBytes / sizeof(deUint32));
+	const deUint32*			tfData		= (deUint32*)bufAlloc->getHostPtr();
+
+	for (deUint32 dataNdx = 0; dataNdx < numPoints; ++dataNdx)
+	{
+		const deUint32	i			= dataNdx / 3;
+		const deUint32	vertexNdx	= dataNdx % 3;
+		const bool		even		= (0 == i % 2);
+		deUint32		expected;
+
+		if (even)
+		{
+			const deUint32	vertexNumbers[3] = { 2 * i + 0, 2 * i + 2, 2 * i + 4 };
+
+			expected = vertexNumbers[vertexNdx];
+		}
+		else
+		{
+			const deUint32	vertexNumbers[3] = { 2 * i + 0, 2 * i + 4, 2 * i + 2 };
+
+			expected = vertexNumbers[vertexNdx];
+		}
+
+		if (tfData[dataNdx] != expected)
+			TCU_FAIL(std::string("Failed at item ") + de::toString(dataNdx) + " received:" + de::toString(tfData[dataNdx]) + " expected:" + de::toString(expected));
+	}
 }
 
 class TransformFeedbackBuiltinTestInstance : public TransformFeedbackTestInstance
@@ -1555,6 +1663,9 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 	if (m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL)
 		return new TransformFeedbackBuiltinTestInstance(context, m_parameters);
 
+	if (m_parameters.testType == TEST_TYPE_TRIANGLE_STRIP_ADJACENCY)
+		return new TransformFeedbackTriangleStripWithAdjacencyTestInstance(context, m_parameters);
+
 	if (m_parameters.testType == TEST_TYPE_STREAMS)
 		return new TransformFeedbackStreamsTestInstance(context, m_parameters);
 
@@ -1584,6 +1695,10 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 
 void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollection) const
 {
+	const bool vertexShaderOnly		=  m_parameters.testType == TEST_TYPE_BASIC
+									|| m_parameters.testType == TEST_TYPE_RESUME
+									|| m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY
+									|| m_parameters.testType == TEST_TYPE_TRIANGLE_STRIP_ADJACENCY;
 	const bool requiresFullPipeline	=  m_parameters.testType == TEST_TYPE_STREAMS
 									|| m_parameters.testType == TEST_TYPE_STREAMS_POINTSIZE
 									|| m_parameters.testType == TEST_TYPE_STREAMS_CULLDISTANCE
@@ -1593,7 +1708,7 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 									|| m_parameters.testType == TEST_TYPE_XFB_CULLDISTANCE
 									|| m_parameters.testType == TEST_TYPE_XFB_CLIP_AND_CULL;
 
-	if (m_parameters.testType == TEST_TYPE_BASIC || m_parameters.testType == TEST_TYPE_RESUME || m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY)
+	if (vertexShaderOnly)
 	{
 		// Vertex shader
 		{
@@ -1993,6 +2108,26 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 
 					group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(partCount) + "_" + de::toString(bufferSize)).c_str(), "Simple Transform Feedback test", parameters));
 				}
+			}
+		}
+	}
+
+	{
+		const deUint32		bufferCounts[]	= { 6, 8, 10, 12 };
+		const TestType		testTypes[]		= { TEST_TYPE_TRIANGLE_STRIP_ADJACENCY };
+		const std::string	testTypeNames[]	= { "triangle_strip_with_adjacency"};
+
+		for (deUint32 testTypesNdx = 0; testTypesNdx < DE_LENGTH_OF_ARRAY(testTypes); ++testTypesNdx)
+		{
+			const TestType		testType	= testTypes[testTypesNdx];
+			const std::string	testName	= testTypeNames[testTypesNdx];
+
+			for (deUint32 bufferCountsNdx = 0; bufferCountsNdx < DE_LENGTH_OF_ARRAY(bufferCounts); ++bufferCountsNdx)
+			{
+				const deUint32			vertexCount	= bufferCounts[bufferCountsNdx];
+				const TestParameters	parameters	= { testType, 0u, vertexCount, 0u, 0u, 0u };
+
+				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), (testName + "_" + de::toString(vertexCount)).c_str(), "Triangle Strip With Adjacency Transform Feedback test", parameters));
 			}
 		}
 	}
