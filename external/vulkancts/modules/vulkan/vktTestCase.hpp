@@ -96,6 +96,8 @@ public:
 												getBufferDeviceAddressFeatures	(void) const;
 	const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
 												getCooperativeMatrixFeatures	(void) const;
+	const vk::VkPhysicalDeviceHostQueryResetFeaturesEXT&
+												getHostQueryResetFeatures		(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;

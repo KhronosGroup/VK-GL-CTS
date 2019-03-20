@@ -368,6 +368,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV:								return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT";
 		default:																				return DE_NULL;
 	}
 }
@@ -6768,6 +6769,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatr
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tcooperativeMatrix = " << value.cooperativeMatrix << '\n';
 	s << "\tcooperativeMatrixRobustBufferAccess = " << value.cooperativeMatrixRobustBufferAccess << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceHostQueryResetFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceHostQueryResetFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\thostQueryReset = " << value.hostQueryReset << '\n';
 	s << '}';
 	return s;
 }
