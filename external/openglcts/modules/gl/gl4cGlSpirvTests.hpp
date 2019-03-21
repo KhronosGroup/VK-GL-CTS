@@ -29,6 +29,7 @@
  * \brief Conformance tests for the GL_ARB_gl_spirv functionality.
  */ /*-------------------------------------------------------------------*/
 
+#include "../common/glcSpirvUtils.hpp"
 #include "glcTestCase.hpp"
 #include "gluShaderProgram.hpp"
 #include "glwDefs.hpp"
@@ -38,11 +39,10 @@
 
 using namespace glu;
 using namespace glw;
+using namespace glc;
 
 namespace gl4cts
 {
-
-typedef std::map<std::string, std::vector<std::string> > SpirVMapping;
 
 typedef std::vector<std::string> CapabilitiesVec;
 

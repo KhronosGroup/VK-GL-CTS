@@ -1737,21 +1737,22 @@ tcu::TestStatus testSecondaryCmdBuffer (Context& context, const TestParams param
 		const VkExtent2D		extentBottom	= { params.image.size.width / 2, de::max(params.image.size.height / 2, 1u) };
 		const VkRect2D			rectRightTop	= { offsetTop, extentTop };
 		const VkRect2D			rectRightBottom	= { offsetBottom, extentBottom };
+
 		const VkClearRect		rects[]			=
 		{
-			{
-				rectRightTop,		// VkRect2D	rect
-				0u,					// deUint32	baseArrayLayer
-				numLayers / 2		// deUint32	layerCount
-			},
 			{
 				rectRightBottom,	// VkRect2D	rect
 				numLayers / 2,		// deUint32	baseArrayLayer
 				numLayers / 2		// deUint32	layerCount
+			},
+			{
+				rectRightTop,		// VkRect2D	rect
+				0u,					// deUint32	baseArrayLayer
+				numLayers / 2		// deUint32	layerCount
 			}
 		};
 
-		vk.cmdClearAttachments(*secondaryCmdBuffer, 1u, &clearAttachment, 2u, rects);
+		vk.cmdClearAttachments(*secondaryCmdBuffer, 1u, &clearAttachment, extentTop.height > 0 ? 2u : 1u, rects);
 	}
 
 	vk.cmdBindPipeline(*secondaryCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);

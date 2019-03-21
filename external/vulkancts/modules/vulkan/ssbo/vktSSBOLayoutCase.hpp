@@ -231,7 +231,7 @@ public:
 		BUFFERMODE_LAST
 	};
 
-								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag);
+								SSBOLayoutCase				(tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, bool usePhysStorageBuffer);
 	virtual						~SSBOLayoutCase				(void);
 
 	virtual void				initPrograms				(vk::SourceCollections& programCollection) const;
@@ -244,6 +244,7 @@ protected:
 	ShaderInterface				m_interface;
 	MatrixLoadFlags				m_matrixLoadFlag;
 	std::string					m_computeShaderSrc;
+	bool						m_usePhysStorageBuffer;
 
 private:
 								SSBOLayoutCase				(const SSBOLayoutCase&);

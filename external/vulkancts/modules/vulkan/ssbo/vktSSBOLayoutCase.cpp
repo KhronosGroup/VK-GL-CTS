@@ -1080,13 +1080,16 @@ void generateDeclaration (std::ostream& src, const BufferVar& bufferVar, int ind
 	src << glu::declare(bufferVar.getType(), bufferVar.getName(), indentLevel);
 }
 
-void generateDeclaration (std::ostream& src, const BufferBlock& block, int bindingPoint)
+void generateDeclaration (std::ostream& src, const BufferBlock& block, int bindingPoint, bool usePhysStorageBuffer)
 {
 	src << "layout(";
 	if ((block.getFlags() & LAYOUT_MASK) != 0)
 		src << LayoutFlagsFmt(block.getFlags() & LAYOUT_MASK) << ", ";
 
-	src << "binding = " << bindingPoint;
+	if (usePhysStorageBuffer)
+		src << "buffer_reference";
+	else
+		src << "binding = " << bindingPoint;
 
 	src << ") ";
 
@@ -1103,14 +1106,17 @@ void generateDeclaration (std::ostream& src, const BufferBlock& block, int bindi
 
 	src << "}";
 
-	if (block.getInstanceName() != DE_NULL)
+	if (!usePhysStorageBuffer)
 	{
-		src << " " << block.getInstanceName();
-		if (block.isArray())
-			src << "[" << block.getArraySize() << "]";
+		if (block.getInstanceName() != DE_NULL)
+		{
+			src << " " << block.getInstanceName();
+			if (block.isArray())
+				src << "[" << block.getArraySize() << "]";
+		}
+		else
+			DE_ASSERT(!block.isArray());
 	}
-	else
-		DE_ASSERT(!block.isArray());
 
 	src << ";\n";
 }
@@ -1492,7 +1498,7 @@ void generateWriteSrc (std::ostream& src, const ShaderInterface& interface, cons
 	}
 }
 
-string generateComputeShader (const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& comparePtrs, const vector<BlockDataPtr>& writePtrs, MatrixLoadFlags matrixLoadFlag)
+string generateComputeShader (const ShaderInterface& interface, const BufferLayout& layout, const vector<BlockDataPtr>& comparePtrs, const vector<BlockDataPtr>& writePtrs, MatrixLoadFlags matrixLoadFlag, bool usePhysStorageBuffer)
 {
 	std::ostringstream src;
 
@@ -1504,6 +1510,7 @@ string generateComputeShader (const ShaderInterface& interface, const BufferLayo
 	src << "#extension GL_EXT_shader_16bit_storage : enable\n";
 	src << "#extension GL_EXT_shader_8bit_storage : enable\n";
 	src << "#extension GL_EXT_scalar_block_layout : enable\n";
+	src << "#extension GL_EXT_buffer_reference : enable\n";
 	src << "layout(local_size_x = 1) in;\n";
 	src << "\n";
 
@@ -1519,7 +1526,24 @@ string generateComputeShader (const ShaderInterface& interface, const BufferLayo
 		for (int blockNdx = 0; blockNdx < interface.getNumBlocks(); blockNdx++)
 		{
 			const BufferBlock& block = interface.getBlock(blockNdx);
-			generateDeclaration(src, block, 1 + blockNdx);
+			generateDeclaration(src, block, 1 + blockNdx, usePhysStorageBuffer);
+		}
+
+		if (usePhysStorageBuffer)
+		{
+			src << "layout (push_constant, std430) uniform PC {\n";
+			for (int blockNdx = 0; blockNdx < interface.getNumBlocks(); blockNdx++)
+			{
+				const BufferBlock& block = interface.getBlock(blockNdx);
+				if (block.getInstanceName() != DE_NULL)
+				{
+					src << "	" << block.getBlockName() << " " << block.getInstanceName();
+					if (block.isArray())
+						src << "[" << block.getArraySize() << "]";
+					src << ";\n";
+				}
+			}
+			src << "};\n";
 		}
 	}
 
@@ -2101,7 +2125,8 @@ public:
 														const ShaderInterface&		interface,
 														const BufferLayout&			refLayout,
 														const RefDataStorage&		initialData,
-														const RefDataStorage&		writeData);
+														const RefDataStorage&		writeData,
+														bool						usePhysStorageBuffer);
 	virtual						~SSBOLayoutCaseInstance	(void);
 	virtual tcu::TestStatus		iterate						(void);
 
@@ -2111,7 +2136,7 @@ private:
 	const BufferLayout&			m_refLayout;
 	const RefDataStorage&		m_initialData;	// Initial data stored in buffer.
 	const RefDataStorage&		m_writeData;	// Data written by compute shader.
-
+	const bool					m_usePhysStorageBuffer;
 
 	typedef de::SharedPtr<vk::Unique<vk::VkBuffer> >	VkBufferSp;
 	typedef de::SharedPtr<vk::Allocation>				AllocationSp;
@@ -2125,13 +2150,15 @@ SSBOLayoutCaseInstance::SSBOLayoutCaseInstance (Context&					context,
 												const ShaderInterface&		interface,
 												const BufferLayout&			refLayout,
 												const RefDataStorage&		initialData,
-												const RefDataStorage&		writeData)
+												const RefDataStorage&		writeData,
+												bool						usePhysStorageBuffer)
 	: TestInstance	(context)
 	, m_bufferMode	(bufferMode)
 	, m_interface	(interface)
 	, m_refLayout	(refLayout)
 	, m_initialData	(initialData)
 	, m_writeData	(writeData)
+	, m_usePhysStorageBuffer(usePhysStorageBuffer)
 {
 }
 
@@ -2206,6 +2233,10 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 	vector<BlockDataPtr>  mappedBlockPtrs;
 
+	vk::VkFlags usageFlags = vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+	if (m_usePhysStorageBuffer)
+		usageFlags |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_EXT;
+
 	// Upload base buffers
 	const std::vector<int> bufferSizes	= computeBufferSizes(m_interface, m_refLayout);
 	{
@@ -2224,7 +2255,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 				blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
 
-				vk::Move<vk::VkBuffer>				buffer		= createBuffer(m_context, bufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+				vk::Move<vk::VkBuffer>				buffer		= createBuffer(m_context, bufferSize, usageFlags);
 				de::MovePtr<vk::Allocation>			alloc		= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
 
 				descriptors[blockNdx] = makeDescriptorBufferInfo(*buffer, 0ull, bufferSize);
@@ -2256,7 +2287,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 			}
 
 			const int						totalBufferSize = curOffset;
-			vk::Move<vk::VkBuffer>			buffer			= createBuffer(m_context, totalBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+			vk::Move<vk::VkBuffer>			buffer			= createBuffer(m_context, totalBufferSize, usageFlags);
 			de::MovePtr<vk::Allocation>		alloc			= allocateAndBindMemory(m_context, *buffer, vk::MemoryRequirement::HostVisible);
 
 			mapPtrs.push_back(alloc->getHostPtr());
@@ -2301,7 +2332,37 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		}
 	}
 
+	std::vector<vk::VkDeviceAddress> gpuAddrs;
+	// Query the buffer device addresses and push them via push constants
+	if (m_usePhysStorageBuffer)
+	{
+		vk::VkBufferDeviceAddressInfoEXT info =
+		{
+			vk::VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT,	// VkStructureType	sType;
+			DE_NULL,												// const void*		pNext;
+			0,														// VkBuffer			buffer
+		};
+
+		for (deUint32 i = 0; i < descriptors.size(); ++i)
+		{
+			info.buffer = descriptors[i].buffer;
+			vk::VkDeviceAddress addr = vk.getBufferDeviceAddressEXT(device, &info);
+			addr += descriptors[i].offset;
+			gpuAddrs.push_back(addr);
+		}
+	}
+
 	setUpdateBuilder.update(vk, device);
+
+	const vk::VkPushConstantRange pushConstRange =
+	{
+		vk::VK_SHADER_STAGE_COMPUTE_BIT,							// VkShaderStageFlags	stageFlags
+		0,															// deUint32				offset
+		(deUint32)(sizeof(vk::VkDeviceAddress)*descriptors.size())	// deUint32				size
+	};
+
+	// must fit in spec min max
+	DE_ASSERT(pushConstRange.size <= 128);
 
 	const vk::VkPipelineLayoutCreateInfo pipelineLayoutParams =
 	{
@@ -2310,8 +2371,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 		(vk::VkPipelineLayoutCreateFlags)0,
 		1u,													// deUint32						descriptorSetCount;
 		&*descriptorSetLayout,								// const VkDescriptorSetLayout*	pSetLayouts;
-		0u,													// deUint32						pushConstantRangeCount;
-		DE_NULL,											// const VkPushConstantRange*	pPushConstantRanges;
+        m_usePhysStorageBuffer ? 1u : 0u,					// deUint32						pushConstantRangeCount;
+		&pushConstRange,									// const VkPushConstantRange*	pPushConstantRanges;
 	};
 	vk::Move<vk::VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutParams));
 
@@ -2344,6 +2405,11 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 	beginCommandBuffer(vk, *cmdBuffer, 0u);
 
 	vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+
+	if (gpuAddrs.size()) {
+		vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, vk::VK_SHADER_STAGE_COMPUTE_BIT,
+							0, (deUint32)(sizeof(vk::VkDeviceAddress)*gpuAddrs.size()), &gpuAddrs[0]);
+	}
 	vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, DE_NULL);
 
 	vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
@@ -2438,10 +2504,11 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate (void)
 
 // SSBOLayoutCase.
 
-SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag)
+SSBOLayoutCase::SSBOLayoutCase (tcu::TestContext& testCtx, const char* name, const char* description, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag, bool usePhysStorageBuffer)
 	: TestCase			(testCtx, name, description)
 	, m_bufferMode		(bufferMode)
 	, m_matrixLoadFlag	(matrixLoadFlag)
+	, m_usePhysStorageBuffer(usePhysStorageBuffer)
 {
 }
 
@@ -2478,8 +2545,9 @@ TestInstance* SSBOLayoutCase::createInstance (Context& context) const
 		TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
 	if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesScalarLayout(m_interface))
 		TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
-
-	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData);
+	if (!context.getBufferDeviceAddressFeatures().bufferDeviceAddress && m_usePhysStorageBuffer)
+		TCU_THROW(NotSupportedError, "Physical storage buffer pointers not supported");
+	return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData, m_usePhysStorageBuffer);
 }
 
 void SSBOLayoutCase::init ()
@@ -2491,7 +2559,7 @@ void SSBOLayoutCase::init ()
 	generateValues			(m_refLayout, m_writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
 	copyNonWrittenData		(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
 
-	m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers, m_matrixLoadFlag);
+	m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers, m_matrixLoadFlag, m_usePhysStorageBuffer);
 }
 
 } // ssbo

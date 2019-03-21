@@ -436,7 +436,7 @@ struct Buffer : public BufferOrImage
 								context.getDevice(), &bufferCreateInfo);
 		vk::VkMemoryRequirements req = getBufferMemoryRequirements(
 										   context.getDeviceInterface(), context.getDevice(), *m_buffer);
-		req.size *= 2;
+		req.size *= 4;
 		m_allocation = context.getDefaultAllocator().allocate(
 						   req, MemoryRequirement::HostVisible);
 		VK_CHECK(context.getDeviceInterface().bindBufferMemory(

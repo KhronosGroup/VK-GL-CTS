@@ -2,8 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2016 The Khronos Group Inc.
- * Copyright (c) 2016 The Android Open Source Project
+ * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2019 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@
 #include "vkCmdUtil.hpp"
 
 #include "tcuCommandLine.hpp"
+#include "tcuTestLog.hpp"
 
 #include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
@@ -2954,6 +2955,347 @@ tcu::TestStatus DeviceIndexTestInstance::iterate (void)
 	return tcu::TestStatus::pass("Compute succeeded");
 }
 
+class ConcurrentCompute : public vkt::TestCase
+{
+public:
+						ConcurrentCompute	(tcu::TestContext&	testCtx,
+											 const std::string&	name,
+											 const std::string&	description);
+
+
+	void				initPrograms		(SourceCollections& sourceCollections) const;
+	TestInstance*		createInstance		(Context&			context) const;
+};
+
+class ConcurrentComputeInstance : public vkt::TestInstance
+{
+public:
+									ConcurrentComputeInstance	(Context& context);
+
+	tcu::TestStatus					iterate						(void);
+};
+
+ConcurrentCompute::ConcurrentCompute (tcu::TestContext&	testCtx,
+									  const std::string&	name,
+									  const std::string&	description)
+	: TestCase		(testCtx, name, description)
+{
+}
+
+void ConcurrentCompute::initPrograms (SourceCollections& sourceCollections) const
+{
+	std::ostringstream src;
+	src << "#version 310 es\n"
+		<< "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
+		<< "layout(binding = 0) buffer InOut {\n"
+		<< "    uint values[1024];\n"
+		<< "} sb_inout;\n"
+		<< "void main (void) {\n"
+		<< "    uvec3 size           = gl_NumWorkGroups * gl_WorkGroupSize;\n"
+		<< "    uint numValuesPerInv = uint(sb_inout.values.length()) / (size.x*size.y*size.z);\n"
+		<< "    uint groupNdx        = size.x*size.y*gl_GlobalInvocationID.z + size.x*gl_GlobalInvocationID.y + gl_GlobalInvocationID.x;\n"
+		<< "    uint offset          = numValuesPerInv*groupNdx;\n"
+		<< "\n"
+		<< "    for (uint ndx = 0u; ndx < numValuesPerInv; ndx++)\n"
+		<< "        sb_inout.values[offset + ndx] = ~sb_inout.values[offset + ndx];\n"
+		<< "}\n";
+
+	sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
+}
+
+TestInstance* ConcurrentCompute::createInstance (Context& context) const
+{
+	return new ConcurrentComputeInstance(context);
+}
+
+ConcurrentComputeInstance::ConcurrentComputeInstance (Context& context)
+	: TestInstance	(context)
+{
+}
+
+tcu::TestStatus ConcurrentComputeInstance::iterate (void)
+{
+	enum {
+		NO_MATCH_FOUND	= ~((deUint32)0),
+		ERROR_NONE		= 0,
+		ERROR_WAIT		= 1,
+		ERROR_ORDER		= 2
+	};
+
+	struct Queues
+	{
+		VkQueue		queue;
+		deUint32	queueFamilyIndex;
+	};
+
+	const DeviceInterface&					vk							= m_context.getDeviceInterface();
+	const deUint32							numValues					= 1024;
+	const InstanceInterface&				instance					= m_context.getInstanceInterface();
+	const VkPhysicalDevice					physicalDevice				= m_context.getPhysicalDevice();
+	tcu::TestLog&							log							= m_context.getTestContext().getLog();
+	vk::Move<vk::VkDevice>					logicalDevice;
+	std::vector<VkQueueFamilyProperties>	queueFamilyProperties;
+	VkDeviceCreateInfo						deviceInfo;
+	VkPhysicalDeviceFeatures				deviceFeatures;
+	const float								queuePriorities[2]			= {1.0f, 0.0f};
+	VkDeviceQueueCreateInfo					queueInfos[2];
+	Queues									queues[2]					=
+																		{
+																			{DE_NULL, (deUint32)NO_MATCH_FOUND},
+																			{DE_NULL, (deUint32)NO_MATCH_FOUND}
+																		};
+
+	queueFamilyProperties = getPhysicalDeviceQueueFamilyProperties(instance, physicalDevice);
+
+	for (deUint32 queueNdx = 0; queueNdx < queueFamilyProperties.size(); ++queueNdx)
+	{
+		if (queueFamilyProperties[queueNdx].queueFlags & VK_QUEUE_COMPUTE_BIT)
+		{
+			if (NO_MATCH_FOUND == queues[0].queueFamilyIndex)
+				queues[0].queueFamilyIndex = queueNdx;
+
+			if (queues[0].queueFamilyIndex != queueNdx || queueFamilyProperties[queueNdx].queueCount > 1u)
+			{
+				queues[1].queueFamilyIndex = queueNdx;
+				break;
+			}
+		}
+	}
+
+	if (queues[0].queueFamilyIndex == NO_MATCH_FOUND || queues[1].queueFamilyIndex == NO_MATCH_FOUND)
+		TCU_THROW(NotSupportedError, "Queues couldn't be created");
+
+	for (int queueNdx = 0; queueNdx < 2; ++queueNdx)
+	{
+		VkDeviceQueueCreateInfo queueInfo;
+		deMemset(&queueInfo, 0, sizeof(queueInfo));
+
+		queueInfo.sType				= VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueInfo.pNext				= DE_NULL;
+		queueInfo.flags				= (VkDeviceQueueCreateFlags)0u;
+		queueInfo.queueFamilyIndex	= queues[queueNdx].queueFamilyIndex;
+		queueInfo.queueCount		= (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex) ? 2 : 1;
+		queueInfo.pQueuePriorities	= (queueInfo.queueCount == 2) ? queuePriorities : &queuePriorities[queueNdx];
+
+		queueInfos[queueNdx]		= queueInfo;
+
+		if (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex)
+			break;
+	}
+	deMemset(&deviceInfo, 0, sizeof(deviceInfo));
+	instance.getPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+
+	deviceInfo.sType					= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceInfo.pNext					= DE_NULL;
+	deviceInfo.enabledExtensionCount	= 0u;
+	deviceInfo.ppEnabledExtensionNames	= DE_NULL;
+	deviceInfo.enabledLayerCount		= 0u;
+	deviceInfo.ppEnabledLayerNames		= DE_NULL;
+	deviceInfo.pEnabledFeatures			= &deviceFeatures;
+	deviceInfo.queueCreateInfoCount		= (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex) ? 1 : 2;
+	deviceInfo.pQueueCreateInfos		= queueInfos;
+
+	logicalDevice = vk::createDevice(m_context.getPlatformInterface(), m_context.getInstance(), instance, physicalDevice, &deviceInfo);
+
+	for (deUint32 queueReqNdx = 0; queueReqNdx < 2; ++queueReqNdx)
+	{
+		if (queues[0].queueFamilyIndex == queues[1].queueFamilyIndex)
+			vk.getDeviceQueue(*logicalDevice, queues[queueReqNdx].queueFamilyIndex, queueReqNdx, &queues[queueReqNdx].queue);
+		else
+			vk.getDeviceQueue(*logicalDevice, queues[queueReqNdx].queueFamilyIndex, 0u, &queues[queueReqNdx].queue);
+	}
+
+	// Create an input/output buffers
+	const VkPhysicalDeviceMemoryProperties memoryProperties	= vk::getPhysicalDeviceMemoryProperties(instance, physicalDevice);
+
+	SimpleAllocator *allocator								= new SimpleAllocator(vk, *logicalDevice, memoryProperties);
+	const VkDeviceSize bufferSizeBytes						= sizeof(deUint32) * numValues;
+	const Buffer buffer1(vk, *logicalDevice, *allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const Buffer buffer2(vk, *logicalDevice, *allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+
+	// Fill the buffers with data
+
+	typedef std::vector<deUint32> data_vector_t;
+	data_vector_t inputData(numValues);
+
+	{
+		de::Random rnd(0x82ce7f);
+		const Allocation& bufferAllocation1	= buffer1.getAllocation();
+		const Allocation& bufferAllocation2	= buffer2.getAllocation();
+		deUint32* bufferPtr1				= static_cast<deUint32*>(bufferAllocation1.getHostPtr());
+		deUint32* bufferPtr2				= static_cast<deUint32*>(bufferAllocation2.getHostPtr());
+
+		for (deUint32 i = 0; i < numValues; ++i)
+		{
+			deUint32 val = rnd.getUint32();
+			inputData[i] = val;
+			*bufferPtr1++ = val;
+			*bufferPtr2++ = val;
+		}
+
+		flushAlloc(vk, *logicalDevice, bufferAllocation1);
+		flushAlloc(vk, *logicalDevice, bufferAllocation2);
+	}
+
+	// Create descriptor sets
+
+	const Unique<VkDescriptorSetLayout>	descriptorSetLayout1(
+		DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(vk, *logicalDevice));
+
+	const Unique<VkDescriptorPool>		descriptorPool1(
+		DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.build(vk, *logicalDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+	const Unique<VkDescriptorSet>		descriptorSet1(makeDescriptorSet(vk, *logicalDevice, *descriptorPool1, *descriptorSetLayout1));
+
+	const VkDescriptorBufferInfo		bufferDescriptorInfo1	= makeDescriptorBufferInfo(*buffer1, 0ull, bufferSizeBytes);
+		DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet1, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo1)
+		.update(vk, *logicalDevice);
+
+	const Unique<VkDescriptorSetLayout>	descriptorSetLayout2(
+		DescriptorSetLayoutBuilder()
+		.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+		.build(vk, *logicalDevice));
+
+	const Unique<VkDescriptorPool>		descriptorPool2(
+		DescriptorPoolBuilder()
+		.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+		.build(vk, *logicalDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+	const Unique<VkDescriptorSet>		descriptorSet2(makeDescriptorSet(vk, *logicalDevice, *descriptorPool2, *descriptorSetLayout2));
+
+	const VkDescriptorBufferInfo		bufferDescriptorInfo2	= makeDescriptorBufferInfo(*buffer2, 0ull, bufferSizeBytes);
+		DescriptorSetUpdateBuilder()
+		.writeSingle(*descriptorSet2, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo2)
+		.update(vk, *logicalDevice);
+
+	// Perform the computation
+
+	const Unique<VkShaderModule>		shaderModule(createShaderModule(vk, *logicalDevice, m_context.getBinaryCollection().get("comp"), 0u));
+
+	const Unique<VkPipelineLayout>		pipelineLayout1(makePipelineLayout(vk, *logicalDevice, *descriptorSetLayout1));
+	const Unique<VkPipeline>			pipeline1(makeComputePipeline(vk, *logicalDevice, *pipelineLayout1, *shaderModule));
+	const VkBufferMemoryBarrier			hostWriteBarrier1		= makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer1, 0ull, bufferSizeBytes);
+	const VkBufferMemoryBarrier			shaderWriteBarrier1		= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer1, 0ull, bufferSizeBytes);
+	const Unique<VkCommandPool>			cmdPool1(makeCommandPool(vk, *logicalDevice, queues[0].queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer1(allocateCommandBuffer(vk, *logicalDevice, *cmdPool1, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	const Unique<VkPipelineLayout>		pipelineLayout2(makePipelineLayout(vk, *logicalDevice, *descriptorSetLayout2));
+	const Unique<VkPipeline>			pipeline2(makeComputePipeline(vk, *logicalDevice, *pipelineLayout2, *shaderModule));
+	const VkBufferMemoryBarrier			hostWriteBarrier2		= makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer2, 0ull, bufferSizeBytes);
+	const VkBufferMemoryBarrier			shaderWriteBarrier2		= makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer2, 0ull, bufferSizeBytes);
+	const Unique<VkCommandPool>			cmdPool2(makeCommandPool(vk, *logicalDevice, queues[1].queueFamilyIndex));
+	const Unique<VkCommandBuffer>		cmdBuffer2(allocateCommandBuffer(vk, *logicalDevice, *cmdPool2, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+	// Command buffer 1
+
+	beginCommandBuffer(vk, *cmdBuffer1);
+	vk.cmdBindPipeline(*cmdBuffer1, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline1);
+	vk.cmdBindDescriptorSets(*cmdBuffer1, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout1, 0u, 1u, &descriptorSet1.get(), 0u, DE_NULL);
+	vk.cmdPipelineBarrier(*cmdBuffer1, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostWriteBarrier1, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	vk.cmdDispatch(*cmdBuffer1, 1, 1, 1);
+	vk.cmdPipelineBarrier(*cmdBuffer1, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier1, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	endCommandBuffer(vk, *cmdBuffer1);
+
+	// Command buffer 2
+
+	beginCommandBuffer(vk, *cmdBuffer2);
+	vk.cmdBindPipeline(*cmdBuffer2, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline2);
+	vk.cmdBindDescriptorSets(*cmdBuffer2, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout2, 0u, 1u, &descriptorSet2.get(), 0u, DE_NULL);
+	vk.cmdPipelineBarrier(*cmdBuffer2, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &hostWriteBarrier2, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	vk.cmdDispatch(*cmdBuffer2, 1, 1, 1);
+	vk.cmdPipelineBarrier(*cmdBuffer2, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0, 0, (const VkMemoryBarrier*)DE_NULL, 1, &shaderWriteBarrier2, 0, (const VkImageMemoryBarrier*)DE_NULL);
+	endCommandBuffer(vk, *cmdBuffer2);
+
+	VkSubmitInfo	submitInfo1 =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
+		DE_NULL,								// pNext
+		0u,										// waitSemaphoreCount
+		DE_NULL,								// pWaitSemaphores
+		(const VkPipelineStageFlags*)DE_NULL,	// pWaitDstStageMask
+		1u,										// commandBufferCount
+		&cmdBuffer1.get(),						// pCommandBuffers
+		0u,										// signalSemaphoreCount
+		DE_NULL									// pSignalSemaphores
+	};
+
+	VkSubmitInfo	submitInfo2 =
+	{
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,			// sType
+		DE_NULL,								// pNext
+		0u,										// waitSemaphoreCount
+		DE_NULL,								// pWaitSemaphores
+		(const VkPipelineStageFlags*)DE_NULL,	// pWaitDstStageMask
+		1u,										// commandBufferCount
+		&cmdBuffer2.get(),						// pCommandBuffers
+		0u,										// signalSemaphoreCount
+		DE_NULL									// pSignalSemaphores
+	};
+
+	// Wait for completion
+	const Unique<VkFence>	fence1(createFence(vk, *logicalDevice));
+	const Unique<VkFence>	fence2(createFence(vk, *logicalDevice));
+
+	VK_CHECK(vk.queueSubmit(queues[0].queue, 1u, &submitInfo1, *fence1));
+	VK_CHECK(vk.queueSubmit(queues[1].queue, 1u, &submitInfo2, *fence2));
+
+	int err = ERROR_NONE;
+
+	// First wait for the low-priority queue
+	if (VK_SUCCESS != vk.waitForFences(*logicalDevice, 1u, &fence2.get(), DE_TRUE, ~0ull))
+		err = ERROR_WAIT;
+
+	// If the high-priority queue hasn't finished, we have a problem.
+	if (VK_SUCCESS != vk.getFenceStatus(*logicalDevice, fence1.get()))
+		if (err == ERROR_NONE)
+			err = ERROR_ORDER;
+
+	// Wait for the high-priority fence so we don't get errors on teardown.
+	vk.waitForFences(*logicalDevice, 1u, &fence1.get(), DE_TRUE, ~0ull);
+
+	// If we fail() before waiting for all of the fences, error will come from
+	// teardown instead of the error we want.
+
+	if (err == ERROR_WAIT)
+		return tcu::TestStatus::fail("Failed waiting for low-priority queue fence.");
+
+	// Validate the results
+
+	const Allocation& bufferAllocation1	= buffer1.getAllocation();
+	invalidateAlloc(vk, *logicalDevice, bufferAllocation1);
+	const deUint32* bufferPtr1			= static_cast<deUint32*>(bufferAllocation1.getHostPtr());
+
+	const Allocation& bufferAllocation2	= buffer2.getAllocation();
+	invalidateAlloc(vk, *logicalDevice, bufferAllocation2);
+	const deUint32* bufferPtr2			= static_cast<deUint32*>(bufferAllocation2.getHostPtr());
+
+	for (deUint32 ndx = 0; ndx < numValues; ++ndx)
+	{
+		const deUint32 res1	= bufferPtr1[ndx];
+		const deUint32 res2	= bufferPtr2[ndx];
+		const deUint32 inp	= inputData[ndx];
+		const deUint32 ref	= ~inp;
+
+		if (res1 != ref || res1 != res2)
+		{
+			std::ostringstream msg;
+			msg << "Comparison failed for InOut.values[" << ndx << "] ref:" << ref <<" res1:" << res1 << " res2:" << res2 << " inp:" << inp;
+			return tcu::TestStatus::fail(msg.str());
+		}
+	}
+
+	if (err == ERROR_ORDER)
+		log << tcu::TestLog::Message << "Note: Low-priority queue was faster than high-priority one. This is not an error, but priorities may be inverted." << tcu::TestLog::EndMessage;
+
+	return tcu::TestStatus::pass("Test passed");
+}
+
+
 namespace EmptyShaderTest
 {
 
@@ -3005,6 +3347,8 @@ tcu::TestCaseGroup* createBasicComputeShaderTests (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup> basicComputeTests(new tcu::TestCaseGroup(testCtx, "basic", "Basic compute tests"));
 
 	addFunctionCaseWithPrograms(basicComputeTests.get(), "empty_shader", "Shader that does nothing", EmptyShaderTest::createProgram, EmptyShaderTest::createTest);
+
+	basicComputeTests->addChild(new ConcurrentCompute(testCtx, "concurrent_compute", "Concurrent compute test"));
 
 	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_invocation",	"Copy from UBO to SSBO, inverting bits",	256,	tcu::IVec3(1,1,1),	tcu::IVec3(1,1,1)));
 	basicComputeTests->addChild(BufferToBufferInvertTest::UBOToSSBOInvertCase(testCtx,	"ubo_to_ssbo_single_group",			"Copy from UBO to SSBO, inverting bits",	1024,	tcu::IVec3(2,1,4),	tcu::IVec3(1,1,1)));

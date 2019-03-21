@@ -32,6 +32,7 @@ namespace SpirVAssembly
 {
 
 tcu::TestCaseGroup*	createVariablePointersComputeGroup	(tcu::TestContext& testCtx);
+tcu::TestCaseGroup*	createPhysicalPointersComputeGroup	(tcu::TestContext& testCtx);
 tcu::TestCaseGroup*	createVariablePointersGraphicsGroup	(tcu::TestContext& testCtx);
 
 } // SpirVAssembly

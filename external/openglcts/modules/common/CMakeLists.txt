@@ -82,6 +82,8 @@ set(GLCTS_COMMON_SRCS
 	glcShaderSwitchTests.hpp
 	glcSampleVariablesTests.cpp
 	glcSampleVariablesTests.hpp
+	glcSpirvUtils.cpp
+	glcSpirvUtils.hpp
 	glcTestCase.cpp
 	glcTestCase.hpp
 	glcTestCaseWrapper.cpp
@@ -114,6 +116,32 @@ set(GLCTS_COMMON_LIBS
 	tcutil
 	eglutil
 	)
+
+# Add glslang
+if (DEQP_HAVE_GLSLANG)
+	include_directories(${GLSLANG_INCLUDE_PATH})
+	add_definitions(-DDEQP_HAVE_GLSLANG=1)
+
+	# \note Code interfacing with glslang needs to include third-party headers
+	#       that cause all sorts of warnings to appear.
+	if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
+		set_source_files_properties(
+			FILES glcSpirvUtils.cpp
+			PROPERTIES COMPILE_FLAGS "${DE_3RD_PARTY_CXX_FLAGS} -std=c++11")
+	endif ()
+
+	set(GLCTS_COMMON_LIBS ${GLCTS_COMMON_LIBS} ${GLSLANG_LIBRARIES})
+endif ()
+
+# Add spirv-tools
+if(DEQP_HAVE_SPIRV_TOOLS)
+	include_directories(${spirv-tools_SOURCE_DIR}/include)
+	include_directories(${spirv-tools_SOURCE_DIR}/external/include)
+
+	add_definitions(-DDEQP_HAVE_SPIRV_TOOLS=1)
+	set(GLCTS_COMMON_LIBS ${GLCTS_COMMON_LIBS} SPIRV-Tools)
+endif()
+
 
 PCH(GLCTS_COMMON_SRCS ../pch.cpp)
 

@@ -39,6 +39,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkMemUtil.cpp \
+	external/vulkancts/framework/vulkan/vkNoRenderDocUtil.cpp \
 	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
 	external/vulkancts/framework/vulkan/vkObjUtil.cpp \
 	external/vulkancts/framework/vulkan/vkPlatform.cpp \
@@ -56,6 +57,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkWsiPlatform.cpp \
 	external/vulkancts/framework/vulkan/vkWsiUtil.cpp \
 	external/vulkancts/framework/vulkan/vkYCbCrImageWithMemory.cpp \
+	external/vulkancts/modules/vulkan/amber/vktAmberExampleTests.cpp \
+	external/vulkancts/modules/vulkan/amber/vktAmberHelper.cpp \
+	external/vulkancts/modules/vulkan/amber/vktAmberTestCase.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferAndImageAllocationUtil.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferComputeInstance.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiBufferTests.cpp \
@@ -82,6 +86,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/api/vktApiSmokeTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiTests.cpp \
 	external/vulkancts/modules/vulkan/api/vktApiVersionCheck.cpp \
+	external/vulkancts/modules/vulkan/binding_model/vktBindingBufferDeviceAddressTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorCopyTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorSetRandomTests.cpp \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingDescriptorUpdateTests.cpp \
@@ -89,6 +94,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/binding_model/vktBindingShaderAccessTests.cpp \
 	external/vulkancts/modules/vulkan/clipping/vktClippingTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeBasicComputeShaderTests.cpp \
+	external/vulkancts/modules/vulkan/compute/vktComputeCooperativeMatrixTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeIndirectComputeDispatchTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp \
 	external/vulkancts/modules/vulkan/compute/vktComputeTests.cpp \
@@ -1069,6 +1075,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/execserver \
 	$(deqp_dir)/executor \
 	$(deqp_dir)/external/vulkancts/framework/vulkan \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/amber \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/api \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/binding_model \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/clipping \

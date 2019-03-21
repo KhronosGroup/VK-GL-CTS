@@ -13,6 +13,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingDescriptorSetRandomTests.hpp
 	vktBindingDescriptorCopyTests.cpp
 	vktBindingDescriptorCopyTests.hpp
+	vktBindingBufferDeviceAddressTests.cpp
+	vktBindingBufferDeviceAddressTests.hpp
 	)
 
 set(DEQP_VK_BINDING_MODEL_LIBS

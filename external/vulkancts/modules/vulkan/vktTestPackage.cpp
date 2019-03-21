@@ -90,6 +90,7 @@
 #include "vktMemoryModelTests.hpp"
 #include "vktVkRunnerExampleTests.hpp"
 #include "vktVkRunnerGraphicsFuzzTests.hpp"
+#include "vktAmberExampleTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -500,6 +501,7 @@ void TestPackage::init (void)
 	addChild(conditional::createTests			(m_testCtx));
 	addChild(vkrunner::createTests				(m_testCtx));
 	addChild(vkrunner::createGraphicsFuzzTests	(m_testCtx));
+	addChild(cts_amber::createExampleTests		(m_testCtx));
 }
 
 } // vkt

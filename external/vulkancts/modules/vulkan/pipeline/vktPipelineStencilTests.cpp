@@ -678,7 +678,7 @@ tcu::TestStatus StencilTestInstance::verifyImage (void)
 	// Render reference image
 	{
 		// Set depth state
-		rr::RenderState renderState(refRenderer.getViewportState());
+		rr::RenderState renderState(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 
 		renderState.fragOps.depthTestEnabled	= true;
 		renderState.fragOps.depthFunc			= mapVkCompareOp(VK_COMPARE_OP_LESS);

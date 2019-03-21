@@ -314,7 +314,8 @@ void uploadImage (const DeviceInterface&		vkd,
 				  VkImage						image,
 				  const MultiPlaneImageData&	imageData,
 				  VkAccessFlags					nextAccess,
-				  VkImageLayout					finalLayout)
+				  VkImageLayout					finalLayout,
+				  deUint32						arrayLayer)
 {
 	const VkQueue					queue			= getDeviceQueue(vkd, device, queueFamilyNdx, 0u);
 	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, (VkCommandPoolCreateFlags)0, queueFamilyNdx));
@@ -340,7 +341,7 @@ void uploadImage (const DeviceInterface&		vkd,
 			VK_QUEUE_FAMILY_IGNORED,
 			VK_QUEUE_FAMILY_IGNORED,
 			image,
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, arrayLayer, 1u }
 		};
 
 		vkd.cmdPipelineBarrier(*cmdBuffer,
@@ -371,7 +372,7 @@ void uploadImage (const DeviceInterface&		vkd,
 			0u,		// bufferOffset
 			0u,		// bufferRowLength
 			0u,		// bufferImageHeight
-			{ (VkImageAspectFlags)aspect, 0u, 0u, 1u },
+			{ (VkImageAspectFlags)aspect, 0u, arrayLayer, 1u },
 			makeOffset3D(0u, 0u, 0u),
 			makeExtent3D(planeW, planeH, 1u),
 		};
@@ -391,7 +392,7 @@ void uploadImage (const DeviceInterface&		vkd,
 			VK_QUEUE_FAMILY_IGNORED,
 			VK_QUEUE_FAMILY_IGNORED,
 			image,
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, arrayLayer, 1u }
 		};
 
 		vkd.cmdPipelineBarrier(*cmdBuffer,
@@ -418,7 +419,8 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 					  const std::vector<de::SharedPtr<vk::Allocation> >&	allocations,
 					  const MultiPlaneImageData&							imageData,
 					  vk::VkAccessFlags										nextAccess,
-					  vk::VkImageLayout										finalLayout)
+					  vk::VkImageLayout										finalLayout,
+					  deUint32												arrayLayer)
 {
 	const VkQueue					queue			= getDeviceQueue(vkd, device, queueFamilyNdx, 0u);
 	const Unique<VkCommandPool>		cmdPool			(createCommandPool(vkd, device, (VkCommandPoolCreateFlags)0, queueFamilyNdx));
@@ -439,7 +441,7 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 		{
 			static_cast<vk::VkImageAspectFlags>(aspect),
 			0u,
-			0u,
+			arrayLayer,
 		};
 		VkSubresourceLayout			layout;
 
@@ -470,7 +472,7 @@ void fillImageMemory (const vk::DeviceInterface&							vkd,
 			VK_QUEUE_FAMILY_IGNORED,
 			VK_QUEUE_FAMILY_IGNORED,
 			image,
-			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u }
+			{ VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, arrayLayer, 1u }
 		};
 
 		vkd.cmdPipelineBarrier(*cmdBuffer,

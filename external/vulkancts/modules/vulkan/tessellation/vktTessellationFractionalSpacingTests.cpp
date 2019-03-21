@@ -581,18 +581,19 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 	{
 		// Upload tessellation levels data to the input buffer
 		{
-			const Allocation& alloc			  = tessLevelsBuffer.getAllocation();
-			float* const	  tessLevelOuter1 = static_cast<float*>(alloc.getHostPtr());
+			const Allocation&	alloc			= tessLevelsBuffer.getAllocation();
+			float* const		tessLevelOuter1	= static_cast<float*>(alloc.getHostPtr());
 
 			*tessLevelOuter1 = tessLevelCases[tessLevelCaseNdx];
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), tessLevelsBufferSizeBytes);
+			flushAlloc(vk, device, alloc);
 		}
 
 		// Clear the results buffer
 		{
 			const Allocation& alloc = resultBuffer.getAllocation();
+
 			deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(resultBufferSizeBytes));
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+			flushAlloc(vk, device, alloc);
 		}
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -619,17 +620,17 @@ tcu::TestStatus test (Context& context, TestParams testParams)
 
 		// Verify the result.
 		{
-			tcu::TestLog& log = context.getTestContext().getLog();
+			tcu::TestLog&				log					= context.getTestContext().getLog();
+			const Allocation&			resultAlloc			= resultBuffer.getAllocation();
 
-			const Allocation& resultAlloc = resultBuffer.getAllocation();
-			invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), resultBufferSizeBytes);
+			invalidateAlloc(vk, device, resultAlloc);
 
-			const deInt32 numResults = *static_cast<deInt32*>(resultAlloc.getHostPtr());
-			const std::vector<float> resultTessCoords = readFloatArray(numResults, resultAlloc.getHostPtr(), sizeof(deInt32));
+			const deInt32				numResults			= *static_cast<deInt32*>(resultAlloc.getHostPtr());
+			const std::vector<float>	resultTessCoords	= readFloatArray(numResults, resultAlloc.getHostPtr(), sizeof(deInt32));
 
 			// Outputs
-			float additionalSegmentLength;
-			int   additionalSegmentLocation;
+			float						additionalSegmentLength;
+			int							additionalSegmentLocation;
 
 			success = verifyFractionalSpacingSingle(log, testParams.spacingMode, tessLevelCases[tessLevelCaseNdx], resultTessCoords,
 													&additionalSegmentLength, &additionalSegmentLocation);

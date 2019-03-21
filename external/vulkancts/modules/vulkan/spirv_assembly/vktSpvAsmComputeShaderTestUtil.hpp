@@ -352,6 +352,7 @@ struct ComputeShaderSpec
 	ComputeVerifyBinaryFunc					verifyBinary;
 	SpirvVersion							spirvVersion;
 	bool									coherentMemory;
+	bool									usesPhysStorageBuffer;
 
 											ComputeShaderSpec (void)
 												: entryPoint					("main")
@@ -363,6 +364,7 @@ struct ComputeShaderSpec
 												, verifyBinary					(DE_NULL)
 												, spirvVersion					(SPIRV_VERSION_1_0)
 												, coherentMemory				(false)
+												, usesPhysStorageBuffer			(false)
 											{}
 };
 

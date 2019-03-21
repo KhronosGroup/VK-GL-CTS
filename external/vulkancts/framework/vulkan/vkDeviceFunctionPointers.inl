@@ -203,3 +203,4 @@ GetValidationCacheDataEXTFunc					getValidationCacheDataEXT;
 GetMemoryHostPointerPropertiesEXTFunc			getMemoryHostPointerPropertiesEXT;
 GetAndroidHardwareBufferPropertiesANDROIDFunc	getAndroidHardwareBufferPropertiesANDROID;
 GetMemoryAndroidHardwareBufferANDROIDFunc		getMemoryAndroidHardwareBufferANDROID;
+GetBufferDeviceAddressEXTFunc					getBufferDeviceAddressEXT;

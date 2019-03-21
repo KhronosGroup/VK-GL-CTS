@@ -95,6 +95,10 @@ public:
 												getFloat16Int8Features			(void) const;
 	const vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT&
 												getDepthClipEnableFeatures		(void) const;
+	const vk::VkPhysicalDeviceBufferAddressFeaturesEXT&
+												getBufferDeviceAddressFeatures	(void) const;
+	const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&
+												getCooperativeMatrixFeatures	(void) const;
 	const vk::VkPhysicalDeviceProperties&		getDeviceProperties				(void) const;
 	const std::vector<std::string>&				getDeviceExtensions				(void) const;
 	vk::VkDevice								getDevice						(void) const;
@@ -112,6 +116,8 @@ public:
 	bool										requireDeviceExtension			(const std::string& required);
 	bool										requireInstanceExtension		(const std::string& required);
 	bool										requireDeviceCoreFeature		(const DeviceCoreFeature requiredDeviceCoreFeature);
+
+	void*										getInstanceProcAddr				();
 
 protected:
 	tcu::TestContext&							m_testCtx;

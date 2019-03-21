@@ -99,3 +99,4 @@ m_vk.getPhysicalDeviceSurfaceCapabilities2EXT				= (GetPhysicalDeviceSurfaceCapa
 m_vk.createIOSSurfaceMVK									= (CreateIOSSurfaceMVKFunc)									GET_PROC_ADDR("vkCreateIOSSurfaceMVK");
 m_vk.createMacOSSurfaceMVK									= (CreateMacOSSurfaceMVKFunc)								GET_PROC_ADDR("vkCreateMacOSSurfaceMVK");
 m_vk.getPhysicalDeviceMultisamplePropertiesEXT				= (GetPhysicalDeviceMultisamplePropertiesEXTFunc)			GET_PROC_ADDR("vkGetPhysicalDeviceMultisamplePropertiesEXT");
+m_vk.getPhysicalDeviceCooperativeMatrixPropertiesNV			= (GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc)		GET_PROC_ADDR("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");

@@ -431,25 +431,25 @@ void RobustBufferAccessTest::genTexelBufferShaderAccess (VkFormat				bufferForma
 	if (isFloatFormat(bufferFormat))
 	{
 		layoutTypeStr			= "rgba32f";
-		inTexelBufferTypeStr	= readFromStorage ? "imageBuffer" : "samplerBuffer";
+		inTexelBufferTypeStr	= readFromStorage ? "imageBuffer" : "textureBuffer";
 		outTexelBufferTypeStr	= "imageBuffer";
 	}
 	else if (isUintFormat(bufferFormat))
 	{
 		layoutTypeStr			= "rgba32ui";
-		inTexelBufferTypeStr	= readFromStorage ? "uimageBuffer" : "usamplerBuffer";
+		inTexelBufferTypeStr	= readFromStorage ? "uimageBuffer" : "utextureBuffer";
 		outTexelBufferTypeStr	= "uimageBuffer";
 	}
 	else if (isIntFormat(bufferFormat))
 	{
 		layoutTypeStr			= "rgba32i";
-		inTexelBufferTypeStr	= readFromStorage ? "iimageBuffer" : "isamplerBuffer";
+		inTexelBufferTypeStr	= readFromStorage ? "iimageBuffer" : "itextureBuffer";
 		outTexelBufferTypeStr	= "iimageBuffer";
 	}
 	else if (bufferFormat == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
 	{
 		layoutTypeStr			= "rgb10_a2";
-		inTexelBufferTypeStr	= readFromStorage ? "imageBuffer" : "samplerBuffer"; outTexelBufferTypeStr	= "imageBuffer";
+		inTexelBufferTypeStr	= readFromStorage ? "imageBuffer" : "textureBuffer"; outTexelBufferTypeStr	= "imageBuffer";
 	}
 	else
 	{

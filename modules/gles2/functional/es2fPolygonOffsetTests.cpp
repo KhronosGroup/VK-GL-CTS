@@ -361,6 +361,7 @@ void UsageTestCase::testPolygonOffset (void)
 	tcu::TestLog&		log				= m_testCtx.getLog();
 	tcu::Surface		testImage		(m_targetSize, m_targetSize);
 	tcu::Surface		referenceImage	(m_targetSize, m_targetSize);
+	int					subpixelBits	= 0;
 
 	// render test image
 	{
@@ -411,13 +412,15 @@ void UsageTestCase::testPolygonOffset (void)
 		gl.finish					();
 
 		glu::readPixels(m_context.getRenderContext(), 0, 0, testImage.getAccess());
+
+		gl.getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
 	}
 
 	// render reference image
 	{
 		rr::Renderer		referenceRenderer;
 		rr::VertexAttrib	attribs[2];
-		rr::RenderState		state((rr::ViewportState)(rr::WindowRectangle(0, 0, m_targetSize, m_targetSize)));
+		rr::RenderState		state((rr::ViewportState)(rr::WindowRectangle(0, 0, m_targetSize, m_targetSize)), subpixelBits);
 
 		PositionColorShader program;
 
@@ -608,6 +611,7 @@ void UsagePositiveNegativeTestCase::testPolygonOffset (void)
 	tcu::TestLog&		log				= m_testCtx.getLog();
 	tcu::Surface		testImage		(m_targetSize, m_targetSize);
 	tcu::Surface		referenceImage	(m_targetSize, m_targetSize);
+	int					subpixelBits	= 0;
 
 	// render test image
 	{
@@ -674,13 +678,15 @@ void UsagePositiveNegativeTestCase::testPolygonOffset (void)
 		gl.finish					();
 
 		glu::readPixels(m_context.getRenderContext(), 0, 0, testImage.getAccess());
+
+		gl.getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
 	}
 
 	// render reference image
 	{
 		rr::Renderer		referenceRenderer;
 		rr::VertexAttrib	attribs[2];
-		rr::RenderState		state((rr::ViewportState)(rr::WindowRectangle(0, 0, m_targetSize, m_targetSize)));
+		rr::RenderState		state((rr::ViewportState)(rr::WindowRectangle(0, 0, m_targetSize, m_targetSize)), subpixelBits);
 
 		PositionColorShader program;
 

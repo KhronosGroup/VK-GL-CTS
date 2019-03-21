@@ -69,6 +69,7 @@ typedef deUint64	VkDeviceSize;
 typedef deUint32	VkSampleMask;
 typedef deUint32	VkBool32;
 typedef deUint32	VkFlags;
+typedef deUint64	VkDeviceAddress;
 
 // enum HandleType { HANDLE_TYPE_INSTANCE, ... };
 #include "vkHandleType.inl"
@@ -178,12 +179,14 @@ class PlatformInterface
 public:
 #include "vkVirtualPlatformInterface.inl"
 
+	virtual	GetInstanceProcAddrFunc	getGetInstanceProcAddr	() const = 0;
+
 protected:
-						PlatformInterface	(void) {}
+									PlatformInterface		(void) {}
 
 private:
-						PlatformInterface	(const PlatformInterface&);
-	PlatformInterface&	operator=			(const PlatformInterface&);
+									PlatformInterface		(const PlatformInterface&);
+	PlatformInterface&				operator=				(const PlatformInterface&);
 };
 
 class InstanceInterface

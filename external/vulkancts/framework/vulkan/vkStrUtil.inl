@@ -59,6 +59,8 @@ const char*	getSamplerReductionModeEXTName			(VkSamplerReductionModeEXT value);
 const char*	getBlendOverlapEXTName					(VkBlendOverlapEXT value);
 const char*	getCoverageModulationModeNVName			(VkCoverageModulationModeNV value);
 const char*	getValidationCacheHeaderVersionEXTName	(VkValidationCacheHeaderVersionEXT value);
+const char*	getComponentTypeNVName					(VkComponentTypeNV value);
+const char*	getScopeNVName							(VkScopeNV value);
 
 inline tcu::Format::Enum<VkPipelineCacheHeaderVersion>		getPipelineCacheHeaderVersionStr		(VkPipelineCacheHeaderVersion value)		{ return tcu::Format::Enum<VkPipelineCacheHeaderVersion>(getPipelineCacheHeaderVersionName, value);				}
 inline tcu::Format::Enum<VkResult>							getResultStr							(VkResult value)							{ return tcu::Format::Enum<VkResult>(getResultName, value);														}
@@ -118,6 +120,8 @@ inline tcu::Format::Enum<VkSamplerReductionModeEXT>			getSamplerReductionModeEXT
 inline tcu::Format::Enum<VkBlendOverlapEXT>					getBlendOverlapEXTStr					(VkBlendOverlapEXT value)					{ return tcu::Format::Enum<VkBlendOverlapEXT>(getBlendOverlapEXTName, value);									}
 inline tcu::Format::Enum<VkCoverageModulationModeNV>		getCoverageModulationModeNVStr			(VkCoverageModulationModeNV value)			{ return tcu::Format::Enum<VkCoverageModulationModeNV>(getCoverageModulationModeNVName, value);					}
 inline tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>	getValidationCacheHeaderVersionEXTStr	(VkValidationCacheHeaderVersionEXT value)	{ return tcu::Format::Enum<VkValidationCacheHeaderVersionEXT>(getValidationCacheHeaderVersionEXTName, value);	}
+inline tcu::Format::Enum<VkComponentTypeNV>					getComponentTypeNVStr					(VkComponentTypeNV value)					{ return tcu::Format::Enum<VkComponentTypeNV>(getComponentTypeNVName, value);									}
+inline tcu::Format::Enum<VkScopeNV>							getScopeNVStr							(VkScopeNV value)							{ return tcu::Format::Enum<VkScopeNV>(getScopeNVName, value);													}
 
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineCacheHeaderVersion value)		{ return s << getPipelineCacheHeaderVersionStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkResult value)							{ return s << getResultStr(value);							}
@@ -177,6 +181,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkSamplerReductionModeEXT valu
 inline std::ostream&	operator<<	(std::ostream& s, VkBlendOverlapEXT value)					{ return s << getBlendOverlapEXTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkCoverageModulationModeNV value)			{ return s << getCoverageModulationModeNVStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationCacheHeaderVersionEXT value)	{ return s << getValidationCacheHeaderVersionEXTStr(value);	}
+inline std::ostream&	operator<<	(std::ostream& s, VkComponentTypeNV value)					{ return s << getComponentTypeNVStr(value);					}
+inline std::ostream&	operator<<	(std::ostream& s, VkScopeNV value)							{ return s << getScopeNVStr(value);							}
 
 tcu::Format::Bitfield<32>	getFormatFeatureFlagsStr								(VkFormatFeatureFlags value);
 tcu::Format::Bitfield<32>	getImageUsageFlagsStr									(VkImageUsageFlags value);
@@ -527,6 +533,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDriverPropertie
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloatControlsPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSubpassDescriptionDepthStencilResolveKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthStencilResolvePropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSurfaceProtectedCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugReportCallbackCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationStateRasterizationOrderAMD& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDebugMarkerObjectNameInfoEXT& value);
@@ -625,3 +632,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVulkanMemoryMod
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClipEnableFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineRasterizationDepthClipStateCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceBufferAddressFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBufferDeviceAddressCreateInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixPropertiesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatrixFeaturesNV& value);

@@ -706,6 +706,7 @@ void checkInstanceExtensions (tcu::ResultCollector& results, const vector<string
 		"VK_KHR_external_fence_capabilities",
 		"VK_KHR_device_group_creation",
 		"VK_KHR_get_display_properties2",
+		"VK_KHR_surface_protected_capabilities",
 	};
 
 	checkKhrExtensions(results, extensions, DE_LENGTH_OF_ARRAY(s_allowedInstanceKhrExtensions), s_allowedInstanceKhrExtensions);
@@ -2387,8 +2388,10 @@ VkImageCreateFlags getValidImageCreateFlags (const VkPhysicalDeviceFeatures& dev
 	{
 		flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
 
-		if (type == VK_IMAGE_TYPE_2D)
+		if (type == VK_IMAGE_TYPE_2D && !isYCbCrFormat(format))
+		{
 			flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+		}
 	}
 
 	if (isYCbCrFormat(format) && getPlaneCount(format) > 1)
@@ -2719,121 +2722,6 @@ tcu::TestStatus imageFormatProperties (Context& context, const VkFormat format, 
 
 // VK_KHR_get_physical_device_properties2
 
-string toString (const VkPhysicalDevice16BitStorageFeatures& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDevice16BitStorageFeatures = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tstorageBuffer16BitAccess = " << value.storageBuffer16BitAccess << '\n';
-	s << "\tuniformAndStorageBuffer16BitAccess = " << value.uniformAndStorageBuffer16BitAccess << '\n';
-	s << "\tstoragePushConstant16 = " << value.storagePushConstant16 << '\n';
-	s << "\tstorageInputOutput16 = " << value.storageInputOutput16 << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDeviceFloatControlsPropertiesKHR& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceFloatControlsPropertiesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tseparateDenormSettings = " << value.separateDenormSettings << '\n';
-	s << "\tseparateRoundingModeSettings = " << value.separateRoundingModeSettings << '\n';
-	s << "\tshaderSignedZeroInfNanPreserveFloat16 = " << value.shaderSignedZeroInfNanPreserveFloat16 << '\n';
-	s << "\tshaderSignedZeroInfNanPreserveFloat32 = " << value.shaderSignedZeroInfNanPreserveFloat32 << '\n';
-	s << "\tshaderSignedZeroInfNanPreserveFloat64 = " << value.shaderSignedZeroInfNanPreserveFloat64 << '\n';
-	s << "\tshaderDenormPreserveFloat16 = " << value.shaderDenormPreserveFloat16 << '\n';
-	s << "\tshaderDenormPreserveFloat32 = " << value.shaderDenormPreserveFloat32 << '\n';
-	s << "\tshaderDenormPreserveFloat64 = " << value.shaderDenormPreserveFloat64 << '\n';
-	s << "\tshaderDenormFlushToZeroFloat16 = " << value.shaderDenormFlushToZeroFloat16 << '\n';
-	s << "\tshaderDenormFlushToZeroFloat32 = " << value.shaderDenormFlushToZeroFloat32 << '\n';
-	s << "\tshaderDenormFlushToZeroFloat64 = " << value.shaderDenormFlushToZeroFloat64 << '\n';
-	s << "\tshaderRoundingModeRTEFloat16 = " << value.shaderRoundingModeRTEFloat16 << '\n';
-	s << "\tshaderRoundingModeRTEFloat32 = " << value.shaderRoundingModeRTEFloat32 << '\n';
-	s << "\tshaderRoundingModeRTEFloat64 = " << value.shaderRoundingModeRTEFloat64 << '\n';
-	s << "\tshaderRoundingModeRTZFloat16 = " << value.shaderRoundingModeRTZFloat16 << '\n';
-	s << "\tshaderRoundingModeRTZFloat32 = " << value.shaderRoundingModeRTZFloat32 << '\n';
-	s << "\tshaderRoundingModeRTZFloat64 = " << value.shaderRoundingModeRTZFloat64 << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDeviceMultiviewFeatures& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceMultiviewFeatures = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tmultiview = " << value.multiview << '\n';
-	s << "\tmultiviewGeometryShader = " << value.multiviewGeometryShader << '\n';
-	s << "\tmultiviewTessellationShader = " << value.multiviewTessellationShader << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDeviceProtectedMemoryFeatures& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceProtectedMemoryFeatures = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tprotectedMemory = " << value.protectedMemory << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDeviceSamplerYcbcrConversionFeatures& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceSamplerYcbcrConversionFeatures = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tsamplerYcbcrConversion = " << value.samplerYcbcrConversion << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDeviceVariablePointerFeatures& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceVariablePointerFeatures = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tvariablePointersStorageBuffer = " << value.variablePointersStorageBuffer << '\n';
-	s << "\tvariablePointers = " << value.variablePointers << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString(const VkPhysicalDevicePushDescriptorPropertiesKHR& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDevicePushDescriptorPropertiesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tmaxPushDescriptors = " << value.maxPushDescriptors << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString(const VkPhysicalDeviceDepthStencilResolvePropertiesKHR& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceDepthStencilResolvePropertiesKHR = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tsupportedDepthResolveModes = " << value.supportedDepthResolveModes << '\n';
-	s << "\tsupportedStencilResolveModes = " << value.supportedStencilResolveModes << '\n';
-	s << "\tindependentResolveNone = " << value.independentResolveNone << '\n';
-	s << "\tindependentResolve = " << value.independentResolve << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString(const VkPhysicalDeviceScalarBlockLayoutFeaturesEXT& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceScalarBlockLayoutFeaturesEXT = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tscalarBlockLayout = " << value.scalarBlockLayout << '\n';
-	s << '}';
-	return s.str();
-}
-
 bool checkExtension (vector<VkExtensionProperties>& properties, const char* extension)
 {
 	for (size_t ndx = 0; ndx < properties.size(); ++ndx)
@@ -3005,91 +2893,21 @@ tcu::TestStatus deviceFeatures2 (Context& context)
 	if (ext_conditional_rendering)
 		log << TestLog::Message << deviceConditionalRenderingFeatures[0]		<< TestLog::EndMessage;
 	if (khr_16bit_storage)
-		log << TestLog::Message << toString(device16BitStorageFeatures[0])		<< TestLog::EndMessage;
+		log << TestLog::Message << device16BitStorageFeatures[0]		<< TestLog::EndMessage;
 	if (khr_multiview)
-		log << TestLog::Message << toString(deviceMultiviewFeatures[0])			<< TestLog::EndMessage;
+		log << TestLog::Message << deviceMultiviewFeatures[0]			<< TestLog::EndMessage;
 	if (deviceProtectedMemory)
-		log << TestLog::Message << toString(protectedMemoryFeatures[0])			<< TestLog::EndMessage;
+		log << TestLog::Message << protectedMemoryFeatures[0]			<< TestLog::EndMessage;
 	if (sampler_ycbcr_conversion)
-		log << TestLog::Message << toString(samplerYcbcrConversionFeatures[0])	<< TestLog::EndMessage;
+		log << TestLog::Message << samplerYcbcrConversionFeatures[0]	<< TestLog::EndMessage;
 	if (variable_pointers)
-		log << TestLog::Message << toString(variablePointerFeatures[0])			<< TestLog::EndMessage;
+		log << TestLog::Message << variablePointerFeatures[0]			<< TestLog::EndMessage;
 	if (scalar_block_layout)
-		log << TestLog::Message << toString(scalarBlockLayoutFeatures[0])		<< TestLog::EndMessage;
+		log << TestLog::Message << scalarBlockLayoutFeatures[0]			<< TestLog::EndMessage;
 
 	return tcu::TestStatus::pass("Querying device features succeeded");
 }
 
-
-string toString (const VkPhysicalDeviceIDProperties& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceIDProperties = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tdeviceUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceUUID))) << '\n';
-	s << "\tdriverUUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.driverUUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.driverUUID))) << '\n';
-	s << "\tdeviceLUID = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<deUint8>(DE_ARRAY_BEGIN(value.deviceLUID)), tcu::Format::HexIterator<deUint8>(DE_ARRAY_END(value.deviceLUID))) << '\n';
-	s << "\tdeviceNodeMask = " << value.deviceNodeMask << '\n';
-	s << "\tdeviceLUIDValid = " << value.deviceLUIDValid << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDeviceMaintenance3Properties& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceMaintenance3Properties = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tmaxPerSetDescriptors = " << value.maxPerSetDescriptors << '\n';
-	s << "\tmaxMemoryAllocationSize = " << value.maxMemoryAllocationSize << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDeviceMultiviewProperties& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceMultiviewProperties = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tmaxMultiviewViewCount = " << value.maxMultiviewViewCount << '\n';
-	s << "\tmaxMultiviewInstanceIndex = " << value.maxMultiviewInstanceIndex << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDevicePointClippingProperties& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDevicePointClippingProperties = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tpointClippingBehavior = " << value.pointClippingBehavior << '\n';
-	s << '}';
-	return s.str();
-}
-
-string toString (const VkPhysicalDeviceProtectedMemoryProperties& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceProtectedMemoryProperties = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tprotectedNoFault = " << value.protectedNoFault << '\n';
-	s << '}';
-	return s.str();
-}
-
-
-string toString (const VkPhysicalDeviceSubgroupProperties& value)
-{
-	std::ostringstream	s;
-	s << "VkPhysicalDeviceSubgroupProperties = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tsubgroupSize = " << value.subgroupSize << '\n';
-	s << "\tsupportedStages = " << getShaderStageFlagsStr(value.supportedStages) << '\n';
-	s << "\tsupportedOperations = " << getSubgroupFeatureFlagsStr(value.supportedOperations) << '\n';
-	s << "\tquadOperationsInAllStages = " << value.quadOperationsInAllStages << '\n';
-	s << '}';
-	return s.str();
-}
 
 tcu::TestStatus deviceProperties2 (Context& context)
 {
@@ -3243,17 +3061,17 @@ tcu::TestStatus deviceProperties2 (Context& context)
 	}
 
 	if (khr_external_memory_capabilities)
-		log << TestLog::Message << toString(IDProperties[0])					<< TestLog::EndMessage;
+		log << TestLog::Message << IDProperties[0]					<< TestLog::EndMessage;
 	if (khr_maintenance3)
-		log << TestLog::Message << toString(maintenance3Properties[0])			<< TestLog::EndMessage;
+		log << TestLog::Message << maintenance3Properties[0]			<< TestLog::EndMessage;
 	if (khr_multiview)
-		log << TestLog::Message << toString(multiviewProperties[0])				<< TestLog::EndMessage;
+		log << TestLog::Message << multiviewProperties[0]				<< TestLog::EndMessage;
 	if (khr_maintenance2)
-		log << TestLog::Message << toString(pointClippingProperties[0])			<< TestLog::EndMessage;
+		log << TestLog::Message << pointClippingProperties[0]			<< TestLog::EndMessage;
 	if (!apiVersionSmallerThen_1_1)
 	{
-		log << TestLog::Message << toString(protectedMemoryPropertiesKHR[0])	<< TestLog::EndMessage
-			<< TestLog::Message << toString(subgroupProperties[0])				<< TestLog::EndMessage;
+		log << TestLog::Message << protectedMemoryPropertiesKHR[0]	<< TestLog::EndMessage
+			<< TestLog::Message << subgroupProperties[0]				<< TestLog::EndMessage;
 	}
 
 	const vector<VkExtensionProperties>	extensions = enumerateDeviceExtensionProperties(vki, physicalDevice, DE_NULL);
@@ -3281,7 +3099,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			TCU_FAIL("Mismatch in vkGetPhysicalDeviceProperties2 in VkPhysicalDevicePushDescriptorPropertiesKHR ");
 		}
 
-		log << TestLog::Message << toString(pushDescriptorProperties[0]) << TestLog::EndMessage;
+		log << TestLog::Message << pushDescriptorProperties[0] << TestLog::EndMessage;
 
 		if (pushDescriptorProperties[0].maxPushDescriptors < 32)
 		{
@@ -3308,7 +3126,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			TCU_FAIL("Mismatch in VkPhysicalDeviceFloatControlsPropertiesKHR");
 		}
 
-		log << TestLog::Message << toString(floatControlsProperties[0]) << TestLog::EndMessage;
+		log << TestLog::Message << floatControlsProperties[0] << TestLog::EndMessage;
 	}
 
 	if (isExtensionSupported(extensions, RequiredExtension("VK_KHR_depth_stencil_resolve")))
@@ -3331,7 +3149,7 @@ tcu::TestStatus deviceProperties2 (Context& context)
 			TCU_FAIL("Mismatch in VkPhysicalDeviceDepthStencilResolvePropertiesKHR");
 		}
 
-		log << TestLog::Message << toString(dsResolveProperties[0]) << TestLog::EndMessage;
+		log << TestLog::Message << dsResolveProperties[0] << TestLog::EndMessage;
 	}
 
 	return tcu::TestStatus::pass("Querying device properties succeeded");
@@ -3386,16 +3204,6 @@ tcu::TestStatus deviceFormatProperties2 (Context& context)
 	return tcu::TestStatus::pass("Querying device format properties succeeded");
 }
 
-string toString (const VkQueueFamilyProperties2& value)
-{
-	std::ostringstream	s;
-	s << "VkQueueFamilyProperties2 = {\n";
-	s << "\tsType = " << value.sType << '\n';
-	s << "\tqueueFamilyProperties = " << value.queueFamilyProperties << '\n';
-	s << '}';
-	return s.str();
-}
-
 tcu::TestStatus deviceQueueFamilyProperties2 (Context& context)
 {
 	const PlatformInterface&		vkp						= context.getPlatformInterface();
@@ -3441,7 +3249,7 @@ tcu::TestStatus deviceQueueFamilyProperties2 (Context& context)
 				TCU_FAIL("Mismatch between format properties reported by vkGetPhysicalDeviceQueueFamilyProperties and vkGetPhysicalDeviceQueueFamilyProperties2");
 
 			log << TestLog::Message << " queueFamilyNdx = " << ndx <<TestLog::EndMessage
-			<< TestLog::Message << toString(extProperties[ndx]) << TestLog::EndMessage;
+			<< TestLog::Message << extProperties[ndx] << TestLog::EndMessage;
 		}
 	}
 

@@ -936,21 +936,15 @@ bool verifyMultisampleLineGroupRasterization (const tcu::Surface& surface, const
 			(lineNormalizedDeviceSpace[1] + tcu::Vec2(1.0f, 1.0f)) * 0.5f * viewportSize,
 		};
 
-		const tcu::Vec2 lineScreenSpaceRounded[2] =
-		{
-			tcu::Vec2(deFloatRound(lineScreenSpace[0].x() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits), deFloatRound(lineScreenSpace[0].y() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits)),
-			tcu::Vec2(deFloatRound(lineScreenSpace[1].x() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits), deFloatRound(lineScreenSpace[1].y() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits))
-		};
-
-		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpaceRounded[1] - lineScreenSpaceRounded[0]);
+		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpace[1] - lineScreenSpace[0]);
 		const tcu::Vec2 lineNormalDir	= tcu::Vec2(lineDir.y(), -lineDir.x());
 
 		const tcu::Vec2 lineQuadScreenSpace[4] =
 		{
-			lineScreenSpaceRounded[0] + lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[0] - lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[1] - lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[1] + lineNormalDir * halfLineWidth,
+			lineScreenSpace[0] + lineNormalDir * halfLineWidth,
+			lineScreenSpace[0] - lineNormalDir * halfLineWidth,
+			lineScreenSpace[1] - lineNormalDir * halfLineWidth,
+			lineScreenSpace[1] + lineNormalDir * halfLineWidth,
 		};
 		const tcu::Vec2 lineQuadNormalizedDeviceSpace[4] =
 		{
@@ -995,21 +989,15 @@ bool verifyMultisampleLineGroupInterpolation (const tcu::Surface& surface, const
 			(lineNormalizedDeviceSpace[1] + tcu::Vec2(1.0f, 1.0f)) * 0.5f * viewportSize,
 		};
 
-		const tcu::Vec2 lineScreenSpaceRounded[2] =
-		{
-			tcu::Vec2(deFloatRound(lineScreenSpace[0].x() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits), deFloatRound(lineScreenSpace[0].y() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits)),
-			tcu::Vec2(deFloatRound(lineScreenSpace[1].x() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits), deFloatRound(lineScreenSpace[1].y() * (float)(1 << args.subpixelBits)) / (float)(1 << args.subpixelBits))
-		};
-
-		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpaceRounded[1] - lineScreenSpaceRounded[0]);
+		const tcu::Vec2 lineDir			= tcu::normalize(lineScreenSpace[1] - lineScreenSpace[0]);
 		const tcu::Vec2 lineNormalDir	= tcu::Vec2(lineDir.y(), -lineDir.x());
 
 		const tcu::Vec2 lineQuadScreenSpace[4] =
 		{
-			lineScreenSpaceRounded[0] + lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[0] - lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[1] - lineNormalDir * halfLineWidth,
-			lineScreenSpaceRounded[1] + lineNormalDir * halfLineWidth,
+			lineScreenSpace[0] + lineNormalDir * halfLineWidth,
+			lineScreenSpace[0] - lineNormalDir * halfLineWidth,
+			lineScreenSpace[1] - lineNormalDir * halfLineWidth,
+			lineScreenSpace[1] + lineNormalDir * halfLineWidth,
 		};
 		const tcu::Vec2 lineQuadNormalizedDeviceSpace[4] =
 		{
@@ -1124,7 +1112,7 @@ bool verifySinglesampleLineGroupRasterization (const tcu::Surface& surface, cons
 
 	for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
 	{
-		rr::SingleSampleLineRasterizer rasterizer(tcu::IVec4(0, 0, surface.getWidth(), surface.getHeight()));
+		rr::SingleSampleLineRasterizer rasterizer(tcu::IVec4(0, 0, surface.getWidth(), surface.getHeight()), args.subpixelBits);
 		rasterizer.init(tcu::Vec4(screenspaceLines[lineNdx][0],
 								  screenspaceLines[lineNdx][1],
 								  0.0f,
@@ -1494,14 +1482,14 @@ struct SingleSampleNarrowLineCandidate
 	tcu::Vec3	valueRangeMax;
 };
 
-void setMaskMapCoverageBitForLine (int bitNdx, const tcu::Vec2& screenSpaceP0, const tcu::Vec2& screenSpaceP1, float lineWidth, tcu::PixelBufferAccess maskMap)
+void setMaskMapCoverageBitForLine (int bitNdx, const tcu::Vec2& screenSpaceP0, const tcu::Vec2& screenSpaceP1, float lineWidth, tcu::PixelBufferAccess maskMap, const int subpixelBits)
 {
 	enum
 	{
 		MAX_PACKETS = 32,
 	};
 
-	rr::SingleSampleLineRasterizer	rasterizer				(tcu::IVec4(0, 0, maskMap.getWidth(), maskMap.getHeight()));
+	rr::SingleSampleLineRasterizer	rasterizer				(tcu::IVec4(0, 0, maskMap.getWidth(), maskMap.getHeight()), subpixelBits);
 	int								numRasterized			= MAX_PACKETS;
 	rr::FragmentPacket				packets[MAX_PACKETS];
 
@@ -1534,14 +1522,14 @@ void setMaskMapCoverageBitForLine (int bitNdx, const tcu::Vec2& screenSpaceP0, c
 	}
 }
 
-void setMaskMapCoverageBitForLines (const std::vector<tcu::Vec4>& screenspaceLines, float lineWidth, tcu::PixelBufferAccess maskMap)
+void setMaskMapCoverageBitForLines (const std::vector<tcu::Vec4>& screenspaceLines, float lineWidth, tcu::PixelBufferAccess maskMap, const int subpixelBits)
 {
 	for (int lineNdx = 0; lineNdx < (int)screenspaceLines.size(); ++lineNdx)
 	{
 		const tcu::Vec2 pa = screenspaceLines[lineNdx].swizzle(0, 1);
 		const tcu::Vec2 pb = screenspaceLines[lineNdx].swizzle(2, 3);
 
-		setMaskMapCoverageBitForLine(lineNdx, pa, pb, lineWidth, maskMap);
+		setMaskMapCoverageBitForLine(lineNdx, pa, pb, lineWidth, maskMap, subpixelBits);
 	}
 }
 
@@ -1579,7 +1567,7 @@ bool verifyLineGroupPixelIndependentInterpolation (const tcu::Surface&				surfac
 	// prepare lookup map
 
 	genScreenSpaceLines(screenspaceLines, scene.lines, viewportSize);
-	setMaskMapCoverageBitForLines(screenspaceLines, scene.lineWidth, referenceLineMap.getAccess());
+	setMaskMapCoverageBitForLines(screenspaceLines, scene.lineWidth, referenceLineMap.getAccess(), args.subpixelBits);
 
 	// Find all possible lines with coverage, check pixel color matches one of them
 
@@ -1826,7 +1814,7 @@ bool verifySinglesampleWideLineGroupInterpolation (const tcu::Surface& surface, 
 		std::vector<tcu::Vec4> screenspaceLines(scene.lines.size());
 
 		genScreenSpaceLines(screenspaceLines, scene.lines, viewportSize);
-		setMaskMapCoverageBitForLines(screenspaceLines, scene.lineWidth, referenceLineMap.getAccess());
+		setMaskMapCoverageBitForLines(screenspaceLines, scene.lineWidth, referenceLineMap.getAccess(), args.subpixelBits);
 
 		for (int lineNdx = 0; lineNdx < (int)scene.lines.size(); ++lineNdx)
 		{
@@ -1866,7 +1854,7 @@ bool verifySinglesampleWideLineGroupInterpolation (const tcu::Surface& surface, 
 		{
 			const bool						isXMajor			= lineIsXMajor[lineNdx];
 			const int						majorSize			= (isXMajor) ? (surface.getWidth()) : (surface.getHeight());
-			rr::LineExitDiamondGenerator	diamondGenerator;
+			rr::LineExitDiamondGenerator	diamondGenerator	(args.subpixelBits);
 			rr::LineExitDiamond				diamonds[32];
 			int								numRasterized		= DE_LENGTH_OF_ARRAY(diamonds);
 

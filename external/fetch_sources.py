@@ -315,24 +315,29 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		None,
-		"e0292c269d6f5c8481afb9f2d043c74ee11ca24f",
+		"32b0f6739fa571d0476fccd50eae3ef82734f5b2",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"2898223375d57fb3974f24e1e944bb624f67cb73",
+		"822817977cdd5df28b85ae8c317fe802bfd8854b",
 		"glslang",
 		removeTags = ["master-tot"]),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
 		None,
-		"17da9f8231f78cf519b4958c2229463a63ead9e2",
+		"d3752ea20886d2fceb6cecda3c2b146a8f22d214",
 		"spirv-headers"),
 	GitRepo(
 		"https://github.com/Igalia/vkrunner.git",
 		None,
 		"79229ee3662da691240bde7fb6c6578e0e10e3f1",
 		"vkrunner"),
+	GitRepo(
+		"https://github.com/google/amber.git",
+		None,
+		"34c750892a8a8bf7e3440ea25cf4c8c690a44827",
+		"amber"),
 ]
 
 def parseArgs ():

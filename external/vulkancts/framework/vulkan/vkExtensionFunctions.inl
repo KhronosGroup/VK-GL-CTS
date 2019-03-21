@@ -108,6 +108,8 @@ void getInstanceExtensionFunctions (::std::string extName, ::std::vector<const c
 		functions.push_back("vkCreateMacOSSurfaceMVK");
 	else if (extName == "VK_EXT_sample_locations")
 		functions.push_back("vkGetPhysicalDeviceMultisamplePropertiesEXT");
+	else if (extName == "VK_NV_cooperative_matrix")
+		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixPropertiesNV");
 	else
 		DE_ASSERT("Extension name not found");
 }
@@ -272,6 +274,8 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 		functions.push_back("vkGetAndroidHardwareBufferPropertiesANDROID");
 		functions.push_back("vkGetMemoryAndroidHardwareBufferANDROID");
 	}
+	else if (extName == "VK_EXT_buffer_device_address")
+		functions.push_back("vkGetBufferDeviceAddressEXT");
 	else
 		DE_ASSERT("Extension name not found");
 }
@@ -300,7 +304,8 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	"VK_EXT_acquire_xlib_display",
 	"VK_EXT_display_surface_counter",
 	"VK_MVK_ios_surface",
-	"VK_MVK_macos_surface"
+	"VK_MVK_macos_surface",
+	"VK_NV_cooperative_matrix"
 };
 
 ::std::string deviceExtensionNames[] =
@@ -336,5 +341,6 @@ void getDeviceExtensionFunctions (::std::string extName, ::std::vector<const cha
 	"VK_EXT_hdr_metadata",
 	"VK_EXT_sample_locations",
 	"VK_EXT_validation_cache",
-	"VK_ANDROID_external_memory_android_hardware_buffer"
+	"VK_ANDROID_external_memory_android_hardware_buffer",
+	"VK_EXT_buffer_device_address"
 };

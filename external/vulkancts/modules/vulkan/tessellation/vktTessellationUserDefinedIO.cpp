@@ -779,20 +779,22 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 
 	{
 		const Allocation& alloc = vertexBuffer.getAllocation();
+
 		deMemcpy(alloc.getHostPtr(), &attributes[0], static_cast<std::size_t>(vertexDataSizeBytes));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+		flushAlloc(vk, device, alloc);
 	}
 
 	// Output buffer: number of invocations and verification indices
 
-	const int		   resultBufferMaxVertices	= refNumVertices;
-	const VkDeviceSize resultBufferSizeBytes    = sizeof(deInt32) + resultBufferMaxVertices * sizeof(deUint32);
-	const Buffer       resultBuffer             (vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
+	const int			resultBufferMaxVertices	= refNumVertices;
+	const VkDeviceSize	resultBufferSizeBytes	= sizeof(deInt32) + resultBufferMaxVertices * sizeof(deUint32);
+	const Buffer		resultBuffer			(vk, device, allocator, makeBufferCreateInfo(resultBufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), MemoryRequirement::HostVisible);
 
 	{
 		const Allocation& alloc = resultBuffer.getAllocation();
+
 		deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(resultBufferSizeBytes));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+		flushAlloc(vk, device, alloc);
 	}
 
 	// Color attachment
@@ -888,7 +890,8 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 	bool isImageCompareOK = false;
 	{
 		const Allocation& colorBufferAlloc = colorBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc.getMemory(), colorBufferAlloc.getOffset(), colorBufferSizeBytes);
+
+		invalidateAlloc(vk, device, colorBufferAlloc);
 
 		// Load reference image
 		tcu::TextureLevel referenceImage;
@@ -901,7 +904,8 @@ tcu::TestStatus UserDefinedIOTestInstance::iterate (void)
 	}
 	{
 		const Allocation& resultAlloc = resultBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), resultBufferSizeBytes);
+
+		invalidateAlloc(vk, device, resultAlloc);
 
 		const deInt32			numVertices = *static_cast<deInt32*>(resultAlloc.getHostPtr());
 		const deUint32* const	vertices    = reinterpret_cast<deUint32*>(static_cast<deUint8*>(resultAlloc.getHostPtr()) + sizeof(deInt32));

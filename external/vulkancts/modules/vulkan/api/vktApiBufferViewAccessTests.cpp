@@ -516,7 +516,7 @@ void BufferViewTestCase::initPrograms									(SourceCollections&			programColle
 	programCollection.glslSources.add("frag") << glu::FragmentSource(
 		"#version 310 es\n"
 		"#extension GL_EXT_texture_buffer : enable\n"
-		"layout (set=0, binding=0) uniform highp usamplerBuffer u_buffer;\n"
+		"layout (set=0, binding=0) uniform highp utextureBuffer u_buffer;\n"
 		"layout (location = 0) out highp uint o_color;\n"
 		"void main()\n"
 		"{\n"

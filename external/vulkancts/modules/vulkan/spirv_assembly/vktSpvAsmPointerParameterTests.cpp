@@ -262,6 +262,7 @@ void addComputePointerBufferMemoryTest (tcu::TestCaseGroup* group)
 	const int			numFloats			= 128;
 	ComputeShaderSpec	spec;
 	vector<float>		expectedOutput;
+	VulkanFeatures		requiredFeatures;
 
 	// Implements the following pseudo GLSL shader:
 	//
@@ -289,7 +290,9 @@ void addComputePointerBufferMemoryTest (tcu::TestCaseGroup* group)
 	//	}
 	const string		shaderSource		=
 			"                          OpCapability Shader\n"
+			"                          OpCapability VariablePointersStorageBuffer\n"
 			"                          OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
+			"                          OpExtension \"SPV_KHR_variable_pointers\"\n"
 			"                     %1 = OpExtInstImport \"GLSL.std.450\"\n"
 			"                          OpMemoryModel Logical GLSL450\n"
 			"                          OpEntryPoint GLCompute %main \"main\" %gl_GlobalInvocationID\n"
@@ -374,10 +377,14 @@ void addComputePointerBufferMemoryTest (tcu::TestCaseGroup* group)
 	for (deUint32 numIdx = 0; numIdx < numFloats / 2; ++numIdx)
 		expectedOutput.push_back(2.0f);
 
+	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+
 	spec.outputs.push_back(BufferSp(new Float32Buffer(expectedOutput)));
 
 	spec.assembly					= shaderSource;
 	spec.numWorkGroups				= IVec3(16, 1, 1);
+	spec.requestedVulkanFeatures	= requiredFeatures;
+	spec.extensions.push_back("VK_KHR_variable_pointers");
 
 	group->addChild(new SpvAsmComputeShaderCase(testCtx, "buffer_memory", "", spec));
 }
@@ -960,6 +967,7 @@ void addGraphicsPointerBufferMemoryTest (tcu::TestCaseGroup* group)
 		expectedOutput.push_back(2.0f);
 
 	extensions.push_back("VK_KHR_variable_pointers");
+	requiredFeatures.extVariablePointers = EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
 	requiredFeatures.coreFeatures.vertexPipelineStoresAndAtomics = DE_TRUE;
 	resources.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 

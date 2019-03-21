@@ -416,7 +416,7 @@ tcu::TextureFormat getStencilFormat (int stencilBits)
 	}
 }
 
-void renderReference (const tcu::PixelBufferAccess& dst, const vector<DrawPrimitiveOp>& drawOps, const tcu::PixelFormat& colorBits, const int depthBits, const int stencilBits, const int numSamples)
+void renderReference (const tcu::PixelBufferAccess& dst, const vector<DrawPrimitiveOp>& drawOps, const tcu::PixelFormat& colorBits, const int depthBits, const int stencilBits, const int numSamples, const int subpixelBits)
 {
 	const int						width			= dst.getWidth();
 	const int						height			= dst.getHeight();
@@ -462,7 +462,7 @@ void renderReference (const tcu::PixelBufferAccess& dst, const vector<DrawPrimit
 	for (vector<DrawPrimitiveOp>::const_iterator drawOp = drawOps.begin(); drawOp != drawOps.end(); drawOp++)
 	{
 		// Translate state
-		rr::RenderState renderState((rr::ViewportState)(rr::MultisamplePixelBufferAccess::fromMultisampleAccess(colorBuffer.getAccess())));
+		rr::RenderState renderState((rr::ViewportState)(rr::MultisamplePixelBufferAccess::fromMultisampleAccess(colorBuffer.getAccess())), subpixelBits);
 		toReferenceRenderState(renderState, *drawOp);
 
 		DE_ASSERT(drawOp->type == PRIMITIVETYPE_TRIANGLE);
@@ -819,11 +819,14 @@ void SingleThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface 
 		readPixels(m_gl, api, frame);
 	}
 
+	int	subpixelBits = 0;
+	m_gl.getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
+
 	EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
 	// Render reference.
 	// \note Reference image is always generated using single-sampling.
-	renderReference(refFrame.getAccess(), drawOps, pixelFmt, depthBits, stencilBits, 1);
+	renderReference(refFrame.getAccess(), drawOps, pixelFmt, depthBits, stencilBits, 1, subpixelBits);
 
 	// Compare images
 	{
@@ -1045,6 +1048,9 @@ void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface s
 		readPixels(m_gl, api, frame);
 	}
 
+	int	subpixelBits = 0;
+	m_gl.getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
+
 	EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
 	// Join threads.
@@ -1052,7 +1058,7 @@ void MultiThreadRenderCase::executeForContexts (EGLDisplay display, EGLSurface s
 		threads[threadNdx]->join();
 
 	// Render reference.
-	renderReference(refFrame.getAccess(), drawOps, pixelFmt, depthBits, stencilBits, 1);
+	renderReference(refFrame.getAccess(), drawOps, pixelFmt, depthBits, stencilBits, 1, subpixelBits);
 
 	// Compare images
 	{

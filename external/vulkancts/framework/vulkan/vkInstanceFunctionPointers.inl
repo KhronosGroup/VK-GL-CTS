@@ -77,3 +77,4 @@ GetPhysicalDeviceSurfaceCapabilities2EXTFunc			getPhysicalDeviceSurfaceCapabilit
 CreateIOSSurfaceMVKFunc									createIOSSurfaceMVK;
 CreateMacOSSurfaceMVKFunc								createMacOSSurfaceMVK;
 GetPhysicalDeviceMultisamplePropertiesEXTFunc			getPhysicalDeviceMultisamplePropertiesEXT;
+GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc		getPhysicalDeviceCooperativeMatrixPropertiesNV;

@@ -365,16 +365,23 @@ struct RestartState
 	}
 };
 
+//! Rasterizer configuration
 struct RenderState
 {
-	explicit RenderState (const ViewportState& viewport_, ViewportOrientation viewportOrientation_ = VIEWPORTORIENTATION_LOWER_LEFT)
+	explicit RenderState (const ViewportState& viewport_, const int subpixelBits_, ViewportOrientation viewportOrientation_ = VIEWPORTORIENTATION_LOWER_LEFT)
 		: cullMode					(CULLMODE_NONE)
 		, provokingVertexConvention	(PROVOKINGVERTEX_LAST)
 		, viewport					(viewport_)
 		, viewportOrientation		(viewportOrientation_)
+		, subpixelBits              (subpixelBits_)
 	{
 		rasterization.viewportOrientation = viewportOrientation;
 	}
+
+	enum
+	{
+		DEFAULT_SUBPIXEL_BITS = 8
+	};
 
 	CullMode					cullMode;
 	ProvokingVertex				provokingVertexConvention;
@@ -385,6 +392,7 @@ struct RenderState
 	LineState					line;
 	RestartState				restart;
 	ViewportOrientation			viewportOrientation;
+	const int					subpixelBits;
 };
 
 } // rr

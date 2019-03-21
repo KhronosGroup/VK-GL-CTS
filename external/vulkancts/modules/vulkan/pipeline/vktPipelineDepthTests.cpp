@@ -651,7 +651,7 @@ tcu::TestStatus DepthTestInstance::verifyImage (void)
 		for (int quadNdx = 0; quadNdx < DepthTest::QUAD_COUNT; quadNdx++)
 		{
 			// Set depth state
-			rr::RenderState renderState(refRenderer.getViewportState());
+			rr::RenderState renderState(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 			renderState.fragOps.depthTestEnabled = m_depthTestEnable;
 			renderState.fragOps.depthFunc = mapVkCompareOp(m_depthCompareOps[quadNdx]);
 			if (m_depthBoundsTestEnable)

@@ -344,7 +344,7 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 		deMemcpy(pData + vertexTessParamsOffset, &gridTessParams[0], static_cast<std::size_t>(sizeInBytes(gridTessParams)));
 		deMemcpy(pData + vertexIndicesOffset,    &gridIndices[0],    static_cast<std::size_t>(sizeInBytes(gridIndices)));
 
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), vertexDataSizeBytes);
+		flushAlloc(vk, device, alloc);
 		// No barrier needed, flushed memory is automatically visible
 	}
 
@@ -429,11 +429,13 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 	{
 		// Log the result image.
 
-		const Allocation& colorBufferAlloc = colorBuffer.getAllocation();
-		invalidateMappedMemoryRange(vk, device, colorBufferAlloc.getMemory(), colorBufferAlloc.getOffset(), colorBufferSizeBytes);
-		const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
+		const Allocation&					colorBufferAlloc	= colorBuffer.getAllocation();
 
-		tcu::TestLog& log = context.getTestContext().getLog();
+		invalidateAlloc(vk, device, colorBufferAlloc);
+
+		const tcu::ConstPixelBufferAccess	imagePixelAccess	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
+		tcu::TestLog&						log					= context.getTestContext().getLog();
+
 		log << tcu::TestLog::Image("color0", "Rendered image", imagePixelAccess)
 			<< tcu::TestLog::Message
 			<< "Note: coloring is done to clarify the positioning and orientation of the "
@@ -450,7 +452,6 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 			DE_ASSERT(false);
 
 		// Verify the result.
-
 		const bool ok = verifyResult(log, imagePixelAccess);
 		return (ok ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Failure"));
 	}

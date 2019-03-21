@@ -34,6 +34,7 @@ add_subdirectory(protected_memory)
 add_subdirectory(memory_model)
 add_subdirectory(util)
 add_subdirectory(vkrunner)
+add_subdirectory(amber)
 
 include_directories(
 	api
@@ -70,6 +71,7 @@ include_directories(
 	memory_model
 	util
 	vkrunner
+	amber
 	)
 
 set(DEQP_VK_SRCS
@@ -125,6 +127,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-protected-memory
 	deqp-vk-memory-model
 	deqp-vk-vkrunner
+	deqp-vk-amber
 	)
 
 if (DE_COMPILER_IS_MSC AND (DE_PTR_SIZE EQUAL 4))

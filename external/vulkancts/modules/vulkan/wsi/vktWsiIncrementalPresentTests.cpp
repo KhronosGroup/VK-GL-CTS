@@ -194,7 +194,8 @@ de::MovePtr<vk::wsi::Display> createDisplay (const vk::Platform&	platform,
 	}
 	catch (const tcu::NotSupportedError& e)
 	{
-		if (isExtensionSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))))
+		if (isExtensionSupported(supportedExtensions, vk::RequiredExtension(getExtensionName(wsiType))) &&
+		    platform.hasDisplay(wsiType))
 		{
 			// If VK_KHR_{platform}_surface was supported, vk::Platform implementation
 			// must support creating native display & window for that WSI type.
@@ -708,7 +709,7 @@ private:
 };
 
 std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfaceKHR						surface,
-																	deUint32								queueFamilyIndex,
+																	const deUint32							*queueFamilyIndex,
 																	Scaling									scaling,
 																	const vk::VkSurfaceCapabilitiesKHR&		properties,
 																	const vector<vk::VkSurfaceFormatKHR>&	formats,
@@ -783,7 +784,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 					imageUsage,
 					vk::VK_SHARING_MODE_EXCLUSIVE,
 					1u,
-					&queueFamilyIndex,
+					queueFamilyIndex,
 					preTransform,
 					compositeAlpha,
 					presentMode,
@@ -808,7 +809,7 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs (vk::VkSurfac
 					imageUsage,
 					vk::VK_SHARING_MODE_EXCLUSIVE,
 					1u,
-					&queueFamilyIndex,
+					queueFamilyIndex,
 					preTransform,
 					compositeAlpha,
 					presentMode,
@@ -855,7 +856,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance (Context& context
 	, m_freeAcquireSemaphore	((vk::VkSemaphore)0)
 	, m_freeRenderSemaphore		((vk::VkSemaphore)0)
 
-	, m_swapchainConfigs		(generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode))
+	, m_swapchainConfigs		(generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, testConfig.presentMode))
 	, m_swapchainConfigNdx		(0u)
 
 	, m_frameCount				(60u * 5u)
@@ -1078,7 +1079,7 @@ tcu::TestStatus IncrementalPresentTestInstance::iterate (void)
 	{
 		if (error.getError() == vk::VK_ERROR_OUT_OF_DATE_KHR)
 		{
-			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode);
+			m_swapchainConfigs = generateSwapchainConfigs(*m_surface, &m_queueFamilyIndex, m_testConfig.scaling, m_surfaceProperties, m_surfaceFormats, m_presentModes, m_testConfig.presentMode);
 
 			if (m_outOfDateCount < m_maxOutOfDateCount)
 			{

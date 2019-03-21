@@ -626,23 +626,24 @@ BaseTestInstance::BaseTestInstance (Context& context, const CaseDefinition caseD
 //! patchTessLevels are tessellation levels for all drawn patches.
 BaseTestInstance::DrawResult BaseTestInstance::draw (const deUint32 vertexCount, const std::vector<float>& patchTessLevels, const Winding winding, const bool usePointMode)
 {
-	const DeviceInterface&	vk		= m_context.getDeviceInterface();
-	const VkDevice			device	= m_context.getDevice();
-	const VkQueue			queue	= m_context.getUniversalQueue();
+	const DeviceInterface&		vk			= m_context.getDeviceInterface();
+	const VkDevice				device		= m_context.getDevice();
+	const VkQueue				queue		= m_context.getUniversalQueue();
 
-	const Unique<VkPipeline> pipeline(GraphicsPipelineBuilder()
-		.setPatchControlPoints        (NUM_TESS_LEVELS)
-		.setVertexInputSingleAttribute(m_vertexFormat, m_vertexStride)
-		.setShader                    (vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,	m_context.getBinaryCollection().get("tesc"), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, m_context.getBinaryCollection().get(getProgramName("tese", winding, usePointMode)), DE_NULL)
-		.setShader                    (vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,                m_context.getBinaryCollection().get(getProgramName("geom", usePointMode)), DE_NULL)
-		.build                        (vk, device, *m_pipelineLayout, *m_renderPass));
+	const Unique<VkPipeline>	pipeline	(GraphicsPipelineBuilder()
+		.setPatchControlPoints				(NUM_TESS_LEVELS)
+		.setVertexInputSingleAttribute		(m_vertexFormat, m_vertexStride)
+		.setShader							(vk, device, VK_SHADER_STAGE_VERTEX_BIT,					m_context.getBinaryCollection().get("vert"), DE_NULL)
+		.setShader							(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,		m_context.getBinaryCollection().get("tesc"), DE_NULL)
+		.setShader							(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,	m_context.getBinaryCollection().get(getProgramName("tese", winding, usePointMode)), DE_NULL)
+		.setShader							(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT,					m_context.getBinaryCollection().get(getProgramName("geom", usePointMode)), DE_NULL)
+		.build								(vk, device, *m_pipelineLayout, *m_renderPass));
 
 	{
 		const Allocation& alloc = m_resultBuffer.getAllocation();
+
 		deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(m_resultBufferSizeBytes));
-		flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), m_resultBufferSizeBytes);
+		flushAlloc(vk, device, alloc);
 	}
 
 	beginCommandBuffer(vk, *m_cmdBuffer);
@@ -672,14 +673,15 @@ BaseTestInstance::DrawResult BaseTestInstance::draw (const deUint32 vertexCount,
 	// Read back and check results
 
 	const Allocation& resultAlloc = m_resultBuffer.getAllocation();
-	invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), m_resultBufferSizeBytes);
+
+	invalidateAlloc(vk, device, resultAlloc);
 
 	DrawResult result;
 	result.success				= true;
-	result.refNumPrimitives     = multiplePatchReferencePrimitiveCount(m_caseDef.primitiveType, m_caseDef.spacingMode, usePointMode, &patchTessLevels[0], m_numPatchesToDraw);
-	result.numPrimitiveVertices = numVerticesPerPrimitive(m_caseDef.primitiveType, usePointMode);
-	result.numPrimitives        = *static_cast<deInt32*>(resultAlloc.getHostPtr());
-	result.primitives           = sorted(readInterleavedData<PerPrimitive>(result.numPrimitives, resultAlloc.getHostPtr(), m_resultBufferPrimitiveDataOffset, sizeof(PerPrimitive)),
+	result.refNumPrimitives		= multiplePatchReferencePrimitiveCount(m_caseDef.primitiveType, m_caseDef.spacingMode, usePointMode, &patchTessLevels[0], m_numPatchesToDraw);
+	result.numPrimitiveVertices	= numVerticesPerPrimitive(m_caseDef.primitiveType, usePointMode);
+	result.numPrimitives		= *static_cast<deInt32*>(resultAlloc.getHostPtr());
+	result.primitives			= sorted(readInterleavedData<PerPrimitive>(result.numPrimitives, resultAlloc.getHostPtr(), m_resultBufferPrimitiveDataOffset, sizeof(PerPrimitive)),
 										 byPatchPrimitiveID);
 
 	// If this fails then we didn't read all vertices from shader and test must be changed to allow more.
@@ -699,9 +701,10 @@ void BaseTestInstance::uploadVertexAttributes (const std::vector<float>& vertexD
 	const DeviceInterface&	vk		= m_context.getDeviceInterface();
 	const VkDevice			device	= m_context.getDevice();
 
-	const Allocation& alloc = m_vertexBuffer.getAllocation();
+	const Allocation&		alloc	= m_vertexBuffer.getAllocation();
+
 	deMemcpy(alloc.getHostPtr(), &vertexData[0], sizeInBytes(vertexData));
-	flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeInBytes(vertexData));
+	flushAlloc(vk, device, alloc);
 }
 
 /*--------------------------------------------------------------------*//*!
@@ -1416,8 +1419,9 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 				data[1] = tessLevels;
 
 				const Allocation& alloc = vertexBuffer.getAllocation();
+
 				deMemcpy(alloc.getHostPtr(), data, sizeof(data));
-				flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeof(data));
+				flushAlloc(vk, device, alloc);
 			}
 
 			int programNdx = 0;
@@ -1435,8 +1439,9 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 				{
 					const Allocation& alloc = resultBuffer.getAllocation();
+
 					deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(resultBufferSizeBytes));
-					flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+					flushAlloc(vk, device, alloc);
 				}
 
 				beginCommandBuffer(vk, *cmdBuffer);
@@ -1465,14 +1470,15 @@ tcu::TestStatus InvarianceTestInstance::iterate (void)
 
 				// Verify case result
 				{
-					const Allocation& resultAlloc = resultBuffer.getAllocation();
-					invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), resultBufferSizeBytes);
+					const Allocation&		resultAlloc				= resultBuffer.getAllocation();
 
-					const int				refNumPrimitives     = numPatchesPerDrawCall * primitiveCounts[tessLevelCaseNdx][subTessLevelCaseNdx];
-					const int				numPrimitiveVertices = numVerticesPerPrimitive(m_caseDef.primitiveType, m_caseDef.usePointMode);
-					const deInt32			numPrimitives        = *static_cast<deInt32*>(resultAlloc.getHostPtr());
-					const PerPrimitiveVec	primitives           = sorted(readInterleavedData<PerPrimitive>(numPrimitives, resultAlloc.getHostPtr(), resultBufferTessCoordsOffset, sizeof(PerPrimitive)),
-																		  byPatchPrimitiveID);
+					invalidateAlloc(vk, device, resultAlloc);
+
+					const int				refNumPrimitives		= numPatchesPerDrawCall * primitiveCounts[tessLevelCaseNdx][subTessLevelCaseNdx];
+					const int				numPrimitiveVertices	= numVerticesPerPrimitive(m_caseDef.primitiveType, m_caseDef.usePointMode);
+					const deInt32			numPrimitives			= *static_cast<deInt32*>(resultAlloc.getHostPtr());
+					const PerPrimitiveVec	primitives				= sorted(readInterleavedData<PerPrimitive>(numPrimitives, resultAlloc.getHostPtr(),
+																			 resultBufferTessCoordsOffset, sizeof(PerPrimitive)), byPatchPrimitiveID);
 
 					// If this fails then we didn't read all vertices from shader and test must be changed to allow more.
 					DE_ASSERT(numPrimitiveVertices * numPrimitives <= resultBufferMaxVertices);
@@ -2059,13 +2065,15 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 		{
 			const Allocation& alloc = vertexBuffer.getAllocation();
+
 			deMemcpy(alloc.getHostPtr(), &tessLevelCases[tessLevelCaseNdx], sizeof(TessLevels));
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), sizeof(TessLevels));
+			flushAlloc(vk, device, alloc);
 		}
 		{
 			const Allocation& alloc = resultBuffer.getAllocation();
+
 			deMemset(alloc.getHostPtr(), 0, static_cast<std::size_t>(resultBufferSizeBytes));
-			flushMappedMemoryRange(vk, device, alloc.getMemory(), alloc.getOffset(), resultBufferSizeBytes);
+			flushAlloc(vk, device, alloc);
 		}
 
 		beginCommandBuffer(vk, *cmdBuffer);
@@ -2094,20 +2102,21 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 
 		// Verify case result
 		{
-			const Allocation& resultAlloc = resultBuffer.getAllocation();
-			invalidateMappedMemoryRange(vk, device, resultAlloc.getMemory(), resultAlloc.getOffset(), resultBufferSizeBytes);
+			const Allocation&				resultAlloc		= resultBuffer.getAllocation();
 
-			const deInt32				 numVertices = *static_cast<deInt32*>(resultAlloc.getHostPtr());
-			const std::vector<tcu::Vec3> vertices    = readInterleavedData<tcu::Vec3>(numVertices, resultAlloc.getHostPtr(), resultBufferTessCoordsOffset, sizeof(tcu::Vec4));
+			invalidateAlloc(vk, device, resultAlloc);
+
+			const deInt32					numVertices		= *static_cast<deInt32*>(resultAlloc.getHostPtr());
+			const std::vector<tcu::Vec3>	vertices		= readInterleavedData<tcu::Vec3>(numVertices, resultAlloc.getHostPtr(), resultBufferTessCoordsOffset, sizeof(tcu::Vec4));
 
 			// If this fails then we didn't read all vertices from shader and test must be changed to allow more.
 			DE_ASSERT(numVertices <= maxNumVerticesInDrawCall);
 
-			tcu::TestLog& log           = context.getTestContext().getLog();
-			const int     numComponents = (caseDef.primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? 3 : 2);
+			tcu::TestLog&					log				= context.getTestContext().getLog();
+			const int						numComponents	= (caseDef.primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? 3 : 2);
 
-			CompareFunc compare = (caseDef.caseType == CASETYPE_TESS_COORD_RANGE     ? compareTessCoordRange :
-								   caseDef.caseType == CASETYPE_ONE_MINUS_TESS_COORD ? compareOneMinusTessCoord : DE_NULL);
+			CompareFunc						compare			= (caseDef.caseType == CASETYPE_TESS_COORD_RANGE     ? compareTessCoordRange :
+															   caseDef.caseType == CASETYPE_ONE_MINUS_TESS_COORD ? compareOneMinusTessCoord : DE_NULL);
 
 			DE_ASSERT(compare != DE_NULL);
 
@@ -2115,10 +2124,10 @@ tcu::TestStatus test (Context& context, const CaseDefinition caseDef)
 			for (int i = 0; i < numComponents; ++i)
 				if (!compare(log, (*vertexIter)[i]))
 				{
-						log << tcu::TestLog::Message << "Note: got a wrong tessellation coordinate "
-							<< (numComponents == 3 ? de::toString(*vertexIter) : de::toString(vertexIter->swizzle(0,1))) << tcu::TestLog::EndMessage;
+					log << tcu::TestLog::Message << "Note: got a wrong tessellation coordinate "
+						<< (numComponents == 3 ? de::toString(*vertexIter) : de::toString(vertexIter->swizzle(0,1))) << tcu::TestLog::EndMessage;
 
-						tcu::TestStatus::fail("Invalid tessellation coordinate component");
+					tcu::TestStatus::fail("Invalid tessellation coordinate component");
 				}
 		}
 	}

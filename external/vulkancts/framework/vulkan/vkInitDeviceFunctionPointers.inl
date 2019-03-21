@@ -233,3 +233,4 @@ m_vk.getValidationCacheDataEXT					= (GetValidationCacheDataEXTFunc)					GET_PRO
 m_vk.getMemoryHostPointerPropertiesEXT			= (GetMemoryHostPointerPropertiesEXTFunc)			GET_PROC_ADDR("vkGetMemoryHostPointerPropertiesEXT");
 m_vk.getAndroidHardwareBufferPropertiesANDROID	= (GetAndroidHardwareBufferPropertiesANDROIDFunc)	GET_PROC_ADDR("vkGetAndroidHardwareBufferPropertiesANDROID");
 m_vk.getMemoryAndroidHardwareBufferANDROID		= (GetMemoryAndroidHardwareBufferANDROIDFunc)		GET_PROC_ADDR("vkGetMemoryAndroidHardwareBufferANDROID");
+m_vk.getBufferDeviceAddressEXT					= (GetBufferDeviceAddressEXTFunc)					GET_PROC_ADDR("vkGetBufferDeviceAddressEXT");

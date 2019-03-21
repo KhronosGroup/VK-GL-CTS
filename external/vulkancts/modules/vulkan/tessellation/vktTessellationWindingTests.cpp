@@ -541,10 +541,12 @@ tcu::TestStatus WindingTestInstance::iterate (void)
 
 		{
 			// Log rendered image
-			const Allocation& colorBufferAlloc = colorBuffer.getAllocation();
-			invalidateMappedMemoryRange(vk, device, colorBufferAlloc.getMemory(), colorBufferAlloc.getOffset(), colorBufferSizeBytes);
+			const Allocation&					colorBufferAlloc	= colorBuffer.getAllocation();
 
-			const tcu::ConstPixelBufferAccess imagePixelAccess(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
+			invalidateAlloc(vk, device, colorBufferAlloc);
+
+			const tcu::ConstPixelBufferAccess	imagePixelAccess	(mapVkFormat(colorFormat), renderSize.x(), renderSize.y(), 1, colorBufferAlloc.getHostPtr());
+
 			log << tcu::TestLog::Image("color0", "Rendered image", imagePixelAccess);
 
 			// Verify case result

@@ -658,7 +658,8 @@ void renderReference (RenderBits					renderBits,
 					  int							triangleCount,
 					  const glu::TextureBuffer&		texture,
 					  int							maxTextureBufferSize,
-					  const tcu::PixelBufferAccess&	target)
+					  const tcu::PixelBufferAccess&	target,
+					  int							subpixelBits)
 {
 	const tcu::ConstPixelBufferAccess	effectiveAccess			= glu::getTextureBufferEffectiveRefTexture(texture, maxTextureBufferSize);
 
@@ -671,7 +672,7 @@ void renderReference (RenderBits					renderBits,
 	const rr::FragmentShader* const		fragmentShader			= (renderBits & RENDERBITS_AS_FRAGMENT_TEXTURE ? static_cast<const rr::FragmentShader*>(&textureFragmentShader) : &coordFragmmentShader);
 
 	const rr::Renderer					renderer;
-	const rr::RenderState				renderState(rr::ViewportState(rr::WindowRectangle(0, 0, target.getWidth(), target.getHeight())));
+	const rr::RenderState				renderState(rr::ViewportState(rr::WindowRectangle(0, 0, target.getWidth(), target.getHeight())), subpixelBits);
 	const rr::RenderTarget				renderTarget(rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(target));
 
 	const rr::Program					program(vertexShader, fragmentShader);
@@ -774,7 +775,10 @@ void render (TestLog&						log,
 	logRendering(log, renderBits);
 
 	renderGL(renderContext, renderBits, coordSeed, triangleCount, program, texture);
-	renderReference(renderBits, coordSeed, triangleCount, texture, maxTextureBufferSize, target);
+
+	int subpixelBits = 0;
+	renderContext.getFunctions().getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
+	renderReference(renderBits, coordSeed, triangleCount, texture, maxTextureBufferSize, target, subpixelBits);
 }
 
 void verifyScreen (TestLog&								log,

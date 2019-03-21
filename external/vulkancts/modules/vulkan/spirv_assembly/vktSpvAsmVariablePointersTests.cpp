@@ -174,7 +174,7 @@ deUint32 getBaseOffsetForSingleInputBuffer (deUint32 indexOuterStruct,
 	return offset;
 }
 
-void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
+void addPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool physPtrs)
 {
 	tcu::TestContext&				testCtx					= group->getTestContext();
 	de::Random						rnd						(deStringHash(group->getName()));
@@ -211,14 +211,22 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		incrAmuxBOutputFloats[i] = (inputSFloats[i] < 0) ? 1 + inputAFloats[i]	 : 1 + inputBFloats[i];
 	}
 
-	const StringTemplate shaderTemplate (
+	const char *extensions = physPtrs ? "VK_EXT_buffer_device_address" : "VK_KHR_variable_pointers";
+
+	std::string stringTemplate =
 		"OpCapability Shader\n"
 
-		"${ExtraCapability}\n"
+		"${ExtraCapability}\n";
 
-		"OpExtension \"SPV_KHR_variable_pointers\"\n"
+	stringTemplate +=
+		physPtrs ?
+		"OpExtension \"SPV_EXT_physical_storage_buffer\"\n"
+		:
+		"OpExtension \"SPV_KHR_variable_pointers\"\n";
+
+	stringTemplate +=
 		"OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
-		"OpMemoryModel Logical GLSL450\n"
+		"OpMemoryModel " + string(physPtrs ? "PhysicalStorageBuffer64EXT" : "Logical") + " GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n"
 
@@ -228,6 +236,25 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 
 		// Decorations
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
+		"OpDecorate %f32arr ArrayStride 4\n"
+		"OpDecorate %sb_f32ptr ArrayStride 4\n"
+		"OpDecorate %buf Block\n"
+		"OpMemberDecorate %buf 0 Offset 0\n"
+		"${ExtraDecorations}";
+
+
+	stringTemplate +=
+		physPtrs ?
+		"OpDecorate %physPtrsStruct Block\n"
+		"OpMemberDecorate %physPtrsStruct 0 Offset 0\n"
+		"OpMemberDecorate %physPtrsStruct 1 Offset 8\n"
+		"OpMemberDecorate %physPtrsStruct 2 Offset 16\n"
+		"OpMemberDecorate %physPtrsStruct 3 Offset 24\n"
+		"OpDecorate %indata_all DescriptorSet 0\n"
+		"OpDecorate %indata_all Binding 0\n"
+		"OpDecorate %first_ptr_param Restrict\n"
+		"OpDecorate %second_ptr_param Restrict\n"
+		:
 		"OpDecorate %indata_a DescriptorSet 0\n"
 		"OpDecorate %indata_a Binding 0\n"
 		"OpDecorate %indata_b DescriptorSet 0\n"
@@ -235,24 +262,35 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"OpDecorate %indata_s DescriptorSet 0\n"
 		"OpDecorate %indata_s Binding 2\n"
 		"OpDecorate %outdata DescriptorSet 0\n"
-		"OpDecorate %outdata Binding 3\n"
-		"OpDecorate %f32arr ArrayStride 4\n"
-		"OpDecorate %sb_f32ptr ArrayStride 4\n"
-		"OpDecorate %buf Block\n"
-		"OpMemberDecorate %buf 0 Offset 0\n"
+		"OpDecorate %outdata Binding 3\n";
 
-		+ string(getComputeAsmCommonTypes()) +
+	stringTemplate +=
+		string(getComputeAsmCommonTypes());
 
+	stringTemplate +=
+		physPtrs ?
+		"%sb_f32ptr				= OpTypePointer PhysicalStorageBufferEXT %f32\n"
+		"%buf					= OpTypeStruct %f32arr\n"
+		"%bufptrphys			= OpTypePointer PhysicalStorageBufferEXT %buf\n"
+		"%physPtrsStruct		= OpTypeStruct %bufptrphys %bufptrphys %bufptrphys %bufptrphys\n"
+		"%physPtrsStructPtr		= OpTypePointer StorageBuffer %physPtrsStruct\n"
+		"%indata_all			= OpVariable %physPtrsStructPtr StorageBuffer\n"
+		"%bufptrphysPtr			= OpTypePointer StorageBuffer %bufptrphys\n"
+		:
 		"%sb_f32ptr				= OpTypePointer StorageBuffer %f32\n"
 		"%buf					= OpTypeStruct %f32arr\n"
 		"%bufptr				= OpTypePointer StorageBuffer %buf\n"
 		"%indata_a				= OpVariable %bufptr StorageBuffer\n"
 		"%indata_b				= OpVariable %bufptr StorageBuffer\n"
 		"%indata_s				= OpVariable %bufptr StorageBuffer\n"
-		"%outdata				= OpVariable %bufptr StorageBuffer\n"
+		"%outdata				= OpVariable %bufptr StorageBuffer\n";
+
+	stringTemplate +=
 		"%id					= OpVariable %uvec3ptr Input\n"
 		"%zero				    = OpConstant %i32 0\n"
 		"%one					= OpConstant %i32 1\n"
+		"%two					= OpConstant %i32 2\n"
+		"%three					= OpConstant %i32 3\n"
 		"%fzero					= OpConstant %f32 0\n"
 		"%fone					= OpConstant %f32 1\n"
 
@@ -276,8 +314,22 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"%main					= OpFunction %void None %voidf\n"
 		"%label					= OpLabel\n"
 
-		"${ExtraFunctionScopeVars}"
+		"${ExtraFunctionScopeVars}";
 
+	if (physPtrs)
+	{
+		stringTemplate +=
+			"%indata_a_ptr			= OpAccessChain %bufptrphysPtr %indata_all %zero\n"
+			"%indata_a				= OpLoad %bufptrphys %indata_a_ptr\n"
+			"%indata_b_ptr			= OpAccessChain %bufptrphysPtr %indata_all %one\n"
+			"%indata_b				= OpLoad %bufptrphys %indata_b_ptr\n"
+			"%indata_s_ptr			= OpAccessChain %bufptrphysPtr %indata_all %two\n"
+			"%indata_s				= OpLoad %bufptrphys %indata_s_ptr\n"
+			"%outdata_ptr			= OpAccessChain %bufptrphysPtr %indata_all %three\n"
+			"%outdata				= OpLoad %bufptrphys %outdata_ptr\n";
+	}
+
+	stringTemplate +=
 		"%idval					= OpLoad %uvec3 %id\n"
 		"%i						= OpCompositeExtract %u32 %idval 0\n"
 		"%two_i					= OpIAdd %u32 %i %i\n"
@@ -288,23 +340,26 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"%outloc_i              = OpAccessChain %sb_f32ptr %outdata  %zero %i\n"
 		"%inloc_a_2i			= OpAccessChain %sb_f32ptr %indata_a %zero %two_i\n"
 		"%inloc_a_2i_plus_1		= OpAccessChain %sb_f32ptr %indata_a %zero %two_i_plus_1\n"
-		"%inval_s_i				= OpLoad %f32 %inloc_s_i\n"
+		"%inval_s_i				= OpLoad %f32 %inloc_s_i Aligned 4\n"
 		"%is_neg				= OpFOrdLessThan %bool %inval_s_i %fzero\n"
 
 		"${ExtraSetupComputations}"
 
 		"${ResultStrategy}"
 
-		"%mux_output			= OpLoad %f32 ${VarPtrName}\n"
-		"						  OpStore %outloc_i %mux_output\n"
+		"%mux_output			= OpLoad %f32 ${VarPtrName} Aligned 4\n"
+		"						  OpStore %outloc_i %mux_output Aligned 4\n"
 		"						  OpReturn\n"
-		"						  OpFunctionEnd\n");
+		"						  OpFunctionEnd\n";
+
+	const StringTemplate shaderTemplate (stringTemplate);
 
 	const bool singleInputBuffer[]  = { true, false };
 	for (int inputBufferTypeIndex = 0 ; inputBufferTypeIndex < 2; ++inputBufferTypeIndex)
 	{
 		const bool isSingleInputBuffer			= singleInputBuffer[inputBufferTypeIndex];
-		const string extraCap					= isSingleInputBuffer	? "OpCapability VariablePointersStorageBuffer\n" : "OpCapability VariablePointers\n";
+		const string extraCap					= string(physPtrs ? "OpCapability PhysicalStorageBufferAddressesEXT\n" :
+														 isSingleInputBuffer	? "OpCapability VariablePointersStorageBuffer\n" : "OpCapability VariablePointers\n");
 		const vector<float>& expectedOutput		= isSingleInputBuffer	? AmuxAOutputFloats		 : AmuxBOutputFloats;
 		const vector<float>& expectedIncrOutput	= isSingleInputBuffer	? incrAmuxAOutputFloats	 : incrAmuxBOutputFloats;
 		const string bufferType					= isSingleInputBuffer	? "single_buffer"	 : "two_buffers";
@@ -312,10 +367,17 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		const string muxInput2					= isSingleInputBuffer	? " %inloc_a_2i_plus_1 " : " %inloc_b_i ";
 
 		// Set the proper extension features required for the test
-		if (isSingleInputBuffer)
-			requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+		if (physPtrs)
+		{
+			requiredFeatures.extVariablePointers = 0;
+		}
 		else
-			requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+		{
+			if (isSingleInputBuffer)
+				requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+			else
+				requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+		}
 
 		{ // Variable Pointer Reads (using OpSelect)
 			ComputeShaderSpec				spec;
@@ -326,8 +388,10 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			specs["ExtraGlobalScopeVars"]	= "";
 			specs["ExtraFunctionScopeVars"]	= "";
 			specs["ExtraSetupComputations"]	= "";
+			specs["ExtraDecorations"]		= "";
 			specs["VarPtrName"]				= "%mux_output_var_ptr";
 			specs["ResultStrategy"]			= "%mux_output_var_ptr	= OpSelect %sb_f32ptr %is_neg" + muxInput1 + muxInput2 + "\n";
+			spec.usesPhysStorageBuffer		= physPtrs;
 			spec.assembly					= shaderTemplate.specialize(specs);
 			spec.numWorkGroups				= IVec3(numMuxes, 1, 1);
 			spec.requestedVulkanFeatures	= requiredFeatures;
@@ -335,7 +399,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back("VK_KHR_variable_pointers");
+			spec.extensions.push_back(extensions);
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpFunctionCall)
@@ -347,8 +411,10 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			specs["ExtraGlobalScopeVars"]	= "";
 			specs["ExtraFunctionScopeVars"]	= "";
 			specs["ExtraSetupComputations"]	= "";
+			specs["ExtraDecorations"]		= "";
 			specs["VarPtrName"]				= "%mux_output_var_ptr";
 			specs["ResultStrategy"]			= "%mux_output_var_ptr = OpFunctionCall %sb_f32ptr %choose_input_func %is_neg" + muxInput1 + muxInput2 + "\n";
+			spec.usesPhysStorageBuffer		= physPtrs;
 			spec.assembly					= shaderTemplate.specialize(specs);
 			spec.numWorkGroups				= IVec3(numMuxes, 1, 1);
 			spec.requestedVulkanFeatures	= requiredFeatures;
@@ -356,7 +422,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back("VK_KHR_variable_pointers");
+			spec.extensions.push_back(extensions);
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpPhi)
@@ -368,6 +434,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			specs["ExtraGlobalScopeVars"]	= "";
 			specs["ExtraFunctionScopeVars"]	= "";
 			specs["ExtraSetupComputations"]	= "";
+			specs["ExtraDecorations"]		= "";
 			specs["VarPtrName"]				= "%mux_output_var_ptr";
 			specs["ResultStrategy"]			=
 				"							  OpSelectionMerge %end_label None\n"
@@ -378,6 +445,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 				"						      OpBranch %end_label\n"
 				"%end_label					= OpLabel\n"
 				"%mux_output_var_ptr		= OpPhi %sb_f32ptr" + muxInput1 + "%take_mux_input_1" + muxInput2 + "%take_mux_input_2\n";
+			spec.usesPhysStorageBuffer		= physPtrs;
 			spec.assembly					= shaderTemplate.specialize(specs);
 			spec.numWorkGroups				= IVec3(numMuxes, 1, 1);
 			spec.requestedVulkanFeatures	= requiredFeatures;
@@ -385,7 +453,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back("VK_KHR_variable_pointers");
+			spec.extensions.push_back(extensions);
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{ // Variable Pointer Reads (using OpCopyObject)
@@ -397,11 +465,13 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			specs["ExtraGlobalScopeVars"]	= "";
 			specs["ExtraFunctionScopeVars"]	= "";
 			specs["ExtraSetupComputations"]	= "";
+			specs["ExtraDecorations"]		= "";
 			specs["VarPtrName"]				= "%mux_output_var_ptr";
 			specs["ResultStrategy"]			=
 				"%mux_input_1_copy			= OpCopyObject %sb_f32ptr" + muxInput1 + "\n"
 				"%mux_input_2_copy			= OpCopyObject %sb_f32ptr" + muxInput2 + "\n"
 				"%mux_output_var_ptr		= OpSelect %sb_f32ptr %is_neg %mux_input_1_copy %mux_input_2_copy\n";
+			spec.usesPhysStorageBuffer		= physPtrs;
 			spec.assembly					= shaderTemplate.specialize(specs);
 			spec.numWorkGroups				= IVec3(numMuxes, 1, 1);
 			spec.requestedVulkanFeatures	= requiredFeatures;
@@ -409,7 +479,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back("VK_KHR_variable_pointers");
+			spec.extensions.push_back(extensions);
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{ // Test storing into Private variables.
@@ -427,11 +497,13 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 				specs["ExtraGlobalScopeVars"]	= (classId == 0) ? extraVariable : "";
 				specs["ExtraFunctionScopeVars"]	= (classId == 1) ? extraVariable : "";
 				specs["ExtraSetupComputations"]	= "";
+                specs["ExtraDecorations"]		= physPtrs ? "OpDecorate %mux_output_copy AliasedPointerEXT\n" : "";
 				specs["VarPtrName"]				= "%mux_output_var_ptr";
 				specs["ResultStrategy"]			=
 					"%opselect_result			= OpSelect %sb_f32ptr %is_neg" + muxInput1 + muxInput2 + "\n"
 					"							  OpStore %mux_output_copy %opselect_result\n"
-					"%mux_output_var_ptr		= OpLoad %sb_f32ptr %mux_output_copy\n";
+					"%mux_output_var_ptr		= OpLoad %sb_f32ptr %mux_output_copy Aligned 4\n";
+				spec.usesPhysStorageBuffer		= physPtrs;
 				spec.assembly					= shaderTemplate.specialize(specs);
 				spec.numWorkGroups				= IVec3(numMuxes, 1, 1);
 				spec.requestedVulkanFeatures	= requiredFeatures;
@@ -439,7 +511,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 				spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 				spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-				spec.extensions.push_back("VK_KHR_variable_pointers");
+				spec.extensions.push_back(extensions);
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), description.c_str(), spec));
 			}
 		}
@@ -454,6 +526,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			specs["ExtraGlobalScopeVars"]	= "";
 			specs["ExtraFunctionScopeVars"]	= "";
 			specs["ExtraSetupComputations"]	= "";
+			specs["ExtraDecorations"]		= "";
 			specs["VarPtrName"]				= "%mux_output_var_ptr";
 			specs["ResultStrategy"]			=
 					"%a_ptr					= OpAccessChain %sb_f32ptr %indata_a %zero %zero\n"
@@ -466,6 +539,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					"%a_2i_ptr              = OpPtrAccessChain %sb_f32ptr %a_ptr %two_i\n"
 					"%a_2i_plus_1_ptr       = OpPtrAccessChain %sb_f32ptr %a_ptr %two_i_plus_1\n"
 					"%mux_output_var_ptr    = OpSelect %sb_f32ptr %is_neg " + in_1 + in_2 + "\n";
+			spec.usesPhysStorageBuffer		= physPtrs;
 			spec.assembly					= shaderTemplate.specialize(specs);
 			spec.numWorkGroups				= IVec3(numMuxes, 1, 1);
 			spec.requestedVulkanFeatures	= requiredFeatures;
@@ -473,7 +547,7 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back("VK_KHR_variable_pointers");
+			spec.extensions.push_back(extensions);
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 		{   // Variable Pointer Writes
@@ -485,11 +559,13 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			specs["ExtraGlobalScopeVars"]	= "";
 			specs["ExtraFunctionScopeVars"]	= "";
 			specs["ExtraSetupComputations"]	= "";
+			specs["ExtraDecorations"]		= "";
 			specs["VarPtrName"]				= "%mux_output_var_ptr";
 			specs["ResultStrategy"]			= "%mux_output_var_ptr = OpSelect %sb_f32ptr %is_neg" + muxInput1 + muxInput2 + "\n" +
-											  "               %val = OpLoad %f32 %mux_output_var_ptr\n"
+											  "               %val = OpLoad %f32 %mux_output_var_ptr Aligned 4\n"
 											  "        %val_plus_1 = OpFAdd %f32 %val %fone\n"
-											  "						 OpStore %mux_output_var_ptr %val_plus_1\n";
+											  "						 OpStore %mux_output_var_ptr %val_plus_1 Aligned 4\n";
+			spec.usesPhysStorageBuffer		= physPtrs;
 			spec.assembly					= shaderTemplate.specialize(specs);
 			spec.numWorkGroups				= IVec3(numMuxes, 1, 1);
 			spec.requestedVulkanFeatures	= requiredFeatures;
@@ -497,13 +573,13 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedIncrOutput))));
-			spec.extensions.push_back("VK_KHR_variable_pointers");
+			spec.extensions.push_back(extensions);
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 
 		// If we only have VariablePointersStorageBuffer, then the extension does not apply to Workgroup storage class.
 		// Therefore the Workgroup tests apply to cases where the VariablePointers capability is used (when 2 input buffers are used).
-		if (!isSingleInputBuffer)
+		if (!physPtrs && !isSingleInputBuffer)
 		{
 			// VariablePointers on Workgroup
 			ComputeShaderSpec				spec;
@@ -526,11 +602,13 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					"%inval_b_i				= OpLoad %f32 %inloc_b_i\n"
 					"%inval_a_2i			= OpLoad %f32 %inloc_a_2i\n"
 					"%inval_a_2i_plus_1		= OpLoad %f32 %inloc_a_2i_plus_1\n";
+			specs["ExtraDecorations"]		= "";
 			specs["VarPtrName"]				= "%output_var_ptr";
 			specs["ResultStrategy"]			=
 					"						  OpStore %loc_AW_i %inval_a_i\n"
 					"						  OpStore %loc_BW_i %inval_b_i\n"
 					"%output_var_ptr		= OpSelect %f32_wrkgrp_ptr %is_neg %loc_AW_i %loc_BW_i\n";
+			spec.usesPhysStorageBuffer		= physPtrs;
 			spec.assembly					= shaderTemplate.specialize(specs);
 			spec.numWorkGroups				= IVec3(numMuxes, 1, 1);
 			spec.requestedVulkanFeatures	= requiredFeatures;
@@ -538,13 +616,23 @@ void addVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 			spec.inputs.push_back (Resource(BufferSp(new Float32Buffer(inputBFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.inputs.push_back (Resource(BufferSp(new Float32Buffer(inputSFloats)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 			spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-			spec.extensions.push_back("VK_KHR_variable_pointers");
+			spec.extensions.push_back(extensions);
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 		}
 	}
 }
 
-void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
+void addVariablePointersComputeGroup(tcu::TestCaseGroup* group)
+{
+	addPhysicalOrVariablePointersComputeGroup(group, false);
+}
+
+void addPhysicalPointersComputeGroup(tcu::TestCaseGroup* group)
+{
+	addPhysicalOrVariablePointersComputeGroup(group, true);
+}
+
+void addComplexTypesPhysicalOrVariablePointersComputeGroup (tcu::TestCaseGroup* group, bool physPtrs)
 {
 	tcu::TestContext&				testCtx					= group->getTestContext();
 	const int						numFloats				= 64;
@@ -618,12 +706,24 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 	// 7. inputC.a.r[?][?].(x|y)[?][?]	or	inputC.b.r[?][?].(x|y)[?][?]	= scalars
 	const int numLevels = 7;
 
-	const string commonDecorations (
-		// Decorations
-		"OpDecorate %id BuiltIn GlobalInvocationId		\n"
+	// Decorations
+	string commonDecorations =
+		physPtrs ?
+		"OpDecorate %physPtrsStruct Block\n"
+		"OpMemberDecorate %physPtrsStruct 0 Offset 0\n"
+		"OpMemberDecorate %physPtrsStruct 1 Offset 8\n"
+		"OpMemberDecorate %physPtrsStruct 2 Offset 16\n"
+		"OpMemberDecorate %physPtrsStruct 3 Offset 24\n"
+		"OpDecorate %indata_all DescriptorSet 0\n"
+		"OpDecorate %indata_all Binding 0\n"
+		"OpDecorate %first_param Restrict\n"
+		"OpDecorate %second_param Restrict\n"
+		:
 		"OpDecorate %outdata DescriptorSet 0			\n"
-		"OpDecorate %outdata Binding 3					\n"
+		"OpDecorate %outdata Binding 3					\n";
 
+	commonDecorations +=
+		"OpDecorate %id BuiltIn GlobalInvocationId		\n"
 		// Set the Block decoration
 		"OpDecorate %output_buffer	Block				\n"
 
@@ -640,8 +740,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"OpDecorate %arr2_inner_struct   ArrayStride 64		\n"
 		"OpDecorate %mat2x2_inner_struct ArrayStride 128	\n"
 		"OpDecorate %outer_struct_ptr    ArrayStride 256	\n"
-		"OpDecorate %v4f32_ptr           ArrayStride 16		\n"
-	);
+		"OpDecorate %v4f32_ptr           ArrayStride 16		\n";
 
 	const string inputABDecorations (
 		"OpDecorate %inputA DescriptorSet 0				\n"
@@ -661,7 +760,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"OpDecorate %input_buffer	Block				\n"
 	);
 
-	const string types (
+	string types =
 		///////////////
 		// CONSTANTS //
 		///////////////
@@ -701,11 +800,28 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		// struct output_struct {
 		//   float out;
 		// }
-		"%output_buffer			= OpTypeStruct %f32									\n"
+		"%output_buffer			= OpTypeStruct %f32									\n";
 
 		///////////////////
 		// POINTER TYPES //
 		///////////////////
+	types +=
+		physPtrs ?
+		"%output_buffer_ptr		= OpTypePointer PhysicalStorageBufferEXT %output_buffer		\n"
+		"%input_buffer_ptr		= OpTypePointer PhysicalStorageBufferEXT %input_buffer			\n"
+		"%outer_struct_ptr		= OpTypePointer PhysicalStorageBufferEXT %outer_struct			\n"
+		"%mat2x2_ptr			= OpTypePointer PhysicalStorageBufferEXT %mat2x2_inner_struct	\n"
+		"%arr2_ptr				= OpTypePointer PhysicalStorageBufferEXT %arr2_inner_struct	\n"
+		"%inner_struct_ptr		= OpTypePointer PhysicalStorageBufferEXT %inner_struct			\n"
+		"%arr_v4f32_ptr			= OpTypePointer PhysicalStorageBufferEXT %arr2_v4float			\n"
+		"%v4f32_ptr				= OpTypePointer PhysicalStorageBufferEXT %v4f32				\n"
+		"%sb_f32ptr				= OpTypePointer PhysicalStorageBufferEXT %f32					\n"
+		"%physPtrsStruct		= OpTypeStruct %outer_struct_ptr %outer_struct_ptr %input_buffer_ptr %output_buffer_ptr\n"
+		"%physPtrsStructPtr	 = OpTypePointer StorageBuffer %physPtrsStruct\n"
+		"%outer_struct_ptr_ptr  = OpTypePointer StorageBuffer %outer_struct_ptr\n"
+		"%input_buffer_ptr_ptr  = OpTypePointer StorageBuffer %input_buffer_ptr\n"
+		"%output_buffer_ptr_ptr = OpTypePointer StorageBuffer %output_buffer_ptr\n"
+		:
 		"%output_buffer_ptr		= OpTypePointer StorageBuffer %output_buffer		\n"
 		"%input_buffer_ptr		= OpTypePointer StorageBuffer %input_buffer			\n"
 		"%outer_struct_ptr		= OpTypePointer StorageBuffer %outer_struct			\n"
@@ -714,23 +830,33 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"%inner_struct_ptr		= OpTypePointer StorageBuffer %inner_struct			\n"
 		"%arr_v4f32_ptr			= OpTypePointer StorageBuffer %arr2_v4float			\n"
 		"%v4f32_ptr				= OpTypePointer StorageBuffer %v4f32				\n"
-		"%sb_f32ptr				= OpTypePointer StorageBuffer %f32					\n"
+		"%sb_f32ptr				= OpTypePointer StorageBuffer %f32					\n";
+
+	types += "${extra_types}\n";
 
 		///////////////
 		// VARIABLES //
 		///////////////
+	types +=
+		physPtrs ?
 		"%id					= OpVariable %uvec3ptr			Input				\n"
-		"%outdata				= OpVariable %output_buffer_ptr	StorageBuffer		\n"
-	);
+		"%indata_all			= OpVariable %physPtrsStructPtr StorageBuffer\n"
+		:
+		"%id					= OpVariable %uvec3ptr			Input				\n"
+		"%outdata				= OpVariable %output_buffer_ptr	StorageBuffer		\n";
 
-	const string inputABVariables (
+	string inputABVariables =
+		physPtrs ?
+		""
+		:
 		"%inputA				= OpVariable %outer_struct_ptr	StorageBuffer		\n"
-		"%inputB				= OpVariable %outer_struct_ptr	StorageBuffer		\n"
-	);
+		"%inputB				= OpVariable %outer_struct_ptr	StorageBuffer		\n";
 
-	const string inputCVariables (
-		"%inputC				= OpVariable %input_buffer_ptr	StorageBuffer		\n"
-	);
+	string inputCVariables =
+		physPtrs ?
+		""
+		:
+		"%inputC				= OpVariable %input_buffer_ptr	StorageBuffer		\n";
 
 	const string inputCIntermediates (
 		// Here are the 2 nested structures within InputC.
@@ -738,14 +864,22 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"%inputC_b				= OpAccessChain %outer_struct_ptr %inputC %c_i32_1\n"
 	);
 
-	const StringTemplate shaderTemplate (
+	const char *extensions = physPtrs ? "VK_EXT_buffer_device_address" : "VK_KHR_variable_pointers";
+
+	std::string stringTemplate =
 		"OpCapability Shader\n"
 
-		"${extra_capability}\n"
+		"${extra_capability}\n";
 
-		"OpExtension \"SPV_KHR_variable_pointers\"\n"
+	stringTemplate +=
+		physPtrs ?
+		"OpExtension \"SPV_EXT_physical_storage_buffer\"\n"
+		:
+		"OpExtension \"SPV_KHR_variable_pointers\"\n";
+
+	stringTemplate +=
 		"OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
-		"OpMemoryModel Logical GLSL450\n"
+		"OpMemoryModel " + string(physPtrs ? "PhysicalStorageBuffer64EXT" : "Logical") + " GLSL450\n"
 		"OpEntryPoint GLCompute %main \"main\" %id\n"
 		"OpExecutionMode %main LocalSize 1 1 1\n"
 
@@ -777,8 +911,22 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 
 		// main function is the entry_point
 		"%main					= OpFunction %void None %voidf\n"
-		"%label					= OpLabel\n"
+		"%label					= OpLabel\n";
 
+		if (physPtrs)
+		{
+			stringTemplate +=
+				"%inputA_ptr			= OpAccessChain %outer_struct_ptr_ptr %indata_all %c_i32_0\n"
+				"%inputA				= OpLoad %outer_struct_ptr %inputA_ptr\n"
+				"%inputB_ptr			= OpAccessChain %outer_struct_ptr_ptr %indata_all %c_i32_1\n"
+				"%inputB				= OpLoad %outer_struct_ptr %inputB_ptr\n"
+				"%inputC_ptr			= OpAccessChain %input_buffer_ptr_ptr %indata_all %c_i32_2\n"
+				"%inputC				= OpLoad %input_buffer_ptr %inputC_ptr\n"
+				"%outdata_ptr			= OpAccessChain %output_buffer_ptr_ptr %indata_all %c_i32_3\n"
+				"%outdata				= OpLoad %output_buffer_ptr %outdata_ptr\n";
+		}
+
+	stringTemplate +=
 		"${input_intermediates}\n"
 
 		// Define the 2 pointers from which we're going to choose one.
@@ -792,25 +940,35 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 		"%result_loc			= OpAccessChain %sb_f32ptr %var_ptr  ${remaining_indexes} \n"
 
 		// Now load from the result_loc
-		"%result_val			= OpLoad %f32 %result_loc \n"
+		"%result_val			= OpLoad %f32 %result_loc Aligned 4\n"
 
 		// Store the chosen value to the output buffer.
 		"%outdata_loc			= OpAccessChain %sb_f32ptr %outdata %c_i32_0\n"
-		"						  OpStore %outdata_loc %result_val\n"
+		"						  OpStore %outdata_loc %result_val Aligned 4\n"
 		"						  OpReturn\n"
-		"						  OpFunctionEnd\n");
+		"						  OpFunctionEnd\n";
+
+	const StringTemplate shaderTemplate (stringTemplate);
 
 	for (int isSingleInputBuffer = 0 ; isSingleInputBuffer < 2; ++isSingleInputBuffer)
 	{
 		// Set the proper extension features required for the test
-		if (isSingleInputBuffer)
-			requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+		if (physPtrs)
+		{
+			requiredFeatures.extVariablePointers = 0;
+		}
 		else
-			requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+		{
+			if (isSingleInputBuffer)
+				requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS_STORAGEBUFFER;
+			else
+				requiredFeatures.extVariablePointers	= EXTVARIABLEPOINTERSFEATURES_VARIABLE_POINTERS;
+		}
 
 		for (int selectInputA = 0; selectInputA < 2; ++selectInputA)
 		{
-			const string extraCap					= isSingleInputBuffer	? "OpCapability VariablePointersStorageBuffer\n" : "OpCapability VariablePointers\n";
+			const string extraCap					= string(physPtrs ? "OpCapability PhysicalStorageBufferAddressesEXT\n" :
+															 isSingleInputBuffer	? "OpCapability VariablePointersStorageBuffer\n" : "OpCapability VariablePointers\n");
 			const string inputDecorations			= isSingleInputBuffer	? inputCDecorations								 : inputABDecorations;
 			const string inputVariables				= isSingleInputBuffer	? inputCVariables								 : inputABVariables;
 			const string inputIntermediates			= isSingleInputBuffer	? inputCIntermediates							 : "";
@@ -909,6 +1067,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					map<string, string>				specs;
 					string opCodeForTests			= "opselect";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
+					specs["extra_types"]			= "";
 					specs["extra_capability"]		= extraCap;
 					specs["input_decorations"]		= inputDecorations;
 					specs["input_variables"]		= inputVariables;
@@ -924,6 +1083,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 														+ baseANameAtLevel[indexLevel] + " "
 														+ baseBNameAtLevel[indexLevel] + "\n";
 					expectedOutput[0]				= selectedInput[baseOffset];
+					spec.usesPhysStorageBuffer		= physPtrs;
 					spec.assembly					= shaderTemplate.specialize(specs);
 					spec.numWorkGroups				= IVec3(1, 1, 1);
 					spec.requestedVulkanFeatures	= requiredFeatures;
@@ -931,7 +1091,47 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back("VK_KHR_variable_pointers");
+					spec.extensions.push_back(extensions);
+					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
+				}
+
+				// Use OpConstantNull to choose between 2 pointers
+				if (physPtrs)
+				{
+					ComputeShaderSpec				spec;
+					map<string, string>				specs;
+					string opCodeForTests			= "opconstantnull";
+					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
+					specs["extra_types"]			= "%uint64				= OpTypeInt 64 0\n"
+													  "%c_u64_0				= OpConstant %uint64 0\n"
+													  "%cnull				= OpConstantNull %sb_f32ptr\n";
+					specs["extra_capability"]		= "OpCapability PhysicalStorageBufferAddressesEXT\nOpCapability Int64\n";
+					specs["input_decorations"]		= inputDecorations;
+					specs["input_variables"]		= inputVariables;
+					specs["input_intermediates"]	= inputIntermediates;
+					specs["selected_type"]			= pointerTypeAtLevel[indexLevel];
+					specs["select_inputA"]			= spirvSelectInputA;
+					specs["a_loc"]					= inputALocations[indexLevel];
+					specs["b_loc"]					= inputBLocations[indexLevel];
+					specs["remaining_indexes"]		= remainingIndexesAtLevel[indexLevel];
+					specs["selection_strategy"]		= "%cnullint = OpConvertPtrToU %uint64 %cnull\n"
+														"%nulleq0 = " + string(selectInputA ? "OpIEqual" : "OpINotEqual") + " %bool %cnullint %c_u64_0\n"
+														"%var_ptr	= OpSelect "
+														+ pointerTypeAtLevel[indexLevel]
+														+ " %nulleq0 "
+														+ baseANameAtLevel[indexLevel] + " "
+														+ baseBNameAtLevel[indexLevel] + "\n";
+					expectedOutput[0]				= selectedInput[baseOffset];
+					spec.usesPhysStorageBuffer		= physPtrs;
+					spec.assembly					= shaderTemplate.specialize(specs);
+					spec.numWorkGroups				= IVec3(1, 1, 1);
+					spec.requestedVulkanFeatures	= requiredFeatures;
+					spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
+					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputA)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
+					spec.extensions.push_back(extensions);
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
@@ -941,6 +1141,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					map<string, string>				specs;
 					string opCodeForTests			= "opfunctioncall";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
+					specs["extra_types"]			= "";
 					specs["extra_capability"]		= extraCap;
 					specs["input_decorations"]		= inputDecorations;
 					specs["input_variables"]		= inputVariables;
@@ -957,6 +1158,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 														+ baseANameAtLevel[indexLevel] + " "
 														+ baseBNameAtLevel[indexLevel] + "\n";
 					expectedOutput[0]				= selectedInput[baseOffset];
+					spec.usesPhysStorageBuffer		= physPtrs;
 					spec.assembly					= shaderTemplate.specialize(specs);
 					spec.numWorkGroups				= IVec3(1, 1, 1);
 					spec.requestedVulkanFeatures	= requiredFeatures;
@@ -964,7 +1166,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back("VK_KHR_variable_pointers");
+					spec.extensions.push_back(extensions);
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
@@ -975,6 +1177,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					map<string, string>				specs;
 					string opCodeForTests			= "opphi";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
+					specs["extra_types"]			= "";
 					specs["extra_capability"]		= extraCap;
 					specs["input_decorations"]		= inputDecorations;
 					specs["input_variables"]		= inputVariables;
@@ -999,6 +1202,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 														+ baseBNameAtLevel[indexLevel]
 														+ " %take_input_b\n";
 					expectedOutput[0]				= selectedInput[baseOffset];
+					spec.usesPhysStorageBuffer		= physPtrs;
 					spec.assembly					= shaderTemplate.specialize(specs);
 					spec.numWorkGroups				= IVec3(1, 1, 1);
 					spec.requestedVulkanFeatures	= requiredFeatures;
@@ -1006,7 +1210,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back("VK_KHR_variable_pointers");
+					spec.extensions.push_back(extensions);
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
@@ -1016,6 +1220,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					map<string, string>				specs;
 					string opCodeForTests			= "opcopyobject";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
+					specs["extra_types"]			= "";
 					specs["extra_capability"]		= extraCap;
 					specs["input_decorations"]		= inputDecorations;
 					specs["input_variables"]		= inputVariables;
@@ -1030,6 +1235,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 										"%in_b_copy = OpCopyObject " + pointerTypeAtLevel[indexLevel] + " " + baseBNameAtLevel[indexLevel] + "\n"
 										"%var_ptr	= OpSelect " + pointerTypeAtLevel[indexLevel] + " " + spirvSelectInputA + " %in_a_copy %in_b_copy\n";
 					expectedOutput[0]				= selectedInput[baseOffset];
+					spec.usesPhysStorageBuffer		= physPtrs;
 					spec.assembly					= shaderTemplate.specialize(specs);
 					spec.numWorkGroups				= IVec3(1, 1, 1);
 					spec.requestedVulkanFeatures	= requiredFeatures;
@@ -1037,7 +1243,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back("VK_KHR_variable_pointers");
+					spec.extensions.push_back(extensions);
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 
@@ -1047,6 +1253,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					map<string, string>				specs;
 					string opCodeForTests			= "opptraccesschain";
 					string name						= opCodeForTests + indexLevelNames[indexLevel] + bufferType + selectedInputStr;
+					specs["extra_types"]			= "";
 					specs["extra_capability"]		= extraCap;
 					specs["input_decorations"]		= inputDecorations;
 					specs["input_variables"]		= inputVariables;
@@ -1062,6 +1269,7 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 														+ baseANameAtLevel[indexLevel] + " "
 														+ baseBNameAtLevel[indexLevel] + "\n";
 					expectedOutput[0]				= selectedInput[baseOffset];
+					spec.usesPhysStorageBuffer		= physPtrs;
 					spec.assembly					= shaderTemplate.specialize(specs);
 					spec.numWorkGroups				= IVec3(1, 1, 1);
 					spec.requestedVulkanFeatures	= requiredFeatures;
@@ -1069,12 +1277,22 @@ void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputB)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(inputC)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 					spec.outputs.push_back(Resource(BufferSp(new Float32Buffer(expectedOutput))));
-					spec.extensions.push_back("VK_KHR_variable_pointers");
+					spec.extensions.push_back(extensions);
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), name.c_str(), spec));
 				}
 			}
 		}
 	}
+}
+
+void addComplexTypesVariablePointersComputeGroup (tcu::TestCaseGroup* group)
+{
+    addComplexTypesPhysicalOrVariablePointersComputeGroup(group, false);
+}
+
+void addComplexTypesPhysicalPointersComputeGroup (tcu::TestCaseGroup* group)
+{
+    addComplexTypesPhysicalOrVariablePointersComputeGroup(group, true);
 }
 
 void addNullptrVariablePointersComputeGroup (tcu::TestCaseGroup* group)
@@ -1557,7 +1775,7 @@ void addVariablePointersGraphicsGroup (tcu::TestCaseGroup* testGroup)
 			specs["VarPtrName"]				= "%mux_output_var_ptr";
 			specs["ResultStrategy"]			=
 					   "%mux_output_var_ptr = OpSelect %sb_f32 %is_neg" + muxInput1 + muxInput2 + "\n" +
-					   "               %val = OpLoad %f32 %mux_output_var_ptr\n"
+					   "               %val = OpLoad %f32 %mux_output_var_ptr Aligned 4\n"
 					   "        %val_plus_1 = OpFAdd %f32 %val %c_f32_1\n"
 					   "					  OpStore %mux_output_var_ptr %val_plus_1\n";
 			fragments["capability"]			= cap;
@@ -2538,6 +2756,18 @@ tcu::TestCaseGroup* createVariablePointersComputeGroup (tcu::TestContext& testCt
 				 "nullptr_compute",
 				 "Test the usage of nullptr using the variable pointers extension in a compute shader",
 				 addNullptrVariablePointersComputeGroup);
+
+	return group.release();
+}
+
+tcu::TestCaseGroup* createPhysicalPointersComputeGroup (tcu::TestContext& testCtx)
+{
+	de::MovePtr<tcu::TestCaseGroup> group	(new tcu::TestCaseGroup(testCtx, "physical_pointers", "Compute tests for SPV_EXT_physical_storage_buffer extension"));
+	addTestGroup(group.get(), "compute", "Test the physical storage buffer extension using a compute shader", addPhysicalPointersComputeGroup);
+	addTestGroup(group.get(),
+				 "complex_types_compute",
+				 "Testing physical pointers pointing to various types in different input buffers",
+				 addComplexTypesPhysicalPointersComputeGroup);
 
 	return group.release();
 }

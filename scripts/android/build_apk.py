@@ -326,6 +326,13 @@ class BuildStep:
 def getNativeBuildPath (config, abiName):
 	return os.path.join(config.buildPath, "%s-%s-%d" % (abiName, config.nativeBuildType, config.nativeApi))
 
+def clearCMakeCacheVariables(args):
+	# New value, so clear the necessary cmake variables
+	args.append('-UANGLE_LIBS')
+	args.append('-UGLES1_LIBRARY')
+	args.append('-UGLES2_LIBRARY')
+	args.append('-UEGL_LIBRARY')
+
 def buildNativeLibrary (config, abiName):
 	def makeNDKVersionString (version):
 		minorVersionString = (chr(ord('a') + version[1]) if version[1] > 0 else "")
@@ -342,8 +349,25 @@ def buildNativeLibrary (config, abiName):
 				'-DDE_ANDROID_API=%s' % config.nativeApi,
 				'-DGLCTS_GTF_TARGET=%s' % config.gtfTarget]
 
-		if config.angle is not None:
-			args.append('-DANGLE_LIBS=%s' % os.path.join(config.angle, abiName))
+		if config.angle is None:
+			# Find any previous builds that may have embedded ANGLE libs and clear the CMake cache
+			for abi in NDKEnv.getKnownAbis():
+				cMakeCachePath = os.path.join(getNativeBuildPath(config, abi), "CMakeCache.txt")
+				try:
+					if 'ANGLE_LIBS' in open(cMakeCachePath).read():
+						clearCMakeCacheVariables(args)
+				except IOError:
+					pass
+		else:
+			cMakeCachePath = os.path.join(getNativeBuildPath(config, abiName), "CMakeCache.txt")
+			angleLibsDir = os.path.join(config.angle, abiName)
+			# Check if the user changed where the ANGLE libs are being loaded from
+			try:
+				if angleLibsDir not in open(cMakeCachePath).read():
+					clearCMakeCacheVariables(args)
+			except IOError:
+				pass
+			args.append('-DANGLE_LIBS=%s' % angleLibsDir)
 
 		return args
 

@@ -294,5 +294,13 @@ vk::wsi::Display* VulkanPlatform::createWsiDisplay (vk::wsi::Type wsiType) const
 	return new VulkanDisplay(m_instance);
 }
 
+bool VulkanPlatform::hasDisplay (vk::wsi::Type wsiType)  const
+{
+	if (wsiType != vk::wsi::TYPE_WIN32)
+		return false;
+
+	return true;
+}
+
 } // win32
 } // tcu

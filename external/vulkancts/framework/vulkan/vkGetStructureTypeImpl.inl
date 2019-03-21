@@ -866,6 +866,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDepthStencilResolveP
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkSurfaceProtectedCapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDebugReportCallbackCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
@@ -1259,5 +1264,35 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClipEnableFeatu
 template<> VkStructureType getStructureType<VkPipelineRasterizationDepthClipStateCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceBufferAddressFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBufferDeviceAddressInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBufferDeviceAddressCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCooperativeMatrixPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeMatrixPropertiesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeMatrixFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV;
 }
 

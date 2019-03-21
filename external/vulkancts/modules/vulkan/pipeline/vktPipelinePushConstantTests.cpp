@@ -616,7 +616,7 @@ tcu::TestStatus PushConstantGraphicsTestInstance::verifyImage (void)
 
 		for (int triangleNdx = 0; triangleNdx < TRIANGLE_COUNT; triangleNdx++)
 		{
-			rr::RenderState renderState(refRenderer.getViewportState());
+			rr::RenderState renderState(refRenderer.getViewportState(), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 
 			refRenderer.draw(renderState,
 							 rr::PRIMITIVETYPE_TRIANGLES,

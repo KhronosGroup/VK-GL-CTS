@@ -20,7 +20,7 @@ The following tools must be installed and present in the PATH variable:
 
 ### Win32
 
- * Visual Studio 2013 or newer (glslang uses several C++11 features)
+ * Visual Studio 2015 or newer (glslang uses several C++11 features)
 
 ### Linux
 
@@ -59,12 +59,12 @@ using cmake.
 
 ### Windows x86-32
 
-	cmake <path to vulkancts> -G"Visual Studio 12"
+	cmake <path to vulkancts> -G"Visual Studio 14"
 	start dEQP-Core-default.sln
 
 ### Windows x86-64
 
-	cmake <path to vulkancts> -G"Visual Studio 12 Win64"
+	cmake <path to vulkancts> -G"Visual Studio 14 Win64"
 	start dEQP-Core-default.sln
 
 ### Linux 32-bit Debug

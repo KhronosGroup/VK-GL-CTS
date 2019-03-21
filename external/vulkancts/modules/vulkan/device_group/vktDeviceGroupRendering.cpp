@@ -122,14 +122,14 @@ public:
 	}
 };
 
-void renderReferenceTriangle (const tcu::PixelBufferAccess& dst, const tcu::Vec4(&vertices)[3])
+void renderReferenceTriangle (const tcu::PixelBufferAccess& dst, const tcu::Vec4(&vertices)[3], const int subpixelBits)
 {
 	const RefVertexShader					vertShader;
 	const RefFragmentShader					fragShader;
 	const rr::Program						program(&vertShader, &fragShader);
 	const rr::MultisamplePixelBufferAccess	colorBuffer = rr::MultisamplePixelBufferAccess::fromSinglesampleAccess(dst);
 	const rr::RenderTarget					renderTarget(colorBuffer);
-	const rr::RenderState					renderState((rr::ViewportState(colorBuffer)));
+	const rr::RenderState					renderState((rr::ViewportState(colorBuffer)), subpixelBits);
 	const rr::Renderer						renderer;
 	const rr::VertexAttrib					vertexAttribs[] =
 	{
@@ -1654,7 +1654,7 @@ tcu::TestStatus DeviceGroupTestInstance::iterate (void)
 					const tcu::IVec3	posDeviation(1, 1, 0);
 
 					tcu::clear(refImage.getAccess(), clearColor);
-					renderReferenceTriangle(refImage.getAccess(), triVertices);
+					renderReferenceTriangle(refImage.getAccess(), triVertices, m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 
 					iterateResultSuccess = tcu::intThresholdPositionDeviationCompare(m_context.getTestContext().getLog(),
 						"ComparisonResult",

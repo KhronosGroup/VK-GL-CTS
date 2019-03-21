@@ -531,7 +531,7 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					decls << "layout(set = " << s << ", binding = " << b << ") buffer sbodef" << s << "_" << b << " { int val; } ssbo" << s << "_" << b << array.str()  << ";\n";
 					break;
 				case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-					decls << "layout(set = " << s << ", binding = " << b << ") uniform isamplerBuffer texbo" << s << "_" << b << array.str()  << ";\n";
+					decls << "layout(set = " << s << ", binding = " << b << ") uniform itextureBuffer texbo" << s << "_" << b << array.str()  << ";\n";
 					break;
 				case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 					decls << "layout(r32i, set = " << s << ", binding = " << b << ") uniform iimageBuffer image" << s << "_" << b << array.str()  << ";\n";

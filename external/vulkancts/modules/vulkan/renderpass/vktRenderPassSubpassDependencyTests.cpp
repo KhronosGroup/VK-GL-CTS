@@ -1463,14 +1463,6 @@ tcu::TestStatus SubpassDependencyTestInstance::iterate (void)
 	}
 }
 
-static float truncateCoord(int dim, int subPixelBits, float f)
-{
-	const float scale = (float)(dim << subPixelBits);
-	const float coord = deFloatFloor(f * scale) / scale;
-
-	return coord;
-}
-
 template<typename RenderpassSubpass>
 tcu::TestStatus SubpassDependencyTestInstance::iterateInternal (void)
 {
@@ -1518,10 +1510,8 @@ tcu::TestStatus SubpassDependencyTestInstance::iterateInternal (void)
 
 		for (int vertexNdx = 0; vertexNdx < 3; vertexNdx++)
 		{
-			const int subPixelBits = m_context.getDeviceProperties().limits.subPixelPrecisionBits;
-
-			float x = 2.0f * truncateCoord(m_width,  subPixelBits, rand.getFloat()) - 1.0f;
-			float y = 2.0f * truncateCoord(m_height, subPixelBits, rand.getFloat()) - 1.0f;
+			float x = 2.0f * rand.getFloat() - 1.0f;
+			float y = 2.0f * rand.getFloat() - 1.0f;
 
 			vertexData.push_back(Vec4(x, y, primitiveDepth, 1.0f));
 		}
@@ -1757,7 +1747,7 @@ tcu::TestStatus SubpassDependencyTestInstance::iterateInternal (void)
 				const rr::RenderTarget					renderTarget		(rr::MultisamplePixelBufferAccess(colorBufferAccess), depthBuffer, rr::MultisamplePixelBufferAccess());
 				const rr::PrimitiveType					primitiveType		(rr::PRIMITIVETYPE_TRIANGLES);
 				const rr::PrimitiveList					primitiveList		(rr::PrimitiveList(primitiveType, (deUint32)vertexData.size(), 0));
-				rr::RenderState							renderState			((rr::ViewportState(depthBuffer)));
+				rr::RenderState							renderState			((rr::ViewportState(depthBuffer)), m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 
 				const rr::VertexAttrib vertices			= rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &vertexData[0]);
 
@@ -2237,7 +2227,7 @@ tcu::TestStatus SubpassSelfDependencyBackwardsTestInstance::iterateInternal (voi
 			const rr::PrimitiveType					primitiveType	(rr::PRIMITIVETYPE_TRIANGLES);
 			const rr::PrimitiveList					primitiveList	(rr::PrimitiveList(primitiveType, (deUint32)triangles.size(), 0));
 			const rr::ViewportState					viewportState	(msAccess);
-			const rr::RenderState					renderState		(viewportState);
+			const rr::RenderState					renderState		(viewportState, m_context.getDeviceProperties().limits.subPixelPrecisionBits);
 			const rr::VertexAttrib					vertices		= rr::VertexAttrib(rr::VERTEXATTRIBTYPE_FLOAT, 4, sizeof(tcu::Vec4), 0, &triangles[0]);
 
 			tcu::clear(referenceAccess, tcu::UVec4(0, 255, 0, 255));
