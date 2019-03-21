@@ -57,8 +57,6 @@ set(VKUTILNOSHADER_SRCS
 	vkBufferWithMemory.hpp
 	vkImageWithMemory.cpp
 	vkImageWithMemory.hpp
-	vkBufferWithMemory.cpp
-	vkBufferWithMemory.hpp
 	vkImageWithMemory.cpp
 	vkImageWithMemory.hpp
 	vkShaderProgram.cpp

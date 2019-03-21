@@ -180,7 +180,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 	// Create a buffer and host-visible memory for it
 
 	const vk::VkDeviceSize bufferSizeBytes = sizeof(deUint32);
-	const compute::Buffer outputBuffer(vk, device, allocator, compute::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), vk::MemoryRequirement::HostVisible);
+	const compute::Buffer outputBuffer(vk, device, allocator, vk::makeBufferCreateInfo(bufferSizeBytes, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT), vk::MemoryRequirement::HostVisible);
 
 	{
 		const vk::Allocation& alloc = outputBuffer.getAllocation();
@@ -223,7 +223,7 @@ tcu::TestStatus ConditionalDispatchTestInstance::iterate (void)
 
 	compute::Buffer indirectBuffer(
 		vk, device, allocator,
-		compute::makeBufferCreateInfo(sizeof(dispatchCommands), vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+		vk::makeBufferCreateInfo(sizeof(dispatchCommands), vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
 
 	deUint8* indirectBufferPtr = reinterpret_cast<deUint8*>(indirectBuffer.getAllocation().getHostPtr());

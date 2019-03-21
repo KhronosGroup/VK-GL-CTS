@@ -223,7 +223,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 
 	Buffer resultBuffer(
 		m_device_interface, m_device, m_allocator,
-		makeBufferCreateInfo(resultBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+		vk::makeBufferCreateInfo(resultBufferSize, vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
 
 	{
@@ -275,7 +275,7 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate (void)
 	// Create indirect buffer
 	Buffer indirectBuffer(
 		m_device_interface, m_device, m_allocator,
-		makeBufferCreateInfo(m_bufferSize, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+		vk::makeBufferCreateInfo(m_bufferSize, vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
 		vk::MemoryRequirement::HostVisible);
 	fillIndirectBufferData(*cmdBuffer, indirectBuffer);
 

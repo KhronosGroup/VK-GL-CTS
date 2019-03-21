@@ -30,6 +30,7 @@
 #include "vkPrograms.hpp"
 #include "vkRefUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkObjUtil.hpp"
 
 #include "tcuVector.hpp"
 #include "tcuMaybe.hpp"
@@ -207,7 +208,6 @@ enum FeatureFlagBits
 };
 typedef deUint32 FeatureFlags;
 
-vk::VkBufferCreateInfo			makeBufferCreateInfo						(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
 vk::VkImageCreateInfo			makeImageCreateInfo							(const tcu::IVec2& size, const vk::VkFormat format, const vk::VkImageUsageFlags usage, const deUint32 numArrayLayers);
 vk::Move<vk::VkCommandPool>		makeCommandPool								(const vk::DeviceInterface& vk, const vk::VkDevice device, const deUint32 queueFamilyIndex);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout);

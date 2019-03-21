@@ -102,6 +102,9 @@ Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
 										 const VkDescriptorSetLayout	setLayout,
 										 const void*					pNext = DE_NULL);
 
+VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
+										 const VkBufferUsageFlags	usage);
+
 } // vk
 
 #endif // _VKOBJUTIL_HPP

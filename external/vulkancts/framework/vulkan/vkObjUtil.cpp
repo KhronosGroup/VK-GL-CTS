@@ -528,4 +528,21 @@ Move<VkDescriptorSet> makeDescriptorSet (const DeviceInterface&			vk,
 	return allocateDescriptorSet(vk, device, &allocateParams);
 }
 
+VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize			size,
+										 const VkBufferUsageFlags	usage)
+{
+	const VkBufferCreateInfo bufferCreateInfo =
+	{
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
+		DE_NULL,								// const void*			pNext;
+		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
+		size,									// VkDeviceSize			size;
+		usage,									// VkBufferUsageFlags	usage;
+		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
+		0u,										// deUint32				queueFamilyIndexCount;
+		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
+	};
+	return bufferCreateInfo;
+}
+
 } // vk

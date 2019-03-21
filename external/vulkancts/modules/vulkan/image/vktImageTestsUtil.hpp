@@ -138,9 +138,6 @@ vk::Move<vk::VkRenderPass>			makeRenderPass					(const vk::DeviceInterface&					
 																	 const vk::VkFormat							inputFormat,
 																	 const vk::VkFormat							colorFormat);
 
-vk::VkBufferCreateInfo				makeBufferCreateInfo			(const vk::VkDeviceSize						bufferSize,
-																	 const vk::VkBufferUsageFlags				usage);
-
 vk::VkBufferImageCopy				makeBufferImageCopy				(const vk::VkExtent3D						extent,
 																	 const deUint32								arraySize);
 

@@ -109,22 +109,6 @@ VkFormat getDepthBufferFormat (const vk::VkFormat depthStencilImageFormat)
 	return result;
 }
 
-VkBufferCreateInfo makeBufferCreateInfo (const VkDeviceSize bufferSize, const VkBufferUsageFlags usage)
-{
-	const VkBufferCreateInfo bufferCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		(VkBufferCreateFlags)0,					// VkBufferCreateFlags	flags;
-		bufferSize,								// VkDeviceSize			size;
-		usage,									// VkBufferUsageFlags	usage;
-		VK_SHARING_MODE_EXCLUSIVE,				// VkSharingMode		sharingMode;
-		0u,										// deUint32				queueFamilyIndexCount;
-		DE_NULL,								// const deUint32*		pQueueFamilyIndices;
-	};
-	return bufferCreateInfo;
-}
-
 VkImageCreateInfo makeImageCreateInfo (const VkImageType imageType, const VkExtent3D& extent, const VkFormat format, const VkImageUsageFlags usage, const VkSampleCountFlagBits samples)
 {
 	const VkImageCreateInfo imageInfo	=

@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkDefs.hpp"
+#include "vkObjUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRefUtil.hpp"
@@ -222,7 +223,6 @@ struct ImageResource
 	vk::VkImageSubresourceLayers	subresourceLayers;
 };
 
-vk::VkBufferCreateInfo			makeBufferCreateInfo						(const vk::VkDeviceSize bufferSize, const vk::VkBufferUsageFlags usage);
 vk::VkImageCreateInfo			makeImageCreateInfo							(const vk::VkImageType imageType, const vk::VkExtent3D& extent, const vk::VkFormat format, const vk::VkImageUsageFlags usage);
 vk::Move<vk::VkCommandBuffer>	makeCommandBuffer							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkCommandPool commandPool);
 vk::Move<vk::VkPipelineLayout>	makePipelineLayout							(const vk::DeviceInterface& vk, const vk::VkDevice device, const vk::VkDescriptorSetLayout descriptorSetLayout);
