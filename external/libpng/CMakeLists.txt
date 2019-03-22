@@ -39,7 +39,15 @@ set(PNG_SRCS
 	${PNG_ABS_PATH}/pngpread.c
 	)
 
-if (DE_CPU_IS_ARM_64)
+
+if(DE_CPU_IS_ARM AND NOT DEFINED DE_CPU_IS_ARM_NEON)
+    set(DE_CPU_IS_ARM_NEON 1)
+    message(STATUS "DE_CPU_IS_ARM_NEON is not defined: Assuming ARM NEON is supported.")
+else ()
+    set(DE_CPU_IS_ARM_NEON 0)
+endif()
+
+if (DE_CPU_IS_ARM_64 OR (DE_CPU_IS_ARM AND DE_CPU_IS_ARM_NEON))
 	# armv8-a has always neon
 	set(PNG_SRCS
 		${PNG_SRCS}
@@ -47,7 +55,11 @@ if (DE_CPU_IS_ARM_64)
 		${PNG_ABS_PATH}/arm/filter_neon_intrinsics.c
 		${PNG_ABS_PATH}/arm/filter_neon.S
 		)
+else ()
+    message(STATUS "Disabling ARM NEON optimizations.")
+    add_definitions(-DPNG_ARM_NEON_OPT=0)
 endif ()
+
 
 if (DE_DEBUG EQUAL 1)
 	add_definitions(-DPNG_DEBUG)
