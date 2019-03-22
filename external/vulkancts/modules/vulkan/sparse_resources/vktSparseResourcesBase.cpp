@@ -139,7 +139,7 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 
 			for (deUint32 queueNdx = 0; queueNdx < queuesPerFamilyCount; ++queueNdx)
 			{
-				Queue queue;
+				Queue queue				= {DE_NULL, 0, 0};
 				queue.queueFamilyIndex	= queueFamilyIndex;
 				queue.queueIndex		= queueNdx;
 
