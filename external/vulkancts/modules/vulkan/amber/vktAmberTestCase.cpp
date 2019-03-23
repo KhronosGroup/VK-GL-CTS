@@ -174,11 +174,12 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 			m_context.getDeviceExtensions(), m_context.getUniversalQueueFamilyIndex(),
 			m_context.getUniversalQueue(), m_context.getInstanceProcAddr());
 
-	amber::Amber			am;
-	amber::Options			amber_options;
-	amber_options.engine	= amber::kEngineTypeVulkan;
-	amber_options.config	= vkConfig;
-
+	amber::Amber						am;
+	amber::Options						amber_options;
+	amber_options.engine				= amber::kEngineTypeVulkan;
+	amber_options.config				= vkConfig;
+	amber_options.delegate				= DE_NULL;
+	amber_options.pipeline_create_only	= false;
 
 	amber::Result r = am.ExecuteWithShaderData(m_recipe, &amber_options, shaderMap);
 	if (!r.IsSuccess()) {

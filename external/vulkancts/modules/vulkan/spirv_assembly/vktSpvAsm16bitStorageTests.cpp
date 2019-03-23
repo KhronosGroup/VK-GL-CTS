@@ -6750,8 +6750,10 @@ void addGraphics16BitStorageInputOutputFloat16To64Group (tcu::TestCaseGroup* tes
 	};
 
 	VulkanFeatures	requiredFeatures;
-	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
-	requiredFeatures.coreFeatures.shaderFloat64 = DE_TRUE;
+
+	requiredFeatures.coreFeatures.shaderFloat64	= DE_TRUE;
+	requiredFeatures.ext16BitStorage			= EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
+	requiredFeatures.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
 
 	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
 	{
@@ -6920,7 +6922,10 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 					testName += string("_const_idx_") + de::toString(constIdx);
 
 				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-				features.coreFeatures.shaderFloat64 = DE_TRUE;
+
+				features.coreFeatures.shaderFloat64	= DE_TRUE;
+				features.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
+
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 		}
@@ -7039,7 +7044,10 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 					testName += string("_const_idx_") + de::toString(constantIndices[constIndexIdx].constantIndex);
 
 				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-				features.coreFeatures.shaderFloat64 = DE_TRUE;
+
+				features.coreFeatures.shaderFloat64	= DE_TRUE;
+				features.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
+
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
 		}
@@ -7154,7 +7162,10 @@ void addGraphics16BitStorageUniformFloat16To64Group (tcu::TestCaseGroup* testGro
 				resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
 				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-				features.coreFeatures.shaderFloat64 = DE_TRUE;
+
+				features.coreFeatures.shaderFloat64	= DE_TRUE;
+				features.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
+
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 		}
 	}
@@ -7180,15 +7191,16 @@ void addGraphics16BitStoragePushConstantFloat16To64Group (tcu::TestCaseGroup* te
 	extensions.push_back("VK_KHR_16bit_storage");
 	extensions.push_back("VK_KHR_shader_float16_int8");
 
-	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
-	requiredFeatures.coreFeatures.shaderFloat64 = DE_TRUE;
+	requiredFeatures.coreFeatures.shaderFloat64	= DE_TRUE;
+	requiredFeatures.ext16BitStorage			= EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
+	requiredFeatures.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
 
-	fragments["capability"]				=
+	fragments["capability"]						=
 		"OpCapability StoragePushConstant16\n"
 		"OpCapability Float64\n"
 		"OpCapability Float16\n";
 
-	fragments["extension"]				= "OpExtension \"SPV_KHR_16bit_storage\"";
+	fragments["extension"]						= "OpExtension \"SPV_KHR_16bit_storage\"";
 
 	pcs.setPushConstant(BufferSp(new Float16Buffer(float16Data)));
 	resources.outputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
@@ -7556,13 +7568,18 @@ void addCompute16bitStorageUniform64To16Group (tcu::TestCaseGroup* group)
 					const unsigned padding	= isUBO ? cTypes[tyIdx].padding64UBO : cTypes[tyIdx].padding64SSBO;
 
 					spec.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data, padding)), CAPABILITIES[capIdx].dtype));
+
 					// We provided a custom verifyIO in the above in which inputs will be used for checking.
 					// So put dummy data in the expected values.
 					spec.outputs.push_back(BufferSp(new Float16Buffer(float16DummyData)));
+
 					spec.extensions.push_back("VK_KHR_16bit_storage");
 					spec.extensions.push_back("VK_KHR_shader_float16_int8");
-					spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-					spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
+
+					spec.requestedVulkanFeatures							= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+					spec.requestedVulkanFeatures.coreFeatures.shaderFloat64	= VK_TRUE;
+					spec.requestedVulkanFeatures.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
+
 					group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 				}
 	}
@@ -7675,21 +7692,25 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 				map<string, string>	specs;
 				string				testName	= string(CAPABILITIES[capIdx].name) + "_scalar_float_" + rndModes[rndModeIdx].name;
 				const bool			isUBO		= CAPABILITIES[capIdx].dtype == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				VulkanFeatures		features;
 
-				specs["cap"]					= CAPABILITIES[capIdx].cap;
-				specs["indecor"]				= CAPABILITIES[capIdx].decor;
-				specs["rounddecor"]				= rndModes[rndModeIdx].decor;
-				specs["stride64"]				= isUBO ? "16" : "8";
+				specs["cap"]						= CAPABILITIES[capIdx].cap;
+				specs["indecor"]					= CAPABILITIES[capIdx].decor;
+				specs["rounddecor"]					= rndModes[rndModeIdx].decor;
+				specs["stride64"]					= isUBO ? "16" : "8";
 
-				fragments["capability"]			= capabilities.specialize(specs);
-				fragments["decoration"]			= decoration.specialize(specs);
+				fragments["capability"]				= capabilities.specialize(specs);
+				fragments["decoration"]				= decoration.specialize(specs);
 
 				resources.inputs.clear();
 				resources.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data, isUBO ? 8 : 0)), CAPABILITIES[capIdx].dtype));
 
-				resources.verifyIO				= rndModes[rndModeIdx].f;
-				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				resources.verifyIO					= rndModes[rndModeIdx].f;
+
+				features							= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 				features.coreFeatures.shaderFloat64 = DE_TRUE;
+				features.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
+
 
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
@@ -7773,20 +7794,23 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 			for (deUint32 rndModeIdx = 0; rndModeIdx < DE_LENGTH_OF_ARRAY(rndModes); ++rndModeIdx)
 			{
 				map<string, string>	specs;
-				string				testName	= string(CAPABILITIES[capIdx].name) + "_vector_float_" + rndModes[rndModeIdx].name;
+				VulkanFeatures		features;
+				string				testName = string(CAPABILITIES[capIdx].name) + "_vector_float_" + rndModes[rndModeIdx].name;
 
-				specs["cap"]					= CAPABILITIES[capIdx].cap;
-				specs["indecor"]				= CAPABILITIES[capIdx].decor;
-				specs["rounddecor"]				= rndModes[rndModeIdx].decor;
+				specs["cap"]						= CAPABILITIES[capIdx].cap;
+				specs["indecor"]					= CAPABILITIES[capIdx].decor;
+				specs["rounddecor"]					= rndModes[rndModeIdx].decor;
 
-				fragments["capability"]			= capabilities.specialize(specs);
-				fragments["decoration"]			= decoration.specialize(specs);
+				fragments["capability"]				= capabilities.specialize(specs);
+				fragments["decoration"]				= decoration.specialize(specs);
 
 				resources.inputs.clear();
 				resources.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), CAPABILITIES[capIdx].dtype));
-				resources.verifyIO				= rndModes[rndModeIdx].f;
-				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-				features.coreFeatures.shaderFloat64 = DE_TRUE;
+				resources.verifyIO					= rndModes[rndModeIdx].f;
+
+				features							= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.shaderFloat64	= DE_TRUE;
+				features.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
 
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
@@ -7890,20 +7914,23 @@ void addGraphics16BitStorageUniformFloat64To16Group (tcu::TestCaseGroup* testGro
 			for (deUint32 rndModeIdx = 0; rndModeIdx < DE_LENGTH_OF_ARRAY(rndModes); ++rndModeIdx)
 			{
 				map<string, string>	specs;
-				string				testName	= string(CAPABILITIES[capIdx].name) + "_matrix_float_" + rndModes[rndModeIdx].name;
+				VulkanFeatures		features;
+				string				testName = string(CAPABILITIES[capIdx].name) + "_matrix_float_" + rndModes[rndModeIdx].name;
 
-				specs["cap"]					= CAPABILITIES[capIdx].cap;
-				specs["indecor"]				= CAPABILITIES[capIdx].decor;
-				specs["rounddecor"]				= rndModes[rndModeIdx].decor;
+				specs["cap"]						= CAPABILITIES[capIdx].cap;
+				specs["indecor"]					= CAPABILITIES[capIdx].decor;
+				specs["rounddecor"]					= rndModes[rndModeIdx].decor;
 
-				fragments["capability"]			= capabilities.specialize(specs);
-				fragments["decoration"]			= decoration.specialize(specs);
+				fragments["capability"]				= capabilities.specialize(specs);
+				fragments["decoration"]				= decoration.specialize(specs);
 
 				resources.inputs.clear();
 				resources.inputs.push_back(Resource(BufferSp(new Float64Buffer(float64Data)), CAPABILITIES[capIdx].dtype));
-				resources.verifyIO				= rndModes[rndModeIdx].f;
-				VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-				features.coreFeatures.shaderFloat64 = DE_TRUE;
+				resources.verifyIO					= rndModes[rndModeIdx].f;
+
+				features							= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				features.coreFeatures.shaderFloat64	= DE_TRUE;
+				features.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
 
 				createTestsForAllStages(testName, defaultColors, defaultColors, fragments, resources, extensions, testGroup, features);
 			}
@@ -7967,7 +7994,7 @@ void addGraphics16BitStorageInputOutputFloat64To16Group (tcu::TestCaseGroup* tes
 		deUint32	numElements;
 	};
 
-	const Case	cases[]		=
+	const Case		cases[]				=
 	{
 		{ // Scalar cases
 			"scalar",
@@ -8051,8 +8078,10 @@ void addGraphics16BitStorageInputOutputFloat64To16Group (tcu::TestCaseGroup* tes
 	};
 
 	VulkanFeatures	requiredFeatures;
-	requiredFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
-	requiredFeatures.coreFeatures.shaderFloat64 = DE_TRUE;
+
+	requiredFeatures.coreFeatures.shaderFloat64	= DE_TRUE;
+	requiredFeatures.ext16BitStorage			= EXT16BITSTORAGEFEATURES_INPUT_OUTPUT;
+	requiredFeatures.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
 
 	for (deUint32 caseIdx = 0; caseIdx < DE_LENGTH_OF_ARRAY(cases); ++caseIdx)
 		for (deUint32 rndModeIdx = 0; rndModeIdx < DE_LENGTH_OF_ARRAY(rndModes); ++rndModeIdx)
@@ -8316,11 +8345,14 @@ void addCompute16bitStorageUniform16To64Group (tcu::TestCaseGroup* group)
 					typedef Buffer<tcu::Vector<deFloat16, 2> > Float16Vec2Buffer;
 					spec.inputs.push_back(Resource(BufferSp(new Float16Vec2Buffer(float16Vec2Data, padding)), CAPABILITIES[capIdx].dtype));
 				}
+
 				spec.outputs.push_back(Resource(BufferSp(new Float64Buffer(cTypes[tyIdx].useConstantIndex ? float64DataConstIdx : float64Data))));
 				spec.extensions.push_back("VK_KHR_16bit_storage");
 				spec.extensions.push_back("VK_KHR_shader_float16_int8");
-				spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
-				spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
+
+				spec.requestedVulkanFeatures							= get16BitStorageFeatures(CAPABILITIES[capIdx].name);
+				spec.requestedVulkanFeatures.coreFeatures.shaderFloat64	= VK_TRUE;
+				spec.requestedVulkanFeatures.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
 
 				group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 			}
@@ -8483,10 +8515,13 @@ void addCompute16bitStoragePushConstant16To64Group (tcu::TestCaseGroup* group)
 			spec.pushConstants		= BufferSp(new Float16Buffer(float16Data));
 
 			spec.outputs.push_back(BufferSp(new Float64Buffer(float64Data)));
+
 			spec.extensions.push_back("VK_KHR_16bit_storage");
 			spec.extensions.push_back("VK_KHR_shader_float16_int8");
-			spec.requestedVulkanFeatures.ext16BitStorage = EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
-			spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
+
+			spec.requestedVulkanFeatures.coreFeatures.shaderFloat64	= VK_TRUE;
+			spec.requestedVulkanFeatures.ext16BitStorage			= EXT16BITSTORAGEFEATURES_PUSH_CONSTANT;
+			spec.requestedVulkanFeatures.extFloat16Int8				= EXTFLOAT16INT8FEATURES_FLOAT16;
 
 			group->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), testName.c_str(), spec));
 		}

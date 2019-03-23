@@ -39,6 +39,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/framework/vulkan/vkImageUtil.cpp \
 	external/vulkancts/framework/vulkan/vkImageWithMemory.cpp \
 	external/vulkancts/framework/vulkan/vkMemUtil.cpp \
+	external/vulkancts/framework/vulkan/vkNoRenderDocUtil.cpp \
 	external/vulkancts/framework/vulkan/vkNullDriver.cpp \
 	external/vulkancts/framework/vulkan/vkObjUtil.cpp \
 	external/vulkancts/framework/vulkan/vkPlatform.cpp \

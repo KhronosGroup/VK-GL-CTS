@@ -2000,6 +2000,8 @@ tcu::TestStatus DescriptorCommands::run (Context& context)
 	}
 	else
 	{
+		invalidateAlloc(vk, device, resultImageBuffer->getAllocation());
+
 		// Verify result image
 		tcu::ConstPixelBufferAccess	resultBufferAccess(mapVkFormat(resultFormat), renderSize.x(), renderSize.y(), 1, resultImageBuffer->getAllocation().getHostPtr());
 

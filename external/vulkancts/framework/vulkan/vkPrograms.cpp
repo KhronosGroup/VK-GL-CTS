@@ -2,7 +2,7 @@
  * Vulkan CTS Framework
  * --------------------
  *
- * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2019 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -418,9 +418,22 @@ std::string intToString (deUint32 integer)
 	return temp_sstream.str();
 }
 
+// 32-bit FNV-1 hash
+deUint32 shadercacheHash (const char* str)
+{
+	deUint32 hash = 0x811c9dc5;
+	deUint32 c;
+	while ((c = (deUint32)*str++) != 0)
+	{
+		hash *= 16777619;
+		hash ^= c;
+	}
+	return hash;
+}
+
 vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char* shaderCacheFilename)
 {
-	deUint32		hash		= deStringHash(shaderstring.c_str());
+	deUint32		hash		= shadercacheHash(shaderstring.c_str());
 	deInt32			format;
 	deInt32			length;
 	deInt32			sourcelength;
@@ -428,7 +441,8 @@ vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char*
 	deUint32		temp;
 	deUint8*		bin			= 0;
 	char*			source		= 0;
-	bool			ok			= true;
+	deBool			ok			= true;
+	deBool			diff;
 	cacheFileMutex.lock();
 
 	if (cacheFileIndex.count(hash) == 0)
@@ -457,7 +471,8 @@ vk::ProgramBinary* shadercacheLoad (const std::string& shaderstring, const char*
 			ok = fread(source, 1, sourcelength, file)				== (size_t)sourcelength;
 			source[sourcelength] = 0;
 		}
-		if (!ok || shaderstring != std::string(source))
+		diff = shaderstring != std::string(source);
+		if (!ok || diff)
 		{
 			// Mismatch, but may still exist in cache if there were hash collisions
 			delete[] source;
@@ -482,7 +497,7 @@ void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shader
 {
 	if (binary == 0)
 		return;
-	deUint32			hash		= deStringHash(shaderstring.c_str());
+	deUint32			hash		= shadercacheHash(shaderstring.c_str());
 	deInt32				format		= binary->getFormat();
 	deUint32			length		= (deUint32)binary->getSize();
 	deUint32			chunksize;
@@ -491,6 +506,48 @@ void shadercacheSave (const vk::ProgramBinary* binary, const std::string& shader
 	const de::FilePath	filePath	(shaderCacheFilename);
 
 	cacheFileMutex.lock();
+
+	if (cacheFileIndex[hash].size())
+	{
+		FILE*			file		= fopen(shaderCacheFilename, "rb");
+		deBool			ok			= (file != 0);
+		deBool			diff;
+		deInt32			sourcelength;
+		deUint32		i;
+		deUint32		temp;
+
+		for (i = 0; i < cacheFileIndex[hash].size(); i++)
+		{
+			if (ok) ok = fseek(file, cacheFileIndex[hash][i], SEEK_SET)	== 0;
+			if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Chunk size (skip)
+			if (ok) ok = fread(&temp, 1, 4, file)						== 4; // Stored hash
+			if (ok) ok = temp											== hash; // Double check
+			if (ok) ok = fread(&temp, 1, 4, file)						== 4;
+			if (ok) ok = fread(&length, 1, 4, file)						== 4;
+			if (ok) ok = length											> 0; // sanity check
+			if (ok) fseek(file, length, SEEK_CUR); // skip binary
+			if (ok) ok = fread(&sourcelength, 1, 4, file)				== 4;
+
+			if (ok && sourcelength > 0)
+			{
+				char* source;
+				source	= new char[sourcelength + 1];
+				ok		= fread(source, 1, sourcelength, file)			== (size_t)sourcelength;
+				source[sourcelength] = 0;
+				diff	= shaderstring != std::string(source);
+				delete[] source;
+			}
+
+			if (ok && !diff)
+			{
+				// Already in cache (written by another thread, probably)
+				fclose(file);
+				cacheFileMutex.unlock();
+				return;
+			}
+		}
+		fclose(file);
+	}
 
 	if (!de::FilePath(filePath.getDirName()).exists())
 		de::createDirectoryAndParents(filePath.getDirName().c_str());

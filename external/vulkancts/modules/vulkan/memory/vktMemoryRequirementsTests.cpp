@@ -1315,7 +1315,6 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 	const VkDevice				device			= context.getDevice();
 	const VkPhysicalDevice		physDevice		= context.getPhysicalDevice();
 	const VkImageCreateFlags	sparseFlags		= VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_ALIASED_BIT;
-	const VkImageUsageFlags		transientFlags	= VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
 
 	preTestChecks(context, vki, physDevice, params.flags);
 
@@ -1338,62 +1337,64 @@ tcu::TestStatus ImageMemoryRequirementsOriginal::execTest (Context& context, con
 		for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
 		{
 			const VkFormat format = formats[formatNdx];
-
 			if  (isFormatMatchingAspect(format, aspect))
 			{
 				// memoryTypeBits may differ between depth/stencil formats
 				if (aspect == depthStencilAspect)
 					previousMemoryTypeBits = notInitializedBits;
-
-				for (VkImageType			loopImageType	= VK_IMAGE_TYPE_1D;					loopImageType	!= VK_IMAGE_TYPE_LAST;					loopImageType	= nextEnum(loopImageType))
-				for (VkImageCreateFlags		loopCreateFlags	= (VkImageCreateFlags)0;			loopCreateFlags	<= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;	loopCreateFlags	= nextFlagExcluding(loopCreateFlags, sparseFlags))
-				for (VkImageUsageFlags		loopUsageFlags	= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;	loopUsageFlags	<= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;	loopUsageFlags	= nextFlagExcluding(loopUsageFlags, transientFlags))
 				for (VkSampleCountFlagBits	loopSampleCount	= VK_SAMPLE_COUNT_1_BIT;			loopSampleCount	<= VK_SAMPLE_COUNT_16_BIT;				loopSampleCount	= nextFlag(loopSampleCount))
 				{
-					const VkImageCreateFlags	actualCreateFlags	= loopCreateFlags | params.flags;
-					const VkImageUsageFlags		actualUsageFlags	= loopUsageFlags  | (params.transient ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0);
-					const bool					isCube				= (actualCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) != 0u;
-					const VkImageCreateInfo		imageInfo			=
+					// memoryTypeBits may differ between sample count
+					previousMemoryTypeBits = notInitializedBits;
+
+					for (VkImageType			loopImageType	= VK_IMAGE_TYPE_1D;					loopImageType	!= VK_IMAGE_TYPE_LAST;					loopImageType	= nextEnum(loopImageType))
+					for (VkImageCreateFlags		loopCreateFlags	= (VkImageCreateFlags)0;			loopCreateFlags	<= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;	loopCreateFlags	= nextFlagExcluding(loopCreateFlags, sparseFlags))
 					{
-						VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType          sType;
-						DE_NULL,									// const void*              pNext;
-						actualCreateFlags,							// VkImageCreateFlags       flags;
-						loopImageType,								// VkImageType              imageType;
-						format,									// VkFormat                 format;
-						makeExtentForImage(loopImageType),			// VkExtent3D               extent;
-						1u,											// uint32_t                 mipLevels;
-						(isCube ? 6u : 1u),							// uint32_t                 arrayLayers;
-						loopSampleCount,							// VkSampleCountFlagBits    samples;
-						params.tiling,								// VkImageTiling            tiling;
-						actualUsageFlags,							// VkImageUsageFlags        usage;
-						VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
-						0u,											// uint32_t                 queueFamilyIndexCount;
-						DE_NULL,									// const uint32_t*          pQueueFamilyIndices;
-						VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout            initialLayout;
-					};
+						const VkImageCreateFlags	actualCreateFlags	= loopCreateFlags | params.flags;
+						const VkImageUsageFlags		actualUsageFlags	= (params.transient ? VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0);
+						const bool					isCube				= (actualCreateFlags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) != 0u;
+						const VkImageCreateInfo		imageInfo			=
+						{
+							VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,		// VkStructureType          sType;
+							DE_NULL,									// const void*              pNext;
+							actualCreateFlags,							// VkImageCreateFlags       flags;
+							loopImageType,								// VkImageType              imageType;
+							format,										// VkFormat                 format;
+							makeExtentForImage(loopImageType),			// VkExtent3D               extent;
+							1u,											// uint32_t                 mipLevels;
+							(isCube ? 6u : 1u),							// uint32_t                 arrayLayers;
+							loopSampleCount,							// VkSampleCountFlagBits    samples;
+							params.tiling,								// VkImageTiling            tiling;
+							actualUsageFlags,							// VkImageUsageFlags        usage;
+							VK_SHARING_MODE_EXCLUSIVE,					// VkSharingMode            sharingMode;
+							0u,											// uint32_t                 queueFamilyIndexCount;
+							DE_NULL,									// const uint32_t*          pQueueFamilyIndices;
+							VK_IMAGE_LAYOUT_UNDEFINED,					// VkImageLayout            initialLayout;
+						};
 
-					m_currentTestImageInfo = imageInfo;
+						m_currentTestImageInfo = imageInfo;
 
-					if (!isImageSupported(context.getUsedApiVersion(), vki, physDevice, context.getDeviceExtensions(), m_currentTestImageInfo))
-						continue;
+						if (!isImageSupported(context.getUsedApiVersion(), vki, physDevice, context.getDeviceExtensions(), m_currentTestImageInfo))
+							continue;
 
-					log << tcu::TestLog::Message << "- " << getImageInfoString(m_currentTestImageInfo) << tcu::TestLog::EndMessage;
-					++numCheckedImages;
+						log << tcu::TestLog::Message << "- " << getImageInfoString(m_currentTestImageInfo) << tcu::TestLog::EndMessage;
+						++numCheckedImages;
 
-					tcu::ResultCollector result(log, "ERROR: ");
+						tcu::ResultCollector result(log, "ERROR: ");
 
-					updateMemoryRequirements(vk, device);
+						updateMemoryRequirements(vk, device);
 
-					verifyMemoryRequirements(result, memoryProperties);
+						verifyMemoryRequirements(result, memoryProperties);
 
-					// For the same tiling, transient usage, and sparse flags, (and format, if D/S) memoryTypeBits must be the same for all images
-					result.check((previousMemoryTypeBits == notInitializedBits) || (m_currentTestRequirements.memoryTypeBits == previousMemoryTypeBits),
-									"memoryTypeBits differ from the ones in the previous image configuration");
+						// For the same tiling, transient usage, and sparse flags, (and format, if D/S) memoryTypeBits must be the same for all images
+						result.check((previousMemoryTypeBits == notInitializedBits) || (m_currentTestRequirements.memoryTypeBits == previousMemoryTypeBits),
+										"memoryTypeBits differ from the ones in the previous image configuration");
 
-					if (result.getResult() != QP_TEST_RESULT_PASS)
-						allPass = false;
+						if (result.getResult() != QP_TEST_RESULT_PASS)
+							allPass = false;
 
-					previousMemoryTypeBits = m_currentTestRequirements.memoryTypeBits;
+						previousMemoryTypeBits = m_currentTestRequirements.memoryTypeBits;
+					}
 				}
 			}
 		}
