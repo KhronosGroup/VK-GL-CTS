@@ -46,7 +46,10 @@ void createAmberTests (tcu::TestCaseGroup* tests)
 	if (testCase->parse("example", "clear.amber"))
 		tests->addChild(testCase);
 	else
+	{
 		delete testCase;
+		TCU_THROW(InternalError, "Failed to create a test case from Amber file.");
+	}
 }
 
 } // anonymous
