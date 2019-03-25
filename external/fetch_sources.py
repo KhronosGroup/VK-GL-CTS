@@ -329,11 +329,6 @@ PACKAGES = [
 		"d3752ea20886d2fceb6cecda3c2b146a8f22d214",
 		"spirv-headers"),
 	GitRepo(
-		"https://github.com/Igalia/vkrunner.git",
-		None,
-		"79229ee3662da691240bde7fb6c6578e0e10e3f1",
-		"vkrunner"),
-	GitRepo(
 		"https://github.com/google/amber.git",
 		None,
 		"b783263992229f5c7d8b422beec09cdd4b02b31a",

@@ -65,8 +65,5 @@ dEQP-VK.wsi.android.shared_presentable_image.scale_down.*
 # Issue: b/67022169
 dEQP-VK.wsi.android.incremental_present.scale_down.*
 
-# Excluded VkRunner example tests
-dEQP-VK.vkrunner-example.*
-
 # Exclude Amber example tests
 dEQP-VK.amber-example.*

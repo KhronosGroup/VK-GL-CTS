@@ -9,6 +9,8 @@ set(DEQP_VK_AMBER_SRCS
 	vktAmberTestCase.cpp
 	vktAmberExampleTests.hpp
 	vktAmberExampleTests.cpp
+	vktAmberGraphicsFuzzTests.hpp
+	vktAmberGraphicsFuzzTests.cpp
 	)
 
 set(DEQP_VK_AMBER_LIBS
