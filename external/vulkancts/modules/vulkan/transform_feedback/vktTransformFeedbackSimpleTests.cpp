@@ -74,6 +74,7 @@ enum TestType
 	TEST_TYPE_DRAW_INDIRECT,
 	TEST_TYPE_BACKWARD_DEPENDENCY,
 	TEST_TYPE_QUERY,
+	TEST_TYPE_QUERY_RESET,
 	TEST_TYPE_LAST
 };
 
@@ -1504,6 +1505,14 @@ TransformFeedbackQueryTestInstance::TransformFeedbackQueryTestInstance (Context&
 
 	if (m_transformFeedbackProperties.transformFeedbackQueries == DE_FALSE)
 		TCU_THROW(NotSupportedError, "transformFeedbackQueries feature is not supported");
+
+	if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
+	{
+		// Check VK_EXT_host_query_reset is supported
+		m_context.requireDeviceExtension("VK_EXT_host_query_reset");
+		if(m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
+			throw tcu::NotSupportedError(std::string("Implementation doesn't support resetting queries from the host").c_str());
+	}
 }
 
 tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
@@ -1571,6 +1580,9 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 		endRenderPass(vk, *cmdBuffer);
 	}
 	endCommandBuffer(vk, *cmdBuffer);
+
+	if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
+		vk.resetQueryPoolEXT(device, *queryPool, queryIndex, queryCountersNumber);
 	submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
 	{
@@ -1586,6 +1598,36 @@ tcu::TestStatus TransformFeedbackQueryTestInstance::iterate (void)
 
 		if (*numPrimitivesNeeded != numVerticesToWrite)
 			return tcu::TestStatus::fail("numPrimitivesNeeded=" + de::toString(*numPrimitivesNeeded) + " while expected " + de::toString(numVerticesToWrite));
+	}
+
+	if (m_parameters.testType == TEST_TYPE_QUERY_RESET)
+	{
+
+		const deUint32			queryDataSize			(static_cast<deUint32>(3u * sizeof(deUint32)));
+		std::vector<deUint8>	queryData				(queryDataSize, 0u);
+		deUint32*			numPrimitivesWritten	= reinterpret_cast<deUint32*>(&queryData[0]);
+		deUint32*			numPrimitivesNeeded		= numPrimitivesWritten + 1;
+		deUint32*			availabilityState		= numPrimitivesNeeded + 1;
+
+		// Initialize values
+		*numPrimitivesNeeded	= 1u;
+		*numPrimitivesWritten	= 1u;
+		*availabilityState		= 1u;
+
+		vk.resetQueryPoolEXT(device, *queryPool, queryIndex, queryCountersNumber);
+
+		vk::VkResult res = vk.getQueryPoolResults(device, *queryPool, queryIndex, queryCountersNumber, queryDataSize, &queryData[0], queryDataSize, VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+		/* From Vulkan spec:
+			*
+			* If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+			* for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+			* However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+			*/
+		if (res != vk::VK_NOT_READY || *availabilityState != 0u)
+			return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
+	    if (*numPrimitivesWritten != 1u || *numPrimitivesNeeded != 1u )
+			return tcu::TestStatus::fail("QueryPoolResults data was modified");
+
 	}
 
 	return tcu::TestStatus::pass("Pass");
@@ -1653,7 +1695,7 @@ vkt::TestInstance*	TransformFeedbackTestCase::createInstance (vkt::Context& cont
 	if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY)
 		return new TransformFeedbackBackwardDependencyTestInstance(context, m_parameters);
 
-	if (m_parameters.testType == TEST_TYPE_QUERY)
+	if (m_parameters.testType == TEST_TYPE_QUERY || m_parameters.testType == TEST_TYPE_QUERY_RESET)
 		return new TransformFeedbackQueryTestInstance(context, m_parameters);
 
 	TCU_THROW(InternalError, "Specified test type not found");
@@ -2003,7 +2045,7 @@ void TransformFeedbackTestCase::initPrograms (SourceCollections& programCollecti
 		return;
 	}
 
-	if (m_parameters.testType == TEST_TYPE_QUERY)
+	if (m_parameters.testType == TEST_TYPE_QUERY || m_parameters.testType == TEST_TYPE_QUERY_RESET)
 	{
 		// Vertex shader
 		{
@@ -2121,10 +2163,12 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 	}
 
 	{
-		const deUint32		usedStreamId[]	= { 0, 1, 3, 6, 14 };
-		const deUint32		vertexCount[]	= { 4, 61, 127, 251, 509 };
-		const TestType		testType		= TEST_TYPE_QUERY;
-		const std::string	testName		= "query";
+		const deUint32		usedStreamId[]			= { 0, 1, 3, 6, 14 };
+		const deUint32		vertexCount[]			= { 4, 61, 127, 251, 509 };
+		const TestType		testType				= TEST_TYPE_QUERY;
+		const std::string	testName				= "query";
+		const TestType		testTypeHostQueryReset	= TEST_TYPE_QUERY_RESET;
+		const std::string	testNameHostQueryReset	= "host_query_reset";
 
 		for (deUint32 streamCountsNdx = 0; streamCountsNdx < DE_LENGTH_OF_ARRAY(usedStreamId); ++streamCountsNdx)
 		{
@@ -2138,6 +2182,10 @@ void createTransformFeedbackSimpleTests (tcu::TestCaseGroup* group)
 				const std::string		fullTestName	= testName + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]);
 
 				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestName.c_str(), "Written primitives query test", parameters));
+
+				const std::string		fullTestNameHostQueryReset	= testNameHostQueryReset + "_" + de::toString(streamId) + "_" + de::toString(vertexCount[vertexCountNdx]);
+				const TestParameters	parametersHostQueryReset	= { testTypeHostQueryReset, bufferSize, 0u, streamId, 0u, 0u };
+				group->addChild(new TransformFeedbackTestCase(group->getTestContext(), fullTestNameHostQueryReset.c_str(), "Written primitives query test", parametersHostQueryReset));
 			}
 		}
 	}
