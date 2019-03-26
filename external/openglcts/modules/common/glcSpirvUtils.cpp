@@ -42,6 +42,8 @@
 #include "spirv-tools/optimizer.hpp"
 #endif // DEQP_HAVE_SPIRV_TOOLS
 
+using namespace glu;
+
 namespace glc
 {
 
