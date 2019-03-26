@@ -427,9 +427,37 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	// Core features
 	{
-		const char* unsupportedFeature = DE_NULL;
+		const char*						unsupportedFeature			= DE_NULL;
+		vk::VkPhysicalDeviceFeatures	localRequiredCoreFeatures	= m_shaderSpec.requestedVulkanFeatures.coreFeatures;
 
-		if (!isCoreFeaturesSupported(m_context, m_shaderSpec.requestedVulkanFeatures.coreFeatures, &unsupportedFeature))
+		// Skip check features not targeted to compute
+		localRequiredCoreFeatures.fullDrawIndexUint32						= DE_FALSE;
+		localRequiredCoreFeatures.independentBlend							= DE_FALSE;
+		localRequiredCoreFeatures.geometryShader							= DE_FALSE;
+		localRequiredCoreFeatures.tessellationShader						= DE_FALSE;
+		localRequiredCoreFeatures.sampleRateShading							= DE_FALSE;
+		localRequiredCoreFeatures.dualSrcBlend								= DE_FALSE;
+		localRequiredCoreFeatures.logicOp									= DE_FALSE;
+		localRequiredCoreFeatures.multiDrawIndirect							= DE_FALSE;
+		localRequiredCoreFeatures.drawIndirectFirstInstance					= DE_FALSE;
+		localRequiredCoreFeatures.depthClamp								= DE_FALSE;
+		localRequiredCoreFeatures.depthBiasClamp							= DE_FALSE;
+		localRequiredCoreFeatures.fillModeNonSolid							= DE_FALSE;
+		localRequiredCoreFeatures.depthBounds								= DE_FALSE;
+		localRequiredCoreFeatures.wideLines									= DE_FALSE;
+		localRequiredCoreFeatures.largePoints								= DE_FALSE;
+		localRequiredCoreFeatures.alphaToOne								= DE_FALSE;
+		localRequiredCoreFeatures.multiViewport								= DE_FALSE;
+		localRequiredCoreFeatures.occlusionQueryPrecise						= DE_FALSE;
+		localRequiredCoreFeatures.vertexPipelineStoresAndAtomics			= DE_FALSE;
+		localRequiredCoreFeatures.fragmentStoresAndAtomics					= DE_FALSE;
+		localRequiredCoreFeatures.shaderTessellationAndGeometryPointSize	= DE_FALSE;
+		localRequiredCoreFeatures.shaderClipDistance						= DE_FALSE;
+		localRequiredCoreFeatures.shaderCullDistance						= DE_FALSE;
+		localRequiredCoreFeatures.sparseBinding								= DE_FALSE;
+		localRequiredCoreFeatures.variableMultisampleRate					= DE_FALSE;
+
+		if (!isCoreFeaturesSupported(m_context, localRequiredCoreFeatures, &unsupportedFeature))
 			TCU_THROW(NotSupportedError, std::string("At least following requested core feature is not supported: ") + unsupportedFeature);
 	}
 
