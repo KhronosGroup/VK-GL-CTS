@@ -1,0 +1,129 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; Test OpSelect with a scalar condition and composite result type.
+; Generated from the following GLSL with minor modification.
+;
+;#version 430
+;
+;struct S {int a; int b; int c;};
+;
+;layout(std430, binding = 0) buffer input_buffer
+;{
+;	S data_SSBO[];
+;};
+;
+;layout(std430, binding = 1) buffer output_buffer
+;{
+;	S out_SSBO[];
+;};
+;
+;void main() {
+;    S one = { 1, 1, 1 };
+;    S two = { 2, 2, 2 };
+;
+;    out_SSBO[gl_GlobalInvocationID.z] = (data_SSBO[gl_GlobalInvocationID.z].a == 0 ? one : two);
+;}
+;
+; Applying the no signed wrap decoration
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %gl_GlobalInvocationID %_ %__0
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpSourceExtension "GL_GOOGLE_cpp_style_line_directive"
+               OpSourceExtension "GL_GOOGLE_include_directive"
+               OpName %main "main"
+               OpName %S "S"
+               OpMemberName %S 0 "a"
+               OpMemberName %S 1 "b"
+               OpMemberName %S 2 "c"
+               OpName %one "one"
+               OpName %two "two"
+               OpName %S_0 "S"
+               OpMemberName %S_0 0 "a"
+               OpMemberName %S_0 1 "b"
+               OpMemberName %S_0 2 "c"
+               OpName %output_buffer "output_buffer"
+               OpMemberName %output_buffer 0 "out_SSBO"
+               OpName %_ ""
+               OpName %gl_GlobalInvocationID "gl_GlobalInvocationID"
+               OpName %input_buffer "input_buffer"
+               OpMemberName %input_buffer 0 "data_SSBO"
+               OpName %__0 ""
+               OpMemberDecorate %S_0 0 Offset 0
+               OpMemberDecorate %S_0 1 Offset 4
+               OpMemberDecorate %S_0 2 Offset 8
+               OpDecorate %_runtimearr_S_0 ArrayStride 12
+               OpMemberDecorate %output_buffer 0 Offset 0
+               OpDecorate %output_buffer Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 1
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %_runtimearr_S_0_0 ArrayStride 12
+               OpMemberDecorate %input_buffer 0 Offset 0
+               OpDecorate %input_buffer Block
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+          %S = OpTypeStruct %int %int %int
+%_ptr_Function_S = OpTypePointer Function %S
+      %int_1 = OpConstant %int 1
+         %11 = OpConstantComposite %S %int_1 %int_1 %int_1
+      %int_2 = OpConstant %int 2
+         %14 = OpConstantComposite %S %int_2 %int_2 %int_2
+        %S_0 = OpTypeStruct %int %int %int
+%_runtimearr_S_0 = OpTypeRuntimeArray %S_0
+%output_buffer = OpTypeStruct %_runtimearr_S_0
+%_ptr_StorageBuffer_output_buffer = OpTypePointer StorageBuffer %output_buffer
+          %_ = OpVariable %_ptr_StorageBuffer_output_buffer StorageBuffer
+      %int_0 = OpConstant %int 0
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+     %uint_2 = OpConstant %uint 2
+%_ptr_Input_uint = OpTypePointer Input %uint
+%_runtimearr_S_0_0 = OpTypeRuntimeArray %S_0
+%input_buffer = OpTypeStruct %_runtimearr_S_0_0
+%_ptr_StorageBuffer_input_buffer = OpTypePointer StorageBuffer %input_buffer
+        %__0 = OpVariable %_ptr_StorageBuffer_input_buffer StorageBuffer
+%_ptr_StorageBuffer_int = OpTypePointer StorageBuffer %int
+       %bool = OpTypeBool
+%_ptr_StorageBuffer_S_0 = OpTypePointer StorageBuffer %S_0
+%one = OpConstantComposite %S %int_1 %int_1 %int_1
+%two = OpConstantComposite %S %int_2 %int_2 %int_2
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %27 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_2
+         %28 = OpLoad %uint %27
+         %36 = OpAccessChain %_ptr_StorageBuffer_int %__0 %int_0 %28 %int_0
+         %37 = OpLoad %int %36
+         %39 = OpIEqual %bool %37 %int_0
+        %sel = OpSelect %S %39 %one %two
+         %48 = OpAccessChain %_ptr_StorageBuffer_S_0 %_ %int_0 %28
+         %49 = OpCompositeExtract %int %sel 0
+         %50 = OpAccessChain %_ptr_StorageBuffer_int %48 %int_0
+               OpStore %50 %49
+         %51 = OpCompositeExtract %int %sel 1
+         %52 = OpAccessChain %_ptr_StorageBuffer_int %48 %int_1
+               OpStore %52 %51
+         %53 = OpCompositeExtract %int %sel 2
+         %54 = OpAccessChain %_ptr_StorageBuffer_int %48 %int_2
+               OpStore %54 %53
+               OpReturn
+               OpFunctionEnd
+[test]
+ssbo 0:0 24
+ssbo 0:0 subdata int 0 0 0 0 1 1 1
+ssbo 0:1 8
+ssbo 0:1 subdata int 0 -1 -1 -1 -1 -1 -1
+
+compute entrypoint main
+compute 1 1 2
+
+probe ssbo int 0:1 0 == 1 1 1 2 2 2

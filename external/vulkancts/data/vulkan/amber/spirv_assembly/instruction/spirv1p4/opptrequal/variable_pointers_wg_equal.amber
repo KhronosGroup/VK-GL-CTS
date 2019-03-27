@@ -1,0 +1,98 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VariablePointerFeatures.variablePointers
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; This test generates four results per iteration of the loop. The loop is executed 64 times.
+
+; Each iteration generates results for OpPtrEqual. One pointer is an iterator
+; through the workgroup variable (%wg_var) and the other is a selection between
+; the iterator, null or the 0'th index pointer depending on the value of the
+; iterator mod 3.
+
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %wg_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %int_rta ArrayStride 4
+OpDecorate %ptr_wg_int ArrayStride 4
+
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 0
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int_32 = OpConstant %int 32
+%int_array = OpTypeArray %int %int_32
+%int_rta = OpTypeRuntimeArray %int
+
+%ptr_wg_int_array = OpTypePointer Workgroup %int_array
+%wg_var = OpVariable %ptr_wg_int_array Workgroup
+
+%out_struct = OpTypeStruct %int_rta
+%ptr_ssbo_out_struct = OpTypePointer StorageBuffer %out_struct
+%out_var = OpVariable %ptr_ssbo_out_struct StorageBuffer
+
+%ptr_wg_int = OpTypePointer Workgroup %int
+%ptr_wg_int_null = OpConstantNull %ptr_wg_int
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%void_fn = OpTypeFunction %void
+%ptr_return_fn = OpTypeFunction %ptr_wg_int %ptr_wg_int %ptr_wg_int %int
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%base_wg_gep = OpAccessChain %ptr_wg_int %wg_var %int_0
+OpBranch %loop
+
+%loop = OpLabel
+%i = OpPhi %int %int_0 %entry %inc_i %loop
+%wg_gep = OpPhi %ptr_wg_int %base_wg_gep %entry %next_wg_gep %loop
+%inc_i = OpIAdd %int %i %int_1
+%next_wg_gep = OpPtrAccessChain %ptr_wg_int %wg_gep %int_1
+
+%ptr_call = OpFunctionCall %ptr_wg_int %gep_func %wg_gep %base_wg_gep %i
+%equal = OpPtrEqual %bool %wg_gep %ptr_call
+%equal_int = OpSelect %int %equal %int_1 %int_0
+%out_gep = OpAccessChain %ptr_ssbo_int %out_var %int_0 %i
+OpStore %out_gep %equal_int
+
+%cmp = OpSGreaterThan %bool %i %int_32
+OpLoopMerge %exit %loop None
+OpBranchConditional %cmp %exit %loop
+
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+
+%gep_func = OpFunction %ptr_wg_int None %ptr_return_fn
+%param_ptr = OpFunctionParameter %ptr_wg_int
+%param_alt_ptr = OpFunctionParameter %ptr_wg_int
+%param_i = OpFunctionParameter %int
+%1 = OpLabel
+%i_mod_3 = OpSMod %int %param_i %int_3
+%i_mod_3_is_0 = OpIEqual %bool %i_mod_3 %int_0
+%i_mod_3_is_1 = OpIEqual %bool %i_mod_3 %int_1
+%wg_gep1 = OpSelect %ptr_wg_int %i_mod_3_is_0 %param_alt_ptr %ptr_wg_int_null
+%wg_gep2 = OpSelect %ptr_wg_int %i_mod_3_is_1 %param_ptr %wg_gep1
+OpReturnValue %wg_gep2
+OpFunctionEnd
+
+[test]
+ssbo 0:0 132
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo int 0:0 0 == 1 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0

@@ -1,0 +1,213 @@
+[require]
+VK_KHR_spirv_1_4
+tessellationShader
+
+[vertex shader]
+#version 450
+
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec4 vert_color;
+layout(location = 0) out vec4 tsc_color;
+
+void main() {
+    gl_Position = position;
+      tsc_color = vert_color;
+}
+
+[tessellation control shader]
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(vertices = 3) out;
+
+layout(location = 0) in vec4 tsc_color[];
+layout(location = 0) out vec4 tse_color[];
+
+#define ID gl_InvocationID
+
+void main()
+{
+  gl_out[ID].gl_Position = gl_in[ID].gl_Position;
+  tse_color[ID] = tsc_color[ID];
+  gl_TessLevelOuter[0] = 1.0;
+  gl_TessLevelOuter[1] = 1.0;
+  gl_TessLevelOuter[2] = 1.0;
+  gl_TessLevelInner[0] = 1.0;
+  gl_TessLevelInner[1] = 1.0;
+}
+
+[tessellation evaluation shader spirv]
+; Test tessellation evaluation shader with an SSBO on the entry point.
+; #version 450
+; #extension GL_ARB_separate_shader_objects : enable
+;
+; layout(triangles, equal_spacing, cw) in;
+;
+; layout(location = 0) in vec4 tse_color[];
+; layout(location = 0) out vec4 frag_color;
+;
+; layout(std430, binding = 0) buffer input_buffer
+; {
+;   vec4 in_val;
+; };
+;
+; void main()
+; {
+;   vec4 p0 = gl_TessCoord.x * gl_in[0].gl_Position;
+;   vec4 p1 = gl_TessCoord.y * gl_in[1].gl_Position;
+;   vec4 p2 = gl_TessCoord.z * gl_in[2].gl_Position;
+;   gl_Position = p0 + p1 + p2;
+;   frag_color = tse_color[0]+in_val;
+; }
+               OpCapability Tessellation
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint TessellationEvaluation %main "main" %gl_TessCoord %gl_in %_ %frag_color %tse_color %__0
+               OpExecutionMode %main Triangles
+               OpExecutionMode %main SpacingEqual
+               OpExecutionMode %main VertexOrderCw
+               OpSource GLSL 450
+               OpSourceExtension "GL_ARB_separate_shader_objects"
+               OpName %main "main"
+               OpName %p0 "p0"
+               OpName %gl_TessCoord "gl_TessCoord"
+               OpName %gl_PerVertex "gl_PerVertex"
+               OpMemberName %gl_PerVertex 0 "gl_Position"
+               OpMemberName %gl_PerVertex 1 "gl_PointSize"
+               OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
+               OpMemberName %gl_PerVertex 3 "gl_CullDistance"
+               OpName %gl_in "gl_in"
+               OpName %p1 "p1"
+               OpName %p2 "p2"
+               OpName %gl_PerVertex_0 "gl_PerVertex"
+               OpMemberName %gl_PerVertex_0 0 "gl_Position"
+               OpMemberName %gl_PerVertex_0 1 "gl_PointSize"
+               OpMemberName %gl_PerVertex_0 2 "gl_ClipDistance"
+               OpMemberName %gl_PerVertex_0 3 "gl_CullDistance"
+               OpName %_ ""
+               OpName %frag_color "frag_color"
+               OpName %tse_color "tse_color"
+               OpName %input_buffer "input_buffer"
+               OpMemberName %input_buffer 0 "in_val"
+               OpName %__0 ""
+               OpDecorate %gl_TessCoord BuiltIn TessCoord
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex Block
+               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex_0 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex_0 Block
+               OpDecorate %frag_color Location 0
+               OpDecorate %tse_color Location 0
+               OpMemberDecorate %input_buffer 0 Offset 0
+               OpDecorate %input_buffer Block
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Function_v4float = OpTypePointer Function %v4float
+    %v3float = OpTypeVector %float 3
+%_ptr_Input_v3float = OpTypePointer Input %v3float
+%gl_TessCoord = OpVariable %_ptr_Input_v3float Input
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+%_ptr_Input_float = OpTypePointer Input %float
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+    %uint_32 = OpConstant %uint 32
+%_arr_gl_PerVertex_uint_32 = OpTypeArray %gl_PerVertex %uint_32
+%_ptr_Input__arr_gl_PerVertex_uint_32 = OpTypePointer Input %_arr_gl_PerVertex_uint_32
+      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_uint_32 Input
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+      %int_1 = OpConstant %int 1
+     %uint_2 = OpConstant %uint 2
+      %int_2 = OpConstant %int 2
+%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex_0 = OpTypePointer Output %gl_PerVertex_0
+          %_ = OpVariable %_ptr_Output_gl_PerVertex_0 Output
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+ %frag_color = OpVariable %_ptr_Output_v4float Output
+%_arr_v4float_uint_32 = OpTypeArray %v4float %uint_32
+%_ptr_Input__arr_v4float_uint_32 = OpTypePointer Input %_arr_v4float_uint_32
+  %tse_color = OpVariable %_ptr_Input__arr_v4float_uint_32 Input
+%input_buffer = OpTypeStruct %v4float
+%_ptr_StorageBuffer_input_buffer = OpTypePointer StorageBuffer %input_buffer
+        %__0 = OpVariable %_ptr_StorageBuffer_input_buffer StorageBuffer
+%_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %p0 = OpVariable %_ptr_Function_v4float Function
+         %p1 = OpVariable %_ptr_Function_v4float Function
+         %p2 = OpVariable %_ptr_Function_v4float Function
+         %16 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_0
+         %17 = OpLoad %float %16
+         %28 = OpAccessChain %_ptr_Input_v4float %gl_in %int_0 %int_0
+         %29 = OpLoad %v4float %28
+         %30 = OpVectorTimesScalar %v4float %29 %17
+               OpStore %p0 %30
+         %32 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_1
+         %33 = OpLoad %float %32
+         %35 = OpAccessChain %_ptr_Input_v4float %gl_in %int_1 %int_0
+         %36 = OpLoad %v4float %35
+         %37 = OpVectorTimesScalar %v4float %36 %33
+               OpStore %p1 %37
+         %40 = OpAccessChain %_ptr_Input_float %gl_TessCoord %uint_2
+         %41 = OpLoad %float %40
+         %43 = OpAccessChain %_ptr_Input_v4float %gl_in %int_2 %int_0
+         %44 = OpLoad %v4float %43
+         %45 = OpVectorTimesScalar %v4float %44 %41
+               OpStore %p2 %45
+         %49 = OpLoad %v4float %p0
+         %50 = OpLoad %v4float %p1
+         %51 = OpFAdd %v4float %49 %50
+         %52 = OpLoad %v4float %p2
+         %53 = OpFAdd %v4float %51 %52
+         %55 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %55 %53
+         %60 = OpAccessChain %_ptr_Input_v4float %tse_color %int_0
+         %61 = OpLoad %v4float %60
+         %66 = OpAccessChain %_ptr_StorageBuffer_v4float %__0 %int_0
+         %67 = OpLoad %v4float %66
+         %68 = OpFAdd %v4float %61 %67
+               OpStore %frag_color %68
+               OpReturn
+               OpFunctionEnd
+
+[fragment shader]
+#version 450
+
+layout(location = 0) in vec4 frag_color;
+layout(location = 0) out vec4 final_color;
+
+void main() {
+  final_color = frag_color;
+}
+
+[vertex data]
+#        position     vert_color
+     0/R8G8_SNORM 1/R8G8B8_UNORM
+
+#           Red for entire frame
+#         R8   G8     R8  G8  B8
+        -128 -128    255   0   0
+         127  127    255   0   0
+        -128  127    255   0   0
+
+        -128 -128    255   0   0
+         127  127    255   0   0
+         127 -128    255   0   0
+
+[test]
+ssbo 0:0 subdata float 0 0.0 0.0 0.3 0.0
+clear
+draw arrays PATCH_LIST 0 6
+relative probe rect rgb (0.0, 0.0, 1.0, 1.0) (1.0, 0, 0.3)

@@ -1,0 +1,62 @@
+[require]
+VK_KHR_spirv_1_4
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+; A fragment shader with a ubo.
+;
+; #version 430
+;
+; layout(std430, binding = 0) buffer input_buffer
+; {
+;	vec4 data_SSBO[];
+; };
+;
+; layout(location = 0) out vec4 outColor;
+;
+; void main() {
+;     outColor = data_SSBO[0];
+; }
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %_ %outColor
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 430
+               OpName %main "main"
+               OpName %outColor "outColor"
+               OpName %input_buffer "input_buffer"
+               OpMemberName %input_buffer 0 "data_SSBO"
+               OpName %_ ""
+               OpDecorate %outColor Location 0
+               OpDecorate %_runtimearr_v4float ArrayStride 16
+               OpMemberDecorate %input_buffer 0 Offset 0
+               OpDecorate %input_buffer Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+   %outColor = OpVariable %_ptr_Output_v4float Output
+%_runtimearr_v4float = OpTypeRuntimeArray %v4float
+%input_buffer = OpTypeStruct %_runtimearr_v4float
+%_ptr_StorageBuffer_input_buffer = OpTypePointer StorageBuffer %input_buffer
+          %_ = OpVariable %_ptr_StorageBuffer_input_buffer StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_StorageBuffer_v4float = OpTypePointer StorageBuffer %v4float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %17 = OpAccessChain %_ptr_StorageBuffer_v4float %_ %int_0 %int_0
+         %18 = OpLoad %v4float %17
+               OpStore %outColor %18
+               OpReturn
+               OpFunctionEnd
+[test]
+ssbo 0:0 subdata float 0 0.2 0.3 0.4 0.1
+draw rect -1 -1 2 2
+
+probe rect rgba (0, 0, 250, 250) (0.2 0.3 0.4 0.1)

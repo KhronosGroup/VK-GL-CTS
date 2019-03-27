@@ -1,0 +1,62 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_storage_buffer_storage_class
+
+[compute shader spirv]
+OpCapability Shader
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %ssbo
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %struct Block
+OpMemberDecorate %struct 0 Offset 0
+OpMemberDecorate %struct 1 Offset 16
+OpMemberDecorate %struct 2 Offset 32
+OpMemberDecorate %struct 3 Offset 48
+OpMemberDecorate %struct 4 Offset 64
+OpDecorate %ssbo DescriptorSet 0
+OpDecorate %ssbo Binding 0
+
+%void = OpTypeVoid
+%int = OpTypeInt 32 0
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int_4 = OpConstant %int 4
+%int4 = OpTypeVector %int 4
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+
+%struct = OpTypeStruct %int4 %int %int %int %int
+%ptr_ssbo_struct = OpTypePointer StorageBuffer %struct
+%ssbo = OpVariable %ptr_ssbo_struct StorageBuffer
+
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%src_gep0 = OpAccessChain %ptr_ssbo_int %ssbo %int_0 %int_0
+%dst_gep0 = OpAccessChain %ptr_ssbo_int %ssbo %int_1
+OpCopyMemory %dst_gep0 %src_gep0 Aligned 16 Aligned 4
+%src_gep1 = OpAccessChain %ptr_ssbo_int %ssbo %int_0 %int_1
+%dst_gep1 = OpAccessChain %ptr_ssbo_int %ssbo %int_2
+OpCopyMemory %dst_gep1 %src_gep1 Aligned 16 Aligned 4
+%src_gep2 = OpAccessChain %ptr_ssbo_int %ssbo %int_0 %int_2
+%dst_gep2 = OpAccessChain %ptr_ssbo_int %ssbo %int_3
+OpCopyMemory %dst_gep2 %src_gep2 Aligned 16 Aligned 4
+%src_gep3 = OpAccessChain %ptr_ssbo_int %ssbo %int_0 %int_3
+%dst_gep3 = OpAccessChain %ptr_ssbo_int %ssbo %int_4
+OpCopyMemory %dst_gep3 %src_gep3 Aligned 16 Aligned 4
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 68
+ssbo 0:0 subdata uint 0 1 2 3 4
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uint 0:0 16 == 1
+probe ssbo uint 0:0 32 == 2
+probe ssbo uint 0:0 48 == 3
+probe ssbo uint 0:0 64 == 4

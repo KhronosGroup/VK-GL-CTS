@@ -1,0 +1,144 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; Tests use of private variables holding SSBO pointers and pointer comparisons.
+
+; Two iterators are each stored in Private variables: one moves forward, one
+; moves backward. In each iteration an int2 result is written that contains two
+; diffs. Iterators are then moved forward (or backward respectively) one index.
+
+OpCapability Shader
+OpCapability VariablePointersStorageBuffer
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %in_var %out_var %forward_var %backward_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %int_rta ArrayStride 4
+OpDecorate %in_struct Block
+OpMemberDecorate %in_struct 0 Offset 0
+OpMemberDecorate %in_struct 1 Offset 4
+OpDecorate %in_var DescriptorSet 0
+OpDecorate %in_var Binding 0
+
+OpDecorate %int2_rta ArrayStride 8
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 1
+
+OpDecorate %ptr_ssbo_int ArrayStride 4
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 1
+%int_n1 = OpConstant %int -1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int2 = OpTypeVector %int 2
+
+%int_rta = OpTypeRuntimeArray %int
+%in_struct = OpTypeStruct %int %int_rta
+%ptr_ssbo_in_struct = OpTypePointer StorageBuffer %in_struct
+%in_var = OpVariable %ptr_ssbo_in_struct StorageBuffer
+
+%int2_rta = OpTypeRuntimeArray %int2
+%out_struct = OpTypeStruct %int2_rta
+%ptr_ssbo_out_struct = OpTypePointer StorageBuffer %out_struct
+%out_var = OpVariable %ptr_ssbo_out_struct StorageBuffer
+
+%ptr_ssbo_int = OpTypePointer StorageBuffer %int
+%ptr_ptr = OpTypePointer Private %ptr_ssbo_int
+%forward_var = OpVariable %ptr_ptr Private
+%backward_var = OpVariable %ptr_ptr Private
+
+%ptr_ssbo_n = OpTypePointer StorageBuffer %int
+%ptr_ssbo_int2 = OpTypePointer StorageBuffer %int2
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%n_gep = OpAccessChain %ptr_ssbo_n %in_var %int_0
+%n = OpLoad %int %n_gep
+%first_gep = OpAccessChain %ptr_ssbo_int %in_var %int_1 %int_0
+OpStore %forward_var %first_gep
+%last_gep = OpPtrAccessChain %ptr_ssbo_int %first_gep %n
+OpStore %backward_var %last_gep
+%cmp_n = OpSLessThanEqual %bool %n %int_0
+OpSelectionMerge %exit None
+OpBranchConditional %cmp_n %exit %loop
+
+%loop = OpLabel
+%i = OpPhi %int %int_0 %entry %inc_i %loop
+%forward_gep = OpLoad %ptr_ssbo_int %forward_var
+%backward_gep = OpLoad %ptr_ssbo_int %backward_var
+%forward_next = OpPtrAccessChain %ptr_ssbo_int %forward_gep %int_1
+%backward_next = OpPtrAccessChain %ptr_ssbo_int %backward_gep %int_n1
+%inc_i = OpIAdd %int %i %int_1
+OpStore %forward_var %forward_next
+OpStore %backward_var %backward_next
+
+%diff1 = OpPtrDiff %int %forward_gep %backward_gep
+%diff2 = OpPtrDiff %int %backward_gep %forward_gep
+%result = OpCompositeConstruct %int2 %diff1 %diff2
+%out_gep = OpAccessChain %ptr_ssbo_int2 %out_var %int_0 %i
+OpStore %out_gep %result
+
+%cmp = OpSGreaterThanEqual %bool %i %n
+OpLoopMerge %loop_exit %loop None
+OpBranchConditional %cmp %loop_exit %loop
+
+%loop_exit = OpLabel
+OpBranch %exit
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 132
+# Only data for number of iterations matters.
+ssbo 0:0 subdata int 0 33
+ssbo 0:1 264
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo ivec2 0:1 0   == -33  33
+probe ssbo ivec2 0:1 8   == -31  31
+probe ssbo ivec2 0:1 16  == -29  29
+probe ssbo ivec2 0:1 24  == -27  27
+probe ssbo ivec2 0:1 32  == -25  25
+probe ssbo ivec2 0:1 40  == -23  23
+probe ssbo ivec2 0:1 48  == -21  21
+probe ssbo ivec2 0:1 56  == -19  19
+probe ssbo ivec2 0:1 64  == -17  17
+probe ssbo ivec2 0:1 72  == -15  15
+probe ssbo ivec2 0:1 80  == -13  13
+probe ssbo ivec2 0:1 88  == -11  11
+probe ssbo ivec2 0:1 96  ==  -9   9
+probe ssbo ivec2 0:1 104 ==  -7   7
+probe ssbo ivec2 0:1 112 ==  -5   5
+probe ssbo ivec2 0:1 120 ==  -3   3
+probe ssbo ivec2 0:1 128 ==  -1   1
+probe ssbo ivec2 0:1 136 ==   1  -1
+probe ssbo ivec2 0:1 144 ==   3  -3
+probe ssbo ivec2 0:1 152 ==   5  -5
+probe ssbo ivec2 0:1 160 ==   7  -7
+probe ssbo ivec2 0:1 168 ==   9  -9
+probe ssbo ivec2 0:1 176 ==  11 -11
+probe ssbo ivec2 0:1 184 ==  13 -13
+probe ssbo ivec2 0:1 192 ==  15 -15
+probe ssbo ivec2 0:1 200 ==  17 -17
+probe ssbo ivec2 0:1 208 ==  19 -19
+probe ssbo ivec2 0:1 216 ==  21 -21
+probe ssbo ivec2 0:1 224 ==  23 -23
+probe ssbo ivec2 0:1 232 ==  25 -25
+probe ssbo ivec2 0:1 240 ==  27 -27
+probe ssbo ivec2 0:1 248 ==  29 -29
+probe ssbo ivec2 0:1 256 ==  31 -31
+

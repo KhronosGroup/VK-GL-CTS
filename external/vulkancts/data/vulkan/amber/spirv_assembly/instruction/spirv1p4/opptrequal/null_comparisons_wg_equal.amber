@@ -1,0 +1,85 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VariablePointerFeatures.variablePointers
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; This generates 4 results for OpPtrEqual
+
+; The workgroup variable is a struct containing a single float.
+
+; Results:
+; 0: comparison of the workgroup var vs null
+; 1: comparison of the workgroup float vs null
+; 2: comparison of null struct vs null struct
+; 3: comparison of null float vs null float
+
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %wg_var %out_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 0
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%float = OpTypeFloat 32
+%int = OpTypeInt 32 0
+%int4 = OpTypeVector %int 4
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+
+%wg_struct = OpTypeStruct %float
+%ptr_wg_struct = OpTypePointer Workgroup %wg_struct
+%wg_var = OpVariable %ptr_wg_struct Workgroup
+%ptr_wg_float = OpTypePointer Workgroup %float
+
+%out_struct = OpTypeStruct %int4
+%ptr_out_struct = OpTypePointer StorageBuffer %out_struct
+%out_var = OpVariable %ptr_out_struct StorageBuffer
+%ptr_ssbo_int4 = OpTypePointer StorageBuffer %int4
+
+%ptr_wg_struct_null = OpConstantNull %ptr_wg_struct
+%ptr_wg_float_null = OpConstantNull %ptr_wg_float
+%ptr_wg_struct_null2 = OpConstantNull %ptr_wg_struct
+%ptr_wg_float_null2 = OpConstantNull %ptr_wg_float
+
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+
+%wg_equal = OpPtrEqual %bool %wg_var %ptr_wg_struct_null
+%wg_equal_int = OpSelect %int %wg_equal %int_1 %int_0
+
+%wg_gep_0 = OpAccessChain %ptr_wg_float %wg_var %int_0
+%wg_equal_0 = OpPtrEqual %bool %wg_gep_0 %ptr_wg_float_null
+%wg_equal_0_int = OpSelect %int %wg_equal_0 %int_1 %int_0
+
+%null_wg_equal = OpPtrEqual %bool %ptr_wg_struct_null %ptr_wg_struct_null2
+%null_wg_equal_int = OpSelect %int %null_wg_equal %int_1 %int_0
+
+%null_wg_equal_0 = OpPtrEqual %bool %ptr_wg_float_null %ptr_wg_float_null2
+%null_wg_equal_0_int = OpSelect %int %null_wg_equal_0 %int_1 %int_0
+
+%combined = OpCompositeConstruct %int4 %wg_equal_int %wg_equal_0_int %null_wg_equal_int %null_wg_equal_0_int
+%out_gep = OpAccessChain %ptr_ssbo_int4 %out_var %int_0
+OpStore %out_gep %combined
+
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 16
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo uvec4 0:0 0  == 0 0 1 1
+

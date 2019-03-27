@@ -309,7 +309,7 @@ tcu::TestStatus AmberTestInstance::iterate (void)
 
 void AmberTestCase::setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions& asm_options)
 {
-		m_asm_options = asm_options;
+	m_asm_options = asm_options;
 }
 
 void AmberTestCase::addRequirement(const std::string& requirement)

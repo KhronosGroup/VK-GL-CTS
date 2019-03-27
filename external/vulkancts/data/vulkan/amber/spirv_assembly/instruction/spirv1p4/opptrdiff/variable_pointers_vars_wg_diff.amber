@@ -1,0 +1,129 @@
+[require]
+VK_KHR_spirv_1_4
+VK_KHR_variable_pointers
+VariablePointerFeatures.variablePointersStorageBuffer
+VariablePointerFeatures.variablePointers
+VK_KHR_storage_buffer_storage_class
+VK_KHR_get_physical_device_properties2
+
+[compute shader spirv]
+; Tests use of private variables holding workgroup pointers and pointer comparisons.
+
+; Two iterators are each stored in Private variables: one moves forward, one
+; moves backward. In each iteration an int2 result is written that contains
+; two diffs (operands swapped). Iterators are then moved forward (or backward
+; respectively) one index.
+
+OpCapability Shader
+OpCapability VariablePointers
+OpMemoryModel Logical GLSL450
+OpEntryPoint GLCompute %main "main" %wg_var %out_var %forward_var %backward_var
+OpExecutionMode %main LocalSize 1 1 1
+
+OpDecorate %int2_rta ArrayStride 8
+OpDecorate %out_struct Block
+OpMemberDecorate %out_struct 0 Offset 0
+OpDecorate %out_var DescriptorSet 0
+OpDecorate %out_var Binding 0
+
+OpDecorate %ptr_wg_int ArrayStride 4
+
+%void = OpTypeVoid
+%bool = OpTypeBool
+%int = OpTypeInt 32 1
+%int_n1 = OpConstant %int -1
+%int_0 = OpConstant %int 0
+%int_1 = OpConstant %int 1
+%int_2 = OpConstant %int 2
+%int_3 = OpConstant %int 3
+%int_32 = OpConstant %int 32
+%int2 = OpTypeVector %int 2
+
+%int_array_32 = OpTypeArray %int %int_32
+%ptr_wg_array = OpTypePointer Workgroup %int_array_32
+%wg_var = OpVariable %ptr_wg_array Workgroup
+
+%int2_rta = OpTypeRuntimeArray %int2
+%out_struct = OpTypeStruct %int2_rta
+%ptr_ssbo_out_struct = OpTypePointer StorageBuffer %out_struct
+%out_var = OpVariable %ptr_ssbo_out_struct StorageBuffer
+
+%ptr_wg_int = OpTypePointer Workgroup %int
+%ptr_ptr = OpTypePointer Private %ptr_wg_int
+%forward_var = OpVariable %ptr_ptr Private
+%backward_var = OpVariable %ptr_ptr Private
+
+%ptr_ssbo_int2 = OpTypePointer StorageBuffer %int2
+%void_fn = OpTypeFunction %void
+%main = OpFunction %void None %void_fn
+%entry = OpLabel
+%first_gep = OpAccessChain %ptr_wg_int %wg_var %int_0
+OpStore %forward_var %first_gep
+%last_gep = OpPtrAccessChain %ptr_wg_int %first_gep %int_32
+OpStore %backward_var %last_gep
+OpBranch %loop
+
+%loop = OpLabel
+%i = OpPhi %int %int_0 %entry %inc_i %loop
+%forward_gep = OpLoad %ptr_wg_int %forward_var
+%backward_gep = OpLoad %ptr_wg_int %backward_var
+%forward_next = OpPtrAccessChain %ptr_wg_int %forward_gep %int_1
+%backward_next = OpPtrAccessChain %ptr_wg_int %backward_gep %int_n1
+%inc_i = OpIAdd %int %i %int_1
+OpStore %forward_var %forward_next
+OpStore %backward_var %backward_next
+
+%diff1 = OpPtrDiff %int %forward_gep %backward_gep
+%diff2 = OpPtrDiff %int %backward_gep %forward_gep
+%result = OpCompositeConstruct %int2 %diff1 %diff2
+%out_gep = OpAccessChain %ptr_ssbo_int2 %out_var %int_0 %i
+OpStore %out_gep %result
+
+%cmp = OpSGreaterThan %bool %i %int_32
+OpLoopMerge %exit %loop None
+OpBranchConditional %cmp %exit %loop
+
+%exit = OpLabel
+OpReturn
+OpFunctionEnd
+
+[test]
+ssbo 0:0 264
+
+compute entrypoint main
+compute 1 1 1
+
+probe ssbo ivec2 0:0 0   == -32  32
+probe ssbo ivec2 0:0 8   == -30  30
+probe ssbo ivec2 0:0 16  == -28  28
+probe ssbo ivec2 0:0 24  == -26  26
+probe ssbo ivec2 0:0 32  == -24  24
+probe ssbo ivec2 0:0 40  == -22  22
+probe ssbo ivec2 0:0 48  == -20  20
+probe ssbo ivec2 0:0 56  == -18  18
+probe ssbo ivec2 0:0 64  == -16  16
+probe ssbo ivec2 0:0 72  == -14  14
+probe ssbo ivec2 0:0 80  == -12  12
+probe ssbo ivec2 0:0 88  == -10  10
+probe ssbo ivec2 0:0 96  ==  -8   8
+probe ssbo ivec2 0:0 104 ==  -6   6
+probe ssbo ivec2 0:0 112 ==  -4   4
+probe ssbo ivec2 0:0 120 ==  -2   2
+probe ssbo ivec2 0:0 128 ==   0   0
+probe ssbo ivec2 0:0 136 ==   2  -2
+probe ssbo ivec2 0:0 144 ==   4  -4
+probe ssbo ivec2 0:0 152 ==   6  -6
+probe ssbo ivec2 0:0 160 ==   8  -8
+probe ssbo ivec2 0:0 168 ==  10 -10
+probe ssbo ivec2 0:0 176 ==  12 -12
+probe ssbo ivec2 0:0 184 ==  14 -14
+probe ssbo ivec2 0:0 192 ==  16 -16
+probe ssbo ivec2 0:0 200 ==  18 -18
+probe ssbo ivec2 0:0 208 ==  20 -20
+probe ssbo ivec2 0:0 216 ==  22 -22
+probe ssbo ivec2 0:0 224 ==  24 -24
+probe ssbo ivec2 0:0 232 ==  26 -26
+probe ssbo ivec2 0:0 240 ==  28 -28
+probe ssbo ivec2 0:0 248 ==  30 -30
+probe ssbo ivec2 0:0 256 ==  32 -32
+

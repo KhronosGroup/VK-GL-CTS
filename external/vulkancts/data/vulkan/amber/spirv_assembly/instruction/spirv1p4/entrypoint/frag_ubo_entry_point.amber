@@ -1,0 +1,60 @@
+[require]
+VK_KHR_spirv_1_4
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+; A fragment shader with a ubo.
+;
+; #version 430
+;
+; layout(binding = 0) uniform input_buffer
+; {
+;	vec4 in_data;
+; };
+;
+; layout(location = 0) out vec4 outColor;
+;
+; void main() {
+;     outColor = in_data;
+; }
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %_ %outColor
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 430
+               OpName %main "main"
+               OpName %outColor "outColor"
+               OpName %input_buffer "input_buffer"
+               OpMemberName %input_buffer 0 "in_data"
+               OpName %_ ""
+               OpDecorate %outColor Location 0
+               OpMemberDecorate %input_buffer 0 Offset 0
+               OpDecorate %input_buffer Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+   %outColor = OpVariable %_ptr_Output_v4float Output
+%input_buffer = OpTypeStruct %v4float
+%_ptr_Uniform_input_buffer = OpTypePointer Uniform %input_buffer
+          %_ = OpVariable %_ptr_Uniform_input_buffer Uniform
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_Uniform_v4float = OpTypePointer Uniform %v4float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %16 = OpAccessChain %_ptr_Uniform_v4float %_ %int_0
+         %17 = OpLoad %v4float %16
+               OpStore %outColor %17
+               OpReturn
+               OpFunctionEnd
+[test]
+uniform ubo 0:0 float 0 0.2 0.3 0.4 0.1
+draw rect -1 -1 2 2
+
+probe rect rgba (0, 0, 250, 250) (0.2 0.3 0.4 0.1)

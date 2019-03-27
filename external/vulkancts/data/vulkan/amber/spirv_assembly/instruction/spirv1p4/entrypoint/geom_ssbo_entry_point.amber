@@ -1,0 +1,154 @@
+[require]
+VK_KHR_spirv_1_4
+geometryShader
+
+[vertex shader passthrough]
+[geometry shader spirv]
+; Test a geometry shader with an SSBO on the OpEntryPoint instruction.
+; #version 450
+;
+; layout(triangles) in;
+; layout(triangle_strip, max_vertices = 3) out;
+;
+; layout(std430, binding = 0) buffer input_buffer
+; {
+;   float factor;
+; };
+;
+; void main()
+; {
+;   for( int i = 0; i < 3; i++ ) {
+;     vec3 point = gl_in[i].gl_Position.xyz;
+;     gl_Position = vec4(point * factor, 1.0);
+;     EmitVertex();
+;   }
+;   EndPrimitive();
+; }
+               OpCapability Geometry
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Geometry %main "main" %gl_in %_ %__0
+               OpExecutionMode %main Triangles
+               OpExecutionMode %main Invocations 1
+               OpExecutionMode %main OutputTriangleStrip
+               OpExecutionMode %main OutputVertices 3
+               OpSource GLSL 450
+               OpName %main "main"
+               OpName %i "i"
+               OpName %point "point"
+               OpName %gl_PerVertex "gl_PerVertex"
+               OpMemberName %gl_PerVertex 0 "gl_Position"
+               OpMemberName %gl_PerVertex 1 "gl_PointSize"
+               OpMemberName %gl_PerVertex 2 "gl_ClipDistance"
+               OpMemberName %gl_PerVertex 3 "gl_CullDistance"
+               OpName %gl_in "gl_in"
+               OpName %gl_PerVertex_0 "gl_PerVertex"
+               OpMemberName %gl_PerVertex_0 0 "gl_Position"
+               OpMemberName %gl_PerVertex_0 1 "gl_PointSize"
+               OpMemberName %gl_PerVertex_0 2 "gl_ClipDistance"
+               OpMemberName %gl_PerVertex_0 3 "gl_CullDistance"
+               OpName %_ ""
+               OpName %input_buffer "input_buffer"
+               OpMemberName %input_buffer 0 "factor"
+               OpName %__0 ""
+               OpMemberDecorate %gl_PerVertex 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex Block
+               OpMemberDecorate %gl_PerVertex_0 0 BuiltIn Position
+               OpMemberDecorate %gl_PerVertex_0 1 BuiltIn PointSize
+               OpMemberDecorate %gl_PerVertex_0 2 BuiltIn ClipDistance
+               OpMemberDecorate %gl_PerVertex_0 3 BuiltIn CullDistance
+               OpDecorate %gl_PerVertex_0 Block
+               OpMemberDecorate %input_buffer 0 Offset 0
+               OpDecorate %input_buffer Block
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_ptr_Function_int = OpTypePointer Function %int
+      %int_0 = OpConstant %int 0
+      %int_3 = OpConstant %int 3
+       %bool = OpTypeBool
+      %float = OpTypeFloat 32
+    %v3float = OpTypeVector %float 3
+%_ptr_Function_v3float = OpTypePointer Function %v3float
+    %v4float = OpTypeVector %float 4
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+%_arr_float_uint_1 = OpTypeArray %float %uint_1
+%gl_PerVertex = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+     %uint_3 = OpConstant %uint 3
+%_arr_gl_PerVertex_uint_3 = OpTypeArray %gl_PerVertex %uint_3
+%_ptr_Input__arr_gl_PerVertex_uint_3 = OpTypePointer Input %_arr_gl_PerVertex_uint_3
+      %gl_in = OpVariable %_ptr_Input__arr_gl_PerVertex_uint_3 Input
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%gl_PerVertex_0 = OpTypeStruct %v4float %float %_arr_float_uint_1 %_arr_float_uint_1
+%_ptr_Output_gl_PerVertex_0 = OpTypePointer Output %gl_PerVertex_0
+          %_ = OpVariable %_ptr_Output_gl_PerVertex_0 Output
+%input_buffer = OpTypeStruct %float
+%_ptr_StorageBuffer_input_buffer = OpTypePointer StorageBuffer %input_buffer
+        %__0 = OpVariable %_ptr_StorageBuffer_input_buffer StorageBuffer
+%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
+    %float_1 = OpConstant %float 1
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+      %int_1 = OpConstant %int 1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+          %i = OpVariable %_ptr_Function_int Function
+      %point = OpVariable %_ptr_Function_v3float Function
+               OpStore %i %int_0
+               OpBranch %10
+         %10 = OpLabel
+               OpLoopMerge %12 %13 None
+               OpBranch %14
+         %14 = OpLabel
+         %15 = OpLoad %int %i
+         %18 = OpSLessThan %bool %15 %int_3
+               OpBranchConditional %18 %11 %12
+         %11 = OpLabel
+         %32 = OpLoad %int %i
+         %34 = OpAccessChain %_ptr_Input_v4float %gl_in %32 %int_0
+         %35 = OpLoad %v4float %34
+         %36 = OpVectorShuffle %v3float %35 %35 0 1 2
+               OpStore %point %36
+         %40 = OpLoad %v3float %point
+         %45 = OpAccessChain %_ptr_StorageBuffer_float %__0 %int_0
+         %46 = OpLoad %float %45
+         %47 = OpVectorTimesScalar %v3float %40 %46
+         %49 = OpCompositeExtract %float %47 0
+         %50 = OpCompositeExtract %float %47 1
+         %51 = OpCompositeExtract %float %47 2
+         %52 = OpCompositeConstruct %v4float %49 %50 %51 %float_1
+         %54 = OpAccessChain %_ptr_Output_v4float %_ %int_0
+               OpStore %54 %52
+               OpEmitVertex
+               OpBranch %13
+         %13 = OpLabel
+         %55 = OpLoad %int %i
+         %57 = OpIAdd %int %55 %int_1
+               OpStore %i %57
+               OpBranch %10
+         %12 = OpLabel
+               OpEndPrimitive
+               OpReturn
+               OpFunctionEnd
+[fragment shader]
+#version 430
+layout(location = 0) out vec4 outColor;
+void main() {
+    outColor = vec4(0.5, 0.5, 0.5, 0.5);
+}
+
+[test]
+ssbo 0:0 subdata float 0 0.5
+clear
+draw rect -1 -1 2 2
+
+probe rect rgba (62, 62, 125, 125) (0.5 0.5 0.5 0.5)
+probe rect rgba (0, 0, 250, 62) (0.0 0.0 0.0 0.0)
+probe rect rgba (0, 0, 62, 250) (0.0 0.0 0.0 0.0)
+probe rect rgba (187, 0, 63, 250) (0.0 0.0 0.0 0.0)
+probe rect rgba (0, 187, 250, 63) (0.0 0.0 0.0 0.0)

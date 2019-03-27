@@ -1,0 +1,104 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; Test that the HlslCounterBufferGOOGLE/CounterBuffer decoration is accepted.
+; Generated with
+;
+;
+; RWStructuredBuffer<uint4>      sbuf_rw_i;
+; RWStructuredBuffer<uint4>      sbuf_rw_d;
+;
+; void main()
+; {
+;     sbuf_rw_i[0].x = sbuf_rw_i.IncrementCounter();
+;     sbuf_rw_d[0].x = sbuf_rw_d.DecrementCounter();
+; }
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %sbuf_rw_i_0 %sbuf_rw_i_count_0 %sbuf_rw_d %sbuf_rw_d_count
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource HLSL 500
+               OpName %main "main"
+               OpName %sbuf_rw_i "sbuf_rw_i"
+               OpMemberName %sbuf_rw_i 0 "@data"
+               OpName %sbuf_rw_i_0 "sbuf_rw_i"
+               OpName %sbuf_rw_i_count "sbuf_rw_i@count"
+               OpMemberName %sbuf_rw_i_count 0 "@count"
+               OpName %sbuf_rw_i_count_0 "sbuf_rw_i@count"
+               OpName %sbuf_rw_d "sbuf_rw_d"
+               OpName %sbuf_rw_d_count "sbuf_rw_d@count"
+               OpDecorate %_runtimearr_v4uint ArrayStride 16
+               OpMemberDecorate %sbuf_rw_i 0 Offset 0
+               OpDecorate %sbuf_rw_i Block
+               OpDecorate %sbuf_rw_i_0 DescriptorSet 0
+               OpDecorate %sbuf_rw_i_0 Binding 0
+               OpMemberDecorate %sbuf_rw_i_count 0 Offset 0
+               OpDecorate %sbuf_rw_i_count Block
+               OpDecorate %sbuf_rw_i_count_0 DescriptorSet 0
+               OpDecorate %sbuf_rw_i_count_0 Binding 1
+               OpDecorate %sbuf_rw_d DescriptorSet 0
+               OpDecorate %sbuf_rw_d Binding 2
+               OpDecorate %sbuf_rw_d_count DescriptorSet 0
+               OpDecorate %sbuf_rw_d_count Binding 3
+               OpDecorateId %sbuf_rw_i_0 CounterBuffer %sbuf_rw_i_count_0
+               OpDecorateId %sbuf_rw_d CounterBuffer %sbuf_rw_d_count
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+     %v4uint = OpTypeVector %uint 4
+%_runtimearr_v4uint = OpTypeRuntimeArray %v4uint
+  %sbuf_rw_i = OpTypeStruct %_runtimearr_v4uint
+%_ptr_StorageBuffer_sbuf_rw_i = OpTypePointer StorageBuffer %sbuf_rw_i
+%sbuf_rw_i_0 = OpVariable %_ptr_StorageBuffer_sbuf_rw_i StorageBuffer
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%sbuf_rw_i_count = OpTypeStruct %uint
+%_ptr_StorageBuffer_sbuf_rw_i_count = OpTypePointer StorageBuffer %sbuf_rw_i_count
+%sbuf_rw_i_count_0 = OpVariable %_ptr_StorageBuffer_sbuf_rw_i_count StorageBuffer
+%_ptr_StorageBuffer_uint = OpTypePointer StorageBuffer %uint
+     %uint_1 = OpConstant %uint 1
+     %uint_0 = OpConstant %uint 0
+  %sbuf_rw_d = OpVariable %_ptr_StorageBuffer_sbuf_rw_i StorageBuffer
+%sbuf_rw_d_count = OpVariable %_ptr_StorageBuffer_sbuf_rw_i_count StorageBuffer
+%uint_4294967295 = OpConstant %uint 4294967295
+     %int_n1 = OpConstant %int -1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %34 = OpAccessChain %_ptr_StorageBuffer_uint %sbuf_rw_i_count_0 %int_0
+         %35 = OpAtomicIAdd %uint %34 %uint_1 %uint_0 %uint_1
+         %36 = OpAccessChain %_ptr_StorageBuffer_uint %sbuf_rw_i_0 %int_0 %int_0 %uint_0
+               OpStore %36 %35
+         %37 = OpAccessChain %_ptr_StorageBuffer_uint %sbuf_rw_d_count %int_0
+         %38 = OpAtomicIAdd %uint %37 %uint_1 %uint_0 %uint_4294967295
+         %39 = OpIAdd %uint %38 %int_n1
+         %40 = OpAccessChain %_ptr_StorageBuffer_uint %sbuf_rw_d %int_0 %int_0 %uint_0
+               OpStore %40 %39
+               OpReturn
+               OpFunctionEnd
+[test]
+# sbuf_rw_i_0
+ssbo 0:0 16
+# sbuf_rw_i_count_0
+ssbo 0:1 4
+# sbuf_rw_d
+ssbo 0:2 16
+# sbuf_rw_d_count
+ssbo 0:3 4
+
+ssbo 0:0 subdata uint 0 200 200 200 200
+ssbo 0:1 subdata uint 0 8
+ssbo 0:2 subdata uint 0 200 200 200 200
+ssbo 0:3 subdata uint 0 8
+
+compute entrypoint main
+compute 1 1 1
+
+# Check the storage buffer.
+probe ssbo uint 0:0 0 == 8 200 200 200
+probe ssbo uint 0:2 0 == 7 200 200 200
+
+# Check the counters.
+probe ssbo uint 0:1 0 == 9
+probe ssbo uint 0:3 0 == 7

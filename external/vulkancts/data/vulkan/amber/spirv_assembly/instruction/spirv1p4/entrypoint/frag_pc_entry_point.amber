@@ -1,0 +1,57 @@
+[require]
+VK_KHR_spirv_1_4
+
+[vertex shader passthrough]
+
+[fragment shader spirv]
+; A fragment shader with a push constant.
+;
+; #version 430
+;
+; layout(push_constant) uniform pushConstants {
+;     vec4 in_val;
+; } u_pushConstants;
+;
+; layout(location = 0) out vec4 outColor;
+;
+; void main() {
+;     outColor = u_pushConstants.in_val;
+; }
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %outColor %u_pushConstants
+               OpExecutionMode %main OriginUpperLeft
+               OpSource GLSL 430
+               OpName %main "main"
+               OpName %outColor "outColor"
+               OpName %pushConstants "pushConstants"
+               OpMemberName %pushConstants 0 "in_val"
+               OpName %u_pushConstants "u_pushConstants"
+               OpDecorate %outColor Location 0
+               OpMemberDecorate %pushConstants 0 Offset 0
+               OpDecorate %pushConstants Block
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+   %outColor = OpVariable %_ptr_Output_v4float Output
+%pushConstants = OpTypeStruct %v4float
+%_ptr_PushConstant_pushConstants = OpTypePointer PushConstant %pushConstants
+%u_pushConstants = OpVariable %_ptr_PushConstant_pushConstants PushConstant
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_v4float = OpTypePointer PushConstant %v4float
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %16 = OpAccessChain %_ptr_PushConstant_v4float %u_pushConstants %int_0
+         %17 = OpLoad %v4float %16
+               OpStore %outColor %17
+               OpReturn
+               OpFunctionEnd
+[test]
+uniform float 0 0.2 0.3 0.4 0.1
+draw rect -1 -1 2 2
+
+probe rect rgba (0, 0, 250, 250) (0.2 0.3 0.4 0.1)

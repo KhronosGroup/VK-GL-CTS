@@ -1,0 +1,87 @@
+[require]
+VK_KHR_spirv_1_4
+
+[compute shader spirv]
+; Compute shader with a UBO.
+;
+; #version 430
+;
+; layout(binding = 0) uniform input_buffer
+; {
+;	int in_data[2];
+; };
+;
+; layout(std430, binding = 1) buffer output_buffer
+; {
+;	int out_SSBO[];
+; };
+;
+; void main() {
+;     out_SSBO[gl_GlobalInvocationID.z] = in_data[gl_GlobalInvocationID.z];
+; }
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %_ %gl_GlobalInvocationID %__0
+               OpExecutionMode %main LocalSize 1 1 1
+               OpSource GLSL 430
+               OpName %main "main"
+               OpName %output_buffer "output_buffer"
+               OpMemberName %output_buffer 0 "out_SSBO"
+               OpName %_ ""
+               OpName %gl_GlobalInvocationID "gl_GlobalInvocationID"
+               OpName %input_buffer "input_buffer"
+               OpMemberName %input_buffer 0 "in_data"
+               OpName %__0 ""
+               OpDecorate %_runtimearr_int ArrayStride 4
+               OpMemberDecorate %output_buffer 0 Offset 0
+               OpDecorate %output_buffer Block
+               OpDecorate %_ DescriptorSet 0
+               OpDecorate %_ Binding 1
+               OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId
+               OpDecorate %_arr_int_uint_2 ArrayStride 16
+               OpMemberDecorate %input_buffer 0 Offset 0
+               OpDecorate %input_buffer Block
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %__0 Binding 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+        %int = OpTypeInt 32 1
+%_runtimearr_int = OpTypeRuntimeArray %int
+%output_buffer = OpTypeStruct %_runtimearr_int
+%_ptr_StorageBuffer_output_buffer = OpTypePointer StorageBuffer %output_buffer
+          %_ = OpVariable %_ptr_StorageBuffer_output_buffer StorageBuffer
+      %int_0 = OpConstant %int 0
+       %uint = OpTypeInt 32 0
+     %v3uint = OpTypeVector %uint 3
+%_ptr_Input_v3uint = OpTypePointer Input %v3uint
+%gl_GlobalInvocationID = OpVariable %_ptr_Input_v3uint Input
+     %uint_2 = OpConstant %uint 2
+%_ptr_Input_uint = OpTypePointer Input %uint
+%_arr_int_uint_2 = OpTypeArray %int %uint_2
+%input_buffer = OpTypeStruct %_arr_int_uint_2
+%_ptr_Uniform_input_buffer = OpTypePointer Uniform %input_buffer
+        %__0 = OpVariable %_ptr_Uniform_input_buffer Uniform
+%_ptr_Uniform_int = OpTypePointer Uniform %int
+%_ptr_StorageBuffer_int = OpTypePointer StorageBuffer %int
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+         %18 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_2
+         %19 = OpLoad %uint %18
+         %24 = OpAccessChain %_ptr_Input_uint %gl_GlobalInvocationID %uint_2
+         %25 = OpLoad %uint %24
+         %27 = OpAccessChain %_ptr_Uniform_int %__0 %int_0 %25
+         %28 = OpLoad %int %27
+         %30 = OpAccessChain %_ptr_StorageBuffer_int %_ %int_0 %19
+               OpStore %30 %28
+               OpReturn
+               OpFunctionEnd
+[test]
+uniform ubo 0:0 int 0 0
+uniform ubo 0:0 int 16 1
+ssbo 0:1 subdata int 0 -1 -1
+
+compute entrypoint main
+compute 1 1 2
+
+probe ssbo int 0:1 0 == 0 1
