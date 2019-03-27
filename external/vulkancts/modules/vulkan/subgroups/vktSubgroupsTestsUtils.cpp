@@ -2,7 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2017 The Khronos Group Inc.
+ * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2017 Codeplay Software Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -376,7 +377,10 @@ struct Buffer : public BufferOrImage
 		, m_sizeInBytes		(sizeInBytes)
 		, m_usage			(usage)
 	{
-		const vk::VkBufferCreateInfo bufferCreateInfo =
+		const DeviceInterface&			vkd					= context.getDeviceInterface();
+		const VkDevice					device				= context.getDevice();
+
+		const vk::VkBufferCreateInfo	bufferCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 			DE_NULL,
@@ -387,15 +391,12 @@ struct Buffer : public BufferOrImage
 			0u,
 			DE_NULL,
 		};
-		m_buffer = createBuffer(context.getDeviceInterface(),
-								context.getDevice(), &bufferCreateInfo);
-		vk::VkMemoryRequirements req = getBufferMemoryRequirements(
-										   context.getDeviceInterface(), context.getDevice(), *m_buffer);
-		m_allocation = context.getDefaultAllocator().allocate(
-						   req, MemoryRequirement::HostVisible);
-		VK_CHECK(context.getDeviceInterface().bindBufferMemory(
-					 context.getDevice(), *m_buffer, m_allocation->getMemory(),
-					 m_allocation->getOffset()));
+		m_buffer		= createBuffer(vkd, device, &bufferCreateInfo);
+
+		VkMemoryRequirements			req					= getBufferMemoryRequirements(vkd, device, *m_buffer);
+
+		m_allocation	= context.getDefaultAllocator().allocate(req, MemoryRequirement::HostVisible);
+		VK_CHECK(vkd.bindBufferMemory(device, *m_buffer, m_allocation->getMemory(), m_allocation->getOffset()));
 	}
 
 	virtual VkDescriptorType getType() const
@@ -407,15 +408,18 @@ struct Buffer : public BufferOrImage
 		return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	}
 
-	VkBuffer getBuffer() const {
+	VkBuffer getBuffer () const
+	{
 		return *m_buffer;
 	}
 
-	const VkBuffer* getBufferPtr() const {
+	const VkBuffer* getBufferPtr () const
+	{
 		return &(*m_buffer);
 	}
 
-	VkDeviceSize getSize() const {
+	VkDeviceSize getSize () const
+	{
 		return m_sizeInBytes;
 	}
 
@@ -431,7 +435,10 @@ struct Image : public BufferOrImage
 				   VkFormat format, VkImageUsageFlags usage = VK_IMAGE_USAGE_STORAGE_BIT)
 		: BufferOrImage(true)
 	{
-		const VkImageCreateInfo imageCreateInfo =
+		const DeviceInterface&			vkd					= context.getDeviceInterface();
+		const VkDevice					device				= context.getDevice();
+
+		const VkImageCreateInfo			imageCreateInfo		=
 		{
 			VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, DE_NULL, 0, VK_IMAGE_TYPE_2D,
 			format, {width, height, 1}, 1, 1, VK_SAMPLE_COUNT_1_BIT,
@@ -439,36 +446,23 @@ struct Image : public BufferOrImage
 			VK_SHARING_MODE_EXCLUSIVE, 0u, DE_NULL,
 			VK_IMAGE_LAYOUT_UNDEFINED
 		};
-		m_image = createImage(context.getDeviceInterface(), context.getDevice(),
-							  &imageCreateInfo);
-		vk::VkMemoryRequirements req = getImageMemoryRequirements(
-										   context.getDeviceInterface(), context.getDevice(), *m_image);
-		req.size *= 2;
-		m_allocation =
-			context.getDefaultAllocator().allocate(req, MemoryRequirement::Any);
-		VK_CHECK(context.getDeviceInterface().bindImageMemory(
-					 context.getDevice(), *m_image, m_allocation->getMemory(),
-					 m_allocation->getOffset()));
 
-		const VkComponentMapping componentMapping =
+		const VkComponentMapping		componentMapping	=
 		{
 			VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY
 		};
 
-		const VkImageViewCreateInfo imageViewCreateInfo =
+		const VkImageSubresourceRange	subresourceRange	=
 		{
-			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, DE_NULL, 0, *m_image,
-			VK_IMAGE_VIEW_TYPE_2D, imageCreateInfo.format, componentMapping,
-			{
-				VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
-			}
+			VK_IMAGE_ASPECT_COLOR_BIT,	//VkImageAspectFlags	aspectMask
+			0u,							//deUint32				baseMipLevel
+			1u,							//deUint32				levelCount
+			0u,							//deUint32				baseArrayLayer
+			1u							//deUint32				layerCount
 		};
 
-		m_imageView = createImageView(context.getDeviceInterface(),
-									  context.getDevice(), &imageViewCreateInfo);
-
-		const struct VkSamplerCreateInfo samplerCreateInfo =
+		const VkSamplerCreateInfo		samplerCreateInfo	=
 		{
 			VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 			DE_NULL,
@@ -490,18 +484,55 @@ struct Image : public BufferOrImage
 			VK_FALSE,
 		};
 
-		m_sampler = createSampler(context.getDeviceInterface(), context.getDevice(), &samplerCreateInfo);
+		m_image			= createImage(vkd, device, &imageCreateInfo);
+
+		VkMemoryRequirements			req					= getImageMemoryRequirements(vkd, device, *m_image);
+
+		req.size		*= 2;
+		m_allocation	= context.getDefaultAllocator().allocate(req, MemoryRequirement::Any);
+
+		VK_CHECK(vkd.bindImageMemory(device, *m_image, m_allocation->getMemory(), m_allocation->getOffset()));
+
+		const VkImageViewCreateInfo		imageViewCreateInfo	=
+		{
+			VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, DE_NULL, 0, *m_image,
+			VK_IMAGE_VIEW_TYPE_2D, imageCreateInfo.format, componentMapping,
+			subresourceRange
+		};
+
+		m_imageView		= createImageView(vkd, device, &imageViewCreateInfo);
+		m_sampler		= createSampler(vkd, device, &samplerCreateInfo);
+
+		// Transition input image layouts
+		{
+			const Unique<VkCommandPool>		cmdPool				(makeCommandPool(context));
+			const Unique<VkCommandBuffer>	cmdBuffer			(makeCommandBuffer(context, *cmdPool));
+
+			beginCommandBuffer(vkd, *cmdBuffer);
+
+			const VkImageMemoryBarrier		imageBarrier		= makeImageMemoryBarrier((VkAccessFlags)0u, VK_ACCESS_TRANSFER_WRITE_BIT,
+																	VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, *m_image, subresourceRange);
+
+			vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				(VkDependencyFlags)0, 0u, (const VkMemoryBarrier*)DE_NULL, 0u, (const VkBufferMemoryBarrier*)DE_NULL, 1u, &imageBarrier);
+
+			endCommandBuffer(vkd, *cmdBuffer);
+			submitCommandsAndWait(vkd, device, context.getUniversalQueue(), *cmdBuffer);
+		}
 	}
 
-	VkImage getImage() const {
+	VkImage getImage () const
+	{
 		return *m_image;
 	}
 
-	VkImageView getImageView() const {
+	VkImageView getImageView () const
+	{
 		return *m_imageView;
 	}
 
-	VkSampler getSampler() const {
+	VkSampler getSampler () const
+	{
 		return *m_sampler;
 	}
 
@@ -964,6 +995,13 @@ bool vkt::subgroups::isDoubleSupportedForDevice(Context& context)
 	return features.shaderFloat64 ? true : false;
 }
 
+bool vkt::subgroups::isTessellationAndGeometryPointSizeSupported (Context& context)
+{
+	const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(
+		context.getInstanceInterface(), context.getPhysicalDevice());
+	return features.shaderTessellationAndGeometryPointSize ? true : false;
+}
+
 bool vkt::subgroups::isDoubleFormat(VkFormat format)
 {
 	switch (format)
@@ -1035,13 +1073,14 @@ void vkt::subgroups::setVertexShaderFrameBuffer (SourceCollections& programColle
 		"void main (void)\n"
 		"{\n"
 		"  gl_Position = in_position;\n"
+		"  gl_PointSize = 1.0f;\n"
 		"}\n";
 	*/
 	programCollection.spirvAsmSources.add("vert") <<
 		"; SPIR-V\n"
 		"; Version: 1.3\n"
-		"; Generator: Khronos Glslang Reference Front End; 2\n"
-		"; Bound: 21\n"
+		"; Generator: Khronos Glslang Reference Front End; 7\n"
+		"; Bound: 25\n"
 		"; Schema: 0\n"
 		"OpCapability Shader\n"
 		"%1 = OpExtInstImport \"GLSL.std.450\"\n"
@@ -1068,11 +1107,16 @@ void vkt::subgroups::setVertexShaderFrameBuffer (SourceCollections& programColle
 		"%16 = OpTypePointer Input %7\n"
 		"%17 = OpVariable %16 Input\n"
 		"%19 = OpTypePointer Output %7\n"
+		"%21 = OpConstant %14 1\n"
+		"%22 = OpConstant %6 1\n"
+		"%23 = OpTypePointer Output %6\n"
 		"%4 = OpFunction %2 None %3\n"
 		"%5 = OpLabel\n"
 		"%18 = OpLoad %7 %17\n"
 		"%20 = OpAccessChain %19 %13 %15\n"
 		"OpStore %20 %18\n"
+		"%24 = OpAccessChain %23 %13 %21\n"
+		"OpStore %24 %22\n"
 		"OpReturn\n"
 		"OpFunctionEnd\n";
 }
