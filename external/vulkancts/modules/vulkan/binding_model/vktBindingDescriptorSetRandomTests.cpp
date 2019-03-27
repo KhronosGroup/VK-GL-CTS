@@ -83,6 +83,12 @@ typedef enum
 	STAGE_FRAGMENT,
 } Stage;
 
+typedef enum
+{
+	UPDATE_AFTER_BIND_DISABLED = 0,
+	UPDATE_AFTER_BIND_ENABLED,
+} UpdateAfterBind;
+
 const VkFlags allShaderStages = VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 const VkFlags allPipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
@@ -99,6 +105,7 @@ struct CaseDef
 	deUint32 maxInlineUniformBlocks;
 	deUint32 maxInlineUniformBlockSize;
 	Stage stage;
+	UpdateAfterBind uab;
 	deUint32 seed;
 };
 
@@ -332,6 +339,9 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 		arraySizes = vector<deUint32>(numBindings);
 	}
 
+	// BUFFER_DYNAMIC descriptor types cannot be used with VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT bindings in one set
+	bool allowDynamicBuffers = caseDef.uab != UPDATE_AFTER_BIND_ENABLED;
+
 	// Iterate over bindings first, then over sets. This prevents the low-limit bindings
 	// from getting clustered in low-numbered sets.
 	for (deUint32 b = 0; b <= maxBindings; ++b)
@@ -364,7 +374,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 			binding.descriptorCount = 0;
 
 			// Select a random type of descriptor.
-			int r = randRange(&rnd, 0, 6);
+			int r = randRange(&rnd, 0, (allowDynamicBuffers ? 6 : 4));
 			switch (r)
 			{
 			default: DE_ASSERT(0); // Fallthrough
@@ -378,18 +388,6 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 				}
 				break;
 			case 1:
-				binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-				if (numUBODyn < caseDef.maxUniformBuffersDynamic &&
-					numUBO < caseDef.maxPerStageUniformBuffers)
-				{
-					arraySizes[b] = randRange(&rnd, 0, de::min(maxArray, de::min(caseDef.maxUniformBuffersDynamic - numUBODyn,
-																				 caseDef.maxPerStageUniformBuffers - numUBO)));
-					binding.descriptorCount = arraySizes[b] ? arraySizes[b] : 1;
-					numUBO += binding.descriptorCount;
-					numUBODyn += binding.descriptorCount;
-				}
-				break;
-			case 2:
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 				if (numSSBO < caseDef.maxPerStageStorageBuffers)
 				{
@@ -398,19 +396,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 					numSSBO += binding.descriptorCount;
 				}
 				break;
-			case 3:
-				binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-				if (numSSBODyn < caseDef.maxStorageBuffersDynamic &&
-					numSSBO < caseDef.maxPerStageStorageBuffers)
-				{
-					arraySizes[b] = randRange(&rnd, 0, de::min(maxArray, de::min(caseDef.maxStorageBuffersDynamic - numSSBODyn,
-																				 caseDef.maxPerStageStorageBuffers - numSSBO)));
-					binding.descriptorCount = arraySizes[b] ? arraySizes[b] : 1;
-					numSSBO += binding.descriptorCount;
-					numSSBODyn += binding.descriptorCount;
-				}
-				break;
-			case 4:
+			case 2:
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
 				if (numImage < caseDef.maxPerStageStorageImages)
 				{
@@ -419,7 +405,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 					numImage += binding.descriptorCount;
 				}
 				break;
-			case 5:
+			case 3:
 				binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
 				if (numTexBuffer < caseDef.maxPerStageSampledImages)
 				{
@@ -428,7 +414,7 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 					numTexBuffer += binding.descriptorCount;
 				}
 				break;
-			case 6:
+			case 4:
 				if (caseDef.maxInlineUniformBlocks > 0)
 				{
 					binding.descriptorType = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT;
@@ -445,6 +431,30 @@ void generateRandomLayout(RandomLayout &randomLayout, const CaseDef &caseDef)
 					// Plug in a dummy descriptor type, so validation layers that don't
 					// support inline_uniform_block don't crash.
 					binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+				}
+				break;
+			case 5:
+				binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+				if (numUBODyn < caseDef.maxUniformBuffersDynamic &&
+					numUBO < caseDef.maxPerStageUniformBuffers)
+				{
+					arraySizes[b] = randRange(&rnd, 0, de::min(maxArray, de::min(caseDef.maxUniformBuffersDynamic - numUBODyn,
+																				 caseDef.maxPerStageUniformBuffers - numUBO)));
+					binding.descriptorCount = arraySizes[b] ? arraySizes[b] : 1;
+					numUBO += binding.descriptorCount;
+					numUBODyn += binding.descriptorCount;
+				}
+				break;
+			case 6:
+				binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+				if (numSSBODyn < caseDef.maxStorageBuffersDynamic &&
+					numSSBO < caseDef.maxPerStageStorageBuffers)
+				{
+					arraySizes[b] = randRange(&rnd, 0, de::min(maxArray, de::min(caseDef.maxStorageBuffersDynamic - numSSBODyn,
+																				 caseDef.maxPerStageStorageBuffers - numSSBO)));
+					binding.descriptorCount = arraySizes[b] ? arraySizes[b] : 1;
+					numSSBO += binding.descriptorCount;
+					numSSBODyn += binding.descriptorCount;
 				}
 				break;
 			}
@@ -546,10 +556,20 @@ void DescriptorSetRandomTestCase::initPrograms (SourceCollections& programCollec
 					// Don't access descriptors past the end of the allocated range for
 					// variable descriptor count
 					if (b == bindings.size() - 1 &&
-						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT) &&
-						ai >= variableDescriptorSizes[s])
+						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT))
 					{
-						continue;
+						if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+						{
+							// Convert to bytes and add 16 for "ivec4 dummy" in case of inline uniform block
+							const deUint32 uboRange = ai*16 + 16;
+							if (uboRange >= variableDescriptorSizes[s])
+								continue;
+						}
+						else
+						{
+							if (ai >= variableDescriptorSizes[s])
+								continue;
+						}
 					}
 
 					if (s == 0 && b == 0)
@@ -862,7 +882,8 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 			numDescriptors += binding.descriptorCount;
 
 			// Randomly choose some bindings to use update-after-bind, if it is supported
-			if (randRange(&rnd, 1, 8) == 1 && // 1 in 8 chance
+			if (m_data.uab == UPDATE_AFTER_BIND_ENABLED &&
+				randRange(&rnd, 1, 8) == 1 && // 1 in 8 chance
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER			|| indexingFeatures.descriptorBindingUniformBufferUpdateAfterBind) &&
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE				|| indexingFeatures.descriptorBindingStorageImageUpdateAfterBind) &&
 				(binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER			|| indexingFeatures.descriptorBindingStorageBufferUpdateAfterBind) &&
@@ -1157,10 +1178,20 @@ tcu::TestStatus DescriptorSetRandomTestInstance::iterate (void)
 					// Don't access descriptors past the end of the allocated range for
 					// variable descriptor count
 					if (b == bindings.size() - 1 &&
-						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT) &&
-						ai >= variableDescriptorSizes[s])
+						(bindingsFlags[b] & VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT))
 					{
-						continue;
+						if (binding.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK_EXT)
+						{
+							// Convert to bytes and add 16 for "ivec4 dummy" in case of inline uniform block
+							const deUint32 uboRange = ai*16 + 16;
+							if (uboRange >= variableDescriptorSizes[s])
+								continue;
+						}
+						else
+						{
+							if (ai >= variableDescriptorSizes[s])
+								continue;
+						}
 					}
 
 					// output image
@@ -1720,6 +1751,11 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 		{ STAGE_VERTEX,		"vert",		"vertex"	},
 	};
 
+	TestGroupCase uabCases[] =
+	{
+		{ UPDATE_AFTER_BIND_DISABLED,	"nouab",	"no update after bind"		},
+	};
+
 	for (int setsNdx = 0; setsNdx < DE_LENGTH_OF_ARRAY(setsCases); setsNdx++)
 	{
 		de::MovePtr<tcu::TestCaseGroup> setsGroup(new tcu::TestCaseGroup(testCtx, setsCases[setsNdx].name, setsCases[setsNdx].description));
@@ -1738,32 +1774,42 @@ tcu::TestCaseGroup*	createDescriptorSetRandomTests (tcu::TestContext& testCtx)
 						for (int iubNdx = 0; iubNdx < DE_LENGTH_OF_ARRAY(iubCases); iubNdx++)
 						{
 							de::MovePtr<tcu::TestCaseGroup> iubGroup(new tcu::TestCaseGroup(testCtx, iubCases[iubNdx].name, iubCases[iubNdx].description));
-							for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
+							for (int uabNdx = 0; uabNdx < DE_LENGTH_OF_ARRAY(uabCases); uabNdx++)
 							{
-								de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description));
-								deUint32 numSeeds = (setsCases[setsNdx].count == 4 && uboNdx == 0 && sboNdx == 0 && imgNdx == 0 && iubNdx == 0) ? 10 : 1;
-								for (deUint32 rnd = 0; rnd < numSeeds; ++rnd)
+								de::MovePtr<tcu::TestCaseGroup> uabGroup(new tcu::TestCaseGroup(testCtx, uabCases[uabNdx].name, uabCases[uabNdx].description));
+								bool updateAfterBind = (UpdateAfterBind)uabCases[uabNdx].count == UPDATE_AFTER_BIND_ENABLED;
+								for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
 								{
-									CaseDef c =
+									de::MovePtr<tcu::TestCaseGroup> stageGroup(new tcu::TestCaseGroup(testCtx, stageCases[stageNdx].name, stageCases[stageNdx].description));
+									deUint32 numSeeds = (setsCases[setsNdx].count == 4 && uboNdx == 0 && sboNdx == 0 && imgNdx == 0 && iubNdx == 0) ? 10 : 1;
+									for (deUint32 rnd = 0; rnd < numSeeds; ++rnd)
 									{
-										(IndexType)indexCases[indexNdx].count,		// IndexType indexType;
-										setsCases[setsNdx].count,					// deUint32 numDescriptorSets;
-										uboCases[uboNdx].count,						// deUint32 maxPerStageUniformBuffers;
-										8,											// deUint32 maxUniformBuffersDynamic;
-										sboCases[sboNdx].count,						// deUint32 maxPerStageStorageBuffers;
-										4,											// deUint32 maxStorageBuffersDynamic;
-										imgCases[imgNdx].texCount,					// deUint32 maxPerStageSampledImages;
-										imgCases[imgNdx].imgCount,					// deUint32 maxPerStageStorageImages;
-										iubCases[iubNdx].iubCount,					// deUint32 maxInlineUniformBlocks;
-										iubCases[iubNdx].iubSize,					// deUint32 maxInlineUniformBlockSize;
-										(Stage)stageCases[stageNdx].count,			// Stage stage;
-										seed++,										// deUint32 seed;
-									};
+										CaseDef c =
+										{
+											(IndexType)indexCases[indexNdx].count,							// IndexType indexType;
+											setsCases[setsNdx].count,										// deUint32 numDescriptorSets;
+											uboCases[uboNdx].count,											// deUint32 maxPerStageUniformBuffers;
+											8,																// deUint32 maxUniformBuffersDynamic;
+											sboCases[sboNdx].count,											// deUint32 maxPerStageStorageBuffers;
+											4,																// deUint32 maxStorageBuffersDynamic;
+											imgCases[imgNdx].texCount,										// deUint32 maxPerStageSampledImages;
+											imgCases[imgNdx].imgCount,										// deUint32 maxPerStageStorageImages;
+											iubCases[iubNdx].iubCount,										// deUint32 maxInlineUniformBlocks;
+											iubCases[iubNdx].iubSize,										// deUint32 maxInlineUniformBlockSize;
+											(Stage)stageCases[stageNdx].count,								// Stage stage;
+											(UpdateAfterBind)uabCases[uabNdx].count,						// UpdateAfterBind uab;
+											seed++,															// deUint32 seed;
+										};
 
-									string name = de::toString(rnd);
-									stageGroup->addChild(new DescriptorSetRandomTestCase(testCtx, name.c_str(), "test", c));
+										string name = de::toString(rnd);
+										stageGroup->addChild(new DescriptorSetRandomTestCase(testCtx, name.c_str(), "test", c));
+									}
+									(updateAfterBind ? uabGroup : iubGroup)->addChild(stageGroup.release());
 								}
-								iubGroup->addChild(stageGroup.release());
+								if (updateAfterBind)
+								{
+									iubGroup->addChild(uabGroup.release());
+								}
 							}
 							imgGroup->addChild(iubGroup.release());
 						}
